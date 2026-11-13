@@ -1976,23 +1976,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const idempotencyKey = body.idempotencyKey?.trim() || `web-project-${randomUUID()}`;
       const command = buildAppAdmissionCommand({ projectPath: path, projectId, comment, idempotencyKey });
       try {
-        const admitted = await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, (key) => {
-          const eventId = findEventPublication(
-            _db(),
-            {
-              type: "app.input.requested",
-              target: { appId: projectId },
-              idempotencyKey: key,
-              data: {
-                input: command.input,
-                conversationId: command.conversationId,
-                channel: command.channel,
-              },
-            },
-            { source: "control-socket", inputSource: { kind: "human", id: `web-ui:${key}` } },
-          );
-          return eventId ? { eventId, eventType: "app.input.requested" } : undefined;
-        });
+        const admitted = await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, (key) =>
+          confirmAcceptedAppInput(
+            projectId,
+            key,
+            { input: command.input, conversationId: command.conversationId, channel: command.channel },
+            { kind: "human", id: `web-ui:${key}` },
+          ),
+        );
         return json(
           {
             ok: true,
@@ -2301,36 +2292,39 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
-  const { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
-    createTaskReadHandlers({ daemonRead, json });
-  const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
-  function confirmTaskInput(
-    command: TaskInputCommand,
-  ): { eventId: number; eventType: string; delivery: "accepted" } | undefined {
+  function confirmAcceptedAppInput(
+    appId: string,
+    idempotencyKey: string,
+    data: Record<string, unknown>,
+    inputSource: { kind: "human"; id: string },
+  ): { eventId: number; eventType: "app.input.requested"; delivery: "accepted" } | undefined {
     const db = _db();
     const eventId = findEventPublication(
       db,
-      {
-        type: "app.input.requested",
-        target: { appId: String(command.appId) },
-        idempotencyKey: command.idempotencyKey,
-        data: { input: command.input, targetTaskId: command.targetTaskId, channel: command.channel },
-      },
-      { source: "control-socket", inputSource: command.source },
+      { type: "app.input.requested", target: { appId }, idempotencyKey, data },
+      { source: "control-socket", inputSource },
     );
     if (!eventId || getEventView(db, eventId)?.delivery.state !== "accepted") return undefined;
     return { eventId, eventType: "app.input.requested", delivery: "accepted" };
   }
+  const { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
+    createTaskReadHandlers({ daemonRead, json });
+  const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
+  const confirmTaskInput = (command: TaskInputCommand) =>
+    confirmAcceptedAppInput(
+      String(command.appId),
+      command.idempotencyKey,
+      { input: command.input, targetTaskId: command.targetTaskId, channel: command.channel },
+      command.source,
+    );
   const handleTaskInput = createTaskInputHandler({
     daemonRead,
     json,
     confirm: confirmTaskInput,
-    admit: async (command) => {
-      const response = await sendAppInputWithRetry(
-        conventionSocketPath(), command, sendSocketCommand, () => confirmTaskInput(command),
-      );
-      return response as unknown as Record<string, unknown>;
-    },
+    admit: async (command) =>
+      (await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, () =>
+        confirmTaskInput(command),
+      )) as unknown as Record<string, unknown>,
   });
 
   async function handleSessionCancel(sessionId: string): Promise<Response> {

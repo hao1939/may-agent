@@ -165,5 +165,20 @@ describe("Task-scoped human feedback", () => {
     expect(seenKeys[1]).toBe("web-task:7:example:15:support:version:feedback-1");
     expect(seenKeys[2]).toBe("web-task:7:example:7:support:version:feedback-1");
     expect(seenKeys[1]).not.toBe(seenKeys[2]);
+
+    const bomAccepted = await handler(
+      new Request("https://example.test/api/task/input", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: `\uFEFF${JSON.stringify({
+          appId: "example",
+          taskId: "support",
+          message: "BOM-prefixed feedback",
+          expectedGeneration: 1,
+          idempotencyKey: "bom-feedback-1",
+        })}`,
+      }),
+    );
+    expect(bomAccepted.status).toBe(202);
   });
 });

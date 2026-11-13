@@ -137,7 +137,7 @@ describe("Codex goal Task progress", () => {
         },
       }),
     ).toMatchObject({
-      localKey: "codex-progress:goal-status:thread-1:turn-1:active:20",
+      localKey: "codex-progress:goal-status:thread-1:turn-1:active",
       event: { data: { stage: "goal-status", status: "active", tokensUsed: 120, timeUsedSeconds: 3 } },
     });
     expect(
@@ -236,81 +236,6 @@ describe("Codex goal Task progress", () => {
     expect(published.at(-1)).toBe("codex-progress:item:thread-1:turn-1:later");
   });
 
-  it("retains lifecycle transitions when routine progress fills the queue", async () => {
-    const published: Record<string, unknown>[] = [];
-    const publisher = new CodexGoalProgressPublisher({
-      maxEvents: 3,
-      async publish(_localKey, event) {
-        published.push(event.data);
-        return { eventId: published.length };
-      },
-    });
-    for (let index = 0; index < 100; index += 1) {
-      publisher.observe(completed({ id: `plan-${index}`, type: "plan", text: `Progress ${index}` }));
-    }
-    publisher.observe({
-      method: "turn/completed",
-      params: { threadId: "thread-1", turn: { id: "turn-1", status: "completed" } },
-    });
-    publisher.observe({
-      method: "thread/goal/updated",
-      params: { threadId: "thread-1", turnId: "turn-1", goal: { status: "paused", updatedAt: 100 } },
-    });
-    publisher.observe(completed({ id: "last", type: "plan", text: "Latest commentary" }));
-    await publisher.flush();
-    expect(published.map((event) => event.stage)).toEqual(["turn-completed", "goal-status", "intermediate"]);
-    expect(published[1]).toMatchObject({ status: "paused" });
-    expect(published[2]).toMatchObject({ message: "Latest commentary" });
-  });
-
-  it("keeps the newest lifecycle state during a lifecycle-only backlog", async () => {
-    const published: Record<string, unknown>[] = [];
-    const publisher = new CodexGoalProgressPublisher({
-      maxEvents: 2,
-      async publish(_localKey, event) {
-        published.push(event.data);
-        return { eventId: published.length };
-      },
-    });
-    for (let index = 0; index < 100; index += 1) {
-      publisher.observe({
-        method: "turn/started",
-        params: { threadId: "thread-1", turn: { id: `turn-${index}`, status: "inProgress" } },
-      });
-    }
-    publisher.observe({
-      method: "thread/goal/updated",
-      params: { threadId: "thread-1", goal: { status: "complete", updatedAt: 100 } },
-    });
-    expect(await publisher.flush()).toMatchObject({ published: 2, dropped: 99 });
-    expect(published.at(-1)).toMatchObject({ stage: "goal-status", status: "complete" });
-  });
-
-  it("does not displace a lifecycle-only backlog to admit routine observations", async () => {
-    const published: Record<string, unknown>[] = [];
-    const publisher = new CodexGoalProgressPublisher({
-      maxEvents: 2,
-      async publish(_localKey, event) {
-        published.push(event.data);
-        return { eventId: published.length };
-      },
-    });
-    publisher.observe({
-      method: "turn/completed",
-      params: { threadId: "thread-1", turn: { id: "turn-1", status: "completed" } },
-    });
-    publisher.observe({
-      method: "thread/goal/updated",
-      params: { threadId: "thread-1", goal: { status: "complete", updatedAt: 100 } },
-    });
-    for (let index = 0; index < 100; index += 1) {
-      publisher.observe(completed({ id: `late-${index}`, type: "plan", text: `Late progress ${index}` }));
-    }
-    expect(await publisher.flush()).toMatchObject({ published: 2, dropped: 100 });
-    expect(published.map((event) => event.stage)).toEqual(["turn-completed", "goal-status"]);
-    expect(published.at(-1)).toMatchObject({ status: "complete" });
-  });
-
   it("compacts opaque item identities without weakening stable-key uniqueness", () => {
     const sharedPrefix = "opaque/".repeat(100);
     const first = projectCodexGoalProgress(completed({ id: `${sharedPrefix}one`, type: "plan", text: "First" }));
@@ -321,67 +246,7 @@ describe("Codex goal Task progress", () => {
     expect(first?.localKey.length).toBeLessThanOrEqual(240);
   });
 
-  it("deduplicates repeated active-goal heartbeats but preserves status transitions", async () => {
-    const published: string[] = [];
-    const publisher = new CodexGoalProgressPublisher({
-      async publish(localKey) {
-        published.push(localKey);
-        return { eventId: published.length };
-      },
-    });
-    for (const [updatedAt, tokensUsed] of [
-      [10, 0],
-      [20, 100],
-      [30, 200],
-    ]) {
-      publisher.observe({
-        method: "thread/goal/updated",
-        params: {
-          threadId: "thread-1",
-          turnId: "turn-1",
-          goal: { status: "active", updatedAt, tokensUsed, timeUsedSeconds: updatedAt },
-        },
-      });
-    }
-    publisher.observe({
-      method: "thread/goal/updated",
-      params: {
-        threadId: "thread-1",
-        turnId: "turn-1",
-        goal: { status: "complete", updatedAt: 40, tokensUsed: 300, timeUsedSeconds: 40 },
-      },
-    });
-    expect(await publisher.flush()).toMatchObject({ queued: 2, published: 2, dropped: 0 });
-    expect(published).toEqual([
-      "codex-progress:goal-status:thread-1:turn-1:active:10",
-      "codex-progress:goal-status:thread-1:turn-1:complete:40",
-    ]);
-  });
-
-  it("preserves returning to the same status in one turn without replaying heartbeats", async () => {
-    const published: string[] = [];
-    const publisher = new CodexGoalProgressPublisher({
-      async publish(localKey) {
-        published.push(localKey);
-        return { eventId: published.length };
-      },
-    });
-    for (const [index, status] of ["active", "active", "paused", "active", "active", "complete"].entries()) {
-      publisher.observe({
-        method: "thread/goal/updated",
-        params: { threadId: "thread-1", turnId: "turn-1", goal: { status, updatedAt: index } },
-      });
-    }
-    expect(await publisher.flush()).toMatchObject({ queued: 4, published: 4, dropped: 0 });
-    expect(published).toEqual([
-      "codex-progress:goal-status:thread-1:turn-1:active:0",
-      "codex-progress:goal-status:thread-1:turn-1:paused:2",
-      "codex-progress:goal-status:thread-1:turn-1:active:3",
-      "codex-progress:goal-status:thread-1:turn-1:complete:5",
-    ]);
-  });
-
-  it("distinguishes rapid active -> paused -> active transitions with identical updatedAt while staying replay-idempotent", async () => {
+  it("deduplicates repeated goal-status heartbeats and numbers genuine transitions on the local stream", async () => {
     const published: Array<{ localKey: string; status: unknown }> = [];
     const publisher = new CodexGoalProgressPublisher({
       async publish(localKey, event) {
@@ -389,27 +254,30 @@ describe("Codex goal Task progress", () => {
         return { eventId: published.length };
       },
     });
-    const emitGoal = (status: string, updatedAt = 1_700_000_000) =>
+    for (const [status, updatedAt] of [
+      ["active", 10],
+      ["active", 10],
+      ["active", 20],
+      ["paused", 20],
+      ["paused", 20],
+      ["active", 20],
+      ["complete", 30],
+    ] as const) {
       publisher.observe({
         method: "thread/goal/updated",
-        params: { threadId: "thread-1", turnId: "turn-1", goal: { status, updatedAt } },
+        params: {
+          threadId: "thread-1",
+          turnId: "turn-1",
+          goal: { status, updatedAt, tokensUsed: updatedAt * 10 },
+        },
       });
-
-    emitGoal("active");
-    emitGoal("active"); // immediate replay / same-second heartbeat
-    emitGoal("paused");
-    emitGoal("paused"); // immediate replay
-    emitGoal("active"); // rapid resume within the same whole second
-    emitGoal("active"); // immediate replay of resumed active state
-    emitGoal("active", 1_700_000_200); // newer same-status heartbeat advances watermark
-    emitGoal("paused", 1_700_000_150); // delayed stale pause older than heartbeat watermark is ignored
-    emitGoal("paused", 1_699_999_999); // stale out-of-order replay from earlier second must not regress status
-
-    expect(await publisher.flush()).toMatchObject({ queued: 3, published: 3, dropped: 0 });
+    }
+    expect(await publisher.flush()).toMatchObject({ queued: 4, published: 4, dropped: 0 });
     expect(published).toEqual([
-      { localKey: "codex-progress:goal-status:thread-1:turn-1:active:1700000000", status: "active" },
-      { localKey: "codex-progress:goal-status:thread-1:turn-1:paused:1700000000", status: "paused" },
-      { localKey: "codex-progress:goal-status:thread-1:turn-1:active:1700000000:2", status: "active" },
+      { localKey: "codex-progress:goal-status:thread-1:turn-1:active", status: "active" },
+      { localKey: "codex-progress:goal-status:thread-1:turn-1:paused:2", status: "paused" },
+      { localKey: "codex-progress:goal-status:thread-1:turn-1:active:3", status: "active" },
+      { localKey: "codex-progress:goal-status:thread-1:turn-1:complete:4", status: "complete" },
     ]);
   });
 

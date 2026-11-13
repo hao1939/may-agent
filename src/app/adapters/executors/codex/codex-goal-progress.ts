@@ -126,11 +126,10 @@ export function projectCodexGoalProgress(
     const turnId = boundedString(params.turnId);
     const tokensUsed = finiteNumber(goal.tokensUsed);
     const timeUsedSeconds = finiteNumber(goal.timeUsedSeconds);
-    const updatedAt = finiteNumber(goal.updatedAt);
     return projection({
-      // The update identity distinguishes active -> paused -> active in one
-      // turn. The publisher separately suppresses unchanged usage heartbeats.
-      localKey: stableLocalKey("goal-status", threadId, turnId, status, ...(updatedAt === null ? [] : [updatedAt])),
+      // Status transitions get sequence keys in CodexGoalProgressPublisher so
+      // unchanged heartbeats are suppressed without timestamp state machines.
+      localKey: stableLocalKey("goal-status", threadId, turnId, status),
       executorName,
       threadId,
       turnId,
@@ -247,11 +246,10 @@ function errorMessage(error: unknown): string {
   return boundedString(error instanceof Error ? error.message : String(error), 512) ?? "unknown publication error";
 }
 
-type GoalStatusMemory = {
-  status: string;
-  lastUpdatedAt: number | null;
-  byStatus: Record<string, { rawKey: string; occurrence: number }>;
-};
+function addBounded<T>(set: Set<T>, value: T): void {
+  set.add(value);
+  if (set.size > MAX_RECENT_PROGRESS_KEYS) set.delete(set.values().next().value!);
+}
 
 /**
  * A non-blocking, serialized bridge from protocol notifications to Task events.
@@ -263,10 +261,9 @@ export class CodexGoalProgressPublisher {
   private readonly executorName: string;
   private readonly keyScope?: string;
   private readonly seen = new Set<string>();
-  private readonly goalStatuses = new Map<string, GoalStatusMemory>();
+  private readonly goalStatuses = new Map<string, { status: string; transitions: number }>();
   private readonly pending: CodexGoalProgressProjection[] = [];
   private draining: Promise<void> | null = null;
-  private inFlight: string | null = null;
   private stats: CodexGoalProgressStats = { queued: 0, published: 0, failed: 0, dropped: 0 };
 
   constructor(input: {
@@ -291,57 +288,23 @@ export class CodexGoalProgressPublisher {
     if (projected.event.data.stage === "goal-status") {
       const { threadId, turnId, status } = projected.event.data;
       const statusName = String(status);
-      const updatedAt = finiteNumber(record(notification.params?.goal)?.updatedAt);
       const identity = JSON.stringify([threadId, turnId]);
       const current = this.goalStatuses.get(identity);
-      if (updatedAt !== null && current?.lastUpdatedAt !== null && current?.lastUpdatedAt !== undefined && updatedAt < current.lastUpdatedAt) {
-        return;
-      }
-      if (current?.status === statusName) {
-        if (updatedAt !== null && (current.lastUpdatedAt === null || updatedAt > current.lastUpdatedAt)) {
-          current.lastUpdatedAt = updatedAt;
-        }
-        return;
-      }
-      const byStatus = { ...(current?.byStatus ?? {}) };
-      const prior = Object.hasOwn(byStatus, statusName) ? byStatus[statusName] : undefined;
-      const occurrence = prior?.rawKey === baseKey ? prior.occurrence + 1 : 1;
-      byStatus[statusName] = { rawKey: baseKey, occurrence };
-      if (Object.keys(byStatus).length > 8) delete byStatus[Object.keys(byStatus)[0]!];
-      if (occurrence > 1) baseKey = `${baseKey}:${occurrence}`;
+      if (current?.status === statusName) return;
+      const transitions = (current?.transitions ?? 0) + 1;
+      if (transitions > 1) baseKey = `${baseKey}:${transitions}`;
       this.goalStatuses.delete(identity);
-      this.goalStatuses.set(identity, {
-        status: statusName,
-        lastUpdatedAt: updatedAt ?? current?.lastUpdatedAt ?? null,
-        byStatus,
-      });
+      this.goalStatuses.set(identity, { status: statusName, transitions });
       if (this.goalStatuses.size > MAX_RECENT_PROGRESS_KEYS) {
         this.goalStatuses.delete(this.goalStatuses.keys().next().value!);
       }
     }
     const localKey = scopedLocalKey(baseKey, this.keyScope);
-    if (
-      this.seen.has(localKey) ||
-      this.inFlight === localKey ||
-      this.pending.some((item) => item.localKey === localKey)
-    )
-      return;
-    this.seen.add(localKey);
-    if (this.seen.size > MAX_RECENT_PROGRESS_KEYS) this.seen.delete(this.seen.values().next().value!);
+    if (this.seen.has(localKey)) return;
+    addBounded(this.seen, localKey);
     if (this.pending.length >= this.maxEvents) {
-      // Retain lifecycle transitions ahead of routine observations. If the
-      // entire queue contains lifecycle events, retain the newest state rather
-      // than accumulating an unbounded transition history behind a slow store.
-      const routine = this.pending.findIndex(
-        (item) => !["turn-started", "turn-completed", "goal-status"].includes(String(item.event.data.stage)),
-      );
       this.stats.dropped += 1;
-      if (
-        routine < 0 &&
-        !["turn-started", "turn-completed", "goal-status"].includes(String(projected.event.data.stage))
-      )
-        return;
-      this.pending.splice(routine < 0 ? 0 : routine, 1);
+      this.pending.shift();
     }
     this.stats.queued += 1;
     this.pending.push({ localKey, event: projected.event });
@@ -354,15 +317,12 @@ export class CodexGoalProgressPublisher {
       .then(async () => {
         while (this.pending.length > 0) {
           const next = this.pending.shift()!;
-          this.inFlight = next.localKey;
           try {
             await this.publish(next.localKey, next.event);
             this.stats.published += 1;
           } catch (error: unknown) {
             this.stats.failed += 1;
             this.stats.lastError = errorMessage(error);
-          } finally {
-            this.inFlight = null;
           }
         }
       })
