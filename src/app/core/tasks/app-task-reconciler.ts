@@ -565,16 +565,6 @@ function previousAttemptFacts(attempt: AppTaskAttempt): NonNullable<TaskAttempt[
   };
 }
 
-// Read old saved handoffs as unfinished workflow work; never select another executor.
-function hasLegacyWorkflowHandoff(tree: TaskTree, resource: AppTaskResource): boolean {
-  if (resource.status.phase !== "attention") return false;
-  const attempt = latestTaskAttempt(tree, resource.metadata.id, resource.metadata.generation);
-  return Boolean(
-    attempt?.handler.startsWith("workflow:") &&
-    (attempt.failureReason === "needs-agent" || attempt.failureReason === "needs-owner"),
-  );
-}
-
 function touchResource(resource: AppTaskResource, status: Partial<AppTaskResource["status"]>): void {
   resource.metadata.resourceVersion += 1;
   resource.status = {
@@ -2033,7 +2023,6 @@ function isRunnableOnPassiveResync(tree: TaskTree, resource: AppTaskResource): b
     if (reviewAt !== null) return reviewAt <= Date.now();
     return !(resource.status.conditionIds?.length ?? 0);
   }
-  if (resource.status.phase === "attention") return hasLegacyWorkflowHandoff(tree, resource);
   if (resource.status.phase === "running") return true;
   return false;
 }
@@ -3054,8 +3043,7 @@ export function claimObservedAppTask(
   if (
     resource.status.phase === "attention" &&
     resource.status.observedGeneration >= resource.metadata.generation &&
-    !pendingTrigger &&
-    !hasLegacyWorkflowHandoff(tree, resource)
+    !pendingTrigger
   ) {
     return {
       kind: "attention",

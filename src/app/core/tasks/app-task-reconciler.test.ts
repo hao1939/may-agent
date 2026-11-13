@@ -1610,6 +1610,9 @@ describe("App task reconciler state", () => {
       resource.status.phase = "attention";
       resource.status.executionRetryAt = undefined;
     });
+    config.resourceStore.db
+      .prepare("UPDATE app_tasks SET ready = 0, changed = 0 WHERE app_id = ? AND task_id = ?")
+      .run(config.resourceStore.appId, attentionIntent.id);
 
     observeAppTaskIntent(config, { intent: unavailableIntent, appAgent: "app-owner" });
     const unavailableClaim = claimObservedAppTask(config, {
@@ -1654,7 +1657,7 @@ describe("App task reconciler state", () => {
     if (maintainClaim.kind !== "claimed") throw new Error("expected maintain claim");
     completeAppTask(config, maintainClaim, { summary: "monitor converged" });
 
-    expect(listRunnableAppTaskIds(config)).toEqual(["work/attention", "categorized-task", "work/pending"]);
+    expect(listRunnableAppTaskIds(config)).toEqual(["categorized-task", "work/pending"]);
 
     observeAppTaskIntent(config, {
       intent: attentionIntent,
