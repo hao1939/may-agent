@@ -379,10 +379,18 @@ export async function runAppRuntime(opts: {
 
   let telegramBot: { close: () => void } = { close: () => {} };
   let cancelledOnce = false;
-  const preparedSources = new WeakMap<
+  const preparedSources = new Map<
     Awaited<ReturnType<typeof prepareAgentGeneration>>,
-    DefinitionSourceRelease & { appDirectories: string[] }
+    DefinitionSourceRelease & { appDirectories: string[]; stagedAt: number }
   >();
+  const STAGED_SOURCE_MAX_AGE_MS = 30 * 60_000;
+  const activeStagedSourceIds = (): string[] => {
+    const now = Date.now();
+    for (const [key, value] of preparedSources.entries()) {
+      if (now - value.stagedAt > STAGED_SOURCE_MAX_AGE_MS) preparedSources.delete(key);
+    }
+    return [...preparedSources.values()].map((item) => item.id);
+  };
 
   const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
     bus,
@@ -415,7 +423,7 @@ export async function runAppRuntime(opts: {
         definitionSharedRoot: candidate.sharedRoot,
         appDirectories: candidate.appDirectories,
       });
-      preparedSources.set(generation, candidate);
+      preparedSources.set(generation, { ...candidate, stagedAt: Date.now() });
       return generation;
     },
     publishAgents: publishPreparedAgentGeneration,
@@ -438,7 +446,8 @@ export async function runAppRuntime(opts: {
                 sharedRoot: candidate.sharedRoot,
               },
               publish: () => {
-                appSources.activate(candidate);
+                const stagedIds = activeStagedSourceIds();
+                appSources.activate(candidate, [previous.id, ...stagedIds]);
                 acceptedWorkerSource = candidate;
                 try {
                   publishAgents();
@@ -446,7 +455,7 @@ export async function runAppRuntime(opts: {
                 } catch (error) {
                   // Restore before Task rollback yields to other worker dispatch.
                   acceptedWorkerSource = previous;
-                  appSources.activate(previous);
+                  appSources.activate(previous, [candidate.id, ...stagedIds]);
                   throw error;
                 }
               },
@@ -455,7 +464,8 @@ export async function runAppRuntime(opts: {
           } catch (error) {
             acceptedWorkerSource = previous;
             if (appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
-              appSources.activate(previous);
+              const stagedIds = activeStagedSourceIds();
+              appSources.activate(previous, [candidate.id, ...stagedIds]);
             }
             throw error;
           }

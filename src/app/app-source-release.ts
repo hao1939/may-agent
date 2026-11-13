@@ -12,6 +12,7 @@ import {
   realpathSync,
   renameSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -35,6 +36,8 @@ type ReleaseManifest = {
 };
 
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/;
+const DEFAULT_MAX_RETAINED_RELEASES = 5;
+const STALE_STAGE_MAX_AGE_MS = 60 * 60_000;
 const NON_SOURCE_DIRECTORIES = new Set([
   ".state",
   "archive",
@@ -58,6 +61,20 @@ function isNonSourcePath(path: string): boolean {
         part === ".last-eval-state.json" ||
         part.startsWith("ui.root-stale-"),
     );
+}
+
+function stripCapturedNonSourceEntries(root: string): void {
+  if (!existsSync(root)) return;
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const child = join(root, entry.name);
+    if (isNonSourcePath(entry.name)) {
+      rmSync(child, { recursive: true, force: true });
+      continue;
+    }
+    if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      stripCapturedNonSourceEntries(child);
+    }
+  }
 }
 
 function appDirectoryNames(projectsRoot: string): string[] {
@@ -295,6 +312,9 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
   mkdirSync(join(stageRoot, "projects"), { recursive: true });
   mkdirSync(join(stageRoot, "agents"), { recursive: true });
   rmSync(archivePath, { force: true });
+  stripCapturedNonSourceEntries(join(stageRoot, "projects"));
+  stripCapturedNonSourceEntries(join(stageRoot, "agents"));
+  stripCapturedNonSourceEntries(join(stageRoot, "shared"));
 }
 
 function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void {
@@ -378,10 +398,17 @@ export class DefinitionSourceReleaseStore {
 
   ensureCurrent(): DefinitionSourceRelease {
     const active = this.current();
-    if (active && existsSync(active.agentsRoot) && existsSync(join(active.sharedRoot, "common-sense.md")))
+    if (
+      active &&
+      active.id.endsWith("-definitions-v6") &&
+      existsSync(active.agentsRoot) &&
+      existsSync(join(active.sharedRoot, "common-sense.md"))
+    ) {
+      this.prune();
       return active;
+    }
     const candidate = this.stage();
-    this.activate(candidate);
+    this.activate(candidate, active ? [active.id] : []);
     return candidate;
   }
 
@@ -394,8 +421,8 @@ export class DefinitionSourceReleaseStore {
     }
     mkdirSync(this.releasesRoot, { recursive: true });
     if (commit) assertCommittedDefinitionSource(this.projectRoot, commit, !expectedSourceCommit);
-    // v5 captures installation file policy; never reuse a snapshot that omitted it.
-    const id = commit ? `${commit}-definitions-v5` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v5`;
+    // v6 strips non-source directories (archive/, generated/, reports/, etc.) from Git snapshots too.
+    const id = commit ? `${commit}-definitions-v6` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v6`;
     const releaseRoot = join(this.releasesRoot, id);
     if (existsSync(releaseRoot)) return validateRelease(releaseRoot);
 
@@ -419,14 +446,61 @@ export class DefinitionSourceReleaseStore {
     return validateRelease(releaseRoot);
   }
 
-  activate(release: DefinitionSourceRelease): void {
+  activate(release: DefinitionSourceRelease, preserveIds: readonly string[] = []): void {
     const validated = validateRelease(release.root);
     const relativeTarget = relative(this.releasesRoot, validated.root);
     if (!relativeTarget || relativeTarget.startsWith("..")) {
       throw new Error(`App source release is outside ${this.releasesRoot}: ${validated.root}`);
     }
+    const previousId = existsSync(this.currentLink) ? this.current()?.id : undefined;
     const nextLink = `${this.currentLink}.next-${process.pid}-${randomUUID()}`;
     symlinkSync(relativeTarget, nextLink);
     renameSync(nextLink, this.currentLink);
+    this.prune([...preserveIds, ...(previousId ? [previousId] : [])]);
+  }
+
+  prune(preserveIds: readonly string[] = [], maxRetained = DEFAULT_MAX_RETAINED_RELEASES): string[] {
+    if (!existsSync(this.releasesRoot)) return [];
+    const activeId = existsSync(this.currentLink) ? this.current()?.id : undefined;
+    const protectedIds = new Set<string>(preserveIds.filter(Boolean));
+    if (activeId) protectedIds.add(activeId);
+    const now = Date.now();
+    const candidates: Array<{ id: string; path: string; mtimeMs: number }> = [];
+    const removed: string[] = [];
+
+    for (const entry of readdirSync(this.releasesRoot, { withFileTypes: true })) {
+      if (entry.name === "current" || entry.name.startsWith("current.next-")) continue;
+      const entryPath = join(this.releasesRoot, entry.name);
+      if (entry.name.startsWith(".next-")) {
+        try {
+          if (now - statSync(entryPath).mtimeMs >= STALE_STAGE_MAX_AGE_MS) {
+            rmSync(entryPath, { recursive: true, force: true });
+            removed.push(entry.name);
+          }
+        } catch {
+          // Concurrent stage finished or cleaned up.
+        }
+        continue;
+      }
+      if (!entry.isDirectory() || entry.isSymbolicLink() || !existsSync(join(entryPath, "release.json"))) continue;
+      try {
+        candidates.push({ id: entry.name, path: entryPath, mtimeMs: statSync(entryPath).mtimeMs });
+      } catch {
+        // Concurrent removal.
+      }
+    }
+
+    candidates.sort((left, right) => right.mtimeMs - left.mtimeMs || right.id.localeCompare(left.id));
+    let retained = protectedIds.size;
+    for (const candidate of candidates) {
+      if (protectedIds.has(candidate.id)) continue;
+      if (retained < Math.max(1, maxRetained)) {
+        retained += 1;
+        continue;
+      }
+      rmSync(candidate.path, { recursive: true, force: true });
+      removed.push(candidate.id);
+    }
+    return removed;
   }
 }

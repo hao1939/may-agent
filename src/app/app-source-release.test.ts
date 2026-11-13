@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -218,7 +218,7 @@ describe("App source releases", () => {
         })
       ).map((tool) => tool.name);
     expect(await load(first)).toEqual(["sample-v1"]);
-    expect(first.id).toEndWith("-definitions-v5");
+    expect(first.id).toEndWith("-definitions-v6");
     // Content cache identity changes; the manifest schema does not. Previous
     // Hosts must still be able to read the active source after binary rollback.
     expect(JSON.parse(readFileSync(join(first.root, "release.json"), "utf8")).version).toBe(3);
@@ -462,5 +462,61 @@ describe("App source releases", () => {
 
     writeFileSync(join(root, "projects", "sample.app", "new-handler.ts"), "export const handler = true;\n");
     expect(() => store.stage()).toThrow("untracked executable/config files");
+  });
+
+  it("strips tracked non-source directories from Git snapshots on parity with filesystem copy", async () => {
+    const { root, stateDir } = await fixture();
+    for (const rel of [
+      "projects/sample.app/archive/historical.md",
+      "projects/sample.app/docs/archive/old-review.md",
+      "projects/sample.app/generated/schema.json",
+      "projects/sample.app/reports/run.json",
+      "projects/sample.app/docs/active.md",
+    ]) {
+      const target = join(root, rel);
+      mkdirSync(join(target, ".."), { recursive: true });
+      writeFileSync(target, "tracked content\n");
+    }
+    await git(root, "add", "projects/sample.app");
+    await git(root, "commit", "-qm", "track archives and active docs");
+
+    const release = new DefinitionSourceReleaseStore(root, stateDir).stage();
+    expect(existsSync(join(release.projectsRoot, "sample.app", "docs", "active.md"))).toBeTrue();
+    for (const omitted of [
+      "archive",
+      "docs/archive",
+      "generated",
+      "reports",
+    ]) {
+      expect(existsSync(join(release.projectsRoot, "sample.app", omitted))).toBeFalse();
+    }
+  });
+
+  it("prunes older releases beyond retention bound while preserving active and rollback targets", async () => {
+    const { root, stateDir, appPath } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const releases = [store.ensureCurrent()];
+    for (let index = 2; index <= 7; index += 1) {
+      writeFileSync(
+        appPath,
+        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
+      );
+      await git(root, "add", appPath);
+      await git(root, "commit", "-qm", `v${index}`);
+      const next = store.stage();
+      store.activate(next);
+      releases.push(next);
+    }
+
+    const active = store.current()!;
+    const previous = releases[releases.length - 2]!;
+    expect(active.id).toBe(releases[releases.length - 1]!.id);
+    expect(existsSync(active.root)).toBeTrue();
+    expect(existsSync(previous.root)).toBeTrue();
+    expect(existsSync(releases[0]!.root)).toBeFalse();
+    expect(existsSync(releases[1]!.root)).toBeFalse();
+
+    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current");
+    expect(retainedDirs).toHaveLength(5);
   });
 });
