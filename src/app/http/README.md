@@ -1,8 +1,14 @@
 # HTTP source map
 
 `server.ts` starts the HTTP server, wires route handlers and owns the existing
-socket connection and static-file serving. Its final `fetch` function lists
-the routes explicitly.
+socket connection and WebSocket proxy. Its final `fetch` function lists the
+routes explicitly, delegating to focused route modules:
+
+- `task-read-routes.ts`, `task-transcript.ts`, `task-input.ts`: Task, App, Conversation and transcript reads/inputs.
+- `project-routes.ts`: `/api/projects*` metadata, detail, artifact, session, comment and action routes.
+- `session-and-agent-routes.ts`: `/api/sessions/*` and `/api/agents/*` inspection, transcript and direct-chat steering routes.
+- `diagnostic-and-metric-routes.ts`: `/api/liveness`, `/api/stats`, `/api/metrics*`, `/api/alerts/*`, `/api/app-inbox*`, `/api/events*`, and `/api/loop-trace`.
+- `static-and-knowledge-routes.ts`: platform UI SPA static serving, `/projects/*` directory/asset serving, `/api/browse`, and `/api/knowledge/search`.
 
 `task-read-routes.ts` handles the related read endpoints:
 
