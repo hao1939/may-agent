@@ -13,7 +13,8 @@ import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { cacheTaskSnapshots, readTaskSnapshot } from "../tasks/app-task-store.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { createConversationTopic, listConversationTopicLinksForTask } from "./conversations.js";
+import { createConversationTopic } from "./conversations.js";
+import { listConversationTaskLinks } from "./conversation-task-links.js";
 import {
   cancelAppTask,
   closeAppTask,
@@ -137,7 +138,7 @@ describe("request-to-Task state operation", () => {
     expect(() => admitTaskInput(config, { ...input, inboxInputId: undefined, topicId: "missing" })).toThrow();
     expect(config.resourceStore.readTask("work/one")).toBeNull();
     admitTaskInput(config, { ...input, inboxInputId: undefined, topicId: "topic" });
-    expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
+    expect(listConversationTaskLinks(db, "example", "work/one", { scope: "link" })).toHaveLength(1);
   });
   it("commits Task input, exact dependency, Topic and Conversation claim release together", () => {
     const { db, config, input } = fixture();
@@ -145,7 +146,7 @@ describe("request-to-Task state operation", () => {
     expect(getAppInboxItem(db, input.inputContext.id)).toMatchObject({ waitingOn: { kind: "task", id: "work/one" } });
     expect(getAppInboxItem(db, input.inputContext.id)?.lease).toBeUndefined();
     expect(config.resourceStore.readTask("work/one")).not.toBeNull();
-    expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
+    expect(listConversationTaskLinks(db, "example", "work/one", { scope: "link" })).toHaveLength(1);
     createAppInboxItem(db, {
       id: "next",
       appId: "example",
@@ -230,7 +231,7 @@ describe("request-to-Task state operation", () => {
     expect(admissions()?.[legacyKey]).toEqual(accepted);
     expect(config.resourceStore.readTaskContext({ taskIds: ["work/one"] }).taskTriggers).toEqual(before.taskTriggers);
     expect(getAppInboxItem(db, input.inputContext.id)?.waitingOn?.id).toBe("work/one");
-    expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
+    expect(listConversationTaskLinks(db, "example", "work/one", { scope: "link" })).toHaveLength(1);
     expect(Boolean(readAppTaskAdmissionOutcome(config, "work/one", legacyKey))).toBe(completed);
     const revision = config.resourceStore.revision();
     admitTaskInput(config, resumed);
@@ -281,7 +282,7 @@ describe("request-to-Task state operation", () => {
     admitTaskInput(config, input);
     expect(getAppInboxItem(db, input.inputContext.id)?.availableAt).toBeUndefined();
     expect(getAppInboxItem(db, input.inputContext.id)?.taskAdmissionKey).toBe(input.idempotencyKey);
-    expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
+    expect(listConversationTaskLinks(db, "example", "work/one", { scope: "link" })).toHaveLength(1);
   });
 
   it("does not treat an older receipt as completion of a changed generation", () => {
@@ -507,10 +508,10 @@ describe("request-to-Task state operation", () => {
     if (action === "crash-before") {
       expect(config.resourceStore.readTask("work/one")).toBeNull();
       expect(getAppInboxItem(db, input.inputContext.id)?.waitingOn).toBeUndefined();
-      expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(0);
+      expect(listConversationTaskLinks(db, "example", "work/one", { scope: "link" })).toHaveLength(0);
     } else {
       expect(getAppInboxItem(db, input.inputContext.id)?.waitingOn?.id).toBe("work/one");
-      expect(listConversationTopicLinksForTask(db, "example", "work/one")).toHaveLength(1);
+      expect(listConversationTaskLinks(db, "example", "work/one", { scope: "link" })).toHaveLength(1);
     }
     admitTaskInput(config, input);
     finishTask(config);
@@ -554,7 +555,7 @@ it("runs Task-only input with no conversational frontend and keeps retained Conv
   await host.recoverTaskResults();
   expect(host.get("no-chat")).toMatchObject({ status: "done", result: { summary: "Verified" } });
   expect(readAppConversationResource(db, "example", "chat")).toEqual(before);
-  expect(listConversationTopicLinksForTask(db, app.id, "work/without-chat")).toEqual([]);
+  expect(listConversationTaskLinks(db, app.id, "work/without-chat", { scope: "link" })).toEqual([]);
 });
 
 it("routes an exact App-only revision through the installed mapper and gives stale input one readable result", async () => {
