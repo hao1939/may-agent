@@ -157,7 +157,7 @@ describe("AppTaskResourceStore", () => {
     }
   });
 
-  it("upgrades retained input identities once without retaining duplicate event bodies", () => {
+  it("backfills retained input identities during bootstrap without retaining duplicate event bodies", () => {
     const store = open();
     try {
       const tree = fixture();
@@ -174,20 +174,16 @@ describe("AppTaskResourceStore", () => {
       };
       store.bootstrapSnapshot(tree, "fixture");
       const pending = store.readTrigger("human");
-      // Recreate the version-2 projection while retaining real resource rows.
-      store.db.prepare("DELETE FROM app_task_events WHERE task_id = 'active'").run();
-      store.db.prepare("UPDATE app_task_store_meta SET value = '2' WHERE key = 'schema_version'").run();
-      const upgraded = AppTaskResourceStore.fromDb(store.db, "example");
-      for (const eventId of [11, 12, 13]) expect(upgraded.hasTaskEvent("active", { eventId })).toBeTrue();
-      expect(upgraded.hasTaskEvent("human", { eventId: 11 })).toBeFalse();
-      expect(upgraded.readTrigger("human")).toEqual(pending);
-      expect(upgraded.readTrigger("active")).toBeNull();
+      for (const eventId of [11, 12, 13]) expect(store.hasTaskEvent("active", { eventId })).toBeTrue();
+      expect(store.hasTaskEvent("human", { eventId: 11 })).toBeFalse();
+      expect(store.readTrigger("human")).toEqual(pending);
+      expect(store.readTrigger("active")).toBeNull();
       expect(store.db.prepare("SELECT DISTINCT event_json FROM app_task_events").all()).toEqual([{ event_json: "{}" }]);
       // Identities outlive later attempt-history pruning; reopen does not need
       // that history again and does not change Task state.
       expect(
-        upgraded.commit({
-          fences: [{ taskId: "active", resourceVersion: upgraded.readTask("active")!.metadata.resourceVersion }],
+        store.commit({
+          fences: [{ taskId: "active", resourceVersion: store.readTask("active")!.metadata.resourceVersion }],
           deleteAttemptIds: ["legacy"],
         }),
       ).toBeTrue();
@@ -265,75 +261,76 @@ describe("AppTaskResourceStore", () => {
       store.close();
     }
   });
-  it("backfills normalized Condition and Task relationship routes when opening a legacy resource database", () => {
+  it("refuses to silently promote or activate an unsupported schema_version on open or discovery", () => {
+    const store = open();
+    try {
+      store.bootstrapSnapshot(fixture(), "fixture");
+      store.db
+        .prepare("UPDATE app_task_store_meta SET value = '2' WHERE app_id = ? AND key = 'schema_version'")
+        .run("example");
+      expect(() => AppTaskResourceStore.fromDb(store.db, "example")).toThrow(
+        "Task resource store for example has unsupported schema_version 2 (expected 4)",
+      );
+      expect(() => AppTaskResourceStore.activeFromDb(store.db, "example")).toThrow(
+        "Task resource store for example has unsupported schema_version 2 (expected 4)",
+      );
+      expect(() => AppTaskResourceStore.inspectFromDb(store.db, "example")).toThrow(
+        "Task resource store for example has unsupported schema_version 2 (expected 4)",
+      );
+      expect(
+        store.db
+          .prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'schema_version'")
+          .get("example"),
+      ).toEqual({ value: "2" });
+    } finally {
+      store.close();
+    }
+  });
+  it("normalizes legacy Condition evidence into facts when reading stored Conditions", () => {
     const root = mkdtempSync(join(tmpdir(), "may-task-resource-legacy-"));
     roots.push(root);
-    const db = openDatabase(join(root, "host.sqlite"));
+    const store = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
     const legacy = resource("legacy");
     legacy.status.conditionIds = ["legacy-condition"];
-    db.exec(`
-      CREATE TABLE app_task_store_meta (
-        app_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL,
-        PRIMARY KEY(app_id, key)
-      );
-      CREATE TABLE app_tasks (
-        app_id TEXT NOT NULL, task_id TEXT NOT NULL,
-        generation INTEGER NOT NULL, resource_version INTEGER NOT NULL,
-        observed_generation INTEGER NOT NULL, phase TEXT NOT NULL,
-        lane TEXT NOT NULL, changed INTEGER NOT NULL, ready INTEGER NOT NULL,
-        next_check_at INTEGER, lease_until INTEGER, current_attempt_id TEXT,
-        updated_at INTEGER NOT NULL, resource_json TEXT NOT NULL, trigger_json TEXT,
-        PRIMARY KEY(app_id, task_id)
-      );
-      CREATE TABLE app_task_conditions (
-        app_id TEXT NOT NULL, condition_id TEXT NOT NULL, state TEXT NOT NULL, condition_json TEXT NOT NULL,
-        PRIMARY KEY(app_id, condition_id)
-      );
-    `);
-    db.prepare("INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'schema_version', '1')").run("example");
-    db.prepare("INSERT INTO app_task_store_meta(app_id, key, value) VALUES (?, 'app_metadata', ?)").run(
-      "example",
-      JSON.stringify({ project: "example", root_task_id: "project" }),
-    );
-    db.prepare(
-      `INSERT INTO app_tasks(
-         app_id, task_id, generation, resource_version, observed_generation, phase, lane,
-         changed, ready, updated_at, resource_json
-       ) VALUES (?, ?, 1, 1, 0, 'waiting', 'normal', 0, 0, 0, ?)`,
-    ).run("example", "legacy", JSON.stringify(legacy));
-    db.prepare(
-      "INSERT INTO app_task_conditions(app_id, condition_id, state, condition_json) VALUES (?, ?, 'unknown', ?)",
-    ).run(
-      "example",
-      "legacy-condition",
-      JSON.stringify({
-        metadata: { id: "legacy-condition", generation: 1, resourceVersion: 1 },
-        spec: { type: "legacy.completed", subject: "legacy", expected: "done" },
-        status: {
-          state: "unknown",
-          observedGeneration: 0,
-          updatedAt: "2026-08-21T00:00:00.000Z",
-          evidence: ["Saved Condition observation"],
-          observed: { evidence: "App-owned data" },
+    store.bootstrapSnapshot(
+      {
+        project: "example",
+        root_task_id: "project",
+        resources: { legacy },
+        conditions: {
+          "legacy-condition": {
+            metadata: { id: "legacy-condition", generation: 1, resourceVersion: 1 },
+            spec: { type: "legacy.completed", subject: "legacy", expected: "done", owner: "app:example" },
+            status: {
+              state: "unknown",
+              observedGeneration: 0,
+              updatedAt: "2026-08-21T00:00:00.000Z",
+              observed: { evidence: "App-owned data" },
+            },
+          },
         },
-      }),
+      },
+      "legacy",
     );
-
-    const store = AppTaskResourceStore.fromDb(db, "example");
-    expect(
-      db.prepare("SELECT value FROM app_task_store_meta WHERE app_id = ? AND key = 'schema_version'").get("example"),
-    ).toEqual({ value: "4" });
-    expect(store.readConditionRoutes("legacy.completed")).toEqual([expect.objectContaining({ taskIds: ["legacy"] })]);
-    expect(
-      db
-        .prepare(
-          `SELECT source_task_id, relation_kind, target_task_id
-         FROM app_task_relations WHERE app_id = 'example'`,
-        )
-        .all(),
-    ).toEqual([{ source_task_id: "legacy", relation_kind: "parent", target_task_id: "project" }]);
-    const saved = db.prepare("SELECT condition_json FROM app_task_conditions").get();
-    db.close();
+    store.db
+      .prepare("UPDATE app_task_conditions SET condition_json = ? WHERE app_id = ? AND condition_id = ?")
+      .run(
+        JSON.stringify({
+          metadata: { id: "legacy-condition", generation: 1, resourceVersion: 1 },
+          spec: { type: "legacy.completed", subject: "legacy", expected: "done" },
+          status: {
+            state: "unknown",
+            observedGeneration: 0,
+            updatedAt: "2026-08-21T00:00:00.000Z",
+            evidence: ["Saved Condition observation"],
+            observed: { evidence: "App-owned data" },
+          },
+        }),
+        "example",
+        "legacy-condition",
+      );
+    const saved = store.db.prepare("SELECT condition_json FROM app_task_conditions").get();
+    store.close();
     const reopened = AppTaskResourceStore.openStandalone(join(root, "host.sqlite"), "example");
     try {
       const conditions = [
@@ -1462,132 +1459,6 @@ describe("AppTaskResourceStore", () => {
       expect.objectContaining({ taskId: dependent.metadata.id, ready: true }),
     );
     store.close();
-  });
-
-  it("clears retired indefinite funding and execution holds on reopen while preserving workspace and retry fences", () => {
-    const root = mkdtempSync(join(tmpdir(), "may-retired-holds-"));
-    roots.push(root);
-    const path = join(root, "host.sqlite");
-    let store = AppTaskResourceStore.openStandalone(path, "example");
-    const now = Date.now();
-    const retryAt = now + 3_600_000;
-    const workspaceRetryAt = now + 120_000;
-    const heldTask = resource("held-indefinite", "pending");
-    const heldWorkspace = resource("held-workspace", "pending");
-    heldWorkspace.status.workspaceConstraint = {
-      kind: "deferred",
-      reason: "disk-capacity",
-      resource: "disk",
-      generation: 1,
-      requiredBytes: 2048,
-      availableBytes: 512,
-      observedAt: now,
-      retryAt: workspaceRetryAt,
-    };
-    const heldBackoff = resource("held-backoff", "pending");
-    heldBackoff.status.executionRetryAt = retryAt;
-    const heldRepairSettlement = resource("held-repair-settlement", "waiting");
-    heldRepairSettlement.status.currentAttemptId = "attempt-repair-settlement";
-    heldRepairSettlement.status.retryExhausted = {
-      attempts: 3,
-      maxAttempts: 3,
-      lastAttemptId: "attempt-prior",
-      lastFailureAt: new Date(now - 1000).toISOString(),
-      summary: "Exhausted before fresh human repair",
-    };
-    store.bootstrapSnapshot(
-      {
-        project: "example",
-        resources: {
-          "held-indefinite": heldTask,
-          "held-workspace": heldWorkspace,
-          "held-backoff": heldBackoff,
-          "held-repair-settlement": heldRepairSettlement,
-        },
-        attempts: {
-          "attempt-repair-settlement": {
-            metadata: { id: "attempt-repair-settlement", resourceVersion: 2 },
-            taskId: "held-repair-settlement",
-            taskGeneration: 1,
-            specHash: "hash",
-            owner: "owner",
-            handler: "agent:owner",
-            runtimeId: "rt",
-            state: "running",
-            reason: "event",
-            startedAt: new Date(now - 500).toISOString(),
-            pendingSettlement: {
-              claim: {
-                kind: "claimed",
-                taskId: "held-repair-settlement",
-                generation: 1,
-                resourceVersion: 1,
-                specHash: "hash",
-                attemptId: "attempt-repair-settlement",
-                attemptResourceVersion: 1,
-                owner: "owner",
-                handler: "agent:owner",
-                reason: "event",
-                declaredOutputPaths: [],
-              },
-              report: {
-                handlerResult: { state: "converged", summary: "Repaired by human", facts: ["repaired"], actions: [] },
-                runId: null,
-              },
-              acceptanceBasis: { method: "executor", evidence: ["repaired"] },
-            },
-          },
-        },
-      },
-      "retired-holds",
-    );
-    for (const [id, field, val] of [
-      ["held-indefinite", "$.status.funding", { kind: "deferred", reason: "root-credit", retryAt: null }],
-      ["held-workspace", "$.status.funding", { kind: "deferred", reason: "adoption-required", retryAt: null }],
-      ["held-backoff", "$.status.executionConstraint", { kind: "deferred", reason: "shared-capacity", retryAt }],
-      ["held-repair-settlement", "$.status.funding", { kind: "deferred", reason: "sponsor-credit", retryAt: null }],
-    ] as const) {
-      store.db
-        .prepare("UPDATE app_tasks SET ready = 0, changed = 0, next_check_at = NULL, resource_json = json_set(resource_json, ?, json(?)) WHERE app_id = ? AND task_id = ?")
-        .run(field, JSON.stringify(val), "example", id);
-    }
-    store.db
-      .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
-      .run();
-    store.close();
-
-    store = AppTaskResourceStore.openStandalone(path, "example");
-    try {
-      const recovered = store.readTask("held-indefinite")!;
-      expect((recovered.status as Record<string, unknown>).funding).toBeUndefined();
-      const row = store.db
-        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
-        .get("example", "held-indefinite") as { ready: number; changed: number; next_check_at: number | null };
-      expect(row).toEqual({ ready: 1, changed: 1, next_check_at: null });
-
-      const wsRow = store.db
-        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
-        .get("example", "held-workspace") as { ready: number; changed: number; next_check_at: number | null };
-      expect(wsRow).toEqual({ ready: 0, changed: 0, next_check_at: workspaceRetryAt });
-
-      const backoffRow = store.db
-        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
-        .get("example", "held-backoff") as { ready: number; changed: number; next_check_at: number | null };
-      expect(backoffRow).toEqual({ ready: 0, changed: 0, next_check_at: retryAt });
-
-      const repairRow = store.db
-        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
-        .get("example", "held-repair-settlement") as { ready: number; changed: number; next_check_at: number | null };
-      expect(repairRow.ready).toBe(1);
-      expect(repairRow.next_check_at).not.toBeNull();
-      expect(
-        store.db
-          .prepare("SELECT value FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
-          .get(),
-      ).toEqual({ value: "1" });
-    } finally {
-      store.close();
-    }
   });
 
   it("stamps App-only creator provenance on new-app-seed so seeded coordination Tasks satisfy matchesTaskCoordination", () => {

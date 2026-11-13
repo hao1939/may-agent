@@ -8,7 +8,6 @@ import { readMetricObservations } from "../../src/app/adapters/reporting/metric-
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { openDatabase } from "../../src/lib/db.js";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
-import { applyDbSchema } from "../../src/lib/db/schema.js";
 import { stateTransaction } from "../../src/lib/db/transaction.js";
 
 describe("MetricService", () => {
@@ -91,36 +90,21 @@ describe("MetricService", () => {
     expect(emitted).toEqual([]);
   });
 
-  it("upgrades duplicate open alerts once, retaining the first episode and its historical references", () => {
+  it("enforces a single open alert episode per metric and preserves resolved timestamps", () => {
     const { db, service, emitted } = harness();
     const id = "sample.queue-depth";
     service.define({ id, threshold: 0, alertOp: ">" });
     service.record(id, 1);
-    // Reproduce the pre-upgrade shape, including a misleading earlier timestamp
-    // on the second insertion. Episode identity follows insertion order.
-    db.exec("DROP INDEX IF EXISTS idx_ma_one_open_metric");
     const insert = db.prepare("INSERT INTO metric_alerts (metric_id, message, created_at, resolved_at) VALUES (?, ?, ?, ?)");
-    insert.run(id, "previous episode", 500, 600);
+    const closedId = Number(insert.run(id, "previous episode", 500, 600).lastInsertRowid);
     const firstId = Number(insert.run(id, "first opening", 2000, null).lastInsertRowid);
-    const duplicateId = Number(insert.run(id, "duplicate opening", 1000, null).lastInsertRowid);
-    for (const alertId of [firstId, duplicateId]) {
-      db.run("INSERT INTO events (event_type, metric_id, alert_id, data, timestamp) VALUES ('metric.breach', ?, ?, ?, ?)",
-        [id, String(alertId), JSON.stringify({ metricId: id, alertId }), 2000]);
-    }
-    const history = db.prepare("SELECT * FROM events ORDER BY id").all();
-    applyDbSchema(db);
-    const upgraded = db.prepare("SELECT * FROM metric_alerts ORDER BY id").all();
-    expect(upgraded).toHaveLength(3);
-    expect(upgraded[0]).toMatchObject({ message: "previous episode", resolved_at: 600 });
-    expect(upgraded[1]).toMatchObject({ id: firstId, message: "first opening", resolved_at: null });
-    expect(upgraded[2]).toMatchObject({ id: duplicateId, resolved_at: expect.any(Number) });
-    expect(upgraded[2].message).toContain("duplicate opening");
-    expect(upgraded[2].message).toContain(`alert ${firstId}`);
-    applyDbSchema(db);
-    service.resolveAlert(duplicateId); // Repeated administrative closure preserves its first timestamp.
-    expect(db.prepare("SELECT * FROM metric_alerts ORDER BY id").all()).toEqual(upgraded);
-    expect(db.prepare("SELECT * FROM events ORDER BY id").all()).toEqual(history);
     expect(() => insert.run(id, "another duplicate", 3000, null)).toThrow("UNIQUE constraint failed");
+
+    service.resolveAlert(closedId); // Repeated administrative closure preserves its first timestamp.
+    expect(db.prepare("SELECT id, message, resolved_at FROM metric_alerts ORDER BY id").all()).toEqual([
+      { id: closedId, message: "previous episode", resolved_at: 600 },
+      { id: firstId, message: "first opening", resolved_at: null },
+    ]);
 
     service.alert(id, "manual evidence");
     expect(service.evaluate(id)[0]).toMatchObject({ status: "breached", alertId: firstId });
@@ -130,7 +114,7 @@ describe("MetricService", () => {
     expect(service.evaluate(id)[0]?.status).toBe("ok");
     service.record(id, 2);
     const next = service.evaluate(id)[0]!.alertId;
-    expect(next).toBeGreaterThan(duplicateId);
+    expect(next).toBeGreaterThan(firstId);
     expect(emitted.map(({ type, data }) => [type, data!.alertId])).toEqual([
       ["metric.recovered", firstId], ["metric.breach", next],
     ]);

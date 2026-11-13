@@ -5275,6 +5275,42 @@ describe("canonical App task runtime", () => {
     expect(AppTaskResourceStore.activeFromDb(getDb(persistDir), "sample")).toBeNull();
   });
 
+  it("refuses runtime installation when an active resource store has an unsupported schema_version", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const persistDir = join(f.root, "state");
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      persistDir,
+      appRegistrySnapshot: {
+        id: "boot:initial",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    await closeInstalledAppTaskRuntimes(bus);
+    getDb(persistDir)
+      .prepare("UPDATE app_task_store_meta SET value = '3' WHERE app_id = 'sample' AND key = 'schema_version'")
+      .run();
+
+    await expect(
+      installAppTaskRuntimes({
+        ...options(f, bus),
+        persistDir,
+        appRegistrySnapshot: {
+          id: "boot:unsupported-version",
+          generation: 2,
+          entries: [{ appDir: f.appDir, definition: definition() }],
+        },
+      }),
+    ).rejects.toThrow("Task resource store for sample has unsupported schema_version 3 (expected 4)");
+    expect(
+      getDb(persistDir)
+        .prepare("SELECT value FROM app_task_store_meta WHERE app_id = 'sample' AND key = 'schema_version'")
+        .get(),
+    ).toEqual({ value: "3" });
+  });
+
   it("yields readiness inside one large reconciliation after claim persistence", async () => {
     const f = fixture();
     const bus = eventBus();
@@ -6970,7 +7006,7 @@ describe("canonical App task runtime", () => {
   }, 20_000);
 
   it.each(
-    ["during execution", "after acceptance", "after restart", "after upgrade"].flatMap((phase) =>
+    ["during execution", "after acceptance", "after restart"].flatMap((phase) =>
       ["exact", "intent"].map((route) => ({ phase, route })),
     ),
   )(
@@ -7084,16 +7120,7 @@ describe("canonical App task runtime", () => {
         });
       await run();
       expect(readAcceptedRuntimeAttempt(loadedTaskConfig(f), taskId)?.acceptedResult?.summary).toBe("Feedback handled");
-      if (phase === "after restart" || phase === "after upgrade") {
-        if (phase === "after upgrade") {
-          // Version 2 deleted Task-event links on claim/settlement. Preserve
-          // the real accepted attempt and verify startup rebuilds its identity.
-          const db = getDb(persistDir);
-          db.prepare("DELETE FROM app_task_events WHERE app_id = 'sample'").run();
-          db.prepare(
-            "UPDATE app_task_store_meta SET value = '2' WHERE app_id = 'sample' AND key = 'schema_version'",
-          ).run();
-        }
+      if (phase === "after restart") {
         await closeInstalledAppTaskRuntimes(bus);
         closeDb(persistDir);
         bus = eventBus();
@@ -10462,23 +10489,13 @@ describe("dependency Condition specification updates", () => {
       acceptanceBasis: { method: "executor", evidence: ["test:saved"] },
     };
     delete attempt.lease;
-    (resource.status as Record<string, unknown>).funding = {
-      kind: "deferred",
-      reason: "sponsor-credit",
-      task: { appId: "sample", taskId },
-      root: { appId: "sample", taskId },
-      retryAt: null,
-    };
     resource.status.phase = "waiting";
     config.resourceStore.db
       .prepare("UPDATE app_task_attempts SET attempt_json = ?, lease_until = NULL WHERE app_id = ? AND attempt_id = ?")
       .run(JSON.stringify(attempt), "sample", claim.attemptId);
     config.resourceStore.db
-      .prepare("UPDATE app_tasks SET phase = 'waiting', ready = 0, changed = 0, next_check_at = NULL, resource_json = ? WHERE app_id = ? AND task_id = ?")
+      .prepare("UPDATE app_tasks SET phase = 'waiting', ready = 1, changed = 0, next_check_at = 1, resource_json = ? WHERE app_id = ? AND task_id = ?")
       .run(JSON.stringify(resource), "sample", taskId);
-    config.resourceStore.db
-      .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
-      .run();
 
     closeDb(join(f.root, "state"));
     bus = eventBus();
