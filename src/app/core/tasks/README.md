@@ -139,6 +139,12 @@ Workflows compose judgment through `ctx.agents.call`; the nested call inherits
 the Task context and authority and does not replace future workflow attempts.
 The App decides how to use its returned contribution and publishes the result.
 
+Successful session completion is recovery evidence for an unsettled Task
+attempt. The active controller already owns settlement; a delayed notice after
+settlement does not start another worker. A retained unfinished attempt without
+an active controller pass can still wake for recovery. New Task input, returned
+continuations and failure retries keep their existing independent wake paths.
+
 Failures retain the same Task, pending inputs, accepted effects and previous
 attempt evidence. The Host schedules retry with backoff and emits the existing
 `project.task.reconciled` event. App subscriptions and metric policies decide
