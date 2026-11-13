@@ -1403,7 +1403,13 @@ function attachAppEventRouter(opts: AppTaskRuntimeOptions, descriptors: AppTaskR
               } as unknown as AgentEvent);
             }
           }
-          if (successfulAgent.binding?.appId === descriptor.id) {
+          // Session completion is recovery evidence, not new Task input.
+          // The controller owns settlement until its adapter returns; a delayed
+          // notification after settlement no longer has an attempt to recover.
+          // Input wakes, returned continuations and failure retries are separate.
+          if (successfulAgent.binding?.appId === descriptor.id &&
+            !taskController.snapshot().running.includes(successfulAgent.binding.taskId) &&
+            config.resourceStore.readTask(successfulAgent.binding.taskId)?.status.currentAttemptId) {
             enqueueAppTask(taskController, config, successfulAgent.binding.taskId, { promote: true });
           }
         }

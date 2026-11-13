@@ -59,6 +59,7 @@ import { recoverTaskConditions } from "./dependency-admission.js";
 import { createGitTaskWorkspaces, gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
 import { readTaskWorkload } from "../reads/task-workload.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
+import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskWorkflowRunner } from "../../adapters/executors/workflow.js";
 import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
@@ -7869,6 +7870,137 @@ describe("canonical App task runtime", () => {
     while (calls.length === 0 && performance.now() < deadline) await Bun.sleep(5);
     expect(calls).toEqual([{ appId: "sample", taskId: "work/isolated", lane: "human" }]);
   });
+
+  it.each(["before settlement", "after settlement", "new input"] as const)(
+    "coalesces a Task's session completion (%s) while preserving recovery wakes",
+    async (timing) => {
+      const newInput = timing === "new input";
+      const f = fixture();
+      const bus = eventBus();
+      const persistDir = join(f.root, "state");
+      const taskId = "work/session-completion";
+      const sessionEnded = Promise.withResolvers<void>();
+      const firstNotice = Promise.withResolvers<void>();
+      const allNotices = Promise.withResolvers<void>();
+      const observedNotices = new Set<string>();
+      const sessionAdapter = createTaskSessionRecovery({ persistDir, bus, manager: { hasActiveSession: () => false } as never });
+      const settle = Promise.withResolvers<void>();
+      const barrierStarted = Promise.withResolvers<void>();
+      const releaseBarrier = Promise.withResolvers<void>();
+      const lateCheck = Promise.withResolvers<void>();
+      const dispatches: string[] = [];
+      const consumed: string[][] = [];
+      const expectedAttempts = newInput ? 2 : 1;
+      let endEvent: AgentEvent;
+      const waitFor = async (signal: Promise<void>) => {
+        let timer: ReturnType<typeof setTimeout>;
+        try {
+          await Promise.race([signal, new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error("Expected controller boundary was not reached")), 2_000);
+          })]);
+        } finally { clearTimeout(timer!); }
+      };
+      const attach = (id: string, barrier = false) => attachLoadedAppTask({
+        bus, appDir: f.appDir, appId: "sample",
+        attachment: { kind: "desired", intent: {
+          id: barrier ? "work/barrier" : taskId, parentId: "operations",
+          outcome: barrier ? "Observe the next queued dispatch" : "Answer every admitted input",
+          acceptance: ["Return the saved answer"], executor: "fixture",
+          priority: barrier ? "P3" : "P2",
+        } },
+        idempotencyKey: `attach:${id}`,
+        inputContext: { id, source: { kind: "app", id: "caller" }, input: { kind: "message", data: { id } } },
+      });
+      await installAppTaskRuntimes({
+        ...options(f, bus),
+        appRegistrySnapshot: { id: "session-completion", generation: 1,
+          entries: [{ appDir: f.appDir, definition: definition() }] },
+        sessions: { ...sessionAdapter, read(id) {
+          const saved = sessionAdapter.read(id);
+          if (id.startsWith("session-completion-")) {
+            firstNotice.resolve();
+            observedNotices.add(id);
+            if (observedNotices.size === expectedAttempts) allNotices.resolve();
+          }
+          return saved;
+        } },
+        executeAttempt: async (input) => {
+          dispatches.push(input.taskId);
+          const followups = await reconcileLoadedAppTaskOnce({ bus, ...input });
+          if (input.taskId === taskId && dispatches.filter(id => id === taskId).length === 1)
+            await attach("barrier", true);
+          if (input.taskId === taskId && dispatches.filter(id => id === taskId).length > expectedAttempts)
+            lateCheck.resolve();
+          return followups;
+        },
+        executors: { fixture: async (attempt) => {
+          if (attempt.task.id === "work/barrier") {
+            barrierStarted.resolve();
+            await releaseBarrier.promise;
+            return { state: "converged", summary: "Queue barrier passed", facts: [] };
+          }
+          consumed.push((attempt.events.inputs ?? []).map(item => item.key));
+          const sessionId = `session-completion-${consumed.length}`;
+          writeSessionMeta(persistDir, sessionId, {
+            agent: "sample-owner", task: "Answer admitted input", status: "done",
+            startedAt: Date.now(), endedAt: Date.now(), source: "app-task-agent", projectId: "sample", kind: "call",
+            taskBinding: { appId: "sample", taskId, generation: attempt.task.generation, attemptId: attempt.attemptId },
+          });
+          endEvent = { type: "session.end", source: "app-task-agent", owner: "agent:sample-owner", data: {
+            sessionId, agent: "sample-owner", status: "done", outcome: "done", summary: "Answer ready", durationMs: 1,
+          } };
+          bus.emit(endEvent);
+          if (consumed.length === 1) {
+            sessionEnded.resolve();
+            await settle.promise;
+          }
+          return { state: "converged", summary: "Answered admitted input", response: "Saved answer", facts: [],
+            inputKeys: (attempt.events.inputs ?? []).map(item => item.key) };
+        } },
+      });
+      try {
+        await attach("first");
+        await waitFor(sessionEnded.promise);
+        if (timing !== "after settlement") await waitFor(firstNotice.promise);
+        if (newInput) await attach("second");
+        settle.resolve();
+        // Same-Task wakes are promoted ahead of this lower-priority barrier.
+        // Reaching it observes dispatch completion without a quiet-time sleep.
+        await waitFor(barrierStarted.promise);
+        await waitFor(allNotices.promise);
+        expect(dispatches.filter(id => id === taskId)).toHaveLength(expectedAttempts);
+        expect(consumed).toEqual(newInput ? [["attach:first"], ["attach:second"]] : [["attach:first"]]);
+        const config = loadedTaskConfig(f);
+        for (const id of newInput ? ["first", "second"] : ["first"])
+          expect(readAppTaskAdmissionOutcome(config, taskId, `attach:${id}`)).toMatchObject({
+            state: "converged", response: "Saved answer",
+          });
+        // Retain an unfinished attempt without a controller dispatch, as after
+        // losing its worker. Its late terminal notice must still reach recovery,
+        // even while another Task holds the controller's execution place.
+        recordAppTaskTrigger(config, taskId, { type: "fixture.recovery-input", data: {} });
+        const retained = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "auto" });
+        if (retained.kind !== "claimed") throw new Error("Expected retained unfinished attempt");
+        writeSessionMeta(persistDir, "late-session", {
+          agent: "sample-owner", task: "Retained attempt", status: "done",
+          startedAt: Date.now(), endedAt: Date.now(), source: "app-task-agent", projectId: "sample", kind: "call",
+          taskBinding: { appId: "sample", taskId, generation: retained.generation, attemptId: retained.attemptId },
+        });
+        const accepted = config.resourceStore.readTask(taskId);
+        bus.emit({ ...endEvent!, data: { ...endEvent!.data, sessionId: "late-session" } } as AgentEvent);
+        releaseBarrier.resolve();
+        await waitFor(lateCheck.promise);
+        await closeInstalledAppTaskRuntimes(bus);
+        expect(dispatches.filter(id => id === taskId)).toHaveLength(expectedAttempts + 1);
+        expect(consumed).toHaveLength(expectedAttempts);
+        expect(config.resourceStore.readTask(taskId)).toEqual(accepted);
+      } finally {
+        settle.resolve();
+        releaseBarrier.resolve();
+        await closeInstalledAppTaskRuntimes(bus);
+      }
+    },
+  );
 
   it("delegates startup Task recovery across the configured execution boundary", async () => {
     const f = fixture();
