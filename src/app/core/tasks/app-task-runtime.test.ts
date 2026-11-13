@@ -10406,4 +10406,98 @@ describe("dependency Condition specification updates", () => {
     });
     expect(readTaskSnapshot(config).conditions?.[original.id]?.spec.requestedAction).toBeUndefined();
   });
+
+  it("reopening a retained pendingSettlement checkpoint settles the saved report without re-executing the executor", async () => {
+    const f = fixture();
+    let bus = eventBus();
+    let executions = 0;
+    const install = async () => {
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        appRegistrySnapshot: { id: "checkpoint-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+        executors: {
+          verify: async () => {
+            executions++;
+            return { state: "converged", summary: "Completed once", facts: ["test:once"], result: { answer: 42 } };
+          },
+        },
+      });
+    };
+    await install();
+    const config = loadedTaskConfig(f);
+    const { taskId } = admitTaskInput(config, {
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/checkpoint",
+          parentId: "operations",
+          outcome: "Verify once",
+          acceptance: ["Produce answer 42"],
+          executor: "verify",
+        },
+      },
+      idempotencyKey: "checkpoint-1",
+      inputContext: { id: "in-1", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
+    });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
+    if (claim.kind !== "claimed") throw new Error("expected claimed attempt");
+    const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+    const resource = config.resourceStore.readTask(taskId)!;
+    attempt.pendingSettlement = {
+      claim,
+      report: {
+        handlerResult: {
+          state: "converged",
+          summary: "Saved before upgrade",
+          facts: ["test:saved"],
+          actions: [],
+          result: { answer: 42 },
+        },
+        runId: "saved-run",
+      },
+      acceptanceBasis: { method: "executor", evidence: ["test:saved"] },
+    };
+    delete attempt.lease;
+    (resource.status as Record<string, unknown>).funding = {
+      kind: "deferred",
+      reason: "sponsor-credit",
+      task: { appId: "sample", taskId },
+      root: { appId: "sample", taskId },
+      retryAt: null,
+    };
+    resource.status.phase = "waiting";
+    config.resourceStore.db
+      .prepare("UPDATE app_task_attempts SET attempt_json = ?, lease_until = NULL WHERE app_id = ? AND attempt_id = ?")
+      .run(JSON.stringify(attempt), "sample", claim.attemptId);
+    config.resourceStore.db
+      .prepare("UPDATE app_tasks SET phase = 'waiting', ready = 0, changed = 0, next_check_at = NULL, resource_json = ? WHERE app_id = ? AND task_id = ?")
+      .run(JSON.stringify(resource), "sample", taskId);
+
+    closeDb(join(f.root, "state"));
+    bus = eventBus();
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "checkpoint-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+      executors: {
+        verify: async () => {
+          executions++;
+          throw new Error("Completed checkpoint must not re-execute");
+        },
+      },
+    });
+    await reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(executions).toBe(0);
+    const settled = loadedTaskConfig(f).resourceStore.readTask(taskId)!;
+    expect(settled.status.phase).toBe("converged");
+    expect(settled.status.result).toEqual({ answer: 42 });
+    expect(loadedTaskConfig(f).resourceStore.readAttempt(claim.attemptId)?.pendingSettlement).toBeUndefined();
+  });
 });

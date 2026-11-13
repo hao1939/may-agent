@@ -1017,3 +1017,31 @@ test.each(["cancelled", "closed"] as const)(
     expect(f.store.readTask(admitted.taskId)).toEqual(ended);
   },
 );
+
+test("reopening storage clears a retired indefinite funding hold on an Inbox item and resumes ordinary admission", () => {
+  const f = fixture();
+  createAppInboxItem(f.db, f.input("turn-deferred", 1, "Resume after funding hold"));
+  f.db
+    .prepare("UPDATE app_inbox_items SET task_admission_key = ?, handling = ?, available_at = NULL WHERE id = ?")
+    .run(
+      "conversation-input:turn-deferred",
+      JSON.stringify({
+        phase: "deferred",
+        funding: {
+          kind: "deferred",
+          reason: "adoption-required",
+          task: { appId: app.id, taskId: "conv:sample:chat" },
+          root: null,
+          retryAt: null,
+        },
+      }),
+      "turn-deferred",
+    );
+  f.reopen();
+  const cleared = getAppInboxItem(f.db, "turn-deferred")!;
+  expect(cleared.handling).toBeUndefined();
+  expect(cleared.availableAt).toBeUndefined();
+  const resumed = f.admit("turn-deferred", 1, "Resume after funding hold");
+  expect(resumed.item.executionTaskId).toBe(resumed.taskId);
+  expect(f.store.readTask(resumed.taskId)?.status.phase).toBe("pending");
+});

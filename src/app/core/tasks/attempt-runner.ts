@@ -265,7 +265,7 @@ async function runClaimedTask(
   const event = claim.trigger as EventEnvelope | undefined;
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   let executionPaths: AppTaskExecutionPaths;
-  let taskWorkspace: PreparedTaskWorkspace | undefined;
+  let taskWorkspace: PreparedTaskWorkspace | undefined = claim.settlement?.workspace;
   let workspaceFinalized = false;
   try {
     executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
@@ -286,7 +286,10 @@ async function runClaimedTask(
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
     let report: TaskCapabilityRun;
-    {
+    if (claim.settlement) {
+      report = claim.settlement.report;
+      if (taskWorkspace) executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
+    } else {
       const method = await taskWorkspaceRequirement(opts, descriptor, config, {
         intent, agent: claim.agent, generation: claim.generation,
       });
@@ -387,7 +390,9 @@ async function runClaimedTask(
       }
     }
     if (result.state === "converged") {
-      const accepted = await establishTaskAcceptance({
+      const accepted = claim.settlement?.acceptanceBasis
+        ? { ok: true as const, acceptanceBasis: claim.settlement.acceptanceBasis }
+        : await establishTaskAcceptance({
         opts,
         descriptor,
         intent,

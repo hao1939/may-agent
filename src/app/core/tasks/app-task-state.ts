@@ -1,3 +1,4 @@
+import type { PendingTaskSettlement } from "./result.js";
 import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
@@ -157,6 +158,8 @@ export type AppTaskAttempt = {
     id: string;
     resourceVersion: number;
   };
+  /** The executor exited; only these exact effects await settlement. */
+  pendingSettlement?: PendingTaskSettlement;
   taskId: string;
   taskGeneration: number;
   specHash: string;

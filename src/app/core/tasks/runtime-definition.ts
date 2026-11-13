@@ -107,7 +107,8 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
     db.prepare(`SELECT 1 FROM app_event_admission_commands WHERE app_id = ? AND status = 'pending'
       AND ((route_kind = 'unresolved' AND json_extract(payload, '$.resolveTask') = 1)
         OR (route_kind = 'task' AND json_extract(payload, '$.intent.executor') = 'conversation')) LIMIT 1`).get(id) ||
-    false
+    db.prepare(`SELECT 1 FROM app_task_attempts WHERE app_id = ?
+      AND json_extract(attempt_json, '$.pendingSettlement.report.conversation') IS NOT NULL LIMIT 1`).get(id)
   ) {
     throw new Error(
       `App ${id} requires stopped-runtime Task contract conversion; see scripts/operations/convert-task-contracts.ts`,

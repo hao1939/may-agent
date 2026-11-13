@@ -366,7 +366,7 @@ export class AppTaskResourceStore {
     treeInput: TaskTree,
     sourceRevision: string,
     readyTaskIds: Iterable<string> = [],
-    _origin: "retained-facts" | "new-app-seed" = "retained-facts",
+    origin: "retained-facts" | "new-app-seed" = "retained-facts",
   ): void {
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
     if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
@@ -394,6 +394,16 @@ export class AppTaskResourceStore {
       }
 
 
+      if (origin === "new-app-seed") {
+        for (const resource of Object.values(tree.resources ?? {})) {
+          if (resource.metadata.creator && !isDeepStrictEqual(resource.metadata.creator, { appId: this.appId })) {
+            throw new Error(
+              "A new App seed requires its exact App-only creator; contribution admission needs its creating Task",
+            );
+          }
+          resource.metadata.creator = { appId: this.appId };
+        }
+      }
       for (const cancellation of Object.values(tree.cancellations ?? {})) this.putCancellation(cancellation);
       for (const resource of Object.values(tree.resources ?? {})) {
         const trigger = tree.taskTriggers?.[resource.metadata.id];

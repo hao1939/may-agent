@@ -1,3 +1,4 @@
+import type { PendingTaskSettlement } from "./result.js";
 import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
 import type { TaskWorkspaceConstraint } from "./workspace.js";
 import { isDeepStrictEqual } from "node:util";
@@ -60,6 +61,8 @@ function isManagedAgentHandler(handler: string, agent?: string): boolean {
 
 export type AppTaskClaim = {
   kind: "claimed";
+  /** Host checkpoint replay performs no new execution. */
+  settlement?: PendingTaskSettlement;
   taskId: string;
   generation: number;
   resourceVersion: number;
@@ -584,6 +587,7 @@ function finishAttempt(
   const attempt = attemptId ? tree.attempts?.[attemptId] : undefined;
   if (attempt) {
     attempt.metadata.resourceVersion += 1;
+    delete attempt.pendingSettlement;
     attempt.state = state;
     attempt.finishedAt = now;
     attempt.summary = summary;
@@ -2828,6 +2832,16 @@ export function claimObservedAppTask(
       `Task ${input.taskId} current attempt ${persistedCurrentAttempt.metadata.id} belongs to ${persistedCurrentAttempt.taskId}; refusing cross-Task recovery`,
     );
   }
+  const settlement = persistedCurrentAttempt?.pendingSettlement;
+  if (settlement) {
+    if (settlement.claim.taskId !== input.taskId || !matchingClaimAttempt(resource, persistedCurrentAttempt, settlement.claim))
+      throw new Error("Deferred settlement does not match its exact Task claim");
+    if (persistedCurrentAttempt.taskGeneration !== resource.metadata.generation) {
+      const released = releaseStaleAppTaskResult(config, settlement.claim);
+      if (released.status === "busy") return { kind: "busy", taskId: input.taskId, attemptId: persistedCurrentAttempt.metadata.id };
+      return claimObservedAppTask(config, input);
+    }
+  }
   const heldWorkspace = pendingTaskWorkspaceConstraint(resource);
   if (heldWorkspace) {
     acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldWorkspace.retryAt);
@@ -2840,6 +2854,10 @@ export function claimObservedAppTask(
   const agent = resolvedAgent(tree, intent, input.appAgent);
   if (input.canUseCoordinationReserve && !input.canUseCoordinationReserve(resource, agent))
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
+  if (settlement) {
+    return { ...structuredClone(settlement.claim), resourceVersion: resource.metadata.resourceVersion,
+      settlement: structuredClone(settlement) };
+  }
   // Adoption writes once. Reread its result and current wakes before claiming or
   // acknowledging a wait; the earlier store revision no longer describes them.
   if (exhaustRetainedFailures(config, tree, resource)) return claimObservedAppTask(config, input);

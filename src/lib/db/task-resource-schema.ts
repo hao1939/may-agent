@@ -1,7 +1,8 @@
+import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../db.js";
 import { APP_INBOX_SCHEMA } from "./app-inbox-schema.js";
 import type { Condition } from "@may-agent/sdk";
-import type { AppTaskCondition } from "../../app/core/tasks/app-task-state.js";
+import { taskExecutionRetryExhausted, type AppTaskAttempt, type AppTaskCondition, type AppTaskResource } from "../../app/core/tasks/app-task-state.js";
 
 /** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
 export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
@@ -240,12 +241,16 @@ function migrateConditionFreshness(db: SqliteDb): void {
     .prepare("SELECT app_id FROM app_task_store_meta WHERE key = 'schema_version' AND CAST(value AS INTEGER) < 4")
     .all() as Array<{ app_id: string }>;
   if (!apps.length) return;
+  const upgradeTime = Date.now();
   db.exec("SAVEPOINT condition_freshness");
   try {
     for (const { app_id: appId } of apps) {
       const rows = db
         .prepare("SELECT condition_id, condition_json FROM app_task_conditions WHERE app_id = ?")
         .all(appId) as Array<{ condition_id: string; condition_json: string }>;
+      const previous = new Map(
+        rows.map((row) => [row.condition_id, JSON.parse(row.condition_json) as AppTaskCondition]),
+      );
       let changed = false;
       for (const row of rows) {
         const condition = JSON.parse(row.condition_json) as AppTaskCondition;
@@ -261,6 +266,42 @@ function migrateConditionFreshness(db: SqliteDb): void {
         );
         changed = true;
       }
+      // A completed executor may have saved effects awaiting settlement. Keep those
+      // exact effects recoverable, with upgrade time as the new request boundary.
+      const attempts = db
+        .prepare(
+          `SELECT attempt_id, attempt_json FROM app_task_attempts WHERE app_id = ?
+        AND json_extract(attempt_json, '$.pendingSettlement') IS NOT NULL`,
+        )
+        .all(appId) as Array<{
+        attempt_id: string;
+        attempt_json: string;
+      }>;
+      for (const row of attempts) {
+        const attempt = JSON.parse(row.attempt_json) as AppTaskAttempt;
+        let updated = false;
+        for (const condition of attempt.pendingSettlement!.report.handlerResult?.conditions ?? []) {
+          if (!("type" in condition)) continue;
+          const saved = previous.get(condition.id);
+          const unchanged =
+            saved &&
+            saved.spec.type === condition.type &&
+            saved.spec.subject === condition.subject &&
+            saved.spec.owner === condition.owner &&
+            saved.spec.requestedAction === condition.requestedAction &&
+            isDeepStrictEqual(saved.spec.expected, condition.expected);
+          const boundary = unchanged ? Date.parse(saved.status.observedAt ?? "") : upgradeTime;
+          if (explicitLegacyFreshness(condition, boundary)) updated = true;
+        }
+        if (!updated) continue;
+        attempt.metadata.resourceVersion++;
+        db.prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?").run(
+          JSON.stringify(attempt),
+          appId,
+          row.attempt_id,
+        );
+        changed = true;
+      }
       if (changed) advanceTaskResourceRevision(db, appId);
       db.prepare("UPDATE app_task_store_meta SET value = '4' WHERE app_id = ? AND key = 'schema_version'").run(appId);
     }
@@ -268,6 +309,114 @@ function migrateConditionFreshness(db: SqliteDb): void {
   } catch (error) {
     db.exec("ROLLBACK TO SAVEPOINT condition_freshness");
     db.exec("RELEASE SAVEPOINT condition_freshness");
+    throw error;
+  }
+}
+
+
+/** Clear retired funding and execution-reservation holds so upgraded Inbox items
+ * and Tasks resume ordinary admission and recovery without losing workspace, retry, or pause fences. */
+function migrateRetiredWorkloadHolds(db: SqliteDb): void {
+  const now = Date.now();
+  db.exec("SAVEPOINT retired_workload_holds");
+  try {
+    db.prepare(
+      `UPDATE app_inbox_items
+       SET handling = NULL, available_at = NULL, changed_at = ?, updated_at = ?
+       WHERE status != 'done' AND execution_task_id IS NULL
+         AND json_extract(handling, '$.phase') = 'deferred'`,
+    ).run(now, now);
+
+    const heldTasks = db
+      .prepare(
+        `SELECT app_id, task_id, ready, changed, next_check_at, resource_json, trigger_json
+         FROM app_tasks
+         WHERE json_valid(resource_json) = 1
+           AND (json_extract(resource_json, '$.status.funding') IS NOT NULL
+             OR json_extract(resource_json, '$.status.executionConstraint') IS NOT NULL)`,
+      )
+      .all() as Array<{
+      app_id: string;
+      task_id: string;
+      ready: number;
+      changed: number;
+      next_check_at: number | null;
+      resource_json: string;
+      trigger_json: string | null;
+    }>;
+    const touchedApps = new Set<string>();
+    for (const row of heldTasks) {
+      const resource = JSON.parse(row.resource_json) as AppTaskResource & {
+        status: Record<string, unknown>;
+      };
+      delete resource.status.funding;
+      delete resource.status.executionConstraint;
+      const cancelled = Boolean(
+        db
+          .prepare("SELECT 1 FROM app_task_cancellations WHERE app_id = ? AND task_id = ?")
+          .get(row.app_id, row.task_id),
+      );
+      const retryAt =
+        typeof resource.status.executionRetryAt === "number" && resource.status.executionRetryAt > now
+          ? resource.status.executionRetryAt
+          : null;
+      const workspace = resource.status.workspaceConstraint;
+      const workspaceHeld =
+        workspace &&
+        workspace.generation === resource.metadata.generation &&
+        workspace.retryAt > now
+          ? workspace.retryAt
+          : null;
+      const exhausted = taskExecutionRetryExhausted(resource);
+      const triggerPresent = Boolean(row.trigger_json);
+      const pendingSettlementPresent = Boolean(
+        resource.status.currentAttemptId &&
+          db
+            .prepare(
+              `SELECT 1 FROM app_task_attempts
+               WHERE app_id = ? AND attempt_id = ?
+                 AND json_extract(attempt_json, '$.pendingSettlement') IS NOT NULL`,
+            )
+            .get(row.app_id, resource.status.currentAttemptId),
+      );
+      let ready = row.ready;
+      let changed = row.changed;
+      let nextCheckAt = row.next_check_at;
+      if (cancelled || exhausted) {
+        ready = 0;
+        changed = 0;
+        nextCheckAt = null;
+      } else if (workspaceHeld !== null) {
+        ready = 0;
+        changed = 0;
+        nextCheckAt = workspaceHeld;
+      } else if (retryAt !== null) {
+        ready = 0;
+        changed = 0;
+        nextCheckAt = retryAt;
+      } else if (pendingSettlementPresent) {
+        ready = 1;
+        changed = triggerPresent ? 1 : 0;
+        nextCheckAt = now;
+      } else if (resource.status.phase === "pending") {
+        ready = 1;
+        changed = (resource.status.observedGeneration ?? 0) < resource.metadata.generation || triggerPresent ? 1 : 0;
+        nextCheckAt = null;
+      } else if (resource.status.phase === "waiting") {
+        ready = triggerPresent ? 1 : 0;
+        changed = triggerPresent ? 1 : 0;
+        nextCheckAt = typeof resource.status.reviewAt === "number" ? resource.status.reviewAt : now;
+      }
+      db.prepare(
+        "UPDATE app_tasks SET ready = ?, changed = ?, next_check_at = ?, resource_json = ? WHERE app_id = ? AND task_id = ?",
+      ).run(ready, changed, nextCheckAt, JSON.stringify(resource), row.app_id, row.task_id);
+      touchedApps.add(row.app_id);
+    }
+    for (const appId of touchedApps) advanceTaskResourceRevision(db, appId);
+    db.exec("RELEASE SAVEPOINT retired_workload_holds");
+  } catch (error) {
+    db.exec("ROLLBACK TO SAVEPOINT retired_workload_holds");
+    db.exec("RELEASE SAVEPOINT retired_workload_holds");
     throw error;
   }
 }
@@ -316,6 +465,7 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
     db.exec(TASK_RESOURCE_SCHEMA);
     migrateTaskEventReceipts(db);
     migrateConditionFreshness(db);
+    migrateRetiredWorkloadHolds(db);
     return;
   }
   // This helper is used both by the top-level schema transaction and by
@@ -355,6 +505,7 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
     }
     migrateTaskEventReceipts(db);
     migrateConditionFreshness(db);
+    migrateRetiredWorkloadHolds(db);
     db.exec("RELEASE SAVEPOINT task_resource_schema");
   } catch (error) {
     try {

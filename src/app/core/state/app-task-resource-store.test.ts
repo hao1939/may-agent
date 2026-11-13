@@ -970,7 +970,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("repairs obsolete Condition indexes after restart without bypassing backoff or funding holds", () => {
+  it("repairs obsolete Condition indexes after restart without bypassing backoff", () => {
     const root = mkdtempSync(join(tmpdir(), "may-condition-recovery-"));
     roots.push(root);
     const path = join(root, "host.sqlite");
@@ -985,8 +985,6 @@ describe("AppTaskResourceStore", () => {
       overdue: now - 1,
       retry: retryAt,
       "retry-missing": null,
-      "funding-indefinite": null,
-      "funding-future": retryAt,
       closed: null,
       satisfied: null,
       "no-condition": null,
@@ -997,10 +995,6 @@ describe("AppTaskResourceStore", () => {
       const task = resource(id, id === "closed" ? "converged" : "waiting");
       task.status.observedGeneration = 1;
       if (id.startsWith("retry")) task.status.executionRetryAt = retryAt;
-      if (id.startsWith("funding")) task.status.funding = {
-        kind: "deferred", reason: "root-credit", task: { appId: "example", taskId: id },
-        root: { appId: "example", taskId: id }, retryAt: id === "funding-indefinite" ? null : retryAt,
-      };
       if (id === "early") task.status.reviewAt = earlyAt;
       if (id !== "no-condition") {
         task.status.conditionIds = [id];
@@ -1468,5 +1462,98 @@ describe("AppTaskResourceStore", () => {
       expect.objectContaining({ taskId: dependent.metadata.id, ready: true }),
     );
     store.close();
+  });
+
+  it("clears retired indefinite funding and execution holds on reopen while preserving workspace and retry fences", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-retired-holds-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    let store = AppTaskResourceStore.openStandalone(path, "example");
+    const now = Date.now();
+    const retryAt = now + 3_600_000;
+    const workspaceRetryAt = now + 120_000;
+    const heldTask = resource("held-indefinite", "pending");
+    (heldTask.status as Record<string, unknown>).funding = {
+      kind: "deferred",
+      reason: "root-credit",
+      task: { appId: "example", taskId: "held-indefinite" },
+      root: { appId: "example", taskId: "held-indefinite" },
+      retryAt: null,
+    };
+    const heldWorkspace = resource("held-workspace", "pending");
+    (heldWorkspace.status as Record<string, unknown>).funding = {
+      kind: "deferred",
+      reason: "adoption-required",
+      task: { appId: "example", taskId: "held-workspace" },
+      root: null,
+      retryAt: null,
+    };
+    heldWorkspace.status.workspaceConstraint = {
+      kind: "deferred",
+      reason: "disk-capacity",
+      resource: "disk",
+      generation: 1,
+      requiredBytes: 2048,
+      availableBytes: 512,
+      observedAt: now,
+      retryAt: workspaceRetryAt,
+    };
+    const heldBackoff = resource("held-backoff", "pending");
+    (heldBackoff.status as Record<string, unknown>).executionConstraint = {
+      kind: "deferred",
+      reason: "shared-capacity",
+      retryAt,
+    };
+    heldBackoff.status.executionRetryAt = retryAt;
+    store.bootstrapSnapshot(
+      {
+        project: "example",
+        resources: {
+          "held-indefinite": heldTask,
+          "held-workspace": heldWorkspace,
+          "held-backoff": heldBackoff,
+        },
+      },
+      "retired-holds",
+    );
+    store.db
+      .prepare("UPDATE app_tasks SET ready = 0, changed = 0, next_check_at = NULL WHERE app_id = ? AND task_id = ?")
+      .run("example", "held-indefinite");
+    store.close();
+
+    store = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      const recovered = store.readTask("held-indefinite")!;
+      expect((recovered.status as Record<string, unknown>).funding).toBeUndefined();
+      const row = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-indefinite") as { ready: number; changed: number; next_check_at: number | null };
+      expect(row).toEqual({ ready: 1, changed: 1, next_check_at: null });
+
+      const wsRow = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-workspace") as { ready: number; changed: number; next_check_at: number | null };
+      expect(wsRow).toEqual({ ready: 0, changed: 0, next_check_at: workspaceRetryAt });
+
+      const backoffRow = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-backoff") as { ready: number; changed: number; next_check_at: number | null };
+      expect(backoffRow).toEqual({ ready: 0, changed: 0, next_check_at: retryAt });
+    } finally {
+      store.close();
+    }
+  });
+
+  it("stamps App-only creator provenance on new-app-seed so seeded coordination Tasks satisfy matchesTaskCoordination", () => {
+    const store = open();
+    const coordTask = resource("runtime/coord", "pending");
+    coordTask.spec.workflow = "coord-wf";
+    const tree: TaskTree = {
+      project: "example",
+      resources: { "runtime/coord": coordTask },
+    };
+    store.bootstrapSnapshot(tree, "seed:coord", [], "new-app-seed");
+    const saved = store.readTask("runtime/coord")!;
+    expect(saved.metadata.creator).toEqual({ appId: "example" });
   });
 });
