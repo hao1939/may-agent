@@ -20,49 +20,11 @@ export interface TimeFilter extends QueryOptions {
   until?: number;
 }
 
-export interface SessionQuery extends TimeFilter {
-  agent?: string;
-  status?: string;
-  kind?: string;
-  source?: string;
-  projectId?: string;
-  parentSessionId?: string;
-  workflowRunId?: string;
-}
-
 export interface EventQuery extends TimeFilter {
   type?: string;
   owner?: string;
   source?: string;
   projectId?: string;
-}
-
-export interface MetricQuery extends QueryOptions {
-  id?: string;
-  owner?: string;
-  status?: string;
-  project?: string;
-  priority?: string;
-}
-
-export interface AlertQuery extends TimeFilter {
-  metricId?: string;
-  resolved?: boolean;
-}
-
-export interface ProjectQuery extends QueryOptions {
-  id?: string;
-  owner?: string;
-  status?: string;
-  workflow?: string;
-}
-
-export interface WorkflowRunQuery extends TimeFilter {
-  workflow?: string;
-  status?: string;
-  projectId?: string;
-  parentSessionId?: string;
-  parentWorkflowRunId?: string;
 }
 
 export interface EventDeliveryHealthQuery {
@@ -81,12 +43,7 @@ export interface EventDeliveryHealth {
 }
 
 export interface QueryAPI {
-  sessions(filter?: SessionQuery): QueryResult;
   events(filter?: EventQuery): QueryResult;
-  metrics(filter?: MetricQuery): QueryResult;
-  alerts(filter?: AlertQuery): QueryResult;
-  projects(filter?: ProjectQuery): QueryResult;
-  workflowRuns(filter?: WorkflowRunQuery): QueryResult;
   eventDeliveryHealth(filter?: EventDeliveryHealthQuery): EventDeliveryHealth;
   sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 }
@@ -206,27 +163,6 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
   const maxLimit = opts.maxLimit ?? MAX_LIMIT;
 
   return {
-    sessions(filter = {}) {
-      const where: string[] = [];
-      const params: unknown[] = [];
-      addEquals(where, params, "agent", filter.agent);
-      addEquals(where, params, "status", filter.status);
-      addEquals(where, params, "kind", filter.kind);
-      addEquals(where, params, "source", filter.source);
-      addEquals(where, params, "projectId", filter.projectId);
-      addEquals(where, params, "parentSessionId", filter.parentSessionId);
-      addEquals(where, params, "workflowRunId", filter.workflowRunId);
-      addSinceUntil(where, params, "startedAt", filter);
-      return select(
-        opts.getDb(),
-        "sessions",
-        where,
-        params,
-        "startedAt DESC",
-        clampLimit(filter.limit, defaultLimit, maxLimit),
-      );
-    },
-
     events(filter = {}) {
       const where: string[] = [];
       const params: unknown[] = [];
@@ -241,77 +177,6 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         where,
         params,
         "timestamp DESC, id DESC",
-        clampLimit(filter.limit, defaultLimit, maxLimit),
-      );
-    },
-
-    metrics(filter = {}) {
-      const where: string[] = [];
-      const params: unknown[] = [];
-      addEquals(where, params, "id", filter.id);
-      addEquals(where, params, "owner", filter.owner);
-      addEquals(where, params, "status", filter.status);
-      addEquals(where, params, "project", filter.project);
-      addEquals(where, params, "priority", filter.priority);
-      return select(
-        opts.getDb(),
-        "metrics",
-        where,
-        params,
-        "updated_at DESC, id ASC",
-        clampLimit(filter.limit, defaultLimit, maxLimit),
-      );
-    },
-
-    alerts(filter = {}) {
-      const where: string[] = [];
-      const params: unknown[] = [];
-      addEquals(where, params, "metric_id", filter.metricId);
-      if (filter.resolved === true) where.push("resolved_at IS NOT NULL");
-      if (filter.resolved === false) where.push("resolved_at IS NULL");
-      addSinceUntil(where, params, "created_at", filter);
-      return select(
-        opts.getDb(),
-        "metric_alerts",
-        where,
-        params,
-        "created_at DESC, id DESC",
-        clampLimit(filter.limit, defaultLimit, maxLimit),
-      );
-    },
-
-    projects(filter = {}) {
-      const where: string[] = [];
-      const params: unknown[] = [];
-      addEquals(where, params, "id", filter.id);
-      addEquals(where, params, "owner", filter.owner);
-      addEquals(where, params, "status", filter.status);
-      addEquals(where, params, "workflow", filter.workflow);
-      return select(
-        opts.getDb(),
-        "projects",
-        where,
-        params,
-        "updated_at DESC, id ASC",
-        clampLimit(filter.limit, defaultLimit, maxLimit),
-      );
-    },
-
-    workflowRuns(filter = {}) {
-      const where: string[] = [];
-      const params: unknown[] = [];
-      addEquals(where, params, "workflow", filter.workflow);
-      addEquals(where, params, "status", filter.status);
-      addEquals(where, params, "projectId", filter.projectId);
-      addEquals(where, params, "parentSessionId", filter.parentSessionId);
-      addEquals(where, params, "parentWorkflowRunId", filter.parentWorkflowRunId);
-      addSinceUntil(where, params, "startedAt", filter);
-      return select(
-        opts.getDb(),
-        "workflow_runs",
-        where,
-        params,
-        "startedAt DESC",
         clampLimit(filter.limit, defaultLimit, maxLimit),
       );
     },

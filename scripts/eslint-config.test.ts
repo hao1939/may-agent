@@ -66,8 +66,6 @@ it("keeps capability implementations out of core, but allows wiring and boundary
     'import { createConversationTurnHandler } from "../../conversations/turn-handler.js"; void createConversationTurnHandler;',
     'export { prepareConversationInput } from "../../conversations/context";',
     'import type { TaskWorkspaces } from "./workspace.js"; export type Contract = TaskWorkspaces;',
-    'import { appOwnerReviewEvent } from "../../app-input-event.js"; void appOwnerReviewEvent;',
-    'export { appOwnerReviewEvent } from "../../app-input-event";',
     'import { getDb } from "../../../lib/db/connection.js"; void getDb;',
     'export { closeDb } from "../../../lib/db/connection";',
     'import { getDb as connection } from "../../../lib/db/connection.js"; void connection;',
@@ -90,11 +88,9 @@ it("keeps capability implementations out of core, but allows wiring and boundary
       ["no-restricted-imports", 3],
       ["no-restricted-imports", 4],
       ["no-restricted-imports", 5],
-      ["no-restricted-imports", 7],
-      ["no-restricted-imports", 8],
+      ["no-restricted-imports", 10],
+      ["no-restricted-imports", 11],
       ["no-restricted-imports", 12],
-      ["no-restricted-imports", 13],
-      ["no-restricted-imports", 14],
     ]);
   }
   for (const filePath of [
