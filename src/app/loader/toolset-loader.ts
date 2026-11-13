@@ -36,7 +36,6 @@ export interface ToolsetLoaderOptions {
   manager: SubagentManager;
   bus: EventBus;
   getAgentSessionId: (agentName: string) => string | undefined;
-  addCleanup: (agentName: string, fn: () => void) => void;
   agentDir?: string;
 }
 

@@ -112,7 +112,6 @@ export async function prepareDaemonAgents(opts: {
         agentsRoot: resolve(appDir, "agents"),
         agentDir,
         getAgentSessionId,
-        addCleanup: () => {},
       }),
       projectRoot: opts.projectRoot,
       sharedRoot: opts.definitionSharedRoot,
