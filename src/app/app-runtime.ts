@@ -2,7 +2,6 @@ import type { AttachControlSocketOptions } from "@may-agent/control/server";
 import type { AppInput, TaskListOptions } from "@may-agent/sdk";
 import { randomUUID } from "node:crypto";
 import { basename, dirname, resolve } from "node:path";
-import { assertLegacyCliTasksSettled } from "../lib/cli-agent.js";
 import { closeAllDbs, getDb } from "../lib/db/connection.js";
 import { SubagentManager } from "../lib/index.js";
 import { discoverAppDefinitions, listAppDefinitionFiles } from "./adapters/discovery/app-definitions.js";
@@ -127,7 +126,6 @@ export async function runAppRuntime(opts: {
   writeIdentity: (data: Partial<InstanceIdentity>) => void;
   reporting?: AppReporting;
 }): Promise<void> {
-  assertLegacyCliTasksSettled(opts.persistDir);
   const startupStartedAt = performance.now();
   let priorStartupPhaseAt = startupStartedAt;
   const startupPhases: string[] = [];

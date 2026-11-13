@@ -599,9 +599,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       const input = host.translateSubscription(command.appId, subscriptionId, canonical);
       return input === null ? [] : [{ subscriptionId, input }];
     });
-    if (command.resolveTask) {
-      throw new Error("Unresolved legacy Task routing requires explicit offline conversion before upgrading");
-    }
     if (inputs.length > 1) throw new Error(`Ambiguous App ${command.appId} routing for event:${plan.eventId}`);
     const common = { appId: command.appId, conditionTaskIds: command.conditionTaskIds };
     const selected = inputs[0];
@@ -1049,40 +1046,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         throw new Error("Conversation Task change admission is not configured");
       }
-      if (String(event.type) === "conversation.task.changed") {
-        // Read notifications saved by older Hosts through the same admission path.
-        if (!options.admitConversationChange) throw new Error("Conversation Task change admission is not configured");
-        const ref = record(data.taskRef);
-        if (
-          [data.appId, data.conversationId, data.originInputId ?? data.topicId, ref.appId, ref.taskId].every(
-            (value) => typeof value === "string" && value.trim(),
-          )
-        ) {
-          const admitted = options.admitConversationChange({
-            appId: String(data.appId),
-            conversationId: String(data.conversationId),
-            ...(typeof data.topicId === "string" ? { topicId: data.topicId } : {}),
-            ...(typeof data.originInputId === "string" ? { originInputId: data.originInputId } : {}),
-            taskAppId: String(ref.appId),
-            taskId: String(ref.taskId),
-            ...(typeof data.closedGeneration === "number" &&
-            Number.isSafeInteger(data.closedGeneration) &&
-            data.closedGeneration > 0
-              ? { closedGeneration: data.closedGeneration }
-              : { attemptId: typeof data.attemptId === "string" ? data.attemptId : "" }),
-          });
-          if (admitted)
-            return {
-              accepted: true,
-              by: `conversation-task:${admitted.taskId}`,
-              route: "direct",
-              note: admitted.created
-                ? "Stored Task change admitted as Conversation input"
-                : "Task change already handled or unavailable",
-            };
-        }
-        throw new Error("Conversation Task change has no available execution owner or exact stored outcome");
-      }
       if (event.type === "app.input.requested") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
         const identity = eventIdentity(event);
@@ -1234,7 +1197,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           kind: "unresolved",
           routeId: canonical.type,
           subscriptionIds: subscriptionIdsByApp.get(appId) ?? [],
-          resolveTask: false,
           conditionTaskIds: [...(conditionTaskIdsByApp.get(appId) ?? [])].sort(),
         }));
         if (routes.length > 0) {

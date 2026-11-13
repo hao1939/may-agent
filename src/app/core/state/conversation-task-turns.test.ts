@@ -363,20 +363,14 @@ test("old inbox cannot execute Task-owned Conversation input or later unconverte
   const f = fixture();
   const input = f.admit();
   createAppInboxItem(f.db, f.input("old-route", 2));
-  let executions = 0;
   const host = new AppInboxHost({
     db: f.db,
     apps: [app],
-    resolveConversationInput: async () => {
-      executions++;
-      return decision;
-    },
   });
   expect(claimAppInboxItem(f.db, input.item.id, "legacy", 1_000)).toBeNull();
   expect(claimAppInboxItem(f.db, "old-route", "legacy", 1_000)).toBeNull();
 
   await host.recoverAdmissions();
-  expect(executions).toBe(0);
   expect(getAppInboxItem(f.db, "old-route")?.status).toBe("pending");
 });
 

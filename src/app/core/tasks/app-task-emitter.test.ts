@@ -11,7 +11,7 @@ import { EVENT_ROW_ID, EVENT_TASK_EMISSION_FENCE, EventBus } from "../events/bus
 import { loadPersistedEvent } from "../events/persisted.js";
 import { getEventView } from "../events/interface.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
-import { cacheTaskSnapshots, readTaskSnapshot, type AppTaskContext, type TaskTree } from "./app-task-store.js";
+import { readTaskSnapshot, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -424,7 +424,6 @@ describe("AppTaskEmitter", () => {
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskSnapshots(config);
     expect(readTaskSnapshot(config).taskTriggers?.["child-1"]).toBeUndefined();
 
     emitter.emit("wake-cached-child", {

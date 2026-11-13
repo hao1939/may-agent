@@ -14,7 +14,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  assertLegacyCliTasksSettled,
   CLI_DIAGNOSTIC_TAIL_BYTES,
   createCliOutputCollector,
   runCliAgent,
@@ -283,16 +282,11 @@ describe("bounded native CLI call", () => {
     });
   }
 
-  it("rejects implicit cross-task session reuse, missing identity, and invalid deadlines before spawning", async () => {
+  it("rejects missing identity and invalid deadlines before spawning", async () => {
     const tool = createRunCliAgentTool({ ...options(), getCallerSessionId: () => "caller" });
     expect(tool.parameters.properties).not.toHaveProperty("reuseSession");
     expect(tool.parameters.properties).toHaveProperty("resumeSessionId");
-    const rejected = await tool.execute("legacy-input", { tool: "codex", prompt: "Review", reuseSession: true });
-    expect(JSON.parse((rejected.content[0] as { text: string }).text)).toMatchObject({
-      status: "failed",
-      error: "Automatic shared session reuse is retired; pass resumeSessionId to continue an exact native session",
-    });
-    for (const input of [{ reuseSession: true }, { timeoutMs: 0 }, { timeoutMs: Infinity }, { timeoutMs: 2 ** 31 }]) {
+    for (const input of [{ timeoutMs: 0 }, { timeoutMs: Infinity }, { timeoutMs: 2 ** 31 }]) {
       await expect(runCliAgent({ tool: "codex", prompt: "Review", ...input }, options())).rejects.toThrow();
     }
     await expect(runCliAgent({ tool: "codex", prompt: "Review" }, options({ sessionId: "" }))).rejects.toThrow(
@@ -517,22 +511,5 @@ describe("native protocol collector", () => {
     const codex = createCliOutputCollector("codex");
     codex.stdout(Buffer.from('{"type":"turn.completed"}\n{"type":"turn.failed"}\n'));
     expect(codex.finish().completedProtocol).toBe(false);
-  });
-});
-
-describe("read-only legacy upgrade fence", () => {
-  it("allows history but never silently replays or discards pending old admissions", () => {
-    assertLegacyCliTasksSettled(persistDir);
-    for (const status of ["completed", "failed", "orphaned", "requested", "running", "unknown", "broken", "missing"]) {
-      const dir = join(persistDir, "cli-tasks", status);
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, "request.json"), '{"taskId":"legacy"}');
-      const original = status === "broken" ? "unreadable JSON" : JSON.stringify({ status });
-      if (status !== "missing") writeFileSync(join(dir, "task.json"), original);
-      if (["completed", "failed"].includes(status)) assertLegacyCliTasksSettled(persistDir);
-      else expect(() => assertLegacyCliTasksSettled(persistDir)).toThrow("previous Host");
-      if (status !== "missing") expect(readFileSync(join(dir, "task.json"), "utf8")).toBe(original);
-      rmSync(dir, { recursive: true });
-    }
   });
 });
