@@ -3,6 +3,59 @@ let currentAgentSubTab = 'chat';
 let currentAgentChat = null;
 let forceNewAgentChat = false;
 
+async function loadAgentsTab() {
+  const el = document.getElementById('agents-content');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading agents…</div>';
+  try {
+    const r = await fetch('/api/agents');
+    const agents = await r.json();
+    if (agents.error) throw new Error(agents.error);
+
+    let html = `<div style="margin-bottom:16px">
+      <h2 style="margin:0 0 4px;font-size:18px">Agents <span style="color:var(--fg2);font-weight:normal;font-size:13px">(${agents.length})</span></h2>
+      <div style="font-size:12px;color:var(--fg2)">Each agent owns a domain. Click a card to talk to them, see their projects, metrics, and recent work.</div>
+    </div>`;
+
+    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:12px">`;
+    for (const a of agents) {
+      const ageMs = a.lastSessionAt ? (Date.now() - a.lastSessionAt) : null;
+      const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
+      const dotColor = stale ? 'var(--fg2)' : (a.errors4h > 0 ? 'var(--red)' : 'var(--green)');
+      const ageLabel = ageMs == null ? 'no recent session' : timeAgo(a.lastSessionAt);
+
+      html += `<div onclick="routeTo('/agents/${esc(a.name)}')" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color 0.1s;${stale ? 'opacity:0.7' : ''}" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`;
+
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="color:${dotColor};font-size:12px">●</span>
+        <span style="font-weight:600;font-size:15px">${esc(a.name)}</span>
+        ${a.model ? `<span class="model-chip" style="margin-left:auto;font-size:10px">${esc(a.model)}</span>` : ''}
+      </div>`;
+
+      if (a.description) {
+        html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px;line-height:1.4;min-height:34px">${esc(String(a.description).slice(0, 140))}</div>`;
+      } else {
+        html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px;font-style:italic;min-height:34px">No description in agent.json</div>`;
+      }
+
+      html += `<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--fg2)">
+        <span title="Last session" style="background:var(--bg);padding:2px 8px;border-radius:8px">⏱ ${esc(ageLabel)}</span>
+        <span title="Sessions in 4h / 24h" style="background:var(--bg);padding:2px 8px;border-radius:8px">${a.sessions4h || 0} (4h) · ${a.sessions24h || 0} (24h)</span>
+        <span title="Active projects / total" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.projectsActive > 0 ? 'color:var(--green)' : ''}">📁 ${a.projectsActive}/${a.projectsTotal}</span>
+        <span title="Owned metrics; breached count" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.metricBreached > 0 ? 'color:var(--red)' : ''}">∆ ${a.metricCount}${a.metricBreached > 0 ? ` (${a.metricBreached} ⚠)` : ''}</span>
+        ${a.errors4h > 0 ? `<span style="background:var(--bg);padding:2px 8px;border-radius:8px;color:var(--red)" title="Errored sessions in 4h">✗ ${a.errors4h}</span>` : ''}
+      </div>`;
+
+      html += `</div>`;
+    }
+    html += `</div>`;
+
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load agents: ${esc(e.message)}</div>`;
+  }
+}
+
 function isAgentChatActive(name) {
   return currentTab === 'agents' && currentRouteParams.name === name
     && currentAgentChat === name && currentAgentSubTab === 'chat';

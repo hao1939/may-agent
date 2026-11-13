@@ -1451,6 +1451,50 @@ describe("HTTP human Task reads and board", () => {
       await page.evaluate("loadProjects()");
       expect(await page.$('#installed-apps [data-app-id="bare"]')).not.toBeNull();
       expect(await page.$eval("#projects-content", (el) => el.textContent)).toContain("Saved projects unavailable: metadata unavailable");
+      await page.click('#installed-apps [data-app-id="bare"] a');
+      await page.waitForSelector(".kanban-shell h3");
+      expect(await page.$eval(".kanban-shell h3", (el) => el.textContent)).toBe("bare Tasks");
+      expect(await page.$$eval(".kanban-card", (cards) => cards.length)).toBe(1);
+
+      // Even when sample.app/project.json declares id: "alpha.app", clicking Loaded App "sample"
+      // opens "sample" Tasks rather than "alpha", slash-containing App IDs open their exact Tasks,
+      // and App IDs ending in ".app" (e.g. "billing.app" alongside "billing") preserve their exact path.
+      mkdirSync(join(root, "projects", "billing.app"), { recursive: true });
+      writeFileSync(join(root, "projects", "billing.app", "project.json"), JSON.stringify({ id: "billing", owner: "test", status: "active" }));
+      mkdirSync(join(root, "projects", "billing.app.app"), { recursive: true });
+      writeFileSync(join(root, "projects", "billing.app.app", "project.json"), JSON.stringify({ id: "billing.app", owner: "test", status: "active" }));
+      await installApps("sample", "team/slash", "billing", "billing.app");
+      task("billing-plain-only", 15, "running", "billing");
+      task("billing-app-only", 16, "waiting", "billing.app");
+      task("sample-only", 13, "running", "sample");
+      task("slash-only", 14, "waiting", "team/slash");
+      await page.evaluate("routeTo('/projects')");
+      await page.waitForSelector('#installed-apps [data-app-id="sample"] a');
+      await page.click('#installed-apps [data-app-id="sample"] a');
+      await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "sample Tasks");
+      expect(await page.$eval(".kanban-board", (el) => el.textContent)).toContain("sample-only");
+      await page.evaluate("routeTo('/projects')");
+      await page.waitForSelector('#installed-apps [data-app-id="team/slash"] a');
+      await page.click('#installed-apps [data-app-id="team/slash"] a');
+      await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "team/slash Tasks");
+      expect(await page.$eval(".kanban-board", (el) => el.textContent)).toContain("slash-only");
+      await page.evaluate("routeTo('/projects')");
+      let commentBody: any = null;
+      await page.evaluate("window.originalCommentFetch = window.fetch; window.fetch = (url, init) => String(url).endsWith('/api/projects/comment') ? (window.lastCommentBody = JSON.parse(init.body), Promise.resolve(new Response(JSON.stringify({ ok: true, triggered: true, projectId: 'billing.app' }), { status: 202 }))) : window.originalCommentFetch(url, init);");
+      await page.waitForSelector('#installed-apps [data-app-id="billing.app"] a');
+      await page.click('#installed-apps [data-app-id="billing.app"] a');
+      await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "billing.app Tasks");
+      const boardText = await page.$eval(".kanban-board", (el) => el.textContent);
+      expect(boardText).toContain("billing-app-only");
+      expect(boardText).not.toContain("billing-plain-only");
+      await page.click(".kanban-card");
+      await page.waitForFunction(() => document.querySelector("#task-detail-drawer")?.textContent?.includes("Full goal billing-app-only"));
+      expect(await page.$eval("#task-detail-drawer", (el) => el.classList.contains("hidden"))).toBe(false);
+      expect(await page.evaluate("_projectDetailPath")).toBe("projects/billing.app.app");
+      await page.type("#project-comment", "Comment for billing.app");
+      await page.evaluate("addProjectComment()");
+      commentBody = await page.evaluate("window.lastCommentBody");
+      expect(commentBody).toMatchObject({ path: "projects/billing.app.app", comment: "Comment for billing.app" });
     } finally {
       await browser.close();
     }

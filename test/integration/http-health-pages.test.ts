@@ -195,8 +195,13 @@ describe("served workflow and metric health pages", () => {
       freshness: "stale",
       collectionFailure: { afterLastSample: true },
     });
+    expect(data.metrics.find((m: { id: string }) => m.id === "runtime.daemon-heartbeat-stale")).toMatchObject({
+      current: null,
+      freshness: "missing",
+      updated_at: null,
+    });
     const live = await read("/api/liveness");
-    expect(live.vitals[0]).toMatchObject({ current: null, freshness: "missing", updatedAt: null });
+    expect(live.summary).toMatchObject({ openAlerts: 0, openAlertsTruncated: false });
     const history = await read("/api/metrics/workflow.error-count-24h/history?days=14");
     expect(history.snapshots).toHaveLength(4);
     expect(history.failures).toHaveLength(1);
@@ -305,7 +310,7 @@ describe("served workflow and metric health pages", () => {
         }
       });
       const cappedLive = await liveAlerts(20, true);
-      expect(cappedLive.vitals.find((m: { id: string }) => m.id === target).alertOpen).toBeNull();
+      expect(cappedLive.alerts).toHaveLength(20);
       const listResponse = await fetch(base + "/api/metrics", { signal: AbortSignal.timeout(5000) });
       expect(listResponse.status).toBe(200);
       const list = await listResponse.json();
@@ -317,7 +322,19 @@ describe("served workflow and metric health pages", () => {
       expect(detail.metrics[0]).toMatchObject({ alertOpen: true, alertMessage: "synthetic latest alert" });
       expect(detail.alertsTruncated).toBe(false);
       expect(detail.alerts).toHaveLength(1);
+
+      stateTransaction(db, () => {
+        db.run("INSERT INTO sessions(sessionId, agent, task, status, startedAt) VALUES ('early-agent', 'quiet-agent', 'Work', 'done', ?)", [now - 2_000]);
+        for (let i = 0; i < 2_001; i++) {
+          db.run("INSERT INTO sessions(sessionId, agent, task, status, startedAt) VALUES (?, 'busy-agent', 'Flood', 'done', ?)", [`flood-${i}`, now - 1_000 + i]);
+        }
+      });
+      const floodedLive = await (await fetch(base + "/api/liveness", { signal: AbortSignal.timeout(5000) })).json();
+      expect(floodedLive.summary.activityRowsTruncated).toBe(true);
+      const quietRow = floodedLive.agents.find((a: { name: string }) => a.name === "quiet-agent");
+      expect(quietRow).toMatchObject({ sessionCount: 1, lastSessionAt: now - 2_000, lastStatus: "done" });
     } finally {
+      db.prepare("DELETE FROM sessions WHERE sessionId = 'early-agent' OR sessionId LIKE 'flood-%'").run();
       db.prepare("DELETE FROM metric_alerts WHERE message IN ('synthetic oldest alert', 'synthetic latest alert', 'synthetic alert flood')").run();
     }
   });
@@ -429,7 +446,7 @@ describe("served workflow and metric health pages", () => {
   );
 
   test.skipIf(skipBrowser)(
-    "disabled rules suppress only derived warnings, not retained alerts, across HTTP and project/vital cards",
+    "disabled rules suppress only derived warnings, not retained alerts, across HTTP and project cards",
     async () => {
       const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
       const db = getDb(root);
@@ -453,26 +470,24 @@ describe("served workflow and metric health pages", () => {
           if (retained) metrics.alert(id, "Existing alert still needs resolution");
           // Changing policy must not resolve the existing alert as a side effect.
           metrics.define({ ...definition, config: { alert: { disabled } } });
-          const response = await fetch(base + "/api/liveness", { signal: AbortSignal.timeout(5000) });
+          const response = await fetch(base + "/api/metrics?id=" + id, { signal: AbortSignal.timeout(5000) });
           expect(response.status).toBe(200);
-          const vital = (await response.json()).vitals.find((m: { id: string }) => m.id === id);
-          expect(vital).toMatchObject({ alertsDisabled: disabled, alertOpen: retained,
-            thresholdBreached: value > 5, breached: !disabled && value > 5 });
+          const metric = (await response.json()).metrics.find((m: { id: string }) => m.id === id);
+          expect(metric).toMatchObject({ alertsDisabled: disabled, alertOpen: retained,
+            thresholdBreached: value > 5 });
           const expectedWarning = retained || (!disabled && value > 5);
           await page.goto(base, { waitUntil: "domcontentloaded" });
-          const vitalCard = `.vital-card[title^="${id}"]`;
           const projectChip = `.project-metric-chip[title^="${id}"]`;
           // Reconnect may refresh this panel between browser calls. Capture one
           // rendered snapshot instead of crossing separate redraws with $eval.
-          const health = await page.waitForFunction((vitalSelector, chipSelector) => {
-            const vital = document.querySelector(vitalSelector);
+          const health = await page.waitForFunction((chipSelector) => {
             const chip = document.querySelector(chipSelector);
             const projects = document.querySelector("#liveness-projects");
-            if (!vital || !chip || !projects) return null;
-            return { vital: vital.classList.contains("alerting"), chip: chip.classList.contains("alerting"),
+            if (!chip || !projects) return null;
+            return { chip: chip.classList.contains("alerting"),
               project: !!projects.querySelector(".project-health-alert") };
-          }, {}, vitalCard, projectChip);
-          expect(await health.jsonValue()).toEqual({ vital: expectedWarning, chip: expectedWarning, project: expectedWarning });
+          }, {}, projectChip);
+          expect(await health.jsonValue()).toEqual({ chip: expectedWarning, project: expectedWarning });
           await health.dispose();
           if (disabled) {
             await page.goto(base + "/metrics/" + id, { waitUntil: "domcontentloaded" });

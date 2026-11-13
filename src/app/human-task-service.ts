@@ -307,9 +307,27 @@ function decodeCursor(value: string): TaskCursor {
   }
 }
 
-function normalizeAppId(value: string | undefined): string | undefined {
-  const normalized = value?.trim().replace(/\.app$/, "");
-  return normalized || undefined;
+function resolveRequestedAppId(
+  value: string | undefined,
+  registry: Pick<AppRegistry, "snapshot">,
+  db: SqliteDb,
+): string | undefined {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  if (!raw.endsWith(".app")) return raw;
+  if (registry.snapshot().entries.some((entry) => entry.definition.id === raw)) return raw;
+  const hasExactRows = Boolean(
+    db
+      .prepare(
+        `SELECT 1 FROM app_tasks WHERE app_id = ?
+         UNION ALL SELECT 1 FROM app_task_cancellations WHERE app_id = ?
+         UNION ALL SELECT 1 FROM app_task_receipts WHERE app_id = ?
+         LIMIT 1`,
+      )
+      .get(raw, raw, raw),
+  );
+  if (hasExactRows) return raw;
+  return raw.replace(/\.app$/, "") || undefined;
 }
 
 // A wake can queue the next cycle without rewriting the last accepted phase.
@@ -1020,7 +1038,7 @@ export class HumanTaskService {
   }
 
   listApps(appId?: string): HumanAppView[] {
-    const selected = normalizeAppId(appId);
+    const selected = resolveRequestedAppId(appId, this.registry, this.db);
     const counts = this.db
       .prepare(
         `SELECT app_id,
@@ -1127,7 +1145,7 @@ export class HumanTaskService {
     const storedPhases = livePhases.includes("pending")
       ? [...new Set([...livePhases, "converged", "waiting"])]
       : livePhases;
-    const appId = normalizeAppId(input.appId);
+    const appId = resolveRequestedAppId(input.appId, this.registry, this.db);
     // A global read already has every eligible Task as a root. Start from the
     // selective open-human Condition index and follow its exact owner routes;
     // recursive dependency discovery remains only for scoped reads.
@@ -1299,7 +1317,7 @@ export class HumanTaskService {
       }
       identity = resolved.task;
     } else {
-      const appId = normalizeAppId(input.appId);
+      const appId = resolveRequestedAppId(input.appId, this.registry, this.db);
       const taskId = input.taskId?.trim();
       if (!appId || !taskId) throw new Error("Task read requires ref or App and Task ids");
       identity = { appId, taskId, digest: taskReferenceDigest(appId, taskId) };

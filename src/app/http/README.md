@@ -109,8 +109,8 @@ session-era finding/notification summaries. Task review and follow-through belon
 The project Lineage tab, `/api/projects/lineage` aggregate, and the legacy
 project Journal and Discussion routes (`/api/projects/journal`, `/api/projects/discussion`)
 are also retired.
-The project Sessions tab and `/api/projects/sessions` remain, with their existing
-tagged/mention provenance. Exact session
+The project Sessions tab and `/api/projects/sessions` remain, using exact
+`sessions.projectId` tags. Exact session
 detail retains recorded parent/child links. The removed Lineage view combined additional
 workflow references, historical file reads and child associations with inline
 checkpoint summaries; those project-wide summaries have no replacement view.

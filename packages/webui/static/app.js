@@ -58,7 +58,8 @@ function scrollToHashAnchor() {
 }
 
 function parseRouteString(route) {
-  const raw = String(route || '/').replace(/^\/?/, '').split('?')[0];
+  const [pathname, query = ''] = String(route || '/').replace(/^\/?/, '').split('?');
+  const raw = pathname;
   if (!raw) return { tab: 'live', params: {} };
   const segs = raw.split('/').filter(Boolean);
   const head = segs[0];
@@ -71,7 +72,8 @@ function parseRouteString(route) {
       surface = last;
       tail.pop();
     }
-    return { tab: 'projects', params: { id: tail.map(decodeURIComponent).join('/') || null, surface } };
+    const appId = new URLSearchParams(query).get('appId') || null;
+    return { tab: 'projects', params: { id: tail.map(decodeURIComponent).join('/') || null, surface, appId } };
   }
   if (head === 'sessions') return { tab: 'sessions', params: { id: segs[1] ? decodeURIComponent(segs[1]) : null } };
   if (head === 'agents') return { tab: 'agents', params: { name: segs[1] ? decodeURIComponent(segs[1]) : null } };
@@ -212,9 +214,10 @@ function render() {
     // Project id deep-link: /projects/<id>
     if (params.id) {
       // params.id is the canonical id form: '<name>', '<owner>/<name>',
-      // or 'shared/<name>'. Server paths are reconstructed via projectPathOf().
-      _projectDetailPath = projectPathOf(params.id);
-      showProjectDetail(_projectDetailPath, params.surface || 'project');
+      // or 'shared/<name>'. When navigated from Loaded Apps with an explicit
+      // appId, keep the projects/<appId>.app path even if appId contains '/'.
+      _projectDetailPath = params.appId ? `projects/${params.appId}.app` : projectPathOf(params.id);
+      showProjectDetail(_projectDetailPath, params.surface || 'project', params.appId);
     } else {
       _projectDetailPath = null;
       loadProjects();

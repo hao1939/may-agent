@@ -3,63 +3,6 @@
 // List and detail requests share one pane; only the latest load may render it.
 let projectLoadVersion = 0;
 
-async function loadAgentsTab() {
-  const el = document.getElementById('agents-content');
-  if (!el) return;
-  el.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading agents…</div>';
-  try {
-    const r = await fetch('/api/agents');
-    const agents = await r.json();
-    if (agents.error) throw new Error(agents.error);
-
-    // Top header + intro.
-    let html = `<div style="margin-bottom:16px">
-      <h2 style="margin:0 0 4px;font-size:18px">Agents <span style="color:var(--fg2);font-weight:normal;font-size:13px">(${agents.length})</span></h2>
-      <div style="font-size:12px;color:var(--fg2)">Each agent owns a domain. Click a card to talk to them, see their projects, metrics, and recent work.</div>
-    </div>`;
-
-    html += `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:12px">`;
-    for (const a of agents) {
-      const ageMs = a.lastSessionAt ? (Date.now() - a.lastSessionAt) : null;
-      const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
-      const dotColor = stale ? 'var(--fg2)' : (a.errors4h > 0 ? 'var(--red)' : 'var(--green)');
-      const ageLabel = ageMs == null ? 'no recent session' : timeAgo(a.lastSessionAt);
-
-      html += `<div onclick="routeTo('/agents/${esc(a.name)}')" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color 0.1s;${stale ? 'opacity:0.7' : ''}" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`;
-
-      // Header: dot + name + model badge.
-      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="color:${dotColor};font-size:12px">●</span>
-        <span style="font-weight:600;font-size:15px">${esc(a.name)}</span>
-        ${a.model ? `<span class="model-chip" style="margin-left:auto;font-size:10px">${esc(a.model)}</span>` : ''}
-      </div>`;
-
-      // Description.
-      if (a.description) {
-        html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px;line-height:1.4;min-height:34px">${esc(String(a.description).slice(0, 140))}</div>`;
-      } else {
-        html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px;font-style:italic;min-height:34px">No description in agent.json</div>`;
-      }
-
-      // Stats row: 4 chips.
-      html += `<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--fg2)">
-        <span title="Last session" style="background:var(--bg);padding:2px 8px;border-radius:8px">⏱ ${esc(ageLabel)}</span>
-        <span title="Heartbeats in 4h / sessions in 4h" style="background:var(--bg);padding:2px 8px;border-radius:8px">♥ ${a.heartbeats4h}/${a.sessions4h} (4h)</span>
-        <span title="Active projects / total" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.projectsActive > 0 ? 'color:var(--green)' : ''}">📁 ${a.projectsActive}/${a.projectsTotal}</span>
-        <span title="Owned metrics; breached count" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.metricBreached > 0 ? 'color:var(--red)' : ''}">∆ ${a.metricCount}${a.metricBreached > 0 ? ` (${a.metricBreached} ⚠)` : ''}</span>
-        ${a.errors4h > 0 ? `<span style="background:var(--bg);padding:2px 8px;border-radius:8px;color:var(--red)" title="Errored sessions in 4h">✗ ${a.errors4h}</span>` : ''}
-      </div>`;
-
-      html += `</div>`;
-    }
-    html += `</div>`;
-
-    el.innerHTML = html;
-  } catch (e) {
-    el.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load agents: ${esc(e.message)}</div>`;
-  }
-}
-
 function renderInstalledApps(result) {
   let html = '<section id="installed-apps" class="health-section"><h2>Loaded Apps</h2><p class="health-note">Apps loaded in this Host. A loaded App can be idle; Task counts show current activity.</p>';
   if (result.status === 'rejected') {
@@ -69,8 +12,9 @@ function renderInstalledApps(result) {
   if (!apps.length) return html + '<p>No Apps loaded.</p></section>';
   html += '<div class="health-scroll"><table class="health-table"><thead><tr><th>App</th><th>Owner</th><th>Running Tasks</th><th>Waiting Tasks</th><th>Needs review</th></tr></thead><tbody>';
   for (const app of apps) {
-    html += `<tr data-app-id="${attrEsc(app.id)}">` +
-      `<td><strong>${esc(app.id)}</strong>${app.description ? `<div class="health-note">${esc(app.description)}</div>` : ''}</td>` +
+    const href = `/projects/${encodeURIComponent(app.id + '.app')}/tasks?appId=${encodeURIComponent(app.id)}`;
+    html += `<tr data-app-id="${attrEsc(app.id)}" style="cursor:pointer" onclick="routeTo(${jsStringAttr(href)})">` +
+      `<td><a href="${attrEsc(href)}" style="color:inherit;text-decoration:none"><strong>${esc(app.id)}</strong></a>${app.description ? `<div class="health-note">${esc(app.description)}</div>` : ''}</td>` +
       `<td>${esc(app.owner)}</td><td>${esc(app.runningTasks)}</td><td>${esc(app.waitingTasks)}</td><td>${esc(app.attentionTasks)}</td></tr>`;
   }
   return html + '</tbody></table></div></section>';
@@ -151,13 +95,17 @@ function projectIdFromPath(path) {
   return projectIdOf({ path: path || '' });
 }
 
-function projectRouteFor(path, surface) {
-  const id = projectIdFromPath(path);
+function projectRouteFor(path, surface, explicitAppId) {
+  const query = explicitAppId ? `?appId=${encodeURIComponent(explicitAppId)}` : '';
   const suffix = surface && surface !== 'project' ? `/${surface}` : '';
+  if (explicitAppId) {
+    return `/projects/${encodeURIComponent(explicitAppId + '.app')}${suffix}${query}`;
+  }
+  const id = projectIdFromPath(path);
   return `/projects/${id.split('/').map(encodeURIComponent).join('/')}${suffix}`;
 }
 
-async function showProjectDetail(path, initialTab) {
+async function showProjectDetail(path, initialTab, explicitAppId) {
   const loadVersion = ++projectLoadVersion;
   _projectDetailPath = path;
   const el = document.getElementById('projects-content');
@@ -167,10 +115,25 @@ async function showProjectDetail(path, initialTab) {
   let detail = null;
   try {
     const r = await fetch(`/api/projects/detail?path=${encodeURIComponent(path)}`);
-    detail = await r.json();
+    const body = await r.json().catch(() => ({}));
     if (loadVersion !== projectLoadVersion) return;
-    if (detail.error) throw new Error(detail.error);
-    _currentProjectDetail = detail;
+    if (explicitAppId) {
+      const appDirName = `${explicitAppId}.app`;
+      if (r.ok && !body.error) {
+        detail = { ...body, explicitAppId, app: { ...(body.app || {}), appId: explicitAppId, appDirName } };
+      } else {
+        detail = { name: appDirName, owner: '', status: 'loaded-app', explicitAppId, app: { appId: explicitAppId, appDirName, hasUi: false } };
+      }
+      _currentProjectDetail = detail;
+    } else if (r.status === 404 && initialTab === 'tasks' && /^projects\/.+\.app$/.test(path)) {
+      const appId = path.slice('projects/'.length).replace(/\.app$/, '');
+      detail = { name: `${appId}.app`, owner: '', status: 'loaded-app', app: { appId, appDirName: `${appId}.app`, hasUi: false } };
+      _currentProjectDetail = detail;
+    } else {
+      if (!r.ok || body.error) throw new Error(body.error || `HTTP ${r.status}`);
+      detail = body;
+      _currentProjectDetail = detail;
+    }
   } catch (e) {
     if (loadVersion !== projectLoadVersion) return;
     el.innerHTML = `<div style="color:var(--red);padding:16px">Failed to load project: ${esc(e.message)}</div>`;
@@ -204,7 +167,7 @@ async function showProjectDetail(path, initialTab) {
   html += `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-top:6px">`;
   html += `<span>owner: <a href="/agents/${esc(detail.owner)}" style="color:var(--accent);text-decoration:none">${esc(detail.owner)}</a></span>`;
   html += `<span>iteration ${detail.iteration ?? 0}</span>`;
-  html += `<span title="Sessions tagged with projectId; +mentions = task body references this project but wasn't dispatched through it">${detail.sessionCount} sessions${detail.mentionCount ? ` (+${detail.mentionCount} mentions)` : ''}</span>`;
+  html += `<span title="Sessions tagged with projectId">${detail.sessionCount || 0} sessions</span>`;
   if (detail.updatedAt) html += `<span>updated ${esc(timeAgo(detail.updatedAt))}</span>`;
   if (detail.createdAt) html += `<span>created ${esc(timeAgo(detail.createdAt))}</span>`;
   html += `</div>`;
@@ -281,7 +244,7 @@ async function showProjectDetail(path, initialTab) {
   html += projectTabButton('project', 'Project', defaultProjectTab);
   html += projectTabButton('kanban', 'Tasks', defaultProjectTab);
   html += projectTabButton('functions', 'Functions', defaultProjectTab);
-  const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
+  const totalSessionLink = detail.sessionCount || 0;
   html += projectTabButton('sessions', `Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}`, defaultProjectTab);
   html += `</div>`;
   html += `<div id="project-tab-content" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px"></div>`;
@@ -322,9 +285,10 @@ function projectTabButton(tab, label, activeTab) {
 function switchProjectTab(btn, tab) {
   btn.parentElement.querySelectorAll('.tab-btn').forEach(b => { b.style.borderBottomColor = 'transparent'; b.style.color = 'var(--fg2)'; });
   btn.style.borderBottomColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
-  if (tab === 'kanban') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'tasks'));
-  else if (tab === 'functions') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'functions'));
-  else if (location.pathname.endsWith('/tasks') || location.pathname.endsWith('/functions')) history.replaceState({}, '', projectRouteFor(_projectDetailPath));
+  const explicitAppId = _currentProjectDetail?.explicitAppId || null;
+  if (tab === 'kanban') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'tasks', explicitAppId));
+  else if (tab === 'functions') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'functions', explicitAppId));
+  else if (location.pathname.endsWith('/tasks') || location.pathname.endsWith('/functions')) history.replaceState({}, '', projectRouteFor(_projectDetailPath, null, explicitAppId));
   loadProjectTab(tab);
 }
 
@@ -350,46 +314,26 @@ async function loadProjectTab(tab) {
       const res = await fetch(`/api/projects/sessions?path=${encodeURIComponent(_projectDetailPath)}`);
       const rows = await res.json();
       if (rows.length === 0) {
-        el.innerHTML = `<div style="color:var(--fg2)">
-          <p style="margin:0 0 8px">No sessions linked to this project.</p>
-          <p style="margin:0;font-size:12px">Sessions are linked two ways:</p>
-          <ul style="font-size:12px;margin:4px 0 0 20px">
-            <li><b>Tagged</b>: dispatched through this project's workflow (sets <code>sessions.projectId</code>).</li>
-            <li><b>Mention</b>: task body references the project name. Best-effort; only shown for projects with name length ≥ 6.</li>
-          </ul>
-          <p style="margin:8px 0 0;font-size:12px;color:var(--fg2)">If you expected work here, the project may not be wired into a workflow yet.</p>
-        </div>`;
+        el.innerHTML = `<div style="color:var(--fg2)">No sessions linked to this project.</div>`;
         return;
       }
-      // Group: tagged first, then mentions.
-      const tagged = rows.filter(r => r.link === 'tagged' || !r.link);
-      const mentions = rows.filter(r => r.link === 'mention');
-      let html = '';
-      const renderTable = (group, label, hint, badgeColor) => {
-        if (group.length === 0) return '';
-        let h = `<div style="margin-bottom:14px">`;
-        h += `<h4 style="margin:0 0 4px;font-size:12px;color:var(--fg2);display:flex;align-items:center;gap:6px"><span style="background:${badgeColor};color:#000;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600">${label}</span><span style="color:var(--fg2);font-size:11px;font-weight:normal">${group.length} · ${hint}</span></h4>`;
-        h += `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
-        h += `<tr style="border-bottom:2px solid var(--border)"><th style="padding:6px;text-align:left">Session</th><th>Agent</th><th>Status</th><th>Ops</th><th>Time</th><th>Task</th></tr>`;
-        for (const s of group) {
-          const sessionIdArg = jsStringAttr(s.sessionId);
-          const sessionHref = attrEsc('/sessions/' + encodeURIComponent(s.sessionId || ''));
-          h += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="openSessionRoute(${sessionIdArg})" title="Open interactive session">`;
-          h += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
-          h += `<td>${esc(s.agent||'')}</td>`;
-          h += `<td>${esc(s.status||'')}</td>`;
-          h += `<td>${s.opCount ?? ''}</td>`;
-          h += `<td style="color:var(--fg2);font-size:12px">${s.startedAt ? timeAgo(s.startedAt) : ''}</td>`;
-          h += `<td style="color:var(--fg2);font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((s.task||'').slice(0,80))}<a href="${sessionHref}" onclick="event.stopPropagation()" style="color:var(--accent);margin-left:8px;text-decoration:none">open</a></td>`;
-          h += `</tr>`;
-        }
-        h += `</table></div>`;
-        return h;
-      };
-      html += renderTable(tagged,   'TAGGED',   'dispatched through this project',                      'var(--green)');
-      html += renderTable(mentions, 'MENTION',  'task body references this project (not dispatched here)', 'var(--orange,#e8a44c)');
+      let h = `<table style="width:100%;border-collapse:collapse;font-size:13px">`;
+      h += `<tr style="border-bottom:2px solid var(--border)"><th style="padding:6px;text-align:left">Session</th><th>Agent</th><th>Status</th><th>Ops</th><th>Time</th><th>Task</th></tr>`;
+      for (const s of rows) {
+        const sessionIdArg = jsStringAttr(s.sessionId);
+        const sessionHref = attrEsc('/sessions/' + encodeURIComponent(s.sessionId || ''));
+        h += `<tr style="border-bottom:1px solid var(--border);cursor:pointer" onclick="navigateToSession(${sessionIdArg})" title="Open interactive session">`;
+        h += `<td style="padding:6px;font-family:monospace;font-size:11px">${esc((s.sessionId||'').slice(-12))}</td>`;
+        h += `<td>${esc(s.agent||'')}</td>`;
+        h += `<td>${esc(s.status||'')}</td>`;
+        h += `<td>${s.opCount ?? ''}</td>`;
+        h += `<td style="color:var(--fg2);font-size:12px">${s.startedAt ? timeAgo(s.startedAt) : ''}</td>`;
+        h += `<td style="color:var(--fg2);font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc((s.task||'').slice(0,80))}<a href="${sessionHref}" onclick="event.stopPropagation()" style="color:var(--accent);margin-left:8px;text-decoration:none">open</a></td>`;
+        h += `</tr>`;
+      }
+      h += `</table>`;
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = 'inherit';
-      el.innerHTML = html;
+      el.innerHTML = h;
     }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
@@ -520,11 +464,6 @@ async function emitProjectAction() {
   }
 }
 
-
-function openSessionRoute(sessionId) {
-  if (!sessionId) return;
-  routeTo('/sessions/' + encodeURIComponent(sessionId));
-}
 
 async function addProjectComment() {
   const input = document.getElementById('project-comment');
