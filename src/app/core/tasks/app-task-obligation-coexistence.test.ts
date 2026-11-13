@@ -18,7 +18,6 @@ import {
   failAppTaskAttempt,
   observeAppTaskIntent,
   recordAppTaskTrigger,
-  repairUnadmittedAppDependencyWaits,
   retryFailedAppTask,
 } from "./app-task-reconciler.js";
 import {
@@ -206,14 +205,11 @@ test("repair, failure, retry, unblock, satisfaction, and retirement mutate only 
     deferAppTask(f.config, f.claim(), {
       disposition: "waiting",
       summary: "Await independent facts",
-      conditions: [human, dependency, admittedDependency, testResult],
+      conditions: [human, admittedDependency, testResult],
     });
-
-    const isAdmitted = (requestId: string) => requestId === "deploy";
-    expect(repairUnadmittedAppDependencyWaits(f.config, isAdmitted, ["work"])).toHaveLength(1);
     expect(f.ids()).toEqual([human.id, admittedDependency.id, testResult.id]);
-    expect(repairUnadmittedAppDependencyWaits(f.config, isAdmitted, ["work"])).toEqual([]);
 
+    recordAppTaskTrigger(f.config, "work", { type: "project.task.tick", eventId: 1 });
     const failed = f.claim();
     failAppTaskAttempt(f.config, failed, "Transient executor failure");
     expect(f.ids()).toEqual([human.id, admittedDependency.id, testResult.id]);

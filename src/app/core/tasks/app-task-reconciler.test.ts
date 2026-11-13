@@ -40,8 +40,6 @@ import {
   recordAppTaskTrigger,
   appTaskQueueEntries,
   AppTaskActionStaleError,
-  repairPreviousRuntimeRecoveryAttention,
-  repairUnadmittedAppDependencyWaits,
   repairRunningAppTasksWithoutAttempt,
   recoverableAppTaskAttempts,
   expiredAgentSessionAppTaskAttempt,
@@ -4317,63 +4315,6 @@ describe("App task reconciler state", () => {
     expect(listRunnableAppTaskIds(config)).toContain(claim.taskId);
   });
 
-  it("requeues an orphaned App dependency wait and leaves admitted waits alone", () => {
-    const state = fixture();
-    const { config } = state;
-    const makeWaiting = (taskId: string, requestId: string) => {
-      const taskIntent = { ...intent(), id: taskId };
-      const claim = declareAndClaimTask(config, {
-        intent: taskIntent,
-        appAgent: "app-owner",
-        handler: "agent:app-owner",
-      });
-      if (claim.kind !== "claimed") throw new Error("expected claim");
-      deferAppTask(config, claim, {
-        disposition: "waiting",
-        summary: `waiting for ${requestId}`,
-        conditions: [
-          {
-            id: `app-request:${requestId}`,
-            type: "app.dependency.updated",
-            subject: `id:${requestId}`,
-            expected: { field: "status", equals: "done" },
-          },
-        ],
-      });
-    };
-    makeWaiting("work/orphaned", "missing-request");
-    makeWaiting("work/admitted", "accepted-request");
-    const resourceConfig = state.config;
-    const candidateTaskIds = ["work/orphaned", "work/admitted"];
-
-    expect(
-      repairUnadmittedAppDependencyWaits(
-        resourceConfig,
-        (requestId) => requestId === "accepted-request",
-        candidateTaskIds,
-      ),
-    ).toEqual([expect.objectContaining({ taskId: "work/orphaned", disposition: "requeued" })]);
-
-    const repaired = resourceConfig.resourceStore.readTaskContext({ taskIds: candidateTaskIds });
-    expect(repaired.resources?.["work/orphaned"]?.status).toMatchObject({
-      phase: "pending",
-      conditionIds: [],
-      summary: "App dependency request missing-request was not admitted; retrying the same Task from current facts",
-    });
-    expect(repaired.conditions?.["app-request:missing-request"]).toBeUndefined();
-    expect(repaired.resources?.["work/admitted"]?.status).toMatchObject({
-      phase: "waiting",
-      conditionIds: ["app-request:accepted-request"],
-    });
-    expect(
-      repairUnadmittedAppDependencyWaits(
-        resourceConfig,
-        (requestId) => requestId === "accepted-request",
-        candidateTaskIds,
-      ),
-    ).toEqual([]);
-  });
-
   it("claims running tasks whose current attempt record is missing", () => {
     const { config } = fixture();
     const claim = declareAndClaimTask(config, {
@@ -4563,16 +4504,7 @@ describe("App task reconciler state", () => {
       });
       if (kind === "missing-attempt-scan")
         expect(repairRunningAppTasksWithoutAttempt(config, [first.taskId])).toHaveLength(1);
-    } else if (kind === "legacy-attention") {
-      mutateAttemptFixture(config, first.taskId, running.attemptId, (attempt) => {
-        attempt.state = "interrupted";
-        attempt.failureReason = "previous-runtime-attempt-not-recoverable";
-      });
-      mutateTaskResourceFixture(config, first.taskId, (resource) => {
-        resource.status.phase = "attention";
-        resource.status.currentAttemptId = undefined;
-      });
-      expect(repairPreviousRuntimeRecoveryAttention(config, [first.taskId])).toHaveLength(1);
+
     } else if (kind === "late-terminal") {
       expect(
         releaseLateTerminalWorkflowAppTaskAttempt(
@@ -4727,53 +4659,6 @@ describe("App task reconciler state", () => {
     expect(acceptedAttempts[0].metadata.id).toBe(replacement.attemptId);
     expect(runningAttempts).toHaveLength(1);
     expect(runningAttempts[0].metadata.id).toBe(fresh.attemptId);
-  });
-
-  it("repairs existing previous-runtime attention records on startup", () => {
-    const state = fixture();
-    const { config } = state;
-    const claim = declareAndClaimTask(config, {
-      intent: intent(),
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    mutateAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
-      attempt.runtimeId = "previous-runtime";
-      attempt.state = "interrupted";
-      attempt.failureReason = "previous-runtime-attempt-not-recoverable";
-    });
-    mutateTaskResourceFixture(
-      config,
-      claim.taskId,
-      (resource) => {
-        resource.status = {
-          ...resource.status,
-          phase: "attention",
-          observedGeneration: claim.generation,
-          currentAttemptId: undefined,
-          summary: `old attention ${claim.taskId}`,
-        };
-      },
-      false,
-    );
-
-    const resourceConfig = state.config;
-    expect(repairPreviousRuntimeRecoveryAttention(resourceConfig, [claim.taskId])).toMatchObject([
-      { taskId: "evaluate:session-1", disposition: "requeued" },
-    ]);
-
-    const repaired = resourceConfig.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    expect(repaired.resources?.["evaluate:session-1"]).toMatchObject({
-      status: { phase: "pending", observedGeneration: claim.generation },
-    });
-    expect(
-      claimObservedAppTask(resourceConfig, {
-        taskId: claim.taskId,
-        appAgent: "app-owner",
-        handler: "workflow:known-workflow",
-      }).kind,
-    ).toBe("claimed");
   });
 
   it("keeps converged maintain tasks live for the next event", () => {
