@@ -1151,7 +1151,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const {
     isAllowedProjectPath,
     resolveProjectFile,
-    serveIndex,
     serveProjectStatic,
     readProjects,
     handleProjects,
@@ -1163,11 +1162,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     handleProjectActions,
     handleProjectActionInvoke,
   } = createProjectRouteHandlers({
-    stateDir: STATE_DIR,
     projectRoot: PROJECT_ROOT,
     agentsRoot: AGENTS_ROOT,
     projectsRoot: PROJECTS_ROOT,
-    platformUiDir: PLATFORM_UI_DIR,
     getDb: _db,
     json,
     conventionSocketPath,
@@ -1426,7 +1423,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
       const platformUiResponse = servePlatformUiRequest(req, PLATFORM_UI_DIR);
       if (platformUiResponse) return platformUiResponse;
-      if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) return serveIndex();
+      if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html"))
+        return serveProjectStatic("/projects");
       if (req.method === "GET" && (url.pathname === "/projects" || url.pathname.startsWith("/projects/")))
         return serveProjectStatic(url.pathname);
       return new Response("Not found", { status: 404 });

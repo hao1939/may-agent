@@ -361,10 +361,9 @@ async function loadProjectTab(tab) {
         </div>`;
         return;
       }
-      // Group: tagged first, then mentions, then workflow-file fallbacks.
+      // Group: tagged first, then mentions.
       const tagged = rows.filter(r => r.link === 'tagged' || !r.link);
       const mentions = rows.filter(r => r.link === 'mention');
-      const workflow = rows.filter(r => r.link === 'workflow-file');
       let html = '';
       const renderTable = (group, label, hint, badgeColor) => {
         if (group.length === 0) return '';
@@ -389,7 +388,6 @@ async function loadProjectTab(tab) {
       };
       html += renderTable(tagged,   'TAGGED',   'dispatched through this project',                      'var(--green)');
       html += renderTable(mentions, 'MENTION',  'task body references this project (not dispatched here)', 'var(--orange,#e8a44c)');
-      html += renderTable(workflow, 'WORKFLOW', 'recovered from workflow run files',                     'var(--accent)');
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = 'inherit';
       el.innerHTML = html;
     }

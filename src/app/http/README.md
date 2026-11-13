@@ -106,10 +106,12 @@ Session detail (`/api/sessions/:id`, `/transcript`, `/raw-log`) remains availabl
 artifacts and evaluation records on disk are retained; HTTP does not serve or regenerate
 session-era finding/notification summaries. Task review and follow-through belong to Apps.
 
-The project Lineage tab and `/api/projects/lineage` aggregate are also retired.
+The project Lineage tab, `/api/projects/lineage` aggregate, and the legacy
+project Journal and Discussion routes (`/api/projects/journal`, `/api/projects/discussion`)
+are also retired.
 The project Sessions tab and `/api/projects/sessions` remain, with their existing
-tagged/mention provenance and historical workflow-file fallback. Exact session
-detail retains recorded parent/child links. The removed view combined additional
+tagged/mention provenance. Exact session
+detail retains recorded parent/child links. The removed Lineage view combined additional
 workflow references, historical file reads and child associations with inline
 checkpoint summaries; those project-wide summaries have no replacement view.
 Stored sessions, workflow artifacts, checkpoints and historical rows are retained.
