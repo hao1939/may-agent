@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
-import { createTestAppWorkflowContext, resolveCallableTarget, runWorkflowTest } from "./testing.js";
+import { createTestAppWorkflowContext, resolveCallable, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -577,7 +577,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     },
   );
 
-  test("supports unified ctx.call, resolveCallableTarget, mocks, dual output schemas, and readonly enforcement", async () => {
+  test("supports unified ctx.call, resolveCallable, mocks, dual output schemas, and readonly enforcement", async () => {
     const childCodeMod = {
       name: "child-proc",
       description: "Readonly code procedure",
@@ -597,23 +597,23 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       prompts: new Map([["reviewer", { owner: "reviewer", definition: { name: "reviewer" } }]]),
       proceduresByOwner: new Map([["owner", new Map([["child-proc", childCodeMod]])]]),
     };
-    expect(resolveCallableTarget("owner", "child-proc", snapshot)).toMatchObject({
+    expect(resolveCallable("owner", "child-proc", snapshot)).toMatchObject({
       kind: "code",
       name: "child-proc",
       owner: "owner",
       readonly: true,
     });
-    expect(resolveCallableTarget("owner", "owner/child-proc", snapshot)).toMatchObject({
+    expect(resolveCallable("owner", "owner/child-proc", snapshot)).toMatchObject({
       kind: "code",
       name: "child-proc",
       owner: "owner",
     });
-    expect(resolveCallableTarget("owner", "reviewer", snapshot)).toMatchObject({
+    expect(resolveCallable("owner", "reviewer", snapshot)).toMatchObject({
       kind: "prompt",
       name: "reviewer",
       owner: "reviewer",
     });
-    expect(() => resolveCallableTarget("other", "child-proc", snapshot)).toThrow(
+    expect(() => resolveCallable("other", "child-proc", snapshot)).toThrow(
       'Callable target "child-proc" not found for owner "other"',
     );
 

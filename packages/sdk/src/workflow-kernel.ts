@@ -35,7 +35,7 @@ export type WorkflowExecutableModule<TInput = any> = {
   entryContentHash?: string;
 };
 
-export type PreparedTarget<TPromptDef = unknown> =
+export type PreparedDefinition<TPromptDef = unknown> =
   | {
       kind: "prompt";
       name: string;
@@ -51,7 +51,7 @@ export type PreparedTarget<TPromptDef = unknown> =
       readonly: boolean;
     };
 
-export type PreparedTargetCatalog<TPromptDef = unknown> = {
+export type PreparedCatalog<TPromptDef = unknown> = {
   /** Prompt agent definitions keyed by canonical agent name. */
   readonly prompts?: ReadonlyMap<string, { owner?: string; definition: TPromptDef; outputSchema?: TSchema }>;
   /** Code procedure catalogs keyed by owning agent name. */
@@ -60,30 +60,30 @@ export type PreparedTargetCatalog<TPromptDef = unknown> = {
   readonly diagnostics?: readonly string[];
 };
 
-export function resolveCallableTarget<TPromptDef = unknown>(
+export function resolveCallable<TPromptDef = unknown>(
   callerOwner: string,
-  target: string,
-  snapshot: PreparedTargetCatalog<TPromptDef>,
-): PreparedTarget<TPromptDef> {
-  if (!target || typeof target !== "string" || !target.trim() || target === "undefined" || target === "unknown") {
-    throw new Error(`Invalid callable target name: ${JSON.stringify(target)}`);
+  name: string,
+  snapshot: PreparedCatalog<TPromptDef>,
+): PreparedDefinition<TPromptDef> {
+  if (!name || typeof name !== "string" || !name.trim() || name === "undefined" || name === "unknown") {
+    throw new Error(`Invalid callable target name: ${JSON.stringify(name)}`);
   }
-  const normalizedTarget = target.trim();
+  const normalizedTarget = name.trim();
   const slashIndex = normalizedTarget.indexOf("/");
   if (slashIndex !== -1) {
     const owner = normalizedTarget.slice(0, slashIndex).trim();
-    const name = normalizedTarget.slice(slashIndex + 1).trim();
-    if (!owner || !name || name.includes("/")) {
-      throw new Error(`Invalid qualified callable target "${target}" (expected "<owner>/<name>")`);
+    const procName = normalizedTarget.slice(slashIndex + 1).trim();
+    if (!owner || !procName || procName.includes("/")) {
+      throw new Error(`Invalid qualified callable target "${name}" (expected "<owner>/<name>")`);
     }
     const ownerProcedures = snapshot.proceduresByOwner?.get(owner);
-    const mod = ownerProcedures?.get(name);
+    const mod = ownerProcedures?.get(procName);
     if (!mod) {
       const diag =
         snapshot.diagnostics && snapshot.diagnostics.length > 0
           ? ` Catalog diagnostics:\n  ${snapshot.diagnostics.join("\n  ")}`
           : "";
-      throw new Error(`Callable procedure "${owner}/${name}" not found.${diag}`);
+      throw new Error(`Callable procedure "${owner}/${procName}" not found.${diag}`);
     }
     return {
       kind: "code",
@@ -122,6 +122,10 @@ export function resolveCallableTarget<TPromptDef = unknown>(
       : "";
   throw new Error(`Callable target "${normalizedTarget}" not found for owner "${callerOwner}".${diag}`);
 }
+
+export type PreparedTarget<TPromptDef = unknown> = PreparedDefinition<TPromptDef>;
+export type PreparedTargetCatalog<TPromptDef = unknown> = PreparedCatalog<TPromptDef>;
+export const resolveCallableTarget = resolveCallable;
 
 export type NormalizedWorkflowContribution = (
   | { type: "done"; summary: string }

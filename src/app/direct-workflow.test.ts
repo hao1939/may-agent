@@ -11,7 +11,7 @@ import { executePreparedAgent } from "../lib/agent-execution.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
-import { createDirectWorkflowTool, runDirectWorkflow } from "./direct-workflow.js";
+import { runDirectWorkflow } from "./direct-workflow.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -219,7 +219,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(readFileSync(join(env.workRoot, "candidate.txt"), "utf8")).toBe("important evidence");
   });
 
-  test("enforces shared root maxConcurrentCalls across nested workflows and exposes sandboxed workflow tool to opted-in direct agents", async () => {
+  test("enforces shared root maxConcurrentCalls across nested workflows", async () => {
     const env = setupDirectLayout();
     const ownerWorkflowsDir = join(env.agentsRoot, "owner", "workflows");
     writeFileSync(
@@ -256,64 +256,6 @@ export async function execute(ctx) {
     });
     expect(saturated.ok).toBe(false);
     expect(saturated.error).toBeInstanceOf(WorkflowAllowanceExhaustedError);
-
-    // Opted-in direct agent receives a working Host-free workflow tool
-    const wfTool = createDirectWorkflowTool({
-      agentName: "owner",
-      workflowDir: ownerWorkflowsDir,
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      agentsRoot: env.agentsRoot,
-      sharedRoot: env.sharedRoot,
-      outputRoot: env.outputRoot,
-      models: { test: { id: "test-model" } as any },
-      agentFixtures: {
-        reviewer: async () => ({
-          id: "s_fix",
-          kind: "agent",
-          status: "done",
-          summary: "ok",
-          output: { subjectRef: "HEAD", verdict: "pass", summary: "Fixture review" },
-        }),
-      },
-    });
-
-    const prep = await prepareDirectAgentExecution({
-      agentName: "owner",
-      task: "Use your workflow tool",
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      agentsRoot: env.agentsRoot,
-      sharedRoot: env.sharedRoot,
-      outputRoot: env.outputRoot,
-      models: { test: { id: "test-model" } as any },
-      toolDenials: [{ name: "checkpoint", reason: "isolated scenario" }],
-      workflowTool: wfTool,
-    });
-    try {
-      expect(prep.executionManifest.effectiveTools).toContain("workflow");
-      const listed = JSON.parse(
-        (await wfTool.execute("tc_list", { action: "list" } as any)).content[0]!.text as string,
-      );
-      expect(listed.workflows.map((w: any) => w.name)).toEqual(["outer", "review-change"]);
-
-      const executed = JSON.parse(
-        (
-          await wfTool.execute("tc_run", {
-            action: "run",
-            name: "review-change",
-            input: { subjectRef: "HEAD" },
-          } as any)
-        ).content[0]!.text as string,
-      );
-      expect(executed).toMatchObject({
-        type: "done",
-        status: "done",
-        summary: "Reviewed HEAD",
-      });
-    } finally {
-      await prep.cleanupAsync();
-    }
   });
 
   test("forwards readonly toolPolicy after concrete and local tool expansion in direct agent steps", async () => {
@@ -380,7 +322,7 @@ export default function createCustomTool() {
     expect(effectiveTools).toEqual(["read", "finish"]);
   });
 
-  test("propagates unconfirmed cleanup from tool-dispatched child workflows, enforces maxDepth at entry, and isolates nested executionIds", async () => {
+  test("enforces maxDepth at entry, isolates nested executionIds, and pins captured agent.json config across mid-flight disk edits", async () => {
     const env = setupDirectLayout();
     const ownerWorkflowsDir = join(env.agentsRoot, "owner", "workflows");
     writeFileSync(
@@ -426,69 +368,46 @@ export async function execute(ctx) {
     expect(idsOut.secondId).not.toBe("wr_explicit_root");
     expect(idsOut.firstId).not.toBe(idsOut.secondId);
 
-    // 2. maxDepth=1 blocks child-agent workflow tool dispatch (depth 2 > 1).
-    let toolDepthReply: any;
+    // 2. maxDepth=1 blocks nested code calls at depth 2.
     const depthLimited = await runDirectWorkflow({
       module: {
         name: "root-depth-1",
-        description: "Calls owner agent which tries to invoke workflow tool at depth 2",
+        description: "Calls nested review-change at depth 2 with maxDepth=1",
         async execute(ctx) {
-          const step = await ctx.agents.call("owner", "Try nested workflow");
+          const step = await ctx.call("owner/review-change", { subjectRef: "HEAD" });
           return ctx.done(step.summary);
         },
       },
+      agentName: "owner",
       input: {},
       maxDepth: 1,
-      allowChildAgentWorkflowTool: true,
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
       sharedRoot: env.sharedRoot,
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
-      runAgent: async (opts): Promise<DirectAgentRunResult> => {
-        const res = await opts.workflowTool!.execute("tc_depth", {
-          action: "run",
-          name: "review-change",
-          input: { subjectRef: "HEAD" },
-        } as any);
-        toolDepthReply = JSON.parse(res.content[0]!.text as string);
-        return {
-          sessionId: "s_owner_depth",
-          sessionPath: join(opts.outputRoot, "sessions", "s_owner_depth"),
-          systemPrompt: "",
-          model: "test",
-          executionManifest: { agent: "owner", configuredTools: [], deniedTools: [], effectiveTools: [] },
-          status: "done",
-          lastAssistantText: "handled",
-          messages: [],
-          durationMs: 1,
-          finishResult: { status: "success", summary: "handled" },
-          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
-          cleanupConfirmed: true,
-        };
-      },
     });
-    expect(depthLimited.ok).toBe(true);
-    expect(toolDepthReply).toMatchObject({
-      type: "error",
-      started: false,
-      error: expect.stringContaining("Maximum workflow nesting depth (1) exceeded"),
-    });
+    expect(depthLimited.ok).toBe(false);
+    expect(String(depthLimited.error)).toContain("Maximum workflow nesting depth (1) exceeded");
 
-    // 3. Unconfirmed cleanup inside tool-dispatched child workflow taints enclosing agent step & outer workflow.
-    const leakedViaTool = await runDirectWorkflow({
+    // 3. Captured prompt config in PreparedCatalog stays pinned even if agent.json is disabled on disk mid-run.
+    let seenTools: string[] = [];
+    const snapshotPinned = await runDirectWorkflow({
       module: {
-        name: "outer-tool-leak",
-        description: "Agent swallows tool error, but unconfirmed cleanup still propagates",
+        name: "mid-flight-config-edit",
+        description: "Mutates reviewer agent.json on disk before calling reviewer",
         async execute(ctx) {
-          await ctx.agents.call("owner", "Run review-change tool");
-          return ctx.done("agent reported success");
+          writeFileSync(
+            join(env.agentsRoot, "reviewer", "agent.json"),
+            JSON.stringify({ name: "reviewer", disabled: true }),
+          );
+          const step = await ctx.call("reviewer", "Still runs from captured snapshot");
+          return ctx.done(step.summary);
         },
       },
+      agentName: "owner",
       input: {},
-      maxDepth: 3,
-      allowChildAgentWorkflowTool: true,
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -496,54 +415,31 @@ export async function execute(ctx) {
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
       runAgent: async (opts): Promise<DirectAgentRunResult> => {
-        if (opts.agentName === "owner") {
-          await opts.workflowTool!.execute("tc_leak", {
-            action: "run",
-            name: "review-change",
-            input: { subjectRef: "HEAD" },
-          } as any);
-          // Even though owner finishes cleanly with cleanupConfirmed=true on its own session,
-          // the nested workflow's unconfirmed cleanup must taint this step!
+        const prep = await prepareDirectAgentExecution(opts);
+        try {
+          seenTools = prep.executionManifest.effectiveTools;
           return {
-            sessionId: "s_owner_ok",
-            sessionPath: join(opts.outputRoot, "sessions", "s_owner_ok"),
-            systemPrompt: "",
-            model: "test",
-            executionManifest: { agent: "owner", configuredTools: [], deniedTools: [], effectiveTools: [] },
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
             status: "done",
-            lastAssistantText: "done",
+            lastAssistantText: "pinned",
             messages: [],
-            durationMs: 2,
-            finishResult: { status: "success", summary: "ignored tool error" },
+            durationMs: 1,
+            finishResult: { status: "success", summary: "pinned-ok" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
-            cleanupConfirmed: true,
+            cleanupConfirmed: await prep.cleanupAsync(),
           };
+        } finally {
+          prep.cleanup();
         }
-        return {
-          sessionId: "s_reviewer_leaked",
-          sessionPath: join(opts.outputRoot, "sessions", "s_reviewer_leaked"),
-          systemPrompt: "",
-          model: "test",
-          executionManifest: { agent: "reviewer", configuredTools: [], deniedTools: [], effectiveTools: [] },
-          status: "done",
-          lastAssistantText: "done",
-          messages: [],
-          durationMs: 2,
-          finishResult: {
-            status: "success",
-            summary: "done",
-            result: { subjectRef: "HEAD", summary: "ok" },
-          },
-          structuredResult: { subjectRef: "HEAD", summary: "ok" },
-          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
-          cleanupConfirmed: false,
-        };
       },
     });
-    expect(leakedViaTool.ok).toBe(false);
-    expect(leakedViaTool.status).toBe("error");
-    expect(leakedViaTool.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
-    expect(leakedViaTool.report.cleanup.confirmed).toBe(false);
+    expect(snapshotPinned.ok).toBe(true);
+    expect(snapshotPinned.result).toMatchObject({ type: "done", summary: "pinned-ok" });
+    expect(seenTools).toContain("finish");
   });
 
   test("preserves read.tasks.workload and honors step operationAllowance in real direct execution", async () => {

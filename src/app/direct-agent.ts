@@ -39,8 +39,10 @@ export type AgentExecutionManifest = {
 
 export type DirectAgentRunOptions = {
   agentName: string;
-  /** Trusted source already selected by the invocation's captured target catalog. */
+  /** Trusted source already selected by the invocation's captured catalog. */
   agentSource?: AgentDirectory;
+  /** Pre-read agent.json configuration captured at catalog snapshot time. */
+  agentConfig?: AgentConfig;
   task: string;
   projectRoot: string;
   /** Explicit installation-layout workspace, possibly separate from projectRoot. */
@@ -73,8 +75,6 @@ export type DirectAgentRunOptions = {
   promptTimestamp?: string;
   /** Fixed only when deterministic preparation/evaluation facts are required. */
   sessionId?: string;
-  /** Optional sandboxed workflow tool supplied by direct-workflow / Gym when opted in. */
-  workflowTool?: AgentTool;
   /** Optional override for background process-group draining in tests. */
   drainProcessGroup?: (pgid: number) => Promise<boolean>;
   onNotice?: (message: string) => void;
@@ -175,16 +175,6 @@ async function buildDirectTools(
           }),
         );
         break;
-      case "workflow": {
-        if (!options.workflowTool) {
-          throw new Error(
-            `Direct run cannot construct effective tool "workflow" for agent ${config.name}; ` +
-              `the caller must provide an explicit denial or workflowTool`,
-          );
-        }
-        tools.push(options.workflowTool);
-        break;
-      }
       default:
         throw new Error(
           `Direct run cannot construct effective tool "${capability}" for agent ${config.name}; ` +
@@ -208,7 +198,7 @@ async function buildDirectTools(
 export async function prepareDirectAgentExecution(options: DirectAgentRunOptions): Promise<DirectAgentPreparation> {
   validateOperationAllowance(options.operationAllowance);
   const source = resolveAgentSource(options);
-  const config = readAgentConfigFile(source.dir);
+  const config = options.agentConfig ?? readAgentConfigFile(source.dir);
   if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
   const configErrors = validateAgentConfig(config, options.models, options.agentsRoot);
   if (configErrors.length > 0) {
