@@ -1,8 +1,3 @@
-function compactText(text, max = 140) {
-  const value = String(text || '').replace(/\s+/g, ' ').trim();
-  return value.length > max ? value.slice(0, max - 1) + '...' : value;
-}
-
 function formatJson(value) {
   if (value == null || value === '') return '';
   try { return JSON.stringify(value, null, 2); } catch { return String(value); }
@@ -259,19 +254,6 @@ function hideRawLog() {
   const viewer = document.getElementById('raw-log-viewer');
   document.querySelectorAll('.source-chip.active').forEach(el => el.classList.remove('active'));
   if (viewer) { viewer.classList.remove('active'); viewer.innerHTML = ''; }
-}
-
-function focusSessionLine(line) {
-  const targetLine = Number(line);
-  if (!targetLine) return;
-  document.querySelectorAll('.session-message.active').forEach(el => el.classList.remove('active'));
-  const turn = [...document.querySelectorAll('.session-message[data-raw-lines]')].find(el =>
-    String(el.dataset.rawLines || '').split(',').map(Number).includes(targetLine)
-  );
-  if (turn) {
-    turn.classList.add('active');
-    turn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
 }
 
 const sessionHistory = [];

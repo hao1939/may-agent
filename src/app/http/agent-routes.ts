@@ -7,15 +7,6 @@ import { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory } from "../lo
 import { ChatPublicationConflict, readChatPublication } from "./read-model/chat-publication.js";
 import type { SqliteDb } from "./read-model/state-db.js";
 
-// New heartbeat sessions carry source='heartbeat'. The remaining clauses are
-// read-only compatibility for sessions persisted before typed classification.
-export const HEARTBEAT_SESSION_PREDICATE = `(
-  source = 'heartbeat'
-  OR source LIKE 'workflow:%heartbeat%'
-  OR task LIKE '[heartbeat]%'
-  OR task LIKE 'You are %waking up for your heartbeat.%'
-)`;
-
 export function createAgentRouteHandlers(options: {
   stateDir: string;
   agentsRoot: string;
@@ -86,13 +77,12 @@ export function createAgentRouteHandlers(options: {
       for (const a of agents) {
         const name = a.name as string;
 
-        // Sessions in 4h, partitioned into heartbeat vs other.
+        // Sessions in 4h.
         const sess4h = db
           .prepare(
             `
           SELECT
             COUNT(*) as total,
-            SUM(CASE WHEN ${HEARTBEAT_SESSION_PREDICATE} THEN 1 ELSE 0 END) as heartbeats,
             MAX(startedAt) as lastStart,
             SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors
           FROM sessions WHERE agent = ? AND startedAt >= ?
@@ -100,7 +90,6 @@ export function createAgentRouteHandlers(options: {
           )
           .get(name, fourHourAgo) as any;
         a.sessions4h = sess4h?.total ?? 0;
-        a.heartbeats4h = sess4h?.heartbeats ?? 0;
         a.lastSessionAt = sess4h?.lastStart ?? null;
         a.errors4h = sess4h?.errors ?? 0;
 

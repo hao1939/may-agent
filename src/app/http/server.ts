@@ -22,7 +22,7 @@ declare const Bun: {
   }): { port: number };
 };
 import { randomUUID } from "node:crypto";
-import { createAgentRouteHandlers, HEARTBEAT_SESSION_PREDICATE } from "./agent-routes.js";
+import { createAgentRouteHandlers } from "./agent-routes.js";
 import { createProjectRouteHandlers, type ConfirmDurableControl } from "./project-routes.js";
 import { createSessionRouteHandlers } from "./session-routes.js";
 import { createTaskReadHandlers } from "./task-read-routes.js";
@@ -54,21 +54,6 @@ import { eventDeliveryContract, findEventPublication, getEventView, PUBLIC_EVENT
 
 // ── Public API ────────────────────────────────────────────────────────
 
-const LIVE_VITAL_METRIC_IDS = [
-  "runtime.daemon-heartbeat-stale",
-  "agent.heartbeat-dark-count-2h",
-  "agent.config-invalid-count-1h",
-  "handler.success-rate",
-  "session.error-rate-6h",
-  "session.first-turn-error-count-1h",
-  "session.empty-assistant-stop-count-1h",
-  "session.planner-timeout-rate-6h",
-  "message.delivery-failed-count-1h",
-  "escalation.pending-count",
-  "capability.zombie-session-count",
-  "runtime.stale-running-session-count",
-  "eval.llm-coverage-lag-h",
-];
 const DASHBOARD_SESSION_ROW_LIMIT = 2_000;
 const DASHBOARD_ALERT_ROW_LIMIT = 20;
 
@@ -503,47 +488,30 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const rawHours = Number(url?.searchParams.get("hours"));
     const hours = Number.isFinite(rawHours) && rawHours > 0 ? Math.min(72, Math.max(1, rawHours)) : 4;
     const since = now - hours * 60 * 60 * 1000;
-    const oneHour = now - 60 * 60 * 1000;
     const agents = listConfiguredAgents();
-    const heartbeatCandidates = db
+
+    const agentLatestRows = db
       .prepare(
-        `SELECT sessionId, agent, status, kind, source, startedAt, endedAt
-       FROM sessions
-       WHERE startedAt > ?
-         AND ${HEARTBEAT_SESSION_PREDICATE}
-       ORDER BY startedAt DESC
-       LIMIT ?`,
-      )
-      .all(since, DASHBOARD_SESSION_ROW_LIMIT + 1) as any[];
-    const heartbeatRows = heartbeatCandidates.slice(0, DASHBOARD_SESSION_ROW_LIMIT).reverse();
-    const heartbeatsTruncated = heartbeatCandidates.length > DASHBOARD_SESSION_ROW_LIMIT;
-    const latestHeartbeatRows = db
-      .prepare(
-        `SELECT agent, status, startedAt AS lastHeartbeat, heartbeatCount
+        `SELECT agent, status, startedAt AS lastSessionAt, sessionCount
          FROM (
            SELECT agent, status, startedAt,
-                  COUNT(*) OVER (PARTITION BY agent) AS heartbeatCount,
+                  COUNT(*) OVER (PARTITION BY agent) AS sessionCount,
                   ROW_NUMBER() OVER (PARTITION BY agent ORDER BY startedAt DESC) AS recency
            FROM sessions
            WHERE startedAt > ? AND agent IS NOT NULL AND agent != ''
-             AND ${HEARTBEAT_SESSION_PREDICATE}
          )
          WHERE recency = 1`,
       )
       .all(since) as Array<{
       agent: string;
       status: string;
-      lastHeartbeat: number;
-      heartbeatCount: number;
+      lastSessionAt: number;
+      sessionCount: number;
     }>;
-    const heartbeatSummaryByAgent = new Map(latestHeartbeatRows.map((row) => [row.agent, row]));
-    const heartbeatTotal = latestHeartbeatRows.reduce((total, row) => total + Number(row.heartbeatCount || 0), 0);
+    const summaryByAgent = new Map(agentLatestRows.map((row) => [row.agent, row]));
 
-    // All sessions in the selected window (not just heartbeats). The
-    // timeline shows everything an agent did so the operator sees real
-    // activity distribution, not only the cron tick. Each session is
-    // classified into a 'category' bucket which maps to a color in the
-    // frontend.
+    // All sessions in the selected window. Each session is classified into a
+    // 'category' bucket which maps to a color in the frontend.
     const allCandidates = db
       .prepare(
         `SELECT sessionId, agent, status, kind, source, projectId, parentSessionId,
@@ -557,13 +525,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     const allRows = allCandidates.slice(0, DASHBOARD_SESSION_ROW_LIMIT).reverse();
     const activityTruncated = allCandidates.length > DASHBOARD_SESSION_ROW_LIMIT;
 
-    // Heartbeat detection mirrors heartbeatRows above (same predicates).
-    // Pre-build a Set of heartbeat sessionIds for O(1) classification.
-    const heartbeatIds = new Set(heartbeatRows.map((r) => r.sessionId));
-
     function classifyKind(row: any): string {
-      if (heartbeatIds.has(row.sessionId)) return "heartbeat";
       const src = String(row.source || "").toLowerCase();
+      if (src === "heartbeat" || src.includes("heartbeat")) return "heartbeat";
       // Project work: explicit projectId tag or source mentions a project
       // workflow. (`workflow:project` is the generic project worker.)
       if (row.projectId && String(row.projectId).trim() !== "") return "project";
@@ -572,14 +536,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (row.kind === "chat") return "chat";
       if (src === "telegram" || src === "web" || src === "human" || src === "cli") return "chat";
       if (src.includes("chat") || src.includes("message")) return "chat";
-      // Workflow: any workflow-dispatched session that isn't a heartbeat or
-      // project. Catches aftermath, triage, orchestrator, and goal-driver.
+      // Workflow: any workflow-dispatched session that isn't a project.
       if (src.startsWith("workflow:")) return "workflow";
       return "other";
     }
 
     const byAgent = new Map<string, any[]>();
     for (const agent of agents) byAgent.set(agent, []);
+    for (const row of summaryByAgent.keys()) {
+      if (!byAgent.has(row)) byAgent.set(row, []);
+    }
     for (const row of allRows) {
       if (!byAgent.has(row.agent)) byAgent.set(row.agent, []);
       // 'category' is the timeline bucket (heartbeat / project / chat /
@@ -590,20 +556,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     const agentRows = [...byAgent.entries()]
       .map(([name, sessions]) => {
-        const heartbeatSummary = heartbeatSummaryByAgent.get(name);
+        const agentSummary = summaryByAgent.get(name);
         const categoryCounts: Record<string, number> = { heartbeat: 0, project: 0, chat: 0, workflow: 0, other: 0 };
         for (const s of sessions) categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
         return {
           name,
-          heartbeatCount: heartbeatSummary?.heartbeatCount ?? 0,
-          sessionCount: sessions.length,
+          sessionCount: agentSummary?.sessionCount ?? sessions.length,
           categoryCounts,
-          lastHeartbeat: heartbeatSummary?.lastHeartbeat ?? null,
-          lastStatus: heartbeatSummary?.status ?? null,
+          lastSessionAt: agentSummary?.lastSessionAt ?? null,
+          lastStatus: agentSummary?.status ?? null,
           sessions,
         };
       })
-      .sort((a, b) => (b.lastHeartbeat ?? 0) - (a.lastHeartbeat ?? 0));
+      .sort((a, b) => (b.lastSessionAt ?? 0) - (a.lastSessionAt ?? 0));
 
     const activeSessions =
       (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
@@ -627,90 +592,23 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
     const openAlerts = openAlertCandidates.slice(0, DASHBOARD_ALERT_ROW_LIMIT);
     const openAlertsTruncated = openAlertCandidates.length > DASHBOARD_ALERT_ROW_LIMIT;
-    const metricOrder = new Map(LIVE_VITAL_METRIC_IDS.map((id, idx) => [id, idx]));
-    const openAlertMetricIds = new Set(openAlerts.map((alert) => alert.metricId));
-    const vitals = readMetricObservations(db, now, LIVE_VITAL_METRIC_IDS).metrics;
-    const vitalMetrics = vitals
-      .map((m) => {
-        return {
-          ...m,
-          owner: m.owner || "system:host",
-          updatedAt: m.observation?.measuredAt ?? null,
-          breached: m.alertsDisabled ? false : m.thresholdBreached,
-          alertOpen: openAlertMetricIds.has(m.id) ? true : openAlertsTruncated ? null : false,
-        };
-      })
-      .sort((a, b) => (metricOrder.get(a.id) ?? 999) - (metricOrder.get(b.id) ?? 999));
-
-    const messages = (
-      db
-        .prepare(
-          `SELECT event_type, source, owner, data, timestamp
-       FROM events
-       WHERE event_type = 'message.created' AND timestamp > ?
-       ORDER BY timestamp DESC
-       LIMIT 20`,
-        )
-        .all(oneHour) as any[]
-    ).map((row) => {
-      const data = parseEventData(row.data);
-      return {
-        timestamp: row.timestamp,
-        from: data.from ?? row.source ?? "unknown",
-        to: data.to ?? row.owner ?? "unknown",
-        priority: data.priority ?? null,
-        intent: data.intent ?? null,
-        content: data.content ?? "",
-      };
-    });
-
-    const recentDecisions = (
-      db
-        .prepare(
-          `SELECT sessionId, agent, task, status, startedAt, outcome
-       FROM sessions
-       WHERE startedAt > ?
-         AND (
-           ${HEARTBEAT_SESSION_PREDICATE}
-         )
-       ORDER BY startedAt DESC
-       LIMIT 8`,
-        )
-        .all(since) as any[]
-    ).map((row) => ({
-      sessionId: row.sessionId,
-      agent: row.agent,
-      timestamp: row.startedAt,
-      status: row.status,
-      text: (row.outcome || row.task || "").replace(/^\[heartbeat\]\s*/i, "").slice(0, 220),
-    }));
 
     return json({
       summary: {
         agentsConfigured: agents.length,
         agentsTotal: agents.length,
-        // NOTE: keep `*4h` field names even though the window is now
-        // operator-selectable — they're consumed elsewhere as the
-        // "heartbeat coverage in window" signal, and the window default
-        // is still 4h. Use `windowHours` for accurate labeling.
-        heartbeatAgents4h: agentRows.filter((agent) => agent.lastHeartbeat).length,
-        heartbeats4h: heartbeatTotal,
+        activeAgentsInWindow: agentRows.filter((agent) => agent.sessionCount > 0).length,
         windowHours: hours,
         windowSince: since,
         activityRows: allRows.length,
         activityRowsTruncated: activityTruncated,
-        heartbeatRowsTruncated: heartbeatsTruncated,
         rowLimit: DASHBOARD_SESSION_ROW_LIMIT,
         activeSessions,
         openAlerts: openAlerts.length,
         openAlertsTruncated,
       },
       agents: agentRows,
-      heartbeats: heartbeatRows,
-      recentDecisions,
-      messages,
       alerts: openAlerts,
-      vitals: vitalMetrics,
     });
   }
 
@@ -771,27 +669,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         : { ...metric, alertOpen: alertsTruncated ? null : false };
     });
 
-    const snapshots = metrics.filter((m) => m.observation).map((m) => ({
-      metric_id: m.id, value: m.current, sample_size: m.sample_size,
-      measured_at: m.measured_at, measured_by: m.measured_by, note: m.note,
-    }));
-
-    const recentSnapshots = db
-      .prepare(
-        `
-      SELECT ms.metric_id, ms.value, ms.sample_size, ms.measured_at, ms.measured_by, ms.note
-      FROM metric_snapshots ms ORDER BY ms.measured_at DESC LIMIT 50
-    `,
-      )
-      .all() as any[];
-
     return new Response(
       JSON.stringify({
         metrics: metricsWithAlertState,
         generatedAt: observations.generatedAt,
         truncated: observations.truncated,
-        latestSnapshots: snapshots,
-        recentSnapshots,
         alerts: openAlerts.slice(0, METRIC_LIST_LIMIT),
         alertsTruncated,
       }),

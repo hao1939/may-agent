@@ -1451,6 +1451,10 @@ describe("HTTP human Task reads and board", () => {
       await page.evaluate("loadProjects()");
       expect(await page.$('#installed-apps [data-app-id="bare"]')).not.toBeNull();
       expect(await page.$eval("#projects-content", (el) => el.textContent)).toContain("Saved projects unavailable: metadata unavailable");
+      await page.click('#installed-apps [data-app-id="bare"] a');
+      await page.waitForSelector(".kanban-shell h3");
+      expect(await page.$eval(".kanban-shell h3", (el) => el.textContent)).toBe("bare Tasks");
+      expect(await page.$$eval(".kanban-card", (cards) => cards.length)).toBe(1);
     } finally {
       await browser.close();
     }

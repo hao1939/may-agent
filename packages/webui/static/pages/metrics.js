@@ -263,12 +263,3 @@ async function showMetricHistory(id, metric, generation) {
       <div class="health-scroll"><table class="health-table"><thead><tr><th>Measured</th><th>Value</th><th>Sample size</th><th>Source</th><th>Note</th></tr></thead><tbody>${data.snapshots.slice(-50).reverse().map(s => `<tr><td>${esc(healthTime(s.measured_at))}</td><td>${esc(s.value)}</td><td>${esc(s.sample_size ?? 'unknown')}</td><td>${esc(s.measured_by || 'unknown')}</td><td class="health-text">${esc(s.note || '')}</td></tr>`).join('')}</tbody></table></div><p class="health-note">Table shows the latest 50 retained observations in this window.</p>`;
   } catch (error) { if (generation === metricsLoadGeneration) el.innerHTML = `<p class="health-warning">History read failed: ${esc(error.message)}</p>`; }
 }
-
-// Existing project/agent cards can request a single history after selection.
-async function loadSparkline(id) {
-  try {
-    const data = await readHealthJson('/api/metrics/' + encodeURIComponent(id) + '/history?days=7');
-    const el = document.getElementById('spark-' + id.replace(/\./g, '-'));
-    if (el) el.innerHTML = renderSparklineWithValues(data.snapshots, null, 250, 40, null, data.window);
-  } catch { /* The owning page shows its read state. */ }
-}

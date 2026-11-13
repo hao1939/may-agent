@@ -1,33 +1,3 @@
-// ── Ask about (bridge dashboard → chat) ───────────────────────────────
-
-function switchToChat(message) {
-  // Switch to sessions tab via the router
-  routeTo('/sessions');
-
-  // Pre-fill the input with the context message
-  const input = document.getElementById('chat-input');
-  input.value = message;
-  input.focus();
-}
-
-function askAboutRequest(r) {
-  const task = (r.task || '').slice(0, 150);
-  const outcome = r.outcome || r.summary || '(no outcome recorded)';
-  const dur = r.durationMs ? (r.durationMs < 60000 ? Math.round(r.durationMs/1000)+'s' : Math.round(r.durationMs/60000)+'m') : '?';
-
-  const msg = `Review this request and tell me what happened:\n` +
-    `- Request: ${r.requestId.slice(0,8)}\n` +
-    `- From: ${r.fromEntity} → ${r.toAgent}\n` +
-    `- Task: "${task}"\n` +
-    `- Status: ${r.status}, duration: ${dur}\n` +
-    (r.sessionId ? `- Session: ${r.sessionId}\n` : '') +
-    `- Outcome: ${outcome.slice(0,200)}\n\n` +
-    `Was this handled well? What was the actual result?`;
-
-  switchToChat(msg);
-}
-
-
 // ── Chat ──────────────────────────────────────────────────────────────
 
 let ws = null;

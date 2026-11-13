@@ -145,9 +145,6 @@ async function loadLiveness() {
     const span = Date.now() - since;
     const alerts = data.alerts || [];
     const visibleAlerts = alerts.slice(0, 4);
-    const vitals = data.vitals || [];
-    const decisions = data.recentDecisions || [];
-    const messages = data.messages || [];
     const windowLabel = windowHours === 1 ? '1h'
       : windowHours === 24 ? '1 day'
       : windowHours === 48 ? '2 days'
@@ -155,39 +152,21 @@ async function loadLiveness() {
 
     let html = `<h2>
       <span>System liveness</span>
-      <span class="subtle">${summary.heartbeatAgents4h || 0} agents had heartbeat activity in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
+      <span class="subtle">${summary.activeAgentsInWindow || 0} agents active in ${esc(windowLabel)} · ${summary.activeSessions || 0} active</span>
       <span class="breach-badge ${(summary.openAlerts || 0) > 0 ? 'alerting' : ''}" onclick="routeTo('/metrics')" title="Alert state is not overall health">${summary.openAlertsTruncated ? 'More than ' + summary.openAlerts + ' open alerts' : (summary.openAlerts || 0) > 0 ? summary.openAlerts + ' open alerts' : 'No open alerts'}${summary.openAlertsTruncated || summary.openAlerts > visibleAlerts.length ? ' · showing newest ' + visibleAlerts.length : ''}</span>
     </h2>`;
     html += '<div id="liveness-measurement-problems" class="liveness-section">Loading measurement coverage…</div>';
 
-    if (vitals.length > 0) {
-      html += `<div class="liveness-section"><h3>Host observations</h3>`;
-      html += `<div class="vitals-grid">`;
-      for (const metric of vitals) {
-        const alerting = metricBreached(metric);
-        const value = formatMetricValue(metric.current, metric.unit);
-        const threshold = metric.alertsDisabled ? 'Alerts disabled' : metric.threshold == null ? 'no threshold' : `${metricHealthyOperator(metric)} ${formatMetricValue(metric.threshold, metric.unit)}`;
-        html += `<div class="vital-card ${alerting ? 'alerting' : ''}" onclick="routeTo(${jsStringAttr('/metrics/' + encodeURIComponent(metric.id))})" title="${attrEsc(metric.id + ' · owner ' + (metric.owner || 'system:host') + ' · ' + threshold)}">
-          <div class="vital-top"><span class="vital-label">${esc(metric.name || metric.id)}</span><span class="vital-owner">${esc(metric.owner || 'system:host')}</span></div>
-          <div class="vital-value">${esc(value)}</div>
-          <div class="vital-sub">${esc(threshold)}</div><div class="health-note">${esc(metricObservationLabel(metric))}${metric.alertOpen === null ? ' · alert list limited; open metric detail' : ''}</div>
-        </div>`;
-      }
-      html += `</div></div>`;
-    }
-
     // Agent contact strip — Telegram-style entry points. One tile per
-    // configured agent: name + status dot + last-heartbeat-age. Click to
-    // open #/agents/<name> chat. Stale agents (no heartbeat in 4h) are
+    // configured agent: name + status dot + last-session-age. Click to
+    // open #/agents/<name> chat. Stale agents (no session in 4h) are
     // muted but still clickable — you can wake them by sending a message.
-    // Compact contact strip — the full Agents tab has the rich card grid.
-    // Here we just expose names as quick chat entry points.
     html += `<div class="liveness-section" style="margin:8px 0 12px"><h3 style="font-size:11px;color:var(--fg2);margin:0 0 6px;display:flex;align-items:center;gap:8px">Talk to an agent <a href="/agents" style="color:var(--accent);text-decoration:none;font-size:10px">see all →</a></h3><div class="agent-contact-strip" style="display:flex;flex-wrap:wrap;gap:4px">`;
     for (const agent of agents) {
-      const ageMs = agent.lastHeartbeat ? (Date.now() - agent.lastHeartbeat) : null;
+      const ageMs = agent.lastSessionAt ? (Date.now() - agent.lastSessionAt) : null;
       const stale = ageMs == null || ageMs > 4 * 3600 * 1000;
       const dotColor = stale ? 'var(--fg2)' : (agent.lastStatus === 'error' ? 'var(--red)' : 'var(--green)');
-      const ageLabel = ageMs == null ? 'no heartbeat' : formatAgo(agent.lastHeartbeat);
+      const ageLabel = ageMs == null ? 'no recent session' : formatAgo(agent.lastSessionAt);
       html += `<button class="agent-tile" onclick="routeTo('/agents/${esc(agent.name)}')" title="Open chat with ${esc(agent.name)} — ${esc(ageLabel)}" style="display:flex;align-items:center;gap:5px;padding:3px 9px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;color:var(--fg);cursor:pointer;font-size:12px;${stale ? 'opacity:0.55' : ''}">
         <span style="color:${dotColor};font-size:9px">●</span>
         <span>${esc(agent.name)}</span>
@@ -260,27 +239,12 @@ async function loadLiveness() {
                       : (s.source || 'session');
           html += `<span class="heartbeat-dot ${cat}${errCls}${runCls}" style="left:${left}%" title="${esc(agent.name)} · ${esc(label)} · ${esc(s.status || '')} · ${formatAgo(s.startedAt)}" onclick="navigateToSession(${jsStringAttr(s.sessionId)})"></span>`;
         }
-        html += `</div><div class="heartbeat-last" title="Last historical heartbeat">${formatAgo(agent.lastHeartbeat)}</div></div>`;
+        html += `</div><div class="heartbeat-last" title="Last session in window">${formatAgo(agent.lastSessionAt)}</div></div>`;
       }
     }
     html += `</div>`;
 
-    // Three-column row: decisions / alerts / messages.
-    html += `<div class="liveness-row3">`;
-    html += `<div class="liveness-section"><h3>Recent decisions</h3><div class="liveness-list">`;
-    if (decisions.length === 0) {
-      html += `<div class="liveness-item">No heartbeat sessions in the last 4 hours.</div>`;
-    } else {
-      for (const item of decisions.slice(0, 5)) {
-        html += `<div class="liveness-item" onclick="navigateToSession(${jsStringAttr(item.sessionId)})" style="cursor:pointer">
-          <div class="meta">${formatAgo(item.timestamp)} · <strong>${esc(item.agent)}</strong> · ${esc(item.status || '')}</div>
-          <div>${esc(item.text || '(no outcome yet)')}</div>
-        </div>`;
-      }
-    }
-    html += `</div></div>`;
-
-    html += `<div class="liveness-section"><h3>Open alerts</h3><div class="liveness-list">`;
+    html += `<div class="liveness-section" style="margin-top:16px"><h3>Open alerts</h3><div class="liveness-list">`;
     if (alerts.length === 0) {
       html += `<div class="liveness-item">No open metric alerts.</div>`;
     } else {
@@ -297,20 +261,7 @@ async function loadLiveness() {
     }
     html += `</div></div>`;
 
-    html += `<div class="liveness-section"><h3>Recent messages</h3><div class="liveness-list">`;
-    if (messages.length === 0) {
-      html += `<div class="liveness-item">No messages in the last hour.</div>`;
-    } else {
-      for (const msg of messages.slice(0, 4)) {
-        html += `<div class="liveness-item">
-          <div class="meta">${formatAgo(msg.timestamp)} · <strong>${esc(String(msg.from || 'unknown'))}</strong> -> ${esc(String(msg.to || 'unknown'))}${msg.priority ? ' · ' + esc(String(msg.priority)) : ''}</div>
-          <div>${esc(String(msg.content || ''))}</div>
-        </div>`;
-      }
-    }
-    html += `</div></div></div>`;
-
-    // — Projects panel (design's screen-1 fifth panel) — sorted by metric risk, then activity —
+    // — Projects panel — sorted by metric risk, then activity —
     html += `<div class="liveness-section" style="margin-top:16px"><h3>Project metric health</h3><div class="liveness-list" id="liveness-projects">Loading…</div></div>`;
 
     panel.innerHTML = html;

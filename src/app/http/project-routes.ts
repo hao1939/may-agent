@@ -479,7 +479,6 @@ export function createProjectRouteHandlers(options: {
 
     const recentSessions: Array<Record<string, unknown>> = [];
     let sessionCount = 0;
-    let mentionCount = 0;
     try {
       const tagged = db
         .prepare(
@@ -491,21 +490,6 @@ export function createProjectRouteHandlers(options: {
         .prepare(`SELECT COUNT(*) as c FROM sessions WHERE projectId IN (${projectIds.map(() => "?").join(",")})`)
         .get(...projectIds) as any;
       sessionCount = cnt?.c ?? 0;
-      if (tagged.length < 10 && projectName.length >= 6) {
-        const seen = new Set(tagged.map((t) => t.sessionId));
-        const mentions = db
-          .prepare(
-            `SELECT sessionId, agent, status, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 10`,
-          )
-          .all(`%${projectName}%`) as any[];
-        for (const r of mentions) {
-          if (!seen.has(r.sessionId)) recentSessions.push({ ...r, link: "mention" });
-        }
-        const mcnt = db
-          .prepare(`SELECT COUNT(*) as c FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ?`)
-          .get(`%${projectName}%`) as any;
-        mentionCount = mcnt?.c ?? 0;
-      }
     } catch {
       /* skip */
     }
@@ -529,7 +513,6 @@ export function createProjectRouteHandlers(options: {
       ownedMetrics,
       citedMetricsResolved,
       sessionCount,
-      mentionCount,
       recentSessions,
       app: (() => {
         const appDir = appDirForPath(path);
@@ -549,13 +532,13 @@ export function createProjectRouteHandlers(options: {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
     if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
-    let project: Pick<ReturnType<typeof projectPathIdentity>, "name" | "projectIds">;
+    let project: Pick<ReturnType<typeof projectPathIdentity>, "projectIds">;
     try {
       project = readProject(path);
     } catch {
       project = projectPathIdentity(path);
     }
-    const { name, projectIds } = project;
+    const { projectIds } = project;
 
     const sessions: any[] = [];
     try {
@@ -566,17 +549,6 @@ export function createProjectRouteHandlers(options: {
         )
         .all(...projectIds) as any[];
       for (const r of tagged) sessions.push({ ...r, link: "tagged" });
-      if (tagged.length < 20 && name.length >= 6) {
-        const seen = new Set(tagged.map((t) => t.sessionId));
-        const mentions = db
-          .prepare(
-            "SELECT sessionId, agent, status, opCount, startedAt, endedAt, task FROM sessions WHERE (projectId IS NULL OR projectId = '') AND task LIKE ? ORDER BY startedAt DESC LIMIT 30",
-          )
-          .all(`%${name}%`) as any[];
-        for (const r of mentions) {
-          if (!seen.has(r.sessionId)) sessions.push({ ...r, link: "mention" });
-        }
-      }
     } catch {
       /* projectId column may not exist */
     }
