@@ -27,6 +27,79 @@ afterEach(() => {
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true });
 });
+
+test.each(["catalog", "observation", "history"])(
+  "metric selection propagates cancellation during %s instead of deferring coverage",
+  async (stage) => {
+    const f = fixture();
+    const controller = new AbortController();
+    let reads = 0;
+    const ctx = {
+      ...f.context(),
+      signal: controller.signal,
+      read: createTestAppRead({
+        tasks: {
+          ...f.context().read.tasks,
+          get: async () => {
+            controller.abort(new Error("Review stopped"));
+            return {} as never;
+          },
+        },
+      }),
+    };
+    await expect(
+      selectMetricCandidate(
+        ctx,
+        "",
+        reviewer,
+        async (id, cut, _alert, signal) => {
+          reads++;
+          expect(signal).toBe(controller.signal);
+          if (stage === "observation")
+            controller.abort(new Error("Review stopped"));
+          return {
+            ...(await f.read(id, cut)),
+            alerts: [{ alertId: 1, createdAt: NOW - 1 }],
+          };
+        },
+        async () => {
+          if (stage === "catalog")
+            controller.abort(new Error("Review stopped"));
+          return { metrics: [{ id: metricId, status: "active" }] };
+        },
+        NOW,
+      ),
+    ).rejects.toThrow("Review stopped");
+    expect(reads).toBe(stage === "catalog" ? 0 : 1);
+  },
+);
+
+test.each([false, true])(
+  "metric review propagates a stopped evidence read (reader throws: %s)",
+  async (throws) => {
+    const f = fixture();
+    const controller = new AbortController();
+    const ctx = {
+      ...f.context({ metricId, end: NOW }),
+      signal: controller.signal,
+    };
+    await expect(
+      reviewMetric(
+        ctx,
+        async (id, cut, _alert, signal) => {
+          expect(signal).toBe(controller.signal);
+          controller.abort(new Error("Review stopped"));
+          if (throws) throw new Error("transport aborted");
+          return f.read(id, cut);
+        },
+        f.root,
+      ),
+    ).rejects.toThrow("Review stopped");
+    expect(f.calls).toBe(0);
+    expect(f.events).toEqual([]);
+  },
+);
+
 function fixture() {
   const root = mkdtempSync(join(tmpdir(), "metric-transitions-"));
   roots.push(root);

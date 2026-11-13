@@ -211,6 +211,61 @@ function factsOf(
 }
 
 describe("Task outcome review", () => {
+  test.each(["initial", "freshness"])(
+    "cancellation during the %s read does not publish an evidence failure",
+    async (stage) => {
+      const root = mkdtempSync(join(tmpdir(), "task-review-cancel-"));
+      const controller = new AbortController();
+      let catalogs = 0;
+      let models = 0;
+      let publications = 0;
+      const read = reader();
+      const ctx = createSdkTestAppWorkflowContext({
+        input: { appId, taskId, automatic: true as const },
+        workspace: {
+          root: TEST_APP_ROOT,
+          appRoot: TEST_APP_ROOT,
+          projectRoot: TEST_APP_ROOT,
+          output: TEST_APP_ROOT,
+        },
+        signal: controller.signal,
+        callAgent: async () => {
+          models++;
+          return {
+            id: "review",
+            kind: "agent" as const,
+            status: "done" as const,
+            summary: "reviewed",
+            output: judgment,
+          };
+        },
+        emit: async () => {
+          publications++;
+        },
+      });
+      try {
+        await expect(
+          reviewTaskOutcome(
+            ctx,
+            async (input) => {
+              if (
+                input.type === "apps.list" &&
+                ++catalogs === (stage === "initial" ? 1 : 2)
+              )
+                controller.abort(new Error("Review stopped"));
+              return read(input);
+            },
+            root,
+          ),
+        ).rejects.toThrow("Review stopped");
+        expect(models).toBe(stage === "initial" ? 0 : 1);
+        expect(publications).toBe(0);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
   test("optional evidence survives publication retry without another judgment", async () => {
     const root = mkdtempSync(join(tmpdir(), "task-review-optional-"));
     try {

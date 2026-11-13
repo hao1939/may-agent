@@ -92,6 +92,26 @@ These are Evaluation connection settings; the Host's public contracts and the
 reader's identity checks are unchanged. A failed read remains a coverage gap,
 with no fallback to a different installation.
 
+Evaluation's metric catalog, metric observations, attempt reports and session
+reads share the small `readHostReport` HTTP helper. It rejects redirects, failed
+statuses and invalid JSON, and enforces the response cap while consuming the
+body, including when a server never finishes sending it. Each reader retains
+its own evidence identity and coverage checks; a successful HTTP response alone
+does not establish valid evidence.
+
+| Read | Deadline | Maximum response bytes |
+| --- | ---: | ---: |
+| Metric catalog | 10 seconds | 1,000,000 |
+| Metric observation | 10 seconds | 128,000 |
+| Task attempts or session evidence | 5 seconds | 1,000,000 |
+
+Review and selector workflows pass their cancellation signal to these reporting
+reads and public Task acquisition, including the Task freshness reread. A caller
+stop cancels the pending client read and propagates cancellation; it does not
+publish an evidence failure or a no-candidate result. An individual read deadline
+or transport failure still leaves the existing explicit evidence gap. The three
+exact raw-result reads retain their shared five-second budget described below.
+
 **Population extension (September 27 candidate):** [Systemic pattern review](systemic-pattern-review-20260927.md)
 adds bounded App-attempt aggregates and exact examples to this assessment path.
 Current recovery and a remaining systemic concern are independent findings. The

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { hostReportUrl } from "./host-reporting.js";
+import { hostReportUrl, readHostReport } from "./host-reporting.js";
 import type { PublicTaskEvidenceProvider } from "./public-task-evidence.js";
 
 function object(value: unknown): Record<string, any> {
@@ -16,6 +16,7 @@ export type SessionRead = (
   sessionId: string,
   part: boolean | number,
   timeoutMs?: number,
+  signal?: AbortSignal,
 ) => Promise<Record<string, unknown>>;
 
 /** Existing public HTTP reads only. The Host currently parses the entire
@@ -24,46 +25,20 @@ export const readPublicSession: SessionRead = async (
   sessionId,
   part,
   timeoutMs = 5_000,
+  signal,
 ) => {
   if (!/^s_[a-zA-Z0-9_-]+$/.test(sessionId))
     throw new Error("unsupported session identity");
   if (typeof part === "number" && (!Number.isSafeInteger(part) || part < 1))
     throw new Error("unsupported raw line");
-  const controller = new AbortController();
-  const timer = setTimeout(
-    () => controller.abort(),
-    Math.min(5_000, timeoutMs),
-  );
-  try {
-    const response = await fetch(
+  return object(
+    await readHostReport(
       hostReportUrl(
         `/api/sessions/${sessionId}${typeof part === "number" ? `/raw-log?line=${part}` : part ? "/transcript" : ""}`,
       ),
-      { signal: controller.signal, redirect: "error" },
-    );
-    if (!response.ok || !response.body)
-      throw new Error(`session HTTP read unavailable (${response.status})`);
-    const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let bytes = 0;
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        bytes += value.byteLength;
-        if (bytes > 1_000_000)
-          throw new Error(
-            "session HTTP response truncated: 1000000 byte limit",
-          );
-        chunks.push(value);
-      }
-    } finally {
-      await reader.cancel();
-    }
-    return object(JSON.parse(Buffer.concat(chunks).toString("utf8")));
-  } finally {
-    clearTimeout(timer);
-  }
+      { timeoutMs: Math.min(5_000, timeoutMs), maxBytes: 1_000_000, signal },
+    ),
+  );
 };
 
 /** A bounded process window, not a meaningfulness or efficiency classifier.

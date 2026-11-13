@@ -1,4 +1,4 @@
-import { hostReportUrl } from "./host-reporting.js";
+import { hostReportUrl, readHostReport } from "./host-reporting.js";
 import { metricEvidenceHash } from "./task-report-store.js";
 import {
   createPublicTaskEvidenceProvider,
@@ -82,7 +82,7 @@ export async function readMetricObservation(
   end: number,
   alertId?: number,
   signal?: AbortSignal,
-  request = fetch,
+  request: (url: URL, options: RequestInit) => Promise<Response> = fetch,
 ): Promise<MetricEvidence> {
   signal?.throwIfAborted();
   const url = hostReportUrl(
@@ -90,17 +90,11 @@ export async function readMetricObservation(
   );
   url.searchParams.set("end", String(end));
   if (alertId !== undefined) url.searchParams.set("alertId", String(alertId));
-  const timeout = AbortSignal.timeout(10_000);
-  const response = await request(url, {
-    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    redirect: "error",
-  });
-  if (!response.ok)
-    throw new Error(`Metric evidence read failed: HTTP ${response.status}`);
-  const bytes = await response.text();
-  if (Buffer.byteLength(bytes) > 128_000)
-    throw new Error("Metric evidence exceeds the review bound");
-  const value = JSON.parse(bytes);
+  const value = (await readHostReport(
+    url,
+    { timeoutMs: 10_000, maxBytes: 128_000, signal },
+    request,
+  )) as MetricEvidence;
   if (
     value?.version !== 1 ||
     value.available !== true ||

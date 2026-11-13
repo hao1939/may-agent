@@ -53,6 +53,7 @@ export async function reviewMetric(
   reportRoot = configuredTaskReportRoot(),
   readOwnerTask: MetricOwnerTaskReader = readMetricOwnerTask,
 ): Promise<ExecutionResult> {
+  ctx.signal.throwIfAborted();
   const { metricId, alertId: requestedAlertId } = ctx.input;
   const end = Number(ctx.input.end);
   const profile = reviewerProfile(ctx.input.reviewer);
@@ -74,6 +75,7 @@ export async function reviewMetric(
       profile.reviewer,
     );
   } catch (error) {
+    ctx.signal.throwIfAborted();
     const summary = `Metric review history unavailable: ${error instanceof Error ? error.message : String(error)}`;
     return ctx.done(summary, {
       state: "incomplete",
@@ -82,6 +84,7 @@ export async function reviewMetric(
       facts: [`metric:${metricId}`, "review-disposition:history-unavailable"],
     });
   }
+  ctx.signal.throwIfAborted();
   const quiet =
     ctx.input.automatic &&
     (requestedAlertId === undefined || end <= reviewedThrough);
@@ -117,8 +120,9 @@ export async function reviewMetric(
   try {
     evidence = existsSync(evidencePath)
       ? JSON.parse(readFileSync(evidencePath, "utf8"))
-      : await reader(metricId, end, requestedAlertId);
+      : await reader(metricId, end, requestedAlertId, ctx.signal);
   } catch (error) {
+    ctx.signal.throwIfAborted();
     const summary = `Metric evidence unavailable: ${error instanceof Error ? error.message : String(error)}`;
     return ctx.done(summary, {
       state: "incomplete",
@@ -128,6 +132,7 @@ export async function reviewMetric(
       result: { reviewedThrough },
     });
   }
+  ctx.signal.throwIfAborted();
   if (
     evidence.responsibility?.appId === "evaluation" ||
     evidence.metricId !== metricId ||

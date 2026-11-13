@@ -52,6 +52,7 @@ function fixture() {
   const closes: TaskClosure[] = [];
   let samples = 0;
   const ctx = {
+    signal: new AbortController().signal,
     reconciliation: { appId: "alex", taskId: selectorId, taskSnapshot: { live: [{ taskId: reviewId, agent: "evaluator", status: "idle" }], truncated: false } },
     read: { tasks: { get: async (id: string) => id === selectorId ? { facts: [] as string[] } : review } },
     closeTask: async (change: TaskClosure) => { closes.push(change); review.status = "closed"; return review; },

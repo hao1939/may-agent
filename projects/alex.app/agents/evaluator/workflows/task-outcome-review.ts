@@ -470,6 +470,7 @@ export async function reviewTaskOutcome(
   reportRoot = configuredTaskReportRoot(),
   readSession?: SessionRead,
 ): Promise<ExecutionResult> {
+  ctx.signal.throwIfAborted();
   const profile = reviewerProfile(ctx.input?.reviewer);
   const appId = text(ctx.input?.appId);
   const taskId = text(ctx.input?.taskId);
@@ -484,7 +485,9 @@ export async function reviewTaskOutcome(
     },
     command,
     readSession,
+    ctx.signal,
   );
+  ctx.signal.throwIfAborted();
   if (subject.disposition !== "eligible") {
     const summary = `${subject.disposition}: ${subject.reason}`;
     if (ctx.input?.automatic === true && subject.acquisitionFailed) {
@@ -720,7 +723,9 @@ export async function reviewTaskOutcome(
     },
     command,
     readSession,
+    ctx.signal,
   );
+  ctx.signal.throwIfAborted();
   const currentAssessment =
     current.disposition === "eligible"
       ? assessmentContext(current, assessment.purpose)

@@ -8,6 +8,7 @@ import { Socket } from "node:net";
 import { resolve } from "node:path";
 import { readPinnedTaskEvidence } from "./pinned-task-evidence.js";
 import {
+  readPublicSession,
   readTaskProcessEvidence,
   type SessionRead,
 } from "./task-process-evidence.js";
@@ -573,15 +574,36 @@ export function unresolvedReviewSubject(
 
 export async function readSubjectTask(
   subject: SubjectRequest,
-  command: PublicCommand = sendPublicReadCommand,
+  command?: PublicCommand,
   readSession?: SessionRead,
+  signal?: AbortSignal,
 ): Promise<SubjectEvidence> {
+  signal?.throwIfAborted();
+  const readCommand: PublicCommand = async (input) => {
+    signal?.throwIfAborted();
+    const result = await (command
+      ? command(input)
+      : sendPublicReadCommand(input, { signal }));
+    signal?.throwIfAborted();
+    return result;
+  };
+  const session: SessionRead = async (id, part, timeoutMs) => {
+    signal?.throwIfAborted();
+    const result = await (readSession ?? readPublicSession)(
+      id,
+      part,
+      timeoutMs,
+      signal,
+    );
+    signal?.throwIfAborted();
+    return result;
+  };
   const appId = text(subject.appId);
   const taskId = text(subject.taskId);
   if (isEvaluation(appId)) return unresolvedReviewSubject(appId, taskId);
   if (!appId || !taskId) return unresolvedReviewSubject(appId, taskId);
   try {
-    const provider = createPublicTaskEvidenceProvider(command);
+    const provider = createPublicTaskEvidenceProvider(readCommand);
     const apps = await provider.listApps();
     if (
       !apps.some(
@@ -650,8 +672,9 @@ export async function readSubjectTask(
       taskId,
       detail,
       provider,
-      readSession,
+      session,
     );
+    signal?.throwIfAborted();
     const readBack = { ...pinned, process };
     if (creators.length === 0)
       readBack.gaps.push(
@@ -661,12 +684,13 @@ export async function readSubjectTask(
     if (subject.populationEnd !== undefined) {
       try {
         population = await readPopulation(
-          command,
+          readCommand,
           appId,
           subject.populationEnd,
           taskId,
         );
       } catch (error) {
+        signal?.throwIfAborted();
         population = {
           available: false,
           appId,
@@ -692,6 +716,7 @@ export async function readSubjectTask(
       task: snapshot,
     };
   } catch (error) {
+    signal?.throwIfAborted();
     return {
       disposition: "insufficient-evidence",
       reason: error instanceof Error ? error.message : String(error),

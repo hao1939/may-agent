@@ -1,5 +1,5 @@
 import type { PublicCommand, SubjectEvidence } from "./public-task-evidence.js";
-import { hostReportUrl } from "./host-reporting.js";
+import { hostReportUrl, readHostReport } from "./host-reporting.js";
 
 export const POPULATION_WINDOW_MS = 86_400_000;
 export const populationCut = (now = Date.now()) =>
@@ -13,17 +13,11 @@ export async function readPublicAttempts(
   const params = new URLSearchParams();
   for (const key of ["appId", "taskId", "attemptId", "end", "windowMs"])
     if (input[key] !== undefined) params.set(key, String(input[key]));
-  const timeout = AbortSignal.timeout(5_000);
-  const response = await fetch(hostReportUrl(`/api/task-attempts?${params}`), {
-    signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    redirect: "error",
-  });
-  if (!response.ok)
-    throw new Error(`Task attempt report unavailable (${response.status})`);
-  const body = await response.text();
-  if (Buffer.byteLength(body) > 1_000_000)
-    throw new Error("Task attempt report exceeds byte limit");
-  return JSON.parse(body);
+  return (await readHostReport(hostReportUrl(`/api/task-attempts?${params}`), {
+    timeoutMs: 5_000,
+    maxBytes: 1_000_000,
+    signal,
+  })) as Record<string, unknown>;
 }
 
 export async function readPopulation(

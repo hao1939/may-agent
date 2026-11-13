@@ -7,7 +7,7 @@ import { join } from "node:path";
 import {
   automaticReviewConfig,
   populationEvidenceDigest,
-  runTaskOutcomeSelector as runSelector,
+  runTaskOutcomeSelector as runSelectorImplementation,
   selectFairCandidate,
   selectorStateFact,
 } from "./task-outcome-selector.ts";
@@ -24,6 +24,15 @@ import {
 } from "./lib/task-report-store.ts";
 
 const NOW = Date.UTC(2026, 8, 17);
+function runSelector(...args: Parameters<typeof runSelectorImplementation>) {
+  return runSelectorImplementation(
+    { ...args[0], signal: args[0].signal ?? new AbortController().signal },
+    args[1],
+    args[2],
+    args[3],
+    args[4],
+  );
+}
 // These fixtures exercise Task selection; metric integration has its own evidence fixtures.
 function runTaskOutcomeSelector(...args: Parameters<typeof runSelector>) {
   return runSelector(
@@ -255,6 +264,38 @@ function catalogCommand(
 }
 
 describe("automatic task outcome selector", () => {
+  test.each(["task.attempts.read", "tasks.list"])(
+    "cancellation during %s stops selection rather than advancing its cursor",
+    async (stopAt) => {
+      const root = mkdtempSync(join(tmpdir(), "selector-cancel-"));
+      const controller = new AbortController();
+      const requests: string[] = [];
+      const read = populationCommand(() => populationReport(NOW, []), {
+        gym: [task("gym", "goal/one", 0, "waiting")],
+      });
+      try {
+        await expect(
+          selectFairCandidate(
+            async (input) => {
+              requests.push(String(input.type));
+              if (input.type === stopAt)
+                controller.abort(new Error("Review stopped"));
+              return read(input);
+            },
+            config,
+            root,
+            undefined,
+            NOW,
+            controller.signal,
+          ),
+        ).rejects.toThrow("Review stopped");
+        expect(requests.at(-1)).toBe(stopAt);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
   test("exposes a catalog timeout and resumes configured DeepSeek selection without using the Sol backlog", async () => {
     const root = mkdtempSync(join(tmpdir(), "selector-recovery-choice-"));
     const events: Record<string, unknown>[] = [];

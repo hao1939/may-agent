@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { WorkflowContext } from "@may-agent/sdk";
-import { hostReportUrl } from "./host-reporting.js";
+import { hostReportUrl, readHostReport } from "./host-reporting.js";
 import { readMetricEvidence, type MetricReader } from "./metric-evidence.js";
 import type { Reviewer } from "./reviewer-profile.js";
 
@@ -55,19 +55,17 @@ export async function selectMetricCandidate(
   const end = now;
   const facts: string[] = [];
   try {
-    const data = list
-      ? await list()
-      : await (async () => {
-          const response = await fetch(hostReportUrl("/api/metrics"), {
-            signal: AbortSignal.timeout(10_000),
-            redirect: "error",
-          });
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const bytes = await response.text();
-          if (Buffer.byteLength(bytes) > 1_000_000)
-            throw new Error("Metric catalog exceeds the selection bound");
-          return JSON.parse(bytes);
-        })();
+    ctx.signal.throwIfAborted();
+    const data = (
+      list
+        ? await list()
+        : await readHostReport(hostReportUrl("/api/metrics"), {
+            timeoutMs: 10_000,
+            maxBytes: 1_000_000,
+            signal: ctx.signal,
+          })
+    ) as Record<string, any>;
+    ctx.signal.throwIfAborted();
     if (!Array.isArray(data.metrics))
       throw new Error("Metric catalog is unavailable");
     if (data.truncated || data.metricsTruncated)
@@ -88,7 +86,8 @@ export async function selectMetricCandidate(
     for (const metric of ordered.slice(0, 3)) {
       cursor = metric.id;
       const cut = end;
-      const evidence = await reader(metric.id, cut);
+      const evidence = await reader(metric.id, cut, undefined, ctx.signal);
+      ctx.signal.throwIfAborted();
       if (evidence.metricId !== metric.id || evidence.end !== cut)
         throw new Error(
           "Metric selection evidence identity differs from the request",
@@ -120,10 +119,11 @@ export async function selectMetricCandidate(
         })
         .sort((a, b) => b.end - a.end || b.alertId - a.alertId)[0];
       facts.push(`selector:metric-observed:${metric.id}:cut=${cut}`);
-      if (
-        transition &&
-        transition.end > (await metricReviewedThrough(ctx, metric.id, reviewer))
-      )
+      const reviewedThrough = transition
+        ? await metricReviewedThrough(ctx, metric.id, reviewer)
+        : 0;
+      ctx.signal.throwIfAborted();
+      if (transition && transition.end > reviewedThrough)
         return {
           candidate: { metricId: metric.id, ...transition, reviewer },
           cursor,
@@ -132,6 +132,7 @@ export async function selectMetricCandidate(
     }
     return { candidate: null, cursor, facts };
   } catch (error) {
+    ctx.signal.throwIfAborted();
     facts.push(
       `selector:metric-read-deferred:cut=${end}:${String(error).slice(0, 180)}`,
     );

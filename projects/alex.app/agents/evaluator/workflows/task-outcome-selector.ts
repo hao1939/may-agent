@@ -567,10 +567,13 @@ async function needsReview(
   reportRoot: string,
   command?: PublicCommand,
   nowMs = Date.now(),
+  signal?: AbortSignal,
 ): Promise<{ needed: boolean; unavailableReason?: string }> {
   const subject = await readSubjectTask(
     { appId, taskId: taskId(item), automatic: true },
     command,
+    undefined,
+    signal,
   );
   if (subject.disposition !== "eligible" || !subject.evidenceHash)
     return { needed: false, unavailableReason: subject.reason };
@@ -700,7 +703,17 @@ export async function selectFairCandidate(
   reportRoot = configuredTaskReportRoot(),
   priorState: SelectorState = emptyState(),
   nowMs = Date.now(),
+  signal?: AbortSignal,
 ): Promise<Selection> {
+  signal?.throwIfAborted();
+  const readCommand: PublicCommand = async (input) => {
+    signal?.throwIfAborted();
+    const result = await (command
+      ? command(input)
+      : sendPublicReadCommand(input, { signal }));
+    signal?.throwIfAborted();
+    return result;
+  };
   if (!config.enabled)
     return {
       candidate: null,
@@ -709,7 +722,7 @@ export async function selectFairCandidate(
     };
   const reviewer = reviewerProfile(config.reviewer).reviewer;
   const state = cleanState(priorState);
-  const provider = createPublicTaskEvidenceProvider(command);
+  const provider = createPublicTaskEvidenceProvider(readCommand);
   const apps = [
     ...new Set(
       (await provider.listApps(config.maxApps))
@@ -740,11 +753,7 @@ export async function selectFairCandidate(
     const priorPopulation = populationCheckpoint(state.populationEndByApp[key]);
     if (state.populationTurn && priorPopulation.end < end) {
       try {
-        const population = await readPopulation(
-          command ?? sendPublicReadCommand,
-          appId,
-          end,
-        );
+        const population = await readPopulation(readCommand, appId, end);
         const current = object(population.current);
         const previous = object(population.previous);
         const representatives = [
@@ -778,7 +787,9 @@ export async function selectFairCandidate(
             if (!exactTaskId) continue;
             const subject = await readSubjectTask(
               { appId, taskId: exactTaskId, automatic: true },
-              command,
+              readCommand,
+              undefined,
+              signal,
             );
             if (subject.disposition !== "eligible") continue;
             nextState = cleanState({
@@ -812,6 +823,7 @@ export async function selectFairCandidate(
           );
         }
       } catch (error) {
+        signal?.throwIfAborted();
         appendNavigationFact(
           navigationFacts,
           `selector:population-unavailable:${appId}:${String(error).slice(0, 160)}`,
@@ -836,8 +848,9 @@ export async function selectFairCandidate(
         "ongoing",
         reviewer,
         reportRoot,
-        command,
+        readCommand,
         nowMs,
+        signal,
       );
       if (review.unavailableReason) {
         appendNavigationFact(
@@ -923,8 +936,9 @@ export async function selectFairCandidate(
                 purpose,
                 reviewer,
                 reportRoot,
-                command,
+                readCommand,
                 nowMs,
+                signal,
               );
               if (review.unavailableReason) {
                 appendNavigationFact(
@@ -946,6 +960,7 @@ export async function selectFairCandidate(
         unresolvedExhausted = false;
       }
     } catch (error) {
+      signal?.throwIfAborted();
       // Retry the exact opaque boundaries and phase after a failed public read.
       continuationCursor = original.cursor;
       unresolvedContinuationCursor = original.unresolvedCursor;
@@ -1041,6 +1056,7 @@ export async function runTaskOutcomeSelector(
   reportRoot = configuredTaskReportRoot(),
   metricSelector: MetricSelector = selectMetricCandidate,
 ): Promise<ExecutionResult> {
+  ctx.signal.throwIfAborted();
   const reconcile = reconciliationCommand(ctx);
   if (reconcile.state === "invalid") {
     const summary =
@@ -1136,6 +1152,7 @@ export async function runTaskOutcomeSelector(
       priorState.metricCursor ?? "",
       reviewer,
     );
+    ctx.signal.throwIfAborted();
     priorState.metricCursor = metric.cursor;
     priorState.metricTurn = false;
     metricFacts.push(...metric.facts);
@@ -1165,7 +1182,10 @@ export async function runTaskOutcomeSelector(
     config,
     reportRoot,
     priorState,
+    Date.now(),
+    ctx.signal,
   );
+  ctx.signal.throwIfAborted();
   const cursorFact = selectorStateFact(selection.state);
   selection.navigationFacts.push(...metricFacts);
   const coverageUnavailable = metricFacts.some((fact) =>

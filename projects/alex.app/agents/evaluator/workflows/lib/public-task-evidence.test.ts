@@ -83,6 +83,76 @@ function fixture(
 }
 
 describe("public Task evidence", () => {
+  test("cancellation in an optional population read is not retained as an evidence gap", async () => {
+    const controller = new AbortController();
+    const read = fixture();
+    await expect(
+      readSubjectTask(
+        { appId: "sample", taskId: "goal/one", populationEnd: 1 },
+        async (input) => {
+          if (input.type === "task.attempts.read") {
+            controller.abort(new Error("Review stopped"));
+            throw new Error("transport aborted");
+          }
+          return read(input);
+        },
+        undefined,
+        controller.signal,
+      ),
+    ).rejects.toThrow("Review stopped");
+  });
+
+  test("session reads receive cancellation and cannot turn a stopped subject read into process gaps", async () => {
+    const controller = new AbortController();
+    const ref = {
+      eventId: 1,
+      generation: 1,
+      attemptId: "attempt-one",
+      eventType: "project.task.reconciled",
+    };
+    const read = fixture(appTask, { ...taskDetail, history: [ref] });
+    let sessionReads = 0;
+    await expect(
+      readSubjectTask(
+        { appId: "sample", taskId: "goal/one" },
+        async (input) => {
+          if (input.type === "event.get")
+            return {
+              command: input.type,
+              event: {
+                id: 1,
+                type: ref.eventType,
+                data: {
+                  project: "sample",
+                  taskId: "goal/one",
+                  generation: 1,
+                  attemptId: ref.attemptId,
+                },
+              },
+            };
+          if (input.type === "task.attempts.read")
+            return {
+              available: true,
+              appId: "sample",
+              taskId: "goal/one",
+              generation: 1,
+              attemptId: ref.attemptId,
+              sessionId: "s_trial",
+            };
+          return read(input);
+        },
+        async (_id, _part, _timeout, signal) => {
+          sessionReads++;
+          expect(signal).toBe(controller.signal);
+          controller.abort(new Error("Review stopped"));
+          throw new Error("transport aborted");
+        },
+        controller.signal,
+      ),
+    ).rejects.toThrow("Review stopped");
+    expect(sessionReads).toBe(1);
+  });
+
   test("the HTTP attempt-read path honors the same cancellation signal", async () => {
     const server = Bun.serve({
       port: 0,
