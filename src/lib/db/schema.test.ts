@@ -94,8 +94,6 @@ describe("canonical database schema", () => {
       const workflowColumns = db.prepare("PRAGMA table_info(workflow_runs)").all() as Array<{ name: string }>;
       const inboxColumns = db.prepare("PRAGMA table_info(app_inbox_items)").all() as Array<{ name: string }>;
       const inboxIndexes = db.prepare("PRAGMA index_list(app_inbox_items)").all() as Array<{ name: string; partial: number }>;
-      const deliveryColumns = db.prepare("PRAGMA table_info(app_inbox_deliveries)").all() as Array<{ name: string }>;
-      const deliveryIndexes = db.prepare("PRAGMA index_list(app_inbox_deliveries)").all() as Array<{ name: string }>;
       const admissionPlanColumns = db.prepare("PRAGMA table_info(app_event_admission_plans)").all() as Array<{
         name: string;
       }>;
@@ -139,19 +137,6 @@ describe("canonical database schema", () => {
         .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'")
         .get() as { sql: string };
       expect(inboxSql.sql).toContain("'analysis'");
-      expect(deliveryColumns.map(({ name }) => name)).toEqual(
-        expect.arrayContaining([
-          "operation_id",
-          "item_id",
-          "kind",
-          "text",
-          "session_id",
-          "request_id",
-          "status",
-          "receipt_event_id",
-        ]),
-      );
-      expect(deliveryIndexes.some(({ name }) => name === "idx_app_inbox_delivery_status")).toBe(true);
       expect(admissionPlanColumns.some(({ name }) => name === "registry_snapshot_id")).toBe(true);
       expect(admissionCommandColumns.some(({ name }) => name === "payload_version")).toBe(true);
       expect(conditionRouteIndexes.some(({ name }) => name === "idx_app_task_condition_routes_task")).toBe(true);
@@ -166,6 +151,8 @@ describe("canonical database schema", () => {
       for (const domainTable of [
         "evaluations",
         "session_digests",
+        "file_reads",
+        "app_inbox_deliveries",
         "gym_runs",
         "gym_checks",
         "gym_prompts",
@@ -389,55 +376,6 @@ describe("canonical database schema", () => {
              waiting_on_kind, waiting_on_id, created_at, updated_at
            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           ["analysis-wait", "may", "human", "human:1", "message", "{}", "handling", "analysis", "a-1", 1, 1],
-        ),
-      ).not.toThrow();
-    } finally {
-      db.close();
-    }
-  });
-
-  it("upgrades the one-row delivery table to progress and final operations", () => {
-    const db = openDatabase(":memory:");
-    try {
-      db.exec(`
-        CREATE TABLE app_inbox_deliveries (
-          item_id TEXT PRIMARY KEY,
-          operation_id TEXT NOT NULL UNIQUE,
-          session_id TEXT NOT NULL,
-          request_id TEXT NOT NULL,
-          channel TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'pending',
-          external_message_id TEXT,
-          failure_reason TEXT,
-          receipt_event_id INTEGER,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          attempted_at INTEGER,
-          completed_at INTEGER
-        );
-        INSERT INTO app_inbox_deliveries (
-          item_id, operation_id, session_id, request_id, channel, status, created_at, updated_at
-        ) VALUES ('item-1', 'legacy-operation', 'session-1', 'request-1', 'telegram', 'pending', 1, 1);
-      `);
-
-      expect(() => applyDbSchema(db)).not.toThrow();
-      expect(() => applyDbSchema(db)).not.toThrow();
-      const columns = db.prepare("PRAGMA table_info(app_inbox_deliveries)").all() as Array<{
-        name: string;
-        pk: number;
-      }>;
-      expect(columns.find(({ name }) => name === "operation_id")?.pk).toBe(1);
-      expect(columns.map(({ name }) => name)).toEqual(expect.arrayContaining(["kind", "text"]));
-      expect(db.prepare("SELECT operation_id, item_id, kind FROM app_inbox_deliveries").get()).toEqual({
-        operation_id: "legacy-operation",
-        item_id: "item-1",
-        kind: "final",
-      });
-      expect(() =>
-        db.run(
-          `INSERT INTO app_inbox_deliveries (
-             operation_id, item_id, kind, text, session_id, request_id, channel, status, created_at, updated_at
-           ) VALUES ('progress-operation', 'item-1', 'progress', 'Working', 'session-2', 'request-1', 'telegram', 'pending', 2, 2)`,
         ),
       ).not.toThrow();
     } finally {

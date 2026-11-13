@@ -49,7 +49,6 @@ import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapte
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "../adapters/reporting/metric-observations.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
-import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
 import type { EventInput } from "@may-agent/control/events";
 import { eventDeliveryContract, findEventPublication, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
 
@@ -86,20 +85,6 @@ export interface WebUIOptions {
   stateDir: string;
   port: number;
   hostname?: string;
-}
-
-export function appInboxQueryFromUrl(url: URL): AppInboxQuery {
-  const status = url.searchParams.get("status");
-  if (status !== null && status !== "pending" && status !== "handling" && status !== "done") {
-    throw new Error(`Invalid App inbox status: ${status}`);
-  }
-  const limit = Math.max(1, Math.min(500, Number(url.searchParams.get("limit") || 100) || 100));
-  return {
-    appId: url.searchParams.get("appId") || undefined,
-    status: status === null ? undefined : status,
-    idempotencyKey: url.searchParams.get("idempotencyKey") || undefined,
-    limit,
-  };
 }
 
 type DaemonFrameResult = {
@@ -1768,32 +1753,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     }
   }
 
-  function handleAppInbox(url: URL): Response {
-    try {
-      const items = listAppInboxItems(_db(), appInboxQueryFromUrl(url));
-      return json({ items, count: items.length });
-    } catch (error) {
-      return json({ error: error instanceof Error ? error.message : String(error) }, 400);
-    }
-  }
-
-  function handleAppInboxHealth(url: URL): Response {
-    try {
-      const appId = url.searchParams.get("appId") || undefined;
-      const generatedAt = Date.now();
-      return json({ apps: listAppInboxHealth(_db(), { appId, now: generatedAt }), generatedAt });
-    } catch (error) {
-      return json({ error: error instanceof Error ? error.message : String(error) }, 400);
-    }
-  }
-
-  function handleAppInboxItem(itemIdText: string): Response {
-    const itemId = decodeURIComponent(itemIdText).trim();
-    if (!itemId) return json({ error: "App inbox item id required" }, 400);
-    const item = getAppInboxItem(_db(), itemId);
-    return item ? json(item) : json({ error: `App inbox item not found: ${itemId}` }, 404);
-  }
-
   async function handleProjectActionInvoke(
     req: Request,
     projectIdText: string,
@@ -2631,10 +2590,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
-      if (url.pathname === "/api/app-inbox" && req.method === "GET") return handleAppInbox(url);
-      if (url.pathname === "/api/app-inbox/health" && req.method === "GET") return handleAppInboxHealth(url);
-      const appInboxItemMatch = url.pathname.match(/^\/api\/app-inbox\/([^/]+)$/);
-      if (appInboxItemMatch && req.method === "GET") return handleAppInboxItem(appInboxItemMatch[1]);
       const projectActionInvokeMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions\/([^/]+)$/);
       if (projectActionInvokeMatch && req.method === "POST") {
         return handleProjectActionInvoke(req, projectActionInvokeMatch[1], projectActionInvokeMatch[2]);

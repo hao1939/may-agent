@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { readAppConversationResource } from "./conversations.js";
-import { createAppInboxItem, getAppInboxItem, listAppInboxConversationItems, listAppInboxHealth, listAppInboxItems, listAppInboxTaskDependencyKeys } from "./app-inbox-store.js";
+import { createAppInboxItem, getAppInboxItem, listAppInboxConversationItems, listAppInboxItems, listAppInboxTaskDependencyKeys } from "./app-inbox-store.js";
 import { associateAppInboxClaimSession, claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 
 describe("App inbox store", () => {
@@ -218,42 +218,7 @@ describe("App inbox store", () => {
     ]);
   });
 
-  it("projects current inbox health without reconstructing lifecycle events", () => {
-    create("pending", { now: 100 });
-    create("leased", { now: 110 });
-    create("waiting", { now: 120 });
-    expect(claimAppInboxItem(db, "leased", "worker-1", 50, 130)).not.toBeNull();
-    const waiting = claimAppInboxItem(db, "waiting", "worker-2", 100, 130)!;
-    expect(waitAppInboxClaim(db, waiting, { kind: "task", id: "task-1" }, { now: 140 })).toBe(true);
-    createAppInboxItem(db, {
-      id: "evaluation-done",
-      appId: "evaluation",
-      source: { kind: "system", id: "canary" },
-      input: { kind: "probe", data: {} },
-      now: 150,
-    });
-    const evaluation = claimAppInboxItem(db, "evaluation-done", "worker-3", 50, 150)!;
-    completeAppInboxClaim(db, evaluation, { summary: "done" }, 160);
-
-    expect(listAppInboxHealth(db, { appId: "may", now: 181 })).toEqual([
-      {
-        appId: "may",
-        total: 3,
-        pending: 1,
-        handling: 2,
-        done: 0,
-        ready: 2,
-        waitingOnDependency: 1,
-        activeLeases: 0,
-        expiredLeases: 1,
-        oldestPendingAgeMs: 81,
-        oldestHandlingItemAgeMs: 71,
-      },
-    ]);
-    expect(listAppInboxHealth(db, { now: 181 }).map((entry) => entry.appId)).toEqual(["evaluation", "may"]);
-  });
-
-  it("ignores retained historical delivery rows after semantic completion", () => {
+  it("records completed human replies into the derived Conversation resource", () => {
     createAppInboxItem(db, {
       id: "human-delivery",
       appId: "may",
@@ -267,21 +232,6 @@ describe("App inbox store", () => {
     const claim = claimAppInboxItem(db, "human-delivery", "worker-1", 50, 100)!;
     expect(associateAppInboxClaimSession(db, claim, "session-1", 101)).toBe(true);
     expect(completeAppInboxClaim(db, claim, { summary: "finished", response: "Hello back" }, 102)).toBe(true);
-    db.run(
-      `INSERT INTO app_inbox_deliveries (
-         operation_id, item_id, kind, text, session_id, request_id, channel, status, created_at, updated_at
-       ) VALUES (?, ?, 'final', ?, ?, ?, ?, 'pending', ?, ?)`,
-      [
-        "legacy-delivery:human-delivery",
-        "human-delivery",
-        "Hello back",
-        "session-1",
-        "app-inbox-human:human-delivery",
-        "telegram",
-        103,
-        103,
-      ],
-    );
 
     expect(getAppInboxItem(db, "human-delivery")).toMatchObject({
       status: "done",
@@ -293,7 +243,6 @@ describe("App inbox store", () => {
       expect.objectContaining({ author: { kind: "agent", id: "may" }, text: "Hello back" }),
     ]);
     expect(claimAppInboxItem(db, "human-delivery", "worker-2", 50, 200)).toBeNull();
-    expect(listAppInboxHealth(db, { appId: "may", now: 200 })[0]).not.toHaveProperty("waitingOnDelivery");
   });
 
   it("pages exact input links even when several await the same Task", () => {
