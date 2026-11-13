@@ -344,4 +344,64 @@ describe("canonical database schema", () => {
       db.close();
     }
   });
+
+  it("retires populated event_trace_links table and replaces retention trigger idempotently", () => {
+    const db = openDatabase(":memory:");
+    try {
+      applyDbSchema(db);
+      db.exec(`
+        DROP TRIGGER IF EXISTS trg_events_referential_retention;
+        CREATE TABLE event_trace_links (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          from_event_id INTEGER NOT NULL,
+          to_event_id INTEGER NOT NULL,
+          type TEXT NOT NULL DEFAULT 'reference',
+          label TEXT NOT NULL DEFAULT '',
+          created_at INTEGER NOT NULL,
+          UNIQUE(from_event_id, to_event_id, type, label)
+        );
+        CREATE INDEX idx_event_trace_links_from ON event_trace_links(from_event_id, type);
+        CREATE INDEX idx_event_trace_links_to ON event_trace_links(to_event_id, type);
+        CREATE TRIGGER trg_events_referential_retention
+        BEFORE DELETE ON events
+        WHEN EXISTS (
+          SELECT 1 FROM event_traces child WHERE child.parent_event_id = OLD.id
+        ) OR EXISTS (
+          SELECT 1 FROM event_trace_links l WHERE l.from_event_id = OLD.id OR l.to_event_id = OLD.id
+        )
+        BEGIN
+          SELECT RAISE(ABORT, 'event row is still referenced by retained trace or open work');
+        END;
+        INSERT INTO events (id, event_type, timestamp) VALUES (1, 'fixture.root', 100), (2, 'fixture.child', 200), (3, 'fixture.leaf', 300);
+        INSERT OR REPLACE INTO event_traces (event_id, trace_id, parent_event_id, visibility) VALUES
+          (1, 'event:1', NULL, 'default'),
+          (2, 'event:1', 1, 'detail'),
+          (3, 'event:3', NULL, 'default');
+        INSERT INTO event_trace_links (from_event_id, to_event_id, type, label, created_at) VALUES (3, 1, 'reference', 'legacy', 300);
+      `);
+
+      expect(() => applyDbSchema(db)).not.toThrow();
+      expect(() => applyDbSchema(db)).not.toThrow();
+
+      expect(
+        db.prepare("SELECT name FROM sqlite_master WHERE name LIKE '%event_trace_links%'").all(),
+      ).toEqual([]);
+      expect(
+        db.prepare("SELECT event_id, trace_id, parent_event_id, visibility FROM event_traces ORDER BY event_id").all(),
+      ).toEqual([
+        { event_id: 1, trace_id: "event:1", parent_event_id: null, visibility: "default" },
+        { event_id: 2, trace_id: "event:1", parent_event_id: 1, visibility: "detail" },
+        { event_id: 3, trace_id: "event:3", parent_event_id: null, visibility: "default" },
+      ]);
+
+      // Event 3 was only referenced by the retired event_trace_links row and can now be deleted;
+      // Event 1 is still referenced by child trace row 2 and remains protected by the replacement trigger.
+      expect(db.run("DELETE FROM events WHERE id = 3").changes).toBe(1);
+      expect(db.run("DELETE FROM events WHERE id = 1").changes).toBe(0);
+      db.run("INSERT INTO events (id, event_type, timestamp) VALUES (4, 'fixture.new', 400)");
+      expect(db.prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }, { id: 4 }]);
+    } finally {
+      db.close();
+    }
+  });
 });
