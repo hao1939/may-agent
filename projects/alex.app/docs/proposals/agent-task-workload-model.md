@@ -478,7 +478,19 @@ The initial automatic mode asks the subject's existing owner to consider its
 method or remaining obligations. It does not interpret prose to discover another
 creator or funding route; the recipient seeks that authority when needed. Only
 `reconsider` or `opportunity` with an inspected `taskId` and concrete `nextStep`
-can notify. The workflow rereads the target after judgment and checks its
+can notify. These decisions describe follow-through: `retain` means the current
+course needs no new owner action; `reconsider` asks for a method or obligation
+review; `opportunity` proposes a useful optional action. Keeping required work
+open does not itself mean `retain`. A method change can be worth notifying while
+the Task and its original promise remain open.
+
+The helper's per-pass schema permits at most one subject, using only the exact
+Task IDs or unadmitted-input IDs supplied in that pass. The review request's own
+input is not unadmitted demand. Invalid targets can be corrected within the
+existing bounded helper invocation; the workflow still validates the returned
+subject before saving or sending anything. This narrows the helper's contract
+without changing retained review-state format or reinterpreting historical
+advice as a new action. The workflow rereads the target after judgment and checks its
 generation and live state. Targetless advice and pre-Task input remain retained
 for their declared owner path, with no Task created as a delivery fallback.
 
@@ -526,8 +538,14 @@ separate settlement of the advice and original input, denied sibling closure,
 and explicit closed/missing-target feedback without replacement work. The actual
 workflow also runs through the Host adapter with notification enabled, covering
 restart, a return during another review and opt-in withdrawal. Decisions are
-scripted. These verify source routing and settlement, not installed agent
-judgment, complete portfolio follow-through or external delivery.
+scripted. A later [isolated model trial](../archive/reviews/workload-contention-comparison-20261113.md#model-decisions-through-the-actual-owner-notification)
+verified two actionable recommendations through actual addressed notifications,
+model owner-method choices and verified local effects. Two other reviews
+retained the current course without a notification. All four original reports
+remained owed until verified fulfillment, then their exact local Inbox requests
+settled and App policy closed their finite Tasks. This is a small synthetic
+business workflow, with locally driven input arrival and dispatch; installed
+judgment, portfolio-wide follow-through and external delivery remain unverified.
 
 Include old ready obligations in review so low-priority work cannot silently
 disappear behind repeated urgent arrivals. The agent must explain continued

@@ -1,3 +1,4 @@
+import { Check } from "typebox/value";
 import { afterEach, expect, setSystemTime, test } from "bun:test";
 import { admitTaskReconcileResult, type TaskDetail, type TaskWorkload, type WorkflowContext } from "@may-agent/sdk";
 import { execute } from "./workload-review.js";
@@ -577,4 +578,25 @@ test("the retained observation window stays bounded during a larger population s
     f.own.result = { workloadReview: progress };
   }
   expect(f.prompts).toHaveLength(71); // The first batch was evicted before the complete scan returned to it.
+});
+
+
+test("the helper contract admits only one subject actually supplied in this review", async () => {
+  const f = fixture(false, true);
+  f.workload.unadmittedInputs!.items.push({ id: "retained-demand", kind: "work", source: { kind: "app", id: "caller" },
+    receivedAt: now, changedAt: now, funding: { reason: "sponsor-credit", retryAt: now + 60_000 } });
+  f.workload.unadmittedInputs!.coverage.scanned = 1;
+  f.ctx.agents.call = (async (_agent: string, _prompt: string, options: { schema: Parameters<typeof Check>[0] }) => {
+    const advice = { decision: "reconsider", reason: "Keep the required delivery and choose a smaller method." };
+    expect(Check(options.schema, advice)).toBe(true);
+    expect(Check(options.schema, { ...advice, taskId: f.task.id })).toBe(true);
+    expect(Check(options.schema, { ...advice, inputId: "retained-demand" })).toBe(true);
+    expect(Check(options.schema, { ...advice, taskId: f.task.id, inputId: "retained-demand" })).toBe(false);
+    expect(Check(options.schema, { ...advice, taskId: "unread-task" })).toBe(false);
+    expect(Check(options.schema, { ...advice, inputId: "review-request-itself" })).toBe(false);
+    return { status: "done", output: { ...advice, taskId: f.task.id, nextStep: "Use the smaller local method." } };
+  }) as typeof f.ctx.agents.call;
+  const result = await execute(f.ctx);
+  expect(result.status).toBe("done");
+  expect(result.output).toHaveProperty("requests");
 });

@@ -630,3 +630,118 @@ prefix under `/home/hao/workspace-archive/`.
 Notification has not been activated. Installed judgment, useful follow-through,
 full owner-route discovery and external caller delivery remain acceptance work.
 No live Task, App activation, Host source, image or release changed.
+
+
+## Model decisions through the actual owner notification
+
+The next isolated trial connected the actual opted-in review source to an
+existing business owner through the normal Host request and Condition path.
+Both the recommendation and the receiving owner's method choice used a model.
+A small authored report workflow executed and verified the selected local method;
+its final report operation remained deterministic. Input arrival and dispatch
+were driven by the fixture. No live state, activation, image or release changed.
+
+The original request required the `original-batch` report after its sealed input
+arrived. While waiting, two paid preview invoices with an ambiguous label and
+three customer questions justified considering an optional audit. A parallel
+cross-check needed two additional workers alongside its owner; a smaller local
+audit needed no helper during the business operation. Two cases had available
+capacity and two had two actual competing background reservations. The installed
+trial limits were six Host places, four background places, a three-place Alex
+recipient and two-place Task roots. These are isolated trial grants, not changes
+to the installation. Competitors were explicitly confirmed never started; they
+occupied genuine reservation records until released.
+
+The first cohort at Apps `34512bb946` stopped after one model request. The model
+returned both an inspected `taskId` and the review's own unrelated `inputId`.
+The workflow rejected that recommendation without a notification. It also chose
+`retain` while discussing a possible method change. This revealed a helper
+contract ambiguity, not lost business input or an admitted unauthorized action.
+The failed output remains in `workload-notification-applied-20261113-model1`.
+It is not counted as accepted model evidence.
+
+The correction makes decision meanings explicit: `retain` requires no new owner
+action; `reconsider` can change a method while preserving the original Task;
+`opportunity` proposes useful optional work. The helper's actual schema now
+allows only one of the Task or unadmitted-input identities supplied in that pass.
+It can correct an invalid target within its existing bounded invocation, before
+the workflow's final validation. Retained state format, notification policy,
+authority and historic advice remain unchanged.
+
+The corrected frozen Apps source was
+`162bb5e20afc3ea659cb8b7db821628c8f23a138`, paired with clean Host
+`0c7b0adb071ad6dae8a281a2a875e1f3e583eeff`. Experiment source remains on the
+`experiment/workload-notification-applied-20261113` branch under
+`projects/alex.app/experiments/workload-notification-20261113/`; it is not another
+installed workflow. The second cohort accepted six fresh model decisions:
+
+| Run | Capacity | Review | Notification and applied owner method | Final original report |
+| --- | --- | --- | --- | --- |
+| 0 | Available | `retain` | None; retain the current wait | Verified, exact local input answered, finite Task closed |
+| 0 | Contended | `reconsider` | One request; verified local label audit | Verified, exact local input answered, finite Task closed |
+| 1 | Contended | `retain` | None; retain the current wait | Verified, exact local input answered, finite Task closed |
+| 1 | Available | `opportunity` | One request; verified local label audit | Verified, exact local input answered, finite Task closed |
+
+Each original request stayed `handling` with its original generation and exact
+review deadline after advice consideration. Neither advice answer closed the
+Task. Both notified owners chose the smaller local audit, read the saved preview,
+recorded its result and verified the written decision artifact. The coordinator
+retained each exact returned request without another model call. After the
+sealed batch arrived, every report file contained the independently checked
+batch identity, three records and total 60. The workflow explicitly selected the
+retained original input for that result; App policy then applied the ending.
+There were only the original owner and coordination Tasks, at most one addressed
+notification, and zero remaining execution reservations after every completed
+case. Local Inbox completion does not prove delivery to an external consumer.
+
+The optional advisory path cost resources: ordinary owner roots were charged
+three credits without notification and five with notification (one additional
+owner attempt and one model helper). Coordinator work used its separate trial
+grant. Saving the returned feedback used no additional model call, but still
+required a coordinator attempt. Feedback was selective, not free.
+
+This cohort used six requests, 273,047 request bytes and 54,750 deduplicated
+provider tokens. The rejected first cohort used one request and 8,807 tokens.
+Per cohort the bridge capped requests at 24, four per pass, request bytes at
+4 MiB, output at 1,024 tokens per request, provider time at 45 seconds and total
+time at 20 minutes, within the prior trial's bounds. Model, endpoint and API
+matched the earlier authorized trial, with no fallback. No invalid response or
+historical saved recommendation was counted as a fresh accepted choice.
+
+Preflight used scripted decisions and passed all four paths. It initially lacked
+the normal session-recovery adapter and did not explicitly select the original
+input at final delivery; the corrected fixture uses both supported contracts.
+The receiver's preserved original wait correctly prevented premature closure in
+those failed preflights. Failed logs remain archived; these were fixture gaps,
+not Host fixes. The final source suites passed **73 tests / 895 assertions in
+36.49 seconds**, and strict source-SDK types passed. A schema regression checks
+valid Task, valid unadmitted demand, targetless advice, mixed targets, unknown
+Task and the review's own unrelated input at the actual helper boundary.
+Restoring the preceding helper contract in a separate disposable source copy
+made that regression fail; the corrected source passes.
+
+The design command passed structure, SDK/control examples and canonical Apps.
+Model-surface still failed on May's omitted `reading-metrics`,
+`system-investigation`, `verification` skills and Scout's 36,100-character prompt
+against 36,000. Restoring all five changed integration paths to the untouched
+Apps base at the same candidate path produced identical errors; the full global
+command remains red. Relative file and heading links passed the scoped check.
+
+Evidence is retained under the private archive's
+`workload-notification-applied-20261113-model2/`, with original request/response
+files, accepted Task snapshots, local artifacts, request receipts, endings and
+funding. `workload-notification-applied-assessment-20261113.json` records the
+per-case assessment and deduplicated usage. Logs use
+`workload-notification-decision-contract-` and `workload-notification-applied-`
+prefixes. The main integration receipt records the exact final source mapping.
+
+This demonstrates two complete local model handoffs and four guarded original
+fulfillments. It does not show a consistent change of method between capacity
+regimes: each regime contained one useful notification and one legitimate
+retention, and both notified owners chose the same smaller method. That is
+compatible with the design's business judgment rule; different load does not
+require opposite answers. The two-place root cap also excludes the declared
+three-place parallel method in both regimes, so this trial tests notification
+and application rather than isolating a capacity-caused method preference.
+Broader usefulness, installed follow-through, missing
+creator/funding routes and external caller delivery remain acceptance work.

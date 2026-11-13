@@ -316,9 +316,16 @@ The actual source workflow uses the Host adapter in these scripted checks; this
 is not installed agent acceptance. No subscriber, new review Task or extra
 scheduler is introduced. Pending notification limits further sends but does not
 stop other reviews or establish a portfolio-wide delivery guarantee.
+The helper now receives a per-pass schema permitting at most one supplied Task
+or unadmitted-input subject. Its decision labels distinguish retaining the
+current course from changing a method while preserving an obligation. An
+isolated model trial exposed those two ambiguities; the corrected contract and
+applied local outcomes are recorded in the
+[notification trial](../archive/reviews/workload-contention-comparison-20261113.md#model-decisions-through-the-actual-owner-notification).
 The contract tests prove call bounds, read-only options, coalescing, scope and
-default-mode isolation; they do not prove model comprehension or improved delivery.
-Activation and any business acceptance trial remain separate.
+default-mode isolation. The small synthetic model trial verifies two complete
+local handoffs, not a consistent pressure-dependent method preference or improved
+installed delivery. Activation and business acceptance remain separate.
 
 Successive bounded passes must make progress beyond the first three detailed
 reads and the first discovery page. Retain the Host's opaque page continuation
