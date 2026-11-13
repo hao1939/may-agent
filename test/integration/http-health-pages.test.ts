@@ -39,11 +39,9 @@ describe("served workflow and metric health pages", () => {
       JSON.stringify({ handler: "executor:conversation", startedAt: new Date(now - 500).toISOString(),
         finishedAt: new Date(now - 100).toISOString(), sessionId: "step-upload", failureReason: "SettlementFailed" }));
     getDb(root).prepare(`UPDATE sessions SET status = 'done', error = NULL WHERE sessionId = 'step-upload'`).run();
-    const sessionHealth = await (await fetch(`${base}/api/agents/health`)).json() as Record<string, unknown>;
-    expect(sessionHealth.sessionCompletionRate).toBe(100);
-    expect(sessionHealth.successRate).toBeUndefined();
-    const activity = await (await fetch(`${base}/api/agents/activity`)).json() as { agents: Array<Record<string, unknown>> };
-    expect(activity.agents.find((agent) => agent.name === "worker")).toMatchObject({ sessionCompletionRate: 100 });
+    for (const retired of ["/api/agents/health", "/api/agents/activity", "/api/agents/timeline", "/api/stats", "/api/agents/worker/detail"]) {
+      expect((await fetch(`${base}${retired}`)).status).toBe(404);
+    }
     // Model completion can coexist with rejected Task settlement.
     const response = await fetch(`${base}/api/task-attempts?appId=research&end=${now}&windowMs=1000`);
     expect(response.status).toBe(200);
