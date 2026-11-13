@@ -16,7 +16,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { basename, join, relative, resolve, sep } from "node:path";
+import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { resolveSkillRoots } from "../lib/skill-paths.js";
 
@@ -380,6 +380,7 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
 export class DefinitionSourceReleaseStore {
   private readonly releasesRoot: string;
   private readonly currentLink: string;
+  private readonly previousLink: string;
   private readonly heldCounts = new Map<string, number>();
   private readonly onNotice?: (message: string) => void;
   private readonly activePaths?: () => readonly string[];
@@ -394,6 +395,7 @@ export class DefinitionSourceReleaseStore {
   ) {
     this.releasesRoot = join(persistDir, "releases", "app-definitions");
     this.currentLink = join(this.releasesRoot, "current");
+    this.previousLink = join(this.releasesRoot, "previous");
     this.onNotice = options.onNotice;
     this.activePaths = options.activePaths;
   }
@@ -402,30 +404,54 @@ export class DefinitionSourceReleaseStore {
     const raw = path?.trim();
     if (!raw) return undefined;
     const rel = relative(resolve(this.releasesRoot), resolve(raw));
-    if (!rel || rel.startsWith("..") || rel.includes("..")) return undefined;
+    if (!rel || isAbsolute(rel) || rel === ".." || rel.startsWith(`..${sep}`)) return undefined;
     const [first] = rel.split(sep);
-    return first && first !== "current" && !first.startsWith("current.next-") && !first.startsWith(".next-")
+    return first &&
+      first !== "current" &&
+      first !== "previous" &&
+      !first.startsWith("current.next-") &&
+      !first.startsWith("previous.next-") &&
+      !first.startsWith(".next-")
       ? first
       : undefined;
   }
 
-  private currentReleaseRoot(): string | null {
-    if (!existsSync(this.currentLink)) return null;
-    if (!lstatSync(this.currentLink).isSymbolicLink()) {
-      throw new Error(`App source current path is not a symlink: ${this.currentLink}`);
+  private linkedReleaseRoot(linkPath: string): string | null {
+    let stat;
+    try {
+      stat = lstatSync(linkPath);
+    } catch {
+      return null;
     }
-    const target = readlinkSync(this.currentLink);
+    if (!stat.isSymbolicLink()) {
+      throw new Error(`App source release link path is not a symlink: ${linkPath}`);
+    }
+    const target = readlinkSync(linkPath);
     const root = resolve(this.releasesRoot, target);
     if (resolve(root, "..") !== resolve(this.releasesRoot)) {
-      throw new Error(`Unsafe App source release link: ${this.currentLink} -> ${target}`);
+      throw new Error(`Unsafe App source release link: ${linkPath} -> ${target}`);
     }
     return root;
+  }
+
+  private currentReleaseRoot(): string | null {
+    if (!existsSync(this.currentLink)) return null;
+    return this.linkedReleaseRoot(this.currentLink);
   }
 
   private currentIdFast(): string | undefined {
     try {
       const root = this.currentReleaseRoot();
       return root ? basename(root) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private previousIdFast(): string | undefined {
+    try {
+      const root = this.linkedReleaseRoot(this.previousLink);
+      return root && existsSync(join(root, "release.json")) ? basename(root) : undefined;
     } catch {
       return undefined;
     }
@@ -509,12 +535,24 @@ export class DefinitionSourceReleaseStore {
     const nextLink = `${this.currentLink}.next-${process.pid}-${randomUUID()}`;
     symlinkSync(relativeTarget, nextLink);
     renameSync(nextLink, this.currentLink);
+    if (previousId && previousId !== validated.id) {
+      try {
+        const nextPrevious = `${this.previousLink}.next-${process.pid}-${randomUUID()}`;
+        symlinkSync(previousId, nextPrevious);
+        renameSync(nextPrevious, this.previousLink);
+      } catch (error) {
+        this.onNotice?.(
+          `[apps] Failed to record previous release link ${previousId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
     this.prune([...preserveIds, ...(previousId ? [previousId] : [])]);
   }
 
   prune(preserveIds: readonly string[] = [], maxRetained = DEFAULT_MAX_RETAINED_RELEASES): string[] {
     if (!existsSync(this.releasesRoot)) return [];
     const activeId = this.currentIdFast();
+    const previousId = this.previousIdFast();
     const sessionProtectedIds = (this.activePaths?.() ?? [])
       .map((path) => this.releaseIdForPath(path))
       .filter((id): id is string => Boolean(id));
@@ -524,6 +562,7 @@ export class DefinitionSourceReleaseStore {
       ...preserveIds.filter(Boolean),
     ]);
     if (activeId) protectedIds.add(activeId);
+    if (previousId) protectedIds.add(previousId);
     const now = Date.now();
     const candidates: Array<{ id: string; path: string; mtimeMs: number }> = [];
     const removed: string[] = [];
@@ -536,7 +575,13 @@ export class DefinitionSourceReleaseStore {
     }
 
     for (const entry of entries) {
-      if (entry.name === "current" || entry.name.startsWith("current.next-")) continue;
+      if (
+        entry.name === "current" ||
+        entry.name === "previous" ||
+        entry.name.startsWith("current.next-") ||
+        entry.name.startsWith("previous.next-")
+      )
+        continue;
       const entryPath = join(this.releasesRoot, entry.name);
       if (entry.name.startsWith(".next-")) {
         try {

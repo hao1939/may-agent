@@ -208,7 +208,7 @@ export async function runAppRuntime(opts: {
   // Workers must capture one accepted pair, never combine those two clocks.
   let acceptedWorkerSource = { ...activeAppSource, appDirectories: activeAppDirectories };
   const workerDefinitionSource = () => acceptedWorkerSource;
-  bus.subscribe(
+  bus.listen(
     (event) => {
       if (event.type !== "session.end") return;
       appSources.prune([acceptedWorkerSource.id]);
@@ -368,27 +368,17 @@ export async function runAppRuntime(opts: {
       const captured = workerDefinitionSource();
       const capturedId = captured?.id;
       const releaseHold = appSources.retain(capturedId);
-      const releaseAndMaybePrune = () => {
+      const releaseOnTerminated = () => {
         releaseHold();
         if (capturedId && capturedId !== acceptedWorkerSource.id) {
           appSources.prune([acceptedWorkerSource.id]);
         }
       };
       try {
-        const worker = createTaskAdmissionProcess({
+        return createTaskAdmissionProcess({
           definitionSource: captured ?? undefined,
-          onExit: releaseAndMaybePrune,
+          onTerminated: releaseOnTerminated,
         });
-        return {
-          dispatch: worker.dispatch,
-          close: () => {
-            try {
-              worker.close();
-            } finally {
-              releaseAndMaybePrune();
-            }
-          },
-        };
       } catch (error) {
         releaseHold();
         throw error;

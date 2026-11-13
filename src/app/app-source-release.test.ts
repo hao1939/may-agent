@@ -516,7 +516,9 @@ describe("App source releases", () => {
     expect(existsSync(releases[0]!.root)).toBeFalse();
     expect(existsSync(releases[1]!.root)).toBeFalse();
 
-    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current");
+    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter(
+      (name) => name !== "current" && name !== "previous",
+    );
     expect(retainedDirs).toHaveLength(5);
   });
 
@@ -603,7 +605,9 @@ describe("App source releases", () => {
     expect(existsSync(initial.root)).toBeTrue();
     expect(existsSync(overlapping.root)).toBeTrue();
     expect(
-      readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current"),
+      readdirSync(join(stateDir, "releases", "app-definitions")).filter(
+        (name) => name !== "current" && name !== "previous",
+      ),
     ).toHaveLength(5);
 
     releaseWorkerHold();
@@ -620,11 +624,13 @@ describe("App source releases", () => {
 
     expect(existsSync(initial.root)).toBeFalse();
     expect(existsSync(overlapping.root)).toBeFalse();
-    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current");
+    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter(
+      (name) => name !== "current" && name !== "previous",
+    );
     expect(retainedDirs).toHaveLength(5);
   });
 
-  it("retains releases referenced by live in-process agent sessions across >5 reloads until session exit", async () => {
+  it("retains releases referenced by live in-process agent sessions (including names with ..) across >5 reloads until session exit", async () => {
     const { root, stateDir, appPath } = await fixture();
     let liveAgentDirs: string[] = [];
     const store = new DefinitionSourceReleaseStore(root, stateDir, {
@@ -632,7 +638,9 @@ describe("App source releases", () => {
     });
     const first = store.ensureCurrent();
     const sessionSkillPath = join(first.sharedRoot, "skills", "sample", "SKILL.md");
-    liveAgentDirs = [join(first.agentsRoot, "worker")];
+    liveAgentDirs = [join(first.agentsRoot, "worker..backup")];
+    expect(store.releaseIdForPath(liveAgentDirs[0])).toBe(first.id);
+    expect(store.releaseIdForPath(join(stateDir, "releases", "outside"))).toBeUndefined();
 
     for (let index = 2; index <= 8; index += 1) {
       writeFileSync(
@@ -656,6 +664,39 @@ describe("App source releases", () => {
     await git(root, "commit", "-qm", "v9");
     store.activate(store.stage());
     expect(existsSync(first.root)).toBeFalse();
+  });
+
+  it("persists and protects the last accepted predecessor across rejected reloads and restarts", async () => {
+    const { root, stateDir, appPath } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const releaseA = store.ensureCurrent();
+    writeFileSync(
+      appPath,
+      `export default { id: "sample-v2", version: 2, agent: "worker", inputSchema: { type: "object" } };\n`,
+    );
+    await git(root, "add", appPath);
+    await git(root, "commit", "-qm", "v2");
+    const releaseB = store.stage();
+    store.activate(releaseB);
+
+    // Stage 5 newer rejected candidates and prune after each without activating them.
+    for (let index = 3; index <= 7; index += 1) {
+      writeFileSync(
+        appPath,
+        `export default { id: "sample-rejected-${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
+      );
+      await git(root, "add", appPath);
+      await git(root, "commit", "-qm", `rejected-${index}`);
+      store.stage();
+      store.prune();
+    }
+
+    // Both B (current) and A (last accepted predecessor) survive rejected-reload pruning AND restart ensureCurrent()!
+    expect(existsSync(releaseB.root)).toBeTrue();
+    expect(existsSync(releaseA.root)).toBeTrue();
+    const restarted = new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent();
+    expect(restarted.id).toBe(releaseB.id);
+    expect(existsSync(releaseA.root)).toBeTrue();
   });
 
   it("reports and swallows per-release deletion errors without breaking activation or cleanup callers", async () => {
