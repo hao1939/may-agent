@@ -6,7 +6,6 @@ import type {
   AppInput,
   AppInputSource,
   AppResult,
-  ConversationTurnResult,
   ResourceCreator,
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -20,7 +19,6 @@ export type AppInboxWaitKind = "app" | "task" | "session" | "analysis";
 /** Input execution facts, not fulfillment of the accepted human ask. */
 export type AppInboxHandling =
   | { phase: "executing" }
-  | { phase: "decided"; decision: ConversationTurnResult; requestRevisions?: Record<string, number> }
   | { phase: "failed"; reason: string }
   | { phase: "stopped"; reason: string };
 

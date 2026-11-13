@@ -23,10 +23,7 @@ export type {
   AppAction,
   AppContract,
   AppDefinition,
-  ConversationTurnResult,
-  ConversationDelegation,
   AppConversationPolicy,
-  ConversationTaskControl,
   TaskObservation,
   ConversationTopicDecision,
   AppConversationTopic,
@@ -95,7 +92,6 @@ export type {
   WorkflowMetricCapability,
   AgentCallOptions,
 } from "./app.js";
-export { conversationTurnResultSchema } from "./app.js";
 export type {
   Condition,
   ResourceCreator,

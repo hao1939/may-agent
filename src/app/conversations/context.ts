@@ -8,7 +8,7 @@ import type { AppTaskClaim } from "../core/tasks/app-task-reconciler.js";
 import { readConversationRequest, listConversationInputRequests } from "../core/state/conversation-requests.js";
 import {
   conversationRequestUpdatesSchema,
-  type ConversationTurnResult,
+  type AppConversationRequestUpdate,
   type AppInput,
   type AppInputContext,
   type AppConversationResource,
@@ -149,7 +149,7 @@ export async function prepareConversationTaskContext(
       ? (priorDecision as Record<string, unknown>).requestUpdates
       : undefined;
   if (inputContext.conversation && Check(conversationRequestUpdatesSchema, priorUpdates)) {
-    const requests = (priorUpdates as NonNullable<ConversationTurnResult["requestUpdates"]>).flatMap(({ id }) => {
+    const requests = (priorUpdates as AppConversationRequestUpdate[]).flatMap(({ id }) => {
       const request = readConversationRequest(db, item.appId, item.conversationId!, id);
       return request ? [request] : [];
     });

@@ -1,4 +1,4 @@
-import { Type, defineApp, type ConversationTurnResult } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk";
 import { afterEach, expect, setSystemTime, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -48,7 +48,7 @@ const app = defineApp({
   conversation: { mode: "task" },
   inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ text: Type.String() }) }),
 });
-const decision: ConversationTurnResult = {
+const decision: Parameters<typeof completeCommunicationTask>[2] = {
   summary: "Compared options",
   response: "Option A costs less; option B is faster.",
   topic: { kind: "new", title: "Compare options" },
@@ -199,7 +199,7 @@ test.each(["new", "existing"] as const)(
       });
     const input = f.admit();
     const claim = f.claim(input.taskId);
-    const proposed: ConversationTurnResult = {
+    const proposed: Parameters<typeof completeCommunicationTask>[2] = {
       ...decision,
       topic: kind === "new" ? decision.topic : { kind: "existing", id: "existing" },
     };
