@@ -426,3 +426,59 @@ Private evidence and the read-only assessor are retained in
 installed workflow catalog and portable Host CI. Next: review the small Host
 change, then separately authorize and observe the ordinary installed owner path
 when release resumes. Do not reopen old contributions to manufacture acceptance.
+
+### Unchanged-refresh storage review
+
+The #491 review correctly found a missing storage invariant. Creator discovery
+returns a fresh `observedAt` for every read. Putting that timestamp inside the
+content-addressed decision detail made an unchanged page, including an empty
+one, persist another complete copy of potentially large retained input. The
+earlier tests changed the assignments and checked refreshed content; they did
+not check file reuse while content stayed equal. The native behavioral cohorts
+also did not assess that storage property.
+
+The fix uses the existing separation between observations and facts. Discovery
+still runs on every refresh. Its current time appears in the brief as
+`observed.createdAssignmentsReadAt`, alongside the existing current-Task read
+time. Assignment content and continuation stay in the immutable detail. The SDK
+reader's own `observedAt` field is unchanged. No timestamp is removed from
+business evidence, and no retention manager, pruning loop or cache is added.
+
+Two new regressions first failed on the reviewed source: one empty creator page
+and one populated page, each beside 120,000 bytes of retained source content.
+Five unchanged reads now reuse one detail file while their observation times
+advance. A changed assignment creates a second file. Existing unavailable-read
+coverage now also checks that a successful timestamp is not presented after a
+failed or mismatched observation. The source change is
+`ecf9a22ff0`; integrated head `1b53bd65737c81221a6579ba6f05792e64de341b` includes
+current main `21b57b91ac`. The focused reader/context and actual execution-context
+owners passed 19 tests / 280 assertions before integration.
+
+The unchanged four business cases passed the current-source scripted native
+preflight: four passes / ten local requests / 546,648 serialized bytes, zero
+provider requests. Strict current-source SDK types also passed. The first
+typecheck exposed a fixture-only declaration leak: `review()` returned the event
+bus's symbol-bearing internal result even though its caller ignored it. The
+branch-only fixture now returns `void`, frozen at Apps `c2caae8945`; its complete
+scripted preflight was rerun. The earlier real-model cohorts retain their exact
+original source and observations; they were not repeated or relabeled as tests
+of this metadata revision.
+
+Final integrated local CI passed 3,616 tests / 21,747 assertions across 327 files,
+with three existing installation-only skips and zero failures. Browser tests ran;
+Host/SDK types, App boundaries and lint passed. The longest shard took 316.45
+seconds. Exact-head GitHub
+[Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43426058931)
+passed, and the addressed review thread is resolved. An independent approving
+review is still required by the repository's active main ruleset.
+
+No external model request, release, activation or live Task change was performed
+for this review correction. The general rule is to verify both sides of a
+refreshed projection: freshness must advance, and unchanged content must reuse
+its stored artifact. Changed facts must remain discoverable as new content.
+
+A separate follow-up remains outside #491: generic `taskWorkloadGuidance()` still
+describes work-start credits, sponsor/root balances and funding holds after #482
+removed their implementation. The current reader reports those funding/root
+observations unavailable. Guidance should describe the remaining execution and
+read contracts rather than imply those retired controls are still installed.
