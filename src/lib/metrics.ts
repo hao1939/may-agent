@@ -115,10 +115,6 @@ export interface MetricService {
 
 
 
-function hasColumn(db: SqliteDb, table: string, column: string): boolean {
-  return (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name?: string }>).some((c) => c.name === column);
-}
-
 function numberOrNull(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -255,10 +251,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       project: def.project ?? null,
     });
     const values = toDbDefinition(def, owner, ts);
-    const metricColumns = new Set(
-      (db.prepare("PRAGMA table_info(metrics)").all() as Array<{ name?: string }>).map((c) => c.name),
-    );
-    const insertColumns = Object.keys(values).filter((key) => metricColumns.has(key));
+    const insertColumns = Object.keys(values);
     const insertValues = insertColumns.map((key) => values[key]);
     stateTransaction(db, () => {
       db.run(
@@ -297,7 +290,6 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
 
   function evaluate(id?: string): MetricEvaluationResult[] {
     const db = options.getDb();
-    const configSelect = hasColumn(db, "metrics", "config") ? ", m.config" : "";
     const metricIds = id ? [id] : db
       .prepare("SELECT id FROM metrics WHERE status = 'active' AND threshold IS NOT NULL")
       .all().map((row) => String(row.id));
@@ -305,7 +297,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       `SELECT m.id, m.name,
               m.owner as explicitOwner, p.owner as projectOwner, m.project,
               m.current, m.target, m.threshold, m.alert_op, m.type, m.measure_interval,
-              COALESCE(m.priority, 'P2') as priority${configSelect}
+              COALESCE(m.priority, 'P2') as priority, m.config
        FROM metrics m
        LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
          AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
