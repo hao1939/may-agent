@@ -218,7 +218,7 @@ describe("App source releases", () => {
         })
       ).map((tool) => tool.name);
     expect(await load(first)).toEqual(["sample-v1"]);
-    expect(first.id).toEndWith("-definitions-v5");
+    expect(first.id).toEndWith("-definitions-v6");
     // Content cache identity changes; the manifest schema does not. Previous
     // Hosts must still be able to read the active source after binary rollback.
     expect(JSON.parse(readFileSync(join(first.root, "release.json"), "utf8")).version).toBe(3);
@@ -462,5 +462,122 @@ describe("App source releases", () => {
 
     writeFileSync(join(root, "projects", "sample.app", "new-handler.ts"), "export const handler = true;\n");
     expect(() => store.stage()).toThrow("untracked executable/config files");
+  });
+
+  it.each([true, false])("omits non-source entries and retains authored files (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const omitted = [
+      "projects/sample.app/archive/historical.md",
+      "projects/sample.app/docs/archive/old-review.md",
+      "projects/sample.app/generated/schema.json",
+      "projects/sample.app/reports/run.json",
+      "projects/sample.app/.disabled",
+      "projects/sample.app/.last-eval-state.json",
+      "projects/sample.app/ui.root-stale-example/index.html",
+      "agents/worker/artifacts/run.json",
+      "shared/skills/sample/evidence/run.json",
+      "shared/tools/workspace/run.json",
+    ];
+    const retained = [
+      "projects/sample.app/docs/active.md",
+      "agents/worker/instructions.md",
+      "shared/skills/sample/guide.txt",
+      "shared/tools/helper.js",
+    ];
+    for (const rel of [...omitted, ...retained]) {
+      const target = join(root, rel);
+      mkdirSync(join(target, ".."), { recursive: true });
+      writeFileSync(target, "tracked content\n");
+    }
+    if (withGit) {
+      await git(root, "add", "agents", "projects", "shared");
+      await git(root, "commit", "-qm", "track generated files and authored source");
+    }
+
+    const release = new DefinitionSourceReleaseStore(root, stateDir).stage();
+    for (const rel of retained) {
+      expect(readFileSync(join(release.root, rel), "utf8")).toBe("tracked content\n");
+    }
+    for (const rel of omitted) {
+      expect(existsSync(join(release.root, rel))).toBeFalse();
+    }
+  });
+
+  it("preserves an accepted v5 release across startup even when source has advanced or is dirty", async () => {
+    const { root, stateDir, appPath } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const v6 = store.stage();
+    const v5Id = v6.id.replace(/-definitions-v6$/, "-definitions-v5");
+    const v5Root = join(stateDir, "releases", "app-definitions", v5Id);
+    renameSync(v6.root, v5Root);
+    writeFileSync(
+      join(v5Root, "release.json"),
+      `${JSON.stringify({ version: 3, id: v5Id, sourceCommit: v6.sourceCommit }, null, 2)}\n`,
+    );
+    store.activate({
+      ...v6,
+      id: v5Id,
+      root: v5Root,
+      agentsRoot: join(v5Root, "agents"),
+      projectsRoot: join(v5Root, "projects"),
+      sharedRoot: join(v5Root, "shared"),
+    });
+
+    writeFileSync(
+      appPath,
+      `export default { id: "sample-unaccepted", version: 2, agent: "worker", inputSchema: { type: "object" } };\n`,
+    );
+    await git(root, "add", appPath);
+    await git(root, "commit", "-qm", "advance HEAD without reload");
+    writeFileSync(appPath, `export default { id: "dirty-worktree", version: 3 };\n`);
+
+    const ensured = new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent();
+    expect(ensured.id).toBe(v5Id);
+    expect(readFileSync(join(ensured.projectsRoot, "sample.app", "app.js"), "utf8")).toContain("sample-v1");
+  });
+
+  it("does not traverse external symlinked top-level roots when stripping non-source entries", async () => {
+    const { root, stateDir } = await fixture();
+    const externalAgents = join(root, "uncaptured-agents");
+    mkdirSync(join(externalAgents, "archive"), { recursive: true });
+    writeFileSync(join(externalAgents, "archive", "keep.txt"), "must survive\n");
+    rmSync(join(root, "agents"), { recursive: true, force: true });
+    symlinkSync(externalAgents, join(root, "agents"));
+    await git(root, "add", "-A");
+    await git(root, "commit", "-qm", "symlink agents root");
+
+    new DefinitionSourceReleaseStore(root, stateDir).stage();
+    expect(readFileSync(join(externalAgents, "archive", "keep.txt"), "utf8")).toBe("must survive\n");
+  });
+
+  it("rejects skill links to filtered files without replacing accepted source", async () => {
+    const { root, stateDir } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const accepted = store.ensureCurrent();
+    const skill = join(root, "shared", "skills", "sample");
+    mkdirSync(join(skill, "generated"));
+    writeFileSync(join(skill, "generated", "guide.txt"), "generated support\n");
+    symlinkSync("generated/guide.txt", join(skill, "guide.txt"));
+    await git(root, "add", "shared/skills");
+    await git(root, "commit", "-qm", "skill links to generated support");
+
+    expect(() => store.stage()).toThrow("Invalid skill discovery paths in captured App source");
+    expect(store.current()?.id).toBe(accepted.id);
+    expect(readFileSync(join(skill, "generated", "guide.txt"), "utf8")).toBe("generated support\n");
+  });
+
+  it("keeps earlier snapshots readable and available for rollback across reloads and restart", async () => {
+    const { root, stateDir } = await fixture(false);
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const first = store.ensureCurrent();
+    for (let index = 0; index < 7; index += 1) store.activate(store.stage());
+    const accepted = store.current()!;
+    store.stage(); // A prepared candidate does not become accepted at startup.
+
+    const restarted = new DefinitionSourceReleaseStore(root, stateDir);
+    expect(restarted.ensureCurrent().id).toBe(accepted.id);
+    expect(readFileSync(join(first.sharedRoot, "skills", "sample", "SKILL.md"), "utf8")).toContain("# Sample");
+    restarted.activate(first);
+    expect(restarted.current()?.id).toBe(first.id);
   });
 });

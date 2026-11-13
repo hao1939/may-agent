@@ -60,6 +60,26 @@ function isNonSourcePath(path: string): boolean {
     );
 }
 
+function stripCapturedNonSourceEntries(root: string): void {
+  let stat;
+  try {
+    stat = lstatSync(root);
+  } catch {
+    return;
+  }
+  if (!stat.isDirectory() || stat.isSymbolicLink()) return;
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const child = join(root, entry.name);
+    if (isNonSourcePath(entry.name)) {
+      rmSync(child, { recursive: true, force: true });
+      continue;
+    }
+    if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      stripCapturedNonSourceEntries(child);
+    }
+  }
+}
+
 function appDirectoryNames(projectsRoot: string): string[] {
   if (!existsSync(projectsRoot)) return [];
   return readdirSync(projectsRoot, { withFileTypes: true })
@@ -295,6 +315,9 @@ function extractCommittedDefinitions(projectRoot: string, commit: string, stageR
   mkdirSync(join(stageRoot, "projects"), { recursive: true });
   mkdirSync(join(stageRoot, "agents"), { recursive: true });
   rmSync(archivePath, { force: true });
+  stripCapturedNonSourceEntries(join(stageRoot, "projects"));
+  stripCapturedNonSourceEntries(join(stageRoot, "agents"));
+  stripCapturedNonSourceEntries(join(stageRoot, "shared"));
 }
 
 function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void {
@@ -394,8 +417,8 @@ export class DefinitionSourceReleaseStore {
     }
     mkdirSync(this.releasesRoot, { recursive: true });
     if (commit) assertCommittedDefinitionSource(this.projectRoot, commit, !expectedSourceCommit);
-    // v5 captures installation file policy; never reuse a snapshot that omitted it.
-    const id = commit ? `${commit}-definitions-v5` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v5`;
+    // v6 applies the filesystem non-source policy to Git captures too.
+    const id = commit ? `${commit}-definitions-v6` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v6`;
     const releaseRoot = join(this.releasesRoot, id);
     if (existsSync(releaseRoot)) return validateRelease(releaseRoot);
 
