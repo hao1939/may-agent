@@ -93,6 +93,15 @@ assessments in both assignment arms; it shows compatibility, without measuring
 an improvement. These source and bounded comparison checks do not establish
 installed adoption or make ordinary finite work a standing service.
 
+The [native creator-consumption drill](../archive/reviews/workload-owner-comparison-20261113.md#native-creator-consumption-after-runtime-restart)
+exposes a separate acceptance gap: all four native owners handled the original
+report correctly, but none inspected or closed its fulfilled finite contribution.
+More explicit guidance did not fix the observed omission and remains branch-only.
+The next source slice must address ordinary creator result consumption through
+existing context, reads and guarded controls, with unfinished and standing
+contributions preserved. Business delivery alone does not establish lifecycle
+follow-through; broader activation remains held.
+
 ## The mental model
 
 **Agents accept and organize work. Tasks preserve assignments. The Host executes

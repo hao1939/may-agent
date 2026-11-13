@@ -259,3 +259,78 @@ model passes applied two useful investigations with supplied feedback while both
 arms deferred under heavy load. Resource-scope reasoning was inconsistent, and
 extra deciding-model overhead prevents an overall latency-benefit claim. The
 release and native owner/caller acceptance remain held.
+
+## Native creator consumption after runtime restart
+
+**Status:** Disposable native-owner evidence with an unmet lifecycle acceptance
+check. No release, activation, live Task mutation or external message occurred.
+
+Frozen Apps `b3a23c012608349fcf6979909d2a23217670e325` uses Alex guidance from
+`0c2759c783` against clean Host/SDK `0c7b0adb071ad6dae8a281a2a875e1f3e583eeff`.
+A scripted commissioning attempt creates a finite snapshot request through
+ordinary admission. A real deterministic workflow computes and saves the result.
+Durable event admission settles, then the runtime closes and reopens the same
+disposable database. Subsequent owner decisions use the real managed Task agent
+and writable Task tools. No driver applies a model recommendation afterward.
+
+The sealed case owes a final report from saved amounts 100, 200 and 300. The
+preview case has the same arithmetic but no sealed batch; its original final
+report remains owed at an existing review deadline. The one-time snapshot
+contribution has fulfilled its narrower assignment in both cases. Its creator
+should close it independently of whether the original report can be delivered.
+The calculation is a lifecycle fixture, not a reason to create a production
+Task for every bounded workflow step.
+
+The second frozen source, `ed9667ee8c79e7e485a19f5bb20e90255eaa37f3`, explicitly
+asks the owner to disposition returned contributions during the same useful pass,
+including while its original outcome remains unfinished. It also names creator
+discovery for a missing Task ID. Both cohorts use byte-identical drill source,
+business workflow and App policy, with the same model, tools and bounds. Actual
+provider requests include the changed guidance.
+
+| Source | Sealed report delivered and original closed | Preview report kept owed with its deadline | Completed contributions closed |
+| --- | --- | --- | --- |
+| Committed guidance | 1/1 | 1/1 | 0/2 |
+| Explicit consumption guidance | 1/1 | 1/1 | 0/2 |
+
+All four owners read the source and saved artifact and made an accepted decision
+for the original request. None read the exact contribution Task, used creator
+discovery or called guarded closure. Each sealed original closed while its
+fulfilled contribution stayed open. The preview cases preserved their original
+input and review time. The wording change did not demonstrate a fix and remains
+branch-only; it is not integrated into main. Four examples are not a reliability
+estimate, and they make no workload-adaptation or external-delivery claim.
+
+Independent read-only assessment verifies frozen source, actual provider input,
+raw SQLite, native finish output, creator provenance, arithmetic and exact
+Inbox/closure records. The assessor was corrected to recognize accepted waiting
+results from `partial` and `blocked` finishes as well as `success`; raw cohorts
+were unchanged. Cohort one used **6 requests, 371,889 request bytes and 75,634
+adapter tokens**; cohort two used **7 requests, 452,341 bytes and 90,482 tokens**.
+Totals include cache categories; reasoning is separate. Neither cohort had
+provider errors, tool errors or SQLite-lock warnings.
+
+Both scripted preflight paths and strict source-SDK types pass. Failed fixture
+preflights remain retained: the initial runner wrapper omitted prepare/snapshot;
+manual dispatch then raced durable event admission; finally the preview needed
+to retain the original input as waiting rather than leave it pending with empty
+coverage. These are fixture corrections, not Host fixes or successful model
+evidence. The admission barrier checks saved completion, not a timed assumption.
+
+Evidence: `/home/hao/workspace-archive/owner-follow-through-20261113-model1/` and
+`owner-follow-through-20261113-model2/`, with independent
+`owner-follow-through-assess-model{1,2}-20261113.py` scripts and corresponding
+`owner-follow-through-model{1,2}-assessment-20261113.json` results in the parent
+archive. Frozen source under
+`projects/alex.app/experiments/owner-follow-through-20261113/` remains on the two
+linked branches, outside the installed workflow catalog and normal CI.
+
+The next implementation target is creator consumption of a returned assignment
+in the ordinary owner path. Inspect supplied owner context and its result
+consumer together; carry the exact contribution identity and current obligation
+through existing reads and guarded controls. Prefer the known returned Task ID;
+use creator discovery for a missing link rather than scanning grouping parents.
+Avoid another deciding-model call merely to close work. Preserve unfinished and
+standing contributions in the next acceptance contrast; neither a parent's
+ending nor age or phase supplies closure authority. Installed follow-through,
+workload benefit and external caller delivery remain unproved.
