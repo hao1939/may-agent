@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-13
 
+- [Automated approval needs per-action, fail-closed review](./findings/2026-11-13-automated-approval-needs-per-action-fail-closed-review.md) — LoopForge puts a separate tool-free model before each exact platform write, makes valid denial final, falls back only on reviewer failure, rejects malformed or contradictory permits, and does not reuse decisions; Scout inspected pinned producer source and tests statically without running the service, models, tests, or effects.
 - [Adaptive model delegation needs step-level promotion gates](./findings/2026-11-13-adaptive-model-delegation-needs-step-level-promotion-gates.md) — Mubit and Neon report step-level small-model delegation behind holdout, shadow, canary, promotion, comparison, and demotion gates, plus schema-scoped verified lessons; the benchmark and external training service remain producer-authored and Scout did not reproduce them.
 
 ### 2026-11-12
