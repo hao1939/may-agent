@@ -28,10 +28,12 @@ function fixture(heavy = false, notifyOwners = false) {
     version: 1, observedAt: new Date(now).toISOString(), scope: { appId: "alex" },
     coverage: { limit: 20, scanned: 2, matched: 2, truncated: false },
     counts: { running: heavy ? 4 : 1, runnable: heavy ? 10 : 0, waiting: 1, attention: 0, idle: 0, paused: 0, cooldown: 0, unknown: 0, pendingInputTasks: 0 },
+    assignments: { rootTasks: 0, contributions: 0, unattributed: 2, representedRoots: 0 },
     examples: { blockers: [{ taskId: "incident", kind: "waiting" }], dispositionCandidates: [], truncated: false },
     unadmittedInputs: { scope: { appId: "alex" }, coverage: { limit: 5, scanned: 0, truncated: false }, omitted: 0, items: [] },
-    limits: { app: { backgroundMaxConcurrent: 3, interactiveAdditional: 1 }, host: { available: false }, agent: { available: false }, root: { available: false } },
+    limits: { app: { backgroundMaxConcurrent: 3, interactiveAdditional: 1 }, host: { available: false }, sharedHost: { available: false }, agent: { available: false }, root: { available: false } },
     queueWait: { available: false }, resourceHealth: { available: false },
+    funding: { ordinary: { available: false }, currentRoot: { available: false } },
   };
   const prompts: string[] = [];
   let response: unknown = { status: "done", output: { decision: "retain", reason: "The delivery remains owed; choose a smaller useful method." } };
@@ -71,9 +73,9 @@ test("pre-Task received demand receives accountable advice even with no business
   const f = fixture(false, true);
   f.tasks.splice(1);
   const pending = { id: "required-report", kind: "work", source: { kind: "app" as const, id: "exact-caller" },
-    receivedAt: now, changedAt: now, funding: { reason: "sponsor-credit", retryAt: now + 60_000 } };
+    receivedAt: now, changedAt: now };
   f.workload.unadmittedInputs = { scope: { appId: "alex" }, coverage: { limit: 5, scanned: 1, truncated: true, nextCursor: "next-input" }, omitted: 0, items: [pending] };
-  f.setResponse({ status: "done", output: { decision: "reconsider", inputId: pending.id, reason: "The receiving App owes a funding decision", nextStep: "Owner inspect the exact retained input and seek authorized funding; preserve its caller route" } });
+  f.setResponse({ status: "done", output: { decision: "reconsider", inputId: pending.id, reason: "The receiving App owes an admission decision", nextStep: "Owner inspect the exact retained input and judge the business need; preserve its caller route" } });
   const result = await execute(f.ctx);
   expect(result.status).toBe("done");
   expect(f.prompts).toHaveLength(1);
@@ -104,6 +106,9 @@ test.each([false, true])("required work stays owed in the same bounded advice co
   expect(f.prompts[0]).toContain("Business need determines owed work under every load");
   expect(f.prompts[0]).toContain("smaller useful methods and less optional fanout");
   expect(f.prompts[0]).toContain("Do not create filler Tasks or prefer closure to reduce counts");
+  expect(f.prompts[0]).toContain("Unavailable fields establish neither an allowance nor a denial");
+  expect(f.prompts[0]).toContain("App limits and the controller-Host observation have separate scopes");
+  expect(f.prompts[0]).not.toMatch(/protected credits|sponsor credits|seek.*funding|funding or method decision/i);
   expect(f.prompts[0]).toContain('"resourceHealth":{"available":false}');
   expect(result.output).toMatchObject({ state: "converged", actions: [], result: { workloadReview: { decision: { decision: "retain" } } } });
   expect(admitTaskReconcileResult(result.output).ok).toBe(true);
@@ -233,7 +238,7 @@ test.each(["old-host", "wrong-scope", "damaged-state", "damaged-feedback", "dama
   if (["old-host", "wrong-scope", "damaged-state", "missing-task", "over-bound"].includes(kind)) expect(f.prompts).toHaveLength(0);
 });
 
-test("changed ordinary funding warrants new advice; paying for this protected review does not", async () => {
+test("legacy funding observations stay scoped without implying admission authority", async () => {
   const f = fixture();
   f.workload.funding = {
     ordinary: {
@@ -274,7 +279,7 @@ test("changed ordinary funding warrants new advice; paying for this protected re
   expect(f.prompts).toHaveLength(2);
   expect(f.prompts[1]).toContain('Previous recommendation for this batch: {"decision":"retain"');
   expect(f.prompts[1]).toContain('"remaining":0');
-  expect(f.prompts[1]).toContain("funding hold retains the obligation");
+  expect(f.prompts[1]).toContain("Unavailable fields establish neither an allowance nor a denial");
   expect(f.task.status).toBe("waiting");
   expect(stressed.output).not.toHaveProperty("requests");
   f.own.result = { workloadReview: state(stressed) };
@@ -283,11 +288,11 @@ test("changed ordinary funding warrants new advice; paying for this protected re
   f.workload.funding.ordinary.remaining = 5;
   expect((await execute(f.ctx)).summary).toContain("advice retained");
   expect(f.prompts).toHaveLength(3);
-  expect(f.prompts[2]).toContain("available credits do not establish spare execution capacity");
+  expect(f.prompts[2]).toContain("A read reserves no execution slot");
   expect(f.task.status).toBe("waiting");
 });
 
-test("mechanical capacity rechecks stay quiet while changed method demand warrants advice", async () => {
+test("legacy capacity rechecks stay quiet while changed method demand warrants advice", async () => {
   const f = fixture();
   f.workload.examples.blockers = [{ taskId: "incident", kind: "capacity", scope: "root",
     reason: "execution-capacity", requiredSlots: 2, retryAt: now + 60_000 }];
@@ -337,7 +342,7 @@ test("changed assignment attribution warrants advice without treating contributi
   expect(f.task.status).toBe("waiting");
 });
 
-test("shared execution changes warrant method advice while unchanged observations stay quiet", async () => {
+test("legacy execution observations retain source scopes while unchanged observations stay quiet", async () => {
   const f = fixture(true);
   f.workload.limits.sharedHost = { available: true, scope: "installation", maxConcurrent: 4,
     occupied: 3, remaining: 1, backgroundMaxConcurrent: 3, backgroundOccupied: 3, backgroundRemaining: 0 };
@@ -347,8 +352,8 @@ test("shared execution changes warrant method advice while unchanged observation
     task: { appId: "alex", taskId: WORKLOAD_REVIEW_TASK_ID },
     root: { appId: "alex", taskId: WORKLOAD_REVIEW_TASK_ID }, maxConcurrent: 2, occupied: 1, remaining: 1 };
   f.own.result = { workloadReview: state(await execute(f.ctx)) };
-  expect(f.prompts[0]).toContain("Shared Host and recipient limits describe actual installation execution");
-  expect(f.prompts[0]).toContain("current-root capacity belongs only to this review's bound assignment");
+  expect(f.prompts[0]).toContain("App limits and the controller-Host observation have separate scopes");
+  expect(f.prompts[0]).toContain("Older scoped observations describe only their named authority");
   setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
   f.workload.observedAt = new Date(Date.now()).toISOString();
   expect((await execute(f.ctx)).summary).toContain("No changed");
@@ -584,7 +589,7 @@ test("the retained observation window stays bounded during a larger population s
 test("the helper contract admits only one subject actually supplied in this review", async () => {
   const f = fixture(false, true);
   f.workload.unadmittedInputs!.items.push({ id: "retained-demand", kind: "work", source: { kind: "app", id: "caller" },
-    receivedAt: now, changedAt: now, funding: { reason: "sponsor-credit", retryAt: now + 60_000 } });
+    receivedAt: now, changedAt: now });
   f.workload.unadmittedInputs!.coverage.scanned = 1;
   f.ctx.agents.call = (async (_agent: string, _prompt: string, options: { schema: Parameters<typeof Check>[0] }) => {
     const advice = { decision: "reconsider", reason: "Keep the required delivery and choose a smaller method." };

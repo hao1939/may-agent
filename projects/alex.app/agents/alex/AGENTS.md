@@ -92,14 +92,14 @@ installed App contract advertises `taskReads.workload`, workflows can use
 `ctx.read.tasks.workload` and agents can use `tasks {action: "workload"}` for a
 bounded current-App read. Retain its time, scope and coverage: page counts are
 not totals, blocked or idle assignments are not utilization, and unavailable
-resource or budget facts do not prove spare capacity. Read only the additional
+resource or capacity facts do not prove spare capacity. Read only the additional
 scope needed for a consequential choice; no separate model call is required.
-When present, `assignments` distinguishes canonically attributed root Tasks,
-contributions and unattributed work among the matched page. Do not treat each
-contribution as another independent commitment or guess missing ancestry from
-parent links. `representedRoots` is distinct within that observation and cannot
-be summed across pages. Actual shared execution still counts contributions and
-helpers; these assignment counts do not measure utilization or business need.
+The current Host reports `assignments` as unattributed and shared Host, agent,
+root and funding observations unavailable. Do not infer resource accounts from
+parent links or agent labels. App limits and controller-Host observations retain
+their own scopes and reserve no execution slot. Unavailable fields establish
+neither an allowance nor a denial. Counts do not measure utilization or need;
+legacy root attribution must not be summed across pages.
 
 Business need determines whether work is owed. Under pressure, prefer advancing
 existing commitments, consuming returned work and reusing useful investigations;
