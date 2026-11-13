@@ -435,6 +435,46 @@ field. All 98 shared guard tests, targeted strict source/fixture checking and
 This is source verification in temporary workspaces, not live activation,
 model-quality evidence or a measured speedup on the already-inactive branch.
 
+### Completed support cleanup: retire guards without a runtime callback
+
+Retire shared `milestone-quality`, `rbe-primer`, and `vae-primer`. All three
+subscribe exclusively to `step_start`. The current hosted runner dispatches
+`workflow_start`, agent `step_done`, and `workflow_done` to guards, but never
+`step_start`. Its similarly named `workflow.step_started` presentation callback
+does not dispatch guards. Neither do App `ctx.events.emit()` publications.
+Direct workflow and SDK test runners do not discover these shared modules.
+The milestone scorer also requires `worker-iteration-1`, with no current
+tracked workflow caller, and scores a Markdown checklist with word/path regexes.
+
+This removes a dormant process-specific scorer and two experimental reminder
+modules, rather than adding a callback to activate them. Their historical
+experiments remain readable. The remaining eight shared guard handlers and
+thresholds are unchanged, including completed-step read/build warnings, secret
+blocking, cost limits and explicit workflow-selection checks. Required
+verification remains explicit in the owning workflow, including across runners.
+The deliberate loss is these three modules for custom callers that manually
+import or dispatch them. The SDK event union remains unchanged; no Host API,
+replacement detector, toggle or migration is introduced. Untracked callers and
+other installations are unassessed.
+
+The source audit used Apps `960cbd385b` and Host `2d7454ba5c`. The hosted runner,
+direct runner, invocation kernel, SDK callback and result-type files match
+verification Host `2dd58ba3e3`. Actual discovery returns eight guards instead of
+eleven; retained handler bodies and metadata match. Twelve before/after hosted
+scenarios (24 fixture runs) match callbacks, delivered prompts, guard signals
+and outcomes, excluding generated run IDs. Cases include ordinary work, the
+retired milestone task shape, workflow-selection blocks/negation/both recorded
+tool-call formats, warnings passed to the next agent, and secret/cost blocking.
+Observed callbacks confirm that presentation step-start notifications do not
+reach guards.
+
+All 82 remaining shared guard tests and ten Host workflow repair/guard tests
+pass. Sixteen tests whose sole subject was a removed module are retired with
+it; no deletion-assertion test is added. Strict checking of the remaining guard
+sources and typed finish fixture passes, as does `check:may-design`, with the
+existing `reports` root-layout warning. This establishes the source behavior
+under scripted results, not model quality, deployment or measured runtime gains.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and

@@ -520,6 +520,13 @@ explicit policy; multi-step verification and bounded repair belong explicitly in
 workflow TypeScript rather than hidden guard step injection. Guards do not own
 retries, App requests, or task state.
 
+Check the callback the runner actually dispatches. Hosted shared guards receive
+`workflow_start`, agent `step_done`, and `workflow_done`; the SDK's declared
+`step_start` is not currently dispatched. `workflow.step_started` presentation
+notifications and `ctx.events.emit()` publications do not invoke guards. Direct
+workflow and SDK test runners do not discover shared guards, so required checks
+must be explicit in the workflow to apply across runners.
+
 Guard evidence should remain observable through canonical trace/metric facts.
 Do not add App-specific domain routing to a shared guard.
 

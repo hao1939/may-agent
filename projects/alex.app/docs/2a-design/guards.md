@@ -153,12 +153,16 @@ Host diagnostic layer. Historical tool guard events remain readable.
 
 Workflow guards are App/shared modules exporting `guard: WorkflowGuard`.
 `loadGuards()` in Host `src/lib/workflow-tool.ts` discovers the supplied guard
-directories. They fire on workflow step transitions such as
-`step_done` or `step_start`.
+directories. The hosted runner dispatches `workflow_start`, agent `step_done`,
+and `workflow_done` callbacks. The SDK still declares `step_start`, but the
+current runner does not dispatch it. Its `workflow.step_started` presentation
+callback is separate, as are App events published through `ctx.events.emit()`.
+Direct workflow and SDK test runners do not discover shared guard modules.
 
 Each guard exports `guard: WorkflowGuard` with a `handle()` method. The guard
-returns demands from the supported SDK vocabulary. Step callbacks identify
-`source: "agent"` or `"function"`; emitted `guard.triggered` diagnostics use
+returns demands from the supported SDK vocabulary. The SDK step callback type
+admits `source: "agent"` or `"function"`; current hosted step callbacks identify
+agent results. Emitted `guard.triggered` diagnostics use
 `source: "workflow"` and the guard's own name in the `guard` field.
 
 Standard callbacks carry no repository-root or write-ownership fields. The shared
@@ -168,9 +172,12 @@ repository-state check, the owning workflow checks its actual workspace rather
 than inferring edit ownership from paths and shell text in a guard. This adds no
 automatic commit requirement or replacement detector.
 
-Workflow guards are best for process-level expectations: read before edit,
-verify after write, build after code changes, milestone quality, secret
-leakage, or hallucinated paths in workflow evidence.
+Workflow guards can inspect completed-step evidence for expectations such as
+build confirmation or secret leakage. The dormant shared read/verify primers
+and milestone scorer are retired: they depended on the undispatched
+`step_start` callback, and the scorer also required a retired worker process.
+Required verification and acceptance criteria remain explicit in the owning
+workflow. Historical experiment results do not establish current activation.
 
 ### Tool Contracts And Completion
 

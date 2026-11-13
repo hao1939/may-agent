@@ -8,6 +8,13 @@ Each guard file must export a `guard` object matching the `WorkflowGuard` interf
 The Host workflow runner (`loadGuards` in `src/lib/workflow-tool.ts`) imports every `.ts` file in this
 directory (skipping `.test.ts`, `REGISTRY*`, and `.disabled.ts`) and collects exports matching `{ guard: WorkflowGuard }`.
 
+The hosted runner dispatches `workflow_start`, agent `step_done`, and
+`workflow_done` guard callbacks. Although `step_start` remains declared in the
+SDK, the current runner does not dispatch it. The presentation callback
+`workflow.step_started` and App events published through `ctx.events.emit()` do
+not invoke guards. Direct workflow and SDK test runners do not discover these
+shared guards.
+
 ## Available Guards
 
 | Guard | File | Description |
@@ -20,9 +27,12 @@ directory (skipping `.test.ts`, `REGISTRY*`, and `.disabled.ts`) and collects ex
 | read-before-edit | read-before-edit.ts | C1.1: Warns when edit() is called on a file not read() in the same step (targets #1 violation type, 37% of baseline) |
 | hallucinated-path | hallucinated-path.ts | C7.1: Warns when bash commands reference /home/, /Users/, /root/ paths that don't exist in the container environment |
 | knowledge-entry-overwrite | knowledge-entry-overwrite.ts | Warns after whole-file writes or shell redirection to legacy low-numbered shared knowledge entries (KE-001..KE-999); new knowledge should use a fresh high-numbered KE id, and legacy updates should preserve existing content with read()+edit(). |
-| milestone-quality | milestone-quality.ts | Validates milestone specificity on first iteration — flags vague milestones (no named deliverable, no boolean done-check, unbounded scope) |
-| rbe-primer | rbe-primer.ts | C1.1: Step-start reminder to read() before edit() (EXP-256: 50%→84.2% compliance) |
-| vae-primer | vae-primer.ts | C1.3: Step-start reminder to read() after edit()/write() (EXP-258: replicating RBE primer success) |
+
+The dormant `milestone-quality`, `rbe-primer`, and `vae-primer` modules are
+retired. They subscribed only to `step_start`; the milestone scorer additionally
+required the retired `worker-iteration-1` process. Historical experiments remain
+evidence about their original execution path, not current activation. Acceptance
+criteria and required verification belong in the owning workflow.
 
 `finish-guard` supplies workflow policy through its `guard` export. Required
 finish arguments, caller result schemas and declared-deliverable checks remain
