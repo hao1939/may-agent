@@ -420,6 +420,7 @@ CREATE TABLE IF NOT EXISTS metric_alerts (
 -- Interactive reads skip resolved history and stream the newest open alerts.
 CREATE INDEX IF NOT EXISTS idx_ma_open_created ON metric_alerts(created_at DESC, id DESC) WHERE resolved_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_ma_open_metric_created ON metric_alerts(metric_id, created_at DESC, id DESC) WHERE resolved_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ma_one_open_metric ON metric_alerts(metric_id) WHERE resolved_at IS NULL;
 
 
 ${NOTIFICATION_SCHEMA}
@@ -485,11 +486,6 @@ export function applyDbSchema(db: SqliteDb): void {
   // process cannot observe a table between rename, rebuild, and copy.
   db.exec("BEGIN IMMEDIATE");
   try {
-    // Only databases created before event traces existed need the historical
-    // backfill. Once the table exists, the insert trigger below owns all new
-    // rows; rescanning the complete event journal on every process start makes
-    // startup proportional to retained history.
-    const needsEventTraceBackfill = tableExists(db, "events") && !tableExists(db, "event_traces");
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
     ensureExistingTaskBindingColumns(db);
@@ -499,13 +495,6 @@ export function applyDbSchema(db: SqliteDb): void {
     db.exec("DROP VIEW IF EXISTS event_direct_app_recovery_candidates");
     db.exec("DROP INDEX IF EXISTS idx_events_direct_app_recovery");
     db.exec(SCHEMA);
-    ensureSingleOpenMetricAlert(db);
-    if (needsEventTraceBackfill) {
-      db.exec(`
-        INSERT OR IGNORE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
-        SELECT id, 'event:' || id, NULL, 'default' FROM events
-      `);
-    }
     ensureTaskResourceSchema(db);
     // Lost App-route acknowledgement recovers addressed messages by their
     // originating Event; keep that retry lookup bounded as inbox history grows.
@@ -533,30 +522,6 @@ export function applyDbSchema(db: SqliteDb): void {
     }
     throw error;
   }
-}
-
-/** Repair the old race once, then let SQLite enforce the episode invariant. */
-function ensureSingleOpenMetricAlert(db: SqliteDb): void {
-  if (db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_ma_one_open_metric'").get()) return;
-  // Keep the earliest inserted open ID: historical Events may already refer to
-  // it. Administrative closure of duplicates is not a measured recovery.
-  db.prepare(
-    `
-    WITH episodes AS (
-      SELECT metric_id, MIN(id) AS episode_id FROM metric_alerts
-      WHERE resolved_at IS NULL GROUP BY metric_id HAVING COUNT(*) > 1
-    )
-    UPDATE metric_alerts AS a SET resolved_at = ?,
-      message = COALESCE(message, '') || char(10) ||
-        '[Duplicate open alert closed during upgrade; episode continues as alert ' ||
-        (SELECT episode_id FROM episodes WHERE metric_id = a.metric_id) || '.]'
-    WHERE resolved_at IS NULL AND id > (
-      SELECT episode_id FROM episodes WHERE metric_id = a.metric_id
-    )
-  `,
-  ).run(Date.now());
-  db.exec(`CREATE UNIQUE INDEX idx_ma_one_open_metric
-    ON metric_alerts(metric_id) WHERE resolved_at IS NULL`);
 }
 
 const APP_INBOX_COLUMNS: Array<[string, string]> = [

@@ -2,7 +2,16 @@ import type { TaskAttempt, TaskDetail, TaskReconciliationEvents } from "@may-age
 
 /** Shared interpretation for every executor; observations grant no authority. */
 export function taskWorkloadGuidance(workload: TaskAttempt["workload"]): string {
-  return workload ? "Workload at attempt start is a scoped observation, not an admission decision. Respect its time, coverage and unavailable fields; missing or truncated facts do not prove spare capacity. Required work remains owed under pressure. Use the observations to judge priorities, methods and discretionary expansion. Idle and blocked assignments are not execution utilization. Work-start credits are separate from execution capacity. Ordinary sponsor and current-root balances have distinct scopes; protected coordination funds cannot finance business work. A funding hold retains the obligation and calls for an authorized funding or method decision. Pressure does not prove fulfillment or authorize closure; the creator retains that decision." : "";
+  if (!workload) return "";
+  return [
+    "Workload at attempt start is a scoped observation, not an admission decision.",
+    "Respect its time, coverage and unavailable fields; missing or truncated facts do not prove spare capacity.",
+    "Required work remains owed under pressure. Use the observations to judge priorities, methods and discretionary expansion.",
+    "Idle and blocked assignments are not execution utilization.",
+    "App limits and the Host controller observation have separate scopes; neither reserves an execution slot.",
+    "Fields marked unavailable establish neither an allowance nor a denial.",
+    "Pressure does not prove fulfillment or authorize closure; the creator retains that decision.",
+  ].join(" ");
 }
 
 /** Disposable facts for presentation, never a scheduler or a judgment of useful progress. */
