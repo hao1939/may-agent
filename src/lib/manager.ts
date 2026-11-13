@@ -22,10 +22,9 @@ import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execut
 import { extractFinishParams } from "./agent-result.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
 import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
-import { readWorkflowFacts } from "./workflow-facts.js";
 
 import { existsSync, mkdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { ownsBoundedHelper, validateSessionControl } from "../app/adapters/executors/session-control.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
@@ -34,7 +33,6 @@ import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "
 import {
   getWorkflowRun,
   getWorkflowStepSessions,
-  listChildWorkflowRunIds,
   listRunningWorkflowRunIdsBefore,
   updateWorkflowRun,
 } from "./db/workflows.js";
@@ -59,7 +57,6 @@ import {
   listActiveSessionIds,
   markSessionActive,
   markSessionInactive,
-  readActiveSessionProcessId,
   readSessionMessagesTail,
   readSessionMetaRecoveryEvidence,
   rewriteSessionMessages,
@@ -291,9 +288,6 @@ export class SubagentManager {
   }
   agentNames(): string[] {
     return [...this.agents.keys()];
-  }
-  agentCount(): number {
-    return this.agents.size;
   }
 
   listAgents(): Array<{ name: string; description: string; domain: string }> {
@@ -1025,83 +1019,6 @@ export class SubagentManager {
     };
   }
 
-  async auditHealth() {
-    const now = Date.now();
-    const dayAgo = now - 24 * 60 * 60 * 1000;
-    const db = getDb(this._persistDir);
-    const sessionCounts = db
-      .prepare(
-        `SELECT COUNT(*) AS total,
-                SUM(CASE WHEN startedAt >= ? THEN 1 ELSE 0 END) AS recent
-         FROM sessions`,
-      )
-      .get(dayAgo) as { total?: number | null; recent?: number | null } | null;
-    const liveSessionIds = [...this._sessions.keys()];
-    const liveSessionFilter = liveSessionIds.length
-      ? ` AND sessionId NOT IN (${liveSessionIds.map(() => "?").join(", ")})`
-      : "";
-    const staleCandidates = db
-      .prepare(
-        `SELECT sessionId, agent, task, startedAt, status
-         FROM sessions
-         WHERE status IN ('running', 'idle')
-         ${liveSessionFilter}
-         ORDER BY startedAt, sessionId
-         LIMIT 1001`,
-      )
-      .all(...liveSessionIds) as Array<{
-      sessionId: string;
-      agent: string;
-      task: string;
-      startedAt: number;
-      status: string;
-    }>;
-    const staleSessions = staleCandidates
-      .slice(0, 1000)
-      .filter((session) => readActiveSessionProcessId(this._persistDir, session.sessionId) === null);
-    const workflowRuns = db
-      .prepare(
-        `SELECT COUNT(*) AS total,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS completed,
-                SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) AS running,
-                SUM(CASE WHEN status = 'interrupted' THEN 1 ELSE 0 END) AS interrupted
-         FROM workflow_runs`,
-      )
-      .get() as {
-      total?: number | null;
-      completed?: number | null;
-      running?: number | null;
-      interrupted?: number | null;
-    } | null;
-
-    return {
-      timestamp: new Date().toISOString(),
-      sessionsLast24h: Number(sessionCounts?.recent ?? 0),
-      totalPersistedSessions: Number(sessionCounts?.total ?? 0),
-      staleSessions,
-      staleSessionsTruncated: staleCandidates.length > 1000,
-      workflowRuns: {
-        total: Number(workflowRuns?.total ?? 0),
-        completed: Number(workflowRuns?.completed ?? 0),
-        running: Number(workflowRuns?.running ?? 0),
-        interrupted: Number(workflowRuns?.interrupted ?? 0),
-      },
-    };
-  }
-
-  async reconcileHealth() {
-    const health = this.health();
-    const audit = await this.auditHealth();
-    const discrepancies = audit.staleSessions.map((s) => `Stale session ${s.sessionId} (${s.agent})`);
-    if (audit.staleSessionsTruncated) discrepancies.push("Session health scan incomplete; more candidates remain");
-    return {
-      healthy: discrepancies.length === 0,
-      discrepancies,
-      health,
-      audit,
-    };
-  }
-
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
@@ -1135,147 +1052,6 @@ export class SubagentManager {
         sessionId: session.sessionId,
         summary: `${session.status}: ${(session.outcome ?? "").slice(0, 300)}`,
       }));
-  }
-
-  getSessionTree(sessionId: string): any {
-    const buildNode = (sid: string): any => {
-      const active = this._sessions.get(sid);
-      const persisted = this._registry.getSession(sid);
-      if (!active && !persisted) throw new Error(`Session "${sid}" not found`);
-      const rawStatus = active?.status ?? persisted!.status;
-      const messages = active ? (active.agent.state.messages as AgentMessage[]) : this.progress(sid, 1000);
-      const node = {
-        sessionId: sid,
-        agent: active?.agentName ?? persisted!.agent,
-        task: active?.task ?? persisted!.task,
-        status: this.treeStatus(rawStatus),
-        startedAt: active?.startedAt ?? persisted!.startedAt,
-        endedAt: persisted?.endedAt,
-        result: rawStatus === "done" ? extractLastAssistantText(messages) : undefined,
-        children: [] as any[],
-      };
-
-      const childIds = new Set<string>();
-      for (const [childId, child] of this._sessions) {
-        if (child.parentSessionId === sid) childIds.add(childId);
-      }
-      const indexedChildren = getDb(this._persistDir)
-        .prepare("SELECT sessionId FROM sessions WHERE parentSessionId = ? ORDER BY startedAt, sessionId")
-        .all(sid) as Array<{ sessionId?: unknown }>;
-      for (const child of indexedChildren) {
-        if (typeof child.sessionId === "string" && child.sessionId) childIds.add(child.sessionId);
-      }
-      for (const childId of childIds) node.children.push(buildNode(childId));
-      return node;
-    };
-    return buildNode(sessionId);
-  }
-
-  trace(targetId: string): any | null {
-    const targetSession = this._sessions.get(targetId) ?? this._registry.getSession(targetId) ?? undefined;
-    if (targetSession) {
-      return {
-        targetId,
-        tree: {
-          type: "session",
-          id: targetId,
-          label:
-            "agentName" in targetSession ? (targetSession as ActiveSession).agentName : (targetSession as any).agent,
-          isTarget: true,
-          children: [],
-        },
-        path: [`session:${targetId}`],
-      };
-    }
-
-    const targetRun = getWorkflowRun(this._persistDir, targetId);
-    if (!targetRun) return null;
-
-    const buildWorkflowNode = (runId: string): any => {
-      const run = getWorkflowRun(this._persistDir, runId);
-      if (!run) return null;
-      const children = listChildWorkflowRunIds(this._persistDir, runId)
-        .map((childRunId) => buildWorkflowNode(childRunId))
-        .filter(Boolean);
-      return {
-        type: "workflow",
-        id: run.runId,
-        label: run.workflow,
-        status: run.status,
-        startedAt: run.startedAt,
-        endedAt: run.endedAt,
-        summary: run.result_summary,
-        reason: run.result_reason,
-        depth: run.depth,
-        isTarget: run.runId === targetId,
-        children,
-      };
-    };
-
-    const rootRunId = (() => {
-      let current = targetRun;
-      while (current.parentWorkflowRunId) {
-        const parent = getWorkflowRun(this._persistDir, current.parentWorkflowRunId);
-        if (!parent) break;
-        current = parent;
-      }
-      return current.runId;
-    })();
-    const rootRun = getWorkflowRun(this._persistDir, rootRunId)!;
-    const rootSessionId = rootRun.parentSessionId ?? "unknown";
-    const workflowTree = buildWorkflowNode(rootRunId);
-    const path: string[] = [`session:${rootSessionId}`];
-    const addPath = (node: any): boolean => {
-      path.push(`workflow:${node.label} (${node.id})`);
-      if (node.id === targetId) return true;
-      for (const child of node.children ?? []) {
-        if (addPath(child)) return true;
-      }
-      path.pop();
-      return false;
-    };
-    addPath(workflowTree);
-
-    return {
-      targetId,
-      facts: readWorkflowFacts(this._persistDir, targetId),
-      tree: {
-        type: "session",
-        id: rootSessionId,
-        label: rootSessionId,
-        isTarget: rootSessionId === targetId,
-        children: [workflowTree],
-      },
-      path,
-    };
-  }
-
-  private treeStatus(status: string): "running" | "completed" | "cancelled" {
-    if (status === "done") return "completed";
-    if (status === "error" || status === "interrupted") return "cancelled";
-    return "running";
-  }
-
-  getWorkspacePath(name: string): string | undefined {
-    return this.agents.get(name)?.definition.workspace;
-  }
-
-  getKnowledgePath(name: string): string | undefined {
-    return this.agents.get(name)?.definition.knowledgeDir;
-  }
-
-  getWorkflowDir(name: string): string | undefined {
-    const def = this.agents.get(name)?.definition;
-    const basePath = def?.workspace ?? def?.knowledgeDir;
-    if (!basePath) return undefined;
-    return join(dirname(basePath), "workflows");
-  }
-
-  getOutputPath(sessionId: string): string | undefined {
-    if (!this._sessions.has(sessionId) && !this._registry.getSession(sessionId)) {
-      return undefined;
-    }
-    return sessionOutputDir(this._persistDir, sessionId);
   }
 
   private cleanupStaleWorkflowRuns(): void {

@@ -26,26 +26,18 @@ describe("manager agent registry", () => {
     tools: [],
   });
 
-  it("counts and finds registered agents without duplicating replacements", () => {
-    expect(manager.agentCount()).toBe(0);
+  it("finds registered agents without duplicating replacements", () => {
+    expect(manager.agentNames()).toEqual([]);
     expect(manager.hasAgent("alpha")).toBe(false);
     for (const [index, name] of ["alpha", "beta", "gamma"].entries()) {
       manager.register(definition(name));
       expect(manager.hasAgent(name)).toBe(true);
-      expect(manager.agentCount()).toBe(index + 1);
+      expect(manager.agentNames()).toHaveLength(index + 1);
     }
     manager.register({ ...definition("alpha"), description: "Updated" });
-    expect(manager.agentCount()).toBe(3);
+    expect(manager.agentNames()).toHaveLength(3);
     expect(manager.hasAgent("alpha")).toBe(true);
     expect(manager.hasAgent("missing")).toBe(false);
     expect(manager.listAgents().find((agent) => agent.name === "alpha")?.description).toBe("Updated");
-  });
-
-  it("returns knowledge paths only when the registered definition has one", () => {
-    expect(manager.getKnowledgePath("alpha")).toBeUndefined();
-    manager.register({ ...definition("alpha"), knowledgeDir: join(root, "knowledge") });
-    expect(manager.getKnowledgePath("alpha")).toBe(join(root, "knowledge"));
-    manager.register(definition("alpha"));
-    expect(manager.getKnowledgePath("alpha")).toBeUndefined();
   });
 });

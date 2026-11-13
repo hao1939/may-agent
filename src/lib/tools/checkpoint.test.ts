@@ -14,7 +14,6 @@ import {
   createCheckpointTool,
   readCheckpoints,
   readLatestCheckpoint,
-  readCheckpointRecoveryEvidence,
 } from "./checkpoint.js";
 
 let persistDir: string;
@@ -182,10 +181,9 @@ describe("checkpoint tool", () => {
       const data = { artifact: `${sessionId}.txt` };
       const result = await tool.execute("save", { summary, data });
       expect(result.content[0].text).toContain("Checkpoint #1 saved");
-      const evidence = readCheckpointRecoveryEvidence(persistDir, sessionId);
-      expect(evidence.state).toBe("valid");
-      expect(evidence.entries).toMatchObject([{ sessionId, agentName: "agent-x", step: 1, summary, data }]);
-      expect(evidence.entries).toHaveLength(1);
+      const entries = readCheckpoints(persistDir, sessionId);
+      expect(entries).toMatchObject([{ sessionId, agentName: "agent-x", step: 1, summary, data }]);
+      expect(entries).toHaveLength(1);
     }
 
     expect(existsSync(latestPath)).toBe(state !== "absent");

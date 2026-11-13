@@ -3,15 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager, type SessionInfo } from "../../src/lib/manager.js";
-import {
-  markSessionActive,
-  markSessionInactive,
-  writeSessionMeta,
-  type PersistedSession,
-} from "../../src/lib/persistence.js";
 import { closeDb } from "../../src/lib/db/connection.js";
-import { insertWorkflowRun } from "../../src/lib/db/workflows.js";
-import { upsertSession } from "../../src/lib/db/sessions.js";
 import { fakeModel } from "../fixtures/model.js";
 
 function registerTestAgents(manager: SubagentManager) {
@@ -33,11 +25,6 @@ function registerTestAgents(manager: SubagentManager) {
     tools: [],
     apiKey: "fake-key",
   });
-}
-
-function writeAuditSession(persistDir: string, sessionId: string, meta: PersistedSession): void {
-  writeSessionMeta(persistDir, sessionId, meta);
-  upsertSession(persistDir, { sessionId, ...meta });
 }
 
 let persistDir: string;
@@ -125,156 +112,5 @@ describe("health()", () => {
     expect(report.registeredAgents.names).toEqual([]);
     expect(report.activeSessions).toEqual([]);
     expect(report.sessionCounts).toEqual({ running: 0, idle: 0, total: 0 });
-  });
-});
-
-describe("auditHealth()", () => {
-  beforeEach(() => {
-    registerTestAgents(manager);
-  });
-
-  it("returns correct session counts from the indexed session table", async () => {
-    // Create a recent session
-    writeAuditSession(persistDir, "s_recent_0", {
-      agent: "coder",
-      task: "recent task",
-      status: "done",
-      startedAt: Date.now() - 3600_000, // 1 hour ago
-    });
-    // Create an old session
-    writeAuditSession(persistDir, "s_old_0", {
-      agent: "coder",
-      task: "old task",
-      status: "done",
-      startedAt: Date.now() - 48 * 3600_000, // 2 days ago
-    });
-
-    const report = await manager.auditHealth();
-    expect(report.sessionsLast24h).toBe(1);
-    expect(report.totalPersistedSessions).toBe(2);
-    expect(report.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-  });
-
-  it("detects stale sessions without a live process owner", async () => {
-    writeAuditSession(persistDir, "s_stale_0", {
-      agent: "coder",
-      task: "stuck task",
-      status: "running",
-      startedAt: Date.now() - 7200_000,
-    });
-
-    const report = await manager.auditHealth();
-    expect(report.staleSessions).toHaveLength(1);
-    expect(report.staleSessions[0].sessionId).toBe("s_stale_0");
-    expect(report.staleSessions[0].agent).toBe("coder");
-  });
-
-  it("keeps healthy sessions in other managers out of stale-session diagnostics", async () => {
-    writeAuditSession(persistDir, "s_worker", {
-      agent: "coder",
-      task: "running elsewhere",
-      status: "running",
-      startedAt: Date.now(),
-    });
-    markSessionActive(persistDir, "s_worker");
-    expect((await manager.reconcileHealth()).healthy).toBe(true);
-    expect((await manager.auditHealth()).staleSessions).toEqual([]);
-    markSessionInactive(persistDir, "s_worker");
-    expect((await manager.reconcileHealth()).healthy).toBe(false);
-  });
-
-  it("counts workflow runs correctly", async () => {
-    insertWorkflowRun(persistDir, {
-      runId: "wf_1",
-      workflow: "code-review",
-      task: "review PR",
-      parentSessionId: "s_1",
-      parentWorkflowRunId: null,
-      depth: 1,
-      startedAt: Date.now() - 3600_000,
-      endedAt: Date.now(),
-      status: "done",
-      result_summary: null,
-      result_reason: null,
-      resumedFromRunId: null,
-    });
-    insertWorkflowRun(persistDir, {
-      runId: "wf_2",
-      workflow: "code-review",
-      task: "review PR 2",
-      parentSessionId: "s_2",
-      parentWorkflowRunId: null,
-      depth: 1,
-      startedAt: Date.now() - 1800_000,
-      endedAt: null,
-      status: "running",
-      result_summary: null,
-      result_reason: null,
-      resumedFromRunId: null,
-    });
-
-    const report = await manager.auditHealth();
-    expect(report.workflowRuns.total).toBe(2);
-    expect(report.workflowRuns.completed).toBe(1);
-    expect(report.workflowRuns.running).toBe(1);
-    expect(report.workflowRuns.interrupted).toBe(0);
-  });
-
-  it("uses indexed runtime tables without reading session metadata files", async () => {
-    writeAuditSession(persistDir, "s_indexed_0", {
-      agent: "coder",
-      task: "indexed audit",
-      status: "done",
-      startedAt: Date.now(),
-    });
-    manager.registryStore.getSession = () => {
-      throw new Error("auditHealth must not read per-session metadata files");
-    };
-
-    const report = await manager.auditHealth();
-
-    expect(report.totalPersistedSessions).toBe(1);
-    expect(report.sessionsLast24h).toBe(1);
-  });
-});
-
-describe("reconcileHealth()", () => {
-  beforeEach(() => {
-    registerTestAgents(manager);
-  });
-
-  it("does not claim healthy when the bounded audit has unchecked candidates", async () => {
-    const audit = await manager.auditHealth();
-    const read = spyOn(manager, "auditHealth").mockResolvedValue({ ...audit, staleSessionsTruncated: true });
-    try {
-      const report = await manager.reconcileHealth();
-      expect(report.healthy).toBe(false);
-      expect(report.discrepancies).toEqual(["Session health scan incomplete; more candidates remain"]);
-    } finally {
-      read.mockRestore();
-    }
-  });
-
-  it("returns healthy: true when everything matches", async () => {
-    const report = await manager.reconcileHealth();
-    expect(report.healthy).toBe(true);
-    expect(report.discrepancies).toEqual([]);
-    expect(report.health.registeredAgents.count).toBe(2);
-    expect(report.audit.totalPersistedSessions).toBe(0);
-  });
-
-  it("detects stale sessions (in filesystem but not in memory)", async () => {
-    writeAuditSession(persistDir, "s_orphan_0", {
-      agent: "coder",
-      task: "orphaned task",
-      status: "running",
-      startedAt: Date.now() - 7200_000,
-    });
-
-    const report = await manager.reconcileHealth();
-    expect(report.healthy).toBe(false);
-    expect(report.discrepancies.length).toBeGreaterThan(0);
-    expect(report.discrepancies.some((d) => d.includes("s_orphan_0"))).toBe(true);
-    expect(report.discrepancies.some((d) => d.includes("Stale session"))).toBe(true);
   });
 });

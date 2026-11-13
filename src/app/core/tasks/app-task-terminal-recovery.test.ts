@@ -73,7 +73,7 @@ describe("terminal completion recovery", () => {
       actions: [],
     };
     let agentCalls = 0;
-    let recoveryContext: string | undefined;
+    let previousAttemptSeen: import("@may-agent/sdk").TaskAttempt["previousAttempt"] | undefined;
     const agents: TaskAgentRunner = {
       available: () => true,
       prepare: async () => true,
@@ -81,7 +81,7 @@ describe("terminal completion recovery", () => {
       role: (agent) => ({ agent, instructions: "Fixture" }),
       async execute(input) {
         agentCalls++;
-        recoveryContext = input.fallbackReason;
+        previousAttemptSeen = input.attempt.previousAttempt;
         beforeResult?.(input.attempt.task.id);
         return { handlerResult: structuredClone(terminalResult), runId: null };
       },
@@ -181,7 +181,7 @@ describe("terminal completion recovery", () => {
       saveTerminalSession,
       writeTerminalSession,
       agentCalls: () => agentCalls,
-      recoveryContext: () => recoveryContext,
+      previousAttempt: () => previousAttemptSeen,
     };
   }
 
@@ -276,9 +276,11 @@ describe("terminal completion recovery", () => {
       expect(f.agentCalls()).toBe(1);
       expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
       expect(readAcceptedRuntimeAttempt(f.config, "owner")?.acceptedResult?.result).toEqual(f.payload);
-      if (metadata !== "no-binding")
-        expect(f.recoveryContext()).toContain(`session metadata is ${metadata === "missing" ? "missing" : "unreadable"}`);
-      expect(f.recoveryContext()).toContain("First sample collected");
+      expect(f.previousAttempt()).toMatchObject({
+        attemptId: claim.attemptId,
+        sessionId: "session-owner",
+        state: "interrupted",
+      });
       if (metadata === "missing") expect(existsSync(metadataPath)).toBe(false);
       else expect(readFileSync(metadataPath, "utf8")).toBe(bytes);
       expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(result);
@@ -758,8 +760,11 @@ describe("terminal completion recovery", () => {
     drained = true;
     await f.run("owner");
     expect(f.agentCalls()).toBe(1);
-    expect(f.recoveryContext()).toContain("Recovery history incomplete");
-    expect(f.recoveryContext()).toContain("Known progress");
+    expect(f.previousAttempt()).toMatchObject({
+      attemptId: claim.attemptId,
+      sessionId: "session-owner",
+      state: "interrupted",
+    });
     expect(readAcceptedRuntimeAttempt(f.config, "owner")?.taskGeneration).toBe(claim.generation + 1);
   });
 
@@ -811,8 +816,11 @@ describe("terminal completion recovery", () => {
       await requeueSavedAttempt(f, claim, route);
       await f.run("damaged");
       expect(f.agentCalls()).toBe(1);
-      expect(f.recoveryContext()).toContain("Recovery history incomplete");
-      expect(f.recoveryContext()).toContain("Known progress");
+      expect(f.previousAttempt()).toMatchObject({
+        attemptId: claim.attemptId,
+        sessionId: "session-damaged",
+        state: "interrupted",
+      });
       expect(readAcceptedRuntimeAttempt(f.config, "damaged")?.metadata.id).not.toBe(claim.attemptId);
       expect(readFileSync(transcript, "utf8")).toBe(bytes);
     },
@@ -836,7 +844,11 @@ describe("terminal completion recovery", () => {
       await requeueSavedAttempt(f, claim, route);
       await f.run("revised");
       expect(f.agentCalls()).toBe(1);
-      expect(f.recoveryContext()).toContain("Recovery history incomplete");
+      expect(f.previousAttempt()).toMatchObject({
+        attemptId: claim.attemptId,
+        sessionId: "session-revised",
+        state: "interrupted",
+      });
       expect(readAcceptedRuntimeAttempt(f.config, "revised")?.taskGeneration).toBe(2);
       await f.run("revised");
       expect(f.agentCalls()).toBe(1);
@@ -1354,7 +1366,6 @@ describe("terminal completion recovery", () => {
         await installCoreTaskRuntimes({ ...f.base, workflows });
         f.observe("handoff", "must-verify");
         const claim = f.saveTerminalSession("handoff", "agent:sample-owner");
-        expect(claim.handoff).toBeUndefined();
         expect(externalCreates).toBe(1);
 
         if (route === "startup") {

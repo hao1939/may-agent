@@ -96,7 +96,6 @@ export type TaskHandlerInput = TaskAttemptInput & {
   attempt: TaskAttempt;
   taskEvents: AppTaskEvents;
   acceptedLiveEventIds(): number[];
-  fallbackReason?: string;
 };
 
 export function hasLiveAppTaskSession(opts: AppTaskRuntimeOptions, sessionId: string): boolean {

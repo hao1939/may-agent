@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
@@ -652,8 +652,6 @@ function intent(variant: "review" | "monitor" = "review") {
   } as const;
 }
 
-import { buildRecoveredSessionHandoff } from "../../adapters/executors/session-recovery.js";
-
 function declareAndClaimTask(
   config: AppTaskContext,
   input: {
@@ -664,7 +662,6 @@ function declareAndClaimTask(
     trigger?: Record<string, unknown>;
     isAgentRunnable?: (agent: string) => boolean;
     recoverPreviousSession?: Parameters<typeof claimObservedAppTask>[1]["recoverPreviousSession"];
-    recoverSessionHandoff?: Parameters<typeof claimObservedAppTask>[1]["recoverSessionHandoff"];
     creator?: Parameters<typeof observeAppTaskIntent>[1]["creator"];
   },
 ) {
@@ -682,7 +679,6 @@ function declareAndClaimTask(
     reason: input.reason,
     isAgentRunnable: input.isAgentRunnable,
     recoverPreviousSession: input.recoverPreviousSession,
-    recoverSessionHandoff: input.recoverSessionHandoff,
   });
 }
 
@@ -724,50 +720,6 @@ function seedHistoricalCompletion(config: AppTaskContext, claim: AppTaskClaim, s
     }),
   ).toBe(true);
   return receipt;
-}
-
-function reclaimInterruptedSession(
-  state: ReturnType<typeof fixture>,
-  sessionId: string,
-  transcript: unknown[],
-  checkpoint?: Record<string, unknown>,
-) {
-  const { root } = state;
-  const { config } = state;
-  const claim = declareAndClaimTask(config, {
-    intent: intent(),
-    appAgent: "app-owner",
-    handler: "workflow:known-workflow",
-  });
-  if (claim.kind !== "claimed") throw new Error("expected initial claim");
-  expect(recordAppTaskAttemptSession(config, claim, sessionId)).toBe(true);
-
-  const sessionPath = join(root, ".state", "sessions", sessionId);
-  mkdirSync(sessionPath, { recursive: true });
-  writeFileSync(join(sessionPath, "meta.json"), `${JSON.stringify({ error: "previous runtime interrupted" })}\n`);
-  writeFileSync(join(sessionPath, "result.json"), `${JSON.stringify({ status: "interrupted" })}\n`);
-  writeFileSync(join(sessionPath, "session.jsonl"), transcript.map((entry) => JSON.stringify(entry)).join("\n") + "\n");
-  if (checkpoint) {
-    const checkpointDir = join(root, ".state", "checkpoints");
-    mkdirSync(checkpointDir, { recursive: true });
-    writeFileSync(join(checkpointDir, `${sessionId}.jsonl`), `${JSON.stringify(checkpoint)}\n`);
-  }
-
-  mutateAttemptFixture(config, claim.taskId, claim.attemptId, (attempt) => {
-    attempt.runtimeId = "previous-runtime";
-  });
-  const [recovery] = recoverableAppTaskAttempts(config, Date.now(), false, [claim.taskId]);
-  expect(releaseInterruptedAppTaskAttempt(config, recovery, "previous runtime stopped").released).toBe(true);
-
-  const reclaimed = declareAndClaimTask(config, {
-    intent: intent(),
-    appAgent: "app-owner",
-    handler: "workflow:known-workflow",
-    reason: `attempt-recovery:${claim.taskId}`,
-    recoverSessionHandoff: (attempt) => buildRecoveredSessionHandoff(join(root, ".state"), attempt),
-  });
-  if (reclaimed.kind !== "claimed") throw new Error("expected reclaimed claim");
-  return { reclaimed, sessionPath };
 }
 
 afterEach(() => {
@@ -3590,146 +3542,6 @@ describe("App task reconciler state", () => {
     expect(config.resourceStore.readReceipt(old.taskId)).toEqual(receipt);
   });
 
-  it("recovers a receipted checkpoint from an interrupted session transcript when checkpoint JSONL is absent", () => {
-    const state = fixture();
-    const { root } = state;
-    const sessionId = "s_1786381127581_184";
-    const artifactPaths = ["/app/projects/may-agent/report.json", "/app/projects/may-agent/verification.log"];
-    const { reclaimed, sessionPath } = reclaimInterruptedSession(state, sessionId, [
-      {
-        role: "assistant",
-        content: [
-          {
-            type: "toolCall",
-            id: "checkpoint-recovery",
-            name: "checkpoint",
-            arguments: {
-              summary: "Fallback implementation complete; deterministic acceptance tests remain.",
-              data: {
-                next_step: "run focused tests and typecheck",
-                artifact_paths: artifactPaths,
-              },
-            },
-          },
-        ],
-      },
-      {
-        role: "toolResult",
-        toolCallId: "checkpoint-recovery",
-        toolName: "checkpoint",
-        isError: false,
-        content: [{ type: "text", text: "Checkpoint saved (step 1)." }],
-      },
-    ]);
-
-    expect(existsSync(join(root, ".state", "checkpoints", `${sessionId}.jsonl`))).toBe(false);
-    expect(reclaimed.handoff).toMatchObject({ reason: "recovered-session" });
-    expect(reclaimed.handoff?.facts).toEqual(
-      expect.arrayContaining([
-        `Recovered interrupted workflow:known-workflow session path: ${sessionPath}`,
-        `Recovered interrupted workflow:known-workflow session artifact: ${join(sessionPath, "result.json")}`,
-        `Recovered interrupted workflow:known-workflow session transcript: ${join(sessionPath, "session.jsonl")}`,
-        expect.stringContaining("summary=Fallback implementation complete; deterministic acceptance tests remain."),
-        expect.stringContaining(
-          `data=${JSON.stringify({ artifact_paths: artifactPaths, next_step: "run focused tests and typecheck" })}`,
-        ),
-      ]),
-    );
-  });
-
-  it("prefers a file-backed checkpoint over a successful transcript checkpoint", () => {
-    const state = fixture();
-    const { root } = state;
-    const sessionId = "session-file-checkpoint-precedence";
-    const fileCheckpoint = {
-      sessionId,
-      agentName: "dev",
-      step: 4,
-      summary: "File-backed checkpoint wins",
-      data: { source: "checkpoint-jsonl", artifact_paths: ["/tmp/file-backed.txt"] },
-      timestamp: 1_786_381_127_581,
-    };
-    const { reclaimed } = reclaimInterruptedSession(
-      state,
-      sessionId,
-      [
-        {
-          role: "assistant",
-          content: [
-            {
-              type: "toolCall",
-              id: "checkpoint-transcript",
-              name: "checkpoint",
-              arguments: { summary: "Transcript checkpoint loses", data: { source: "transcript" } },
-            },
-          ],
-        },
-        { role: "toolResult", toolCallId: "checkpoint-transcript", toolName: "checkpoint", isError: false,
-          content: [{ type: "text", text: "Recorded" }], timestamp: 2 },
-      ],
-      fileCheckpoint,
-    );
-
-    const checkpointFacts = reclaimed.handoff?.facts.find((entry) =>
-      entry.startsWith("Recovered latest durable checkpoint:"),
-    );
-    expect(checkpointFacts).toContain(
-      `Recovered latest durable checkpoint: ${join(root, ".state", "checkpoints", `${sessionId}.jsonl`)}`,
-    );
-    expect(checkpointFacts).toContain("step=4 summary=File-backed checkpoint wins");
-    expect(checkpointFacts).toContain(
-      'data={"artifact_paths":["/tmp/file-backed.txt"],"source":"checkpoint-jsonl"}',
-    );
-    expect(checkpointFacts).not.toContain("Transcript checkpoint loses");
-  });
-
-  it("reports checkpoint absence without a file or matching successful transcript receipt", () => {
-    for (const [sessionId, transcript] of [
-      [
-        "session-checkpoint-no-receipt",
-        [
-          {
-            role: "assistant",
-            content: [
-              {
-                type: "toolCall",
-                id: "checkpoint-unreceipted",
-                name: "checkpoint",
-                arguments: { summary: "Unreceipted checkpoint", data: { source: "transcript" } },
-              },
-            ],
-          },
-        ],
-      ],
-      [
-        "session-checkpoint-error-receipt",
-        [
-          {
-            role: "assistant",
-            content: [
-              {
-                type: "toolCall",
-                id: "checkpoint-error",
-                name: "checkpoint",
-                arguments: { summary: "Failed checkpoint", data: { source: "transcript" } },
-              },
-            ],
-          },
-          { role: "toolResult", toolCallId: "checkpoint-error", toolName: "checkpoint", isError: true,
-            content: [{ type: "text", text: "Failed" }], timestamp: 2 },
-        ],
-      ],
-    ] as const) {
-      const state = fixture();
-      const { reclaimed, sessionPath } = reclaimInterruptedSession(state, sessionId, [...transcript]);
-      expect(reclaimed.handoff?.facts).toContain(
-        `Recovered durable checkpoint: absent for session ${sessionId}; no matching successful checkpoint receipt in ${join(sessionPath, "session.jsonl")}`,
-      );
-      expect(reclaimed.handoff?.facts.join("\n")).not.toContain("Unreceipted checkpoint");
-      expect(reclaimed.handoff?.facts.join("\n")).not.toContain("Failed checkpoint");
-    }
-  });
-
   it("releases only the exact expired agent attempt after its session is terminal", () => {
     const state = fixture();
     const { config } = state;
@@ -4590,16 +4402,14 @@ describe("App task reconciler state", () => {
       appAgent: "app-owner",
       handler: "workflow:known-workflow",
       reason: "restart-event:5446564",
-      recoverSessionHandoff: (attempt) => buildRecoveredSessionHandoff(join(root, "configured-state"), attempt),
     });
     if (replacement.kind !== "claimed") throw new Error("expected replacement claim");
     expect(replacement.generation).toBe(oldClaim.generation);
-    expect(replacement.handoff?.facts).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining("Event 5446564 interrupted the old owner after acceptance-critical facts"),
-        expect.stringContaining('data={"next_step":"replacement owner decides the unchanged generation"}'),
-      ]),
-    );
+    expect(replacement.previousAttempt).toMatchObject({
+      attemptId: oldClaim.attemptId,
+      sessionId: "r_1_f85fb905-old-session",
+      failureReason: "terminal-agent-session-expired-lease-requeued",
+    });
 
     expect(completeAppTask(config, oldClaim, { summary: "late old disposition" }).status).toBe("stale");
     expect(
