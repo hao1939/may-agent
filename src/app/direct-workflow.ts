@@ -212,8 +212,15 @@ async function buildDirectTargetCatalog(
   callerOwner: string,
   explicitWorkflowDir?: string,
 ): Promise<PreparedTargetCatalog<AgentDirectory>> {
-  const dirs = listRuntimeAgentDirectories(options.agentsRoot, options.projectsRoot);
+  // An App-local agentsRoot can also appear through projectsRoot. Keep its
+  // project metadata instead of treating that duplicate path as a global root.
+  const dirs = [...new Map(
+    listRuntimeAgentDirectories(options.agentsRoot, options.projectsRoot).map((dir) => [resolve(dir.dir), dir]),
+  ).values()];
   const callerSource =
+    (explicitWorkflowDir
+      ? dirs.find((dir) => resolve(dir.dir, "workflows") === resolve(explicitWorkflowDir))
+      : undefined) ??
     resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner) ??
     resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner, options.projectsRoot);
   const callerProjectId = callerSource?.projectId;
@@ -224,20 +231,20 @@ async function buildDirectTargetCatalog(
 
   for (const agentDir of dirs) {
     // Enforce App-local boundary isolation: only include global agents or agents in the same App projectId.
-    if (agentDir.projectId && callerProjectId && agentDir.projectId !== callerProjectId) {
+    if (agentDir.projectId && agentDir.projectId !== callerProjectId) {
       continue;
     }
     const config = readAgentConfigFile(agentDir.dir);
     if (!config) continue;
     const existing = prompts.get(config.name);
-    // Prefer App-local definition over global fallback for the same App.
-    if (!existing || (!existing.definition.projectId && agentDir.projectId)) {
-      prompts.set(config.name, { owner: config.name, definition: agentDir });
+    // Prompt and procedure definitions must come from the same admitted owner.
+    if (existing?.definition.projectId && !agentDir.projectId) continue;
+    if (existing && existing.definition.projectId === agentDir.projectId) {
+      throw new Error(`Ambiguous callable owner "${config.name}": ${existing.definition.dir}, ${agentDir.dir}`);
     }
+    prompts.set(config.name, { owner: config.name, definition: agentDir });
     const wfCatalog = await buildWorkflowCatalog(join(agentDir.dir, "workflows"));
-    if (wfCatalog.workflows.size > 0) {
-      proceduresByOwner.set(config.name, wfCatalog.workflows);
-    }
+    proceduresByOwner.set(config.name, wfCatalog.workflows);
     for (const diag of wfCatalog.diagnostics) {
       diagnostics.push(diag);
     }
@@ -340,7 +347,7 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
   const workflowDir = resolveWorkflowDir(options);
-  const catalog = workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
+  const catalog = !options.module && workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
   const targetCatalog =
     internal?.targetCatalog ?? (await buildDirectTargetCatalog(options, callerOwner, workflowDir));
 
@@ -430,9 +437,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (fixture) {
       return fixture({ agent, task: prompt, options: callOpts, ...stepControl });
     }
-    const agentSource =
-      resolveRuntimeAgentDirectory(options.agentsRoot, agent) ??
-      resolveRuntimeAgentDirectory(options.agentsRoot, agent, options.projectsRoot);
+    const agentSource = targetCatalog.prompts?.get(agent)?.definition;
     if (!agentSource) {
       throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
     }
@@ -470,6 +475,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     try {
       directRun = await executeAgent({
         agentName: agent,
+        agentSource,
         task: effectivePrompt,
         projectRoot: options.projectRoot,
         workRoot: options.workRoot,
@@ -640,30 +646,14 @@ export async function runDirectWorkflow<TInput = unknown>(
     callAgent: (agent, prompt, callOpts, stepControl) =>
       executePromptTarget(agent, prompt, callOpts, stepControl),
     runWorkflow: async (wfName, wfInput, stepControl) => {
-      if (wfName.includes("/")) {
-        const resolved = resolveCallableTarget(callerOwner, wfName, targetCatalog);
-        if (resolved.kind === "code") {
-          return executeCodeTarget(
-            resolved.name,
-            resolved.module,
-            resolved.owner,
-            wfInput,
-            stepControl,
-            stepControl.options,
-          );
-        }
-      }
-      if (!catalog) {
-        throw new Error(`Cannot resolve nested workflow "${wfName}" without a workflowDir`);
-      }
-      const found = findWorkflow(catalog, wfName);
-      if (!found.workflow) {
-        throw new Error(found.error ?? `Workflow "${wfName}" not found`);
+      const resolved = resolveCallableTarget(callerOwner, wfName, targetCatalog);
+      if (resolved.kind !== "code") {
+        throw new Error(`Callable target "${wfName}" is not a code procedure`);
       }
       return executeCodeTarget(
-        found.workflow.name,
-        found.workflow,
-        callerOwner,
+        resolved.name,
+        resolved.module,
+        resolved.owner,
         wfInput,
         stepControl,
         stepControl.options,

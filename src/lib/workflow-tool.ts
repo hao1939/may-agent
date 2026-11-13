@@ -4,10 +4,15 @@ import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { ExecutionDeferredError } from "@may-agent/sdk";
 import {
+  resolveCallableTarget,
   runWorkflowInvocation,
+  type PreparedTargetCatalog,
+  type WorkflowExecutableModule,
+  type WorkflowKernelBindings,
   type WorkflowExecutionAllowance,
   type WorkflowStepInvocationResult,
 } from "../../packages/sdk/src/workflow-kernel.js";
+import { join } from "node:path";
 import { Type, type TSchema } from "typebox";
 import { getDb } from "./db/connection.js";
 import { executionTimeout } from "./execution-scope.js";
@@ -433,8 +438,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     if (!store) throw new Error("Task execution requires canonical authority");
     assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "workflow start");
   };
-  const callAgent = (agentName: string, task: string, callOptions: Parameters<SubagentManager["callAgent"]>[2]) => {
-    const definition = opts.agentDefinitions?.get(agentName);
+  const callAgent = (
+    agentName: string,
+    task: string,
+    callOptions: Parameters<SubagentManager["callAgent"]>[2],
+    definition = opts.agentDefinitions?.get(agentName),
+  ) => {
     return definition
       ? manager.callAgentDefinition(definition, task, callOptions)
       : manager.callAgent(agentName, task, callOptions);
@@ -494,12 +503,38 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     } as any);
   };
 
+  async function captureTargetCatalog(
+    catalog: WorkflowCatalog,
+    parentSessionId: string | undefined,
+  ): Promise<PreparedTargetCatalog<SubagentDefinition>> {
+    const definitions = opts.agentDefinitions ?? opts.taskContext?.agentDefinitions ?? new Map(
+      (manager.agentNames?.() ?? []).flatMap((name) => {
+        const definition = manager.getAgentDefinition(name, parentSessionId);
+        return definition ? [[name, definition] as const] : [];
+      }),
+    );
+    const projectId = opts.projectId ?? getCallerSessionMeta(parentSessionId).projectId ?? opts.taskBinding?.appId;
+    const prompts = new Map<string, { owner: string; definition: SubagentDefinition }>();
+    const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>();
+    const diagnostics = [...catalog.diagnostics];
+    for (const [name, definition] of definitions) {
+      if (definition.appLocal && (!projectId || definition.projectId !== projectId)) continue;
+      prompts.set(name, { owner: name, definition });
+      if (name === opts.agentName || !definition.agentDir) continue;
+      const procedures = await buildWorkflowCatalog(join(definition.agentDir, "workflows"));
+      proceduresByOwner.set(name, procedures.workflows);
+      diagnostics.push(...procedures.diagnostics);
+    }
+    proceduresByOwner.set(opts.agentName ?? "workflow", catalog.workflows);
+    return { prompts, proceduresByOwner, diagnostics };
+  }
+
   let activeSteeringQueue: string[] | null = null;
   let activeWorkflowName: string | null = null;
 
   async function executeWorkflow(
-    catalog: WorkflowCatalog,
-    workflow: WorkflowModule,
+    catalog: PreparedTargetCatalog<SubagentDefinition>,
+    workflow: WorkflowExecutableModule,
     task: string,
     depth: number,
     parentSessionId: string | undefined,
@@ -511,6 +546,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     parentSignal = opts.signal,
     inheritedAllowance?: WorkflowExecutionAllowance,
     inheritedTools?: "full" | "readonly",
+    callerOwner = opts.agentName ?? "workflow",
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     if (depth > 1) assertWorkflowExecution();
     const localSteps: CompletedStep[] = [];
@@ -625,7 +661,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             )
           : undefined;
 
-      const outcome = await runWorkflowInvocation(workflow, {
+      const bindings: WorkflowKernelBindings = {
         executionId: runId,
         startedAt: run.startedAt,
         input: authoredInput ? authoredInput.value : task,
@@ -635,7 +671,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         timeoutMs: declaredTimeoutMs,
         timeoutLimitMs: executionTimeoutLimitMs,
         allowance: inheritedAllowance,
-        resolveTargetKind: (target) => (catalog.workflows.has(target) ? "workflow" : "agent"),
+        resolveTargetKind: (target) => {
+          try {
+            return resolveCallableTarget(callerOwner, target, catalog).kind === "code" ? "workflow" : "agent";
+          } catch {
+            return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
+          }
+        },
         read: appRead,
         metrics: {
           define: (definition) => metricService().define(definition),
@@ -728,7 +770,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             outputSchema: stepOpts?.schema,
             toolPolicy: stepOpts?.tools,
             executionRoot: opts.executionPaths?.workspaceDir,
-          });
+          }, catalog.prompts?.get(agentName)?.definition);
           let sid = taskResult.sessionId;
           stepControl.signal.throwIfAborted();
 
@@ -767,9 +809,13 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           if (depth + 1 > maxDepth) {
             throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
           }
-          const { workflow: subWorkflow, error } = findWorkflow(catalog, wfName);
-          if (!subWorkflow) {
-            throw new Error(error ?? `Workflow "${wfName}" not found`);
+          const resolved = resolveCallableTarget(callerOwner, wfName, catalog);
+          if (resolved.kind !== "code") {
+            throw new Error(`Callable target "${wfName}" is not a code procedure`);
+          }
+          const subWorkflow = resolved.module;
+          if (stepControl.options?.tools === "readonly" && !resolved.readonly) {
+            throw new Error(`Workflow "${wfName}" cannot run with tools: "readonly" unless the module declares readonly: true`);
           }
           const nestedTask =
             typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
@@ -788,6 +834,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             stepControl.signal,
             stepControl.allowance,
             stepControl.options?.tools,
+            resolved.owner,
           );
           stepControl.signal.throwIfAborted();
           if (sub.result.type === "done") {
@@ -803,6 +850,19 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
             ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
           };
+        },
+      };
+      const outcome = await runWorkflowInvocation(workflow, {
+        ...bindings,
+        callTarget: (target, input, callOptions, stepControl) => {
+          const resolved = resolveCallableTarget(callerOwner, target, catalog);
+          if (resolved.kind === "code") {
+            return bindings.runWorkflow(target, input, { ...stepControl, options: callOptions });
+          }
+          if (typeof input !== "string") {
+            throw new Error(`Prompt target "${target}" requires a string prompt input`);
+          }
+          return bindings.callAgent(resolved.name, input, callOptions, stepControl);
         },
       });
 
@@ -926,8 +986,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       activeSteeringQueue = steeringQueue;
       activeWorkflowName = workflow.name;
       onEvent?.({ type: "workflow.started", workflow: workflow.name, task });
+      const targetCatalog = await captureTargetCatalog(catalog, parentSessionId);
       const { result } = await executeWorkflow(
-        catalog,
+        targetCatalog,
         workflow,
         task,
         depth,

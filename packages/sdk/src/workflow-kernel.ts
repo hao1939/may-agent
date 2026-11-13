@@ -303,12 +303,12 @@ export type WorkflowKernelBindings<TInput = unknown> = {
     stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult>;
   /** Optional classifier so runBoundStep knows whether target is prompt ("agent") or code ("workflow") before invocation. */
-  resolveTargetKind?(target: string): "agent" | "workflow";
+  resolveTargetKind?(target: string, input: unknown): "agent" | "workflow";
   callAgent(
     agent: string,
     task: string,
     options: (AgentCallOptions & { schema?: TSchema }) | undefined,
-    stepControl: { signal: AbortSignal; timeoutMs: number; deadlineAt: number; stepIndex: number },
+    stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult>;
   runWorkflow(
     name: string,
@@ -870,7 +870,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
       const actualKind = raw.kind ?? kind;
       const cleanupConfirmed = raw.cleanupConfirmed !== false;
-      if (effectiveOptions?.schema) {
+      if (raw.status === "done" && effectiveOptions?.schema) {
         const kindLabel = actualKind === "agent" ? "Agent" : "Workflow";
         if (raw.output !== undefined) {
           if (!Check(effectiveOptions.schema, raw.output)) {
@@ -943,7 +943,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       return Promise.reject(err);
     }
     const kind: "agent" | "workflow" = bindings.resolveTargetKind
-      ? bindings.resolveTargetKind(target)
+      ? bindings.resolveTargetKind(target, input)
       : typeof target === "string" && target.includes("/")
         ? "workflow"
         : typeof input === "string"

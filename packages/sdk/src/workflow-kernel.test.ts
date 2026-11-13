@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
-import { resolveCallableTarget, runWorkflowTest } from "./testing.js";
+import { createTestAppWorkflowContext, resolveCallableTarget, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -509,6 +509,73 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       summary: { requestedLimit: 5 },
     });
   });
+
+  test("routes test-context aliases through an explicitly supplied unified caller", async () => {
+    const calls: string[] = [];
+    const call = (async (target: string) => {
+      calls.push(target);
+      return { id: "s_test", kind: "agent", status: "done", summary: target };
+    }) as WorkflowContext["call"];
+    const ctx = createTestAppWorkflowContext({ input: {}, call });
+    await ctx.call("unified", "input");
+    await ctx.agents.call("legacy-agent", "input");
+    await ctx.workflows.run("legacy-workflow", {});
+    expect(calls).toEqual(["unified", "legacy-agent", "legacy-workflow"]);
+  });
+
+  test("uses a queued mock's explicit kind before validating call options", async () => {
+    const run = await runWorkflowTest({
+      name: "caller", description: "Calls code with string input",
+      async execute(ctx: WorkflowContext) {
+        return ctx.call("code", "input", { skill: "prompt-only" });
+      },
+    }, { input: {}, mocks: { code: [{ kind: "workflow", summary: "must not run" }] } });
+    expect(run.ok).toBe(false);
+    expect(String(run.error)).toContain('Call option "skill" is only supported for prompt targets');
+    expect(run.unconsumedFixtures).toEqual([{ kind: "workflow", target: "code", remaining: 1 }]);
+  });
+
+  test.each(["blocked", "error", "interrupted"] as const)(
+    "preserves %s code contribution evidence even when it does not satisfy the completion schema",
+    async (status) => {
+      const run = await runWorkflowTest({
+        name: "caller",
+        description: "Preserves partial child evidence",
+        async execute(ctx: WorkflowContext) {
+          const child = await ctx.call("owner/child", {}, {
+            schema: Type.Object({ completed: Type.Boolean() }),
+          });
+          return ctx.done("received", child);
+        },
+      }, {
+        input: {},
+        mocks: { "owner/child": { status, output: { partial: true }, facts: { evidence: "retained" } } },
+      });
+      expect(run.ok).toBe(true);
+      expect(run.result).toMatchObject({ output: {
+        status, output: { partial: true }, facts: { evidence: "retained" },
+      } });
+      expect(run.steps[0]).toMatchObject({ status, output: { partial: true } });
+    },
+  );
+
+  test.each([{ skill: "review" }, { operationAllowance: 2 }])(
+    "classifies a string-input prompt mock before validating prompt-only options: %j",
+    async (options) => {
+      const run = await runWorkflowTest({
+        name: "caller",
+        description: "Calls an ordinary prompt mock",
+        async execute(ctx: WorkflowContext) {
+          const child = await ctx.call("reviewer", "Review HEAD", options);
+          return ctx.done(child.summary);
+        },
+      }, { input: {}, mocks: { reviewer: { summary: "reviewed" } } });
+      expect(run.ok).toBe(true);
+      expect(run.result).toMatchObject({ type: "done", summary: "reviewed" });
+      expect(run.steps[0]?.kind).toBe("agent");
+      expect(run.unconsumedFixtures).toEqual([]);
+    },
+  );
 
   test("supports unified ctx.call, resolveCallableTarget, mocks, dual output schemas, and readonly enforcement", async () => {
     const childCodeMod = {

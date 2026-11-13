@@ -184,10 +184,10 @@ export function createTestAppWorkflowContext<TInput>(
     read: options.read ?? createTestAppRead(),
     call,
     agents: {
-      call: callAgent,
+      call: options.call ?? callAgent,
     },
     workflows: {
-      run: runWorkflow,
+      run: options.call ?? runWorkflow,
     },
     events: {
       emit: options.emit ?? fn(async () => undefined),
@@ -466,6 +466,8 @@ export async function runWorkflowTest<TInput = unknown>(
     const mockFixture = options.mocks?.[target];
     if (mockFixture) {
       if (isExecutableModuleFixture(mockFixture)) return "workflow";
+      const queuedKind = mockQueues.get(target)?.[0]?.kind;
+      if (queuedKind) return queuedKind;
       if (!Array.isArray(mockFixture) && typeof mockFixture !== "function") {
         const single = mockFixture as ScriptedStepResponse;
         if (single.kind) return single.kind;
@@ -636,20 +638,11 @@ export async function runWorkflowTest<TInput = unknown>(
     confirmCleanup: options.confirmCleanup,
     onStep: options.onStep,
     onLog: options.onLog,
-    resolveTargetKind: (target) => resolveMockKind(target),
+    resolveTargetKind: (target, input) => resolveMockKind(target, input),
     callTarget: (target, input, callOpts, stepControl) =>
       invokeMockTarget(target, input, callOpts, stepControl),
     callAgent: (agent, task, callOpts, stepControl) =>
-      invokeMockTarget(
-        agent,
-        task,
-        callOpts,
-        {
-          ...stepControl,
-          allowance: nestedControl?.allowance ?? ({} as any),
-        },
-        "agent",
-      ),
+      invokeMockTarget(agent, task, callOpts, stepControl, "agent"),
     runWorkflow: (name, wfInput, stepControl) =>
       invokeMockTarget(name, wfInput, stepControl.options, stepControl, "workflow"),
   });

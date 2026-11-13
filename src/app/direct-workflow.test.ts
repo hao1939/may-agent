@@ -699,6 +699,81 @@ export async function execute(ctx) {
     expect(seenPrompts[1]?.some((msg) => msg.includes("finish()"))).toBe(true);
   });
 
+  test.each(["global", "app-local"])("isolates %s callers from other Apps' procedures", async (layout) => {
+    const env = setupDirectLayout();
+    const projectsRoot = join(env.projectRoot, "projects");
+    const foreignDir = join(projectsRoot, "foreign.app");
+    const foreignOwner = join(foreignDir, "agents", "foreign-owner");
+    mkdirSync(join(foreignOwner, "workflows"), { recursive: true });
+    writeFileSync(join(foreignDir, "app.ts"), "export default {};");
+    writeFileSync(join(foreignOwner, "agent.json"), JSON.stringify({
+      name: "foreign-owner", model: "test", description: "Foreign", domain: "test", tools: [],
+    }));
+    writeFileSync(join(foreignOwner, "workflows", "secret.ts"), `
+export const name = "secret";
+export const description = "Must not be visible";
+export async function execute(ctx) { return ctx.done("foreign execution"); }
+`);
+    let agentsRoot = env.agentsRoot;
+    if (layout === "app-local") {
+      const appDir = join(projectsRoot, "local.app");
+      agentsRoot = join(appDir, "agents");
+      mkdirSync(join(agentsRoot, "owner", "workflows"), { recursive: true });
+      writeFileSync(join(appDir, "app.ts"), "export default {};");
+      writeFileSync(join(agentsRoot, "owner", "agent.json"), JSON.stringify({
+        name: "owner", model: "test", description: "Local", domain: "test", tools: [],
+      }));
+    }
+    const run = await runDirectWorkflow({
+      ...env, agentsRoot, projectsRoot, agentName: "owner", input: {}, models: {},
+      module: { name: "caller", description: "Boundary probe", async execute(ctx) {
+        return ctx.call("foreign-owner/secret", {});
+      } },
+    });
+    expect(run.ok).toBe(false);
+    expect(String(run.error)).toContain('Callable procedure "foreign-owner/secret" not found');
+  });
+
+  test("executes the App-local prompt admitted by the catalog instead of resolving a global namesake", async () => {
+    const env = setupDirectLayout();
+    const projectsRoot = join(env.projectRoot, "projects");
+    const appDir = join(projectsRoot, "local.app");
+    const localAgentsRoot = join(appDir, "agents");
+    for (const name of ["owner", "reviewer"]) {
+      const dir = join(localAgentsRoot, name);
+      mkdirSync(join(dir, "workflows"), { recursive: true });
+      writeFileSync(join(dir, "agent.json"), JSON.stringify({
+        name, description: "Local", domain: "test", model: "test", tools: ["finish"],
+      }));
+      writeFileSync(join(dir, "AGENTS.md"), `APP LOCAL ${name} INSTRUCTIONS`);
+    }
+    writeFileSync(join(appDir, "app.ts"), "export default {};");
+    const run = await runDirectWorkflow({
+      ...env, projectsRoot, agentName: "owner", workflowDir: join(localAgentsRoot, "owner", "workflows"),
+      input: {}, models: { test: fakeModel() as any },
+      module: { name: "caller", description: "Calls captured prompt", async execute(ctx) {
+        return ctx.call("reviewer", "Review HEAD");
+      } },
+      runAgent: async (opts) => {
+        const prep = await prepareDirectAgentExecution(opts);
+        try {
+          expect(prep.prepared.systemPrompt).toContain("APP LOCAL reviewer INSTRUCTIONS");
+          expect(prep.prepared.systemPrompt).not.toContain("Lab-forked reviewer");
+          return {
+            sessionId: prep.sessionId, sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt, model: prep.model, executionManifest: prep.executionManifest,
+            status: "done", lastAssistantText: "ok", messages: [], durationMs: 1,
+            finishResult: { status: "success", summary: "local executed" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } finally { prep.cleanup(); }
+      },
+    });
+    expect(run.ok).toBe(true);
+    expect(run.result).toMatchObject({ type: "done", summary: "local executed" });
+  });
+
   test("resolves local and cross-owner <owner>/<name> procedures via ctx.call while preserving Task reconciliation owner", async () => {
     const env = setupDirectLayout();
     const reviewerWorkflowsDir = join(env.agentsRoot, "reviewer", "workflows");
@@ -724,6 +799,8 @@ export const description = "Cross-owner procedure that calls unqualified local-h
 export const readonly = true;
 export async function execute(ctx) {
   const helper = await ctx.call("local-helper", {});
+  const legacyHelper = await ctx.workflows.run("local-helper", {});
+  if (legacyHelper.summary !== helper.summary) throw new Error("Legacy alias changed lexical owner");
   const agentStep = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef);
   return ctx.done(helper.summary + ":" + agentStep.summary, {
     helper: helper.output,
