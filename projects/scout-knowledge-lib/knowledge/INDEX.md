@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-11-12"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-12, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-11-13"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-13, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-13
 
+- [Human takeover must drain in-flight agent actions](./findings/2026-11-13-human-takeover-must-drain-in-flight-agent-actions.md) — OpenBot closes new Bot action admission and drains already-admitted computer work before granting human control; Scout inspected pinned producer source and tests statically without running the application, browser, tests, or distributed execution paths.
 - [Output-only agent privacy audits miss internal channels](./findings/2026-11-13-output-only-agent-privacy-audits-miss-internal-channels.md) — AgentLeak reports that 41.7% of 4,979 validated two-agent coordinator-worker traces had a safe final output while inter-agent messages or shared memory leaked; Scout did not reproduce the producer-authored benchmark, validate its semantic judge, inspect all traces, or establish comparable coverage for all seven channels.
 - [Automated approval needs per-action, fail-closed review](./findings/2026-11-13-automated-approval-needs-per-action-fail-closed-review.md) — LoopForge puts a separate tool-free model before each exact platform write, makes valid denial final, falls back only on reviewer failure, rejects malformed or contradictory permits, and does not reuse decisions; Scout inspected pinned producer source and tests statically without running the service, models, tests, or effects.
 - [Adaptive model delegation needs step-level promotion gates](./findings/2026-11-13-adaptive-model-delegation-needs-step-level-promotion-gates.md) — Mubit and Neon report step-level small-model delegation behind holdout, shadow, canary, promotion, comparison, and demotion gates, plus schema-scoped verified lessons; the benchmark and external training service remain producer-authored and Scout did not reproduce them.
