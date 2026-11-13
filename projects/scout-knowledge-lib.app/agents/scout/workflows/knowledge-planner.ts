@@ -7,7 +7,7 @@ import {
   type TaskVerificationResult,
   type WorkflowContext,
 } from "@may-agent/sdk";
-import { taskEmissionKey } from "./lib/task-emission.js";
+import { taskEmissionKey } from "../../../../../shared/tools/task-emission.js";
 import {
   acceptedPublicationRecovery,
   retainAcceptedPublication,

@@ -18,7 +18,10 @@ import {
 import { assessmentContext } from "./lib/task-assessment-context.js";
 import { reviewerProfile, type Reviewer } from "./lib/reviewer-profile.js";
 import { consumePublishedReviews } from "./lib/review-disposition.js";
-import { memberEmissionKey, taskEmissionKey } from "./lib/task-emission.js";
+import {
+  memberEmissionKey,
+  taskEmissionKey,
+} from "../../../../../shared/tools/task-emission.js";
 import {
   selectMetricCandidate,
   type MetricSelector,

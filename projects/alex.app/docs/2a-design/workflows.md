@@ -317,6 +317,15 @@ assume publication means another owner accepted work. Any actionable consumer
 must be declared by the destination App as an input subscription, exact task
 target, or matching Condition.
 
+Alex and Scout share the pure key helpers in `shared/tools/task-emission.ts`.
+They retain the existing input-based key format, including older triggers without
+event IDs. With no triggering input, the logical key uses the Host's existing
+App/Task/generation scope; attempt IDs and resource versions do not add another
+scope. Apps choose the logical publication and any optional content binding.
+Semantic member identities ignore object field order; content binding hashes
+the serialized facts in their original order, matching the Host's byte-sensitive
+conflict check. These helpers add no receipt storage or publication authority.
+
 The compatibility `ctx.emit` and `ctx.dispatchEvent` forms are rejected for a
 resource-backed task because they cannot carry the fenced local key. Use
 `ctx.events.emit`. To request a result from another App, return a typed

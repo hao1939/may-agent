@@ -12,7 +12,7 @@ import {
   ACCEPTED_SOURCE_OUTPUTS_METRIC_ID,
   RETIRED_ACCEPTED_SOURCE_OUTPUTS_24H_METRIC_ID,
 } from "../../../scripts/accepted-source-outputs.js";
-import { taskEmissionKey } from "./lib/task-emission.js";
+import { taskEmissionKey } from "../../../../../shared/tools/task-emission.js";
 
 export const name = "library-health";
 export const description =

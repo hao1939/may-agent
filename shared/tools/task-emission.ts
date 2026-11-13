@@ -1,7 +1,13 @@
 import { createHash } from "node:crypto";
 import type { WorkflowContext } from "@may-agent/sdk";
 
-type ReconciliationView = NonNullable<WorkflowContext["reconciliation"]>;
+type ReconciliationEvents = NonNullable<
+  WorkflowContext["reconciliation"]
+>["events"];
+
+type EmissionContext = {
+  reconciliation?: { events: ReconciliationEvents };
+};
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -34,42 +40,42 @@ function byteFingerprint(value: unknown): string {
     .slice(0, 16);
 }
 
-/** Stable input identity for one Task wake, independent of its retry. */
+/** Preserve the existing key format, including older triggers without IDs. */
 function reconciliationCycleKey(
-  reconciliation: ReconciliationView,
+  events: ReconciliationEvents | undefined,
 ): string | undefined {
-  const events = reconciliation.events;
-  if (Number.isSafeInteger(events?.throughEventId)) {
+  if (!events) return undefined;
+  if (Number.isSafeInteger(events.throughEventId)) {
     return `event-${events.throughEventId}`;
   }
-  const eventId = [...(events?.items ?? [])]
+  const eventId = [...events.items]
     .reverse()
     .find((item) => Number.isSafeInteger(item.eventId))?.eventId;
   if (eventId !== undefined) return `event-${eventId}`;
-  const latestEvent = events?.items.at(-1)?.event;
-  if (latestEvent) {
-    return `event-${fingerprint(latestEvent)}`;
-  }
-  // Without input, the Host's Task-generation scope is sufficient. A mutable
-  // resource version changes during retry and must not invent a new publication.
+  const latestEvent = events.items.at(-1)?.event;
+  if (latestEvent) return `event-${fingerprint(latestEvent)}`;
   return undefined;
 }
 
 /**
- * Every Task can receive multiple inputs in one generation. Scope publication
- * to the exact wake, rather than a retired Task mode or mutable resource version.
- * When supplied, materialFact binds the key to the exact serialized event data,
- * so a reused key implies byte-equivalent data while changed facts get new keys.
+ * Local publication identity; the Host supplies App/Task/generation scope.
+ * Retries retain their input key. Without input, the logical key is sufficient.
+ * Apps may bind changing facts to their exact serialized data; property order
+ * matters here because the Host compares publication bytes on key reuse.
  */
 export function taskEmissionKey(
-  ctx: Pick<WorkflowContext, "reconciliation">,
+  ctx: EmissionContext,
   logicalKey: string,
   materialFact?: unknown,
 ): string {
-  const reconciliation = ctx.reconciliation;
-  const cycle = reconciliation && reconciliationCycleKey(reconciliation);
+  const cycle = reconciliationCycleKey(ctx.reconciliation?.events);
   const wakeKey = cycle ? `${cycle}:${logicalKey}` : logicalKey;
   return materialFact === undefined
     ? wakeKey
     : `${wakeKey}:fact-${byteFingerprint(materialFact)}`;
+}
+
+/** Stable bounded identity for one semantic member, independent of field order. */
+export function memberEmissionKey(prefix: string, identity: unknown): string {
+  return `${prefix}-${fingerprint(identity)}`;
 }

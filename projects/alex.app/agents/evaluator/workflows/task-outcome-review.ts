@@ -25,7 +25,7 @@ import {
   type PublicCommand,
   type SubjectEvidence,
 } from "./lib/public-task-evidence.js";
-import { taskEmissionKey } from "./lib/task-emission.js";
+import { taskEmissionKey } from "../../../../../shared/tools/task-emission.js";
 import {
   configuredTaskReportRoot,
   hashReport,

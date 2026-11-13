@@ -28,7 +28,7 @@ import {
 } from "./lib/task-report-store.js";
 import { publishRetainedReport } from "./lib/report-publication.js";
 import { reportFollowUpGuidance } from "./lib/report-follow-up.js";
-import { taskEmissionKey } from "./lib/task-emission.js";
+import { taskEmissionKey } from "../../../../../shared/tools/task-emission.js";
 import {
   checkMetricDecisionReuse,
   readMetricOwnerTask,
