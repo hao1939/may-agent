@@ -41,6 +41,16 @@ and prevent new finite results from accumulating without a decision before
 broader workload activation. Use the existing lifecycle,
 bounded reader and guarded controls first.
 
+**November 13 follow-through:** [Host #472](https://github.com/hao1939/may-agent/pull/472)
+merged one explicit creator-discovery read, independent of grouping and ended
+waits. Scout's committed guidance uses it on ordinary wakes; release and native
+behavioral acceptance remain on hold. The
+[owner comparison](../archive/reviews/workload-owner-comparison-20261113.md)
+prepares a separate local business fixture to verify applied decisions while
+preserving the readonly advice pilot. Scripted effects are verified; unscripted
+workload benefit and production adoption remain unproven. The dated November 8
+milestone observations below are historical snapshots, not current rollout state.
+
 ## The mental model
 
 **Agents accept and organize work. Tasks preserve assignments. The Host executes

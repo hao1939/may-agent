@@ -5,6 +5,11 @@ and [implementation approach](../../proposals/agent-task-workload-implementation
 The user authorized the isolated model comparison using the configured gateway.
 That authorization does not activate the workload pilot or change live Tasks.
 
+The November 13 [owner comparison](workload-owner-comparison-20261113.md) adds a
+separate ordinary-funded business fixture for applied effects and guarded creator
+disposition. Its scripted verification does not change the readonly pilot or
+establish unscripted workload benefit.
+
 ## First cohort
 
 The Host candidate was `f68fd7f3070b6dfd88657e4e8527b00dd2d4b984`
