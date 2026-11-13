@@ -104,7 +104,7 @@ describe("validateAgentConfig", () => {
     expect(errors.some((e) => e.field === "tools" && e.message.includes("fly-to-moon"))).toBe(true);
   });
 
-  it("accepts retired context and skill fields in older configuration", () => {
+  it("accepts retired fields in older configuration", () => {
     const config = {
       name: "test",
       description: "test",
@@ -113,6 +113,7 @@ describe("validateAgentConfig", () => {
       tools: ["coding"],
       skillActivationRules: [{ skill: "proof-first", pattern: "roll(?:out| out).*(?:all|every) agents" }],
       context_files: ["missing-retired-context.md"],
+      memoryLimit: 5,
     } as AgentConfig;
     const errors = validateAgentConfig(config, fakeModels, AGENTS_ROOT);
     expect(errors).toEqual([]);
@@ -310,6 +311,8 @@ describe("agent loader boundaries", () => {
           tools: ["query_db"],
           context_files: ["missing-retired-context.md"],
           skillActivationRules: [{ skill: "old-skill", pattern: ".*" }],
+          memoryLimit: 5,
+          compaction: true,
         }),
       );
 
@@ -336,6 +339,8 @@ describe("agent loader boundaries", () => {
       expect(registered[0].projectRoot).toBe(projectDir);
       expect(registered[0]).not.toHaveProperty("contextFiles");
       expect(registered[0]).not.toHaveProperty("skillActivationRules");
+      expect(registered[0]).not.toHaveProperty("memoryLimit");
+      expect(registered[0].compaction).toBe(true);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

@@ -1,7 +1,7 @@
 /**
  * Tests for the checkpoint tool (Common Sense P3.5).
  *
- * Covers: writing checkpoints, reading back, per-agent latest pointer,
+ * Covers: writing checkpoints, reading back, historical pointer preservation,
  * step counter, error handling, and JSONL append behavior.
  */
 
@@ -14,6 +14,7 @@ import {
   createCheckpointTool,
   readCheckpoints,
   readLatestCheckpoint,
+  readCheckpointRecoveryEvidence,
 } from "./checkpoint.js";
 
 let persistDir: string;
@@ -73,7 +74,7 @@ describe("checkpoint tool", () => {
     await createCheckpointTool(options).execute("third", { summary: "Recreated tool" });
     await tool.execute("fourth", { summary: "Original tool sees new evidence" });
     expect(readCheckpoints(persistDir, "resumed").map((entry) => entry.step)).toEqual([1, 2, 3, 4]);
-    expect(JSON.parse(readFileSync(resolve(persistDir, "checkpoints/latest/agent.json"), "utf8")).step).toBe(4);
+    expect(readLatestCheckpoint(persistDir, "resumed")).toMatchObject({ step: 4, summary: "Original tool sees new evidence" });
   });
 
   it("numbers beyond retained history even if an old process reset its counter", async () => {
@@ -163,28 +164,33 @@ describe("checkpoint tool", () => {
     expect(latest!.step).toBe(2);
   });
 
-  it("writes the per-agent latest pointer across sessions", async () => {
-    // First session
-    const tool1 = createCheckpointTool({
-      sessionId: "sess-A",
-      agentName: "agent-x",
-      persistDir: persistDir,
-    });
-    await tool1.execute("tc1", { summary: "Session A work" });
+  it.each(["absent", "blocked", "historical"] as const)("saves session progress without changing the retired pointer path (%s)", async (state) => {
+    const checkpointDir = resolve(persistDir, "checkpoints");
+    const latestPath = resolve(checkpointDir, "latest");
+    const pointerPath = resolve(latestPath, "agent-x.json");
+    const historical = '{"sessionId":"older-session","agentName":"agent-x","step":99,"summary":"Historical progress","data":{},"timestamp":1}\n';
+    mkdirSync(checkpointDir);
+    if (state === "blocked") writeFileSync(latestPath, "Historical path blocker");
+    if (state === "historical") {
+      mkdirSync(latestPath);
+      writeFileSync(pointerPath, historical);
+    }
 
-    // Second session (same agent)
-    const tool2 = createCheckpointTool({
-      sessionId: "sess-B",
-      agentName: "agent-x",
-      persistDir: persistDir,
-    });
-    await tool2.execute("tc1", { summary: "Session B work" });
+    for (const sessionId of ["sess-A", "sess-B"]) {
+      const tool = createCheckpointTool({ sessionId, agentName: "agent-x", persistDir });
+      const summary = `Progress for ${sessionId}`;
+      const data = { artifact: `${sessionId}.txt` };
+      const result = await tool.execute("save", { summary, data });
+      expect(result.content[0].text).toContain("Checkpoint #1 saved");
+      const evidence = readCheckpointRecoveryEvidence(persistDir, sessionId);
+      expect(evidence.state).toBe("valid");
+      expect(evidence.entries).toMatchObject([{ sessionId, agentName: "agent-x", step: 1, summary, data }]);
+      expect(evidence.entries).toHaveLength(1);
+    }
 
-    // Latest for agent should be from session B
-    const latest = JSON.parse(readFileSync(resolve(persistDir, "checkpoints/latest/agent-x.json"), "utf8"));
-    expect(latest).not.toBeNull();
-    expect(latest!.sessionId).toBe("sess-B");
-    expect(latest!.summary).toBe("Session B work");
+    expect(existsSync(latestPath)).toBe(state !== "absent");
+    if (state === "blocked") expect(readFileSync(latestPath, "utf8")).toBe("Historical path blocker");
+    if (state === "historical") expect(readFileSync(pointerPath, "utf8")).toBe(historical);
   });
 
   it("returns null for non-existent checkpoints", () => {

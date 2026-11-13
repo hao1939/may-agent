@@ -32,7 +32,6 @@ export interface PersistedAgentConfig {
   workspace?: string;
   model: { provider: string; id: string };
   timeoutMs?: number;
-  memoryLimit?: number;
   compaction?: boolean;
 }
 
@@ -126,7 +125,6 @@ function toPersistedConfig(def: SubagentDefinition): PersistedAgentConfig {
   if (def.systemPrompt !== undefined) config.systemPrompt = def.systemPrompt;
   if (def.workspace !== undefined) config.workspace = def.workspace;
   if (def.timeoutMs !== undefined) config.timeoutMs = def.timeoutMs;
-  if (def.memoryLimit !== undefined) config.memoryLimit = def.memoryLimit;
   if (def.compaction !== undefined) config.compaction = def.compaction;
   return config;
 }

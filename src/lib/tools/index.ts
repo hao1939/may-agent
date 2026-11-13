@@ -21,6 +21,3 @@ export * from "./write.js";
 export * from "./query-db.js";
 export * from "./lifecycle.js";
 export * from "./checkpoint.js";
-
-// Pi no longer exports this default, retained for the Host tool surface.
-export const GREP_MAX_LINE_LENGTH = 500;

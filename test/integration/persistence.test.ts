@@ -45,7 +45,7 @@ describe("Registry persistence", () => {
     expect(registry.agents["test-agent"].model).toEqual({ provider: "anthropic", id: "test-model" });
   });
 
-  it("persists fields (domain, workspace, timeoutMs, memoryLimit)", () => {
+  it("retains supported fields (domain, workspace, timeoutMs)", () => {
     const manager = new SubagentManager({ persistDir });
 
     manager.register({
@@ -56,7 +56,6 @@ describe("Registry persistence", () => {
       model: fakeModel(),
       tools: [],
       timeoutMs: 600000,
-      memoryLimit: 30,
     });
 
     const registry = (manager as any).registry.getRegistry();
@@ -64,7 +63,6 @@ describe("Registry persistence", () => {
     expect(agent.domain).toBe("research");
     expect(agent.workspace).toBe("/path/to/workspace");
     expect(agent.timeoutMs).toBe(600000);
-    expect(agent.memoryLimit).toBe(30);
   });
 
   it("persists multiple agents", () => {
@@ -247,6 +245,5 @@ describe("Registry persistence", () => {
     expect(agent.systemPrompt).toBeUndefined();
     expect(agent.workspace).toBeUndefined();
     expect(agent.timeoutMs).toBeUndefined();
-    expect(agent.memoryLimit).toBeUndefined();
   });
 });

@@ -75,7 +75,6 @@ export async function buildAgentDefinition(options: AgentDefinitionOptions): Pro
     appLocal,
     projectId: source.projectId,
     apiKey: options.model.apiKey,
-    memoryLimit: config.memoryLimit,
     compaction: config.compaction,
     contextPreparation,
     contextPreparationSource,

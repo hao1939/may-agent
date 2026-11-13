@@ -82,7 +82,6 @@ describe("Manager session startup robustness", () => {
       model: fakeModel(),
       tools: [],
       apiKey: "fake-key",
-      memoryLimit: 5,
     });
 
     // The session should start without issues
@@ -104,7 +103,6 @@ describe("Manager session startup robustness", () => {
       model: fakeModel(),
       tools: [],
       apiKey: "fake-key",
-      memoryLimit: 5,
     });
 
     const sessionId = manager.run("test-agent2", "test task");

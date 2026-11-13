@@ -70,8 +70,9 @@ evidence. Finish does not copy them into a separate memory stream or activate
 guidance. Apps own review and adoption through their existing learning workflow.
 
 The Host does not guess invalid paths from home-directory prefixes, track
-repeated reads by file name, or classify transcript reads through shell-command
-patterns, infer completed writes from tool names, or scan Git at completion.
+repeated reads by file name, classify transcript reads through shell-command
+patterns, infer completed writes from tool names, rewrite or reject markdown
+files via regex memory-poisoning/PII filters, or scan Git at completion.
 Apps judge whether retained evidence meets their acceptance criteria, including
 verification and committed source where required. The Host has no default
 tool-guard composition or diagnostic callback; App workflow guards keep their
@@ -91,6 +92,7 @@ sequence of unnecessary calls from consuming the execution budget.
 | Workflow loading, steps and agent calls | `workflow-tool.ts`; `workflow.ts` holds internal types; `workflow-payload.ts` prepares inputs |
 | Execution results and retained evidence | `execution-result.ts`, `workflow-facts.ts`, `artifacts.ts` |
 | Session transcripts and metadata files | `persistence.ts` |
+| Session checkpoint logs and recovery evidence | `tools/checkpoint.ts`; `app/adapters/executors/session-recovery.ts` |
 | SQLite connection, schema and queries | Focused modules in `db/`; `db.ts` adapts Bun/Node SQLite |
 
 | Event persistence | `db-writer.ts`; Task resource operations remain in `app/core/state/` |
@@ -104,6 +106,14 @@ Receipt repair does not replay committed effects. Isolated Task workers retain
 their bounded retry schedule. Repeatable schema/metric-definition installation
 uses the separate initialization retry helper; it is not an ordinary delivery
 allowance. Session/workflow artifacts remain evidence if a SQL projection fails.
+
+Checkpoint saves append to the exact session's progress log. That log owns step
+numbering and checkpoint recovery. Historical per-agent latest files are retained;
+new saves do not create or refresh that separate copy.
+
+Older agent JSON may contain `memoryLimit`. The loader ignores that retired field;
+definitions and registry projections carry actual execution controls instead.
+Context compaction and per-response output truncation keep their existing owners.
 
 Opening a database never replaces existing state with a backup. Lock contention
 uses the bounded initialization retry; damaged state fails visibly and remains
@@ -128,12 +138,11 @@ attempt can still settle as no-work when the saved observation is inspected. App
 acknowledges its own inspection independently, in the same transaction. See the observer-delivery,
 persisted-event and worker-boundary regressions for these failure paths.
 
-`session-subscribers.ts` contains the digest and last-session writers registered
-by `app/daemon-events.ts`. Completion suggestions stay in the saved result;
-they do not rewrite guidance or enter future prompts automatically. The retired
-context updater and unregistered file-read tracker are removed. Historical
-`file_reads` rows remain stored; the project Lineage HTTP view that read them
-is retired.
+Completion suggestions stay in the saved result; they do not rewrite guidance
+or enter future prompts automatically. The retired context updater,
+session-digest/last-session subscribers, and unregistered file-read tracker are
+removed. Historical `file_reads` and `session_digests` rows remain stored; the
+project Lineage HTTP view and `/api/digest` endpoint that read them are retired.
 
 Manager health reads describe sessions, process ownership and workflow runs.
 They do not select work for evaluation. Evaluation eligibility and exclusions
