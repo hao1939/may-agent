@@ -53,42 +53,6 @@ bun scripts/library-health-readonly.ts
 
 Run it from an isolated worktree when using it as Herdr completion evidence.
 
-The allocation-design isolation fixture is offline and authorizes no provider
-calls:
-
-```bash
-bun scripts/verification-allocation-factorial.ts
-```
-
-It verifies a synthetic 64-episode toy schedule. Passing it is design-tooling
-evidence, not a model result or proof of a cryptographic lineage authority.
-
-The execution-freeze validator binds a proposed schedule to immutable model
-resolution declarations, a Scout-specific seed policy, exact artifact hashes,
-and completed external-registration metadata while keeping results empty and
-provider authority false:
-
-```bash
-bun test scripts/verification-allocation-freeze.test.ts
-```
-
-Use `verifyExecutionFreezeManifest` from
-[`scripts/verification-allocation-freeze.ts`](scripts/verification-allocation-freeze.ts)
-with the unknown manifest value and the exact supplied artifact bytes. The
-validator also runs the factorial isolation verifier over the bound schedule.
-It is an offline structural and byte-binding gate: it does not contact a
-provider, verify that an external URL or timestamp is genuine, authenticate
-lineage, or grant call or spending authority.
-
-For an explicit goal-owned directory, use `verifyExecutionFreezeBundle` from
-[`scripts/verification-allocation-freeze-bundle.ts`](scripts/verification-allocation-freeze-bundle.ts).
-It reads the fixed `freeze-manifest.json`, inventories the directory, and
-rejects relative roots, traversal-shaped artifact names, symlinks, non-regular
-entries, and undeclared files before invoking the same offline gate. Regular
-files are opened through no-follow descriptors, so replacing an inventoried
-file with a final-component symlink cannot redirect the subsequent read. On
-the Linux Scout runtime, the root directory remains pinned and recursive
-children are opened relative to its `/proc/self/fd` descriptor chain, so an
-intermediate directory replacement also fails closed. A runtime without that
-descriptor filesystem cannot validate a directory bundle. Directory
-validation does not authenticate provenance or authorize provider calls.
+Historical September 2026 verification-allocation, provenance, and overlay-plan
+study scripts are archived in Git history (`d0191d2b55` and the exact study
+commits cited in `../scout-knowledge-lib/reports/`).

@@ -1340,7 +1340,7 @@ counterbalance which constraint is superseded and record order, and analyze
 selection before downstream decisions. Scout's
 [preregistration-ready design](../../reports/research/verification-allocation-factorial-design-2026-09-02.md)
 specifies that boundary and its no-call gates. Its offline
-[factor-isolation verifier](../../../scout-knowledge-lib.app/scripts/verification-allocation-factorial.ts)
+factor-isolation verifier (`verification-allocation-factorial.ts`)
 now checks all 64 cells in a synthetic toy schedule at exact commit
 `957390080c9a77dc2adc88ed91d66c7f5ba86d50`; the fixture-only attestation and
 empty results remain design tooling, not an authenticated manifest or model

@@ -103,8 +103,8 @@ and externally timestamped before confirmatory calls.
 ## Offline isolation fixture
 
 Scout commit `957390080c9a77dc2adc88ed91d66c7f5ba86d50` adds the
-[deterministic generator and verifier](../../../scout-knowledge-lib.app/scripts/verification-allocation-factorial.ts)
-plus [regression tests](../../../scout-knowledge-lib.app/scripts/verification-allocation-factorial.test.ts).
+deterministic generator and verifier (`verification-allocation-factorial.ts`)
+plus regression tests (`verification-allocation-factorial.test.ts`).
 Its deliberately smaller smoke fixture contains one synthetic model identity,
 two synthetic seeds, and all 32 factor/counterbalance cells: 64 episodes at
 SHA-256
@@ -170,8 +170,8 @@ still empty.
 ## Cycle 48 offline freeze gate
 
 Scout commit `f71b2f185a08061cc67340017a31c643e7d0a9cb` adds a
-[fail-closed freeze validator](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze.ts)
-and [seven regressions](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze.test.ts).
+fail-closed freeze validator (`verification-allocation-freeze.ts`)
+and seven regressions (`verification-allocation-freeze.test.ts`).
 It accepts unknown JSON rather than trusting a TypeScript caller, hashes every
 declared artifact's supplied bytes, rejects missing, duplicated, tampered, or
 undeclared artifacts, and binds model resolution evidence plus a Scout-specific
@@ -198,8 +198,8 @@ preparation and never authorizes provider calls or spending.
 ## Cycle 49 read-only directory gate
 
 Scout commit `f44c14bd69a601b1ad0a248159906793b19e4c6a` adds a
-[read-only directory adapter](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze-bundle.ts)
-and [six regressions](../../../scout-knowledge-lib.app/scripts/verification-allocation-freeze-bundle.test.ts).
+read-only directory adapter (`verification-allocation-freeze-bundle.ts`)
+and six regressions (`verification-allocation-freeze-bundle.test.ts`).
 The adapter requires an explicit absolute directory rather than choosing a
 default execution package. It reads a fixed `freeze-manifest.json`, inventories
 all nested files, and rejects a symlinked root, any nested symlink or
@@ -1328,7 +1328,7 @@ byte drift. Added and changed IDs remain unknown, removals are `[]`, and all
 `2026-09-02T23:55:59.924Z–23:55:59.929Z` found all six tracked refs unchanged;
 GitHub, arXiv, and Reddit made zero public requests.
 
-The [exact frontier verifier](../../../scout-knowledge-lib.app/scripts/verification-allocation-robust-frontier.ts)
+The exact frontier verifier (`verification-allocation-robust-frontier.ts`)
 at `6fd185a54b4fa386d92ceba26b187a3a7963a6fe` regenerates every count from 64
 through 256 in four interleaved local workers. All 193 rows retain the frozen
 null gate; dense-null at 71 is again worst at `0.008554538502693238`. The
