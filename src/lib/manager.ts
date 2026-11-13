@@ -452,9 +452,7 @@ export class SubagentManager {
           : {}),
         createFinish: () =>
           createFinishTool({
-            agentName: def.name,
             projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
-            persistDir: this._persistDir,
           }),
         createCheckpoint: () =>
           createCheckpointTool({

@@ -169,9 +169,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       case "finish": {
         tools.push(
           createFinishTool({
-            agentName: config.name,
             projectRoot,
-            persistDir,
           }),
         );
         break;

@@ -159,7 +159,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
       domain: "fixture",
       model,
       tools: [
-        createFinishTool({ agentName: "worker", projectRoot: root, persistDir }),
+        createFinishTool({ projectRoot: root }),
         {
           name: "hold",
           label: "Hold",

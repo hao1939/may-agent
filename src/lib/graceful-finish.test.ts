@@ -120,7 +120,7 @@ test("direct execution interrupts work, rejects further effects, and admits a co
             return { content: [{ type: "text", text: "new effect" }] };
           },
         },
-        createFinishTool({ agentName: "owner", projectRoot: dir }),
+        createFinishTool({ projectRoot: dir }),
       ],
     },
     sessionId: "direct-wrap-up",
@@ -170,7 +170,7 @@ test("a stalled finalization still reaches the original hard stop without an inv
       domain: "test",
       model: fakeModel(),
       systemPrompt: "Return evidence.",
-      tools: [stalledTool(), createFinishTool({ agentName: "owner", projectRoot: dir })],
+      tools: [stalledTool(), createFinishTool({ projectRoot: dir })],
     },
     sessionId: "stalled-finish",
     projectRoot: dir,

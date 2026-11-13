@@ -791,14 +791,14 @@ describe("shared agent execution preparation", () => {
         systemPrompt: "identity",
         projectRoot: registeredRoot,
         model: { contextWindow: 10_000 } as any,
-        tools: [createFinishTool({ agentName: "sample", projectRoot: registeredRoot })],
+        tools: [createFinishTool({ projectRoot: registeredRoot })],
       },
       projectRoot: registeredRoot,
       executionRoot,
       sessionId: "isolated-finish-1",
       task: "finish with proof",
       requireFinish: true,
-      createFinish: () => createFinishTool({ agentName: "sample", projectRoot: executionRoot }),
+      createFinish: () => createFinishTool({ projectRoot: executionRoot }),
     });
 
     const finish = prepared.tools.find((candidate) => candidate.name === "finish");
@@ -835,7 +835,7 @@ describe("direct structured judgment execution", () => {
         domain: "tests",
         systemPrompt: "Judge the supplied facts.",
         model: streamTestModel,
-        tools: [createFinishTool({ agentName: "judge", projectRoot: root })],
+        tools: [createFinishTool({ projectRoot: root })],
       },
       projectRoot: root,
       sessionId: "judgment-fixture",

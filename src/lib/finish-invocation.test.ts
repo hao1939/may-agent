@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import { afterEach, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAssistantMessageEventStream, type ToolCall } from "@earendil-works/pi-ai";
@@ -11,6 +11,8 @@ import { createAgentRun } from "./agent-runner.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
+import { readSessionMessages } from "./persistence.js";
+import { extractFinishParams } from "./agent-result.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -32,7 +34,7 @@ function fixture(mode: "plain" | "required" | "schema" = "plain") {
   roots.push(root);
   const definition = {
     name: "helper", description: "Synthetic helper", domain: "tests", systemPrompt: "Report the measurement",
-    model: fakeModel(), tools: [createFinishTool({ agentName: "helper", projectRoot: root })],
+    model: fakeModel(), tools: [createFinishTool({ projectRoot: root })],
   };
   const prepared = prepareAgentExecution({
     definition, projectRoot: root, sessionId: "finish-fixture", task: "Measure once",
@@ -111,16 +113,22 @@ test.each(["steering", "follow-up"] as const)("finish fences a mixed batch and p
 
 test("the managed ordinary-helper path keeps the result without continuing model work", async () => {
   const { root, definition } = fixture();
+  mkdirSync(join(root, ".state"), { recursive: true });
+  const lessons = [{ category: "insight", content: "Compare retained evidence before changing guidance" }];
   let requests = 0;
   const manager = new SubagentManager({
     persistDir: root,
-    agentRunFactory: (config) => createAgentRun({ ...config, streamFn: () => stream(++requests <= 3 ? [call()] : []) }),
+    agentRunFactory: (config) => createAgentRun({ ...config, streamFn: () => stream(++requests <= 3
+      ? [{ ...call(), arguments: { ...args, lessons } }] : []) }),
   });
   manager.register(definition);
   const session = manager.run("helper", "Measure once");
   try {
     expect(await manager.waitFor(session)).toMatchObject({ status: "done", lastAssistantText: "Measured" });
     expect(requests).toBe(1);
+    expect(extractFinishParams(readSessionMessages(root, session))?.lessons).toEqual(lessons);
+    expect(existsSync(join(root, ".state", "memory-stream.jsonl"))).toBe(false);
+    expect(existsSync(join(root, "memory-stream.jsonl"))).toBe(false);
   } finally {
     manager.cancel(session);
     await manager.waitFor(session);

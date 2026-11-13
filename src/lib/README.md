@@ -65,6 +65,10 @@ Task acceptance belongs to the App's declared policy. An accepted finish ends
 the invocation and fences remaining tool calls in that batch. Rejected reports
 remain correctable through the existing completion boundary.
 
+Reported lessons stay in the returned completion report and saved session
+evidence. Finish does not copy them into a separate memory stream or activate
+guidance. Apps own review and adoption through their existing learning workflow.
+
 The Host does not guess invalid paths from home-directory prefixes, track
 repeated reads by file name, or classify transcript reads through shell-command
 patterns, infer completed writes from tool names, or scan Git at completion.

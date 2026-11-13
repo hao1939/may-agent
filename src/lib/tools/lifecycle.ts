@@ -7,7 +7,6 @@ import { Type, type TSchema } from "typebox";
  * What finish() does:
  *   - Reports status (success/failure/blocked/partial) + summary
  *   - Validates deliverables exist on disk
- *   - Attempts to append reported lessons to the local memory stream
  *   - Returns a report; the caller records the turn and runs its configured hooks
  *
  * What finish() does NOT do:
@@ -27,21 +26,15 @@ import { Type, type TSchema } from "typebox";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 
-import { existsSync, appendFileSync } from "fs";
+import { existsSync } from "fs";
 import { resolve } from "path";
 
 
 // ── Types ──────────────────────────────────────────────────────────────
 
 export interface FinishToolOptions {
-  /** The agent calling finish(). */
-  agentName: string;
   /** Project root for resolving deliverable paths. */
   projectRoot: string;
-  /** Directory for .state/ files. Default: projectRoot/.state */
-  persistDir?: string;
-  /** Request ID for unified request tracking (if session has one). */
-  requestId?: string;
 }
 
 // ── Schema ─────────────────────────────────────────────────────────────
@@ -115,7 +108,7 @@ const finishSchema: TSchema = Type.Object({
             "The lesson — specific and actionable, not generic. Bad: 'always test'. Good: 'manager.ts uses lazy DB init, must call getDb() not import db directly'.",
         }),
       }),
-      { description: "Reported lessons. A local memory-stream append is best-effort; this does not load lessons into future sessions or activate guidance." },
+      { description: "Reported lessons, retained in the completion report. This does not write a separate memory file, load lessons into future sessions or activate guidance." },
     ),
   ),
   verification_facts: Type.Optional(
@@ -169,15 +162,13 @@ interface FinishParams {
  *
  * When called:
  * 1. Validates deliverable paths exist (if status is success)
- * 2. Attempts a best-effort local append of reported lessons
- * 3. Returns a formatted summary as the tool output
+ * 2. Returns a formatted summary, including reported lessons, as the tool output
  *
  * The caller extracts accepted finish arguments from session facts and owns
  * the resulting work state. Report fields are not additional state-changing tools.
  */
 export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema> {
-  const { agentName, projectRoot, persistDir } = options;
-  const stateDir = persistDir ?? resolve(projectRoot, ".state");
+  const { projectRoot } = options;
 
   return {
     name: "finish",
@@ -230,25 +221,6 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
           ],
           details: undefined,
         };
-      }
-
-      // ── Persist lessons to memory-stream.jsonl ─────────────────
-      if (params.lessons && params.lessons.length > 0 && stateDir) {
-        try {
-          const streamPath = resolve(stateDir, "memory-stream.jsonl");
-          const now = new Date().toISOString();
-          for (const lesson of params.lessons) {
-            const entry = JSON.stringify({
-              timestamp: now,
-              agent: agentName,
-              category: lesson.category,
-              content: lesson.content,
-            });
-            appendFileSync(streamPath, entry + "\n");
-          }
-        } catch {
-          /* non-fatal — lesson persistence should never break finish() */
-        }
       }
 
       // ── Build formatted output ─────────────────────────────────
