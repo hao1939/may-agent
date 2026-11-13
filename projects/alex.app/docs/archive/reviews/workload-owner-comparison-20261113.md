@@ -660,6 +660,37 @@ including closure while the original report remains owed. Exact inspection is
 not consistently demonstrated, and one example per case establishes neither
 reliability nor a feedback, cost or throughput benefit. The neutral review wake
 and local caller settlement do not establish ordinary installed follow-through
-or external delivery. Those acceptance gates stay open. No production source
+or external delivery. Those acceptance gates stay open. No lifecycle behavior
 change is made from this cohort; release, activation and live Task changes remain
 held.
+
+### Shared reply-description follow-up
+
+[Host #500](https://github.com/hao1939/may-agent/pull/500), source
+`61766aaec7d1928e71c699b932c66b71cd087179`, addresses the wording limitation at
+the shared SDK schema. Both native `finish` and `tasks.apply` expose that schema.
+It now distinguishes an ordinary final App `response` from communication through
+an input with saved reply context, points to the accepted input's communication
+context and explains that explicit messages should omit the implicit response.
+The authority guard, final preflight and delivery implementation are unchanged.
+No additional lifecycle policy, model call or test case is introduced.
+
+The two extended execution-preparation checks fail on the former descriptions
+and pass when inspecting the actual exposed tools. The three owning suites pass
+130 tests / 842 assertions, including authority, correction, caller settlement
+and restart. Removing descriptions yields identical result/change schema
+constraints. The first wording exceeded the existing 8,400-character result
+schema limit by 33 characters; shortening it keeps the original limits intact.
+The final result and change schemas use 8,323 and 6,302 serialized characters.
+Full local CI passed: 3,585 tests / 21,728 assertions across 323 files, three
+existing installation-only skips and zero failures. Browser coverage executed;
+Host/SDK types, architecture checks and lint passed. The longest test shard took
+267.49 seconds. Exact-head
+[Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43438513712)
+passed, including the image build and smoke test. These timings do not establish
+a speed gain. The PR is ready for independent review and remains unmerged.
+
+This verifies contract descriptions and compatible execution, not improved model
+behavior. No new model cohort replaces the standing-service omission or rejected
+proposal above. Ordinary installed follow-through, external delivery and release
+remain separate open gates.

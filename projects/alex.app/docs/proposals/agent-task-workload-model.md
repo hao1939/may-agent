@@ -136,6 +136,10 @@ case omitted the exact Task read and corrected an unsupported communication
 proposal after Host rejection. Keep both qualifications. This bounded local
 trial does not establish consistent inspection, ordinary installed follow-through,
 external delivery or a workload benefit. Release and activation remain held.
+The [shared reply-description follow-up](../archive/reviews/workload-owner-comparison-20261113.md#shared-reply-description-follow-up)
+clarifies the existing distinction between final App answers and saved-context
+communication at the schema owner; it changes no lifecycle or delivery behavior
+and does not resolve the observed inspection gap.
 
 ## The mental model
 
