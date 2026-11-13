@@ -87,7 +87,12 @@ const communicationSchema = Type.Array(
   Type.Object(
     {
       id: Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" }),
-      inputId: Type.String({ minLength: 1, pattern: "\\S" }),
+      inputId: Type.String({
+        minLength: 1,
+        pattern: "\\S",
+        description:
+          "This Task's accepted input ID; select an events.inputs entry with communication context.",
+      }),
       message: Type.Optional(Type.String({ minLength: 1, maxLength: 8000, pattern: "\\S" })),
       replyId: Type.Optional(Type.String({ minLength: 1, maxLength: 160, pattern: "\\S" })),
       requestUpdates: Type.Optional(conversationRequestUpdatesSchema),
@@ -109,7 +114,8 @@ const communicationSchema = Type.Array(
   ),
   {
     maxItems: 8,
-    description: "Publish messages or update Requests via an accepted inputId (reuse id and content on retry).",
+    description:
+      "Publish messages or update Requests only through an accepted input's saved reply context. Use the final result's response for ordinary App answers. Reuse id and content on retry; omit response when publishing messages.",
   },
 );
 
@@ -173,7 +179,13 @@ export const taskAgentResultSchema = Type.Object(
   {
     state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("incomplete")]),
     ...resultFields,
-    response: Type.Optional(nonEmptyStringSchema),
+    response: Type.Optional(
+      Type.String({
+        minLength: 1,
+        description:
+          "Final answer for the addressed input, including ordinary App results. On convergence, Host routes it through one unambiguous saved reply context if present. Omit when publishing explicit communication messages.",
+      }),
+    ),
     continue: Type.Optional(
       Type.Literal(true, {
         description: "With state=waiting and non-empty facts: queue one more bounded pass for independent work.",

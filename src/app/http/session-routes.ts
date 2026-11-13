@@ -49,43 +49,6 @@ export function createSessionRouteHandlers(options: {
     return null;
   }
 
-  function resolveSessionEval(
-    sessionId: string,
-  ): { path: string; source: string; session: { path: string; source: string } } | null {
-    const session = resolveSessionJsonl(sessionId);
-    if (!session) return null;
-    return {
-      path: session.path.replace(/session\.jsonl$/, "session.eval.jsonl"),
-      source: session.source.replace(/session\.jsonl$/, "session.eval.jsonl"),
-      session,
-    };
-  }
-
-  function readEvalRows(evalPath: string): unknown[] {
-    if (!existsSync(evalPath)) return [];
-    return readFileSync(evalPath, "utf-8")
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => {
-        try {
-          return JSON.parse(line);
-        } catch {
-          return { parseError: true, raw: line };
-        }
-      });
-  }
-
-  function handleSessionEval(sessionId: string): Response {
-    const resolved = resolveSessionEval(sessionId);
-    if (!resolved) return json({ error: "Session not found" }, 404);
-    return json({
-      sessionId,
-      source: resolved.source,
-      exists: existsSync(resolved.path),
-      rows: readEvalRows(resolved.path),
-    });
-  }
-
   function readSessionTranscript(sessionId: string): Record<string, unknown> | null {
     const resolved = resolveSessionJsonl(sessionId);
     if (!resolved) return null;
@@ -214,7 +177,6 @@ export function createSessionRouteHandlers(options: {
 
   return {
     handleSession,
-    handleSessionEval,
     handleTranscript,
     handleRawLog,
     handleSessionCancel,

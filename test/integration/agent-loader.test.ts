@@ -11,7 +11,7 @@ import {
   type AgentConfig,
 } from "../../src/app/agent-loader.js";
 import { createModelRegistry } from "../../src/app/model-registry.js";
-import { VALID_TOOL_PRESETS, findFleetToolPresetIssues } from "../../src/lib/tool-preset-registry.js";
+import { VALID_TOOL_PRESETS } from "../../src/lib/tool-preset-registry.js";
 
 // Installed catalog policy belongs to the separate deployment check. Portable
 // loader behavior below is exercised with generated temporary fixtures.
@@ -149,10 +149,6 @@ describe("validateAgentConfig", () => {
       const errors = validateAgentConfig(config, fakeModels, agent.agentsRoot);
       expect(errors, `project agent "${config.name}" has validation errors`).toEqual([]);
     }
-  });
-
-  it.skipIf(!installationRoot)("has no fleet tool preset drift or legacy archetype inheritance", () => {
-    expect(findFleetToolPresetIssues(AGENTS_ROOT)).toEqual([]);
   });
 
   it("wires every valid preset without falling through to unknown-preset logging", async () => {

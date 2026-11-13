@@ -103,15 +103,6 @@ function isEscalationClosureEvent(type: string | undefined): boolean {
   return type === "escalation.resolved" || type === "escalation.dismissed";
 }
 
-function isEscalationFollowupEvent(type: string | undefined): boolean {
-  return (
-    isEscalationClosureEvent(type) ||
-    type === "escalation.resume_attempted" ||
-    type === "escalation.resume_started" ||
-    type === "escalation.resume_failed"
-  );
-}
-
 function findPriorEscalationCreated(db: SqliteDb, escalationId: string, eventId: number): number | undefined {
   const row = db
     .prepare(
@@ -172,7 +163,7 @@ export function persistEventTrace(db: SqliteDb, event: unknown, eventId: number,
   const openEventId = dataEventId(data, ["openEventId", "open_event_id"]);
   const escalationId = nonEmptyString(data.escalationId);
   const escalationCreatedId =
-    escalationId && isEscalationFollowupEvent(eventType)
+    escalationId && isEscalationClosureEvent(eventType)
       ? findPriorEscalationCreated(db, escalationId, eventId)
       : undefined;
   const inferredParentEventId = eventExists(db, openEventId)
@@ -214,16 +205,15 @@ export function persistEventTrace(db: SqliteDb, event: unknown, eventId: number,
   if (
     escalationCreatedId &&
     eventExists(db, escalationCreatedId) &&
-    !hasDeclaredLink(trace, escalationCreatedId, isEscalationClosureEvent(eventType) ? "closure" : "reference")
+    !hasDeclaredLink(trace, escalationCreatedId, "closure")
   ) {
     db.run(
       `INSERT OR IGNORE INTO event_trace_links
        (from_event_id, to_event_id, type, label, created_at)
-       VALUES (?, ?, ?, ?, ?)`,
+       VALUES (?, ?, 'closure', ?, ?)`,
       [
         eventId,
         escalationCreatedId,
-        isEscalationClosureEvent(eventType) ? "closure" : "reference",
         eventType ?? "escalation.followup",
         createdAt,
       ],

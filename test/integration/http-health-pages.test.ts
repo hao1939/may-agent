@@ -765,13 +765,13 @@ describe("served workflow and metric health pages", () => {
             held.resolve(request);
           } else void request.continue();
         });
-        for (const [notes, fail] of [[false, false], [false, true], [true, false], [true, true]]) {
+        for (const fail of [false, true]) {
           await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
           await page.waitForSelector("#session-detail-panel .session-inspector");
           const intercepted = new Promise<HTTPRequest>(resolve => {
-            capture = { path: "/api/sessions/step-upload" + (notes ? "/eval" : ""), resolve };
+            capture = { path: "/api/sessions/step-upload", resolve };
           });
-          const pending = page.evaluate(notes ? "openSessionEval('step-upload')" : "loadSessionDetail('step-upload')");
+          const pending = page.evaluate("loadSessionDetail('step-upload')");
           const held = await intercepted;
           const route = fail ? "/metrics" : "/sessions/other-session";
           await page.evaluate(route => (window as unknown as { routeTo(route: string): void }).routeTo(route), route);
@@ -784,7 +784,6 @@ describe("served workflow and metric health pages", () => {
           expect(new URL(page.url()).pathname).toBe(route);
           expect(await page.$eval("#session-detail-panel", el => el.querySelector("h3")?.textContent ?? null)).toBe(previous);
           expect(await page.$eval("#session-detail-panel", el => el.textContent)).not.toContain("late session read failure");
-          expect(await page.evaluate("currentSessionEval")).toBeNull();
           if (!fail) {
             expect(await page.evaluate("currentSessionId")).toBe("other-session");
             expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();

@@ -326,7 +326,7 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       }, { timeout: 5000 });
       await page.click(`#project-tab-content a[href="/sessions/${sessionId}"]`);
       await page.waitForFunction((id) => location.pathname === `/sessions/${id}`
-        && !!document.getElementById("session-eval-btn"), { timeout: 5000 }, sessionId);
+        && !!document.querySelector("#session-detail-panel .session-inspector"), { timeout: 5000 }, sessionId);
       await page.goto(`${base}/projects/platform`, { waitUntil: "domcontentloaded" });
       await page.waitForSelector("#project-comment");
 
@@ -440,29 +440,6 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
         expect(queryEvents(db, { types: ["project.nudge"] })).toEqual([]);
         expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
       } finally { db.close(); }
-
-
-      // Saved notes are a read-only view, including when no notes exist yet.
-      const sessionDir = join(sb.stateDir, "sessions", sessionId);
-      const noteRequests: string[] = [];
-      page.on("request", (req) => {
-        if (req.url().includes(`/api/sessions/${sessionId}/eval`)) noteRequests.push(req.method());
-      });
-      await page.evaluate(async (id) => {
-        const ui = window as typeof window & { navigateToSession: (id: string) => void };
-        ui.navigateToSession(id);
-      }, sessionId);
-      await page.waitForSelector("#session-eval-btn");
-      expect(await page.$eval("#session-eval-btn", (el) => el.textContent)).toBe("Review notes");
-      await page.$eval("#session-eval-btn", (el) => (el as HTMLButtonElement).click());
-      await page.waitForFunction(() => document.getElementById("session-detail-panel")?.textContent?.includes("No saved review notes for this session."));
-      writeFileSync(join(sessionDir, "session.eval.jsonl"), JSON.stringify({
-        type: "line", line: 1, source: "human-feedback", comment: "Saved note from a previous review",
-      }) + "\n");
-      await page.$eval("#session-eval-btn", (el) => (el as HTMLButtonElement).click());
-      await page.waitForFunction(() => document.querySelector(".eval-comment")?.textContent === "Saved note from a previous review");
-      expect(await page.$$(".eval-feedback textarea")).toHaveLength(0);
-      expect(noteRequests).toEqual(["GET", "GET"]);
     } finally {
       await browser.close();
     }

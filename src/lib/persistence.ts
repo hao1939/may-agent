@@ -13,7 +13,6 @@ import {
   rmSync,
   readdirSync,
 } from "node:fs";
-import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 
@@ -60,7 +59,6 @@ export interface PersistedSession {
   projectId?: string;
   /** Explicit task bindings retained by older task runtimes. */
   taskId?: string | null;
-  projectTaskId?: string | null;
   /** Exact fenced App Task attempt; never reconstructed from prompt prose. */
   taskBinding?: TaskBinding;
   /** Runtime that exclusively owns crash recovery for this session. */
@@ -74,8 +72,6 @@ export interface PersistedSession {
   autoClose?: "immediate" | "never";
   /** Number of state-changing tool calls executed so far (persisted for crash recovery). */
   opCount?: number;
-  /** Order ID linking this session to a persisted human order (P209). */
-  orderId?: string;
   /** Workflow calls require the structured finish() terminal contract. */
   requireFinish?: boolean;
   /** Per-invocation operation allowance retained across runtime recovery. */
@@ -651,53 +647,6 @@ export function loadAllSessionMetas(persistDir: string): Record<string, Persiste
   return result;
 }
 
-/** Read only marker-selected active metadata for bounded startup recovery. */
-export function loadActiveSessionMetas(persistDir: string): Record<string, PersistedSession> {
-  const result: Record<string, PersistedSession> = {};
-  for (const sid of listActiveSessionIds(persistDir)) {
-    const meta = readSessionMeta(persistDir, sid);
-    if (meta) result[sid] = meta;
-  }
-  return result;
-}
-
-// ── Async variants (non-blocking I/O for large state directories) ────
-
-/** Async version of readSessionMeta. Uses fs/promises for non-blocking I/O. */
-export async function readSessionMetaAsync(persistDir: string, sessionId: string): Promise<PersistedSession | null> {
-  try {
-    const data = await readFile(sessionMetaPath(persistDir, sessionId), "utf-8");
-    return JSON.parse(data) as PersistedSession;
-  } catch {
-    return null;
-  }
-}
-
-/** Async version of listSessionIds. */
-export async function listSessionIdsAsync(persistDir: string): Promise<string[]> {
-  const sessionsRoot = join(persistDir, "sessions");
-  try {
-    const entries = await readdir(sessionsRoot, { withFileTypes: true });
-    return entries.filter((d) => d.isDirectory()).map((d) => d.name);
-  } catch {
-    return [];
-  }
-}
-
-/** Async version of loadAllSessionMetas. Uses non-blocking I/O for large state directories.
- *  Reads session metadata from per-session meta.json files without blocking the event loop. */
-export async function loadAllSessionMetasAsync(persistDir: string): Promise<Record<string, PersistedSession>> {
-  const result: Record<string, PersistedSession> = {};
-  const sessionIds = await listSessionIdsAsync(persistDir);
-  const metas = await Promise.all(
-    sessionIds.map((sid) => readSessionMetaAsync(persistDir, sid).then((meta) => [sid, meta] as const)),
-  );
-  for (const [sid, meta] of metas) {
-    if (meta) result[sid] = meta;
-  }
-  return result;
-}
-
 // ── SessionStore interface ─────────────────────────────────────────────
 
 /** Abstraction over session metadata persistence.
@@ -754,11 +703,6 @@ export class RegistryStore implements SessionStore {
   /** Get a single session's metadata without scanning all sessions. */
   getSession(sessionId: string): PersistedSession | null {
     return readSessionMeta(this.persistDir, sessionId);
-  }
-
-  /** Get the persist directory path. */
-  getFilePath(): string {
-    return this.persistDir;
   }
 }
 

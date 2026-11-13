@@ -155,87 +155,13 @@ function toggleToolDetails(button) {
   button.classList.toggle('active', details.open);
 }
 
-function evalRowsByLine(evalData) {
-  const byLine = new Map();
-  for (const row of evalData?.rows || []) {
-    const line = Number(row?.line || 0);
-    if (!line) continue;
-    if (!byLine.has(line)) byLine.set(line, []);
-    byLine.get(line).push(row);
-  }
-  return byLine;
-}
-
-function evalRowsForLines(byLine, lines) {
-  const rows = [];
-  const seen = new Set();
-  for (const line of [...new Set((lines || []).map(Number).filter(Boolean))]) {
-    for (const row of byLine.get(line) || []) {
-      const key = `${line}:${row.createdAt || ''}:${row.source || ''}:${row.comment || ''}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      rows.push(row);
-    }
-  }
-  return rows.sort((a, b) => (Number(a.line || 0) - Number(b.line || 0)) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
-}
-
-function renderEvalExtra(row) {
-  const skip = new Set(['type', 'schemaVersion', 'sessionId', 'line', 'source', 'author', 'createdAt', 'rawSource', 'rawRole', 'rawPreview', 'rawContext', 'score', 'issues', 'comment']);
-  const priority = ['judgment', 'why', 'facts', 'better', 'improvement', 'lesson', 'concern', 'checks'];
-  const parts = [];
-  const add = (key) => {
-    if (!(key in row) || row[key] == null || row[key] === '') return;
-    const value = typeof row[key] === 'string' ? row[key] : JSON.stringify(row[key], null, 2);
-    parts.push(`<div class="eval-extra-item"><b>${esc(key)}</b><div>${esc(value)}</div></div>`);
-  };
-  priority.forEach(add);
-  Object.keys(row).filter(k => !skip.has(k) && !priority.includes(k)).slice(0, 8).forEach(add);
-  return parts.length ? `<div class="eval-extra">${parts.join('')}</div>` : '';
-}
-
-function renderEvalRows(rows, sessionId) {
-  let html = '';
-  rows.forEach((row) => {
-    const line = Number(row.line || 0);
-    const source = row.source || row.author || 'eval';
-    const scoreClass = row.score === 'issue' ? 'error' : row.score === 'ok' ? 'good' : '';
-    html += `<div class="eval-row" id="eval-line-${esc(line)}">
-      <div class="eval-row-head">
-        ${sourceLineChip(sessionId, line, row.rawSource || row.rawContext?.source)}
-        ${flowChip(row.score || 'note', scoreClass)}
-        ${flowChip(source)}
-        ${evalIssueChips(row.issues)}
-      </div>
-      <div class="eval-comment">${esc(row.comment || row.judgment || row.raw || '')}</div>
-      ${renderEvalExtra(row)}
-    </div>`;
-  });
-  return html;
-}
-
-function renderTurnEval(rows, sessionId, turnIndex) {
-  return `<aside class="turn-eval-cell">
-    <div class="turn-eval-head"><b>Eval</b>${flowChip('turn ' + turnIndex)}${flowChip(`${rows.length} note${rows.length === 1 ? '' : 's'}`)}</div>
-    ${rows.length ? renderEvalRows(rows, sessionId) : '<div class="turn-eval-empty">No saved review notes for this turn.</div>'}
-  </aside>`;
-}
-
-function renderTurnWithEval(messageHtml, rawLines, turnIndex, evalByLine, sessionId) {
-  if (!evalByLine) return messageHtml;
-  const rows = evalRowsForLines(evalByLine, rawLines);
-  return `<div class="turn-eval-row" data-raw-lines="${rawLineAttr(rawLines)}"><div class="turn-cell">${messageHtml}</div>${renderTurnEval(rows, sessionId, turnIndex)}</div>`;
-}
-
-function renderEnrichedTranscript(messages, sessionId, evalData = null) {
+function renderEnrichedTranscript(messages, sessionId) {
   const flow = buildSessionFlow(messages);
-  const evalByLine = evalData ? evalRowsByLine(evalData) : null;
-  let html = `<div class="transcript enriched-transcript${evalData ? ' eval-transcript' : ''}">`;
+  let html = '<div class="transcript enriched-transcript">';
   for (const item of flow) {
     if (item.role === 'user') {
       const rawLines = [item.rawLine];
-      const msg = `<div class="msg user session-message" data-raw-lines="${rawLineAttr(rawLines)}"><div class="msg-header turn-header">${sourceChip('turn ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body"><div class="message-text">${esc(item.text || '')}</div></div></div>`;
-      html += renderTurnWithEval(msg, rawLines, item.index, evalByLine, sessionId);
+      html += `<div class="msg user session-message" data-raw-lines="${rawLineAttr(rawLines)}"><div class="msg-header turn-header">${sourceChip('turn ' + item.index, sessionId, item.rawLine, item.rawSource)}${flowChip('user')}</div><div class="message-body"><div class="message-text">${esc(item.text || '')}</div></div></div>`;
       continue;
     }
     const a = item.assistant || {};
@@ -251,7 +177,7 @@ function renderEnrichedTranscript(messages, sessionId, evalData = null) {
     for (const tc of toolCalls) pairs += renderToolPair(tc, resultById.get(tc.id), sessionId);
     for (const r of unmatched) pairs += renderToolPair({ tool: r.toolName || 'unmatched_result', id: r.toolCallId, args: {}, rawLine: r.rawLine, rawSource: r.rawSource }, r, sessionId);
     if (!a.text && !pairs) continue;
-    const msg = `<div class="msg assistant session-message" data-raw-lines="${rawLineAttr(rawLines)}">
+    html += `<div class="msg assistant session-message" data-raw-lines="${rawLineAttr(rawLines)}">
       <div class="msg-header turn-header">
         ${sourceChip('turn ' + item.index, sessionId, a.rawLine, a.rawSource)}
         ${flowChip('assistant')}
@@ -269,12 +195,10 @@ function renderEnrichedTranscript(messages, sessionId, evalData = null) {
         ${renderRawBlock('Raw API response', a)}
       </div>
     </div>`;
-    html += renderTurnWithEval(msg, rawLines, item.index, evalByLine, sessionId);
   }
   html += '</div>';
   return html;
 }
-
 
 function sessionConversationStats(messages) {
   const flow = buildSessionFlow(messages);
@@ -289,19 +213,13 @@ function sessionConversationStats(messages) {
   }, { messages: 0, users: 0, assistants: 0, tools: 0, errors: 0 });
 }
 
-function evalIssueChips(issues) {
-  return Array.isArray(issues) ? issues.map(issue => flowChip(issue, issue === 'tool_output_error' ? 'error' : '')).join('') : '';
-}
-
 function renderSessionConversation(transData, opts = {}) {
   const messages = transData.messages || [];
   if (!messages.length) return '';
   const stats = sessionConversationStats(messages);
   const sectionClass = opts.embedded
     ? 'conversation-section embedded-conversation'
-    : opts.evalData
-      ? 'panel conversation-section evaluated-conversation'
-      : 'section conversation-section';
+    : 'section conversation-section';
   const title = opts.showTitle === false ? '' : `<div class="conversation-title">
       <h4>Conversation</h4>
       ${flowChip(`${stats.messages} messages`)}
@@ -313,27 +231,9 @@ function renderSessionConversation(transData, opts = {}) {
   const conversation = `<div class="${sectionClass}">
     ${title}
     <div id="raw-log-viewer" class="raw-log-viewer"></div>
-    ${renderEnrichedTranscript(messages, transData.sessionId, opts.evalData || null)}
+    ${renderEnrichedTranscript(messages, transData.sessionId)}
   </div>`;
   return conversation;
-}
-
-async function openSessionEval(sessionId) {
-  const btn = document.getElementById('session-eval-btn');
-  if (btn) { btn.textContent = 'Loading notes...'; btn.disabled = true; }
-  try {
-    const r = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/eval`);
-    const data = await r.json();
-    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
-    if (!r.ok) throw new Error(data.error || r.statusText);
-    currentSessionEval = data;
-    await loadSessionDetail(sessionId);
-  } catch (e) {
-    if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
-    alert('Could not load review notes: ' + (e.message || String(e)));
-  } finally {
-    if (btn?.isConnected) { btn.textContent = 'Review notes'; btn.disabled = false; }
-  }
 }
 
 async function showRawLog(sessionId, line, label, sourceEl) {
@@ -364,9 +264,7 @@ function hideRawLog() {
 function focusSessionLine(line) {
   const targetLine = Number(line);
   if (!targetLine) return;
-  document.querySelectorAll('.eval-row.active, .session-message.active').forEach(el => el.classList.remove('active'));
-  const evalRow = document.getElementById(`eval-line-${targetLine}`);
-  if (evalRow) evalRow.classList.add('active');
+  document.querySelectorAll('.session-message.active').forEach(el => el.classList.remove('active'));
   const turn = [...document.querySelectorAll('.session-message[data-raw-lines]')].find(el =>
     String(el.dataset.rawLines || '').split(',').map(Number).includes(targetLine)
   );
@@ -378,7 +276,6 @@ function focusSessionLine(line) {
 
 const sessionHistory = [];
 let currentInspectedSession = null;
-let currentSessionEval = null;
 
 function fmtTime(epoch) {
   if (!epoch) return '—';
@@ -396,7 +293,6 @@ async function loadSessionDetail(sessionId) {
 async function readSessionDetail(sessionId, opts = {}) {
   if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
   const changed = currentInspectedSession !== sessionId;
-  if (changed) currentSessionEval = null;
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
   if (changed || !panel.querySelector('.session-inspector')) {
@@ -445,7 +341,6 @@ async function readSessionDetail(sessionId, opts = {}) {
         <span style="font-size:14px"><a href="/agents/${attrEsc(encodeURIComponent(s.agent))}" style="color:var(--accent);text-decoration:none">${esc(s.agent)}</a></span>
         <span style="color:var(--fg2);font-size:13px">· ${durStr} · ${s.opCount || 0} ops</span>
         <button class="ask-btn" style="margin-left:auto" onclick='openLoopTrace({sessionId:${sessionIdArg}})'>trace</button>
-        <button class="ask-btn" id="session-eval-btn" onclick="openSessionEval('${esc(s.sessionId)}')">Review notes</button>
       </div>
       <div style="font-size:12px;color:var(--fg2);margin-top:6px">
         <span title="${s.startedAt || ''}">Started: ${fmtTime(s.startedAt)}</span>
@@ -474,14 +369,8 @@ async function readSessionDetail(sessionId, opts = {}) {
 
     html += `<div id="session-followup-anchor" class="session-followup-anchor"></div>`;
 
-    // C. Unified enriched session chat surface; evaluation/review and live mode reuse it.
-    const evalData = opts.evalData || currentSessionEval;
-    if (evalData) {
-      if (!evalData.rows?.length) html += '<div class="section">No saved review notes for this session.</div>';
-      html += `</div>${unavailableTranscript || renderSessionConversation(transData, { evalData })}<div class="panel session-inspector session-inspector-secondary">`;
-    } else {
-      html += unavailableTranscript || renderSessionConversation(transData);
-    }
+    // C. Unified enriched session chat surface.
+    html += unavailableTranscript || renderSessionConversation(transData);
 
     // D. Outcome Section
     if (s.outcome) {

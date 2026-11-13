@@ -445,17 +445,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "escalation.routed";
-      source: string;
-      owner: string;
-      data: {
-        openEventId?: number;
-        escalationId?: string;
-        route: string;
-        reason?: string;
-      };
-    }
-  | {
       type: "escalation.resolved";
       source: string;
       owner: string;
@@ -479,57 +468,6 @@ export type SystemEvent =
         escalationId?: string;
         reason: string;
         resolverAgent?: string;
-      };
-    }
-  | {
-      type: "escalation.resume_attempted";
-      source: "escalation-lifecycle";
-      owner: string;
-      data: {
-        escalationId: string;
-        resolvedEscalationId?: string;
-        parentEscalationId?: string;
-        outcome: string;
-        sourceKind: "session" | "project" | "workflow" | "unknown";
-        sourceRef?: string;
-        sourceSessionId?: string;
-        workflowRunId?: string;
-        resumeInstruction: string;
-      };
-    }
-  | {
-      type: "escalation.resume_started";
-      source: "escalation-lifecycle";
-      owner: string;
-      data: {
-        escalationId: string;
-        resolvedEscalationId?: string;
-        parentEscalationId?: string;
-        outcome: string;
-        sourceKind: "session" | "project" | "workflow";
-        sourceRef: string;
-        sourceSessionId?: string;
-        resumedSessionId?: string;
-        workflowRunId?: string;
-        summary: string;
-      };
-    }
-  | {
-      type: "escalation.resume_failed";
-      source: "escalation-lifecycle";
-      owner: string;
-      data: {
-        escalationId?: string;
-        resolvedEscalationId?: string;
-        parentEscalationId?: string;
-        outcome?: string;
-        sourceKind?: "session" | "workflow" | "unknown";
-        sourceRef?: string;
-        sourceSessionId?: string;
-        workflowRunId?: string;
-        reason: string;
-        category: string;
-        recoverable: boolean;
       };
     }
   | {
@@ -882,36 +820,6 @@ export type SystemEvent =
       duration?: string;
       reason?: string;
       task?: string;
-    }
-  | {
-      type: "evaluation.recorded";
-      source?: string;
-      owner: string;
-      timestamp?: number;
-      data: {
-        source?: string;
-        idempotencyKey?: string;
-        evaluation: {
-          sessionId: string;
-          agent: string;
-          quality: number;
-          efficiency: number;
-          verdict: string;
-          issues: string[];
-          productiveCalls?: number;
-          wastedCalls?: number;
-          lane?: string;
-          reason?: string;
-          signals?: string[];
-          overall?: Record<string, unknown>;
-          createdAt?: number;
-        };
-      };
-      target?: {
-        appId?: string;
-        project?: string;
-        sessionId?: string;
-      };
     }
   | {
       type: "subscriber.failed";

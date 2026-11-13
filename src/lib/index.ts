@@ -20,9 +20,7 @@ export {
   appendSessionMessage,
   ensureSessionDir,
   listActiveSessionIds,
-  loadActiveSessionMetas,
   loadAllSessionMetas,
-  loadAllSessionMetasAsync,
   readSessionMessages,
   readSessionMessagesTail,
   readSessionMeta,
@@ -94,13 +92,10 @@ export type { SocketEvent, SocketResponse } from "@may-agent/control/client";
 export type { ModelWithApiKey, SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 
 export {
-  getExecutionResult,
   getExecutionResultFromDb,
   normalizeExecutionStatus,
   sessionRowToExecutionResult,
-  taskResultToExecutionResult,
   workflowRowToExecutionResult,
-  workflowToolResultToExecutionResult,
 } from "./execution-result.js";
 export type { ExecutionKind, ExecutionResult, ExecutionStatus } from "./execution-result.js";
 export { createQueryService } from "./query-service.js";

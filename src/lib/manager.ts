@@ -120,7 +120,6 @@ export interface RunOptions {
   contextPrompt?: string;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
-  orderId?: string;
   startedAt?: number;
   timeoutMs?: number;
   signal?: AbortSignal;
@@ -571,7 +570,6 @@ export class SubagentManager {
         recoveryOwner: opts?.recoveryOwner,
         kind,
         autoClose,
-        orderId: opts?.orderId,
         requireFinish,
         operationAllowance: operationAllowance,
         outputSchema: outputSchema,

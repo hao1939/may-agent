@@ -303,6 +303,8 @@ describe("HTTP event reads", () => {
       "/api/agents/timeline",
       "/api/agents/health",
       "/api/agents/worker/detail",
+      `/api/sessions/${sessionId}/eval`,
+      `/api/sessions/${sessionId}/eval/comment`,
     ]) {
       expect((await fetch(baseUrl + route)).status).toBe(404);
     }
@@ -315,32 +317,7 @@ describe("HTTP event reads", () => {
     expect(await read("/api/projects/sessions?path=projects/sample.app")).toMatchObject([
       { sessionId, status: "done", link: "tagged" },
     ]);
-    expect(await read(`/api/sessions/${sessionId}/eval`)).toMatchObject({ exists: true, rows: [summary] });
     expect(readFileSync(path, "utf8")).toBe(saved);
-  });
-
-  it("reads saved session notes without Evaluation and rejects retired writes", async () => {
-    const dir = join(root, "sessions", "s_notes");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "session.jsonl"), '{"role":"user","content":"Review the result"}\n');
-    const path = join(dir, "session.eval.jsonl");
-    const endpoint = "/api/sessions/s_notes/eval";
-    expect(await read(endpoint)).toMatchObject({ exists: false, rows: [] });
-    for (const suffix of ["", "/comment"]) {
-      const response = await fetch(`${baseUrl}${endpoint}${suffix}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ line: 1, comment: "Must not be saved by HTTP" }),
-        signal: AbortSignal.timeout(5_000),
-      });
-      expect(response.status).toBe(404);
-    }
-    expect(existsSync(path)).toBe(false);
-    const note = { type: "line", line: 1, source: "human-feedback", comment: "Retained review" };
-    const saved = JSON.stringify(note) + "\n";
-    writeFileSync(path, saved);
-    expect(await read(endpoint)).toMatchObject({ exists: true, rows: [note] });
-    expect(readFileSync(path, "utf8")).toBe(saved);
-    expect(await read("/api/events?type=evaluation.session.requested")).toEqual([]);
   });
 
   it("opens failed workflow facts through HTTP without a daemon or metric collector", async () => {

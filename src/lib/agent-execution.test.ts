@@ -17,6 +17,7 @@ import { createFinishTool } from "./tools/lifecycle.js";
 import { agentExecutionResult } from "./execution-handoff.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
+import { taskAgentResultSchema } from "@may-agent/sdk";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../app/core/tasks/app-task-output-paths.js";
 import { createAppTaskReadTool } from "../app/app-task-read-tool.js";
 import { EventBus } from "../app/core/events/bus.js";
@@ -80,6 +81,8 @@ describe("read-only Task capability", () => {
     expect(await f.invoke(f.prepare("full"), "apply")).toEqual({ applied: true });
     expect(f.mutations()).toBe(1);
     expect(Value.Check(f.tasks.parameters, { action: "apply", changes: {} })).toBe(true);
+    expect(f.prepare("full").parameters.properties.changes.properties.communication.description)
+      .toContain("saved reply context");
     expect(await f.invoke(readonly, "apply")).toEqual({ error: "Read-only Task capability does not allow this action" });
     expect(f.mutations()).toBe(1);
   });
@@ -709,24 +712,33 @@ describe("shared agent execution preparation", () => {
   });
 
   test("adapts the supplied finish capability for structured workflow results", () => {
-    const prepared = prepareAgentExecution({
-      definition: {
-        name: "sample",
-        description: "sample",
-        domain: "tests",
-        systemPrompt: "identity",
-        model: { contextWindow: 10_000 } as any,
-        tools: [tool("finish")],
-      },
-      projectRoot: "/tmp",
-      sessionId: "direct-2",
-      task: "return a result",
-      outputSchema: Type.Object({ verdict: Type.String() }),
-    });
+    for (const outputSchema of [Type.Object({ verdict: Type.String() }), taskAgentResultSchema]) {
+      const prepared = prepareAgentExecution({
+        definition: {
+          name: "sample",
+          description: "sample",
+          domain: "tests",
+          systemPrompt: "identity",
+          model: { contextWindow: 10_000 } as any,
+          tools: [tool("finish")],
+        },
+        projectRoot: "/tmp",
+        sessionId: "direct-2",
+        task: "return a result",
+        outputSchema,
+      });
 
-    expect(prepared.requireFinish).toBe(true);
-    expect(prepared.systemPrompt).toContain("Complete this invocation by calling finish()");
-    expect((prepared.tools[0]!.parameters as any).required).toContain("result");
+      expect(prepared.requireFinish).toBe(true);
+      expect(prepared.systemPrompt).toContain("Complete this invocation by calling finish()");
+      expect((prepared.tools[0]!.parameters as any).required).toContain("result");
+      if (outputSchema === taskAgentResultSchema) {
+        const result = prepared.tools[0]!.parameters.properties.result as typeof taskAgentResultSchema;
+        expect(result.properties.communication.description).toContain("saved reply context");
+        expect(result.properties.communication.items.properties.inputId.description).toContain("events.inputs");
+        expect(result.properties.response.description).toContain("ordinary App");
+        expect(result.properties.response.description).toContain("explicit communication messages");
+      }
+    }
   });
 
   test("rejects duplicate finish capabilities after structured-result adaptation", () => {
