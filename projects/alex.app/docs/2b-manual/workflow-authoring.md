@@ -58,13 +58,18 @@ Procedure input types belong to that module. Export `inputSchema` (and optional
 Adding a recipe does not require a new public App input variant.
 
 For example, Alex's `verified-coder` recipe accepts
-`{ task, verifyCommand, maxAttempts?, agent? }`. Its SDK input schema validates
+`{ task, verify: [executable, ...arguments], maxAttempts?, agent? }`.
+Its SDK input schema validates
 the object before any agent call or command. `maxAttempts` defaults to three
 and is bounded to one through five; `agent` defaults to `tech-lead`. Task text
 remains assignment text, while the named fields select the command and attempt
 limit. Callers using the retired metadata strings or fenced reconciliation
 envelopes must supply this object. The Gym repair-loop scenario uses the same
-contract.
+contract. Verification uses the same App-local command runner as `develop-change`,
+with literal arguments, bounded output and the workflow's cancellation signal
+and deadline. There is no separate verification timer. The retired
+`verifyCommand` shell string is rejected; move compound checks into a script or
+explicitly select a shell executable when required.
 
 Workflows are bounded and ordered. They may use `await`, but every awaited
 agent, nested workflow, read, metric write, or fact publication must finish in

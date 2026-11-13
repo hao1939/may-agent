@@ -69,6 +69,7 @@ function trial() {
     acceptance: spec(1).data.acceptance,
     input: spec(1),
     conditions: [],
+    acceptedEvidence: { available: true, maxPageSize: 8 },
   };
   const prompts: string[] = [];
   const calls: Array<{ agent: string; stage: string; tools: unknown }> = [];
@@ -105,6 +106,7 @@ function trial() {
       input: { verify: (current.input as any).data.verify },
       signal,
       reconciliation: {
+        task: current,
         appId: "alex",
         taskId: current.id,
         generation: current.generation,
@@ -361,7 +363,7 @@ describe("development workflow using real Git and verification", () => {
       t.current.outcome = t.spec(0).data.outcome;
       t.current.acceptance = t.spec(0).data.acceptance;
       if (phase === "verification") {
-        t.current.input.data.verify = [
+        (t.current.input as ReturnType<typeof t.spec>).data.verify = [
           "node",
           "-e",
           "require('node:fs').appendFileSync('answer.cjs', '// changed during verification\\n')",

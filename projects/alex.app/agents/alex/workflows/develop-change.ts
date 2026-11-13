@@ -7,11 +7,11 @@ import {
   type WorkflowContext,
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
+import { commandReceipt } from "../../../command.js";
 import { readDevelopmentOptions } from "./lib/input.js";
 import {
   candidate,
   command,
-  commandReceipt,
   describeCandidate,
   sameCandidate,
   type Candidate,

@@ -3,28 +3,28 @@
  *
  * Implements the "Ralph Loop" pattern from design-hard-gated-coder.md:
  * a coder agent is run in a loop, and the workflow itself executes
- * a verification command (e.g. `bun run test`, `tsc`, `node script.js`)
+ * a verification executable with arguments (e.g. ["node", "script.js"])
  * after each attempt. The workflow only succeeds when the verification
  * command returns exit code 0.
  *
- * Input: { task, verifyCommand, maxAttempts?, agent? }.
+ * Input: { task, verify: [executable, ...arguments], maxAttempts?, agent? }.
  * The shared invocation kernel validates inputSchema before execution.
  * Max attempts defaults to 3; the implementation agent defaults to tech-lead.
  */
 
-import { execSync } from "node:child_process";
 import { Type, type ExecutionResult, type Static, type WorkflowContext } from "@may-agent/sdk";
+import { commandReceipt } from "../../../command.js";
 
 export const name: string = "verified-coder";
 
 export const description: string =
-  "Implementation + shell verification loop (up to maxAttempts, default 3). " +
-  "Input: { task, verifyCommand, maxAttempts?, agent? }.";
+  "Implementation + command verification loop (up to maxAttempts, default 3). " +
+  "Input: { task, verify: [executable, ...arguments], maxAttempts?, agent? }.";
 
 export const inputSchema = Type.Object(
   {
     task: Type.String({ minLength: 1, pattern: "\\S" }),
-    verifyCommand: Type.String({ minLength: 1, pattern: "\\S" }),
+    verify: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, maxItems: 32 }),
     maxAttempts: Type.Optional(Type.Integer({ minimum: 1, maximum: 5 })),
     agent: Type.Optional(Type.String({ minLength: 1 })),
   },
@@ -34,7 +34,7 @@ export const inputSchema = Type.Object(
 export const outputSchema = Type.Object(
   {
     attemptsUsed: Type.Integer({ minimum: 1 }),
-    verifyCommand: Type.String({ minLength: 1 }),
+    verify: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, maxItems: 32 }),
     verifyOutput: Type.String(),
     coderSummary: Type.String(),
   },
@@ -42,33 +42,6 @@ export const outputSchema = Type.Object(
 );
 
 type VerifiedCoderInput = Static<typeof inputSchema>;
-
-// ── Verification runner ────────────────────────────────────────────────
-
-interface VerifyResult {
-  passed: boolean;
-  exitCode: number;
-  output: string;
-}
-
-function runVerification(command: string, cwd: string): VerifyResult {
-  try {
-    const output = execSync(command, {
-      encoding: "utf-8",
-      timeout: 60_000, // 60s timeout for verification
-      stdio: ["pipe", "pipe", "pipe"],
-      cwd,
-    });
-    return { passed: true, exitCode: 0, output: output || "(no output)" };
-  } catch (err: any) {
-    const exitCode = err.status ?? 1;
-    const stdout = err.stdout ?? "";
-    const stderr = err.stderr ?? "";
-    const output =
-      [stdout, stderr].filter(Boolean).join("\n").trim() || "(no output)";
-    return { passed: false, exitCode, output };
-  }
-}
 
 // ── Main workflow ──────────────────────────────────────────────────────
 
@@ -83,7 +56,8 @@ export async function execute(
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
   const task = ctx.input.task.trim();
-  const verifyCommand = ctx.input.verifyCommand.trim();
+  const verify = ctx.input.verify;
+  const verifyDescription = JSON.stringify(verify);
   const maxAttempts = ctx.input.maxAttempts ?? 3;
   const agent = ctx.input.agent?.trim() || "tech-lead";
 
@@ -95,6 +69,7 @@ export async function execute(
   emitStep(ctx, "init");
 
   let lastVerifyOutput = "";
+  let lastExitCode: number | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     ctx.signal.throwIfAborted();
@@ -106,15 +81,15 @@ export async function execute(
       coderTask =
         `${task}\n\n` +
         `## Verification\n` +
-        `When done, this command will be run to verify your work:\n` +
-        `\`\`\`\n${verifyCommand}\n\`\`\`\n` +
+        `When done, this executable and its arguments will verify your work:\n` +
+        `\`\`\`json\n${verifyDescription}\n\`\`\`\n` +
         `It must exit with code 0. Make sure your code passes this check.`;
     } else {
       coderTask =
         `## Fix Required (attempt ${attempt}/${maxAttempts})\n\n` +
         `The verification command failed. Fix the code so it passes.\n\n` +
         `### Original Task\n${task}\n\n` +
-        `### Verification Command\n\`\`\`\n${verifyCommand}\n\`\`\`\n\n` +
+        `### Verification Command (executable and arguments)\n\`\`\`json\n${verifyDescription}\n\`\`\`\n\n` +
         `### Verification Output (FAILED)\n\`\`\`\n${lastVerifyOutput}\n\`\`\`\n\n` +
         `Read the error output carefully. Fix the root cause. ` +
         `Do NOT just suppress errors — actually fix the code.\n\n` +
@@ -145,26 +120,31 @@ export async function execute(
     // ── Verify step ──────────────────────────────────────────────────
     emitStep(ctx, `verify-attempt-${attempt}`);
 
-    const verify = runVerification(verifyCommand, workspaceRoot);
+    const receipt = await commandReceipt(workspaceRoot, verify, ctx.signal);
+    ctx.signal.throwIfAborted();
+    const verifyOutput =
+      [receipt.stdout, receipt.stderr].filter(Boolean).join("\n").trim() ||
+      receipt.error || "(no output)";
 
-    if (verify.passed) {
+    if (!receipt.error) {
       const coderSummary = coder.summary || "(no output)";
       return ctx.done(
         `## Verification PASSED (attempt ${attempt}/${maxAttempts})\n\n` +
-          `### Verification Command\n\`\`\`\n${verifyCommand}\n\`\`\`\n\n` +
-          `### Verification Output\n\`\`\`\n${verify.output}\n\`\`\`\n\n` +
+          `### Verification Command (executable and arguments)\n\`\`\`json\n${verifyDescription}\n\`\`\`\n\n` +
+          `### Verification Output\n\`\`\`\n${verifyOutput}\n\`\`\`\n\n` +
           `### Coder Summary\n${coderSummary}`,
         {
           attemptsUsed: attempt,
-          verifyCommand,
-          verifyOutput: verify.output,
+          verify,
+          verifyOutput,
           coderSummary,
         },
       );
     }
 
     // Failed — record output for next iteration
-    lastVerifyOutput = verify.output;
+    lastVerifyOutput = verifyOutput;
+    lastExitCode = receipt.exitCode;
 
     if (attempt < maxAttempts) {
       emitStep(ctx, `retry-${attempt}`);
@@ -173,8 +153,8 @@ export async function execute(
 
   // All attempts exhausted
   return ctx.blocked(`Verification failed after ${maxAttempts} attempts`, {
-    verifyCommand,
-    lastExitCode: 1,
+    verify,
+    lastExitCode,
     lastOutput: lastVerifyOutput,
   });
 }

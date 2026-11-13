@@ -416,7 +416,7 @@ To repeat the revised-helper probe from the Apps root (takes about two minutes):
 
 ```sh
 bun -e '
-import { commandReceipt } from "./projects/alex.app/agents/alex/workflows/lib/repository.ts";
+import { commandReceipt } from "./projects/alex.app/command.ts";
 const receipt = await commandReceipt(process.cwd(), ["node", "-e", "setTimeout(() => console.log(\"verified\"), 121_000)"], AbortSignal.timeout(150_000));
 console.log(receipt);
 if (receipt.error || receipt.exitCode !== 0 || receipt.stdout !== "verified\n") process.exit(1);
@@ -428,6 +428,41 @@ cancellation. It does not certify a full Host check, model judgment, daemon
 recovery or live activation. No model calls or deployment ran for this correction.
 Repeated specialist context was inspected but left unchanged; no safe reduction
 was established that preserves current requirements and usable evidence.
+
+### One verification command runner
+
+`develop-change` and `verified-coder` now use the same App-local
+[`commandReceipt`](../command.ts) helper. Both take verification as
+`verify: [executable, ...arguments]`, execute in the allocated workspace and
+inherit workflow cancellation and deadlines. The helper keeps its existing
+two-MiB limit per output stream and records process errors; it adds no timer,
+shell parser or execution lifecycle. The two procedures retain their own gates
+and result contracts.
+
+`verified-coder` retires its synchronous shell runner, separate 60-second
+cutoff and `verifyCommand` string input/output field. Arguments are passed
+literally. Use a check script or an explicitly selected shell executable for
+compound checks. Explicit shells and tools can create descendants; Host worker
+cleanup still owns those processes. The helper forwards cancellation to the
+direct executable and does not add another process-tree manager.
+
+The focused regressions exercise actual repair, exact argument passing,
+nonzero exit evidence and cancellation of a running direct verification
+process. Gym uses the same typed input. The changed workflows and tests also
+type-check against the current SDK; the development fixture supplies its
+required starting Task and accepted-evidence navigation fields.
+
+A separate actual-workflow probe used a Node check that prints success after
+61 seconds, one scripted implementation result and a 90-second workflow allowance:
+
+| Runner | Elapsed | Workflow contribution |
+| --- | --- | --- |
+| Baseline Apps `2d4e7906d1` synchronous shell runner | 61,447 ms | Blocked; no successful check output |
+| Shared executable/arguments runner | 62,485 ms | Done; `verified after 61 seconds` |
+
+The focused suite passed 49 tests across the two procedures and Gym adapter.
+These source checks establish neither live activation nor full process-tree
+cleanup for arbitrary verification tools. No model calls or deployment ran.
 
 The historical `may.app/poc/run.ts --live` harness predates the move and is not
 a current Alex activation check. It was a temporary opt-in branch harness. Set `MAY_HOST_SOURCE`

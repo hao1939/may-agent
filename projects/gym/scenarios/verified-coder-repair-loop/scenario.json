@@ -1,6 +1,6 @@
 {
   "name": "verified-coder-repair-loop",
-  "description": "Direct workflow_entry scenario exercising alex.app's verified-coder executable-skill workflow (bounded implementation + shell verification loop) without Host infrastructure.",
+  "description": "Direct workflow_entry scenario exercising alex.app's verified-coder executable-skill workflow (bounded implementation + command verification loop) without Host infrastructure.",
   "categories": [
     "bug-fixing",
     "verification"
@@ -18,7 +18,7 @@
     "workflow": "verified-coder",
     "input": {
       "task": "Fix add(a, b) in math.cjs so it returns a + b instead of a - b, preserving module exports.",
-      "verifyCommand": "node verify.cjs",
+      "verify": ["node", "verify.cjs"],
       "maxAttempts": 2
     }
   }

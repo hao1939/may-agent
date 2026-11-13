@@ -83,6 +83,15 @@ See [proof and reproduction](../development-workflow.md#november-13-command-dura
 for the baseline comparison, focused tests and limits. This proves the bounded
 mechanical correction, not overall workflow speed or model quality.
 
+The follow-up source cleanup gives `develop-change` and `verified-coder` one
+App-local command runner and the same executable/arguments verification form.
+It retires `verified-coder`'s synchronous shell runner and private 60-second
+cutoff while preserving its repair loop. Automatic shell interpretation is
+removed; compound checks use a script or an explicit shell executable. See
+[the command contract and limits](../development-workflow.md#one-verification-command-runner).
+The [typed workflow input](../2b-manual/workflow-authoring.md) remains the
+validation boundary. No live activation is established.
+
 Repeated Task/event context and repository descriptions were inspected but
 left unchanged: no safe reduction was established that preserves current
 requirements and usable evidence. Further context trimming needs a concrete
