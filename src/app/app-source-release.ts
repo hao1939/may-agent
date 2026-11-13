@@ -64,7 +64,13 @@ function isNonSourcePath(path: string): boolean {
 }
 
 function stripCapturedNonSourceEntries(root: string): void {
-  if (!existsSync(root)) return;
+  let stat;
+  try {
+    stat = lstatSync(root);
+  } catch {
+    return;
+  }
+  if (!stat.isDirectory() || stat.isSymbolicLink()) return;
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     const child = join(root, entry.name);
     if (isNonSourcePath(entry.name)) {
@@ -374,6 +380,7 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
 export class DefinitionSourceReleaseStore {
   private readonly releasesRoot: string;
   private readonly currentLink: string;
+  private readonly heldCounts = new Map<string, number>();
 
   constructor(
     private readonly projectRoot: string,
@@ -381,6 +388,24 @@ export class DefinitionSourceReleaseStore {
   ) {
     this.releasesRoot = join(persistDir, "releases", "app-definitions");
     this.currentLink = join(this.releasesRoot, "current");
+  }
+
+  retain(releaseId: string | undefined): () => void {
+    const id = releaseId?.trim();
+    if (!id) return () => {};
+    this.heldCounts.set(id, (this.heldCounts.get(id) ?? 0) + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      const next = (this.heldCounts.get(id) ?? 1) - 1;
+      if (next > 0) this.heldCounts.set(id, next);
+      else this.heldCounts.delete(id);
+    };
+  }
+
+  heldIds(): string[] {
+    return [...this.heldCounts.keys()];
   }
 
   current(): DefinitionSourceRelease | null {
@@ -398,12 +423,7 @@ export class DefinitionSourceReleaseStore {
 
   ensureCurrent(): DefinitionSourceRelease {
     const active = this.current();
-    if (
-      active &&
-      active.id.endsWith("-definitions-v6") &&
-      existsSync(active.agentsRoot) &&
-      existsSync(join(active.sharedRoot, "common-sense.md"))
-    ) {
+    if (active && existsSync(active.agentsRoot) && existsSync(join(active.sharedRoot, "common-sense.md"))) {
       this.prune();
       return active;
     }
@@ -462,7 +482,7 @@ export class DefinitionSourceReleaseStore {
   prune(preserveIds: readonly string[] = [], maxRetained = DEFAULT_MAX_RETAINED_RELEASES): string[] {
     if (!existsSync(this.releasesRoot)) return [];
     const activeId = existsSync(this.currentLink) ? this.current()?.id : undefined;
-    const protectedIds = new Set<string>(preserveIds.filter(Boolean));
+    const protectedIds = new Set<string>([...this.heldCounts.keys(), ...preserveIds.filter(Boolean)]);
     if (activeId) protectedIds.add(activeId);
     const now = Date.now();
     const candidates: Array<{ id: string; path: string; mtimeMs: number }> = [];
@@ -491,11 +511,14 @@ export class DefinitionSourceReleaseStore {
     }
 
     candidates.sort((left, right) => right.mtimeMs - left.mtimeMs || right.id.localeCompare(left.id));
-    let retained = protectedIds.size;
+    let retainedTotal = 0;
     for (const candidate of candidates) {
-      if (protectedIds.has(candidate.id)) continue;
-      if (retained < Math.max(1, maxRetained)) {
-        retained += 1;
+      if (protectedIds.has(candidate.id)) {
+        retainedTotal += 1;
+        continue;
+      }
+      if (retainedTotal < Math.max(1, maxRetained)) {
+        retainedTotal += 1;
         continue;
       }
       rmSync(candidate.path, { recursive: true, force: true });

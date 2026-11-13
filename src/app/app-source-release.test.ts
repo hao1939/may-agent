@@ -519,4 +519,94 @@ describe("App source releases", () => {
     const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current");
     expect(retainedDirs).toHaveLength(5);
   });
+
+  it("preserves an accepted v5 release across startup even when source has advanced or is dirty", async () => {
+    const { root, stateDir, appPath } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const v6 = store.stage();
+    const v5Id = v6.id.replace(/-definitions-v6$/, "-definitions-v5");
+    const v5Root = join(stateDir, "releases", "app-definitions", v5Id);
+    renameSync(v6.root, v5Root);
+    writeFileSync(
+      join(v5Root, "release.json"),
+      `${JSON.stringify({ version: 3, id: v5Id, sourceCommit: v6.sourceCommit }, null, 2)}\n`,
+    );
+    store.activate({ ...v6, id: v5Id, root: v5Root, agentsRoot: join(v5Root, "agents"), projectsRoot: join(v5Root, "projects"), sharedRoot: join(v5Root, "shared") });
+
+    writeFileSync(
+      appPath,
+      `export default { id: "sample-unaccepted", version: 2, agent: "worker", inputSchema: { type: "object" } };\n`,
+    );
+    await git(root, "add", appPath);
+    await git(root, "commit", "-qm", "advance HEAD without reload");
+    writeFileSync(appPath, `export default { id: "dirty-worktree", version: 3 };\n`);
+
+    const ensured = new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent();
+    expect(ensured.id).toBe(v5Id);
+    expect(readFileSync(join(ensured.projectsRoot, "sample.app", "app.js"), "utf8")).toContain("sample-v1");
+  });
+
+  it("does not traverse external symlinked top-level roots when stripping non-source entries", async () => {
+    const { root, stateDir } = await fixture();
+    const externalAgents = join(root, "..", `external-agents-${Date.now()}`);
+    roots.push(externalAgents);
+    mkdirSync(join(externalAgents, "archive"), { recursive: true });
+    writeFileSync(join(externalAgents, "archive", "keep.txt"), "must survive\n");
+    rmSync(join(root, "agents"), { recursive: true, force: true });
+    symlinkSync(externalAgents, join(root, "agents"));
+    await git(root, "add", "-A");
+    await git(root, "commit", "-qm", "symlink agents root");
+
+    new DefinitionSourceReleaseStore(root, stateDir).stage();
+    expect(readFileSync(join(externalAgents, "archive", "keep.txt"), "utf8")).toBe("must survive\n");
+  });
+
+  it("protects held releases used by running workers and overlapping or rejected reloads across >5 releases", async () => {
+    const { root, stateDir, appPath } = await fixture();
+    const store = new DefinitionSourceReleaseStore(root, stateDir);
+    const initial = store.ensureCurrent();
+    const releaseWorkerHold = store.retain(initial.id);
+    const stagedOverlapping = (() => {
+      writeFileSync(
+        appPath,
+        `export default { id: "sample-v2", version: 2, agent: "worker", inputSchema: { type: "object" } };\n`,
+      );
+      return appPath;
+    })();
+    await git(root, "add", stagedOverlapping);
+    await git(root, "commit", "-qm", "v2");
+    const overlapping = store.stage();
+    const releaseOverlapHold = store.retain(overlapping.id);
+
+    for (let index = 3; index <= 11; index += 1) {
+      writeFileSync(
+        appPath,
+        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
+      );
+      await git(root, "add", appPath);
+      await git(root, "commit", "-qm", `v${index}`);
+      const candidate = store.stage();
+      if (index <= 5) {
+        // Simulate rejected reload: stage cached, hold released, prune invoked without activation.
+        const releaseRejected = store.retain(candidate.id);
+        releaseRejected();
+        store.prune();
+      } else {
+        store.activate(candidate);
+      }
+    }
+
+    // Both the running worker's initial release and the overlapping reload's release survive >5 activations.
+    expect(existsSync(initial.root)).toBeTrue();
+    expect(existsSync(overlapping.root)).toBeTrue();
+
+    releaseWorkerHold();
+    releaseOverlapHold();
+    store.prune();
+
+    expect(existsSync(initial.root)).toBeFalse();
+    expect(existsSync(overlapping.root)).toBeFalse();
+    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current");
+    expect(retainedDirs).toHaveLength(5);
+  });
 });

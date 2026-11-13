@@ -73,6 +73,7 @@ export function createDaemonLifecycle(opts: {
     agents: PreparedAgentGeneration;
     publishAgents: () => void;
   }) => Promise<AppGenerationReloadResult>;
+  onReloadError?: () => void;
 }) {
   let shuttingDown = false;
 
@@ -154,6 +155,7 @@ export function createDaemonLifecycle(opts: {
         );
       }
       errors.push(`[runtime-generation] ${err instanceof Error ? err.message : String(err)}`);
+      opts.onReloadError?.();
     }
     let summary: string;
     if (errors.length > 0) {
