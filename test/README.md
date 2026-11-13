@@ -188,39 +188,16 @@ atomic result/closure wakes. The daemon checks verify accepted attempts on
 retained Tasks after graceful shutdown while waiting and a crash during workflow
 execution, with optional schedules disabled. Scheduled workflow discovery also
 checks the accepted attempt while its Task stays open. These are isolated
-candidate-to-candidate restarts. The separate old-version trial below crosses
-the actual daemon boundary.
-
-For an opt-in old-source cutover trial, use a clean, dependency-installed Host
-checkout at `a8f6518855aa5f85a697468665269124dda30479` and the candidate checkout:
-
-```sh
-bun scripts/migrations/task-state-cutover.ts --legacy-source /path/to/old-host
-bun scripts/migrations/task-runtime-cutover.ts --legacy-source /path/to/old-host --out /tmp/task-cutover-report
-```
-
-Use a new report directory. The first command creates/deletes temporary state
-and prints a JSON verdict; the second retains its synthetic report. They are
-upgrade-verification tools, not commands to migrate an installation. Keep them
-while upgrading from that lifecycle is supported; deliberate withdrawal of that
-support, not an arbitrary expiry date, is their retirement boundary.
+candidate-to-candidate restarts.
 
 `test/e2e/e5-source-activation.test.ts` owns the no-model daemon reload regression:
 committed source is not automatically active, successful activation is correlated
 to its exact request, and rejected source leaves the active release intact.
 Source-store unit checks remain in `src/app/app-source-release.test.ts`.
-
-This Linux harness starts the old daemon with temporary Apps and a local
-scripted provider. It retains an accepted reply/Request, holds the next human
-input in real inbox execution and holds measurement/supervisor workflow workers.
-It stops the old parent before taking its process census, terminates it, and
-verifies every observed child has exited before converting state. The candidate
-daemon must answer the original input, complete the same measurement generation,
-preserve history, retire the supervisor and accept fresh input on the same Task.
-The obsolete inbox claim is checked before its old expiry so expiry cannot hide
-missing ownership fencing. No installed state or real model endpoint is used.
-This requires an explicit old source checkout and is outside ordinary CI; it
-proves the exercised fixture upgrade, not an arbitrary installation or rollback.
+The pre-#449 old-source cutover harnesses (`task-state-cutover.ts`,
+`task-runtime-cutover.ts`) were retired in PR #477 after all installations
+completed cutover; offline completion-receipt conversion remains covered by
+`src/app/migrations/task-receipt-cutover.test.ts`.
 
 Human Task detail reads include structured results from retained Task state and
 historical receipts. Their tests keep those results out of compact cards and

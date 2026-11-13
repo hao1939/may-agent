@@ -50,17 +50,13 @@ before filling the remaining history slots. Timestamp order alone cannot select
 execution authority or accepted facts: clocks can move backwards, and two
 attempts can share a timestamp. The history limit remains 16 attempts per Task.
 
-Cutover helpers require the old Host and every worker to be stopped, after the
-normal database schema upgrade. They are source operations, not an operational
-upgrade runner. Receipt import preserves original historical receipts and links
+Offline completion-receipt conversion (`src/app/migrations/task-receipt-cutover.ts`)
+requires the Host and every worker to be stopped, after the normal database
+schema upgrade. Receipt import preserves original historical receipts and links
 their exact generation/specification to accepted outcomes on closed Tasks;
-newer Task generations and existing human closure remain unchanged. Open-state
-import then preserves maintained outcomes, restores original input/wait links,
-and paces unfinished work with the existing retry deadline. Historical worker
-self-stops become failure facts on the same Task; human closure and Turn
-Stop remain effective. Missing original input or conflicting accepted-attempt
-identity aborts import rather than inventing an answer. Supervisor retirement
-uses ordinary owner closure; an operational upgrade runner remains separate.
+newer Task generations and existing human closure remain unchanged. The older
+pre-#449 open-state cutover (`task-state-cutover.ts`) and runtime cutover
+harnesses were retired in PR #477 after all installations completed cutover.
 
 App runtime preparation rejects unconverted completion receipts before admitting
 or executing work. Run the offline conversion first. Admission, claims, recovery
@@ -70,5 +66,4 @@ receipts, and the original archive remains available to conversion and inspectio
 
 Colocated store tests cover claims, revisions, transactions and reopen behavior.
 `inbox.test.ts` covers cross-resource attachment; `conversation-requests.test.ts`
-covers accepted-ask fences and closure. `retired-conversation-waits.test.ts` checks
-upgrades preserve admitted work and expose unfinished legacy turns as failed.
+covers accepted-ask fences and closure.
