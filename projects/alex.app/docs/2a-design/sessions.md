@@ -218,11 +218,11 @@ log owns numbering: a recreated tool or restarted process continues from
 retained progress in that state directory. Separate installations do not share
 a counter.
 
-Retirement of the automatically written per-agent latest copy is selected and
-prepared for review; see [the selected reduction](../proposals/external-components-simplification.md#retire-per-agent-latest-checkpoint-writes)
-for source status. The candidate saves only the session checkpoint log and
-preserves historical latest files. Source merge and installed adoption remain
-unverified.
+The automatically written per-agent latest copy was retired in merged
+[#478](https://github.com/hao1939/may-agent/pull/478); see
+[the selected reduction](../proposals/external-components-simplification.md#retire-per-agent-latest-checkpoint-writes)
+for its source and verification record. Checkpoint saves append to the session
+log and preserve historical latest files. Installed adoption remains unverified.
 
 The [tool cleanup](../proposals/authority-boundary-simplification.md#independent-tool-cleanup),
 merged in Host #198 as `28670dd2`, implements this by reading the highest saved

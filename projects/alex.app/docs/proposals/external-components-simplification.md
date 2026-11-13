@@ -233,15 +233,15 @@ was run.
 ## Retire per-agent latest checkpoint writes
 
 **Design status:** Accepted on November 13, 2026.
-**Implementation status:** Candidate source is open in
-[Host PR #478](https://github.com/hao1939/may-agent/pull/478), at
-`694b4f490e07aa1f4dab52dfe335c84a1d2907f5`, including Host main `0711ede840`.
-Source merge and installed adoption are unverified.
+**Implementation status:** [Host PR #478](https://github.com/hao1939/may-agent/pull/478)
+merged on November 13, 2026, as `4195036ad3242003b1ff1e83f0c20edfade4b4c9`.
+The premerge reviewed head was `694b4f490e07aa1f4dab52dfe335c84a1d2907f5`,
+including Host main `0711ede840`. Installed adoption remains unverified.
 
-At reviewed Host baseline `cd29dc70d9`, `checkpoint()` appends to the exact
-session's checkpoint log, then overwrites
-`.state/checkpoints/latest/<agentName>.json`. Both writes share one error path.
-If the second write fails, the tool reports failure despite a saved checkpoint.
+At reviewed Host baseline `cd29dc70d9`, `checkpoint()` appended to the exact
+session's checkpoint log, then overwrote
+`.state/checkpoints/latest/<agentName>.json`. Both writes shared one error path.
+If the second write failed, the tool reported failure despite a saved checkpoint.
 The reviewed Host recovery readers use the session log and retained transcript
 receipts. No current Host or scoped App source reader of the per-agent copy was
 found. Historical design records describing that pointer remain evidence of
