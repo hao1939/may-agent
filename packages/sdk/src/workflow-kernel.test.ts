@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { Type, type Static, type WorkflowContext } from "./index.js";
-import { runWorkflowTest } from "./testing.js";
+import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { resolveCallableTarget, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -508,5 +508,126 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       items: [],
       summary: { requestedLimit: 5 },
     });
+  });
+
+  test("supports unified ctx.call, resolveCallableTarget, mocks, dual output schemas, and readonly enforcement", async () => {
+    const childCodeMod = {
+      name: "child-proc",
+      description: "Readonly code procedure",
+      readonly: true as const,
+      inputSchema: Type.Object({ item: Type.String({ minLength: 1 }) }),
+      outputSchema: Type.Object({ item: Type.String(), score: Type.Number() }),
+      async execute(ctx: AgentContext<{ item: string }>) {
+        expect(ctx.reviseTask).toBeUndefined();
+        expect(ctx.closeTask).toBeUndefined();
+        expect(ctx.applyTaskChanges).toBeUndefined();
+        const promptStep = await ctx.call("reviewer", `Check ${ctx.input.item}`);
+        return ctx.done(promptStep.summary, { item: ctx.input.item, score: 95 });
+      },
+    };
+
+    const snapshot = {
+      prompts: new Map([["reviewer", { owner: "reviewer", definition: { name: "reviewer" } }]]),
+      proceduresByOwner: new Map([["owner", new Map([["child-proc", childCodeMod]])]]),
+    };
+    expect(resolveCallableTarget("owner", "child-proc", snapshot)).toMatchObject({
+      kind: "code",
+      name: "child-proc",
+      owner: "owner",
+      readonly: true,
+    });
+    expect(resolveCallableTarget("owner", "owner/child-proc", snapshot)).toMatchObject({
+      kind: "code",
+      name: "child-proc",
+      owner: "owner",
+    });
+    expect(resolveCallableTarget("owner", "reviewer", snapshot)).toMatchObject({
+      kind: "prompt",
+      name: "reviewer",
+      owner: "reviewer",
+    });
+    expect(() => resolveCallableTarget("other", "child-proc", snapshot)).toThrow(
+      'Callable target "child-proc" not found for owner "other"',
+    );
+
+    const parentMod = {
+      name: "parent-proc",
+      description: "Calls child code and prompt via ctx.call",
+      async execute(ctx: AgentContext<{ item: string }>) {
+        const res = await ctx.call("owner/child-proc", { item: ctx.input.item }, {
+          tools: "readonly",
+          schema: Type.Object({
+            item: Type.String(),
+            score: Type.Number({ minimum: 90 }),
+          }),
+        });
+        return ctx.done("unified call ok", res.output);
+      },
+    };
+
+    const run = await runWorkflowTest(parentMod, {
+      input: { item: "alpha" },
+      reviseTask: async () => ({} as any),
+      mocks: {
+        "owner/child-proc": childCodeMod,
+        reviewer: { status: "done", summary: "reviewed alpha" },
+      },
+    });
+    expect(run.ok).toBe(true);
+    expect(run.result).toEqual({
+      type: "done",
+      summary: "unified call ok",
+      output: { item: "alpha", score: 95 },
+    });
+    expect(run.steps).toHaveLength(1);
+    expect(run.steps[0]).toMatchObject({
+      kind: "workflow",
+      target: "owner/child-proc",
+      prompt: '{"item":"alpha"}',
+      status: "done",
+    });
+
+    // Rejects calling a non-readonly code module with tools: "readonly"
+    const mutatingMod = {
+      name: "mutating-proc",
+      description: "Mutating procedure without readonly: true",
+      async execute(ctx: AgentContext) {
+        return ctx.done("mutated");
+      },
+    };
+    const readonlyRejected = await runWorkflowTest(
+      {
+        name: "caller",
+        description: "Calls mutating procedure with readonly",
+        async execute(ctx: AgentContext) {
+          await ctx.call("owner/mutating-proc", {}, { tools: "readonly" });
+          return ctx.done("unreachable");
+        },
+      },
+      {
+        input: {},
+        mocks: { "owner/mutating-proc": mutatingMod },
+      },
+    );
+    expect(readonlyRejected.ok).toBe(false);
+    expect(String(readonlyRejected.error)).toContain('cannot run with tools: "readonly"');
+
+    // Rejects prompt-only options (skill / operationAllowance) on code targets
+    const skillOnCode = await runWorkflowTest(
+      {
+        name: "caller-skill",
+        description: "Passes skill to code target",
+        async execute(ctx: AgentContext) {
+          await ctx.call("owner/child-proc", { item: "beta" }, { skill: "some-skill" });
+          return ctx.done("unreachable");
+        },
+      },
+      {
+        input: {},
+        mocks: { "owner/child-proc": childCodeMod },
+      },
+    );
+    expect(skillOnCode.ok).toBe(false);
+    expect(String(skillOnCode.error)).toContain('Call option "skill" is only supported for prompt targets');
   });
 });

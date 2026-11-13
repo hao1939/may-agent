@@ -9,7 +9,7 @@
 
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
-import type { AgentCallOptions, AppRead, ExecutionResult, WorkflowMetricCapability } from "./app.js";
+import type { AgentCallOptions, AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
 import type { TaskReconcileResult } from "./task.js";
 import type { Logger, WorkflowContext } from "./workflow.js";
 
@@ -23,6 +23,7 @@ const MAX_PROMPT_CHARS = 2_000;
 export type WorkflowExecutableModule<TInput = any> = {
   name: string;
   description: string;
+  readonly?: boolean;
   inputSchema?: TSchema;
   outputSchema?: TSchema;
   executionTimeoutMs?: number;
@@ -33,6 +34,94 @@ export type WorkflowExecutableModule<TInput = any> = {
   sourceScope?: "agent" | "project";
   entryContentHash?: string;
 };
+
+export type PreparedTarget<TPromptDef = unknown> =
+  | {
+      kind: "prompt";
+      name: string;
+      owner: string;
+      definition: TPromptDef;
+      outputSchema?: TSchema;
+    }
+  | {
+      kind: "code";
+      name: string;
+      owner: string;
+      module: WorkflowExecutableModule;
+      readonly: boolean;
+    };
+
+export type PreparedTargetCatalog<TPromptDef = unknown> = {
+  /** Prompt agent definitions keyed by canonical agent name. */
+  readonly prompts?: ReadonlyMap<string, { owner?: string; definition: TPromptDef; outputSchema?: TSchema }>;
+  /** Code procedure catalogs keyed by owning agent name. */
+  readonly proceduresByOwner?: ReadonlyMap<string, ReadonlyMap<string, WorkflowExecutableModule>>;
+  /** Optional catalog diagnostics surfaced on resolution failures. */
+  readonly diagnostics?: readonly string[];
+};
+
+export function resolveCallableTarget<TPromptDef = unknown>(
+  callerOwner: string,
+  target: string,
+  snapshot: PreparedTargetCatalog<TPromptDef>,
+): PreparedTarget<TPromptDef> {
+  if (!target || typeof target !== "string" || !target.trim() || target === "undefined" || target === "unknown") {
+    throw new Error(`Invalid callable target name: ${JSON.stringify(target)}`);
+  }
+  const normalizedTarget = target.trim();
+  const slashIndex = normalizedTarget.indexOf("/");
+  if (slashIndex !== -1) {
+    const owner = normalizedTarget.slice(0, slashIndex).trim();
+    const name = normalizedTarget.slice(slashIndex + 1).trim();
+    if (!owner || !name || name.includes("/")) {
+      throw new Error(`Invalid qualified callable target "${target}" (expected "<owner>/<name>")`);
+    }
+    const ownerProcedures = snapshot.proceduresByOwner?.get(owner);
+    const mod = ownerProcedures?.get(name);
+    if (!mod) {
+      const diag =
+        snapshot.diagnostics && snapshot.diagnostics.length > 0
+          ? ` Catalog diagnostics:\n  ${snapshot.diagnostics.join("\n  ")}`
+          : "";
+      throw new Error(`Callable procedure "${owner}/${name}" not found.${diag}`);
+    }
+    return {
+      kind: "code",
+      name: mod.name,
+      owner,
+      module: mod,
+      readonly: Boolean(mod.readonly),
+    };
+  }
+
+  const localMod = snapshot.proceduresByOwner?.get(callerOwner)?.get(normalizedTarget);
+  if (localMod) {
+    return {
+      kind: "code",
+      name: localMod.name,
+      owner: callerOwner,
+      module: localMod,
+      readonly: Boolean(localMod.readonly),
+    };
+  }
+
+  const promptEntry = snapshot.prompts?.get(normalizedTarget);
+  if (promptEntry) {
+    return {
+      kind: "prompt",
+      name: normalizedTarget,
+      owner: promptEntry.owner ?? normalizedTarget,
+      definition: promptEntry.definition,
+      ...(promptEntry.outputSchema ? { outputSchema: promptEntry.outputSchema } : {}),
+    };
+  }
+
+  const diag =
+    snapshot.diagnostics && snapshot.diagnostics.length > 0
+      ? ` Catalog diagnostics:\n  ${snapshot.diagnostics.join("\n  ")}`
+      : "";
+  throw new Error(`Callable target "${normalizedTarget}" not found for owner "${callerOwner}".${diag}`);
+}
 
 export type NormalizedWorkflowContribution = (
   | { type: "done"; summary: string }
@@ -185,17 +274,36 @@ export function createWorkflowAllowance(options: {
   };
 }
 
+export type WorkflowKernelStepControl = {
+  signal: AbortSignal;
+  timeoutMs: number;
+  deadlineAt: number;
+  stepIndex: number;
+  allowance: WorkflowExecutionAllowance;
+};
+
 export type WorkflowKernelBindings<TInput = unknown> = {
   executionId?: string;
   startedAt?: number;
   input: TInput;
   taskOwned?: boolean;
+  /** Enclosing tool restriction ("readonly" strips Task mutations and propagates to descendants). */
+  tools?: "full" | "readonly";
   signal?: AbortSignal;
   timeoutMs?: number;
   timeoutLimitMs?: number;
   deadlineAt?: number;
   maxConcurrentCalls?: number;
   allowance?: WorkflowExecutionAllowance;
+  /** Optional unified target resolver/invoker; falls back to callAgent / runWorkflow when omitted. */
+  callTarget?(
+    target: string,
+    input: unknown,
+    options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    stepControl: WorkflowKernelStepControl,
+  ): Promise<WorkflowStepInvocationResult>;
+  /** Optional classifier so runBoundStep knows whether target is prompt ("agent") or code ("workflow") before invocation. */
+  resolveTargetKind?(target: string): "agent" | "workflow";
   callAgent(
     agent: string,
     task: string,
@@ -205,12 +313,8 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   runWorkflow(
     name: string,
     input: unknown,
-    stepControl: {
-      signal: AbortSignal;
-      timeoutMs: number;
-      deadlineAt: number;
-      stepIndex: number;
-      allowance: WorkflowExecutionAllowance;
+    stepControl: WorkflowKernelStepControl & {
+      options?: CallOptions<TSchema> & { schema?: TSchema };
     },
   ): Promise<WorkflowStepInvocationResult>;
   read?: AppRead;
@@ -448,6 +552,14 @@ export async function runWorkflowInvocation<TInput = unknown>(
     return failBeforeStart(bindings.signal.reason ?? new Error(`Workflow "${module.name}" was aborted before start`));
   }
 
+  if (bindings.tools === "readonly" && !module.readonly) {
+    return failBeforeStart(
+      new Error(
+        `Workflow "${module.name}" cannot run with tools: "readonly" unless the module declares readonly: true`,
+      ),
+    );
+  }
+
   let allowance: WorkflowExecutionAllowance;
   let timeoutMs: number;
   let effectiveTimeoutMessage: string;
@@ -594,17 +706,47 @@ export async function runWorkflowInvocation<TInput = unknown>(
     error: (msg) => logAt("error", msg),
   };
 
+  const enclosingReadonly = bindings.tools === "readonly" || Boolean(module.readonly);
+
+  const normalizeEffectiveCallOptions = (
+    kind: "agent" | "workflow",
+    target: string,
+    callOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+  ): (CallOptions<TSchema> & { schema?: TSchema }) | undefined => {
+    if (enclosingReadonly && callOptions?.tools === "full") {
+      throw new Error(
+        `Cannot widen tool policy to "full" for "${target}" inside a readonly execution scope`,
+      );
+    }
+    if (kind === "workflow") {
+      if (callOptions?.skill !== undefined) {
+        throw new Error(
+          `Call option "skill" is only supported for prompt targets, not code procedure "${target}"`,
+        );
+      }
+      if (callOptions?.operationAllowance !== undefined) {
+        throw new Error(
+          `Call option "operationAllowance" is only supported for prompt targets, not code procedure "${target}"`,
+        );
+      }
+    }
+    const effectiveTools = enclosingReadonly ? "readonly" : callOptions?.tools;
+    if (!callOptions && !effectiveTools) return undefined;
+    return {
+      ...callOptions,
+      ...(effectiveTools ? { tools: effectiveTools } : {}),
+    };
+  };
+
   const runBoundStep = async (
     kind: "agent" | "workflow",
     target: string,
     promptText: string,
-    callOptions: (AgentCallOptions & { schema?: TSchema }) | undefined,
-    invoke: (stepControl: {
-      signal: AbortSignal;
-      timeoutMs: number;
-      deadlineAt: number;
-      stepIndex: number;
-    }) => Promise<WorkflowStepInvocationResult>,
+    callOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    invoke: (
+      stepControl: WorkflowKernelStepControl,
+      effectiveOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    ) => Promise<WorkflowStepInvocationResult>,
   ): Promise<ExecutionResult> => {
     assertActive();
     if (
@@ -617,6 +759,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
         `${kind === "agent" ? "agents.call" : "workflows.run"} called with invalid ${kind} name: ${JSON.stringify(target)}`,
       );
     }
+    const effectiveOptions = normalizeEffectiveCallOptions(kind, target, callOptions);
     const remainingMs = allowance.deadlineAt - Date.now();
     if (remainingMs <= 0) {
       timedOut = true;
@@ -624,7 +767,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       controller.abort(err);
       throw err;
     }
-    const requestedStepMs = callOptions?.timeoutMs ?? remainingMs;
+    const requestedStepMs = effectiveOptions?.timeoutMs ?? remainingMs;
     if (!Number.isFinite(requestedStepMs) || requestedStepMs <= 0 || requestedStepMs > MAX_TIMER_MS) {
       throw new Error("Step timeoutMs must be a positive bounded timer duration");
     }
@@ -637,7 +780,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
     const stepController = new AbortController();
     let stepTimedOut = false;
     const stepTimeoutError =
-      callOptions?.timeoutMs !== undefined && requestedStepMs < remainingMs
+      effectiveOptions?.timeoutMs !== undefined && requestedStepMs < remainingMs
         ? new Error(
             `${kind === "agent" ? "Agent" : "Workflow"} step "${target}" timed out after ${stepTimeoutMs}ms`,
           )
@@ -662,15 +805,20 @@ export async function runWorkflowInvocation<TInput = unknown>(
       let lateRaw: WorkflowStepInvocationResult | undefined;
       let lateCleanupConfirmed = true;
       try {
-        raw = await invoke({
-          signal: stepController.signal,
-          timeoutMs: stepTimeoutMs,
-          deadlineAt: stepDeadlineAt,
-          stepIndex,
-        });
+        raw = await invoke(
+          {
+            signal: stepController.signal,
+            timeoutMs: stepTimeoutMs,
+            deadlineAt: stepDeadlineAt,
+            stepIndex,
+            allowance,
+          },
+          effectiveOptions,
+        );
         const rawCleanupConfirmed = raw.cleanupConfirmed !== false;
         if (!rawCleanupConfirmed) {
-          const label = `${kind}:${target}${raw.sessionId ? ` (${raw.sessionId})` : raw.id ? ` (${raw.id})` : ""}`;
+          const actualKind = raw.kind ?? kind;
+          const label = `${actualKind}:${target}${raw.sessionId ? ` (${raw.sessionId})` : raw.id ? ` (${raw.id})` : ""}`;
           if (!unconfirmedCleanups.includes(label)) unconfirmedCleanups.push(label);
         }
         if (stepTimedOut || Date.now() > stepDeadlineAt) {
@@ -720,15 +868,17 @@ export async function runWorkflowInvocation<TInput = unknown>(
         throw stepErr;
       }
 
+      const actualKind = raw.kind ?? kind;
       const cleanupConfirmed = raw.cleanupConfirmed !== false;
-      if (kind === "agent" && callOptions?.schema) {
+      if (effectiveOptions?.schema) {
+        const kindLabel = actualKind === "agent" ? "Agent" : "Workflow";
         if (raw.output !== undefined) {
-          if (!Check(callOptions.schema, raw.output)) {
-            const detail = schemaDiagnostic(callOptions.schema, raw.output);
+          if (!Check(effectiveOptions.schema, raw.output)) {
+            const detail = schemaDiagnostic(effectiveOptions.schema, raw.output);
             raw = {
               ...raw,
               status: "error",
-              summary: `Agent "${target}" output failed step schema: ${detail}`,
+              summary: `${kindLabel} "${target}" output failed step schema: ${detail}`,
               output: undefined,
               facts: {
                 ...(isRecord(raw.facts) ? raw.facts : raw.facts !== undefined ? { priorFacts: raw.facts } : {}),
@@ -741,7 +891,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
           raw = {
             ...raw,
             status: "error",
-            summary: `Agent "${target}" completed without required schema output`,
+            summary: `${kindLabel} "${target}" completed without required schema output`,
             facts: {
               ...(isRecord(raw.facts) ? raw.facts : raw.facts !== undefined ? { priorFacts: raw.facts } : {}),
               validationError: "missing required schema output",
@@ -754,7 +904,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       const promptTruncated = promptText.length > MAX_PROMPT_CHARS;
       recordStep({
         index: stepIndex,
-        kind,
+        kind: actualKind,
         target,
         prompt: promptTruncated ? `${promptText.slice(0, MAX_PROMPT_CHARS)}...` : promptText,
         ...(promptTruncated ? { promptTruncated: true } : {}),
@@ -782,6 +932,46 @@ export async function runWorkflowInvocation<TInput = unknown>(
     }
   };
 
+  const callOverload = (<S extends TSchema>(
+    target: string,
+    input: unknown,
+    options?: CallOptions<S> & { schema?: S },
+  ): Promise<ExecutionResult<Static<S>>> => {
+    try {
+      assertActive();
+    } catch (err) {
+      return Promise.reject(err);
+    }
+    const kind: "agent" | "workflow" = bindings.resolveTargetKind
+      ? bindings.resolveTargetKind(target)
+      : typeof target === "string" && target.includes("/")
+        ? "workflow"
+        : typeof input === "string"
+          ? "agent"
+          : "workflow";
+    const promptPreview =
+      typeof input === "string" ? input : JSON.stringify(input ?? null);
+    return trackOperation(
+      runBoundStep(kind, target, promptPreview, options, (stepControl, effectiveOptions) => {
+        if (bindings.callTarget) {
+          return bindings.callTarget(target, input, effectiveOptions, stepControl);
+        }
+        if (kind === "agent") {
+          if (typeof input !== "string") {
+            return Promise.reject(
+              new Error(`Prompt target "${target}" requires a string prompt input`),
+            );
+          }
+          return bindings.callAgent(target, input, effectiveOptions, stepControl);
+        }
+        return bindings.runWorkflow(target, input, {
+          ...stepControl,
+          options: effectiveOptions,
+        });
+      }),
+    ) as Promise<ExecutionResult<Static<S>>>;
+  }) as WorkflowContext["call"];
+
   const callAgentOverload = (<S extends TSchema>(
     agent: string,
     task: string,
@@ -793,8 +983,8 @@ export async function runWorkflowInvocation<TInput = unknown>(
       return Promise.reject(err);
     }
     return trackOperation(
-      runBoundStep("agent", agent, task, options, (stepControl) =>
-        bindings.callAgent(agent, task, options, stepControl),
+      runBoundStep("agent", agent, task, options, (stepControl, effectiveOptions) =>
+        bindings.callAgent(agent, task, effectiveOptions, stepControl),
       ),
     ) as Promise<ExecutionResult<Static<S>>>;
   }) as WorkflowContext["agents"]["call"];
@@ -828,7 +1018,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       },
     },
     ...(bindings.workspace ? { workspace: bindings.workspace } : {}),
-    ...(bindings.reviseTask
+    ...(!enclosingReadonly && bindings.reviseTask
       ? {
           reviseTask: (change) => {
             try {
@@ -840,7 +1030,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
           },
         }
       : {}),
-    ...(bindings.closeTask
+    ...(!enclosingReadonly && bindings.closeTask
       ? {
           closeTask: (change) => {
             try {
@@ -852,7 +1042,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
           },
         }
       : {}),
-    ...(bindings.applyTaskChanges
+    ...(!enclosingReadonly && bindings.applyTaskChanges
       ? {
           applyTaskChanges: (changes) => {
             try {
@@ -865,6 +1055,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
         }
       : {}),
     ...(bindings.readCommunication ? { readCommunication: bindings.readCommunication } : {}),
+    call: callOverload,
     agents: {
       call: callAgentOverload,
     },
@@ -878,8 +1069,11 @@ export async function runWorkflowInvocation<TInput = unknown>(
         const promptPreview =
           typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
         return trackOperation(
-          runBoundStep("workflow", name, promptPreview, undefined, (stepControl) =>
-            bindings.runWorkflow(name, workflowInput, { ...stepControl, allowance }),
+          runBoundStep("workflow", name, promptPreview, undefined, (stepControl, effectiveOptions) =>
+            bindings.runWorkflow(name, workflowInput, {
+              ...stepControl,
+              options: effectiveOptions,
+            }),
           ),
         );
       },

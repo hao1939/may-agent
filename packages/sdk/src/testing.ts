@@ -3,6 +3,7 @@
 import type {
   AgentCallOptions,
   AppRead,
+  CallOptions,
   ExecutionResult,
   Logger,
   ObserverContext,
@@ -15,6 +16,7 @@ import {
   type NormalizedWorkflowContribution,
   type WorkflowExecutableModule,
   type WorkflowKernelBindings,
+  type WorkflowKernelStepControl,
   type WorkflowLogEntry,
   type WorkflowRunReport,
   type WorkflowStepInvocationResult,
@@ -26,13 +28,17 @@ export {
   WorkflowValidationError,
   createWorkflowAllowance,
   normalizeWorkflowContribution,
+  resolveCallableTarget,
   runWorkflowInvocation,
   type NormalizedWorkflowContribution,
+  type PreparedTarget,
+  type PreparedTargetCatalog,
   type WorkflowCleanupStatus,
   type WorkflowExecutableModule,
   type WorkflowExecutionAllowance,
   type WorkflowKernelBindings,
   type WorkflowKernelOutcome,
+  type WorkflowKernelStepControl,
   type WorkflowLogEntry,
   type WorkflowRunReport,
   type WorkflowStepInvocationResult,
@@ -134,6 +140,7 @@ export type TestAppWorkflowContextOptions<TInput> = {
   closeTask?: WorkflowContext["closeTask"];
   read?: AppRead;
   log?: Logger;
+  call?: WorkflowContext["call"];
   callAgent?: WorkflowContext["agents"]["call"];
   runWorkflow?: WorkflowContext["workflows"]["run"];
   emit?: WorkflowContext["events"]["emit"];
@@ -156,6 +163,18 @@ export function createTestAppWorkflowContext<TInput>(
     status: "done",
     summary: "ok",
   });
+  const callAgent =
+    options.callAgent ?? fn(async (agent: string) => terminal("agent", `s_test_${agent}`));
+  const runWorkflow =
+    options.runWorkflow ?? fn(async (name: string) => terminal("workflow", `wf_test_${name}`));
+  const call =
+    options.call ??
+    (fn(async (target: string, input: unknown, callOpts?: CallOptions<any>) => {
+      if (typeof target === "string" && !target.includes("/") && typeof input === "string") {
+        return callAgent(target, input, callOpts);
+      }
+      return runWorkflow(target, input);
+    }) as WorkflowContext["call"]);
   return {
     input: options.input,
     signal: options.signal ?? new AbortController().signal,
@@ -163,11 +182,12 @@ export function createTestAppWorkflowContext<TInput>(
     ...(options.reviseTask ? { reviseTask: options.reviseTask } : {}),
     ...(options.closeTask ? { closeTask: options.closeTask } : {}),
     read: options.read ?? createTestAppRead(),
+    call,
     agents: {
-      call: options.callAgent ?? fn(async (agent: string) => terminal("agent", `s_test_${agent}`)),
+      call: callAgent,
     },
     workflows: {
-      run: options.runWorkflow ?? fn(async (name: string) => terminal("workflow", `wf_test_${name}`)),
+      run: runWorkflow,
     },
     events: {
       emit: options.emit ?? fn(async () => undefined),
@@ -201,6 +221,7 @@ export function createTestAppWorkflowContext<TInput>(
 
 export type ScriptedStepResponse = {
   id?: string;
+  kind?: "agent" | "workflow";
   status?: ExecutionResult["status"];
   summary?: string;
   output?: unknown;
@@ -208,6 +229,19 @@ export type ScriptedStepResponse = {
   sessionId?: string;
   transcriptPath?: string;
   cleanupConfirmed?: boolean;
+};
+
+export type ScriptedCallContext = {
+  target: string;
+  input: unknown;
+  agent: string;
+  task: string;
+  name: string;
+  options?: CallOptions<TSchema> & { schema?: TSchema };
+  signal: AbortSignal;
+  timeoutMs: number;
+  deadlineAt: number;
+  stepIndex: number;
 };
 
 export type ScriptedAgentCallContext = {
@@ -223,11 +257,18 @@ export type ScriptedAgentCallContext = {
 export type ScriptedWorkflowCallContext = {
   name: string;
   input: unknown;
+  options?: CallOptions<TSchema> & { schema?: TSchema };
   signal: AbortSignal;
   timeoutMs: number;
   deadlineAt: number;
   stepIndex: number;
 };
+
+export type ScriptedTargetFixture =
+  | ScriptedStepResponse
+  | WorkflowExecutableModule
+  | readonly ScriptedStepResponse[]
+  | ((call: ScriptedCallContext) => ScriptedStepResponse | Promise<ScriptedStepResponse>);
 
 export type ScriptedAgentFixture =
   | ScriptedStepResponse
@@ -244,9 +285,12 @@ export type WorkflowTestOptions<TInput> = {
   input: TInput;
   executionId?: string;
   taskOwned?: boolean;
+  tools?: "full" | "readonly";
   task?: TaskDetail;
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
   workspace?: WorkflowContext["workspace"];
+  /** Unified target fixtures keyed by target name (supports both prompt and code targets). */
+  mocks?: Record<string, ScriptedTargetFixture>;
   agents?: Record<string, ScriptedAgentFixture>;
   workflows?: Record<string, ScriptedWorkflowFixture>;
   read?: Partial<AppRead>;
@@ -284,10 +328,12 @@ function toStepResult(
   stepIndex: number,
   raw: ScriptedStepResponse,
 ): WorkflowStepInvocationResult {
-  const defaultId = kind === "agent" ? `s_test_${target}_${stepIndex}` : `wf_test_${target}_${stepIndex}`;
+  const effectiveKind = raw.kind ?? kind;
+  const defaultId =
+    effectiveKind === "agent" ? `s_test_${target}_${stepIndex}` : `wf_test_${target}_${stepIndex}`;
   return {
     id: raw.id ?? defaultId,
-    kind,
+    kind: effectiveKind,
     status: raw.status ?? "done",
     summary: raw.summary ?? "ok",
     ...(raw.output !== undefined ? { output: raw.output } : {}),
@@ -298,6 +344,16 @@ function toStepResult(
   };
 }
 
+function isExecutableModuleFixture(fixture: unknown): fixture is WorkflowExecutableModule {
+  return (
+    Boolean(fixture) &&
+    typeof fixture === "object" &&
+    !Array.isArray(fixture) &&
+    "execute" in (fixture as Record<string, unknown>) &&
+    typeof (fixture as WorkflowExecutableModule).execute === "function"
+  );
+}
+
 /**
  * Execute an authored workflow module through the real portable kernel with
  * strict schema validation, scripted step consumption checks, and zero Host setup.
@@ -306,6 +362,15 @@ export async function runWorkflowTest<TInput = unknown>(
   module: WorkflowExecutableModule<TInput>,
   options: WorkflowTestOptions<TInput>,
 ): Promise<WorkflowTestRunResult> {
+  const mockQueues = new Map<string, ScriptedStepResponse[]>();
+  for (const [name, fixture] of Object.entries(options.mocks ?? {})) {
+    if (Array.isArray(fixture)) {
+      mockQueues.set(name, [...fixture]);
+    } else if (typeof fixture !== "function" && !isExecutableModuleFixture(fixture)) {
+      mockQueues.set(name, [fixture as ScriptedStepResponse]);
+    }
+  }
+
   const agentQueues = new Map<string, ScriptedStepResponse[]>();
   for (const [name, fixture] of Object.entries(options.agents ?? {})) {
     if (Array.isArray(fixture)) {
@@ -319,7 +384,7 @@ export async function runWorkflowTest<TInput = unknown>(
   for (const [name, fixture] of Object.entries(options.workflows ?? {})) {
     if (Array.isArray(fixture)) {
       workflowQueues.set(name, [...fixture]);
-    } else if (typeof fixture !== "function" && !("execute" in fixture && typeof fixture.execute === "function")) {
+    } else if (typeof fixture !== "function" && !isExecutableModuleFixture(fixture)) {
       workflowQueues.set(name, [fixture as ScriptedStepResponse]);
     }
   }
@@ -397,13 +462,164 @@ export async function runWorkflowTest<TInput = unknown>(
     evaluate: options.metrics?.evaluate ?? fn(() => []),
   };
 
+  const resolveMockKind = (target: string, fallbackInput?: unknown): "agent" | "workflow" => {
+    const mockFixture = options.mocks?.[target];
+    if (mockFixture) {
+      if (isExecutableModuleFixture(mockFixture)) return "workflow";
+      if (!Array.isArray(mockFixture) && typeof mockFixture !== "function") {
+        const single = mockFixture as ScriptedStepResponse;
+        if (single.kind) return single.kind;
+      }
+      if (target.includes("/")) return "workflow";
+      return typeof fallbackInput === "string" ? "agent" : "workflow";
+    }
+    if (options.workflows && Object.hasOwn(options.workflows, target)) return "workflow";
+    if (options.agents && Object.hasOwn(options.agents, target)) return "agent";
+    if (target.includes("/")) return "workflow";
+    return typeof fallbackInput === "string" ? "agent" : "workflow";
+  };
+
+  const executeNestedModuleFixture = async (
+    nestedModule: WorkflowExecutableModule,
+    wfInput: unknown,
+    stepControl: WorkflowKernelStepControl,
+    callOpts?: CallOptions<TSchema> & { schema?: TSchema },
+  ): Promise<WorkflowStepInvocationResult> => {
+    const sub = await runWorkflowInvocation(
+      nestedModule,
+      buildBindings(wfInput, {
+        ...stepControl,
+        tools: callOpts?.tools,
+      }),
+    );
+    if (!sub.ok) {
+      const thrown = sub.error instanceof Error ? sub.error : new Error(sub.message);
+      if (sub.started) {
+        (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
+      }
+      throw thrown;
+    }
+    return {
+      id: sub.report.executionId,
+      kind: "workflow",
+      status: sub.result.type,
+      summary: sub.result.type === "done" ? sub.result.summary : sub.result.reason,
+      ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
+      ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
+      cleanupConfirmed: sub.report.cleanup.confirmed,
+    };
+  };
+
+  const invokeMockTarget = async (
+    target: string,
+    input: unknown,
+    callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    stepControl: WorkflowKernelStepControl,
+    preferredKind?: "agent" | "workflow",
+  ): Promise<WorkflowStepInvocationResult> => {
+    const kind = preferredKind ?? resolveMockKind(target, input);
+    const mockFixture = options.mocks?.[target];
+    if (mockFixture) {
+      if (typeof mockFixture === "function") {
+        const promptStr = typeof input === "string" ? input : JSON.stringify(input ?? null);
+        const res = await mockFixture({
+          target,
+          input,
+          agent: target,
+          task: promptStr,
+          name: target,
+          options: callOpts,
+          signal: stepControl.signal,
+          timeoutMs: stepControl.timeoutMs,
+          deadlineAt: stepControl.deadlineAt,
+          stepIndex: stepControl.stepIndex,
+        });
+        return toStepResult(kind, target, stepControl.stepIndex, res);
+      }
+      if (isExecutableModuleFixture(mockFixture)) {
+        return executeNestedModuleFixture(mockFixture, input, stepControl, callOpts);
+      }
+      const queue = mockQueues.get(target)!;
+      const next = queue.shift();
+      if (!next) {
+        throw new Error(`Exhausted scripted fixture responses for "${target}" on call #${stepControl.stepIndex}`);
+      }
+      return toStepResult(kind, target, stepControl.stepIndex, next);
+    }
+
+    if (kind === "workflow" && options.workflows?.[target]) {
+      const fixture = options.workflows[target]!;
+      if (typeof fixture === "function") {
+        const res = await fixture({
+          name: target,
+          input,
+          options: callOpts,
+          signal: stepControl.signal,
+          timeoutMs: stepControl.timeoutMs,
+          deadlineAt: stepControl.deadlineAt,
+          stepIndex: stepControl.stepIndex,
+        });
+        return toStepResult("workflow", target, stepControl.stepIndex, res);
+      }
+      if (isExecutableModuleFixture(fixture)) {
+        return executeNestedModuleFixture(fixture, input, stepControl, callOpts);
+      }
+      const queue = workflowQueues.get(target)!;
+      const next = queue.shift();
+      if (!next) {
+        throw new Error(`Exhausted scripted fixture responses for workflow "${target}" on call #${stepControl.stepIndex}`);
+      }
+      return toStepResult("workflow", target, stepControl.stepIndex, next);
+    }
+
+    if (options.agents?.[target]) {
+      if (typeof input !== "string") {
+        throw new Error(`Prompt target "${target}" requires a string prompt input`);
+      }
+      const fixture = options.agents[target]!;
+      if (typeof fixture === "function") {
+        const res = await fixture({
+          agent: target,
+          task: input,
+          options: callOpts,
+          signal: stepControl.signal,
+          timeoutMs: stepControl.timeoutMs,
+          deadlineAt: stepControl.deadlineAt,
+          stepIndex: stepControl.stepIndex,
+        });
+        return toStepResult("agent", target, stepControl.stepIndex, res);
+      }
+      const queue = agentQueues.get(target)!;
+      const next = queue.shift();
+      if (!next) {
+        throw new Error(`Exhausted scripted fixture responses for agent "${target}" on call #${stepControl.stepIndex}`);
+      }
+      return toStepResult("agent", target, stepControl.stepIndex, next);
+    }
+
+    if (options.workflows?.[target]) {
+      return invokeMockTarget(target, input, callOpts, stepControl, "workflow");
+    }
+
+    throw new Error(
+      `Unexpected ${kind} call to unconfigured ${kind} "${target}"`,
+    );
+  };
+
   const buildBindings = (
     currentInput: unknown,
-    nestedControl?: { signal: AbortSignal; timeoutMs: number; deadlineAt: number; allowance: WorkflowKernelBindings["allowance"] },
+    nestedControl?: {
+      signal: AbortSignal;
+      timeoutMs: number;
+      deadlineAt: number;
+      allowance: WorkflowKernelBindings["allowance"];
+      tools?: "full" | "readonly";
+    },
   ): WorkflowKernelBindings<any> => ({
     executionId: nestedControl ? undefined : options.executionId,
     input: currentInput,
     taskOwned: options.taskOwned ?? Boolean(options.task || options.reconciliation),
+    tools: nestedControl?.tools ?? options.tools,
     signal: nestedControl?.signal ?? options.signal,
     timeoutMs: nestedControl?.timeoutMs ?? options.timeoutMs,
     deadlineAt: nestedControl?.deadlineAt ?? options.deadlineAt,
@@ -420,68 +636,31 @@ export async function runWorkflowTest<TInput = unknown>(
     confirmCleanup: options.confirmCleanup,
     onStep: options.onStep,
     onLog: options.onLog,
-    callAgent: async (agent, task, callOpts, stepControl) => {
-      const fixture = options.agents?.[agent];
-      if (!fixture) {
-        throw new Error(`Unexpected agent call to unconfigured agent "${agent}"`);
-      }
-      if (typeof fixture === "function") {
-        const res = await fixture({ agent, task, options: callOpts, ...stepControl });
-        return toStepResult("agent", agent, stepControl.stepIndex, res);
-      }
-      const queue = agentQueues.get(agent)!;
-      const next = queue.shift();
-      if (!next) {
-        throw new Error(`Exhausted scripted fixture responses for agent "${agent}" on call #${stepControl.stepIndex}`);
-      }
-      return toStepResult("agent", agent, stepControl.stepIndex, next);
-    },
-    runWorkflow: async (name, wfInput, stepControl) => {
-      const fixture = options.workflows?.[name];
-      if (!fixture) {
-        throw new Error(`Unexpected workflow call to unconfigured workflow "${name}"`);
-      }
-      if (typeof fixture === "function") {
-        const res = await fixture({
-          name,
-          input: wfInput,
-          signal: stepControl.signal,
-          timeoutMs: stepControl.timeoutMs,
-          deadlineAt: stepControl.deadlineAt,
-          stepIndex: stepControl.stepIndex,
-        });
-        return toStepResult("workflow", name, stepControl.stepIndex, res);
-      }
-      if (!Array.isArray(fixture) && "execute" in fixture && typeof fixture.execute === "function") {
-        const sub = await runWorkflowInvocation(fixture, buildBindings(wfInput, stepControl));
-        if (!sub.ok) {
-          const thrown = sub.error instanceof Error ? sub.error : new Error(sub.message);
-          if (sub.started) {
-            (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
-          }
-          throw thrown;
-        }
-        return {
-          id: sub.report.executionId,
-          kind: "workflow",
-          status: sub.result.type,
-          summary: sub.result.type === "done" ? sub.result.summary : sub.result.reason,
-          ...(sub.result.output !== undefined ? { output: sub.result.output } : {}),
-          ...(sub.result.facts !== undefined ? { facts: sub.result.facts } : {}),
-          cleanupConfirmed: sub.report.cleanup.confirmed,
-        };
-      }
-      const queue = workflowQueues.get(name)!;
-      const next = queue.shift();
-      if (!next) {
-        throw new Error(`Exhausted scripted fixture responses for workflow "${name}" on call #${stepControl.stepIndex}`);
-      }
-      return toStepResult("workflow", name, stepControl.stepIndex, next);
-    },
+    resolveTargetKind: (target) => resolveMockKind(target),
+    callTarget: (target, input, callOpts, stepControl) =>
+      invokeMockTarget(target, input, callOpts, stepControl),
+    callAgent: (agent, task, callOpts, stepControl) =>
+      invokeMockTarget(
+        agent,
+        task,
+        callOpts,
+        {
+          ...stepControl,
+          allowance: nestedControl?.allowance ?? ({} as any),
+        },
+        "agent",
+      ),
+    runWorkflow: (name, wfInput, stepControl) =>
+      invokeMockTarget(name, wfInput, stepControl.options, stepControl, "workflow"),
   });
 
   const outcome = await runWorkflowInvocation(module, buildBindings(options.input));
   const unconsumedFixtures: WorkflowTestRunResult["unconsumedFixtures"] = [];
+  for (const [target, queue] of mockQueues) {
+    if (queue.length > 0) {
+      unconsumedFixtures.push({ kind: resolveMockKind(target), target, remaining: queue.length });
+    }
+  }
   for (const [target, queue] of agentQueues) {
     if (queue.length > 0) unconsumedFixtures.push({ kind: "agent", target, remaining: queue.length });
   }

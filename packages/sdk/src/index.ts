@@ -91,6 +91,8 @@ export type {
   WorkflowInput,
   WorkflowMetricCapability,
   AgentCallOptions,
+  AgentContext,
+  CallOptions,
 } from "./app.js";
 export type {
   Condition,

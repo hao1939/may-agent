@@ -698,4 +698,95 @@ export async function execute(ctx) {
     expect(seenPrompts).toHaveLength(2);
     expect(seenPrompts[1]?.some((msg) => msg.includes("finish()"))).toBe(true);
   });
+
+  test("resolves local and cross-owner <owner>/<name> procedures via ctx.call while preserving Task reconciliation owner", async () => {
+    const env = setupDirectLayout();
+    const reviewerWorkflowsDir = join(env.agentsRoot, "reviewer", "workflows");
+    writeFileSync(
+      join(reviewerWorkflowsDir, "local-helper.ts"),
+      `
+export const name = "local-helper";
+export const description = "Reviewer local helper";
+export const readonly = true;
+export async function execute(ctx) {
+  return ctx.done("helper:" + ctx.reconciliation?.agent, {
+    taskOwner: ctx.reconciliation?.agent,
+    reviseExposed: Boolean(ctx.reviseTask),
+  });
+}
+`,
+    );
+    writeFileSync(
+      join(reviewerWorkflowsDir, "deep-review.ts"),
+      `
+export const name = "deep-review";
+export const description = "Cross-owner procedure that calls unqualified local-helper and prompt reviewer";
+export const readonly = true;
+export async function execute(ctx) {
+  const helper = await ctx.call("local-helper", {});
+  const agentStep = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef);
+  return ctx.done(helper.summary + ":" + agentStep.summary, {
+    helper: helper.output,
+    agentSummary: agentStep.summary,
+  });
+}
+`,
+    );
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "delegate-cross-owner.ts"),
+      `
+export const name = "delegate-cross-owner";
+export const description = "Owner calls reviewer/deep-review via ctx.call";
+export async function execute(ctx) {
+  const sub = await ctx.call("reviewer/deep-review", { subjectRef: "HEAD" }, { tools: "readonly" });
+  return ctx.done(sub.summary, sub.output);
+}
+`,
+    );
+
+    const run = await runDirectWorkflow({
+      agentName: "owner",
+      workflowName: "delegate-cross-owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      task: {
+        id: "task-1",
+        status: "running",
+        generation: 1,
+        outcome: "Verify cross-owner lexical vs Task authority owner",
+        parentId: "root",
+        acceptance: ["Owner stays owner"],
+        input: {},
+        agent: "owner",
+        conditions: [],
+        acceptedEvidence: { available: true, maxPageSize: 8 },
+      },
+      agentFixtures: {
+        reviewer: async () => ({
+          id: "s_rev_1",
+          kind: "agent",
+          status: "done",
+          summary: "prompt-ok",
+        }),
+      },
+    });
+
+    expect(run.ok).toBe(true);
+    expect(run.result).toEqual({
+      type: "done",
+      summary: "helper:owner:prompt-ok",
+      output: {
+        helper: {
+          taskOwner: "owner",
+          reviseExposed: false,
+        },
+        agentSummary: "prompt-ok",
+      },
+    });
+  });
 });

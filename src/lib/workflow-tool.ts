@@ -510,6 +510,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     runId = generateRunId(),
     parentSignal = opts.signal,
     inheritedAllowance?: WorkflowExecutionAllowance,
+    inheritedTools?: "full" | "readonly",
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     if (depth > 1) assertWorkflowExecution();
     const localSteps: CompletedStep[] = [];
@@ -629,10 +630,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         startedAt: run.startedAt,
         input: authoredInput ? authoredInput.value : task,
         taskOwned: Boolean(opts.taskBinding),
+        tools: inheritedTools,
         signal: parentSignal,
         timeoutMs: declaredTimeoutMs,
         timeoutLimitMs: executionTimeoutLimitMs,
         allowance: inheritedAllowance,
+        resolveTargetKind: (target) => (catalog.workflows.has(target) ? "workflow" : "agent"),
         read: appRead,
         metrics: {
           define: (definition) => metricService().define(definition),
@@ -784,6 +787,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             undefined,
             stepControl.signal,
             stepControl.allowance,
+            stepControl.options?.tools,
           );
           stepControl.signal.throwIfAborted();
           if (sub.result.type === "done") {

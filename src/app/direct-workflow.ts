@@ -14,6 +14,7 @@ import { join, resolve } from "node:path";
 import type {
   AgentCallOptions,
   AppRead,
+  CallOptions,
   TaskDetail,
   WorkflowContext,
 } from "@may-agent/sdk";
@@ -21,11 +22,14 @@ import { createTestAppRead } from "@may-agent/sdk/testing";
 import {
   WorkflowUnconfirmedCleanupError,
   createWorkflowAllowance,
+  resolveCallableTarget,
   runWorkflowInvocation,
   type NormalizedWorkflowContribution,
+  type PreparedTargetCatalog,
   type WorkflowExecutableModule,
   type WorkflowExecutionAllowance,
   type WorkflowKernelOutcome,
+  type WorkflowKernelStepControl,
   type WorkflowLogEntry,
   type WorkflowRunReport,
   type WorkflowStepInvocationResult,
@@ -36,7 +40,11 @@ import type { ModelWithApiKey, TaskResult } from "../lib/types.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/workflow-catalog.js";
 import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
 import { readAgentConfigFile } from "./loader/agent-config.js";
-import { resolveRuntimeAgentDirectory } from "./loader/agent-discovery.js";
+import {
+  listRuntimeAgentDirectories,
+  resolveRuntimeAgentDirectory,
+  type AgentDirectory,
+} from "./loader/agent-discovery.js";
 import {
   runDirectAgent,
   type DirectAgentRunOptions,
@@ -112,6 +120,8 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   resolveToolDenials?: (agentName: string, configuredTools: readonly string[]) => ToolDenial[];
   /** Expose sandboxed `workflow` tool inside child agent steps (default: false). */
   allowChildAgentWorkflowTool?: boolean;
+  /** Optional tool restriction ("readonly") for this execution scope. */
+  tools?: "full" | "readonly";
   drainProcessGroup?: (pgid: number) => Promise<boolean>;
   timeoutMs?: number;
   deadlineAt?: number;
@@ -197,12 +207,85 @@ function enforceDirectStepCompletion(
   return result;
 }
 
+async function buildDirectTargetCatalog(
+  options: DirectWorkflowRunOptions<any>,
+  callerOwner: string,
+  explicitWorkflowDir?: string,
+): Promise<PreparedTargetCatalog<AgentDirectory>> {
+  const dirs = listRuntimeAgentDirectories(options.agentsRoot, options.projectsRoot);
+  const callerSource =
+    resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner) ??
+    resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner, options.projectsRoot);
+  const callerProjectId = callerSource?.projectId;
+
+  const prompts = new Map<string, { owner: string; definition: AgentDirectory }>();
+  const proceduresByOwner = new Map<string, ReadonlyMap<string, WorkflowExecutableModule>>();
+  const diagnostics: string[] = [];
+
+  for (const agentDir of dirs) {
+    // Enforce App-local boundary isolation: only include global agents or agents in the same App projectId.
+    if (agentDir.projectId && callerProjectId && agentDir.projectId !== callerProjectId) {
+      continue;
+    }
+    const config = readAgentConfigFile(agentDir.dir);
+    if (!config) continue;
+    const existing = prompts.get(config.name);
+    // Prefer App-local definition over global fallback for the same App.
+    if (!existing || (!existing.definition.projectId && agentDir.projectId)) {
+      prompts.set(config.name, { owner: config.name, definition: agentDir });
+    }
+    const wfCatalog = await buildWorkflowCatalog(join(agentDir.dir, "workflows"));
+    if (wfCatalog.workflows.size > 0) {
+      proceduresByOwner.set(config.name, wfCatalog.workflows);
+    }
+    for (const diag of wfCatalog.diagnostics) {
+      diagnostics.push(diag);
+    }
+  }
+
+  if (explicitWorkflowDir) {
+    const explicitCatalog = await buildWorkflowCatalog(explicitWorkflowDir);
+    if (explicitCatalog.workflows.size > 0 || !proceduresByOwner.has(callerOwner)) {
+      proceduresByOwner.set(callerOwner, explicitCatalog.workflows);
+    }
+    for (const diag of explicitCatalog.diagnostics) {
+      if (!diagnostics.includes(diag)) diagnostics.push(diag);
+    }
+  }
+
+  for (const fixtureAgent of Object.keys(options.agentFixtures ?? {})) {
+    if (!prompts.has(fixtureAgent)) {
+      prompts.set(fixtureAgent, {
+        owner: fixtureAgent,
+        definition: {
+          name: fixtureAgent,
+          dir: join(options.agentsRoot, fixtureAgent),
+          agentsRoot: options.agentsRoot,
+          relativeDir: `agents/${fixtureAgent}`,
+        },
+      });
+    }
+  }
+
+  return {
+    prompts,
+    proceduresByOwner,
+    diagnostics,
+  };
+}
+
 /**
  * Run a workflow end-to-end without booting Host SQLite, EventBus, or SubagentManager.
  */
 export async function runDirectWorkflow<TInput = unknown>(
   options: DirectWorkflowRunOptions<TInput>,
-  internal?: { depth: number; allowance?: WorkflowExecutionAllowance },
+  internal?: {
+    depth: number;
+    allowance?: WorkflowExecutionAllowance;
+    targetCatalog?: PreparedTargetCatalog<AgentDirectory>;
+    callerOwner?: string;
+    tools?: "full" | "readonly";
+  },
 ): Promise<DirectWorkflowRunResult> {
   const depth = internal?.depth ?? 1;
   const maxDepth = options.maxDepth ?? DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH;
@@ -255,8 +338,11 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   }
 
+  const callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
   const workflowDir = resolveWorkflowDir(options);
   const catalog = workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
+  const targetCatalog =
+    internal?.targetCatalog ?? (await buildDirectTargetCatalog(options, callerOwner, workflowDir));
 
   let targetModule = options.module;
   if (!targetModule) {
@@ -333,10 +419,164 @@ export async function runDirectWorkflow<TInput = unknown>(
     }
   }
 
+  const executePromptTarget = async (
+    agent: string,
+    prompt: string,
+    callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    stepControl: { signal: AbortSignal; timeoutMs: number; deadlineAt: number; stepIndex: number },
+  ): Promise<WorkflowStepInvocationResult> => {
+    const operationAllowance = validateOperationAllowance(callOpts?.operationAllowance);
+    const fixture = options.agentFixtures?.[agent];
+    if (fixture) {
+      return fixture({ agent, task: prompt, options: callOpts, ...stepControl });
+    }
+    const agentSource =
+      resolveRuntimeAgentDirectory(options.agentsRoot, agent) ??
+      resolveRuntimeAgentDirectory(options.agentsRoot, agent, options.projectsRoot);
+    if (!agentSource) {
+      throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
+    }
+    const config = readAgentConfigFile(agentSource.dir);
+    if (!config) {
+      throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
+    }
+    const unconfirmedToolWorkflows: string[] = [];
+    const childWorkflowTool =
+      options.allowChildAgentWorkflowTool && config.tools.includes("workflow")
+        ? createDirectWorkflowTool({
+            ...options,
+            executionId: undefined,
+            agentName: agent,
+            workflowDir: join(agentSource.dir, "workflows"),
+            allowance: rootAllowance,
+            depth: depth + 1,
+            onUnconfirmedCleanup: (items) => {
+              for (const item of items) {
+                if (!unconfirmedToolWorkflows.includes(item)) unconfirmedToolWorkflows.push(item);
+              }
+            },
+          })
+        : undefined;
+    const denials = options.resolveToolDenials
+      ? options.resolveToolDenials(agent, config.tools)
+      : defaultDirectToolDenials(config.tools, {
+          allowWorkflowTool: Boolean(childWorkflowTool),
+        });
+    const effectivePrompt = callOpts?.skill
+      ? `Apply skill "${callOpts.skill}" when relevant.\n\n${prompt}`
+      : prompt;
+
+    let directRun: DirectAgentRunResult;
+    try {
+      directRun = await executeAgent({
+        agentName: agent,
+        task: effectivePrompt,
+        projectRoot: options.projectRoot,
+        workRoot: options.workRoot,
+        agentsRoot: options.agentsRoot,
+        sharedRoot: options.sharedRoot,
+        projectsRoot: options.projectsRoot,
+        globalAgentsRoot: options.globalAgentsRoot,
+        outputRoot: options.outputRoot,
+        models: options.models,
+        requireFinish: true,
+        outputSchema: callOpts?.schema,
+        toolPolicy: callOpts?.tools,
+        operationAllowance,
+        toolDenials: denials,
+        workflowTool: childWorkflowTool,
+        drainProcessGroup: options.drainProcessGroup,
+        timeoutMs: stepControl.timeoutMs,
+        deadlineAt: stepControl.deadlineAt,
+        signal: stepControl.signal,
+        onNotice: options.onNotice,
+      });
+    } catch (err) {
+      if (unconfirmedToolWorkflows.length > 0 && !(err instanceof WorkflowUnconfirmedCleanupError)) {
+        throw new WorkflowUnconfirmedCleanupError(agent, unconfirmedToolWorkflows, err);
+      }
+      throw err;
+    }
+
+    const transcriptPath = join(directRun.sessionPath, "session.jsonl");
+    childSessions.push({
+      stepIndex: stepControl.stepIndex,
+      agent,
+      sessionId: directRun.sessionId,
+      transcriptPath,
+    });
+    const taskResult = enforceDirectStepCompletion(
+      directResultToTaskResult(directRun),
+      Boolean(callOpts?.schema),
+    );
+    const mapped = agentExecutionResult(taskResult);
+    return {
+      ...mapped,
+      sessionId: directRun.sessionId,
+      transcriptPath,
+      cleanupConfirmed: directRun.cleanupConfirmed && unconfirmedToolWorkflows.length === 0,
+    };
+  };
+
+  const executeCodeTarget = async (
+    wfName: string,
+    targetMod: WorkflowExecutableModule,
+    targetOwner: string,
+    wfInput: unknown,
+    stepControl: WorkflowKernelStepControl,
+    callOpts?: CallOptions<TSchema> & { schema?: TSchema },
+  ): Promise<WorkflowStepInvocationResult> => {
+    if (depth + 1 > maxDepth) {
+      throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
+    }
+    const sub = await runDirectWorkflow(
+      {
+        ...options,
+        executionId: undefined,
+        module: targetMod,
+        workflowName: wfName,
+        input: wfInput,
+        signal: stepControl.signal,
+        timeoutMs: stepControl.timeoutMs,
+        deadlineAt: stepControl.deadlineAt,
+        traceDir: undefined,
+      },
+      {
+        depth: depth + 1,
+        allowance: stepControl.allowance,
+        targetCatalog,
+        callerOwner: targetOwner,
+        tools: callOpts?.tools,
+      },
+    );
+    for (const session of sub.childSessions) {
+      childSessions.push(session);
+    }
+    if (!sub.ok) {
+      const thrown = sub.error instanceof Error
+        ? sub.error
+        : new Error(String(sub.error ?? sub.report.error?.message));
+      if (sub.started) {
+        (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
+      }
+      throw thrown;
+    }
+    return {
+      id: sub.report.executionId,
+      kind: "workflow",
+      status: sub.result!.type,
+      summary: sub.result!.type === "done" ? sub.result!.summary : sub.result!.reason,
+      ...(sub.result!.output !== undefined ? { output: sub.result!.output } : {}),
+      ...(sub.result!.facts !== undefined ? { facts: sub.result!.facts } : {}),
+      cleanupConfirmed: sub.report.cleanup.confirmed,
+    };
+  };
+
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(targetModule, {
     executionId: internal ? undefined : options.executionId,
     input: options.input,
     taskOwned: Boolean(options.task || options.reconciliation),
+    tools: internal?.tools ?? options.tools,
     signal: options.signal,
     timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
     deadlineAt: options.deadlineAt,
@@ -379,102 +619,39 @@ export async function runDirectWorkflow<TInput = unknown>(
     reconciliation,
     onStep: options.onStep,
     onLog: options.onLog,
-    callAgent: async (agent, prompt, callOpts, stepControl) => {
-      const operationAllowance = validateOperationAllowance(callOpts?.operationAllowance);
-      const fixture = options.agentFixtures?.[agent];
-      if (fixture) {
-        return fixture({ agent, task: prompt, options: callOpts, ...stepControl });
-      }
-      const agentSource =
-        resolveRuntimeAgentDirectory(options.agentsRoot, agent) ??
-        resolveRuntimeAgentDirectory(options.agentsRoot, agent, options.projectsRoot);
-      if (!agentSource) {
-        throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
-      }
-      const config = readAgentConfigFile(agentSource.dir);
-      if (!config) {
-        throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
-      }
-      const unconfirmedToolWorkflows: string[] = [];
-      const childWorkflowTool =
-        options.allowChildAgentWorkflowTool && config.tools.includes("workflow")
-          ? createDirectWorkflowTool({
-              ...options,
-              executionId: undefined,
-              agentName: agent,
-              workflowDir: join(agentSource.dir, "workflows"),
-              allowance: rootAllowance,
-              depth: depth + 1,
-              onUnconfirmedCleanup: (items) => {
-                for (const item of items) {
-                  if (!unconfirmedToolWorkflows.includes(item)) unconfirmedToolWorkflows.push(item);
-                }
-              },
-            })
-          : undefined;
-      const denials = options.resolveToolDenials
-        ? options.resolveToolDenials(agent, config.tools)
-        : defaultDirectToolDenials(config.tools, {
-            allowWorkflowTool: Boolean(childWorkflowTool),
-          });
-      const effectivePrompt = callOpts?.skill
-        ? `Apply skill "${callOpts.skill}" when relevant.\n\n${prompt}`
-        : prompt;
-
-      let directRun: DirectAgentRunResult;
+    resolveTargetKind: (target) => {
       try {
-        directRun = await executeAgent({
-          agentName: agent,
-          task: effectivePrompt,
-          projectRoot: options.projectRoot,
-          workRoot: options.workRoot,
-          agentsRoot: options.agentsRoot,
-          sharedRoot: options.sharedRoot,
-          projectsRoot: options.projectsRoot,
-          globalAgentsRoot: options.globalAgentsRoot,
-          outputRoot: options.outputRoot,
-          models: options.models,
-          requireFinish: true,
-          outputSchema: callOpts?.schema,
-          toolPolicy: callOpts?.tools,
-          operationAllowance,
-          toolDenials: denials,
-          workflowTool: childWorkflowTool,
-          drainProcessGroup: options.drainProcessGroup,
-          timeoutMs: stepControl.timeoutMs,
-          deadlineAt: stepControl.deadlineAt,
-          signal: stepControl.signal,
-          onNotice: options.onNotice,
-        });
-      } catch (err) {
-        if (unconfirmedToolWorkflows.length > 0 && !(err instanceof WorkflowUnconfirmedCleanupError)) {
-          throw new WorkflowUnconfirmedCleanupError(agent, unconfirmedToolWorkflows, err);
-        }
-        throw err;
+        const resolved = resolveCallableTarget(callerOwner, target, targetCatalog);
+        return resolved.kind === "prompt" ? "agent" : "workflow";
+      } catch {
+        return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
       }
-
-      const transcriptPath = join(directRun.sessionPath, "session.jsonl");
-      childSessions.push({
-        stepIndex: stepControl.stepIndex,
-        agent,
-        sessionId: directRun.sessionId,
-        transcriptPath,
-      });
-      const taskResult = enforceDirectStepCompletion(
-        directResultToTaskResult(directRun),
-        Boolean(callOpts?.schema),
-      );
-      const mapped = agentExecutionResult(taskResult);
-      return {
-        ...mapped,
-        sessionId: directRun.sessionId,
-        transcriptPath,
-        cleanupConfirmed: directRun.cleanupConfirmed && unconfirmedToolWorkflows.length === 0,
-      };
     },
+    callTarget: async (target, input, callOpts, stepControl) => {
+      const resolved = resolveCallableTarget(callerOwner, target, targetCatalog);
+      if (resolved.kind === "prompt") {
+        if (typeof input !== "string") {
+          throw new Error(`Prompt target "${target}" requires a string prompt input`);
+        }
+        return executePromptTarget(resolved.name, input, callOpts, stepControl);
+      }
+      return executeCodeTarget(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts);
+    },
+    callAgent: (agent, prompt, callOpts, stepControl) =>
+      executePromptTarget(agent, prompt, callOpts, stepControl),
     runWorkflow: async (wfName, wfInput, stepControl) => {
-      if (depth + 1 > maxDepth) {
-        throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
+      if (wfName.includes("/")) {
+        const resolved = resolveCallableTarget(callerOwner, wfName, targetCatalog);
+        if (resolved.kind === "code") {
+          return executeCodeTarget(
+            resolved.name,
+            resolved.module,
+            resolved.owner,
+            wfInput,
+            stepControl,
+            stepControl.options,
+          );
+        }
       }
       if (!catalog) {
         throw new Error(`Cannot resolve nested workflow "${wfName}" without a workflowDir`);
@@ -483,41 +660,14 @@ export async function runDirectWorkflow<TInput = unknown>(
       if (!found.workflow) {
         throw new Error(found.error ?? `Workflow "${wfName}" not found`);
       }
-      const sub = await runDirectWorkflow(
-        {
-          ...options,
-          executionId: undefined,
-          module: found.workflow,
-          workflowName: wfName,
-          input: wfInput,
-          signal: stepControl.signal,
-          timeoutMs: stepControl.timeoutMs,
-          deadlineAt: stepControl.deadlineAt,
-          traceDir: undefined,
-        },
-        { depth: depth + 1, allowance: stepControl.allowance },
+      return executeCodeTarget(
+        found.workflow.name,
+        found.workflow,
+        callerOwner,
+        wfInput,
+        stepControl,
+        stepControl.options,
       );
-      for (const session of sub.childSessions) {
-        childSessions.push(session);
-      }
-      if (!sub.ok) {
-        const thrown = sub.error instanceof Error
-          ? sub.error
-          : new Error(String(sub.error ?? sub.report.error?.message));
-        if (sub.started) {
-          (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
-        }
-        throw thrown;
-      }
-      return {
-        id: sub.report.executionId,
-        kind: "workflow",
-        status: sub.result!.type,
-        summary: sub.result!.type === "done" ? sub.result!.summary : sub.result!.reason,
-        ...(sub.result!.output !== undefined ? { output: sub.result!.output } : {}),
-        ...(sub.result!.facts !== undefined ? { facts: sub.result!.facts } : {}),
-        cleanupConfirmed: sub.report.cleanup.confirmed,
-      };
     },
   });
 
