@@ -35,8 +35,10 @@ On November 13, the user asked to derive further simplification from the real
 workloads and selected the local May/Scout/Alex cases and MLVM's Kubernetes,
 compiler, spec-repair and knowledge assignments. This review uses local source
 and the retained November 12 MLVM cutover record; it is not a fresh remote
-inspection. The source baseline is Host `28fc86fbedb9`. Procedure changes below
-are proposals, with no implementation or measured benefit yet.
+inspection. The review baseline is Host `28fc86fbedb9`. The bounded command
+correction below is implemented in Apps source `0862215c6d`; broader
+procedure/context and MLVM reporting changes remain proposals. No live
+activation was performed.
 
 The purpose remains [verified useful results with decreasing human supervision
 and acceptable total cost](../1-principles/purpose.md#mays-goal).
@@ -69,13 +71,22 @@ repeated work; it should not be removed merely because it is complex. Current
 conservative invalidation on new input preserves reports while requesting fresh
 judgment. No measured cost yet justifies replacing it with smarter classification.
 
-Start with concrete support costs. The command helper imposes a fixed
-120-second timeout, while the recent full Host check took more than five
-minutes. Establish which checks the procedure owns and align their execution
-with the existing workflow allowance and cancellation. Also inspect repeated
-Task/event context and full repository descriptions sent to each specialist;
-retain current requirements and usable source/evidence references while
-removing demonstrated duplication. Required human approvals, exact-candidate
+**Implemented support correction:** the command helper's fixed 120-second
+timeout could stop valid verification while the Host workflow still had time
+available; the recent full Host check took more than five minutes. Apps source
+`0862215c6d` removes that timer and passes the existing workflow signal to
+`execFile`. The Host owns duration and cancellation; the helper still bounds
+output and records failures. A real 121-second command now passes, and a
+real-process regression verifies cancellation prevents review and completion.
+See [proof and reproduction](../development-workflow.md#november-13-command-duration-correction)
+for the baseline comparison, focused tests and limits. This proves the bounded
+mechanical correction, not overall workflow speed or model quality.
+
+Repeated Task/event context and repository descriptions were inspected but
+left unchanged: no safe reduction was established that preserves current
+requirements and usable evidence. Further context trimming needs a concrete
+duplication and equivalent supported behavior, rather than a smaller prompt
+alone. Required human approvals, exact-candidate
 verification, retained evidence and independent review remain. A stage removal
 would change this procedure's business contract and needs a separate value
 case; replacing the workflow with free-form agent coordination is not the
@@ -103,7 +114,8 @@ facts. Use the existing checks and retained receipts. A simpler procedure must
 still deliver the requested result; fewer calls or files alone do not prove it.
 Host storage/recovery, current executors and the thin MLVM App can serve this
 review without a new admission API, orchestration framework or work lifecycle.
-The unused registry projection below is lower-priority housekeeping.
+The separately merged [Host #484](https://github.com/hao1939/may-agent/pull/484)
+already retired the unused registry projection; do not select it again.
 
 | Area | Current disposition |
 | --- | --- |
@@ -531,9 +543,9 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 
 ## Recommended next milestone
 
-1. Trace one invocation of the reusable development procedure. Check its
-   verification bounds and repeated context first; select a bounded support
-   correction while preserving the declared steps and delivery contract.
+1. The reusable development procedure's separate command timer is removed and
+   checked in Apps source `0862215c6d`. Preserve the declared steps and delivery
+   contract; reconsider repeated context only with evidence of a safe reduction.
 2. Then review one MLVM checkpoint for duplicated progress facts, keeping Host
    execution state and domain evidence with their existing owners.
 3. Let the separate #482 accounting cleanup finish through its own contract and
@@ -541,12 +553,13 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 4. Preserve accepted Task state, exact identity, atomic publication and recovery.
    Source cleanup does not authorize deployment or historical-state deletion.
 
-For every source slice, run the existing affected tests and full Host CI,
+For every Host source slice, run the existing affected tests and full Host CI,
 including subprocess and browser coverage where paths change. Do not add a
 parallel framework or rewrite algorithms during file moves. Reviewer acceptance
 is concrete: one obvious home per responsibility, a traceable execution path,
 updated references and no behavior change. A source map alone does not complete
-the directory milestone.
+the directory milestone. App-only changes follow the
+[owning repository's checks](../development-workflow.md#repository-delivery-boundary).
 
 ## Implementation evidence
 
@@ -606,8 +619,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 | Work | Boundary and next proof |
 | --- | --- |
 | Review retained compatibility | Check current consumers and supported upgrade requirements before selecting another removal. September inventories are historical; their completed aliases, context metadata and diagnostics must not be reopened. |
-| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) takes priority: preserve the reusable development procedure while inspecting verification bounds and duplicated context, then review duplicated MLVM progress reporting. These are source-grounded candidates, not implemented reductions or measured savings. |
-| Unused agent configuration projection | [Housekeeping candidate](external-components-simplification.md#remove-the-unused-agent-configuration-projection-housekeeping-candidate): only tests read the second agent metadata map and aggregate registry view at the reviewed baseline. Lower priority than simplifying current delivery work; preserve actual registration and session persistence if selected. |
+| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) records the completed App command-timer correction and its tests. Context stays unchanged pending a safe reduction; MLVM progress reporting remains a proposal. No live activation or overall cost saving is established. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Separate accounting simplification | #482 is open and owned by its existing workstream. Review its outcome there; it is neither completed nor a second task for this proposal. |
@@ -616,7 +628,8 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 
 These are conditional review or evidence choices, not promised implementation
 phases or prerequisites for every ordinary May Task. Workflow replay, the DB
-facade and ignored agent context are complete removals. Keep
+facade, ignored agent context and the registry projection (#484) are complete
+source removals. Keep
 the [convergence tracker](design-implementation-convergence.md) for verified open
 source gaps and the core proposal for implementation separation. Do not copy
 their backlogs here.

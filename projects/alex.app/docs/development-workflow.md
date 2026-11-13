@@ -89,11 +89,15 @@ Task, scheduler or independent work authority. The Task creator maintains the ac
 requirement; Bob judges design and acceptance; tech-lead
 judges implementation choices.
 
-Agent calls inherit the Host's remaining workflow execution allowance and
-cancellation. There is no additional per-step timer or operation cap in this
-workflow. The initial parser PoC's three-minute/40-operation caps interrupted
+Agent calls and repository commands inherit the Host's remaining workflow
+execution allowance and cancellation. Commands receive `ctx.signal`, which
+aborts on caller cancellation, the run/parent deadline or run completion.
+There is no additional per-step timer or operation cap in this workflow.
+The initial parser PoC's three-minute/40-operation caps interrupted
 substantive report authoring in the local integration trial. Removing those
 overrides keeps the existing bounded execution path and ordinary recovery.
+The command helper's separate two-minute cutoff is also removed: a valid
+verification may take longer while remaining within the workflow allowance.
 
 Alex, Bob and tech-lead live under `alex.app/agents/`, with names `alex`,
 `bob` and `tech-lead`. Alex owns the workflow catalog and chooses
@@ -156,8 +160,11 @@ infer severity from the presence of prose. Exact-candidate verification and
 review fences still apply, including when reusing a previous pass.
 
 Verification argv is supplied in the creator's specification. Code executes it
-as a subprocess without shell interpolation, with bounded duration/output and
-the workflow cancellation signal. The implementing agent cannot substitute a
+as a subprocess without shell interpolation. The workflow signal bounds its
+duration; the helper limits captured output to 2 MiB per stdout/stderr stream.
+There is no separate command timeout. Cancellation stops the direct subprocess
+through `execFile`; this does not establish process-tree termination for tools
+that start detached children. The implementing agent cannot substitute a
 different command in its finish result. Bob must still judge whether the
 tests prove the requirement and whether changing a test was appropriate.
 
@@ -373,10 +380,54 @@ before executing; changing the App's workspace can affect its other Tasks.
 
 ## Proof and reproduction
 
-Portable checks run with `bun run check` in this App. The workflow tests use
+Run these checks from the Apps repository root:
+
+```sh
+bun test ./projects/alex.app/agents/alex/workflows/develop-change.test.ts ./shared/tools/task-evidence.test.ts --timeout 45000
+bun run check:may-design
+```
+
+The workflow tests use
 actual temporary Git repositories, isolated worktrees, subprocess verification,
 SDK result admission and scripted agent decisions. They test process mechanics,
 not model quality or full daemon recovery.
+
+### November 13 command-duration correction
+
+Apps source `0862215c6d` removes only the command helper's `120_000` ms timer;
+the fixed stages, three-round repair bound, exact-candidate checks, evidence
+reuse and independent review remain. The focused suite passed all 36 tests.
+`bun run check:may-design` passed with only the existing root-layout warning
+about the `reports` directory.
+Its new cancellation regression waits until a real verification subprocess is
+running, cancels the workflow, observes its connection close, and checks that
+review and completion did not occur. Removing only signal forwarding from
+`execFile` makes that test fail against the fixture's ten-second self-guard.
+
+A separate real-duration comparison used the same Node command and a
+150-second caller signal with the old and revised helpers:
+
+| Helper | Elapsed | Receipt |
+| --- | --- | --- |
+| Baseline Apps `edc932194e` | 120,016 ms | SIGTERM, error, no successful exit |
+| Revised Apps `0862215c6d` | 121,158 ms | Exit 0, stdout `verified` |
+
+To repeat the revised-helper probe from the Apps root (takes about two minutes):
+
+```sh
+bun -e '
+import { commandReceipt } from "./projects/alex.app/agents/alex/workflows/lib/repository.ts";
+const receipt = await commandReceipt(process.cwd(), ["node", "-e", "setTimeout(() => console.log(\"verified\"), 121_000)"], AbortSignal.timeout(150_000));
+console.log(receipt);
+if (receipt.error || receipt.exitCode !== 0 || receipt.stdout !== "verified\n") process.exit(1);
+'
+```
+
+This establishes removal of the helper cutoff and preservation of cooperative
+cancellation. It does not certify a full Host check, model judgment, daemon
+recovery or live activation. No model calls or deployment ran for this correction.
+Repeated specialist context was inspected but left unchanged; no safe reduction
+was established that preserves current requirements and usable evidence.
 
 The historical `may.app/poc/run.ts --live` harness predates the move and is not
 a current Alex activation check. It was a temporary opt-in branch harness. Set `MAY_HOST_SOURCE`
