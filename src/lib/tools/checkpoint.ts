@@ -14,7 +14,7 @@ import { Type, type TSchema } from "typebox";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 
-import { mkdirSync, appendFileSync, readFileSync, writeFileSync, existsSync } from "fs";
+import { mkdirSync, appendFileSync, readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 import { readJsonlRecoveryEvidence, type JsonlRecoveryEvidence } from "../persistence.js";
 
@@ -24,7 +24,7 @@ export interface CheckpointToolOptions {
   /** Session ID for namespacing checkpoint files.
    *  Can be a string (fixed) or a function (resolved at call time). */
   sessionId: string | (() => string);
-  /** Agent name — used for the per-agent latest-checkpoint pointer.
+  /** Agent name — retained as attribution in each checkpoint entry.
    *  Can be a string (fixed) or a function (resolved at call time).
    *  Injected by the manager alongside sessionId. */
   agentName: string | (() => string);
@@ -141,7 +141,6 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
   const resolveSessionId = () => (typeof options.sessionId === "function" ? options.sessionId() : options.sessionId);
   const resolveAgentName = () => (typeof options.agentName === "function" ? options.agentName() : options.agentName);
   const checkpointDir = resolve(persistDir, "checkpoints");
-  const latestDir = resolve(checkpointDir, "latest");
 
   return {
     name: "checkpoint",
@@ -190,9 +189,6 @@ export function createCheckpointTool(options: CheckpointToolOptions): AgentTool<
         };
         mkdirSync(checkpointDir, { recursive: true });
         appendFileSync(resolve(checkpointDir, `${sid}.jsonl`), JSON.stringify(entry) + "\n", "utf-8");
-        // Keep a per-agent latest pointer for on-demand inspection.
-        mkdirSync(latestDir, { recursive: true });
-        writeFileSync(resolve(latestDir, `${entry.agentName}.json`), JSON.stringify(entry) + "\n", "utf-8");
       } catch (err) {
         return {
           content: [

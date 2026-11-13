@@ -91,6 +91,7 @@ sequence of unnecessary calls from consuming the execution budget.
 | Workflow loading, steps and agent calls | `workflow-tool.ts`; `workflow.ts` holds internal types; `workflow-payload.ts` prepares inputs |
 | Execution results and retained evidence | `execution-result.ts`, `workflow-facts.ts`, `artifacts.ts` |
 | Session transcripts and metadata files | `persistence.ts` |
+| Session checkpoint logs and recovery evidence | `tools/checkpoint.ts`; `app/adapters/executors/session-recovery.ts` |
 | SQLite connection, schema and queries | Focused modules in `db/`; `db.ts` adapts Bun/Node SQLite |
 
 | Event persistence | `db-writer.ts`; Task resource operations remain in `app/core/state/` |
@@ -104,6 +105,10 @@ Receipt repair does not replay committed effects. Isolated Task workers retain
 their bounded retry schedule. Repeatable schema/metric-definition installation
 uses the separate initialization retry helper; it is not an ordinary delivery
 allowance. Session/workflow artifacts remain evidence if a SQL projection fails.
+
+Checkpoint saves append to the exact session's progress log. That log owns step
+numbering and checkpoint recovery. Historical per-agent latest files are retained;
+new saves do not create or refresh that separate copy.
 
 Opening a database never replaces existing state with a backup. Lock contention
 uses the bounded initialization retry; damaged state fails visibly and remains
