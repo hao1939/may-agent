@@ -31,7 +31,7 @@ function workflowHealthLink(data, changes = {}) {
 }
 
 function workflowRunLink(id) {
-  return '/events?workflowRunId=' + encodeURIComponent(id) + '#loop-trace';
+  return '/api/workflow-runs/' + encodeURIComponent(id);
 }
 
 function workflowOutcomeCards(data) {
@@ -255,7 +255,7 @@ async function showMetricHistory(id, metric, generation) {
     el.innerHTML = `<h2>${esc(metric.name || id)}</h2><p>${esc(id)} · ${esc(metric.type || 'unspecified')} · ${esc(metric.unit || 'no unit')}</p>
       <p>${esc(metric.description || metric.source || 'No source description recorded.')}</p><p>${esc(metricObservationLabel(metric))}</p><p>${esc(metricRuleLabel(metric))}</p>
       ${metric.workflowSelection ? `<p><a href="/metrics?${attrEsc(new URLSearchParams({ ...metric.workflowSelection, runs: 'true' }).toString())}">Inspect retained runs for this observation's window</a> · Counts are recalculated; retention or later settlement can change the available facts.</p>` : '<p class="health-note">This definition does not supply a known workflow-run selection.</p>'}
-      ${metric.alertOpen ? `<p class="health-warning">Open alert: ${esc(metric.alertMessage)} · <a href="/api/loop-trace?alertId=${metric.alertId}">retained alert facts (JSON)</a></p>` : ''}
+      ${metric.alertOpen ? `<p class="health-warning">Open alert: ${esc(metric.alertMessage)}</p>` : ''}
       <p class="health-note">${metric.staleAfterMs ? 'Stale after ' + esc(healthDuration(metric.staleAfterMs)) + ' (two declared sampling intervals).' : 'No sampling cadence: freshness is unknown.'} Measurement freshness is not system health.</p>
       ${metric.collectionFailure ? `<p class="health-warning">Last retained collection failure: ${esc(healthTime(metric.collectionFailure.at))} · ${esc(metric.collectionFailure.reason)} · <a href="/events/${metric.collectionFailure.eventId}">event</a></p>` : ''}
       <h3>Recorded sample history</h3><div class="health-actions">${[1, 7, 14].map(d => `<button onclick="selectMetricDays(${jsStringAttr(id)}, ${d})">Last ${d === 1 ? '24 hours' : d + ' days'}</button>`).join('')}</div>${renderSparklineWithValues(data.snapshots, metric.threshold, 700, 160, metric.alert_op, { ...data.window, gapMs: metric.staleAfterMs, failures: data.failures })}

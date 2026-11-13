@@ -1,3 +1,5 @@
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
+import type { SubagentManager } from "../../src/lib/manager.js";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import type { ChildProcess } from "node:child_process";
 import { spawnFixtureProcess } from "../fixtures/owned-process.js";
@@ -6,8 +8,6 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
 import { createQueryService } from "../../src/lib/query-service.js";
-import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
-import type { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb } from "../../src/lib/db/connection.js";
 import { upsertSession } from "../../src/lib/db/sessions.js";
 import { attachControlSocket, type ControlSocket } from "../../packages/control/src/server.js";
@@ -335,12 +335,12 @@ describe("HTTP event reads", () => {
     const runner = createWorkflowRunner({ manager: {} as SubagentManager, workflowDir: workflows, persistDir: root });
     const result = await runner.run("report", "fixture");
     if (result.type !== "error" || !result.workflowRunId) throw new Error("Expected failed workflow identity");
-    const trace = await read(`/api/loop-trace?workflowRunId=${result.workflowRunId}`);
+    const trace = await read(`/api/workflow-runs/${encodeURIComponent(result.workflowRunId)}`);
     expect(trace.workflowFacts.run).toMatchObject({ status: "error", result_reason: "upload unavailable" });
     expect(trace.workflowFacts.diagnostics).toMatchObject({ state: "available", truncated: false,
       entries: [{ level: "info", message: "prepared partial report" }] });
     expect(trace.workflowFacts.stepsTruncated).toBe(false);
-    expect((await read("/api/loop-trace?workflowRunId=wr_missing")).workflowFacts).toBeNull();
+    expect((await read("/api/workflow-runs/wr_missing")).workflowFacts).toBeNull();
   });
 
   function event(
