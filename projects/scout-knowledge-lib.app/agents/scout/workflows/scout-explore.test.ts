@@ -13,8 +13,12 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import { parseXhsCredentialOutput } from "../tools/lib/xhs-credential";
-import { parseXhsSearchOutput } from "../tools/lib/xhs-source";
+import {
+  parseXhsCredentialOutput,
+  prepareXhsSession,
+} from "../tools/lib/xhs-credential";
+import { parseXhsSearchOutput, searchXhs } from "../tools/lib/xhs-source";
+import { xhsCommandFixture } from "../tools/lib/xhs-command.test-fixture";
 import { publicationTestFixture } from "./lib/publication-test-fixture";
 import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
@@ -207,7 +211,7 @@ describe("scout-explore workflow prompt", () => {
 
     const result = await executeScoutExplore(ctx, {
       prepareXhsSession: async () => ({}) as never,
-      searchXhs: () => ({}) as never,
+      searchXhs: async () => ({}) as never,
       acquireArxiv: async () => ({
         endpoint: "https://export.arxiv.org/api/query",
         status: 200,
@@ -542,7 +546,7 @@ describe("scout-explore workflow prompt", () => {
       }, "arxiv");
       const result = await executeScoutExplore(ctx, {
         prepareXhsSession: async () => ({}) as never,
-        searchXhs: () => ({}) as never,
+        searchXhs: async () => ({}) as never,
         acquireArxiv: async () => {
           acquisitions += 1;
           return {
@@ -587,7 +591,7 @@ describe("scout-explore workflow prompt", () => {
       }, "arxiv");
       const result = await executeScoutExplore(ctx, {
         prepareXhsSession: async () => ({}) as never,
-        searchXhs: () => ({}) as never,
+        searchXhs: async () => ({}) as never,
         acquireArxiv: async () => ({
           endpoint: arxivEndpoint,
           status: 200,
@@ -627,7 +631,7 @@ describe("scout-explore workflow prompt", () => {
     }, "arxiv");
     const result = await executeScoutExplore(ctx, {
       prepareXhsSession: async () => ({}) as never,
-      searchXhs: () => ({}) as never,
+      searchXhs: async () => ({}) as never,
       acquireArxiv: async () => ({
         endpoint: arxivEndpoint,
         status: null,
@@ -808,6 +812,149 @@ describe("scout-explore workflow prompt", () => {
     );
   });
 
+  it.each(["prepare", "search"])(
+    "cancels during XHS %s before research or publication starts",
+    async (command) => {
+      const fixture = xhsCommandFixture(command);
+      const publication = publicationTestFixture();
+      temporaryRoots.push(publication.repositoryRoot);
+      const head = publication.git("rev-parse", "HEAD");
+      const controller = new AbortController();
+      let agentCalls = 0;
+      const ctx = workflowContext(async () => {
+        agentCalls++;
+        return {};
+      });
+      ctx.signal = controller.signal;
+      ctx.workspace = publication.workspace;
+      const pending = executeScoutExplore(ctx, {
+        prepareXhsSession: (_root, signal) => {
+          expect(signal).toBe(ctx.signal);
+          return prepareXhsSession(fixture.root, signal);
+        },
+        searchXhs: (_root, query, signal) => {
+          expect(signal).toBe(ctx.signal);
+          return searchXhs(fixture.root, query, signal);
+        },
+      });
+      const outcome = pending.catch((error: unknown) => error);
+      try {
+        const pid = await fixture.started;
+        const reason = new Error("cancel XHS workflow");
+        controller.abort(reason);
+        expect(await outcome).toBe(reason);
+        expect(() => process.kill(pid, 0)).toThrow();
+        expect(agentCalls).toBe(0);
+        expect(publication.git("rev-parse", "HEAD")).toBe(head);
+        expect(publication.git("status", "--porcelain")).toBe("");
+        expect(existsSync(publication.workspace.output)).toBe(false);
+      } finally {
+        fixture.close();
+        await outcome;
+      }
+    },
+  );
+
+  it.each(["prepare", "search"])(
+    "rejects a late XHS %s result even when a dependency ignores cancellation",
+    async (stage) => {
+      const controller = new AbortController();
+      const reason = new Error("cancelled before late result");
+      let agentCalls = 0;
+      let searchCalls = 0;
+      const ctx = workflowContext(async () => {
+        agentCalls++;
+        return {};
+      });
+      ctx.signal = controller.signal;
+      const pending = executeScoutExplore(ctx, {
+        prepareXhsSession: async () => {
+          if (stage === "prepare") controller.abort(reason);
+          return {
+            credential: "xhs",
+            state: stage === "prepare" ? "unavailable" : "ready",
+            reason: "fixture",
+            evidence: [],
+            loginWall: stage === "prepare",
+          };
+        },
+        searchXhs: async (_root, query) => {
+          searchCalls++;
+          controller.abort(reason);
+          return { state: "success", query, items: [], evidence: [] };
+        },
+      });
+      await expect(pending).rejects.toBe(reason);
+      expect(agentCalls).toBe(0);
+      expect(searchCalls).toBe(stage === "search" ? 1 : 0);
+    },
+  );
+
+  it("preserves a late research candidate without publishing after cancellation", async () => {
+    const publication = publicationTestFixture();
+    temporaryRoots.push(publication.repositoryRoot);
+    const head = publication.git("rev-parse", "HEAD");
+    const controller = new AbortController();
+    const reason = new Error("cancelled during research");
+    let candidate = "";
+    const ctx = workflowContext(async (_agent, task) => {
+      candidate = join(
+        candidateProjectFromPrompt(task),
+        "knowledge/late-fixture.md",
+      );
+      writeFileSync(candidate, "# Retained unpublished fixture\n");
+      controller.abort(reason);
+      return {
+        status: "done",
+        sessionId: "s_cancelled_fixture",
+        structuredResult: {
+          summary: "Late fixture",
+          source: {
+            name: "xhs",
+            queryOrFeed: "fixture",
+            itemIdsOrUrls: ["note-1"],
+          },
+          outputs: [candidate],
+        },
+      };
+    });
+    ctx.signal = controller.signal;
+    ctx.workspace = publication.workspace;
+    await expect(
+      executeScoutExplore(ctx, {
+        prepareXhsSession: async () => ({
+          credential: "xhs",
+          state: "ready",
+          reason: "fixture",
+          evidence: [],
+        }),
+        searchXhs: async (_root, query) => ({
+          state: "success",
+          query,
+          items: [
+            {
+              id: "note-1",
+              title: "Fixture",
+              author: "",
+              likes: "",
+              link: "https://example.invalid/fixture",
+            },
+          ],
+          evidence: [],
+        }),
+      }),
+    ).rejects.toBe(reason);
+    expect(publication.git("rev-parse", "HEAD")).toBe(head);
+    expect(
+      existsSync(
+        join(publication.workspace.projectRoot, "knowledge/late-fixture.md"),
+      ),
+    ).toBe(false);
+    expect(readFileSync(candidate, "utf8")).toBe(
+      "# Retained unpublished fixture\n",
+    );
+  });
+
   it("does not dispatch an agent while the current credential is unavailable", async () => {
     let agentCalls = 0;
     let searchCalls = 0;
@@ -824,7 +971,7 @@ describe("scout-explore workflow prompt", () => {
           evidence: ["login-wall:true"],
           loginWall: true,
         }),
-        searchXhs: () => {
+        searchXhs: async () => {
           searchCalls += 1;
           throw new Error("search must not run");
         },
@@ -859,7 +1006,7 @@ describe("scout-explore workflow prompt", () => {
       });
       const result = await executeScoutExplore(ctx, {
         prepareXhsSession: async () => parseXhsCredentialOutput(stdout),
-        searchXhs: () => {
+        searchXhs: async () => {
           throw Error("search must not run");
         },
       });
@@ -882,7 +1029,7 @@ describe("scout-explore workflow prompt", () => {
           parseXhsCredentialOutput(
             JSON.stringify({ status: "success", data: { ready: true } }),
           ),
-        searchXhs: (_app, query) =>
+        searchXhs: async (_app, query) =>
           parseXhsSearchOutput(
             query,
             JSON.stringify({
@@ -911,7 +1058,7 @@ describe("scout-explore workflow prompt", () => {
           reason: "ready",
           evidence: ["note-count:12"],
         }),
-        searchXhs: (_appDir, query) => ({
+        searchXhs: async (_appDir, query) => ({
           state: "failed",
           query,
           reason: "search page timed out",
@@ -943,7 +1090,7 @@ describe("scout-explore workflow prompt", () => {
               data: { ready: true, noteCount: 27, loginWall: false },
             }),
           ),
-        searchXhs: (_appDir, query) => ({
+        searchXhs: async (_appDir, query) => ({
           state: "success",
           query,
           items: [],
@@ -978,7 +1125,7 @@ describe("scout-explore workflow prompt", () => {
           reason: "ready",
           evidence: ["note-count:0"],
         }),
-        searchXhs: (_appDir, query) => ({
+        searchXhs: async (_appDir, query) => ({
           state: "success",
           query,
           items: [],
@@ -1015,7 +1162,7 @@ describe("scout-explore workflow prompt", () => {
           reason: "ready",
           evidence: ["login-wall:false"],
         }),
-        searchXhs: (_appDir, query) => ({
+        searchXhs: async (_appDir, query) => ({
           state: "success",
           query,
           items: [],
@@ -1098,7 +1245,7 @@ describe("scout-explore workflow prompt", () => {
         reason: "ready",
         evidence: ["note-count:12", "login-wall:false"],
       }),
-      searchXhs: (_appDir, query) => ({
+      searchXhs: async (_appDir, query) => ({
         state: "success",
         query,
         items: [
@@ -1868,7 +2015,7 @@ describe("scout-explore workflow prompt", () => {
           reason: "ready",
           evidence: [],
         }),
-        searchXhs: (_appDir, query) => ({
+        searchXhs: async (_appDir, query) => ({
           state: "success",
           query,
           items: [

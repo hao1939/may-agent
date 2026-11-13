@@ -1,5 +1,4 @@
-import { execFile } from "node:child_process";
-import { join } from "node:path";
+import { runXhsCommand } from "./xhs-command";
 
 export type XhsCredentialStatus = {
   credential: "xhs";
@@ -99,48 +98,28 @@ export function inspectXhsCredential(
 /** Workflow action: restore an absent tab, then inspect the actual page. */
 export function prepareXhsSession(
   appDir: string,
+  signal?: AbortSignal,
 ): Promise<XhsCredentialStatus> {
-  return runXhsStatus(appDir, "prepare");
+  return runXhsStatus(appDir, "prepare", signal);
 }
 
-function runXhsStatus(
+async function runXhsStatus(
   appDir: string,
   command: "status" | "prepare",
   signal?: AbortSignal,
 ): Promise<XhsCredentialStatus> {
-  const toolPath = join(appDir, "agents", "scout", "tools", "xhs-browse.mjs");
-  return new Promise((resolve, reject) => {
-    execFile(
-      "node",
-      [toolPath, command],
-      {
-        encoding: "utf8",
-        signal,
-        timeout: 30_000,
-        killSignal: "SIGKILL",
-      },
-      (error, stdout, stderr) => {
-        // A normal nonzero exit still carries the provider's structured failure.
-        if (error && (error.killed || typeof error.code !== "number")) {
-          resolve(
-            unavailable(
-              `XHS credential preflight could not run: ${error.message}`,
-            ),
-          );
-          return;
-        }
-        try {
-          resolve(
-            parseXhsCredentialOutput(
-              stdout,
-              stderr,
-              typeof error?.code === "number" ? error.code : 0,
-            ),
-          );
-        } catch (parseError) {
-          reject(parseError);
-        }
-      },
+  let output;
+  try {
+    output = await runXhsCommand(appDir, [command], signal);
+  } catch (error) {
+    signal?.throwIfAborted();
+    return unavailable(
+      `XHS credential preflight could not run: ${error instanceof Error ? error.message : String(error)}`,
     );
-  });
+  }
+  return parseXhsCredentialOutput(
+    output.stdout,
+    output.stderr,
+    output.exitCode,
+  );
 }

@@ -1,53 +1,13 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { xhsCommandFixture } from "./xhs-command.test-fixture";
 import {
   inspectXhsCredential,
   parseXhsCredentialOutput,
 } from "./xhs-credential";
 
-function probeFixture(exitCode = 0, stderr = false) {
-  const root = mkdtempSync(join(tmpdir(), "scout-credential-"));
-  const started = Promise.withResolvers<number>();
-  const output = Promise.withResolvers<Response>();
-  const server = Bun.serve({
-    hostname: "127.0.0.1",
-    port: 0,
-    idleTimeout: 0,
-    fetch(request) {
-      started.resolve(Number(new URL(request.url).searchParams.get("pid")));
-      return output.promise;
-    },
-  });
-  const tools = join(root, "agents", "scout", "tools");
-  mkdirSync(tools, { recursive: true });
-  writeFileSync(
-    join(tools, "xhs-browse.mjs"),
-    `
-    process.on("SIGTERM", () => {});
-    const response = await fetch(${JSON.stringify(server.url.href)} + "?pid=" + process.pid);
-    process.${stderr ? "stderr" : "stdout"}.write(await response.text());
-    process.exitCode = ${exitCode};
-  `,
-  );
-  return {
-    root,
-    started: started.promise,
-    release(text: string) {
-      output.resolve(new Response(text));
-    },
-    close() {
-      output.resolve(new Response("fixture closed"));
-      server.stop(true);
-      rmSync(root, { recursive: true, force: true });
-    },
-  };
-}
-
 describe("XHS credential status", () => {
   it("leaves the event loop responsive while a real child waits for output", async () => {
-    const fixture = probeFixture();
+    const fixture = xhsCommandFixture();
     let settled = false;
     const pending = inspectXhsCredential(fixture.root).finally(() => {
       settled = true;
@@ -70,7 +30,7 @@ describe("XHS credential status", () => {
   });
 
   it("preserves a provider failure from stderr and a nonzero exit", async () => {
-    const fixture = probeFixture(2, true);
+    const fixture = xhsCommandFixture("status", 2, true);
     const pending = inspectXhsCredential(fixture.root);
     try {
       await fixture.started;
@@ -89,7 +49,7 @@ describe("XHS credential status", () => {
   });
 
   it("retains a malformed provider value as unknown access, not login", async () => {
-    const fixture = probeFixture();
+    const fixture = xhsCommandFixture();
     const pending = inspectXhsCredential(fixture.root);
     const outcome = pending.catch((error: unknown) => error);
     try {
@@ -104,7 +64,7 @@ describe("XHS credential status", () => {
   });
 
   it("kills a stuck probe at the existing 30-second deadline", async () => {
-    const fixture = probeFixture();
+    const fixture = xhsCommandFixture();
     const pending = inspectXhsCredential(fixture.root);
     try {
       const pid = await fixture.started;

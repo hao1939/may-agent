@@ -182,8 +182,15 @@ export async function acquireArxivSource(
 }
 
 export type ScoutExploreDependencies = {
-  prepareXhsSession(appDir: string): Promise<XhsCredentialStatus>;
-  searchXhs(appDir: string, query: string): XhsSearchResult;
+  prepareXhsSession(
+    appDir: string,
+    signal?: AbortSignal,
+  ): Promise<XhsCredentialStatus>;
+  searchXhs(
+    appDir: string,
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<XhsSearchResult>;
   acquireArxiv?(): Promise<ArxivAcquisition>;
 };
 
@@ -920,6 +927,7 @@ export async function executeScoutExplore(
   ctx: WorkflowContext,
   dependencies: ScoutExploreDependencies = defaultDependencies,
 ): Promise<ExecutionResult> {
+  ctx.signal.throwIfAborted();
   const agent = "scout";
   if (!ctx.workspace || !ctx.reconciliation) {
     return ctx.blocked(
@@ -1039,7 +1047,8 @@ export async function executeScoutExplore(
   }
 
   if (source === "xhs") {
-    const credential = await dependencies.prepareXhsSession(appDir);
+    const credential = await dependencies.prepareXhsSession(appDir, ctx.signal);
+    ctx.signal.throwIfAborted();
     const waiting = xhsWaitResult(source, credential);
     if (waiting) return ctx.done(waiting.summary, waiting);
     if (credential.state !== "ready") {
@@ -1050,7 +1059,12 @@ export async function executeScoutExplore(
       });
     }
 
-    const search = dependencies.searchXhs(appDir, defaultXhsQuery);
+    const search = await dependencies.searchXhs(
+      appDir,
+      defaultXhsQuery,
+      ctx.signal,
+    );
+    ctx.signal.throwIfAborted();
     sourceEvidence = [...xhsAccessEvidence(credential), ...search.evidence];
     if (search.state === "failed") {
       return ctx.blocked(`XHS search failed: ${search.reason}`, {
@@ -1107,6 +1121,7 @@ not an assignment to reconcile or reschedule the standing Task):
 \`\`\`json
 ${JSON.stringify(ctx.reconciliation, null, 2)}
 \`\`\``;
+  ctx.signal.throwIfAborted();
   const beforePublication = snapshotKnowledge(projectDir, ctx.workspace.output);
   let snapshotHandled = false;
   const candidateFailureDetails = () => {
@@ -1155,6 +1170,7 @@ run Git publication or edit the canonical library in this call.`;
     // the existing time limit; do not add a workflow-owned continuation loop.
     operationAllowance: 48,
   });
+  ctx.signal.throwIfAborted();
 
   if (result.status !== "done") {
     return ctx.blocked("Scout exploration session failed", {
@@ -1293,6 +1309,7 @@ run Git publication or edit the canonical library in this call.`;
   const scratchOutputs = outputs.filter(
     (path) => !path.startsWith(`${candidateProjectDir}${sep}`),
   );
+  ctx.signal.throwIfAborted();
   try {
     publication = publishKnowledgeChanges(beforePublication, {
       executionId: result.id,

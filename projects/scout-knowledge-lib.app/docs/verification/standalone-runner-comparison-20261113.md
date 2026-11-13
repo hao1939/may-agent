@@ -1,8 +1,10 @@
 # Scout: standalone runners and source-command execution
 
-**Date:** 2026-11-13. **Status:** local comparison completed; production source
-execution is unchanged. This record informs the next simplification; it does
-not claim a deployed fix.
+**Date:** 2026-11-13. **Status:** local comparison completed; the selected async
+command helper is implemented in App source and verified locally. No deployment
+or runtime restart was performed. The comparison below describes the pinned
+baseline; [implementation verification](#implementation-verification) records
+the follow-through.
 
 ## Decision
 
@@ -111,20 +113,54 @@ adapter. Ordinary Scout production helpers should not import Host-private
 `src/app/direct-workflow.ts` merely to launch a Node script. They continue to
 use the SDK authoring contract and App-local deterministic helpers.
 
-## Next bounded change
+## Selected implementation
 
-If proceeding with the XHS cleanup, share only the `node xhs-browse.mjs`
-execution mechanics between status, preparation and search. Use asynchronous
-execution, explicit output limits, caller cancellation and confirmed child exit.
-Keep the existing 30-second status/preparation and 60-second search ceilings.
-Pass the workflow signal into preparation and search, await search, and check
-cancellation before research or publication can start.
+The [App-local helper](../../agents/scout/tools/lib/xhs-command.ts) now shares
+only the `node xhs-browse.mjs` execution mechanics between status, preparation
+and search. Node's asynchronous `execFile` supplies 1 MiB limits per output
+stream, the existing 30-second status/preparation and 60-second search ceilings,
+and `SIGKILL` on cancellation, timeout or overflow. The helper waits for child
+closure before returning; cancellation propagates as a control failure rather
+than a domain result. The workflow passes its signal to preparation and search,
+awaits search, and checks cancellation before accepting source results, starting
+research and publishing a returned candidate.
 
 Keep output parsing operation-specific. Preserve nonzero structured failures,
 read-only observer status versus tab-restoring preparation, supported human-login
 waits, partial search evidence and the failed-extraction gate. Do not create a
 generic cross-App process service, nested command workflow or retry framework.
-The prototype has not been installed as that production implementation.
+These are the existing boundaries of the selected implementation. The experiment
+prototype remains on its retained branch; production uses the focused helper and
+regressions in the owning App. The existing browser session is not killed, and
+already completed synchronous publication effects cannot be undone by cancellation.
+
+## Implementation verification
+
+Implemented from Apps baseline `b2315dc226`. The same pinned Host SDK source
+was used for local verification, without replacing the installed runtime SDK.
+
+- 107 tests passed across the five owning command, credential, parser, observer
+  and Scout exploration test files: 370 assertions. This includes the real
+  30-second credential and 60-second search deadlines, subprocess cancellation
+  and exit confirmation for all three commands, independent stdout/stderr
+  overflow, exact query argument passing and structured provider failure.
+- Workflow regressions cancel while actual preparation/search children are
+  waiting, verify that research/publication never start, and reject late results
+  from dependencies that ignore cancellation. A changed candidate returned by
+  late research is preserved without a canonical write or Git publication.
+  Existing successful publication, login-wait, failed-extraction and recovery
+  checks also pass.
+- Strict TypeScript checking passed for the changed implementation and focused
+  command/credential/parser/observer tests. Including the larger existing
+  `scout-explore.test.ts` reports 14 diagnostics. Comparing their codes and
+  messages against the unchanged baseline produced identical diagnostics; this
+  change adds none. This is not a claim that the full existing test file is
+  type-clean.
+- The App design, SDK examples, canonical-App and model-surface checks passed,
+  with the existing unclassified `reports` root-layout warning.
+
+All new runtime evidence comes from temporary local scripts/repositories;
+no live browser, source, Task, provider, publication or deployment was used.
 
 ## Reproduction
 

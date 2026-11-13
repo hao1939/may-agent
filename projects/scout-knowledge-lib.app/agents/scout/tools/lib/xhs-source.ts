@@ -1,5 +1,4 @@
-import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import { runXhsCommand } from "./xhs-command";
 
 export type XhsSearchItem = {
   id: string;
@@ -115,24 +114,27 @@ export function parseXhsSearchOutput(
   };
 }
 
-export function searchXhs(appDir: string, query: string): XhsSearchResult {
-  const toolPath = join(appDir, "agents", "scout", "tools", "xhs-browse.mjs");
-  const result = spawnSync("node", [toolPath, "search", query], {
-    encoding: "utf8",
-    timeout: 60_000,
-  });
-  if (result.error) {
+export async function searchXhs(
+  appDir: string,
+  query: string,
+  signal?: AbortSignal,
+): Promise<XhsSearchResult> {
+  let output;
+  try {
+    output = await runXhsCommand(appDir, ["search", query], signal);
+  } catch (error) {
+    signal?.throwIfAborted();
     return {
       state: "failed",
       query,
-      reason: `XHS search could not run: ${result.error.message}`,
+      reason: `XHS search could not run: ${error instanceof Error ? error.message : String(error)}`,
       evidence: [],
     };
   }
   return parseXhsSearchOutput(
     query,
-    result.stdout ?? "",
-    result.stderr ?? "",
-    result.status ?? 1,
+    output.stdout,
+    output.stderr,
+    output.exitCode,
   );
 }

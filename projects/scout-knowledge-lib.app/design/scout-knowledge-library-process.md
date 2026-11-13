@@ -443,18 +443,34 @@ produce no global observation events. The login Condition still names
 `human:operator` with the concrete action and review boundary; its exact observer
 source supplies evidence independently of who must perform the login.
 
-The observer probes `status` with the existing asynchronous 30-second subprocess
-deadline and propagates Host cancellation. A timeout kills the probe. Failures
-remain access evidence and do not establish a human prerequisite. Source setup
-continues to use `prepare` and owns restoring an absent tab.
+Status, preparation and search share one App-local asynchronous command helper.
+It launches the existing Node adapter without a shell, limits each output stream
+to 1 MiB, and retains the 30-second status/preparation and 60-second search
+deadlines. Cancellation, timeout and output overflow kill the adapter with
+`SIGKILL`; the helper observes child closure before returning. It owns this
+adapter process, not the existing Chrome session. Status remains a read-only
+observer operation; preparation alone may restore an absent tab.
+
+The observer and workflow pass their cancellation signals into the helper.
+Cancellation rejects the call; it does not become an access failure, login wait
+or successful empty scan. The workflow awaits search and checks cancellation
+before accepting source results, starting research or publishing a late research
+result. An unpublished changed candidate remains available through the existing
+publication workspace. Cancellation cannot undo an already completed publication
+or preempt its synchronous Git/filesystem operations.
+
+Operation-specific parsers retain structured nonzero provider failures and source
+evidence. Technical failures remain explicit and do not establish a human
+prerequisite. Login waits, partial-item evidence and the failed-extraction check
+retain their existing meanings.
 
 The [standalone-runner comparison](../docs/verification/standalone-runner-comparison-20261113.md)
 verified this reusable workflow without a running Host, including fixture
-publication and access gates. That runner does not remove the current synchronous
-XHS search or supply cancellation to preparation/search automatically. The next
-proposed cleanup is one small asynchronous App-local command helper, retaining
-this workflow and its source/publication checks. This is a verified design choice;
-the production command path is not yet changed.
+publication and access gates. It established that wrapping the former synchronous
+search in another workflow did not fix responsiveness or cancellation. The
+selected command helper is now implemented and verified locally; the reusable
+workflow and its source/publication checks remain the owning procedure. No new
+runner, model-controlled command step or cross-App process service is introduced.
 
 The Host advances observation memory only after publication and fences replaced
 observer results. A new wait receives fresh ready evidence even if an earlier
