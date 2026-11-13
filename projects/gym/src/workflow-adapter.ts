@@ -26,7 +26,6 @@ import type { WorkflowScenarioEntry } from "./scenarios/types";
 export const GYM_TOOL_DENIAL_REASONS: Readonly<Record<string, string>> = {
   agents: "isolated Gym scenarios do not dispatch supporting agents",
   workflow: "the direct Gym adapter denies workflow unless allow_workflow is enabled",
-  message: "isolated Gym scenarios must not notify real users or agents",
   cron: "isolated Gym scenarios must not change autonomous schedules",
   checkpoint: "the direct Gym adapter has no hosted durable checkpoint service",
   "cli-delegation": "isolated Gym scenarios do not delegate to external agent CLIs",

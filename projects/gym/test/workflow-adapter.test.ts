@@ -85,7 +85,7 @@ describe("Gym Host-free workflow support & executable-skill exemplar", () => {
     mkdirSync(globalAgentsRoot, { recursive: true });
 
     for (const [name, tools, prompt] of [
-      ["owner", ["coding", "workflow", "message", "finish"], "Lab owner prompt"],
+      ["owner", ["coding", "workflow", "checkpoint", "finish"], "Lab owner prompt"],
       ["reviewer", ["coding", "finish"], "Lab reviewer v3 prompt"],
     ] as const) {
       const dir = join(agentsRoot, name);
@@ -210,7 +210,7 @@ export async function execute(ctx) {
         description: "Owner",
         domain: "test",
         model: "test",
-        tools: ["coding", "workflow", "message", "finish"],
+        tools: ["coding", "workflow", "checkpoint", "finish"],
       }),
     );
     writeFileSync(
@@ -225,10 +225,10 @@ export async function execute(ctx) {
     );
 
     const defaultDenials = buildGymToolDenials(ownerDir);
-    expect(defaultDenials.map((d) => d.name)).toEqual(["workflow", "message"]);
+    expect(defaultDenials.map((d) => d.name)).toEqual(["workflow", "checkpoint"]);
 
     const optedInDenials = buildGymToolDenials(ownerDir, { allowWorkflow: true });
-    expect(optedInDenials.map((d) => d.name)).toEqual(["message"]);
+    expect(optedInDenials.map((d) => d.name)).toEqual(["checkpoint"]);
 
     const wfTool = createGymAgentWorkflowTool({
       agentName: "owner",
