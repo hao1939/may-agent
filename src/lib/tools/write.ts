@@ -8,7 +8,6 @@ import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 import { checkCrossEditGuard } from "./cross-edit-guard.js";
 import { withAbortSignal } from "./abort-utils.js";
-import { isMemoryFile, sanitizeMemory, formatSanitizeWarning } from "../security/memory-sanitizer.js";
 import { generateDiffString } from "./edit-diff.js";
 
 const writeSchema: TSchema = Type.Object({
@@ -64,8 +63,6 @@ export interface WriteToolOptions {
 	agentName?: string;
 	/** Project root directory (needed for cross-edit guard path resolution). Defaults to cwd. */
 	projectRoot?: string;
-	/** Enable memory sanitization on writes to JOURNAL.md, MEMORY.md, LESSONS.md, etc. Default: true */
-	enableMemorySanitizer?: boolean;
 }
 
 /** Minimum existing file size (bytes) for the shrink guard to apply */
@@ -80,7 +77,6 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 	const allowShrink = options?.allowShrink ?? false;
 	const agentName = options?.agentName;
 	const projectRoot = options?.projectRoot ?? cwd;
-	const memorySanitizer = options?.enableMemorySanitizer ?? true;
 
 	return {
 		name: "write",
@@ -110,24 +106,6 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 				};
 			}
 
-			// Memory sanitizer: detect prompt injection and PII in memory files
-			let sanitizedContent = content;
-			let sanitizeWarning = "";
-			if (memorySanitizer && isMemoryFile(absolutePath)) {
-				const result = sanitizeMemory(content, { filePath: absolutePath, agentName });
-				if (result.action === "rejected") {
-					const warning = formatSanitizeWarning(result)!;
-					return {
-						content: [{ type: "text" as const, text: warning }],
-						details: undefined,
-					};
-				}
-				if (result.action === "redacted") {
-					sanitizedContent = result.content;
-					sanitizeWarning = ` ${formatSanitizeWarning(result)}`;
-				}
-			}
-
 			return withAbortSignal(signal, async (isAborted) => {
 				// Create parent directories if needed
 				await ops.mkdir(dir);
@@ -145,7 +123,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 				if (!allowShrink && ops.fileSize) {
 					const existingSize = await ops.fileSize(absolutePath);
 					if (existingSize !== null && existingSize >= SHRINK_GUARD_MIN_SIZE) {
-						const newSize = Buffer.byteLength(sanitizedContent, "utf-8");
+						const newSize = Buffer.byteLength(content, "utf-8");
 						const ratio = newSize / existingSize;
 						if (ratio < SHRINK_BLOCK_RATIO) {
 							return {
@@ -159,7 +137,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 				}
 
 				// Write the file
-				await ops.writeFile(absolutePath, sanitizedContent);
+				await ops.writeFile(absolutePath, content);
 
 				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
 
@@ -167,13 +145,13 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 				// Agents still need a read-back before finish(success).
 				// For overwrites: show unified diff (like edit() does)
 				// For new files: show content preview
-				const lines = sanitizedContent.split("\n");
+				const lines = content.split("\n");
 				const isOverwrite = existingContent !== null;
 
 				let responseText: string;
 				if (isOverwrite && existingContent !== null) {
 					// Generate unified diff between old and new content
-					const diffResult = generateDiffString(existingContent, sanitizedContent);
+					const diffResult = generateDiffString(existingContent, content);
 					const diffPreview = diffResult.diff;
 					const diffLines = diffPreview.split("\n");
 					const maxDiffLines = 60;
@@ -183,7 +161,7 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 						: diffPreview;
 
 					responseText = [
-						`✅ Wrote ${sanitizedContent.length} bytes to ${path} (${lines.length} lines, overwrite)${shrinkWarning}${sanitizeWarning}`,
+						`✅ Wrote ${content.length} bytes to ${path} (${lines.length} lines, overwrite)${shrinkWarning}`,
 						"```diff",
 						shownDiff,
 						"```",
@@ -195,10 +173,10 @@ export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentT
 					const isTruncated = lines.length > previewLines;
 					const preview = isTruncated
 						? lines.slice(0, previewLines).join("\n") + `\n... (${lines.length} total lines, showing first ${previewLines})`
-						: sanitizedContent;
+						: content;
 
 					responseText = [
-						`✅ Wrote ${sanitizedContent.length} bytes to ${path} (${lines.length} lines)${shrinkWarning}${sanitizeWarning}`,
+						`✅ Wrote ${content.length} bytes to ${path} (${lines.length} lines)${shrinkWarning}`,
 						"```",
 						preview,
 						"```",

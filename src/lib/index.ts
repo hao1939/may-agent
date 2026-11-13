@@ -48,7 +48,6 @@ export {
   createRunCliAgentTool,
   createWriteTool,
   expandPath,
-  extractHallucinatedRelPath,
   formatSize,
   isMetaRecursionCommand,
   readCheckpoints,
