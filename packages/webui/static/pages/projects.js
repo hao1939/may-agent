@@ -281,8 +281,6 @@ async function showProjectDetail(path, initialTab) {
   html += projectTabButton('project', 'Project', defaultProjectTab);
   html += projectTabButton('kanban', 'Tasks', defaultProjectTab);
   html += projectTabButton('functions', 'Functions', defaultProjectTab);
-  html += projectTabButton('journal', 'Journal', defaultProjectTab);
-  html += projectTabButton('discussion', 'Discussion', defaultProjectTab);
   const totalSessionLink = (detail.sessionCount || 0) + (detail.mentionCount || 0);
   html += projectTabButton('sessions', `Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}`, defaultProjectTab);
   html += `</div>`;
@@ -342,18 +340,6 @@ async function loadProjectTab(tab) {
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
       if (window.marked?.parse) { el.innerHTML = window.marked.parse(data.content || 'No content'); el.classList.add('md-rendered'); }
       else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No content'; }
-    } else if (tab === 'journal') {
-      const res = await fetch(`/api/projects/journal?path=${encodeURIComponent(_projectDetailPath)}`);
-      const data = await res.json();
-      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
-      if (window.marked?.parse) { el.innerHTML = window.marked.parse(data.content || 'No journal'); el.classList.add('md-rendered'); }
-      else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No journal'; }
-    } else if (tab === 'discussion') {
-      const res = await fetch(`/api/projects/discussion?path=${encodeURIComponent(_projectDetailPath)}`);
-      const data = await res.json();
-      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
-      if (window.marked?.parse) { el.innerHTML = window.marked.parse(data.content || 'No discussion yet'); el.classList.add('md-rendered'); }
-      else { el.style.whiteSpace = 'pre-wrap'; el.style.fontFamily = 'monospace'; el.textContent = data.content || 'No discussion yet'; }
     } else if (tab === 'kanban') {
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
       await renderProjectKanban(el);

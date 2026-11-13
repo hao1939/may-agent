@@ -1155,8 +1155,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     serveProjectStatic,
     readProjects,
     handleProjects,
-    handleProjectJournal,
-    handleProjectDiscussion,
     handleProjectContent,
     handleProjectArtifact,
     handleProjectDetail,
@@ -1365,8 +1363,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         return req.method === "GET" ? handleHumanTaskRead(url) : json({ error: "GET required" }, 405);
       }
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
-      if (url.pathname === "/api/projects/journal") return handleProjectJournal(url);
-      if (url.pathname === "/api/projects/discussion") return handleProjectDiscussion(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
       const projectActionInvokeMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions\/([^/]+)$/);
