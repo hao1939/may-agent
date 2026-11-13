@@ -220,15 +220,6 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
       try {
-        // Back-compat: 'message' and 'send' actions are removed.
-        if ((params as { action?: string }).action === "message" || (params as { action?: string }).action === "send") {
-          return textResult(
-            JSON.stringify({
-              error:
-                "The agents.message and agents.send actions have been removed. Use agents({ action: 'follow-up', sessionId, content }) to correct your running helper, or agents.call/agents.fork with { agent, task } for a bounded helper. Durable cross-App work belongs to an App Task request.",
-            }),
-          );
-        }
         switch (params.action) {
           case "call": {
             if (!params.agent || !params.task) {

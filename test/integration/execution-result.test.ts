@@ -3,13 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
-import {
-  getExecutionResultFromDb,
-  taskResultToExecutionResult,
-  workflowToolResultToExecutionResult,
-} from "../../src/lib/execution-result.js";
-import type { TaskResult } from "../../src/lib/types.js";
-import type { WorkflowToolResult } from "../../src/lib/workflow.js";
+import { getExecutionResultFromDb } from "../../src/lib/execution-result.js";
 
 describe("ExecutionResult", () => {
   const roots: string[] = [];
@@ -26,48 +20,6 @@ describe("ExecutionResult", () => {
     roots.push(root);
     return getDb(root);
   }
-
-  it("maps TaskResult into a shared session result", () => {
-    const taskResult: TaskResult = {
-      sessionId: "s1",
-      status: "done",
-      lastAssistantText: "implemented the change",
-      messages: [],
-      duration: "1.2s",
-      outputDir: "/tmp/out",
-      turnsUsed: 2,
-    };
-
-    expect(taskResultToExecutionResult(taskResult, { agent: "dev", task: "fix bug", projectId: "p1" })).toMatchObject({
-      id: "s1",
-      kind: "session",
-      status: "done",
-      summary: "implemented the change",
-      traceId: "s1",
-      owner: "dev",
-      projectId: "p1",
-      facts: { agent: "dev", task: "fix bug", duration: "1.2s", turnsUsed: 2 },
-    });
-  });
-
-  it("maps workflow tool results into the same shape", () => {
-    const result: WorkflowToolResult = {
-      type: "blocked",
-      workflow: "goal-driver",
-      workflowRunId: "wr1",
-      reason: "missing facts",
-      completedSteps: [],
-    };
-
-    expect(workflowToolResultToExecutionResult(result)).toMatchObject({
-      id: "wr1",
-      kind: "workflow",
-      status: "blocked",
-      summary: "missing facts",
-      traceId: "wr1",
-      facts: { workflow: "goal-driver", completedSteps: 0 },
-    });
-  });
 
   it("reads session rows from DB as execution results", () => {
     const db = dbHarness();

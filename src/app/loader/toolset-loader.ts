@@ -48,7 +48,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
     const start = tools.length;
     switch (preset) {
       case "query_db":
-      case "query-db":
         tools.push(createQueryDbTool(persistDir));
         break;
 
