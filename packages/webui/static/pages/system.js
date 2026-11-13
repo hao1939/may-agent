@@ -348,7 +348,7 @@ function renderLoopTrace(trace) {
       const owner = ev.owner || trace.owner || '—';
       const category = data.category || data.action || ev.event_type || 'failure';
       const recoverable = data.recoverable === false ? 'not recoverable' : data.recoverable === true ? 'recoverable' : '';
-      const nextAction = data.nextAction || (ev.event_type === 'workflow.resume_skipped' ? 'none' : '');
+      const nextAction = data.nextAction || '';
       const reason = data.reason || data.message || ev.event_type || '';
       html += `<div style="font-size:12px;color:var(--fg2);border-left:2px solid var(--red);padding-left:8px">`;
       html += `<span style="color:var(--fg)">${esc(ev.event_type || '')}</span>`;

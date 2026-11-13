@@ -98,13 +98,12 @@ export {
   getExecutionResult,
   getExecutionResultFromDb,
   normalizeExecutionStatus,
-  resumeDiagnosticToExecutionResult,
   sessionRowToExecutionResult,
   taskResultToExecutionResult,
   workflowRowToExecutionResult,
   workflowToolResultToExecutionResult,
 } from "./execution-result.js";
-export type { ExecutionKind, ExecutionResult, ExecutionStatus, ResumeDiagnostic } from "./execution-result.js";
+export type { ExecutionKind, ExecutionResult, ExecutionStatus } from "./execution-result.js";
 export { createQueryService } from "./query-service.js";
 export type {
   EventDeliveryHealth,

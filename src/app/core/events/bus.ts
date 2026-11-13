@@ -341,25 +341,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "heartbeat.skipped";
-      source?: string;
-      owner: string;
-      data: { agent: string; gate: string; reason?: string; attempts?: number };
-    }
-  | {
-      type: "heartbeat.step_started";
-      source?: string;
-      owner: string;
-      data: { agent?: string; workflow: string; step: string };
-    }
-  | { type: "heartbeat.diagnostics_started"; source?: string; owner: string; data: { agent: string; step: string } }
-  | {
-      type: "heartbeat.diagnostics_completed";
-      source?: string;
-      owner: string;
-      data: { agent: string; step: string; summary: string };
-    }
-  | {
       type: "runtime.daemon.heartbeat";
       source: "daemon";
       owner: string;
@@ -403,18 +384,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "handler.load-failed";
-      source: "handler-loader";
-      owner: string;
-      data: { handler: string; agent: string; path: string; error: string };
-    }
-  | {
-      type: "handler.skipped";
-      source?: string;
-      owner: string;
-      data: { handler: string; reason: string; eventType?: string | null; [key: string]: unknown };
-    }
-  | {
       type: "handler.workflow_dispatched";
       source?: string;
       owner: string;
@@ -433,18 +402,6 @@ export type SystemEvent =
       source?: string;
       owner: string;
       data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string };
-    }
-  | {
-      type: "project.owner.requested";
-      source?: string;
-      owner: string;
-      data: {
-        project?: string;
-        projectId?: string;
-        projectPath?: string;
-        reason: string;
-        [key: string]: unknown;
-      };
     }
   | {
       type: "project.nudge";
@@ -608,15 +565,6 @@ export type SystemEvent =
         files?: string[];
         worktree?: string;
         expectedOutput?: { format: "markdown" | "json"; requiredFields?: string[] };
-      };
-    }
-  | {
-      type: "cli.task.cancelled";
-      source: string;
-      owner: string;
-      data: {
-        taskId: string;
-        reason: string;
       };
     }
   | {
@@ -819,13 +767,6 @@ export type SystemEvent =
       data: { metricId: string; reason: string; triggerEventId?: number };
     }
   | {
-      type: "metric.stalled";
-      source?: string;
-      owner: string;
-      urgency?: EventUrgency;
-      data: MetricEventData & { message: string };
-    }
-  | {
       type: "metric.feedback.routed";
       source?: string;
       owner: string;
@@ -867,25 +808,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "agent.decision";
-      source?: string;
-      owner: string;
-      data: { agent: string; sessionId?: string; decision: string; facts?: Record<string, unknown> };
-    }
-  | {
-      type: "context.read";
-      source?: string;
-      owner: string;
-      data: { agent?: string; sessionId?: string; [key: string]: unknown };
-    }
-  | {
-      type: "learning.feedback";
-      source?: string;
-      owner: string;
-      urgency?: "low" | "normal" | "high" | "immediate";
-      data: { [key: string]: unknown };
-    }
-  | {
       type: "guard.triggered";
       owner: string;
       source: "workflow" | "tool";
@@ -915,51 +837,6 @@ export type SystemEvent =
         scope: string;
         filePath: string;
         contentHash: string;
-      };
-    }
-  | {
-      type: "session.resume_failed";
-      source: "manager";
-      owner: string;
-      timestamp: number;
-      data: {
-        sessionId: string;
-        agent?: string;
-        workflowRunId?: string;
-        projectId?: string;
-        reason: string;
-        category: string;
-        recoverable: boolean;
-        nextAction?: string;
-      };
-    }
-  | {
-      type: "workflow.resume_failed";
-      source: "workflow-tool";
-      owner: string;
-      timestamp: number;
-      data: {
-        workflowRunId?: string;
-        workflow?: string;
-        projectId?: string;
-        reason: string;
-        category: string;
-        recoverable: boolean;
-        nextAction?: string;
-      };
-    }
-  | {
-      type: "workflow.resume_skipped";
-      source: "workflow-tool";
-      owner: string;
-      timestamp: number;
-      data: {
-        workflowRunId: string;
-        workflow: string;
-        projectId?: string;
-        status: string;
-        reason: string;
-        nextAction?: string;
       };
     }
   | {

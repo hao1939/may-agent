@@ -5,7 +5,6 @@ import { tmpdir } from "node:os";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import {
   getExecutionResultFromDb,
-  resumeDiagnosticToExecutionResult,
   taskResultToExecutionResult,
   workflowToolResultToExecutionResult,
 } from "../../src/lib/execution-result.js";
@@ -67,60 +66,6 @@ describe("ExecutionResult", () => {
       summary: "missing facts",
       traceId: "wr1",
       facts: { workflow: "goal-driver", completedSteps: 0 },
-    });
-  });
-
-  it("maps session resume diagnostics into the same shape", () => {
-    expect(resumeDiagnosticToExecutionResult({
-      kind: "session",
-      id: "s_missing",
-      reason: "Agent missing-agent is not registered",
-      category: "agent_not_registered",
-      recoverable: false,
-      owner: "missing-agent",
-      agent: "missing-agent",
-      projectId: "p1",
-    })).toMatchObject({
-      id: "s_missing",
-      kind: "session",
-      status: "error",
-      summary: "Agent missing-agent is not registered",
-      traceId: "s_missing",
-      owner: "missing-agent",
-      projectId: "p1",
-      facts: {
-        owner: "missing-agent",
-        agent: "missing-agent",
-        category: "agent_not_registered",
-        recoverable: false,
-      },
-    });
-  });
-
-  it("maps workflow resume diagnostics into the same shape", () => {
-    expect(resumeDiagnosticToExecutionResult({
-      kind: "workflow",
-      id: "wr_missing",
-      reason: "Workflow definition missing",
-      category: "workflow_definition_missing",
-      recoverable: true,
-      nextAction: "recover",
-      owner: "may",
-      workflow: "goal-driver",
-      status: "interrupted",
-    })).toMatchObject({
-      id: "wr_missing",
-      kind: "workflow",
-      status: "interrupted",
-      summary: "Workflow definition missing",
-      traceId: "wr_missing",
-      facts: {
-        owner: "may",
-        workflow: "goal-driver",
-        category: "workflow_definition_missing",
-        recoverable: true,
-        nextAction: "recover",
-      },
     });
   });
 
