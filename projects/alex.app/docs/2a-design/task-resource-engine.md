@@ -455,7 +455,7 @@ A fresh exact wake may move ahead of passive
 peers at the same priority, but it cannot override human origin or a higher
 priority. Repeated input wakes coalesce; input during execution requests one fresh pass.
 Session completion is recovery evidence for an unfinished attempt without an active
-controller pass; it adds no input after settlement. [Candidate Host #507](https://github.com/hao1939/may-agent/pull/507) applies this coalescing; merge and activation remain pending.
+controller pass; it adds no input after settlement. [Host #507](https://github.com/hao1939/may-agent/pull/507) implements this coalescing; activation remains pending.
 Passive recovery reads canonical Task priority rather than a second ordering policy.
 
 The controller is stable across definition reloads. Publication changes one

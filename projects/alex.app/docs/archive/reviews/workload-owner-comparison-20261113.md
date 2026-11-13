@@ -908,8 +908,8 @@ controller pass. The controller handles its own settlement, returned
 continuations and dispatch-error retries. Explicit input and Condition wakes
 continue independently. Interrupted-workflow release keeps its existing wake.
 No readiness policy, lifecycle state, budget or business decision is added.
-The candidate is under review; release, activation and live Task changes remain
-held.
+Host #507 merged as `de76f5c3f00c6e3d103317259e2c26422b0f72cf` on
+2026-11-14 local time. Release, activation and live Task changes remain held.
 
 Three owning runtime regressions cover notification before settlement,
 notification handled after settlement, and input arriving during completion.
@@ -927,9 +927,11 @@ Full local CI passes on candidate `86bcf1ce29`: 3,573 tests, zero failures and
 checks remain skipped. PR head `17e9c90a502caaa61f8f493c00e09a71afe9448b`
 adds the unrelated current-main loop-trace retirement; its runtime, owning tests
 and source README are byte-identical to the locally checked candidate. Both
-experiment Host checkouts remain pinned at the revisions below. Exact-head
-Quality and Container evidence belongs to
+experiment Host checkouts remain pinned at the revisions below. Quality and
+Container passed on that exact PR head in
 [the PR run](https://github.com/hao1939/may-agent/actions/runs/43459254930).
+The merge commit has the same Git tree as the checked PR head; this establishes
+merged source identity, not installed adoption or another behavioral trial.
 
 The process comparison holds Apps experiment
 `7abc6fdd6fd9164ea341d566445d0d922a998993` and all four business cases fixed.
