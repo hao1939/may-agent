@@ -51,7 +51,6 @@ describe("bounded DB maintenance", () => {
 
   it.each([
     { table: "event_traces", key: "event_id", counter: "event_traces" },
-    { table: "event_trace_links", key: "id", counter: "event_trace_links_orphaned" },
   ])("finds $table orphans without blocking a writer and rechecks before deletion", ({ table, key, counter }) => {
     const root = mkdtempSync(join(tmpdir(), "may-maintenance-orphan-race-"));
     const db = getDb(root);
@@ -60,16 +59,8 @@ describe("bounded DB maintenance", () => {
     const now = Date.now();
     const insertEvent = "INSERT INTO events(id, event_type, timestamp) VALUES (?, 'fixture', ?)";
     db.prepare(insertEvent).run(1, now);
-    if (table === "event_traces") {
-      for (const id of [10, 20, 30])
-        db.prepare("INSERT INTO event_traces(event_id, trace_id) VALUES (?, 'fixture')").run(id);
-    } else {
-      // Exercise both sides of the missing-endpoint predicate. Row 30 is
-      // outside this batch even though its second endpoint is missing.
-      for (const [id, from, to] of [[10, 10, 1], [20, 1, 20], [30, 1, 30]])
-        db.prepare("INSERT INTO event_trace_links(id, from_event_id, to_event_id, type, created_at) VALUES (?, ?, ?, 'fixture', ?)")
-          .run(id, from, to, now);
-    }
+    for (const id of [10, 20, 30])
+      db.prepare("INSERT INTO event_traces(event_id, trace_id) VALUES (?, 'fixture')").run(id);
     const prepare = db.prepare.bind(db);
     let candidateReads = 0;
     const spy = spyOn(db, "prepare").mockImplementation((sql) => {
@@ -145,9 +136,9 @@ describe("bounded DB maintenance", () => {
             writer.run("UPDATE event_pair_runs SET status = 'open' WHERE id = 1");
             writer.run("UPDATE event_pair_runs SET opened_at = ? WHERE id = 2", [now]);
           } else {
-            // This row was eligible at selection; the new reference must win.
-            writer.run(`INSERT INTO event_trace_links(from_event_id, to_event_id, type, created_at)
-              VALUES (2, 1, 'fixture', ?)`, [now]);
+            // These rows were eligible at selection; the new references must win.
+            writer.run(`INSERT OR REPLACE INTO event_traces(event_id, trace_id, parent_event_id)
+              VALUES (1, 'fixture', 2), (2, 'fixture', 1)`);
             writer.run("UPDATE events SET timestamp = ? WHERE id = 3", [now]);
           }
           writer.exec("COMMIT");

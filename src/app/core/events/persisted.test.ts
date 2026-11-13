@@ -308,8 +308,7 @@ test("reopening preserves the complete App event and causal context for recovere
       bus.emit({ type: "fixture.child", source: "fixture", owner: "app:consumer", data: {} });
       return { accepted: true, by: "fixture", route: "direct" };
     });
-    const trace = { traceId: "original-chain", parentEventId: referenceId,
-      links: [{ eventId: referenceId, type: "reference" as const, label: "support" }] };
+    const trace = { traceId: "original-chain", parentEventId: referenceId };
     const original = bus.emit({
       type: "fixture.observed", source: "fixture", owner: "app:producer",
       target: { appId: "recipient", taskId: "recipient-task" }, action: "review",

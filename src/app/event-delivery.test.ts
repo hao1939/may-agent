@@ -159,24 +159,12 @@ describe("event delivery metadata", () => {
     try {
       const db = getDb(root);
       const traceCols = db.prepare("PRAGMA table_info(event_traces)").all();
-      const linkCols = db.prepare("PRAGMA table_info(event_trace_links)").all();
       const traceIndexes = db.prepare("PRAGMA index_list(event_traces)").all();
-      const linkIndexes = db.prepare("PRAGMA index_list(event_trace_links)").all();
       const pairIndexes = db.prepare("PRAGMA index_list(event_pair_runs)").all();
 
       expect(traceCols.map((row) => row.name)).toEqual(["event_id", "trace_id", "parent_event_id", "visibility"]);
-      expect(linkCols.map((row) => row.name)).toEqual([
-        "id",
-        "from_event_id",
-        "to_event_id",
-        "type",
-        "label",
-        "created_at",
-      ]);
       expect(traceIndexes.map((row) => row.name)).toContain("idx_event_traces_trace");
       expect(traceIndexes.map((row) => row.name)).toContain("idx_event_traces_parent");
-      expect(linkIndexes.map((row) => row.name)).toContain("idx_event_trace_links_from");
-      expect(linkIndexes.map((row) => row.name)).toContain("idx_event_trace_links_to");
       expect(pairIndexes.map((row) => row.name)).toContain("idx_event_pair_close_event");
     } finally {
       closeDb(root);
@@ -298,7 +286,6 @@ describe("event delivery metadata", () => {
         trace: {
           traceId: `event:${rootEvent.id}`,
           parentEventId: rootEvent.id,
-          links: [{ eventId: rootEvent.id, type: "closure", label: "reviewed" }],
         },
         data: { openEventId: rootEvent.id, reviewedBy: "test" },
       });
@@ -307,19 +294,12 @@ describe("event delivery metadata", () => {
         id: number;
       };
       const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(closeEvent.id);
-      const link = db.prepare("SELECT * FROM event_trace_links WHERE from_event_id = ?").get(closeEvent.id);
 
       expect(trace).toMatchObject({
         event_id: closeEvent.id,
         trace_id: `event:${rootEvent.id}`,
         parent_event_id: rootEvent.id,
         visibility: "detail",
-      });
-      expect(link).toMatchObject({
-        from_event_id: closeEvent.id,
-        to_event_id: rootEvent.id,
-        type: "closure",
-        label: "reviewed",
       });
 
     } finally {
@@ -357,20 +337,10 @@ describe("event delivery metadata", () => {
         id: number;
       };
       const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(closeEvent.id);
-      const link = db
-        .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
-        .get(closeEvent.id, rootEvent.id);
-
       expect(trace).toMatchObject({
         event_id: closeEvent.id,
         trace_id: `event:${rootEvent.id}`,
         parent_event_id: rootEvent.id,
-      });
-      expect(link).toMatchObject({
-        from_event_id: closeEvent.id,
-        to_event_id: rootEvent.id,
-        type: "closure",
-        label: "project.feedback.reviewed",
       });
 
     } finally {
@@ -415,20 +385,10 @@ describe("event delivery metadata", () => {
         id: number;
       };
       const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(resolved.id);
-      const link = db
-        .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
-        .get(resolved.id, created.id);
-
       expect(trace).toMatchObject({
         event_id: resolved.id,
         trace_id: `event:${created.id}`,
         parent_event_id: created.id,
-      });
-      expect(link).toMatchObject({
-        from_event_id: resolved.id,
-        to_event_id: created.id,
-        type: "closure",
-        label: "escalation.resolved",
       });
 
     } finally {
@@ -437,7 +397,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("ignores explicit trace links to missing events", () => {
+  it("ignores explicit parentEventId references to missing events", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -450,7 +410,6 @@ describe("event delivery metadata", () => {
         trace: {
           traceId: "event:99999",
           parentEventId: 99999,
-          links: [{ eventId: 99999, type: "closure", label: "missing" }],
         },
         data: { reviewedBy: "test" },
       });
@@ -460,14 +419,12 @@ describe("event delivery metadata", () => {
         id: number;
       };
       const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(event.id);
-      const links = db.prepare("SELECT COUNT(*) as c FROM event_trace_links").get() as { c: number };
 
       expect(trace).toMatchObject({
         event_id: event.id,
         trace_id: "event:99999",
         parent_event_id: null,
       });
-      expect(links.c).toBe(0);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -504,20 +461,11 @@ describe("event delivery metadata", () => {
 
 
       const closeTrace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(pair.close_event_id);
-      const closureLink = db
-        .prepare("SELECT * FROM event_trace_links WHERE from_event_id = ? AND to_event_id = ?")
-        .get(pair.close_event_id, pair.open_event_id);
 
       expect(closeTrace).toMatchObject({
         event_id: pair.close_event_id,
         trace_id: `event:${pair.open_event_id}`,
         parent_event_id: pair.open_event_id,
-      });
-      expect(closureLink).toMatchObject({
-        from_event_id: pair.close_event_id,
-        to_event_id: pair.open_event_id,
-        type: "closure",
-        label: "handler",
       });
 
     } finally {

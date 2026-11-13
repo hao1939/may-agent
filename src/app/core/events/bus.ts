@@ -196,15 +196,9 @@ export type SessionEvent =
     };
 
 type EventUrgency = "low" | "normal" | "high" | "immediate";
-export type EventTraceLink = {
-  eventId: number;
-  type?: "reference" | "closure";
-  label?: string;
-};
 export type EventTrace = {
   traceId: string;
   parentEventId?: number;
-  links?: EventTraceLink[];
 };
 export type EventTraceMetadata = {
   visibility?: "default" | "detail";

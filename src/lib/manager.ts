@@ -1745,15 +1745,7 @@ export class SubagentManager {
 
   private terminalTrace(session: ActiveSession): EventTrace | undefined {
     const openTurnTraces = session.openTurnTraces ?? [];
-    const base = session.trace ?? openTurnTraces.at(-1);
-    if (!base) return undefined;
-    const links = [...(base.links ?? [])];
-    for (const trace of openTurnTraces) {
-      if (!trace.parentEventId) continue;
-      if (links.some((link) => link.eventId === trace.parentEventId && link.type === "closure")) continue;
-      links.push({ eventId: trace.parentEventId, type: "closure", label: "turn-intent" });
-    }
-    return { ...base, ...(links.length ? { links } : {}) };
+    return session.trace ?? openTurnTraces.at(-1);
   }
 
   private clearTurnTraces(session: ActiveSession): void {
