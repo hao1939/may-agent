@@ -14,7 +14,7 @@ import { resolve } from "node:path";
 import { Duplex } from "node:stream";
 import { readIdentity, type InstanceIdentity } from "../../src/lib/instance-identity.js";
 import { createIdentityWriter } from "../../src/app/daemon-lifecycle.js";
-import { sendSocketCommand, waitForSocketEvent, type SocketEndpoint } from "../../src/lib/socket-client.js";
+import { sendSocketCommand, waitForSocketEvent, type SocketEndpoint } from "@may-agent/control/client";
 
 type ClientHandler = (socket: Duplex) => void;
 

@@ -12,7 +12,6 @@ export type { SessionStore } from "./persistence.js";
 export { classifyError } from "./classify-error.js";
 export type { ErrorClass } from "./classify-error.js";
 // Core coding tools (synced from pi-coding-agent)
-export { createBackgroundExecTool } from "./background-exec.js";
 export { extractKeyFacts } from "./compaction.js";
 export type { KeyFacts } from "./compaction.js";
 export { isOverflowError } from "./overflow.js";
@@ -90,8 +89,8 @@ export type {
 export { readIdentity } from "./instance-identity.js";
 export type { InstanceIdentity } from "./instance-identity.js";
 export type { PersistedSession, SessionKind } from "./persistence.js";
-export { sendSocketCommand, waitForSocketEvent } from "./socket-client.js";
-export type { SocketEvent, SocketResponse } from "./socket-client.js";
+export { sendSocketCommand, waitForSocketEvent } from "@may-agent/control/client";
+export type { SocketEvent, SocketResponse } from "@may-agent/control/client";
 export type { ModelWithApiKey, SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 
 export {

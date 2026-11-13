@@ -404,7 +404,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             const identity = meta?.detached && meta.instance
               ? readIdentity(manager.registry.persistDir, meta.instance) : null;
             if (!identity?.socket) throw new Error("No reachable execution owner for this session");
-            const { sendSocketCommand } = await import("./socket-client.js");
+            const { sendSocketCommand } = await import("@may-agent/control/client");
             const receipt = await sendSocketCommand(identity.socket, {
               type: "publish",
               event: {
