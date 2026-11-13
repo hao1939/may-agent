@@ -5,8 +5,8 @@ socket connection and static-file serving. Its final `fetch` function lists
 the routes explicitly.
 
 `session-routes.ts`, `agent-routes.ts` and `project-routes.ts` group the
-session/evaluation reads and steering verbs (`/api/sessions/:id`, `/transcript`,
-`/raw-log`, `/eval`, `/cancel`, `/message`), agent rollups and direct chat
+session reads and steering verbs (`/api/sessions/:id`, `/transcript`,
+`/raw-log`, `/cancel`, `/message`), agent rollups and direct chat
 (`/api/agents`, `/about`, `/default-session`, `/message`), and project metadata,
 static/UI serving, comments and actions (`/api/projects*`, `/projects*`).
 
@@ -100,11 +100,11 @@ renderer are retired; `/events/:eventId` renders the exact `GET /api/events/:id`
 record and links to `GET /api/events/:id/trace`. Other report implementations
 live in `../adapters/reporting/`.
 
-The legacy Learning dashboard and `/api/learning` aggregate are retired, including
-the project-detail Learning tab. Session detail, saved review-note reads
-(`/api/sessions/:id/eval`) remain available. Historical
-artifacts and evaluation records are retained; HTTP does not regenerate their old
-finding/notification summaries. Task review and follow-through belong to Apps.
+The legacy Learning dashboard, `/api/learning` aggregate, and `/api/sessions/:id/eval`
+review-note overlay are retired, including the project-detail Learning tab.
+Session detail (`/api/sessions/:id`, `/transcript`, `/raw-log`) remains available. Historical
+artifacts and evaluation records on disk are retained; HTTP does not serve or regenerate
+session-era finding/notification summaries. Task review and follow-through belong to Apps.
 
 The project Lineage tab and `/api/projects/lineage` aggregate are also retired.
 The project Sessions tab and `/api/projects/sessions` remain, with their existing

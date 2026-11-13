@@ -1137,7 +1137,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   });
   const {
     handleSession,
-    handleSessionEval,
     handleTranscript,
     handleRawLog,
     handleSessionCancel,
@@ -1414,8 +1413,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (transcriptMatch) return handleTranscript(transcriptMatch[1]);
       const rawLogMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/raw-log$/);
       if (rawLogMatch) return handleRawLog(rawLogMatch[1], url);
-      const evalMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/eval$/);
-      if (evalMatch && req.method === "GET") return handleSessionEval(evalMatch[1]);
 
       // ── Steering verbs (POST) ───────────────────────────────────────
       if (req.method === "POST") {
