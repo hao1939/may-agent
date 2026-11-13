@@ -25,7 +25,11 @@ Agent ownership, creator-controlled revision and closure, bounded attempts,
 Host concurrency and scoped workload observations remain. Installed owner
 follow-through and behavioral acceptance remain pending.
 The [current-guidance correction](https://github.com/hao1939/may-agent/pull/497)
-aligns shared executor instructions with those remaining controls. Required work
+merged at `528cfeec32b5bb7b262857e02ddc57ccb8319938` and aligns shared executor
+instructions with those remaining controls. Alex's own workload-review prompt
+and agent guidance now use the same observation and authority rules; its current
+fixtures report retired account and execution fields unavailable, while explicit
+legacy-read cases preserve compatibility. Required work
 stays owed under pressure; agents judge priorities, methods and discretionary
 expansion. An observation reserves no execution slot, and unavailable fields
 establish neither an allowance nor a denial. Creator-controlled closure still

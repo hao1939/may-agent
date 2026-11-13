@@ -499,6 +499,32 @@ passing this run does not explain that earlier failure.
 No admission, scheduling, SDK shape, Task state, App runtime, activation or
 installed behavior changed.
 
+Host #497 merged at `528cfeec32b5bb7b262857e02ddc57ccb8319938`; its main-branch
+Quality and Container also passed in run `43434426281`. Reviewing the App side
+found the same obsolete funding prescriptions in Alex's separate workload-review
+prompt and assignment-count guidance. Apps source
+`c26e30d43e51650ee7910790d5a80d081477145c` aligns those instructions with the merged
+Host. Current-path fixtures now report retired fields unavailable and retain
+unadmitted demand without inventing a funding hold. Existing optional legacy-read
+cases remain labeled as compatibility, not evidence of installed accounting.
+The paired light/heavy prompt regression failed in both cases on the previous
+guidance. The final three App suites passed 74 tests / 964 assertions in 41.63
+seconds, without adding cases, covering the real workflow, owner notifications,
+restart and separate advice/original-input settlement. Strict source-SDK types
+passed after removing two obsolete, unused `agentName` options from the existing
+finish-tool fixture. No Host runtime change was needed.
+
+The branch-only native drill at Apps
+`56f0c8b73e7d4e8278f9bce96975185623fe1a9c` reuses the four-case fixture against that
+merged Host and the updated App source: four passes, ten local scripted requests,
+550,768 request bytes and zero provider requests. Fulfilled finite contributions
+closed after restart. Preview-only original delivery remained owed; unfinished
+contributions and the standing service stayed open. Original generation, caller
+receipts, accepted child evidence and review deadlines were preserved. This
+confirms combined source wiring, not another real-model cohort, a load-benefit
+measurement, installed follow-through or external delivery. Release, activation
+and live Task changes remain held; those acceptance gates are still open.
+
 ### Independent creator-page storage
 
 The next review correctly identified a deeper coupling. Moving the read timestamp
