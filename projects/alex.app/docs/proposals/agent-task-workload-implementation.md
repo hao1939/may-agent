@@ -291,6 +291,12 @@ portfolio edits, closure, funding or new work. Required business work remains
 owed under both loads; pressure changes the recommended method and discretionary
 fanout, while supported spare capacity can justify a grounded opportunity.
 Limited pages and unknown resource health cannot establish fleet spare capacity.
+Its brief identifies the helper as the producer of one recommendation and
+supplies the existing `finish` envelope. The workflow validates and saves that
+report; an accountable business owner applies follow-through through ordinary
+capabilities. Readonly discovery supplies material missing facts within the same
+bounded pass. The pilot has no automatic recommendation consumer: `nextStep`
+remains advice, not a dispatched request or evidence that work occurred.
 The contract tests prove call bounds, read-only options, coalescing, scope and
 no automatic effects; they do not prove model comprehension or improved delivery.
 Activation and any business acceptance trial remain separate.

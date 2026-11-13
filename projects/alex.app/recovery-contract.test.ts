@@ -249,7 +249,7 @@ test.each(["", "The existing repair already owns this concern."])(
         definition: {
           name: "evaluator", description: "Offline report acceptance trial", domain: "tests",
           systemPrompt: "Assess the supplied evidence.", model: fakeModel(),
-          tools: [createFinishTool({ projectRoot: root })],
+          tools: [createFinishTool({ projectRoot: root, agentName: "evaluator" })],
         },
         projectRoot: root, sessionId: "no-action-explanation", task: "Return the assessment.",
         requireFinish: true, outputSchema: JSON.parse(JSON.stringify(evaluationJudgmentSchema)),
@@ -317,6 +317,7 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
             tool,
             createFinishTool({
               projectRoot: f.root,
+              agentName: "alex",
             }),
           ],
         },
@@ -614,7 +615,7 @@ test("active controller failures reach Alex and normal retries finish the origin
       expect(readFileSync(access, "utf8")).toBe("ready\n");
       const sample = Number(readFileSync(join(f.root, "sample.txt"), "utf8"));
       return { runId: attempt.attemptId, handlerResult: {
-        state: "converged", summary: `Verified original sample ${sample}`, facts: ["access:verified"], result: { sample },
+        state: "converged", summary: `Verified original sample ${sample}`, facts: ["access:verified"], actions: [], result: { sample },
       } };
     }
     recoveryTaskId ||= attempt.task.id;
@@ -624,7 +625,7 @@ test("active controller failures reach Alex and normal retries finish the origin
     if (returned) {
       expect(returned.event.data).toMatchObject({ taskId: originalTaskId, result: { sample: 42 } });
       return { runId: attempt.attemptId, handlerResult: {
-        state: "converged", summary: "Verified the original work returned sample 42", facts: ["original:verified"],
+        state: "converged", summary: "Verified the original work returned sample 42", facts: ["original:verified"], actions: [],
       } };
     }
     if (!existsSync(access)) {
@@ -643,7 +644,7 @@ test("active controller failures reach Alex and normal retries finish the origin
       repairs++;
     }
     return { runId: attempt.attemptId, handlerResult: {
-      state: "waiting", summary: "Access restored; the original result remains owed", facts: ["access:restored"],
+      state: "waiting", summary: "Access restored; the original result remains owed", facts: ["access:restored"], actions: [],
       requests: [{ id: "verify-original", appId: "alex", taskId: originalTaskId,
         input: { kind: "message", data: { message: "Return the original verified sample after access restoration." } } }],
       conditions: [{ requestId: "verify-original" }],
@@ -827,6 +828,83 @@ test("a rejected typed request reaches its existing caller's next attempt with t
   } finally {
     await f.close();
   }
+});
+
+test("an owner consumes its contribution after restart, closes it and returns the verified result to the original input", async () => {
+  let ownerTask = "";
+  let contributionTask = "";
+  let contributionAttempt = "";
+  let ownerCalls = 0;
+  let contributionCalls = 0;
+  const input = { kind: "message", data: { message: "Return the verified total from the saved batch." } };
+  const f = await runtime(async ({ attempt }) => {
+    if (attempt.task.id === ownerTask) {
+      ownerCalls++;
+      if (ownerCalls === 1) return {
+        runId: attempt.attemptId,
+        handlerResult: { state: "waiting", summary: "The batch result remains owed.", facts: [], actions: [],
+          requests: [{ id: "batch-count", appId: "alex", input: { kind: "message",
+            data: { message: "Calculate the saved batch total and retain its artifact." } } }],
+          conditions: [{ requestId: "batch-count" }],
+        },
+      };
+      const created = await attempt.read.tasks.created!({ limit: 5 });
+      expect(created.items.map(item => item.taskId)).toEqual([contributionTask]);
+      const returned = await attempt.read.tasks.get(contributionTask);
+      expect(returned).toMatchObject({ creator: { appId: "alex", taskId: ownerTask },
+        acceptedAttempt: { id: contributionAttempt }, result: { total: 600, rows: 3 } });
+      if (!returned?.resourceVersion || !returned.acceptedAttempt) throw new Error("Accepted contribution unavailable");
+      expect(JSON.parse(readFileSync(join(f.root, "batch-result.json"), "utf8"))).toEqual({ total: 600, rows: 3 });
+      const closed = await attempt.closeTask({ appId: "alex", taskId: returned.id,
+        expectedGeneration: returned.generation, expectedResourceVersion: returned.resourceVersion,
+        afterResult: returned.acceptedAttempt.id, reason: "Consumed the verified finite batch result." });
+      expect(closed.status).toBe("closed");
+      expect((await attempt.read.tasks.created!()).items).toEqual([]);
+      return {
+        runId: attempt.attemptId,
+        handlerResult: { state: "converged", summary: "The saved batch total is 600 across three rows.",
+          response: "Verified total: 600 across three rows.", facts: ["Saved result independently read back."], actions: [],
+          result: { total: 600, rows: 3, taskDisposition: { kind: "close", reason: "The original batch result was returned." } },
+        },
+      };
+    }
+    contributionCalls++;
+    contributionTask = attempt.task.id;
+    contributionAttempt = attempt.attemptId;
+    const amounts = JSON.parse(readFileSync(join(f.root, "batch.json"), "utf8")) as number[];
+    const result = { total: amounts.reduce((sum, amount) => sum + amount, 0), rows: amounts.length };
+    writeFileSync(join(f.root, "batch-result.json"), JSON.stringify(result));
+    return { runId: attempt.attemptId,
+      handlerResult: { state: "converged", summary: "Saved the finite batch result.", facts: [], actions: [], result } };
+  });
+  try {
+    writeFileSync(join(f.root, "batch.json"), JSON.stringify([100, 200, 300]));
+    const original = f.admit("batch-caller", input);
+    ownerTask = original.waitingOn!.id;
+    await f.run(ownerTask);
+    expect(f.inbox.host.get(original.id)?.status).toBe("handling");
+    const request = listAppInboxItems(f.db, { appId: "alex", limit: 10 })
+      .find(item => item.creator?.appId === "alex" && item.creator.taskId === ownerTask);
+    if (!request?.waitingOn) throw new Error("Contribution request unavailable");
+    await f.run(request.waitingOn.id);
+    await f.inbox.host.refreshTaskResults("alex", contributionTask);
+    expect(f.store.readCancellation(contributionTask)).toBeNull();
+    expect(f.inbox.host.get(original.id)?.status).toBe("handling");
+    await f.restart();
+    await f.run(ownerTask);
+    await f.inbox.host.refreshTaskResults("alex", ownerTask);
+    const delivered = f.inbox.host.get(original.id);
+    if (!delivered) throw new Error("Original input unavailable after result delivery");
+    expect(delivered).toMatchObject({ status: "done", result: { response: "Verified total: 600 across three rows.",
+      result: { total: 600, rows: 3 } } });
+    expect(f.store.readCancellation(contributionTask)).not.toBeNull();
+    expect(f.store.readCancellation(ownerTask)).not.toBeNull();
+    expect(f.admit("batch-caller", input)).toEqual(delivered);
+    await f.run(ownerTask);
+    expect(ownerCalls).toBe(2);
+    expect(contributionCalls).toBe(1);
+    expect(f.db.prepare("SELECT count(*) AS n FROM app_tasks WHERE app_id='alex'").get()).toEqual({ n: 2 });
+  } finally { await f.close(); }
 });
 
 test("incompatible input is rejected before a Task and a retained pending input reports its exact rejection", async () => {

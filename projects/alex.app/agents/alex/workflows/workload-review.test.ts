@@ -1,5 +1,5 @@
 import { afterEach, expect, setSystemTime, test } from "bun:test";
-import type { TaskDetail, TaskWorkload, WorkflowContext } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type TaskDetail, type TaskWorkload, type WorkflowContext } from "@may-agent/sdk";
 import { execute } from "./workload-review.js";
 import { workloadReviewPolicy, workloadReviewTask, WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID } from "../../../workload-review-policy.js";
 
@@ -95,6 +95,7 @@ test.each([false, true])("required work stays owed in the same bounded advice co
   expect(f.prompts[0]).toContain("Do not create filler Tasks or prefer closure to reduce counts");
   expect(f.prompts[0]).toContain('"resourceHealth":{"available":false}');
   expect(result.output).toMatchObject({ state: "converged", actions: [], result: { workloadReview: { decision: { decision: "retain" } } } });
+  expect(admitTaskReconcileResult(result.output).ok).toBe(true);
   expect(result.output).not.toHaveProperty("requests");
   expect(f.reads).toEqual([WORKLOAD_REVIEW_TASK_ID, "workload", "incident"]);
   expect(f.task.status).toBe("waiting");
@@ -401,7 +402,9 @@ test("a failed helper retains the same next commitments for retry", async () => 
   const retained = structuredClone(f.own.result);
   setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
   f.setResponse({ status: "error" });
-  expect((await execute(f.ctx)).status).toBe("blocked");
+  const failed = await execute(f.ctx);
+  expect(failed.status).toBe("blocked");
+  expect(failed.output).toBeUndefined();
   expect(f.own.result).toEqual(retained);
   f.setResponse({ status: "done", output: { decision: "retain", reason: "Required work remains owed." } });
   f.own.result = { workloadReview: state(await execute(f.ctx)) };
