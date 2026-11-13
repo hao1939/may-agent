@@ -1046,229 +1046,9 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ sessionId, source: resolved.source, line: lineNo, raw, parsed });
   }
 
-  function handleStats(): Response {
-    const now = Date.now();
-    const day = now - 86400000;
-    const week = now - 7 * 86400000;
-    const sess24h = _db()
-      .prepare(
-        `SELECT agent, COUNT(*) as cnt, SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as done, SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors, AVG(endedAt - startedAt) as avgMs FROM sessions WHERE startedAt > ? GROUP BY agent ORDER BY cnt DESC`,
-      )
-      .all(day);
-    const req24h: unknown[] = [];
-    const totalSess7d = (_db().prepare("SELECT COUNT(*) as cnt FROM sessions WHERE startedAt > ?").get(week) as any)
-      .cnt;
-    const humanReq7d = 0;
-    return json({
-      last24h: { sessions: sess24h, requests: req24h },
-      last7d: { totalSessions: totalSess7d, humanRequests: humanReq7d },
-      socketAvailable: existsSync(conventionSocketPath()),
-      socketPath: conventionSocketPath(),
-    });
-  }
-
   async function handleReadiness(): Promise<Response> {
     const readiness = await probeDaemonReadiness(conventionSocketPath());
     return json(readiness, readiness.ready ? 200 : 503);
-  }
-
-  // ── Agent Activity API ──────────────────────────────────────────────
-
-  function handleAgentActivity(): Response {
-    const now = Date.now();
-    const dayStart = now - 86400000;
-    const rows = _db()
-      .prepare(
-        `SELECT agent,
-                MAX(startedAt) as lastSession,
-                COUNT(*) as sessionsToday,
-                SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as doneCount,
-                SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errorCount
-         FROM sessions
-         WHERE startedAt > ?
-         GROUP BY agent
-         ORDER BY lastSession DESC`,
-      )
-      .all(dayStart) as Array<{
-      agent: string;
-      lastSession: number;
-      sessionsToday: number;
-      doneCount: number;
-      errorCount: number;
-    }>;
-
-    const agents = rows.map((r) => {
-      const elapsed = now - r.lastSession;
-      let status: "active" | "idle" | "inactive";
-      if (elapsed < 30 * 60 * 1000) status = "active";
-      else if (elapsed < 2 * 60 * 60 * 1000) status = "idle";
-      else status = "inactive";
-
-      return {
-        name: r.agent,
-        lastSession: r.lastSession,
-        sessionsToday: r.sessionsToday,
-        sessionCompletionRate: r.sessionsToday > 0 ? Math.round((r.doneCount / r.sessionsToday) * 100) : 0,
-        status,
-      };
-    });
-
-    return json({ agents });
-  }
-
-  function handleAgentTimeline(url: URL): Response {
-    const requestedHours = parseInt(url.searchParams.get("hours") || "24", 10);
-    const hours = Number.isFinite(requestedHours) ? Math.max(1, Math.min(requestedHours, 168)) : 24;
-    const since = Date.now() - hours * 60 * 60 * 1000;
-
-    const candidates = _db()
-      .prepare(
-        `SELECT sessionId, agent, startedAt, endedAt, status
-         FROM sessions
-         WHERE startedAt > ?
-         ORDER BY startedAt DESC
-         LIMIT ?`,
-      )
-      .all(since, DASHBOARD_SESSION_ROW_LIMIT + 1) as Array<{
-      sessionId: string;
-      agent: string;
-      startedAt: number;
-      endedAt: number | null;
-      status: string;
-    }>;
-    const truncated = candidates.length > DASHBOARD_SESSION_ROW_LIMIT;
-    const rows = candidates
-      .slice(0, DASHBOARD_SESSION_ROW_LIMIT)
-      .sort((a, b) => a.agent.localeCompare(b.agent) || a.startedAt - b.startedAt);
-
-    const agentMap: Record<string, Array<{ id: string; start: number; end: number | null; status: string }>> = {};
-    for (const r of rows) {
-      if (!agentMap[r.agent]) agentMap[r.agent] = [];
-      agentMap[r.agent].push({
-        id: r.sessionId,
-        start: r.startedAt,
-        end: r.endedAt,
-        status: r.status,
-      });
-    }
-
-    const agents = Object.entries(agentMap).map(([name, sessions]) => ({ name, sessions }));
-    return json({
-      agents,
-      since,
-      now: Date.now(),
-      rowsReturned: rows.length,
-      rowLimit: DASHBOARD_SESSION_ROW_LIMIT,
-      truncated,
-    });
-  }
-
-  function handleSystemHealth(): Response {
-    const now = Date.now();
-    const todayStart = now - 86400000;
-    const yesterdayStart = todayStart - 86400000;
-
-    const todayStats = _db()
-      .prepare(
-        `SELECT COUNT(*) as total,
-                SUM(CASE WHEN status='done' THEN 1 ELSE 0 END) as done,
-                SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors,
-                AVG(CASE WHEN endedAt IS NOT NULL THEN endedAt - startedAt END) as avgDuration
-         FROM sessions WHERE startedAt > ?`,
-      )
-      .get(todayStart) as { total: number; done: number; errors: number; avgDuration: number | null };
-
-    const yesterdayStats = _db()
-      .prepare(
-        `SELECT COUNT(*) as total,
-                SUM(CASE WHEN status='error' THEN 1 ELSE 0 END) as errors
-         FROM sessions WHERE startedAt > ? AND startedAt <= ?`,
-      )
-      .get(yesterdayStart, todayStart) as { total: number; errors: number };
-
-    const activeAgents = _db()
-      .prepare(`SELECT COUNT(DISTINCT agent) as cnt FROM sessions WHERE startedAt > ?`)
-      .get(now - 2 * 60 * 60 * 1000) as { cnt: number };
-
-    const todayErrorRate = todayStats.total > 0 ? Math.round((todayStats.errors / todayStats.total) * 100) : 0;
-    const yesterdayErrorRate =
-      yesterdayStats.total > 0 ? Math.round((yesterdayStats.errors / yesterdayStats.total) * 100) : 0;
-
-    return json({
-      sessionsToday: todayStats.total,
-      sessionCompletionRate: todayStats.total > 0 ? Math.round((todayStats.done / todayStats.total) * 100) : 0,
-      activeAgents: activeAgents.cnt,
-      avgDurationMs: todayStats.avgDuration ? Math.round(todayStats.avgDuration) : null,
-      errorRateToday: todayErrorRate,
-      errorRateYesterday: yesterdayErrorRate,
-      errorTrend: todayErrorRate - yesterdayErrorRate,
-    });
-  }
-
-  // ── Agent Detail API ─────────────────────────────────────────────
-
-  function handleAgentDetail(agentName: string): Response {
-    // 1. Recent sessions
-    const recentSessions = (
-      _db()
-        .prepare(
-          `SELECT sessionId, task, status, startedAt, endedAt, opCount, outcome
-         FROM sessions WHERE agent = ? ORDER BY startedAt DESC LIMIT 50`,
-        )
-        .all(agentName) as Array<{
-        sessionId: string;
-        task: string | null;
-        status: string;
-        startedAt: number;
-        endedAt: number | null;
-        opCount: number | null;
-        outcome: string | null;
-      }>
-    ).map((row) => ({
-      id: row.sessionId,
-      task: row.task?.slice(0, 120),
-      status: row.status,
-      startedAt: row.startedAt,
-      duration: row.endedAt ? Math.round((row.endedAt - row.startedAt) / 1000) : null,
-      opCount: row.opCount,
-      outcome: row.outcome?.slice(0, 100),
-    }));
-
-    // 2. Delegation map
-    const since = Date.now() - 7 * 86400000;
-
-    const delegatesTo = _db()
-      .prepare(
-        `SELECT c.agent, COUNT(*) as count
-         FROM sessions p JOIN sessions c ON c.parentSessionId = p.sessionId
-         WHERE p.agent = ? AND p.startedAt > ?
-         GROUP BY c.agent ORDER BY count DESC`,
-      )
-      .all(agentName, since) as Array<{ agent: string; count: number }>;
-
-    const delegatedFrom = _db()
-      .prepare(
-        `SELECT p.agent, COUNT(*) as count
-         FROM sessions c JOIN sessions p ON c.parentSessionId = p.sessionId
-         WHERE c.agent = ? AND c.startedAt > ?
-         GROUP BY p.agent ORDER BY count DESC`,
-      )
-      .all(agentName, since) as Array<{ agent: string; count: number }>;
-
-    // 3. Workspace files
-    const wsDir = join(STATE_DIR, "..", "agents", agentName, "workspace");
-    let workspaceFiles: string[] = [];
-    if (existsSync(wsDir)) {
-      workspaceFiles = readdirSync(wsDir)
-        .filter((f) => !f.startsWith("."))
-        .slice(0, 50);
-    }
-
-    return json({
-      recentSessions,
-      delegationMap: { delegatesTo, delegatedFrom },
-      workspaceFiles,
-    });
   }
 
   // ── Knowledge API ──────────────────────────────────────────────────
@@ -1464,38 +1244,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     return json({ query: q, results });
   }
 
-  function contentTypeFor(path: string): string {
-    switch (extname(path).toLowerCase()) {
-      case ".html":
-        return "text/html; charset=utf-8";
-      case ".css":
-        return "text/css; charset=utf-8";
-      case ".js":
-        return "text/javascript; charset=utf-8";
-      case ".json":
-        return "application/json; charset=utf-8";
-      case ".md":
-        return "text/markdown; charset=utf-8";
-      case ".txt":
-        return "text/plain; charset=utf-8";
-      case ".svg":
-        return "image/svg+xml";
-      case ".png":
-        return "image/png";
-      case ".jpg":
-      case ".jpeg":
-        return "image/jpeg";
-      case ".gif":
-        return "image/gif";
-      case ".webp":
-        return "image/webp";
-      case ".ico":
-        return "image/x-icon";
-      default:
-        return "application/octet-stream";
-    }
-  }
-
   function htmlEscape(value: string): string {
     return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
@@ -1517,7 +1265,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   function serveFile(path: string): Response {
     return new Response(readFileSync(path), {
       headers: {
-        "Content-Type": contentTypeFor(path),
+        "Content-Type": platformUiContentTypeFor(path),
         "Cache-Control": "no-cache",
       },
     });
@@ -2832,11 +2580,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/liveness") return handleLiveness(url);
       if (url.pathname === "/api/interface") return json(humanInterface);
       if (url.pathname === "/api/readiness") return handleReadiness();
-      if (url.pathname === "/api/stats") return handleStats();
       if (url.pathname === "/api/agents") return handleAgents();
-      if (url.pathname === "/api/agents/activity") return handleAgentActivity();
-      if (url.pathname === "/api/agents/timeline") return handleAgentTimeline(url);
-      if (url.pathname === "/api/agents/health") return handleSystemHealth();
       const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
       if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1], url.searchParams.get("requestId")?.trim());
       const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
@@ -2929,8 +2673,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid history window" }, 400); }
         return json(readMetricHistory(_db(), metricId, window));
       }
-      const agentDetailMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/detail$/);
-      if (agentDetailMatch) return handleAgentDetail(agentDetailMatch[1]);
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
       if (sessionMatch) return handleSession(sessionMatch[1]);
       const transcriptMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/transcript$/);

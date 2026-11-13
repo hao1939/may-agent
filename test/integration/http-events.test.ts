@@ -291,8 +291,19 @@ describe("HTTP event reads", () => {
     const saved = JSON.stringify(summary) + "\n";
     writeFileSync(path, saved);
 
-    for (const route of ["/api/learning", "/api/learning?projectId=sample&days=30", "/learning", "/learning/",
-      "/api/projects/lineage", "/api/projects/lineage?path=projects/sample.app"]) {
+    for (const route of [
+      "/api/learning",
+      "/api/learning?projectId=sample&days=30",
+      "/learning",
+      "/learning/",
+      "/api/projects/lineage",
+      "/api/projects/lineage?path=projects/sample.app",
+      "/api/stats",
+      "/api/agents/activity",
+      "/api/agents/timeline",
+      "/api/agents/health",
+      "/api/agents/worker/detail",
+    ]) {
       expect((await fetch(baseUrl + route)).status).toBe(404);
     }
     const sessionPayload = await read(`/api/sessions/${sessionId}`);
@@ -305,11 +316,6 @@ describe("HTTP event reads", () => {
       { sessionId, status: "done", link: "tagged" },
     ]);
     expect(await read(`/api/sessions/${sessionId}/eval`)).toMatchObject({ exists: true, rows: [summary] });
-    const agentDetail = await read("/api/agents/worker/detail");
-    expect(agentDetail).toMatchObject({
-      recentSessions: [{ id: sessionId }],
-    });
-    expect(agentDetail).not.toHaveProperty("evalTrend");
     expect(readFileSync(path, "utf8")).toBe(saved);
   });
 

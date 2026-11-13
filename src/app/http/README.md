@@ -106,9 +106,10 @@ Stored sessions, workflow artifacts, checkpoints and historical rows are retaine
 
 Overview has one presentation: workflow outcomes, current Tasks and Liveness.
 The folded legacy health summary/charts, agent grid/drawer, activity timeline,
-live feed and session statistics are retired. The old drawer's evaluation
-summary, seven-day delegation totals and workspace file list have no replacement
-view. Their backend reads remain supported.
+live feed, session statistics and their `/api/stats`, `/api/agents/activity`,
+`/api/agents/timeline`, `/api/agents/health` and `/api/agents/:name/detail`
+endpoints are retired. The old drawer's evaluation summary, seven-day delegation
+totals and workspace file list have no replacement view.
 Session links open `/sessions/:id`, using one inspector and follow-up composer;
 the session's agent link opens `/agents/:name`. The shared WebSocket transport,
 event subscriptions and current-page refresh remain. Retained history and metric
