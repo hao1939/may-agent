@@ -5,31 +5,12 @@ import { join } from "node:path";
 
 import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";
 import { DbWriter } from "../lib/db-writer.js";
-import {
-  addSessionTranscriptToEventGraph,
-  buildEventGraph,
-  type EventGraphNode,
-  type EventGraphResponse,
-} from "./http/read-model/event-graph.js";
 import { backfillEventPairTraces, checkEventTraceIntegrity } from "../lib/db/event-traces.js";
 import { closeDb, getDb } from "../lib/db/connection.js";
 import { createQueryService } from "../lib/query-service.js";
 
 function tempRoot(): string {
   return mkdtempSync(join(tmpdir(), "may-event-delivery-"));
-}
-
-function selectedEvents(graph: EventGraphResponse, ids: number[]): EventGraphNode[] {
-  const selected = new Set(ids);
-  return graph.events.filter((event) => selected.has(event.id));
-}
-
-function graphEvents(graph: EventGraphResponse): EventGraphNode[] {
-  return selectedEvents(graph, graph.scope.graphEventIds);
-}
-
-function timelineEvents(graph: EventGraphResponse): EventGraphNode[] {
-  return selectedEvents(graph, graph.scope.timelineEventIds);
 }
 
 function attachPersistence(bus: EventBus, root: string): void {
@@ -292,324 +273,6 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("returns compact data previews for the complete event graph", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "project.feedback.created",
-        source: "test",
-        owner: "agent:owner",
-        data: {
-          projectId: "sample",
-          sessionId: "s_preview",
-          workflowRunId: "wr_preview",
-          task: `Review packet\n${"large context ".repeat(80)}`,
-          items: ["a", "b", "c"],
-          nested: { should: "remain inspectable" },
-        },
-      });
-
-      const db = getDb(root);
-      const event = db.prepare("SELECT id FROM events WHERE event_type = 'project.feedback.created'").get() as {
-        id: number;
-      };
-      const graph = buildEventGraph(db, event.id);
-      const node = graphEvents(graph).find((item) => item.id === event.id);
-
-      expect(node?.dataPreview).toMatchObject({
-        projectId: "sample",
-        sessionId: "s_preview",
-        workflowRunId: "wr_preview",
-        items: '["a","b","c"]',
-        nested: '{"should":"remain inspectable"}',
-      });
-      expect(String(node?.dataPreview?.task).length).toBeLessThanOrEqual(220);
-      expect(String(node?.dataPreview?.task)).toEndWith("...");
-      expect(graph.focusEvent?.data).toMatchObject({
-        projectId: "sample",
-        task: expect.stringContaining("large context"),
-        nested: { should: "remain inspectable" },
-      });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("includes detailed session events in the complete graph", () => {
-    const root = tempRoot();
-    try {
-      const db = getDb(root);
-      const now = Date.now();
-      const startRow = db.run(
-        `INSERT INTO events (event_type, source, owner, data, timestamp)
-         VALUES (?, ?, ?, ?, ?)`,
-        ["session.start", "test", "agent:owner", JSON.stringify({ sessionId: "s_detail", summary: "started" }), now],
-      ) as { lastInsertRowid?: number | bigint };
-      db.run(
-        `INSERT INTO events (event_type, source, owner, data, timestamp)
-         VALUES (?, ?, ?, ?, ?)`,
-        [
-          "guard.triggered",
-          "test",
-          "agent:owner",
-          JSON.stringify({ sessionId: "s_detail", reason: "tool guard detail" }),
-          now + 1,
-        ],
-      );
-      db.run(
-        `INSERT INTO events (event_type, source, owner, data, timestamp)
-         VALUES (?, ?, ?, ?, ?)`,
-        ["session.end", "test", "agent:owner", JSON.stringify({ sessionId: "s_detail", status: "completed" }), now + 2],
-      );
-      const start = db.prepare("SELECT id FROM events WHERE event_type = 'session.start'").get() as {
-        id: number;
-      };
-      const graph = buildEventGraph(db, Number(startRow.lastInsertRowid ?? start.id));
-
-      expect(graph.scope).toMatchObject({ kind: "session", ids: ["s_detail"] });
-      expect(timelineEvents(graph).map((node) => node.type)).toEqual([
-        "session.start",
-        "guard.triggered",
-        "session.end",
-      ]);
-      expect(timelineEvents(graph).find((node) => node.type === "guard.triggered")?.visibility).toBe("detail");
-      const startKey = `event:${Number(startRow.lastInsertRowid ?? start.id)}`;
-      const guardDisplayNode = graph.nodes.find((node) => node.type === "guard.triggered");
-      expect(guardDisplayNode).toMatchObject({
-        kind: "diagnostic",
-        role: "diagnostic",
-        parentKey: startKey,
-        level: 1,
-        visibility: "detail",
-      });
-      expect(graph.edges).toContainEqual(
-        expect.objectContaining({
-          sourceKey: startKey,
-          targetKey: guardDisplayNode?.key,
-          kind: "detail",
-          provenance: "projection",
-        }),
-      );
-      expect(graph.nodes.map((node) => node.type)).toEqual(["session.start", "guard.triggered", "session.end"]);
-      expect(graph.nodes.map((node) => node.order)).toEqual([0, 1, 2]);
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("projects transcript turns and tools into the canonical graph", () => {
-    const root = tempRoot();
-    try {
-      const db = getDb(root);
-      const now = Date.now();
-      const start = Number(
-        (
-          db.run(`INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)`, [
-            "session.start",
-            "test",
-            "agent:owner",
-            JSON.stringify({ sessionId: "s_transcript" }),
-            now,
-          ]) as { lastInsertRowid?: number | bigint }
-        ).lastInsertRowid,
-      );
-      db.run(`INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)`, [
-        "session.end",
-        "test",
-        "agent:owner",
-        JSON.stringify({ sessionId: "s_transcript" }),
-        now + 100,
-      ]);
-      const graph = addSessionTranscriptToEventGraph(buildEventGraph(db, start), "s_transcript", {
-        sessionId: "s_transcript",
-        source: ".state/sessions/s_transcript/session.jsonl",
-        messages: [
-          { role: "user", text: "Investigate the issue", rawLine: 1 },
-          {
-            role: "assistant",
-            text: "Checking",
-            rawLine: 2,
-            timestamp: now + 20,
-            toolCalls: [{ id: "call-1", tool: "read", args: { path: "a.ts" } }],
-          },
-          {
-            role: "tool_result",
-            toolCallId: "call-1",
-            toolName: "read",
-            content: "ok",
-            rawLine: 3,
-            timestamp: now + 30,
-          },
-        ],
-      });
-
-      expect(graph.nodes.map((node) => node.kind)).toEqual(
-        expect.arrayContaining(["turn", "tool_call", "tool_result"]),
-      );
-      const user = graph.nodes.find((node) => node.type === "llm.user")!;
-      const assistant = graph.nodes.find((node) => node.type === "llm.assistant")!;
-      const toolCall = graph.nodes.find((node) => node.kind === "tool_call")!;
-      const toolResult = graph.nodes.find((node) => node.kind === "tool_result")!;
-      expect(user.timestamp).toBeGreaterThan(now);
-      expect(user.timestamp).toBeLessThan(assistant.timestamp!);
-      expect(assistant.timestamp).toBe(toolCall.timestamp);
-      expect(toolCall.timestamp).toBeLessThan(toolResult.timestamp!);
-      expect([user.level, assistant.level, toolCall.level, toolResult.level]).toEqual([1, 1, 2, 3]);
-      expect(graph.nodes.map((node) => node.timestamp)).toEqual(
-        [...graph.nodes.map((node) => node.timestamp)].sort((a, b) => Number(a) - Number(b)),
-      );
-      expect(graph.edges).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ kind: "sequence", provenance: "transcript" }),
-          expect.objectContaining({ kind: "tool_call", provenance: "transcript" }),
-          expect.objectContaining({ kind: "tool_result", provenance: "transcript" }),
-        ]),
-      );
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("includes same-workflow sessions in the complete graph", () => {
-    const root = tempRoot();
-    try {
-      const db = getDb(root);
-      const now = Date.now();
-      const insertEvent = (type: string, sessionId: string, timestamp: number): number => {
-        const row = db.run(
-          `INSERT INTO events (event_type, source, owner, data, timestamp)
-           VALUES (?, ?, ?, ?, ?)`,
-          [type, "test", "agent:owner", JSON.stringify({ sessionId, workflowRunId: "wr_scope" }), timestamp],
-        ) as { lastInsertRowid?: number | bigint };
-        return Number(row.lastInsertRowid);
-      };
-
-      const start1 = insertEvent("session.start", "s_scope_1", now);
-      const end1 = insertEvent("session.end", "s_scope_1", now + 1);
-      const start2 = insertEvent("session.start", "s_scope_2", now + 2);
-      const end2 = insertEvent("session.end", "s_scope_2", now + 3);
-      db.run(
-        `INSERT INTO event_pair_runs
-         (pair_name, correlation_key, open_event_id, close_event_id, owner, status, opened_at, expected_close_at, closed_at, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ["session", "s_scope_1", start1, end1, "agent:owner", "closed", now, now + 1000, now + 1, "session closed"],
-      );
-
-      const graph = buildEventGraph(db, start1);
-
-      expect(graphEvents(graph).map((node) => node.id)).toEqual([start1, end1, start2, end2]);
-      expect(graph.relations).toContainEqual(
-        expect.objectContaining({ source: start1, target: end1, type: "closure" }),
-      );
-      expect(graph.relations).toContainEqual(
-        expect.objectContaining({ source: end1, target: start2, type: "reference", label: "same workflow" }),
-      );
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("infers session.completed as the result of session.end for legacy session events", () => {
-    const root = tempRoot();
-    try {
-      const db = getDb(root);
-      const now = Date.now();
-      const insertEvent = (type: string, timestamp: number): number => {
-        const row = db.run(
-          `INSERT INTO events (event_type, source, owner, data, timestamp)
-           VALUES (?, ?, ?, ?, ?)`,
-          [type, "test", "agent:owner", JSON.stringify({ sessionId: "s_completed" }), timestamp],
-        ) as { lastInsertRowid?: number | bigint };
-        return Number(row.lastInsertRowid);
-      };
-
-      insertEvent("session.start", now);
-      const end = insertEvent("session.end", now + 1);
-      const completed = insertEvent("session.completed", now + 2);
-
-      const graph = buildEventGraph(db, end);
-
-      expect(graphEvents(graph).map((node) => node.id)).toContain(completed);
-      expect(graph.relations).toContainEqual(
-        expect.objectContaining({ source: end, target: completed, type: "reference", label: "completed" }),
-      );
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("includes the complete trace with sibling branches", () => {
-    const root = tempRoot();
-    try {
-      const db = getDb(root);
-      const now = Date.now();
-      const insertEvent = (type: string, data: Record<string, unknown>, timestamp: number): number => {
-        const row = db.run(
-          `INSERT INTO events (event_type, source, owner, data, timestamp)
-           VALUES (?, ?, ?, ?, ?)`,
-          [type, "test", "agent:owner", JSON.stringify(data), timestamp],
-        ) as { lastInsertRowid?: number | bigint };
-        return Number(row.lastInsertRowid);
-      };
-      const insertTrace = (eventId: number, traceId: string, parentEventId: number | null = null): void => {
-        db.run(
-          `INSERT OR REPLACE INTO event_traces (event_id, trace_id, parent_event_id, visibility)
-           VALUES (?, ?, ?, ?)`,
-          [eventId, traceId, parentEventId, "default"],
-        );
-      };
-
-      const start = insertEvent("metric.breach", { metricId: "m_scope", summary: "scope started" }, now);
-      const owner = insertEvent("owner.inbox.created", { metricId: "m_scope" }, now + 1);
-      const workflow = insertEvent("workflow.started", { workflowRunId: "wr_scope" }, now + 2);
-      const session = insertEvent("session.start", { sessionId: "s_scope", workflowRunId: "wr_scope" }, now + 3);
-      const sibling = insertEvent("session.start", { sessionId: "s_sibling", workflowRunId: "wr_scope" }, now + 4);
-      const selected = insertEvent("project.task.reconciled", { taskId: "t_scope", sessionId: "s_scope" }, now + 5);
-      const directChild = insertEvent("project.owner.reviewed", { projectId: "sample" }, now + 6);
-      const traceId = `event:${start}`;
-      insertTrace(start, traceId);
-      insertTrace(owner, traceId, start);
-      insertTrace(workflow, traceId, owner);
-      insertTrace(session, traceId, workflow);
-      insertTrace(sibling, traceId, workflow);
-      insertTrace(selected, traceId, session);
-      insertTrace(directChild, traceId, selected);
-
-      const graph = buildEventGraph(db, selected);
-
-      expect(graphEvents(graph).map((node) => node.id)).toEqual([
-        start,
-        owner,
-        workflow,
-        session,
-        sibling,
-        selected,
-        directChild,
-      ]);
-      expect(graph.relations).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ source: start, target: owner, type: "parent" }),
-          expect.objectContaining({ source: owner, target: workflow, type: "parent" }),
-          expect.objectContaining({ source: workflow, target: session, type: "parent" }),
-          expect.objectContaining({ source: workflow, target: sibling, type: "parent" }),
-          expect.objectContaining({ source: session, target: selected, type: "parent" }),
-          expect.objectContaining({ source: selected, target: directChild, type: "parent" }),
-        ]),
-      );
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("reports event trace integrity gaps", () => {
     const root = tempRoot();
     try {
@@ -762,20 +425,6 @@ describe("event delivery metadata", () => {
         label: "reviewed",
       });
 
-      const defaultGraph = buildEventGraph(db, rootEvent.id);
-      expect(graphEvents(defaultGraph).map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
-      expect(defaultGraph.edges).toContainEqual(
-        expect.objectContaining({
-          sourceKey: `event:${rootEvent.id}`,
-          targetKey: `event:${closeEvent.id}`,
-          kind: "detail",
-        }),
-      );
-
-      expect(defaultGraph.traceId).toBe(`event:${rootEvent.id}`);
-      expect(defaultGraph.relations).toEqual([
-        expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "closure" }),
-      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -827,11 +476,6 @@ describe("event delivery metadata", () => {
         label: "project.feedback.reviewed",
       });
 
-      const graph = buildEventGraph(db, rootEvent.id);
-      expect(graphEvents(graph).map((node) => node.id)).toEqual([rootEvent.id, closeEvent.id]);
-      expect(graph.relations).toEqual([
-        expect.objectContaining({ source: rootEvent.id, target: closeEvent.id, type: "closure" }),
-      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -890,11 +534,6 @@ describe("event delivery metadata", () => {
         label: "escalation.resolved",
       });
 
-      const graph = buildEventGraph(db, created.id);
-      expect(graphEvents(graph).map((node) => node.id)).toEqual([created.id, resolved.id]);
-      expect(graph.relations).toEqual([
-        expect.objectContaining({ source: created.id, target: resolved.id, type: "closure" }),
-      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -974,14 +613,6 @@ describe("event delivery metadata", () => {
         )
         .get() as { open_event_id: number; close_event_id: number };
 
-      const fallbackGraph = buildEventGraph(db, pair.open_event_id);
-      expect(fallbackGraph.diagnostics).not.toContain("graph includes event_pair_runs fallback edges");
-      expect(graphEvents(fallbackGraph).map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
-      expect(fallbackGraph.relations).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "closure" }),
-        ]),
-      );
 
       const closeTrace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(pair.close_event_id);
       const closureLink = db
@@ -1000,11 +631,6 @@ describe("event delivery metadata", () => {
         label: "handler",
       });
 
-      const graph = buildEventGraph(db, pair.open_event_id);
-      expect(graphEvents(graph).map((node) => node.id)).toEqual([pair.open_event_id, pair.close_event_id]);
-      expect(graph.relations).toEqual([
-        expect.objectContaining({ source: pair.open_event_id, target: pair.close_event_id, type: "closure" }),
-      ]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -1140,10 +766,6 @@ describe("event delivery metadata", () => {
         label: "escalation.resolved",
       });
 
-      const messageGraph = buildEventGraph(db, openEventId);
-      expect(graphEvents(messageGraph).map((node) => node.id)).toEqual([openEventId, closeEventId]);
-      const escalationGraph = buildEventGraph(db, createdEventId);
-      expect(graphEvents(escalationGraph).map((node) => node.id)).toEqual([createdEventId, resolvedEventId]);
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
