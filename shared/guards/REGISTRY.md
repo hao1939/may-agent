@@ -24,6 +24,11 @@ directory (skipping `.test.ts`, `REGISTRY*`, and `.disabled.ts`) and collects ex
 | rbe-primer | rbe-primer.ts | C1.1: Step-start reminder to read() before edit() (EXP-256: 50%→84.2% compliance) |
 | vae-primer | vae-primer.ts | C1.3: Step-start reminder to read() after edit()/write() (EXP-258: replicating RBE primer success) |
 
+`finish-guard` supplies workflow policy through its `guard` export. Required
+finish arguments, caller result schemas and declared-deliverable checks remain
+at the Host's finish-tool boundary; do not import a second validation API from
+this directory. See the [tool completion contract](../../projects/alex.app/docs/2a-design/guards.md#tool-contracts-and-completion).
+
 ## Writing Guards
 
 ```ts

@@ -372,6 +372,37 @@ root-layout warning. No live prompt refresh, Task mutation or deployment was
 performed. These checks do not establish improved model behavior or measured
 runtime savings.
 
+### Completed support cleanup: retire unused finish-validation exports
+
+`shared/guards/finish-guard.ts` no longer exports
+`validateFinishDeliverables`, `enforceFinishDeliverables`,
+`validateVerificationEvidence` or `enforceVerificationEvidence`. A tracked-source
+audit at Apps `05ae151b42` and Host `2dd58ba3e3` found no callers of these four
+functions. They included a separate deliverable-path alias policy and checks
+against the obsolete `verification_evidence` field. Their private path helper
+and four independently declared result interfaces are also retired. The active
+guard now derives the result type it reads from the SDK callback contract,
+removing an unnecessary cast and a competing shape to maintain.
+
+This changes no active guard policy. The shared guard directory remains actively
+discovered; the `finish-guard` persistent-workflow selection check and worktree
+warning remain, as do the other guards and their thresholds. Required finish
+arguments, missing-deliverable rejection and caller result-schema correction
+remain at the existing Host capability boundary. The deliberate loss is the
+unused helper API and local interfaces, without aliases or a new validator. Historical
+records and installation state remain untouched.
+
+Before/after loading through the real Host loader returns the same eleven
+guard names, event filters and executable handler bodies. Demand comparison
+matches across seventeen cases, including explicit/negated workflow selection,
+both recorded tool-call formats, non-success results and temporary Git
+worktrees with owned and unrelated changes. All 98 existing shared guard tests
+and 26 Host finish-tool tests pass. The latter retain missing-deliverable and
+caller-result checks; no deletion-only test or new framework is added. Targeted
+strict source checking and `check:may-design` pass, with the existing `reports`
+root-layout warning. These are local source checks, not a deployment or
+runtime-speed claim.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and

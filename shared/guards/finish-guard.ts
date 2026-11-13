@@ -1,6 +1,10 @@
 import type { Demand, WorkflowGuard, WorkflowGuardEvent } from "@may-agent/sdk";
+import { execFileSync } from "node:child_process";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 type StepDoneEvent = Extract<WorkflowGuardEvent, { type: "step_done" }>;
+type FinishResult = NonNullable<StepDoneEvent["result"]["finishResult"]>;
 
 /**
  * finish-guard — FM-3.4 Persistent-Task Enforcement.
@@ -65,125 +69,6 @@ function wasPersistentTaskRun(result: any): boolean {
   }
 
   return false;
-}
-
-// ── Types ──────────────────────────────────────────────────────────
-
-export interface FinishDeliverable {
-  path: string;
-  description: string;
-}
-
-export interface FinishCallParams {
-  status: string;
-  deliverables?: FinishDeliverable[] | null;
-  verification_evidence?: string[] | null;
-}
-
-export interface FinishValidationResult {
-  valid: boolean;
-  missing: string[];
-}
-
-export interface EvidenceValidationResult {
-  valid: boolean;
-  warnings: string[];
-}
-
-// ── FM-3.1: Deliverable validation ────────────────────────────────
-
-import { execFileSync } from "node:child_process";
-import * as fs from "fs";
-import * as path from "path";
-
-/**
- * Return plausible on-disk locations for a declared deliverable path.
- *
- * The finish tool runs with project root `/app`, while agents often report
- * agent-local paths such as `arc/heartbeat.md`. Treat those as aliases for
- * `agents/arc/...` instead of rejecting otherwise-real deliverables as ghosts.
- */
-function deliverablePathCandidates(deliverablePath: string, rootDir: string): string[] {
-  if (path.isAbsolute(deliverablePath)) return [deliverablePath];
-
-  const normalized = deliverablePath.replace(/^\.\//, "").replace(/\/+/g, "/");
-  const candidates = [path.join(rootDir, normalized)];
-
-  if (!normalized.startsWith("agents/") && path.basename(rootDir) !== "agents") {
-    const firstSegment = normalized.split("/")[0];
-    if (firstSegment && fs.existsSync(path.join(rootDir, "agents", firstSegment))) {
-      candidates.push(path.join(rootDir, "agents", normalized));
-    }
-  }
-
-  return candidates;
-}
-
-/**
- * Validate that all declared deliverables exist on disk.
- * Returns a result object (non-throwing).
- */
-export function validateFinishDeliverables(
-  deliverables: FinishDeliverable[] | null | undefined,
-  _status: string,
-  rootDir: string,
-): FinishValidationResult {
-  if (!deliverables || deliverables.length === 0) {
-    return { valid: true, missing: [] };
-  }
-  const missing: string[] = [];
-  for (const d of deliverables) {
-    const exists = deliverablePathCandidates(d.path, rootDir).some((candidate) => fs.existsSync(candidate));
-    if (!exists) {
-      missing.push(d.path);
-    }
-  }
-  return { valid: missing.length === 0, missing };
-}
-
-/**
- * Throw if any declared deliverables don't exist (ghost deliverables).
- * Only enforced when status is "success".
- */
-export function enforceFinishDeliverables(
-  deliverables: FinishDeliverable[] | null | undefined,
-  status: string,
-  rootDir: string,
-): void {
-  if (status !== "success") return;
-  const result = validateFinishDeliverables(deliverables, status, rootDir);
-  if (!result.valid) {
-    throw new Error(
-      `Ghost deliverables — files declared but not found: ${result.missing.join(", ")}`,
-    );
-  }
-}
-
-// ── FM-3.3: Verification evidence validation ──────────────────────
-
-/**
- * Validate that finish(success) includes verification evidence.
- * Returns a result object (non-throwing).
- */
-export function validateVerificationEvidence(
-  params: FinishCallParams,
-): EvidenceValidationResult {
-  const warnings: string[] = [];
-  if (params.status === "success") {
-    if (!params.verification_evidence || params.verification_evidence.length === 0) {
-      warnings.push("finish(success) has no verification_evidence — add tool-output references proving deliverables work.");
-    }
-  }
-  return { valid: warnings.length === 0, warnings };
-}
-
-/**
- * Enforce verification evidence. Returns warnings (non-throwing).
- */
-export function enforceVerificationEvidence(
-  params: FinishCallParams,
-): string[] {
-  return validateVerificationEvidence(params).warnings;
 }
 
 // ── Shared worktree dirt warning ───────────────────────────────────
@@ -259,7 +144,7 @@ function messagesForEvent(event: StepDoneEvent): unknown[] {
   return messages;
 }
 
-function claimedDeliverablePaths(finishResult: FinishCallParams | undefined): string[] {
+function claimedDeliverablePaths(finishResult: FinishResult | undefined): string[] {
   return (finishResult?.deliverables ?? [])
     .map((deliverable) => normalizeAgentRepoPath(deliverable.path))
     .filter((p): p is string => !!p);
@@ -306,7 +191,7 @@ function isSameOrChild(candidate: string, ownerPath: string): boolean {
   return candidate === ownerPath || candidate.startsWith(`${ownerPath.replace(/\/$/, "")}/`);
 }
 
-function dirtyWorktreeWarning(event: StepDoneEvent, finishResult: FinishCallParams): Demand | null {
+function dirtyWorktreeWarning(event: StepDoneEvent, finishResult: FinishResult): Demand | null {
   const agentName = agentNameFromEvent(event);
   const agentsDir = agentsDirFromEvent(event);
   if (!agentsDir || !fs.existsSync(path.join(agentsDir, ".git"))) return null;
@@ -372,7 +257,7 @@ export const guard: WorkflowGuard = {
     if (!finishResult || finishResult.status !== "success") return [];
 
     const demands: Demand[] = [];
-    const dirtyWarning = dirtyWorktreeWarning(event, finishResult as unknown as FinishCallParams);
+    const dirtyWarning = dirtyWorktreeWarning(event, finishResult);
     if (dirtyWarning) demands.push(dirtyWarning);
 
     // Get the task text from the event
