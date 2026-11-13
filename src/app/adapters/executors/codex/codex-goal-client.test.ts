@@ -444,6 +444,30 @@ describe("CodexGoalAppServerClient", () => {
     await client.stop();
   });
 
+  it("fails closed when an oversized line has a top-level id after params or a nested item/* method", async () => {
+    for (const malformedLine of [
+      `{"method":"item/completed","params":{"output":"${"x".repeat(4 * 1024 * 1024 + 128)}"},"id":99}`,
+      `{"method":"turn/completed","params":{"nested":{"method":"item/completed"},"output":"${"x".repeat(4 * 1024 * 1024 + 128)}"}}`,
+      `{"result":{"method":"item/completed","params":{"output":"${"x".repeat(4 * 1024 * 1024 + 128)}"}},"id":1}`,
+    ]) {
+      const process = new FakeAppServerProcess();
+      const client = new CodexGoalAppServerClient(process, {
+        requestTimeoutMs: 1_000,
+        terminateAfterMs: 0,
+        killAfterMs: 10,
+      });
+      const pending = client.getGoal("thread-1");
+      await waitForWrite(process, "thread/goal/get");
+
+      process.stdout.write(malformedLine.slice(0, 4 * 1024 * 1024 + 16));
+      process.stdout.write(`${malformedLine.slice(4 * 1024 * 1024 + 16)}\n`);
+
+      await expect(pending).rejects.toThrow("protocol line exceeded");
+      expect(client.diagnostics().skippedOversizedLines).toBeUndefined();
+      await client.stop();
+    }
+  });
+
   it("stops through normal stdin shutdown without signaling", async () => {
     const process = new FakeAppServerProcess({ closeOnStdinEnd: true, closeOnSignal: null });
     const client = new CodexGoalAppServerClient(process, { terminateAfterMs: 5, killAfterMs: 15 });
