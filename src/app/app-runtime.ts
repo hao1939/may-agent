@@ -192,7 +192,10 @@ export async function runAppRuntime(opts: {
   });
 
   let appInboxRuntime: AppInboxRuntime | null = null;
-  const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir);
+  const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir, {
+    onNotice: (message) => bus.emit({ type: "info", message }),
+    activePaths: () => manager.activeAgentDirectories(),
+  });
   const activeAppSource = appSources.ensureCurrent();
   const activeAppDirectories = listAppDefinitionFiles(activeAppSource.projectsRoot, opts.projectsRoot).map((file) =>
     basename(dirname(file)),
@@ -205,6 +208,13 @@ export async function runAppRuntime(opts: {
   // Workers must capture one accepted pair, never combine those two clocks.
   let acceptedWorkerSource = { ...activeAppSource, appDirectories: activeAppDirectories };
   const workerDefinitionSource = () => acceptedWorkerSource;
+  bus.subscribe(
+    (event) => {
+      if (event.type !== "session.end") return;
+      appSources.prune([acceptedWorkerSource.id]);
+    },
+    { label: "app-source-release-prune" },
+  );
   markStartupPhase("apps");
   bus.emit({
     type: "info",
@@ -244,24 +254,30 @@ export async function runAppRuntime(opts: {
     executeTaskAttempt: (() => {
       const execute = createTaskAttemptProcessExecutor({ bus, definitionSource: workerDefinitionSource });
       return async (request) => {
-        const releaseHold = appSources.retain(workerDefinitionSource()?.id);
+        const capturedId = workerDefinitionSource()?.id;
+        const releaseHold = appSources.retain(capturedId);
         try {
           return await execute(request);
         } finally {
           releaseHold();
-          appSources.prune([acceptedWorkerSource.id]);
+          if (capturedId && capturedId !== acceptedWorkerSource.id) {
+            appSources.prune([acceptedWorkerSource.id]);
+          }
         }
       };
     })(),
     executeTaskRecovery: (() => {
       const execute = createTaskRecoveryProcessExecutor({ bus, definitionSource: workerDefinitionSource });
       return async () => {
-        const releaseHold = appSources.retain(workerDefinitionSource()?.id);
+        const capturedId = workerDefinitionSource()?.id;
+        const releaseHold = appSources.retain(capturedId);
         try {
           await execute();
         } finally {
           releaseHold();
-          appSources.prune([acceptedWorkerSource.id]);
+          if (capturedId && capturedId !== acceptedWorkerSource.id) {
+            appSources.prune([acceptedWorkerSource.id]);
+          }
         }
       };
     })(),
@@ -350,14 +366,18 @@ export async function runAppRuntime(opts: {
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
     createTaskAdmissionWorker: () => {
       const captured = workerDefinitionSource();
-      const releaseHold = appSources.retain(captured?.id);
+      const capturedId = captured?.id;
+      const releaseHold = appSources.retain(capturedId);
+      const releaseAndMaybePrune = () => {
+        releaseHold();
+        if (capturedId && capturedId !== acceptedWorkerSource.id) {
+          appSources.prune([acceptedWorkerSource.id]);
+        }
+      };
       try {
         const worker = createTaskAdmissionProcess({
           definitionSource: captured ?? undefined,
-          onExit: () => {
-            releaseHold();
-            appSources.prune([acceptedWorkerSource.id]);
-          },
+          onExit: releaseAndMaybePrune,
         });
         return {
           dispatch: worker.dispatch,
@@ -365,8 +385,7 @@ export async function runAppRuntime(opts: {
             try {
               worker.close();
             } finally {
-              releaseHold();
-              appSources.prune([acceptedWorkerSource.id]);
+              releaseAndMaybePrune();
             }
           },
         };

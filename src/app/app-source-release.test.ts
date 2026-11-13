@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -596,17 +596,95 @@ describe("App source releases", () => {
       }
     }
 
-    // Both the running worker's initial release and the overlapping reload's release survive >5 activations.
+    // While two older releases are held (initial + overlapping) plus current,
+    // prune([], 5) reserves slots for all 3 protected releases and keeps only 2
+    // recent unprotected releases so total retained releases never exceeds 5!
+    store.prune();
     expect(existsSync(initial.root)).toBeTrue();
     expect(existsSync(overlapping.root)).toBeTrue();
+    expect(
+      readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current"),
+    ).toHaveLength(5);
 
     releaseWorkerHold();
     releaseOverlapHold();
-    store.prune();
+    for (let index = 12; index <= 14; index += 1) {
+      writeFileSync(
+        appPath,
+        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
+      );
+      await git(root, "add", appPath);
+      await git(root, "commit", "-qm", `v${index}`);
+      store.activate(store.stage());
+    }
 
     expect(existsSync(initial.root)).toBeFalse();
     expect(existsSync(overlapping.root)).toBeFalse();
     const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter((name) => name !== "current");
     expect(retainedDirs).toHaveLength(5);
+  });
+
+  it("retains releases referenced by live in-process agent sessions across >5 reloads until session exit", async () => {
+    const { root, stateDir, appPath } = await fixture();
+    let liveAgentDirs: string[] = [];
+    const store = new DefinitionSourceReleaseStore(root, stateDir, {
+      activePaths: () => liveAgentDirs,
+    });
+    const first = store.ensureCurrent();
+    const sessionSkillPath = join(first.sharedRoot, "skills", "sample", "SKILL.md");
+    liveAgentDirs = [join(first.agentsRoot, "worker")];
+
+    for (let index = 2; index <= 8; index += 1) {
+      writeFileSync(
+        appPath,
+        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
+      );
+      await git(root, "add", appPath);
+      await git(root, "commit", "-qm", `v${index}`);
+      store.activate(store.stage());
+    }
+
+    expect(existsSync(first.root)).toBeTrue();
+    expect(readFileSync(sessionSkillPath, "utf8")).toContain("# Sample");
+
+    liveAgentDirs = [];
+    writeFileSync(
+      appPath,
+      `export default { id: "sample-v9", version: 9, agent: "worker", inputSchema: { type: "object" } };\n`,
+    );
+    await git(root, "add", appPath);
+    await git(root, "commit", "-qm", "v9");
+    store.activate(store.stage());
+    expect(existsSync(first.root)).toBeFalse();
+  });
+
+  it("reports and swallows per-release deletion errors without breaking activation or cleanup callers", async () => {
+    if (typeof process.getuid === "function" && process.getuid() === 0) return;
+    const { root, stateDir, appPath } = await fixture();
+    const notices: string[] = [];
+    const store = new DefinitionSourceReleaseStore(root, stateDir, {
+      onNotice: (message) => notices.push(message),
+    });
+    const first = store.ensureCurrent();
+    const lockedDir = join(first.projectsRoot, "sample.app");
+    chmodSync(first.projectsRoot, 0o555);
+    try {
+      for (let index = 2; index <= 8; index += 1) {
+        writeFileSync(
+          appPath,
+          `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
+        );
+        await git(root, "add", appPath);
+        await git(root, "commit", "-qm", `v${index}`);
+        const next = store.stage();
+        expect(() => store.activate(next)).not.toThrow();
+      }
+      expect(existsSync(lockedDir)).toBeTrue();
+      expect(notices.some((msg) => msg.includes(`Failed to prune obsolete release ${first.id}`))).toBeTrue();
+    } finally {
+      chmodSync(first.projectsRoot, 0o755);
+    }
+    expect(store.prune()).toContain(first.id);
+    expect(existsSync(first.root)).toBeFalse();
   });
 });

@@ -738,6 +738,10 @@ export class SubagentManager {
     return this._sessions.has(sessionId);
   }
 
+  activeAgentDirectories(): string[] {
+    return [...new Set([...this._sessions.values()].map((session) => session.definition.agentDir).filter((dir): dir is string => Boolean(dir)))];
+  }
+
   getSessionCount(): number {
     return this._sessions.size;
   }

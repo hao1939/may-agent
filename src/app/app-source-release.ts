@@ -381,13 +381,54 @@ export class DefinitionSourceReleaseStore {
   private readonly releasesRoot: string;
   private readonly currentLink: string;
   private readonly heldCounts = new Map<string, number>();
+  private readonly onNotice?: (message: string) => void;
+  private readonly activePaths?: () => readonly string[];
 
   constructor(
     private readonly projectRoot: string,
     persistDir: string,
+    options: {
+      onNotice?: (message: string) => void;
+      activePaths?: () => readonly string[];
+    } = {},
   ) {
     this.releasesRoot = join(persistDir, "releases", "app-definitions");
     this.currentLink = join(this.releasesRoot, "current");
+    this.onNotice = options.onNotice;
+    this.activePaths = options.activePaths;
+  }
+
+  releaseIdForPath(path: string | undefined): string | undefined {
+    const raw = path?.trim();
+    if (!raw) return undefined;
+    const rel = relative(resolve(this.releasesRoot), resolve(raw));
+    if (!rel || rel.startsWith("..") || rel.includes("..")) return undefined;
+    const [first] = rel.split(sep);
+    return first && first !== "current" && !first.startsWith("current.next-") && !first.startsWith(".next-")
+      ? first
+      : undefined;
+  }
+
+  private currentReleaseRoot(): string | null {
+    if (!existsSync(this.currentLink)) return null;
+    if (!lstatSync(this.currentLink).isSymbolicLink()) {
+      throw new Error(`App source current path is not a symlink: ${this.currentLink}`);
+    }
+    const target = readlinkSync(this.currentLink);
+    const root = resolve(this.releasesRoot, target);
+    if (resolve(root, "..") !== resolve(this.releasesRoot)) {
+      throw new Error(`Unsafe App source release link: ${this.currentLink} -> ${target}`);
+    }
+    return root;
+  }
+
+  private currentIdFast(): string | undefined {
+    try {
+      const root = this.currentReleaseRoot();
+      return root ? basename(root) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   retain(releaseId: string | undefined): () => void {
@@ -409,16 +450,8 @@ export class DefinitionSourceReleaseStore {
   }
 
   current(): DefinitionSourceRelease | null {
-    if (!existsSync(this.currentLink)) return null;
-    if (!lstatSync(this.currentLink).isSymbolicLink()) {
-      throw new Error(`App source current path is not a symlink: ${this.currentLink}`);
-    }
-    const target = readlinkSync(this.currentLink);
-    const root = resolve(this.releasesRoot, target);
-    if (resolve(root, "..") !== resolve(this.releasesRoot)) {
-      throw new Error(`Unsafe App source release link: ${this.currentLink} -> ${target}`);
-    }
-    return validateRelease(root);
+    const root = this.currentReleaseRoot();
+    return root ? validateRelease(root) : null;
   }
 
   ensureCurrent(): DefinitionSourceRelease {
@@ -472,7 +505,7 @@ export class DefinitionSourceReleaseStore {
     if (!relativeTarget || relativeTarget.startsWith("..")) {
       throw new Error(`App source release is outside ${this.releasesRoot}: ${validated.root}`);
     }
-    const previousId = existsSync(this.currentLink) ? this.current()?.id : undefined;
+    const previousId = this.currentIdFast();
     const nextLink = `${this.currentLink}.next-${process.pid}-${randomUUID()}`;
     symlinkSync(relativeTarget, nextLink);
     renameSync(nextLink, this.currentLink);
@@ -481,14 +514,28 @@ export class DefinitionSourceReleaseStore {
 
   prune(preserveIds: readonly string[] = [], maxRetained = DEFAULT_MAX_RETAINED_RELEASES): string[] {
     if (!existsSync(this.releasesRoot)) return [];
-    const activeId = existsSync(this.currentLink) ? this.current()?.id : undefined;
-    const protectedIds = new Set<string>([...this.heldCounts.keys(), ...preserveIds.filter(Boolean)]);
+    const activeId = this.currentIdFast();
+    const sessionProtectedIds = (this.activePaths?.() ?? [])
+      .map((path) => this.releaseIdForPath(path))
+      .filter((id): id is string => Boolean(id));
+    const protectedIds = new Set<string>([
+      ...this.heldCounts.keys(),
+      ...sessionProtectedIds,
+      ...preserveIds.filter(Boolean),
+    ]);
     if (activeId) protectedIds.add(activeId);
     const now = Date.now();
     const candidates: Array<{ id: string; path: string; mtimeMs: number }> = [];
     const removed: string[] = [];
 
-    for (const entry of readdirSync(this.releasesRoot, { withFileTypes: true })) {
+    let entries;
+    try {
+      entries = readdirSync(this.releasesRoot, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+
+    for (const entry of entries) {
       if (entry.name === "current" || entry.name.startsWith("current.next-")) continue;
       const entryPath = join(this.releasesRoot, entry.name);
       if (entry.name.startsWith(".next-")) {
@@ -497,8 +544,10 @@ export class DefinitionSourceReleaseStore {
             rmSync(entryPath, { recursive: true, force: true });
             removed.push(entry.name);
           }
-        } catch {
-          // Concurrent stage finished or cleaned up.
+        } catch (error) {
+          this.onNotice?.(
+            `[apps] Ignored stale stage cleanup error for ${entry.name}: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
         continue;
       }
@@ -511,18 +560,24 @@ export class DefinitionSourceReleaseStore {
     }
 
     candidates.sort((left, right) => right.mtimeMs - left.mtimeMs || right.id.localeCompare(left.id));
-    let retainedTotal = 0;
+    const protectedCount = candidates.filter((candidate) => protectedIds.has(candidate.id)).length;
+    const unprotectedBudget = Math.max(0, Math.max(1, maxRetained) - protectedCount);
+    let keptUnprotected = 0;
+
     for (const candidate of candidates) {
-      if (protectedIds.has(candidate.id)) {
-        retainedTotal += 1;
+      if (protectedIds.has(candidate.id)) continue;
+      if (keptUnprotected < unprotectedBudget) {
+        keptUnprotected += 1;
         continue;
       }
-      if (retainedTotal < Math.max(1, maxRetained)) {
-        retainedTotal += 1;
-        continue;
+      try {
+        rmSync(candidate.path, { recursive: true, force: true });
+        removed.push(candidate.id);
+      } catch (error) {
+        this.onNotice?.(
+          `[apps] Failed to prune obsolete release ${candidate.id}: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
-      rmSync(candidate.path, { recursive: true, force: true });
-      removed.push(candidate.id);
     }
     return removed;
   }
