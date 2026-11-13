@@ -110,9 +110,7 @@ bun run bundle
 
 `ui:sync` (also called by `bundle`) stages to `bundle/platform-ui`.
 `MAY_AGENT_UI_OUTPUT_DIR` may select another staging directory; that directory
-is replaced. A build does not update the sibling served UI. Installed diagnostics
-such as `bun run check:event-graph -- --state-dir /path/to/state` require an
-existing database, not just this source checkout. See the
+is replaced. A build does not update the sibling served UI. See the
 [script guide](scripts/README.md) before running operational helpers. Authorized
 operators deploy with `bun run deploy`; it requires no App or Task. Optional
 App/Task metadata requests a completion notification. The script guide owns
