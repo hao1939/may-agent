@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; completion evidence from requirement binding, post-edit freshness, and non-vacuous execution; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; authority migrations from behavioral-equivalence and retired-path absence proof; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "authority migration", "oracle retirement", "absence proof", "action lattice", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "M31A", "requirement-scoped evidence", "evidence freshness", "zero-test rejection", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
-last_updated: "2026-11-09"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-11-09: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4, f5d568f, and 31e223d, ctrlrun 8ebc5a8, aep-sandbox 3495e27, M31A efd97af, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; completion evidence from requirement binding, post-edit freshness, and non-vacuous execution; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; authority migrations from behavioral-equivalence and retired-path absence proof; release withdrawal from coordinated registry, feed, resolver, and installed-client state transitions; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "authority migration", "oracle retirement", "absence proof", "action lattice", "release withdrawal", "package yank", "fix-forward", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "M31A", "requirement-scoped evidence", "evidence freshness", "zero-test rejection", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
+last_updated: "2026-11-13"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-11-13: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4, f5d568f, 31e223d, and 764faf7, ctrlrun 8ebc5a8, aep-sandbox 3495e27, M31A efd97af, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -1127,6 +1127,66 @@ audit the complete absence-gate implementation, install a built artifact, or
 exercise a live host. The source supports the migration proof structure and
 named invariants, not independent proof that every legacy route is absent from
 every distributed package or that the new evaluator is bypass-free.
+
+### Follow-up: release withdrawal is a multi-registry state transition
+
+**Pinned observation:** repository commit
+[`764faf7d76ec910498fa8ec63bef941f20baf2fe`](https://github.com/hashgraph-online/hol-guard/commit/764faf7d76ec910498fa8ec63bef941f20baf2fe)
+
+HOL Guard's response to a bad alpha exposes a release-control boundary that a
+tag deletion alone cannot enforce. Its runbook says alpha `3.60.0a83` closed
+every hook and took about three hours to fix and republish. The new withdrawal
+path deletes the GitHub prerelease, tag, and image, then restores platform feeds
+to the newest remaining alpha whose signed sidecars can be tied to a successful
+publish run. Yet PyPI remains a separate resolution authority: until an owner
+manually yanks the bad package, pip, uv, pipx, and one Desktop Core updater may
+still select it even though its GitHub artifacts are gone.
+
+The client-side fallback adds another independent state machine. Alpha selection
+drops yanked files, checks a GitHub tag for at most three recent alphas, treats
+404 as retracted, and treats rate limits, timeouts, malformed responses, and
+other lookup failures as unverifiable. After the first unverifiable result, the
+selection walk fails closed rather than offering an unchecked alpha. That bound
+limits update-check cost, but it also means two or three deleted-yet-unyanked
+alphas can consume the whole lookup budget and hide a valid fallback. Yanking is
+therefore not registry hygiene after withdrawal; it preserves the resolver's
+ability to discover a known-live release.
+
+Installed clients form the final boundary. The documented update paths move
+only forward, so users already on the bad alpha are not automatically downgraded
+to the restored feed. They need a fix-forward release or an explicit pinned
+reinstall. A release revocation contract should consequently track at least:
+
+1. **distribution withdrawal:** delete or disable each hosted artifact and feed
+   pointer under its actual authority;
+2. **resolver exclusion:** mark the version unusable in every index that clients
+   query, rather than assuming one registry's deletion propagates;
+3. **fallback proof:** bind the replacement artifacts to a successful,
+   independently rechecked publication run;
+4. **bounded lookup behavior:** specify how network uncertainty and search
+   budgets affect candidate selection; and
+5. **installed-population recovery:** distinguish preventing new adoption from
+   repairing clients that already installed the release.
+
+Deleting a tag proves only one authority changed state. It does not prove that
+package resolvers stopped selecting the bytes, feed consumers found a complete
+fallback, or affected installations recovered.
+
+**Evidence inspected at the pinned commit:**
+[`alpha-rollback-runbook.md`](https://github.com/hashgraph-online/hol-guard/blob/764faf7d76ec910498fa8ec63bef941f20baf2fe/docs/guard/alpha-rollback-runbook.md),
+[`delete-alpha-release.yml`](https://github.com/hashgraph-online/hol-guard/blob/764faf7d76ec910498fa8ec63bef941f20baf2fe/.github/workflows/delete-alpha-release.yml),
+[`update_alpha_tag_lookup.py`](https://github.com/hashgraph-online/hol-guard/blob/764faf7d76ec910498fa8ec63bef941f20baf2fe/src/codex_plugin_scanner/guard/cli/update_alpha_tag_lookup.py),
+[`test_update_alpha_tag_liveness.py`](https://github.com/hashgraph-online/hol-guard/blob/764faf7d76ec910498fa8ec63bef941f20baf2fe/tests/test_update_alpha_tag_liveness.py), and
+[`test_release_please_workflow.py`](https://github.com/hashgraph-online/hol-guard/blob/764faf7d76ec910498fa8ec63bef941f20baf2fe/tests/test_release_please_workflow.py).
+
+**Evidence boundary:** Scout inspected pinned producer documentation, workflow
+source, resolver code, and repository-authored tests statically. It did not
+withdraw a release, query PyPI resolution, run the workflow or tests, inspect
+the affected installations, or reproduce the incident. The producer reports
+that the focused workflow tests passed, while its local macOS offline-upgrade
+run timed out and names Linux CI as the reference; this section therefore
+extracts the cross-authority recovery contract rather than independently proving
+that the current rollback completes within the documented times.
 
 ## An Authorization Receipt Is Not an Effect Gate (GitHub, September 2026)
 
