@@ -175,22 +175,13 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       }
 
       case "checkpoint": {
-        let currentSessionId = "unknown";
-        let currentAgentName = "unknown";
         tools.push(
           createCheckpointTool({
-            sessionId: () => currentSessionId,
-            agentName: () => currentAgentName,
+            sessionId: () => currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name) ?? "unknown",
+            agentName: config.name,
             persistDir,
           }),
         );
-        const cpTool = tools[tools.length - 1] as any;
-        cpTool._setSessionId = (id: string) => {
-          currentSessionId = id;
-        };
-        cpTool._setAgentName = (name: string) => {
-          currentAgentName = name;
-        };
         break;
       }
 
