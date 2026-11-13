@@ -68,7 +68,7 @@ const DEPUTY_TOOL_ALLOWLIST = new Set([
 // An App owner must return durable ownership changes through its fenced
 // disposition. These tools create asynchronous work or lifecycle state
 // outside that admission boundary and belong only to compatibility sessions.
-const APP_OWNER_TOOL_DENYLIST = new Set(["background_exec", "checkpoint", "cron"]);
+const APP_OWNER_TOOL_DENYLIST = new Set(["background_exec", "checkpoint", "cron", "message"]);
 
 const SEQUENTIAL_TOOL_NAMES = new Set([
   "agents",
@@ -78,6 +78,7 @@ const SEQUENTIAL_TOOL_NAMES = new Set([
   "cron",
   "edit",
   "finish",
+  "message",
   "run_cli_agent",
   "workflow",
   "write",

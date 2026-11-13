@@ -558,6 +558,7 @@ describe("shared agent execution preparation", () => {
         "cron",
         "edit",
         "finish",
+        "message",
         "query_db",
         "read",
         "run_cli_agent",
