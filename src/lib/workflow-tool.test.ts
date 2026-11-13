@@ -7,6 +7,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
 import { closeDb, getDb } from "./db/connection.js";
+import { fakeModel } from "../../test/fixtures/model.js";
+import type { SubagentDefinition } from "./types.js";
 
 const roots: string[] = [];
 function workflowRoot(prefix: string): string {
@@ -22,6 +24,93 @@ afterEach(() => {
 });
 
 describe("workflow execution boundaries", () => {
+  it("resolves cross-owner code and prompt calls from one scoped catalog while retaining Task owner facts", async () => {
+    const root = workflowRoot("workflow-scoped-calls-");
+    const workflowDir = join(root, "owner", "workflows");
+    const reviewerDir = join(root, "reviewer");
+    mkdirSync(workflowDir, { recursive: true });
+    mkdirSync(join(reviewerDir, "workflows"), { recursive: true });
+    writeFileSync(join(workflowDir, "parent.ts"), `
+export const name = "parent";
+export const description = "Calls a cross-owner readonly procedure";
+export async function execute(ctx) { return ctx.call("reviewer/deep", {}, { tools: "readonly" }); }
+`);
+    writeFileSync(join(workflowDir, "local.ts"), `
+export const name = "local";
+export const description = "Wrong lexical owner";
+export async function execute(ctx) { throw new Error("Wrong owner's procedure"); }
+`);
+    writeFileSync(join(reviewerDir, "workflows", "deep.ts"), `
+export const name = "deep";
+export const description = "Uses the callee lexical catalog";
+export const readonly = true;
+export async function execute(ctx) {
+  const legacy = await ctx.workflows.run("local", {});
+  const unified = await ctx.call("local", {});
+  const prompt = await ctx.call("reviewer", "Review HEAD", { skill: "review" });
+  return ctx.done(prompt.summary, { legacy: legacy.summary, unified: unified.summary });
+}
+`);
+    writeFileSync(join(reviewerDir, "workflows", "local.ts"), `
+export const name = "local";
+export const description = "Reports the unchanged responsible Task agent";
+export const readonly = true;
+export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); }
+`);
+    const reviewer: SubagentDefinition = {
+      name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(), tools: [],
+      agentDir: reviewerDir, appLocal: true, projectId: "sample",
+    };
+    let promptCalls = 0;
+    const runner = createWorkflowRunner({
+      manager: {
+        callAgentDefinition: async (definition: SubagentDefinition, _task: string, options: { toolPolicy?: string; skill?: string }) => {
+          expect(definition).toBe(reviewer);
+          expect(options).toMatchObject({ toolPolicy: "readonly", skill: "review" });
+          promptCalls++;
+          return { sessionId: "s_captured", status: "done", messages: [],
+            finishResult: { status: "success", summary: "captured prompt" } };
+        },
+      } as any,
+      workflowDir, agentName: "owner", projectId: "sample", maxDepth: 3,
+      agentDefinitions: new Map([["reviewer", reviewer]]),
+      reconciliation: { agent: "owner" } as any,
+    });
+    await expect(runner.run("parent", "input")).resolves.toMatchObject({
+      type: "done", summary: "captured prompt", output: { legacy: "owner", unified: "owner" },
+    });
+    expect(promptCalls).toBe(1);
+  });
+
+  it.each([undefined, "sample"])("does not resolve another App's procedures from project %j", async (projectId) => {
+    const root = workflowRoot("workflow-app-isolation-");
+    const foreignDir = join(root, "foreign");
+    mkdirSync(join(foreignDir, "workflows"), { recursive: true });
+    const marker = join(root, "imported-foreign");
+    writeFileSync(join(foreignDir, "workflows", "secret.ts"), `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(marker)}, "imported");
+export const name = "secret";
+export const description = "Foreign App procedure";
+export async function execute(ctx) { return ctx.done("must not execute"); }
+`);
+    writeFileSync(join(root, "parent.ts"), `
+export const name = "parent";
+export const description = "Attempts cross-App delegation";
+export async function execute(ctx) { return ctx.call("foreign/secret", {}); }
+`);
+    const foreign: SubagentDefinition = {
+      name: "foreign", description: "Foreign", domain: "test", model: fakeModel(), tools: [],
+      agentDir: foreignDir, appLocal: true, projectId: "other-app",
+    };
+    const result = await createWorkflowRunner({
+      manager: {} as any, workflowDir: root, agentName: "owner", projectId,
+      agentDefinitions: new Map([["foreign", foreign]]),
+    }).run("parent", "input");
+    expect(result).toMatchObject({ type: "error", error: expect.stringContaining('Callable procedure "foreign/secret" not found') });
+    expect(existsSync(marker)).toBe(false);
+  });
+
   it("lets the caller recover from an unavailable nested workflow without inventing a child execution", async () => {
     const root = workflowRoot("workflow-missing-child-");
     writeFileSync(join(root, "parent.ts"), `
@@ -1406,7 +1495,7 @@ export async function execute(ctx) {
     },
   );
 
-  it("current parent and nested workflows reuse their Task attempt and recheck canonical authority if cancelled before nested start", async () => {
+  it.each(["legacy", "qualified", "cross-owner"] as const)("%s nested calls reuse their Task attempt and recheck canonical authority before start", async (mode) => {
     const root = workflowRoot("workflow-nested-fenced-");
     const marker = join(root, "executed.txt");
     writeFileSync(
@@ -1428,7 +1517,7 @@ export async function execute(ctx) {
         export const description = "Run a nested method in the same attempt";
         export async function execute(ctx) {
           ctx.log.info("Before nested");
-          const result = await ctx.workflows.run("inspect", {});
+          const result = await ${mode === "legacy" ? 'ctx.workflows.run("inspect", {})' : mode === "qualified" ? 'ctx.call("owner/inspect", {})' : 'ctx.call("reviewer/inspect", {})'};
           return ctx.done(result.summary);
         }
       `,
@@ -1459,12 +1548,21 @@ export async function execute(ctx) {
       attemptId: claim.attemptId,
     };
 
+    const reviewerDir = join(root, "reviewer");
+    mkdirSync(join(reviewerDir, "workflows"), { recursive: true });
+    writeFileSync(join(reviewerDir, "workflows", "inspect.ts"), readFileSync(join(root, "inspect.ts")));
+    const agentDefinitions = new Map<string, any>([["reviewer", {
+      name: "reviewer", agentDir: reviewerDir,
+    }]]);
+
     // 1. Valid parent + nested execution succeeds and creates 2 workflow_runs rows
     const okResult = await createWorkflowRunner({
       manager: {} as any,
       workflowDir: root,
       persistDir: root,
       taskBinding: binding,
+      agentName: "owner",
+      agentDefinitions,
     }).run("parent", "Inspect");
     expect(okResult).toMatchObject({ type: "done", summary: "Executed code" });
     expect(readFileSync(marker, "utf8")).toBe("executed\n");
@@ -1492,6 +1590,8 @@ export async function execute(ctx) {
       persistDir: root,
       runtimeCtx: runtimeCtx as any,
       taskBinding: binding,
+      agentName: "owner",
+      agentDefinitions,
     }).run("parent", "Inspect");
     expect(cancelledResult).toMatchObject({ type: "error", error: expect.stringContaining("no longer current") });
     expect(existsSync(marker)).toBe(false);

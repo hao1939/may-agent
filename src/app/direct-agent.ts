@@ -39,6 +39,8 @@ export type AgentExecutionManifest = {
 
 export type DirectAgentRunOptions = {
   agentName: string;
+  /** Trusted source already selected by the invocation's captured target catalog. */
+  agentSource?: AgentDirectory;
   task: string;
   projectRoot: string;
   /** Explicit installation-layout workspace, possibly separate from projectRoot. */
@@ -98,6 +100,7 @@ export type DirectAgentPreparation = {
 };
 
 function resolveAgentSource(options: DirectAgentRunOptions): AgentDirectory {
+  if (options.agentSource) return options.agentSource;
   const explicit = resolveRuntimeAgentDirectory(options.agentsRoot, options.agentName);
   const source = explicit ?? resolveRuntimeAgentDirectory(options.agentsRoot, options.agentName, options.projectsRoot);
   if (!source) {

@@ -17,7 +17,9 @@ export { matchesEventSelector } from "./event.js";
 export type { AppEvent, AppEventTarget, EventSelector } from "./event.js";
 export type {
   AgentCallOptions,
+  AgentContext,
   AppRead,
+  CallOptions,
   CliCallFacts,
   ExecutionResult,
   ExecutionView,

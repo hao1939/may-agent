@@ -29,6 +29,7 @@ export async function loadWorkflowModuleFromFile(
   const mod = await importRuntimeModule<{
     name?: unknown;
     description?: unknown;
+    readonly?: unknown;
     inputSchema?: unknown;
     outputSchema?: unknown;
     executionTimeoutMs?: unknown;
@@ -45,6 +46,9 @@ export async function loadWorkflowModuleFromFile(
   }
   if (typeof mod.execute !== "function") {
     throw new Error(`Workflow file ${filePath} must export an 'execute' function`);
+  }
+  if (mod.readonly !== undefined && typeof mod.readonly !== "boolean") {
+    throw new Error(`Workflow file ${filePath} must export 'readonly' as a boolean when present`);
   }
   if (mod.verify !== undefined && typeof mod.verify !== "function") {
     throw new Error(`Workflow file ${filePath} must export 'verify' as a function when present`);
@@ -83,6 +87,7 @@ export async function loadWorkflowModuleFromFile(
   return {
     name: mod.name.trim(),
     description: mod.description.trim(),
+    ...(mod.readonly !== undefined ? { readonly: mod.readonly } : {}),
     ...(mod.inputSchema !== undefined ? { inputSchema: mod.inputSchema } : {}),
     ...(mod.outputSchema !== undefined ? { outputSchema: mod.outputSchema } : {}),
     ...(mod.executionTimeoutMs !== undefined ? { executionTimeoutMs: Number(mod.executionTimeoutMs) } : {}),

@@ -32,6 +32,7 @@ export type WorkflowResult = ({ type: "done"; summary: string }
 export interface WorkflowModule {
   name: string;
   description: string;
+  readonly?: boolean;
   inputSchema?: TSchema;
   outputSchema?: TSchema;
   /** Optional bounded wall-clock budget for workflows that run long evaluations. */

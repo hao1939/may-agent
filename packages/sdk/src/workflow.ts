@@ -333,17 +333,22 @@ export type WorkflowMetricCapability = {
   evaluate(id?: string): unknown[];
 };
 
-export type AgentCallOptions = {
-  /** Restrict this bounded call to observation tools plus finish(). */
-  tools?: "full" | "readonly";
-  /** Explicit skill used by this bounded call. */
-  skill?: string;
+export type CallOptions<S extends TSchema | undefined = undefined> = {
+  /** Optional caller-side structured output contract (checked in addition to target outputSchema). */
+  schema?: S;
+  /** Clamped to the enclosing invocation's remaining deadlineAt. */
   timeoutMs?: number;
-  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  /** Tool restriction inherited by descendants. Caller restrictions cannot be widened by callees. */
+  tools?: "full" | "readonly";
+  /** Prompt-target skill selection; rejected if passed directly to a code target. */
+  skill?: string;
+  /** Prompt-target finite positive tool-operation allowance; rejected on code targets. */
   operationAllowance?: number;
-  /** Exact source classification persisted on the execution session. */
+  /** Exact source classification persisted on prompt sessions. */
   source?: string;
 };
+
+export type AgentCallOptions = Omit<CallOptions, "schema">;
 
 /** Shared read contract. Task lists and evidence are paginated; storage stays private. */
 export type AppRead = {
@@ -845,6 +850,20 @@ export type WorkflowContext<TInput = unknown> = {
   applyTaskChanges?: TaskAttempt["apply"];
   readCommunication?: TaskAttempt["read"]["communication"];
   read: AppRead;
+  /**
+   * Canonical bounded invocation API for both prompt-backed and code-backed targets.
+   * Production calls pass string target names resolved against the captured catalog snapshot.
+   */
+  call<S extends TSchema>(
+    target: string,
+    input: unknown,
+    options: CallOptions<S> & { schema: S },
+  ): Promise<ExecutionResult<Static<S>>>;
+  call<TOut = unknown>(
+    target: string,
+    input: unknown,
+    options?: CallOptions,
+  ): Promise<ExecutionResult<TOut>>;
   agents: {
     /** Resource admission can throw ExecutionDeferredError before a helper starts.
      * Catch it to choose another method or retain demand; it has no helper ID.
@@ -892,3 +911,6 @@ export type WorkflowContext<TInput = unknown> = {
   done<T>(summary: string, output?: T): ExecutionResult<T>;
   blocked(reason: string, facts?: unknown): ExecutionResult;
 };
+
+/** Alias for callers adopting unified naming without duplicating context shapes. */
+export type AgentContext<TInput = unknown> = WorkflowContext<TInput>;
