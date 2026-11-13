@@ -17,10 +17,8 @@ revision checks. Schema upgrades and foundational transaction helpers remain in
 | `task-emissions.ts` | Exact published-fact reads scoped to App, Task, generation, type and local effect key, using the event journal index and shared verified body loader |
 | `task-reference-index.ts` | Lookup/display of exact Task references |
 
-Offline cutover and one-off state recovery operations (`conversation-cutover.ts`,
-`task-receipt-cutover.ts`, `task-state-cutover.ts`, `task-coordination-cutover.ts`,
-`retired-app-retirement.ts`, and `malformed-conversation-input-recovery.ts`) live
-under `src/app/migrations/` outside the runtime `core/state` store modules.
+Offline completion-receipt import (`task-receipt-cutover.ts`) lives under
+`src/app/migrations/` outside the runtime `core/state` store modules.
 
 The Task runtime decides transitions; these operations enforce their storage
 boundaries. Events announce meaningful changes and accelerate discovery, while
