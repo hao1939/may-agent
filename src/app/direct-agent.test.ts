@@ -234,19 +234,19 @@ describe("direct agent tool policy", () => {
     expect(
       resolveDirectToolPolicy(
         "may",
-        ["coding", "message", "finish"],
-        [{ name: "message", reason: "isolated benchmark must not notify users" }],
+        ["coding", "checkpoint", "finish"],
+        [{ name: "checkpoint", reason: "isolated benchmark has no durable checkpoint service" }],
       ),
     ).toEqual({
       agent: "may",
-      configuredTools: ["coding", "message", "finish"],
-      deniedTools: [{ name: "message", reason: "isolated benchmark must not notify users" }],
+      configuredTools: ["coding", "checkpoint", "finish"],
+      deniedTools: [{ name: "checkpoint", reason: "isolated benchmark has no durable checkpoint service" }],
       effectiveTools: ["coding", "finish"],
     });
   });
 
   test("rejects unknown, duplicate, and unexplained denials", () => {
-    expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: "message", reason: "not configured" }])).toThrow(
+    expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: "checkpoint", reason: "not configured" }])).toThrow(
       "unconfigured tool",
     );
     expect(() =>
@@ -275,7 +275,7 @@ describe("direct agent tool policy", () => {
         description: "example",
         domain: "test",
         model: "test",
-        tools: ["message"],
+        tools: ["checkpoint"],
       }),
     );
     try {
@@ -290,7 +290,7 @@ describe("direct agent tool policy", () => {
           outputRoot: join(root, "output"),
           models: { test: {} as any },
         }),
-      ).rejects.toThrow('cannot construct effective tool "message"');
+      ).rejects.toThrow('cannot construct effective tool "checkpoint"');
     } finally {
       await rm(root, { recursive: true, force: true });
     }

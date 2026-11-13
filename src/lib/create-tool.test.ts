@@ -196,14 +196,16 @@ describe("createAgentsTool()", () => {
   });
 
   describe("action: message", () => {
-    it("rejects both removed actions before validation or agent lookup", async () => {
+    it("rejects both removed actions and omits unsupported message tool guidance from descriptions", async () => {
       const deprecation = "agents.message and agents.send actions have been removed";
       const tool = manager.createAgentsTool();
+      expect(tool.description).not.toContain("`message`");
+      expect(tool.description).toContain("App Task requests");
+      expect(JSON.stringify(tool.parameters)).not.toContain("use `message`");
       for (const action of ["message", "send"]) {
         const result = parseResult(await tool.execute("removed", { action, agent: "nonexistent" }));
         expect(result).toEqual({ error: expect.stringContaining(deprecation) });
-        expect(result.error).toContain("Use the message tool");
-        expect(result.error).toContain("Durable work belongs to an App Task");
+        expect(result.error).toContain("Durable cross-App work belongs to an App Task request");
       }
     });
   });

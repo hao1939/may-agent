@@ -89,7 +89,7 @@ const AgentsToolParams = Type.Object({
         "'follow-up': send a correction or additional context to your running helper using its returned sessionId and content. Queued for consideration; does not create new work or prove the correction was applied. Durable requirement changes belong in Task input; existing Task feedback already reaches active helpers.",
         "'cancel': request cancellation through the owning runtime (requires sessionId).",
         "'sessions': query persisted execution sessions (optionally filter by agent or status).",
-        "For independent FYI notifications to an available recipient, use `message`. To update a helper, use 'follow-up', not its agent name.",
+        "Durable cross-App work belongs to an App Task request. To update a helper, use 'follow-up' with its sessionId, not its agent name.",
       ].join(" "),
     },
   ),
@@ -215,18 +215,17 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Independent notifications use `message`; helper updates use the exact sessionId.",
+      "Cooperate with other agents. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Durable cross-App work uses App Task requests; helper updates use the exact sessionId.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
       try {
-        // Back-compat: 'message' and 'send' actions are removed. Direct callers
-        // to the v2 `message` tool.
+        // Back-compat: 'message' and 'send' actions are removed.
         if ((params as { action?: string }).action === "message" || (params as { action?: string }).action === "send") {
           return textResult(
             JSON.stringify({
               error:
-                "The agents.message and agents.send actions have been removed. Use the message tool: message({ to, content, intent?, priority? }) for independent notifications, agents({ action: 'follow-up', sessionId, content }) to correct your running helper, or agents.call/agents.fork with { agent, task } for a bounded helper. Durable work belongs to an App Task.",
+                "The agents.message and agents.send actions have been removed. Use agents({ action: 'follow-up', sessionId, content }) to correct your running helper, or agents.call/agents.fork with { agent, task } for a bounded helper. Durable cross-App work belongs to an App Task request.",
             }),
           );
         }

@@ -59,7 +59,6 @@ const DEPUTY_TOOL_ALLOWLIST = new Set([
   "agents",
   "conversation_context",
   "finish",
-  "message",
   "query_db",
   "read",
   "run_cli_agent",

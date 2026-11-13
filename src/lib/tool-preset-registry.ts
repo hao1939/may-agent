@@ -18,7 +18,6 @@ export const VALID_TOOL_PRESETS = new Set([
   "finish",
   "checkpoint",
   "cli-delegation",
-  "message",
   "query_db",
   "query-db",
 ]);
