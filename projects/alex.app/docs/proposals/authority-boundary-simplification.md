@@ -242,6 +242,37 @@ Before/after discovery confirms only that entry is removed for the ten agents
 in source; every remaining skill's content and metadata match and fit the catalog,
 including the Task guide. The six shared-skill tests and `check:may-design` pass.
 
+### Completed support cleanup: retire the unused finding-delivery ledger
+
+The evaluator's old `workflows/lib/finding-delivery.ts` helper is retired without
+a replacement. It modeled a second delivery lifecycle: mutable owner/human
+timestamps and content-fingerprint variants under
+`.state/finding-delivery/receipts`. The current Task and metric reviewers already
+share immutable report publication and carry the evaluator's explicit `followUp`
+decision through ordinary Alex intake. Publication recovery and exact request
+identity remain with those existing owners; no synchronizer or migration is
+needed.
+
+At Apps baseline `57fb09ac09`, a tracked-source audit of the module name and every
+export found no current caller. Remaining specific references were archived
+session-aftermath reports; the live evaluation-design phrase `finding-delivery`
+describes an outcome, not a module binding. Workflow discovery is nonrecursive
+and does not register this `lib/` file. No current reader scans the old receipts.
+The two inspected local receipt locations were absent; other installations are
+unassessed and any existing files are preserved. Historical reports remain
+unchanged.
+
+This removes an obsolete state format and private API from the maintained
+source. It does not claim a runtime speedup or a change to delivery guarantees.
+The [current follow-up contract](../evaluation/task-outcome-evaluation.md#follow-up-is-an-evaluator-decision)
+owns the retained behavior and retirement boundary. Before/after loading with
+Host `2dd58ba3e3` returned the same four evaluator workflows, entry hashes and
+metadata, with no catalog diagnostics. All 319 existing evaluator tests passed
+(1,733 assertions), including publication recovery, report read-back and explicit
+follow-up routing. Targeted strict source checks and `check:may-design` passed;
+the design check retains its pre-existing `reports` root-layout warning. This is
+source verification, not deployed delivery evidence.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and

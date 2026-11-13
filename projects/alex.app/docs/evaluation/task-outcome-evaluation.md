@@ -450,6 +450,14 @@ does not suppress a later request about changed evidence. Delivery remains
 at least once; this removes recurring unnecessary work without an exactly-once
 attention ledger.
 
+The unused session-aftermath `finding-delivery.ts` helper is retired. It kept a
+separate mutable ledger of owner/human delivery variants under
+`.state/finding-delivery/receipts`, but no current workflow or loader used it.
+Report publication and ordinary request identity remain the supported path;
+this removal changes no current delivery behavior. Existing receipt files and
+historical reports are left intact as evidence, not consulted for current
+follow-up decisions.
+
 The judgment is the `result` of the ordinary `finish` call. Its outer `summary`
 is required; outer `verification_facts` is optional on Host #373 and later.
 Task and metric reviews share `evaluation-judgment.ts`: its schema is supplied
