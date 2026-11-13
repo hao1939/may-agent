@@ -305,7 +305,6 @@ describe("App inbox runtime", () => {
       db,
       bus,
       ...task.options,
-      resolveConversationInput: async () => ({ summary: "unused", response: "unused", topic: { kind: "none" } }),
       scanIntervalMs: 10_000,
     });
 
@@ -680,10 +679,8 @@ describe("App inbox runtime", () => {
     const task = capabilities(bus);
     const messages: unknown[] = [];
     const admitted: unknown[] = [];
-    const changes: unknown[] = [];
     bus.subscribe((event) => {
       if (event.type === "conversation.message.created") messages.push(event.data);
-      if (event.type === "conversation.task.changed") changes.push(event.data);
     });
     createConversationTopic(db, {
       id: "topic",
@@ -755,7 +752,6 @@ describe("App inbox runtime", () => {
         attemptId: "accepted-attempt",
       },
     ]));
-    expect(changes).toEqual([]);
     publish(executionTaskId, "own-attempt");
     expect(admitted).toHaveLength(2);
     bus.emit({
@@ -768,7 +764,6 @@ describe("App inbox runtime", () => {
       appId: "evaluation", conversationId, taskAppId: "evaluation",
       taskId: "probe/current", closedGeneration: 1,
     }))));
-    expect(changes).toEqual([]);
     // Presentation and judgment happen only when the real Task accepts a reply.
     expect(messages).toEqual([]);
   });
@@ -812,12 +807,10 @@ describe("App inbox runtime", () => {
     let calls = 0;
     const returned: Array<{ conversationId: string; topicIds: string[] }> = [];
     const failures: unknown[] = [];
-    const changes: unknown[] = [];
     const connect = async () => {
       const bus = persistentBus();
       bus.subscribe((event) => {
         if (event.type === "handler.failed") failures.push(event.data);
-        if (event.type === "conversation.task.changed") changes.push(event.data);
       });
       runtime = await startAppInboxRuntime({
         registry: await loadedRegistry(root), db, bus, deferStart: true,
@@ -857,7 +850,6 @@ describe("App inbox runtime", () => {
     recover();
     expect(calls).toBe(5);
     expect(listPendingConversationTaskChanges(db, "evaluation")).toEqual([]);
-    expect(changes).toEqual([]);
   });
 
   it("recovers an exact Task wait after restart", async () => {
@@ -1414,7 +1406,6 @@ describe("App inbox runtime", () => {
           kind: "unresolved",
           routeId: "provider-change",
           subscriptionIds: ["provider-change"],
-          resolveTask: false,
           conditionTaskIds: [],
         },
       ],

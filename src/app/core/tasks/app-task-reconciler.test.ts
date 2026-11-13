@@ -4,7 +4,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import {
-  cacheTaskSnapshots,
   readTaskSnapshot,
   type AppTaskContext,
   type TaskCompletionReceipt,
@@ -2279,7 +2278,6 @@ describe("App task reconciler state", () => {
   it("returns trigger snapshots that cannot mutate a long-lived cached task tree", () => {
     const f = fixture();
     const { config } = f;
-    cacheTaskSnapshots(config);
     const monitor = intent("monitor");
     observeAppTaskIntent(config, { intent: monitor, appAgent: "app-owner" });
     recordAppTaskTrigger(config, monitor.id, {
@@ -4408,7 +4406,7 @@ describe("App task reconciler state", () => {
     expect(replacement.previousAttempt).toMatchObject({
       attemptId: oldClaim.attemptId,
       sessionId: "r_1_f85fb905-old-session",
-      failureReason: "terminal-agent-session-expired-lease-requeued",
+      failureReason: "previous-runtime-attempt-requeued",
     });
 
     expect(completeAppTask(config, oldClaim, { summary: "late old disposition" }).status).toBe("stale");
