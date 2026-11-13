@@ -206,12 +206,15 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
       available: false,
       reason: "Creator-scoped Task discovery is not installed; absence is not an empty work list.",
     };
+    let createdAssignmentsReadAt: string | undefined;
     if (context.taskRead.created) {
       try {
-        const page = await context.taskRead.created({ limit: 5 });
+        const { observedAt, ...page } = await context.taskRead.created({ limit: 5 });
         if (page.creator.appId !== context.taskBinding.appId || page.creator.taskId !== context.taskBinding.taskId)
           throw new Error("Created Task observation does not match this attempt's creator identity");
         createdAssignments = { available: true, ...page };
+        // Freshness belongs to this read, not the content-addressed facts below.
+        createdAssignmentsReadAt = observedAt;
       } catch (error) {
         createdAssignments = { available: false, reason: String(error).slice(0, 300) };
       }
@@ -248,6 +251,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
         refresh,
         snapshot: knownAt ? "last-successful-read" : "attempt-start",
         ...(knownAt ? { readAt: knownAt } : {}),
+        ...(createdAssignmentsReadAt ? { createdAssignmentsReadAt } : {}),
         resourceVersion: known?.resourceVersion ?? null,
       },
       ...sections,

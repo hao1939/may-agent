@@ -1,8 +1,8 @@
 import { Type } from "typebox";
 import { expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { TaskDetail } from "@may-agent/sdk";
 import { createTaskDecisionContext } from "./task-decision-context.js";
@@ -549,10 +549,10 @@ test("the owner brief refreshes creator-owned work independently of empty groupi
     expect(first.createdAssignments).toEqual({
       available: true,
       creator: { appId: "sample", taskId: "review" },
-      observedAt: "observation-1",
       items,
       nextCursor: "more-creator-work",
     });
+    expect(first.observed.createdAssignmentsReadAt).toBe("observation-1");
     const detail = JSON.parse(readFileSync(first.coverage.detail, "utf8"));
     expect(detail.createdAssignments.items).toEqual(items);
     // A real close removes only the finite contribution from the read. The
@@ -562,13 +562,67 @@ test("the owner brief refreshes creator-owned work independently of empty groupi
     expect(second.createdAssignments.items.map((item: { taskId: string }) => item.taskId)).toEqual([
       "standing-service",
     ]);
-    expect(second.createdAssignments.observedAt).toBe("observation-2");
+    expect(second.observed.createdAssignmentsReadAt).toBe("observation-2");
     expect(f.context.reconciliation.children).toEqual({ live: [], completed: [] });
     expect(reads).toBe(2);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test.each([false, true])(
+  "unchanged creator discovery reuses decision detail while observation times refresh (has work: %s)",
+  async (hasWork) => {
+    const root = mkdtempSync(join(tmpdir(), "decision-created-dedup-"));
+    try {
+      const f = fixture(root);
+      const background = "Large retained source detail. ".repeat(4_000);
+      f.setCurrent({ ...f.task, input: { background } });
+      const item = {
+        appId: "another-app",
+        taskId: "finite-contribution",
+        generation: 1,
+        resourceVersion: 4,
+        status: "idle" as const,
+        outcomePreview: "Assess one report snapshot",
+        summaryPreview: "Assessment returned",
+        acceptedAttempt: { id: "accepted-report", generation: 1 },
+      };
+      let items = hasWork ? [item] : [];
+      let reads = 0;
+      f.context.taskRead.created = async () => ({
+        creator: { appId: "sample", taskId: "review" },
+        observedAt: `observation-${++reads}`,
+        items,
+        nextCursor: "more-creator-work",
+      });
+      const brief = createTaskDecisionContext(f.context);
+      const first = packet(await brief());
+      for (let index = 2; index <= 5; index++) {
+        const current = packet(await brief());
+        expect(current.coverage.detail).toBe(first.coverage.detail);
+        expect(current.observed.createdAssignmentsReadAt).toBe(`observation-${index}`);
+        expect(current.createdAssignments).toEqual(first.createdAssignments);
+      }
+      expect(first.observed.createdAssignmentsReadAt).toBe("observation-1");
+      const detail = JSON.parse(readFileSync(first.coverage.detail, "utf8"));
+      expect(detail.createdAssignments.items).toEqual(items);
+      expect(detail.createdAssignments.nextCursor).toBe("more-creator-work");
+      expect(detail.createdAssignments.observedAt).toBeUndefined();
+      expect(detail.input.background).toBe(background);
+      expect(readdirSync(dirname(first.coverage.detail))).toHaveLength(1);
+      // A changed assignment remains fresh and receives its own immutable detail.
+      items = [{ ...item, resourceVersion: 5, summaryPreview: "A correction remains owed" }];
+      const changed = packet(await brief());
+      expect(changed.coverage.detail).not.toBe(first.coverage.detail);
+      expect(changed.createdAssignments.items).toEqual(items);
+      expect(readdirSync(dirname(first.coverage.detail))).toHaveLength(2);
+      expect(reads).toBe(6);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
 
 test("missing, failed or mismatched creator discovery remains unavailable without losing the owner's input", async () => {
   const root = mkdtempSync(join(tmpdir(), "decision-created-unavailable-"));
@@ -577,6 +631,12 @@ test("missing, failed or mismatched creator discovery remains unavailable withou
     f.context.reconciliation.events.items = [inputEvent("owed", "Return the original result", 71)];
     const brief = createTaskDecisionContext(f.context);
     expect(packet(await brief()).createdAssignments).toMatchObject({ available: false });
+    f.context.taskRead.created = async () => ({
+      creator: { appId: "sample", taskId: "review" },
+      observedAt: "last-successful-read",
+      items: [],
+    });
+    expect(packet(await brief()).observed.createdAssignmentsReadAt).toBe("last-successful-read");
     f.context.taskRead.created = async () => {
       throw new Error("Created work temporarily unavailable");
     };
@@ -586,6 +646,7 @@ test("missing, failed or mismatched creator discovery remains unavailable withou
       reason: "Error: Created work temporarily unavailable",
     });
     expect(failed.events.attemptInput.items).toHaveLength(1);
+    expect(failed.observed.createdAssignmentsReadAt).toBeUndefined();
     f.context.taskRead.created = async () => ({
       creator: { appId: "other", taskId: "other-owner" },
       observedAt: "now",
@@ -594,6 +655,7 @@ test("missing, failed or mismatched creator discovery remains unavailable withou
     const mismatched = packet(await brief());
     expect(mismatched.createdAssignments.available).toBe(false);
     expect(mismatched.createdAssignments.reason).toContain("does not match");
+    expect(mismatched.observed.createdAssignmentsReadAt).toBeUndefined();
     expect(mismatched.assignment).toEqual(failed.assignment);
     expect(f.context.reconciliation.events.items).toHaveLength(1);
   } finally {
