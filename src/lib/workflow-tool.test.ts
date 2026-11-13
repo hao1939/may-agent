@@ -1,5 +1,4 @@
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
-import { getDb } from "./db/connection.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -187,7 +187,9 @@ function hasLiveExternalAttemptOwner(attempt: AppTaskAttempt | null | undefined)
   if (!attempt || attempt.state !== "running" || attempt.pendingSettlement) return false;
   if (attempt.runtimeId === reconcilerRuntimeId) return false;
   const ownerProcess = attempt.lease?.ownerProcess;
-  return ownerProcess !== undefined && isProcessInstanceAlive(ownerProcess);
+  if (!ownerProcess) return false;
+  if (ownerProcess.processIdentity === currentProcessInstance().processIdentity) return false;
+  return isProcessInstanceAlive(ownerProcess);
 }
 
 export const APP_TASK_ATTEMPT_LEASE_DURATION_MS = 15 * 60_000;

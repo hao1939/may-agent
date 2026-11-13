@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../../core/state/app-task-resource-store.js";
+import { getDb } from "../../../lib/db/connection.js";
 import { afterEach, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -28,6 +30,33 @@ export async function execute(ctx) {
   return { ...ctx.done("Inspection stopped"), status: ${JSON.stringify(status)},
     output: { report: "partial.md" }, facts: { inspected: true } };
 }`);
+  AppTaskResourceStore.fromDb(getDb(root), "fixture").bootstrapSnapshot(
+    {
+      project: "fixture",
+      resources: {
+        review: {
+          metadata: { id: "review", generation: 1, resourceVersion: 1 },
+          spec: { parentId: "root", outcome: "Review", acceptance: ["Done"] },
+          status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt" },
+        },
+      },
+      attempts: {
+        attempt: {
+          metadata: { id: "attempt", resourceVersion: 1 },
+          taskId: "review",
+          taskGeneration: 1,
+          specHash: "hash",
+          owner: "owner",
+          handler: "workflow:review",
+          runtimeId: "rt",
+          state: "running",
+          reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+      },
+    },
+    "fixture",
+  );
   const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
   const result = await runner.execute({
     source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
@@ -97,6 +126,33 @@ export const description = "Reads legacy task string and reconciliation events";
 export async function execute(ctx) {
   return ctx.done("checked", { state: "converged", summary: "checked", facts: [String(ctx.reconciliation?.events.continuedInputs?.length ?? 0)] });
 }`,
+  );
+  AppTaskResourceStore.fromDb(getDb(root), "fixture").bootstrapSnapshot(
+    {
+      project: "fixture",
+      resources: {
+        review: {
+          metadata: { id: "review", generation: 1, resourceVersion: 2 },
+          spec: { parentId: "root", outcome: "Review", acceptance: ["Checked"] },
+          status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-continued" },
+        },
+      },
+      attempts: {
+        "attempt-continued": {
+          metadata: { id: "attempt-continued", resourceVersion: 1 },
+          taskId: "review",
+          taskGeneration: 1,
+          specHash: "hash",
+          owner: "owner",
+          handler: "workflow:check-input",
+          runtimeId: "rt",
+          state: "running",
+          reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+      },
+    },
+    "fixture",
   );
   const bus = new EventBus();
   const runner = createTaskWorkflowRunner({ manager: {} as never, bus });
