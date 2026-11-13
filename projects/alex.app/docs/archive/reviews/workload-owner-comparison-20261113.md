@@ -820,3 +820,73 @@ extra lifecycle mechanism. This narrows the source-wiring gap; it does not
 establish consistent model inspection, isolated-process execution, installed
 adoption, external delivery, reliable adaptation or a workload benefit. Release,
 activation and live Task changes remain held.
+
+
+## Process-worker follow-through
+
+The next drill replaces only the post-restart in-process attempt adapter with
+`createTaskAttemptProcessExecutor` and the real child IPC protocol. Frozen Apps
+experiment `7abc6fdd6fd9164ea341d566445d0d922a998993` uses Host #500 merge
+`e9c789b3b95bfd2d88ba3c69c0931347b3a2814d`. A branch-only child entry supplies
+a synthetic localhost model registry and invokes `runTaskAttemptWorker`.
+Definition discovery, agent/tool loading, native execution, durable writes,
+result frames and parent event relay use production code. Parent and child share
+the same frozen business definition and disposable overrides. Children receive
+only PATH and disposable HOME/TMPDIR; no external provider credentials or request
+forwarding are available. Startup recovery remains in the parent. Commissioning
+and contribution execution remain setup before restart. There is no post-restart
+manual dispatch, review event, direct enqueue or caller-result refresh.
+
+All four cases pass the separate read-only assessment:
+
+| Case | Durable outcome after automatic process execution |
+| --- | --- |
+| Sealed result | Creator closes the finite contribution; original caller receives the verified result and its Task closes. |
+| Preview only | Creator closes the completed finite snapshot; original sealed delivery stays handling with the same review deadline. |
+| Standing service | Reusable contribution stays open; original finite request receives its result and closes. |
+| Unfinished contribution | No owner dispatch, worker or native request; the entire waiting owner record stays unchanged. |
+
+The final frozen run uses eight localhost requests / 449,965 serialized bytes,
+zero external provider requests and six workers. Each eligible owner has one
+new accepted attempt and a second process check that creates no attempt or
+provider request. Every worker has its own PID, one result frame and an observed
+clean exit. Relayed event identities and full bodies match the durable journal,
+including digest-checked artifacts where the inline event is only a projection;
+the parent records acceptance. Exact caller receipts, creator authority,
+requirements, generations, child evidence, arithmetic and the original two-Task
+population survive. There are no provider/tool errors or SQLite-lock warnings.
+The same 250 ms quiet observation is followed by controller drain; it does not
+establish indefinite quietness or later timer behavior.
+
+The three productive worker lifetimes are 952–1,109 ms; the three empty follow-up
+checks take 550–702 ms each on this machine. These startup-inclusive observations
+identify a possible efficiency cost, not a workload benchmark or a reason to
+change closure policy. A future optimization should first establish whether the
+parent can safely avoid a stale dispatch using existing canonical readiness,
+while preserving a new input arriving during settlement. No new gate is proposed
+or Host source changed by this drill.
+
+Strict source-SDK types pass. A pre-freeze configuration type error (missing model
+reasoning metadata) was fixed. The negative control exits the child cleanly before
+running an attempt or sending a result: zero requests and zero completed cases,
+with the expected five-second missing-settlement failure. Exact source bytes are
+restored before the frozen run. The first assessor failed because it compared
+large event bodies against their truncated inline projections; it now verifies
+the existing artifact digest, byte count and full body. That failed assessment is
+retained, and the same frozen run is assessed again without changing its source,
+raw evidence or business checks. The earlier real-model inspection omissions
+remain unresolved.
+
+Private evidence uses `$EVIDENCE/process-owner-20261113-frozen/`, with
+`process-owner-assess-20261113.py`, `process-owner-assessment-20261113.json` and
+the frozen run/type logs beside it. The preflight, missing-result negative and
+inline-only assessor failure are retained separately. Reproduce from the frozen
+experiment by linking the frozen Host and its dependencies, then run
+`bun projects/alex.app/experiments/owner-follow-through-20261113/run.ts --preflight <new-private-evidence-directory>`.
+The README and manifest describe the source, local-only limits and spawn seam.
+
+This establishes the tested automatic owner/result path through process workers
+and local Inbox settlement. It does not test the bundled launcher, isolated
+recovery worker, live installation, external caller delivery or new model
+judgment. Installed adoption, consistent inspection and workload benefit still
+need their own evidence. Release, activation and live Task changes remain held.

@@ -148,11 +148,14 @@ two inspect the exact contribution, and the standing-service omission remains.
 This checks readiness through manual dispatch, not automatic installed scheduling
 or external delivery. No new lifecycle control is needed for the observed path.
 The [automatic-controller drill](../archive/reviews/workload-owner-comparison-20261113.md#automatic-controller-follow-through)
-subsequently verifies ordinary startup selection and local caller settlement
-without manual owner dispatch. All four scripted cases pass, and disabling the
-controller fails the check. It uses an in-process attempt adapter and a bounded
-quiet observation; live adoption, process-worker acceptance and consistent model
-inspection remain separate. No new Host implementation is needed for this path.
+verifies ordinary startup selection and local caller settlement through an
+in-process adapter. The subsequent [process-worker drill](../archive/reviews/workload-owner-comparison-20261113.md#process-worker-follow-through)
+preserves all four outcomes through the production executor and child IPC with
+scripted native replies, clean exits and parent-accepted events. Each eligible
+owner still incurs one empty follow-up worker, a measured efficiency opportunity
+rather than a lifecycle defect. These bounded local checks leave bundled-launcher
+and installed acceptance, external delivery and consistent model inspection
+open. Release and activation remain held.
 
 ## The mental model
 
