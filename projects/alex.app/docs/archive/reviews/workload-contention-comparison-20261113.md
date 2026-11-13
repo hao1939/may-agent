@@ -469,3 +469,56 @@ is unchanged. This completes the isolated decision-boundary experiment; native
 owner result consumption, guarded finite disposition and exact caller acceptance
 remain operational gates. Applying this brief to an installed workflow is a
 separate source change and acceptance exercise. Release remains held.
+
+## Actual App helper adoption and owner-consumer contract
+
+The actual Alex `workload-review` workflow now identifies the helper as the
+producer of one readonly recommendation, identifies the workflow as its
+validator and recorder, and supplies the existing `finish` envelope. Material
+missing facts can still be read within the same bounded call. The actual pilot
+continues to save advice only; it creates no business request or Task, applies
+no closure, and changes no funding or execution allowance. Local Apps `main`
+source is `7b48145cc0029502af9f369cc471ff276ba8113c`, verified first as isolated
+candidate `be92ed1c13366bd4cbdcf64bcae9a5b189ede3da` against the same pinned
+Host `0c7b0adb071ad6dae8a281a2a875e1f3e583eeff`. No Host source changed.
+
+The existing App recovery suite gained one owner-consumer scenario through real
+App admission, Task requests, result settlement, creator discovery, guarded
+closure and restart. A scripted owner requests a finite saved-batch calculation.
+Its contribution computes and saves the total, while the original request stays
+handling and the contribution remains open. After restart, the owner discovers
+that work through the recorded creator, independently reads the artifact and
+accepted attempt, closes that contribution against the current revision, then
+returns the verified total to the exact original input. The existing App policy
+consumes the owner's explicit finite disposition. Replaying the original input
+adds no Task or business execution. This verifies the ordinary internal
+owner-consumer mechanism; decisions are scripted, and the original source App
+has no external delivery consumer in this fixture.
+
+The three owning suites passed 49 tests and 730 assertions, including the actual
+pilot's readonly/invalid-result/coalescing contracts and the recovery scenario.
+Strict source-SDK types passed across the workflow and these tests. Older
+recovery fixtures now name their actual finish agent and include explicit empty
+action lists under the current contract. The first new test attempt incorrectly
+looked for ownership through Inbox `parentId`; the supported request route saves
+an exact creator instead. That failed log remains evidence; the corrected case
+uses the recorded creator and passes through the same production operations.
+
+`check:may-design` passed structure, executable SDK/control examples and canonical
+App checks. Its final model-surface check reports two errors in this isolated
+checkout: May's catalog omits three skills, and Scout's prompt measures 36,025
+characters against 36,000. Running the same check on the untouched base at the
+same path produced identical errors. The full command therefore remains red;
+this change neither repairs those limits nor claims the global gate passed.
+An initial missing Bun type declaration was corrected in the isolated dependency
+links without changing Host dependencies. Logs and strict compiler configuration
+remain under the private archive with the `workload-helper-` prefix.
+
+The remaining business-adoption gap is an explicit route from actionable pilot
+advice to an existing accountable owner. `nextStep` is currently retained prose,
+not an admitted request or evidence of follow-through. The tested ordinary
+request/result path can support that subsequent App policy; an automatic
+consumer, priority controller or additional admission gate was not added here.
+Installed agent comprehension, ordinary-wake follow-through and exact external
+caller acceptance remain unverified. No source activation, live work injection
+or release followed this local source commit; the release remains held.

@@ -68,6 +68,11 @@ discovery turn per pass with equal business outcomes. The earlier errors remain
 evidence. A separate online receipt drill confirmed the existing recovery path
 after SQLite contention using one runtime and an injected recovery clock, without
 proving production latency or caller delivery.
+The actual readonly pilot now uses that explicit helper role and return contract.
+A scripted App integration verifies creator-owned result consumption, guarded
+closure and return to the original Inbox input across restart. The pilot still
+has no automatic route from its advice to an accountable business owner; source
+checks do not establish installed agent follow-through or external delivery.
 Reliable adaptation, overall workload benefit and production adoption remain
 unproven. The dated November 8
 milestone observations below are historical snapshots, not current rollout state.
