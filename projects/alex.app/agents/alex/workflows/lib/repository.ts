@@ -14,8 +14,9 @@ export type CommandReceipt = {
   error?: string;
 };
 
-/** Capture success and failure alike. An error (including timeout/output limit)
- * never becomes a passing check, even if no numeric exit code is available. */
+/** Workflow cancellation and deadlines bound execution; output is bounded below.
+ * Capture success and failure alike. An error never becomes a passing check,
+ * even if no numeric exit code is available. */
 export function commandReceipt(
   root: string,
   argv: string[],
@@ -30,7 +31,6 @@ export function commandReceipt(
       {
         cwd: root,
         signal,
-        timeout: 120_000,
         maxBuffer: 2 * 1024 * 1024,
         encoding: "utf8",
       },

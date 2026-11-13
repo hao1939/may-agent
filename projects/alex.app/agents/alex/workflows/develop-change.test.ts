@@ -7,6 +7,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { createServer, type AddressInfo, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -446,6 +447,64 @@ describe("development workflow using real Git and verification", () => {
     });
     expect((await t.run()).state).toBe("converged");
   });
+
+  test("workflow cancellation stops running verification without allowing review", async () => {
+    const t = trial();
+    const controller = new AbortController();
+    const stopped = Promise.withResolvers<void>();
+    let started = false;
+    let guarded = false;
+    let peer: Socket | undefined;
+    const server = createServer((socket) => {
+      peer = socket;
+      let messages = "";
+      socket.on("data", (chunk) => {
+        messages += chunk.toString();
+        if (messages.includes("ready") && !started) {
+          started = true;
+          controller.abort(new Error("Verification cancelled"));
+        }
+        if (messages.includes("guarded")) guarded = true;
+      });
+      socket.on("close", () => stopped.resolve());
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", resolve);
+    });
+    const port = (server.address() as AddressInfo).port;
+    const ctx = t.context(controller.signal);
+    ctx.input = {
+      verify: [
+        "node",
+        "-e",
+        `
+          const socket = require("node:net").connect(${port}, "127.0.0.1");
+          // Bound the fixture even if production cancellation breaks.
+          const guard = setTimeout(() => {
+            socket.end("guarded", () => process.exit(71));
+          }, 10_000);
+          socket.on("connect", () => socket.write("ready"));
+          socket.on("close", () => clearTimeout(guard));
+        `,
+      ],
+    };
+    try {
+      await expect(t.run(ctx)).rejects.toThrow("Verification cancelled");
+      expect(started).toBe(true);
+      await stopped.promise;
+      expect(guarded).toBe(false);
+      expect(t.calls.map((call) => call.stage)).toEqual([
+        "design",
+        "implementation",
+      ]);
+      expect(t.current.result).toBeUndefined();
+    } finally {
+      controller.abort();
+      peer?.destroy();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  }, 15_000);
 
   test("new input triggers judgment despite a previously accepted result", async () => {
     const t = trial();
