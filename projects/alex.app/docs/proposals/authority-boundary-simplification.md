@@ -29,6 +29,67 @@ duplicate decision or state copy when doing so fixes a demonstrated problem;
 do not build another coordination framework or delete useful recovery merely
 to reduce the line count.
 
+### Priority from current delivery work
+
+On November 13, the user asked to derive further simplification from the real
+workloads and selected the local May/Scout/Alex cases and MLVM's Kubernetes,
+compiler, spec-repair and knowledge assignments. This review uses local source
+and the retained November 12 MLVM cutover record; it is not a fresh remote
+inspection. The source baseline is Host `28fc86fbedb9`. Procedure changes below
+are proposals, with no implementation or measured benefit yet.
+
+The purpose remains [verified useful results with decreasing human supervision
+and acceptable total cost](../1-principles/purpose.md#mays-goal).
+
+| Representative work | Useful result | Essential support |
+| --- | --- | --- |
+| Local May assistance and a Host improvement | Understand the request, incorporate corrections, deliver an answer or checked change, and return background results to the human | Current requirements, tools and workspace, verification, saved caller links, feedback and cancellation |
+| Local Scout research and Alex improvement | Produce useful grounded findings or a verified improvement; retain a justified no-change or wait without manufacturing activity | Deliberate discovery cadence, evidence, an accountable owner and selective specialist judgment |
+| MLVM Kubernetes support, compiler, spec repair and knowledge | Advance each existing assignment to its next reviewable milestone, retain exact source/check evidence, and wait for real external decisions | One owner per assignment, continued execution, persistent source/native state, scoped authority, exact waits and Task-scoped feedback |
+
+The common path is one owned assignment, useful work and verification, then an
+evidence-backed result or real wait. Corrections and relevant new facts return
+to that owner. Bounded helpers support that assignment; independent obligations
+justify additional Tasks. An ended execution, accepted result and fulfilled
+human promise remain different facts even when their storage is simplified.
+
+**First candidate: simplify ordinary development procedure.** Local goals
+already default to an owner agent; a multi-agent sequence is not mandatory.
+The optional [`develop-change` workflow](../../agents/alex/workflows/develop-change.ts)
+adds its own design/implementation/review state, invalidation and reuse rules,
+and a fixed three-round repair loop. Review whether one owner working directly
+in its Task worktree, running existing checks and requesting independent review
+can replace that procedure for ordinary changes. Required human approvals,
+source-bound verification and independent review remain acceptance gates.
+The proposed reduction is the custom stage/reuse protocol, not those gates.
+The tradeoff is losing automatic upfront specialist separation and stage reuse;
+the owner may inspect or redo more work after interruption. Compare one bounded
+real change before selecting retirement or a smaller procedure change.
+
+**Second candidate: consolidate progress reporting.** The MLVM cutover's agent
+guidance asks for `progress.json`; its task UI also reads an `overview.json`
+alongside Host Task/session state. Assign each fact one owner: the Host owns
+execution, accepted waits and input delivery; a checkpoint report owns domain
+progress, evidence and the next milestone. Review duplicated fields and manual
+updates across those records. Keep useful domain summaries and source/CI/cloud
+receipts; session activity cannot establish milestone completion. The deliberate
+cost may be fewer custom overview fields or less presentation convenience.
+This proposal changes no remote source, state or running assignment.
+
+Recurring research can need fresh observations. Automatic evaluation and
+supervision need evidence that they reduce missed work or human intervention.
+Their existence is not itself a reason to run another model review. Audit their
+current contribution before changing cadence; source inspection alone cannot
+establish waste or justify deleting useful monitoring.
+
+For either candidate, assess accepted output, correction/restart/wait behavior,
+human reminders, model handoffs, repeated context and manually synchronized
+facts. Use the existing checks and retained receipts. A simpler procedure must
+still deliver the requested result; fewer calls or files alone do not prove it.
+Host storage/recovery, current executors and the thin MLVM App can serve this
+review without a new admission API, orchestration framework or work lifecycle.
+The unused registry projection below is lower-priority housekeeping.
+
 | Area | Current disposition |
 | --- | --- |
 | Shared execution and recovery | Conversation uses one stable Task. [#449](https://github.com/hao1939/may-agent/pull/449), merged as `7d32fa337890`, retired workflow crash replay and old session-resume paths. Fresh attempts use current Task facts and retained evidence; accepted inputs/results and recovery safeguards remain. See [workflows](../2a-design/workflows.md#crash-recovery). |
@@ -455,12 +516,13 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 
 ## Recommended next milestone
 
-1. Keep the current plan and owning proposal records aligned with merged source;
-   remove completed items from the active backlog while preserving dated evidence.
-2. Let the separate #482 accounting cleanup finish through its own contract and
+1. Review one ordinary local development assignment against the proposed simpler
+   owner-led procedure above. Preserve its checks, review and delivery contract;
+   choose a bounded procedure change from that evidence.
+2. Then review one MLVM checkpoint for duplicated progress facts, keeping Host
+   execution state and domain evidence with their existing owners.
+3. Let the separate #482 accounting cleanup finish through its own contract and
    review. Do not create a competing implementation here.
-3. Select a further reduction only after finding a current consumer, responsibility
-   or duplicate decision worth changing. File size alone is not that evidence.
 4. Preserve accepted Task state, exact identity, atomic publication and recovery.
    Source cleanup does not authorize deployment or historical-state deletion.
 
@@ -529,7 +591,8 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 | Work | Boundary and next proof |
 | --- | --- |
 | Review retained compatibility | Check current consumers and supported upgrade requirements before selecting another removal. September inventories are historical; their completed aliases, context metadata and diagnostics must not be reopened. |
-| Unused agent configuration projection | [Next candidate](external-components-simplification.md#remove-the-unused-agent-configuration-projection-next-candidate): only tests read the second agent metadata map and aggregate registry view at the reviewed baseline. A removal is proposed, not selected or implemented; preserve actual registration and session persistence. |
+| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) takes priority: inspect the optional development stage protocol, then duplicated MLVM progress reporting. These are source-grounded candidates, not implemented reductions or measured savings. |
+| Unused agent configuration projection | [Housekeeping candidate](external-components-simplification.md#remove-the-unused-agent-configuration-projection-housekeeping-candidate): only tests read the second agent metadata map and aggregate registry view at the reviewed baseline. Lower priority than simplifying current delivery work; preserve actual registration and session persistence if selected. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Separate accounting simplification | #482 is open and owned by its existing workstream. Review its outcome there; it is neither completed nor a second task for this proposal. |

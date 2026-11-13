@@ -357,9 +357,12 @@ both passed on that exact head. The integrated App docs check passed with zero
 errors and the existing root-layout warning. No installation or external
 provider trial ran.
 
-## Remove the unused agent configuration projection: next candidate
+## Remove the unused agent configuration projection: housekeeping candidate
 
 **Design status:** Proposed for the next simplification decision.
+**Priority:** Lower than the [current-work delivery review](authority-boundary-simplification.md#priority-from-current-delivery-work).
+The user prioritizes simpler useful execution in the local and MLVM cases;
+this unused-view cleanup remains optional housekeeping.
 **Implementation status:** Source review only at merged Host `28fc86fbedb9`;
 no implementation or Host PR is prepared for this candidate.
 
