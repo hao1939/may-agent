@@ -37,13 +37,7 @@ export function createTaskInputHandler(options: {
         }
         chunks.push(part.value);
       }
-      const bytes = new Uint8Array(size);
-      let offset = 0;
-      for (const chunk of chunks) {
-        bytes.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-      const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+      const parsed: unknown = JSON.parse(Buffer.concat(chunks, size).toString("utf8"));
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Object required");
       body = parsed as Record<string, unknown>;
     } catch {
@@ -80,8 +74,6 @@ export function createTaskInputHandler(options: {
       idempotencyKey: taskInputIdempotencyKey(appId, taskId, key),
     };
     try {
-      // A retry can arrive after feedback changed or closed the Task. Confirm
-      // the original exact publication before rejecting its older generation.
       const recorded = options.confirm?.(frame);
       if (recorded)
         return options.json(

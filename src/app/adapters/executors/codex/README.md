@@ -29,13 +29,11 @@ attempt before failing cleanly. Individual commands and test-run limits are
 unchanged.
 
 Progress reporting continues for the attempt's full lifetime. `maxProgressEvents`
-(64 by default) bounds the pending publication queue, rather than the total
-number of events. A slow store causes older routine observations to be replaced
-by newer ones, with lifecycle transitions retained ahead of routine progress.
-If the backlog consists entirely of lifecycle events, the newest state wins.
-Publication remains serialized; flushing drains retained observations. Recent
-deduplication keys are bounded, while durable event keys preserve idempotency
-when older observations are replayed. No reporting timer needs cancellation.
+(64 by default) bounds the pending FIFO publication queue, rather than the total
+number of events: if the store lags, the oldest queued observation is dropped so
+the newest observations are retained. Publication remains serialized; flushing
+drains retained observations, and goal-status heartbeats are suppressed unless
+the status actually changes.
 The runtime's accepted Task state remains authoritative; backend thread state
 is execution evidence. Removing this executor leaves its work visibly
 unavailable under the existing recovery contract while other executors remain
