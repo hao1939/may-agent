@@ -1,6 +1,6 @@
 import { workloadReviewPolicy, workloadReviewTask } from "./workload-review-policy.js";
 import { createHash } from "node:crypto";
-import { closeAcceptedAssignment } from "./task-completion.js";
+import { closeAcceptedAssignment, isAlexOperationalRecoveryTask } from "./task-completion.js";
 import { retiredEvaluationMetrics } from "./retired-evaluation-metrics.js";
 import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
 import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.js";
@@ -165,13 +165,6 @@ export function evaluationReportInput(event: AppEvent<Record<string, unknown>>):
       },
     },
   } as AppInput;
-}
-
-function isAlexOperationalRecoveryTask(appId: string, taskId: string): boolean {
-  return (
-    appId === "alex" &&
-    (taskId === "runtime/selector-recovery" || taskId.startsWith("runtime/recovery/"))
-  );
 }
 
 function operationalRecoveryInput(
@@ -339,8 +332,8 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
   if (admitted.input.kind === "message" &&
       (selectorFailure.project ?? selectorFailure.appId) === "alex" &&
       selectorFailure.taskId === "runtime/task-outcome-selector") {
-    // Repeated notices join one ordinary owned outcome. The saved admissions
-    // retain each attempt's evidence; they do not revise the repair assignment.
+    // This reusable recovery route survives a completed repair cycle. Saved
+    // admissions retain each notice without revising the repair assignment.
     return { kind: "desired" as const, intent: {
       id: "runtime/selector-recovery",
       parentId: "root",

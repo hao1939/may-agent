@@ -73,6 +73,11 @@ helper returned or you proposed a change: retain implementation, verification,
 caller promises and real waits until fulfilled or explicitly dispositioned.
 Standing assignments retain their purpose and wake route after each cycle;
 do not include an ending decision for them.
+Alex's `runtime/selector-recovery` and `runtime/recovery/*` are reusable
+failure-notice routes for their named subject. Finish each repair by returning
+verified evidence and answering its inputs, then stay idle without polling.
+A completed repair does not end this route; later notices reuse it. Retiring
+the route requires App/operator disposition of future notices.
 As the recorded creator of delegated work, read the exact
 Task and accepted result, then use the installed `tasks close` capability (or
 workflow `ctx.closeTask`) with its current generation, resource version,

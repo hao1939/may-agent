@@ -606,10 +606,14 @@ test("selector failure and exhaustion reach the same owner Task across restart",
   }
 });
 
-test("active controller failures reach Alex and normal retries finish the original work", async () => {
+test("controller recovery finishes each incident and accepts later failures on the same route after restart", async () => {
   const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
   process.env.EVALUATION_AUTO_REVIEW_ENABLED = "false";
-  const repeatedFailure = Promise.withResolvers<void>();
+  let repeatedFailure = Promise.withResolvers<void>();
+  let cycle = 1;
+  let failureBaseline = 0;
+  let originalCalls = 0;
+  let recoveryCalls = 0;
   let originalTaskId = "";
   let recoveryTaskId = "";
   let repairs = 0;
@@ -617,20 +621,24 @@ test("active controller failures reach Alex and normal retries finish the origin
   const f = await runtime(async ({ attempt }) => {
     const access = join(f.root, "sample-access.ready");
     if (attempt.task.id === originalTaskId) {
+      originalCalls++;
       expect(readFileSync(access, "utf8")).toBe("ready\n");
       const sample = Number(readFileSync(join(f.root, "sample.txt"), "utf8"));
       return { runId: attempt.attemptId, handlerResult: {
         state: "converged", summary: `Verified original sample ${sample}`, facts: ["access:verified"], actions: [], result: { sample },
       } };
     }
+    recoveryCalls++;
     recoveryTaskId ||= attempt.task.id;
     expect(attempt.task.id).toBe(recoveryTaskId);
     expect(recoveryTaskId).toStartWith("runtime/recovery/alex-input-controller-original-");
     const returned = attempt.events.items.find(({ event }) => event.type === "app.dependency.updated" && event.data.status === "done");
     if (returned) {
-      expect(returned.event.data).toMatchObject({ taskId: originalTaskId, result: { sample: 42 } });
+      expect(returned.event.data).toMatchObject({ taskId: originalTaskId, result: { sample: 42 * cycle } });
       return { runId: attempt.attemptId, handlerResult: {
-        state: "converged", summary: "Verified the original work returned sample 42", facts: ["original:verified"], actions: [],
+        state: "converged", summary: `Verified the original work returned sample ${42 * cycle}`, facts: ["original:verified"], actions: [],
+        // A mistaken cycle-close recommendation must not disable later notices.
+        result: { taskDisposition: { kind: "close", reason: "The current repair is verified." } },
       } };
     }
     if (!existsSync(access)) {
@@ -642,27 +650,28 @@ test("active controller failures reach Alex and normal retries finish the origin
           timeout = setTimeout(() => reject(new Error("Missing repeated controller failure")), 3000);
         })]);
       } finally { clearTimeout(timeout); }
-      expect(failures.length).toBeGreaterThanOrEqual(2);
-      expect(f.store.readTaskContext({ taskIds: [originalTaskId] }).attempts ?? {}).toEqual({});
+      expect(failures.length - failureBaseline).toBeGreaterThanOrEqual(2);
+      expect(originalCalls).toBe(cycle - 1);
       await createWriteTool(f.root).execute("restore-access", { path: access, content: "ready\n" }, attempt.signal);
       expect(readFileSync(access, "utf8")).toBe("ready\n");
       repairs++;
     }
     return { runId: attempt.attemptId, handlerResult: {
       state: "waiting", summary: "Access restored; the original result remains owed", facts: ["access:restored"], actions: [],
-      requests: [{ id: "verify-original", appId: "alex", taskId: originalTaskId,
+      requests: [{ id: `verify-original-${cycle}`, appId: "alex", taskId: originalTaskId,
         input: { kind: "message", data: { message: "Return the original verified sample after access restoration." } } }],
-      conditions: [{ requestId: "verify-original" }],
+      conditions: [{ requestId: `verify-original-${cycle}` }],
     } };
   }, async taskId => {
     if (taskId === originalTaskId && !existsSync(join(f.root, "sample-access.ready")))
       throw new Error("Fixture access prerequisite unavailable before Task claim");
   });
-  const unsubscribe = f.bus.subscribe(event => {
+  const subscribe = () => f.bus.subscribe(event => {
     if (event.type !== "handler.failed" || event.source !== "app-task-controller" || event.data.taskId !== originalTaskId) return;
     failures.push(event.data);
-    if (failures.length === 2) repeatedFailure.resolve();
+    if (failures.length === failureBaseline + 2) repeatedFailure.resolve();
   });
+  let unsubscribe = subscribe();
   try {
     writeFileSync(join(f.root, "sample.txt"), "42\n");
     const original = f.admit("controller-original", { kind: "message", data: { message: "Read and return the original sample." } });
@@ -686,13 +695,57 @@ test("active controller failures reach Alex and normal retries finish the origin
     expect(notices).toHaveLength(failures.length);
     expect(notices.every(item => item.waitingOn?.id === recoveryTaskId)).toBe(true);
     expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'app.task.retry.requested'").get()).toEqual({ n: 0 });
+    expect(notices.every(item => item.status === "done")).toBe(true);
+    expect(f.store.readCancellation(recoveryTaskId)).toBeNull();
+    const firstRepairAttempt = f.store.readTask(recoveryTaskId)?.status.observedAttemptId;
+    const quietCalls = recoveryCalls;
+    await f.run(recoveryTaskId);
+    expect(recoveryCalls).toBe(quietCalls);
+
+    // Complete the first incident, restart, then fail a genuinely new input on
+    // the same original Task. No synthetic failure event or recovery wake.
+    unsubscribe();
+    await f.restart();
+    cycle++;
+    failureBaseline = failures.length;
+    repeatedFailure = Promise.withResolvers<void>();
+    unsubscribe = subscribe();
+    rmSync(join(f.root, "sample-access.ready"));
+    writeFileSync(join(f.root, "sample.txt"), "84\n");
+    const laterRequest = { id: "controller-later", appId: "alex", targetTaskId: originalTaskId,
+      source: { kind: "app" as const, id: "may" },
+      input: { kind: "message", data: { message: "Return the new verified sample on the same assignment." } } };
+    const later = f.inbox.host.admit(laterRequest).item;
+    expect(later.waitingOn?.id).toBe(originalTaskId);
+    f.start();
+    const laterDeadline = Date.now() + 5000;
+    while (Date.now() < laterDeadline && (repairs !== 2 ||
+      f.store.readTask(recoveryTaskId)?.status.phase !== "converged" ||
+      f.inbox.host.get(later.id)?.status !== "done")) await Bun.sleep(10);
+    expect(repairs).toBe(2);
+    expect(originalCalls).toBe(2);
+    expect(f.inbox.host.get(later.id)).toMatchObject({ status: "done", result: { result: { sample: 84 } } });
+    expect(f.inbox.host.get(original.id)).toMatchObject({ status: "done", result: { result: { sample: 42 } } });
+    expect(f.store.readTask(recoveryTaskId)).toMatchObject({ metadata: { generation: 1 }, status: { phase: "converged" } });
+    expect(f.store.readTask(recoveryTaskId)?.status.observedAttemptId).not.toBe(firstRepairAttempt);
+    expect(f.store.readCancellation(recoveryTaskId)).toBeNull();
+    expect(f.store.listTaskIds({ limit: 10 }).sort()).toEqual([originalTaskId, recoveryTaskId].sort());
+    const laterNotices = listAppInboxItems(f.db, { appId: "alex", limit: 100 }).filter(item => item.originEventId &&
+      (item.input.data as { context?: { taskRecovery?: unknown } }).context?.taskRecovery);
+    expect(laterNotices).toHaveLength(failures.length);
+    expect(laterNotices.every(item => item.waitingOn?.id === recoveryTaskId && item.status === "done")).toBe(true);
+    const completedCalls = recoveryCalls;
+    await f.run(recoveryTaskId);
+    expect(recoveryCalls).toBe(completedCalls);
+    expect(f.inbox.host.admit(laterRequest).item.status).toBe("done");
+
   } finally {
     unsubscribe();
     await f.close();
     if (enabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
     else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
   }
-}, 10_000);
+}, 15_000);
 
 test("repair before exhaustion lets Host resume the real selector automatically", async () => {
   const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;

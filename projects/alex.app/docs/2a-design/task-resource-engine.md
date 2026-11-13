@@ -74,8 +74,9 @@ An opt-in `tasks.closeOnResult` App policy can end its own App-created finite
 assignment from an explicit accepted owner decision. Result, caller answer and
 closure commit atomically; pending input and waits prevent ending. Task-created
 and unattributed assignments retain creator authority. [Host PR #398](https://github.com/hao1939/may-agent/pull/398)
-implements this optional policy but is not deployed. Alex's requirements and
-adoption boundary are in the [Task execution guide](../2b-manual/task-execution-guide/SKILL.md).
+implements this optional policy. Read the selected installation's App contract
+before relying on it; source merge and App activation are separate facts.
+Alex's requirements are in the [Task execution guide](../2b-manual/task-execution-guide/SKILL.md).
 
 When none of these responsibilities applies, the creator judges fulfillment,
 transfer with a verified return route, or authorized unfulfilled/withdrawn

@@ -289,18 +289,19 @@ recurring work. The capability requires the paired Host/SDK source revision in t
 On an older installation, return a missing closure capability
 through the existing owner path, not a reason to create a repeating review job.
 
-**Prepared, not installed:** [Host PR #398](https://github.com/hao1939/may-agent/pull/398)
-adds an opt-in `tasks.closeOnResult` App callback. Alex's integrated companion policy
+**Check the selected installation:** [Host PR #398](https://github.com/hao1939/may-agent/pull/398)
+provides an opt-in `tasks.closeOnResult` App callback. Alex's companion policy
 accepts an explicit evidenced converged `result.taskDisposition` with
 `{kind: "close", reason}` for finite message/goal assignments. Standing
-audit/research cycles and evaluator procedures retain their responsibility.
+audit/research cycles, declared operational recovery routes and evaluator
+procedures retain their responsibility.
 The Host restricts this path to the same App's App-created assignments, guards
 remaining input and waits, and atomically saves result, caller answer and closure.
 Delegated work still requires its recorded creating Task's guarded close.
-After the merged Host is separately deployed, activate the companion
-App definitions and verify `read.contract("alex").taskPolicy.closeOnResult`.
-Until then, use the installed creator/operator controls above. Preserve the
-review-admission identity fix when integrating the companion. Historical records
+Verify `read.contract("alex").taskPolicy.closeOnResult` on the loaded App
+before relying on this path; otherwise use the installed creator/operator
+controls above. Preserve the review-admission identity fix when integrating the
+companion. Historical records
 use bounded review; do not rerun their workers to manufacture closure results.
 
 For a large Alex backlog, use `task-disposition-review` with
@@ -319,6 +320,13 @@ onto the same Task, but give a later independent admission its own identity.
 Keep standing metric/reviewer and Conversation routes reusable. After closing
 finite reviews, verify that later admissions still have a valid route; closure
 capability alone does not provide continuing result-to-disposition integration.
+Alex's `runtime/selector-recovery` and `runtime/recovery/*` also have declared
+reusable input routes: repeated and later failures of the named subject reach
+the same assignment. Return verified repair evidence and settle each notice;
+then stay idle without polling or a cycle-close decision. Ending the route
+requires App/operator disposition of future notices, such as withdrawing the
+route or explicitly reopening it before further admission. The bounded reader
+recognizes these App-created routes while preserving real outstanding work.
 The [backlog trial](../../archive/reviews/task-backlog-disposition-trial-20261107.md)
 shows the real population and an isolated closure trial without live cleanup.
 

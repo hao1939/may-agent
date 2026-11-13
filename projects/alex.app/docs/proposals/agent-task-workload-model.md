@@ -79,6 +79,14 @@ Reliable adaptation, overall workload benefit and production adoption remain
 unproven. The dated November 8
 milestone observations below are historical snapshots, not current rollout state.
 
+The [November 13 recovery-route review](../archive/reviews/recovery-route-lifecycle-20261113.md)
+separates a finished repair cycle from its declared reusable input route. The
+bounded disposition reader now recognizes Alex's App-created recovery routes
+without hiding outstanding work. Source guidance asks owners to answer each
+notice and become idle without polling. A scripted controller/restart check
+verifies a later incident reaches the same route; this does not establish model
+adoption or justify closing ordinary finite work as standing service.
+
 ## The mental model
 
 **Agents accept and organize work. Tasks preserve assignments. The Host executes

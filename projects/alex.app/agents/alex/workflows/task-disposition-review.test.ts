@@ -4,6 +4,7 @@ import {
   type PublicCommand,
 } from "../../evaluator/workflows/lib/public-task-evidence.js";
 import { reviewTaskDispositionBatch } from "./task-disposition-review.js";
+import { taskForInput, taskInputForEvent } from "../../../app.js";
 
 function fixture(count = 1) {
   const tasks = Array.from({ length: count }, (_, index) => ({
@@ -145,6 +146,30 @@ describe("bounded Task disposition review", () => {
       route: "owner-review",
       status: "idle",
     });
+  });
+
+  test("recognizes Alex's App-created recovery routes while preserving real waits and other creators", async () => {
+    const f = fixture(6);
+    for (let index = 0; index < f.tasks.length; index++) {
+      const input = taskInputForEvent({ type: "handler.failed", source: "app-task-controller",
+        data: { appId: "alex", taskId: index === 0 ? "runtime/task-outcome-selector" : `input/original-${index}`,
+          stage: "task-reconciliation", willRetry: true },
+      } as never)!;
+      f.tasks[index].id = taskForInput({ id: `notice-${index}`, input } as never).intent.id;
+      f.human[index].taskId = f.tasks[index].id;
+      f.tasks[index].creator = { appId: "alex" };
+    }
+    f.tasks[1].conditions.push({ id: "repair-authority", owner: "human" });
+    f.tasks[2].status = f.human[2].status = "waiting";
+    f.tasks[3].creator = { appId: "foreign" };
+    Object.assign(f.tasks[4].creator, { taskId: "input/creator" });
+    const result = await reviewTaskDispositionBatch(f.provider, { appId: "alex" });
+    expect(result.items.map(({ route }) => route)).toEqual([
+      "retain-standing", "retain-work", "retain-work", "owner-review", "owner-review", "retain-standing",
+    ]);
+    expect(result.items[0].reason).toContain("without polling");
+    expect(result.items[4].authorityRoute).toBe("creating-task");
+    expect((await reviewTaskDispositionBatch(f.provider, { appId: "sample" })).items[0].route).toBe("owner-review");
   });
 
   test("retains explicit retries for changed, failed and incomplete reads while advancing discovery", async () => {

@@ -1,4 +1,5 @@
 import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { isAlexOperationalRecoveryTask } from "../../../task-completion.js";
 import {
   createPublicTaskEvidenceProvider,
   sendPublicReadCommand,
@@ -172,6 +173,17 @@ async function reviewOne(
       route: "retain-work",
       reason:
         "Retained input, event, Condition or reconsideration work needs owner reconciliation.",
+    };
+  if (
+    isAlexOperationalRecoveryTask(appId, taskId) &&
+    object(task.creator).appId === "alex" &&
+    object(task.creator).taskId === undefined
+  )
+    return {
+      ...base,
+      route: "retain-standing",
+      reason:
+        "Alex's declared failure-notice route remains for this subject. A finished repair cycle stays idle without polling; ending the route requires App/operator disposition of future notices.",
     };
   if (
     !base.acceptedAttemptId ||

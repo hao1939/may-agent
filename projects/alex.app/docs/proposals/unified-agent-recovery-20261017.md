@@ -65,6 +65,26 @@ Task, App input/request, Condition and Conversation Request keep their
 Recovery of current work and engineering improvement of future behavior remain
 separate responsibilities; Alex or an evaluator is not a mandatory repair hop.
 
+## Repair completion and the reusable route
+
+Alex's existing `runtime/selector-recovery` and `runtime/recovery/*` assignments
+are operational input routes for a named subject. Repeated notices during a
+repair and later incidents share that assignment. A verified repair completes
+the current cycle and answers its notices; the route then stays idle without
+polling. Do not request Task closure for a completed cycle. Retirement belongs
+to App/operator policy and must account for future notices before ending or
+explicitly reopening the route. Ordinary finite message/goal work keeps its
+explicit, guarded closure path.
+
+The [November 13 lifecycle review](../archive/reviews/recovery-route-lifecycle-20261113.md)
+found a live close recommendation on such a route. The installed policy retained
+it, but worker guidance and bounded workload review did not make its continuing
+purpose clear. The source correction makes that purpose explicit and shares the
+existing route classification across routing, closure and read-only review.
+It preserves Task identities, requirements, generation and existing receipts.
+Source verification includes a second real controller-failure incident after
+restart; changed model behavior and installed adoption remain unproved.
+
 ## Startup boundary: first verified finding
 
 The [November 12 disposable trial](../archive/reviews/recovery-bootstrap-trial-20261112.md)
