@@ -448,6 +448,14 @@ deadline and propagates Host cancellation. A timeout kills the probe. Failures
 remain access evidence and do not establish a human prerequisite. Source setup
 continues to use `prepare` and owns restoring an absent tab.
 
+The [standalone-runner comparison](../docs/verification/standalone-runner-comparison-20261113.md)
+verified this reusable workflow without a running Host, including fixture
+publication and access gates. That runner does not remove the current synchronous
+XHS search or supply cancellation to preparation/search automatically. The next
+proposed cleanup is one small asynchronous App-local command helper, retaining
+this workflow and its source/publication checks. This is a verified design choice;
+the production command path is not yet changed.
+
 The Host advances observation memory only after publication and fences replaced
 observer results. A new wait receives fresh ready evidence even if an earlier
 wait used the same resource and value. Human request delivery still uses the
