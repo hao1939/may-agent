@@ -551,7 +551,20 @@ export class DefinitionSourceReleaseStore {
         }
         continue;
       }
-      if (!entry.isDirectory() || entry.isSymbolicLink() || !existsSync(join(entryPath, "release.json"))) continue;
+      if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
+      if (!existsSync(join(entryPath, "release.json"))) {
+        if (!protectedIds.has(entry.name) && /-definitions-v\d+$/.test(entry.name)) {
+          try {
+            rmSync(entryPath, { recursive: true, force: true });
+            removed.push(entry.name);
+          } catch (error) {
+            this.onNotice?.(
+              `[apps] Failed to prune obsolete release ${entry.name}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        }
+        continue;
+      }
       try {
         candidates.push({ id: entry.name, path: entryPath, mtimeMs: statSync(entryPath).mtimeMs });
       } catch {
