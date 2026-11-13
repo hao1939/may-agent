@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import { upsertSession } from "./db/sessions.js";
+import { loadAllSessionMetas } from "./persistence.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 
 function registerTestAgents(manager: SubagentManager) {
@@ -259,7 +260,7 @@ describe("createAgentsTool()", () => {
   describe("callDeny", () => {
     it.each(["call", "fork"] as const)("blocks %s before starting a denied helper", async (action) => {
       const caller = startCaller();
-      const before = structuredClone(manager.registryStore.getRegistry());
+      const before = structuredClone(loadAllSessionMetas(persistDir));
       const tool = manager.createAgentsTool({
         getCallerSessionId: () => caller,
         callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
@@ -275,7 +276,7 @@ describe("createAgentsTool()", () => {
       expect(parsed.error).toContain("Use workflow instead.");
       expect(parsed.sessionId).toBeUndefined();
       expect(manager.status().map((session) => session.sessionId)).toEqual([caller]);
-      expect(manager.registryStore.getRegistry()).toEqual(before);
+      expect(loadAllSessionMetas(persistDir)).toEqual(before);
     });
 
     it("allows call to non-denied agent", async () => {

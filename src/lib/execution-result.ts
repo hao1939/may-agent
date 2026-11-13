@@ -65,7 +65,6 @@ interface WorkflowRow {
   endedAt?: number | null;
   result_summary?: string | null;
   result_reason?: string | null;
-  resumedFromRunId?: string | null;
 }
 
 function compact(text: unknown, fallback: string): string {
@@ -232,7 +231,6 @@ export function workflowRowToExecutionResult(row: WorkflowRow): ExecutionResult 
       depth: row.depth,
       parentSessionId: row.parentSessionId,
       parentWorkflowRunId: row.parentWorkflowRunId,
-      resumedFromRunId: row.resumedFromRunId,
     },
   };
 }

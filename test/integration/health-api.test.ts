@@ -220,15 +220,15 @@ describe("auditHealth()", () => {
     expect(report.workflowRuns.interrupted).toBe(0);
   });
 
-  it("uses indexed runtime tables without loading the retained session registry", async () => {
+  it("uses indexed runtime tables without reading session metadata files", async () => {
     writeAuditSession(persistDir, "s_indexed_0", {
       agent: "coder",
       task: "indexed audit",
       status: "done",
       startedAt: Date.now(),
     });
-    manager.registryStore.getRegistry = () => {
-      throw new Error("auditHealth must not parse all session metadata");
+    manager.registryStore.getSession = () => {
+      throw new Error("auditHealth must not read per-session metadata files");
     };
 
     const report = await manager.auditHealth();
