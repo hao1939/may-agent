@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Companion to agent-runtime-effect-integrity.md for guarded writes: transactional review versus atomic commit, review-bound configuration plans, recovery evidence, apply-time revalidation, post-write observation, and concurrency-safe snapshots."
-triggers: ["guarded write", "transactional review", "atomic commit", "configuration plan", "apply-time revalidation", "preview fingerprint", "post-write readback", "configuration backup", "conditional update"]
-last_updated: "2026-10-04"
-source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-10-04 oversized-note review. Each retained section preserves stable source links, pinned revisions, reproduced checks where performed, and explicit evidence limitations."
+summary: "Companion to agent-runtime-effect-integrity.md for guarded writes: transactional review versus atomic commit, review-bound configuration plans, recovery evidence, apply-time revalidation, post-write observation, concurrency-safe snapshots, and schema-derived write admission that does not trust an agent-authored security artifact."
+triggers: ["guarded write", "transactional review", "atomic commit", "configuration plan", "apply-time revalidation", "preview fingerprint", "post-write readback", "configuration backup", "conditional update", "CapLite", "write integrity", "schema-derived policy", "prompt injection"]
+last_updated: "2026-11-13"
+source_basis: "Extracted intact from agent-runtime-effect-integrity.md during its 2026-10-04 oversized-note review. Each retained section preserves stable source links, pinned revisions, reproduced checks where performed, and explicit evidence limitations. The 2026-11-13 CapLite update uses title, metadata, and abstract-level evidence for arXiv 2611.17115v1; Scout did not inspect the full paper, implementation, attack corpus, or evaluations."
 </ai_context>
 
 # Agent Runtime Guarded Write Integrity
@@ -203,3 +203,53 @@ on 2026-09-17 and had four stars at retrieval.
 - **Inspected revision:** [`16270229942b761d8ca9833b85460d732a4f01dd`](https://github.com/MrChalo69/ankibridge-oss/commit/16270229942b761d8ca9833b85460d732a4f01dd)
 - **Primary sources:** [architecture and transaction limits](https://github.com/MrChalo69/ankibridge-oss/blob/16270229942b761d8ca9833b85460d732a4f01dd/docs/ARCHITECTURE.md), [plan/apply service boundary](https://github.com/MrChalo69/ankibridge-oss/blob/16270229942b761d8ca9833b85460d732a4f01dd/src/ankibridge/service.py), [safety tests](https://github.com/MrChalo69/ankibridge-oss/blob/16270229942b761d8ca9833b85460d732a4f01dd/tests/test_service_safety.py), and [unimplemented MCP approval design](https://github.com/MrChalo69/ankibridge-oss/blob/16270229942b761d8ca9833b85460d732a4f01dd/docs/MCP_DESIGN.md)
 - **Discovery query:** GitHub Repository Search API `"AI agent" created:>2026-09-16`, sorted by stars; `incomplete_results: false`
+
+## Write Admission Should Not Depend on an Agent-Written Security Artifact — CapLite (arXiv, November 2026)
+
+**CapLite** ([2611.17115v1](https://arxiv.org/abs/2611.17115v1)) targets a
+specific failure mode in prompt-injection enforcement: asking the same language
+model that may be confused by untrusted content to author the program, policy,
+dependency graph, or constraint list that supposedly contains it. The abstract
+reports evaluating 15 open-weight models, including 13 between 1.7B and 12B
+parameters. Agent-authored artifacts reportedly admitted attacks for 14 models
+under Progent, 13 under IPIGuard, and 11 under DRIFT; CaMeL-generated programs
+failed to run in as many as 68% of episodes.
+
+CapLite instead derives policy from tool schemas, commits write calls before any
+tool result is read, and permits a write only when every argument deciding its
+recipient, amount, object, or destination is stated in the user's request. The
+paper calls the resulting property **write integrity**: injected text cannot add
+a write or redirect one to an unstated target. Its abstract reports no successful
+attack across 13,935 attacked AgentDojo episodes, 29.0% utility under attack
+versus 27.2% for CaMeL, and 17.1k tokens per episode—18% of CaMeL's usage.
+
+The reusable runtime pattern is narrower than general prompt-injection safety:
+
+1. derive the admission rule from a trusted interface definition rather than
+   model-authored security prose;
+2. bind each effect-bearing argument to explicit user-supplied authority before
+   untrusted observations can influence the plan;
+3. distinguish write integrity from read confidentiality, task completion, and
+   utility; and
+4. keep schema correctness and the user-request parser inside the trusted base,
+   because the abstract-level guarantee depends on both.
+
+This complements review-bound plans and apply-time revalidation elsewhere in
+this note. Those mechanisms ask whether an authorized write is fresh, complete,
+and recoverable. CapLite asks the prior question: whether the write and its
+authority-bearing arguments were admissible at all. A strong effect boundary
+needs both; a fresh, atomic, fully observed write can still be unauthorized.
+
+**Coverage and retrieval record:** Scout reviewed only the title, metadata,
+comment, and abstract supplied by the workflow, not the full paper, proof,
+implementation, tool-schema assumptions, user-request parser, model outputs,
+AgentDojo episodes, comparison implementations, or statistical analysis. The
+workflow-owned request was
+`https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`;
+it returned HTTP 200 in 307 ms with one request and no `Retry-After` value.
+Accordingly, the reported guarantee and measurements remain producer-authored
+abstract claims, and this note does not establish protection for reads,
+model-only outputs, underspecified user requests, incorrect tool schemas, or
+writes whose dangerous semantics are hidden outside the checked arguments.
+
+Source: https://arxiv.org/abs/2611.17115v1
