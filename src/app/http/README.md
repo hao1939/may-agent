@@ -87,8 +87,12 @@ identity parser without loading display posture; JSON syntax errors retain the
 previous path/frontmatter fallback. File access errors still fail explicitly,
 and the daemon owns validation and admission of the single addressed target.
 
-`read-model/` contains HTTP diagnostic reads for the event graph and loop trace.
-Other report implementations live in `../adapters/reporting/`.
+`read-model/` contains HTTP diagnostic reads for the loop trace (`loop-trace.ts`)
+and direct-chat publication recovery (`chat-publication.ts`). The inferred
+`/api/events/:id/graph` read model (`event-graph.ts`) and its client SVG graph
+renderer are retired; `/events/:eventId` renders the exact `GET /api/events/:id`
+record and links to `GET /api/events/:id/trace`. Other report implementations
+live in `../adapters/reporting/`.
 
 The legacy Learning dashboard and `/api/learning` aggregate are retired, including
 the project-detail Learning tab. Session detail, saved review-note reads
