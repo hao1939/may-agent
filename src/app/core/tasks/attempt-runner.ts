@@ -1,8 +1,8 @@
 import {
   admitTaskVerificationResult as admitAppTaskVerificationResult,
-  type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
   type TaskReconcileResult as AppTaskHandlerResult,
   type TaskIntent as AppTaskIntent,
+  type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
   type TaskAttempt,
 } from "@may-agent/sdk";
 import { join } from "node:path";
@@ -11,9 +11,6 @@ import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_RECORD_ONLY, childEventTrace, type AgentEvent, type EventBus } from "../events/bus.js";
 import { isConversationTask } from "../state/conversation-task-turns.js";
-import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
-import { recoverDeadTaskExecution, releaseJoinedTaskAttemptExecution } from "../state/task-execution-cleanup.js";
-import { TaskExecutionStore } from "../state/task-execution-store.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace, type AppTaskExecutionPaths } from "./app-task-output-paths.js";
 import {
   assertAppTaskClaimCurrent,
@@ -22,7 +19,6 @@ import {
   completeAppTask,
   deferAppTask,
   deferAppTaskExecution,
-  deferAppTaskSettlement,
   expiredAgentSessionAppTaskAttempt,
   failAppTaskAttempt,
   isAppTaskActionStaleError,
@@ -113,10 +109,7 @@ export async function runTaskAttempt(input: {
   };
 
   const config = appTaskConfig(descriptor);
-  recoverDeadTaskExecution(config.resourceStore.db, { appId: descriptor.id, taskId: input.taskId },
-    opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
-      opts.sessions!.interrupt(id, "Recovering stopped Task execution", input.taskId, binding) : undefined);
-  let claimedExecution: AppTaskClaim | undefined;
+
   try {
     // Recover the exact saved answer before deciding whether any agent work is needed.
     const recoveredTaskIds = recoverTaskConditions(opts, descriptor, config, { taskId: input.taskId }).filter(
@@ -162,8 +155,6 @@ export async function runTaskAttempt(input: {
       appAgent: descriptor.agent,
       handler: "auto",
       expectedResource,
-      execution: { recipient: agent => opts.agents?.executionRecipient?.(agent) ?? null,
-        lane: input.dispatch.coordination ? "coordination" : input.dispatch.lane === "human" ? "human" : "background" },
       ...(input.dispatch.coordination ? { canUseCoordinationReserve: (resource, agent) => isTrustedTaskCoordination(descriptor, resource, agent) } : {}),
       reason: input.reason ?? "task-controller",
       recoverPreviousSession: (attempt) => {
@@ -218,9 +209,7 @@ export async function runTaskAttempt(input: {
           session?.status === "done" || session?.status === "error" || session?.status === "interrupted"
             ? session.status
             : null;
-        if (expired && sessionId && terminalStatus &&
-          !new TaskExecutionStore(config.resourceStore.db).hasActive({ appId: descriptor.id, taskId: input.taskId }, expired.attemptId) &&
-          !hasLiveAppTaskSession(opts, sessionId)) {
+        if (expired && sessionId && terminalStatus && !hasLiveAppTaskSession(opts, sessionId)) {
           // A session artifact is facts, not an accepted Task result. Drain
           // the exact old execution before retrying through normal settlement.
           interruptSupersededAgentSession(
@@ -257,15 +246,10 @@ export async function runTaskAttempt(input: {
       log("debug", `[app-task:${descriptor.id}] ${input.taskId} check: ${claim.kind}`);
       return recoveredTaskIds;
     }
-    claimedExecution = claim;
     timing.attemptId = claim.attemptId;
     timing.generation = claim.generation;
     return [...new Set([...recoveredTaskIds, ...(await runClaimedTask(opts, descriptor, config, claim, input.dispatch))])];
   } finally {
-    if (claimedExecution) releaseJoinedTaskAttemptExecution(config.resourceStore.db,
-      { appId: descriptor.id, taskId: input.taskId }, claimedExecution.attemptId,
-      opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
-        opts.sessions!.interrupt(id, "Task execution joined", input.taskId, binding) : undefined);
     if (timing.attemptId) input.reportTiming(timing);
   }
 }
@@ -281,7 +265,7 @@ async function runClaimedTask(
   const event = claim.trigger as EventEnvelope | undefined;
   const workflowKey = claim.handler.startsWith("workflow:") ? claim.handler.slice("workflow:".length) : "";
   let executionPaths: AppTaskExecutionPaths;
-  let taskWorkspace: PreparedTaskWorkspace | undefined = claim.settlement?.workspace;
+  let taskWorkspace: PreparedTaskWorkspace | undefined;
   let workspaceFinalized = false;
   try {
     executionPaths = appTaskExecutionPaths(descriptor.appDir, descriptor.projectDir);
@@ -302,10 +286,7 @@ async function runClaimedTask(
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
     let report: TaskCapabilityRun;
-    if (claim.settlement) {
-      report = claim.settlement.report;
-      if (taskWorkspace) executionPaths = withAppTaskWorkspace(executionPaths, taskWorkspace.metadata.path);
-    } else {
+    {
       const method = await taskWorkspaceRequirement(opts, descriptor, config, {
         intent, agent: claim.agent, generation: claim.generation,
       });
@@ -352,21 +333,6 @@ async function runClaimedTask(
       });
     }
     const result = report.handlerResult;
-    if (report.funding || report.execution) {
-      const constraint = (report.funding ?? report.execution)!;
-      // Execution has drained. Retain its workspace and all unaccepted input;
-      // this resource constraint must not consume an execution retry.
-      const finalized = await finalizeWorkspace("waiting");
-      const facts = [...result.facts, ...(!finalized.ok && finalized.reason ? [finalized.reason] : [])];
-      const applied = persistResult(() => deferAppTaskExecution(config, claim, constraint, facts));
-      emit("project.task.reconciled", {
-        disposition: applied === "applied" ? "deferred" : "stale",
-        ...(report.funding ? { funding: report.funding } : { execution: report.execution }),
-        workflowRunId: report.runId,
-        summary: result.summary,
-      });
-      return [];
-    }
     const rejectResult = (
       summary: string,
       diagnostics: Pick<TaskCapabilityRun, "handlerBlocked"> = {},
@@ -421,9 +387,7 @@ async function runClaimedTask(
       }
     }
     if (result.state === "converged") {
-      const accepted = claim.settlement?.acceptanceBasis
-        ? { ok: true as const, acceptanceBasis: claim.settlement.acceptanceBasis }
-        : await establishTaskAcceptance({
+      const accepted = await establishTaskAcceptance({
         opts,
         descriptor,
         intent,
@@ -515,8 +479,6 @@ async function runClaimedTask(
         for (const cancelled of apply.cancelledTasks ?? []) publishTaskCancellation(opts.bus, cancelled);
         return stale?.reconcileTaskIds ?? apply.dependentTaskIds;
       } catch (error) {
-        if (error instanceof TaskBudgetDeferredError)
-          return deferSettlement(report, error, acceptanceBasis);
         const stale = recoverStaleTaskActionResult(config, claim, error);
         if (stale) {
           const summary = error instanceof Error ? error.message : String(error);
@@ -661,23 +623,6 @@ async function runClaimedTask(
       // persistence boundary itself is unavailable.
     }
     throw error;
-  }
-
-  function deferSettlement(report: TaskCapabilityRun, error: TaskBudgetDeferredError, acceptanceBasis: AppTaskAcceptanceBasis): string[] {
-    const { settlement: _previousSettlement, ...originalClaim } = claim;
-    const workspace = taskWorkspace ? {
-      ...taskWorkspace, metadata: config.resourceStore.readAttempt(claim.attemptId)?.workspace ?? taskWorkspace.metadata,
-    } : undefined;
-    persistResult(() => deferAppTaskSettlement(config, claim, error.constraint, {
-      claim: originalClaim,
-      report: { handlerResult: report.handlerResult, runId: report.runId,
-        acceptedLiveEventIds: report.acceptedLiveEventIds },
-      acceptanceBasis,
-      ...(workspace ? { workspace } : {}),
-    }));
-    emit("project.task.reconciled", { disposition: "deferred", funding: error.constraint,
-      summary: "Execution completed; prepared effects await funding" });
-    return [];
   }
 
   async function finalizeWorkspace(outcome: "accepted" | "waiting" | "failed") {

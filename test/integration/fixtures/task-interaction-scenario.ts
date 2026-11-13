@@ -19,14 +19,10 @@ import { AppTaskResourceStore } from "../../../src/app/core/state/app-task-resou
 import { readConversationRequest } from "../../../src/app/core/state/conversation-requests.js";
 import {
   admitConversationTaskInput,
-  conversationTaskId,
   conversationTaskIntent,
   listPendingConversationTaskChanges,
 } from "../../../src/app/core/state/conversation-task-turns.js";
 import { readAppConversationResource } from "../../../src/app/core/state/conversations.js";
-import { TaskBudgetAdmissionStore } from "../../../src/app/core/state/task-budget-admission.js";
-import { installTaskExecutionLimit } from "../../../src/app/core/state/task-execution-admission.js";
-import { TaskExecutionStore } from "../../../src/app/core/state/task-execution-store.js";
 import { createAppTaskCapability } from "../../../src/app/core/tasks/app-task-capability.js";
 import { appTaskContext } from "../../../src/app/core/tasks/app-task-reconciler.js";
 import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../../../src/app/core/tasks/app-task-runtime.js";
@@ -280,16 +276,6 @@ function eventAfter(bus: EventBus, matches: (event: AgentEvent) => boolean) {
 
 async function delegation(nested = false, contendAdmission = false, onePlace = false) {
   const f = fixture("owner", false, false, true);
-  const root = { appId: "sample", taskId: conversationTaskId("sample", "primary") };
-  const accounting = new TaskBudgetAdmissionStore(f.db);
-  const executions = new TaskExecutionStore(f.db);
-  if (onePlace) {
-    accounting.install({ appId: "sample", sponsor: { appId: "sample", agent: "owner" },
-      dailyCredits: 20, rootCredits: 20, rootExecutionSlots: 1,
-      standing: [{ taskId: root.taskId, credits: 20 }] });
-    installTaskExecutionLimit(f.db, { kind: "host" }, 4);
-    installTaskExecutionLimit(f.db, { kind: "agent", recipient: { kind: "directory", id: "projects/sample.app/agents/owner" } }, 2);
-  }
   const measurement = Promise.withResolvers<void>();
   const source = createServer(async (_request, response) => {
     await measurement.promise;
@@ -509,16 +495,9 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
             assert(admissionFailed, "The input must recover after a confirmed SQLite admission failure");
           }
           assert.equal(readConversationRequest(f.db, "sample", "primary", "measurement")?.status, "open");
-          if (onePlace) {
-            assert.deepEqual(executions.usage({ kind: "root", root }), { limit: 1, occupied: 1 });
-            assert.equal(accounting.budget.view(root, Date.now())?.rootCharged, 6);
-            for (const id of Object.keys(f.store.readSnapshot().resources!))
-              assert.deepEqual(accounting.budget.binding({ appId: "sample", taskId: id }), root);
-          } else {
-            const discussion = replyAfter("We can keep discussing while it runs.");
-            publish("discuss", "Can we discuss the method while it runs?");
-            await discussion;
-          }
+          const discussion = replyAfter("We can keep discussing while it runs.");
+          publish("discuss", "Can we discuss the method while it runs?");
+          await discussion;
           if (nested) {
             assert.equal(contexts.length, onePlace ? 1 : 2, "Saving B's wait must not execute A");
             assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
@@ -578,23 +557,14 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
     source.closeAllConnections();
     await new Promise<void>((resolve) => source.close(() => resolve()));
   }
-  if (onePlace) {
-    const request = { ...f.request, taskId: root.taskId };
-    await run({ ...f, request });
-    await run({ ...f, request }, true);
-    const retained = new TaskBudgetAdmissionStore(f.db).budget;
-    assert.equal(retained.view(root, Date.now())?.rootCharged, 9);
-    assert.deepEqual(new TaskExecutionStore(f.db).usage({ kind: "root", root }), { limit: 1, occupied: 0 });
-    assert.deepEqual(new TaskExecutionStore(f.db).usage({ kind: "host" }), { limit: 4, occupied: 0 });
-  }
 }
 
 try {
   const scenario = process.argv[2];
   if (scenario === "conversation") await conversation();
   else {
-    assert(["delegation", "nested", "nestedRecovery", "nestedOnePlace"].includes(scenario!));
-    await delegation(scenario !== "delegation", scenario === "nestedRecovery", scenario === "nestedOnePlace");
+    assert(["delegation", "nested", "nestedRecovery"].includes(scenario!));
+    await delegation(scenario !== "delegation", scenario === "nestedRecovery", false);
   }
 } finally {
   await cleanup();

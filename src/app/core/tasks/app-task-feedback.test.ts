@@ -1,6 +1,3 @@
-import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
-import { TaskExecutionStore } from "../state/task-execution-store.js";
-import { installTaskExecutionLimit } from "../state/task-execution-admission.js";
 import { describe, expect, it, setSystemTime } from "bun:test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -558,13 +555,13 @@ describe("caller feedback", () => {
     }
   });
 
-  it.each([{ onePlace: false }, { onePlace: true }])("composes three assignments through the same executor and return contract across restart (one-place budget=$onePlace)", async ({ onePlace }) => {
+  it("composes three assignments through the same executor and return contract across restart", async () => {
+    const onePlace = false;
     const f = fixture();
     const persistDir = join(f.root, "state");
     let bus = eventBus();
     let host: AppInboxHost;
     const calls: string[] = [];
-    const rootRef = { appId: "sample", taskId: "work/0" };
     const recipient = (agent: string) => ({ kind: "programmatic" as const, id: `fixture/${agent}` });
     const ready = Promise.withResolvers<void>();
     const yielded = Promise.withResolvers<void>();
@@ -573,17 +570,6 @@ describe("caller feedback", () => {
       executionRecipient: recipient, role: agent => ({ agent, instructions: "Collect and review facts" }),
       execute: async () => { throw new Error("Code executor must own this fixture"); },
     };
-    if (onePlace) {
-      const db = getDb(persistDir);
-      new TaskBudgetAdmissionStore(db).install({ appId: "sample", sponsor: { appId: "sample", agent: "sample-owner" },
-        dailyCredits: 20, rootCredits: 20 });
-      installTaskExecutionLimit(db, { kind: "host" }, 4);
-      for (let level = 0; level < 3; level++)
-        installTaskExecutionLimit(db, { kind: "agent", recipient: recipient(`role-${level}`) }, 1);
-      installTaskExecutionLimit(db, { kind: "root", root: rootRef }, 1);
-    }
-    const occupied = () => new TaskExecutionStore(getDb(persistDir)).usage({ kind: "root", root: rootRef }).occupied;
-    const charged = () => new TaskBudgetAdmissionStore(getDb(persistDir)).budget.view(rootRef, Date.now())?.rootCharged;
     const app = defineApp({
       ...definition(),
       task: ({ input }) => ({
@@ -614,10 +600,6 @@ describe("caller feedback", () => {
         executors: {
           measure: async (attempt) => {
             calls.push(attempt.task.id);
-            if (onePlace) {
-              expect(occupied()).toBe(1);
-              expect(new TaskBudgetAdmissionStore(getDb(persistDir)).budget.binding({ appId: "sample", taskId: attempt.task.id })).toEqual(rootRef);
-            }
             expect(attempt.task.agent).toBe(attempt.role.agent);
             expect((await attempt.read.contract("sample")).agent).toBe(app.agent);
             const level = Number(attempt.task.id.split("/").at(-1));
@@ -696,20 +678,7 @@ describe("caller feedback", () => {
         source: { kind: "human", id: "human" },
         input: { kind: "measure", data: { level: 0 } },
       });
-      if (onePlace) {
-        const parent = run(0);
-        try {
-          await ready.promise;
-          const before = charged();
-          expect(occupied()).toBe(1);
-          await run(1);
-          expect(calls).toEqual(["work/0"]);
-          expect(charged()).toBe(before);
-          expect(loadedTaskConfig(f).resourceStore.readTask("work/1")?.status.executionConstraint?.scope.kind).toBe("root");
-        } finally { yielded.resolve(); await parent; }
-        expect(occupied()).toBe(0);
-        expect(loadedTaskConfig(f).resourceStore.readTask("work/1")?.status.executionConstraint).toBeUndefined();
-      } else await run(0);
+      await run(0);
       await run(1);
       await run(2);
       expect(host!.get("original")?.result).toBeUndefined();
@@ -729,12 +698,10 @@ describe("caller feedback", () => {
       await host!.recoverTaskResults();
       expect(host!.get("original")?.result?.result).toEqual({ value: 7, reviewedBy: [2, 1, 0] });
       expect(calls).toEqual(["work/0", "work/1", "work/2", "work/1", "work/0"]);
-      if (onePlace) { expect(occupied()).toBe(0); expect(charged()).toBe(8); }
       await host!.recoverTaskResults();
       await recoverInstalledAppTasks(bus);
       await run(0);
       expect(calls).toHaveLength(5);
-      if (onePlace) { expect(occupied()).toBe(0); expect(charged()).toBe(8); }
       const revisionConfig = loadedTaskConfig(f);
       expect(revisionConfig.resourceStore.readTask("work/1")?.metadata.creator).toEqual({
         appId: "sample",

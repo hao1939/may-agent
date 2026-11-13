@@ -24,9 +24,7 @@ import { appInputRoute, assertAppTaskInputRoute } from "../apps/input-routing.js
 import { appEventInboxSubmission } from "../state/app-event-admission-store.js";
 import {
   createAppInboxItem,
-  deferAppInboxTaskFunding,
   getAppInboxItem,
-  hasAppInboxFundingHold,
   hasConversationExecutionTask,
   listAppInboxItemsWaitingOnTask,
   listAppInboxTaskDependencyKeys,
@@ -43,7 +41,6 @@ import {
 } from "../state/app-inbox-store.js";
 import { completeTaskInput, recoverTaskInputAdmissionKey, rejectTaskInput } from "../state/inbox.js";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
-import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
 import {
   observeTaskDependency,
   readInputContext,
@@ -533,7 +530,7 @@ export class AppInboxHost {
 
   #admitTask(item: AppInboxItem): void {
     const now = this.#now();
-    if (item.status === "done" || item.executionTaskId || hasAppInboxFundingHold(item, now)) return;
+    if (item.status === "done" || item.executionTaskId) return;
     if (item.availableAt !== undefined && item.availableAt > now) return;
     if (item.lease && item.lease.expiresAt > now) return;
     try {
@@ -600,10 +597,6 @@ export class AppInboxHost {
         // failure cannot relabel the successfully attached input.
       }
     } catch (error) {
-      if (error instanceof TaskBudgetDeferredError) {
-        deferAppInboxTaskFunding(this.#db, item.id, error.constraint, this.#now());
-        return;
-      }
       if (error instanceof AppTaskAdmissionError) {
         const result = stateTransaction(this.#db, () => {
           recordAppInboxRecoveryFailure(this.#db, item.id, "input-admission", error.message, this.#now());

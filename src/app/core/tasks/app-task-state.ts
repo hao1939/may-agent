@@ -1,5 +1,3 @@
-import type { PendingTaskSettlement } from "./result.js";
-import type { TaskFundingConstraint } from "../state/task-budget-admission.js";
 import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
@@ -93,8 +91,6 @@ export type AppTaskResource = {
     /** Cheap pre-claim checks have their own backoff and do not spend an attempt. */
     admissionFailures?: number;
     /** Resource admission facts; this is neither failure nor a new lifecycle phase. */
-    funding?: TaskFundingConstraint;
-    executionConstraint?: import("../state/task-execution-admission.js").TaskExecutionConstraint;
     workspaceConstraint?: import("./workspace.js").TaskWorkspaceConstraint;
     /** Stops automatic execution, independently of unfinished input and Conditions. */
     retryExhausted?: AppTaskRetryExhaustion;
@@ -204,8 +200,6 @@ export type AppTaskAttempt = {
   failureReason?: string;
   /** Immutable evidence of reaching the App's automatic execution limit. */
   retryExhausted?: AppTaskRetryExhaustion;
-  /** The executor exited; only these exact effects await resource admission. */
-  pendingSettlement?: PendingTaskSettlement;
   /** Retained separately from acceptance so recovery can reuse execution evidence. */
   unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;
@@ -248,17 +242,6 @@ export type AppTaskTrigger = {
   event: Record<string, unknown>;
   observedAt: string;
 };
-
-export function pendingTaskFunding(resource: AppTaskResource, now = Date.now()): TaskFundingConstraint | undefined {
-  const funding = resource.status.funding;
-  return funding && (funding.retryAt === null || funding.retryAt > now) ? funding : undefined;
-}
-
-export function pendingTaskExecutionConstraint(resource: AppTaskResource, now = Date.now()) {
-  const constraint = resource.status.executionConstraint;
-  return constraint && (constraint.generation === undefined || constraint.generation === resource.metadata.generation)
-    && constraint.retryAt > now ? constraint : undefined;
-}
 
 export function pendingTaskWorkspaceConstraint(resource: AppTaskResource) {
   const constraint = resource.status.workspaceConstraint;

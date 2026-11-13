@@ -1,4 +1,3 @@
-import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 import { describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
@@ -5422,8 +5421,6 @@ describe("canonical App task runtime", () => {
     await install();
     let config = loadedTaskConfig(f);
     const db = config.resourceStore.db;
-    new TaskBudgetAdmissionStore(db).install({ appId: "sample", sponsor: { appId: "sample", agent: "sample-owner" },
-      dailyCredits: 20, rootCredits: 20 });
     const taskId = "work/low-disk";
     admitTaskInput(config, { appId: "sample", idempotencyKey: "disk-request",
       inputContext: { id: "disk-request", source: { kind: "human", id: "operator" }, input: { kind: "sample", data: {} } },
@@ -5431,17 +5428,14 @@ describe("canonical App task runtime", () => {
         acceptance: ["Checks pass"], executor: "verify" } } });
     const reconcile = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
-    const charged = () => new TaskBudgetAdmissionStore(db).budget.view({ appId: "sample", taskId }, Date.now())!.rootCharged;
     const attemptCount = () => db.prepare("SELECT count(*) AS n FROM app_task_attempts WHERE app_id = 'sample' AND task_id = ?").get(taskId)!.n;
     await reconcile();
     if (recovery === "race-input") {
-      expect(charged()).toBe(1);
       expect(attemptCount()).toBe(0);
       expect(calls).toBe(0);
       expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(2);
       expect(readTaskChecks(bus).counts.stale).toBe(1);
       await reconcile();
-      expect(charged()).toBe(2);
       expect(calls).toBe(1);
       expect(config.resourceStore.readTrigger(taskId)).toBeNull();
       return;
@@ -5451,8 +5445,6 @@ describe("canonical App task runtime", () => {
       workspaceConstraint: { reason: "workspace-capacity", availableBytes: 0, requiredBytes: expect.any(Number) } });
     expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
     expect(calls).toBe(0);
-    const discoveryCharge = late ? 2 : 1;
-    expect(charged()).toBe(discoveryCharge);
     expect(attemptCount()).toBe(late ? 1 : 0);
     const workload = readTaskWorkload({ taskStateConfig: config });
     expect(workload.counts).toMatchObject({ waiting: 1, runnable: 0, pendingInputTasks: 1 });
@@ -5465,7 +5457,6 @@ describe("canonical App task runtime", () => {
       // Repeated due checks sample mechanically; they neither retry the handler nor charge.
       setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
       await reconcile();
-      expect(charged()).toBe(discoveryCharge);
       expect(attemptCount()).toBe(late ? 1 : 0);
     }
     const lastSample = config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt;
@@ -5473,7 +5464,6 @@ describe("canonical App task runtime", () => {
     setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
     await reconcile();
     expect(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt).toBe(lastSample);
-    expect(charged()).toBe(discoveryCharge);
     unavailable = false;
     availableBytes = Number.MAX_SAFE_INTEGER;
     if (recovery === "source") {
@@ -5490,7 +5480,6 @@ describe("canonical App task runtime", () => {
     setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
     await reconcile();
     expect(calls).toBe(1);
-    expect(charged()).toBe(discoveryCharge + 1);
     expect(config.resourceStore.readTask(taskId)?.status.workspaceConstraint).toBeUndefined();
     expect(config.resourceStore.readTrigger(taskId)).toBeNull();
     expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Verified");

@@ -11,8 +11,6 @@ import type {
   AppTaskWorkspace,
 } from "./app-task-state.js";
 import {
-  pendingTaskExecutionConstraint,
-  pendingTaskFunding,
   pendingTaskWorkspaceConstraint,
   taskExecutionRetryExhausted,
   taskReviewAt,
@@ -346,10 +344,6 @@ function appTaskReadiness(
   phase = resource.status.phase,
   now = Date.now(),
 ): AppTaskReadiness {
-  const funding = pendingTaskFunding(resource, now);
-  if (funding) return { state: "funding-blocked", reason: `Task funding: ${funding.reason}`, related_ids: funding.root ? [funding.root.taskId] : [] };
-  const execution = pendingTaskExecutionConstraint(resource, now);
-  if (execution) return { state: "capacity-blocked", reason: `Task execution: ${execution.reason}`, related_ids: [] };
   const workspace = pendingTaskWorkspaceConstraint(resource);
   if (workspace) return { state: "resource-blocked", reason: `Task prerequisite: ${workspace.reason}`, related_ids: [] };
   const conditionIds = [...(resource.status.conditionIds ?? [])];

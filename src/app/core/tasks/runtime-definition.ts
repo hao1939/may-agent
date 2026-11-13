@@ -5,7 +5,7 @@ import { join, relative, resolve } from "node:path";
 import { getDb } from "../../../lib/db/connection.js";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
+import { assertTaskCoordinationPolicy } from "./task-coordination-policy.js";
 import { appTaskContext } from "./app-task-reconciler.js";
 import { loadProjectReadModel, projectRuntimePaths } from "./app-task-runtime-state.js";
 import type { TaskTree } from "./app-task-store.js";
@@ -107,16 +107,13 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
     db.prepare(`SELECT 1 FROM app_event_admission_commands WHERE app_id = ? AND status = 'pending'
       AND ((route_kind = 'unresolved' AND json_extract(payload, '$.resolveTask') = 1)
         OR (route_kind = 'task' AND json_extract(payload, '$.intent.executor') = 'conversation')) LIMIT 1`).get(id) ||
-    db.prepare(`SELECT 1 FROM app_task_attempts WHERE app_id = ?
-      AND json_extract(attempt_json, '$.pendingSettlement.report.conversation') IS NOT NULL LIMIT 1`).get(id)
+    false
   ) {
     throw new Error(
       `App ${id} requires stopped-runtime Task contract conversion; see scripts/operations/convert-task-contracts.ts`,
     );
   }
-  new TaskBudgetAdmissionStore(descriptor.resourceStore.db).assertCoordinationPolicy(
-    id, descriptor.agent, app.tasks?.coordination,
-  );
+  assertTaskCoordinationPolicy(id, descriptor.agent, app.tasks?.coordination);
   const concurrency = app.tasks?.maxConcurrent ?? 1;
   if (!Number.isInteger(concurrency) || concurrency <= 0) {
     throw new Error(`App ${id} task maxConcurrent must be a positive integer`);
@@ -145,7 +142,7 @@ function discoverAppTaskResourceStore(
   const appId = app.id;
   if (!persistDir) throw new Error(`App ${appId} task runtime requires the Host persistence directory`);
   const db = getDb(persistDir);
-  new TaskBudgetAdmissionStore(db).assertCoordinationPolicy(appId, configuredAppAgent(app, appDir), app.tasks?.coordination);
+  assertTaskCoordinationPolicy(appId, configuredAppAgent(app, appDir), app.tasks?.coordination);
   const active = AppTaskResourceStore.activeFromDb(db, appId);
   if (active) return active;
   if (existsSync(projectRuntimePaths(appDir).taskStatePath)) {

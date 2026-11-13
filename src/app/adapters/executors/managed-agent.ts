@@ -6,7 +6,6 @@ import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js"
 import type { SubagentManager } from "../../../lib/index.js";
 import type { SubagentDefinition } from "../../../lib/types.js";
 import { childEventTrace } from "../../core/events/bus.js";
-import { taskPrimaryStart } from "../../core/state/task-budget-managed-start.js";
 import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
 import type { TaskAgentInput, TaskAgentRunner } from "../../core/tasks/execution.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
@@ -135,7 +134,6 @@ async function executeTaskAgent(
     taskContext,
     contextPrompt: "Pursue the assignment in the current Task decision brief and return the result required by finish().",
     taskBinding: taskContext.taskBinding,
-    taskPrimaryStart: taskPrimaryStart(taskContext.taskBinding),
     signal: attempt.signal,
     sessionStarted: input.sessionStarted,
     source: "app-task-agent",
