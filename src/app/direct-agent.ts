@@ -168,9 +168,7 @@ async function buildDirectTools(
       case "finish":
         tools.push(
           createFinishTool({
-            agentName: config.name,
             projectRoot: options.workRoot,
-            persistDir: options.outputRoot,
           }),
         );
         break;
@@ -259,9 +257,7 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     promptTimestamp: options.promptTimestamp,
     createFinish: () =>
       createFinishTool({
-        agentName: config.name,
         projectRoot: options.workRoot,
-        persistDir: options.outputRoot,
       }),
     onNotice: options.onNotice,
   });

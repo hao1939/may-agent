@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createFinishTool } from "./lifecycle.js";
-import type { FinishToolOptions } from "./lifecycle.js";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -32,13 +31,8 @@ function cleanup() {
   }
 }
 
-function createTool(overrides?: Partial<FinishToolOptions>) {
-  return createFinishTool({
-    agentName: "tech-lead",
-    projectRoot,
-    persistDir: stateDir,
-    ...overrides,
-  });
+function createTool() {
+  return createFinishTool({ projectRoot });
 }
 
 async function callFinish(tool: ReturnType<typeof createTool>, params: Record<string, unknown>) {
@@ -224,11 +218,14 @@ describe("createFinishTool", () => {
     expect(fields.context_updates.description).toContain("suggestions only");
     expect(fields.context_updates.description).toContain("retains these suggestions in its result");
     expect(fields.context_updates.description).toContain("verified activation");
-    expect(fields.lessons.description).toContain("best-effort");
+    expect(fields.lessons.description).toContain("retained in the completion report");
   });
 
-  it.each([true, false])("reports notes without claiming adoption (lesson storage available=%s)", async (storageAvailable) => {
-    if (!storageAvailable) rmSync(stateDir, { recursive: true });
+  it.each(["absent", "empty", "historical"])("reports notes without writing memory (state: %s)", async (state) => {
+    const streamPath = join(stateDir, "memory-stream.jsonl");
+    const historical = '{"agent":"example-agent","category":"insight","content":"Historical evidence"}\n';
+    if (state === "absent") rmSync(stateDir, { recursive: true });
+    if (state === "historical") writeFileSync(streamPath, historical);
     const text = await callFinish(createTool(), {
       status: "partial",
       summary: "Reviewed the change; follow-up needs an owner decision.",
@@ -240,16 +237,11 @@ describe("createFinishTool", () => {
     });
     expect(text).toContain("PARTIAL");
     expect(text).toContain("Lessons reported:");
+    expect(text).toContain("Verify the selected revision");
     expect(text).not.toContain("Lessons recorded:");
     expect(existsSync(join(projectRoot, "agents/tech-lead/context.md"))).toBe(false);
-    const streamPath = join(stateDir, "memory-stream.jsonl");
-    expect(existsSync(streamPath)).toBe(storageAvailable);
-    if (storageAvailable) {
-      expect(JSON.parse(readFileSync(streamPath, "utf8").trim())).toMatchObject({
-        agent: "tech-lead",
-        category: "insight",
-        content: "Verify the selected revision",
-      });
-    }
+    expect(existsSync(stateDir)).toBe(state !== "absent");
+    expect(existsSync(streamPath)).toBe(state === "historical");
+    if (state === "historical") expect(readFileSync(streamPath, "utf8")).toBe(historical);
   });
 });

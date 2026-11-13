@@ -28,7 +28,7 @@ test.each(["success", "partial", "blocked", "failure"])("a valid %s report retai
           ...options, task, projectRoot: root, sessionId: "report-fixture",
           definition: { name: "worker", description: "fixture", domain: "test", tools: [],
             model: { api: "openai-responses", provider: "fixture", id: "model-a" } as SubagentDefinition["model"] },
-          createFinish: () => createFinishTool({ agentName: "worker", projectRoot: root }),
+          createFinish: () => createFinishTool({ projectRoot: root }),
         });
         prepared.runner.streamFn = () => {
           calls++;
@@ -79,7 +79,7 @@ test.each([false, true])("managed Task passes policy scope through real preparat
     const runner = createTaskAgentRunner({ manager: {
       callAgentDefinition: async (selected: SubagentDefinition, task: string, options: CallAgentOptions) => {
         const prepared = prepareAgentExecution({ ...options, definition: selected, task,
-          projectRoot: root, sessionId: "fixture", createFinish: () => createFinishTool({ agentName: selected.name, projectRoot: root }) });
+          projectRoot: root, sessionId: "fixture", createFinish: () => createFinishTool({ projectRoot: root }) });
         const write = prepared.tools.find(tool => tool.name === "write")!;
         const result = await write.execute("probe", { path: "agents/worker/agent.json", content: "{}" });
         expect(result.content).toMatchObject([{ type: "text", text: expect.stringContaining("WRITE BLOCKED") }]);

@@ -22,7 +22,7 @@ describe("workflow finish contract", () => {
     }, { additionalProperties: false });
     const schema = serialized ? JSON.parse(JSON.stringify(declared)) : declared;
     let executions = 0;
-    const base = createFinishTool({ agentName: "reviewer", projectRoot: tmpdir() });
+    const base = createFinishTool({ projectRoot: tmpdir() });
     const tool = createWorkflowFinishTool({ ...base, execute: async (...args) => {
       executions++;
       return base.execute(...args);
@@ -68,7 +68,7 @@ describe("workflow finish contract", () => {
       const report = { summary: "Patch written; test environment unavailable.", changes: ["parser.ts"] };
       let admitted: unknown;
       const tool = createWorkflowFinishTool(
-        createFinishTool({ agentName: "worker", projectRoot }), schema,
+        createFinishTool({ projectRoot }), schema,
         (output) => { admitted = output; return Value.Check(schema, output) ? null : "Invalid report"; },
       );
       // Code and the model tool admit the same report. An omitted optional
@@ -94,7 +94,7 @@ describe("workflow finish contract", () => {
   it("requires and captures the workflow-authored result schema through finish()", async () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "workflow-finish-"));
     try {
-      const base = createFinishTool({ agentName: "reviewer", projectRoot, persistDir: projectRoot });
+      const base = createFinishTool({ projectRoot });
       const tool = createWorkflowFinishTool(
         base,
         Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) }),
@@ -119,7 +119,7 @@ describe("workflow finish contract", () => {
   it("rejects a missing caller-defined result before finish executes", () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "workflow-finish-"));
     try {
-      const base = createFinishTool({ agentName: "reviewer", projectRoot, persistDir: projectRoot });
+      const base = createFinishTool({ projectRoot });
       const tool = createWorkflowFinishTool(base, Type.Object({ verdict: Type.String() }));
 
       expect(() =>
@@ -136,7 +136,7 @@ describe("workflow finish contract", () => {
   it("validates quiet bookkeeping and reply-requiring effects through the serialized Conversation schema", () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "conversation-finish-"));
     try {
-      const base = createFinishTool({ agentName: "may", projectRoot, persistDir: projectRoot });
+      const base = createFinishTool({ projectRoot });
       const tool = createWorkflowFinishTool(base, JSON.parse(JSON.stringify(conversationTurnResultSchema)));
       const quiet = { summary: "Reviewed", topic: { kind: "none" } };
       const validate = (result: unknown) => validateToolArguments(tool, toolCall({
@@ -173,7 +173,7 @@ describe("workflow finish contract", () => {
   it("does not terminate when a supplied deliverable fails its check", async () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "workflow-finish-"));
     try {
-      const base = createFinishTool({ agentName: "reviewer", projectRoot, persistDir: projectRoot });
+      const base = createFinishTool({ projectRoot });
       const tool = createWorkflowFinishTool(base);
 
       const result = await tool.execute("call-1", {

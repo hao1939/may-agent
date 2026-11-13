@@ -33,7 +33,7 @@ describe("prepared completion contract", () => {
         domain: "fixture",
         systemPrompt: "Review the supplied facts; report a typed verdict.",
         model: getBuiltinModel("anthropic", "claude-sonnet-4-20250514"),
-        tools: [createFinishTool({ agentName: name, projectRoot })],
+        tools: [createFinishTool({ projectRoot })],
       },
       projectRoot,
       sessionId: `review-${name}`,

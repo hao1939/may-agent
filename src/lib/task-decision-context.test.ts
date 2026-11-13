@@ -374,7 +374,7 @@ test("the production transform restores current facts after compaction without a
         skillCatalog: { skills: new Map([[skill.name, skill]]), diagnostics: [], omittedFromPrompt: [] },
         domain: "test",
         model: fakeModel(),
-        tools: [createFinishTool({ agentName: "helper", projectRoot: root })],
+        tools: [createFinishTool({ projectRoot: root })],
         compaction: true,
         contextPreparation: ({ task }) => {
           supplied = task;
