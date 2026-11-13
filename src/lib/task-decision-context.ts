@@ -222,29 +222,31 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
     const full = {
       ...taskDecisionState(known, rec.events, rec.workload),
       work,
-      createdAssignments,
       environment: { paths: context.executionPaths, declaredOutputs: context.details?.declaredOutputs },
       related: { childrenAtAttemptStart: rec.children, installedAppsAtAttemptStart: context.details?.dependencies },
       previousAttempt: rec.previousAttempt,
       waitsAtAttemptStart: rec.waits,
     };
-    let detail: string | undefined;
-    let detailError: string | undefined;
     const workspace = context.workspaceBrief;
-    if (workspace && "taskFile" in workspace) {
+    const saveDetail = (directory: string, value: Record<string, unknown>) => {
+      if (!workspace || !("taskFile" in workspace))
+        return { error: "Detail snapshot unavailable; use the scoped Task read and supplied attempt context." };
       try {
         const root = dirname(workspace.taskFile);
-        const artifact = writeContentAddressedJson(root, "decisions", {
-          binding: context.taskBinding,
-          resourceVersion: known?.resourceVersion,
-          ...full,
-        }, { pretty: true });
-        detail = join(root, artifact.ref);
+        const artifact = writeContentAddressedJson(root, directory, value, { pretty: true });
+        return { path: join(root, artifact.ref) };
       } catch {
-        detailError = "Detail snapshot could not be saved; use the scoped Task read and attempt-start context.";
+        return { error: "Detail snapshot could not be saved; use the scoped Task read and attempt-start context." };
       }
-    } else detailError = "Detail snapshot unavailable; use the scoped Task read and supplied attempt context.";
-    const sections = previewTaskDecisionSections(full);
+    };
+    const detail = saveDetail("decisions", {
+      binding: context.taskBinding,
+      resourceVersion: known?.resourceVersion,
+      ...full,
+    });
+    // Independent assignments change without changing the owner's large input.
+    const createdDetail = saveDetail("created-assignments", { binding: context.taskBinding, createdAssignments });
+    const sections = previewTaskDecisionSections({ ...full, createdAssignments });
     const packet = {
       binding: context.taskBinding,
       observed: {
@@ -256,8 +258,10 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
       },
       ...sections,
       coverage: {
-        detail,
-        detailError,
+        detail: detail.path,
+        detailError: detail.error,
+        createdAssignmentsDetail: createdDetail.path,
+        createdAssignmentsDetailError: createdDetail.error,
         ...(workspace && "taskFile" in workspace
           ? { attemptContext: join(dirname(workspace.taskFile), "context.json") }
           : {}),
@@ -267,7 +271,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
           taskId: context.taskBinding.taskId,
           target: { appId: context.taskBinding.appId },
         },
-        note: "An omitted preview links by JSON pointer into detail. attemptInput is assigned to this attempt; pendingInput is not yet claimed. Either may be bounded, and this is not complete history.",
+        note: "Omitted /createdAssignments previews link by JSON pointer into createdAssignmentsDetail; all other omitted previews link into detail. An unavailable detail requires scoped reads. attemptInput is assigned to this attempt; pendingInput is not yet claimed. Either may be bounded, and this is not complete history.",
       },
     };
     return {

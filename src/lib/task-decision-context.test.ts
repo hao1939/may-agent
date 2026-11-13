@@ -553,7 +553,7 @@ test("the owner brief refreshes creator-owned work independently of empty groupi
       nextCursor: "more-creator-work",
     });
     expect(first.observed.createdAssignmentsReadAt).toBe("observation-1");
-    const detail = JSON.parse(readFileSync(first.coverage.detail, "utf8"));
+    const detail = JSON.parse(readFileSync(first.coverage.createdAssignmentsDetail, "utf8"));
     expect(detail.createdAssignments.items).toEqual(items);
     // A real close removes only the finite contribution from the read. The
     // standing assignment remains visible rather than becoming a completion gate.
@@ -605,19 +605,143 @@ test.each([false, true])(
         expect(current.createdAssignments).toEqual(first.createdAssignments);
       }
       expect(first.observed.createdAssignmentsReadAt).toBe("observation-1");
-      const detail = JSON.parse(readFileSync(first.coverage.detail, "utf8"));
+      const detail = JSON.parse(readFileSync(first.coverage.createdAssignmentsDetail, "utf8"));
       expect(detail.createdAssignments.items).toEqual(items);
       expect(detail.createdAssignments.nextCursor).toBe("more-creator-work");
       expect(detail.createdAssignments.observedAt).toBeUndefined();
-      expect(detail.input.background).toBe(background);
+      expect(JSON.parse(readFileSync(first.coverage.detail, "utf8")).input.background).toBe(background);
       expect(readdirSync(dirname(first.coverage.detail))).toHaveLength(1);
       // A changed assignment remains fresh and receives its own immutable detail.
       items = [{ ...item, resourceVersion: 5, summaryPreview: "A correction remains owed" }];
       const changed = packet(await brief());
-      expect(changed.coverage.detail).not.toBe(first.coverage.detail);
+      expect(changed.coverage.detail).toBe(first.coverage.detail);
+      expect(changed.coverage.createdAssignmentsDetail).not.toBe(first.coverage.createdAssignmentsDetail);
       expect(changed.createdAssignments.items).toEqual(items);
-      expect(readdirSync(dirname(first.coverage.detail))).toHaveLength(2);
+      expect(readdirSync(dirname(first.coverage.detail))).toHaveLength(1);
+      expect(readdirSync(dirname(first.coverage.createdAssignmentsDetail))).toHaveLength(2);
       expect(reads).toBe(6);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
+
+test("frequent creator-page updates do not duplicate large unchanged owner detail", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-created-independent-"));
+  try {
+    const f = fixture(root);
+    const background = "Large retained owner evidence. ".repeat(4_000);
+    f.setCurrent({ ...f.task, input: { background } });
+    let version = 1;
+    f.context.taskRead.created = async () => ({
+      creator: { appId: "sample", taskId: "review" },
+      observedAt: `observation-${version}`,
+      items: [
+        {
+          appId: "another-app",
+          taskId: "contribution",
+          generation: 1,
+          resourceVersion: version,
+          status: "running",
+          outcomePreview: "Complete the delegated assessment",
+        },
+      ],
+    });
+    const brief = createTaskDecisionContext(f.context);
+    const first = packet(await brief());
+    const ownerBytes = readFileSync(first.coverage.detail, "utf8");
+    const createdFiles = new Set([first.coverage.createdAssignmentsDetail]);
+    for (version = 2; version <= 12; version++) {
+      const current = packet(await brief());
+      expect(current.coverage.detail).toBe(first.coverage.detail);
+      expect(current.createdAssignments.items[0].resourceVersion).toBe(version);
+      const created = JSON.parse(readFileSync(current.coverage.createdAssignmentsDetail, "utf8"));
+      expect(created.createdAssignments.items[0].resourceVersion).toBe(version);
+      expect(created.binding).toEqual(f.context.taskBinding);
+      expect(current.coverage.createdAssignmentsDetail).not.toBe(first.coverage.createdAssignmentsDetail);
+      createdFiles.add(current.coverage.createdAssignmentsDetail);
+    }
+    expect(createdFiles.size).toBe(12);
+    expect(readFileSync(first.coverage.detail, "utf8")).toBe(ownerBytes);
+    expect(readdirSync(dirname(first.coverage.detail))).toHaveLength(1);
+    expect(ownerBytes).toContain(background);
+    for (const file of createdFiles) {
+      expect(readFileSync(file, "utf8")).not.toContain(background);
+      expect(readFileSync(file, "utf8").length).toBeLessThan(2_000);
+    }
+    // Independent source changes still produce new immutable owner evidence.
+    f.setCurrent({ ...f.task, input: { background }, resourceVersion: 4, summary: "Owner reviewed evidence" });
+    expect(packet(await brief()).coverage.detail).not.toBe(first.coverage.detail);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test.each(["decisions", "created-assignments"])(
+  "decision sources keep independent errors and resolvable creator previews when %s cannot be saved",
+  async (failedDirectory) => {
+    const root = mkdtempSync(join(tmpdir(), "decision-created-sources-"));
+    try {
+      const f = fixture(root);
+      const background = "Owner source payload. ".repeat(4_000);
+      f.setCurrent({ ...f.task, input: { background } });
+      const items = Array.from({ length: 5 }, (_, index) => ({
+        appId: "another-app",
+        taskId: `contribution-${index}`,
+        generation: 1,
+        resourceVersion: 4,
+        status: "idle" as const,
+        outcomePreview: "🔎".repeat(240),
+        summaryPreview: "✅".repeat(240),
+      }));
+      f.context.taskRead.created = async () => ({
+        creator: { appId: "sample", taskId: "review" },
+        observedAt: "current-page",
+        items,
+        nextCursor: "more-creator-work",
+      });
+      const workspace = f.context.workspaceBrief;
+      if (!workspace || !("taskFile" in workspace)) throw new Error("Expected fixture workspace");
+      writeFileSync(join(dirname(workspace.taskFile), failedDirectory), "not a directory");
+      const current = packet(await createTaskDecisionContext(f.context)());
+      expect(current.createdAssignments.omitted).toBe(true);
+      expect(current.createdAssignments.pointer).toBe("/createdAssignments");
+      expect(Buffer.byteLength(JSON.stringify(current.createdAssignments))).toBeLessThanOrEqual(1_600);
+      expect(current.observed.createdAssignmentsReadAt).toBe("current-page");
+      expect(current.current.summary).toBe(f.task.summary);
+      expect(current.coverage.note).toContain("createdAssignmentsDetail");
+      expect(current.coverage.note).toContain("scoped reads");
+      if (failedDirectory === "decisions") {
+        expect(current.coverage.detail).toBeUndefined();
+        expect(current.coverage.detailError).toBeTruthy();
+        expect(current.coverage.createdAssignmentsDetailError).toBeUndefined();
+        const source = JSON.parse(readFileSync(current.coverage.createdAssignmentsDetail, "utf8"));
+        expect(source.binding).toEqual(f.context.taskBinding);
+        expect(source.createdAssignments.items).toEqual(items);
+        expect(source.createdAssignments.nextCursor).toBe("more-creator-work");
+        const checkPointers = (value: unknown) => {
+          if (!value || typeof value !== "object") return;
+          const node = value as Record<string, unknown>;
+          if (node.omitted) {
+            expect(typeof node.pointer).toBe("string");
+            const keys = (node.pointer as string)
+              .split("/")
+              .slice(1)
+              .map((key) => key.replaceAll("~1", "/").replaceAll("~0", "~"));
+            expect(keys.reduce((target, key) => target[key], source)).not.toBeUndefined();
+          }
+          Object.values(node).forEach(checkPointers);
+        };
+        checkPointers(current.createdAssignments);
+      } else {
+        expect(current.coverage.createdAssignmentsDetail).toBeUndefined();
+        expect(current.coverage.createdAssignmentsDetailError).toBeTruthy();
+        expect(current.coverage.detailError).toBeUndefined();
+        const source = JSON.parse(readFileSync(current.coverage.detail, "utf8"));
+        expect(source.binding).toEqual(f.context.taskBinding);
+        expect(source.input.background).toBe(background);
+        expect(source.createdAssignments).toBeUndefined();
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
