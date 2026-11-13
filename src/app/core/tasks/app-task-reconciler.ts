@@ -3045,6 +3045,7 @@ export function claimObservedAppTask(
     resource.status.observedGeneration >= resource.metadata.generation &&
     !pendingTrigger
   ) {
+    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision);
     return {
       kind: "attention",
       taskId: input.taskId,

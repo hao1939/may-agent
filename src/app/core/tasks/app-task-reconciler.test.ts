@@ -1605,14 +1605,35 @@ describe("App task reconciler state", () => {
     });
     if (attentionClaim.kind !== "claimed") throw new Error("expected attention claim");
     failAppTaskAttempt(config, attentionClaim, "owner must decide", { facts: [], reason: "needs-agent" });
-    // Saved state from a release that supported workflow-to-agent handoff.
+    // Saved state from a release that supported workflow-to-agent handoff, with
+    // ready/changed/overdue next_check_at hints still set on the indexed row.
     mutateTaskResourceFixture(config, attentionIntent.id, (resource) => {
       resource.status.phase = "attention";
+      resource.status.observedGeneration = resource.metadata.generation;
       resource.status.executionRetryAt = undefined;
     });
     config.resourceStore.db
-      .prepare("UPDATE app_tasks SET ready = 0, changed = 0 WHERE app_id = ? AND task_id = ?")
-      .run(config.resourceStore.appId, attentionIntent.id);
+      .prepare("UPDATE app_tasks SET trigger_json = NULL, ready = 1, changed = 1, next_check_at = ? WHERE app_id = ? AND task_id = ?")
+      .run(Date.now() - 1_000, config.resourceStore.appId, attentionIntent.id);
+    const attemptsBefore = Object.keys(readTaskSnapshot(config).attempts ?? {}).length;
+    expect(
+      claimObservedAppTask(config, {
+        taskId: attentionIntent.id,
+        appAgent: "app-owner",
+        handler: "workflow:known-workflow",
+        reason: "task-controller",
+      }),
+    ).toMatchObject({
+      kind: "attention",
+      taskId: attentionIntent.id,
+      generation: 1,
+    });
+    expect(Object.keys(readTaskSnapshot(config).attempts ?? {})).toHaveLength(attemptsBefore);
+    expect(
+      config.resourceStore.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get(config.resourceStore.appId, attentionIntent.id),
+    ).toEqual({ ready: 0, changed: 0, next_check_at: null });
 
     observeAppTaskIntent(config, { intent: unavailableIntent, appAgent: "app-owner" });
     const unavailableClaim = claimObservedAppTask(config, {
