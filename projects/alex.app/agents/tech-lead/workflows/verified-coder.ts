@@ -7,16 +7,9 @@
  * after each attempt. The workflow only succeeds when the verification
  * command returns exit code 0.
  *
- * Input contracts (task string):
- *   1. Reconciliation input: a fenced JSON object under the exact
- *      `## Reconciliation Task` heading. Its `outcome` string MUST contain a
- *      physical `verifyCommand:` line after JSON decoding and MAY contain a
- *      `maxAttempts:` line. The coder receives only the sanitized reconciliation
- *      object; wrapper/trigger text outside that fence is never task metadata.
- *   2. Legacy raw input: a physical top-level `verifyCommand:` line and optional
- *      `maxAttempts:` line. Everything else is the coding task.
- *
- * Max attempts defaults to 3.
+ * Input: { task, verifyCommand, maxAttempts?, agent? }.
+ * The shared invocation kernel validates inputSchema before execution.
+ * Max attempts defaults to 3; the implementation agent defaults to tech-lead.
  */
 
 import { execSync } from "node:child_process";
@@ -26,22 +19,17 @@ export const name: string = "verified-coder";
 
 export const description: string =
   "Implementation + shell verification loop (up to maxAttempts, default 3). " +
-  "Accepts { task, verifyCommand, maxAttempts?, agent? } or legacy task string with 'verifyCommand: <cmd>'.";
+  "Input: { task, verifyCommand, maxAttempts?, agent? }.";
 
-export const structuredVerifiedCoderInputSchema = Type.Object(
+export const inputSchema = Type.Object(
   {
-    task: Type.String({ minLength: 1 }),
-    verifyCommand: Type.String({ minLength: 1 }),
+    task: Type.String({ minLength: 1, pattern: "\\S" }),
+    verifyCommand: Type.String({ minLength: 1, pattern: "\\S" }),
     maxAttempts: Type.Optional(Type.Integer({ minimum: 1, maximum: 5 })),
     agent: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 );
-
-export const inputSchema = Type.Union([
-  Type.String({ minLength: 1 }),
-  structuredVerifiedCoderInputSchema,
-]);
 
 export const outputSchema = Type.Object(
   {
@@ -53,114 +41,7 @@ export const outputSchema = Type.Object(
   { additionalProperties: false },
 );
 
-// ── Input parsing ──────────────────────────────────────────────────────
-
-export interface ParsedInput {
-  task: string;
-  verifyCommand: string;
-  maxAttempts: number;
-  agent: string;
-}
-
 type VerifiedCoderInput = Static<typeof inputSchema>;
-
-interface ReconciliationEnvelope {
-  outcome: string;
-  [key: string]: unknown;
-}
-
-function parseTaskAndMetadata(taskWithMetadata: string): ParsedInput {
-  const verifyMatch = taskWithMetadata.match(/^verifyCommand:\s*(.*)$/m);
-  const verifyCommand = verifyMatch?.[1].trim() ?? "";
-  if (!verifyCommand) {
-    throw new Error(
-      "Task must include a non-empty 'verifyCommand: <command>' line. " +
-        "This is the shell command that must exit 0 for the task to pass.",
-    );
-  }
-
-  const attemptsMatch = taskWithMetadata.match(/^maxAttempts:\s*([1-9]\d*)$/m);
-  const maxAttempts = attemptsMatch ? parseInt(attemptsMatch[1], 10) : 3;
-  const task = taskWithMetadata
-    .replace(/^verifyCommand:\s*.*$/m, "")
-    .replace(/^maxAttempts:\s*[1-9]\d*$/m, "")
-    .trim();
-
-  if (!task) {
-    throw new Error(
-      "No coding task found in the input (only found verification metadata).",
-    );
-  }
-
-  return { task, verifyCommand, maxAttempts, agent: "tech-lead" };
-}
-
-export function parseInput(raw: string): ParsedInput {
-  const reconciliationHeading = /^## Reconciliation Task\s*$/m;
-  if (!reconciliationHeading.test(raw)) {
-    return parseTaskAndMetadata(raw);
-  }
-
-  const envelopeMatch = raw.match(
-    /^## Reconciliation Task\s*\r?\n```json\s*\r?\n([\s\S]*?)\r?\n```\s*$/m,
-  );
-  if (!envelopeMatch) {
-    throw new Error("Malformed structured '## Reconciliation Task' envelope.");
-  }
-
-  let envelope: ReconciliationEnvelope;
-  try {
-    envelope = JSON.parse(envelopeMatch[1]) as ReconciliationEnvelope;
-  } catch {
-    throw new Error("Reconciliation Task envelope must contain valid JSON.");
-  }
-  if (
-    !envelope ||
-    typeof envelope !== "object" ||
-    typeof envelope.outcome !== "string"
-  ) {
-    throw new Error(
-      "Reconciliation Task envelope must contain a string 'outcome'.",
-    );
-  }
-
-  // JSON decoding turns escaped newlines in outcome into physical metadata lines.
-  // Only that field is inspected, so trigger/wrapper text can never become a command.
-  const parsedOutcome = parseTaskAndMetadata(envelope.outcome);
-  const sanitizedEnvelope = { ...envelope, outcome: parsedOutcome.task };
-
-  return {
-    task:
-      "## Reconciliation Task\n```json\n" +
-      JSON.stringify(sanitizedEnvelope, null, 2) +
-      "\n```",
-    verifyCommand: parsedOutcome.verifyCommand,
-    maxAttempts: parsedOutcome.maxAttempts,
-    agent: "tech-lead",
-  };
-}
-
-function parseWorkflowInput(input: unknown): ParsedInput {
-  if (typeof input === "string") return parseInput(input);
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw new Error(
-      "verified-coder input must be a string or structured object",
-    );
-  }
-  const record = input as Partial<Exclude<VerifiedCoderInput, string>>;
-  const task = record.task?.trim() ?? "";
-  const verifyCommand = record.verifyCommand?.trim() ?? "";
-  const maxAttempts = record.maxAttempts ?? 3;
-  const agent = record.agent?.trim() || "tech-lead";
-  if (!task) throw new Error("verified-coder input requires a non-empty task");
-  if (!verifyCommand) {
-    throw new Error("verified-coder input requires a non-empty verifyCommand");
-  }
-  if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
-    throw new Error("verified-coder maxAttempts must be a positive integer");
-  }
-  return { task, verifyCommand, maxAttempts, agent };
-}
 
 // ── Verification runner ────────────────────────────────────────────────
 
@@ -201,16 +82,10 @@ export async function execute(
   ctx: WorkflowContext<VerifiedCoderInput>,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
-  let parsed: ParsedInput;
-  try {
-    parsed = parseWorkflowInput(ctx.input);
-  } catch (err: any) {
-    return ctx.blocked("Failed to parse verified-coder input", {
-      error: err.message,
-    });
-  }
-
-  const { task, verifyCommand, maxAttempts, agent } = parsed;
+  const task = ctx.input.task.trim();
+  const verifyCommand = ctx.input.verifyCommand.trim();
+  const maxAttempts = ctx.input.maxAttempts ?? 3;
+  const agent = ctx.input.agent?.trim() || "tech-lead";
 
   const workspaceRoot = ctx.workspace?.root;
   if (!workspaceRoot) {

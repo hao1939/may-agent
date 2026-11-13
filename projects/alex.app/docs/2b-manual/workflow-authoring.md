@@ -57,6 +57,15 @@ Procedure input types belong to that module. Export `inputSchema` (and optional
 `execute(ctx)`; a TypeScript generic alone does not validate runtime data.
 Adding a recipe does not require a new public App input variant.
 
+For example, Alex's `verified-coder` recipe accepts
+`{ task, verifyCommand, maxAttempts?, agent? }`. Its SDK input schema validates
+the object before any agent call or command. `maxAttempts` defaults to three
+and is bounded to one through five; `agent` defaults to `tech-lead`. Task text
+remains assignment text, while the named fields select the command and attempt
+limit. Callers using the retired metadata strings or fenced reconciliation
+envelopes must supply this object. The Gym repair-loop scenario uses the same
+contract.
+
 Workflows are bounded and ordered. They may use `await`, but every awaited
 agent, nested workflow, read, metric write, or fact publication must finish in
 the current run.
