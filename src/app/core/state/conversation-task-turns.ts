@@ -142,30 +142,6 @@ export function admitConversationTaskInput(
         taskId: replay.item.executionTaskId ?? conversationTaskId(input.appId, input.conversationId),
       };
     }
-    // An expired legacy lease is not proof that its executor stopped. Cut over
-    // only a drained Conversation; do not layer a Task over old execution.
-    if (
-      db
-        .prepare(
-          `SELECT 1 FROM app_inbox_items legacy WHERE legacy.app_id = ? AND legacy.conversation_id = ?
-      AND legacy.execution_task_id IS NULL AND legacy.status != 'done'
-      AND COALESCE(legacy.task_admission_key, '') != 'conversation-input:' || legacy.id
-      AND NOT EXISTS (
-        SELECT 1 FROM app_task_admissions admission
-        JOIN app_tasks task ON task.app_id = admission.app_id
-          AND task.task_id = json_extract(admission.admission_json, '$.taskId')
-        WHERE admission.app_id = legacy.app_id
-          AND admission.task_id = legacy.task_admission_key
-          AND legacy.waiting_on_kind = 'task'
-          AND legacy.waiting_on_id = task.task_id
-      )
-      ${input.conversationInputKinds ? `AND legacy.input_kind IN (${input.conversationInputKinds.map(() => "?").join(",")})` : ""}
-      LIMIT 1`,
-        )
-        .get(input.appId, input.conversationId, ...(input.conversationInputKinds ?? []))
-    ) {
-      throw new Error("Conversation still has unhandled legacy input; drain before cutover");
-    }
     if (input.source.kind === "human" && input.conversationSequence === undefined) {
       const latest = db
         .prepare(

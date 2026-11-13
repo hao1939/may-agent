@@ -332,21 +332,6 @@ test.each([false, true])("mixed-batch Stop retains ordinary input and its return
   expect(getAppInboxItem(f.db, newer.item.id)?.status).not.toBe("done");
 });
 
-test("cutover refuses unhandled legacy input even with an expired lease", () => {
-  const f = fixture();
-  createAppInboxItem(f.db, f.input("old", 1));
-  expect(claimAppInboxItem(f.db, "old", "legacy", 1, Date.now())).not.toBeNull();
-  f.db.run("UPDATE app_inbox_items SET lease_expires_at = 1 WHERE id = 'old'");
-  expect(() =>
-    admitConversationTaskInput(f.context(), {
-      ...f.input("new", 2),
-      conversationInputKinds: ["message"],
-    }),
-  ).toThrow("drain before cutover");
-  expect(getAppInboxItem(f.db, "new")).toBeNull();
-  expect(f.db.prepare("SELECT COUNT(*) AS count FROM app_tasks").get()).toEqual({ count: 0 });
-});
-
 test("cutover ignores an ordinary focused input already admitted to an existing Task", () => {
   const f = fixture();
   observeAppTaskIntent(f.context(), {

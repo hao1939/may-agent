@@ -65,22 +65,6 @@ function fixture(maxConsecutiveFailures?: number | "unlimited") {
   };
 }
 
-function retainLegacyFailureCounter(f: ReturnType<typeof fixture>, count: number) {
-  f.config.resourceStore.db.prepare(`UPDATE app_tasks SET resource_json = json_set(
-    json_remove(resource_json, '$.status.executionFailureAttemptId', '$.status.admissionFailures'),
-    '$.status.executionFailures', ?) WHERE app_id = 'sample' AND task_id = 'work'`).run(count);
-  f.reopen();
-}
-
-function rejectAdmission(f: ReturnType<typeof fixture>, times: number) {
-  for (let index = 0; index < times; index++) {
-    expect(claimObservedAppTask(f.config, {
-      taskId: "work", appAgent: "owner", handler: "agent", isAgentRunnable: () => false,
-    })).toMatchObject({ kind: "attention", summary: "Resolved agent owner is not a runnable agent" });
-    setSystemTime(f.config.resourceStore.readTask("work")!.status.executionRetryAt!);
-  }
-}
-
 function runWithoutExecution(f: ReturnType<typeof fixture>) {
   const root = f.config.appDir;
   return runTaskAttempt({
@@ -95,7 +79,7 @@ function runWithoutExecution(f: ReturnType<typeof fixture>) {
   });
 }
 
-it.each([false, true])("exhausts the current caller after success and clock rollback (legacy=%s)", (legacy) => {
+it("exhausts the current caller after success and clock rollback", () => {
   setSystemTime(new Date("2026-10-15T00:00:00Z"));
   const f = fixture("unlimited");
   const old = f.claim();
@@ -113,8 +97,7 @@ it.each([false, true])("exhausts the current caller after success and clock roll
     failAppTaskAttempt(f.config, last, "Current failure");
     setSystemTime(f.config.resourceStore.nextDueAt()!);
   }
-  if (legacy) retainLegacyFailureCounter(f, 3);
-  else f.reopen();
+  f.reopen();
   f.config.maxConsecutiveFailures = 2;
   expect(() => f.claim()).toThrow("attention");
   expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({
@@ -126,59 +109,6 @@ it.each([false, true])("exhausts the current caller after success and clock roll
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:new", "failure")!.summary).toContain("Automatic retries exhausted");
   expect(readAppTaskAdmissionOutcome(f.config, "work", "ask:measure")?.attemptId).toBe(success.attemptId);
   expect(f.config.resourceStore.readAttempt(old.attemptId)?.retryExhausted).toBeUndefined();
-});
-
-it.each([false, true])("does not charge legacy admission checks as failed attempts (older successful episode=%s)", (oldEpisode) => {
-  const f = fixture();
-  if (oldEpisode) {
-    failAppTaskAttempt(f.config, f.claim(), "Old failure");
-    setSystemTime(f.config.resourceStore.nextDueAt()!);
-    deferAppTask(f.config, f.claim(), { disposition: "waiting", continue: true, summary: "Useful progress accepted", facts: [] });
-  }
-  rejectAdmission(f, 3);
-  retainLegacyFailureCounter(f, 3);
-  const first = f.claim();
-  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBeUndefined();
-  expect(failAppTaskAttempt(f.config, first, "First real failure").status).toBe("retrying");
-  expect(f.config.resourceStore.readTask("work")!.status).toMatchObject({
-    executionFailures: 1, executionFailureAttemptId: first.attemptId,
-  });
-  for (let failures = 2; failures <= 3; failures++) {
-    setSystemTime(f.config.resourceStore.nextDueAt()!);
-    expect(failAppTaskAttempt(f.config, f.claim(), "Still failing").status).toBe(failures === 3 ? "exhausted" : "retrying");
-  }
-});
-
-it("preserves real legacy failures while subtracting admission checks", () => {
-  const f = fixture("unlimited");
-  for (let index = 0; index < 2; index++) {
-    failAppTaskAttempt(f.config, f.claim(), "Real failure");
-    setSystemTime(f.config.resourceStore.nextDueAt()!);
-  }
-  rejectAdmission(f, 3);
-  retainLegacyFailureCounter(f, 5);
-  f.config.maxConsecutiveFailures = undefined;
-  const third = f.claim();
-  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(2);
-  expect(failAppTaskAttempt(f.config, third, "Third real failure").status).toBe("exhausted");
-  expect(f.config.resourceStore.readTask("work")!.status.retryExhausted?.failures).toBe(3);
-});
-
-it.each([false, true])("preserves a legacy explicit reset (later admission checks=%s)", (admissionChecks) => {
-  const f = fixture("unlimited");
-  for (let index = 0; index < 3; index++) {
-    failAppTaskAttempt(f.config, f.claim(), "Real failure");
-    setSystemTime(f.config.resourceStore.nextDueAt()!);
-  }
-  const task = f.config.resourceStore.readTask("work")!;
-  retryFailedAppTask(f.config, { appId: "sample", taskId: "work", expectedGeneration: task.metadata.generation,
-    expectedResourceVersion: task.metadata.resourceVersion, ...(admissionChecks ? { controlKey: "reviewed-reset" } : {}) });
-  if (admissionChecks) rejectAdmission(f, 3);
-  retainLegacyFailureCounter(f, admissionChecks ? 3 : 0);
-  f.config.maxConsecutiveFailures = undefined;
-  const first = f.claim();
-  expect(failAppTaskAttempt(f.config, first, "First failure after reset").status).toBe("retrying");
-  expect(f.config.resourceStore.readTask("work")!.status.executionFailures).toBe(1);
 });
 
 it("reads legacy progress independently and retains it when the first failure is selected", () => {

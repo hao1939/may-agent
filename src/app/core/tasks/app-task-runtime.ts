@@ -32,7 +32,6 @@ import { readInstalledAppContract } from "../reads/app-contract.js";
 import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { runtimeWorkloadSource } from "../reads/task-workload.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
-import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   admitConversationTaskChange,
@@ -62,9 +61,7 @@ import {
   releaseInterruptedAppTaskAttempt,
   releaseLateTerminalWorkflowAppTaskAttempt,
   reopenAppTask,
-  repairPreviousRuntimeRecoveryAttention,
   repairRunningAppTasksWithoutAttempt,
-  repairUnadmittedAppDependencyWaits,
   retryFailedAppTask,
   type AppTaskAttemptRecovery,
 } from "./app-task-reconciler.js";
@@ -1205,8 +1202,6 @@ function recoverInterruptedAppTasks(
     }
     settleTerminalAppTaskSessions(opts, descriptor);
     const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
-    const attentionRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
-    const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
       const recoveryBinding = {
         appId: descriptor.id,
@@ -1262,40 +1257,6 @@ function recoverInterruptedAppTasks(
     for (const repair of missingAttemptRepairs) {
       if (controller && !descriptor.reconciliationPaused) {
         enqueueAppTask(controller, config, repair.taskId);
-      }
-    }
-    const appDb = opts.persistDir ? getDb(opts.persistDir) : undefined;
-    const dependencyRepairs = appDb
-      ? repairUnadmittedAppDependencyWaits(
-          config,
-          (requestId) => Boolean(getAppInboxItem(appDb, requestId)),
-          waitingRecoveryTaskIds,
-        )
-      : [];
-    for (const repair of dependencyRepairs) {
-      if (controller && !descriptor.reconciliationPaused) {
-        enqueueAppTask(controller, config, repair.taskId);
-      }
-    }
-    const repairs = repairPreviousRuntimeRecoveryAttention(config, attentionRecoveryTaskIds);
-    if (repairs.length > 0) {
-      opts.bus.emit({
-        type: "project.task.recovery.repaired",
-        source: `app-task:${descriptor.id}:task-recovery`,
-        owner: `agent:${descriptor.agent}`,
-        target: { project: descriptor.id },
-        data: {
-          project: descriptor.id,
-          repaired: repairs.length,
-          requeued: repairs.filter((repair) => repair.disposition === "requeued").length,
-          retired: repairs.filter((repair) => repair.disposition === "retired").length,
-          taskIds: repairs.slice(0, 50).map((repair) => repair.taskId),
-        },
-      } as unknown as AgentEvent);
-      for (const repair of repairs) {
-        if (repair.disposition === "requeued" && controller && !descriptor.reconciliationPaused) {
-          enqueueAppTask(controller, config, repair.taskId);
-        }
       }
     }
     for (const taskId of recoverTaskConditions(opts, descriptor, config)) {
