@@ -71,6 +71,12 @@ and deadline. There is no separate verification timer. The retired
 `verifyCommand` shell string is rejected; move compound checks into a script or
 explicitly select a shell executable when required.
 
+`develop-change` accepts only `{ verify: [executable, ...arguments] }` through
+its exported schema. Outcome, acceptance and constraints come from its owning
+Task. Pass procedure options when invoking it; public goal input and historical
+Task envelopes are not alternative recipe inputs. Retained Task input cannot
+replace the supplied verification command.
+
 Workflows are bounded and ordered. They may use `await`, but every awaited
 agent, nested workflow, read, metric write, or fact publication must finish in
 the current run.

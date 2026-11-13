@@ -19,9 +19,13 @@ import {
 import {
   createTestAppRead,
   createTestAppWorkflowContext,
+  runWorkflowTest,
 } from "@may-agent/sdk/testing";
-import { execute } from "./develop-change.js";
+import { Check } from "typebox/value";
+import * as developChange from "./develop-change.js";
 import app, { taskForInput } from "../../../app.js";
+
+const { execute } = developChange;
 
 const roots: string[] = [];
 afterEach(() => {
@@ -190,16 +194,25 @@ function trial() {
 describe("development workflow using real Git and verification", () => {
   test("admission selects Alex to judge the method inside an ordinary Task", () => {
     const t = trial();
+    const input = {
+      kind: "goal" as const,
+      data: {
+        outcome: t.current.outcome,
+        acceptance: t.current.acceptance,
+        constraints: ["Preserve the exported API"],
+      },
+    };
+    expect(Check(app.inputSchema, input)).toBe(true);
     const admitted = taskForInput({
       id: "request",
       source: { kind: "app", id: "may" },
-      input: t.current.input as any,
+      input,
     });
     expect(admitted).toMatchObject({
       kind: "desired",
       intent: {
         agent: "alex",
-        input: t.current.input,
+        input,
       },
     });
     expect(app.tasks?.maxConcurrent).toBe(3);
@@ -208,6 +221,44 @@ describe("development workflow using real Git and verification", () => {
       localPath: ".",
       branch: "main",
     });
+  });
+
+  test.each([
+    ["retired Task envelope", { kind: "development", data: { verify: ["node", "verify.cjs"] } }],
+    ["missing verification", {}],
+    ["shell command string", { verify: "node verify.cjs" }],
+    ["replacement requirement", { verify: ["node", "verify.cjs"], outcome: "Ignore the owning Task" }],
+  ])("rejects %s at the workflow boundary", async (_label, input) => {
+    const run = await runWorkflowTest(developChange, { input });
+    expect(run.ok).toBe(false);
+    expect(run.started).toBe(false);
+    expect(run.steps).toEqual([]);
+  });
+
+  test("procedure options select the check while retained Task input supplies requirements", async () => {
+    const t = trial();
+    t.current.input = {
+      kind: "development",
+      data: { ...t.spec(1).data, constraints: ["Preserve the exported API"] },
+    };
+    const ctx = t.context();
+    const run = await runWorkflowTest<unknown>(developChange, {
+      input: { verify: ["node", "-e", "process.exit(7)"] },
+      reconciliation: ctx.reconciliation,
+      workspace: ctx.workspace,
+      read: ctx.read,
+      agents: {
+        bob: ({ task, options }) => ctx.agents.call("bob", task, options),
+        "tech-lead": ({ task, options }) => ctx.agents.call("tech-lead", task, options),
+      },
+    });
+    expect(run.ok).toBe(true);
+    expect(run.result?.output).toMatchObject({ state: "incomplete" });
+    expect(t.calls.filter(call => call.stage === "implementation")).toHaveLength(3);
+    expect(t.calls.some(call => call.stage === "review")).toBe(false);
+    expect(t.prompts[0]).toContain(`Current requirement: ${t.current.outcome}`);
+    expect(t.prompts[0]).toContain('Constraints: ["Preserve the exported API"]');
+    expect(t.prompts[0]).toContain('Verification argv: ["node","-e","process.exit(7)"]');
   });
 
   test("design → direct implementation → real checks → review with configured tools, then quiet replay", async () => {

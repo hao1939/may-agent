@@ -8,7 +8,6 @@ import {
 } from "@may-agent/sdk";
 import { Check } from "typebox/value";
 import { commandReceipt } from "../../../command.js";
-import { readDevelopmentOptions } from "./lib/input.js";
 import {
   candidate,
   command,
@@ -28,6 +27,17 @@ export const name = "develop-change";
 export const description =
   "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires an ordinary Task worktree. Input: { verify: [executable, ...arguments] }. Outcome and acceptance come from the owning Task. Returns evidence for Alex to judge; does not merge or deploy.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
+
+// Private procedure options; the owning Task supplies requirements.
+export const inputSchema = Type.Object(
+  {
+    verify: Type.Array(Type.String({ minLength: 1 }), {
+      minItems: 1,
+      maxItems: 32,
+    }),
+  },
+  { additionalProperties: false },
+);
 
 // Explanations are archived; code bounds the aggregate Task result.
 const text = Type.String({ minLength: 1 });
@@ -209,17 +219,8 @@ export async function execute(ctx: WorkflowContext) {
         "Task changed before this attempt; reconcile the current requirement",
       );
     }
-    // Retained Tasks may still carry the retired development envelope. New
-    // callers supply only procedure options; the Task remains the requirement.
-    const legacy = current.input as {
-      kind?: string;
-      data?: { verify?: unknown; constraints?: string[] };
-    };
-    const input = readDevelopmentOptions(
-      legacy?.kind === "development"
-        ? { verify: legacy.data?.verify }
-        : ctx.input,
-    );
+    // The invocation kernel validates the procedure's one input contract.
+    const input = ctx.input as Static<typeof inputSchema>;
     const constraints =
       (current.input as { data?: { constraints?: string[] } })?.data
         ?.constraints ?? [];

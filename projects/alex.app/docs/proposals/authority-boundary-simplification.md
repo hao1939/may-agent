@@ -92,6 +92,14 @@ removed; compound checks use a script or an explicit shell executable. See
 The [typed workflow input](../2b-manual/workflow-authoring.md) remains the
 validation boundary. No live activation is established.
 
+`develop-change` also now validates only its procedure options at that boundary,
+retiring its private parser and fallback to a check inside old Task input.
+This removes a competing source of verification settings: the supplied command
+can no longer be silently replaced by retained metadata. Requirements and
+constraints remain Task-owned. The [input contract and local observation](../development-workflow.md#one-development-procedure-input)
+record the explicit old-binding upgrade cost and the read-only local check;
+other installations and live activation remain unassessed.
+
 Repeated Task/event context and repository descriptions were inspected but
 left unchanged: no safe reduction was established that preserves current
 requirements and usable evidence. Further context trimming needs a concrete
@@ -635,9 +643,11 @@ formats, input/result schemas, recovery behavior. Feature retirement has its own
 
 ## Recommended next milestone
 
-1. The reusable development procedure's separate command timer is removed and
-   checked in Apps source `0862215c6d`. Preserve the declared steps and delivery
-   contract; reconsider repeated context only with evidence of a safe reduction.
+1. The reusable development procedures now share a command runner and use one
+   procedure input each, without separate command timers. Preserve the declared
+   steps and delivery contract; reconsider repeated context only with evidence
+   of a safe reduction. The [current-work review](#priority-from-current-delivery-work)
+   records the completed corrections and checks.
 2. The [MLVM reporting review](#reporting-follow-up-one-owner-for-execution-and-waits)
    has a prepared App guidance patch. Rebase it after the owning source
    consolidation; verify the operational wait correction separately. Keep the
@@ -713,7 +723,7 @@ Task algorithm rewrites and the remaining feature reductions require separate de
 | Work | Boundary and next proof |
 | --- | --- |
 | Review retained compatibility | Check current consumers and supported upgrade requirements before selecting another removal. September inventories are historical; their completed aliases, context metadata and diagnostics must not be reopened. |
-| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) records the completed App command-timer correction and its tests. Context stays unchanged pending a safe reduction. The [MLVM review](#reporting-follow-up-one-owner-for-execution-and-waits) has a prepared four-file guidance patch, pending the owning App's source consolidation and adoption. The observed operational wait gap is not repaired by this audit. No live activation or overall cost saving is established. |
+| Simplify current delivery procedures | The [current-work review](#priority-from-current-delivery-work) records the completed command-timer removal, shared command runner and single procedure input, with their checks. Context stays unchanged pending a safe reduction. The [MLVM review](#reporting-follow-up-one-owner-for-execution-and-waits) has a prepared four-file guidance patch, pending the owning App's source consolidation and adoption. The observed operational wait gap is not repaired by this audit. No live activation or overall cost saving is established. |
 | Further HTTP organization | Directory moves #141/#142 are merged. Extract a retained route family only when its responsibility is clearer; #173's feature removal does not claim the server has been split. |
 | Measure the context cleanup's behavioral effect | Compare baseline and candidate on the same small conversation cases. Existing scripted regressions establish supplied context and mechanics, not improved model judgment. |
 | Separate accounting simplification | #482 is open and owned by its existing workstream. Review its outcome there; it is neither completed nor a second task for this proposal. |

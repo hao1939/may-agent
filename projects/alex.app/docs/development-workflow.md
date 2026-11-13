@@ -107,9 +107,14 @@ the ordinary goal contract; she does not call its private specialists.
 Public inputs are ordinary `message` and `goal`. Workflow selection adds no
 public schema or router branch. `develop-change` takes private procedure options
 `{ verify: [executable, ...arguments] }`; outcome, acceptance and constraints
-come from the owning Task. The retired development envelope is read only for
-retained Task recovery; new development inputs are rejected. Historical
-tech-lead workflow bindings must finish or be retired before activation.
+come from the owning Task. Its exported `inputSchema` validates those options
+through the invocation kernel before execution. Public goals do not accept a
+`verify` field; the agent selects and supplies procedure options when calling
+the workflow. A retained Task input never overrides that selected check.
+The retired `development` envelope is no longer a workflow input or fallback.
+Historical direct workflow bindings must finish under their old source, or be
+explicitly converted or retired before activation. Existing Task records and
+evidence are not rewritten by this source change.
 
 Alex reads the workflow result and proposes the owning Task result, retaining
 `result.development` evidence references. Host acceptance still owns settlement.
@@ -346,8 +351,7 @@ failures remain visible and leave the wait intact.
       "Whole-number hours convert to minutes",
       "Malformed values are rejected"
     ],
-    "constraints": ["No added dependency"],
-    "verify": ["node", "verify.cjs"]
+    "constraints": ["No added dependency"]
   }
 }
 ```
@@ -463,6 +467,30 @@ A separate actual-workflow probe used a Node check that prints success after
 The focused suite passed 49 tests across the two procedures and Gym adapter.
 These source checks establish neither live activation nor full process-tree
 cleanup for arbitrary verification tools. No model calls or deployment ran.
+
+### One development procedure input
+
+`develop-change` uses its exported schema as the only input validation point.
+The private parser and retired Task-envelope fallback are removed. A regression
+demonstrates why the latter matters: with a failing check supplied in the current
+procedure options and a different passing check in retained Task input, the old
+workflow returned convergence. The workflow now runs the selected failing check,
+retains the failure and returns incomplete without review. Requirements and
+constraints still come from the Task, and the existing candidate/evidence reuse
+checks remain.
+
+A read-only local control-socket observation at `2026-11-13T12:24:14.980Z`
+listed all 66 open Alex Tasks (`pending`, `running`, `waiting`, `attention`,
+`idle`) and read each exact Task without failures. None used input kind
+`development` or a direct `develop-change` binding. This is a bounded,
+non-atomic local observation, not a census of other installations or closed
+history. No Task was edited. Other installations must check their retained
+bindings before adopting the retired-input boundary above.
+
+All five new boundary/regression cases failed against pre-change Apps
+`a560069ca8`. After the cleanup, 57 focused tests across development,
+`verified-coder`, Gym and evidence retention pass. Strict type-checking and the
+design checks pass as well. These are source checks, not live activation.
 
 The historical `may.app/poc/run.ts --live` harness predates the move and is not
 a current Alex activation check. It was a temporary opt-in branch harness. Set `MAY_HOST_SOURCE`
