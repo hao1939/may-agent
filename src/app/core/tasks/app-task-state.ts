@@ -1,5 +1,5 @@
+import type { ProcessInstance } from "../../../lib/process-identity.js";
 import type { PendingTaskSettlement } from "./result.js";
-import type { TaskFundingConstraint } from "../state/task-budget-admission.js";
 import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
 
@@ -93,8 +93,6 @@ export type AppTaskResource = {
     /** Cheap pre-claim checks have their own backoff and do not spend an attempt. */
     admissionFailures?: number;
     /** Resource admission facts; this is neither failure nor a new lifecycle phase. */
-    funding?: TaskFundingConstraint;
-    executionConstraint?: import("../state/task-execution-admission.js").TaskExecutionConstraint;
     workspaceConstraint?: import("./workspace.js").TaskWorkspaceConstraint;
     /** Stops automatic execution, independently of unfinished input and Conditions. */
     retryExhausted?: AppTaskRetryExhaustion;
@@ -152,6 +150,8 @@ export type AppTaskAttemptLease = {
   lastActivityAt: string;
   expiresAt: string;
   runtimeId: string;
+  /** Exact OS process instance owning this attempt; cross-process recovery cannot preempt a live owner. */
+  ownerProcess?: ProcessInstance;
   /** Present after the attempt starts its first child Agent session. */
   sessionId?: string;
 };
@@ -161,6 +161,8 @@ export type AppTaskAttempt = {
     id: string;
     resourceVersion: number;
   };
+  /** The executor exited; only these exact effects await settlement. */
+  pendingSettlement?: PendingTaskSettlement;
   taskId: string;
   taskGeneration: number;
   specHash: string;
@@ -204,11 +206,11 @@ export type AppTaskAttempt = {
   failureReason?: string;
   /** Immutable evidence of reaching the App's automatic execution limit. */
   retryExhausted?: AppTaskRetryExhaustion;
-  /** The executor exited; only these exact effects await resource admission. */
-  pendingSettlement?: PendingTaskSettlement;
   /** Retained separately from acceptance so recovery can reuse execution evidence. */
   unacceptedResult?: NonNullable<TaskAttempt["previousAttempt"]>["unacceptedResult"];
   sessionId?: string;
+  /** Every session launched under this attempt (primary + helpers) for crash cleanup. */
+  sessionIds?: string[];
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
   /** Offline import preserves an old worker self-stop as facts, not closure. */
@@ -249,17 +251,6 @@ export type AppTaskTrigger = {
   observedAt: string;
 };
 
-export function pendingTaskFunding(resource: AppTaskResource, now = Date.now()): TaskFundingConstraint | undefined {
-  const funding = resource.status.funding;
-  return funding && (funding.retryAt === null || funding.retryAt > now) ? funding : undefined;
-}
-
-export function pendingTaskExecutionConstraint(resource: AppTaskResource, now = Date.now()) {
-  const constraint = resource.status.executionConstraint;
-  return constraint && (constraint.generation === undefined || constraint.generation === resource.metadata.generation)
-    && constraint.retryAt > now ? constraint : undefined;
-}
-
 export function pendingTaskWorkspaceConstraint(resource: AppTaskResource) {
   const constraint = resource.status.workspaceConstraint;
   return constraint?.generation === resource.metadata.generation ? constraint : undefined;
@@ -274,4 +265,9 @@ export function taskEventPredatesReopening(
 ): boolean {
   const fence = resource?.metadata.reopenedAfterEventId;
   return fence !== undefined && typeof event?.eventId === "number" && event.eventId <= fence;
+}
+
+export function attemptSessionIds(attempt: Pick<AppTaskAttempt, "sessionId" | "sessionIds"> | null | undefined): string[] {
+  if (!attempt) return [];
+  return [...new Set([...(attempt.sessionIds ?? []), ...(attempt.sessionId ? [attempt.sessionId] : [])])];
 }

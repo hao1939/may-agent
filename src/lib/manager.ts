@@ -1,11 +1,7 @@
+import { isDeepStrictEqual } from "node:util";
 import { type TSchema } from "typebox";
-import {
-  admitManagedTaskStart,
-  assertManagedTaskContinuation,
-  type ManagedTaskStartAdmission,
-  type TaskPrimaryStart,
-} from "../app/core/state/task-budget-managed-start.js";
-import { releaseTaskExecutionReservation } from "../app/core/state/task-execution-admission.js";
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { resolvedExecutionRecipient } from "./execution-recipient.js";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
@@ -121,8 +117,6 @@ export interface RunOptions {
   /** Current fenced App Task attempt exposed only to scoped Task tools. */
   taskBinding?: TaskBinding;
   taskContext?: TaskExecutionContext;
-  /** Opaque Host adapter capability; never persisted or inherited by helpers. */
-  taskPrimaryStart?: TaskPrimaryStart;
   contextPrompt?: string;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
@@ -158,7 +152,6 @@ export type CallAgentOptions = Pick<
   | "projectId"
   | "taskBinding"
   | "taskContext"
-  | "taskPrimaryStart"
   | "contextPrompt"
   | "recoveryOwner"
   | "stepLabel"
@@ -180,7 +173,6 @@ export type CallAgentOptions = Pick<
 
 interface ActiveSession {
   usage?: ReturnType<typeof observeExecutionUsage>;
-  managedStart?: ManagedTaskStartAdmission | null;
   executionCleanupConfirmed?: boolean;
   scopedChildren?: Set<Promise<TaskResult>>;
   sessionId: string;
@@ -352,7 +344,6 @@ export class SubagentManager {
         ...opts,
         taskBinding: parent.taskBinding ?? opts?.taskBinding,
         taskContext: parent.taskContext ?? opts?.taskContext,
-        taskPrimaryStart: undefined,
         recoveryOwner: parent.recoveryOwner ?? opts?.recoveryOwner,
         executionRoot: parent.executionRoot ?? opts?.executionRoot,
         toolPolicy: opts?.toolPolicy ?? parent.toolPolicy,
@@ -363,6 +354,12 @@ export class SubagentManager {
       };
     }
     opts?.signal?.throwIfAborted();
+    if (opts?.taskContext?.taskBinding) {
+      if (opts.taskBinding && !isDeepStrictEqual(opts.taskBinding, opts.taskContext.taskBinding)) {
+        throw new Error("Task execution binding does not match its Task context");
+      }
+      if (!opts.taskBinding) opts = { ...opts, taskBinding: opts.taskContext.taskBinding };
+    }
     if (opts?.taskContext) {
       const brief = prepareTaskWorkspaceContext(
         opts.taskContext,
@@ -401,13 +398,24 @@ export class SubagentManager {
     if (existingMeta || existsSync(sessionDir(this._persistDir, sessionId))) {
       throw new Error(`Session "${sessionId}" already has execution evidence; start a fresh session`);
     }
-    const managedStart = admitManagedTaskStart(getDb(this._persistDir), {
-      sessionId,
-      binding: opts?.taskBinding,
-      primary: opts?.taskPrimaryStart,
-      persistentChat,
-      recipient, agent: def.name,
-    });
+    if (opts?.taskBinding) {
+      const db = getDb(this._persistDir);
+      const store = AppTaskResourceStore.activeFromDb(db, opts.taskBinding.appId);
+      if (!store) throw new Error("Task execution requires canonical authority");
+      assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "managed start");
+      const attempt = store.readAttempt(opts.taskBinding.attemptId);
+      if (attempt) {
+        const nextIds = [...new Set([...(attempt.sessionIds ?? []), ...(attempt.sessionId ? [attempt.sessionId] : []), sessionId])];
+        if (nextIds.length !== (attempt.sessionIds?.length ?? 0)) {
+          attempt.sessionIds = nextIds;
+          db.prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?").run(
+            JSON.stringify(attempt),
+            opts.taskBinding.appId,
+            opts.taskBinding.attemptId,
+          );
+        }
+      }
+    }
     let executionDispatched = false;
     try {
       onAdmitted?.();
@@ -503,7 +511,7 @@ export class SubagentManager {
       });
 
       const session: ActiveSession = {
-        usage, managedStart,
+        usage,
         sessionId,
         agent,
         agentName: def.name,
@@ -608,9 +616,6 @@ export class SubagentManager {
       if (!executionDispatched) {
         this._sessions.delete(sessionId);
         markSessionInactive(this._persistDir, sessionId);
-        if (managedStart?.reservation && !managedStart.primaryCovered)
-          releaseTaskExecutionReservation(getDb(this._persistDir), managedStart.reservation,
-            { kind: "confirmed-nonstart", evidenceId: managedStart.invocationId });
       }
       throw error;
     }
@@ -848,7 +853,6 @@ export class SubagentManager {
       projectId: opts?.projectId,
       taskBinding: opts?.taskBinding,
       taskContext: opts?.taskContext,
-      taskPrimaryStart: opts?.taskPrimaryStart,
       recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
       contextPrompt: opts?.contextPrompt,
@@ -1524,9 +1528,6 @@ export class SubagentManager {
     if (failed?.status === "rejected") throw failed.reason;
     if (!await drainSessionBashProcessGroups(this._persistDir, session.sessionId))
       throw new Error(`Managed execution cleanup is unconfirmed for ${session.sessionId}`);
-    if (session.managedStart?.reservation && !session.managedStart.primaryCovered)
-      releaseTaskExecutionReservation(getDb(this._persistDir), session.managedStart.reservation,
-        { kind: "joined", evidenceId: session.managedStart.invocationId });
     session.executionCleanupConfirmed = true;
   }
 
@@ -1762,12 +1763,11 @@ export class SubagentManager {
   }
 
   private assertSessionContinuation(session: ActiveSession): void {
-    assertManagedTaskContinuation(getDb(this._persistDir), {
-      binding: session.taskBinding,
-      persistentChat: this.isPersistentChat(session),
-      admitted: session.managedStart,
-      running: session.status === "running",
-    });
+    if (!session.taskBinding) return;
+    if (session.status !== "running") throw new Error("Task continuation requires a running managed execution");
+    const store = AppTaskResourceStore.activeFromDb(getDb(this._persistDir), session.taskBinding.appId);
+    if (!store) throw new Error("Task execution requires canonical authority");
+    assertCurrentTaskActor({ resourceStore: store }, session.taskBinding, "continuation");
   }
 
   private startChatTurn(session: ActiveSession, start: () => Promise<void>): void {

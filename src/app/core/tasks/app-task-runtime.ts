@@ -15,7 +15,7 @@ import type {
 } from "@may-agent/sdk/app";
 import { resolve } from "node:path";
 import { getDb } from "../../../lib/db/connection.js";
-import { listTerminalTaskSessionBindings } from "../../../lib/db/sessions.js";
+import { listTaskAttemptSessionIds, listTerminalTaskSessionBindings } from "../../../lib/db/sessions.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import { assertValidAppInput } from "../apps/definition-validation.js";
@@ -43,8 +43,6 @@ import {
   type ConversationTaskChangeRef,
 } from "../state/conversation-task-turns.js";
 import { admitTaskInput } from "../state/inbox.js";
-import { recoverDeadTaskExecution, taskExecutionRecoveryPage } from "../state/task-execution-cleanup.js";
-import { TaskExecutionStore } from "../state/task-execution-store.js";
 import {
   matchesAppTaskCondition,
   matchingAppTaskConditionTaskIds,
@@ -575,8 +573,6 @@ function installConventionTaskControllers(
   const installedIds = new Set(descriptors.map((descriptor) => descriptor.id));
   for (const previous of appRouterDescriptorsByBus.get(opts.bus) ?? []) {
     if (installedIds.has(previous.id)) continue;
-    if (new TaskExecutionStore(previous.resourceStore.db).activeTaskPage(previous.id, 1).taskIds.length)
-      throw new Error(`Cannot remove App ${previous.id} while it has unconfirmed Task execution`);
     if (previous.resourceStore.hasUnfinishedTasks()) {
       throw new Error(`Cannot remove App ${previous.id} while it has unfinished Tasks`);
     }
@@ -665,11 +661,6 @@ function installConventionTaskControllers(
     const config = appTaskConfig(descriptor);
     const recoveryScheduler = new AppTaskRecoveryScheduler({
       source: config.resourceStore,
-      executionCandidates: (limit, after) => {
-        const page = taskExecutionRecoveryPage(config.resourceStore.db, descriptor.id, limit, after);
-        for (const id of page.taskIds) binding.executionCleanupTaskIds.add(id);
-        return page;
-      },
       safetyIntervalMs: APP_TASK_RECOVERY_SAFETY_INTERVAL_MS,
       enqueue: (taskId, options) => {
         enqueueAppTask(controller, config, taskId, options);
@@ -1213,32 +1204,30 @@ function recoverInterruptedAppTasks(
       appTaskRecoverySchedulersByBus.get(opts.bus)?.get(descriptor.id)?.stateChanged();
     }
     settleTerminalAppTaskSessions(opts, descriptor);
-    // Startup work is bounded too. Periodic scheduler paging covers later
-    // active rows and sends their cleanup through ordinary worker dispatch.
-    for (const taskId of new TaskExecutionStore(config.resourceStore.db).activeTaskPage(descriptor.id, 256).taskIds) {
-      recoverDeadTaskExecution(config.resourceStore.db, { appId: descriptor.id, taskId },
-        opts.sessions ? (id, binding) => !opts.sessions!.isLive(id) &&
-          opts.sessions!.interrupt(id, "Recovering stopped Task execution", taskId, binding) : undefined);
-    }
     const runningRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["running"], 512);
     const attentionRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["attention"], 512);
     const waitingRecoveryTaskIds = config.resourceStore.listTaskIdsByPhase(["waiting"], 512);
     const releaseRecovery = (recovery: AppTaskAttemptRecovery, reason?: string) => {
-      if (new TaskExecutionStore(config.resourceStore.db).hasActive(
-        { appId: descriptor.id, taskId: recovery.taskId }, recovery.attemptId,
-      )) return;
-      if (recovery.sessionId) {
+      const recoveryBinding = {
+        appId: descriptor.id,
+        taskId: recovery.taskId,
+        generation: recovery.attemptGeneration,
+        attemptId: recovery.attemptId,
+      };
+      const recoverySessionIds = [
+        ...new Set([
+          ...(recovery.sessionIds ?? []),
+          ...(recovery.sessionId ? [recovery.sessionId] : []),
+          ...(opts.persistDir ? listTaskAttemptSessionIds(opts.persistDir, recoveryBinding) : []),
+        ]),
+      ];
+      for (const id of recoverySessionIds) {
         interruptSupersededAgentSession(
           opts,
-          recovery.sessionId,
+          id,
           `Recovered task ${recovery.taskId} interrupted an orphaned agent session from a previous runtime`,
           recovery.taskId,
-          {
-            appId: descriptor.id,
-            taskId: recovery.taskId,
-            generation: recovery.attemptGeneration,
-            attemptId: recovery.attemptId,
-          },
+          recoveryBinding,
         );
       }
       const released = releaseInterruptedAppTaskAttempt(
@@ -1251,7 +1240,20 @@ function recoverInterruptedAppTasks(
       }
     };
     for (const recovery of recoverableAppTaskAttempts(config, Date.now(), includeFreshLeases, runningRecoveryTaskIds)) {
-      if (recovery.sessionId && hasLiveAppTaskSession(opts, recovery.sessionId)) {
+      const recoveryBinding = {
+        appId: descriptor.id,
+        taskId: recovery.taskId,
+        generation: recovery.attemptGeneration,
+        attemptId: recovery.attemptId,
+      };
+      const recoverySessionIds = [
+        ...new Set([
+          ...(recovery.sessionIds ?? []),
+          ...(recovery.sessionId ? [recovery.sessionId] : []),
+          ...(opts.persistDir ? listTaskAttemptSessionIds(opts.persistDir, recoveryBinding) : []),
+        ]),
+      ];
+      if (recoverySessionIds.some((id) => hasLiveAppTaskSession(opts, id))) {
         continue;
       }
       releaseRecovery(recovery);

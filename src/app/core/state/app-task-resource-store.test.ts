@@ -970,7 +970,7 @@ describe("AppTaskResourceStore", () => {
     store.close();
   });
 
-  it("repairs obsolete Condition indexes after restart without bypassing backoff or funding holds", () => {
+  it("repairs obsolete Condition indexes after restart without bypassing backoff", () => {
     const root = mkdtempSync(join(tmpdir(), "may-condition-recovery-"));
     roots.push(root);
     const path = join(root, "host.sqlite");
@@ -985,8 +985,6 @@ describe("AppTaskResourceStore", () => {
       overdue: now - 1,
       retry: retryAt,
       "retry-missing": null,
-      "funding-indefinite": null,
-      "funding-future": retryAt,
       closed: null,
       satisfied: null,
       "no-condition": null,
@@ -997,10 +995,6 @@ describe("AppTaskResourceStore", () => {
       const task = resource(id, id === "closed" ? "converged" : "waiting");
       task.status.observedGeneration = 1;
       if (id.startsWith("retry")) task.status.executionRetryAt = retryAt;
-      if (id.startsWith("funding")) task.status.funding = {
-        kind: "deferred", reason: "root-credit", task: { appId: "example", taskId: id },
-        root: { appId: "example", taskId: id }, retryAt: id === "funding-indefinite" ? null : retryAt,
-      };
       if (id === "early") task.status.reviewAt = earlyAt;
       if (id !== "no-condition") {
         task.status.conditionIds = [id];
@@ -1468,5 +1462,144 @@ describe("AppTaskResourceStore", () => {
       expect.objectContaining({ taskId: dependent.metadata.id, ready: true }),
     );
     store.close();
+  });
+
+  it("clears retired indefinite funding and execution holds on reopen while preserving workspace and retry fences", () => {
+    const root = mkdtempSync(join(tmpdir(), "may-retired-holds-"));
+    roots.push(root);
+    const path = join(root, "host.sqlite");
+    let store = AppTaskResourceStore.openStandalone(path, "example");
+    const now = Date.now();
+    const retryAt = now + 3_600_000;
+    const workspaceRetryAt = now + 120_000;
+    const heldTask = resource("held-indefinite", "pending");
+    const heldWorkspace = resource("held-workspace", "pending");
+    heldWorkspace.status.workspaceConstraint = {
+      kind: "deferred",
+      reason: "disk-capacity",
+      resource: "disk",
+      generation: 1,
+      requiredBytes: 2048,
+      availableBytes: 512,
+      observedAt: now,
+      retryAt: workspaceRetryAt,
+    };
+    const heldBackoff = resource("held-backoff", "pending");
+    heldBackoff.status.executionRetryAt = retryAt;
+    const heldRepairSettlement = resource("held-repair-settlement", "waiting");
+    heldRepairSettlement.status.currentAttemptId = "attempt-repair-settlement";
+    heldRepairSettlement.status.retryExhausted = {
+      attempts: 3,
+      maxAttempts: 3,
+      lastAttemptId: "attempt-prior",
+      lastFailureAt: new Date(now - 1000).toISOString(),
+      summary: "Exhausted before fresh human repair",
+    };
+    store.bootstrapSnapshot(
+      {
+        project: "example",
+        resources: {
+          "held-indefinite": heldTask,
+          "held-workspace": heldWorkspace,
+          "held-backoff": heldBackoff,
+          "held-repair-settlement": heldRepairSettlement,
+        },
+        attempts: {
+          "attempt-repair-settlement": {
+            metadata: { id: "attempt-repair-settlement", resourceVersion: 2 },
+            taskId: "held-repair-settlement",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "owner",
+            handler: "agent:owner",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date(now - 500).toISOString(),
+            pendingSettlement: {
+              claim: {
+                kind: "claimed",
+                taskId: "held-repair-settlement",
+                generation: 1,
+                resourceVersion: 1,
+                specHash: "hash",
+                attemptId: "attempt-repair-settlement",
+                attemptResourceVersion: 1,
+                owner: "owner",
+                handler: "agent:owner",
+                reason: "event",
+                declaredOutputPaths: [],
+              },
+              report: {
+                handlerResult: { state: "converged", summary: "Repaired by human", facts: ["repaired"], actions: [] },
+                runId: null,
+              },
+              acceptanceBasis: { method: "executor", evidence: ["repaired"] },
+            },
+          },
+        },
+      },
+      "retired-holds",
+    );
+    for (const [id, field, val] of [
+      ["held-indefinite", "$.status.funding", { kind: "deferred", reason: "root-credit", retryAt: null }],
+      ["held-workspace", "$.status.funding", { kind: "deferred", reason: "adoption-required", retryAt: null }],
+      ["held-backoff", "$.status.executionConstraint", { kind: "deferred", reason: "shared-capacity", retryAt }],
+      ["held-repair-settlement", "$.status.funding", { kind: "deferred", reason: "sponsor-credit", retryAt: null }],
+    ] as const) {
+      store.db
+        .prepare("UPDATE app_tasks SET ready = 0, changed = 0, next_check_at = NULL, resource_json = json_set(resource_json, ?, json(?)) WHERE app_id = ? AND task_id = ?")
+        .run(field, JSON.stringify(val), "example", id);
+    }
+    store.db
+      .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+      .run();
+    store.close();
+
+    store = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      const recovered = store.readTask("held-indefinite")!;
+      expect((recovered.status as Record<string, unknown>).funding).toBeUndefined();
+      const row = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-indefinite") as { ready: number; changed: number; next_check_at: number | null };
+      expect(row).toEqual({ ready: 1, changed: 1, next_check_at: null });
+
+      const wsRow = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-workspace") as { ready: number; changed: number; next_check_at: number | null };
+      expect(wsRow).toEqual({ ready: 0, changed: 0, next_check_at: workspaceRetryAt });
+
+      const backoffRow = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-backoff") as { ready: number; changed: number; next_check_at: number | null };
+      expect(backoffRow).toEqual({ ready: 0, changed: 0, next_check_at: retryAt });
+
+      const repairRow = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-repair-settlement") as { ready: number; changed: number; next_check_at: number | null };
+      expect(repairRow.ready).toBe(1);
+      expect(repairRow.next_check_at).not.toBeNull();
+      expect(
+        store.db
+          .prepare("SELECT value FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+          .get(),
+      ).toEqual({ value: "1" });
+    } finally {
+      store.close();
+    }
+  });
+
+  it("stamps App-only creator provenance on new-app-seed so seeded coordination Tasks satisfy matchesTaskCoordination", () => {
+    const store = open();
+    const coordTask = resource("runtime/coord", "pending");
+    coordTask.spec.workflow = "coord-wf";
+    const tree: TaskTree = {
+      project: "example",
+      resources: { "runtime/coord": coordTask },
+    };
+    store.bootstrapSnapshot(tree, "seed:coord", [], "new-app-seed");
+    const saved = store.readTask("runtime/coord")!;
+    expect(saved.metadata.creator).toEqual({ appId: "example" });
   });
 });

@@ -273,3 +273,18 @@ export function readSessionLastActivityAt(persistDir: string, sessionId: string)
     { lastActivityAt: number | null } | undefined;
   return row?.lastActivityAt ?? null;
 }
+
+/** Discover all persisted session IDs bound to an exact Task attempt. */
+export function listTaskAttemptSessionIds(
+  persistDir: string,
+  binding: { appId: string; taskId: string; generation: number; attemptId: string },
+): string[] {
+  const rows = getDb(persistDir)
+    .prepare(
+      `SELECT sessionId FROM sessions INDEXED BY idx_sess_task_binding
+       WHERE app_id = ? AND task_id = ? AND task_generation = ? AND attempt_id = ?
+       ORDER BY startedAt, sessionId`,
+    )
+    .all(binding.appId, binding.taskId, binding.generation, binding.attemptId) as Array<{ sessionId: string }>;
+  return rows.map((row) => row.sessionId);
+}

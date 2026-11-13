@@ -1,5 +1,3 @@
-import { admitTaskMutationExecution, type TaskExecutionAdmissionContext } from "./task-execution-admission.js";
-import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
 import type { TaskChangeReceipt, TaskStatus } from "@may-agent/sdk";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
@@ -12,7 +10,7 @@ import {
   ensureTaskResourceSchema,
 } from "../../../lib/db/task-resource-schema.js";
 import { indexTaskReference } from "./task-reference-index.js";
-import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, pendingTaskFunding, pendingTaskExecutionConstraint, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
+import { CONDITION_RECOVERY_INTERVAL_MS, pendingTaskExecutionRetryAt, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
 import type {
   AppTaskAttempt,
   AppTaskCancellation,
@@ -178,8 +176,6 @@ export type AppTaskResourceMutation = {
   fences: TaskMutationFence[];
   /** Check background pause against current input inside the claim transaction. */
   requireUnpausedTask?: string;
-  /** Private resolved definitions and trusted scheduling provenance for new claims. */
-  execution?: TaskExecutionAdmissionContext;
   expectMissingTaskIds?: string[];
   tasks?: TaskResourceWrite[];
   deleteTaskIds?: string[];
@@ -268,12 +264,22 @@ export class AppTaskResourceStore {
     ready: boolean,
     nextCheckAt: number | null,
   ): void {
+    delete (resource.status as Record<string, unknown>).funding;
+    delete (resource.status as Record<string, unknown>).executionConstraint;
     // Retain pending input without a ready hint that bypasses its cooldown.
     const retryAt = pendingTaskExecutionRetryAt(resource);
-    const exhausted = taskExecutionRetryExhausted(resource);
-    const funding = pendingTaskFunding(resource);
-    const execution = pendingTaskExecutionConstraint(resource);
     const activeAttempt = resource.status.currentAttemptId;
+    const pendingSettlement = activeAttempt
+      ? Boolean(
+          this.db
+            .prepare(
+              `SELECT 1 FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?
+                 AND json_extract(attempt_json, '$.pendingSettlement') IS NOT NULL`,
+            )
+            .get(this.appId, activeAttempt),
+        )
+      : false;
+    const exhausted = !pendingSettlement && taskExecutionRetryExhausted(resource);
     const leaseUntil = activeAttempt
       ? ((
           this.db
@@ -303,9 +309,9 @@ export class AppTaskResourceStore {
         resource.status.observedGeneration,
         resource.status.phase,
         resource.status.lane ?? "normal",
-        !retryAt && !exhausted && !funding && !execution && taskChanged(resource, trigger) ? 1 : 0,
-        !retryAt && !exhausted && !funding && !execution && ready ? 1 : 0,
-        funding ? funding.retryAt : execution ? execution.retryAt : retryAt ?? nextCheckAt,
+        !retryAt && !exhausted && taskChanged(resource, trigger) ? 1 : 0,
+        !retryAt && !exhausted && ready ? 1 : 0,
+        retryAt ?? nextCheckAt,
         leaseUntil,
         resource.status.currentAttemptId ?? null,
         epoch(resource.status.updatedAt) ?? Date.now(),
@@ -399,8 +405,17 @@ export class AppTaskResourceStore {
         this.db.prepare(`DELETE FROM ${table} WHERE app_id = ?`).run(this.appId);
       }
 
-      if (origin === "new-app-seed") new TaskBudgetAdmissionStore(this.db).admitNewSeed(this.appId, tree);
 
+      if (origin === "new-app-seed") {
+        for (const resource of Object.values(tree.resources ?? {})) {
+          if (resource.metadata.creator && !isDeepStrictEqual(resource.metadata.creator, { appId: this.appId })) {
+            throw new Error(
+              "A new App seed requires its exact App-only creator; contribution admission needs its creating Task",
+            );
+          }
+          resource.metadata.creator = { appId: this.appId };
+        }
+      }
       for (const cancellation of Object.values(tree.cancellations ?? {})) this.putCancellation(cancellation);
       for (const resource of Object.values(tree.resources ?? {})) {
         const trigger = tree.taskTriggers?.[resource.metadata.id];
@@ -1571,9 +1586,6 @@ export class AppTaskResourceStore {
         }
       }
 
-      new TaskBudgetAdmissionStore(this.db).admitMutation(this.appId, mutation, restoredTaskIds);
-      admitTaskMutationExecution(this.db, this.appId, mutation);
-
       for (const taskId of new Set(mutation.reopenTaskIds ?? [])) {
         const closure = this.readCancellation(taskId);
         const receipt = mutation.controlReceipts?.find((entry) => entry.taskId === taskId && entry.action === "reopen");
@@ -1738,10 +1750,6 @@ export class AppTaskResourceStore {
         `UPDATE app_tasks
          SET next_check_at = MAX(?, COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?))
          WHERE app_id = ? AND phase = 'waiting'
-           AND (json_extract(resource_json, '$.status.funding') IS NULL
-             OR json_extract(resource_json, '$.status.funding.retryAt') <= ?)
-           AND (json_extract(resource_json, '$.status.executionConstraint') IS NULL
-             OR json_extract(resource_json, '$.status.executionConstraint.retryAt') <= ?)
            AND (next_check_at IS NULL OR next_check_at > MAX(?,
              COALESCE(json_extract(resource_json, '$.status.executionRetryAt'), ?)))
            AND NOT EXISTS (
@@ -1756,7 +1764,7 @@ export class AppTaskResourceStore {
                AND conditions.state <> 'true'
            )`,
       )
-      .run(now, now, this.appId, now, now, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
+      .run(now, now, this.appId, now + CONDITION_RECOVERY_INTERVAL_MS, now).changes;
   }
 
   setRecoveryState(
@@ -1767,10 +1775,6 @@ export class AppTaskResourceStore {
       const resource = this.readTask(taskId);
       const retryAt = resource && pendingTaskExecutionRetryAt(resource);
       if (retryAt) input = { ...input, ready: false, changed: false, nextCheckAt: retryAt };
-      const funding = resource && pendingTaskFunding(resource);
-      if (funding) input = { ...input, ready: false, changed: false, nextCheckAt: funding.retryAt };
-      const execution = resource && pendingTaskExecutionConstraint(resource);
-      if (execution) input = { ...input, ready: false, changed: false, nextCheckAt: execution.retryAt };
       if (resource && taskExecutionRetryExhausted(resource)) input = { ...input, ready: false, changed: false };
       const assignments: string[] = [];
       const assignmentValues: unknown[] = [];

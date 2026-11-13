@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { Type, defineApp } from "@may-agent/sdk";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { migrateTaskCompletionReceipts } from "../../migrations/task-receipt-cutover.js";
 import { appTaskContext, appTaskSpecHash } from "./app-task-reconciler.js";
 import { appTaskConfig, prepareAppTaskRuntimeDescriptors, standaloneAppTaskAdmissionDescriptors } from "./runtime-definition.js";
@@ -105,44 +104,3 @@ test("runtime preparation requires offline receipt conversion before admission o
 });
 
 
-test("loaded App coordination must match protected funding before bootstrap or admission", async () => {
-  const root = mkdtempSync(join(tmpdir(), "may-protected-definition-"));
-  const coordination = { taskId: "runtime/review", workflow: "review", maxAttemptMs: 60_000 };
-  const app = defineApp({
-    id: "sample",
-    version: 1,
-    agent: "owner",
-    inputSchema: Type.Object({}),
-    tasks: { coordination: { ...coordination, workflow: "business" } },
-  });
-  try {
-    const db = getDb(root);
-    new TaskBudgetAdmissionStore(db).install({
-      appId: app.id,
-      sponsor: { appId: app.id, agent: "owner" },
-      dailyCredits: 0,
-      rootCredits: 5,
-      coordination: { ...coordination, agent: "owner", dailyCredits: 3, credits: 3 },
-    });
-    const options = { persistDir: root, projectsRoot: root, entries: [{ appDir: root, definition: app }] };
-    await expect(
-      prepareAppTaskRuntimeDescriptors({
-        ...options,
-        appRegistrySnapshot: { id: "candidate", generation: 1, entries: options.entries },
-        workflows: {
-          inspect: async () => ({ available: true, error: null, workspace: "shared" as const }),
-          execute: async () => {
-            throw new Error("must not run");
-          },
-        },
-      }),
-    ).rejects.toThrow("differs");
-    expect(AppTaskResourceStore.activeFromDb(db, app.id)).toBeNull();
-    expect(() => standaloneAppTaskAdmissionDescriptors(options)).toThrow("differs");
-    expect(() => standaloneAppTaskAdmissionDescriptors({ ...options, initialize: false })).toThrow("differs");
-    expect(db.prepare("SELECT count(*) AS n FROM task_budget_operations").get()?.n).toBe(0);
-  } finally {
-    closeDb(root);
-    rmSync(root, { recursive: true, force: true });
-  }
-});

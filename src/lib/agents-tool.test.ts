@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { getDb } from "./db/connection.js";
 /**
  * Tests for bounded agent cooperation and execution evidence.
  */
@@ -219,6 +221,33 @@ describe("agents tool", () => {
 
   it("follow-up reaches only a live owned helper in the same Task attempt", async () => {
     const binding = { appId: "sample", taskId: "work", generation: 2, attemptId: "current" };
+    AppTaskResourceStore.fromDb(getDb(persistDir), binding.appId).bootstrapSnapshot(
+      {
+        project: binding.appId,
+        resources: {
+          [binding.taskId]: {
+            metadata: { id: binding.taskId, generation: binding.generation, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Work", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 1, currentAttemptId: binding.attemptId },
+          },
+        },
+        attempts: {
+          [binding.attemptId]: {
+            metadata: { id: binding.attemptId, resourceVersion: 1 },
+            taskId: binding.taskId,
+            taskGeneration: binding.generation,
+            specHash: "hash",
+            owner: "worker",
+            handler: "agent:worker",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     const received: Array<{ id: string; message: unknown }> = [];
     for (const [id, parentSessionId, taskBinding, status] of [
       ["parent", undefined, binding, "running"],

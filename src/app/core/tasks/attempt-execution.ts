@@ -18,8 +18,6 @@ import { boundedAppRequestConversation } from "../reads/conversation-context.js"
 import { readTaskWorkload, runtimeWorkloadSource } from "../reads/task-workload.js";
 import { listConversationInputRequests } from "../state/conversation-requests.js";
 import { readAppConversationResource, readConversationContext } from "../state/conversations.js";
-import { TaskBudgetDeferredError } from "../state/task-budget-admission.js";
-import { TaskExecutionDeferredError } from "../state/task-execution-admission.js";
 import {
   readAppTaskLiveEvent,
   readAppTaskReconciliationEvents,
@@ -503,19 +501,7 @@ export async function runTaskExecutorAttempt(
     if (result.acceptedLiveEventIds !== undefined) return result;
     const acceptedLiveEventIds = taskAttempt.acceptedLiveEventIds();
     return acceptedLiveEventIds.length > 0 ? { ...result, acceptedLiveEventIds } : result;
-  } catch (error) {
-    if (!(error instanceof TaskBudgetDeferredError) && !(error instanceof TaskExecutionDeferredError)) throw error;
-    const runId = error.callerExecution?.id ?? null;
-    return {
-      ...(error instanceof TaskBudgetDeferredError ? { funding: error.constraint } : { execution: error.constraint }),
-      runId,
-      handlerResult: {
-        state: "error",
-        summary: error.message,
-        actions: [],
-        facts: error.callerExecution?.kind === "workflow" ? [`workflow-run:${runId}`] : [],
-      },
-    };
+
   } finally {
     clearInterval(leaseTimer);
     taskAttempt.close();

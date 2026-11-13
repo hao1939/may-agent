@@ -51,7 +51,7 @@ async function fixture(
   taskPolicy?: AppTaskPolicy,
   runtimeOptions?: { workspace?: AppDefinition["workspace"]; workspaces?: TaskWorkspaces; executor?: "agent" },
 ) {
-  const root = mkdtempSync(join(tmpdir(), "task-communication-"));
+  const root = (managedAgents as { persistDir?: string } | undefined)?.persistDir ?? mkdtempSync(join(tmpdir(), "task-communication-"));
   const appDir = join(root, "sample.app");
   mkdirSync(join(appDir, "tasks"), { recursive: true });
   writeFileSync(

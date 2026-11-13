@@ -7,9 +7,7 @@ import { readTaskInputs } from "../tasks/app-task-inputs.js";
 import type { AppTaskContext } from "../tasks/app-task-store.js";
 import {
   createAppInboxItem,
-  deferAppInboxTaskFunding,
   getAppInboxItem,
-  hasAppInboxFundingHold,
   hasConversationExecutionTask,
   reuseAppInboxSubmission,
   type AppTurnTarget,
@@ -22,7 +20,6 @@ import {
   listConversationTaskLinks,
 } from "./conversation-task-links.js";
 import { admitTaskInput } from "./inbox.js";
-import { TaskBudgetDeferredError } from "./task-budget-admission.js";
 export { conversationTaskId } from "./conversation-identity.js";
 
 function conversationTaskLineage(
@@ -191,10 +188,7 @@ export function admitConversationTaskInput(
     // from a legacy worker even after an explicit funding wake clears its hold.
     db.prepare("UPDATE app_inbox_items SET task_admission_key = ? WHERE id = ? AND task_admission_key IS NOT ?")
       .run(admissionKey, item.id, admissionKey);
-    if (hasAppInboxFundingHold(item, input.now ?? Date.now()))
-      return { item, taskId, created: created.created };
-    try {
-      return stateTransaction(db, () => {
+    return stateTransaction(db, () => {
         // Bind the saved input before shared admission checks executor compatibility.
         // The surrounding transaction rolls back this link if admission fails.
         db.run(
@@ -226,11 +220,6 @@ export function admitConversationTaskInput(
         });
         return { item: getAppInboxItem(db, item.id)!, taskId: observed.taskId, created: created.created };
       });
-    } catch (error) {
-      if (!(error instanceof TaskBudgetDeferredError)) throw error;
-      deferAppInboxTaskFunding(db, item.id, error.constraint, input.now ?? Date.now());
-      return { item: getAppInboxItem(db, item.id)!, taskId, created: created.created };
-    }
   });
 }
 

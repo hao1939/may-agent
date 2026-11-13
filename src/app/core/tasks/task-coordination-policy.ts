@@ -21,3 +21,12 @@ export function matchesTaskCoordination(
     resource.metadata.creator.taskId === undefined,
   );
 }
+
+export function assertTaskCoordinationPolicy(appId: string, owner: string, policy?: TaskCoordinationPolicy): void {
+  if (!policy) return;
+  if (!owner.trim()) throw new Error(`App ${appId} coordination requires a non-empty owner agent`);
+  if (!policy.taskId?.trim() || !policy.workflow?.trim())
+    throw new Error(`App ${appId} coordination requires non-empty taskId and workflow`);
+  if (policy.maxAttemptMs !== undefined && (!Number.isSafeInteger(policy.maxAttemptMs) || policy.maxAttemptMs <= 0))
+    throw new Error(`App ${appId} coordination maxAttemptMs must be a positive integer`);
+}

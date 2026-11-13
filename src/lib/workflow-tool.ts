@@ -1,3 +1,6 @@
+import { isDeepStrictEqual } from "node:util";
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { ExecutionDeferredError } from "@may-agent/sdk";
 import {
@@ -8,7 +11,6 @@ import {
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { Type, type TSchema } from "typebox";
-import { assertTaskWorkflowStart } from "../app/core/state/task-budget-managed-start.js";
 import { getDb } from "./db/connection.js";
 import { executionTimeout } from "./execution-scope.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
@@ -545,10 +547,20 @@ export interface WorkflowToolOptions {
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: false): WorkflowRunner;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: true): WorkflowTool;
 function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: boolean): WorkflowRunner | WorkflowTool {
+  if (opts.taskContext?.taskBinding) {
+    if (opts.taskBinding && !isDeepStrictEqual(opts.taskBinding, opts.taskContext.taskBinding)) {
+      throw new Error("Task execution binding does not match its Task context");
+    }
+    if (!opts.taskBinding) opts = { ...opts, taskBinding: opts.taskContext.taskBinding };
+  }
   const { manager, workflowDir, persistDir, onEvent } = opts;
   const assertWorkflowExecution = (): void => {
+    if (!opts.taskBinding) return;
     const db = opts.runtimeCtx?.getDb?.() ?? (persistDir ? getDb(persistDir) : undefined);
-    if (db) assertTaskWorkflowStart(db, opts.taskBinding);
+    if (!db) throw new Error("Task execution requires canonical authority");
+    const store = AppTaskResourceStore.activeFromDb(db, opts.taskBinding.appId);
+    if (!store) throw new Error("Task execution requires canonical authority");
+    assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "workflow start");
   };
   const callAgent = (agentName: string, task: string, callOptions: Parameters<SubagentManager["callAgent"]>[2]) => {
     const definition = opts.agentDefinitions?.get(agentName);

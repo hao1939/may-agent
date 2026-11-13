@@ -1,4 +1,3 @@
-import { TaskBudgetAdmissionStore } from "../state/task-budget-admission.js";
 import { normalizeTaskHandlerResult } from "./result.js";
 import { describe, expect, it, setSystemTime, spyOn } from "bun:test";
 import { execFile, execFileSync, spawn } from "node:child_process";
@@ -71,7 +70,9 @@ import {
   rejectConvergedDirectAgentResidue,
 } from "../../adapters/executors/agent-workspace.js";
 import {
+  associateAppTaskSession,
   claimObservedAppTask,
+  recoverableAppTaskAttempts,
   completeAppTask,
   deferAppTask,
   failAppTaskAttempt,
@@ -5422,8 +5423,6 @@ describe("canonical App task runtime", () => {
     await install();
     let config = loadedTaskConfig(f);
     const db = config.resourceStore.db;
-    new TaskBudgetAdmissionStore(db).install({ appId: "sample", sponsor: { appId: "sample", agent: "sample-owner" },
-      dailyCredits: 20, rootCredits: 20 });
     const taskId = "work/low-disk";
     admitTaskInput(config, { appId: "sample", idempotencyKey: "disk-request",
       inputContext: { id: "disk-request", source: { kind: "human", id: "operator" }, input: { kind: "sample", data: {} } },
@@ -5431,17 +5430,14 @@ describe("canonical App task runtime", () => {
         acceptance: ["Checks pass"], executor: "verify" } } });
     const reconcile = () => reconcileLoadedAppTaskOnce({ bus, appId: "sample", taskId,
       dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" } });
-    const charged = () => new TaskBudgetAdmissionStore(db).budget.view({ appId: "sample", taskId }, Date.now())!.rootCharged;
     const attemptCount = () => db.prepare("SELECT count(*) AS n FROM app_task_attempts WHERE app_id = 'sample' AND task_id = ?").get(taskId)!.n;
     await reconcile();
     if (recovery === "race-input") {
-      expect(charged()).toBe(1);
       expect(attemptCount()).toBe(0);
       expect(calls).toBe(0);
       expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(2);
       expect(readTaskChecks(bus).counts.stale).toBe(1);
       await reconcile();
-      expect(charged()).toBe(2);
       expect(calls).toBe(1);
       expect(config.resourceStore.readTrigger(taskId)).toBeNull();
       return;
@@ -5451,8 +5447,6 @@ describe("canonical App task runtime", () => {
       workspaceConstraint: { reason: "workspace-capacity", availableBytes: 0, requiredBytes: expect.any(Number) } });
     expect(config.resourceStore.readTrigger(taskId)?.events).toHaveLength(1);
     expect(calls).toBe(0);
-    const discoveryCharge = late ? 2 : 1;
-    expect(charged()).toBe(discoveryCharge);
     expect(attemptCount()).toBe(late ? 1 : 0);
     const workload = readTaskWorkload({ taskStateConfig: config });
     expect(workload.counts).toMatchObject({ waiting: 1, runnable: 0, pendingInputTasks: 1 });
@@ -5465,7 +5459,6 @@ describe("canonical App task runtime", () => {
       // Repeated due checks sample mechanically; they neither retry the handler nor charge.
       setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
       await reconcile();
-      expect(charged()).toBe(discoveryCharge);
       expect(attemptCount()).toBe(late ? 1 : 0);
     }
     const lastSample = config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt;
@@ -5473,7 +5466,6 @@ describe("canonical App task runtime", () => {
     setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
     await reconcile();
     expect(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.observedAt).toBe(lastSample);
-    expect(charged()).toBe(discoveryCharge);
     unavailable = false;
     availableBytes = Number.MAX_SAFE_INTEGER;
     if (recovery === "source") {
@@ -5490,7 +5482,6 @@ describe("canonical App task runtime", () => {
     setSystemTime(new Date(config.resourceStore.readTask(taskId)!.status.workspaceConstraint!.retryAt));
     await reconcile();
     expect(calls).toBe(1);
-    expect(charged()).toBe(discoveryCharge + 1);
     expect(config.resourceStore.readTask(taskId)?.status.workspaceConstraint).toBeUndefined();
     expect(config.resourceStore.readTrigger(taskId)).toBeNull();
     expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Verified");
@@ -10416,5 +10407,324 @@ describe("dependency Condition specification updates", () => {
       spec: { outcome: "Revised current generation" },
     });
     expect(readTaskSnapshot(config).conditions?.[original.id]?.spec.requestedAction).toBeUndefined();
+  });
+
+  it("reopening a retained pendingSettlement checkpoint settles the saved report without re-executing the executor", async () => {
+    const f = fixture();
+    let bus = eventBus();
+    let executions = 0;
+    const install = async () => {
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        appRegistrySnapshot: { id: "checkpoint-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+        executors: {
+          verify: async () => {
+            executions++;
+            return { state: "converged", summary: "Completed once", facts: ["test:once"], result: { answer: 42 } };
+          },
+        },
+      });
+    };
+    await install();
+    const config = loadedTaskConfig(f);
+    const { taskId } = admitTaskInput(config, {
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/checkpoint",
+          parentId: "operations",
+          outcome: "Verify once",
+          acceptance: ["Produce answer 42"],
+          executor: "verify",
+        },
+      },
+      idempotencyKey: "checkpoint-1",
+      inputContext: { id: "in-1", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
+    });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
+    if (claim.kind !== "claimed") throw new Error("expected claimed attempt");
+    const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+    const resource = config.resourceStore.readTask(taskId)!;
+    attempt.pendingSettlement = {
+      claim,
+      report: {
+        handlerResult: {
+          state: "converged",
+          summary: "Saved before upgrade",
+          facts: ["test:saved"],
+          actions: [],
+          result: { answer: 42 },
+        },
+        runId: "saved-run",
+      },
+      acceptanceBasis: { method: "executor", evidence: ["test:saved"] },
+    };
+    delete attempt.lease;
+    (resource.status as Record<string, unknown>).funding = {
+      kind: "deferred",
+      reason: "sponsor-credit",
+      task: { appId: "sample", taskId },
+      root: { appId: "sample", taskId },
+      retryAt: null,
+    };
+    resource.status.phase = "waiting";
+    config.resourceStore.db
+      .prepare("UPDATE app_task_attempts SET attempt_json = ?, lease_until = NULL WHERE app_id = ? AND attempt_id = ?")
+      .run(JSON.stringify(attempt), "sample", claim.attemptId);
+    config.resourceStore.db
+      .prepare("UPDATE app_tasks SET phase = 'waiting', ready = 0, changed = 0, next_check_at = NULL, resource_json = ? WHERE app_id = ? AND task_id = ?")
+      .run(JSON.stringify(resource), "sample", taskId);
+    config.resourceStore.db
+      .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+      .run();
+
+    closeDb(join(f.root, "state"));
+    bus = eventBus();
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "checkpoint-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+      executors: {
+        verify: async () => {
+          executions++;
+          throw new Error("Completed checkpoint must not re-execute");
+        },
+      },
+    });
+    await reconcileLoadedAppTaskOnce({
+      bus,
+      appId: "sample",
+      taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    expect(executions).toBe(0);
+    const settled = loadedTaskConfig(f).resourceStore.readTask(taskId)!;
+    expect(settled.status.phase).toBe("converged");
+    expect(settled.status.result).toEqual({ answer: 42 });
+    expect(loadedTaskConfig(f).resourceStore.readAttempt(claim.attemptId)?.pendingSettlement).toBeUndefined();
+  });
+
+  it("refuses cross-process recovery and claim replacement while a sessionless executor process is still alive", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "live-owner-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+    });
+    const config = loadedTaskConfig(f);
+    const { taskId } = admitTaskInput(config, {
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/sessionless-live",
+          parentId: "operations",
+          outcome: "Run sessionless work",
+          acceptance: ["Do not run twice concurrently"],
+          executor: "verify",
+        },
+      },
+      idempotencyKey: "sessionless-1",
+      inputContext: { id: "in-live", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
+    });
+
+    const child = spawn(
+      process.execPath,
+      [
+        "-e",
+        `
+          import { currentProcessInstance } from "./src/lib/process-identity.ts";
+          console.log(JSON.stringify(currentProcessInstance()));
+          setInterval(() => {}, 1000);
+        `,
+      ],
+      { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] },
+    );
+    try {
+      const line = await new Promise<string>((resolve, reject) => {
+        let out = "";
+        child.stdout.on("data", (chunk) => {
+          out += String(chunk);
+          if (out.includes("\n")) resolve(out.trim());
+        });
+        child.on("error", reject);
+      });
+      const childProcess = JSON.parse(line);
+      const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
+      if (claim.kind !== "claimed") throw new Error("expected initial claim");
+      const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+      attempt.runtimeId = "external-worker-runtime";
+      attempt.lease = {
+        id: attempt.lease!.id,
+        version: attempt.lease!.version,
+        lastActivityAt: new Date(Date.now() - 600_000).toISOString(),
+        expiresAt: new Date(Date.now() - 300_000).toISOString(),
+        runtimeId: "external-worker-runtime",
+        ownerProcess: childProcess,
+      };
+      config.resourceStore.db
+        .prepare("UPDATE app_task_attempts SET attempt_json = ?, lease_until = ? WHERE app_id = ? AND attempt_id = ?")
+        .run(JSON.stringify(attempt), Date.now() - 300_000, "sample", claim.attemptId);
+      config.resourceStore.db
+        .prepare("UPDATE app_tasks SET lease_until = ? WHERE app_id = ? AND task_id = ?")
+        .run(Date.now() - 300_000, "sample", taskId);
+
+      // Even though the lease timestamp is expired and there is no sessionId,
+      // the external owner process is still alive: recovery and claim must refuse to preempt it.
+      expect(recoverableAppTaskAttempts(config, Date.now(), true, [taskId])).toEqual([]);
+      expect(
+        claimObservedAppTask(config, {
+          taskId,
+          appAgent: "sample-owner",
+          handler: "executor:verify",
+          reason: `attempt-recovery:${taskId}`,
+        }),
+      ).toEqual({ kind: "busy", taskId, attemptId: claim.attemptId });
+
+      // Once the external process exits, recovery and claim replacement succeed.
+      child.kill("SIGKILL");
+      await new Promise((resolve) => child.once("close", resolve));
+      expect(recoverableAppTaskAttempts(config, Date.now(), true, [taskId])).toHaveLength(1);
+      const replaced = claimObservedAppTask(config, {
+        taskId,
+        appAgent: "sample-owner",
+        handler: "executor:verify",
+        reason: `attempt-recovery:${taskId}`,
+      });
+      expect(replaced.kind).toBe("claimed");
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+    }
+  });
+
+  it("drains persisted Bash process groups from all parallel helper sessions before replacing a dead worker attempt", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const stateDir = join(f.root, "state");
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "parallel-helper-crash", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+    });
+    const config = loadedTaskConfig(f);
+    const { taskId } = admitTaskInput(config, {
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/parallel-helpers",
+          parentId: "operations",
+          outcome: "Drain every helper before replacement",
+          acceptance: ["Both helper process groups exit before replacement"],
+          executor: "verify",
+        },
+      },
+      idempotencyKey: "parallel-helpers-1",
+      inputContext: { id: "in-ph", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
+    });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
+    if (claim.kind !== "claimed") throw new Error("expected initial claim");
+    const binding = {
+      appId: "sample",
+      taskId,
+      generation: claim.generation,
+      attemptId: claim.attemptId,
+    };
+
+    const { upsertSession } = await import("../../../lib/db/sessions.ts");
+    const { addSessionBashProcessGroup, readSessionBashProcessGroups, ensureSessionDir, writeSessionMeta } = await import("../../../lib/persistence.ts");
+    const { createTaskSessionRecovery } = await import("../../adapters/executors/session-recovery.ts");
+    const { SubagentManager } = await import("../../../lib/manager.ts");
+
+    const children = ["helper-alpha", "helper-beta"].map((sessionId) => {
+      const child = spawn(
+        process.execPath,
+        ["-e", "console.log(\"ready\"); setInterval(() => {}, 1000);"],
+        { cwd: process.cwd(), detached: true, stdio: ["ignore", "pipe", "pipe"] },
+      );
+      return { sessionId, child };
+    });
+
+    try {
+      for (const { sessionId, child } of children) {
+        await new Promise<void>((resolve, reject) => {
+          child.stdout.once("data", () => resolve());
+          child.once("error", reject);
+        });
+        ensureSessionDir(stateDir, sessionId);
+        writeSessionMeta(stateDir, sessionId, {
+          agent: "sample-owner",
+          task: "helper work",
+          status: "running",
+          startedAt: 1,
+          taskBinding: binding,
+        });
+        upsertSession(stateDir, {
+          sessionId,
+          agent: "sample-owner",
+          task: "helper work",
+          status: "running",
+          startedAt: 1,
+          taskBinding: binding,
+        });
+        addSessionBashProcessGroup(stateDir, sessionId, child.pid!);
+        associateAppTaskSession(config, binding, sessionId);
+      }
+
+      // Simulate worker crash: external runtimeId with dead ownerProcess
+      const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+      attempt.runtimeId = "dead-worker-runtime";
+      attempt.lease = {
+        ...attempt.lease!,
+        runtimeId: "dead-worker-runtime",
+        expiresAt: new Date(Date.now() - 60_000).toISOString(),
+        ownerProcess: { pid: 999999, processIdentity: "dead-proc", startTimeTicks: "1" },
+      };
+      config.resourceStore.db
+        .prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?")
+        .run(JSON.stringify(attempt), "sample", claim.attemptId);
+
+      // Even though associateAppTaskSession was called twice (leaving attempt.sessionId = "helper-beta"),
+      // attempt.sessionIds and the SQL sessions index retain BOTH "helper-alpha" and "helper-beta".
+      expect(attempt.sessionId).toBe("helper-beta");
+      expect(attempt.sessionIds).toEqual(["helper-alpha", "helper-beta"]);
+
+      const recovery = createTaskSessionRecovery({
+        persistDir: stateDir,
+        manager: new SubagentManager({ persistDir: stateDir }),
+        bus,
+      });
+      await closeInstalledAppTaskRuntimes(bus);
+      await installCoreTaskRuntimes({
+        ...options(f, bus),
+        installControllers: false,
+        sessions: recovery,
+        appRegistrySnapshot: { id: "parallel-helper-crash-2", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+        executors: {
+          verify: async () => ({ state: "converged", summary: "Recovered after draining both helpers", facts: ["drained"] }),
+        },
+      });
+      await reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+
+      for (const { sessionId, child } of children) {
+        expect(readSessionBashProcessGroups(stateDir, sessionId)).toEqual([]);
+        expect(() => process.kill(child.pid!, 0)).toThrow();
+      }
+      expect(loadedTaskConfig(f).resourceStore.readTask(taskId)?.status.phase).toBe("converged");
+    } finally {
+      for (const { child } of children) {
+        try {
+          process.kill(-child.pid!, "SIGKILL");
+        } catch { /* already dead */ }
+      }
+    }
   });
 });

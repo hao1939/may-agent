@@ -26,14 +26,12 @@ import { listConversationTaskLinks } from "./conversation-task-links.js";
 import {
   admitConversationTaskChange,
   admitConversationTaskInput,
-  conversationTaskId,
   listPendingConversationTaskChanges,
   stopConversationTaskTurn,
 } from "./conversation-task-turns.js";
 import { createConversationTopic, linkConversationTopicTask, readAppConversationResource } from "./conversations.js";
 import { admitTaskInput } from "./inbox.js";
 import { readTaskInputs } from "../tasks/app-task-inputs.js";
-import { TaskBudgetAdmissionStore } from "./task-budget-admission.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -984,53 +982,6 @@ test.each(["link", "conversation"] as const)("grouped delivery (%s) leaves overf
 });
 
 
-test("unfunded first Conversation input survives replay and storage reopen, then admits once at the next grant", async () => {
-  setSystemTime(new Date("2026-11-09T12:00:00Z"));
-  const f = fixture();
-  const accounting = new TaskBudgetAdmissionStore(f.db);
-  accounting.install({ appId: app.id, sponsor: { appId: app.id, agent: app.id }, dailyCredits: 1, rootCredits: 5 });
-  observeAppTaskIntent(f.context(), { appAgent: app.id, intent: {
-    id: "earlier-work", parentId: "root", outcome: "Earlier work", acceptance: ["Done"],
-  } });
-  const hostFor = () => new AppInboxHost({
-    db: f.db, apps: [app],
-    admitConversation: (input) => admitConversationTaskInput(f.context(), { ...input, intent: f.input().intent }),
-  });
-  let host = hostFor();
-  try {
-    const { intent: _intent, ...input } = f.input();
-    const denied = host.admit(input);
-    expect(denied.created).toBe(true);
-    expect(denied.item).toMatchObject({
-      id: input.id, source: input.source, input: input.input, conversationSequence: 1, status: "pending",
-      handling: { phase: "deferred", funding: { reason: "sponsor-credit" } },
-    });
-    expect(denied.item.executionTaskId).toBeUndefined();
-    expect(denied.item.taskAdmissionKey).toBe(`conversation-input:${input.id}`);
-    expect(denied.item.recovery).toBeUndefined();
-    expect(f.store.readTask(conversationTaskId(app.id, "chat"))).toBeNull();
-    expect(host.admit(input)).toMatchObject({ created: false, item: denied.item });
-    host.close();
-    f.reopen();
-    host = hostFor();
-    await host.recoverAdmissions();
-    expect(host.get(input.id)).toEqual(denied.item);
-    if (denied.item.handling?.phase !== "deferred" || denied.item.handling.funding.retryAt === null)
-      throw new Error("Expected UTC funding deadline");
-    setSystemTime(denied.item.handling.funding.retryAt);
-    await host.recoverAdmissions();
-    const admitted = host.get(input.id)!;
-    expect(admitted).toMatchObject({ input: input.input, source: input.source,
-      executionTaskId: conversationTaskId(app.id, "chat"), taskAdmissionKey: `conversation-input:${input.id}` });
-    expect(admitted.handling).toBeUndefined();
-    const budget = new TaskBudgetAdmissionStore(f.db).budget;
-    expect(budget.view({ appId: app.id, taskId: admitted.executionTaskId! }, Date.now())?.rootCharged).toBe(1);
-    await host.recoverAdmissions();
-    host.admit(input);
-    expect(budget.view({ appId: app.id, taskId: admitted.executionTaskId! }, Date.now())?.rootCharged).toBe(1);
-  } finally { host.close(); }
-});
-
 test.each(["cancelled", "closed"] as const)(
   "an agent-backed %s Conversation retains immutable lineage and requires a successor across restart",
   (ending) => {
@@ -1066,3 +1017,34 @@ test.each(["cancelled", "closed"] as const)(
     expect(f.store.readTask(admitted.taskId)).toEqual(ended);
   },
 );
+
+test("reopening storage clears a retired indefinite funding hold on an Inbox item and resumes ordinary admission", () => {
+  const f = fixture();
+  createAppInboxItem(f.db, f.input("turn-deferred", 1, "Resume after funding hold"));
+  f.db
+    .prepare("UPDATE app_inbox_items SET task_admission_key = ?, handling = ?, available_at = NULL WHERE id = ?")
+    .run(
+      "conversation-input:turn-deferred",
+      JSON.stringify({
+        phase: "deferred",
+        funding: {
+          kind: "deferred",
+          reason: "adoption-required",
+          task: { appId: app.id, taskId: "conv:sample:chat" },
+          root: null,
+          retryAt: null,
+        },
+      }),
+      "turn-deferred",
+    );
+  f.db
+    .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+    .run();
+  f.reopen();
+  const cleared = getAppInboxItem(f.db, "turn-deferred")!;
+  expect(cleared.handling).toBeUndefined();
+  expect(cleared.availableAt).toBeUndefined();
+  const resumed = f.admit("turn-deferred", 1, "Resume after funding hold");
+  expect(resumed.item.executionTaskId).toBe(resumed.taskId);
+  expect(f.store.readTask(resumed.taskId)?.status.phase).toBe("pending");
+});

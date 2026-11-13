@@ -1,12 +1,7 @@
+import { currentProcessInstance, isProcessInstanceAlive } from "../../../lib/process-identity.js";
 import type { PendingTaskSettlement } from "./result.js";
-import { TaskExecutionStore } from "../state/task-execution-store.js";
-import { TaskBudgetAdmissionStore, TaskBudgetDeferredError, type TaskFundingConstraint } from "../state/task-budget-admission.js";
-import { pendingTaskFunding, pendingTaskExecutionConstraint, pendingTaskWorkspaceConstraint } from "./app-task-state.js";
+import { attemptSessionIds, pendingTaskWorkspaceConstraint } from "./app-task-state.js";
 import type { TaskWorkspaceConstraint } from "./workspace.js";
-import {
-  executionStillConstrained, TaskExecutionDeferredError,
-  type TaskExecutionAdmissionContext, type TaskExecutionConstraint,
-} from "../state/task-execution-admission.js";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { CONDITION_RECOVERY_INTERVAL_MS, taskEventPredatesReopening } from "./app-task-state.js";
@@ -67,7 +62,7 @@ function isManagedAgentHandler(handler: string, agent?: string): boolean {
 
 export type AppTaskClaim = {
   kind: "claimed";
-  /** Host checkpoint replay performs no new execution or attempt debit. */
+  /** Host checkpoint replay performs no new execution. */
   settlement?: PendingTaskSettlement;
   taskId: string;
   generation: number;
@@ -94,8 +89,6 @@ export type AppTaskClaim = {
 
 export type AppTaskClaimResult =
   | AppTaskClaim
-  | { kind: "deferred"; taskId: string; funding: TaskFundingConstraint }
-  | { kind: "deferred"; taskId: string; execution: TaskExecutionConstraint }
   | { kind: "deferred"; taskId: string; workspace: TaskWorkspaceConstraint }
   | { kind: "stale"; taskId: string }
   | { kind: "busy"; taskId: string; attemptId: string | null }
@@ -162,6 +155,7 @@ export type AppTaskAttemptRecovery = {
   eventsTruncated?: boolean;
   trigger?: Record<string, unknown>;
   sessionId?: string;
+  sessionIds?: string[];
   /** Current requirement revision used to fence the Task release. */
   taskGeneration: number;
   /** Retained execution revision used to validate its session identity. */
@@ -189,13 +183,16 @@ export type AppTaskRecoveryRepair = {
 
 const reconcilerRuntimeId = randomUUID();
 
-/** Recovery cannot replace an execution whose shutdown is still unconfirmed.
- * All routes use the same active reservations, independent of Task phase. */
-function hasUnconfirmedTaskExecution(config: AppTaskContext, taskId: string, attemptId?: string): boolean {
-  return new TaskExecutionStore(config.resourceStore.db).hasActive(
-    { appId: config.resourceStore.appId, taskId }, attemptId,
-  );
+/** Cross-process recovery cannot replace an attempt whose owning OS process is still alive. */
+function hasLiveExternalAttemptOwner(attempt: AppTaskAttempt | null | undefined): boolean {
+  if (!attempt || attempt.state !== "running" || attempt.pendingSettlement) return false;
+  if (attempt.runtimeId === reconcilerRuntimeId) return false;
+  const ownerProcess = attempt.lease?.ownerProcess;
+  if (!ownerProcess) return false;
+  if (ownerProcess.processIdentity === currentProcessInstance().processIdentity) return false;
+  return isProcessInstanceAlive(ownerProcess);
 }
+
 export const APP_TASK_ATTEMPT_LEASE_DURATION_MS = 15 * 60_000;
 
 function boundedLeaseTimes(nowMs = Date.now()): { lastActivityAt: string; expiresAt: string } {
@@ -602,10 +599,10 @@ function finishAttempt(
   const attempt = attemptId ? tree.attempts?.[attemptId] : undefined;
   if (attempt) {
     attempt.metadata.resourceVersion += 1;
+    delete attempt.pendingSettlement;
     attempt.state = state;
     attempt.finishedAt = now;
     attempt.summary = summary;
-    delete attempt.pendingSettlement;
     if (state === "completed") {
       if (attempt.acceptedResult) delete attempt.unacceptedResult;
       resource.status.executionFailures = undefined;
@@ -615,7 +612,6 @@ function finishAttempt(
     }
   }
   resource.status.currentAttemptId = undefined;
-  delete resource.status.funding;
 }
 
 /** Capture accepted facts inside the same mutation as attempt settlement. */
@@ -1028,7 +1024,7 @@ export function recoverableAppTaskAttempts(
   return Object.values(tree.resources ?? {}).flatMap((resource) => {
     if (resource.status.phase !== "running") return [];
     const attempt = currentResourceAttempt(tree, resource);
-    if (!attempt || attempt.runtimeId === reconcilerRuntimeId || (!includeFreshLeases && leaseIsFresh(attempt, nowMs)))
+    if (!attempt || attempt.runtimeId === reconcilerRuntimeId || hasLiveExternalAttemptOwner(attempt) || (!includeFreshLeases && leaseIsFresh(attempt, nowMs)))
       return [];
     const trigger = attemptTrigger(attempt);
     return [
@@ -1039,6 +1035,7 @@ export function recoverableAppTaskAttempts(
         ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
         ...(trigger ? { trigger: structuredClone(trigger) } : {}),
         ...(attempt.sessionId ? { sessionId: attempt.sessionId } : {}),
+        ...(attempt.sessionIds?.length ? { sessionIds: [...attempt.sessionIds] } : {}),
         taskGeneration: resource.metadata.generation,
         attemptGeneration: attempt.taskGeneration,
         taskResourceVersion: resource.metadata.resourceVersion,
@@ -1063,6 +1060,7 @@ export function expiredAgentSessionAppTaskAttempt(
   const attempt = currentResourceAttempt(tree, resource);
   if (
     !attempt ||
+    hasLiveExternalAttemptOwner(attempt) ||
     !isManagedAgentHandler(attempt.handler) ||
     !attempt.sessionId ||
     !attempt.lease ||
@@ -1080,6 +1078,7 @@ export function expiredAgentSessionAppTaskAttempt(
     ...(attempt.eventsTruncated ? { eventsTruncated: true } : {}),
     ...(trigger ? { trigger: structuredClone(trigger) } : {}),
     sessionId: attempt.sessionId,
+    ...(attempt.sessionIds?.length ? { sessionIds: [...attempt.sessionIds] } : {}),
     taskGeneration: resource.metadata.generation,
     attemptGeneration: attempt.taskGeneration,
     taskResourceVersion: resource.metadata.resourceVersion,
@@ -1102,8 +1101,7 @@ export function releaseInterruptedAppTaskAttempt(
   const resource = tree.resources?.[taskId];
   if (!resource || resource.status.phase !== "running") return { released: false, sessionIds: [] };
   const attempt = currentResourceAttempt(tree, resource);
-  if (!attempt || attempt.runtimeId === reconcilerRuntimeId) return { released: false, sessionIds: [] };
-  if (hasUnconfirmedTaskExecution(config, taskId, attempt.metadata.id)) return { released: false, sessionIds: [] };
+  if (!attempt || attempt.runtimeId === reconcilerRuntimeId || hasLiveExternalAttemptOwner(attempt)) return { released: false, sessionIds: [] };
   if (
     resource.metadata.generation !== recovery.taskGeneration ||
     resource.metadata.resourceVersion !== recovery.taskResourceVersion ||
@@ -1120,7 +1118,7 @@ export function releaseInterruptedAppTaskAttempt(
   const recoveredSummary = `${summary}; ${taskExecutionRetryExhausted(resource)
     ? "automatic retries remain exhausted; owner repair or explicit retry required"
     : "retrying from current task facts"}`;
-  const sessionIds = attempt.sessionId ? [attempt.sessionId] : [];
+  const sessionIds = attemptSessionIds(attempt);
   restoreAttemptEvents(tree, taskId, resource, attempt, now);
   finishAttempt(tree, resource, "interrupted", recoveredSummary, now);
   attempt.metadata.resourceVersion += 1;
@@ -1153,7 +1151,6 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
     return { released: false, sessionIds: [] };
   }
   const attempt = currentResourceAttempt(tree, resource);
-  if (hasUnconfirmedTaskExecution(config, recovery.taskId)) return { released: false, sessionIds: [] };
   if (
     !attempt ||
     !isManagedAgentHandler(attempt.handler) ||
@@ -1189,7 +1186,7 @@ export function releaseTerminalSessionExpiredAppTaskAttempt(
   commitTaskMutation(config, tree, {
     resourceMutation: finishResourceMutationScope(mutationScope, tree),
   });
-  return { released: true, sessionIds: [recovery.sessionId] };
+  return { released: true, sessionIds: attemptSessionIds(attempt) };
 }
 
 export function releaseLateTerminalWorkflowAppTaskAttempt(
@@ -1204,8 +1201,7 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
     return { released: false, taskId: binding.taskId };
   }
   const attempt = currentResourceAttempt(tree, resource);
-  if (hasUnconfirmedTaskExecution(config, binding.taskId)) return { released: false, taskId: binding.taskId };
-  if (!attempt || attempt.taskGeneration !== binding.generation || attempt.state !== "running" || attempt.sessionId !== sessionId) {
+  if (!attempt || hasLiveExternalAttemptOwner(attempt) || attempt.taskGeneration !== binding.generation || attempt.state !== "running" || attempt.sessionId !== sessionId) {
     return { released: false, taskId: binding.taskId };
   }
 
@@ -1333,7 +1329,6 @@ export function repairRunningAppTasksWithoutAttempt(
   const now = new Date().toISOString();
   for (const resource of Object.values(tree.resources ?? {})) {
     if (resource.status.phase !== "running") continue;
-    if (hasUnconfirmedTaskExecution(config, resource.metadata.id)) continue;
     const attemptId = resource.status.currentAttemptId;
     const attempt = attemptId ? tree.attempts?.[attemptId] : undefined;
     if (attempt?.state === "running") continue;
@@ -1606,13 +1601,6 @@ export function observeAppTaskIntent(
   ) {
     touchResource(resource, { executionRetryAt: undefined, freshHumanInput: true });
   }
-  // An authorized specification correction can remove the exact protected-policy
-  // blocker. Keep spending and all other holds, waits and retry facts unchanged.
-  const funding = resource.status.funding;
-  if (desiredStateChanged && funding?.reason === "protected-policy" &&
-    !new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(
-      funding, Date.parse(now), { resource, agent },
-    )) touchResource(resource, { funding: undefined });
   recordAdmission(input.intent.id, generation);
   const relevantConditionIds = new Set([...initialConditionIds, ...(resource.status.conditionIds ?? [])]);
   commitTaskMutation(config, tree, {
@@ -2825,8 +2813,6 @@ export function claimObservedAppTask(
     expectedResource?: { generation: number; resourceVersion: number };
     reason?: string;
     isAgentRunnable?: (agent: string) => boolean;
-    /** Private installed execution policy; provenance comes from trusted dispatch. */
-    execution?: TaskExecutionAdmissionContext;
     /** Recheck a trusted reserve dispatch against the exact resource fence. */
     canUseCoordinationReserve?: (resource: AppTaskResource, agent: string) => boolean;
     /** Validate and drain the retained session before replacement ownership commits. */
@@ -2862,7 +2848,7 @@ export function claimObservedAppTask(
     );
   }
   const settlement = persistedCurrentAttempt?.pendingSettlement;
-  if (!settlement && hasUnconfirmedTaskExecution(config, input.taskId)) {
+  if (!settlement && hasLiveExternalAttemptOwner(persistedCurrentAttempt)) {
     return { kind: "busy", taskId: input.taskId, attemptId: resource.status.currentAttemptId ?? null };
   }
   if (settlement) {
@@ -2874,38 +2860,10 @@ export function claimObservedAppTask(
       return claimObservedAppTask(config, input);
     }
   }
-  const heldFunding = pendingTaskFunding(resource);
-  if (heldFunding) {
-    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldFunding.retryAt);
-    return { kind: "deferred", taskId: input.taskId, funding: heldFunding };
-  }
-  const heldExecution = pendingTaskExecutionConstraint(resource);
-  if (heldExecution) {
-    acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldExecution.retryAt);
-    return { kind: "deferred", taskId: input.taskId, execution: heldExecution };
-  }
   const heldWorkspace = pendingTaskWorkspaceConstraint(resource);
   if (heldWorkspace) {
     acknowledgeIndexedRecoveryWait(config, input.taskId, snapshotRevision, heldWorkspace.retryAt);
     return { kind: "deferred", taskId: input.taskId, workspace: heldWorkspace };
-  }
-  const methodConstraint = resource.status.executionConstraint;
-  if (methodConstraint && (methodConstraint.requiredSlots ?? 1) > 1 &&
-      (methodConstraint.generation === undefined || methodConstraint.generation === resource.metadata.generation)) {
-    // A due check is mechanical. Restarting just the caller cannot make an
-    // inline method fit; retain the complete demand until it fits or is revised.
-    const retained = stateTransaction(config.resourceStore.db, () => {
-      if (!executionStillConstrained(config.resourceStore.db, methodConstraint)) return undefined;
-      const refreshed = { ...methodConstraint, retryAt: Date.now() + 60_000 };
-      const version = resource.metadata.resourceVersion;
-      touchResource(resource, { executionConstraint: refreshed });
-      commitTaskMutation(config, tree, { resourceMutation: {
-        fences: [{ taskId: input.taskId, resourceVersion: version }],
-        tasks: [{ ...resourceWrite(tree, resource, false), nextCheckAt: refreshed.retryAt }],
-      } });
-      return refreshed;
-    });
-    if (retained) return { kind: "deferred", taskId: input.taskId, execution: retained };
   }
   if (!config.resourceStore.allowsTaskExecution(input.taskId)) {
     return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
@@ -2990,6 +2948,7 @@ export function claimObservedAppTask(
   const canRecoverPreviousRuntime = Boolean(
     previousAttempt &&
     previousAttempt.runtimeId !== reconcilerRuntimeId &&
+    !hasLiveExternalAttemptOwner(previousAttempt) &&
     (input.reason === `attempt-recovery:${input.taskId}` || attemptTrigger(previousAttempt)),
   );
   if (admissionError) {
@@ -2998,7 +2957,7 @@ export function claimObservedAppTask(
       if (!canRecoverPreviousRuntime) {
         return { kind: "busy", taskId: input.taskId, attemptId: previousAttempt.metadata.id };
       }
-      if (previousAttempt.sessionId) {
+      if (input.recoverPreviousSession || attemptSessionIds(previousAttempt).length) {
         if (!input.recoverPreviousSession)
           throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
         if (!input.recoverPreviousSession(structuredClone(previousAttempt)))
@@ -3145,7 +3104,7 @@ export function claimObservedAppTask(
   const attemptId = `r_${generation}_${randomUUID()}`;
   const now = new Date().toISOString();
   if (canRecoverPreviousRuntime && previousAttempt) {
-    if (previousAttempt.sessionId) {
+    if (input.recoverPreviousSession || attemptSessionIds(previousAttempt).length) {
       if (!input.recoverPreviousSession)
         throw new Error("Task session recovery is unavailable; retained session ownership cannot be replaced safely");
       if (!input.recoverPreviousSession(structuredClone(previousAttempt)))
@@ -3219,8 +3178,6 @@ export function claimObservedAppTask(
     phase: "running",
     currentAttemptId: attemptId,
     admissionFailures: undefined,
-    funding: undefined,
-    executionConstraint: undefined,
     workspaceConstraint: undefined,
     executionRetryAt: undefined,
     freshHumanInput: undefined,
@@ -3231,7 +3188,6 @@ export function claimObservedAppTask(
     commitTaskMutation(config, tree, {
       resourceMutation: {
         requireUnpausedTask: input.taskId,
-        execution: input.execution,
         fences: [resourceFence],
         tasks: [resourceWrite(tree, resource, false)],
         attempts: [...changedAttempts],
@@ -3240,43 +3196,6 @@ export function claimObservedAppTask(
       },
     });
   } catch (error) {
-    if (error instanceof TaskBudgetDeferredError || error instanceof TaskExecutionDeferredError) {
-      // The failed claim rolled back. Preserve every unclaimed input and the
-      // fresh-human exception; persist only confirmed cleanup of the old runtime.
-      return stateTransaction(config.resourceStore.db, () => {
-        const retained = config.resourceStore.readTaskContext({ taskIds: [input.taskId] });
-        const pending = retained.resources?.[input.taskId];
-        if (!pending) throw new ResourceTaskMutationStaleError();
-        const cleaned = [...changedAttempts].filter(item => item.metadata.id !== attemptId);
-        if (pending.status.phase === "running" && (!previousAttempt || canRecoverPreviousRuntime)) {
-          pending.status.phase = "pending";
-          delete pending.status.currentAttemptId;
-        }
-        const savedTrigger = retained.taskTriggers?.[input.taskId];
-        const restoredTrigger = pendingEvents.length ? {
-          taskId: input.taskId, taskGeneration: pending.metadata.generation,
-          resourceVersion: (savedTrigger?.resourceVersion ?? 0) + 1,
-          events: structuredClone(pendingEvents),
-          event: structuredClone(preferredTriggerFromEvents(pendingEvents, agent)),
-          observedAt: pendingEvents.at(-1)!.observedAt,
-        } : savedTrigger;
-        const held = error instanceof TaskBudgetDeferredError
-          ? new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(error.constraint)
-          : executionStillConstrained(config.resourceStore.db, error.constraint);
-        touchResource(pending, error instanceof TaskBudgetDeferredError
-          ? { funding: held ? error.constraint : undefined }
-          : { executionConstraint: held ? error.constraint : undefined });
-        retained.taskTriggers = { ...retained.taskTriggers, ...(restoredTrigger ? { [input.taskId]: restoredTrigger } : {}) };
-        commitTaskMutation(config, retained, { resourceMutation: {
-          fences: [resourceFence],
-          tasks: [{ ...resourceWrite(retained, pending, !held), nextCheckAt: held ? error.constraint.retryAt : Date.now() }],
-          attempts: cleaned,
-        } });
-        return error instanceof TaskBudgetDeferredError
-          ? { kind: "deferred", taskId: input.taskId, funding: error.constraint }
-          : { kind: "deferred", taskId: input.taskId, execution: error.constraint };
-      });
-    }
     if (error instanceof ResourceTaskMutationStaleError && !config.resourceStore.allowsTaskExecution(input.taskId)) {
       return { kind: "waiting", taskId: input.taskId, conditionIds: [] };
     }
@@ -3330,35 +3249,6 @@ function matchingTaskAttempt(
   return matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
 }
 
-/** Preserve a completed executor's proposed effects under the original claim.
- * Funding is a wait on settlement, not another attempt or accepted business result. */
-export function deferAppTaskSettlement(
-  config: AppTaskContext,
-  claim: AppTaskClaim,
-  funding: TaskFundingConstraint,
-  settlement: PendingTaskSettlement,
-): void {
-  stateTransaction(config.resourceStore.db, () => {
-    const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
-    const match = matchingTaskAttempt(tree, claim);
-    if (!match) throw new ResourceTaskMutationStaleError();
-    const { resource, attempt } = match;
-    const resourceVersion = resource.metadata.resourceVersion;
-    const held = new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(funding);
-    attempt.metadata.resourceVersion++;
-    attempt.pendingSettlement = structuredClone(settlement);
-    // The attempt remains unsettled, but no worker or heartbeat is still running.
-    delete attempt.lease;
-    touchResource(resource, { phase: "waiting", funding: held ? funding : undefined });
-    commitTaskMutation(config, tree, { resourceMutation: {
-      fences: [{ taskId: claim.taskId, generation: claim.generation,
-        resourceVersion, currentAttemptId: claim.attemptId }],
-      tasks: [{ ...resourceWrite(tree, resource, !held), nextCheckAt: held ? funding.retryAt : Date.now() }],
-      attempts: [attempt],
-    } });
-  });
-}
-
 /** Record a mechanical observation without a claim, charge, or input settlement.
  * The sample occurs outside SQL; the exact resource fence rejects concurrent
  * revision, cancellation, input admission, or a competing observation. */
@@ -3388,7 +3278,7 @@ export function refreshTaskWorkspaceConstraint(
 export function deferAppTaskExecution(
   config: AppTaskContext,
   claim: AppTaskClaim,
-  constraint: TaskFundingConstraint | TaskExecutionConstraint | TaskWorkspaceConstraint,
+  constraint: TaskWorkspaceConstraint,
   facts: string[] = [],
 ): "applied" | "stale" {
   return stateTransaction(config.resourceStore.db, () => {
@@ -3403,18 +3293,11 @@ export function deferAppTaskExecution(
     finishAttempt(tree, resource, "interrupted", [summary, ...facts].join("\n"), now);
     attempt.failureReason = "ResourceAdmissionDeferred";
     delete attempt.lease;
-    const execution = "lane" in constraint ? constraint : undefined;
-    const workspace = "resource" in constraint ? constraint : undefined;
-    const funding = "lane" in constraint || "resource" in constraint ? undefined : constraint;
-    const held = workspace ? workspace.generation === resource.metadata.generation
-      : execution ? executionStillConstrained(config.resourceStore.db, execution)
-      : new TaskBudgetAdmissionStore(config.resourceStore.db).stillConstrained(funding!);
+    const held = constraint.generation === resource.metadata.generation;
     touchResource(resource, {
       phase: "pending",
       currentAttemptId: undefined,
-      funding: held ? funding : undefined,
-      executionConstraint: held ? execution : undefined,
-      workspaceConstraint: held ? workspace : undefined,
+      workspaceConstraint: held ? constraint : undefined,
       summary,
     });
     const mutation = finishResourceMutationScope(scope, tree);
@@ -3491,8 +3374,9 @@ export function releaseStaleAppTaskResult(
   if (!attempt || attempt.state !== "running" || attempt.taskId !== claim.taskId || attempt.taskGeneration !== claim.generation) {
     return { status: "superseded", taskId: claim.taskId };
   }
-  if (attempt.runtimeId !== reconcilerRuntimeId && hasUnconfirmedTaskExecution(config, claim.taskId, claim.attemptId))
+  if (hasLiveExternalAttemptOwner(attempt)) {
     return { status: "busy", taskId: claim.taskId };
+  }
   // The rejected claim's version predates the very update we must preserve.
   // Fence this freshly read state, still requiring the same intent/attempt.
   const resourceVersion = resource.metadata.resourceVersion;
@@ -3623,6 +3507,7 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs 
     version: (existing?.version ?? 0) + 1,
     ...times,
     runtimeId: attempt.runtimeId,
+    ownerProcess: currentProcessInstance(),
     ...(sessionId ? { sessionId } : {}),
   };
 }
@@ -3655,9 +3540,11 @@ export function recordAppTaskAttemptSession(config: AppTaskContext, claim: AppTa
   const tree = config.resourceStore.readTaskContext({ taskIds: [claim.taskId] });
   const match = matchingClaimAttempt(tree.resources?.[claim.taskId], tree.attempts?.[claim.attemptId], claim);
   if (!match) return false;
-  if (match.attempt.sessionId === sessionId && match.attempt.lease) return true;
+  const known = attemptSessionIds(match.attempt);
+  if (match.attempt.sessionId === sessionId && known.includes(sessionId) && match.attempt.lease) return true;
   match.attempt.metadata.resourceVersion += 1;
   match.attempt.sessionId = sessionId;
+  match.attempt.sessionIds = [...new Set([...known, sessionId])];
   refreshAttemptLease(match.attempt, sessionId);
   commitTaskMutation(config, tree, {
     resourceMutation: {
@@ -3705,9 +3592,11 @@ export function associateAppTaskSession(
   ) {
     return { status: "superseded", taskId: binding.taskId };
   }
-  if (attempt.sessionId !== sessionId || !attempt.lease) {
+  const known = attemptSessionIds(attempt);
+  if (attempt.sessionId !== sessionId || !known.includes(sessionId) || !attempt.lease) {
     attempt.metadata.resourceVersion += 1;
     attempt.sessionId = sessionId;
+    attempt.sessionIds = [...new Set([...known, sessionId])];
     refreshAttemptLease(attempt, sessionId);
     commitTaskMutation(config, tree, {
       resourceMutation: {
