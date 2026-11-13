@@ -202,6 +202,23 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
     }
     const rec = context.reconciliation;
     const work = taskWorkContext(known, rec.events, rec.previousAttempt);
+    let createdAssignments: Record<string, unknown> = {
+      available: false,
+      reason: "Creator-scoped Task discovery is not installed; absence is not an empty work list.",
+    };
+    let createdAssignmentsReadAt: string | undefined;
+    if (context.taskRead.created) {
+      try {
+        const { observedAt, ...page } = await context.taskRead.created({ limit: 5 });
+        if (page.creator.appId !== context.taskBinding.appId || page.creator.taskId !== context.taskBinding.taskId)
+          throw new Error("Created Task observation does not match this attempt's creator identity");
+        createdAssignments = { available: true, ...page };
+        // Freshness belongs to this read, not the content-addressed facts below.
+        createdAssignmentsReadAt = observedAt;
+      } catch (error) {
+        createdAssignments = { available: false, reason: String(error).slice(0, 300) };
+      }
+    }
     const full = {
       ...taskDecisionState(known, rec.events, rec.workload),
       work,
@@ -210,35 +227,41 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
       previousAttempt: rec.previousAttempt,
       waitsAtAttemptStart: rec.waits,
     };
-    let detail: string | undefined;
-    let detailError: string | undefined;
     const workspace = context.workspaceBrief;
-    if (workspace && "taskFile" in workspace) {
+    const saveDetail = (directory: string, value: Record<string, unknown>) => {
+      if (!workspace || !("taskFile" in workspace))
+        return { error: "Detail snapshot unavailable; use the scoped Task read and supplied attempt context." };
       try {
         const root = dirname(workspace.taskFile);
-        const artifact = writeContentAddressedJson(root, "decisions", {
-          binding: context.taskBinding,
-          resourceVersion: known?.resourceVersion,
-          ...full,
-        }, { pretty: true });
-        detail = join(root, artifact.ref);
+        const artifact = writeContentAddressedJson(root, directory, value, { pretty: true });
+        return { path: join(root, artifact.ref) };
       } catch {
-        detailError = "Detail snapshot could not be saved; use the scoped Task read and attempt-start context.";
+        return { error: "Detail snapshot could not be saved; use the scoped Task read and attempt-start context." };
       }
-    } else detailError = "Detail snapshot unavailable; use the scoped Task read and supplied attempt context.";
-    const sections = previewTaskDecisionSections(full);
+    };
+    const detail = saveDetail("decisions", {
+      binding: context.taskBinding,
+      resourceVersion: known?.resourceVersion,
+      ...full,
+    });
+    // Independent assignments change without changing the owner's large input.
+    const createdDetail = saveDetail("created-assignments", { binding: context.taskBinding, createdAssignments });
+    const sections = previewTaskDecisionSections({ ...full, createdAssignments });
     const packet = {
       binding: context.taskBinding,
       observed: {
         refresh,
         snapshot: knownAt ? "last-successful-read" : "attempt-start",
         ...(knownAt ? { readAt: knownAt } : {}),
+        ...(createdAssignmentsReadAt ? { createdAssignmentsReadAt } : {}),
         resourceVersion: known?.resourceVersion ?? null,
       },
       ...sections,
       coverage: {
-        detail,
-        detailError,
+        detail: detail.path,
+        detailError: detail.error,
+        createdAssignmentsDetail: createdDetail.path,
+        createdAssignmentsDetailError: createdDetail.error,
         ...(workspace && "taskFile" in workspace
           ? { attemptContext: join(dirname(workspace.taskFile), "context.json") }
           : {}),
@@ -248,7 +271,7 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
           taskId: context.taskBinding.taskId,
           target: { appId: context.taskBinding.appId },
         },
-        note: "An omitted preview links by JSON pointer into detail. attemptInput is assigned to this attempt; pendingInput is not yet claimed. Either may be bounded, and this is not complete history.",
+        note: "Omitted /createdAssignments previews link by JSON pointer into createdAssignmentsDetail; all other omitted previews link into detail. An unavailable detail requires scoped reads. attemptInput is assigned to this attempt; pendingInput is not yet claimed. Either may be bounded, and this is not complete history.",
       },
     };
     return {
@@ -262,6 +285,13 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
             taskWorkGuidance(work),
             ...(rec.workload ? [taskWorkloadGuidance(rec.workload)] : []),
             "Judge new input alongside accepted understanding. Progress, failures and waits coexist. Reading input is not fulfillment.",
+            ...(createdAssignments.available &&
+            Array.isArray(createdAssignments.items) &&
+            createdAssignments.items.length
+              ? [
+                  "createdAssignments is a bounded current observation of open assignments recorded under this Task as creator, independently of grouping children. When consuming a returned result, inspect its exact Task, accepted evidence and remaining obligations and judge its disposition within your call's authority. Use the existing guarded close for fulfilled finite work; preserve unfinished and standing responsibilities. Finishing the original assignment does not end those assignments, and their presence does not itself prevent your original result.",
+                ]
+              : []),
             "When coverage is incomplete, read the linked detail before the action needing that evidence. A refresh failure leaves known facts usable within their snapshot scope; diagnose with ordinary reads. Verify current authority for actions that require it.",
             JSON.stringify(packet),
           ].join("\n"),
