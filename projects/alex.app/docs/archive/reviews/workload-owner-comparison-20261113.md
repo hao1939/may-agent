@@ -688,9 +688,80 @@ Host/SDK types, architecture checks and lint passed. The longest test shard took
 267.49 seconds. Exact-head
 [Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43438513712)
 passed, including the image build and smoke test. These timings do not establish
-a speed gain. The PR is ready for independent review and remains unmerged.
+a speed gain. The PR subsequently merged at
+`e9c789b3b95bfd2d88ba3c69c0931347b3a2814d`, with the same Git tree as the
+verified source. Its main-branch CI run `43439781731` was cancelled after main
+advanced; it is not another completed validation run. Release and activation
+remain held.
 
 This verifies contract descriptions and compatible execution, not improved model
 behavior. No new model cohort replaces the standing-service omission or rejected
 proposal above. Ordinary installed follow-through, external delivery and release
 remain separate open gates.
+
+## Ordinary contribution readiness across restart
+
+The next question is whether a returned contribution resumes its owner without
+the extra neutral review event used above. A separate frozen cohort removes that
+event entirely. It uses merged Host #500 at
+`e9c789b3b95bfd2d88ba3c69c0931347b3a2814d` and Apps experiment
+`793f667e5c43ca46a7913a10b634eedb42cbbe20`, based on committed Apps `57fb09ac09`
+plus the same four branch-only drill files. The deterministic business workflow,
+commissioning, model, tools and request/time limits remain unchanged. No
+production source, installation or live Task is changed.
+
+After the contribution returns and the runtime restarts, the driver dispatches
+the exact original Task through its ordinary readiness/claim path. It supplies
+no new input or review event. Manual dispatch verifies eligibility and native
+consumption; it does not verify automatic controller scheduling. Expectations
+were frozen before inference. The unfinished case deliberately expects no owner
+attempt: its reported progress uses default `next-wake` interest, so progress
+remains available without making the owner runnable. Its prior obligation and
+exact review deadline must survive.
+
+| Case | Durable outcome | Exact contribution read | Provider requests |
+| --- | --- | --- | --- |
+| Sealed result | Finite contribution creator-closed; original answered and closed | Yes | 4 |
+| Preview only | Finite contribution creator-closed; original delivery and exact deadline preserved | Yes | 4 |
+| Standing service | Service remains idle/open; original answered and closed | No | 2 |
+| Unfinished contribution | Both assignments and original wait remain unchanged; no fresh owner attempt | Not applicable: no owner execution | 0 |
+
+All three eligible owners made the correct business disposition, and the quiet
+control stayed quiet. **Two of three model decisions meet every inspection
+check; with the no-inference control, three of four cases meet full acceptance.**
+The standing-service owner again read source/artifact evidence but omitted the
+exact Task read. Keep this failure; neither the earlier check nor this cohort's
+expectations were relaxed. A source/artifact read is not an exact Task read.
+No additional prompt, forced read gate or deciding-model call was introduced.
+
+The read-only assessor checked frozen heads/hashes, SQLite integrity, raw Task
+and attempt records, creator-guarded endings, exact caller receipts, arithmetic
+and deadlines. Every database contains zero `fixture.owner-review` events. The
+unfinished case has no provider requests or native calls and preserves its whole
+owner record. Original requirements/generation and child accepted evidence stay
+intact, every case retains two Tasks, and later dispatch produces no repeated
+model polling. Actual provider requests show the merged reply descriptions in
+all three deciding owners' tools.
+
+The cohort made ten provider requests and 650,111 serialized request bytes, with
+zero provider errors, tool errors or SQLite-lock warnings. Deduplicated adapter
+usage reports 130,344 total tokens, including cache categories; 657 reasoning
+tokens are separately reported. The frozen scripted preflight passed all four
+cases with eight local requests / 445,053 bytes and zero provider requests;
+strict source-SDK types passed. The trial did not require a new Host correction.
+
+Private evidence is
+`/home/hao/workspace-archive/ordinary-wake-owner-20261113-model1/`, with
+`ordinary-wake-owner-assess-20261113.py` and
+`ordinary-wake-owner-assessment-20261113.json` in the parent archive. The separate
+assessor's SHA-256 stayed
+`c54517f09980a5da618f39cca4631cd89b9d56e9756c5a39f7c7bc6b30dac08b`
+before and after inference. No provider cohort was rerun to replace its result.
+
+This establishes bounded owner readiness and consumption after an ordinary
+completed contribution, and preserves the existing distinction between retained
+progress and a requested wake. It does not demonstrate a causal improvement from
+#500: the wake presentation also changed, and there is no matched comparison.
+Consistent exact inspection, automatic installed dispatch, external delivery,
+reliable adaptation and workload benefit remain unproved. Release and activation
+remain held; the earlier cohort and its qualifications remain unchanged.

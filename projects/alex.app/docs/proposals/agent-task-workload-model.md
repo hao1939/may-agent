@@ -140,6 +140,13 @@ The [shared reply-description follow-up](../archive/reviews/workload-owner-compa
 clarifies the existing distinction between final App answers and saved-context
 communication at the schema owner; it changes no lifecycle or delivery behavior
 and does not resolve the observed inspection gap.
+The subsequent [ordinary-contribution check](../archive/reviews/workload-owner-comparison-20261113.md#ordinary-contribution-readiness-across-restart)
+removes the extra review event: completed contributions make their owners runnable
+after restart, while default `next-wake` progress preserves waiting with zero
+model calls. All three eligible owners make the correct business disposition;
+two inspect the exact contribution, and the standing-service omission remains.
+This checks readiness through manual dispatch, not automatic installed scheduling
+or external delivery. No new lifecycle control is needed for the observed path.
 
 ## The mental model
 
