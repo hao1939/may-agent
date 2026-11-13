@@ -200,6 +200,27 @@ wait remains intact, and the intended later input reaches the same Task through
 the existing route. Keep checkpoint evidence and current UI reads available.
 No overall latency, token, model-quality or recovery saving is measured yet.
 
+### Completed support cleanup: retire the manual retry ledger
+
+The unused `shared/tools/dispatch-registry.sh` and its legacy
+`retry-aware-dispatch/README.md` are retired. The shell helper kept independent
+failure counts under `.state/dispatch-registry`, keyed by normalized and truncated
+task descriptions. Its README prescribed checkpoint-directory searches and
+attempt-count rules outside the current Task contract. A tracked-source caller
+audit found only that README referring to the helper; it was not a discovered
+`SKILL.md` package. The inspected local registry directory was empty.
+
+This removes a competing manual retry policy and state format without a
+replacement. Exact Task identity, retained attempts/results, Host retry limits,
+and App-specific recovery remain authoritative. The existing
+[Task recovery guide](../2b-manual/task-execution-guide/SKILL.md#understand-the-work-before-repeating-it)
+already explains inspecting accepted work and target state before repeating an
+effect. The deliberate loss is the shell's manual dispatch functions and their
+description-keyed counts; existing installation files are left untouched. This
+source cleanup does not establish a deployed change or measured runtime saving.
+Source skill discovery is unchanged for all ten current agents; the six existing
+shared-skill tests and `check:may-design` pass.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and
