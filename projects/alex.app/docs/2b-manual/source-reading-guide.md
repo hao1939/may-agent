@@ -363,9 +363,9 @@ responsible route for retry; an already translated command is retained for
 replay. Task retry cannot recover input that was never durably routed.
 
 For cooperation, the current [agents tool](../../../may-agent/src/lib/manager-agents-tool.ts)
-still offers bounded `call` and `fork`; the fork remains owned by its live caller.
-The [message tool](../../../may-agent/src/lib/tools/message-tool.ts) uses declared
-App routes. Neither a helper call nor a local workflow `await` creates a durable
+still offers bounded `call`, `fork` and `follow-up`; the fork remains owned by its live caller.
+Durable cross-App work uses declared App Task requests (`attempt.apply({ requests })`).
+Neither a helper call nor a local workflow `await` creates a durable
 continuation that resumes at the same JavaScript line after a crash. See
 [workflow authoring](workflow-authoring.md).
 

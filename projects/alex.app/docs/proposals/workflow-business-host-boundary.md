@@ -19,7 +19,7 @@ guard-injection removal are merged.
 **Implementation status:** Implemented across Host [#455](https://github.com/hao1939/may-agent/pull/455)
 (`52ff184177`: `packages/sdk/src/workflow-kernel.ts`, `packages/sdk/src/testing.ts`,
 `src/lib/workflow-catalog.ts`, `src/lib/workflow-tool.ts`, `src/app/direct-workflow.ts`,
-`src/lib/background-exec.ts`, `src/app/direct-agent.ts`) and Gym
+`src/app/direct-agent.ts`) and Gym
 (`projects/gym/src/workflow-adapter.ts`, `projects/gym/src/cli.ts`,
 `projects/gym/test/workflow-adapter.test.ts`). Broader per-workflow migration to
 `inputSchema` / `runWorkflowTest` proceeds incrementally as workflows are touched.
@@ -359,11 +359,11 @@ effect and cleanup guarantees; the kernel cannot infer them from settled promise
    recording bounded `report.observerErrors` without blocking completion or
    replaying business work.
 
-Current [direct-run cleanup](../../../may-agent/src/app/direct-agent.ts) calls
-[background cleanup](../../../may-agent/src/lib/background-exec.ts), which sends
-`SIGTERM` without awaiting process exit. Adapter cleanup confirmation is therefore
-an implementation gap to fix and test before claiming the joined-process guarantee.
-If it remains unconfirmed after the cleanup bound, preserve ownership and report
+Current [direct-run cleanup](../../../may-agent/src/app/direct-agent.ts) drains
+persisted bash process groups (`drainPersistedSessionBashProcessGroups` in
+`src/lib/tools/bash.ts`); `src/lib/background-exec.ts` was retired in
+[Host PR 489](https://github.com/hao1939/may-agent/pull/489).
+If descendant cleanup remains unconfirmed after the cleanup bound, preserve ownership and report
 that exact boundary; do not hang forever or silently release the resource.
 
 | Boundary failure | Mechanical behavior |

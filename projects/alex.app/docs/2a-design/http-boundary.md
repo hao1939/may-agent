@@ -98,7 +98,10 @@ The unused legacy dashboard backend endpoints (`/api/stats`,
 
 The project Lineage aggregate `/api/projects/lineage` is retired in
 [Host PR 458](https://github.com/hao1939/may-agent/pull/458), merged as
-`2a762206dd52`. Installed adoption is unverified. The retired endpoint returns
+`2a762206dd52`, and the legacy project Journal and Discussion endpoints
+(`/api/projects/journal`, `/api/projects/discussion`) are retired in
+[Host PR 503](https://github.com/hao1939/may-agent/pull/503), merged as
+`d8d910fb5c`. Installed adoption is unverified. The retired endpoints return
 404. `/api/projects/sessions` and exact
 `/api/sessions/:id` reads remain, including recorded session parent/child links.
 The adapter no longer combines workflow mentions, historical file reads and

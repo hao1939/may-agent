@@ -246,14 +246,9 @@ for source status. Current configuration should omit it.
 | --------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `coding`                          | Read, write, edit, and shell tools scoped to the project root                                            |
 | `read-only`                       | Read files only                                                                                          |
-| `agents`                          | Agent cooperation (`call`, `fork`, `context`, `list`, `peek`, `cancel`, `sessions`)                      |
-| `message`                         | Async human/agent inbox messages                                                                         |
+| `agents`                          | Agent cooperation (`call`, `fork`, `follow-up`, `context`, `list`, `peek`, `cancel`, `sessions`)         |
 | `workflow`                        | Multi-step workflow recipes                                                                              |
-| `background-exec`                 | Spawn background processes                                                                               |
-| `cron`                            | Schedule and manage cron jobs                                                                            |
-| `scrape`                          | Web scraping                                                                                             |
-| `query_db` / `query-db`           | Read-only DB query tool                                                                                  |
-| `system-status` / `system_status` | Runtime status summary                                                                                   |
+| `query_db`                        | Read-only DB query tool                                                                                  |
 | `checkpoint`                      | Persist explicit session checkpoints                                                                     |
 | `cli-delegation`                  | Start a native coding-worker process with a persistent worker record; not an App/task ownership boundary |
 | `finish`                          | Finish the current task with a structured result                                                         |
@@ -275,6 +270,7 @@ Agents cooperate through these canonical actions on the `agents` tool:
 | ---------- | ------- | --------------------------------------------- |
 | `call`     | Sync    | Block until child agent completes, get result |
 | `fork`     | Async   | Start a helper owned by the live caller; returns sessionId |
+| `follow-up`| Control | Send a correction or additional context to a running owned helper |
 | `context`  | Query   | Read parent/origin/root/workflow context      |
 | `list`     | Query   | List available agents and active sessions     |
 | `peek`     | Query   | Read a running session's progress             |

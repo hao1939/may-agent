@@ -357,50 +357,35 @@ both passed on that exact head. The integrated App docs check passed with zero
 errors and the existing root-layout warning. No installation or external
 provider trial ran.
 
-## Remove the unused agent configuration projection: housekeeping candidate
+## Remove the unused agent configuration projection: merged
 
-**Design status:** Proposed for the next simplification decision.
-**Priority:** Lower than the [current-work delivery review](authority-boundary-simplification.md#priority-from-current-delivery-work).
-The user prioritizes simpler useful execution in the local and MLVM cases;
-this unused-view cleanup remains optional housekeeping.
-**Implementation status:** Source review only at merged Host `28fc86fbedb9`;
-no implementation or Host PR is prepared for this candidate.
+**Design status:** Accepted and merged in [Host PR 484](https://github.com/hao1939/may-agent/pull/484) (`2aa4d508a4`), followed by [Host PR 488](https://github.com/hao1939/may-agent/pull/488) (`f884d387f3`).
+**Implementation status:** Source implementation is merged on `main`; installed adoption remains separate.
 
-Agent registration currently updates two in-memory owners. The manager keeps
-the actual execution definition in its `agents` map; `RegistryStore` separately
-copies selected fields into an agent metadata map. That second map is never
-written to disk. Its only read path, `getRegistry()`, also scans session metadata
-directories and returns an aggregate of both unrelated resources.
+Agent registration previously updated two in-memory owners: `SubagentManager`
+kept the actual execution definition in its `agents` map, while `RegistryStore`
+separately copied selected fields into an agent metadata map whose only read
+path, `getRegistry()`, scanned session metadata directories and returned an
+aggregate of both unrelated resources.
 
-The current Host production search found no caller of `getRegistry()` and no
-reader of the copied agent metadata. Calls occur in tests; manager registration
-and unregistration only maintain the second map. A scoped App/script source
-search found no caller outside Host tests. This is stronger evidence than the
-unused `memoryLimit` field alone: the projection carrying that field has no
-current production consumer either.
+[Host PR 484](https://github.com/hao1939/may-agent/pull/484) (`2aa4d508a4`)
+removes `PersistedAgentConfig`, `Registry`, `toPersistedConfig`, `saveAgent`,
+`removeAgent` and `getRegistry()` from `RegistryStore` and `SubagentManager`,
+keeps `SubagentManager.agents` as the single in-memory authority, suppresses
+`[agents] Loaded ...` stdout log noise in `"manual"` worker subprocesses, removes
+the unused `resumedFromRunId` workflow field, and stream-skips oversized
+`item/*` notifications (`> 4 MiB`) in `CodexGoalAppServerClient` using structural
+top-level JSON-RPC envelope validation (`OversizedNotificationScanner`) while
+preserving the fail-closed 4 MiB limit for RPC responses, server requests and
+turn/goal notifications.
 
-Proposed change: remove the agent projection, its register/unregister copy
-operations, the aggregate getter and their unused Host library types. Keep the
-manager's actual definition map as the registration authority. Keep session
-metadata writes, exact `getSession()` reads, the separately consumed
-`loadAllSessionMetas()` helper, SQLite event projections and recovery behavior.
-The existing session-storage owner can keep its name; no alias, replacement
-registry or new abstraction is needed to remove its unrelated responsibility.
-
-The gain is one fewer state copy and registration lifecycle to keep aligned,
-plus a session-store interface limited to session persistence. The deliberate
-loss is the unused aggregate Host library view and its exported types; custom
-source callers would migrate to actual agent definitions and existing session
-reads. This does not retire a dashboard, a durable agent file or a public SDK
-contract, and does not claim lower model cost or better model quality.
-
-Verification should retain actual registration/replacement/unregistration,
-failed admission without session creation, exact cancellation status and
-file-backed reopen guarantees. Tests that only describe the removed projection
-can retire; surviving session assertions should read their exact session
-metadata through production code. Recheck consumers and current main before
-implementation, keep the separately owned #482 accounting change separate,
-and run the required Host checks if this candidate is selected.
+[Host PR 488](https://github.com/hao1939/may-agent/pull/488) (`f884d387f3`,
+following [Host PR 486](https://github.com/hao1939/may-agent/pull/486)
+`cc4c2d78b2`) binds the `checkpoint` tool preset directly to the active agent
+session context (`currentAgentSessionId(config.name) ?? getAgentSessionId(config.name)`),
+removes the retired `ResumeDiagnostic` / resume-failover synthesis from
+`execution-result.ts` and `loop-trace.ts` (preserving `message.delivery_failed`),
+and prunes 14 retired zero-reference event union variants from `SystemEvent`.
 
 ## Project metadata reader: merged
 
