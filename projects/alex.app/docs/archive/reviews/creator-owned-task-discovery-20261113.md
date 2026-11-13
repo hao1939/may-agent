@@ -143,6 +143,10 @@ when refreshing the existing native decision brief. It adds no field to the SDK
 execution context, workflow arguments, structural child view or Task records.
 Each page retains its observation time, continuation and existing bounded detail
 projection. Unavailable discovery is visible and does not invent an empty list.
+Owner detail and the creator page have separate immutable files. A contribution
+update changes its small page without copying the owner's retained input. The
+brief keeps read times separately and names each file for preview expansion;
+either write can fail without hiding the other source or inventing empty work.
 
 This intentionally revises the earlier decision to rely solely on an explicit
 model tool call for native discovery. The workflow read remains explicit. The

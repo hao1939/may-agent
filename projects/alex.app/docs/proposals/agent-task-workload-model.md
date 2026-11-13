@@ -109,6 +109,11 @@ preserved unfinished and standing contributions. All four candidate cases passed
 read-only evidence checks. This is one observation per case and revision in
 disposable state, not installed or reliable fleet behavior. Business delivery
 alone does not establish lifecycle follow-through; broader activation remains held.
+The native brief stores the creator page separately from owner detail: changes
+in a contribution must not duplicate the owner's unchanged input. Fresh read
+times remain observation metadata, and truncated previews identify the correct
+detail file. Independent storage failures remain visible and retain scoped-read
+fallbacks; neither projection becomes Task or closure authority.
 
 ## The mental model
 

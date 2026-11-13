@@ -482,3 +482,62 @@ describes work-start credits, sponsor/root balances and funding holds after #482
 removed their implementation. The current reader reports those funding/root
 observations unavailable. Guidance should describe the remaining execution and
 read contracts rather than imply those retired controls are still installed.
+
+### Independent creator-page storage
+
+The next review correctly identified a deeper coupling. Moving the read timestamp
+out of the snapshot fixed unchanged refreshes, but a real change in any created
+Task still copied the owner's entire retained input into another decision file.
+This is disk and write amplification: frequent contribution updates can consume
+space unrelated to owner changes. If storage fills, progress or accepted-result
+persistence can fail and processing can be held or interrupted. The projection
+does not mutate canonical Task records or decide closure; this review found no
+direct record-corruption, authority-bypass or incorrect-closure path. This is a
+reliability issue that can become an availability incident, not evidence that a
+critical live incident occurred. No live installation was changed or inspected
+to establish an operational incident in this correction.
+
+Host revision `3dbbfd5e250639935e6f6a46003e20e9a7c2e04f` separates the independently
+changing views using the existing immutable artifact writer. Owner detail keeps
+its original `coverage.detail` path and error. The creator page has
+`coverage.createdAssignmentsDetail` and a separate error. The brief's read time
+stays outside both content identities. `/createdAssignments` preview pointers
+resolve into the creator file; other pointers still resolve into owner detail.
+Neither file references the other's content identity. Each write succeeds or
+fails independently, with explicit scoped-read fallback. This adds no retention
+manager, pruning loop, controller, Task state or new mutation authority.
+
+The new churn regression first failed against the reviewed revision. Twelve
+creator pages differing only by a Task resource version now reuse one owner
+detail containing 124,000 bytes of unchanged input. Each creator file is below
+2,000 bytes in that fixture and contains no owner payload. Fresh owner evidence
+still creates a new owner file. The prior unchanged-refresh regressions verify
+reuse of both files. Two failure cases check each unavailable output directory,
+continued availability of the other detail, five-item Unicode page truncation,
+creator binding and resolution of every emitted creator-preview pointer.
+The focused reader/context and actual execution-context suites pass 22 tests /
+402 assertions. Host/SDK types, App boundaries and lint pass.
+
+Frozen Apps fixture `c2caae8945` passed its four-case scripted native preflight on
+this Host revision: four passes / ten local requests / 550,938 serialized request
+bytes, zero provider requests. Fulfilled finite contributions close through the
+native Task tool; unfinished and standing responsibilities remain, and the
+original caller dispositions and deadlines are preserved. This is fixture/wiring
+verification, not a repeated real-model cohort or installed acceptance.
+
+Exact-head GitHub run `43429053348` passed Quality and Container. Its four test
+shards report 3,619 passes, three explicit installed-agent skips, zero failures
+and 21,863 assertions. The local complete suite finished with 3,618 passes,
+three skips, one failure and 21,849 assertions: a ten-second
+`E4: metric breach to alert` polling timeout during the breach sample. An explicit
+isolated diagnostic passed the full metric lifecycle (one test / 22 assertions);
+the same test also passed in the hosted full suite. This does not erase the local
+failure or establish its cause. The metric fixture runs an ordinary authored
+workflow rather than the native model decision-brief path changed here. No retry
+loop, timeout increase or unrelated metric change was added to obtain green CI.
+
+The lesson extends the earlier invariant: independently changing observations must not
+duplicate unrelated large source material. For stable owner content of size B
+and N creator updates, store B once plus the small pages, rather than N copies
+of B. Genuine owner changes still retain their own snapshots; this correction
+does not claim bounded retention for every artifact or improved model judgment.
