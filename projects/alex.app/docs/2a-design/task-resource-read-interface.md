@@ -18,6 +18,9 @@ tasks.list({ appId, status?, limit?, cursor? })
 
 tasks.get({ appId, taskId })
   -> TaskDetail or not-found
+
+tasks.created({ limit?, cursor? })
+  -> bounded TaskCreatedPage across Apps for the current attempt's immutable creator identity
 ```
 
 The programmatic App read capability also exposes an opt-in shadow view:

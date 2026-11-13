@@ -105,8 +105,14 @@ diagnostics, file permissions, lifecycle and Bash limits. App
 both passed on final head `ac3b2770edda`; automated review approved with no open
 issues. These checks do not establish installed behavior.
 
-Unused legacy dashboard HTTP API retirement is deferred. Prompt/schema work and
-Telegram PR 468 belong to other workstreams and are not bundled here.
+Unused legacy dashboard HTTP API retirement (`/api/stats`, `/api/agents/activity`,
+`/api/agents/timeline`, `/api/agents/health`, `/api/agents/:name/detail`) was
+subsequently completed in [Host PR 474](https://github.com/hao1939/may-agent/pull/474)
+(`cd29dc70d9`). The remaining unused `extractHallucinatedRelPath` helper and
+legacy `memory-sanitizer.ts` file-write regex filter were retired in
+[Host PR 479](https://github.com/hao1939/may-agent/pull/479) (`9149a60268`).
+Telegram boundary decoupling and `SurfaceSession` unification landed in
+[Host PR 468](https://github.com/hao1939/may-agent/pull/468) (`07148372f9`).
 
 ## Retire default tool completion diagnostics
 
@@ -314,8 +320,13 @@ agent grid/drawer,
 activity timeline, live feed and session statistics. Current Overview and
 dedicated pages remain; session links use the current routed inspector. The
 old aggregate evaluation summary, seven-day delegation totals and workspace
-file list are deliberate losses, without replacement panels. Backend read APIs,
-retained evidence and the shared WebSocket transport remain. See the
+file list are deliberate losses, without replacement panels. The unused legacy
+dashboard backend endpoints (`/api/stats`, `/api/agents/activity`,
+`/api/agents/timeline`, `/api/agents/health` and `/api/agents/:name/detail`)
+were then retired in [Host PR 474](https://github.com/hao1939/may-agent/pull/474)
+(`cd29dc70d9`), and the inferred `/api/events/:id/graph` read model and SVG
+renderer were retired in [Host PR 476](https://github.com/hao1939/may-agent/pull/476)
+(`339ed72430`). Retained evidence and the shared WebSocket transport remain. See the
 [retirement record](../archive/reviews/legacy-dashboard-retirement-20261112.md)
 for source status and checks; installed adoption is unverified.
 Direct-agent chat uses saved transcripts with separate submission and reader

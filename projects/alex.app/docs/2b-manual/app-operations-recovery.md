@@ -383,13 +383,18 @@ that directory. They prove the bounded state repair, not
 that normal pacing has consumed the replacement input; accepted Task state must
 be read before claiming corrected consumption.
 
-## Repair incompatible Conversation input offline
+## Repair incompatible Conversation input offline (retired)
 
-Use the Host's existing `operate:recover-malformed-conversation-input` command
-only against a stopped, quiesced installation, with a consistent database backup
-and an exact reviewed JSON plan. Run `--dry-run` first; both dry-run and apply
-check the Task generation, resource version and absence of a current attempt.
-The command never starts an agent.
+The one-off `operate:recover-malformed-conversation-input` command used for the
+September 19 repair above was retired alongside the pre-#449 offline cutover
+scripts in [Host PR #477](https://github.com/hao1939/may-agent/pull/477)
+(`0711ede840`). The contract below is preserved as the historical record of
+that repair.
+
+The operation ran only against a stopped, quiesced installation, with a consistent database backup
+and an exact reviewed JSON plan. Both dry-run and apply
+checked the Task generation, resource version and absence of a current attempt.
+The command never started an agent.
 
 The plan binds `malformed` to the exact App, Task, input ID, source, payload,
 origin event, inbox idempotency key and Task admission key. `taskFence` carries

@@ -28,6 +28,11 @@ The [current-turn Stop button](human-control-surfaces.md#current-turn-control)
 is implemented; Task cancellation and ending a watch have separate effects.
 Request deadlines and close cancellation merged in Host
 [PR #133](https://github.com/hao1939/may-agent/pull/133) as `39a23f22`.
+In [Host PR #468](https://github.com/hao1939/may-agent/pull/468) (`07148372f9`),
+Telegram transport is split into pure view formatting (`telegram-format.ts`),
+provider HTTP/receipt persistence (`telegram-client.ts`), and unified per-surface
+session state (`telegram.ts`) over `HumanTaskService` and `getAppConversation`,
+with ESLint forbidding direct core state or raw DB imports in `transport/`.
 Source checks and merge state are not a deployment claim.
 The [conversation experience record](../proposals/telegram-conversation-experience.md)
 retains the acknowledgment, contextual-button and compact-update trials.

@@ -12,8 +12,8 @@ capabilities. The default Task board uses paged human Task reads. Source entry:
 Session review notes are read-only; HTTP generation and comment-write routes
 are retired. The legacy `/api/learning` aggregate and its UI are retired in
 [Host PR 457](https://github.com/hao1939/may-agent/pull/457), merged as
-`a84c6918ed40`. Installed adoption is unverified. Exact session detail, retained
-note reads and the agent evaluation-trend API remain available; the adapter does not reconstruct the old finding and
+`a84c6918ed40`. Installed adoption is unverified. Exact session detail and retained
+note reads (`/api/sessions/:id/eval`) remain available; the adapter does not reconstruct the old finding and
 notification summaries. See the [retirement record](../archive/reviews/learning-dashboard-retirement-20261112.md).
 
 ## Purpose
@@ -87,12 +87,14 @@ agents and executions, projects/Tasks, metrics/alerts, adapter diagnostics, and
 terminal transport. The executable server route table remains the endpoint
 catalog.
 
-Retiring the folded Overview "Legacy panels" is a browser-only reduction;
-its [record](../archive/reviews/legacy-dashboard-retirement-20261112.md) tracks
-the Host candidate and verification. Existing agent health/activity/timeline,
-agent detail and statistics endpoints remain supported. Removing their old
-dashboard consumers does not retire their API contracts. Shared WebSocket
-events, exact session reads and metric history remain available.
+Retiring the folded Overview "Legacy panels" is recorded in
+[its review](../archive/reviews/legacy-dashboard-retirement-20261112.md).
+The unused legacy dashboard backend endpoints (`/api/stats`,
+`/api/agents/activity`, `/api/agents/timeline`, `/api/agents/health` and
+`/api/agents/:name/detail`) are also retired in
+[Host PR 474](https://github.com/hao1939/may-agent/pull/474), merged as
+`cd29dc70d9`, returning 404. Shared WebSocket events, `/api/liveness`,
+`/api/agents`, exact session reads and metric history remain available.
 
 The project Lineage aggregate `/api/projects/lineage` is retired in
 [Host PR 458](https://github.com/hao1939/may-agent/pull/458), merged as
@@ -251,9 +253,12 @@ Browser receipt of a websocket frame is observation only. It does not satisfy
 semantic Event admission, App request handling, Task work, or Conversation
 completion.
 
-Trace graphs show causal evidence and links to authoritative App requests,
-Tasks, and optional adapter diagnostics. They do not reconstruct an event-pair
-work lifecycle in the browser.
+Trace reads (`/api/events/:id/trace` and `/api/loop-trace`) show causal
+evidence and links to authoritative App requests, Tasks, sessions, workflows,
+and optional adapter diagnostics. The inferred `/api/events/:id/graph` read
+model and SVG graph renderer were retired in
+[Host PR 476](https://github.com/hao1939/may-agent/pull/476), merged as
+`339ed72430`. They do not reconstruct an event-pair work lifecycle in the browser.
 
 ## Files and path safety
 

@@ -100,7 +100,7 @@ The platform uses real browser paths and `history.pushState`:
 | `/projects/:id/functions`        | Declared App commands that create requests                      |
 | `/metrics` and `/metrics/:id`    | Metric/alert detail and evidence                                |
 | `/sessions/:id`                  | Transcript, result, recorded parent/child links, tools, and steering                |
-| `/events` and `/events/:eventId` | Event list, admission health, and trace graph                   |
+| `/events` and `/events/:eventId` | Event list, admission health, exact event inspector, and loop trace |
 | `/knowledge`                     | Searchable durable knowledge                                    |
 | `/terminal`                      | Full-window ttyd terminal attached to Herdr                                       |
 
@@ -372,12 +372,14 @@ conversation, while event detail preserves per-turn causality.
 
 ## Event Surface
 
-The event page renders backend graph nodes and edges directly. It distinguishes:
+The event page renders the exact event inspector (`GET /api/events/:id`) and
+bounded loop trace (`GET /api/events/:id/trace` and `/api/loop-trace`) directly
+(the inferred `/api/events/:id/graph` SVG renderer was retired in
+[Host PR 476](https://github.com/hao1939/may-agent/pull/476), merged as
+`339ed72430`). It distinguishes:
 
-- persisted causal parent edges;
-- closure links;
-- projected compatibility evidence;
-- supporting session/tool/transcript detail;
+- persisted causal trace and closure links;
+- supporting session/workflow/failover execution detail;
 - Event admission, declared App/Task consumers, unhandled facts, and links
   to correlated App requests or tasks.
 
@@ -457,7 +459,7 @@ Telegram remains the preferred mobile notification/conversation surface.
 - Every control maps to an allowlisted event type and exact target and shows an
   honest `recorded`/`accepted` receipt.
 - Project and task meaning comes from project-owned state/read models.
-- Event graphs render server-provided causality without browser repair.
+- Event inspector and loop trace render server-provided causality without browser repair.
 - App activity and standalone heartbeat activity are not conflated.
 - Default UI source has one editable location and one generated served target.
 - Legacy hash routes and compatibility APIs are not used in new examples.

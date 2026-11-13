@@ -404,30 +404,29 @@ App work.
 
 ## API And Presentation
 
-The graph endpoint returns one complete bounded server-resolved graph:
+The [HTTP boundary](http-boundary.md) and [Web UI](webui.md) own the current
+event inspection and trace endpoints.
 
-```text
-GET /api/events/:eventId/graph
-```
+`GET /api/events/:eventId` returns the exact stored Event, admission state, and
+linked outcomes (`getEventView`). `GET /api/events/:eventId/trace` and
+`GET /api/loop-trace` return the bounded causal loop trace (`buildLoopTrace`),
+connecting the focused Event, alert, metric, workflow run, or session to its
+persisted trace, sessions, workflows, and failover diagnostics.
 
-Its stable contract includes the focused Event, revision, nodes, edges, resolved
-scope, raw persisted Events/relations, and diagnostics. Nodes carry stable keys,
-kind, role, optional display parent, identity references, time, label, summary,
-and a bounded data preview. Edges carry stable keys, endpoints, kind, label,
-and provenance. The focused persisted Event additionally exposes its complete
-stored envelope and data.
-
-The endpoint prefers persisted trace relationships and may add visibly marked
-compatibility projections for retained history. The browser renders every
-returned node and edge, distinguishes detail and diagnostics, and exposes raw
-evidence without applying another semantic filter.
+The inferred `GET /api/events/:eventId/graph` read model (`event-graph.ts`) and
+its client SVG graph renderer were retired in
+[Host PR #476](https://github.com/hao1939/may-agent/pull/476), merged as
+`339ed72430`. The `/events/:eventId` browser inspector now renders the exact
+`GET /api/events/:eventId` record and links directly to `GET /api/events/:eventId/trace`
+without synthesizing a second graph hierarchy.
 
 ## Current Implementation Boundary
 
 Implemented behavior includes additive trace/link storage, transactional Event
-and trace writes, inherited async trace context, closure links, bounded graph
-reads, transcript projection, diagnostic provenance, and backend-authored UI
-hierarchy. App requests and Tasks remain the mutable work authorities.
+and trace writes, inherited async trace context, closure links, exact Event
+inspection (`GET /api/events/:eventId`), and bounded loop-trace reads
+(`GET /api/events/:eventId/trace`, `GET /api/loop-trace`). App requests and
+Tasks remain the mutable work authorities.
 
 Retained history can still lack exact trace propagation. Its bounded audit and
 optional additive backfill are operational procedures; they are not another
