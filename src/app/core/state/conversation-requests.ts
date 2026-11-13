@@ -9,7 +9,6 @@ import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 
 export class ConversationRequestConflict extends Error {}
-export type ConversationRequestChange = Pick<AppConversationRequestUpdate, "id" | "expectedRevision" | "scope" | "inputIds">;
 type Row = {
   id: string;
   revision: number;

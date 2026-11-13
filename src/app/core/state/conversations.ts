@@ -740,32 +740,6 @@ export function linkConversationTopicTask(
   );
 }
 
-export function listConversationTopicLinksForTask(
-  db: SqliteDb,
-  appId: string,
-  taskId: string,
-): Array<{ appId: string; conversationId: string; topicId: string }> {
-  return (
-    db
-      .prepare(
-        `SELECT topic.app_id, topic.conversation_id, topic.id AS topic_id
-       FROM conversation_topic_tasks linked
-       JOIN conversation_topics topic ON topic.id = linked.topic_id
-       WHERE linked.app_id = ? AND linked.task_id = ?
-       ORDER BY topic.created_at, topic.id`,
-      )
-      .all(requiredText(appId, "topic task appId"), requiredText(taskId, "topic taskId")) as Array<{
-      app_id?: string;
-      conversation_id?: string;
-      topic_id?: string;
-    }>
-  ).flatMap((row) =>
-    row.app_id && row.conversation_id && row.topic_id
-      ? [{ appId: row.app_id, conversationId: row.conversation_id, topicId: row.topic_id }]
-      : [],
-  );
-}
-
 /** Queries are bound to an admitted Conversation by the Host, not by prompt fields. */
 export type ConversationContextQuery = import("@may-agent/sdk").TaskCommunicationQuery;
 

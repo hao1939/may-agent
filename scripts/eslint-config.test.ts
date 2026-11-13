@@ -63,8 +63,6 @@ it("keeps capability implementations out of core, but allows wiring and boundary
     'import { adapter } from "../../adapters/workspaces/git.js"; void adapter;',
     'import type { Wiring } from "../../composition/task-execution.js"; export type Check = Wiring;',
     'export { adapter } from "../../adapters/workspaces/git";',
-    'import { createConversationTurnHandler } from "../../conversations/turn-handler.js"; void createConversationTurnHandler;',
-    'export { prepareConversationInput } from "../../conversations/context";',
     'import type { TaskWorkspaces } from "./workspace.js"; export type Contract = TaskWorkspaces;',
     'import { getDb } from "../../../lib/db/connection.js"; void getDb;',
     'export { closeDb } from "../../../lib/db/connection";',
@@ -86,11 +84,9 @@ it("keeps capability implementations out of core, but allows wiring and boundary
       ["no-restricted-imports", 1],
       ["no-restricted-imports", 2],
       ["no-restricted-imports", 3],
-      ["no-restricted-imports", 4],
-      ["no-restricted-imports", 5],
+      ["no-restricted-imports", 8],
+      ["no-restricted-imports", 9],
       ["no-restricted-imports", 10],
-      ["no-restricted-imports", 11],
-      ["no-restricted-imports", 12],
     ]);
   }
   for (const filePath of [

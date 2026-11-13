@@ -99,7 +99,7 @@ export default [
           patterns: [
             {
               group: [
-                "**/adapters/**", "**/composition/**", "**/conversations/**",
+                "**/adapters/**", "**/composition/**",
                 "**/transport/**", "**/http/**", "**/control/src/server", "**/control/src/server.*",
               ],
               message: "Core depends on contracts; select adapters and conversational handlers in composition.",

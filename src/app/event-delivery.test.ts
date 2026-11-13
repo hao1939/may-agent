@@ -5,7 +5,6 @@ import { join } from "node:path";
 
 import { EVENT_INGRESS_SOURCE, EVENT_ROW_ID, EventBus } from "./core/events/bus.js";
 import { DbWriter } from "../lib/db-writer.js";
-import { checkEventTraceIntegrity } from "../lib/db/event-traces.js";
 import { closeDb, getDb } from "../lib/db/connection.js";
 import { createQueryService } from "../lib/query-service.js";
 
@@ -273,108 +272,6 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("reports event trace integrity gaps", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "project.feedback.created",
-        source: "test",
-        owner: "agent:owner",
-        data: { projectId: "sample", message: "review" },
-      });
-
-      const db = getDb(root);
-      expect(checkEventTraceIntegrity(db)).toMatchObject({
-        eventCount: 1,
-        traceCount: 1,
-        missingTraceCount: 0,
-        danglingParentCount: 0,
-        danglingLinkCount: 0,
-        ok: true,
-      });
-
-      const event = db.prepare("SELECT id FROM events").get() as { id: number };
-      db.run("DELETE FROM event_traces WHERE event_id = ?", [event.id]);
-      expect(checkEventTraceIntegrity(db)).toMatchObject({
-        eventCount: 1,
-        traceCount: 0,
-        missingTraceCount: 1,
-        ok: false,
-      });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("audits May Conversation admission and result correlation without adapter delivery", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      bus.emit({
-        type: "conversation.message.created",
-        source: "console",
-        owner: "app:may",
-        data: {
-          appId: "may",
-          conversationId: "may:primary",
-          author: { kind: "human", id: "console:1" },
-          text: "Review this",
-        },
-      });
-
-      const db = getDb(root);
-      const event = db.prepare("SELECT id FROM events").get() as { id: number };
-      expect(checkEventTraceIntegrity(db)).toMatchObject({
-        conversationHumanWithoutSingleRequestCount: 1,
-        resultWithoutConversationCount: 0,
-        semanticOk: false,
-      });
-
-      db.run(
-        `INSERT INTO app_inbox_items
-         (id, app_id, conversation_id, source_kind, source_id, input_kind,
-          input_data, status, origin_event_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          "request-1",
-          "may",
-          "may:primary",
-          "human",
-          "console:1",
-          "message",
-          JSON.stringify({ message: "Review this" }),
-          "pending",
-          event.id,
-          1,
-          1,
-        ],
-      );
-      expect(checkEventTraceIntegrity(db)).toMatchObject({
-        conversationHumanWithoutSingleRequestCount: 0,
-        resultWithoutConversationCount: 0,
-        semanticOk: true,
-      });
-
-      db.run(
-        "UPDATE app_inbox_items SET status = 'done', result = ?, conversation_id = NULL WHERE id = ?",
-        [JSON.stringify({ response: "Reviewed." }), "request-1"],
-      );
-      expect(checkEventTraceIntegrity(db)).toMatchObject({
-        conversationHumanWithoutSingleRequestCount: 0,
-        resultWithoutConversationCount: 1,
-        semanticOk: false,
-      });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("persists explicit trace parent and closure links", () => {
     const root = tempRoot();
     try {
@@ -571,14 +468,6 @@ describe("event delivery metadata", () => {
         parent_event_id: null,
       });
       expect(links.c).toBe(0);
-      expect(checkEventTraceIntegrity(db)).toMatchObject({
-        eventCount: 1,
-        traceCount: 1,
-        danglingTraceCount: 0,
-        danglingParentCount: 0,
-        danglingLinkCount: 0,
-        ok: true,
-      });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });

@@ -1002,11 +1002,6 @@ export function readLoadedAppTaskInputResult(input: {
   return config ? readAppTaskAdmissionOutcome(config, input.taskId, input.admissionKey, input.kind) : null;
 }
 
-/** Read the closure that ended this input, independently of later reopening. */
-export function readLoadedAppTaskInputClosure(input: { bus: EventBus; appDir: string; taskId: string; admissionKey: string }) {
-  return readableAppTaskContext(input.bus, input.appDir)?.resourceStore.readAdmissionCancellation(input.taskId, input.admissionKey) ?? null;
-}
-
 /** Host-private read authority; resolving it never installs an App. */
 export function readLoadedAppTaskContext(input: { bus: EventBus; appId?: string; appDir?: string }): AppTaskContext | null {
   return input.appId
