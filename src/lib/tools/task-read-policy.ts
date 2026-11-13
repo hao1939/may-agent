@@ -1,7 +1,7 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
 
-const READ_ACTIONS = ["list", "workload", "outcomes", "get", "contract", "communication"] as const;
+const READ_ACTIONS = ["list", "created", "workload", "outcomes", "get", "contract", "communication"] as const;
 const allowed = new Set<string>(READ_ACTIONS);
 
 /** Narrow this execution's built-in Task capability without mutating the shared definition. */

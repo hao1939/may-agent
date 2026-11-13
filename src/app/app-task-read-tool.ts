@@ -22,6 +22,7 @@ const parameters = Type.Object(
   {
     action: Type.Union([
       Type.Literal("list"),
+      Type.Literal("created"),
       Type.Literal("workload"),
       Type.Literal("outcomes"),
       Type.Literal("get"),
@@ -136,7 +137,7 @@ const parameters = Type.Object(
 
 type Params = {
   observation?: ObservationInterest;
-  action: "list" | "workload" | "outcomes" | "get" | "contract" | "publish" | "update" | "close" | "apply" | "communication";
+  action: "list" | "created" | "workload" | "outcomes" | "get" | "contract" | "publish" | "update" | "close" | "apply" | "communication";
   agent?: string;
   inputId?: string;
   communicationQuery?: TaskCommunicationQuery;
@@ -225,13 +226,14 @@ export function createAppTaskReadTool(options: {
   /** Resolve the live attempt capability at invocation time; shared tools must not retain one session's scope. */
   communicationReader?: () => TaskAttempt["read"]["communication"];
   workloadReader?: () => TaskAttempt["read"]["tasks"]["workload"] | undefined;
+  createdReader?: () => TaskAttempt["read"]["tasks"]["created"] | undefined;
   applier?: () => ((changes: TaskChanges) => Promise<unknown>) | undefined;
 }): AgentTool {
   return {
     name: "tasks",
     label: "Tasks",
     description:
-      "Inspect or mutate scoped App Tasks. Actions: list/workload/outcomes (current App discovery), get (exact Task requirements/results, optional target.appId, acceptedEvidence, inputKeys), contract (App agent, inputSchema, observations; pass observation {observerId,id,resource,expected} to build a Condition), communication (requires inputId; optional communicationQuery), apply (live changes {requests,conditions,actions,communication,inputKeys,facts} while keeping this attempt running), publish (localKey + dot-separated eventType), update (creator-only: taskId, expectedGeneration, complete input), and close (creator-only: taskId, expectedGeneration, expectedResourceVersion, afterResult, reason).",
+      "Inspect or mutate scoped App Tasks. Actions: created (open Tasks created by this Task across Apps and grouping parents; limit/cursor; previews require exact get before acting), list/workload/outcomes (current App discovery), get (exact Task requirements/results, optional target.appId, acceptedEvidence, inputKeys), contract (App agent, inputSchema, observations; pass observation {observerId,id,resource,expected} to build a Condition), communication (requires inputId; optional communicationQuery), apply (live changes {requests,conditions,actions,communication,inputKeys,facts} while keeping this attempt running), publish (localKey + dot-separated eventType), update (creator-only: taskId, expectedGeneration, complete input), and close (creator-only: taskId, expectedGeneration, expectedResourceVersion, afterResult, reason).",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -239,6 +241,17 @@ export function createAppTaskReadTool(options: {
       const appId = (scope?.appId ?? options.appId?.())?.trim();
       if (!appId) return result({ error: "No current App Task scope" });
       try {
+        if (params.action === "created") {
+          if (!scope?.taskId) throw new Error("Created Task discovery requires a current Task attempt");
+          if (params.target !== undefined || params.taskId !== undefined || params.status !== undefined)
+            throw new Error("Created Task discovery uses only the current creator; pass limit and cursor");
+          const read = options.createdReader?.();
+          if (!read) throw new Error("Current Task creator discovery is unavailable");
+          return result(await read({
+            ...(params.limit !== undefined ? { limit: params.limit } : {}),
+            ...(params.cursor !== undefined ? { cursor: params.cursor } : {}),
+          }));
+        }
         if (params.action === "contract") {
           const contract = (await import("./core/tasks/app-task-runtime.js")).getLoadedAppInputContract({
             bus: options.bus,

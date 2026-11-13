@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createRuntimeTaskRead } from "../reads/app-read.js";
+import { readCreatedTasks } from "../reads/task-created.js";
 import { closeCreatedAppTask } from "./task-closure.js";
 import {
   appTaskContext,
@@ -95,6 +96,9 @@ test("finite no-change review is idle until explicit creator closure; exact evid
     facts: ["report:checked"],
   });
   expect(f.read.get("child")).toMatchObject({ status: "idle", acceptedAttempt: { id: attempt.attemptId } });
+  expect(readCreatedTasks(f.source.resourceStore.db, f.actor).items).toContainEqual(expect.objectContaining({
+    appId: "worker", taskId: "child", status: "idle", acceptedAttempt: { id: attempt.attemptId, generation: 1 },
+  }));
   expect(f.read.list({ status: ["idle"] }).items).toHaveLength(1);
   expect(f.read.list({ status: ["done", "closed", "cancelled"] }).items).toEqual([]);
   const request = f.change();
@@ -110,6 +114,7 @@ test("finite no-change review is idle until explicit creator closure; exact evid
   expect(f.close(request).applied).toBe(false);
   expect(f.read.get("child")).toMatchObject({ status: "closed", closed: true, result: { decision: "no-change" } });
   expect(f.read.list({ status: ["closed"] }).items).toHaveLength(1);
+  expect(readCreatedTasks(f.source.resourceStore.db, f.actor).items.some(task => task.appId === "worker" && task.taskId === "child")).toBe(false);
   expect(f.read.list({ status: ["idle", "done", "cancelled"] }).items).toEqual([]);
   expect(f.target.resourceStore.readAttempt(attempt.attemptId)?.acceptedResult).toEqual(accepted);
   expect(f.target.resourceStore.listRecoveryCandidates().items).toEqual([]);

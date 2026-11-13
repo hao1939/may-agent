@@ -246,6 +246,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         const read = sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.taskRead : undefined;
         return read?.workload;
       },
+      createdReader: () => {
+        const sessionId = opts.getAgentSessionId(config.name);
+        return sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.taskRead?.created : undefined;
+      },
       applier: () => {
         const sessionId = opts.getAgentSessionId(config.name);
         const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;
