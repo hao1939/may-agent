@@ -12,7 +12,7 @@ function renderInstalledApps(result) {
   if (!apps.length) return html + '<p>No Apps loaded.</p></section>';
   html += '<div class="health-scroll"><table class="health-table"><thead><tr><th>App</th><th>Owner</th><th>Running Tasks</th><th>Waiting Tasks</th><th>Needs review</th></tr></thead><tbody>';
   for (const app of apps) {
-    const href = `/projects/${encodeURIComponent(app.id + '.app')}/tasks`;
+    const href = `/projects/${encodeURIComponent(app.id + '.app')}/tasks?appId=${encodeURIComponent(app.id)}`;
     html += `<tr data-app-id="${attrEsc(app.id)}" style="cursor:pointer" onclick="routeTo(${jsStringAttr(href)})">` +
       `<td><a href="${attrEsc(href)}" style="color:inherit;text-decoration:none"><strong>${esc(app.id)}</strong></a>${app.description ? `<div class="health-note">${esc(app.description)}</div>` : ''}</td>` +
       `<td>${esc(app.owner)}</td><td>${esc(app.runningTasks)}</td><td>${esc(app.waitingTasks)}</td><td>${esc(app.attentionTasks)}</td></tr>`;
@@ -95,13 +95,17 @@ function projectIdFromPath(path) {
   return projectIdOf({ path: path || '' });
 }
 
-function projectRouteFor(path, surface) {
-  const id = projectIdFromPath(path);
+function projectRouteFor(path, surface, explicitAppId) {
+  const query = explicitAppId ? `?appId=${encodeURIComponent(explicitAppId)}` : '';
   const suffix = surface && surface !== 'project' ? `/${surface}` : '';
+  if (explicitAppId) {
+    return `/projects/${encodeURIComponent(explicitAppId.replace(/\.app$/, '') + '.app')}${suffix}${query}`;
+  }
+  const id = projectIdFromPath(path);
   return `/projects/${id.split('/').map(encodeURIComponent).join('/')}${suffix}`;
 }
 
-async function showProjectDetail(path, initialTab) {
+async function showProjectDetail(path, initialTab, explicitAppId) {
   const loadVersion = ++projectLoadVersion;
   _projectDetailPath = path;
   const el = document.getElementById('projects-content');
@@ -113,8 +117,16 @@ async function showProjectDetail(path, initialTab) {
     const r = await fetch(`/api/projects/detail?path=${encodeURIComponent(path)}`);
     const body = await r.json().catch(() => ({}));
     if (loadVersion !== projectLoadVersion) return;
-    if (r.status === 404 && initialTab === 'tasks' && /^projects\/[^/]+\.app$/.test(path)) {
-      const appId = projectIdFromPath(path).replace(/\.app$/, '');
+    if (explicitAppId) {
+      const appDirName = `${explicitAppId.replace(/\.app$/, '')}.app`;
+      if (r.ok && !body.error) {
+        detail = { ...body, explicitAppId, app: { ...(body.app || {}), appId: explicitAppId, appDirName } };
+      } else {
+        detail = { name: appDirName, owner: '', status: 'loaded-app', explicitAppId, app: { appId: explicitAppId, appDirName, hasUi: false } };
+      }
+      _currentProjectDetail = detail;
+    } else if (r.status === 404 && initialTab === 'tasks' && /^projects\/.+\.app$/.test(path)) {
+      const appId = path.slice('projects/'.length).replace(/\.app$/, '');
       detail = { name: `${appId}.app`, owner: '', status: 'loaded-app', app: { appId, appDirName: `${appId}.app`, hasUi: false } };
       _currentProjectDetail = detail;
     } else {
@@ -273,9 +285,10 @@ function projectTabButton(tab, label, activeTab) {
 function switchProjectTab(btn, tab) {
   btn.parentElement.querySelectorAll('.tab-btn').forEach(b => { b.style.borderBottomColor = 'transparent'; b.style.color = 'var(--fg2)'; });
   btn.style.borderBottomColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
-  if (tab === 'kanban') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'tasks'));
-  else if (tab === 'functions') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'functions'));
-  else if (location.pathname.endsWith('/tasks') || location.pathname.endsWith('/functions')) history.replaceState({}, '', projectRouteFor(_projectDetailPath));
+  const explicitAppId = _currentProjectDetail?.explicitAppId || null;
+  if (tab === 'kanban') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'tasks', explicitAppId));
+  else if (tab === 'functions') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'functions', explicitAppId));
+  else if (location.pathname.endsWith('/tasks') || location.pathname.endsWith('/functions')) history.replaceState({}, '', projectRouteFor(_projectDetailPath, null, explicitAppId));
   loadProjectTab(tab);
 }
 

@@ -1455,6 +1455,22 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForSelector(".kanban-shell h3");
       expect(await page.$eval(".kanban-shell h3", (el) => el.textContent)).toBe("bare Tasks");
       expect(await page.$$eval(".kanban-card", (cards) => cards.length)).toBe(1);
+
+      // Even when sample.app/project.json declares id: "alpha.app", clicking Loaded App "sample"
+      // opens "sample" Tasks rather than "alpha", and slash-containing App IDs also open their exact Tasks.
+      await installApps("sample", "team/slash");
+      task("sample-only", 13, "running", "sample");
+      task("slash-only", 14, "waiting", "team/slash");
+      await page.evaluate("routeTo('/projects')");
+      await page.waitForSelector('#installed-apps [data-app-id="sample"] a');
+      await page.click('#installed-apps [data-app-id="sample"] a');
+      await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "sample Tasks");
+      expect(await page.$eval(".kanban-board", (el) => el.textContent)).toContain("sample-only");
+      await page.evaluate("routeTo('/projects')");
+      await page.waitForSelector('#installed-apps [data-app-id="team/slash"] a');
+      await page.click('#installed-apps [data-app-id="team/slash"] a');
+      await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "team/slash Tasks");
+      expect(await page.$eval(".kanban-board", (el) => el.textContent)).toContain("slash-only");
     } finally {
       await browser.close();
     }
