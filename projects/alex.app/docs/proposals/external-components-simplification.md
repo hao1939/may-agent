@@ -235,8 +235,8 @@ was run.
 **Design status:** Accepted on November 13, 2026.
 **Implementation status:** Candidate source is open in
 [Host PR #478](https://github.com/hao1939/may-agent/pull/478), at
-`32c0e58be5e31a203f000f29335beaf2fb138663`. Source merge and installed adoption
-are unverified.
+`694b4f490e07aa1f4dab52dfe335c84a1d2907f5`, including Host main `0711ede840`.
+Source merge and installed adoption are unverified.
 
 At reviewed Host baseline `cd29dc70d9`, `checkpoint()` appends to the exact
 session's checkpoint log, then overwrites
@@ -275,12 +275,19 @@ and file/transcript precedence checks. Use temporary fixtures and record the
 Host PR's exact head and CI evidence here; no installed-state cleanup is part
 of this change.
 
-At the candidate head, 128 focused checkpoint/preparation/session-recovery tests
-and three Task checkpoint recovery cases pass. `check:may-design` passes with
-zero errors and the existing unclassified `reports` root-layout warning.
-[GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43384510386)
-both pass at that head. Full local `MAY_TEST_SHARDS=4 bun run ci` also passes:
-4,013 tests, zero failures and three installation-only skips. No installed-state
+At initial head `32c0e58be5`, 128 focused checkpoint/preparation/session-recovery
+tests and three Task checkpoint recovery cases pass. `check:may-design` passes
+with zero errors and the existing unclassified `reports` root-layout warning.
+[Initial-head GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43384510386)
+both pass. Full local `MAY_TEST_SHARDS=4 bun run ci` also passes: 4,013 passes,
+zero failures and three installation-only skips. The branch then integrated
+the separate #477 source migration-tool retirement from main; the checkpoint
+change remains the same. At combined head `694b4f490e`, the same 128 focused
+tests and three Task recovery cases pass, and `check:may-design` passes with
+the same existing warning.
+[Combined-head GitHub Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43385328475)
+both pass. Full local `MAY_TEST_SHARDS=4 bun run ci` passes at the combined head:
+3,851 passes, zero failures and three installation-only skips. No installed-state
 or external model verification was run.
 
 ## Project metadata reader: merged
