@@ -8,7 +8,6 @@ import { createCheckpointTool } from "../../lib/tools/checkpoint.js";
 import { createCodingTools } from "../../lib/tools/coding.js";
 import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
-import { createMessageTool } from "../../lib/tools/message-tool.js";
 import { createQueryDbTool } from "../../lib/tools/query-db.js";
 import { createReadTool } from "../../lib/tools/read.js";
 import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
@@ -69,25 +68,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             getCallerSessionId: () => currentAgentSessionId(config.name),
             getCallerAgentName: () => config.name,
             callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
-          }),
-        );
-        break;
-      }
-
-      case "message": {
-        tools.push(
-          createMessageTool({
-            agentName: config.name,
-            persistDir,
-            // Read the published registry at invocation, even without Task
-            // scheduling or when this worker executes only one App.
-            allowedTargets: () => opts.appRegistry?.messageTargets() ?? [],
-            emit: (event: { type: string; [key: string]: unknown }) => bus.emit(event as any),
-            getCallerSessionId: () => currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name),
-            getCallerTrace: () => {
-              const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
-              return sid ? manager.activeSessions.get(sid)?.trace : undefined;
-            },
           }),
         );
         break;

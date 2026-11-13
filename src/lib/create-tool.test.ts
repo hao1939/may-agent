@@ -202,8 +202,7 @@ describe("createAgentsTool()", () => {
       for (const action of ["message", "send"]) {
         const result = parseResult(await tool.execute("removed", { action, agent: "nonexistent" }));
         expect(result).toEqual({ error: expect.stringContaining(deprecation) });
-        expect(result.error).toContain("Use the message tool");
-        expect(result.error).toContain("Durable work belongs to an App Task");
+        expect(result.error).toContain("Durable cross-App work belongs to an App Task request");
       }
     });
   });

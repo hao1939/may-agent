@@ -30,7 +30,6 @@ function registerMay(manager: SubagentManager): void {
     tools: [
       "query_db",
       "agents",
-      "message",
       "read",
       "run_cli_agent",
       "bash",
@@ -86,7 +85,7 @@ describe("chat runtime policy", () => {
       expect(prompt).toContain("This is a persistent conversation.");
       expect(prompt).not.toContain("Fresh System State");
       expect(prompt).not.toContain("what needs attention?");
-      expect(toolNames).toEqual(["query_db", "agents", "message", "read", "run_cli_agent"]);
+      expect(toolNames).toEqual(["query_db", "agents", "read", "run_cli_agent"]);
     } finally {
       manager.cancel(sessionId);
       rmSync(persistDir, { recursive: true, force: true });
@@ -188,7 +187,6 @@ describe("chat runtime policy", () => {
       expect(toolNames).toEqual(["query_db", "read", "finish"]);
       expect(toolNames).not.toContain("bash");
       expect(toolNames).not.toContain("write");
-      expect(toolNames).not.toContain("message");
       expect(session.toolPolicy).toBe("readonly");
     } finally {
       manager.cancel(sessionId);

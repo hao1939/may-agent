@@ -558,7 +558,6 @@ describe("shared agent execution preparation", () => {
         "cron",
         "edit",
         "finish",
-        "message",
         "query_db",
         "read",
         "run_cli_agent",
@@ -605,7 +604,7 @@ describe("shared agent execution preparation", () => {
         domain: "tests",
         systemPrompt: "identity",
         model: { contextWindow: 10_000 } as any,
-        tools: ["agents", "finish", "message", "read", "run_cli_agent"].map(tool),
+        tools: ["agents", "finish", "query_db", "read", "run_cli_agent"].map(tool),
       },
       projectRoot: "/tmp",
       sessionId: "legacy-deputy",
@@ -616,7 +615,7 @@ describe("shared agent execution preparation", () => {
     expect(prepared.tools.map((candidate) => candidate.name)).toEqual([
       "agents",
       "finish",
-      "message",
+      "query_db",
       "read",
       "run_cli_agent",
     ]);
@@ -625,7 +624,7 @@ describe("shared agent execution preparation", () => {
   test("binds shared tools to the exact concurrent agent session", async () => {
     const observations: Array<{ before?: string; after?: string }> = [];
     const sharedTool: AgentTool = {
-      ...tool("message"),
+      ...tool("agents"),
       execute: async () => {
         const before = currentAgentSessionId("may");
         await Bun.sleep(before === "session-old" ? 5 : 1);

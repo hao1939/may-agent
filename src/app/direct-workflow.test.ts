@@ -33,7 +33,7 @@ function setupDirectLayout() {
   mkdirSync(sharedRoot, { recursive: true });
 
   for (const [name, tools, promptText] of [
-    ["owner", ["coding", "workflow", "message", "finish"], "Owner instructions"],
+    ["owner", ["coding", "workflow", "checkpoint", "finish"], "Owner instructions"],
     ["reviewer", ["coding", "agents", "finish"], "Lab-forked reviewer instructions v2"],
   ] as const) {
     const dir = join(agentsRoot, name);
@@ -287,7 +287,7 @@ export async function execute(ctx) {
       sharedRoot: env.sharedRoot,
       outputRoot: env.outputRoot,
       models: { test: { id: "test-model" } as any },
-      toolDenials: [{ name: "message", reason: "isolated scenario" }],
+      toolDenials: [{ name: "checkpoint", reason: "isolated scenario" }],
       workflowTool: wfTool,
     });
     try {
