@@ -35,7 +35,7 @@ function changes(result: unknown): number {
 /** Search without a write transaction; recheck only selected rows while deleting. */
 function removeEligibleRows(
   db: SqliteDb,
-  table: "event_traces" | "event_trace_links" | "events" | "event_pair_runs",
+  table: "event_traces" | "events" | "event_pair_runs",
   key: "event_id" | "id" | "rowid",
   eligible: string,
   params: unknown[],
@@ -158,28 +158,6 @@ export function runDbMaintenancePass(
     [now - 3 * DAY_MS], PAIR_DELETION_BATCH_SIZE, "opened_at",
   );
 
-  // Old closure/reference links may be released only when both endpoints are
-  // expired and neither endpoint still anchors an open commitment.
-  remove(
-    "event_trace_links_expired",
-    `DELETE FROM event_trace_links WHERE id IN (
-       SELECT l.id
-       FROM event_trace_links l
-       JOIN events source_event ON source_event.id = l.from_event_id
-       JOIN events target_event ON target_event.id = l.to_event_id
-       WHERE l.created_at < ?
-         AND source_event.timestamp < ?
-         AND target_event.timestamp < ?
-         AND NOT EXISTS (
-           SELECT 1 FROM event_pair_runs p
-           WHERE p.open_event_id IN (l.from_event_id, l.to_event_id)
-             AND p.status IN ('open', 'orphan')
-         )
-       ORDER BY l.created_at LIMIT ?
-     )`,
-    [now - 5 * DAY_MS, now - 5 * DAY_MS, now - 5 * DAY_MS, batchSize],
-  );
-
   // Mirror every reference protection in trg_events_referential_retention.
   // Protected rows must not fill the batch and starve later eligible Events.
   deleted.events = removeEligibleRows(
@@ -195,10 +173,6 @@ export function runDbMaintenancePass(
          AND NOT EXISTS (
            SELECT 1 FROM event_traces t
            WHERE t.parent_event_id = events.id AND t.event_id != events.id
-         )
-         AND NOT EXISTS (
-           SELECT 1 FROM event_trace_links l
-           WHERE l.from_event_id = events.id OR l.to_event_id = events.id
          )
          AND NOT EXISTS (
            SELECT 1 FROM sessions s
@@ -224,13 +198,6 @@ export function runDbMaintenancePass(
     "event_traces",
     "event_id",
     "event_id NOT IN (SELECT id FROM events)",
-    [], batchSize,
-  );
-  deleted.event_trace_links_orphaned = removeEligibleRows(
-    db,
-    "event_trace_links",
-    "id",
-    "from_event_id NOT IN (SELECT id FROM events) OR to_event_id NOT IN (SELECT id FROM events)",
     [], batchSize,
   );
 

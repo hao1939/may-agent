@@ -931,7 +931,7 @@ export class DbWriter {
       } catch (error) {
         throw new Error(`Persisted event ${rowId} cannot expose its durable receipt`, { cause: error });
       }
-      persistEventTrace(this.db, event, rowId, timestamp);
+      persistEventTrace(this.db, event, rowId);
       if (emissionFence || event.type === "escalation.resolved" || event.type === "escalation.dismissed")
         this.persistExactTaskWake(event, target, rowId, timestamp);
       this.closePairForFollowup(payload, rowId, timestamp);
@@ -1035,13 +1035,7 @@ export class DbWriter {
       [closeEventId, closedAt, openEventId],
     );
     for (const row of rows) {
-      persistEventClosure(
-        this.db,
-        closeEventId,
-        Number(row.open_event_id),
-        typeof row.pair_name === "string" ? row.pair_name : "follow-up",
-        closedAt,
-      );
+      persistEventClosure(this.db, closeEventId, Number(row.open_event_id));
     }
   }
 
@@ -1127,7 +1121,7 @@ export class DbWriter {
           openEventId,
         ],
       );
-      persistEventClosure(this.db, closeEventId, openEventId, pair.name, openedAt);
+      persistEventClosure(this.db, closeEventId, openEventId);
       return;
     }
   }
@@ -1168,7 +1162,7 @@ export class DbWriter {
         [closeEventId, closedAt, `closed by ${eventType}`, pair.name, key],
       );
       for (const row of rows) {
-        persistEventClosure(this.db, closeEventId, Number(row.open_event_id), pair.name, closedAt);
+        persistEventClosure(this.db, closeEventId, Number(row.open_event_id));
       }
     }
   }

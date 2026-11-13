@@ -204,18 +204,6 @@ CREATE TABLE IF NOT EXISTS event_traces (
 CREATE INDEX IF NOT EXISTS idx_event_traces_trace ON event_traces(trace_id, event_id);
 CREATE INDEX IF NOT EXISTS idx_event_traces_parent ON event_traces(parent_event_id);
 
-CREATE TABLE IF NOT EXISTS event_trace_links (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  from_event_id INTEGER NOT NULL,
-  to_event_id INTEGER NOT NULL,
-  type TEXT NOT NULL DEFAULT 'reference',
-  label TEXT NOT NULL DEFAULT '',
-  created_at INTEGER NOT NULL,
-  UNIQUE(from_event_id, to_event_id, type, label)
-);
-CREATE INDEX IF NOT EXISTS idx_event_trace_links_from ON event_trace_links(from_event_id, type);
-CREATE INDEX IF NOT EXISTS idx_event_trace_links_to ON event_trace_links(to_event_id, type);
-
 CREATE TRIGGER IF NOT EXISTS trg_events_default_trace
 AFTER INSERT ON events
 BEGIN
@@ -347,10 +335,6 @@ WHEN
   OR EXISTS (
     SELECT 1 FROM event_traces t
     WHERE t.parent_event_id = OLD.id AND t.event_id != OLD.id
-  )
-  OR EXISTS (
-    SELECT 1 FROM event_trace_links l
-    WHERE l.from_event_id = OLD.id OR l.to_event_id = OLD.id
   )
   OR EXISTS (
     SELECT 1 FROM sessions s
@@ -492,6 +476,7 @@ export function applyDbSchema(db: SqliteDb): void {
     // Trigger definitions are not replaced by IF NOT EXISTS. Remove the superseded
     // type-specific discovery objects after preserving their exact outstanding subset.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
+    db.exec("DROP TABLE IF EXISTS event_trace_links");
     db.exec("DROP VIEW IF EXISTS event_direct_app_recovery_candidates");
     db.exec("DROP INDEX IF EXISTS idx_events_direct_app_recovery");
     db.exec(SCHEMA);
