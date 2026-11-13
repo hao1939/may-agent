@@ -583,3 +583,83 @@ duplicate unrelated large source material. For stable owner content of size B
 and N creator updates, store B once plus the small pages, rather than N copies
 of B. Genuine owner changes still retain their own snapshots; this correction
 does not claim bounded retention for every artifact or improved model judgment.
+
+## Merged-source native acceptance
+
+The bounded real-model cohort uses merged Host
+`2dd58ba3e31cffe56c080f518ad733a63a05dfbc`, including #491 and #497, and frozen
+Apps experiment `608c1f55ddf852a966133c45d0646444cd1003d1`. The experiment is based
+on committed Apps `e56d465868`, including Alex's current workload guidance, plus
+the four branch-only drill files. Both sources stayed frozen. This checks the
+combined source after runtime restart; it does not replace the earlier paired
+comparison or compare workload levels.
+
+Scripted commissioning and the deterministic calculation are unchanged. Only the
+post-restart owner uses `gpt-5.6-sol` through `openai-completions`, with no fallback.
+The bounds remain six requests per case, 24 total, 4 MiB serialized request
+bodies, 1,024 requested output tokens per request, 45 seconds per provider
+request, 90 seconds per native attempt and ten minutes per cohort. The preceding
+scripted preflight passed all four cases with zero provider requests; strict
+source-SDK types passed.
+
+| Case | Durable business outcome | Exact contribution read | Requests |
+| --- | --- | --- | --- |
+| Sealed result | Fulfilled finite contribution creator-closed; original answered and closed | Yes | 3 |
+| Preview only | Fulfilled finite contribution creator-closed; final report remains owed with its exact review deadline | Yes | 5 |
+| Standing service | Original answered and closed; reusable service remains idle/open | No | 3 |
+| Unfinished contribution | Contribution remains open; original remains owed with its exact review deadline | Yes | 2 |
+
+All four business outcomes are correct. **Three of four pass every acceptance
+check.** The standing-service owner read the source and artifact, used the App
+contract and retained the service consistently with its original assignment and
+returned result. It did not read the exact contribution Task. The supplied
+creator brief explicitly asks for that inspection, so the existing acceptance
+check remains failed. The cohort was not retried and the scorer was not relaxed.
+The driver's four business passes are not four complete inspection passes.
+
+That owner also initially submitted both a final `response` and an explicit
+`communication` message for an ordinary App input without saved human reply
+context. Host finish preflight rejected it with
+`Communication requires an input accepted by this Task with saved reply context`.
+The agent removed the unsupported communication and finished within the same
+bounded attempt. The corrected report settled the original local caller receipt.
+No unsupported message was accepted, no standing assignment was closed and no
+extra recovery model or controller was added.
+
+The actual supplied schema describes communication through an accepted `inputId`
+without stating the saved-reply-context prerequisite; `response` has no field
+description. The executor supplies additional communication guidance only when
+the attempt has communication context. This is a tool-description clarity
+limitation, not evidence that the underlying authority or preflight contract
+failed. Any later clarification should describe the existing distinction at its
+shared schema owner, preserve ordinary App responses and saved-context replies,
+and leave the guard intact. This sample does not justify another lifecycle gate
+or treating a rejected, corrected proposal as an accepted unsafe effect.
+
+The separate read-only assessment checked frozen heads/file hashes, SQLite
+integrity, raw Task/attempt and guarded ending records, creator identity actually
+supplied to the provider, native calls, saved arithmetic, caller receipts and
+deadlines. Original requirements/generation and child accepted evidence remain
+intact, each case retains exactly its original two Tasks, and no subsequent
+model polling followed disposition. There were 13 provider requests, 850,650
+serialized request bytes, zero provider errors, one rejected finish proposal
+and zero SQLite-lock warnings. Deduplicated adapter usage reports 171,411 total
+tokens: 39 input, 66,078 cache-read, 100,544 cache-write and 4,750 output; 805
+reasoning tokens are separately reported, not added again or converted to cost.
+
+Private evidence remains in
+`/home/hao/workspace-archive/merged-native-owner-20261113-model1/`;
+`merged-native-owner-assess-20261113.py` and
+`merged-native-owner-assessment-20261113.json` in its parent archive retain the
+separate assessment. Its top-level `passes: 4` counts assessed business cases;
+the per-case `allAcceptanceChecks` fields establish the three complete passes.
+No private provider payloads or credentials are published here.
+
+The merged source supports the intended finite-result handling in these cases,
+including closure while the original report remains owed. Exact inspection is
+not consistently demonstrated, and one example per case establishes neither
+reliability nor a feedback, cost or throughput benefit. The neutral review wake
+and local caller settlement do not establish ordinary installed follow-through
+or external delivery. Those acceptance gates stay open. No production source
+change is made from this cohort; release, activation and live Task changes remain
+held.

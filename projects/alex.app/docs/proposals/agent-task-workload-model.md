@@ -127,6 +127,16 @@ times remain observation metadata, and truncated previews identify the correct
 detail file. Independent storage failures remain visible and retain scoped-read
 fallbacks; neither projection becomes Task or closure authority.
 
+The [merged-source native cohort](../archive/reviews/workload-owner-comparison-20261113.md#merged-source-native-acceptance)
+checks that wiring with current Alex guidance after runtime restart. All four
+business outcomes were correct: fulfilled finite contributions closed, unfinished
+and standing contributions stayed open, and original delivery and deadlines
+were preserved. Three of four met every inspection check; the standing-service
+case omitted the exact Task read and corrected an unsupported communication
+proposal after Host rejection. Keep both qualifications. This bounded local
+trial does not establish consistent inspection, ordinary installed follow-through,
+external delivery or a workload benefit. Release and activation remain held.
+
 ## The mental model
 
 **Agents accept and organize work. Tasks preserve assignments. The Host executes
