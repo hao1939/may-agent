@@ -25,6 +25,8 @@ const role = Type.Union([
   Type.Literal("gym"),
 ]);
 const STANDING_RESEARCH_TASK_ID = "research-adoption";
+const recoveryRouteAcceptance =
+  "This is a reusable failure-notice assignment. After each verified repair or supported disposition, answer its notices and become idle without polling or a cycle-close decision; later incidents reuse this Task. Retiring the route requires App/operator disposition of future notices.";
 const standingResearchOutcome =
   "Continuously assess qualified Scout findings and older archived research for small, evidence-backed improvements to this installation.";
 const standingResearchAcceptance = [
@@ -338,11 +340,12 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: "runtime/selector-recovery",
       parentId: "root",
       agent: "alex",
-      outcome: "Restore automatic review selection and verify the declared workflow works, or escalate the remaining blocker to May.",
+      outcome: "Handle current and later failure notices for automatic review selection: restore the declared workflow and verify it works, or escalate the remaining blocker to May.",
       acceptance: [
         "Read current selector evidence and account for each admitted failure notice.",
         "Preserve original Task inputs, selection cursor and independent reviewer allowances.",
         "Return verified recovery evidence or the exact remaining blocker to the affected Task and assigning owner.",
+        recoveryRouteAcceptance,
       ],
       input: { appId: "alex", taskId: "runtime/task-outcome-selector" },
       priority: "P1" as const,
@@ -356,10 +359,11 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: `runtime/recovery/${safe(`${recoveryAppId}/${recoveryTaskId}`)}`,
       parentId: "root",
       agent: "alex",
-      outcome: `Diagnose and recover ${recoveryAppId}/${recoveryTaskId} within authorized scope, or escalate the remaining blocker to May.`,
+      outcome: `Handle current and later failure notices for ${recoveryAppId}/${recoveryTaskId}: diagnose and recover within authorized scope, or escalate the remaining blocker to May.`,
       acceptance: [
         "Read current Task evidence and account for each admitted exhaustion or controller-failure notice.",
         "Preserve original Task identity, generation, inputs and caller return links; repair prerequisites within authorized scope and verify recovery on the original Task, or escalate any unresolved domain or human blocker to May.",
+        recoveryRouteAcceptance,
       ],
       input: { appId: recoveryAppId, taskId: recoveryTaskId },
       priority: "P1" as const,

@@ -38,7 +38,8 @@ import type { TaskAgentRunner } from "../may-agent/src/app/core/tasks/execution.
 import { makeTaskRetryDue } from "../may-agent/src/app/core/tasks/app-task-test-support.ts";
 import { startAppInboxRuntime } from "../may-agent/src/app/composition/app-inbox-runtime.ts";
 import { fakeModel } from "../may-agent/test/fixtures/model.ts";
-import alex, { RUNTIME_PATTERN_AUDIT_TASK_ID } from "./app.ts";
+import alex, { RUNTIME_PATTERN_AUDIT_TASK_ID, taskInputForEvent } from "./app.ts";
+import { isAlexOperationalRecoveryTask } from "./task-completion.ts";
 import { workloadReviewPolicy, workloadReviewTask, WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID } from "./workload-review-policy.ts";
 import {
   evaluationJudgmentSchema,
@@ -68,7 +69,7 @@ async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (t
     }),
   );
   options.setup?.(appDir);
-  const definition = {
+  let definition = {
     ...(options.definition ?? alex),
     workspace: undefined,
     schedules: [],
@@ -172,7 +173,7 @@ async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (t
         },
       });
     },
-    async restart() {
+    async restart(nextDefinition?: AppDefinition) {
       inbox.close();
       const closing = closeInstalledAppTaskRuntimes(bus);
       start.resolve();
@@ -180,6 +181,10 @@ async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (t
       closeDb(root);
       db = getDb(root);
       bus = new EventBus();
+      if (nextDefinition) {
+        definition = { ...nextDefinition, workspace: undefined, schedules: [], metrics: [] };
+        await registry.reload();
+      }
       await open();
     },
     async close() {
@@ -746,6 +751,76 @@ test("controller recovery finishes each incident and accepts later failures on t
     else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
   }
 }, 15_000);
+
+test("new failure notices adopt clarified recovery requirements once, preserving prior receipts and the original obligation", async () => {
+  for (const selector of [false, true]) {
+    const legacyDefinition: AppDefinition = { ...alex, task: admitted => {
+      const mapped = alex.task!(admitted);
+      if (mapped.kind !== "desired" || !isAlexOperationalRecoveryTask("alex", mapped.intent.id)) return mapped;
+      const subject = mapped.intent.input as { appId: string; taskId: string };
+      return { ...mapped, intent: { ...mapped.intent,
+        outcome: selector
+          ? "Restore automatic review selection and verify the declared workflow works, or escalate the remaining blocker to May."
+          : `Diagnose and recover ${subject.appId}/${subject.taskId} within authorized scope, or escalate the remaining blocker to May.`,
+        acceptance: selector ? [
+          "Read current selector evidence and account for each admitted failure notice.",
+          "Preserve original Task inputs, selection cursor and independent reviewer allowances.",
+          "Return verified recovery evidence or the exact remaining blocker to the affected Task and assigning owner.",
+        ] : [
+          "Read current Task evidence and account for each admitted exhaustion or controller-failure notice.",
+          "Preserve original Task identity, generation, inputs and caller return links; repair prerequisites within authorized scope and verify recovery on the original Task, or escalate any unresolved domain or human blocker to May.",
+        ],
+      } };
+    } };
+    let cycles = 0;
+    const f = await runtime(async ({ attempt }) => {
+      expect(isAlexOperationalRecoveryTask("alex", attempt.task.id)).toBe(true);
+      cycles++;
+      return { runId: attempt.attemptId, handlerResult: {
+        state: "converged", summary: "Recorded the scoped notice disposition; independent original work remains owed.",
+        facts: ["The exact notice was accounted for."], actions: [], result: { cycle: cycles },
+      } };
+    }, undefined, { definition: legacyDefinition });
+    try {
+      const original = f.admit("original", selector
+        ? { kind: "automatic-review", data: {} }
+        : { kind: "message", data: { message: "The original outcome remains owed." } });
+      const originalTaskId = original.waitingOn!.id;
+      const input = taskInputForEvent({ type: "handler.failed", source: "app-task-controller",
+        data: { appId: "alex", taskId: originalTaskId, stage: "task-reconciliation", willRetry: true },
+      } as never)!;
+      const first = f.admit("legacy-notice", input);
+      const recoveryTaskId = first.waitingOn!.id;
+      await f.run(recoveryTaskId);
+      await f.inbox.host.refreshTaskResults("alex", recoveryTaskId);
+      const firstReply = f.inbox.host.get(first.id);
+      expect(firstReply).toMatchObject({ status: "done", result: { result: { cycle: 1 } } });
+      const before = f.store.readTask(recoveryTaskId)!;
+      const accepted = f.store.readAttempt(before.status.observedAttemptId!)!;
+      const originalBefore = f.store.readTask(originalTaskId);
+      await f.restart(alex);
+      expect(f.store.readTask(recoveryTaskId)).toEqual(before);
+      const next = f.admit("current-notice", input);
+      expect(next.waitingOn?.id).toBe(recoveryTaskId);
+      expect(f.store.readTask(recoveryTaskId)?.metadata.generation).toBe(2);
+      expect(f.store.readAttempt(accepted.metadata.id)?.acceptedResult).toEqual(accepted.acceptedResult);
+      expect(f.admit("legacy-notice", input)).toEqual(firstReply!);
+      await f.run(recoveryTaskId);
+      await f.inbox.host.refreshTaskResults("alex", recoveryTaskId);
+      expect(f.inbox.host.get(next.id)).toMatchObject({ status: "done", result: { result: { cycle: 2 } } });
+      expect(f.inbox.host.get(first.id)).toEqual(firstReply);
+      const later = f.admit("later-notice", input);
+      expect(later.waitingOn?.id).toBe(recoveryTaskId);
+      expect(f.store.readTask(recoveryTaskId)?.metadata.generation).toBe(2);
+      expect(f.store.readAttempt(accepted.metadata.id)?.acceptedResult).toEqual(accepted.acceptedResult);
+      expect(f.store.readTask(originalTaskId)).toEqual(originalBefore);
+      expect(f.inbox.host.get(original.id)?.status).toBe("handling");
+      expect(f.store.readCancellation(recoveryTaskId)).toBeNull();
+      expect(f.store.listTaskIds({ limit: 10 }).sort()).toEqual([originalTaskId, recoveryTaskId].sort());
+      expect(cycles).toBe(2);
+    } finally { await f.close(); }
+  }
+});
 
 test("repair before exhaustion lets Host resume the real selector automatically", async () => {
   const enabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;

@@ -79,11 +79,27 @@ explicit, guarded closure path.
 The [November 13 lifecycle review](../archive/reviews/recovery-route-lifecycle-20261113.md)
 found a live close recommendation on such a route. The installed policy retained
 it, but worker guidance and bounded workload review did not make its continuing
-purpose clear. The source correction makes that purpose explicit and shares the
-existing route classification across routing, closure and read-only review.
-It preserves Task identities, requirements, generation and existing receipts.
+purpose clear. The initial classification/guidance correction shared the
+existing route predicate across routing, closure and read-only review without
+changing requirements. Its native comparison then showed that general guidance
+alone was inconsistent while the assignment still read like a finite repair.
+The source now declares current and later notices in each recovery Task's
+outcome and acceptance. No new lifecycle field or Host mechanism is needed.
+
+A new normally routed notice adopts those clarified requirements on the same
+App-created Task through ordinary admission. A source restart alone leaves the
+saved requirements untouched; old input replays keep their receipts. The
+compatibility regression covers both selector and general recovery: the first
+fresh notice revises requirements once, later notices share that generation,
+and prior accepted evidence and the original obligation remain unchanged.
+Directly addressed input does not revise requirements. Existing idle records
+without another routed notice require a creator/App decision if their terms
+need revision; this change adds no sweep or automatic reopening.
 Source verification includes a second real controller-failure incident after
-restart; changed model behavior and installed adoption remain unproved.
+restart. In the assignment comparison, both old and clarified requirements
+produced the expected recovery retention and finite assessment closure. This
+bounded result shows compatibility, without demonstrating improved judgment;
+installed adoption remains unproved.
 
 ## Startup boundary: first verified finding
 

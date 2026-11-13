@@ -83,9 +83,15 @@ The [November 13 recovery-route review](../archive/reviews/recovery-route-lifecy
 separates a finished repair cycle from its declared reusable input route. The
 bounded disposition reader now recognizes Alex's App-created recovery routes
 without hiding outstanding work. Source guidance asks owners to answer each
-notice and become idle without polling. A scripted controller/restart check
-verifies a later incident reaches the same route; this does not establish model
-adoption or justify closing ordinary finite work as standing service.
+notice and become idle without polling. A native comparison found that generic
+guidance was inconsistent with finite-sounding recovery requirements. The App
+now declares the continuing route in each assignment's outcome and acceptance;
+normal fresh admission adopts the clarification once while preserving old
+receipts. A scripted controller/restart check verifies later incidents still
+arrive. A second native comparison retained recovery routes and closed finite
+assessments in both assignment arms; it shows compatibility, without measuring
+an improvement. These source and bounded comparison checks do not establish
+installed adoption or make ordinary finite work a standing service.
 
 ## The mental model
 

@@ -57,9 +57,9 @@ specific continuing responsibility, for example:
 - An awaited result: record the exact Condition, its provider, the result that
   matters and the action it enables. Prefer the actual result over a separate
   acknowledgment that somebody retried or forwarded the work.
-- A standing assignment: record the recurring purpose, its declared schedule
-  or input route, its budget, and who can revise or end it. Between scheduled
-  observations, the latest work may be idle.
+- A standing assignment: record the recurring purpose in its outcome and
+  acceptance, its declared schedule or input route, its budget, and who can
+  revise or end it. Between scheduled observations, the latest work may be idle.
 - Observation of a resource: name the resource, the relevant change, the
   existing observation/Condition route, and when observation should end.
   A review checkpoint is justified when a decision can change then; it is not

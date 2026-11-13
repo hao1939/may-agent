@@ -2,9 +2,10 @@
 
 **Supports:** [Recovery ownership](../../proposals/unified-agent-recovery-20261017.md#repair-completion-and-the-reusable-route)
 and [idle-Task disposition](../../proposals/agent-task-workload-model.md).
-**Status:** Read-only installed observation, local App correction and scripted
-controller/restart verification. No activation, release, live Task mutation or
-model request. Changed model judgment remains unproved.
+**Status:** Read-only installed observation, local App correction, scripted
+controller/restart verification and subsequent native model comparisons in
+disposable state. No activation, release or live Task mutation. Bounded model
+evidence and installed adoption remain separate.
 
 ## Finding and decision
 
@@ -28,8 +29,9 @@ Keep the existing declared operational route. Finishing a repair cycle answers
 its notices and returns recovery evidence; the route becomes idle without
 polling. Retirement requires App/operator disposition of future notices.
 Ordinary finite assignments keep their guarded closure path. This preserves
-current identities and requirements instead of introducing incident grouping,
-automatic reopening or another controller.
+current routing identities without introducing incident grouping, automatic
+reopening or another controller. The assignment clarification below uses the
+normal requirement-revision path.
 
 The source correction shares the existing recovery-ID predicate across event
 routing, completion policy and bounded disposition review. Completion now
@@ -116,10 +118,124 @@ canonical App checks. Its model-surface stage reported May's existing omitted
 `system-investigation` and `verification` skills, identical to the captured
 baseline at this candidate path. The full global check remains non-green.
 
+## Native comparison: guidance alone is inconsistent
+
+Frozen Apps `e9b44296e923370fb1f38b492dd525b918834506` uses the real managed
+Task-agent adapter, the pinned Host/SDK above, actual Alex input mapping,
+guarded settlement and exact local Inbox receipts. A deterministic business
+workflow verifies restored access, calculates 42 or 84 from saved data, writes
+the evidence and reads it back. The model then receives a historical failure
+notice or a one-off snapshot assessment. It decides through ordinary `tasks`,
+`read`, `checkpoint` and `finish` tools. No decision-only helper or programmatic
+application of a model recommendation substitutes for the native Task worker.
+The notice is retained historical fixture evidence, not a newly produced
+controller failure; the earlier production-controller regression owns that
+mechanical acceptance.
+
+Only Alex's general guidance changes between the first cohort's arms:
+`69c8f38c16` instructions versus `a419eeb4c3` instructions. App mapping, closure
+policy, tools and business evidence stay fixed. Two repetitions counterbalance
+case and arm order. Both old-guidance recovery decisions recommend closure;
+the new-guidance arm recommends closure once and correctly retains the route
+once. Policy preserves every route and every caller receives its result.
+All four finite assessments recommend and receive guarded App-policy closure.
+Three recovery workers also try direct self-closure; creator checks reject all
+three. Advice in a general prompt did not consistently explain this assignment.
+
+Independent assessment checks original and reviewed requirements, creator and
+generation against raw SQLite, each accepted result against the native finish
+call, exact Inbox settlement and closure receipts, artifact arithmetic, frozen
+sources and deduplicated native-session usage. The cohort has **8 accepted
+decisions, 22 requests, 1,375,836 request bytes and 273,860 provider-adapter
+tokens**, with no provider error or SQLite-lock warning. Historical failure
+`error` fields inside successful reads are not tool errors; only actual error
+envelopes or failed tool calls count. The three self-closure denials are genuine
+tool errors and remain recorded.
+
+Evidence: `/home/hao/workspace-archive/recovery-lifecycle-20261113-model1/`;
+independent assessor and result use `recovery-lifecycle-assess-model1-20261113.py`
+and `recovery-lifecycle-model1-assessment-20261113.json` in that archive's parent.
+The frozen experiment lives under
+`projects/alex.app/experiments/recovery-lifecycle-20261113/` on its linked branch;
+it is not added to the installed workflow catalog or normal CI.
+
+## Declare the responsibility with the assignment
+
+The recovery outcome and acceptance still described one completed repair.
+The source correction names current and later failure notices in both recovery
+outcomes and adds one shared acceptance clause for cycle completion, quiet
+idleness and route retirement. It uses existing assignment fields. Routing
+identity, creator authority, caller relationships and closure policy stay fixed.
+
+The compatibility regression starts with the exact earlier selector/general
+requirements, saves a completed notice result, restarts with current source and
+admits a fresh failure notice. The same Task advances from generation 1 to 2
+once; a later notice keeps generation 2. Source restart itself changes nothing.
+Old input replays retain the old receipt, prior accepted evidence stays readable,
+and the original Task and its still-owed input remain unchanged. No live-state
+migration or automatic reopening is performed. A directly addressed input keeps
+its existing Task requirements, so old idle records without a new routed notice
+are outside this adoption path.
+
+The owning six suites pass **108 tests / 1,323 assertions in 46.38 seconds**,
+with strict source-SDK types across the experiment and the same owners. Removing
+the requirement clarification makes the upgrade regression fail at the expected
+generation change. Restoring it passes **1 test / 36 assertions in 1.72 seconds**.
+Eight scripted preflight passes verify the native execution/settlement paths
+without inference before each real comparison. Early fixture preflights caught
+a missing workflow description and an omitted native `checkpoint` tool in the
+bridge's expected catalog; those rejected runs made zero provider requests.
+
+The assignment comparison is frozen at Apps
+`d9a0af5579ce6507adfe4f6a0d0153c9395596be`, with general guidance and closure policy held fixed. Its baseline
+uses the earlier recovery declaration from `e9b44296e9`; the revised arm uses
+the clarified assignment. Finite assessments remain the contrasting case.
+The unchanged eight-pass cohort completed with these results:
+
+| Assignment | Recovery routes retained | Finite assessments closed | Local callers answered |
+| --- | --- | --- | --- |
+| Earlier requirements | 2/2 | 2/2 | 4/4 |
+| Clarified requirements | 2/2 | 2/2 | 4/4 |
+
+Both arms made the expected final decisions. This sample demonstrates that the
+clarified assignment can be followed through native execution and guarded
+settlement; it does **not** show a measured improvement over the earlier
+assignment. Retain the first cohort's inconsistent decisions as evidence of
+variation rather than combining the cohorts into a causal success claim.
+
+Independent assessment verifies both arms' actual saved requirements, shared
+guidance and closure policy, frozen sources, raw SQLite, original business
+evidence, native finish results and local Inbox settlement. All eight results
+were accepted, all original subjects stayed unchanged, and no route left a
+Condition or scheduled poll. The cohort used **27 requests, 1,774,619 request
+bytes and 351,677 provider-adapter tokens**, including cache categories;
+reasoning usage is reported separately. No provider error or SQLite-lock warning
+occurred. Four real tool errors preceded successful corrections: one creator
+authority denial, one malformed finish envelope, one waiting result without an
+exact Condition and one communication without saved reply context. These remain
+recorded; final correctness does not make the attempts error-free.
+
+Evidence: `/home/hao/workspace-archive/recovery-assignment-20261113-model1/`;
+independent assessor and result use `recovery-assignment-assess-model1-20261113.py`
+and `recovery-assignment-model1-assessment-20261113.json` in that archive's parent.
+The frozen experiment remains branch-only and outside the installed catalog
+and normal CI. The same-path design-check baseline already reports May's three
+omitted skills and Scout's prompt length of 36,130 over its 36,000 budget;
+neither is introduced by this correction.
+The final `bun run check:may-design` passes structural integrity, executable
+SDK/admission examples and canonical App checks, then reports exactly those
+two baseline model-surface errors. The pre-existing unclassified `reports`
+directory warning also remains. The full global check remains non-green.
+
 ## Remaining acceptance
 
-Verify the changed guidance through an isolated model comparison before
-claiming better judgment. Activation and native observation remain held.
+The initial native comparison establishes inconsistent guidance-only behavior;
+the assignment comparison reaches correct final decisions in both arms without
+demonstrating improvement. Activation and native operational observation remain
+held. Bounded examples do not establish reliable judgment under arbitrary
+workloads or prove production improvement. Local Inbox receipts do not prove
+external delivery, and historical failure fixtures do not prove model-driven
+repair of a new controller failure.
 Ending a no-longer-needed operational route still needs an explicit owner
 decision accounting for future admission; this change adds no automatic
 retirement rule and does not resolve other finite results awaiting disposition.

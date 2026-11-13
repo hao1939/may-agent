@@ -327,6 +327,11 @@ then stay idle without polling or a cycle-close decision. Ending the route
 requires App/operator disposition of future notices, such as withdrawing the
 route or explicitly reopening it before further admission. The bounded reader
 recognizes these App-created routes while preserving real outstanding work.
+Their mapped outcome and acceptance declare the continuing responsibility.
+After a source upgrade, a new normally routed failure notice adopts clarified
+requirements on the same Task through ordinary App admission. A replay keeps
+its saved receipt; an input addressed to the exact Task keeps its current
+requirements. Activation or restart alone does not rewrite existing work.
 The [backlog trial](../../archive/reviews/task-backlog-disposition-trial-20261107.md)
 shows the real population and an isolated closure trial without live cleanup.
 
