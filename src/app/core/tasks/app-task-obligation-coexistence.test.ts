@@ -18,7 +18,6 @@ import {
   failAppTaskAttempt,
   observeAppTaskIntent,
   recordAppTaskTrigger,
-  recordAppTaskTrigger,
   retryFailedAppTask,
 } from "./app-task-reconciler.js";
 import {
