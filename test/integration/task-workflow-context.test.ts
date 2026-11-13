@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { getDb } from "../../src/lib/db/connection.js";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import type { AppEvent, TaskDetail } from "@may-agent/sdk";
 import { expect, test } from "bun:test";
@@ -183,6 +185,39 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
         },
       ],
     });
+    AppTaskResourceStore.fromDb(getDb(persistDir), "fixture").bootstrapSnapshot(
+      {
+        project: "fixture",
+        resources: Object.fromEntries(
+          ["alpha", "beta"].map((marker) => [
+            marker,
+            {
+              metadata: { id: marker, generation: 1, resourceVersion: 1 },
+              spec: { parentId: "root", outcome: `Inspect ${marker}`, acceptance: ["Done"] },
+              status: { phase: "running" as const, observedGeneration: 0, currentAttemptId: `attempt-${marker}` },
+            },
+          ]),
+        ),
+        attempts: Object.fromEntries(
+          ["alpha", "beta"].map((marker) => [
+            `attempt-${marker}`,
+            {
+              metadata: { id: `attempt-${marker}`, resourceVersion: 1 },
+              taskId: marker,
+              taskGeneration: 1,
+              specHash: "hash",
+              owner: "owner",
+              handler: "agent:owner",
+              runtimeId: "rt",
+              state: "running" as const,
+              reason: "event",
+              startedAt: new Date().toISOString(),
+            },
+          ]),
+        ),
+      },
+      "fixture",
+    );
     const controller = new AbortController();
     const running = ["alpha", "beta"].map((marker) => {
       const task: TaskDetail = {

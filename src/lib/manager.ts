@@ -395,7 +395,8 @@ export class SubagentManager {
     }
     if (opts?.taskBinding) {
       const store = AppTaskResourceStore.activeFromDb(getDb(this._persistDir), opts.taskBinding.appId);
-      if (store) assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "managed start");
+      if (!store) throw new Error("Task execution requires canonical authority");
+      assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "managed start");
     }
     let executionDispatched = false;
     try {
@@ -1747,7 +1748,8 @@ export class SubagentManager {
     if (!session.taskBinding) return;
     if (session.status !== "running") throw new Error("Task continuation requires a running managed execution");
     const store = AppTaskResourceStore.activeFromDb(getDb(this._persistDir), session.taskBinding.appId);
-    if (store) assertCurrentTaskActor({ resourceStore: store }, session.taskBinding, "continuation");
+    if (!store) throw new Error("Task execution requires canonical authority");
+    assertCurrentTaskActor({ resourceStore: store }, session.taskBinding, "continuation");
   }
 
   private startChatTurn(session: ActiveSession, start: () => Promise<void>): void {

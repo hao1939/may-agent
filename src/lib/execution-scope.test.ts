@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { getDb } from "./db/connection.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -126,6 +128,33 @@ describe("shared execution scope", () => {
       await finishParent.promise;
       return "parent answer";
     });
+    AppTaskResourceStore.fromDb(getDb(roots.at(-1)!), "sample").bootstrapSnapshot(
+      {
+        project: "sample",
+        resources: {
+          work: {
+            metadata: { id: "work", generation: 2, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Work", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-2" },
+          },
+        },
+        attempts: {
+          "attempt-2": {
+            metadata: { id: "attempt-2", resourceVersion: 1 },
+            taskId: "work",
+            taskGeneration: 2,
+            specHash: "hash",
+            owner: "worker",
+            handler: "agent:worker",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     parentId = manager.run("worker", "parent", {
       timeoutMs: 5_000,
       toolPolicy: "readonly",
@@ -184,6 +213,33 @@ describe("shared execution scope", () => {
     }, bus);
     const root = roots.at(-1)!;
     const binding = { appId: "sample", taskId: "work", generation: 1, attemptId: "old-attempt" };
+    AppTaskResourceStore.fromDb(getDb(root), "sample").bootstrapSnapshot(
+      {
+        project: "sample",
+        resources: {
+          work: {
+            metadata: { id: "work", generation: 1, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Work", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: "old-attempt" },
+          },
+        },
+        attempts: {
+          "old-attempt": {
+            metadata: { id: "old-attempt", resourceVersion: 1 },
+            taskId: "work",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "worker",
+            handler: "agent:worker",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     const parent = manager.run("worker", "parent", { timeoutMs: 5_000, taskBinding: binding });
     const child = manager.runAgent("worker", "child", { parentSessionId: parent });
     const recovery = createTaskSessionRecovery({ manager, persistDir: root, bus });

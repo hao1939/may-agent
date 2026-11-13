@@ -550,9 +550,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
   const assertWorkflowExecution = (): void => {
     if (!opts.taskBinding) return;
     const db = opts.runtimeCtx?.getDb?.() ?? (persistDir ? getDb(persistDir) : undefined);
-    if (!db) return;
+    if (!db) throw new Error("Task execution requires canonical authority");
     const store = AppTaskResourceStore.activeFromDb(db, opts.taskBinding.appId);
-    if (store) assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "workflow start");
+    if (!store) throw new Error("Task execution requires canonical authority");
+    assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "workflow start");
   };
   const callAgent = (agentName: string, task: string, callOptions: Parameters<SubagentManager["callAgent"]>[2]) => {
     const definition = opts.agentDefinitions?.get(agentName);

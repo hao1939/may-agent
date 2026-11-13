@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { getDb } from "./db/connection.js";
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -48,6 +50,35 @@ describe("SubagentManager timeout enforcement", () => {
       },
     });
     const definition = { name: "worker", description: "fixture", domain: "fixture", model: fakeModel(), tools: [] };
+    if (mode !== "standalone") {
+      AppTaskResourceStore.fromDb(getDb(persistDir), "sample").bootstrapSnapshot(
+        {
+          project: "sample",
+          resources: {
+            work: {
+              metadata: { id: "work", generation: 1, resourceVersion: 1 },
+              spec: { parentId: "root", outcome: "Work", acceptance: ["Done"] },
+              status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt" },
+            },
+          },
+          attempts: {
+            attempt: {
+              metadata: { id: "attempt", resourceVersion: 1 },
+              taskId: "work",
+              taskGeneration: 1,
+              specHash: "hash",
+              owner: "worker",
+              handler: "agent:worker",
+              runtimeId: "rt",
+              state: "running",
+              reason: "event",
+              startedAt: new Date().toISOString(),
+            },
+          },
+        },
+        "fixture",
+      );
+    }
     try {
       const result = await manager.callAgentDefinition(definition, "Do useful work", {
         timeout: 150, ...(mode === "standalone" ? {} : { taskBinding: { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" } }),

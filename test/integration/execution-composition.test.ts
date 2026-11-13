@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { getDb } from "../../src/lib/db/connection.js";
 import { expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -126,6 +128,33 @@ export async function execute(ctx) {
 }`,
     );
     const binding = { appId: "fixture", taskId: "inspect", generation: 1, attemptId: "attempt-1" };
+    AppTaskResourceStore.fromDb(getDb(persistDir), binding.appId).bootstrapSnapshot(
+      {
+        project: binding.appId,
+        resources: {
+          [binding.taskId]: {
+            metadata: { id: binding.taskId, generation: binding.generation, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Inspect", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: binding.attemptId },
+          },
+        },
+        attempts: {
+          [binding.attemptId]: {
+            metadata: { id: binding.attemptId, resourceVersion: 1 },
+            taskId: binding.taskId,
+            taskGeneration: binding.generation,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:inspect",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     const workflow = createWorkflowRunner({
       manager,
       workflowDir: root,

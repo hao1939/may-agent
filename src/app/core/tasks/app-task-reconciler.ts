@@ -1,3 +1,4 @@
+import { currentProcessInstance, isProcessInstanceAlive } from "../../../lib/process-identity.js";
 import type { PendingTaskSettlement } from "./result.js";
 import { pendingTaskWorkspaceConstraint } from "./app-task-state.js";
 import type { TaskWorkspaceConstraint } from "./workspace.js";
@@ -180,6 +181,14 @@ export type AppTaskRecoveryRepair = {
 };
 
 const reconcilerRuntimeId = randomUUID();
+
+/** Cross-process recovery cannot replace an attempt whose owning OS process is still alive. */
+function hasLiveExternalAttemptOwner(attempt: AppTaskAttempt | null | undefined): boolean {
+  if (!attempt || attempt.state !== "running" || attempt.pendingSettlement) return false;
+  if (attempt.runtimeId === reconcilerRuntimeId) return false;
+  const ownerProcess = attempt.lease?.ownerProcess;
+  return ownerProcess !== undefined && isProcessInstanceAlive(ownerProcess);
+}
 
 export const APP_TASK_ATTEMPT_LEASE_DURATION_MS = 15 * 60_000;
 
@@ -1012,7 +1021,7 @@ export function recoverableAppTaskAttempts(
   return Object.values(tree.resources ?? {}).flatMap((resource) => {
     if (resource.status.phase !== "running") return [];
     const attempt = currentResourceAttempt(tree, resource);
-    if (!attempt || attempt.runtimeId === reconcilerRuntimeId || (!includeFreshLeases && leaseIsFresh(attempt, nowMs)))
+    if (!attempt || attempt.runtimeId === reconcilerRuntimeId || hasLiveExternalAttemptOwner(attempt) || (!includeFreshLeases && leaseIsFresh(attempt, nowMs)))
       return [];
     const trigger = attemptTrigger(attempt);
     return [
@@ -1047,6 +1056,7 @@ export function expiredAgentSessionAppTaskAttempt(
   const attempt = currentResourceAttempt(tree, resource);
   if (
     !attempt ||
+    hasLiveExternalAttemptOwner(attempt) ||
     !isManagedAgentHandler(attempt.handler) ||
     !attempt.sessionId ||
     !attempt.lease ||
@@ -1086,7 +1096,7 @@ export function releaseInterruptedAppTaskAttempt(
   const resource = tree.resources?.[taskId];
   if (!resource || resource.status.phase !== "running") return { released: false, sessionIds: [] };
   const attempt = currentResourceAttempt(tree, resource);
-  if (!attempt || attempt.runtimeId === reconcilerRuntimeId) return { released: false, sessionIds: [] };
+  if (!attempt || attempt.runtimeId === reconcilerRuntimeId || hasLiveExternalAttemptOwner(attempt)) return { released: false, sessionIds: [] };
   if (
     resource.metadata.generation !== recovery.taskGeneration ||
     resource.metadata.resourceVersion !== recovery.taskResourceVersion ||
@@ -1186,7 +1196,7 @@ export function releaseLateTerminalWorkflowAppTaskAttempt(
     return { released: false, taskId: binding.taskId };
   }
   const attempt = currentResourceAttempt(tree, resource);
-  if (!attempt || attempt.taskGeneration !== binding.generation || attempt.state !== "running" || attempt.sessionId !== sessionId) {
+  if (!attempt || hasLiveExternalAttemptOwner(attempt) || attempt.taskGeneration !== binding.generation || attempt.state !== "running" || attempt.sessionId !== sessionId) {
     return { released: false, taskId: binding.taskId };
   }
 
@@ -2833,6 +2843,9 @@ export function claimObservedAppTask(
     );
   }
   const settlement = persistedCurrentAttempt?.pendingSettlement;
+  if (!settlement && hasLiveExternalAttemptOwner(persistedCurrentAttempt)) {
+    return { kind: "busy", taskId: input.taskId, attemptId: resource.status.currentAttemptId ?? null };
+  }
   if (settlement) {
     if (settlement.claim.taskId !== input.taskId || !matchingClaimAttempt(resource, persistedCurrentAttempt, settlement.claim))
       throw new Error("Deferred settlement does not match its exact Task claim");
@@ -2930,6 +2943,7 @@ export function claimObservedAppTask(
   const canRecoverPreviousRuntime = Boolean(
     previousAttempt &&
     previousAttempt.runtimeId !== reconcilerRuntimeId &&
+    !hasLiveExternalAttemptOwner(previousAttempt) &&
     (input.reason === `attempt-recovery:${input.taskId}` || attemptTrigger(previousAttempt)),
   );
   if (admissionError) {
@@ -3355,6 +3369,9 @@ export function releaseStaleAppTaskResult(
   if (!attempt || attempt.state !== "running" || attempt.taskId !== claim.taskId || attempt.taskGeneration !== claim.generation) {
     return { status: "superseded", taskId: claim.taskId };
   }
+  if (hasLiveExternalAttemptOwner(attempt)) {
+    return { status: "busy", taskId: claim.taskId };
+  }
   // The rejected claim's version predates the very update we must preserve.
   // Fence this freshly read state, still requiring the same intent/attempt.
   const resourceVersion = resource.metadata.resourceVersion;
@@ -3485,6 +3502,7 @@ function refreshAttemptLease(attempt: AppTaskAttempt, sessionId?: string, nowMs 
     version: (existing?.version ?? 0) + 1,
     ...times,
     runtimeId: attempt.runtimeId,
+    ownerProcess: currentProcessInstance(),
     ...(sessionId ? { sessionId } : {}),
   };
 }

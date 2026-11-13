@@ -1,3 +1,4 @@
+import type { ProcessInstance } from "../../../lib/process-identity.js";
 import type { PendingTaskSettlement } from "./result.js";
 import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
 import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
@@ -149,6 +150,8 @@ export type AppTaskAttemptLease = {
   lastActivityAt: string;
   expiresAt: string;
   runtimeId: string;
+  /** Exact OS process instance owning this attempt; cross-process recovery cannot preempt a live owner. */
+  ownerProcess?: ProcessInstance;
   /** Present after the attempt starts its first child Agent session. */
   sessionId?: string;
 };

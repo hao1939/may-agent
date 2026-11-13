@@ -1,3 +1,4 @@
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -622,6 +623,33 @@ describe("workflow tool: run", () => {
 
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
+    AppTaskResourceStore.fromDb(getDb(join(testDir, "state")), "alpha-project").bootstrapSnapshot(
+      {
+        project: "alpha-project",
+        resources: {
+          "vm-pipeline-rest-plan": {
+            metadata: { id: "vm-pipeline-rest-plan", generation: 1, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Plan", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: "a_vm_pipeline_rest_plan_1" },
+          },
+        },
+        attempts: {
+          a_vm_pipeline_rest_plan_1: {
+            metadata: { id: "a_vm_pipeline_rest_plan_1", resourceVersion: 1 },
+            taskId: "vm-pipeline-rest-plan",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "aks-explorer",
+            handler: "workflow:task-blocked",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     const tool = createWorkflowTool({
       manager,
       workflowDir,

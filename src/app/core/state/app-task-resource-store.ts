@@ -264,10 +264,22 @@ export class AppTaskResourceStore {
     ready: boolean,
     nextCheckAt: number | null,
   ): void {
+    delete (resource.status as Record<string, unknown>).funding;
+    delete (resource.status as Record<string, unknown>).executionConstraint;
     // Retain pending input without a ready hint that bypasses its cooldown.
     const retryAt = pendingTaskExecutionRetryAt(resource);
-    const exhausted = taskExecutionRetryExhausted(resource);
     const activeAttempt = resource.status.currentAttemptId;
+    const pendingSettlement = activeAttempt
+      ? Boolean(
+          this.db
+            .prepare(
+              `SELECT 1 FROM app_task_attempts WHERE app_id = ? AND attempt_id = ?
+                 AND json_extract(attempt_json, '$.pendingSettlement') IS NOT NULL`,
+            )
+            .get(this.appId, activeAttempt),
+        )
+      : false;
+    const exhausted = !pendingSettlement && taskExecutionRetryExhausted(resource);
     const leaseUntil = activeAttempt
       ? ((
           this.db

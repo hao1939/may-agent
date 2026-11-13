@@ -1037,6 +1037,9 @@ test("reopening storage clears a retired indefinite funding hold on an Inbox ite
       }),
       "turn-deferred",
     );
+  f.db
+    .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+    .run();
   f.reopen();
   const cleared = getAppInboxItem(f.db, "turn-deferred")!;
   expect(cleared.handling).toBeUndefined();

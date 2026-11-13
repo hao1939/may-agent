@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { getDb } from "./db/connection.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -537,10 +539,38 @@ export async function execute(ctx) {
   return { state: "incomplete", summary: "Source unavailable", facts: ["event:" + fact.eventId] };
 }`,
     );
+    AppTaskResourceStore.fromDb(getDb(root), "sample").bootstrapSnapshot(
+      {
+        project: "sample",
+        resources: {
+          review: {
+            metadata: { id: "review", generation: 1, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Review", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-1" },
+          },
+        },
+        attempts: {
+          "attempt-1": {
+            metadata: { id: "attempt-1", resourceVersion: 1 },
+            taskId: "review",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:report",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     const reads: string[][] = [];
     const runner = createWorkflowRunner({
       manager: {} as any,
       workflowDir: root,
+      persistDir: root,
       taskBinding: { appId: "sample", taskId: "review", generation: 1, attemptId: "attempt-1" },
       taskEmitter: {
         read(type, key) {
@@ -905,6 +935,33 @@ export async function execute(ctx) {
         owner: "human:reviewer",
       }],
     };
+    AppTaskResourceStore.fromDb(getDb(root), "sample").bootstrapSnapshot(
+      {
+        project: "sample",
+        resources: {
+          "context-transfer": {
+            metadata: { id: "context-transfer", generation: 2, resourceVersion: 7 },
+            spec: { parentId: "root", outcome: "Consider the correction", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 1, currentAttemptId: "attempt-context-transfer" },
+          },
+        },
+        attempts: {
+          "attempt-context-transfer": {
+            metadata: { id: "attempt-context-transfer", resourceVersion: 1 },
+            taskId: "context-transfer",
+            taskGeneration: 2,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:task-context",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     const taskContext = {
       taskBinding: { appId: "sample", taskId: "context-transfer", generation: 2, attemptId: "attempt-context-transfer" },
       recoveryOwner: "app-task",

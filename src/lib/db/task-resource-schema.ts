@@ -317,6 +317,10 @@ function migrateConditionFreshness(db: SqliteDb): void {
 /** Clear retired funding and execution-reservation holds so upgraded Inbox items
  * and Tasks resume ordinary admission and recovery without losing workspace, retry, or pause fences. */
 function migrateRetiredWorkloadHolds(db: SqliteDb): void {
+  const migrated = db
+    .prepare("SELECT value FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+    .get() as { value?: string } | null;
+  if (migrated?.value === "1") return;
   const now = Date.now();
   db.exec("SAVEPOINT retired_workload_holds");
   try {
@@ -382,7 +386,7 @@ function migrateRetiredWorkloadHolds(db: SqliteDb): void {
       let ready = row.ready;
       let changed = row.changed;
       let nextCheckAt = row.next_check_at;
-      if (cancelled || exhausted) {
+      if (cancelled) {
         ready = 0;
         changed = 0;
         nextCheckAt = null;
@@ -390,14 +394,18 @@ function migrateRetiredWorkloadHolds(db: SqliteDb): void {
         ready = 0;
         changed = 0;
         nextCheckAt = workspaceHeld;
-      } else if (retryAt !== null) {
-        ready = 0;
-        changed = 0;
-        nextCheckAt = retryAt;
       } else if (pendingSettlementPresent) {
         ready = 1;
         changed = triggerPresent ? 1 : 0;
         nextCheckAt = now;
+      } else if (exhausted) {
+        ready = 0;
+        changed = 0;
+        nextCheckAt = null;
+      } else if (retryAt !== null) {
+        ready = 0;
+        changed = 0;
+        nextCheckAt = retryAt;
       } else if (resource.status.phase === "pending") {
         ready = 1;
         changed = (resource.status.observedGeneration ?? 0) < resource.metadata.generation || triggerPresent ? 1 : 0;
@@ -413,6 +421,9 @@ function migrateRetiredWorkloadHolds(db: SqliteDb): void {
       touchedApps.add(row.app_id);
     }
     for (const appId of touchedApps) advanceTaskResourceRevision(db, appId);
+    db.prepare(
+      "INSERT OR REPLACE INTO app_task_store_meta(app_id, key, value) VALUES ('__host__', 'retired_workload_holds_migrated', '1')",
+    ).run();
     db.exec("RELEASE SAVEPOINT retired_workload_holds");
   } catch (error) {
     db.exec("ROLLBACK TO SAVEPOINT retired_workload_holds");

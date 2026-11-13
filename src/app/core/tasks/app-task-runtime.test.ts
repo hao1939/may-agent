@@ -71,6 +71,7 @@ import {
 } from "../../adapters/executors/agent-workspace.js";
 import {
   claimObservedAppTask,
+  recoverableAppTaskAttempts,
   completeAppTask,
   deferAppTask,
   failAppTaskAttempt,
@@ -10474,6 +10475,9 @@ describe("dependency Condition specification updates", () => {
     config.resourceStore.db
       .prepare("UPDATE app_tasks SET phase = 'waiting', ready = 0, changed = 0, next_check_at = NULL, resource_json = ? WHERE app_id = ? AND task_id = ?")
       .run(JSON.stringify(resource), "sample", taskId);
+    config.resourceStore.db
+      .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+      .run();
 
     closeDb(join(f.root, "state"));
     bus = eventBus();
@@ -10499,5 +10503,99 @@ describe("dependency Condition specification updates", () => {
     expect(settled.status.phase).toBe("converged");
     expect(settled.status.result).toEqual({ answer: 42 });
     expect(loadedTaskConfig(f).resourceStore.readAttempt(claim.attemptId)?.pendingSettlement).toBeUndefined();
+  });
+
+  it("refuses cross-process recovery and claim replacement while a sessionless executor process is still alive", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      installControllers: false,
+      appRegistrySnapshot: { id: "live-owner-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+    });
+    const config = loadedTaskConfig(f);
+    const { taskId } = admitTaskInput(config, {
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/sessionless-live",
+          parentId: "operations",
+          outcome: "Run sessionless work",
+          acceptance: ["Do not run twice concurrently"],
+          executor: "verify",
+        },
+      },
+      idempotencyKey: "sessionless-1",
+      inputContext: { id: "in-live", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
+    });
+
+    const child = spawn(
+      process.execPath,
+      [
+        "-e",
+        `
+          import { currentProcessInstance } from "./src/lib/process-identity.ts";
+          console.log(JSON.stringify(currentProcessInstance()));
+          setInterval(() => {}, 1000);
+        `,
+      ],
+      { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] },
+    );
+    try {
+      const line = await new Promise<string>((resolve, reject) => {
+        let out = "";
+        child.stdout.on("data", (chunk) => {
+          out += String(chunk);
+          if (out.includes("\n")) resolve(out.trim());
+        });
+        child.on("error", reject);
+      });
+      const childProcess = JSON.parse(line);
+      const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
+      if (claim.kind !== "claimed") throw new Error("expected initial claim");
+      const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+      attempt.runtimeId = "external-worker-runtime";
+      attempt.lease = {
+        id: attempt.lease!.id,
+        version: attempt.lease!.version,
+        lastActivityAt: new Date(Date.now() - 600_000).toISOString(),
+        expiresAt: new Date(Date.now() - 300_000).toISOString(),
+        runtimeId: "external-worker-runtime",
+        ownerProcess: childProcess,
+      };
+      config.resourceStore.db
+        .prepare("UPDATE app_task_attempts SET attempt_json = ?, lease_until = ? WHERE app_id = ? AND attempt_id = ?")
+        .run(JSON.stringify(attempt), Date.now() - 300_000, "sample", claim.attemptId);
+      config.resourceStore.db
+        .prepare("UPDATE app_tasks SET lease_until = ? WHERE app_id = ? AND task_id = ?")
+        .run(Date.now() - 300_000, "sample", taskId);
+
+      // Even though the lease timestamp is expired and there is no sessionId,
+      // the external owner process is still alive: recovery and claim must refuse to preempt it.
+      expect(recoverableAppTaskAttempts(config, Date.now(), true, [taskId])).toEqual([]);
+      expect(
+        claimObservedAppTask(config, {
+          taskId,
+          appAgent: "sample-owner",
+          handler: "executor:verify",
+          reason: `attempt-recovery:${taskId}`,
+        }),
+      ).toEqual({ kind: "busy", taskId, attemptId: claim.attemptId });
+
+      // Once the external process exits, recovery and claim replacement succeed.
+      child.kill("SIGKILL");
+      await new Promise((resolve) => child.once("close", resolve));
+      expect(recoverableAppTaskAttempts(config, Date.now(), true, [taskId])).toHaveLength(1);
+      const replaced = claimObservedAppTask(config, {
+        taskId,
+        appAgent: "sample-owner",
+        handler: "executor:verify",
+        reason: `attempt-recovery:${taskId}`,
+      });
+      expect(replaced.kind).toBe("claimed");
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+    }
   });
 });

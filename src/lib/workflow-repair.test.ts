@@ -1,3 +1,5 @@
+import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
+import { getDb } from "./db/connection.js";
 import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -85,6 +87,33 @@ export const guard = {
     const workerDef = { name: "worker" } as SubagentDefinition;
     const definition = { name: "repairer" } as SubagentDefinition;
     const binding = { appId: "fixture", taskId: "work/one", generation: 3, attemptId: "attempt-one" };
+    AppTaskResourceStore.fromDb(getDb(root), binding.appId).bootstrapSnapshot(
+      {
+        project: binding.appId,
+        resources: {
+          [binding.taskId]: {
+            metadata: { id: binding.taskId, generation: binding.generation, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Work", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: binding.attemptId },
+          },
+        },
+        attempts: {
+          [binding.attemptId]: {
+            metadata: { id: binding.attemptId, resourceVersion: 1 },
+            taskId: binding.taskId,
+            taskGeneration: binding.generation,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:bounded",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
     const call = async (agent: string, _task: string, callOptions: CallOptions, pinned?: SubagentDefinition) => {
       calls.push({ agent, options: callOptions, definition: pinned });
       if (agent !== "repairer") return success(`${agent}-session`);

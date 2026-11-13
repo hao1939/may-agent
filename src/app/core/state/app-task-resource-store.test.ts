@@ -1473,21 +1473,7 @@ describe("AppTaskResourceStore", () => {
     const retryAt = now + 3_600_000;
     const workspaceRetryAt = now + 120_000;
     const heldTask = resource("held-indefinite", "pending");
-    (heldTask.status as Record<string, unknown>).funding = {
-      kind: "deferred",
-      reason: "root-credit",
-      task: { appId: "example", taskId: "held-indefinite" },
-      root: { appId: "example", taskId: "held-indefinite" },
-      retryAt: null,
-    };
     const heldWorkspace = resource("held-workspace", "pending");
-    (heldWorkspace.status as Record<string, unknown>).funding = {
-      kind: "deferred",
-      reason: "adoption-required",
-      task: { appId: "example", taskId: "held-workspace" },
-      root: null,
-      retryAt: null,
-    };
     heldWorkspace.status.workspaceConstraint = {
       kind: "deferred",
       reason: "disk-capacity",
@@ -1499,12 +1485,16 @@ describe("AppTaskResourceStore", () => {
       retryAt: workspaceRetryAt,
     };
     const heldBackoff = resource("held-backoff", "pending");
-    (heldBackoff.status as Record<string, unknown>).executionConstraint = {
-      kind: "deferred",
-      reason: "shared-capacity",
-      retryAt,
-    };
     heldBackoff.status.executionRetryAt = retryAt;
+    const heldRepairSettlement = resource("held-repair-settlement", "waiting");
+    heldRepairSettlement.status.currentAttemptId = "attempt-repair-settlement";
+    heldRepairSettlement.status.retryExhausted = {
+      attempts: 3,
+      maxAttempts: 3,
+      lastAttemptId: "attempt-prior",
+      lastFailureAt: new Date(now - 1000).toISOString(),
+      summary: "Exhausted before fresh human repair",
+    };
     store.bootstrapSnapshot(
       {
         project: "example",
@@ -1512,13 +1502,58 @@ describe("AppTaskResourceStore", () => {
           "held-indefinite": heldTask,
           "held-workspace": heldWorkspace,
           "held-backoff": heldBackoff,
+          "held-repair-settlement": heldRepairSettlement,
+        },
+        attempts: {
+          "attempt-repair-settlement": {
+            metadata: { id: "attempt-repair-settlement", resourceVersion: 2 },
+            taskId: "held-repair-settlement",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "owner",
+            handler: "agent:owner",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date(now - 500).toISOString(),
+            pendingSettlement: {
+              claim: {
+                kind: "claimed",
+                taskId: "held-repair-settlement",
+                generation: 1,
+                resourceVersion: 1,
+                specHash: "hash",
+                attemptId: "attempt-repair-settlement",
+                attemptResourceVersion: 1,
+                owner: "owner",
+                handler: "agent:owner",
+                reason: "event",
+                declaredOutputPaths: [],
+              },
+              report: {
+                handlerResult: { state: "converged", summary: "Repaired by human", facts: ["repaired"], actions: [] },
+                runId: null,
+              },
+              acceptanceBasis: { method: "executor", evidence: ["repaired"] },
+            },
+          },
         },
       },
       "retired-holds",
     );
+    for (const [id, field, val] of [
+      ["held-indefinite", "$.status.funding", { kind: "deferred", reason: "root-credit", retryAt: null }],
+      ["held-workspace", "$.status.funding", { kind: "deferred", reason: "adoption-required", retryAt: null }],
+      ["held-backoff", "$.status.executionConstraint", { kind: "deferred", reason: "shared-capacity", retryAt }],
+      ["held-repair-settlement", "$.status.funding", { kind: "deferred", reason: "sponsor-credit", retryAt: null }],
+    ] as const) {
+      store.db
+        .prepare("UPDATE app_tasks SET ready = 0, changed = 0, next_check_at = NULL, resource_json = json_set(resource_json, ?, json(?)) WHERE app_id = ? AND task_id = ?")
+        .run(field, JSON.stringify(val), "example", id);
+    }
     store.db
-      .prepare("UPDATE app_tasks SET ready = 0, changed = 0, next_check_at = NULL WHERE app_id = ? AND task_id = ?")
-      .run("example", "held-indefinite");
+      .prepare("DELETE FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+      .run();
     store.close();
 
     store = AppTaskResourceStore.openStandalone(path, "example");
@@ -1539,6 +1574,17 @@ describe("AppTaskResourceStore", () => {
         .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
         .get("example", "held-backoff") as { ready: number; changed: number; next_check_at: number | null };
       expect(backoffRow).toEqual({ ready: 0, changed: 0, next_check_at: retryAt });
+
+      const repairRow = store.db
+        .prepare("SELECT ready, changed, next_check_at FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("example", "held-repair-settlement") as { ready: number; changed: number; next_check_at: number | null };
+      expect(repairRow.ready).toBe(1);
+      expect(repairRow.next_check_at).not.toBeNull();
+      expect(
+        store.db
+          .prepare("SELECT value FROM app_task_store_meta WHERE app_id = '__host__' AND key = 'retired_workload_holds_migrated'")
+          .get(),
+      ).toEqual({ value: "1" });
     } finally {
       store.close();
     }
