@@ -5,7 +5,7 @@ May-agent system.
 
 ## Layout
 
-- `agents/` - agent identities, prompts, tools, workflows, and per-agent
+- `projects/*.app/agents/` - agent identities, prompts, tools, workflows, and per-agent
   workspaces.
 - `shared/` - shared knowledge, skills, guards, workflows, docs, and
   compatibility SDK surface used by agents.
@@ -49,6 +49,13 @@ grants. Host PR #326 captures it during definition activation.
 These are file-tool safeguards, not shell or native CLI filesystem permissions.
 Load these declarations before starting the Host with the matching definition release. Retained Tasks,
 Requests and Conversation history keep their existing identities.
+
+Run source App health checks with `bun run test`. It discovers `.test.ts` files
+in `shared/` and enabled `projects/*.app/` directories with an `app.ts` entry.
+It excludes archives, workspaces, dependencies, runtime state and nested project
+checkouts under `shared/projects/`. Retired root `agents/` is outside this scope.
+Plain `bun test` uses the shared-only scope in `bunfig.toml`; pass explicit file
+paths for focused checks.
 
 Run installed policy/guide acceptance with `bun run test:deployment`; Gym's
 script tests run from its package. Generic Host tests remain in the Host repo.

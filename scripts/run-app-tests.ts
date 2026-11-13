@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { existsSync, readdirSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const activeAppRoots = readdirSync("projects", { withFileTypes: true })
@@ -13,16 +13,7 @@ const activeAppRoots = readdirSync("projects", { withFileTypes: true })
   )
   .map((entry) => join("projects", entry.name));
 
-const roots = ["shared", "agents", ...activeAppRoots];
-const excluded = [
-  /^node_modules\//,
-  /^shared\/projects\//,
-  /^agents\/shared\//,
-  /^agents\/[^/]+\/workspace\//,
-  /^projects\/[^/]+\/(?:archive|workspace|node_modules|\.state)\//,
-  /^projects\/[^/]+\/agents\/[^/]+\/(?:archive|workspace|node_modules|\.state)\//,
-  /^\.state\//,
-];
+const roots = ["shared", ...activeAppRoots];
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -30,7 +21,8 @@ function walk(dir: string, out: string[] = []): string[] {
       entry.name === "archive" ||
       entry.name === "workspace" ||
       entry.name === "node_modules" ||
-      entry.name === ".state"
+      entry.name === ".state" ||
+      (dir === "shared" && entry.name === "projects")
     )
       continue;
     const path = join(dir, entry.name);
@@ -40,11 +32,7 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const files = roots
-  .flatMap((root) => walk(root))
-  .map((file) => relative(process.cwd(), file).replaceAll("\\", "/"))
-  .filter((file) => !excluded.some((pattern) => pattern.test(file)))
-  .sort();
+const files = roots.flatMap((root) => walk(root)).sort();
 
 const localSitePackages = join(process.cwd(), ".state/.local/lib/python3.11/site-packages");
 const env = {
