@@ -37,7 +37,7 @@ export function createTaskInputHandler(options: {
         }
         chunks.push(part.value);
       }
-      const parsed: unknown = JSON.parse(Buffer.concat(chunks, size).toString("utf8"));
+      const parsed: unknown = JSON.parse(new TextDecoder().decode(Buffer.concat(chunks, size)));
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Object required");
       body = parsed as Record<string, unknown>;
     } catch {
