@@ -30,7 +30,6 @@ function invocation(): { command: string; args: string[] } {
 export function createTaskAdmissionProcess(
   input: {
     onExit?(error: Error): void;
-    onTerminated?(): void;
     timeoutMs?: number;
     definitionSource?: TaskWorkerDefinitionSource;
   } = {},
@@ -118,23 +117,11 @@ export function createTaskAdmissionProcess(
       request.resolve({ taskIds: response.taskIds });
     else request.reject(new Error(response.error));
   });
-  let terminatedNotified = false;
-  const notifyTerminated = () => {
-    if (terminatedNotified) return;
-    terminatedNotified = true;
-    input.onTerminated?.();
-  };
-  child.once("error", (error) => {
-    fail(error);
-    if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) {
-      notifyTerminated();
-    }
-  });
+  child.once("error", (error) => fail(error));
   child.once("disconnect", () => fail(new Error("Task admission worker is unavailable")));
   child.once("exit", (code, signal) => {
     clearTimeout(killTimer);
     fail(new Error(`Task admission worker exited with ${signal ? `signal ${signal}` : `code ${code}`}`));
-    notifyTerminated();
   });
   return {
     dispatch(command, event) {

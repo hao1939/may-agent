@@ -11,7 +11,6 @@ for (const scenario of [
   "startup-timeout",
   "response-timeout",
   "close",
-  "delayed-termination",
   "error-then-healthy",
   "pinned-selection",
   "environment",

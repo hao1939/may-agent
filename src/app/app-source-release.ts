@@ -12,11 +12,10 @@ import {
   realpathSync,
   renameSync,
   rmSync,
-  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { resolveSkillRoots } from "../lib/skill-paths.js";
 
@@ -36,8 +35,6 @@ type ReleaseManifest = {
 };
 
 const COMMIT_PATTERN = /^[0-9a-f]{40}$/;
-const DEFAULT_MAX_RETAINED_RELEASES = 5;
-const STALE_STAGE_MAX_AGE_MS = 60 * 60_000;
 const NON_SOURCE_DIRECTORIES = new Set([
   ".state",
   "archive",
@@ -380,114 +377,34 @@ function copyFilesystemDefinitions(projectRoot: string, stageRoot: string): void
 export class DefinitionSourceReleaseStore {
   private readonly releasesRoot: string;
   private readonly currentLink: string;
-  private readonly previousLink: string;
-  private readonly heldCounts = new Map<string, number>();
-  private readonly onNotice?: (message: string) => void;
-  private readonly activePaths?: () => readonly string[];
 
   constructor(
     private readonly projectRoot: string,
     persistDir: string,
-    options: {
-      onNotice?: (message: string) => void;
-      activePaths?: () => readonly string[];
-    } = {},
   ) {
     this.releasesRoot = join(persistDir, "releases", "app-definitions");
     this.currentLink = join(this.releasesRoot, "current");
-    this.previousLink = join(this.releasesRoot, "previous");
-    this.onNotice = options.onNotice;
-    this.activePaths = options.activePaths;
-  }
-
-  releaseIdForPath(path: string | undefined): string | undefined {
-    const raw = path?.trim();
-    if (!raw) return undefined;
-    const rel = relative(resolve(this.releasesRoot), resolve(raw));
-    if (!rel || isAbsolute(rel) || rel === ".." || rel.startsWith(`..${sep}`)) return undefined;
-    const [first] = rel.split(sep);
-    return first &&
-      first !== "current" &&
-      first !== "previous" &&
-      !first.startsWith("current.next-") &&
-      !first.startsWith("previous.next-") &&
-      !first.startsWith(".next-")
-      ? first
-      : undefined;
-  }
-
-  private linkedReleaseRoot(linkPath: string): string | null {
-    let stat;
-    try {
-      stat = lstatSync(linkPath);
-    } catch {
-      return null;
-    }
-    if (!stat.isSymbolicLink()) {
-      throw new Error(`App source release link path is not a symlink: ${linkPath}`);
-    }
-    const target = readlinkSync(linkPath);
-    const root = resolve(this.releasesRoot, target);
-    if (resolve(root, "..") !== resolve(this.releasesRoot)) {
-      throw new Error(`Unsafe App source release link: ${linkPath} -> ${target}`);
-    }
-    return root;
-  }
-
-  private currentReleaseRoot(): string | null {
-    if (!existsSync(this.currentLink)) return null;
-    return this.linkedReleaseRoot(this.currentLink);
-  }
-
-  private currentIdFast(): string | undefined {
-    try {
-      const root = this.currentReleaseRoot();
-      return root ? basename(root) : undefined;
-    } catch {
-      return undefined;
-    }
-  }
-
-  private previousIdFast(): string | undefined {
-    try {
-      const root = this.linkedReleaseRoot(this.previousLink);
-      return root && existsSync(join(root, "release.json")) ? basename(root) : undefined;
-    } catch {
-      return undefined;
-    }
-  }
-
-  retain(releaseId: string | undefined): () => void {
-    const id = releaseId?.trim();
-    if (!id) return () => {};
-    this.heldCounts.set(id, (this.heldCounts.get(id) ?? 0) + 1);
-    let released = false;
-    return () => {
-      if (released) return;
-      released = true;
-      const next = (this.heldCounts.get(id) ?? 1) - 1;
-      if (next > 0) this.heldCounts.set(id, next);
-      else this.heldCounts.delete(id);
-    };
-  }
-
-  heldIds(): string[] {
-    return [...this.heldCounts.keys()];
   }
 
   current(): DefinitionSourceRelease | null {
-    const root = this.currentReleaseRoot();
-    return root ? validateRelease(root) : null;
+    if (!existsSync(this.currentLink)) return null;
+    if (!lstatSync(this.currentLink).isSymbolicLink()) {
+      throw new Error(`App source current path is not a symlink: ${this.currentLink}`);
+    }
+    const target = readlinkSync(this.currentLink);
+    const root = resolve(this.releasesRoot, target);
+    if (resolve(root, "..") !== resolve(this.releasesRoot)) {
+      throw new Error(`Unsafe App source release link: ${this.currentLink} -> ${target}`);
+    }
+    return validateRelease(root);
   }
 
   ensureCurrent(): DefinitionSourceRelease {
     const active = this.current();
-    if (active && existsSync(active.agentsRoot) && existsSync(join(active.sharedRoot, "common-sense.md"))) {
-      this.prune();
+    if (active && existsSync(active.agentsRoot) && existsSync(join(active.sharedRoot, "common-sense.md")))
       return active;
-    }
     const candidate = this.stage();
-    this.activate(candidate, active ? [active.id] : []);
+    this.activate(candidate);
     return candidate;
   }
 
@@ -500,7 +417,7 @@ export class DefinitionSourceReleaseStore {
     }
     mkdirSync(this.releasesRoot, { recursive: true });
     if (commit) assertCommittedDefinitionSource(this.projectRoot, commit, !expectedSourceCommit);
-    // v6 strips non-source directories (archive/, generated/, reports/, etc.) from Git snapshots too.
+    // v6 applies the filesystem non-source policy to Git captures too.
     const id = commit ? `${commit}-definitions-v6` : `filesystem-${Date.now()}-${randomUUID()}-definitions-v6`;
     const releaseRoot = join(this.releasesRoot, id);
     if (existsSync(releaseRoot)) return validateRelease(releaseRoot);
@@ -525,118 +442,14 @@ export class DefinitionSourceReleaseStore {
     return validateRelease(releaseRoot);
   }
 
-  activate(release: DefinitionSourceRelease, preserveIds: readonly string[] = []): void {
+  activate(release: DefinitionSourceRelease): void {
     const validated = validateRelease(release.root);
     const relativeTarget = relative(this.releasesRoot, validated.root);
     if (!relativeTarget || relativeTarget.startsWith("..")) {
       throw new Error(`App source release is outside ${this.releasesRoot}: ${validated.root}`);
     }
-    const previousId = this.currentIdFast();
     const nextLink = `${this.currentLink}.next-${process.pid}-${randomUUID()}`;
     symlinkSync(relativeTarget, nextLink);
     renameSync(nextLink, this.currentLink);
-    if (previousId && previousId !== validated.id) {
-      try {
-        const nextPrevious = `${this.previousLink}.next-${process.pid}-${randomUUID()}`;
-        symlinkSync(previousId, nextPrevious);
-        renameSync(nextPrevious, this.previousLink);
-      } catch (error) {
-        this.onNotice?.(
-          `[apps] Failed to record previous release link ${previousId}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-    this.prune([...preserveIds, ...(previousId ? [previousId] : [])]);
-  }
-
-  prune(preserveIds: readonly string[] = [], maxRetained = DEFAULT_MAX_RETAINED_RELEASES): string[] {
-    if (!existsSync(this.releasesRoot)) return [];
-    const activeId = this.currentIdFast();
-    const previousId = this.previousIdFast();
-    const sessionProtectedIds = (this.activePaths?.() ?? [])
-      .map((path) => this.releaseIdForPath(path))
-      .filter((id): id is string => Boolean(id));
-    const protectedIds = new Set<string>([
-      ...this.heldCounts.keys(),
-      ...sessionProtectedIds,
-      ...preserveIds.filter(Boolean),
-    ]);
-    if (activeId) protectedIds.add(activeId);
-    if (previousId) protectedIds.add(previousId);
-    const now = Date.now();
-    const candidates: Array<{ id: string; path: string; mtimeMs: number }> = [];
-    const removed: string[] = [];
-
-    let entries;
-    try {
-      entries = readdirSync(this.releasesRoot, { withFileTypes: true });
-    } catch {
-      return [];
-    }
-
-    for (const entry of entries) {
-      if (
-        entry.name === "current" ||
-        entry.name === "previous" ||
-        entry.name.startsWith("current.next-") ||
-        entry.name.startsWith("previous.next-")
-      )
-        continue;
-      const entryPath = join(this.releasesRoot, entry.name);
-      if (entry.name.startsWith(".next-")) {
-        try {
-          if (now - statSync(entryPath).mtimeMs >= STALE_STAGE_MAX_AGE_MS) {
-            rmSync(entryPath, { recursive: true, force: true });
-            removed.push(entry.name);
-          }
-        } catch (error) {
-          this.onNotice?.(
-            `[apps] Ignored stale stage cleanup error for ${entry.name}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        }
-        continue;
-      }
-      if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
-      if (!existsSync(join(entryPath, "release.json"))) {
-        if (!protectedIds.has(entry.name) && /-definitions-v\d+$/.test(entry.name)) {
-          try {
-            rmSync(entryPath, { recursive: true, force: true });
-            removed.push(entry.name);
-          } catch (error) {
-            this.onNotice?.(
-              `[apps] Failed to prune obsolete release ${entry.name}: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          }
-        }
-        continue;
-      }
-      try {
-        candidates.push({ id: entry.name, path: entryPath, mtimeMs: statSync(entryPath).mtimeMs });
-      } catch {
-        // Concurrent removal.
-      }
-    }
-
-    candidates.sort((left, right) => right.mtimeMs - left.mtimeMs || right.id.localeCompare(left.id));
-    const protectedCount = candidates.filter((candidate) => protectedIds.has(candidate.id)).length;
-    const unprotectedBudget = Math.max(0, Math.max(1, maxRetained) - protectedCount);
-    let keptUnprotected = 0;
-
-    for (const candidate of candidates) {
-      if (protectedIds.has(candidate.id)) continue;
-      if (keptUnprotected < unprotectedBudget) {
-        keptUnprotected += 1;
-        continue;
-      }
-      try {
-        rmSync(candidate.path, { recursive: true, force: true });
-        removed.push(candidate.id);
-      } catch (error) {
-        this.onNotice?.(
-          `[apps] Failed to prune obsolete release ${candidate.id}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    }
-    return removed;
   }
 }

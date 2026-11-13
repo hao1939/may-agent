@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -464,62 +464,43 @@ describe("App source releases", () => {
     expect(() => store.stage()).toThrow("untracked executable/config files");
   });
 
-  it("strips tracked non-source directories from Git snapshots on parity with filesystem copy", async () => {
-    const { root, stateDir } = await fixture();
-    for (const rel of [
+  it.each([true, false])("omits non-source entries and retains authored files (git: %s)", async (withGit) => {
+    const { root, stateDir } = await fixture(withGit);
+    const omitted = [
       "projects/sample.app/archive/historical.md",
       "projects/sample.app/docs/archive/old-review.md",
       "projects/sample.app/generated/schema.json",
       "projects/sample.app/reports/run.json",
+      "projects/sample.app/.disabled",
+      "projects/sample.app/.last-eval-state.json",
+      "projects/sample.app/ui.root-stale-example/index.html",
+      "agents/worker/artifacts/run.json",
+      "shared/skills/sample/evidence/run.json",
+      "shared/tools/workspace/run.json",
+    ];
+    const retained = [
       "projects/sample.app/docs/active.md",
-    ]) {
+      "agents/worker/instructions.md",
+      "shared/skills/sample/guide.txt",
+      "shared/tools/helper.js",
+    ];
+    for (const rel of [...omitted, ...retained]) {
       const target = join(root, rel);
       mkdirSync(join(target, ".."), { recursive: true });
       writeFileSync(target, "tracked content\n");
     }
-    await git(root, "add", "projects/sample.app");
-    await git(root, "commit", "-qm", "track archives and active docs");
+    if (withGit) {
+      await git(root, "add", "agents", "projects", "shared");
+      await git(root, "commit", "-qm", "track generated files and authored source");
+    }
 
     const release = new DefinitionSourceReleaseStore(root, stateDir).stage();
-    expect(existsSync(join(release.projectsRoot, "sample.app", "docs", "active.md"))).toBeTrue();
-    for (const omitted of [
-      "archive",
-      "docs/archive",
-      "generated",
-      "reports",
-    ]) {
-      expect(existsSync(join(release.projectsRoot, "sample.app", omitted))).toBeFalse();
+    for (const rel of retained) {
+      expect(readFileSync(join(release.root, rel), "utf8")).toBe("tracked content\n");
     }
-  });
-
-  it("prunes older releases beyond retention bound while preserving active and rollback targets", async () => {
-    const { root, stateDir, appPath } = await fixture();
-    const store = new DefinitionSourceReleaseStore(root, stateDir);
-    const releases = [store.ensureCurrent()];
-    for (let index = 2; index <= 7; index += 1) {
-      writeFileSync(
-        appPath,
-        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
-      );
-      await git(root, "add", appPath);
-      await git(root, "commit", "-qm", `v${index}`);
-      const next = store.stage();
-      store.activate(next);
-      releases.push(next);
+    for (const rel of omitted) {
+      expect(existsSync(join(release.root, rel))).toBeFalse();
     }
-
-    const active = store.current()!;
-    const previous = releases[releases.length - 2]!;
-    expect(active.id).toBe(releases[releases.length - 1]!.id);
-    expect(existsSync(active.root)).toBeTrue();
-    expect(existsSync(previous.root)).toBeTrue();
-    expect(existsSync(releases[0]!.root)).toBeFalse();
-    expect(existsSync(releases[1]!.root)).toBeFalse();
-
-    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter(
-      (name) => name !== "current" && name !== "previous",
-    );
-    expect(retainedDirs).toHaveLength(5);
   });
 
   it("preserves an accepted v5 release across startup even when source has advanced or is dirty", async () => {
@@ -533,7 +514,14 @@ describe("App source releases", () => {
       join(v5Root, "release.json"),
       `${JSON.stringify({ version: 3, id: v5Id, sourceCommit: v6.sourceCommit }, null, 2)}\n`,
     );
-    store.activate({ ...v6, id: v5Id, root: v5Root, agentsRoot: join(v5Root, "agents"), projectsRoot: join(v5Root, "projects"), sharedRoot: join(v5Root, "shared") });
+    store.activate({
+      ...v6,
+      id: v5Id,
+      root: v5Root,
+      agentsRoot: join(v5Root, "agents"),
+      projectsRoot: join(v5Root, "projects"),
+      sharedRoot: join(v5Root, "shared"),
+    });
 
     writeFileSync(
       appPath,
@@ -550,8 +538,7 @@ describe("App source releases", () => {
 
   it("does not traverse external symlinked top-level roots when stripping non-source entries", async () => {
     const { root, stateDir } = await fixture();
-    const externalAgents = join(root, "..", `external-agents-${Date.now()}`);
-    roots.push(externalAgents);
+    const externalAgents = join(root, "uncaptured-agents");
     mkdirSync(join(externalAgents, "archive"), { recursive: true });
     writeFileSync(join(externalAgents, "archive", "keep.txt"), "must survive\n");
     rmSync(join(root, "agents"), { recursive: true, force: true });
@@ -563,169 +550,34 @@ describe("App source releases", () => {
     expect(readFileSync(join(externalAgents, "archive", "keep.txt"), "utf8")).toBe("must survive\n");
   });
 
-  it("protects held releases used by running workers and overlapping or rejected reloads across >5 releases", async () => {
-    const { root, stateDir, appPath } = await fixture();
+  it("rejects skill links to filtered files without replacing accepted source", async () => {
+    const { root, stateDir } = await fixture();
     const store = new DefinitionSourceReleaseStore(root, stateDir);
-    const initial = store.ensureCurrent();
-    const releaseWorkerHold = store.retain(initial.id);
-    const stagedOverlapping = (() => {
-      writeFileSync(
-        appPath,
-        `export default { id: "sample-v2", version: 2, agent: "worker", inputSchema: { type: "object" } };\n`,
-      );
-      return appPath;
-    })();
-    await git(root, "add", stagedOverlapping);
-    await git(root, "commit", "-qm", "v2");
-    const overlapping = store.stage();
-    const releaseOverlapHold = store.retain(overlapping.id);
+    const accepted = store.ensureCurrent();
+    const skill = join(root, "shared", "skills", "sample");
+    mkdirSync(join(skill, "generated"));
+    writeFileSync(join(skill, "generated", "guide.txt"), "generated support\n");
+    symlinkSync("generated/guide.txt", join(skill, "guide.txt"));
+    await git(root, "add", "shared/skills");
+    await git(root, "commit", "-qm", "skill links to generated support");
 
-    for (let index = 3; index <= 11; index += 1) {
-      writeFileSync(
-        appPath,
-        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
-      );
-      await git(root, "add", appPath);
-      await git(root, "commit", "-qm", `v${index}`);
-      const candidate = store.stage();
-      if (index <= 5) {
-        // Simulate rejected reload: stage cached, hold released, prune invoked without activation.
-        const releaseRejected = store.retain(candidate.id);
-        releaseRejected();
-        store.prune();
-      } else {
-        store.activate(candidate);
-      }
-    }
-
-    // While two older releases are held (initial + overlapping) plus current,
-    // prune([], 5) reserves slots for all 3 protected releases and keeps only 2
-    // recent unprotected releases so total retained releases never exceeds 5!
-    store.prune();
-    expect(existsSync(initial.root)).toBeTrue();
-    expect(existsSync(overlapping.root)).toBeTrue();
-    expect(
-      readdirSync(join(stateDir, "releases", "app-definitions")).filter(
-        (name) => name !== "current" && name !== "previous",
-      ),
-    ).toHaveLength(5);
-
-    releaseWorkerHold();
-    releaseOverlapHold();
-    for (let index = 12; index <= 14; index += 1) {
-      writeFileSync(
-        appPath,
-        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
-      );
-      await git(root, "add", appPath);
-      await git(root, "commit", "-qm", `v${index}`);
-      store.activate(store.stage());
-    }
-
-    expect(existsSync(initial.root)).toBeFalse();
-    expect(existsSync(overlapping.root)).toBeFalse();
-    const retainedDirs = readdirSync(join(stateDir, "releases", "app-definitions")).filter(
-      (name) => name !== "current" && name !== "previous",
-    );
-    expect(retainedDirs).toHaveLength(5);
+    expect(() => store.stage()).toThrow("Invalid skill discovery paths in captured App source");
+    expect(store.current()?.id).toBe(accepted.id);
+    expect(readFileSync(join(skill, "generated", "guide.txt"), "utf8")).toBe("generated support\n");
   });
 
-  it("retains releases referenced by live in-process agent sessions (including names with ..) across >5 reloads until session exit", async () => {
-    const { root, stateDir, appPath } = await fixture();
-    let liveAgentDirs: string[] = [];
-    const store = new DefinitionSourceReleaseStore(root, stateDir, {
-      activePaths: () => liveAgentDirs,
-    });
-    const first = store.ensureCurrent();
-    const sessionSkillPath = join(first.sharedRoot, "skills", "sample", "SKILL.md");
-    liveAgentDirs = [join(first.agentsRoot, "worker..backup")];
-    expect(store.releaseIdForPath(liveAgentDirs[0])).toBe(first.id);
-    expect(store.releaseIdForPath(join(stateDir, "releases", "outside"))).toBeUndefined();
-
-    for (let index = 2; index <= 8; index += 1) {
-      writeFileSync(
-        appPath,
-        `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
-      );
-      await git(root, "add", appPath);
-      await git(root, "commit", "-qm", `v${index}`);
-      store.activate(store.stage());
-    }
-
-    expect(existsSync(first.root)).toBeTrue();
-    expect(readFileSync(sessionSkillPath, "utf8")).toContain("# Sample");
-
-    liveAgentDirs = [];
-    writeFileSync(
-      appPath,
-      `export default { id: "sample-v9", version: 9, agent: "worker", inputSchema: { type: "object" } };\n`,
-    );
-    await git(root, "add", appPath);
-    await git(root, "commit", "-qm", "v9");
-    store.activate(store.stage());
-    expect(existsSync(first.root)).toBeFalse();
-  });
-
-  it("persists and protects the last accepted predecessor across rejected reloads and restarts", async () => {
-    const { root, stateDir, appPath } = await fixture();
+  it("keeps earlier snapshots readable and available for rollback across reloads and restart", async () => {
+    const { root, stateDir } = await fixture(false);
     const store = new DefinitionSourceReleaseStore(root, stateDir);
-    const releaseA = store.ensureCurrent();
-    writeFileSync(
-      appPath,
-      `export default { id: "sample-v2", version: 2, agent: "worker", inputSchema: { type: "object" } };\n`,
-    );
-    await git(root, "add", appPath);
-    await git(root, "commit", "-qm", "v2");
-    const releaseB = store.stage();
-    store.activate(releaseB);
-
-    // Stage 5 newer rejected candidates and prune after each without activating them.
-    for (let index = 3; index <= 7; index += 1) {
-      writeFileSync(
-        appPath,
-        `export default { id: "sample-rejected-${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
-      );
-      await git(root, "add", appPath);
-      await git(root, "commit", "-qm", `rejected-${index}`);
-      store.stage();
-      store.prune();
-    }
-
-    // Both B (current) and A (last accepted predecessor) survive rejected-reload pruning AND restart ensureCurrent()!
-    expect(existsSync(releaseB.root)).toBeTrue();
-    expect(existsSync(releaseA.root)).toBeTrue();
-    const restarted = new DefinitionSourceReleaseStore(root, stateDir).ensureCurrent();
-    expect(restarted.id).toBe(releaseB.id);
-    expect(existsSync(releaseA.root)).toBeTrue();
-  });
-
-  it("reports and swallows per-release deletion errors without breaking activation or cleanup callers", async () => {
-    if (typeof process.getuid === "function" && process.getuid() === 0) return;
-    const { root, stateDir, appPath } = await fixture();
-    const notices: string[] = [];
-    const store = new DefinitionSourceReleaseStore(root, stateDir, {
-      onNotice: (message) => notices.push(message),
-    });
     const first = store.ensureCurrent();
-    const lockedDir = join(first.projectsRoot, "sample.app");
-    chmodSync(first.projectsRoot, 0o555);
-    try {
-      for (let index = 2; index <= 8; index += 1) {
-        writeFileSync(
-          appPath,
-          `export default { id: "sample-v${index}", version: ${index}, agent: "worker", inputSchema: { type: "object" } };\n`,
-        );
-        await git(root, "add", appPath);
-        await git(root, "commit", "-qm", `v${index}`);
-        const next = store.stage();
-        expect(() => store.activate(next)).not.toThrow();
-      }
-      expect(existsSync(lockedDir)).toBeTrue();
-      expect(notices.some((msg) => msg.includes(`Failed to prune obsolete release ${first.id}`))).toBeTrue();
-    } finally {
-      chmodSync(first.projectsRoot, 0o755);
-    }
-    expect(store.prune()).toContain(first.id);
-    expect(existsSync(first.root)).toBeFalse();
+    for (let index = 0; index < 7; index += 1) store.activate(store.stage());
+    const accepted = store.current()!;
+    store.stage(); // A prepared candidate does not become accepted at startup.
+
+    const restarted = new DefinitionSourceReleaseStore(root, stateDir);
+    expect(restarted.ensureCurrent().id).toBe(accepted.id);
+    expect(readFileSync(join(first.sharedRoot, "skills", "sample", "SKILL.md"), "utf8")).toContain("# Sample");
+    restarted.activate(first);
+    expect(restarted.current()?.id).toBe(first.id);
   });
 });

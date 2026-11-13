@@ -192,10 +192,7 @@ export async function runAppRuntime(opts: {
   });
 
   let appInboxRuntime: AppInboxRuntime | null = null;
-  const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir, {
-    onNotice: (message) => bus.emit({ type: "info", message }),
-    activePaths: () => manager.activeAgentDirectories(),
-  });
+  const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir);
   const activeAppSource = appSources.ensureCurrent();
   const activeAppDirectories = listAppDefinitionFiles(activeAppSource.projectsRoot, opts.projectsRoot).map((file) =>
     basename(dirname(file)),
@@ -208,13 +205,6 @@ export async function runAppRuntime(opts: {
   // Workers must capture one accepted pair, never combine those two clocks.
   let acceptedWorkerSource = { ...activeAppSource, appDirectories: activeAppDirectories };
   const workerDefinitionSource = () => acceptedWorkerSource;
-  bus.listen(
-    (event) => {
-      if (event.type !== "session.end") return;
-      appSources.prune([acceptedWorkerSource.id]);
-    },
-    { label: "app-source-release-prune" },
-  );
   markStartupPhase("apps");
   bus.emit({
     type: "info",
@@ -251,36 +241,8 @@ export async function runAppRuntime(opts: {
     appRegistry,
     readOutcomes: opts.reporting?.readOutcomes,
     hostCapacity,
-    executeTaskAttempt: (() => {
-      const execute = createTaskAttemptProcessExecutor({ bus, definitionSource: workerDefinitionSource });
-      return async (request) => {
-        const capturedId = workerDefinitionSource()?.id;
-        const releaseHold = appSources.retain(capturedId);
-        try {
-          return await execute(request);
-        } finally {
-          releaseHold();
-          if (capturedId && capturedId !== acceptedWorkerSource.id) {
-            appSources.prune([acceptedWorkerSource.id]);
-          }
-        }
-      };
-    })(),
-    executeTaskRecovery: (() => {
-      const execute = createTaskRecoveryProcessExecutor({ bus, definitionSource: workerDefinitionSource });
-      return async () => {
-        const capturedId = workerDefinitionSource()?.id;
-        const releaseHold = appSources.retain(capturedId);
-        try {
-          await execute();
-        } finally {
-          releaseHold();
-          if (capturedId && capturedId !== acceptedWorkerSource.id) {
-            appSources.prune([acceptedWorkerSource.id]);
-          }
-        }
-      };
-    })(),
+    executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
+    executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
   });
   markStartupPhase("agents-and-tasks");
 
@@ -364,26 +326,8 @@ export async function runAppRuntime(opts: {
     stopConversationTurn: appTasks.stopTurn,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
-    createTaskAdmissionWorker: () => {
-      const captured = workerDefinitionSource();
-      const capturedId = captured?.id;
-      const releaseHold = appSources.retain(capturedId);
-      const releaseOnTerminated = () => {
-        releaseHold();
-        if (capturedId && capturedId !== acceptedWorkerSource.id) {
-          appSources.prune([acceptedWorkerSource.id]);
-        }
-      };
-      try {
-        return createTaskAdmissionProcess({
-          definitionSource: captured ?? undefined,
-          onTerminated: releaseOnTerminated,
-        });
-      } catch (error) {
-        releaseHold();
-        throw error;
-      }
-    },
+    createTaskAdmissionWorker: () =>
+      createTaskAdmissionProcess({ definitionSource: workerDefinitionSource() ?? undefined }),
     wakeAdmittedTasks: appTasks.wake,
     hasTaskTarget: ({ appId, taskId }) => appTasks.has({ appId, taskId }),
     previewTaskEvent: ({ appId, event, targetedTaskId }) => appTasks.previewEvent({ appId, event, targetedTaskId }),
@@ -437,10 +381,7 @@ export async function runAppRuntime(opts: {
   let cancelledOnce = false;
   const preparedSources = new WeakMap<
     Awaited<ReturnType<typeof prepareAgentGeneration>>,
-    {
-      candidate: DefinitionSourceRelease & { appDirectories: string[] };
-      releaseHold: () => void;
-    }
+    DefinitionSourceRelease & { appDirectories: string[] }
   >();
 
   const { gracefulShutdown, gracefulRestart, handleReload, installProcessHandlers } = createDaemonLifecycle({
@@ -461,88 +402,72 @@ export async function runAppRuntime(opts: {
     },
     prepareAgents: async (_loaderOpts, reloadOptions) => {
       const source = appSources.stage(reloadOptions.expectedSourceCommit);
-      const releaseHold = appSources.retain(source.id);
-      try {
-        const candidate = {
-          ...source,
-          appDirectories: listAppDefinitionFiles(source.projectsRoot, opts.projectsRoot).map((file) =>
-            basename(dirname(file)),
-          ),
-        };
-        const generation = await prepareAgentGeneration({
-          ...loaderOpts,
-          agentsRoot: candidate.agentsRoot,
-          projectsRoot: candidate.projectsRoot,
-          definitionSharedRoot: candidate.sharedRoot,
-          appDirectories: candidate.appDirectories,
-        });
-        preparedSources.set(generation, { candidate, releaseHold });
-        return generation;
-      } catch (error) {
-        releaseHold();
-        appSources.prune([acceptedWorkerSource.id]);
-        throw error;
-      }
+      const candidate = {
+        ...source,
+        appDirectories: listAppDefinitionFiles(source.projectsRoot, opts.projectsRoot).map((file) =>
+          basename(dirname(file)),
+        ),
+      };
+      const generation = await prepareAgentGeneration({
+        ...loaderOpts,
+        agentsRoot: candidate.agentsRoot,
+        projectsRoot: candidate.projectsRoot,
+        definitionSharedRoot: candidate.sharedRoot,
+        appDirectories: candidate.appDirectories,
+      });
+      preparedSources.set(generation, candidate);
+      return generation;
     },
     publishAgents: publishPreparedAgentGeneration,
     reloadApps: async ({ agents, publishAgents }) => {
-      const entry = preparedSources.get(agents);
-      if (!entry) throw new Error("Runtime generation has no staged definition source");
+      const candidate = preparedSources.get(agents);
+      if (!candidate) throw new Error("Runtime generation has no staged definition source");
       preparedSources.delete(agents);
-      const { candidate, releaseHold } = entry;
-      try {
-        let taskApps = 0;
-        const appIds = await appInboxRuntime!.reload(
-          async ({ snapshot, commit }) => {
-            // Capture and restore while holding the registry transaction. A queued
-            // reload must restore its committed predecessor, not its staging source.
-            const previous = acceptedWorkerSource;
-            try {
-              const result = await appTasks.publishGeneration({
-                snapshot,
-                definitionSource: {
-                  projectsRoot: candidate.projectsRoot,
-                  agentsRoot: candidate.agentsRoot,
-                  sharedRoot: candidate.sharedRoot,
-                },
-                publish: () => {
-                  appSources.activate(candidate, [previous.id]);
-                  acceptedWorkerSource = candidate;
-                  try {
-                    publishAgents();
-                    commit();
-                  } catch (error) {
-                    // Restore before Task rollback yields to other worker dispatch.
-                    acceptedWorkerSource = previous;
-                    appSources.activate(previous, [candidate.id]);
-                    throw error;
-                  }
-                },
-              });
-              taskApps = result.apps;
-            } catch (error) {
-              acceptedWorkerSource = previous;
-              if (appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
-                appSources.activate(previous, [candidate.id]);
-              }
-              throw error;
+      let taskApps = 0;
+      const appIds = await appInboxRuntime!.reload(
+        async ({ snapshot, commit }) => {
+          // Capture and restore while holding the registry transaction. A queued
+          // reload must restore its committed predecessor, not its staging source.
+          const previous = acceptedWorkerSource;
+          try {
+            const result = await appTasks.publishGeneration({
+              snapshot,
+              definitionSource: {
+                projectsRoot: candidate.projectsRoot,
+                agentsRoot: candidate.agentsRoot,
+                sharedRoot: candidate.sharedRoot,
+              },
+              publish: () => {
+                appSources.activate(candidate);
+                acceptedWorkerSource = candidate;
+                try {
+                  publishAgents();
+                  commit();
+                } catch (error) {
+                  // Restore before Task rollback yields to other worker dispatch.
+                  acceptedWorkerSource = previous;
+                  appSources.activate(previous);
+                  throw error;
+                }
+              },
+            });
+            taskApps = result.apps;
+          } catch (error) {
+            acceptedWorkerSource = previous;
+            if (appSources.current()?.id === candidate.id && previous.id !== candidate.id) {
+              appSources.activate(previous);
             }
-          },
-          discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot, {}, candidate.appDirectories),
-        );
-        refreshReporting();
-        return {
-          appIds,
-          taskApps,
-          ...(candidate.sourceCommit ? { sourceCommit: candidate.sourceCommit } : {}),
-        };
-      } finally {
-        releaseHold();
-        appSources.prune([acceptedWorkerSource.id]);
-      }
-    },
-    onReloadError: () => {
-      appSources.prune([acceptedWorkerSource.id]);
+            throw error;
+          }
+        },
+        discoverAppDefinitions(candidate.projectsRoot, opts.projectsRoot, {}, candidate.appDirectories),
+      );
+      refreshReporting();
+      return {
+        appIds,
+        taskApps,
+        ...(candidate.sourceCommit ? { sourceCommit: candidate.sourceCommit } : {}),
+      };
     },
   });
   installProcessHandlers();

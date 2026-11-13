@@ -69,6 +69,16 @@ cross-component and process boundaries.
 
 `app-source-release.ts` captures the source used by a generation. Private workers
 enter through `composition/workers/task-admission-process.ts` and `composition/workers/task-attempt-process.ts`.
+Git and filesystem captures share the non-source path policy: directories such as
+`archive/`, `generated/`, `reports/`, `evidence/`, `workspace/` and `node_modules/`
+are omitted wherever they occur in captured source. Authored definitions, skills
+and supporting files must stay outside excluded paths. Skill roots and their
+filesystem links are validated after filtering; invalid captures cannot replace
+accepted source. New captures use the `definitions-v6` cache identity and the
+existing manifest schema. Startup continues to use an accepted older capture
+until an explicit reload. Releases are retained for captured readers and rollback;
+automatic pruning is deferred.
+
 Task context is assembled in `core/tasks/app-task-context.ts`; shared App summaries live in
 `app-dependency-catalog.ts`. Runtime persistence primitives are under `../lib/db/`;
 transcripts/artifacts are handled by `../lib/persistence.ts` and `../lib/artifacts.ts`.
