@@ -1,12 +1,22 @@
 import { describe, expect, it } from "bun:test";
+import type { WorkflowGuardEvent } from "@may-agent/sdk";
 import { guard } from "../guards/finish-guard";
 
-function finishEvent(task: string, messages: unknown[] = []): any {
+type StepDoneEvent = Extract<WorkflowGuardEvent, { type: "step_done" }>;
+
+function finishEvent(task: string, messages: unknown[] = []): StepDoneEvent {
   return {
     type: "step_done",
+    source: "agent",
+    step: "worker",
     task,
+    completedSteps: [],
     result: {
-      finishResult: { status: "success", verification_evidence: ["test"] },
+      sessionId: "fixture-session",
+      status: "done",
+      duration: "0s",
+      outputDir: "",
+      finishResult: { status: "success", summary: "Checked work" },
       messages,
       lastAssistantText: "done",
     },

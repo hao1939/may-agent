@@ -154,11 +154,19 @@ Host diagnostic layer. Historical tool guard events remain readable.
 Workflow guards are App/shared modules exporting `guard: WorkflowGuard`.
 `loadGuards()` in Host `src/lib/workflow-tool.ts` discovers the supplied guard
 directories. They fire on workflow step transitions such as
-`step_done` or `step_started`.
+`step_done` or `step_start`.
 
 Each guard exports `guard: WorkflowGuard` with a `handle()` method. The guard
-returns demands from the supported SDK vocabulary. Events use
+returns demands from the supported SDK vocabulary. Step callbacks identify
+`source: "agent"` or `"function"`; emitted `guard.triggered` diagnostics use
 `source: "workflow"` and the guard's own name in the `guard` field.
+
+Standard callbacks carry no repository-root or write-ownership fields. The shared
+`finish-guard` inspects the supplied task and result for its workflow-selection
+rule; its dormant Git-warning fallback is retired. When acceptance requires a
+repository-state check, the owning workflow checks its actual workspace rather
+than inferring edit ownership from paths and shell text in a guard. This adds no
+automatic commit requirement or replacement detector.
 
 Workflow guards are best for process-level expectations: read before edit,
 verify after write, build after code changes, milestone quality, secret

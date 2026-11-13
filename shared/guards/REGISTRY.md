@@ -28,6 +28,9 @@ directory (skipping `.test.ts`, `REGISTRY*`, and `.disabled.ts`) and collects ex
 finish arguments, caller result schemas and declared-deliverable checks remain
 at the Host's finish-tool boundary; do not import a second validation API from
 this directory. See the [tool completion contract](../../projects/alex.app/docs/2a-design/guards.md#tool-contracts-and-completion).
+The guard reads the supplied callback without Git scans or inferred write
+ownership. When repository-state verification is required, the owning workflow
+checks its actual workspace and acceptance requirements.
 
 ## Writing Guards
 

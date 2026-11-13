@@ -403,6 +403,38 @@ strict source checking and `check:may-design` pass, with the existing `reports`
 root-layout warning. These are local source checks, not a deployment or
 runtime-speed claim.
 
+### Completed support cleanup: retire the dormant Git warning
+
+The follow-up retires `finish-guard`'s worktree-warning branch, superseding the
+preceding cleanup's decision to leave it untouched. The branch required
+`agentsRoot` or `projectRoot` fields outside the standard SDK callback, either
+on the event or its result. The current Host callback supplies neither. No
+tracked production caller enriches the event for this branch. Removing it also
+removes shell-write parsing, path aliases, guessed edit ownership, repository
+probes and a synchronous Git call with a five-second timeout. No callback extension, filesystem
+search, ownership ledger or replacement diagnostic is added.
+
+The `finish-guard` workflow-selection check remains. The other ten shared guards,
+their thresholds and the Host's finish-result checks are unchanged. Git evidence
+required by an assignment remains the owning workflow's responsibility. A custom
+caller manually supplying the old extra fields loses the warning; the preceding
+comparison's temporary-Git fixtures exercised that branch through such injected
+fields, not through the current Host callback. Historical guard events remain
+readable. Other installations and untracked custom callers are unassessed.
+
+At Apps `c75946078f`, the source audit inspected Host `1c5efff490`; its workflow
+runner, SDK callback and result type files match verification Host `2dd58ba3e3`.
+Before/after source loading retains all eleven guards, with identical handlers
+for the other ten. Ten real-runner fixture executions with scripted agent
+results produce matching callbacks and outcomes for ordinary work, explicit and
+negated workflow selection, and both recorded tool-call formats. Configured
+workspace paths still do not enter those callbacks. The existing finish-guard
+fixture now uses the SDK event type rather than `any` and a retired evidence
+field. All 98 shared guard tests, targeted strict source/fixture checking and
+`check:may-design` pass, with the existing `reports` root-layout warning.
+This is source verification in temporary workspaces, not live activation,
+model-quality evidence or a measured speedup on the already-inactive branch.
+
 ### Other candidates remain evidence-led
 
 Recurring research can need fresh observations. Automatic evaluation and
