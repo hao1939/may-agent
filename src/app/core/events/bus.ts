@@ -404,6 +404,18 @@ export type SystemEvent =
       data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string };
     }
   | {
+      type: "project.owner.requested";
+      source?: string;
+      owner: string;
+      data: {
+        project?: string;
+        projectId?: string;
+        projectPath?: string;
+        reason: string;
+        [key: string]: unknown;
+      };
+    }
+  | {
       type: "project.nudge";
       source: string;
       owner: string;
