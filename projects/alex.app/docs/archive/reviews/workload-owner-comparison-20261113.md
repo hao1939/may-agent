@@ -334,3 +334,95 @@ Avoid another deciding-model call merely to close work. Preserve unfinished and
 standing contributions in the next acceptance contrast; neither a parent's
 ending nor age or phase supplies closure authority. Installed follow-through,
 workload benefit and external caller delivery remain unproved.
+
+## Creator-context refinement
+
+**Status:** [Host PR #491](https://github.com/hao1939/may-agent/pull/491) is ready
+for review with narrow native behavioral evidence. Release, App activation and
+live Task mutation remain held.
+
+The explicit discovery tool and the stronger guidance above did not make native
+owners consume fulfilled contributions. Rather than add a second closure model,
+controller or output protocol, this candidate exposes a five-item creator page
+through the existing native decision brief. The existing scoped reader remains
+the sole authority. Observation time, pagination and bounded detail pointers
+remain visible; missing, failed or mismatched discovery stays unavailable.
+Owners must inspect original requirements and accepted evidence before guarded
+closure. Ending the original assignment neither closes its contributions nor
+requires every standing or unfinished contribution to end first.
+
+Frozen Apps experiment `cfce94f6d184b31372165f2565517c506a89c09e` compares baseline
+Host `cef5faa0aa27301af35a170309b1aaa00872651f` with candidate
+`22a443336c94947ec57d29ea0a6236cf0ffcce4f`. App instructions, business code,
+tools, limits and all four fixture cases are identical between arms. Commissioning
+is scripted through ordinary admission; the deterministic calculation saves a
+read-back artifact. The runtime restarts before the native owner decides. Every
+case receives the same neutral addressed review observation, without a supplied
+contribution ID or closure instruction. The unfinished case requires this wake:
+an unfinished dependency alone correctly leaves its owner waiting.
+
+| Assignment and original request | Baseline | Creator-context candidate |
+| --- | --- | --- |
+| Fulfilled finite snapshot, sealed report owed | Original delivered/closed; contribution left open | Exact contribution inspected and creator-closed; original delivered/closed |
+| Fulfilled finite preview, final sealed report still owed | Original and its review deadline preserved; contribution left open | Contribution creator-closed; original delivery and review deadline preserved |
+| Reusable snapshot service, current sealed report owed | Original delivered/closed; service preserved | Exact service inspected/preserved; original delivered/closed |
+| Unfinished independently validated contribution | Original and contribution preserved | Exact contribution inspected; original, contribution and review deadline preserved |
+
+All four candidate cases passed the read-only verification, including exact
+contribution reads, source/artifact reads, immutable specifications, accepted
+attempt identity, creator closure provenance, Inbox disposition, deadline
+preservation, unchanged standing/unfinished records and no repeated polling.
+Actual provider requests contain the candidate's creator page and exact Task
+identity. The baseline did not receive that page and did not read the completed
+finite contributions. The driver applies no model recommendations: the native
+Task tool performs closure and normal App settlement handles the original input.
+
+The baseline made 13 requests / 855,759 serialized request bytes; the candidate
+made 11 / 699,512. Deduplicated adapter usage was 171,857 and 141,323 total tokens,
+respectively, including cache categories; reasoning is recorded separately.
+No provider/tool errors or SQLite-lock warnings occurred. One observation per
+case and revision is not a reliability, cost-saving or throughput estimate.
+Local caller settlement does not establish external delivery or installed
+adoption, and the neutral review event does not prove an unmodified production
+wake path. These cases do not compare workload levels.
+
+Both final scripted preflights passed four cases and ten local requests with
+zero provider requests. Strict source-SDK types passed. The first preflight's
+unfinished case did not run its owner because no review was due; that failed
+fixture receipt is retained. The final fixture supplies the same review event
+to all cases. A temporary event-envelope cast type error was fixed before
+inference; no provider cohort was rerun to replace a disappointing result.
+
+The focused Host context/discovery owners passed 14 tests and 146 assertions.
+The new refresh regression fails on unchanged baseline. Full local Host CI on
+the original base passed 3,633 tests / 21,753 assertions, three existing optional
+installation skips and zero failures across 328 files; browser tests ran. The
+later formatting-only revision passed the focused suites. Whole-file formatting
+still reports pre-existing differences in both files on baseline and candidate;
+no unrelated reformatting was bundled. The candidate is integrated onto current
+main `716a30e4b37961dc9dcc00e353a176303ee8b14a` as
+`06a3052f024cc660fe7decfe708f3a49ed9a4d4a`, with byte-identical changed files
+and an unchanged dependency lock. Final integrated full local CI passed 3,615
+tests / 21,712 assertions across 327 files, with three existing installation-only
+skips and zero failures. Browser tests executed; Host/SDK types, App boundaries
+and lint passed. Its longest shard took 336.05 seconds. Exact-head GitHub
+[Quality and Container](https://github.com/hao1939/may-agent/actions/runs/43424083218)
+both passed. These timings do not demonstrate a test-speed gain from this change.
+
+App documentation integrity, SDK/control examples and canonical-App checks
+passed. The isolated worktree's model-surface check reports two errors: May's
+skill catalog overflows and Scout's prompt exceeds its budget by 25 characters.
+Restoring all four changed documents to their unchanged parent and rerunning
+the complete check at that exact path produces byte-identical output. Skill
+catalogs contain absolute paths, so the long worktree path affects their size;
+the installation-root model-surface check passes across its nine enabled agents.
+The isolated checkout has ten. These baseline/layout differences are retained,
+not hidden as a successful complete isolated App check or fixed in this slice.
+
+Private evidence and the read-only assessor are retained in
+`/home/hao/workspace-archive/creator-context-20261113-{baseline,candidate}-model1/`,
+`creator-context-{baseline,candidate}-assessment-20261113.json` and
+`creator-context-assess-20261113.py`. The frozen experiment remains outside the
+installed workflow catalog and portable Host CI. Next: review the small Host
+change, then separately authorize and observe the ordinary installed owner path
+when release resumes. Do not reopen old contributions to manufacture acceptance.

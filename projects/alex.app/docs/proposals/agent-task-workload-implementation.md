@@ -20,8 +20,13 @@ workspace prerequisites and bounded retained-session continuations. Fresh-state
 initialization, offline retained-state installation and one-way enforcement
 withdrawal have verified implementations. Retained installation requires
 externally excluded, already cleaned execution; it does not import live work.
-Source integration is complete. Installed result disposition, selected funding
-and operational acceptance remain separate; this document records no new activation.
+That source integration completed. Subsequent [Host #482](https://github.com/hao1939/may-agent/pull/482)
+removed work-credit accounting, sponsorship and layered execution reservations.
+The related funding, cutover and withdrawal descriptions below retain their
+dated evidence; they are not current implementation or activation instructions.
+Current work focuses on bounded execution, scoped observation and creator result
+disposition through the existing lifecycle. Installed follow-through and
+operational acceptance remain separate; this document records no new activation.
 
 The 37 earlier PR heads are included in the consolidated candidate. The earlier
 validated baseline was `97cbfdf9748297501f21ab2bff2047041997ceef`. Their branches, original descriptions

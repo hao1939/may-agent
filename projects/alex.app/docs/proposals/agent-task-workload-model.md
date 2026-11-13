@@ -16,17 +16,20 @@ without multiplying budgets or making every observation a new assignment.
 The initial charging, renewal and coordination choices below are proposed refinements.
 **Implementation status:** The supported accounting, execution-limit, feedback
 and coordination paths merged in [Host #443](https://github.com/hao1939/may-agent/pull/443)
-at `01ba70398c7b5a0454bf663115c9f758901d3dc6`. They remain in current Host
-source after #449. Agent ownership, creator-controlled revision and closure,
-bounded attempts and Host concurrency retain their existing meaning. Production budget activation and
-behavioral acceptance remain pending. Fresh-state initialization and a conditional
-offline installation path for already cleaned retained state have source evidence.
+at `01ba70398c7b5a0454bf663115c9f758901d3dc6`. Subsequent simplification in
+[Host #482](https://github.com/hao1939/may-agent/pull/482) removed work-credit
+accounting, sponsorship and layered execution reservations. The corresponding
+charging, renewal, installation and withdrawal sections below are historical
+design and verification, not available current-source activation procedures.
+Agent ownership, creator-controlled revision and closure, bounded attempts,
+Host concurrency and scoped workload observations remain. Installed owner
+follow-through and behavioral acceptance remain pending.
 The [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
 maps the supported first path to its implementation owners and records the
 remaining review, result-disposition adoption and behavioral acceptance gates.
-A one-way offline withdrawal path is included in that merged source; it preserves history and
-obligations and refuses automatic reactivation across unaccounted work. None of
-these source checks establishes a live cutover or online start exclusion.
+The former source also verified one-way offline withdrawal; the later retirement
+supersedes that operational path. None of these source checks establishes a live
+cutover or online start exclusion.
 Current durable admission still requires an App. The
 [standalone-agent proposal](standalone-agent-tasks.md) owns that addressing change.
 
@@ -97,10 +100,15 @@ The [native creator-consumption drill](../archive/reviews/workload-owner-compari
 exposes a separate acceptance gap: all four native owners handled the original
 report correctly, but none inspected or closed its fulfilled finite contribution.
 More explicit guidance did not fix the observed omission and remains branch-only.
-The next source slice must address ordinary creator result consumption through
-existing context, reads and guarded controls, with unfinished and standing
-contributions preserved. Business delivery alone does not establish lifecycle
-follow-through; broader activation remains held.
+The [creator-context refinement](../archive/reviews/workload-owner-comparison-20261113.md#creator-context-refinement)
+now supplies a bounded fresh creator page in the existing native decision brief,
+using the same read and guarded controls. Identical App guidance on the baseline
+again left both fulfilled finite contributions open. The candidate inspected and
+closed both, including while its original final delivery remained owed, and
+preserved unfinished and standing contributions. All four candidate cases passed
+read-only evidence checks. This is one observation per case and revision in
+disposable state, not installed or reliable fleet behavior. Business delivery
+alone does not establish lifecycle follow-through; broader activation remains held.
 
 ## The mental model
 

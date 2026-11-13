@@ -131,3 +131,24 @@ Local candidate and verification evidence are retained under
 `/home/hao/workspace-archive/may-creator-task-discovery-20261113/`.
 The explicit-read refinement's baseline and CI logs are under its `simplified/`
 subdirectory; its current-main verification is kept separately.
+
+## Native decision-context refinement
+
+The explicit-read-only choice above describes merged #472. The later
+[native owner comparison](workload-owner-comparison-20261113.md#creator-context-refinement)
+demonstrates its remaining adoption gap: an available discovery tool plus more
+explicit App guidance still allowed fulfilled contributions to remain open.
+The new candidate therefore requests a five-item page through that same reader
+when refreshing the existing native decision brief. It adds no field to the SDK
+execution context, workflow arguments, structural child view or Task records.
+Each page retains its observation time, continuation and existing bounded detail
+projection. Unavailable discovery is visible and does not invent an empty list.
+
+This intentionally revises the earlier decision to rely solely on an explicit
+model tool call for native discovery. The workflow read remains explicit. The
+new projection adds a bounded database observation and prompt content per native
+decision refresh, not another deciding-model call or independent context cache.
+Owners still inspect exact requirements and accepted evidence and use the
+existing guarded close; unfinished and standing responsibilities remain open.
+The small comparison supports this source candidate without establishing live
+adoption, reliability or reduced workload. Release and activation remain held.
