@@ -70,6 +70,10 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ## Recent Source-Grounded Findings
 
+### 2026-11-13
+
+- [Adaptive model delegation needs step-level promotion gates](./findings/2026-11-13-adaptive-model-delegation-needs-step-level-promotion-gates.md) — Mubit and Neon report step-level small-model delegation behind holdout, shadow, canary, promotion, comparison, and demotion gates, plus schema-scoped verified lessons; the benchmark and external training service remain producer-authored and Scout did not reproduce them.
+
 ### 2026-11-12
 
 - [Black-box agent tests need isolated effect ledgers](./findings/2026-11-12-black-box-agent-tests-need-isolated-effect-ledgers.md) — Argus's simulated payment testbed derives selected probe verdicts from recorded authorizations and opens a separately staged session per probe to prevent inherited interactions and effects; Scout inspected pinned producer-authored source and tests statically without running Argus, agents, payments, chains, judges, or the testbed.
