@@ -3,6 +3,26 @@ import type { TaskResult } from "./types.js";
 import type { WorkflowToolResult } from "./workflow.js";
 import { cliCallFacts } from "./tools/run-cli-agent.js";
 
+/** Enforce required finish() and optional schema-backed result payload on workflow prompt steps. */
+export function enforceStructuredWorkflowResult(result: TaskResult, expectsPayload: boolean): TaskResult {
+  if (result.status !== "done") return result;
+  if (!result.finishResult) {
+    return {
+      ...result,
+      status: "error",
+      error: "Workflow agent step completed without the required finish() result",
+    };
+  }
+  if (expectsPayload && result.structuredResult === undefined && result.finishResult.result === undefined) {
+    return {
+      ...result,
+      status: "error",
+      error: "Workflow agent step completed without the required schema-backed finish().result payload",
+    };
+  }
+  return result;
+}
+
 /** Project execution evidence for callers; never accepts the owning Task. */
 export function agentExecutionResult(result: TaskResult): ExecutionResult {
   if (!result.sessionId) throw new Error(result.error || result.errorMessage || "Agent call did not start an execution");

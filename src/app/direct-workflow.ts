@@ -6,9 +6,7 @@
  * EventBus, SubagentManager, schedule, or daemon state.
  */
 
-import { StringEnum } from "@earendil-works/pi-ai";
-import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import { Type, type TSchema } from "typebox";
+import type { TSchema } from "typebox";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import type {
@@ -20,12 +18,11 @@ import type {
 } from "@may-agent/sdk";
 import { createTestAppRead } from "@may-agent/sdk/testing";
 import {
-  WorkflowUnconfirmedCleanupError,
   createWorkflowAllowance,
-  resolveCallableTarget,
+  resolveCallable,
   runWorkflowInvocation,
   type NormalizedWorkflowContribution,
-  type PreparedTargetCatalog,
+  type PreparedCatalog,
   type WorkflowExecutableModule,
   type WorkflowExecutionAllowance,
   type WorkflowKernelOutcome,
@@ -35,11 +32,11 @@ import {
   type WorkflowStepInvocationResult,
   type WorkflowStepTrace,
 } from "../../packages/sdk/src/workflow-kernel.js";
-import { agentExecutionResult } from "../lib/execution-handoff.js";
+import { agentExecutionResult, enforceStructuredWorkflowResult } from "../lib/execution-handoff.js";
 import type { ModelWithApiKey, TaskResult } from "../lib/types.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/workflow-catalog.js";
 import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
-import { readAgentConfigFile } from "./loader/agent-config.js";
+import { readAgentConfigFile, type AgentConfig } from "./loader/agent-config.js";
 import {
   listRuntimeAgentDirectories,
   resolveRuntimeAgentDirectory,
@@ -57,7 +54,7 @@ export const DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH = 3;
 
 const DIRECT_HOST_TOOL_DENIALS: Readonly<Record<string, string>> = {
   agents: "isolated direct workflow runs do not dispatch hosted supporting agents",
-  workflow: "nested agent steps do not expose hosted workflow dispatch unless explicitly enabled",
+  workflow: "nested agent steps do not expose hosted workflow dispatch",
   message: "isolated direct workflow runs must not notify real users or agents",
   cron: "isolated direct workflow runs must not change autonomous schedules",
   checkpoint: "direct workflow runs do not expose hosted checkpoint storage",
@@ -69,10 +66,8 @@ const DIRECT_HOST_TOOL_DENIALS: Readonly<Record<string, string>> = {
 
 export function defaultDirectToolDenials(
   configuredTools: readonly string[],
-  options: { allowWorkflowTool?: boolean } = {},
 ): ToolDenial[] {
   return configuredTools.flatMap((name) => {
-    if (name === "workflow" && options.allowWorkflowTool) return [];
     const reason = DIRECT_HOST_TOOL_DENIALS[name];
     return reason ? [{ name, reason }] : [];
   });
@@ -118,8 +113,6 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   runAgent?: (options: DirectAgentRunOptions) => Promise<DirectAgentRunResult>;
   /** Custom tool denial policy for real child agent runs. */
   resolveToolDenials?: (agentName: string, configuredTools: readonly string[]) => ToolDenial[];
-  /** Expose sandboxed `workflow` tool inside child agent steps (default: false). */
-  allowChildAgentWorkflowTool?: boolean;
   /** Optional tool restriction ("readonly") for this execution scope. */
   tools?: "full" | "readonly";
   drainProcessGroup?: (pgid: number) => Promise<boolean>;
@@ -185,33 +178,16 @@ function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | un
   return dir ? join(dir.dir, "workflows") : undefined;
 }
 
-function enforceDirectStepCompletion(
-  result: TaskResult,
-  expectsSchemaPayload: boolean,
-): TaskResult {
-  if (result.status !== "done") return result;
-  if (!result.finishResult) {
-    return {
-      ...result,
-      status: "error",
-      error: "Workflow agent step completed without the required finish() result",
-    };
-  }
-  if (expectsSchemaPayload && result.structuredResult === undefined && result.finishResult.result === undefined) {
-    return {
-      ...result,
-      status: "error",
-      error: "Workflow agent step completed without the required schema-backed finish().result payload",
-    };
-  }
-  return result;
-}
+type DirectPromptDefinition = {
+  source: AgentDirectory;
+  config?: AgentConfig;
+};
 
-async function buildDirectTargetCatalog(
+async function buildDirectCatalog(
   options: DirectWorkflowRunOptions<any>,
   callerOwner: string,
   explicitWorkflowDir?: string,
-): Promise<PreparedTargetCatalog<AgentDirectory>> {
+): Promise<PreparedCatalog<DirectPromptDefinition>> {
   // An App-local agentsRoot can also appear through projectsRoot. Keep its
   // project metadata instead of treating that duplicate path as a global root.
   const dirs = [...new Map(
@@ -225,7 +201,7 @@ async function buildDirectTargetCatalog(
     resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner, options.projectsRoot);
   const callerProjectId = callerSource?.projectId;
 
-  const prompts = new Map<string, { owner: string; definition: AgentDirectory }>();
+  const prompts = new Map<string, { owner: string; definition: DirectPromptDefinition }>();
   const proceduresByOwner = new Map<string, ReadonlyMap<string, WorkflowExecutableModule>>();
   const diagnostics: string[] = [];
 
@@ -238,11 +214,11 @@ async function buildDirectTargetCatalog(
     if (!config) continue;
     const existing = prompts.get(config.name);
     // Prompt and procedure definitions must come from the same admitted owner.
-    if (existing?.definition.projectId && !agentDir.projectId) continue;
-    if (existing && existing.definition.projectId === agentDir.projectId) {
-      throw new Error(`Ambiguous callable owner "${config.name}": ${existing.definition.dir}, ${agentDir.dir}`);
+    if (existing?.definition.source.projectId && !agentDir.projectId) continue;
+    if (existing && existing.definition.source.projectId === agentDir.projectId) {
+      throw new Error(`Ambiguous callable owner "${config.name}": ${existing.definition.source.dir}, ${agentDir.dir}`);
     }
-    prompts.set(config.name, { owner: config.name, definition: agentDir });
+    prompts.set(config.name, { owner: config.name, definition: { source: agentDir, config } });
     const wfCatalog = await buildWorkflowCatalog(join(agentDir.dir, "workflows"));
     proceduresByOwner.set(config.name, wfCatalog.workflows);
     for (const diag of wfCatalog.diagnostics) {
@@ -265,10 +241,12 @@ async function buildDirectTargetCatalog(
       prompts.set(fixtureAgent, {
         owner: fixtureAgent,
         definition: {
-          name: fixtureAgent,
-          dir: join(options.agentsRoot, fixtureAgent),
-          agentsRoot: options.agentsRoot,
-          relativeDir: `agents/${fixtureAgent}`,
+          source: {
+            name: fixtureAgent,
+            dir: join(options.agentsRoot, fixtureAgent),
+            agentsRoot: options.agentsRoot,
+            relativeDir: `agents/${fixtureAgent}`,
+          },
         },
       });
     }
@@ -289,7 +267,7 @@ export async function runDirectWorkflow<TInput = unknown>(
   internal?: {
     depth: number;
     allowance?: WorkflowExecutionAllowance;
-    targetCatalog?: PreparedTargetCatalog<AgentDirectory>;
+    catalog?: PreparedCatalog<DirectPromptDefinition>;
     callerOwner?: string;
     tools?: "full" | "readonly";
   },
@@ -347,16 +325,16 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
   const workflowDir = resolveWorkflowDir(options);
-  const catalog = !options.module && workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
-  const targetCatalog =
-    internal?.targetCatalog ?? (await buildDirectTargetCatalog(options, callerOwner, workflowDir));
+  const wfCatalog = !options.module && workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
+  const preparedCatalog =
+    internal?.catalog ?? (await buildDirectCatalog(options, callerOwner, workflowDir));
 
   let targetModule = options.module;
   if (!targetModule) {
-    if (!options.workflowName || !catalog) {
+    if (!options.workflowName || !wfCatalog) {
       throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
     }
-    const found = findWorkflow(catalog, options.workflowName);
+    const found = findWorkflow(wfCatalog, options.workflowName);
     if (!found.workflow) {
       throw new Error(found.error ?? `Workflow "${options.workflowName}" not found`);
     }
@@ -426,7 +404,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     }
   }
 
-  const executePromptTarget = async (
+  const executePromptStep = async (
     agent: string,
     prompt: string,
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
@@ -437,72 +415,45 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (fixture) {
       return fixture({ agent, task: prompt, options: callOpts, ...stepControl });
     }
-    const agentSource = targetCatalog.prompts?.get(agent)?.definition;
-    if (!agentSource) {
+    const promptDef = preparedCatalog.prompts?.get(agent)?.definition;
+    if (!promptDef) {
       throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
     }
-    const config = readAgentConfigFile(agentSource.dir);
+    const config = promptDef.config ?? readAgentConfigFile(promptDef.source.dir);
     if (!config) {
       throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
     }
-    const unconfirmedToolWorkflows: string[] = [];
-    const childWorkflowTool =
-      options.allowChildAgentWorkflowTool && config.tools.includes("workflow")
-        ? createDirectWorkflowTool({
-            ...options,
-            executionId: undefined,
-            agentName: agent,
-            workflowDir: join(agentSource.dir, "workflows"),
-            allowance: rootAllowance,
-            depth: depth + 1,
-            onUnconfirmedCleanup: (items) => {
-              for (const item of items) {
-                if (!unconfirmedToolWorkflows.includes(item)) unconfirmedToolWorkflows.push(item);
-              }
-            },
-          })
-        : undefined;
     const denials = options.resolveToolDenials
       ? options.resolveToolDenials(agent, config.tools)
-      : defaultDirectToolDenials(config.tools, {
-          allowWorkflowTool: Boolean(childWorkflowTool),
-        });
+      : defaultDirectToolDenials(config.tools);
     const effectivePrompt = callOpts?.skill
       ? `Apply skill "${callOpts.skill}" when relevant.\n\n${prompt}`
       : prompt;
 
-    let directRun: DirectAgentRunResult;
-    try {
-      directRun = await executeAgent({
-        agentName: agent,
-        agentSource,
-        task: effectivePrompt,
-        projectRoot: options.projectRoot,
-        workRoot: options.workRoot,
-        agentsRoot: options.agentsRoot,
-        sharedRoot: options.sharedRoot,
-        projectsRoot: options.projectsRoot,
-        globalAgentsRoot: options.globalAgentsRoot,
-        outputRoot: options.outputRoot,
-        models: options.models,
-        requireFinish: true,
-        outputSchema: callOpts?.schema,
-        toolPolicy: callOpts?.tools,
-        operationAllowance,
-        toolDenials: denials,
-        workflowTool: childWorkflowTool,
-        drainProcessGroup: options.drainProcessGroup,
-        timeoutMs: stepControl.timeoutMs,
-        deadlineAt: stepControl.deadlineAt,
-        signal: stepControl.signal,
-        onNotice: options.onNotice,
-      });
-    } catch (err) {
-      if (unconfirmedToolWorkflows.length > 0 && !(err instanceof WorkflowUnconfirmedCleanupError)) {
-        throw new WorkflowUnconfirmedCleanupError(agent, unconfirmedToolWorkflows, err);
-      }
-      throw err;
-    }
+    const directRun = await executeAgent({
+      agentName: agent,
+      agentSource: promptDef.source,
+      agentConfig: config,
+      task: effectivePrompt,
+      projectRoot: options.projectRoot,
+      workRoot: options.workRoot,
+      agentsRoot: options.agentsRoot,
+      sharedRoot: options.sharedRoot,
+      projectsRoot: options.projectsRoot,
+      globalAgentsRoot: options.globalAgentsRoot,
+      outputRoot: options.outputRoot,
+      models: options.models,
+      requireFinish: true,
+      outputSchema: callOpts?.schema,
+      toolPolicy: callOpts?.tools,
+      operationAllowance,
+      toolDenials: denials,
+      drainProcessGroup: options.drainProcessGroup,
+      timeoutMs: stepControl.timeoutMs,
+      deadlineAt: stepControl.deadlineAt,
+      signal: stepControl.signal,
+      onNotice: options.onNotice,
+    });
 
     const transcriptPath = join(directRun.sessionPath, "session.jsonl");
     childSessions.push({
@@ -511,7 +462,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       sessionId: directRun.sessionId,
       transcriptPath,
     });
-    const taskResult = enforceDirectStepCompletion(
+    const taskResult = enforceStructuredWorkflowResult(
       directResultToTaskResult(directRun),
       Boolean(callOpts?.schema),
     );
@@ -520,11 +471,11 @@ export async function runDirectWorkflow<TInput = unknown>(
       ...mapped,
       sessionId: directRun.sessionId,
       transcriptPath,
-      cleanupConfirmed: directRun.cleanupConfirmed && unconfirmedToolWorkflows.length === 0,
+      cleanupConfirmed: directRun.cleanupConfirmed,
     };
   };
 
-  const executeCodeTarget = async (
+  const executeCodeStep = async (
     wfName: string,
     targetMod: WorkflowExecutableModule,
     targetOwner: string,
@@ -550,7 +501,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       {
         depth: depth + 1,
         allowance: stepControl.allowance,
-        targetCatalog,
+        catalog: preparedCatalog,
         callerOwner: targetOwner,
         tools: callOpts?.tools,
       },
@@ -627,30 +578,30 @@ export async function runDirectWorkflow<TInput = unknown>(
     onLog: options.onLog,
     resolveTargetKind: (target) => {
       try {
-        const resolved = resolveCallableTarget(callerOwner, target, targetCatalog);
+        const resolved = resolveCallable(callerOwner, target, preparedCatalog);
         return resolved.kind === "prompt" ? "agent" : "workflow";
       } catch {
         return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
       }
     },
     callTarget: async (target, input, callOpts, stepControl) => {
-      const resolved = resolveCallableTarget(callerOwner, target, targetCatalog);
+      const resolved = resolveCallable(callerOwner, target, preparedCatalog);
       if (resolved.kind === "prompt") {
         if (typeof input !== "string") {
           throw new Error(`Prompt target "${target}" requires a string prompt input`);
         }
-        return executePromptTarget(resolved.name, input, callOpts, stepControl);
+        return executePromptStep(resolved.name, input, callOpts, stepControl);
       }
-      return executeCodeTarget(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts);
+      return executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts);
     },
     callAgent: (agent, prompt, callOpts, stepControl) =>
-      executePromptTarget(agent, prompt, callOpts, stepControl),
+      executePromptStep(agent, prompt, callOpts, stepControl),
     runWorkflow: async (wfName, wfInput, stepControl) => {
-      const resolved = resolveCallableTarget(callerOwner, wfName, targetCatalog);
+      const resolved = resolveCallable(callerOwner, wfName, preparedCatalog);
       if (resolved.kind !== "code") {
         throw new Error(`Callable target "${wfName}" is not a code procedure`);
       }
-      return executeCodeTarget(
+      return executeCodeStep(
         resolved.name,
         resolved.module,
         resolved.owner,
@@ -676,126 +627,5 @@ export async function runDirectWorkflow<TInput = unknown>(
     report: outcome.report,
     ...(reportPath ? { reportPath } : {}),
     childSessions,
-  };
-}
-
-const DirectWorkflowToolParams: TSchema = Type.Object({
-  action: StringEnum(["list", "run"] as const, {
-    description: "'list': show available workflows; 'run': execute a workflow by name.",
-  }),
-  name: Type.Optional(Type.String({ description: "Workflow name (required for 'run')." })),
-  input: Type.Optional(Type.Unknown({ description: "Structured workflow input." })),
-  task: Type.Optional(Type.String({ description: "Legacy string input." })),
-});
-
-function textToolResult(payload: unknown): AgentToolResult<string> {
-  const text = JSON.stringify(payload, null, 2);
-  return { content: [{ type: "text", text }], details: text };
-}
-
-/**
- * Create a Host-free `workflow` tool backed by `runDirectWorkflow` so opted-in
- * Gym or direct agent scenarios can test agent-dispatched workflow invocations.
- */
-export function createDirectWorkflowTool(
-  options: Omit<DirectWorkflowRunOptions<unknown>, "input" | "module" | "workflowName"> & {
-    workflowDir: string;
-    allowance?: WorkflowExecutionAllowance;
-    depth?: number;
-    onUnconfirmedCleanup?: (unconfirmed: readonly string[]) => void;
-  },
-): AgentTool {
-  return {
-    name: "workflow",
-    label: "Workflow",
-    description:
-      "List available workflows or run a workflow by name in an isolated sandbox. Completion returns id, kind, status, summary and output/facts.",
-    parameters: DirectWorkflowToolParams,
-    execute: async (_toolCallId, rawParams, signal) => {
-      const params = rawParams as {
-        action: "list" | "run";
-        name?: string;
-        input?: unknown;
-        task?: string;
-      };
-      const catalog = await buildWorkflowCatalog(options.workflowDir);
-      if (params.action === "list") {
-        const workflows = [...catalog.workflows.values()]
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((wf) => ({ name: wf.name, description: wf.description }));
-        return textToolResult({
-          type: "list",
-          workflows,
-          ...(catalog.diagnostics.length > 0 ? { diagnostics: [...catalog.diagnostics] } : {}),
-        });
-      }
-      if (params.action === "run") {
-        const hasInput = Object.hasOwn(params, "input");
-        if (!params.name || (!hasInput && !params.task) || (hasInput && params.task !== undefined)) {
-          return textToolResult({
-            type: "error",
-            error: "action 'run' requires 'name' and exactly one of 'input' or legacy 'task'",
-          });
-        }
-        const wfInput = hasInput ? params.input : params.task!;
-        const found = findWorkflow(catalog, params.name);
-        if (!found.workflow) {
-          return textToolResult({
-            type: "error",
-            workflow: params.name,
-            error: found.error ?? `Workflow "${params.name}" not found`,
-          });
-        }
-        const sub = await runDirectWorkflow(
-          {
-            ...options,
-            executionId: undefined,
-            module: found.workflow,
-            workflowName: params.name,
-            input: wfInput,
-            signal:
-              signal && options.signal
-                ? AbortSignal.any([signal, options.signal])
-                : (signal ?? options.signal),
-          },
-          {
-            depth: options.depth ?? 1,
-            ...(options.allowance ? { allowance: options.allowance } : {}),
-          },
-        );
-        if (!sub.report.cleanup.confirmed) {
-          options.onUnconfirmedCleanup?.(
-            sub.report.cleanup.unconfirmed ?? [
-              `workflow:${params.name} (${sub.report.executionId})`,
-            ],
-          );
-        }
-        if (!sub.ok) {
-          return textToolResult({
-            type: "error",
-            workflow: params.name,
-            ...(sub.started
-              ? { workflowRunId: sub.report.executionId, id: sub.report.executionId, kind: "workflow" }
-              : { started: false }),
-            status: sub.status,
-            summary: sub.report.error?.message ?? "Workflow failed",
-            error: sub.report.error?.message ?? "Workflow failed",
-          });
-        }
-        return textToolResult({
-          type: sub.result!.type,
-          workflow: params.name,
-          workflowRunId: sub.report.executionId,
-          id: sub.report.executionId,
-          kind: "workflow",
-          status: sub.result!.type,
-          summary: sub.result!.type === "done" ? sub.result!.summary : sub.result!.reason,
-          ...(sub.result!.type !== "done" ? { reason: sub.result!.reason } : {}),
-          ...(sub.result!.output !== undefined ? { output: sub.result!.output } : {}),
-          ...(sub.result!.facts !== undefined ? { facts: sub.result!.facts } : {}),
-        });
-      }
-      return textToolResult({ type: "error", error: `Unknown action: ${String(params.action)}` });
-    },
   };
 }

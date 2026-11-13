@@ -4,9 +4,9 @@ import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { StringEnum } from "@earendil-works/pi-ai";
 import { ExecutionDeferredError } from "@may-agent/sdk";
 import {
-  resolveCallableTarget,
+  resolveCallable,
   runWorkflowInvocation,
-  type PreparedTargetCatalog,
+  type PreparedCatalog,
   type WorkflowExecutableModule,
   type WorkflowKernelBindings,
   type WorkflowExecutionAllowance,
@@ -34,12 +34,17 @@ import type { EventTrace } from "../app/core/events/bus.js";
 import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
 import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
 import { getWorkflowRun, insertWorkflowRun, updateWorkflowRun } from "./db/workflows.js";
-import { agentExecutionResult, deferredExecutionResult, workflowExecutionResult } from "./execution-handoff.js";
+import {
+  agentExecutionResult,
+  deferredExecutionResult,
+  enforceStructuredWorkflowResult,
+  workflowExecutionResult,
+} from "./execution-handoff.js";
 import type { SubagentManager } from "./manager.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import type { TaskBinding } from "./persistence.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
-import type { SubagentDefinition, TaskResult } from "./types.js";
+import type { SubagentDefinition } from "./types.js";
 import {
   buildWorkflowCatalog,
   findWorkflow,
@@ -152,25 +157,6 @@ async function workflowModelExecution(execute: () => Promise<WorkflowToolResult>
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
   return text.slice(0, maxLen) + "...";
-}
-
-function enforceStructuredWorkflowResult(result: TaskResult, expectsPayload: boolean): TaskResult {
-  if (result.status !== "done") return result;
-  if (!result.finishResult) {
-    return {
-      ...result,
-      status: "error",
-      error: "Workflow agent step completed without the required finish() result",
-    };
-  }
-  if (expectsPayload && result.structuredResult === undefined) {
-    return {
-      ...result,
-      status: "error",
-      error: "Workflow agent step completed without the required schema-backed finish().result payload",
-    };
-  }
-  return result;
 }
 
 function generateRunId(): string {
@@ -506,7 +492,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
   async function captureTargetCatalog(
     catalog: WorkflowCatalog,
     parentSessionId: string | undefined,
-  ): Promise<PreparedTargetCatalog<SubagentDefinition>> {
+  ): Promise<PreparedCatalog<SubagentDefinition>> {
     const definitions = opts.agentDefinitions ?? opts.taskContext?.agentDefinitions ?? new Map(
       (manager.agentNames?.() ?? []).flatMap((name) => {
         const definition = manager.getAgentDefinition(name, parentSessionId);
@@ -533,7 +519,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
   let activeWorkflowName: string | null = null;
 
   async function executeWorkflow(
-    catalog: PreparedTargetCatalog<SubagentDefinition>,
+    catalog: PreparedCatalog<SubagentDefinition>,
     workflow: WorkflowExecutableModule,
     task: string,
     depth: number,
@@ -673,7 +659,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         allowance: inheritedAllowance,
         resolveTargetKind: (target) => {
           try {
-            return resolveCallableTarget(callerOwner, target, catalog).kind === "code" ? "workflow" : "agent";
+            return resolveCallable(callerOwner, target, catalog).kind === "code" ? "workflow" : "agent";
           } catch {
             return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
           }
@@ -809,7 +795,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           if (depth + 1 > maxDepth) {
             throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
           }
-          const resolved = resolveCallableTarget(callerOwner, wfName, catalog);
+          const resolved = resolveCallable(callerOwner, wfName, catalog);
           if (resolved.kind !== "code") {
             throw new Error(`Callable target "${wfName}" is not a code procedure`);
           }
@@ -855,7 +841,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const outcome = await runWorkflowInvocation(workflow, {
         ...bindings,
         callTarget: (target, input, callOptions, stepControl) => {
-          const resolved = resolveCallableTarget(callerOwner, target, catalog);
+          const resolved = resolveCallable(callerOwner, target, catalog);
           if (resolved.kind === "code") {
             return bindings.runWorkflow(target, input, { ...stepControl, options: callOptions });
           }
