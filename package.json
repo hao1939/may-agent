@@ -9,7 +9,6 @@
   ],
   "scripts": {
     "check": "tsc --noEmit",
-    "check:event-graph": "bun scripts/event-graph-check.ts",
     "check:ci": "bun run check && bun run check:sdk && bun run check:canonical-app-boundary && bun run lint --quiet",
     "ci": "bun run check:ci && bun run test",
     "verify": "bun run ci",
@@ -26,7 +25,6 @@
     "check:canonical-app-boundary": "bun scripts/check-canonical-app-boundary.ts",
     "check:codex-goal-protocol": "bun scripts/check-codex-goal-protocol.ts",
     "check:codex-goal-execution": "bun scripts/check-codex-goal-protocol.ts --check-execution",
-    "sample:runtime-quiet": "bun scripts/sample-runtime-quiet.ts",
     "ui:sync": "bun scripts/build-webui.ts",
     "bundle": "bun run ui:sync && bun scripts/build-runtime-binary.ts",
     "deploy": "sh scripts/deploy.sh",
