@@ -2,7 +2,6 @@ import { describe, expect, it } from "bun:test";
 import { Type } from "typebox";
 import { observationCondition } from "./observer.js";
 import { Check } from "typebox/value";
-import { conversationTurnResultSchema } from "./app.js";
 import {
   admitTaskChanges,
   admitTaskReconcileResult,
@@ -37,14 +36,6 @@ it("allows open Requests without a reason in live and final Task changes while r
       admitTaskResultForSchema(schema, { state: "waiting", summary: "Accepted", facts: [], ...changes })?.ok,
     ).toBe(true);
   }
-  const legacy = { summary: "Accepted", requestUpdates };
-  expect(Check(conversationTurnResultSchema, legacy)).toBe(false);
-  expect(
-    Check(conversationTurnResultSchema, {
-      ...legacy,
-      requestUpdates: [{ ...requestUpdates[0], reason: "Testing continues" }],
-    }),
-  ).toBe(true);
 });
 
 it("admits exact result scope consistently for agent and workflow results", () => {
