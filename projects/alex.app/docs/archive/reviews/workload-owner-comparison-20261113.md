@@ -890,3 +890,74 @@ and local Inbox settlement. It does not test the bundled launcher, isolated
 recovery worker, live installation, external caller delivery or new model
 judgment. Installed adoption, consistent inspection and workload benefit still
 need their own evidence. Release, activation and live Task changes remain held.
+
+
+## Session-completion wake coalescing
+
+The 2026-11-14 follow-up traces the empty workers to the existing session-event
+handler. A successful `session.end` unconditionally enqueued its bound Task.
+While the controller still owns execution, that wake marks its key dirty. A
+notification may also be handled after settlement because event listeners run
+asynchronously. Both paths can start another process with nothing to claim.
+Session completion supplies execution evidence; it does not itself admit new
+business input.
+
+[Host #507](https://github.com/hao1939/may-agent/pull/507) makes the existing
+handler wake only a Task that retains `currentAttemptId` and has no active
+controller pass. The controller handles its own settlement, returned
+continuations and dispatch-error retries. Explicit input and Condition wakes
+continue independently. Interrupted-workflow release keeps its existing wake.
+No readiness policy, lifecycle state, budget or business decision is added.
+The candidate is under review; release, activation and live Task changes remain
+held.
+
+Three owning runtime regressions cover notification before settlement,
+notification handled after settlement, and input arriving during completion.
+They check exact input results and also retain an unfinished attempt without
+a controller pass: a late terminal notice must still reach recovery, without
+releasing its fresh claim. A lower-priority queue barrier observes dispatch
+order, rather than relying on a quiet-time sleep. All three final regressions
+fail against the original implementation. A preliminary active-controller-only
+fix also failed: it missed notifications handled after settlement. Early fixture
+API/key mistakes and the exploratory failed suite remain in private logs; they
+are excluded from final verification.
+
+Full local CI passes on candidate `86bcf1ce29`: 3,573 tests, zero failures and
+21,625 assertions, including browser execution. Installation-dependent loader
+checks remain skipped. PR head `17e9c90a502caaa61f8f493c00e09a71afe9448b`
+adds the unrelated current-main loop-trace retirement; its runtime, owning tests
+and source README are byte-identical to the locally checked candidate. Both
+experiment Host checkouts remain pinned at the revisions below. Exact-head
+Quality and Container evidence belongs to
+[the PR run](https://github.com/hao1939/may-agent/actions/runs/43459254930).
+
+The process comparison holds Apps experiment
+`7abc6fdd6fd9164ea341d566445d0d922a998993` and all four business cases fixed.
+The baseline uses Host `2d7454ba5caa40853b52b0d0b85e706b79f012a4`; the candidate
+uses `86bcf1ce297dc9fba75639d2e64f0404a63c54fc`. Both have frozen clean source
+and separate disposable state. The same read-only assessor checks source hashes,
+SQLite integrity, exact Tasks/attempts, creator closure, native tool calls,
+original caller receipts/deadlines, child evidence, arithmetic, full event
+artifacts, parent acceptance and clean worker exits.
+
+| Observation | Baseline | Candidate |
+| --- | --- | --- |
+| Business cases passing every check | 4/4 | 4/4 |
+| Post-restart worker starts | 6 | 3 |
+| New accepted owner attempts | 3 | 3 |
+| Local scripted model requests | 8 | 8 |
+| Serialized request bytes | 449,965 | 449,965 |
+| External provider requests | 0 | 0 |
+
+Each eligible owner now needs one worker; unfinished progress still starts none.
+There are no provider/tool errors or SQLite-lock warnings in either arm. This
+is 50% fewer launches in this bounded fixture, not a measured throughput,
+model-quality or live workload improvement. The earlier real-model exact-read
+omissions remain unresolved. Neither arm tests installed adoption, external
+caller delivery or an isolated recovery worker.
+
+Private evidence uses `$EVIDENCE/task-session-wake-{baseline,candidate}-20261114/`
+and the matching read-only assessment scripts/results. The aggregate record is
+`task-session-wake-comparison-20261114.json`. Reproduce with the unchanged frozen
+process experiment's command, selecting each Host revision in an isolated
+checkout. Preserve the earlier six-worker result and all failed checks.

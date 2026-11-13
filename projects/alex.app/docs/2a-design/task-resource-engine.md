@@ -453,10 +453,10 @@ Inside one lane, Runtime uses
 the effective priority derived from the persisted Task and FIFO for peers.
 A fresh exact wake may move ahead of passive
 peers at the same priority, but it cannot override human origin or a higher
-priority. Repeated wakes for one Task coalesce; a wake received while its
-attempt is running requests exactly one fresh pass. Passive recovery rereads
-canonical Task priority rather than carrying a second ordering policy in its
-index or queue.
+priority. Repeated input wakes coalesce; input during execution requests one fresh pass.
+Session completion is recovery evidence for an unfinished attempt without an active
+controller pass; it adds no input after settlement. [Candidate Host #507](https://github.com/hao1939/may-agent/pull/507) applies this coalescing; merge and activation remain pending.
+Passive recovery reads canonical Task priority rather than a second ordering policy.
 
 The controller is stable across definition reloads. Publication changes one
 immutable definition pointer; a claim captures that pointer and uses its App,

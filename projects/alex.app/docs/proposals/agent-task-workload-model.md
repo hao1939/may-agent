@@ -152,8 +152,11 @@ verifies ordinary startup selection and local caller settlement through an
 in-process adapter. The subsequent [process-worker drill](../archive/reviews/workload-owner-comparison-20261113.md#process-worker-follow-through)
 preserves all four outcomes through the production executor and child IPC with
 scripted native replies, clean exits and parent-accepted events. Each eligible
-owner still incurs one empty follow-up worker, a measured efficiency opportunity
-rather than a lifecycle defect. These bounded local checks leave bundled-launcher
+owner incurred one empty follow-up worker. The [session-wake follow-up](../archive/reviews/workload-owner-comparison-20261113.md#session-completion-wake-coalescing)
+traces this to treating session completion as a new wake. Candidate Host #507
+reduces six worker starts to three with the same four outcomes, accepted attempts
+and scripted requests; review and activation remain pending. These bounded local
+checks leave bundled-launcher
 and installed acceptance, external delivery and consistent model inspection
 open. Release and activation remain held.
 
