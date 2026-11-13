@@ -251,3 +251,11 @@ finite-result contract cohort is `workload-applied-20261113-model3/`.
 The finite-result raw-record assessment is
 `/home/hao/workspace-archive/workload-applied-model3-assessment.json`. All original
 cohort manifests, requests, responses and failure receipts remain unchanged.
+
+
+The subsequent [contention comparison](workload-contention-comparison-20261113.md)
+uses a two-worker optional method and real required business executors. Twelve
+model passes applied two useful investigations with supplied feedback while both
+arms deferred under heavy load. Resource-scope reasoning was inconsistent, and
+extra deciding-model overhead prevents an overall latency-benefit claim. The
+release and native owner/caller acceptance remain held.

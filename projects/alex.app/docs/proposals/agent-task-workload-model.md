@@ -53,7 +53,13 @@ contract records optional work on the owner and closes only already accepted
 independent contributions. The corrected comparison verifies 20 model-driven
 applied passes, including eight guarded finite-result endings with unfinished
 and standing work preserved. Choices stayed equal under the available light/busy
-capacity; workload benefit and production adoption remain unproven. The dated November 8
+capacity. The subsequent
+[contention comparison](../archive/reviews/workload-contention-comparison-20261113.md)
+applied two useful optional investigations with supplied feedback across twelve
+model passes, while both arms deferred under heavy load. It also exposed
+confusion between current-root and shared capacity and higher planning overhead.
+Reliable adaptation, overall workload benefit and production adoption remain
+unproven. The dated November 8
 milestone observations below are historical snapshots, not current rollout state.
 
 ## The mental model
@@ -314,7 +320,12 @@ provenance counts neither classify business need nor measure execution.
 Shared Host execution and recipient occupancy have installation scope; controller
 dispatch capacity is a separate observation. Current-root feedback belongs only
 to the Host-bound Task, including its cross-App contributions. It does not
-describe the roots of every commitment in a review page. Pending input includes
+describe the roots of every commitment in a review page. Filling this root's
+places does not itself delay an independently funded report if shared Host and
+recipient capacity can accommodate both. Include the business method's declared
+execution footprint and trusted account attribution when this distinction changes
+the decision. Check actual runnable demand before claiming displacement: returned
+work can still need creator review while requiring no new execution. Pending input includes
 retained unanswered requests after their original triggers have been consumed,
 including requests waiting for an external change.
 
@@ -329,7 +340,10 @@ pass relevant feedback to the agent making that decision. Reuse sufficiently
 fresh context; obtain an exact scoped read when missing or stale facts could
 change the choice. This adds neither a model call before each action nor an
 extra admission approval. The Host still validates spending and execution
-against authoritative state when the chosen operation is admitted.
+against authoritative state when the chosen operation is admitted. Ready work
+should continue through ordinary dispatch while workload review occurs; optional
+planning must not become another admission gate. Count planning/read overhead
+when judging feedback value, as well as any saved business effort.
 
 Task count is supporting context. If `K` is used as a workload reference, crossing
 it prompts review; it is not an automatic rejection or closure threshold. Hard
@@ -398,8 +412,7 @@ it does not acquire authority to reprioritize or close other assignments.
    recommendation is not a persisted priority change, funding grant or closure.
    When ending fulfilled work, the creator references an existing accepted
    result; a plan to produce evidence during this attempt cannot fulfill a
-   different Task. Optional
-   deferral may retain its input without performing prerequisite recovery.
+   different Task. Optional deferral may retain its input without performing prerequisite recovery.
 
 These are reasoning steps within an existing pass, not four model calls or a
 new decision ledger. Record enough to explain changed commitments without
