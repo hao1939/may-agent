@@ -1510,3 +1510,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 ## Recent agent-context continuity findings
 
 - [Agent compaction needs machine facts as well as a semantic frontier](findings/2026-11-11-agent-compaction-needs-machine-facts-and-semantic-frontiers.md) — Pinned producer-authored source separates a model-written work frontier from typed runtime facts and verbatim later messages, but Scout did not run the plugin or tests, and the reported single-user performance benchmark lacks an inspected raw measurement artifact.
+
+## Recent agent-engineering education findings
+
+- [Agent engineering curriculum couples systems, data, and evals](findings/2026-11-13-agent-engineering-curriculum-couples-systems-data-and-evals.md) — Stanford CS 329Z sequences component construction, trace data, benchmark contracts, reliability, safety, and staged project evidence as one engineering loop; Scout reviewed the tentative public syllabus, not course outcomes or every linked material.
