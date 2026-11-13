@@ -147,6 +147,12 @@ model calls. All three eligible owners make the correct business disposition;
 two inspect the exact contribution, and the standing-service omission remains.
 This checks readiness through manual dispatch, not automatic installed scheduling
 or external delivery. No new lifecycle control is needed for the observed path.
+The [automatic-controller drill](../archive/reviews/workload-owner-comparison-20261113.md#automatic-controller-follow-through)
+subsequently verifies ordinary startup selection and local caller settlement
+without manual owner dispatch. All four scripted cases pass, and disabling the
+controller fails the check. It uses an in-process attempt adapter and a bounded
+quiet observation; live adoption, process-worker acceptance and consistent model
+inspection remain separate. No new Host implementation is needed for this path.
 
 ## The mental model
 

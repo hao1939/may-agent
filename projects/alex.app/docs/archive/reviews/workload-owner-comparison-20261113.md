@@ -765,3 +765,58 @@ progress and a requested wake. It does not demonstrate a causal improvement from
 Consistent exact inspection, automatic installed dispatch, external delivery,
 reliable adaptation and workload benefit remain unproved. Release and activation
 remain held; the earlier cohort and its qualifications remain unchanged.
+
+## Automatic controller follow-through
+
+The next local drill enables ordinary startup recovery and the real controller
+after restart. Frozen Apps experiment
+`11044f18905e809aaa1ce428ef9d30c0b96fc0c4` uses the same Host #500 revision
+`e9c789b3b95bfd2d88ba3c69c0931347b3a2814d` and four business cases. Setup still
+commissions the contribution before restart. The automatic runtime then refuses
+manual `run()` calls. Its configured execution adapter records the controller's
+selected App, Task and dispatch facts and invokes the ordinary in-process attempt
+entry. No driver supplies an enqueue, review event, manual recovery call or final
+caller-result refresh. This exercises controller selection and normal local
+Inbox settlement, not a process worker or the live installation.
+
+Owner replies are scripted native tool calls. The drill has no upstream provider
+request path or external credential handling. This is a wiring check, not another
+model cohort or a replacement for the standing-service inspection failures.
+
+All four cases pass the separate read-only assessment. Completed finite
+contributions close through their creator's guarded capability. The preview's
+original sealed delivery and deadline remain owed; the standing service stays
+open while its original finite request is answered and closed. The unfinished
+case has no controller selection of its owner, no new owner attempt and no native
+provider request. Its whole owner record and both assignments remain intact.
+Each eligible case has two controller selections but only one new accepted
+owner attempt: the follow-up check makes no additional native request. Every
+case retains its original two Tasks, requirements, generation and child accepted
+evidence. The observation lasts 250 ms after settlement, or startup for the quiet
+case; it does not establish indefinite quietness or later timer behavior.
+
+The final frozen run passes four cases with eight localhost requests / 445,053
+serialized request bytes and zero external provider requests. It has no provider
+or tool errors or SQLite-lock warnings. Strict source-SDK types pass. Disabling
+only the automatic controller is a negative control: the first owner fails at
+the five-second missing-settlement boundary with zero local requests and no
+completed case. The original source bytes are restored before the frozen run.
+An initial harness-edit failure left the old manual runner active; its passing
+output is excluded from automatic acceptance. A fixture-only event-union
+narrowing error was also corrected before the final type check and freeze.
+Neither required a Host implementation change.
+
+Private evidence remains in
+`/home/hao/workspace-archive/controller-owner-20261113-frozen/`, with
+`controller-owner-assess-20261113.py` and
+`controller-owner-assessment-20261113.json` in the parent archive. The assessor
+checks frozen source, SQLite integrity, actual dispatch records, exact attempt
+counts, native calls, creator authority, caller receipts, arithmetic and waits.
+The excluded setup run, first automatic preflight and disabled-controller control
+remain retained alongside it.
+
+The existing controller supports the tested result-to-owner path without an
+extra lifecycle mechanism. This narrows the source-wiring gap; it does not
+establish consistent model inspection, isolated-process execution, installed
+adoption, external delivery, reliable adaptation or a workload benefit. Release,
+activation and live Task changes remain held.
