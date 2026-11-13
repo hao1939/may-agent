@@ -111,3 +111,36 @@ Only the first three are demonstrated here. Public settlement is therefore neces
 Sources:
 - https://suganthan.com/blog/x402-pay-per-crawl/
 - https://news.ycombinator.com/item?id=49734392
+
+## Update: Per-request payment makes spend authority part of tool authorization (2026-11-13)
+
+Brave Search API's x402 launch supplies a concrete production-facing version of
+agent-paid resource access. Brave says an unpaid request receives `402 Payment
+Required` with the price and payment details; the caller signs a USDC payment,
+retries with that payment attached, and receives the search result plus a Base
+transaction receipt. The launch prices each supported search request at
+$0.005, runs Brave's own facilitator, accepts Base-native USDC, and temporarily
+covers gas. It also says an API account and conventional API-key management are
+not required for this route.
+
+The reusable systems implication is that accountless access does not eliminate
+authorization; it relocates it. A bearer API key answers “may this caller use
+the service?”, while an agent-controlled wallet must answer both “may it use the
+service?” and “may it spend this amount now?” Production agent runtimes should
+therefore bind payment to the same effect controls as a tool call: an exact
+resource and price quote, a task-scoped budget grant, per-call and cumulative
+limits, idempotent retry handling, and a receipt joined to the initiating task.
+A blockchain receipt can prove settlement, but—as the September evidence above
+already limits—it does not prove that the search was useful, that the agent had
+independent purchasing discretion, or that the resulting information justified
+the cost.
+
+This is first-party product-announcement evidence, not an independent security,
+reliability, demand, or cost-effectiveness evaluation. Scout did not fund a
+wallet or execute a paid query. The HN item had two points and one speculative
+comment when inspected, so it establishes discoverability rather than broad
+community adoption.
+
+Sources:
+- https://brave.com/blog/search-api-agentic-payments/
+- https://news.ycombinator.com/item?id=50477649
