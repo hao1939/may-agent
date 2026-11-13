@@ -1,22 +1,32 @@
 import { createHash } from "node:crypto";
-import { Type, type ExecutionResult, type WorkflowContext } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type TaskAppRequest, type WorkflowContext } from "@may-agent/sdk";
 import { Check } from "typebox/value";
-import { WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID, WORKLOAD_REVIEW_WORKFLOW } from "../../../workload-review-policy.js";
+import { workloadReviewPolicy, WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID, WORKLOAD_REVIEW_WORKFLOW } from "../../../workload-review-policy.js";
 
 export const name = WORKLOAD_REVIEW_WORKFLOW;
-export const description = "Review one bounded page of changed Alex commitments and workload; return advice within existing authority, with no Task creation, repriority or closure.";
+export const description = "Review one bounded page of changed Alex commitments and workload; retain advice and optionally notify an existing owner under installed policy, with no Task creation, repriority or closure.";
 export const workspace = "shared";
 export const executionTimeoutMs = 90_000;
 const LIMIT = 20;
 const EXACT_LIMIT = 3;
 const RECENT_BATCHES = 64;
 const digestSchema = Type.String({ pattern: "^[a-f0-9]{64}$" });
+const notificationIdSchema = Type.String({ pattern: "^workload-advice-[a-f0-9]{64}$" });
 const decisionSchema = Type.Object({
   decision: Type.Union([Type.Literal("retain"), Type.Literal("reconsider"), Type.Literal("opportunity")]),
   reason: Type.String({ minLength: 1, maxLength: 1000 }),
   taskId: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
   inputId: Type.Optional(Type.String({ minLength: 1, maxLength: 1024 })),
   nextStep: Type.Optional(Type.String({ minLength: 1, maxLength: 1000 })),
+}, { additionalProperties: false });
+const feedbackSchema = Type.Object({
+  requestId: Type.String({ minLength: 1, maxLength: 1024 }),
+  status: Type.Union([Type.Literal("done"), Type.Literal("blocked"), Type.Literal("progress")]),
+  observedAt: Type.String({ minLength: 1, maxLength: 100 }),
+  taskId: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
+  summary: Type.String({ maxLength: 1000 }),
+  response: Type.Optional(Type.String({ maxLength: 1000 })),
+  truncated: Type.Optional(Type.Literal(true)),
 }, { additionalProperties: false });
 const legacyStateSchema = Type.Object({
   version: Type.Literal(1), fingerprint: digestSchema,
@@ -37,9 +47,15 @@ const stateSchema = Type.Union([legacyStateSchema, Type.Object({
 /** No new ledger: the accepted result retains the last reviewed evidence. */
 export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
   const rec = ctx.reconciliation;
-  const finish = (summary: string, state?: Record<string, unknown>, fact = "retained") => ctx.done(summary, {
-    state: "converged", summary, facts: [`workload-review:${fact}`], actions: [],
-    ...(state ? { result: { workloadReview: state } } : {}),
+  let ownerFeedback: unknown;
+  let ownerNotificationId: string | undefined;
+  const finish = (summary: string, state?: Record<string, unknown>, fact = "retained", request?: TaskAppRequest) => ctx.done(summary, {
+    state: request ? "waiting" : "converged", summary, facts: [`workload-review:${fact}`], actions: [],
+    ...(request ? { requests: [request], conditions: [{ requestId: request.id }] } : {}),
+    ...(state ? { result: { workloadReview: state,
+      ...(ownerFeedback ? { workloadOwnerFeedback: ownerFeedback } : {}),
+      ...(ownerNotificationId ? { workloadOwnerNotificationId: ownerNotificationId } : {}),
+    } } : {}),
   });
   if (!rec || rec.appId !== "alex" || rec.taskId !== WORKLOAD_REVIEW_TASK_ID || rec.agent !== "alex")
     return ctx.blocked("Workload review requires its exact installed Alex Task and responsible agent");
@@ -60,6 +76,32 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
     if (rotation && (new Set(rotation.recent.map(item => item.key)).size !== rotation.recent.length ||
         Boolean(rotation.decision) !== Boolean(rotation.decisionKey)))
       return ctx.blocked("The retained workload review progress is inconsistent; preserve it for owner repair");
+    ownerFeedback = own.result?.workloadOwnerFeedback;
+    if (ownerFeedback !== undefined && !Check(feedbackSchema, ownerFeedback))
+      return ctx.blocked("The retained owner feedback is invalid; preserve it for owner repair");
+    const savedNotificationId = own.result?.workloadOwnerNotificationId;
+    if (savedNotificationId !== undefined && !Check(notificationIdSchema, savedNotificationId))
+      return ctx.blocked("The retained notification identity is invalid; preserve it for owner repair");
+    ownerNotificationId = savedNotificationId;
+    const requestConditions = (own.conditions ?? []).filter(condition => condition.type === "app.dependency.updated");
+    // The Host delivered these exact caller events. A completed Condition may
+    // already have been retired by an earlier settlement; it is not provenance.
+    const returned = rec.events?.items.findLast(({ event }) => event.type === "app.dependency.updated" &&
+      event.source === "app-inbox:alex" && ["done", "blocked", "progress"].includes(String(event.data.status)));
+    if (returned) {
+      if (!prior || !ownerNotificationId || typeof returned.event.data.id !== "string" || typeof returned.event.data.summary !== "string")
+        return ctx.blocked("The owner response lacks its retained review or exact request evidence");
+      ownerFeedback = { requestId: returned.event.data.id, status: returned.event.data.status, observedAt: returned.observedAt,
+        ...(typeof returned.event.data.taskId === "string" ? { taskId: returned.event.data.taskId } : {}),
+        summary: returned.event.data.summary.slice(0, 1000),
+        ...(typeof returned.event.data.response === "string" ? { response: returned.event.data.response.slice(0, 1000) } : {}),
+        ...(returned.event.data.summary.length > 1000 ||
+          (typeof returned.event.data.response === "string" && returned.event.data.response.length > 1000) ? { truncated: true } : {}),
+      };
+      return finish("Owner feedback retained for inspection; pending work, application and the original delivery remain separate judgments.", prior, "owner-returned");
+    }
+    const mayNotify = workloadReviewPolicy().notifyOwners &&
+      !requestConditions.some(condition => condition.observation?.state !== "true");
     const now = Date.now();
     if (prior && now < prior.reviewedAt + WORKLOAD_REVIEW_INTERVAL_MS)
       return finish("The previous workload review remains within its cooldown.", prior, "cooldown");
@@ -84,7 +126,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
           page.nextCursor.length > 2048 || page.nextCursor === cursor)))
       return ctx.blocked("The Task page exceeded its bound or repeated an identity");
     const tasks = page.items.filter(task => task.id !== rec.taskId);
-    const exact = [];
+    const exact: Array<{ id: string; generation: number } & Record<string, unknown>> = [];
     for (const task of tasks.slice(offset, offset + EXACT_LIMIT)) {
       ctx.signal.throwIfAborted();
       const current = await ctx.read.tasks.get(task.id);
@@ -157,9 +199,35 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       ...(inputs.coverage.nextCursor ? { inputCursor: inputs.coverage.nextCursor } : {}),
       recent: [...(rotation?.recent ?? []).filter(item => item.key !== key), { key, fingerprint }].slice(-RECENT_BATCHES),
       ...(prior?.decision ? { decision: prior.decision, decisionKey: rotation?.decisionKey ?? key } : {}) };
+    const notify = async (decision: unknown): Promise<TaskAppRequest | undefined> => {
+      if (!mayNotify || !Check(decisionSchema, decision) || decision.decision === "retain" ||
+          !decision.taskId || !decision.nextStep) return;
+      const inspected = exact.find(task => task.id === decision.taskId);
+      if (!inspected) return;
+      const current = await ctx.read.tasks.get(inspected.id);
+      ctx.signal.throwIfAborted();
+      if (!current || current.generation !== inspected.generation ||
+          !["pending", "running", "waiting", "attention", "idle"].includes(current.status)) return;
+      const input = { kind: "message", data: {
+        message: "Judge this historical workload recommendation against your current assignment and evidence. Apply a useful method decision within your authority or explain why it does not help. Acknowledge only this advice input if the original promise remains unfinished; this grants no closure, funding or priority authority.",
+        context: { workloadAdvice: { ...decision,
+          subject: { appId: rec.appId, taskId: inspected.id, generation: inspected.generation },
+          source: { appId: rec.appId, taskId: rec.taskId, generation: rec.generation },
+        } },
+      } };
+      // Deterministic content reuses the ordinary durable request receipt.
+      // A repeated review cannot change this input under the same request name.
+      const id = `workload-advice-${createHash("sha256").update(JSON.stringify(input)).digest("hex")}`;
+      if (id === ownerNotificationId) return;
+      ownerNotificationId = id;
+      return { id, appId: rec.appId, taskId: inspected.id, input };
+    };
     if (rotation?.recent.some(item => item.key === key && item.fingerprint === fingerprint) ||
-        (prior?.version === 1 && prior.fingerprint === fingerprint))
-      return finish("No changed commitments or workload evidence warrant another model review.", next, "unchanged");
+        (prior?.version === 1 && prior.fingerprint === fingerprint)) {
+      const request = rotation?.decisionKey === key ? await notify(prior?.decision) : undefined;
+      return finish(request ? "Retained advice submitted to its existing owner for consideration." :
+        "No changed commitments or workload evidence warrant another model review.", next, "unchanged", request);
+    }
     if (!exact.length && !inputs.items.length)
       return finish("No remaining commitment was found in this bounded batch; no filler work was commissioned.", next, "empty");
     const prompt = [
@@ -179,6 +247,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       `Previous recommendation for this batch: ${JSON.stringify(rotation?.decisionKey === key ? prior?.decision ?? null : null)}`,
       `Scoped workload (observation times and unavailable facts are explicit): ${JSON.stringify(workload)}`,
       `Exact commitment previews, not full evidence: ${JSON.stringify(exact)}`,
+      `Latest returned owner response, historical evidence rather than proof of application: ${JSON.stringify(ownerFeedback ?? null)}`,
       'Complete this helper with finish: status "success", a summary, and result containing the recommendation decision ("retain", "reconsider" or "opportunity") and reason, with the optional inspected taskId or inputId and nextStep when supported. Returning advice does not claim that a business change, closure or caller delivery occurred.',
     ].join("\n\n");
     const response = await ctx.agents.call("alex", prompt, { tools: "readonly", timeoutMs: 60_000,
@@ -189,8 +258,10 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
         (response.output.inputId && !inputs.items.some(item => item.id === response.output?.inputId)) ||
         (response.output.taskId && response.output.inputId))
       return ctx.blocked("The bounded review did not return a valid recommendation for the inspected commitments");
-    return finish("Workload advice retained; no Task changes or new work were applied.",
-      { ...next, decision: response.output, decisionKey: key }, "reviewed");
+    const request = await notify(response.output);
+    return finish(request ? "Workload advice retained and submitted to its existing owner for consideration; no business change or closure is claimed." :
+      "Workload advice retained; no Task changes or new work were applied.",
+      { ...next, decision: response.output, decisionKey: key }, "reviewed", request);
   } catch (error) {
     ctx.signal.throwIfAborted();
     return ctx.blocked(`Workload review could not read or judge current evidence: ${error instanceof Error ? error.message : String(error)}`);

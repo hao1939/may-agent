@@ -4,11 +4,21 @@ import { execute } from "./workload-review.js";
 import { workloadReviewPolicy, workloadReviewTask, WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID } from "../../../workload-review-policy.js";
 
 const now = 1_800_000_000_000;
-afterEach(() => setSystemTime());
-function fixture(heavy = false) {
+const originalReviewEnabled = process.env.ALEX_WORKLOAD_REVIEW_ENABLED;
+const originalNotifyOwners = process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS;
+afterEach(() => {
+  setSystemTime();
+  if (originalReviewEnabled === undefined) delete process.env.ALEX_WORKLOAD_REVIEW_ENABLED;
+  else process.env.ALEX_WORKLOAD_REVIEW_ENABLED = originalReviewEnabled;
+  if (originalNotifyOwners === undefined) delete process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS;
+  else process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS = originalNotifyOwners;
+});
+function fixture(heavy = false, notifyOwners = false) {
   setSystemTime(now);
+  process.env.ALEX_WORKLOAD_REVIEW_ENABLED = "true";
+  process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS = String(notifyOwners);
   const policy = workloadReviewPolicy({ ALEX_WORKLOAD_REVIEW_ENABLED: "true" });
-  const own = { id: WORKLOAD_REVIEW_TASK_ID, generation: 1, status: "running", outcome: "Review workload" } as TaskDetail;
+  const own = { id: WORKLOAD_REVIEW_TASK_ID, generation: 1, status: "running", outcome: "Review workload", conditions: [] } as unknown as TaskDetail;
   const task = { id: "incident", generation: 1, status: "waiting", outcome: "Restore required delivery", acceptance: ["Verify the actual repair"],
     acceptedEvidence: { available: true, maxPageSize: 20 }, parentId: "root", input: {},
     agent: "alex", creator: { appId: "alex" }, conditions: [], currentObligations: { available: true, inputWaits: { items: [], truncated: false, maxItems: 8 } } } as TaskDetail;
@@ -26,7 +36,7 @@ function fixture(heavy = false) {
   let response: unknown = { status: "done", output: { decision: "retain", reason: "The delivery remains owed; choose a smaller useful method." } };
   const reads: string[] = [];
   const ctx = {
-    reconciliation: { appId: "alex", taskId: own.id, generation: 1, agent: "alex" },
+    reconciliation: { appId: "alex", taskId: own.id, generation: 1, agent: "alex", events: { items: [], truncated: false } },
     signal: new AbortController().signal,
     read: {
       contract: async () => ({ taskPolicy: { coordination: policy.coordination } }),
@@ -57,7 +67,7 @@ test("pilot opt-in selects one stable standing Task and never grants role from i
 });
 
 test("pre-Task received demand receives accountable advice even with no business Task", async () => {
-  const f = fixture();
+  const f = fixture(false, true);
   f.tasks.splice(1);
   const pending = { id: "required-report", kind: "work", source: { kind: "app" as const, id: "exact-caller" },
     receivedAt: now, changedAt: now, funding: { reason: "sponsor-credit", retryAt: now + 60_000 } };
@@ -121,11 +131,95 @@ test("accepted review state coalesces cooldown, timestamps, its own result and u
   expect(f.prompts).toHaveLength(2);
 });
 
-test.each(["old-host", "wrong-scope", "damaged-state", "missing-task", "over-bound", "unknown-target", "invalid-output", "failed-helper"] as const)("%s stays visible without applying advice or creating work", async kind => {
+test("owner notification is a separately opted-in addressed request, with a retained identity across unchanged reviews", async () => {
+  expect(workloadReviewPolicy({ ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS: "true" }).notifyOwners).toBe(false);
+  const f = fixture(true, true);
+  f.setResponse({ status: "done", output: { decision: "reconsider", taskId: f.task.id,
+    reason: "The delivery remains owed.", nextStep: "Defer the optional parallel cross-check." } });
+  const first = await execute(f.ctx);
+  expect(admitTaskReconcileResult(first.output).ok).toBe(true);
+  expect(first.output).toMatchObject({ state: "waiting", requests: [{ appId: "alex", taskId: f.task.id,
+    input: { kind: "message", data: { context: { workloadAdvice: { subject: { taskId: f.task.id, generation: 1 } } } } } }] });
+  const output = first.output as { requests: Array<{ id: string }>; conditions: unknown[]; result: TaskDetail["result"] };
+  expect(output.conditions).toEqual([{ requestId: output.requests[0]!.id }]);
+  f.own.result = output.result;
+  setSystemTime(now + WORKLOAD_REVIEW_INTERVAL_MS);
+  const repeated = await execute(f.ctx);
+  expect(repeated.output).not.toHaveProperty("requests");
+  expect(f.prompts).toHaveLength(1);
+  f.own.result = (repeated.output as { result: TaskDetail["result"] }).result;
+  f.workload.counts.runnable++;
+  setSystemTime(now + 2 * WORKLOAD_REVIEW_INTERVAL_MS);
+  expect((await execute(f.ctx)).output).not.toHaveProperty("requests");
+  expect(f.prompts).toHaveLength(2);
+});
+
+test.each(["disabled", "retain", "input-only", "pending-owner", "changed-target", "closed-target"] as const)(
+  "%s does not produce an owner notification", async kind => {
+    const f = fixture(true, kind !== "disabled");
+    f.setResponse({ status: "done", output: { decision: kind === "retain" ? "retain" : "reconsider",
+      ...(kind === "input-only" ? {} : { taskId: f.task.id }),
+      reason: "Keep the obligation.", nextStep: "Reconsider the current method." } });
+    if (kind === "pending-owner") f.own.conditions.push({ id: "pending", type: "app.dependency.updated", subject: "id:pending" } as never);
+    if (kind === "changed-target" || kind === "closed-target") {
+      const call = f.ctx.agents.call;
+      f.ctx.agents.call = async (...args: Parameters<typeof call>) => {
+        const result = await call(...args);
+        if (kind === "changed-target") f.task.generation++;
+        else f.task.status = "closed";
+        return result;
+      };
+    }
+    const result = await execute(f.ctx);
+    expect(result.status).toBe("done");
+    expect(result.output).not.toHaveProperty("requests");
+  },
+);
+
+test.each(["done", "blocked", "progress", "condition-retired"] as const)("delivered %s feedback is retained during cooldown without another model call, including after notification withdrawal", async kind => {
+  const status = kind === "condition-retired" ? "done" : kind;
+  const f = fixture(true, true);
+  f.setResponse({ status: "done", output: { decision: "reconsider", taskId: f.task.id,
+    reason: "The delivery remains owed.", nextStep: "Defer optional fanout." } });
+  const first = await execute(f.ctx);
+  f.own.result = (first.output as { result: TaskDetail["result"] }).result;
+  if (kind !== "condition-retired") f.own.conditions.push({ id: "app-request:notice", type: "app.dependency.updated", subject: "id:notice",
+    observation: { state: status === "done" ? "true" : "false" } } as never);
+  f.ctx.reconciliation!.events.items.push({ observedAt: new Date(now).toISOString(), event: {
+    type: "app.dependency.updated", source: "app-inbox:alex", data: { id: "notice", status, summary: "Owner response evidence." },
+  } } as never);
+  process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS = "false";
+  const returned = await execute(f.ctx);
+  expect(returned.output).toMatchObject({ state: "converged", result: { workloadOwnerFeedback: {
+    requestId: "notice", status, summary: "Owner response evidence.",
+  } } });
+  expect(returned.output).not.toHaveProperty("requests");
+  expect(f.prompts).toHaveLength(1);
+});
+
+test("cancellation during the final target read prevents notification submission", async () => {
+  const f = fixture(true, true);
+  const controller = new AbortController();
+  f.ctx.signal = controller.signal;
+  f.setResponse({ status: "done", output: { decision: "reconsider", taskId: f.task.id,
+    reason: "The delivery remains owed.", nextStep: "Defer optional fanout." } });
+  const get = f.ctx.read.tasks.get;
+  let targetReads = 0;
+  f.ctx.read.tasks.get = async (...args) => {
+    const result = await get(...args);
+    if (args[0] === f.task.id && ++targetReads === 2) controller.abort(new Error("Source review cancelled"));
+    return result;
+  };
+  await expect(execute(f.ctx)).rejects.toThrow("Source review cancelled");
+});
+
+test.each(["old-host", "wrong-scope", "damaged-state", "damaged-feedback", "damaged-notification", "missing-task", "over-bound", "unknown-target", "invalid-output", "failed-helper"] as const)("%s stays visible without applying advice or creating work", async kind => {
   const f = fixture();
   if (kind === "old-host") f.ctx.read.contract = async () => ({} as never);
   if (kind === "wrong-scope") f.workload.scope.appId = "other";
   if (kind === "damaged-state") f.own.result = { workloadReview: { version: 0 } };
+  if (kind === "damaged-feedback") f.own.result = { workloadOwnerFeedback: { status: "applied" } };
+  if (kind === "damaged-notification") f.own.result = { workloadOwnerNotificationId: "unknown" };
   if (kind === "missing-task") f.ctx.read.tasks.get = async () => null;
   if (kind === "over-bound") f.tasks.push(...Array(21).fill(f.task));
   if (kind === "unknown-target") f.setResponse({ status: "done", output: { decision: "reconsider", reason: "Review", taskId: "unread" } });

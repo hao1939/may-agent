@@ -1,8 +1,9 @@
-import { expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { expect, setSystemTime, test } from "bun:test";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, type AppTaskInput } from "@may-agent/sdk";
+import { Type, type AppDefinition, type AppTaskInput } from "@may-agent/sdk";
+import type { SubagentManager } from "../may-agent/src/lib/manager.ts";
 import {
   createAssistantMessageEventStream,
   type ToolCall,
@@ -28,6 +29,7 @@ import {
 import { createAppTaskCapability } from "../may-agent/src/app/core/tasks/app-task-capability.ts";
 import {
   installAppTaskRuntimes,
+  cancelLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
 } from "../may-agent/src/app/core/tasks/app-task-runtime.ts";
@@ -37,6 +39,7 @@ import { makeTaskRetryDue } from "../may-agent/src/app/core/tasks/app-task-test-
 import { startAppInboxRuntime } from "../may-agent/src/app/composition/app-inbox-runtime.ts";
 import { fakeModel } from "../may-agent/test/fixtures/model.ts";
 import alex, { RUNTIME_PATTERN_AUDIT_TASK_ID } from "./app.ts";
+import { workloadReviewPolicy, workloadReviewTask, WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID } from "./workload-review-policy.ts";
 import {
   evaluationJudgmentSchema,
   readNewJudgment,
@@ -52,7 +55,8 @@ import {
 
 // Real App routing/admission/settlement; explicit start enables ordinary timers.
 // Agent decisions are scripted and no external models are called.
-async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (taskId: string) => Promise<void>) {
+async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (taskId: string) => Promise<void>,
+  options: { definition?: AppDefinition; manager?: SubagentManager; setup?: (appDir: string) => void } = {}) {
   const root = mkdtempSync(join(tmpdir(), "alex-recovery-"));
   const appDir = join(root, "alex.app");
   mkdirSync(join(appDir, "tasks"), { recursive: true });
@@ -63,8 +67,9 @@ async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (t
       groups: { root: { id: "root", parent_id: null } },
     }),
   );
+  options.setup?.(appDir);
   const definition = {
-    ...alex,
+    ...(options.definition ?? alex),
     workspace: undefined,
     schedules: [],
     metrics: [],
@@ -107,7 +112,7 @@ async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (t
           await beforeReconcile(request.taskId);
           return reconcileLoadedAppTaskOnce({ bus, ...request });
         } } : {}),
-        workflows: createTaskWorkflowRunner({ manager: {} as never, bus }),
+        workflows: createTaskWorkflowRunner({ manager: options.manager ?? {} as never, bus }),
       },
       { deferRecovery: true },
     );
@@ -1037,6 +1042,119 @@ test.each(["closed", "missing"] as const)("workload advice to a %s owner returns
       (target === "closed" ? [ownerTask, requesterTask] : [requesterTask]).sort());
     expect(f.store.readTask(requesterTask)?.status.reviewAt).toBeGreaterThan(Date.now());
   } finally { await f.close(); }
+});
+
+test.each(["restart", "during-review", "withdrawn", "cancelled-target"] as const)("the actual opted-in workload workflow preserves its owner handoff through %s", async mode => {
+  const enabled = process.env.ALEX_WORKLOAD_REVIEW_ENABLED;
+  const notifications = process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS;
+  process.env.ALEX_WORKLOAD_REVIEW_ENABLED = "true";
+  process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS = "true";
+  let ownerTask = "";
+  let ownerCalls = 0;
+  let helperCalls = 0;
+  let whileReviewing: (() => Promise<void>) | undefined;
+  const policy = workloadReviewPolicy();
+  // The default App was already imported by this suite. Compose the enabled
+  // fixture with its real policy/mapping; subprocess checks verify env loading.
+  const definition: AppDefinition = { ...alex,
+    task: admitted => admitted.input.kind === "workload-review" ? workloadReviewTask(admitted, policy.enabled) : alex.task!(admitted),
+    tasks: { ...alex.tasks, coordination: policy.coordination },
+  };
+  const manager = { callAgent: async () => {
+    helperCalls++;
+    await whileReviewing?.();
+    const result = { decision: "reconsider", taskId: ownerTask,
+      reason: "The required delivery remains owed.", nextStep: "Defer the optional parallel cross-check." };
+    return { sessionId: "scripted-workload-helper", status: "done", messages: [], duration: "0", outputDir: "",
+      lastAssistantText: null, finishResult: { status: "success", summary: "One method recommendation.", result }, structuredResult: result };
+  } } as unknown as SubagentManager;
+  const f = await runtime(async ({ attempt }) => {
+    expect(attempt.task.id).toBe(ownerTask);
+    ownerCalls++;
+    if (ownerCalls === 1) return { runId: attempt.attemptId, handlerResult: {
+      state: "waiting", summary: "Await the required saved batch.", facts: [], actions: [], reviewAt: Date.now() + 3_600_000,
+    } };
+    const input = attempt.events.inputs?.find(item => item.source.kind === "app" && item.source.id === "alex");
+    if (!input) throw new Error("The owner notification has no admitted identity");
+    return { runId: attempt.attemptId, handlerResult: {
+      state: "converged", summary: "Deferred the optional cross-check; required total still owed.",
+      response: "Optional cross-check deferred; the original delivery remains owed.", inputKeys: [input.key],
+      facts: ["The method decision was recorded on the original assignment."], actions: [],
+      result: { optionalCrossCheck: "deferred", requiredTotal: "owed" },
+    } };
+  }, undefined, { definition, manager, setup: appDir => {
+    const workflows = join(appDir, "agents/alex/workflows");
+    mkdirSync(workflows, { recursive: true });
+    writeFileSync(join(appDir, "agents/alex/agent.json"), JSON.stringify({ name: "alex" }));
+    copyFileSync(new URL("./agents/alex/workflows/workload-review.ts", import.meta.url), join(workflows, "workload-review.ts"));
+    copyFileSync(new URL("./workload-review-policy.ts", import.meta.url), join(appDir, "workload-review-policy.ts"));
+    symlinkSync(new URL("../../node_modules", import.meta.url).pathname, join(appDir, "node_modules"), "dir");
+  } });
+  try {
+    const original = f.admit("notified-original", { kind: "message", data: { message: "Return the required batch total." } });
+    ownerTask = original.waitingOn!.id;
+    await f.run(ownerTask);
+    expect(f.admit("review-for-owner", { kind: "workload-review", data: {} }).waitingOn?.id).toBe(WORKLOAD_REVIEW_TASK_ID);
+    await f.run(WORKLOAD_REVIEW_TASK_ID);
+    expect(f.store.readTask(WORKLOAD_REVIEW_TASK_ID)?.status.phase).toBe("waiting");
+    const notices = () => listAppInboxItems(f.db, { appId: "alex", limit: 10 }).filter(item => item.targetTaskId === ownerTask);
+    expect(notices()).toHaveLength(1);
+    expect(f.store.readTask(WORKLOAD_REVIEW_TASK_ID)?.status.result).toHaveProperty("workloadOwnerNotificationId");
+    await f.restart();
+    const ownerReturns = async () => {
+      await f.run(ownerTask);
+      await f.inbox.host.refreshTaskResults("alex", ownerTask);
+      if (mode === "during-review") {
+        const deadline = performance.now() + 2000;
+        while (!f.store.readTaskConditions(WORKLOAD_REVIEW_TASK_ID).some(condition => condition.status.state === "true")) {
+          if (performance.now() > deadline) throw new Error("Owner completion did not reach its live caller Condition");
+          await Bun.sleep(5);
+        }
+      }
+    };
+    if (mode === "during-review") {
+      setSystemTime(Date.now() + WORKLOAD_REVIEW_INTERVAL_MS);
+      whileReviewing = ownerReturns;
+      f.admit("next-workload-slot", { kind: "workload-review", data: {} });
+      await f.run(WORKLOAD_REVIEW_TASK_ID);
+      whileReviewing = undefined;
+      expect(helperCalls).toBe(2);
+      expect(ownerCalls).toBe(2);
+      expect(f.store.readTask(WORKLOAD_REVIEW_TASK_ID)?.status.summary).toBe("Workload advice retained; no Task changes or new work were applied.");
+      expect(f.store.readTask(WORKLOAD_REVIEW_TASK_ID)?.status.conditionIds ?? []).toEqual([]);
+    } else if (mode === "cancelled-target") {
+      const current = f.store.readTask(ownerTask)!;
+      cancelLoadedAppTask({ bus: f.bus, appId: "alex", taskId: ownerTask,
+        expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
+        reason: "Fixture creator withdrew the original delivery before advice was considered.", decision: "app-policy" });
+      await f.inbox.host.refreshTaskResults("alex", ownerTask);
+    } else {
+      if (mode === "withdrawn") process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS = "false";
+      await ownerReturns();
+    }
+    await f.run(WORKLOAD_REVIEW_TASK_ID);
+    const feedback = f.store.readTask(WORKLOAD_REVIEW_TASK_ID)?.status.result?.workloadOwnerFeedback;
+    expect(feedback).toMatchObject({ requestId: notices()[0]!.id, status: "done" });
+    if (mode === "cancelled-target") {
+      expect(feedback).toMatchObject({ summary: expect.stringMatching(/closed|cancelled|withdrew/) });
+      expect(f.store.readCancellation(ownerTask)).not.toBeNull();
+    } else {
+      expect(feedback).toMatchObject({ response: "Optional cross-check deferred; the original delivery remains owed." });
+      expect(f.inbox.host.get(original.id)?.status).toBe("handling");
+      expect(f.store.readCancellation(ownerTask)).toBeNull();
+    }
+    expect(helperCalls).toBe(mode === "during-review" ? 2 : 1);
+    expect(ownerCalls).toBe(mode === "cancelled-target" ? 1 : 2);
+    expect(f.store.listTaskIds({ limit: 10 }).sort()).toEqual([ownerTask, WORKLOAD_REVIEW_TASK_ID].sort());
+    expect(notices()).toHaveLength(1);
+  } finally {
+    setSystemTime();
+    await f.close();
+    if (enabled === undefined) delete process.env.ALEX_WORKLOAD_REVIEW_ENABLED;
+    else process.env.ALEX_WORKLOAD_REVIEW_ENABLED = enabled;
+    if (notifications === undefined) delete process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS;
+    else process.env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS = notifications;
+  }
 });
 
 test("incompatible input is rejected before a Task and a retained pending input reports its exact rejection", async () => {

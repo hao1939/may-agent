@@ -569,3 +569,64 @@ The advice is supplied by the scripted sender, not automatically selected from
 the pilot; installed agent choices, complete opportunity-to-owner discovery and
 external delivery remain unverified. No new controller, consumer, schedule,
 funding allowance, live mutation, activation or release was introduced.
+
+## Opted-in existing-owner notification
+
+Source now implements the first automatic producer through the existing
+`workload-review` workflow. The default remains advice-only. Both
+`ALEX_WORKLOAD_REVIEW_ENABLED=true` and the separate
+`ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS=true` must be installed before it sends an
+ordinary addressed request with a Condition. The readonly helper remains a
+finite recommendation producer; notification and its saved report settle
+together through the existing Host path. No new subscriber, Task, queue,
+controller, funding grant or closure authority was added.
+
+Only an inspected Task with `reconsider`/`opportunity` and a concrete next step
+can receive the notification. A post-judgment read checks its generation and
+live state, and cancellation is checked again after that read. Input-only and
+targetless advice remain saved. One notification can be outstanding while other
+reviews continue. The last notification identity is retained beside review
+state; exact recipient/generation/recommendation content determines the request
+name, so unrelated workload changes do not resend identical advice. Full request
+receipts provide ordinary replay handling beyond that one retained marker.
+
+Delivered completion, failure and progress retain their status, exact request
+reference and a bounded response preview, with truncation explicit. Recording
+feedback calls no model and does not infer that a business change or original
+caller delivery occurred. The receiver uses its own ordinary execution and
+funding; notification can still add receiver and coordinator attempts. This is
+an advisory channel, not guaranteed notification of every saved suggestion or
+automatic discovery of creator/funding routes for pre-Task demand.
+
+The actual source workflow runs through the normal Host adapter in four local
+integration cases: restart, an owner response during another review, opt-in
+withdrawal with a return still in flight, and explicit creator cancellation of
+the target before it considers the advice. Original delivery remains owed in
+the first three cases; the fourth records the explicit withdrawal and returned
+failure without replacement work. Exactly the original owner and coordination
+Task remain, with one addressed notification. Helper and owner choices are
+scripted; these checks use no external provider and prove no installed behavior.
+
+The concurrent-return case exposed a candidate mistake: requiring the response's
+completed Condition to remain linked drops already delivered caller evidence.
+The corrected consumer trusts the Host-delivered caller event rather than that
+temporary link. A negative control restored the obsolete Condition gate and the
+real adapter regression failed on the missing `workloadOwnerFeedback`; the
+corrected source passes. The initial race test also needed to await the actual
+Condition observation before letting the concurrent review settle. Failed logs
+and the corrected causal boundary remain in the private evidence archive.
+
+Against Apps base `edc932194e098e2d2a811144fadd3d7660450a65` and the clean pinned
+Host `0c7b0adb071ad6dae8a281a2a875e1f3e583eeff`, the final three owning suites
+passed **72 tests / 887 assertions in 40.79 seconds**. Strict source-SDK types
+passed. The design command passed structure, SDK/control examples and canonical
+Apps, then failed model-surface on May's omitted `reading-metrics`,
+`system-investigation`, `verification` skills and Scout's 36,070-character prompt
+against 36,000. Restoring the untouched base at this same candidate path produced
+identical errors; the full global command remains red. Source, type, design,
+negative-control and integration logs use the `workload-owner-notification-`
+prefix under `/home/hao/workspace-archive/`.
+
+Notification has not been activated. Installed judgment, useful follow-through,
+full owner-route discovery and external caller delivery remain acceptance work.
+No live Task, App activation, Host source, image or release changed.

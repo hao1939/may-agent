@@ -9,6 +9,7 @@ export function workloadReviewPolicy(env: NodeJS.ProcessEnv = process.env) {
   const enabled = env.ALEX_WORKLOAD_REVIEW_ENABLED === "true";
   return {
     enabled,
+    notifyOwners: enabled && env.ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS === "true",
     coordination: { taskId: WORKLOAD_REVIEW_TASK_ID, workflow: WORKLOAD_REVIEW_WORKFLOW, maxAttemptMs: 90_000 },
     schedule: { id: "workload-review", intervalMs: WORKLOAD_REVIEW_INTERVAL_MS,
       catchUp: "latest" as const, input: { kind: "workload-review", data: { reason: "scheduled" } } },

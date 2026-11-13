@@ -286,7 +286,7 @@ ceiling, and retains cooldown/fingerprint state in its accepted result. Empty
 and unchanged observations invoke no model. Old Hosts, scope mismatches, missing
 current evidence and damaged retained state remain visible without model calls.
 
-This first coordination pilot returns recommendations only. It applies no
+The default coordination pilot returns recommendations only. It applies no
 portfolio edits, closure, funding or new work. Required business work remains
 owed under both loads; pressure changes the recommended method and discretionary
 fanout, while supported spare capacity can justify a grounded opportunity.
@@ -295,18 +295,29 @@ Its brief identifies the helper as the producer of one recommendation and
 supplies the existing `finish` envelope. The workflow validates and saves that
 report; an accountable business owner applies follow-through through ordinary
 capabilities. Readonly discovery supplies material missing facts within the same
-bounded pass. The pilot has no automatic recommendation consumer: `nextStep`
+bounded pass. Without the separate owner-notification opt-in, `nextStep`
 remains advice, not a dispatched request or evidence that work occurred.
 The [owner handoff](agent-task-workload-model.md#from-advice-to-the-existing-owner)
 uses ordinary addressed requests on existing Tasks. Receiving guidance now
 distinguishes resolving that advice input from fulfilling an original promise.
 App integration checks cover restart, scoped settlement, unchanged creator
-authority and closed/missing-target feedback. This is a callable transport path
-with scripted owner decisions; the pilot still emits no such request. Choosing
-and implementing an automatic producer requires a separate scoped App policy;
-no subscriber, new review Task or extra scheduler is introduced here.
+authority and closed/missing-target feedback. The existing workflow now has a
+separate installed opt-in, `ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS=true`, requiring
+the review opt-in as well. It submits at most one outstanding ordinary addressed
+request/Condition, atomically with the report. The recipient must be an inspected
+live Task at the same generation, reread after judgment. No Task, funding grant,
+creator route or broad control is inferred from recommendation prose.
+Identical recipient/generation/advice content retains its notification identity
+despite unrelated observation changes. Delivered completion, failure and progress
+are saved as bounded feedback beside the report, with the exact request reference
+for full result discovery and no extra model call. Receipt handling survives
+restart, notification withdrawal and a Condition retiring during another review.
+The actual source workflow uses the Host adapter in these scripted checks; this
+is not installed agent acceptance. No subscriber, new review Task or extra
+scheduler is introduced. Pending notification limits further sends but does not
+stop other reviews or establish a portfolio-wide delivery guarantee.
 The contract tests prove call bounds, read-only options, coalescing, scope and
-no automatic effects; they do not prove model comprehension or improved delivery.
+default-mode isolation; they do not prove model comprehension or improved delivery.
 Activation and any business acceptance trial remain separate.
 
 Successive bounded passes must make progress beyond the first three detailed

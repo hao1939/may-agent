@@ -181,7 +181,9 @@ answered, use its admitted key from `events.inputs` in `inputKeys`, preserving
 other inputs and waits. An acknowledgement does not justify closing the Task or
 answering its original caller. See the
 [workload handoff proposal](../../proposals/agent-task-workload-model.md#from-advice-to-the-existing-owner)
-for the pilot's limits and unresolved automatic routing.
+for the default advice-only mode and separately opted-in existing-owner
+notification. That source mode has local verification; activation and installed
+follow-through remain separate.
 
 A Condition observes a fact; declaring one does not launch the operation being
 observed. Select an installed observation capability and a meaningful expectation.

@@ -70,9 +70,11 @@ after SQLite contention using one runtime and an injected recovery clock, withou
 proving production latency or caller delivery.
 The actual readonly pilot now uses that explicit helper role and return contract.
 A scripted App integration verifies creator-owned result consumption, guarded
-closure and return to the original Inbox input across restart. The pilot still
-has no automatic route from its advice to an accountable business owner; source
-checks do not establish installed agent follow-through or external delivery.
+closure and return to the original Inbox input across restart. The default pilot
+remains advice-only. Source now includes a separate opt-in to notify an exact
+existing owner and retain its response through ordinary request/Condition
+handling; activation remains held. Source checks do not establish installed
+agent follow-through or external delivery.
 Reliable adaptation, overall workload benefit and production adoption remain
 unproven. The dated November 8
 milestone observations below are historical snapshots, not current rollout state.
@@ -455,8 +457,13 @@ exact accepted advice and current subject, then use an ordinary Task request
 addressed to an existing `appId` and `taskId`. Include the source result and
 current evidence needed to judge it. This uses the existing Inbox, admission,
 funding, queue and return path; it adds no dispatcher or management privilege.
-The readonly pilot itself continues to record advice only. A retained `nextStep`
-is not this handoff, and automatic forwarding remains unimplemented.
+The default pilot continues to record advice only. Source supports an additional
+installation opt-in, `ALEX_WORKLOAD_REVIEW_NOTIFY_OWNERS=true`, alongside the
+existing review opt-in. The readonly helper still returns one recommendation.
+The workflow can submit that recommendation to its exact inspected Task, using
+one ordinary request and Condition in the same settlement as its saved report.
+A retained `nextStep` alone is not delivery or application. This mode is
+implemented and locally verified, not activated.
 
 Choose the recipient by the decision needed. A method decision belongs on the
 subject's existing Task. A requirements or closure decision belongs to its
@@ -466,6 +473,34 @@ or sponsor is insufficient to identify any of those routes. If no Task exists
 for retained input, its receiving App keeps the demand and must provide the
 authorized review path; do not invent a Task or transfer the original input to
 make notification possible.
+
+The initial automatic mode asks the subject's existing owner to consider its
+method or remaining obligations. It does not interpret prose to discover another
+creator or funding route; the recipient seeks that authority when needed. Only
+`reconsider` or `opportunity` with an inspected `taskId` and concrete `nextStep`
+can notify. The workflow rereads the target after judgment and checks its
+generation and live state. Targetless advice and pre-Task input remain retained
+for their declared owner path, with no Task created as a delivery fallback.
+
+Keep at most one notification outstanding. Other bounded reviews can continue
+while that owner is busy; notification is a limited advisory channel, not a
+queue promising every saved suggestion. The last notification identity is saved
+beside review state. Identity derives from the exact recipient, generation and
+recommendation content, so changing only observation time or unrelated workload
+does not resend identical advice. Ordinary request receipts also make exact
+replay safe after restart. The receiver uses its own ordinary funding and
+execution limits; the coordination reserve grants it no execution allowance.
+Notification can add an ordinary receiver attempt and a coordinator attempt to
+retain feedback; avoiding another model call does not make those starts free.
+
+On delivered completion, failure or progress, the workflow saves a bounded
+feedback preview and exact request reference without another model call. Full
+result evidence remains available through the existing App-result read. A
+delivered event remains usable after its completed Condition has retired; the
+Condition is a wake route, not the response's provenance. Pending feedback does
+not establish application or original caller delivery. Turning notification
+off prevents new sends while the same workflow still records in-flight returns;
+do not replace it with an older source that cannot consume those returns.
 
 For example, under pressure, ask the delivery owner to reconsider an optional
 parallel cross-check. The owner checks current facts and may defer that method
@@ -488,9 +523,11 @@ Closure and delivery of the original promise remain separate checks.
 
 The App recovery fixture verifies an addressed method decision across restart,
 separate settlement of the advice and original input, denied sibling closure,
-and explicit closed/missing-target feedback without replacement work. Its
-decisions are scripted. This verifies the transport and settlement mechanism,
-not installed agent judgment, automatic pilot routing or external delivery.
+and explicit closed/missing-target feedback without replacement work. The actual
+workflow also runs through the Host adapter with notification enabled, covering
+restart, a return during another review and opt-in withdrawal. Decisions are
+scripted. These verify source routing and settlement, not installed agent
+judgment, complete portfolio follow-through or external delivery.
 
 Include old ready obligations in review so low-priority work cannot silently
 disappear behind repeated urgent arrivals. The agent must explain continued
