@@ -127,17 +127,6 @@ CREATE INDEX IF NOT EXISTS idx_sess_started ON sessions(startedAt);
 CREATE INDEX IF NOT EXISTS idx_sess_ended ON sessions(endedAt DESC);
 CREATE INDEX IF NOT EXISTS idx_sess_activity ON sessions(lastActivityAt);
 
-CREATE TABLE IF NOT EXISTS file_reads (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  sessionId TEXT NOT NULL,
-  agent TEXT NOT NULL,
-  filePath TEXT NOT NULL,
-  readAt INTEGER NOT NULL,
-  producerAgent TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_file_reads_agent ON file_reads(agent);
-CREATE INDEX IF NOT EXISTS idx_file_reads_path ON file_reads(filePath);
-
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   event_type TEXT NOT NULL,
@@ -348,30 +337,6 @@ CREATE TABLE IF NOT EXISTS app_event_admission_commands (
 CREATE INDEX IF NOT EXISTS idx_app_event_admission_command_status
   ON app_event_admission_commands(app_id, status, updated_at);
 
-CREATE TABLE IF NOT EXISTS app_inbox_deliveries (
-  operation_id         TEXT PRIMARY KEY,
-  item_id              TEXT NOT NULL,
-  kind                 TEXT NOT NULL DEFAULT 'final',
-  text                 TEXT,
-  session_id           TEXT NOT NULL,
-  request_id           TEXT NOT NULL,
-  channel              TEXT NOT NULL,
-  status               TEXT NOT NULL DEFAULT 'pending',
-  external_message_id  TEXT,
-  failure_reason       TEXT,
-  receipt_event_id     INTEGER,
-  created_at           INTEGER NOT NULL,
-  updated_at           INTEGER NOT NULL,
-  attempted_at         INTEGER,
-  completed_at         INTEGER,
-  CHECK (kind IN ('progress', 'final')),
-  CHECK (status IN ('pending', 'sending', 'delivered', 'failed', 'uncertain'))
-);
-CREATE INDEX IF NOT EXISTS idx_app_inbox_delivery_status
-  ON app_inbox_deliveries(status, created_at);
-CREATE INDEX IF NOT EXISTS idx_app_inbox_delivery_item
-  ON app_inbox_deliveries(item_id, created_at);
-
 CREATE TRIGGER IF NOT EXISTS trg_events_referential_retention
 BEFORE DELETE ON events
 WHEN
@@ -527,7 +492,6 @@ export function applyDbSchema(db: SqliteDb): void {
     const needsEventTraceBackfill = tableExists(db, "events") && !tableExists(db, "event_traces");
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
-    ensureExistingAppInboxWaitKinds(db);
     ensureExistingTaskBindingColumns(db);
     // Trigger definitions are not replaced by IF NOT EXISTS. Remove the superseded
     // type-specific discovery objects after preserving their exact outstanding subset.
@@ -555,10 +519,6 @@ export function applyDbSchema(db: SqliteDb): void {
       db.exec("DROP VIEW IF EXISTS metric_dispositions");
       db.exec(METRIC_DISPOSITION_VIEW);
     }
-    ensureExistingAppInboxDeliveryShape(db);
-    ensureExistingAppEventAdmissionColumns(db);
-    ensureNotificationChatScope(db);
-    retireConversationChildWaits(db);
     db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_events_idempotency
       ON events(event_type, ingress_source, idempotency_scope, idempotency_key)
@@ -599,124 +559,6 @@ function ensureSingleOpenMetricAlert(db: SqliteDb): void {
     ON metric_alerts(metric_id) WHERE resolved_at IS NULL`);
 }
 
-/** Progress and final replies are separate durable operations for one request. */
-function ensureExistingAppInboxDeliveryShape(db: SqliteDb): void {
-  if (!tableExists(db, "app_inbox_deliveries")) return;
-  const columns = db.prepare("PRAGMA table_info(app_inbox_deliveries)").all() as Array<{
-    name?: unknown;
-    pk?: unknown;
-  }>;
-  const hasKind = columns.some((column) => column.name === "kind");
-  const hasText = columns.some((column) => column.name === "text");
-  const operationPrimary = columns.some((column) => column.name === "operation_id" && column.pk === 1);
-  if (hasKind && hasText && operationPrimary) return;
-  db.exec(`
-    DROP INDEX IF EXISTS idx_app_inbox_delivery_status;
-    DROP INDEX IF EXISTS idx_app_inbox_delivery_item;
-    ALTER TABLE app_inbox_deliveries RENAME TO app_inbox_deliveries_before_progress;
-    CREATE TABLE app_inbox_deliveries (
-      operation_id         TEXT PRIMARY KEY,
-      item_id              TEXT NOT NULL,
-      kind                 TEXT NOT NULL DEFAULT 'final',
-      text                 TEXT,
-      session_id           TEXT NOT NULL,
-      request_id           TEXT NOT NULL,
-      channel              TEXT NOT NULL,
-      status               TEXT NOT NULL DEFAULT 'pending',
-      external_message_id  TEXT,
-      failure_reason       TEXT,
-      receipt_event_id     INTEGER,
-      created_at           INTEGER NOT NULL,
-      updated_at           INTEGER NOT NULL,
-      attempted_at         INTEGER,
-      completed_at         INTEGER,
-      CHECK (kind IN ('progress', 'final')),
-      CHECK (status IN ('pending', 'sending', 'delivered', 'failed', 'uncertain'))
-    );
-    INSERT INTO app_inbox_deliveries (
-      operation_id, item_id, kind, text, session_id, request_id, channel,
-      status, external_message_id, failure_reason, receipt_event_id,
-      created_at, updated_at, attempted_at, completed_at
-    )
-    SELECT
-      operation_id, item_id, 'final', NULL, session_id, request_id, channel,
-      status, external_message_id, failure_reason, receipt_event_id,
-      created_at, updated_at, attempted_at, completed_at
-    FROM app_inbox_deliveries_before_progress;
-    DROP TABLE app_inbox_deliveries_before_progress;
-    CREATE INDEX idx_app_inbox_delivery_status
-      ON app_inbox_deliveries(status, created_at);
-    CREATE INDEX idx_app_inbox_delivery_item
-      ON app_inbox_deliveries(item_id, created_at);
-  `);
-}
-
-/** SQLite cannot widen a CHECK constraint in place. Rebuild only the inbox table. */
-function ensureExistingAppInboxWaitKinds(db: SqliteDb): void {
-  if (!tableExists(db, "app_inbox_items")) return;
-  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'app_inbox_items'").get() as
-    { sql?: unknown } | undefined;
-  if (typeof row?.sql === "string" && row.sql.includes("'analysis'")) return;
-  db.exec(`
-    ALTER TABLE app_inbox_items RENAME TO app_inbox_items_before_analysis_wait;
-    CREATE TABLE app_inbox_items (
-      id                  TEXT PRIMARY KEY,
-      app_id              TEXT NOT NULL,
-      parent_id           TEXT,
-      continues_request_id TEXT,
-      conversation_id     TEXT,
-      conversation_seq    INTEGER,
-      channel             TEXT,
-      channel_target_id   TEXT,
-      channel_thread_id   TEXT,
-      channel_message_id  INTEGER,
-      reply_to_source_id  TEXT,
-      source_kind         TEXT NOT NULL,
-      source_id           TEXT NOT NULL,
-      input_kind          TEXT NOT NULL,
-      input_data          TEXT NOT NULL,
-      status              TEXT NOT NULL DEFAULT 'pending',
-      session_id          TEXT,
-      waiting_on_kind     TEXT,
-      waiting_on_id       TEXT,
-      result              TEXT,
-      available_at        INTEGER,
-      review_at           INTEGER,
-      lease_generation    INTEGER NOT NULL DEFAULT 0,
-      lease_owner         TEXT,
-      lease_expires_at    INTEGER,
-      origin_event_id     INTEGER,
-      idempotency_key     TEXT,
-      created_at          INTEGER NOT NULL,
-      started_at          INTEGER,
-      changed_at          INTEGER,
-      updated_at          INTEGER NOT NULL,
-      completed_at        INTEGER,
-      CHECK (source_kind IN ('human', 'app', 'system')),
-      CHECK (status IN ('pending', 'handling', 'done')),
-      CHECK (waiting_on_kind IS NULL OR waiting_on_kind IN ('app', 'task', 'session', 'analysis'))
-    );
-    INSERT INTO app_inbox_items (
-      id, app_id, parent_id, continues_request_id, conversation_id, conversation_seq, channel,
-      channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
-      input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
-      available_at, review_at, lease_generation, lease_owner, lease_expires_at,
-      origin_event_id, idempotency_key, created_at, started_at, changed_at, updated_at, completed_at
-    )
-    SELECT
-      id, app_id, parent_id, NULL, conversation_id, conversation_seq, channel,
-      channel_target_id, channel_thread_id, channel_message_id, reply_to_source_id, source_kind, source_id, input_kind,
-      input_data, status, session_id, waiting_on_kind, waiting_on_id, result,
-      available_at, review_at, lease_generation, lease_owner, lease_expires_at,
-      origin_event_id, idempotency_key, created_at, started_at, changed_at, updated_at, completed_at
-    FROM app_inbox_items_before_analysis_wait;
-    DROP TABLE app_inbox_items_before_analysis_wait;
-  `);
-  // The historical rebuild has a fixed column list. Restore additive columns
-  // before the canonical schema creates indexes that depend on them.
-  ensureExistingAppInboxTableColumns(db);
-}
-
 const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["continues_request_id", "TEXT"],
   ["target_task_id", "TEXT"],
@@ -747,40 +589,6 @@ function ensureExistingAppInboxTableColumns(db: SqliteDb): void {
       SET changed_at = COALESCE(completed_at, created_at)
       WHERE changed_at IS NULL
     `);
-  }
-}
-
-function ensureExistingAppEventAdmissionColumns(db: SqliteDb): void {
-  if (tableExists(db, "app_event_admission_plans")) {
-    ensureColumns(db, "app_event_admission_plans", [
-      ["registry_snapshot_id", "TEXT NOT NULL DEFAULT 'legacy:unknown'"],
-    ]);
-  }
-  if (tableExists(db, "app_event_admission_commands")) {
-    ensureColumns(db, "app_event_admission_commands", [
-      ["payload_version", "INTEGER NOT NULL DEFAULT 1"],
-      ["resolved_snapshot_id", "TEXT"],
-    ]);
-    const schema = String(
-      db.prepare("SELECT sql FROM sqlite_master WHERE name = 'app_event_admission_commands'").get()?.sql,
-    );
-    if (!schema.includes("'unresolved'")) {
-      // The journal keeps the same identity and rows; only its route CHECK expands.
-      db.exec(`
-        ALTER TABLE app_event_admission_commands RENAME TO app_event_admission_commands_previous;
-        DROP INDEX IF EXISTS idx_app_event_admission_command_status;
-      `);
-      db.exec(SCHEMA);
-      db.exec(`
-        INSERT INTO app_event_admission_commands
-          (event_id, app_id, route_kind, route_id, payload_version, payload, status,
-           last_error, admitted_at, updated_at, resolved_snapshot_id)
-        SELECT event_id, app_id, route_kind, route_id, payload_version, payload, status,
-           last_error, admitted_at, updated_at, resolved_snapshot_id
-        FROM app_event_admission_commands_previous;
-        DROP TABLE app_event_admission_commands_previous;
-      `);
-    }
   }
 }
 
@@ -849,32 +657,6 @@ function ensureExistingEventsTableColumns(db: SqliteDb): void {
   `);
 }
 
-/** Runs inside the schema transaction; keep unscoped rows as history, not routing. */
-function ensureNotificationChatScope(db: SqliteDb): void {
-  const columns = db.prepare("PRAGMA table_info(notification_messages)").all() as Array<{ name: string }>;
-  if (columns.some((column) => column.name === "chat_id")) return;
-  db.exec("ALTER TABLE notification_messages RENAME TO notification_messages_unscoped");
-  db.exec(NOTIFICATION_SCHEMA);
-  db.exec(`
-    INSERT INTO notification_messages
-      (chat_id, telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at)
-    SELECT CASE WHEN json_valid(data) THEN
-      CASE
-        WHEN json_extract(data, '$.chatId') IS NOT NULL
-          AND json_extract(data, '$.channelTargetId') IS NOT NULL
-          AND CAST(json_extract(data, '$.chatId') AS TEXT) != CAST(json_extract(data, '$.channelTargetId') AS TEXT)
-          THEN ''
-        WHEN json_type(data, '$.channelTargetId') IN ('text', 'integer')
-          THEN CAST(json_extract(data, '$.channelTargetId') AS TEXT)
-        WHEN json_type(data, '$.chatId') IN ('text', 'integer')
-          THEN CAST(json_extract(data, '$.chatId') AS TEXT) ELSE '' END
-      ELSE '' END,
-      telegram_msg_id, event_type, agent, session_id, project_id, data, sent_at
-    FROM notification_messages_unscoped;
-    DROP TABLE notification_messages_unscoped;
-  `);
-}
-
 function tableExists(db: SqliteDb, table: string): boolean {
   const row = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
   return Boolean(row);
@@ -896,47 +678,4 @@ function ensureColumns(
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     existing.add(column);
   }
-}
-
-/** Retire the removed frontend protocol once, without replaying or cancelling its Tasks. */
-function retireConversationChildWaits(db: SqliteDb): void {
-  const pending = db
-    .prepare(
-      `SELECT 1 FROM app_inbox_items AS parent
-       WHERE status != 'done' AND (
-         (waiting_on_kind = 'app' AND waiting_on_id = 'children:' || id)
-         OR (conversation_id IS NOT NULL AND (
-           waiting_on_kind = 'app'
-           OR EXISTS (SELECT 1 FROM app_inbox_items child WHERE child.parent_id = parent.id)
-           OR json_array_length(handling, '$.decision.dependencies') > 0
-         ))
-       )
-       LIMIT 1`,
-    )
-    .get();
-  if (!pending) return;
-  const reason = "Conversational child-result waiting is no longer supported.";
-  const response =
-    "This older turn can no longer wait for child results. Your ask remains unresolved. " +
-    "Any work already admitted continues independently; its results and history remain available. " +
-    "Send a new message to review that work and decide what is still needed.";
-  const now = Date.now();
-  db.run(
-    `UPDATE app_inbox_items AS parent
-     SET status = 'done',
-         handling = json_set(COALESCE(handling, '{}'), '$.phase', 'failed', '$.reason', ?),
-         result = json_set(COALESCE(result, '{}'), '$.summary', ?, '$.response', ?),
-         available_at = NULL, review_at = NULL,
-         lease_generation = lease_generation + 1, lease_owner = NULL, lease_expires_at = NULL,
-         completed_at = ?, changed_at = ?, updated_at = ?
-     WHERE status != 'done' AND (
-       (waiting_on_kind = 'app' AND waiting_on_id = 'children:' || id)
-       OR (conversation_id IS NOT NULL AND (
-         waiting_on_kind = 'app'
-         OR EXISTS (SELECT 1 FROM app_inbox_items child WHERE child.parent_id = parent.id)
-         OR json_array_length(handling, '$.decision.dependencies') > 0
-       ))
-     )`,
-    [reason, reason, response, now, now, now],
-  );
 }

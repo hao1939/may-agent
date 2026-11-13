@@ -83,10 +83,9 @@ Retained installations still require an explicit adoption/cutover protocol.
 The receiving App's declared agent owns input before Task creation. Its scoped
 workload read includes a separate five-item `unadmittedInputs` page with its own
 `inputCursor`; Task-page counts and agent filters do not cover that demand.
-Inspect exact evidence and the saved caller route through the existing trusted
-Inbox item read (`GET /api/app-inbox/:id`). A saved funding hold is pending
-admission, not an accepted business result, rejection or caller delivery. Policy
-installation, an authorized funding change, exact Task creation/adoption or a
+Inspect exact evidence and the saved caller route in `app_inbox_items`. A saved
+funding hold is pending admission, not an accepted business result, rejection or
+caller delivery. Policy installation, an authorized funding change, exact Task creation/adoption or a
 due UTC grant can wake existing admission recovery. A declared bounded owner
 review may consider a changed hold; it cannot grant funding or end the input
 without the App's existing authority. Oversized identities are counted as omitted
