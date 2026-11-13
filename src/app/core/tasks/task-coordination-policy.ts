@@ -3,7 +3,7 @@ import type { AppTaskResource } from "./app-task-state.js";
 
 export type TaskCoordinationPolicy = NonNullable<NonNullable<AppDefinition["tasks"]>["coordination"]>;
 
-/** Shared exact eligibility for reserve dispatch and protected funding. */
+/** Shared exact eligibility for coordination reserve dispatch. */
 export function matchesTaskCoordination(
   appId: string,
   owner: string,

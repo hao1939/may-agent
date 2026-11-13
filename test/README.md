@@ -42,8 +42,8 @@ Worker `create-task` is retired. `packages/sdk/src/task-contract.test.ts` reject
 it; action fencing and rollback tests now mutate existing fixture assignments.
 `src/app/task-worker-interaction.test.ts` owns real worker coverage for typed
 App delegation, nested A → B → C → B → A, continued human input, and reopen.
-`task-worker-workload.test.ts` owns cross-process funding, shared capacity,
-protected coordination and workload observations. `task-worker-integration.test.ts`
+`task-worker-workload.test.ts` owns cross-process coordination timeout enforcement
+and bounded parent/App workload observations. `task-worker-integration.test.ts`
 keeps worker loss, recovery, source pinning, event delivery and compiled-command
 coverage. Every scenario still has its own parent, children and database; separate
 files let the bounded suite worker pool schedule these contracts independently.
