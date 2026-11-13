@@ -298,6 +298,8 @@ describe("HTTP event reads", () => {
       "/learning/",
       "/api/projects/lineage",
       "/api/projects/lineage?path=projects/sample.app",
+      "/api/projects/journal?path=projects/sample.app",
+      "/api/projects/discussion?path=projects/sample.app",
       "/api/stats",
       "/api/agents/activity",
       "/api/agents/timeline",

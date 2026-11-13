@@ -334,16 +334,8 @@ describe.skipIf(E2E_NO_UI || !probe.ok)("E8: project comment via served UI", () 
       const projectBefore = readFileSync(PROJECT_FILE, "utf-8");
       const discussionBefore = readFileSync(DISC_FILE, "utf-8");
       expect(statusOf(projectBefore)).toBe("waiting");
-      await page.click('button[onclick="switchProjectTab(this,\'discussion\')"]');
-      await page.waitForFunction(
-        () => {
-          const content = document.getElementById("project-tab-content");
-          return content?.dataset.projectTab === "discussion"
-            && content.textContent?.includes("Keep the previous owner's decision visible.");
-        },
-        { timeout: 5000 },
-      );
-      expect(await page.$eval("#project-tab-content", (el) => el.textContent)).toContain("Retained discussion");
+      expect(projectTabs).not.toContain("Journal");
+      expect(projectTabs).not.toContain("Discussion");
       expect(discussionBefore).toBe(retainedDiscussion);
 
       const stamp = "e8-" + new Date().toISOString();

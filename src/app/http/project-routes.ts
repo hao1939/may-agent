@@ -387,28 +387,6 @@ export function createProjectRouteHandlers(options: {
     );
   }
 
-  function handleProjectJournal(url: URL): Response {
-    const path = url.searchParams.get("path");
-    if (!path) return json({ error: "path required" }, 400);
-    const journalPath = resolve(resolveProjectDir(path), "journal.md");
-    try {
-      return json({ content: readFileSync(journalPath, "utf-8") });
-    } catch {
-      return json({ content: "(No journal found)" });
-    }
-  }
-
-  function handleProjectDiscussion(url: URL): Response {
-    const path = url.searchParams.get("path");
-    if (!path) return json({ error: "path required" }, 400);
-    const discPath = resolve(resolveProjectDir(path), "discussion.md");
-    try {
-      return json({ content: readFileSync(discPath, "utf-8") });
-    } catch {
-      return json({ content: "(No discussion yet)" });
-    }
-  }
-
   function handleProjectContent(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
@@ -775,8 +753,6 @@ export function createProjectRouteHandlers(options: {
     serveProjectStatic,
     readProjects,
     handleProjects,
-    handleProjectJournal,
-    handleProjectDiscussion,
     handleProjectContent,
     handleProjectArtifact,
     handleProjectDetail,
