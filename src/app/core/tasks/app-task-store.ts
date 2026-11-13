@@ -1,5 +1,4 @@
 import type { AppTaskPolicy, TaskExecutorName } from "@may-agent/sdk";
-import { inStateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import type {
   AppTaskAcceptanceBasis,
@@ -114,37 +113,12 @@ export type AppTaskContext = {
   resourceStore: AppTaskResourceStore;
 };
 
-type TaskSnapshotCache = {
-  tree?: TaskTree;
-  resourceRevision?: number;
-};
-
-const taskSnapshotCaches = new WeakMap<AppTaskContext, TaskSnapshotCache>();
-const scopedTaskSnapshots = new WeakSet<TaskTree>();
-
-/** Reuse one snapshot for a short-lived context dedicated to a sequential pass. */
-export function cacheTaskSnapshots(context: AppTaskContext): void {
-  taskSnapshotCaches.set(context, {});
-}
-
 export function readTaskSnapshot(
   context: AppTaskContext,
   scope?: { taskIds: Iterable<string>; admissionIds?: Iterable<string>; conditionIds?: Iterable<string> },
 ): TaskTree {
-  if (scope) {
-    const tree = context.resourceStore.readTaskContext(scope);
-    scopedTaskSnapshots.add(tree);
-    return tree;
-  }
-  const cache = taskSnapshotCaches.get(context);
-  const revision = context.resourceStore.revision();
-  if (cache?.tree && cache.resourceRevision === revision) return cache.tree;
-  const tree = context.resourceStore.readSnapshot();
-  if (cache) {
-    cache.tree = tree;
-    cache.resourceRevision = revision;
-  }
-  return tree;
+  if (scope) return context.resourceStore.readTaskContext(scope);
+  return context.resourceStore.readSnapshot();
 }
 
 export type CommitTaskMutationOptions = {
@@ -168,16 +142,6 @@ export function commitTaskMutation(context: AppTaskContext, tree: TaskTree, opti
     throw new ResourceTaskMutationStaleError();
   }
   tree.updated_at = new Date().toISOString();
-  const resourceCache = taskSnapshotCaches.get(context);
-  if (resourceCache) {
-    if (scopedTaskSnapshots.has(tree) || inStateTransaction(context.resourceStore.db)) {
-      resourceCache.tree = undefined;
-      resourceCache.resourceRevision = undefined;
-    } else {
-      resourceCache.tree = tree;
-      resourceCache.resourceRevision = context.resourceStore.revision();
-    }
-  }
 }
 
 export function normalizeTaskStateInPlace(tree: TaskTree): TaskTree {

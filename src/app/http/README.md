@@ -4,11 +4,15 @@
 socket connection and static-file serving. Its final `fetch` function lists
 the routes explicitly.
 
-`session-routes.ts`, `agent-routes.ts` and `project-routes.ts` group the
-session reads and steering verbs (`/api/sessions/:id`, `/transcript`,
-`/raw-log`, `/cancel`, `/message`), agent rollups and direct chat
-(`/api/agents`, `/about`, `/default-session`, `/message`), and project metadata,
-static/UI serving, comments and actions (`/api/projects*`, `/projects*`).
+`session-routes.ts`, `agent-routes.ts`, `project-routes.ts`,
+`metric-knowledge-routes.ts` and `event-routes.ts` group the session reads and
+steering verbs (`/api/sessions/:id`, `/transcript`, `/raw-log`, `/cancel`,
+`/message`), agent rollups and direct chat (`/api/agents`, `/about`,
+`/default-session`, `/message`), project metadata, static/UI serving, comments
+and actions (`/api/projects*`, `/projects*`), liveness/metric/knowledge reads
+and metric/alert actions (`/api/liveness`, `/api/metrics`, `/api/browse`,
+`/api/knowledge/search`, `/api/metrics/:id/threshold`, `/api/alerts/:id/resolve`),
+and event reads/ingress (`/api/events*`).
 
 `task-read-routes.ts` handles the related read endpoints:
 

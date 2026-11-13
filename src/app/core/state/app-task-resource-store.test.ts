@@ -11,7 +11,6 @@ import { trackAppTaskConditionEventForTasks } from "../tasks/app-task-condition-
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import type { AppTaskResource } from "../tasks/app-task-state.js";
 import {
-  cacheTaskSnapshots,
   readTaskSnapshot,
   commitTaskMutation,
   ResourceTaskMutationStaleError,
@@ -904,7 +903,6 @@ describe("AppTaskResourceStore", () => {
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskSnapshots(config);
     recordAppTaskTrigger(config, "normal", { type: "example.changed", eventId: 92 });
     const claim = claimObservedAppTask(config, {
       taskId: "normal",
@@ -1136,7 +1134,6 @@ describe("AppTaskResourceStore", () => {
       resourceStore: store,
     };
     try {
-      cacheTaskSnapshots(config);
       const accepted = readTaskSnapshot(config);
       const stale = structuredClone(accepted);
       for (const [tree, summary] of [
@@ -1177,7 +1174,6 @@ describe("AppTaskResourceStore", () => {
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskSnapshots(config);
     const tree = readTaskSnapshot(config);
     const next = tree.resources!.normal!;
     next.metadata.resourceVersion += 1;
@@ -1327,7 +1323,6 @@ describe("AppTaskResourceStore", () => {
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskSnapshots(config);
 
     expect(recordAppTaskTrigger(config, "normal", { type: "example.changed", eventId: 91 })).toEqual({
       kind: "recorded",
@@ -1388,7 +1383,6 @@ describe("AppTaskResourceStore", () => {
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskSnapshots(config);
 
     expect(
       observeAppTaskIntent(config, {
@@ -1428,7 +1422,6 @@ describe("AppTaskResourceStore", () => {
       maxConcurrent: 2,
       resourceStore: store,
     };
-    cacheTaskSnapshots(config);
 
     expect(
       claimObservedAppTask(config, {

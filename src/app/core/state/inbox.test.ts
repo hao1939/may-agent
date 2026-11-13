@@ -10,7 +10,7 @@ import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
-import { cacheTaskSnapshots, readTaskSnapshot } from "../tasks/app-task-store.js";
+import { readTaskSnapshot } from "../tasks/app-task-store.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { claimAppInboxItem, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { createConversationTopic } from "./conversations.js";
@@ -256,7 +256,6 @@ describe("request-to-Task state operation", () => {
 
   it("rolls back admission, wait, and cached state when Topic linking fails", () => {
     const { db, config, input } = fixture();
-    cacheTaskSnapshots(config);
     readTaskSnapshot(config);
     db.exec(
       "CREATE TRIGGER fail_topic BEFORE INSERT ON conversation_topic_tasks BEGIN SELECT RAISE(ABORT, 'link failure'); END",

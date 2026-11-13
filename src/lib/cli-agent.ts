@@ -6,7 +6,6 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
-  readdirSync,
   realpathSync,
   statSync,
   writeFileSync,
@@ -32,8 +31,6 @@ export type CliAgentInput = {
   worktreePolicy?: "use-existing" | "require";
   expectedOutput?: { format: "markdown" | "json"; requiredFields?: string[] };
   resumeSessionId?: string;
-  /** Retained only to reject implicit cross-task session reuse explicitly. */
-  reuseSession?: boolean;
 };
 type FailureCategory = "timeout" | "cancelled" | "permission" | "tool" | "no_output" | "output_schema" | "process";
 export type CliAgentResult = {
@@ -422,11 +419,6 @@ export async function runCliAgent(input: CliAgentInput, opts: CliAgentOptions): 
   if (!opts.sessionId) throw new Error("CLI execution requires its exact caller session");
   if (input.tool !== "codex" && input.tool !== "claude") throw new Error("tool must be codex or claude");
   if (typeof input.prompt !== "string" || !input.prompt.trim()) throw new Error("prompt is required");
-  if (input.reuseSession && !input.resumeSessionId) {
-    throw new Error(
-      "Automatic shared session reuse is retired; pass resumeSessionId to continue an exact native session",
-    );
-  }
   const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647) {
     throw new Error("timeoutMs must be a positive bounded timer duration");
@@ -591,29 +583,4 @@ export async function runCliAgent(input: CliAgentInput, opts: CliAgentOptions): 
     writeFileSync(structuredResultPath, JSON.stringify(result, null, 2) + "\n");
   }
   return result;
-}
-
-/** Read-only upgrade fence; never replay or erase work admitted by the removed runner. */
-export function assertLegacyCliTasksSettled(persistDir: string): void {
-  const root = join(persistDir, "cli-tasks");
-  if (!existsSync(root)) return;
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const dir = join(root, entry.name);
-    const taskFile = join(dir, "task.json");
-    const requestFile = join(dir, "request.json");
-    if (!existsSync(taskFile) && !existsSync(requestFile)) continue;
-    let status: unknown;
-    try {
-      status = JSON.parse(readFileSync(taskFile, "utf8")).status;
-    } catch {
-      /* Fail closed below. */
-    }
-    // The old runner marked orphaned without draining the native process.
-    // Its record is not proof that mutation has stopped; require operator review.
-    if (["completed", "failed"].includes(String(status))) continue;
-    throw new Error(
-      `Unfinished, orphaned, or unreadable legacy CLI work at ${dir}. Drain or cancel active work using the previous Host. Inspect orphaned/unreadable records and archive them only after confirming their work and processes are settled; no artifacts were changed.`,
-    );
-  }
 }

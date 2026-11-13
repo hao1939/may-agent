@@ -8,7 +8,6 @@ export type AppEventAdmissionRoute =
       kind: "unresolved";
       routeId: string;
       subscriptionIds: string[];
-      resolveTask: boolean;
       conditionTaskIds: string[];
     }
   | {
@@ -106,7 +105,6 @@ function serializeRoute(route: AppEventAdmissionRoute): string {
     case "unresolved":
       return JSON.stringify({
         subscriptionIds: route.subscriptionIds,
-        resolveTask: route.resolveTask,
         conditionTaskIds: route.conditionTaskIds,
       });
     case "noop":
@@ -170,11 +168,10 @@ function commandFromRow(row: Row): AppEventAdmissionCommand {
     resolvedSnapshotId: optionalText(row.resolved_snapshot_id),
   };
   if (kind === "unresolved") {
-    if (typeof payload.resolveTask !== "boolean") throw new Error("Invalid App admission resolveTask");
     return {
-      ...common, kind,
+      ...common,
+      kind,
       subscriptionIds: stringList(payload.subscriptionIds, "subscriptionIds"),
-      resolveTask: payload.resolveTask,
       conditionTaskIds: stringList(payload.conditionTaskIds, "conditionTaskIds"),
     };
   }

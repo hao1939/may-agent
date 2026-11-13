@@ -449,7 +449,7 @@ const PAIR_CONTRACTS: readonly PairContract[] = [
   {
     name: "cli.task",
     open: "cli.task.started",
-    closes: ["cli.task.completed", "cli.task.failed", "cli.task.orphaned"],
+    closes: ["cli.task.completed", "cli.task.failed"],
     timeoutMs: DEFAULT_PAIR_TTL_MS,
     key: cliTaskKey,
   },

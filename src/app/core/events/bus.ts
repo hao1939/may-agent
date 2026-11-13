@@ -505,7 +505,6 @@ export type SystemEvent =
         sourceOwner: string;
         sourceSessionId?: string;
         resumeSessionId?: string;
-        reuseSession?: boolean;
         files?: string[];
         worktree?: string;
         expectedOutput?: { format: "markdown" | "json"; requiredFields?: string[] };
@@ -529,7 +528,6 @@ export type SystemEvent =
         attempt?: number;
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
-        reuseSession?: boolean;
       };
     }
   | {
@@ -619,7 +617,6 @@ export type SystemEvent =
         resumeCommand?: string[];
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
-        reuseSession?: boolean;
       };
     }
   | {
@@ -639,25 +636,6 @@ export type SystemEvent =
         resumeCommand?: string[];
         effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
         sandboxFallbackReason?: string;
-        reuseSession?: boolean;
-      };
-    }
-  | {
-      type: "cli.task.orphaned";
-      source: "cli-task-runner";
-      owner: string;
-      data: {
-        taskId: string;
-        tool?: "claude" | "codex";
-        pid?: number;
-        reason: string;
-        structuredResultPath?: string;
-        sourceSessionId?: string;
-        cliSessionId?: string;
-        resumeCommand?: string[];
-        effectiveSandbox?: "read-only" | "workspace-write" | "danger-full-access";
-        sandboxFallbackReason?: string;
-        reuseSession?: boolean;
       };
     }
   | {
@@ -1382,7 +1360,6 @@ function isPairTrackedEvent(eventType: string): boolean {
     "cli.task.started",
     "cli.task.completed",
     "cli.task.failed",
-    "cli.task.orphaned",
   ]).has(eventType);
 }
 
