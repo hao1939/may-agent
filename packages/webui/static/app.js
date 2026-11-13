@@ -211,15 +211,8 @@ function render() {
     const workflowRunId = new URLSearchParams(location.search).get('workflowRunId');
     if (workflowRunId) loadLoopTrace({ workflowRunId });
     if (params.eventId) {
-      const anchor = currentAnchorId();
-      if (anchor === 'event-details' || anchor === 'event-detail-rows') {
-        if (typeof _eventGraphView !== 'undefined') _eventGraphView = 'list';
-        if (typeof _eventGraphDetailView !== 'undefined') _eventGraphDetailView = anchor === 'event-detail-rows' ? 'rows' : 'graph';
-        loadEventGraph(params.eventId, { detail: true });
-      } else {
-        loadEventGraph(params.eventId);
-      }
-      if (!workflowRunId && anchor === 'loop-trace') loadLoopTrace(params.eventId);
+      loadEventGraph(params.eventId);
+      if (!workflowRunId && currentAnchorId() === 'loop-trace') loadLoopTrace(params.eventId);
     }
   }
   if (tab === 'projects') {

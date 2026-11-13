@@ -48,7 +48,6 @@ import { readWorkflowFacts } from "../../lib/workflow-facts.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { METRIC_LIST_LIMIT, readMetricHistory, readMetricObservations } from "../adapters/reporting/metric-observations.js";
-import { addSessionTranscriptToEventGraph, buildEventGraph } from "./read-model/event-graph.js";
 import { resolveRuntimeAgentDirectory } from "../loader/agent-discovery.js";
 import { getAppInboxItem, listAppInboxHealth, listAppInboxItems, type AppInboxQuery } from "../core/state/app-inbox-store.js";
 import type { EventInput } from "@may-agent/control/events";
@@ -2269,22 +2268,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
-  function handleEventGraph(_url: URL, eventIdText: string): Response {
-    const eventId = Number(eventIdText);
-    if (!Number.isFinite(eventId)) return json({ error: "event id must be numeric" }, 400);
-    let graph = buildEventGraph(_db(), eventId);
-    const sessionIds = [
-      ...new Set(
-        graph.nodes.map((node) => node.sessionId?.trim()).filter((sessionId): sessionId is string => !!sessionId),
-      ),
-    ];
-    for (const sessionId of sessionIds) {
-      const transcript = readSessionTranscript(sessionId);
-      if (transcript) graph = addSessionTranscriptToEventGraph(graph, sessionId, transcript);
-    }
-    return json(graph);
-  }
-
   function json(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
       status,
@@ -2921,8 +2904,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const projectActionsMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions$/);
       if (projectActionsMatch && req.method === "GET") return handleProjectActions(projectActionsMatch[1]);
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
-      const eventGraphMatch = url.pathname.match(/^\/api\/events\/(\d+)\/graph$/);
-      if (eventGraphMatch) return handleEventGraph(url, eventGraphMatch[1]);
       const eventTraceMatch = url.pathname.match(/^\/api\/events\/(\d+)\/trace$/);
       if (eventTraceMatch) {
         const traceUrl = new URL(url);
