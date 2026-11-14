@@ -286,6 +286,14 @@ export type WorkflowKernelStepControl = {
   allowance: WorkflowExecutionAllowance;
 };
 
+export type WorkflowKernelResolvedTarget = {
+  kind: "agent" | "workflow";
+  invoke(
+    options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    stepControl: WorkflowKernelStepControl,
+  ): Promise<WorkflowStepInvocationResult>;
+};
+
 export type WorkflowKernelBindings<TInput = unknown> = {
   executionId?: string;
   startedAt?: number;
@@ -301,14 +309,16 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   allowance?: WorkflowExecutionAllowance;
   /** Optional caller-side output schema enforced in addition to module.outputSchema when status === "done". */
   outputSchema?: TSchema;
-  /** Unified target resolver and invoker for ctx.call. */
-  callTarget(
+  /** Resolve and capture one callable for this ctx.call invocation. */
+  resolveTarget?(target: string, input: unknown): WorkflowKernelResolvedTarget | Promise<WorkflowKernelResolvedTarget>;
+  /** Compatibility fallback for bindings that have not adopted single-pass resolution. */
+  callTarget?(
     target: string,
     input: unknown,
     options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult>;
-  /** Optional classifier so runBoundStep knows whether target is prompt ("agent") or code ("workflow") before invocation. */
+  /** Compatibility classifier used only with callTarget. */
   resolveTargetKind?(target: string, input: unknown): "agent" | "workflow" | Promise<"agent" | "workflow">;
   read?: AppRead;
   events?: WorkflowContext["events"];
@@ -341,6 +351,19 @@ export type WorkflowKernelOutcome =
       message: string;
       report: WorkflowRunReport;
     };
+
+function safePromptPreview(input: unknown): string {
+  if (typeof input === "string") return input;
+  try {
+    return JSON.stringify(input ?? null) ?? "null";
+  } catch {
+    try {
+      return String(input);
+    } catch {
+      return "[unserializable input]";
+    }
+  }
+}
 
 function schemaDiagnostic(schema: TSchema, value: unknown): string {
   const details: string[] = [];
@@ -748,9 +771,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       target === "undefined" ||
       target === "unknown"
     ) {
-      throw new Error(
-        `${kind === "agent" ? "agents.call" : "workflows.run"} called with invalid ${kind} name: ${JSON.stringify(target)}`,
-      );
+      throw new Error(`ctx.call invoked with invalid target name: ${JSON.stringify(target)}`);
     }
     const effectiveOptions = normalizeEffectiveCallOptions(kind, target, callOptions);
     const remainingMs = allowance.deadlineAt - Date.now();
@@ -935,18 +956,41 @@ export async function runWorkflowInvocation<TInput = unknown>(
     } catch (err) {
       return Promise.reject(err);
     }
-    const promptPreview =
-      typeof input === "string" ? input : JSON.stringify(input ?? null);
     return trackOperation((async () => {
-      const kind: "agent" | "workflow" = bindings.resolveTargetKind
-        ? await bindings.resolveTargetKind(target, input)
-        : typeof target === "string" && target.includes("/")
+      const promptPreview = safePromptPreview(input);
+      const fallbackKind: "agent" | "workflow" =
+        typeof target === "string" && target.includes("/")
           ? "workflow"
           : typeof input === "string"
             ? "agent"
             : "workflow";
-      return runBoundStep(kind, target, promptPreview, options, (stepControl, effectiveOptions) =>
-        bindings.callTarget(target, input, effectiveOptions, stepControl),
+      let resolved: WorkflowKernelResolvedTarget;
+      try {
+        if (bindings.resolveTarget) {
+          resolved = await bindings.resolveTarget(target, input);
+        } else {
+          const kind = bindings.resolveTargetKind
+            ? await bindings.resolveTargetKind(target, input)
+            : fallbackKind;
+          if (!bindings.callTarget) throw new Error("Workflow kernel call target binding is not configured");
+          resolved = {
+            kind,
+            invoke: (effectiveOptions, stepControl) =>
+              bindings.callTarget!(target, input, effectiveOptions, stepControl),
+          };
+        }
+      } catch (error) {
+        resolved = {
+          kind: fallbackKind,
+          invoke: async () => { throw error; },
+        };
+      }
+      return runBoundStep(
+        resolved.kind,
+        target,
+        promptPreview,
+        options,
+        (stepControl, effectiveOptions) => resolved.invoke(effectiveOptions, stepControl),
       );
     })()) as Promise<ExecutionResult<Static<S>>>;
   }) as WorkflowContext["call"];
