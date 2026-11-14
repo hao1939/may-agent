@@ -1181,14 +1181,15 @@ function inferCwdAppName(cwd: string, projectsRoot: string): string | undefined 
   return firstSegment && firstSegment.endsWith(".app") ? firstSegment : undefined;
 }
 
-export type StandaloneRunOptions<TInput = unknown> = Omit<
+export type RunOptions<TInput = unknown> = Omit<
   DirectWorkflowRunOptions<TInput>,
-  "target" | "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models"
+  "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models"
 > & {
   /** Optional App disambiguator when two Apps define the same agent name (e.g. `"alex.app"`). */
   app?: string;
   /** Working directory for tools and execution (defaults to `process.cwd()`). */
   cwd?: string;
+  input?: TInput;
   projectRoot?: string;
   workRoot?: string;
   agentsRoot?: string;
@@ -1197,7 +1198,10 @@ export type StandaloneRunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
-export type DiscoveredTargetSummary = {
+export type StandaloneRunOptions<TInput = unknown> = RunOptions<TInput>;
+export type RunResult = DirectWorkflowRunResult;
+
+export type TargetSummary = {
   target: string;
   kind: "prompt" | "code" | "cli";
   owner: string;
@@ -1205,9 +1209,11 @@ export type DiscoveredTargetSummary = {
   description: string;
 };
 
+export type DiscoveredTargetSummary = TargetSummary;
+
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
 
-export async function listStandaloneTargets(options: {
+export async function listTargets(options: {
   cwd?: string;
   projectRoot?: string;
   projectsRoot?: string;
@@ -1215,7 +1221,7 @@ export async function listStandaloneTargets(options: {
   app?: string;
   timeoutMs?: number;
   signal?: AbortSignal;
-} = {}): Promise<DiscoveredTargetSummary[]> {
+} = {}): Promise<TargetSummary[]> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_STANDALONE_LIST_TIMEOUT_MS;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     throw new Error(`Invalid listStandaloneTargets timeoutMs: ${String(options.timeoutMs)}`);
@@ -1320,6 +1326,8 @@ export async function listStandaloneTargets(options: {
   }
 }
 
+export const listStandaloneTargets = listTargets;
+
 function normalizeAppDirName(app: string): string {
   const trimmed = app.trim();
   return trimmed.endsWith(".app") ? trimmed : `${trimmed}.app`;
@@ -1413,25 +1421,40 @@ function discoverAgentsRootForTarget(params: {
 }
 
 /**
- * Run any prompt agent, code procedure, or native CLI executor standalone with
- * positional `(target, input, options?)`—auto-discovering the owning App from
- * `<projectRoot>/projects/*.app` without requiring `--app`.
+ * Run any prompt agent, code procedure, or native CLI executor standalone—either
+ * with positional `(target, input, options?)` or an options object `run(options)`—
+ * auto-discovering the owning App from `<projectRoot>/projects/*.app` without requiring `--app`.
  */
 export async function run<TInput = unknown>(
   target: string,
   input: TInput,
-  options: StandaloneRunOptions<TInput> = {},
-): Promise<DirectRunResult> {
+  options?: RunOptions<TInput>,
+): Promise<RunResult>;
+export async function run<TInput = unknown>(
+  options: RunOptions<TInput> & { input: TInput },
+): Promise<RunResult>;
+export async function run<TInput = unknown>(
+  targetOrOptions: string | (RunOptions<TInput> & { input: TInput }),
+  maybeInput?: TInput,
+  maybeOptions: RunOptions<TInput> = {},
+): Promise<RunResult> {
+  const isPositional = typeof targetOrOptions === "string";
+  const options: RunOptions<TInput> = isPositional ? maybeOptions : targetOrOptions;
+  const input = (isPositional ? maybeInput : targetOrOptions.input) as TInput;
+  const rawTarget = isPositional ? targetOrOptions : (options.target ?? "");
+
   const cwd = resolve(options.cwd ?? process.cwd());
   const projectRoot = resolve(options.projectRoot ?? inferWorkspaceRoot(cwd));
   const workRoot = resolve(options.workRoot ?? cwd);
   const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
   const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
 
-  const { target: normalizedTarget, app: resolvedApp } = parseTargetAndOptionalAppPrefix(
-    target,
-    options.app,
-  );
+  const { target: normalizedTarget, app: resolvedApp } = rawTarget
+    ? parseTargetAndOptionalAppPrefix(rawTarget, options.app)
+    : {
+        target: "",
+        ...(options.app?.trim() ? { app: normalizeAppDirName(options.app) } : {}),
+      };
 
   const agentsRoot = discoverAgentsRootForTarget({
     target: normalizedTarget,
@@ -1455,7 +1478,7 @@ export async function run<TInput = unknown>(
   try {
     const res = await runDirectWorkflow({
       ...options,
-      target: normalizedTarget,
+      ...(normalizedTarget ? { target: normalizedTarget } : {}),
       input,
       projectRoot,
       workRoot,

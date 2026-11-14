@@ -1,10 +1,11 @@
 /**
  * `@may-agent/sdk/standalone` — Self-contained standalone Agent & Workflow Runtime.
  *
- * Allows any script, App, or evaluation harness to run prompt agents (`alex`),
- * code procedures (`tech-lead/verified-coder`), or CLI executors (`codex`/`claude`)
- * by importing `@may-agent/sdk/standalone` directly—without booting SQLite,
- * EventBus, or the Host daemon.
+ * Canonical public API:
+ *   - `run(target, input, options?)` / `run(options)` — execute any prompt agent (`alex`),
+ *     code procedure (`tech-lead/verified-coder`), or CLI executor (`codex`/`claude`).
+ *   - `listTargets(options?)` — list admitted callable prompt, code, and CLI targets.
+ *   - `createModelRegistry()` — build the provider model map from environment variables.
  */
 
 export {
@@ -14,6 +15,7 @@ export {
   defaultDirectToolDenials,
   inferWorkspaceRoot,
   listStandaloneTargets,
+  listTargets,
   prepareDirectAgentExecution,
   resolveDirectToolPolicy,
   run,
@@ -29,7 +31,10 @@ export {
   type DirectWorkflowRunOptions,
   type DirectWorkflowRunResult,
   type DiscoveredTargetSummary,
+  type RunOptions,
+  type RunResult,
   type StandaloneRunOptions,
+  type TargetSummary,
   type ToolDenial,
 } from "./runtime/app/standalone.js";
 
@@ -71,9 +76,7 @@ export {
   resolveCallable,
   resolveCallableTarget,
   runWorkflowInvocation,
-  runTargetTest,
   runWorkflowTest,
-  runTargetTest as runStandalone,
   type NormalizedWorkflowContribution,
   type PreparedCatalog,
   type PreparedDefinition,
@@ -97,7 +100,5 @@ export {
   type WorkflowStepInvocationResult,
   type WorkflowStepTrace,
   type WorkflowTestOptions,
-  type WorkflowTestOptions as StandaloneSdkRunOptions,
   type WorkflowTestRunResult,
-  type WorkflowTestRunResult as StandaloneSdkRunResult,
 } from "./testing.js";
