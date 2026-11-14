@@ -1000,4 +1000,114 @@ export async function execute(ctx) { return ctx.done("probe"); }
       expect(existsSync(marker)).toBe(false);
     },
   );
+
+  test("handles malformed sibling workflow without unhandledRejection, preserves pinned helper revision on workflowName runs, carries prep deadline, and rejects expired deadline before import", async () => {
+    const env = setupDirectLayout();
+    const ownerDir = join(env.agentsRoot, "owner", "workflows");
+
+    // 1. Malformed sibling workflow + pinned helper revision on workflowName runs:
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      const helperPath = join(ownerDir, "pinned-helper.ts");
+      writeFileSync(
+        join(ownerDir, "a-malformed.ts"),
+        `export const name = 123;\n`, // invalid export fails validation in loadWorkflowModuleFromFile
+      );
+      writeFileSync(
+        helperPath,
+        `
+export const name = "pinned-helper";
+export const description = "Initial helper v1";
+export async function execute(ctx) { return ctx.done("v1"); }
+`,
+      );
+      writeFileSync(
+        join(ownerDir, "mutate-and-call.ts"),
+        `
+import { writeFileSync } from "node:fs";
+export const name = "mutate-and-call";
+export const description = "Mutates helper on disk after root prep and calls it";
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(helperPath)}, \`
+export const name = "pinned-helper";
+export const description = "Mutated helper v2";
+export async function execute(ctx) { return ctx.done("v2"); }
+\`);
+  const sub = await ctx.call("pinned-helper", {});
+  return ctx.done("ran:" + sub.summary);
+}
+`,
+      );
+      const pinnedRun = await runDirectWorkflow({
+        ...env,
+        agentName: "owner",
+        workflowName: "mutate-and-call",
+        input: {},
+        models: {},
+      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 25));
+      expect(unhandled).toEqual([]);
+      expect(pinnedRun.ok).toBe(true);
+      expect(pinnedRun.result).toMatchObject({ type: "done", summary: "ran:v1" });
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+
+    // 2. Expired deadline fails before starting any catalog import:
+    const importMarker = join(env.root, "expired-should-not-import");
+    writeFileSync(
+      join(env.agentsRoot, "reviewer", "workflows", "marker.ts"),
+      `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(importMarker)}, "started");
+export const name = "marker";
+export const description = "Should not import when deadlineAt is already expired";
+export async function execute(ctx) { return ctx.done("ok"); }
+`,
+    );
+    const expiredRun = await runDirect({
+      ...env,
+      agentName: "owner",
+      target: "reviewer/marker",
+      input: {},
+      models: {},
+      deadlineAt: Date.now() - 100,
+    });
+    expect(expiredRun.ok).toBe(false);
+    expect(expiredRun.started).toBe(false);
+    expect(String(expiredRun.error)).toContain("deadline expired");
+    expect(existsSync(importMarker)).toBe(false);
+
+    // 3. Preparation time counts against the shared execution budget:
+    const budgetDir = join(env.agentsRoot, "reviewer", "workflows");
+    writeFileSync(
+      join(budgetDir, "slow-prep-then-exec.ts"),
+      `
+await new Promise((r) => setTimeout(r, 180));
+export const name = "slow-prep-then-exec";
+export const description = "Consumes 180ms during import and 180ms during execute";
+export async function execute(ctx) {
+  await new Promise((r, reject) => {
+    const t = setTimeout(r, 180);
+    ctx.signal.addEventListener("abort", () => { clearTimeout(t); reject(ctx.signal.reason); }, { once: true });
+  });
+  return ctx.done("should-have-timed-out");
+}
+`,
+    );
+    const budgetRun = await runDirect({
+      ...env,
+      agentName: "owner",
+      target: "reviewer/slow-prep-then-exec",
+      input: {},
+      models: {},
+      timeoutMs: 260,
+    });
+    expect(budgetRun.ok).toBe(false);
+    expect(String(budgetRun.error)).toContain("timed out");
+  });
 });

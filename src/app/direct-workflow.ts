@@ -385,6 +385,8 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   let targetModule = options.module;
   let catalogCapturedAtRoot = false;
+  const rootStartedAt = Date.now();
+  let preparedAllowance: WorkflowExecutionAllowance | undefined = internal?.allowance;
   if (!targetModule) {
     const requestedTarget = options.target?.trim() ?? options.workflowName?.trim();
     if (!requestedTarget) {
@@ -394,9 +396,64 @@ export async function runDirectWorkflow<TInput = unknown>(
       throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
     }
 
-    const prepNow = Date.now();
+    const prepNow = rootStartedAt;
     let prepAllowance: WorkflowExecutionAllowance | undefined = internal?.allowance;
     let prepTimeoutMs: number | undefined;
+    const makePrepFailureReport = (
+      effectiveError: Error,
+      status: WorkflowRunReport["status"],
+      unconfirmed?: string[],
+    ): DirectWorkflowRunResult => {
+      const endedAt = Date.now();
+      const executionId =
+        internal === undefined && options.executionId
+          ? options.executionId
+          : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`;
+      const report: WorkflowRunReport = {
+        workflow: requestedTarget,
+        executionId,
+        started: false,
+        status,
+        startedAt: prepNow,
+        endedAt,
+        durationMs: endedAt - prepNow,
+        input: options.input,
+        error: {
+          name: effectiveError.name,
+          message: effectiveError.message,
+          ...(effectiveError.stack ? { stack: effectiveError.stack } : {}),
+        },
+        steps: [],
+        stepsTruncated: 0,
+        logs: [],
+        logsTruncated: 0,
+        limits: {
+          timeoutMs: prepTimeoutMs ?? 0,
+          deadlineAt: prepAllowance?.deadlineAt ?? endedAt,
+          ...(prepAllowance?.maxConcurrentCalls !== undefined
+            ? { maxConcurrentCalls: prepAllowance.maxConcurrentCalls }
+            : {}),
+        },
+        cleanup: unconfirmed ? { confirmed: false, unconfirmed } : { confirmed: true },
+        observerErrors: [],
+      };
+      let reportPath: string | undefined;
+      if (options.traceDir) {
+        mkdirSync(options.traceDir, { recursive: true });
+        reportPath = join(options.traceDir, "run.json");
+        writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+      }
+      return {
+        ok: false,
+        started: false,
+        status,
+        error: effectiveError,
+        report,
+        ...(reportPath ? { reportPath } : {}),
+        childSessions: [],
+      };
+    };
+
     if (!prepAllowance && !options.signal?.aborted) {
       try {
         const created = createWorkflowAllowance({
@@ -407,8 +464,11 @@ export async function runDirectWorkflow<TInput = unknown>(
         });
         prepAllowance = created;
         prepTimeoutMs = created.timeoutMs;
-      } catch {
-        // Invalid timeoutMs/deadlineAt will be surfaced cleanly by runWorkflowInvocation below.
+      } catch (allowanceErr) {
+        return makePrepFailureReport(
+          allowanceErr instanceof Error ? allowanceErr : new Error(String(allowanceErr)),
+          "error",
+        );
       }
     } else if (prepAllowance) {
       prepTimeoutMs = Math.max(0, prepAllowance.deadlineAt - prepNow);
@@ -488,9 +548,9 @@ export async function runDirectWorkflow<TInput = unknown>(
         }
         targetModule = found.workflow as WorkflowExecutableModule<TInput>;
       }
+      preparedAllowance = prepAllowance;
     } catch (prepErr) {
       if (prepController.signal.aborted || preparedCatalog.pendingImports > 0) {
-        const endedAt = Date.now();
         const executionId =
           internal === undefined && options.executionId
             ? options.executionId
@@ -506,49 +566,12 @@ export async function runDirectWorkflow<TInput = unknown>(
             : new Error(String(prepErr));
         const status: WorkflowRunReport["status"] =
           !unconfirmed && options.signal?.aborted ? "interrupted" : "error";
-        const report: WorkflowRunReport = {
-          workflow: requestedTarget,
-          executionId,
-          started: false,
-          status,
-          startedAt: prepNow,
-          endedAt,
-          durationMs: endedAt - prepNow,
-          input: options.input,
-          error: {
-            name: effectiveError.name,
-            message: effectiveError.message,
-            ...(effectiveError.stack ? { stack: effectiveError.stack } : {}),
-          },
-          steps: [],
-          stepsTruncated: 0,
-          logs: [],
-          logsTruncated: 0,
-          limits: {
-            timeoutMs: prepTimeoutMs ?? 0,
-            deadlineAt: prepAllowance?.deadlineAt ?? endedAt,
-            ...(prepAllowance?.maxConcurrentCalls !== undefined
-              ? { maxConcurrentCalls: prepAllowance.maxConcurrentCalls }
-              : {}),
-          },
-          cleanup: unconfirmed ? { confirmed: false, unconfirmed } : { confirmed: true },
-          observerErrors: [],
-        };
-        let reportPath: string | undefined;
-        if (options.traceDir) {
-          mkdirSync(options.traceDir, { recursive: true });
-          reportPath = join(options.traceDir, "run.json");
-          writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+        const result = makePrepFailureReport(effectiveError, status, unconfirmed);
+        result.report.executionId = executionId;
+        if (result.reportPath) {
+          writeFileSync(result.reportPath, `${JSON.stringify(result.report, null, 2)}\n`);
         }
-        return {
-          ok: false,
-          started: false,
-          status,
-          error: effectiveError,
-          report,
-          ...(reportPath ? { reportPath } : {}),
-          childSessions: [],
-        };
+        return result;
       }
       throw prepErr;
     } finally {
@@ -607,16 +630,26 @@ export async function runDirectWorkflow<TInput = unknown>(
     options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
   const executeAgent = options.runAgent ?? runDirectAgent;
 
-  let rootAllowance = internal?.allowance;
+  let rootAllowance = preparedAllowance;
   if (!rootAllowance && !options.signal?.aborted) {
     try {
       rootAllowance = createWorkflowAllowance({
         timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
         deadlineAt: options.deadlineAt,
         maxConcurrentCalls,
+        now: rootStartedAt,
       });
     } catch {
       // Pre-start deadline/timeout validation errors are surfaced cleanly by runWorkflowInvocation.
+    }
+  } else if (rootAllowance && targetModule.executionTimeoutMs !== undefined) {
+    const moduleDeadline = rootStartedAt + targetModule.executionTimeoutMs;
+    if (moduleDeadline < rootAllowance.deadlineAt) {
+      rootAllowance = {
+        ...rootAllowance,
+        deadlineAt: moduleDeadline,
+        deadlineReason: `Workflow "${targetModule.name}" timed out after ${targetModule.executionTimeoutMs}ms`,
+      };
     }
   }
 
@@ -759,19 +792,27 @@ export async function runDirectWorkflow<TInput = unknown>(
           ctx.signal,
         );
         ctx.signal.throwIfAborted();
-        preparedCatalog = captured;
+        for (const [name, entry] of captured.prompts) {
+          preparedCatalog.prompts.set(name, entry);
+        }
+        for (const diag of captured.diagnostics) {
+          if (!preparedCatalog.diagnostics.includes(diag)) {
+            preparedCatalog.diagnostics.push(diag);
+          }
+        }
       }
       ctx.signal.throwIfAborted();
       return authoredModule.execute(ctx);
     },
   }, {
     executionId: internal ? undefined : options.executionId,
+    startedAt: internal ? undefined : rootStartedAt,
     input: options.input,
     taskOwned: Boolean(options.task || options.reconciliation),
     tools: internal?.tools ?? options.tools,
     signal: options.signal,
     timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
-    deadlineAt: options.deadlineAt,
+    deadlineAt: rootAllowance?.deadlineAt ?? options.deadlineAt,
     maxConcurrentCalls,
     allowance: rootAllowance,
     read,
