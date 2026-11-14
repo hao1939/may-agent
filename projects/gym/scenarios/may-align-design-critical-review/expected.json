@@ -1,5 +1,5 @@
 {
-  "human_answer": "Ask Arc to review architectural coherence and Tech Lead to review implementation and migration safety independently. Combine their findings, resolve any material disagreement, and rehearse the highest-risk migration path before implementation starts.",
+  "human_answer": "Ask Bob to review architectural coherence and Tech Lead to review implementation and migration safety independently. Combine their findings, resolve any material disagreement, and rehearse the highest-risk migration path before implementation starts.",
   "exact": {
     "needs_clarification": false
   },
@@ -28,8 +28,8 @@
   "delegations": {
     "min": 2,
     "max": 2,
-    "allowed_agents": ["arc", "tech-lead"],
-    "required_agents": ["arc", "tech-lead"],
+    "allowed_agents": ["bob", "tech-lead"],
+    "required_agents": ["bob", "tech-lead"],
     "async_required": true
   },
   "response_target_words": 70,

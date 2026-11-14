@@ -21,7 +21,7 @@
   "delegations": {
     "min": 1,
     "max": 2,
-    "allowed_agents": ["tech-lead", "optimizer"],
+    "allowed_agents": ["tech-lead", "alex"],
     "async_required": true
   },
   "empty": ["preference_updates"],

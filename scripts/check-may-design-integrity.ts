@@ -104,9 +104,9 @@ for (const path of [...markdownFiles(principlesDir), ...markdownFiles(designDir)
 }
 
 const allowedRootEntries = new Set([
-  ".agents", ".azure", ".claude", ".codex", ".copilot", ".git", ".gitignore", ".initialized", ".state", ".tools",
-  "CONVENTIONS.md", "README.md", "agents", "bun.lock", "bunfig.toml", "contracts",
-  "node_modules", "package.json", "packages", "projects", "scripts", "shared", "sources", "tsconfig.json", "ui", "worktrees",
+  ".agents", ".aws", ".azure", ".claude", ".codex", ".copilot", ".git", ".gitignore", ".initialized", ".state", ".tools",
+  "CONVENTIONS.md", "README.md", "agents", "artifacts", "bun.lock", "bunfig.toml", "contracts", "features",
+  "node_modules", "package.json", "packages", "projects", "reports", "scripts", "shared", "sources", "tmp", "tsconfig.json", "ui", "worktrees",
 ]);
 for (const entry of readdirSync(root).sort()) {
   if (!allowedRootEntries.has(entry)) warnings.push(`root layout: unclassified entry ${entry}`);

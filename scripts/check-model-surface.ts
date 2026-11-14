@@ -91,9 +91,9 @@ function resolveSkillRoots(skillsDir: string): string[] {
 
 function discoverSkillsForAgent(agentDir: string, agentName: string, appLocal: boolean): DiscoveredSkill[] {
   const roots: Array<{ path: string; scope: SkillScope; priority: number }> = [
-    { path: join(agentDir, "skills"), scope: appLocal ? "app-agent" : "agent", priority: 1 },
+    { path: join(agentDir, "skills"), scope: (appLocal ? "app-agent" : "agent") as SkillScope, priority: 1 },
     ...(appLocal ? [{ path: join(globalAgentsRoot, agentName, "skills"), scope: "agent" as const, priority: 2 }] : []),
-    { path: join(sharedRoot, "skills"), scope: "shared", priority: 3 },
+    { path: join(sharedRoot, "skills"), scope: "shared" as const, priority: 3 },
   ].flatMap((entry) => resolveSkillRoots(entry.path).map((path) => ({ ...entry, path })));
   const trustedRoots = roots.map((entry) => entry.path);
   const byName = new Map<string, { skill: DiscoveredSkill; priority: number }>();

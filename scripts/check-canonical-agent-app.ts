@@ -126,9 +126,12 @@ function checkTypescriptCompatibility(
   const sdkSourceRoot = join(runtimeRoot, "packages", "sdk", "src");
   const options: ts.CompilerOptions = {
     target: ts.ScriptTarget.ES2022,
+    lib: ["lib.es2023.full.d.ts"],
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
     strict: false,
+    noImplicitAny: false,
+    strictNullChecks: true,
     skipLibCheck: true,
     noEmit: true,
     allowImportingTsExtensions: true,
@@ -162,9 +165,9 @@ function checkTypescriptCompatibility(
 async function checkWorkflowCompatibility(runtimeRoot: string): Promise<void> {
   const sdkRoot = join(runtimeRoot, "packages", "sdk");
   const sdkSourceRoot = join(sdkRoot, "src");
-  const sdkPlugin = {
+  const sdkPlugin: import("bun").BunPlugin = {
     name: "paired-may-agent-sdk",
-    setup(build: import("bun").BunPluginBuilder) {
+    setup(build) {
       build.onResolve(
         { filter: /^@may-agent\/sdk(?:\/.*)?$/ },
         (args: { path: string }) => {
@@ -173,13 +176,7 @@ async function checkWorkflowCompatibility(runtimeRoot: string): Promise<void> {
             ? join(sdkSourceRoot, `${subpath.slice(1)}.ts`)
             : join(sdkSourceRoot, "index.ts");
           if (!existsSync(sourcePath)) {
-            return {
-              errors: [
-                {
-                  text: `paired Runtime SDK does not export source for ${args.path}`,
-                },
-              ],
-            };
+            throw new Error(`paired Runtime SDK does not export source for ${args.path}`);
           }
           return { path: sourcePath };
         },
@@ -197,7 +194,6 @@ async function checkWorkflowCompatibility(runtimeRoot: string): Promise<void> {
         entrypoints: [workflowPath],
         target: "bun",
         format: "esm",
-        write: false,
         minify: false,
         external: ["typebox", "@earendil-works/pi-ai"],
         plugins: [sdkPlugin],
@@ -228,8 +224,12 @@ for (const entry of readdirSync(projectsRoot).sort()) {
 }
 checkRetiredCronDeclarations();
 
-if (finalRuntimeGate) {
-  const configuredRuntimeRoot = process.env.MAY_AGENT_RUNTIME_ROOT;
+const defaultRuntimeRoot = join(root, "projects", "may-agent");
+const configuredRuntimeRoot =
+  process.env.MAY_AGENT_RUNTIME_ROOT?.trim() ||
+  (existsSync(join(defaultRuntimeRoot, "packages", "sdk", "package.json")) ? defaultRuntimeRoot : "");
+
+if (finalRuntimeGate || configuredRuntimeRoot) {
   if (!configuredRuntimeRoot) {
     errors.push(
       "--final-runtime requires MAY_AGENT_RUNTIME_ROOT pointing to the paired Runtime checkout",
@@ -272,6 +272,6 @@ if (finalRuntimeGate) {
 
 for (const error of errors) console.error(`ERROR ${error}`);
 console.log(
-  `Canonical Agent App integrity: ${errors.length} error(s); ${finalRuntimeGate ? `Apps + final Runtime (${checkedWorkflows} workflows checked)` : "Apps"}`,
+  `Canonical Agent App integrity: ${errors.length} error(s); ${checkedWorkflows > 0 ? `Apps + Runtime (${checkedWorkflows} workflows checked)` : "Apps"}`,
 );
 if (errors.length > 0) process.exitCode = 1;

@@ -1,6 +1,6 @@
 # Event-retention design
 
-- Bob wrote the first draft.
+- Alex wrote the first draft.
 - It changes event deletion, trace closure evidence, and open-work retention.
 - No other agent has reviewed it.
 - There is no prototype or migration rehearsal yet.
@@ -8,8 +8,8 @@
 
 ## Current review ownership
 
-- `arc` is the architecture and system-coherence specialist.
+- `bob` is the architecture, design-judgment, and system-coherence specialist.
 - `tech-lead` owns the May-agent platform and implementation/migration boundary.
-- `optimizer` owns agent-system optimization, not general architecture review.
+- `gym` owns controlled benchmark comparison, not general architecture review.
 - Generic labels such as `architect` or `dev`, and external CLI workers such as
   `claude`, are not accountable owners for this design review.

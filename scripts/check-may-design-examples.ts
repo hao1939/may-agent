@@ -30,9 +30,7 @@ if (first.kind !== "desired" || repeated.kind !== "desired" ||
   throw new Error("The App example must map repeated input to the same desired Task");
 }
 for (const [name, result] of Object.entries({ waitingResult, dependencyResult })) {
-  const admitted = admitTaskReconcileResult(result, {
-    allowNeedsAgent: true, defaultParentId: "root",
-  });
+  const admitted = admitTaskReconcileResult(result);
   if (!admitted.ok) throw new Error(`The documented ${name} is not admissible: ${admitted.error}`);
 }
 

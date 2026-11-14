@@ -178,7 +178,12 @@ export async function checkMetricDecisionReuse(
       if (link.appId !== row.appId || link.taskId !== row.taskId)
         links.push({ appId: link.appId, taskId: link.taskId });
     }
-    const tasks = [];
+    const tasks: Array<{
+      appId: string;
+      taskId: string;
+      generation: number;
+      resourceVersion: number;
+    }> = [];
     for (const link of links) {
       const task = await readTask(link.appId, link.taskId);
       if (

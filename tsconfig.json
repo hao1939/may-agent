@@ -10,16 +10,16 @@
     "noEmit": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "types": ["node"],
+    "types": ["bun", "node"],
     "allowImportingTsExtensions": true,
     "paths": {
-      "@may-agent/sdk": ["./projects/may-agent/bundle/sdk-current/src/index.ts"],
-      "@may-agent/sdk/testing": ["./projects/may-agent/bundle/sdk-current/src/testing.ts"]
+      "@may-agent/sdk": ["./projects/may-agent/packages/sdk/src/index.ts"],
+      "@may-agent/sdk/*": ["./projects/may-agent/packages/sdk/src/*.ts"]
     }
   },
   "include": [
-    "types/**/*.d.ts",
-    "shared/guards/**/*.ts"
+    "scripts/*.ts",
+    "shared/tools/**/*.ts"
   ],
   "exclude": [
     "**/node_modules/**",

@@ -627,9 +627,9 @@ Existing names need not match the ideal immediately.
 | Responsibility | Home for changes |
 | --- | --- |
 | Accepted work, state consistency, events | Existing core/state/runtime modules |
-| Conversation policy and context | `src/app/conversations/`, building on the existing state/handler extraction |
+| Conversation policy and context | `src/app/core/state/conversations.ts` and `conversation-task-turns.ts` |
 | Concrete executor, producer, reporting, discovery, workspace, maintenance implementations | Their existing `src/app/adapters/` families; flat implementations can stay until a useful extraction |
-| Input/output transport | Existing `src/app/transport/` and `http/` files |
+| Input/output transport | Existing `src/app/transport/` and `http/` files (`server.ts`, `session-routes.ts`, `agent-routes.ts`, `project-routes.ts`, `metric-knowledge-routes.ts`, `event-routes.ts`) |
 | Concrete selection and lifecycle wiring | `src/app/composition/` and existing composition roots |
 | Public contracts and human clients | Existing SDK, control, terminal, and Web UI packages |
 | Domain probes, prompts, workflows, and acceptance | The owning `projects/<id>.app/` |

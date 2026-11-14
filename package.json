@@ -16,7 +16,6 @@
     "check:may-design": "bun scripts/check-may-design-integrity.ts && bun scripts/check-may-design-examples.ts && bun scripts/check-canonical-agent-app.ts && bun scripts/check-model-surface.ts",
     "check:model-surface": "bun scripts/check-model-surface.ts",
     "check:canonical-apps": "bun scripts/check-canonical-agent-app.ts",
-    "check:canonical-apps:final-runtime": "bun scripts/check-canonical-agent-app.ts --final-runtime",
     "gym": "bun --cwd=projects/gym run scenario:run",
     "gym:list": "bun --cwd=projects/gym run scenario:list",
     "gym:check": "bun --cwd=projects/gym run check",

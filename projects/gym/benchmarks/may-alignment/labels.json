@@ -44,7 +44,7 @@
       "status": "draft",
       "review_status": "ready",
       "source": "synthetic",
-      "rationale": "Current role boundaries require independent Arc architecture review and Tech Lead implementation/migration review, followed by synthesis, resolution of material disagreements, and rehearsal of the highest-risk migration path before implementation.",
+      "rationale": "Current role boundaries require independent Bob architecture review and Tech Lead implementation/migration review, followed by synthesis, resolution of material disagreements, and rehearsal of the highest-risk migration path before implementation.",
       "approved_by": null,
       "approved_at": null
     },

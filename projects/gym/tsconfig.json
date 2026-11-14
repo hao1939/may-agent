@@ -9,7 +9,11 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "types": ["bun", "node"],
-    "typeRoots": ["./node_modules/@types", "../../node_modules/@types", "../may-agent/node_modules/@types"]
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types", "../may-agent/node_modules/@types"],
+    "paths": {
+      "@may-agent/sdk": ["../may-agent/packages/sdk/src/index.ts"],
+      "@may-agent/sdk/*": ["../may-agent/packages/sdk/src/*.ts"]
+    }
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "../may-agent/src/types/text-assets.d.ts"]
 }
