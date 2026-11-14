@@ -1,19 +1,23 @@
 /**
- * `@may-agent/sdk/standalone` — Unified standalone execution surface.
+ * `@may-agent/sdk/standalone` — Self-contained standalone Agent & Workflow Runtime.
  *
- * Allows any script, App, or evaluation harness to run prompt agents (`alex`),
- * code procedures (`tech-lead/verified-coder`), or CLI executors (`codex`/`claude`)
- * by importing `@may-agent/sdk/standalone` directly—without booting SQLite,
- * EventBus, or the Host daemon.
+ * Canonical public API:
+ *   - `run(target, input, options?)` / `run(options)` — execute any prompt agent (`alex`),
+ *     code procedure (`tech-lead/verified-coder`), or CLI executor (`codex`/`claude`).
+ *   - `listTargets(options?)` — list admitted callable prompt, code, and CLI targets.
+ *   - `createModelRegistry()` — build the provider model map from environment variables.
  */
 
 export {
   DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS,
   DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH,
+  DEFAULT_STANDALONE_LIST_TIMEOUT_MS,
   defaultDirectToolDenials,
   inferWorkspaceRoot,
   listStandaloneTargets,
+  listTargets,
   prepareDirectAgentExecution,
+  resolveDirectToolPolicy,
   run,
   runDirect,
   runDirectAgent,
@@ -27,9 +31,41 @@ export {
   type DirectWorkflowRunOptions,
   type DirectWorkflowRunResult,
   type DiscoveredTargetSummary,
+  type RunOptions,
+  type RunResult,
   type StandaloneRunOptions,
+  type TargetSummary,
   type ToolDenial,
-} from "../../../src/app/standalone.js";
+} from "./runtime/app/standalone.js";
+
+export {
+  createModelRegistry,
+  type ModelRegistry,
+  type ModelWithFallback,
+} from "./runtime/app/model-registry.js";
+
+export {
+  listRuntimeAgentDirectories,
+  resolveRuntimeAgentDirectory,
+  type AgentDirectory,
+} from "./runtime/app/loader/agent-discovery.js";
+
+export {
+  readAgentConfigFile,
+  validateAgentConfig,
+  type AgentConfig,
+  type ValidationError,
+} from "./runtime/app/loader/agent-config.js";
+
+export type {
+  FinishResult,
+  InstabilityMetrics,
+  ModelWithApiKey,
+  SubagentDefinition,
+  TaskResult,
+  ToolContext,
+  ToolFactory,
+} from "./runtime/lib/types.js";
 
 export {
   WorkflowAllowanceExhaustedError,
@@ -40,9 +76,7 @@ export {
   resolveCallable,
   resolveCallableTarget,
   runWorkflowInvocation,
-  runTargetTest,
   runWorkflowTest,
-  runTargetTest as runStandalone,
   type NormalizedWorkflowContribution,
   type PreparedCatalog,
   type PreparedDefinition,
@@ -66,7 +100,5 @@ export {
   type WorkflowStepInvocationResult,
   type WorkflowStepTrace,
   type WorkflowTestOptions,
-  type WorkflowTestOptions as StandaloneSdkRunOptions,
   type WorkflowTestRunResult,
-  type WorkflowTestRunResult as StandaloneSdkRunResult,
 } from "./testing.js";

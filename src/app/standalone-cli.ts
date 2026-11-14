@@ -6,7 +6,7 @@ import {
   type DirectRunResult,
   type DiscoveredTargetSummary,
   type StandaloneRunOptions,
-} from "./standalone.js";
+} from "@may-agent/sdk/standalone";
 
 export type ParsedStandaloneCliArgs =
   | {

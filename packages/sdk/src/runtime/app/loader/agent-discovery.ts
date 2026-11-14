@@ -1,0 +1,155 @@
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+
+export interface AgentDirectory {
+  /** Directory basename; the configured agent name can be different. */
+  name: string;
+  dir: string;
+  agentsRoot: string;
+  projectId?: string;
+  projectDir?: string;
+  /** Canonical installation-relative folder, supplied by discovery rather than guessed from the name. */
+  relativeDir: string;
+}
+
+function listAgentDirectoriesInRoot(
+  agentsRoot: string,
+  project?: { projectId: string; projectDir: string; relativeAgentsRoot: string },
+): AgentDirectory[] {
+  if (!existsSync(agentsRoot)) return [];
+  const agents: AgentDirectory[] = [];
+  for (const entry of readdirSync(agentsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name === "shared") continue;
+    if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
+    const dir = resolve(agentsRoot, entry.name);
+    if (!existsSync(resolve(dir, "agent.json"))) continue;
+    agents.push({
+      name: entry.name,
+      dir,
+      agentsRoot: resolve(agentsRoot),
+      projectId: project?.projectId,
+      projectDir: project?.projectDir,
+      relativeDir: `${project?.relativeAgentsRoot ?? "agents"}/${entry.name}`,
+    });
+  }
+  return agents;
+}
+
+export function listAgentDirectories(agentsRoot: string): AgentDirectory[] {
+  return listAgentDirectoriesInRoot(resolve(agentsRoot));
+}
+
+export function listProjectAgentDirectories(
+  projectsRoot: string,
+  canonicalProjectsRoot = projectsRoot,
+  appDirectories?: readonly string[],
+): AgentDirectory[] {
+  if (!existsSync(projectsRoot)) return [];
+  const agents: AgentDirectory[] = [];
+  for (const entry of readdirSync(projectsRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (entry.name.startsWith("_") || entry.name.startsWith(".")) continue;
+
+    if (entry.name.endsWith(".app")) {
+      if (
+        appDirectories
+          ? !appDirectories.includes(entry.name)
+          : existsSync(resolve(canonicalProjectsRoot, entry.name, ".disabled"))
+      )
+        continue;
+      const appDir = resolve(projectsRoot, entry.name);
+      const projectId = entry.name.slice(0, -".app".length);
+      const domainDir = resolve(projectsRoot, projectId);
+      const projectDir = existsSync(domainDir) ? domainDir : appDir;
+      const hasAppFrame = existsSync(resolve(appDir, "app.ts"));
+      if (!hasAppFrame) continue;
+      const agentsRoot = resolve(appDir, "agents");
+      if (!existsSync(agentsRoot)) continue;
+      agents.push(
+        ...listAgentDirectoriesInRoot(agentsRoot, {
+          projectId,
+          projectDir,
+          relativeAgentsRoot: `projects/${entry.name}/agents`,
+        }),
+      );
+      continue;
+    }
+
+    const projectDir = resolve(projectsRoot, entry.name);
+    const hasProjectFrame = existsSync(resolve(projectDir, "project.md"));
+    if (!hasProjectFrame) continue;
+    const agentsRoot = resolve(projectDir, "agents");
+    if (!existsSync(agentsRoot)) continue;
+    agents.push(
+      ...listAgentDirectoriesInRoot(agentsRoot, {
+        projectId: entry.name,
+        projectDir,
+        relativeAgentsRoot: `projects/${entry.name}/agents`,
+      }),
+    );
+  }
+  return agents;
+}
+
+export function listRuntimeAgentDirectories(
+  agentsRoot: string,
+  projectsRoot?: string,
+  canonicalProjectsRoot = projectsRoot,
+  appDirectories?: readonly string[],
+): AgentDirectory[] {
+  return [
+    ...listAgentDirectories(agentsRoot),
+    ...(projectsRoot ? listProjectAgentDirectories(projectsRoot, canonicalProjectsRoot, appDirectories) : []),
+  ];
+}
+
+function configuredNameForDirectory(agentDir: AgentDirectory): string | null {
+  const configPath = resolve(agentDir.dir, "agent.json");
+  if (!existsSync(configPath)) return null;
+
+  try {
+    const config = JSON.parse(readFileSync(configPath, "utf-8")) as { name?: string; disabled?: boolean };
+    if (config.disabled) return null;
+    return config.name ?? agentDir.name;
+  } catch {
+    return agentDir.name;
+  }
+}
+
+export function listConfiguredAgentNames(
+  agentsRoot: string,
+  projectsRoot?: string,
+  canonicalProjectsRoot = projectsRoot,
+  appDirectories?: readonly string[],
+): string[] {
+  const names = new Set<string>();
+  for (const agentDir of listRuntimeAgentDirectories(agentsRoot, projectsRoot, canonicalProjectsRoot, appDirectories)) {
+    const name = configuredNameForDirectory(agentDir);
+    if (name) names.add(name);
+  }
+  return [...names].sort();
+}
+
+export function resolveRuntimeAgentDirectory(
+  agentsRoot: string,
+  agentName: string,
+  projectsRoot?: string,
+): AgentDirectory | null {
+  let selected: AgentDirectory | null = null;
+  for (const agentDir of listRuntimeAgentDirectories(agentsRoot, projectsRoot)) {
+    if (configuredNameForDirectory(agentDir) !== agentName) continue;
+    if (!selected || (!selected.projectId && agentDir.projectId)) {
+      selected = agentDir;
+    }
+  }
+  return selected;
+}
+
+export function agentProjectRoot(agentDir: AgentDirectory, fallbackProjectRoot: string): string {
+  return agentDir.projectDir ?? fallbackProjectRoot;
+}
+
+export function agentsRootForAgentDir(agentDir: AgentDirectory): string {
+  return agentDir.agentsRoot ?? dirname(agentDir.dir);
+}

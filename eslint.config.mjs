@@ -42,7 +42,35 @@ export default [
 
   // Architecture rules inspect imports, not the formatting of source lines.
   {
-    files: ["src/lib/agent-runner.ts", "src/lib/agent-execution.ts"],
+    files: ["packages/sdk/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "bun:sqlite",
+                "**/src/app/**",
+                "**/src/lib/**",
+                "**/core/events/**",
+                "**/core/tasks/**",
+              ],
+              message: "@may-agent/sdk owns the self-contained Agent & Workflow Runtime and must not import Host src/ modules or SQLite.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
+      "src/lib/agent-runner.ts",
+      "src/lib/agent-execution.ts",
+      "packages/sdk/src/runtime/lib/agent-runner.ts",
+      "packages/sdk/src/runtime/lib/agent-execution.ts",
+    ],
     rules: {
       "no-restricted-imports": [
         "error",

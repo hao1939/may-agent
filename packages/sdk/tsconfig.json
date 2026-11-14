@@ -1,9 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "rootDir": "../..",
+    "rootDir": ".",
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "type-tests/**/*.ts", "../../src/types/text-assets.d.ts"]
+  "include": ["src/**/*.ts", "type-tests/**/*.ts"]
 }

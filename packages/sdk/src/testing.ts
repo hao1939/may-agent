@@ -709,5 +709,3 @@ export async function runWorkflowTest<TInput = unknown>(
   };
 }
 
-export const runTargetTest = runWorkflowTest;
-

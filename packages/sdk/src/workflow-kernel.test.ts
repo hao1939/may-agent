@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
-import { run as sdkRun, runStandalone } from "./standalone.js";
-import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
+import { listTargets, run as sdkRun } from "./standalone.js";
+import { createTestAppWorkflowContext, resolveCallable, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -696,8 +696,9 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(skillOnCode.ok).toBe(false);
     expect(String(skillOnCode.error)).toContain('Call option "skill" is only supported for prompt targets');
 
-    // SDK-only string target execution via runTargetTest / runWorkflowTest
-    const sdkDirectPrompt = await runTargetTest("reviewer", {
+    // SDK-only string target execution via runWorkflowTest
+    expect(typeof listTargets).toBe("function");
+    const sdkDirectPrompt = await runWorkflowTest("reviewer", {
       input: "Check HEAD",
       tools: "readonly",
       mocks: {
@@ -716,7 +717,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
 
     for (const nonSuccessStatus of ["blocked", "error", "interrupted"] as const) {
-      const nonSuccessRun = await runTargetTest("reviewer", {
+      const nonSuccessRun = await runWorkflowTest("reviewer", {
         input: "Check HEAD",
         mocks: {
           reviewer: {
@@ -737,7 +738,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       });
     }
 
-    const sdkDirectCode = await runStandalone("owner/review-change", {
+    const sdkDirectCode = await runWorkflowTest("owner/review-change", {
       input: { subjectRef: "HEAD~1..HEAD" },
       mocks: {
         "owner/review-change": reviewWorkflow,
