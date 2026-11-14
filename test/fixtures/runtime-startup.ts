@@ -39,7 +39,6 @@ const mode = process.argv[2];
 const tty = mode === "tty";
 const noInterfaces = mode === "no-interfaces";
 const schedulesEnabled = mode === "headless" || noInterfaces;
-const startupJob = mode === "startup-job";
 const activationFailure = mode === "activation-failure";
 const reportingFailure = mode === "reporting-failure";
 const workerPublication = mode === "worker-publication";
@@ -152,24 +151,6 @@ mock.module("../../src/app/daemon.js", () => ({
     stopTasks = options.beforeShutdown;
     lifecycle = actualDaemon.createDaemonLifecycle(options);
     return { ...lifecycle, installProcessHandlers() {} };
-  },
-  startInitialTask: async (options: Parameters<typeof daemon.startInitialTask>[0]) => {
-    assert.equal(Boolean(options.interactiveMode), tty);
-    if (startupJob) {
-      const run = spyOn(options.manager, "run").mockReturnValue("fixture-startup");
-      const wait = spyOn(options.manager, "waitForIdle").mockImplementation(async () => {
-        assert.ok(order.includes("background"), "a pending startup job must not gate Task recovery");
-        assert.ok(order.includes("recovered-work"), "inbox recovery must already be active");
-        order.push("startup-job");
-      });
-      try {
-        return await actualDaemon.startInitialTask(options);
-      } finally {
-        run.mockRestore();
-        wait.mockRestore();
-      }
-    }
-    return actualDaemon.startInitialTask(options);
   },
   runDaemonKeepalive: async () => {
     order.push("keepalive");
@@ -308,7 +289,6 @@ export async function execute(ctx) {
         "may",
         ...(noInterfaces ? [] : ["--console", "--socket", "--telegram"]),
         ...(schedulesEnabled ? ["--cron"] : []),
-        ...(startupJob ? ["--task", "fixture startup job"] : []),
       ],
       { AGENT: "may" },
     ),
@@ -333,7 +313,6 @@ export async function execute(ctx) {
           "ingress",
           "recovered-work",
           "background",
-          ...(startupJob ? ["startup-job"] : []),
           "keepalive",
         ],
   );

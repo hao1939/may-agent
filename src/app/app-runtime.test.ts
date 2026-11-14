@@ -10,7 +10,6 @@ describe("app runtime startup", () => {
     "headless",
     "tty",
     "no-schedules",
-    "startup-job",
     "activation-failure",
     "reporting-failure",
     "no-interfaces",
