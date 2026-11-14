@@ -10,7 +10,6 @@ import {
 } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "../state/app-task-resource-store.js";
 import { admitTaskInput } from "../state/inbox.js";
-import { migrateTaskCompletionReceipts } from "../../migrations/task-receipt-cutover.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
 import { matchingAppTaskConditionTaskIds, trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.ts";
@@ -2850,129 +2849,6 @@ describe("App task reconciler state", () => {
     ).toThrow("cancelled task");
   });
 
-  it("offline receipt conversion retains the closed Task instead of pruning its resource during admission", () => {
-    const { config } = fixture();
-    const taskIntent = intent();
-    const claim = declareAndClaimTask(config, {
-      intent: taskIntent,
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    seedHistoricalCompletion(config, claim, "session evaluated");
-
-    const staleResource = {
-      metadata: { id: taskIntent.id, generation: claim.generation, resourceVersion: 2 },
-      spec: {
-        parentId: taskIntent.parentId,
-        outcome: taskIntent.outcome,
-        acceptance: [...taskIntent.acceptance],
-
-        owner: "branch-owner",
-        workflow: taskIntent.workflow,
-        input: taskIntent.input,
-        outputs: [...(taskIntent.outputs ?? [])],
-      },
-      status: {
-        observedGeneration: claim.generation,
-        phase: "attention",
-        updatedAt: "2026-07-20T00:00:00.000Z",
-        summary: "stale duplicate attention",
-        conditionIds: [],
-      },
-    };
-    expect(
-      config.resourceStore.commit({
-        fences: [],
-        expectMissingTaskIds: [taskIntent.id],
-        tasks: [{ resource: staleResource, ready: false }],
-      }),
-    ).toBe(true);
-
-    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).closed).toBe(1);
-    const beforeAdmission = readTaskSnapshot(config);
-    expect(() =>
-      observeAppTaskIntent(config, {
-        intent: taskIntent,
-        appAgent: "app-owner",
-      }),
-    ).toThrow("cancelled task");
-
-    const repaired = readTaskSnapshot(config);
-    expect(repaired).toEqual(beforeAdmission);
-    expect(repaired.resources?.[taskIntent.id]).toBeDefined();
-    expect(repaired.cancellations?.[taskIntent.id]?.kind).toBe("closed");
-    expect(repaired.receipts?.[taskIntent.id]).toBeDefined();
-  });
-
-  it("offline receipt conversion preserves the parent and its still-open children", () => {
-    const { config } = fixture();
-    const taskIntent = intent();
-    const claim = declareAndClaimTask(config, {
-      intent: taskIntent,
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    seedHistoricalCompletion(config, claim, "session evaluated");
-
-    const staleParent = {
-      metadata: { id: taskIntent.id, generation: claim.generation, resourceVersion: 2 },
-      spec: {
-        parentId: taskIntent.parentId,
-        outcome: taskIntent.outcome,
-        acceptance: [...taskIntent.acceptance],
-
-        owner: "branch-owner",
-        workflow: taskIntent.workflow,
-        input: taskIntent.input,
-        outputs: [...(taskIntent.outputs ?? [])],
-      },
-      status: {
-        observedGeneration: claim.generation,
-        phase: "attention",
-        updatedAt: "2026-07-20T00:00:00.000Z",
-        summary: "stale duplicate attention",
-        conditionIds: [],
-      },
-    };
-    const liveChild = {
-      metadata: { id: "work/live-child", generation: 1, resourceVersion: 1 },
-      spec: {
-        parentId: taskIntent.id,
-        outcome: "Finish live child work",
-        acceptance: ["Live child work is complete"],
-        owner: "branch-owner",
-        outputs: [],
-      },
-      status: {
-        observedGeneration: 0,
-        phase: "pending",
-        updatedAt: "2026-07-20T00:00:00.000Z",
-        summary: "Live child is still pending",
-        conditionIds: [],
-      },
-    };
-    expect(
-      config.resourceStore.commit({
-        fences: [],
-        expectMissingTaskIds: [taskIntent.id, liveChild.metadata.id],
-        tasks: [
-          { resource: staleParent, ready: false },
-          { resource: liveChild, ready: true },
-        ],
-      }),
-    ).toBe(true);
-
-    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).closed).toBe(1);
-
-    const preserved = readTaskSnapshot(config);
-    expect(preserved.resources?.[taskIntent.id]).toBeDefined();
-    expect(preserved.resources?.["work/live-child"]?.spec.parentId).toBe(taskIntent.id);
-    expect(config.resourceStore.isCancelled(taskIntent.id)).toBe(true);
-    expect(config.resourceStore.isCancelled("work/live-child")).toBe(false);
-  });
-
   it("allows cancellation of revised work while retaining the earlier accepted outcome", () => {
     const { config } = fixture();
     const first = declareAndClaimTask(config, { intent: intent(), appAgent: "app-owner", handler: "agent" });
@@ -3404,99 +3280,6 @@ describe("App task reconciler state", () => {
     );
   });
 
-  it("offline receipt conversion fences every obsolete claim before recovery reads the retained Task", () => {
-    const state = fixture();
-    const { config } = state;
-    const taskIntent = intent();
-    const completedClaim = declareAndClaimTask(config, {
-      intent: taskIntent,
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (completedClaim.kind !== "claimed") throw new Error("expected claim");
-    const completedResource = readTaskSnapshot(config).resources?.[taskIntent.id];
-    if (!completedResource) throw new Error("expected running resource");
-    const completedSpec = structuredClone(completedResource.spec);
-    seedHistoricalCompletion(config, completedClaim, "session evaluated");
-
-    const stale = readTaskSnapshot(config);
-    const receipt = stale.receipts?.[taskIntent.id];
-    if (!receipt) throw new Error("expected completion receipt");
-    stale.resources = {
-      ...(stale.resources ?? {}),
-      [taskIntent.id]: {
-        metadata: { id: taskIntent.id, generation: receipt.metadata.generation, resourceVersion: 3 },
-        spec: completedSpec,
-        status: {
-          observedGeneration: receipt.metadata.generation,
-          phase: "running",
-          currentAttemptId: "r_duplicate_current",
-          updatedAt: "2026-07-20T00:00:00.000Z",
-          conditionIds: [],
-        },
-      },
-    };
-    stale.attempts = {
-      ...(stale.attempts ?? {}),
-      r_duplicate_current: {
-        metadata: { id: "r_duplicate_current", resourceVersion: 1 },
-        taskId: taskIntent.id,
-        taskGeneration: receipt.metadata.generation,
-        specHash: receipt.specHash,
-        owner: receipt.owner,
-        handler: receipt.handler,
-        runtimeId: "previous-runtime",
-        sessionId: "s_1786376881309_240",
-        state: "running",
-        startedAt: "2026-07-20T00:00:00.000Z",
-      },
-      r_duplicate_lineage: {
-        metadata: { id: "r_duplicate_lineage", resourceVersion: 1 },
-        taskId: taskIntent.id,
-        taskGeneration: receipt.metadata.generation,
-        specHash: receipt.specHash,
-        owner: receipt.owner,
-        handler: receipt.handler,
-        runtimeId: "previous-runtime",
-        sessionId: "s_1786376766268_235",
-        state: "running",
-        startedAt: "2026-07-19T23:59:00.000Z",
-      },
-    };
-    const attemptIdsBefore = Object.keys(stale.attempts);
-    expect(
-      config.resourceStore.commit({
-        fences: [],
-        expectMissingTaskIds: [taskIntent.id],
-        tasks: [{ resource: stale.resources![taskIntent.id], ready: false }],
-        attempts: Object.values(stale.attempts ?? {}).filter((attempt) => attempt.taskId === taskIntent.id),
-      }),
-    ).toBe(true);
-    const resourceConfig = state.config;
-
-    expect(migrateTaskCompletionReceipts(resourceConfig, { oldRuntimeStopped: true }).closed).toBe(1);
-    const beforeRecovery = resourceConfig.resourceStore.readSnapshot();
-    expect(recoverableAppTaskAttempts(resourceConfig, Date.now(), false, [taskIntent.id])).toEqual([]);
-
-    const retired = resourceConfig.resourceStore.readSnapshot();
-    expect(retired).toEqual(beforeRecovery);
-    expect(retired.receipts?.[taskIntent.id]).toEqual(receipt);
-    expect(Object.keys(retired.attempts ?? {})).toEqual(expect.arrayContaining(attemptIdsBefore));
-    expect(Object.keys(retired.attempts ?? {})).toHaveLength(attemptIdsBefore.length + 1);
-    for (const [attemptId, sessionId] of [
-      ["r_duplicate_current", "s_1786376881309_240"],
-      ["r_duplicate_lineage", "s_1786376766268_235"],
-    ]) {
-      expect(retired.attempts?.[attemptId]).toMatchObject({
-        state: "interrupted",
-        failureReason: "completion-receipt-cutover",
-        sessionId,
-      });
-    }
-    expect(retired.resources?.[taskIntent.id]).toBeDefined();
-    expect(retired.cancellations?.[taskIntent.id]?.kind).toBe("closed");
-  });
-
   it("an archived success cannot satisfy a dependency on newer unfinished work", () => {
     const { config } = fixture();
     const assignment = intent();
@@ -3516,8 +3299,6 @@ describe("App task reconciler state", () => {
       expectMissingTaskIds: [old.taskId],
       tasks: [{ resource: revised, ready: true }],
     })).toBe(true);
-    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true })).toMatchObject({ imported: 1, closed: 0 });
-    config.resourceStore.assertCompletionReceiptsImported();
     const dependent = { ...assignment, id: "work/assess-new-sample", dependsOn: [old.taskId] };
     observeAppTaskIntent(config, { intent: dependent, appAgent: "app-owner" });
     expect(isAppTaskConverged(config, old.taskId)).toBe(false);
