@@ -380,32 +380,34 @@ export async function runWorkflowTest<TInput = unknown>(
            };
          })()
        : moduleOrTarget;
-  const mockQueues = new Map<string, ScriptedStepResponse[]>();
-  for (const [name, fixture] of Object.entries(options.mocks ?? {})) {
-    if (Array.isArray(fixture)) {
-      mockQueues.set(name, [...fixture]);
-    } else if (typeof fixture !== "function" && !isExecutableModuleFixture(fixture)) {
-      mockQueues.set(name, [fixture as ScriptedStepResponse]);
+  type NormalizedFixtureEntry = {
+    source: "mock" | "agent" | "workflow";
+    fixture: ScriptedTargetFixture | ScriptedAgentFixture | ScriptedWorkflowFixture;
+    queue?: ScriptedStepResponse[];
+  };
+  const makeQueue = (
+    fixture: ScriptedTargetFixture | ScriptedAgentFixture | ScriptedWorkflowFixture,
+  ): ScriptedStepResponse[] | undefined => {
+    if (Array.isArray(fixture)) return [...fixture];
+    if (typeof fixture !== "function" && !isExecutableModuleFixture(fixture)) {
+      return [fixture as ScriptedStepResponse];
     }
-  }
-
-  const agentQueues = new Map<string, ScriptedStepResponse[]>();
-  for (const [name, fixture] of Object.entries(options.agents ?? {})) {
-    if (Array.isArray(fixture)) {
-      agentQueues.set(name, [...fixture]);
-    } else if (typeof fixture !== "function") {
-      agentQueues.set(name, [fixture as ScriptedStepResponse]);
+    return undefined;
+  };
+  const entriesByTarget = new Map<string, { mock?: NormalizedFixtureEntry; agent?: NormalizedFixtureEntry; workflow?: NormalizedFixtureEntry }>();
+  const registerEntries = (
+    source: "mock" | "agent" | "workflow",
+    record?: Record<string, ScriptedTargetFixture | ScriptedAgentFixture | ScriptedWorkflowFixture>,
+  ) => {
+    for (const [name, fixture] of Object.entries(record ?? {})) {
+      const slot = entriesByTarget.get(name) ?? {};
+      slot[source] = { source, fixture, queue: makeQueue(fixture) };
+      entriesByTarget.set(name, slot);
     }
-  }
-
-  const workflowQueues = new Map<string, ScriptedStepResponse[]>();
-  for (const [name, fixture] of Object.entries(options.workflows ?? {})) {
-    if (Array.isArray(fixture)) {
-      workflowQueues.set(name, [...fixture]);
-    } else if (typeof fixture !== "function" && !isExecutableModuleFixture(fixture)) {
-      workflowQueues.set(name, [fixture as ScriptedStepResponse]);
-    }
-  }
+  };
+  registerEntries("mock", options.mocks);
+  registerEntries("agent", options.agents);
+  registerEntries("workflow", options.workflows);
 
   const taskDetail = options.task;
   const reconciliation: WorkflowContext<TInput>["reconciliation"] | undefined =
@@ -481,20 +483,14 @@ export async function runWorkflowTest<TInput = unknown>(
   };
 
   const resolveMockKind = (target: string, fallbackInput?: unknown): "agent" | "workflow" => {
-    const mockFixture = options.mocks?.[target];
-    if (mockFixture) {
-      if (isExecutableModuleFixture(mockFixture)) return "workflow";
-      const queuedKind = mockQueues.get(target)?.[0]?.kind;
+    const slot = entriesByTarget.get(target);
+    if (slot?.mock) {
+      if (isExecutableModuleFixture(slot.mock.fixture)) return "workflow";
+      const queuedKind = slot.mock.queue?.[0]?.kind;
       if (queuedKind) return queuedKind;
-      if (!Array.isArray(mockFixture) && typeof mockFixture !== "function") {
-        const single = mockFixture as ScriptedStepResponse;
-        if (single.kind) return single.kind;
-      }
-      if (target.includes("/")) return "workflow";
-      return typeof fallbackInput === "string" ? "agent" : "workflow";
     }
-    if (options.workflows && Object.hasOwn(options.workflows, target)) return "workflow";
-    if (options.agents && Object.hasOwn(options.agents, target)) return "agent";
+    if (slot?.workflow) return "workflow";
+    if (slot?.agent) return "agent";
     if (target.includes("/")) return "workflow";
     return typeof fallbackInput === "string" ? "agent" : "workflow";
   };
@@ -535,95 +531,44 @@ export async function runWorkflowTest<TInput = unknown>(
     input: unknown,
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: WorkflowKernelStepControl,
-    preferredKind?: "agent" | "workflow",
   ): Promise<WorkflowStepInvocationResult> => {
-    const kind = preferredKind ?? resolveMockKind(target, input);
-    const mockFixture = options.mocks?.[target];
-    if (mockFixture) {
-      if (typeof mockFixture === "function") {
-        const promptStr = typeof input === "string" ? input : JSON.stringify(input ?? null);
-        const res = await mockFixture({
-          target,
-          input,
-          agent: target,
-          task: promptStr,
-          name: target,
-          options: callOpts,
-          signal: stepControl.signal,
-          timeoutMs: stepControl.timeoutMs,
-          deadlineAt: stepControl.deadlineAt,
-          stepIndex: stepControl.stepIndex,
-        });
-        return toStepResult(kind, target, stepControl.stepIndex, res);
-      }
-      if (isExecutableModuleFixture(mockFixture)) {
-        return executeNestedModuleFixture(mockFixture, input, stepControl, callOpts);
-      }
-      const queue = mockQueues.get(target)!;
-      const next = queue.shift();
-      if (!next) {
-        throw new Error(`Exhausted scripted fixture responses for "${target}" on call #${stepControl.stepIndex}`);
-      }
-      return toStepResult(kind, target, stepControl.stepIndex, next);
+    const slot = entriesByTarget.get(target);
+    const kind = resolveMockKind(target, input);
+    const selected =
+      slot?.mock ??
+      (kind === "workflow" ? (slot?.workflow ?? slot?.agent) : (slot?.agent ?? slot?.workflow));
+    if (!selected) {
+      throw new Error(`Unexpected ${kind} call to unconfigured ${kind} "${target}"`);
     }
-
-    if (kind === "workflow" && options.workflows?.[target]) {
-      const fixture = options.workflows[target]!;
-      if (typeof fixture === "function") {
-        const res = await fixture({
-          name: target,
-          input,
-          options: callOpts,
-          signal: stepControl.signal,
-          timeoutMs: stepControl.timeoutMs,
-          deadlineAt: stepControl.deadlineAt,
-          stepIndex: stepControl.stepIndex,
-        });
-        return toStepResult("workflow", target, stepControl.stepIndex, res);
-      }
-      if (isExecutableModuleFixture(fixture)) {
-        return executeNestedModuleFixture(fixture, input, stepControl, callOpts);
-      }
-      const queue = workflowQueues.get(target)!;
-      const next = queue.shift();
-      if (!next) {
-        throw new Error(`Exhausted scripted fixture responses for workflow "${target}" on call #${stepControl.stepIndex}`);
-      }
-      return toStepResult("workflow", target, stepControl.stepIndex, next);
+    const effectiveKind = selected.source === "agent" ? "agent" : selected.source === "workflow" ? "workflow" : kind;
+    if (selected.source === "agent" && typeof input !== "string") {
+      throw new Error(`Prompt target "${target}" requires a string prompt input`);
     }
-
-    if (options.agents?.[target]) {
-      if (typeof input !== "string") {
-        throw new Error(`Prompt target "${target}" requires a string prompt input`);
-      }
-      const fixture = options.agents[target]!;
-      if (typeof fixture === "function") {
-        const res = await fixture({
-          agent: target,
-          task: input,
-          options: callOpts,
-          signal: stepControl.signal,
-          timeoutMs: stepControl.timeoutMs,
-          deadlineAt: stepControl.deadlineAt,
-          stepIndex: stepControl.stepIndex,
-        });
-        return toStepResult("agent", target, stepControl.stepIndex, res);
-      }
-      const queue = agentQueues.get(target)!;
-      const next = queue.shift();
-      if (!next) {
-        throw new Error(`Exhausted scripted fixture responses for agent "${target}" on call #${stepControl.stepIndex}`);
-      }
-      return toStepResult("agent", target, stepControl.stepIndex, next);
+    if (typeof selected.fixture === "function") {
+      const promptStr = typeof input === "string" ? input : JSON.stringify(input ?? null);
+      const res = await (selected.fixture as (call: ScriptedCallContext) => ScriptedStepResponse | Promise<ScriptedStepResponse>)({
+        target,
+        input,
+        agent: target,
+        task: promptStr,
+        name: target,
+        options: callOpts,
+        signal: stepControl.signal,
+        timeoutMs: stepControl.timeoutMs,
+        deadlineAt: stepControl.deadlineAt,
+        stepIndex: stepControl.stepIndex,
+      });
+      return toStepResult(effectiveKind, target, stepControl.stepIndex, res);
     }
-
-    if (options.workflows?.[target]) {
-      return invokeMockTarget(target, input, callOpts, stepControl, "workflow");
+    if (isExecutableModuleFixture(selected.fixture)) {
+      return executeNestedModuleFixture(selected.fixture, input, stepControl, callOpts);
     }
-
-    throw new Error(
-      `Unexpected ${kind} call to unconfigured ${kind} "${target}"`,
-    );
+    const next = selected.queue?.shift();
+    if (!next) {
+      const label = selected.source === "mock" ? `"${target}"` : `${selected.source} "${target}"`;
+      throw new Error(`Exhausted scripted fixture responses for ${label} on call #${stepControl.stepIndex}`);
+    }
+    return toStepResult(effectiveKind, target, stepControl.stepIndex, next);
   };
 
   const buildBindings = (
@@ -663,16 +608,13 @@ export async function runWorkflowTest<TInput = unknown>(
 
   const outcome = await runWorkflowInvocation(module, buildBindings(options.input));
   const unconsumedFixtures: WorkflowTestRunResult["unconsumedFixtures"] = [];
-  for (const [target, queue] of mockQueues) {
-    if (queue.length > 0) {
-      unconsumedFixtures.push({ kind: resolveMockKind(target), target, remaining: queue.length });
+  for (const [target, slot] of entriesByTarget) {
+    for (const entry of [slot.mock, slot.agent, slot.workflow]) {
+      if (entry?.queue && entry.queue.length > 0) {
+        const entryKind = entry.source === "mock" ? resolveMockKind(target) : entry.source;
+        unconsumedFixtures.push({ kind: entryKind, target, remaining: entry.queue.length });
+      }
     }
-  }
-  for (const [target, queue] of agentQueues) {
-    if (queue.length > 0) unconsumedFixtures.push({ kind: "agent", target, remaining: queue.length });
-  }
-  for (const [target, queue] of workflowQueues) {
-    if (queue.length > 0) unconsumedFixtures.push({ kind: "workflow", target, remaining: queue.length });
   }
 
   if ((options.assertAllFixturesConsumed ?? true) && outcome.ok && unconsumedFixtures.length > 0) {

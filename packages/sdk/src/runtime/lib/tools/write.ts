@@ -8,7 +8,7 @@ import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
 import { checkCrossEditGuard } from "./path-utils.js";
 import { withAbortSignal } from "./path-utils.js";
-import { generateDiffString } from "./edit-diff.js";
+import { generateDiffString } from "./edit.js";
 
 const writeSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to write (relative or absolute). Parent directories are created automatically. For small changes to existing files, prefer edit() instead." }),

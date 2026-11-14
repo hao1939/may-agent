@@ -40,16 +40,16 @@ import {
   type CliAgentOptions,
   type CliAgentResult,
 } from "../lib/cli-agent.js";
-import { agentExecutionResult, enforceStructuredWorkflowResult } from "../lib/execution-handoff.js";
-import type { ModelWithApiKey, TaskResult } from "../lib/types.js";
-import { buildWorkflowCatalog, findWorkflow } from "../lib/workflow-catalog.js";
+import { agentExecutionResult, enforceStructuredWorkflowResult } from "../lib/manager-utils.js";
+import type { ModelWithApiKey, TaskResult } from "../lib/manager-utils.js";
+import { buildWorkflowCatalog, findWorkflow } from "../lib/runtime-import.js";
 import { validateOperationAllowance } from "../lib/agent-execution.js";
 import { readAgentConfigFile, type AgentConfig } from "./loader/agent-config.js";
 import {
   listRuntimeAgentDirectories,
   resolveRuntimeAgentDirectory,
   type AgentDirectory,
-} from "./loader/agent-discovery.js";
+} from "./loader/agent-config.js";
 import { createModelRegistry } from "./model-registry.js";
 import {
   prepareDirectAgentExecution,
@@ -157,9 +157,6 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   onLog?: (entry: WorkflowLogEntry) => void;
   onNotice?: (message: string) => void;
 };
-
-export type DirectRunOptions<TInput = unknown> = DirectWorkflowRunOptions<TInput>;
-export type DirectRunResult = DirectWorkflowRunResult;
 
 export type DirectWorkflowRunResult = {
   ok: boolean;
@@ -1150,11 +1147,6 @@ export async function runDirectWorkflow<TInput = unknown>(
   };
 }
 
-/**
- * Unified standalone entrypoint for prompt agents ("alex"), code procedures ("tech-lead/verified-coder"), and CLI executors ("codex").
- */
-export const runDirect = runDirectWorkflow;
-
 export function inferWorkspaceRoot(startDir: string): string {
   let current = resolve(startDir);
   for (;;) {
@@ -1194,7 +1186,6 @@ export type RunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
-export type StandaloneRunOptions<TInput = unknown> = RunOptions<TInput>;
 export type RunResult = DirectWorkflowRunResult;
 
 export type TargetSummary = {
@@ -1204,8 +1195,6 @@ export type TargetSummary = {
   app?: string;
   description: string;
 };
-
-export type DiscoveredTargetSummary = TargetSummary;
 
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
 
@@ -1220,7 +1209,7 @@ export async function listTargets(options: {
 } = {}): Promise<TargetSummary[]> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_STANDALONE_LIST_TIMEOUT_MS;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-    throw new Error(`Invalid listStandaloneTargets timeoutMs: ${String(options.timeoutMs)}`);
+    throw new Error(`Invalid listTargets timeoutMs: ${String(options.timeoutMs)}`);
   }
   options.signal?.throwIfAborted();
   const listController = new AbortController();
@@ -1280,7 +1269,7 @@ export async function listTargets(options: {
       ownersByScope.set(scopeKey, list);
     }
 
-    const items: DiscoveredTargetSummary[] = [];
+    const items: TargetSummary[] = [];
     for (const [, entries] of ownersByScope) {
       listController.signal.throwIfAborted();
       // Skip ambiguous owner definitions within the same scope.
@@ -1321,8 +1310,6 @@ export async function listTargets(options: {
     options.signal?.removeEventListener("abort", onParentAbort);
   }
 }
-
-export const listStandaloneTargets = listTargets;
 
 function normalizeAppDirName(app: string): string {
   const trimmed = app.trim();

@@ -14,8 +14,7 @@ import {
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
 import type { EventTrace } from "../../event.js";
-import { addSessionBashProcessGroup, removeSessionBashProcessGroup } from "./persistence.js";
-import { BASH_PROCESS_GROUP_KILL_GRACE_MS, drainBashProcessGroup } from "./tools/bash.js";
+import { BASH_PROCESS_GROUP_KILL_GRACE_MS, addSessionBashProcessGroup, drainBashProcessGroup, removeSessionBashProcessGroup } from "./tools/bash.js";
 
 type CliTool = "codex" | "claude";
 export type CliAgentProgress = { tool: CliTool; event: string };
