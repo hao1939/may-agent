@@ -174,7 +174,9 @@ for (const failure of ["throw", "invalid-input", "ambiguous", "action"] as const
       // A removed selected subscription is not silently remapped. Repair that exact route explicitly.
       if (failure === "ambiguous") {
         await until(() =>
-          Boolean(getAppEventAdmissionPlan(db, eventId)?.commands[0]?.lastError?.includes("duplicate")),
+          Boolean(getAppEventAdmissionPlan(db, eventId)?.commands[0]?.lastError?.includes("duplicate")) &&
+          getAppEventAdmissionPlan(db, eventId)?.commands.find((command) => command.appId === "healthy")?.status ===
+            "admitted",
         );
         await runtime!.reload(undefined, async () =>
           entries().map((entry) =>

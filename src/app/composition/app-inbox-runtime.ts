@@ -800,9 +800,15 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
 
   let nextAdmissionRecoveryAt = 0;
   let admissionRecoveryHandle: ReturnType<typeof setTimeout> | null = null;
+  let forceAdmissionRecoveryQueued = false;
   const recoverAdmissionPlans = (force = false): void => {
     const currentTime = now();
-    if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
+    if (admissionRecoveryHandle) {
+      if (force) forceAdmissionRecoveryQueued = true;
+      return;
+    }
+    if (!force && currentTime < nextAdmissionRecoveryAt) return;
+    forceAdmissionRecoveryQueued = false;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
     // Freeze this bounded recovery slice before yielding. Otherwise the
     // zero-delay callback can accidentally capture and immediately retry a
@@ -819,7 +825,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         admissionRecoveryHandle = null;
         if (closed) return;
         const plan = plans[index++];
-        if (!plan) return;
+        if (!plan) {
+          if (forceAdmissionRecoveryQueued) {
+            forceAdmissionRecoveryQueued = false;
+            recoverAdmissionPlans(true);
+          }
+          return;
+        }
         const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
         if (!event) {
           for (const command of plan.commands) {
@@ -836,7 +848,12 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           // acceptance on the original row; ordinary subscribers never replay.
           options.bus.redeliverPersisted(event, plan.eventId, "app-inbox-route");
         }
-        if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
+        if (index < plans.length) {
+          admissionRecoveryHandle = setTimeout(recoverNext, 0);
+        } else if (forceAdmissionRecoveryQueued) {
+          forceAdmissionRecoveryQueued = false;
+          recoverAdmissionPlans(true);
+        }
       };
       recoverNext();
     }, 0);
