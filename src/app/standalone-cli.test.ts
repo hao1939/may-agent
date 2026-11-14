@@ -48,6 +48,21 @@ describe("may run / may list standalone CLI", () => {
       outcome: "Implement feature X",
       acceptance: ["Tests pass"],
     });
+
+    expect(() =>
+      parseStandaloneCliArgs(["run", "alex/develop-change", '{"verify":["bun","test"]}', "--task", "{}"]),
+    ).toThrow("Invalid --task JSON object: 'outcome' must be a non-empty string");
+    expect(() =>
+      parseStandaloneCliArgs([
+        "run",
+        "alex/develop-change",
+        '{"verify":["bun","test"]}',
+        '--task={"outcome":"Implement feature X","id":123}',
+      ]),
+    ).toThrow("Invalid --task JSON object: 'id' must be a non-empty string");
+    expect(() =>
+      parseStandaloneCliArgs(["run", "alex/develop-change", '{"verify":["bun","test"]}', "--task=[]"]),
+    ).toThrow("Invalid --task value: expected an outcome string or JSON Task object, not an array");
   });
 
   test("rejects missing option values instead of consuming subsequent flags like --readonly", () => {

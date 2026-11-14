@@ -1086,28 +1086,49 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const childSessions: DirectWorkflowRunResult["childSessions"] = [];
   const env = options.context;
-  const taskDetail = env?.task ?? options.task ?? env?.reconciliation?.task ?? options.reconciliation?.task;
+  const candidateTask = env?.task ?? options.task;
+  const candidateReconciliation = env?.reconciliation ?? options.reconciliation;
+  if (
+    env?.task &&
+    env?.reconciliation &&
+    env.task.id !== env.reconciliation.taskId &&
+    env.task.id !== env.reconciliation.task?.id
+  ) {
+    throw new Error(
+      `Conflicting Task IDs in context.task ("${env.task.id}") and context.reconciliation ("${env.reconciliation.taskId}")`,
+    );
+  }
+  if (
+    options.task &&
+    options.reconciliation &&
+    options.task.id !== options.reconciliation.taskId &&
+    options.task.id !== options.reconciliation.task?.id
+  ) {
+    throw new Error(
+      `Conflicting Task IDs in task ("${options.task.id}") and reconciliation ("${options.reconciliation.taskId}")`,
+    );
+  }
   const reconciliation: WorkflowContext<TInput>["reconciliation"] | undefined =
-    env?.reconciliation ??
-    options.reconciliation ??
-    (taskDetail
+    candidateReconciliation ??
+    (candidateTask
       ? {
-          task: taskDetail,
+          task: candidateTask,
           appId: "direct-app",
-          taskId: taskDetail.id,
-          generation: taskDetail.generation,
-          resourceVersion: taskDetail.resourceVersion ?? 1,
-          agent: taskDetail.agent ?? options.agentName ?? callerOwner,
-          owner: taskDetail.agent ?? options.agentName ?? callerOwner,
-          outcome: taskDetail.outcome,
-          acceptance: taskDetail.acceptance,
-          input: taskDetail.input as TInput,
+          taskId: candidateTask.id,
+          generation: candidateTask.generation,
+          resourceVersion: candidateTask.resourceVersion ?? 1,
+          agent: candidateTask.agent ?? options.agentName ?? callerOwner,
+          owner: candidateTask.agent ?? options.agentName ?? callerOwner,
+          outcome: candidateTask.outcome,
+          acceptance: candidateTask.acceptance,
+          input: candidateTask.input as TInput,
           children: { live: [], completed: [] },
           waits: { open: [], note: "direct snapshot" },
           taskSnapshot: { live: [], truncated: false },
           events: { items: [], truncated: false },
         }
       : undefined);
+  const taskDetail = reconciliation?.task ?? candidateTask;
 
   const readOverrides = env?.read ?? options.read;
   const read: AppRead = createTestAppRead({
@@ -1302,6 +1323,8 @@ export async function runDirectWorkflow<TInput = unknown>(
     const sub = await runDirectWorkflow(
       {
         ...options,
+        task: taskDetail,
+        reconciliation,
         executionId: undefined,
         module: targetMod,
         target: undefined,
@@ -1513,13 +1536,43 @@ function normalizeStandaloneTaskDetail(
   fallbackInput: unknown,
 ): TaskDetail | undefined {
   if (!task) return undefined;
+  if (typeof task !== "object" || Array.isArray(task)) {
+    throw new Error("Invalid task envelope: expected a Task object with a non-empty string outcome");
+  }
+  if (typeof task.outcome !== "string" || !task.outcome.trim()) {
+    throw new Error("Invalid task envelope: outcome must be a non-empty string");
+  }
   if ("status" in task && "conditions" in task && "acceptedEvidence" in task && Array.isArray(task.acceptance)) {
     return task as TaskDetail;
   }
   const simple = task as StandaloneTaskInput;
-  const acceptance = Array.isArray(simple.acceptance) && simple.acceptance.length > 0
-    ? simple.acceptance
-    : [simple.outcome];
+  if (simple.id !== undefined && (typeof simple.id !== "string" || !simple.id.trim())) {
+    throw new Error("Invalid task envelope: id must be a non-empty string when provided");
+  }
+  if (
+    simple.generation !== undefined &&
+    (typeof simple.generation !== "number" || !Number.isSafeInteger(simple.generation) || simple.generation < 1)
+  ) {
+    throw new Error("Invalid task envelope: generation must be a positive integer when provided");
+  }
+  if (
+    simple.acceptance !== undefined &&
+    (!Array.isArray(simple.acceptance) ||
+      simple.acceptance.some((item) => typeof item !== "string" || !item.trim()))
+  ) {
+    throw new Error("Invalid task envelope: acceptance must be an array of non-empty strings when provided");
+  }
+  if (
+    simple.constraints !== undefined &&
+    (!Array.isArray(simple.constraints) ||
+      simple.constraints.some((item) => typeof item !== "string" || !item.trim()))
+  ) {
+    throw new Error("Invalid task envelope: constraints must be an array of non-empty strings when provided");
+  }
+  const acceptance =
+    Array.isArray(simple.acceptance) && simple.acceptance.length > 0
+      ? simple.acceptance
+      : [simple.outcome];
   const rawInput =
     simple.input ??
     (simple.constraints
@@ -1830,15 +1883,23 @@ export async function run<TInput = unknown>(
   });
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
+  const normalizedContextTask = normalizeStandaloneTaskDetail(options.context?.task, input);
+  const normalizedTopTask = normalizeStandaloneTaskDetail(options.task, input);
+  if (normalizedContextTask && normalizedTopTask && normalizedContextTask.id !== normalizedTopTask.id) {
+    throw new Error(
+      `Conflicting Task IDs in context.task ("${normalizedContextTask.id}") and task ("${normalizedTopTask.id}")`,
+    );
+  }
+  const normalizedTask = normalizedContextTask ?? normalizedTopTask;
   const ownsTempOutputRoot = !options.outputRoot;
   const outputRoot = options.outputRoot ? resolve(options.outputRoot) : mkdtempSync(join(tmpdir(), "may-run-"));
   const models = options.models ?? createModelRegistry();
-  const normalizedTask = normalizeStandaloneTaskDetail(options.task ?? options.context?.task, input);
 
   let cleanupConfirmed = false;
   try {
     const res = await runDirectWorkflow({
       ...options,
+      ...(options.context ? { context: { ...options.context, ...(normalizedContextTask ? { task: normalizedContextTask } : {}) } } : {}),
       task: normalizedTask,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
       input,

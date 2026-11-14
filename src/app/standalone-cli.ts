@@ -184,7 +184,37 @@ export function parseStandaloneCliArgs(
     if (arg === "--task" || arg.startsWith("--task=")) {
       const { value, nextIndex } = consumeOptionValue(argv, i, "--task");
       const parsedTask = parseStandaloneInput(value);
-      if (parsedTask && typeof parsedTask === "object" && !Array.isArray(parsedTask)) {
+      if (Array.isArray(parsedTask)) {
+        throw new Error("Invalid --task value: expected an outcome string or JSON Task object, not an array");
+      }
+      if (parsedTask && typeof parsedTask === "object") {
+        const record = parsedTask as Record<string, unknown>;
+        if (typeof record.outcome !== "string" || !record.outcome.trim()) {
+          throw new Error("Invalid --task JSON object: 'outcome' must be a non-empty string");
+        }
+        if (record.id !== undefined && (typeof record.id !== "string" || !record.id.trim())) {
+          throw new Error("Invalid --task JSON object: 'id' must be a non-empty string when provided");
+        }
+        if (
+          record.generation !== undefined &&
+          (typeof record.generation !== "number" || !Number.isSafeInteger(record.generation) || record.generation < 1)
+        ) {
+          throw new Error("Invalid --task JSON object: 'generation' must be a positive integer when provided");
+        }
+        if (
+          record.acceptance !== undefined &&
+          (!Array.isArray(record.acceptance) ||
+            record.acceptance.some((item) => typeof item !== "string" || !item.trim()))
+        ) {
+          throw new Error("Invalid --task JSON object: 'acceptance' must be an array of non-empty strings");
+        }
+        if (
+          record.constraints !== undefined &&
+          (!Array.isArray(record.constraints) ||
+            record.constraints.some((item) => typeof item !== "string" || !item.trim()))
+        ) {
+          throw new Error("Invalid --task JSON object: 'constraints' must be an array of non-empty strings");
+        }
         options.task = parsedTask as NonNullable<StandaloneRunOptions<unknown>["task"]>;
       } else {
         options.task = { outcome: String(value) };
