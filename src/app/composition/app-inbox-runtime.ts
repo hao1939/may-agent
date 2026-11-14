@@ -693,6 +693,25 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const pendingAdmissionEvents = new Map<number, { event: AgentEvent; appIds: string[] }>();
   let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
   let admissionDispatching = false;
+  let activeDispatchedEventId: number | null = null;
+  let nextAdmissionRecoveryAt = 0;
+  let admissionRecoveryHandle: ReturnType<typeof setTimeout> | null = null;
+  let queuedForcedRecovery: { plans: AppEventAdmissionPlan[]; inFlightEventIds: Set<number> } | null = null;
+
+  const isForcedRecoveryBlocked = (queued: { plans: AppEventAdmissionPlan[]; inFlightEventIds: Set<number> }): boolean => {
+    if (admissionRecoveryHandle) return true;
+    for (const eventId of queued.inFlightEventIds) {
+      if (pendingAdmissionEvents.has(eventId) || activeDispatchedEventId === eventId) return true;
+    }
+    return false;
+  };
+
+  const tryStartQueuedForcedRecovery = (): void => {
+    if (closed || !queuedForcedRecovery || isForcedRecoveryBlocked(queuedForcedRecovery)) return;
+    const { plans } = queuedForcedRecovery;
+    queuedForcedRecovery = null;
+    startRecoverySliceWalk(plans);
+  };
 
   const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
     if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
@@ -727,6 +746,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     if (!next) return;
     const [eventId, pending] = next;
     admissionDispatching = true;
+    activeDispatchedEventId = eventId;
     try {
       const plan = getAppEventAdmissionPlan(options.db, eventId);
       const appId = pending.appIds.shift();
@@ -744,8 +764,10 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     } finally {
       pendingAdmissionEvents.delete(eventId);
       if (!closed && pending.appIds.length > 0) pendingAdmissionEvents.set(eventId, pending);
+      activeDispatchedEventId = null;
       admissionDispatching = false;
     }
+    tryStartQueuedForcedRecovery();
     if (!closed && pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
     }
@@ -798,11 +820,51 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     );
   };
 
-  let nextAdmissionRecoveryAt = 0;
-  let admissionRecoveryHandle: ReturnType<typeof setTimeout> | null = null;
+  const startRecoverySliceWalk = (plans: AppEventAdmissionPlan[]): void => {
+    admissionRecoveryHandle = setTimeout(() => {
+      admissionRecoveryHandle = null;
+      if (closed) return;
+      let index = 0;
+      const recoverNext = (): void => {
+        admissionRecoveryHandle = null;
+        if (closed) return;
+        const rawPlan = plans[index++];
+        if (!rawPlan) {
+          tryStartQueuedForcedRecovery();
+          return;
+        }
+        const plan = getAppEventAdmissionPlan(options.db, rawPlan.eventId);
+        if (plan?.status === "pending") {
+          const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
+          if (!event) {
+            for (const command of plan.commands) {
+              if (command.status !== "pending") continue;
+              recordAppEventAdmissionCommandFailure(options.db, {
+                eventId: plan.eventId,
+                appId: command.appId,
+                error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
+                now: now(),
+              });
+            }
+          } else {
+            // EventBus re-runs only idempotent durable routes and records delivery
+            // acceptance on the original row; ordinary subscribers never replay.
+            options.bus.redeliverPersisted(event, plan.eventId, "app-inbox-route");
+          }
+        }
+        if (index < plans.length) {
+          admissionRecoveryHandle = setTimeout(recoverNext, 0);
+        } else {
+          tryStartQueuedForcedRecovery();
+        }
+      };
+      recoverNext();
+    }, 0);
+  };
+
   const recoverAdmissionPlans = (force = false): void => {
     const currentTime = now();
-    if (admissionRecoveryHandle || (!force && currentTime < nextAdmissionRecoveryAt)) return;
+    if (!force && (admissionRecoveryHandle || currentTime < nextAdmissionRecoveryAt)) return;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
     // Freeze this bounded recovery slice before yielding. Otherwise the
     // zero-delay callback can accidentally capture and immediately retry a
@@ -811,35 +873,20 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       ...(force ? {} : { updatedBefore: currentTime - ADMISSION_RECOVERY_INTERVAL_MS }),
       limit: ADMISSION_RECOVERY_BATCH_SIZE,
     });
-    admissionRecoveryHandle = setTimeout(() => {
-      admissionRecoveryHandle = null;
-      if (closed) return;
-      let index = 0;
-      const recoverNext = (): void => {
-        admissionRecoveryHandle = null;
-        if (closed) return;
-        const plan = plans[index++];
-        if (!plan) return;
-        const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
-        if (!event) {
-          for (const command of plan.commands) {
-            if (command.status !== "pending") continue;
-            recordAppEventAdmissionCommandFailure(options.db, {
-              eventId: plan.eventId,
-              appId: command.appId,
-              error: new Error(`Frozen App admission event ${plan.eventId} is unavailable`),
-              now: now(),
-            });
-          }
-        } else {
-          // EventBus re-runs only idempotent durable routes and records delivery
-          // acceptance on the original row; ordinary subscribers never replay.
-          options.bus.redeliverPersisted(event, plan.eventId, "app-inbox-route");
+    if (force) {
+      const inFlightEventIds = new Set<number>();
+      for (const plan of plans) {
+        if (pendingAdmissionEvents.has(plan.eventId) || activeDispatchedEventId === plan.eventId) {
+          inFlightEventIds.add(plan.eventId);
         }
-        if (index < plans.length) admissionRecoveryHandle = setTimeout(recoverNext, 0);
-      };
-      recoverNext();
-    }, 0);
+      }
+      if (admissionRecoveryHandle || inFlightEventIds.size > 0) {
+        queuedForcedRecovery = { plans, inFlightEventIds };
+        return;
+      }
+      queuedForcedRecovery = null;
+    }
+    startRecoverySliceWalk(plans);
   };
 
   const admitEvent = (event: AgentEvent): DeliveryResult | void => {
@@ -1343,6 +1390,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       admissionRecoveryHandle = null;
       if (admissionDispatchHandle) clearTimeout(admissionDispatchHandle);
       admissionDispatchHandle = null;
+      queuedForcedRecovery = null;
       pendingAdmissionEvents.clear();
       taskAdmissionWorker?.close();
       taskAdmissionWorker = undefined;
