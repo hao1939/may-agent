@@ -1,8 +1,8 @@
 <ai_context>
-summary: "A released audit of 1,866 popular active GitHub repositories finds agent instruction files common but mostly declarative: its AI-reviewed samples classify 61% of rules as at least partly script-checkable, while only 3.7% of 431 reviewed rules name a check. Treat instruction files as discovery maps and pair checkable constraints with named executable enforcement; the study measures repository artifacts, not effects on agent behavior."
-triggers: ["AGENTS.md", "CLAUDE.md", "agent instructions", "coding agent rules", "executable enforcement", "instruction lint"]
-last_updated: "2026-10-15"
-source_basis: "HN item 50108234; complete article and research page; released agents-md-study-2026-10.zip (SHA-256 a676ffd9a6ca41ef3c51546dc07748bff3759bb847308db1966a62fa1b9ba850), including its README, final aggregates, length aggregates, reviewer report, recomputed results, and selected analysis scripts, inspected 2026-10-15. Scout did not reclone 1,866 repositories, rerun collection, review every row, or test agent outcomes."
+summary: "Two released audits show that instruction quality and instruction delivery are separate gates. In 1,866 popular active repositories, many rules were script-checkable but rarely named a check; in a later weighted sample of 3,905 public CLAUDE.md and AGENTS.md files, 16.4% of 745 root pairs never exposed AGENTS.md to Claude and 14.9% relied on a non-binding sentence. Treat instruction files as loader-scoped discovery maps, then pair checkable constraints with named executable enforcement."
+triggers: ["AGENTS.md", "CLAUDE.md", "agent instructions", "coding agent rules", "executable enforcement", "instruction lint", "instruction loading", "context truncation"]
+last_updated: "2026-11-14"
+source_basis: "HN items 50108234 and 50496205; complete source articles; the first study's released agents-md-study-2026-10.zip (SHA-256 a676ffd9a6ca41ef3c51546dc07748bff3759bb847308db1966a62fa1b9ba850); and Harbor's aggregate claude-md-agents-md-study-2026-10-18.csv (SHA-256 6cc79d0fc30c09fa452931207503e3b1dace2e5d1d019a3a98ad218f47d2bb40), inspected through 2026-11-14. Scout did not reclone repositories, rerun collection, review every source row or file, run either checker, or test agent outcomes."
 </ai_context>
 
 # Agent instructions are maps; checks provide enforcement
@@ -13,6 +13,8 @@ source_basis: "HN item 50108234; complete article and research page; released ag
 **Data:** [research page and downloadable archive](https://secondtimeisabug.com/research/what-projects-tell-ai-coding-agents/)  
 **Reviewed data artifact:** `agents-md-study-2026-10.zip`, SHA-256 `a676ffd9a6ca41ef3c51546dc07748bff3759bb847308db1966a62fa1b9ba850`  
 **Coverage:** complete article and research page; archive README, final and length aggregates, reviewer report, recomputed review results, and selected analysis scripts. Scout did not inspect every repository record or instruction file.
+
+**Update (2026-11-14):** [HN item 50496205](https://news.ycombinator.com/item?id=50496205) linked Harbor's complete article, [“We checked 3,905 CLAUDE.md and AGENTS.md files on GitHub”](https://gethrbr.com/blog/claude-md-agents-md-github-study), and its [aggregate CSV](https://gethrbr.com/data/claude-md-agents-md-study-2026-10-18.csv), SHA-256 `6cc79d0fc30c09fa452931207503e3b1dace2e5d1d019a3a98ad218f47d2bb40`.
 
 ## Question
 
@@ -29,6 +31,14 @@ The sharper result concerns **declared rules versus named enforcement**. In a se
 The source also found 209 repositories with both exact-case root `AGENTS.md` and `CLAUDE.md`: 157 pairs were pointers and five were identical, while the review classified about 31 pairs as genuinely separate rulebooks after excluding near-copies, shared third-file stubs, and imports. Separate agent-specific rulebooks create a drift surface that a one-line pointer avoids.
 
 Staleness was less common than the raw analyzer suggested. Human-unverified automated flags produced many false alarms around submodules, ignored paths, subdirectory commands, wildcard targets, and negative instructions. The separate AI review reduced the reported dead-pointer rate to about 10 of 585 primary files (1.7%). This is useful evidence for validating references, but it is also a warning that an instruction linter needs repository-aware path and command semantics rather than regex matches alone.
+
+## 2026-11-14 update: delivery must be verified before content quality
+
+Harbor's later producer-authored audit asks a narrower prerequisite question: does the instruction text reach the model at all? It sampled 1,935 `CLAUDE.md` and 1,970 `AGENTS.md` files through size-stratified GitHub code search and separately classified 745 repositories with both files at the root. The released aggregate CSV reports that, among those root pairs, 25.4% explicitly imported `AGENTS.md`, 23.0% used a symlink, 14.9% merely asked Claude in prose to read it, 16.4% never mentioned it, and 7.0% appeared copied and then drifted. These are weighted producer estimates, not an independent census; Harbor says reruns can move results by a point or two.
+
+Size creates a second delivery boundary. The aggregate reports 30,080 public `AGENTS.md` files over Codex's stated 32 KiB default project-document limit (2.6% of GitHub's estimated population) and 51,840 over 24 KiB, where nested instructions can consume the remaining budget. The article says excess text is silently omitted in its tests. Scout verified those aggregate rows and their hash, but did not inspect the underlying repositories, rerun the checker, or independently test Claude Code or Codex loader behavior.
+
+This extends rather than replaces the earlier finding. A rule can fail at four distinct gates: the harness may not load it; a loader budget may truncate it; the model may not follow it; and a checkable requirement may lack executable enforcement. Instruction maintenance should therefore capture the effective, ordered files and byte ranges delivered to each agent—not just lint source files in the repository.
 
 ## Scout interpretation
 
