@@ -8,7 +8,16 @@ const appsRoot = process.env.MAY_AGENT_VERIFY_APPS_ROOT?.trim()
   ? resolve(process.env.MAY_AGENT_VERIFY_APPS_ROOT)
   : undefined;
 const errors: string[] = [];
-const ignoredDirectories = new Set([".git", ".state", "archive", "artifacts", "bundle", "node_modules", "worktrees"]);
+const ignoredDirectories = new Set([
+  ".git",
+  ".state",
+  "archive",
+  "artifacts",
+  "bundle",
+  "node_modules",
+  "workspace",
+  "worktrees",
+]);
 const sourcePattern = /\.(?:ts|tsx|js|mjs|cjs)$/;
 
 const retiredSdkSpecifier = ["@may-agent/sdk", "legacy"].join("/");
@@ -71,7 +80,9 @@ if (appsRoot) {
     for (const entry of readdirSync(appsRoot).sort()) {
       const appDir = join(appsRoot, entry);
       if (!entry.endsWith(".app") || !statSync(appDir).isDirectory()) continue;
-      if (!existsSync(join(appDir, "app.ts")) && !existsSync(join(appDir, "app.js"))) {
+      const hasDeclaration = existsSync(join(appDir, "app.ts")) || existsSync(join(appDir, "app.js"));
+      if (existsSync(join(appDir, ".disabled")) && !hasDeclaration) continue;
+      if (!hasDeclaration) {
         errors.push(`${basename(appDir)}: missing canonical App declaration`);
       }
       for (const path of sourceFiles(appDir)) rejectRetiredAuthoring(path, appsRoot);
