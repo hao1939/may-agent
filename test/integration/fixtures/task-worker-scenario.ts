@@ -472,7 +472,7 @@ const scenarios: Record<string, () => Promise<void>> = {
       export const name = "probe";
       export const description = "Call a helper through the real worker";
       export async function execute(ctx) {
-        const result = await ctx.agents.call("local-reviewer", "Review the fixture");
+        const result = await ctx.call("local-reviewer", "Review the fixture");
         if (result.status !== "done") throw new Error(result.summary);
         return ctx.done("done", { state: "converged", summary: result.summary, facts: [] });
       }

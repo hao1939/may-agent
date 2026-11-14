@@ -6,7 +6,7 @@ import { EventBus } from "../../src/app/core/events/bus.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
-import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
 
 type RuntimeEvent = { type: string; [key: string]: unknown };
@@ -58,7 +58,7 @@ describe("runtime integration", () => {
     bus.subscribe((event) => runtimeEvents.push(event as RuntimeEvent));
 
     const manager = new SubagentManager({ persistDir: stateDir });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       agentName: "dev",
@@ -78,12 +78,7 @@ describe("runtime integration", () => {
       },
     });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "blocked",
-      task: "ship migration",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("blocked", "ship migration");
 
     expect(parsed.type).toBe("blocked");
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);

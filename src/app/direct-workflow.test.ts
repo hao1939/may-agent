@@ -12,7 +12,7 @@ import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
-import { runDirectWorkflow } from "./direct-workflow.js";
+import { runDirect, runDirectWorkflow } from "./direct-workflow.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -75,7 +75,7 @@ const ReviewSchema = {
 };
 export async function execute(ctx) {
   ctx.log.info("starting direct review");
-  const review = await ctx.agents.call("reviewer", "Inspect " + ctx.input.subjectRef, {
+  const review = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef, {
     schema: ReviewSchema,
   });
   if (!review.output) {
@@ -229,7 +229,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
 export const name = "outer";
 export const description = "Calls nested review-change";
 export async function execute(ctx) {
-  return ctx.workflows.run("review-change", { subjectRef: "HEAD" });
+  return ctx.call("review-change", { subjectRef: "HEAD" });
 }
 `,
     );
@@ -284,7 +284,7 @@ export default function createCustomTool() {
         name: "readonly-step",
         description: "Calls coding+local agent with readonly policy",
         async execute(ctx) {
-          const res = await ctx.agents.call("reviewer", "Inspect only", { tools: "readonly" });
+          const res = await ctx.call("reviewer", "Inspect only", { tools: "readonly" });
           return ctx.done(res.summary);
         },
       },
@@ -332,8 +332,8 @@ export default function createCustomTool() {
 export const name = "nested-pair";
 export const description = "Runs two nested workflows and returns their IDs";
 export async function execute(ctx) {
-  const first = await ctx.workflows.run("review-change", { subjectRef: "A" });
-  const second = await ctx.workflows.run("review-change", { subjectRef: "B" });
+  const first = await ctx.call("review-change", { subjectRef: "A" });
+  const second = await ctx.call("review-change", { subjectRef: "B" });
   return ctx.done("pair", { parentId: ctx.done("probe").id, firstId: first.id, secondId: second.id });
 }
 `,
@@ -488,7 +488,7 @@ export async function execute(ctx) {
         name: "bad-allowance",
         description: "Invalid operationAllowance",
         async execute(ctx) {
-          await ctx.agents.call("reviewer", "Check", { operationAllowance: 0 });
+          await ctx.call("reviewer", "Check", { operationAllowance: 0 });
           return ctx.done("unreachable");
         },
       },
@@ -510,7 +510,7 @@ export async function execute(ctx) {
         name: "allowance-one",
         description: "Schema-less step with operationAllowance: 1",
         async execute(ctx) {
-          const step = await ctx.agents.call("reviewer", "Inspect note.txt", {
+          const step = await ctx.call("reviewer", "Inspect note.txt", {
             tools: "readonly",
             operationAllowance: 1,
           });
@@ -707,7 +707,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
         const failures = [];
         for (const probe of [
           () => ctx.call("foreign-owner/secret", {}),
-          () => ctx.agents.call("foreign-owner", "probe"),
+          () => ctx.call("foreign-owner", "probe"),
         ]) {
           try { await probe(); } catch (err) { failures.push(String(err)); }
         }
@@ -719,7 +719,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
       type: "done",
       output: [
         expect.stringContaining('Callable procedure "foreign-owner/secret" not found'),
-        expect.stringContaining('Agent "foreign-owner" was not found'),
+        expect.stringContaining('Callable target "foreign-owner" not found'),
       ],
     });
   });
@@ -789,8 +789,6 @@ export const description = "Cross-owner procedure that calls unqualified local-h
 export const readonly = true;
 export async function execute(ctx) {
   const helper = await ctx.call("local-helper", {});
-  const legacyHelper = await ctx.workflows.run("local-helper", {});
-  if (legacyHelper.summary !== helper.summary) throw new Error("Legacy alias changed lexical owner");
   const agentStep = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef);
   return ctx.done(helper.summary + ":" + agentStep.summary, {
     helper: helper.output,
@@ -854,6 +852,105 @@ export async function execute(ctx) {
         },
         agentSummary: "prompt-ok",
       },
+    });
+  });
+
+  test("runDirect dispatches both prompt targets and code targets through one standalone entrypoint", async () => {
+    const env = setupDirectLayout();
+    const promptRun = await runDirect({
+      target: "reviewer",
+      input: "Inspect HEAD",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async ({ task }) => ({
+          id: "s_direct_prompt",
+          kind: "agent",
+          status: "done",
+          summary: `reviewed:${task}`,
+          output: { verdict: "pass" },
+        }),
+      },
+    });
+    expect(promptRun.ok).toBe(true);
+    expect(promptRun.result).toMatchObject({
+      type: "done",
+      summary: "reviewed:Inspect HEAD",
+      output: { verdict: "pass" },
+    });
+
+    const codeRun = await runDirect({
+      target: "owner/review-change",
+      input: { subjectRef: "HEAD~1..HEAD" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async () => ({
+          id: "s_direct_code_child",
+          kind: "agent",
+          status: "done",
+          summary: "ok",
+          output: { subjectRef: "HEAD~1..HEAD", verdict: "pass", summary: "Clean" },
+        }),
+      },
+    });
+    expect(codeRun.ok).toBe(true);
+    expect(codeRun.result).toMatchObject({
+      type: "done",
+      summary: "Reviewed HEAD~1..HEAD",
+    });
+
+    // Regression: when agentName="owner" calls prompt target="reviewer", and reviewer also owns
+    // a procedure named "reviewer", runDirect must invoke the resolved prompt (not the procedure),
+    // and must forward tools: "readonly" without failing readonly module checks.
+    writeFileSync(
+      join(env.agentsRoot, "reviewer", "workflows", "reviewer.ts"),
+      `
+export const name = "reviewer";
+export const description = "Procedure with same name as owning prompt agent";
+export const readonly = true;
+export async function execute(ctx) {
+  return ctx.done("wrong-procedure-invoked");
+}
+`,
+    );
+    let seenToolsPolicy: string | undefined;
+    const collisionAndReadonlyRun = await runDirect({
+      agentName: "owner",
+      target: "reviewer",
+      input: "Readonly prompt check",
+      tools: "readonly",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async ({ task, options: stepOpts }) => {
+          seenToolsPolicy = stepOpts?.tools;
+          return {
+            id: "s_direct_readonly_prompt",
+            kind: "agent",
+            status: "done",
+            summary: `prompt:${task}`,
+          };
+        },
+      },
+    });
+    expect(collisionAndReadonlyRun.ok).toBe(true);
+    expect(seenToolsPolicy).toBe("readonly");
+    expect(collisionAndReadonlyRun.result).toMatchObject({
+      type: "done",
+      summary: "prompt:Readonly prompt check",
     });
   });
 });

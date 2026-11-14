@@ -5,8 +5,26 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { createWorkflowRunner, createWorkflowTool } from "../../src/lib/workflow-tool.js";
+import type { SubagentDefinition } from "../../src/lib/types.js";
+import { buildWorkflowCatalog } from "../../src/lib/workflow-catalog.js";
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
+import { fakeModel } from "../fixtures/model.js";
+
+const workerDef: SubagentDefinition = {
+  name: "worker", description: "Worker", domain: "test", model: fakeModel(), tools: [],
+};
+const reviewerDef: SubagentDefinition = {
+  name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(), tools: [],
+};
+const coderDef: SubagentDefinition = {
+  name: "coder", description: "Coder", domain: "test", model: fakeModel(), tools: [],
+};
+const testAgentDefs = new Map<string, SubagentDefinition>([
+  ["worker", workerDef],
+  ["reviewer", reviewerDef],
+  ["coder", coderDef],
+]);
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 
@@ -64,34 +82,15 @@ afterEach(() => {
 
 // ── Tests ──────────────────────────────────────────────────────────────
 
-describe("workflow tool: list", () => {
+describe("workflow catalog: list", () => {
   it("returns empty list when no workflows exist", async () => {
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
-
-    const result = await tool.execute("tc1", { action: "list" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("list");
-    if (parsed.type === "list") {
-      expect(parsed.workflows).toEqual([]);
-    }
+    const catalog = await buildWorkflowCatalog(workflowDir);
+    expect([...catalog.workflows.values()]).toEqual([]);
   });
 
   it("returns empty list when directory doesn't exist", async () => {
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
-      manager,
-      workflowDir: join(testDir, "nonexistent"),
-    });
-
-    const result = await tool.execute("tc1", { action: "list" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("list");
-    if (parsed.type === "list") {
-      expect(parsed.workflows).toEqual([]);
-    }
+    const catalog = await buildWorkflowCatalog(join(testDir, "nonexistent"));
+    expect([...catalog.workflows.values()]).toEqual([]);
   });
 
   it("lists workflows from .ts files", async () => {
@@ -114,36 +113,21 @@ describe("workflow tool: list", () => {
     // Non-.ts file should be ignored
     writeFileSync(join(workflowDir, "README.md"), "ignored", "utf-8");
 
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
-
-    const result = await tool.execute("tc1", { action: "list" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("list");
-    if (parsed.type === "list") {
-      expect(parsed.workflows).toHaveLength(2);
-      expect(parsed.workflows[0].name).toBe("alpha");
-      expect(parsed.workflows[0].description).toBe("Alpha workflow");
-      expect(parsed.workflows[1].name).toBe("beta");
-      expect(parsed.workflows[1].description).toBe("Beta workflow");
-    }
+    const catalog = await buildWorkflowCatalog(workflowDir);
+    const workflows = [...catalog.workflows.values()].sort((a, b) => a.name.localeCompare(b.name));
+    expect(workflows).toHaveLength(2);
+    expect(workflows[0].name).toBe("alpha");
+    expect(workflows[0].description).toBe("Alpha workflow");
+    expect(workflows[1].name).toBe("beta");
+    expect(workflows[1].description).toBe("Beta workflow");
   });
 
   it("handles workflow load errors gracefully", async () => {
     writeWorkflow("broken.ts", `export const foo = "bar";`); // missing name/execute
 
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
-
-    const result = await tool.execute("tc1", { action: "list" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("list");
-    if (parsed.type === "list") {
-      expect(parsed.workflows).toHaveLength(0);
-      expect(parsed.diagnostics?.join("\n")).toContain("name");
-    }
+    const catalog = await buildWorkflowCatalog(workflowDir);
+    expect([...catalog.workflows.values()]).toHaveLength(0);
+    expect(catalog.diagnostics.join("\n")).toContain("name");
   });
 
   it("rejects workflows without an explicit description", async () => {
@@ -155,17 +139,9 @@ describe("workflow tool: list", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
-
-    const result = await tool.execute("tc1", { action: "list" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    expect(parsed.type).toBe("list");
-    if (parsed.type === "list") {
-      expect(parsed.workflows).toHaveLength(0);
-      expect(parsed.diagnostics?.join("\n")).toContain("description");
-    }
+    const catalog = await buildWorkflowCatalog(workflowDir);
+    expect([...catalog.workflows.values()]).toHaveLength(0);
+    expect(catalog.diagnostics.join("\n")).toContain("description");
   });
 
   it("resolves by exported name and rejects duplicates within the owning agent", async () => {
@@ -194,22 +170,23 @@ describe("workflow tool: list", () => {
     `,
     );
 
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
-    const listed = JSON.parse((await tool.execute("tc1", { action: "list" })).content[0].text) as WorkflowToolResult;
-    expect(listed.type).toBe("list");
-    if (listed.type !== "list") return;
-    expect(listed.workflows).toContainEqual({
+    const catalog = await buildWorkflowCatalog(workflowDir);
+    const workflows = [...catalog.workflows.values()].map((w) => ({
+      name: w.name,
+      description: w.description,
+      sourceScope: w.sourceScope,
+    }));
+    expect(workflows).toContainEqual({
       name: "effective",
       description: "Agent version",
       sourceScope: "agent",
     });
-    expect(listed.workflows.some((workflow) => workflow.name === "ambiguous")).toBe(false);
-    expect(listed.diagnostics?.join("\n")).toContain('Ambiguous agent workflow name "ambiguous"');
+    expect(workflows.some((workflow) => workflow.name === "ambiguous")).toBe(false);
+    expect(catalog.diagnostics.join("\n")).toContain('Ambiguous agent workflow name "ambiguous"');
 
-    const result = JSON.parse(
-      (await tool.execute("tc2", { action: "run", name: "effective", task: "task" })).content[0].text,
-    ) as WorkflowToolResult;
+    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
+    const runner = createWorkflowRunner({ manager, workflowDir });
+    const result = await runner.run("effective", "task");
     expect(result.type).toBe("done");
     if (result.type === "done") expect(result.summary).toBe("agent");
   });
@@ -252,7 +229,7 @@ describe("workflow tool: typed execution", () => {
     expect(run.endedAt).toBeNumber();
   });
 
-  it("shares one typed runner with the serialized tool boundary", async () => {
+  it("returns typed output from createWorkflowRunner", async () => {
     writeWorkflow(
       "typed.ts",
       `
@@ -263,22 +240,9 @@ describe("workflow tool: typed execution", () => {
     );
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
     const runner = createWorkflowRunner({ manager, workflowDir });
-    const tool = createWorkflowTool({ manager, workflowDir });
 
     const typed = await runner.run("typed", "run typed workflow");
     expect(typed).toMatchObject({
-      type: "done",
-      workflow: "typed",
-      summary: "typed result",
-      output: { disposition: "converged" },
-    });
-
-    const serialized = await tool.execute("tc1", {
-      action: "run",
-      name: "typed",
-      task: "run typed workflow",
-    });
-    expect(JSON.parse(serialized.content[0].text)).toMatchObject({
       type: "done",
       workflow: "typed",
       summary: "typed result",
@@ -293,28 +257,32 @@ describe("workflow tool: typed execution", () => {
       export const name = "recovery-owned";
       export const description = "Recovery ownership fixture";
       export async function execute(ctx) {
-        await ctx.agents.call("worker", "do the step");
+        await ctx.call("worker", "do the step");
         return ctx.done("done");
       }
     `,
     );
     const calls: Array<Record<string, unknown>> = [];
+    const callAgent = async (_agent: string, _task: string, options: Record<string, unknown>) => {
+      calls.push(options);
+      return {
+        sessionId: "step-session",
+        status: "done",
+        lastAssistantText: "done",
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+      };
+    };
     const manager = {
-      async callAgent(_agent: string, _task: string, options: Record<string, unknown>) {
-        calls.push(options);
-        return {
-          sessionId: "step-session",
-          status: "done",
-          lastAssistantText: "done",
-          messages: [],
-          duration: "0s",
-          outputDir: "",
-        };
-      },
+      callAgent,
+      callAgentDefinition: (_def: SubagentDefinition, task: string, options: Record<string, unknown>) =>
+        callAgent(_def.name, task, options),
     } as unknown as SubagentManager;
     const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       projectId: "sample",
       recoveryOwner: "app-task-reconciler",
     });
@@ -328,17 +296,12 @@ describe("workflow tool: typed execution", () => {
   });
 });
 
-describe("workflow tool: run", () => {
+describe("workflow runner: run", () => {
   it("returns error when workflow not found", async () => {
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "nonexistent",
-      task: "do something",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("nonexistent", "do something");
 
     expect(parsed.type).toBe("error");
     if (parsed.type === "error") {
@@ -359,14 +322,9 @@ describe("workflow tool: run", () => {
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "simple",
-      task: "test task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("simple", "test task");
 
     expect(parsed.type).toBe("done");
     if (parsed.type === "done") {
@@ -388,14 +346,9 @@ describe("workflow tool: run", () => {
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "escalating",
-      task: "complex task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("escalating", "complex task");
 
     expect(parsed.type).toBe("blocked");
     if (parsed.type === "blocked") {
@@ -418,14 +371,9 @@ describe("workflow tool: run", () => {
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "crashing",
-      task: "doomed task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("crashing", "doomed task");
 
     expect(parsed.type).toBe("error");
     if (parsed.type === "error") {
@@ -449,17 +397,13 @@ describe("workflow tool: run", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       onEvent: (e) => events.push(e),
     });
 
-    await tool.execute("tc1", {
-      action: "run",
-      name: "evented",
-      task: "evented task",
-    });
+    await runner.run("evented", "evented task");
 
     expect(events.map((event) => event.type)).toEqual([
       "workflow.started", "test.custom-step", "workflow.completed",
@@ -480,17 +424,13 @@ describe("workflow tool: run", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       onEvent: (e) => events.push(e),
     });
 
-    await tool.execute("tc1", {
-      action: "run",
-      name: "esc-event",
-      task: "task",
-    });
+    await runner.run("esc-event", "task");
 
     expect(events.length).toBe(2);
     expect(events[0].type).toBe("workflow.started");
@@ -516,7 +456,7 @@ describe("workflow tool: run", () => {
     const lifecycleEvents: WorkflowEvent[] = [];
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       onEvent: (e) => lifecycleEvents.push(e),
@@ -536,12 +476,7 @@ describe("workflow tool: run", () => {
       },
     });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "local-escalation",
-      task: "task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("local-escalation", "task");
 
     expect(parsed.type).toBe("blocked");
     if (parsed.type === "blocked") {
@@ -570,7 +505,7 @@ describe("workflow tool: run", () => {
 
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       agentName: "may",
@@ -591,12 +526,7 @@ describe("workflow tool: run", () => {
       },
     });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "project-blocked",
-      task: "task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("project-blocked", "task");
 
     expect(parsed.type).toBe("blocked");
     if (parsed.type !== "blocked") return;
@@ -650,7 +580,7 @@ describe("workflow tool: run", () => {
       },
       "fixture",
     );
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       agentName: "aks-explorer",
@@ -677,10 +607,9 @@ describe("workflow tool: run", () => {
       },
     });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "task-blocked",
-      task: [
+    const parsed: WorkflowToolResult = await runner.run(
+      "task-blocked",
+      [
         "app: /app/projects/alpha-project.app",
         "project: /app/projects/alpha-project",
         "",
@@ -696,8 +625,7 @@ describe("workflow tool: run", () => {
         }),
         "```",
       ].join("\n"),
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    );
 
     expect(parsed.type).toBe("blocked");
     expect(runtimeEvents.some((event) => event.type === "escalation.created")).toBe(false);
@@ -730,7 +658,7 @@ describe("workflow tool: run", () => {
 
     const runtimeEvents: Array<{ type: string; [key: string]: unknown }> = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       agentName: "may",
@@ -750,12 +678,7 @@ describe("workflow tool: run", () => {
       },
     });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "owner-blocked",
-      task: "task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("owner-blocked", "task");
 
     expect(parsed.type).toBe("blocked");
     if (parsed.type !== "blocked") return;
@@ -781,24 +704,23 @@ describe("workflow tool: run", () => {
   // can't be tested here. Verified manually with node --input-type=module.
 });
 
-describe("workflow tool: agent name validation", () => {
-  it("rejects agents.call with undefined agent name (defensive guard)", async () => {
+describe("workflow runner: agent name validation", () => {
+  it("rejects call with undefined agent name (defensive guard)", async () => {
     writeWorkflow(
       "bad-agent.ts",
       `
       export const name = "bad-agent";
       export async function execute(ctx) {
-        await ctx.agents.call(undefined, "task");
+        await ctx.call(undefined, "task");
         return ctx.done("should not reach");
       }
     `,
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "bad-agent", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("bad-agent", "test");
 
     expect(parsed.type).toBe("error");
     if (parsed.type === "error") {
@@ -806,24 +728,23 @@ describe("workflow tool: agent name validation", () => {
     }
   });
 
-  it("rejects agents.call with the literal string 'undefined' as agent name", async () => {
+  it("rejects call with the literal string 'undefined' as agent name", async () => {
     writeWorkflow(
       "bad-agent-str.ts",
       `
       export const name = "bad-agent-str";
       export async function execute(ctx) {
         // Simulate serialization bug: agentName becomes the string "undefined"
-        await ctx.agents.call("undefined", "task");
+        await ctx.call("undefined", "task");
         return ctx.done("should not reach");
       }
     `,
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "bad-agent-str", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("bad-agent-str", "test");
 
     expect(parsed.type).toBe("error");
     if (parsed.type === "error") {
@@ -832,7 +753,7 @@ describe("workflow tool: agent name validation", () => {
   });
 });
 
-describe("workflow tool: structured agent results", () => {
+describe("workflow runner: structured agent results", () => {
   it("forwards a workflow-authored schema and exposes the validated payload", async () => {
     writeWorkflow(
       "structured-result.ts",
@@ -846,35 +767,37 @@ describe("workflow tool: structured agent results", () => {
         additionalProperties: false,
       };
       export async function execute(ctx) {
-        const review = await ctx.agents.call("reviewer", "review it", { schema: ReviewSchema, tools: "readonly" });
+        const review = await ctx.call("reviewer", "review it", { schema: ReviewSchema, tools: "readonly" });
         return ctx.done(review.status + ":" + review.output.verdict);
       }
     `,
     );
 
     let receivedOpts: Record<string, unknown> | undefined;
+    const callAgent = async (_agent: string, _task: string, opts: Record<string, unknown>) => {
+      receivedOpts = opts;
+      return {
+        sessionId: "s_structured",
+        status: "done" as const,
+        lastAssistantText: "Review complete",
+        messages: [],
+        duration: "0.0s",
+        outputDir: "",
+        finishResult: { status: "success", summary: "Review complete", result: { verdict: "pass" } },
+        structuredResult: { verdict: "pass" },
+      };
+    };
     const manager = {
       result: () => {
         throw new Error("no replay");
       },
-      callAgent: async (_agent: string, _task: string, opts: Record<string, unknown>) => {
-        receivedOpts = opts;
-        return {
-          sessionId: "s_structured",
-          status: "done" as const,
-          lastAssistantText: "Review complete",
-          messages: [],
-          duration: "0.0s",
-          outputDir: "",
-          finishResult: { status: "success", summary: "Review complete", result: { verdict: "pass" } },
-          structuredResult: { verdict: "pass" },
-        };
-      },
+      callAgent,
+      callAgentDefinition: (_def: SubagentDefinition, task: string, opts: Record<string, unknown>) =>
+        callAgent(_def.name, task, opts),
     } as unknown as SubagentManager;
 
-    const tool = createWorkflowTool({ manager, workflowDir });
-    const result = await tool.execute("tc1", { action: "run", name: "structured-result", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const runner = createWorkflowRunner({ manager, workflowDir, agentDefinitions: testAgentDefs });
+    const parsed: WorkflowToolResult = await runner.run("structured-result", "test");
 
     expect(parsed.type).toBe("done");
     if (parsed.type === "done") expect(parsed.summary).toBe("done:pass");
@@ -890,29 +813,30 @@ describe("workflow tool: structured agent results", () => {
       export const name = "reject-prose";
       export const description = "Rejects a prose-only agent result";
       export async function execute(ctx) {
-        const result = await ctx.agents.call("worker", "do it");
+        const result = await ctx.call("worker", "do it");
         return ctx.done(result.status + ":" + result.summary);
       }
     `,
     );
 
+    const callAgent = async () => ({
+      sessionId: "s_prose",
+      status: "done" as const,
+      lastAssistantText: "I finished the task.",
+      messages: [],
+      duration: "0.0s",
+      outputDir: "",
+    });
     const manager = {
       result: () => {
         throw new Error("no replay");
       },
-      callAgent: async () => ({
-        sessionId: "s_prose",
-        status: "done" as const,
-        lastAssistantText: "I finished the task.",
-        messages: [],
-        duration: "0.0s",
-        outputDir: "",
-      }),
+      callAgent,
+      callAgentDefinition: callAgent,
     } as unknown as SubagentManager;
 
-    const tool = createWorkflowTool({ manager, workflowDir });
-    const result = await tool.execute("tc1", { action: "run", name: "reject-prose", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const runner = createWorkflowRunner({ manager, workflowDir, agentDefinitions: testAgentDefs });
+    const parsed: WorkflowToolResult = await runner.run("reject-prose", "test");
 
     expect(parsed.type).toBe("done");
     if (parsed.type === "done") {
@@ -921,20 +845,20 @@ describe("workflow tool: structured agent results", () => {
   });
 });
 
-describe("workflow tool: steering", () => {
+describe("workflow runner: steering", () => {
   it("steer() returns false when no workflow is running", () => {
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    expect(tool.steer("stop")).toBe(false);
+    expect(runner.steer("stop")).toBe(false);
   });
 
   it("isRunning is false when no workflow is active", () => {
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    expect(tool.isRunning).toBe(false);
-    expect(tool.activeWorkflow).toBeNull();
+    expect(runner.isRunning).toBe(false);
+    expect(runner.activeWorkflow).toBeNull();
   });
 
   it("isRunning is false after a workflow completes", async () => {
@@ -950,16 +874,12 @@ describe("workflow tool: steering", () => {
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    await tool.execute("tc1", {
-      action: "run",
-      name: "quick",
-      task: "task",
-    });
+    await runner.run("quick", "task");
 
-    expect(tool.isRunning).toBe(false);
-    expect(tool.activeWorkflow).toBeNull();
+    expect(runner.isRunning).toBe(false);
+    expect(runner.activeWorkflow).toBeNull();
   });
 
   it("isRunning is false after a workflow crashes", async () => {
@@ -975,16 +895,12 @@ describe("workflow tool: steering", () => {
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    await tool.execute("tc1", {
-      action: "run",
-      name: "crasher",
-      task: "task",
-    });
+    await runner.run("crasher", "task");
 
-    expect(tool.isRunning).toBe(false);
-    expect(tool.activeWorkflow).toBeNull();
+    expect(runner.isRunning).toBe(false);
+    expect(runner.activeWorkflow).toBeNull();
   });
 
   it("isRunning is false after a workflow blocks", async () => {
@@ -1000,30 +916,22 @@ describe("workflow tool: steering", () => {
     );
 
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    await tool.execute("tc1", {
-      action: "run",
-      name: "esc",
-      task: "task",
-    });
+    await runner.run("esc", "task");
 
-    expect(tool.isRunning).toBe(false);
-    expect(tool.activeWorkflow).toBeNull();
+    expect(runner.isRunning).toBe(false);
+    expect(runner.activeWorkflow).toBeNull();
   });
 
-  it("steer() queues a signal that interrupts the workflow at the next agents.call", async () => {
-    // This workflow calls runAgent but we pre-queue a steering signal.
-    // Since runAgent checks the queue before running the agent, it should
-    // throw WorkflowInterrupted immediately without ever calling manager.run().
+  it("steer() queues a signal that interrupts the workflow at the next call", async () => {
     writeWorkflow(
       "steerable.ts",
       `
       export const name = "steerable";
       export const description = "Workflow that can be steered";
       export async function execute(ctx) {
-        // This will never actually reach runAgent because steering is pre-queued
-        const result = await ctx.agents.call("coder", "do something");
+        const result = await ctx.call("coder", "do something");
         return ctx.done("should not reach here");
       }
     `,
@@ -1031,65 +939,27 @@ describe("workflow tool: steering", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       onEvent: (e) => events.push(e),
     });
 
-    // Start the workflow execution in the background
-    const execPromise = tool.execute("tc1", {
-      action: "run",
-      name: "steerable",
-      task: "steerable task",
-    });
-
-    // The workflow is synchronous up to the first runAgent, so by the time
-    // execute() is called, the workflow.started event fires synchronously,
-    // and then the workflow calls runAgent which checks the queue.
-    // Since we need to steer BEFORE runAgent checks, we need to pre-queue.
-    // But the tool only exposes steer() after the workflow starts...
-    // Actually, the workflow's execute() is called asynchronously,
-    // but in this test the steering signal needs to be in the queue
-    // before runAgent checks it.
-    //
-    // The way this works: the workflow.execute() is an async function.
-    // It runs synchronously until the first await. ctx.agents.call is async,
-    // so the first thing it does is check steeringQueue.shift().
-    // If we call steer() before execute(), the signal will be in the queue.
-    //
-    // BUT we can't call steer() before execute() because isRunning is false.
-    // The solution: we need to test with a workflow that does some async
-    // work (like a setTimeout) before calling runAgent, giving us time
-    // to call steer().
-
-    // Wait for the result
-    const result = await execPromise;
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
-
-    // The workflow should have errored because "coder" isn't registered,
-    // not interrupted — because we couldn't steer in time.
-    // This test validates that steer() returns false when called before
-    // the workflow starts. The real steering test needs async timing.
+    const parsed: WorkflowToolResult = await runner.run("steerable", "steerable task");
     expect(parsed.type).toBe("error");
   });
 
-  it("pre-queued steering signal interrupts workflow before first agents.call", async () => {
-    // Write a workflow that uses a global signal to indicate it's ready,
-    // then waits for a signal to proceed. This avoids flaky setTimeout timing.
+  it("pre-queued steering signal interrupts workflow before first call", async () => {
     writeWorkflow(
       "delayed.ts",
       `
       export const name = "delayed";
       export const description = "Delays then calls runAgent";
       export async function execute(ctx) {
-        // Signal readiness via a custom event, then wait for the steering signal
-        // to be queued before proceeding to runAgent
         await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
-        // Small yield to let the test queue a steering signal
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.agents.call("coder", "do something");
+        const result = await ctx.call("coder", "do something");
         return ctx.done("should not reach here");
       }
     `,
@@ -1097,32 +967,24 @@ describe("workflow tool: steering", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       onEvent: (e) => events.push(e),
     });
 
-    // Start execution (don't await)
-    const execPromise = tool.execute("tc1", {
-      action: "run",
-      name: "delayed",
-      task: "steerable task",
-    });
+    const execPromise = runner.run("delayed", "steerable task");
 
-    // Wait for the workflow to signal it's ready for steering
     await waitForEvent(events, (e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
-    // Now the workflow is running and waiting — steer it
-    expect(tool.isRunning).toBe(true);
-    expect(tool.activeWorkflow).toBe("delayed");
+    expect(runner.isRunning).toBe(true);
+    expect(runner.activeWorkflow).toBe("delayed");
 
-    const steered = tool.steer("change direction please");
+    const steered = runner.steer("change direction please");
     expect(steered).toBe(true);
 
-    // Wait for workflow to finish
-    const result = await execPromise;
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await execPromise;
 
     expect(parsed.type).toBe("interrupted");
     if (parsed.type === "interrupted") {
@@ -1131,15 +993,12 @@ describe("workflow tool: steering", () => {
       expect(parsed.completedSteps).toEqual([]); // no steps completed before interruption
     }
 
-    // Tool should be clean after interruption
-    expect(tool.isRunning).toBe(false);
-    expect(tool.activeWorkflow).toBeNull();
-    expect(tool.steer("anything")).toBe(false);
+    expect(runner.isRunning).toBe(false);
+    expect(runner.activeWorkflow).toBeNull();
+    expect(runner.steer("anything")).toBe(false);
   });
 
   it("steering after one completed step includes that step in completedSteps", async () => {
-    // Write a workflow that emits a signal when it's past the first step
-    // and ready for the steering signal
     writeWorkflow(
       "two-step.ts",
       `
@@ -1149,14 +1008,11 @@ describe("workflow tool: steering", () => {
         await ctx.events.emit({ type: "test.planning_started", data: { step: "planning" } });
         await ctx.events.emit({ type: "test.planning_completed", data: { step: "planning" } });
 
-        // Signal that we're past step 1 and ready for steering
         await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
-        // Yield to let the test queue a steering signal
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        // This runAgent will check steering queue
-        const result = await ctx.agents.call("coder", "implement");
+        const result = await ctx.call("coder", "implement");
         return ctx.done("done");
       }
     `,
@@ -1164,35 +1020,29 @@ describe("workflow tool: steering", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       onEvent: (e) => events.push(e),
     });
 
-    const execPromise = tool.execute("tc1", {
-      action: "run",
-      name: "two-step",
-      task: "task",
-    });
+    const execPromise = runner.run("two-step", "task");
 
-    // Wait for the workflow to signal readiness
     await waitForEvent(events, (e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
-    expect(tool.isRunning).toBe(true);
-    tool.steer("abort now");
+    expect(runner.isRunning).toBe(true);
+    runner.steer("abort now");
 
-    const result = await execPromise;
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await execPromise;
 
     expect(parsed.type).toBe("interrupted");
     if (parsed.type === "interrupted") {
       expect(parsed.steeringMessage).toBe("abort now");
-      // completedSteps only tracks runAgent calls, not manual emit calls
       expect(parsed.completedSteps).toEqual([]);
     }
 
-    expect(tool.isRunning).toBe(false);
+    expect(runner.isRunning).toBe(false);
   });
 
   it("multiple steer() calls queue multiple signals, first one wins", async () => {
@@ -1205,7 +1055,7 @@ describe("workflow tool: steering", () => {
         await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.agents.call("coder", "first");
+        const result = await ctx.call("coder", "first");
         return ctx.done("done");
       }
     `,
@@ -1213,26 +1063,22 @@ describe("workflow tool: steering", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       onEvent: (e) => events.push(e),
     });
 
-    const execPromise = tool.execute("tc1", {
-      action: "run",
-      name: "multi-steer",
-      task: "task",
-    });
+    const execPromise = runner.run("multi-steer", "task");
 
     await waitForEvent(events, (e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
-    tool.steer("first signal");
-    tool.steer("second signal");
-    tool.steer("third signal");
+    runner.steer("first signal");
+    runner.steer("second signal");
+    runner.steer("third signal");
 
-    const result = await execPromise;
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await execPromise;
 
     expect(parsed.type).toBe("interrupted");
     if (parsed.type === "interrupted") {

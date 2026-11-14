@@ -239,9 +239,9 @@ describe("workflow facts without reporting", () => {
       export const description = "Fixture report";
       export async function execute(ctx) {
         ctx.log.info("prepared report");
-        try { await ctx.workflows.run("upload", { fail: true }); }
+        try { await ctx.call("upload", { fail: true }); }
         catch { ctx.log.warn("retrying upload"); }
-        await ctx.workflows.run("upload", { fail: false });
+        await ctx.call("upload", { fail: false });
         return ctx.done("delivered");
       }`,
     );

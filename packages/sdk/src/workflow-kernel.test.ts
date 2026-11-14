@@ -35,7 +35,7 @@ const reviewWorkflow = {
   outputSchema: ReviewOutput,
   async execute(ctx: WorkflowContext<Static<typeof ReviewInput>>) {
     ctx.log.info(`reviewing ${ctx.input.subjectRef}`);
-    const review = await ctx.agents.call("reviewer", `Review ${ctx.input.subjectRef}`, {
+    const review = await ctx.call("reviewer", `Review ${ctx.input.subjectRef}`, {
       schema: ReviewReport,
     });
     if (!review.output || review.output.subjectRef !== ctx.input.subjectRef) {
@@ -159,15 +159,15 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       name: "parallel-join",
       description: "Joins sibling calls before returning",
       async execute(ctx: WorkflowContext) {
-        const slowSibling = ctx.agents.call("slow", "work");
-        const fastFail = ctx.agents.call("fast", "fail");
+        const slowSibling = ctx.call("slow", "work");
+        const fastFail = ctx.call("fast", "fail");
         try {
           await fastFail;
         } finally {
           void Promise.resolve().then(async () => {
             await new Promise((r) => setTimeout(r, 25));
             try {
-              await ctx.agents.call("late", "after completion");
+              await ctx.call("late", "after completion");
             } catch (err) {
               lateAgentRejection = err;
             }
@@ -224,7 +224,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       description: "Nested workflow",
       async execute(ctx: WorkflowContext) {
         // Attempting to acquire a 2nd concurrent slot while parent holds slot #1 must fail immediately.
-        await ctx.agents.call("worker", "nested work");
+        await ctx.call("worker", "nested work");
         return ctx.done("child done");
       },
     };
@@ -232,7 +232,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       name: "parent-wf",
       description: "Calls nested workflow under maxConcurrentCalls=1",
       async execute(ctx: WorkflowContext) {
-        await ctx.workflows.run("child-wf", {});
+        await ctx.call("child-wf", {});
         return ctx.done("parent done");
       },
     };
@@ -252,7 +252,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       description: "Tests observer isolation and cleanup confirmation",
       async execute(ctx: WorkflowContext) {
         ctx.log.info("step note");
-        await ctx.agents.call("worker", "run");
+        await ctx.call("worker", "run");
         return ctx.done("completed work", { value: 42 });
       },
     };
@@ -289,7 +289,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       name: "leaky-child",
       description: "Nested workflow with unconfirmed step cleanup",
       async execute(ctx: WorkflowContext) {
-        await ctx.agents.call("worker", "leak");
+        await ctx.call("worker", "leak");
         return ctx.done("child done");
       },
     };
@@ -298,7 +298,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       description: "Catches child error and returns done",
       async execute(ctx: WorkflowContext) {
         try {
-          await ctx.workflows.run("leaky-child", {});
+          await ctx.call("leaky-child", {});
         } catch {
           // Business code tries to recover, but resource cleanup taint must survive.
         }
@@ -332,7 +332,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       name: "step-timeout-cooperative",
       description: "Cancels cooperative fixture at step timeoutMs",
       async execute(ctx: WorkflowContext) {
-        await ctx.agents.call("slow", "bounded step", { timeoutMs: 25 });
+        await ctx.call("slow", "bounded step", { timeoutMs: 25 });
         return ctx.done("unreachable");
       },
     };
@@ -398,16 +398,16 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       description: "Catches failed agent and nested workflow calls",
       async execute(ctx: WorkflowContext) {
         try {
-          await ctx.agents.call("missing-agent", "try missing");
+          await ctx.call("missing-agent", "try missing");
         } catch {
           // caught unstarted agent failure
         }
         try {
-          await ctx.workflows.run("failing-child", { x: 1 });
+          await ctx.call("failing-child", { x: 1 });
         } catch {
           // caught started nested workflow failure
         }
-        const ok = await ctx.agents.call("worker", "fallback work");
+        const ok = await ctx.call("worker", "fallback work");
         return ctx.done(ok.summary);
       },
     };
@@ -449,7 +449,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         name: "uncaught-failure",
         description: "Propagates rejected agent call",
         async execute(ctx: WorkflowContext) {
-          await ctx.agents.call("boom", "explode");
+          await ctx.call("boom", "explode");
           return ctx.done("unreachable");
         },
       },
@@ -510,7 +510,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
   });
 
-  test("routes test-context aliases through an explicitly supplied unified caller", async () => {
+  test("routes test-context calls through an explicitly supplied unified caller", async () => {
     const calls: string[] = [];
     const call = (async (target: string) => {
       calls.push(target);
@@ -518,9 +518,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     }) as WorkflowContext["call"];
     const ctx = createTestAppWorkflowContext({ input: {}, call });
     await ctx.call("unified", "input");
-    await ctx.agents.call("legacy-agent", "input");
-    await ctx.workflows.run("legacy-workflow", {});
-    expect(calls).toEqual(["unified", "legacy-agent", "legacy-workflow"]);
+    expect(calls).toEqual(["unified"]);
   });
 
   test("uses a queued mock's explicit kind before validating call options", async () => {

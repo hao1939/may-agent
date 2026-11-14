@@ -86,7 +86,6 @@ describe("one workflow context", () => {
         type: "done",
         output: {
           keys: [
-            "agents",
             "blocked",
             "call",
             "done",
@@ -96,7 +95,6 @@ describe("one workflow context", () => {
             "metrics",
             "read",
             "signal",
-            "workflows",
             ...(mode !== "direct" ? ["workspace"] : []),
           ].sort(),
           metrics: ["define", "defineMany", "evaluate", "record"],

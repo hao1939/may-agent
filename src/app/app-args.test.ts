@@ -96,4 +96,11 @@ describe("app args", () => {
   it("parses the private persistent Task admission worker", () => {
     expect(parseAppArgs(["bun", "may.ts", "--task-admission-worker"], {}).taskAdmissionWorker).toBeTrue();
   });
+
+  it.each([
+    [["--run-workflow", "probe", "--dry-run", "--cron"]],
+    [["--run-workflow=probe", "--cron"]],
+  ] as const)("rejects retired --run-workflow CLI flag before background startup: %j", (flags) => {
+    expect(() => parseAppArgs(["bun", "may", ...flags], {})).toThrow("--run-workflow has been retired");
+  });
 });

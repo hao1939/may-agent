@@ -9,7 +9,7 @@
 
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
-import type { AgentCallOptions, AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
+import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
 import type { TaskReconcileResult } from "./task.js";
 import type { Logger, WorkflowContext } from "./workflow.js";
 
@@ -299,8 +299,8 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   deadlineAt?: number;
   maxConcurrentCalls?: number;
   allowance?: WorkflowExecutionAllowance;
-  /** Optional unified target resolver/invoker; falls back to callAgent / runWorkflow when omitted. */
-  callTarget?(
+  /** Unified target resolver and invoker for ctx.call. */
+  callTarget(
     target: string,
     input: unknown,
     options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
@@ -308,19 +308,6 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   ): Promise<WorkflowStepInvocationResult>;
   /** Optional classifier so runBoundStep knows whether target is prompt ("agent") or code ("workflow") before invocation. */
   resolveTargetKind?(target: string, input: unknown): "agent" | "workflow" | Promise<"agent" | "workflow">;
-  callAgent(
-    agent: string,
-    task: string,
-    options: (AgentCallOptions & { schema?: TSchema }) | undefined,
-    stepControl: WorkflowKernelStepControl,
-  ): Promise<WorkflowStepInvocationResult>;
-  runWorkflow(
-    name: string,
-    input: unknown,
-    stepControl: WorkflowKernelStepControl & {
-      options?: CallOptions<TSchema> & { schema?: TSchema };
-    },
-  ): Promise<WorkflowStepInvocationResult>;
   read?: AppRead;
   events?: WorkflowContext["events"];
   metrics?: WorkflowMetricCapability;
@@ -956,42 +943,11 @@ export async function runWorkflowInvocation<TInput = unknown>(
           : typeof input === "string"
             ? "agent"
             : "workflow";
-      return runBoundStep(kind, target, promptPreview, options, (stepControl, effectiveOptions) => {
-        if (bindings.callTarget) {
-          return bindings.callTarget(target, input, effectiveOptions, stepControl);
-        }
-        if (kind === "agent") {
-          if (typeof input !== "string") {
-            return Promise.reject(
-              new Error(`Prompt target "${target}" requires a string prompt input`),
-            );
-          }
-          return bindings.callAgent(target, input, effectiveOptions, stepControl);
-        }
-        return bindings.runWorkflow(target, input, {
-          ...stepControl,
-          options: effectiveOptions,
-        });
-      });
+      return runBoundStep(kind, target, promptPreview, options, (stepControl, effectiveOptions) =>
+        bindings.callTarget(target, input, effectiveOptions, stepControl),
+      );
     })()) as Promise<ExecutionResult<Static<S>>>;
   }) as WorkflowContext["call"];
-
-  const callAgentOverload = (<S extends TSchema>(
-    agent: string,
-    task: string,
-    options?: AgentCallOptions & { schema?: S },
-  ): Promise<ExecutionResult<Static<S>>> => {
-    try {
-      assertActive();
-    } catch (err) {
-      return Promise.reject(err);
-    }
-    return trackOperation(
-      runBoundStep("agent", agent, task, options, (stepControl, effectiveOptions) =>
-        bindings.callAgent(agent, task, effectiveOptions, stepControl),
-      ),
-    ) as Promise<ExecutionResult<Static<S>>>;
-  }) as WorkflowContext["agents"]["call"];
 
   const ctx: WorkflowContext<TInput> = {
     input: bindings.input as WorkflowContext<TInput>["input"],
@@ -1060,28 +1016,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
       : {}),
     ...(bindings.readCommunication ? { readCommunication: bindings.readCommunication } : {}),
     call: callOverload,
-    agents: {
-      call: callAgentOverload,
-    },
-    workflows: {
-      run: (name: string, workflowInput: unknown): Promise<ExecutionResult> => {
-        try {
-          assertActive();
-        } catch (err) {
-          return Promise.reject(err);
-        }
-        const promptPreview =
-          typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
-        return trackOperation(
-          runBoundStep("workflow", name, promptPreview, undefined, (stepControl, effectiveOptions) =>
-            bindings.runWorkflow(name, workflowInput, {
-              ...stepControl,
-              options: effectiveOptions,
-            }),
-          ),
-        );
-      },
-    },
     events: {
       read: (type, localKey) => {
         try {

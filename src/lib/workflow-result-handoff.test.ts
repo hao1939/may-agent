@@ -2,7 +2,8 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createWorkflowTool, runWorkflowDirect, WorkflowExecutionFailure } from "./workflow-tool.js";
+import { createWorkflowRunner, runWorkflowDirect, WorkflowExecutionFailure } from "./workflow-tool.js";
+import { workflowExecutionResult } from "./execution-handoff.js";
 import { readWorkflowFacts } from "./workflow-facts.js";
 import { closeDb } from "./db/connection.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
@@ -25,7 +26,7 @@ export async function execute(ctx) {
   writeFileSync(join(workflowDir, "parent.ts"), `
 export const name = "parent";
 export const description = "Caller retains the contribution";
-export async function execute(ctx) { return ctx.workflows.run("child", ctx.input); }
+export async function execute(ctx) { return ctx.call("child", ctx.input); }
 `);
   try {
     let result;
@@ -46,11 +47,9 @@ export async function execute(ctx) { return ctx.workflows.run("child", ctx.input
         expect(error.message).toContain(`workflow-run:${result.id}`);
       }
     } else {
-      const tool = createWorkflowTool({ manager: {} as never, workflowDir, persistDir: root });
-      const response = await tool.execute("call", { action: "run", name: nested ? "parent" : "child", input: { status } });
-      const text = response.content[0];
-      if (text.type !== "text") throw new Error("Missing result text");
-      result = JSON.parse(text.text);
+      const runner = createWorkflowRunner({ manager: {} as never, workflowDir, persistDir: root, workflowInput: { status } });
+      const raw = await runner.run(nested ? "parent" : "child", JSON.stringify({ status }));
+      result = { ...raw, ...workflowExecutionResult(raw) };
     }
     const payload = { output: { draft: "retained.md" }, facts: { checked: true } };
     expect(result).toMatchObject({ kind: "workflow", status, summary: "narrow contribution", ...payload });

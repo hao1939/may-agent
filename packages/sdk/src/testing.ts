@@ -144,8 +144,8 @@ export type TestAppWorkflowContextOptions<TInput> = {
   read?: AppRead;
   log?: Logger;
   call?: WorkflowContext["call"];
-  callAgent?: WorkflowContext["agents"]["call"];
-  runWorkflow?: WorkflowContext["workflows"]["run"];
+  callAgent?: (agent: string, task: string, options?: CallOptions<any>) => Promise<ExecutionResult<any>>;
+  runWorkflow?: (name: string, input: unknown) => Promise<ExecutionResult<any>>;
   emit?: WorkflowContext["events"]["emit"];
   readEvent?: WorkflowContext["events"]["read"];
   onEvent?: WorkflowContext["events"]["onEvent"];
@@ -186,12 +186,6 @@ export function createTestAppWorkflowContext<TInput>(
     ...(options.closeTask ? { closeTask: options.closeTask } : {}),
     read: options.read ?? createTestAppRead(),
     call,
-    agents: {
-      call: options.call ?? callAgent,
-    },
-    workflows: {
-      run: options.call ?? runWorkflow,
-    },
     events: {
       emit: options.emit ?? fn(async () => undefined),
       read: options.readEvent ?? fn(async () => null),
@@ -644,10 +638,6 @@ export async function runWorkflowTest<TInput = unknown>(
     resolveTargetKind: (target, input) => resolveMockKind(target, input),
     callTarget: (target, input, callOpts, stepControl) =>
       invokeMockTarget(target, input, callOpts, stepControl),
-    callAgent: (agent, task, callOpts, stepControl) =>
-      invokeMockTarget(agent, task, callOpts, stepControl, "agent"),
-    runWorkflow: (name, wfInput, stepControl) =>
-      invokeMockTarget(name, wfInput, stepControl.options, stepControl, "workflow"),
   });
 
   const outcome = await runWorkflowInvocation(module, buildBindings(options.input));
