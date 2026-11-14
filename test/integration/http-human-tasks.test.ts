@@ -221,9 +221,9 @@ describe("HTTP human Task reads and board", () => {
       overview: "/", unbound: "/agents/new-worker", loading: "/agents/worker",
       session: "/sessions/selected-old-session", generic: "/sessions", conversation: "/agents/helper",
     }[surface]!;
-    const allowed = surface === "overview" || surface === "conversation"
+      const allowed = surface === "overview" || surface === "conversation" || surface === "generic"
       ? ["fixture", "worker-old-session", "selected-old-session"]
-      : surface === "session" ? ["selected-old-session"] : surface === "generic" ? ["fixture"] : [];
+      : surface === "session" ? ["selected-old-session"] : [];
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     try {
       const page = await browser.newPage();

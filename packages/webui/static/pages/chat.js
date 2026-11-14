@@ -192,7 +192,7 @@ function syncRealtimeSubscriptions() {
   if (currentTab === 'live' || conversation) sessions = ['*'];
   else if (isSessionPageMode()) sessions = [currentRouteParams.id];
   else if (isAgentChatActive(currentAgentChat)) sessions = currentSessionId ? [currentSessionId] : [];
-  else if (currentTab === 'sessions') sessions = [currentSessionId || 'chat'];
+  else if (currentTab === 'sessions') sessions = currentSessionId ? [currentSessionId] : ['*'];
   ws.send(JSON.stringify({
     type: 'subscribe', sessions,
     conversations: conversation ? [humanInterface.conversationId] : [],
