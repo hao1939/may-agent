@@ -6,6 +6,8 @@ import { join } from "node:path";
 import { once } from "node:events";
 import { CodexGoalAppServerClient } from "../src/app/adapters/executors/codex/codex-goal-client.js";
 
+declare const Bun: { sleep(ms: number): Promise<void> };
+
 // Exercise May's production client against the installed CLI and a loopback
 // Responses fixture. No credentials or external model calls are used.
 const root = mkdtempSync(join(tmpdir(), "may-codex-protocol-"));
@@ -182,7 +184,7 @@ try {
   const retainedTurns = new Set<string>();
   let firstRetainedTurn: string | undefined;
   for (let index = 0; index < 8; index += 1) {
-    const retainedTurn = await client.startTurn({
+    const retainedTurn: string = await client.startTurn({
       threadId: thread.threadId,
       prompt: `Retain completed synthetic turn ${index + 1}`,
     });
