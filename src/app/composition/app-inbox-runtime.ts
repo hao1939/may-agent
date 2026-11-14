@@ -740,7 +740,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
       if (plan?.status === "pending") completeAppEventAdmissionPlan(options.db, eventId, now());
     } catch {
-      // The journal retains responsibility for bounded recovery after coordinator failure.
+      //The journal retains responsibility for bounded recovery after coordinator failure.
     } finally {
       pendingAdmissionEvents.delete(eventId);
       if (!closed && pending.appIds.length > 0) pendingAdmissionEvents.set(eventId, pending);
@@ -748,6 +748,9 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     }
     if (!closed && pendingAdmissionEvents.size > 0 && !admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
+    } else if (!closed && pendingAdmissionEvents.size === 0 && !admissionDispatching && forceAdmissionRecoveryQueued) {
+      forceAdmissionRecoveryQueued = false;
+      recoverAdmissionPlans(true);
     }
   }
 
@@ -803,7 +806,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let forceAdmissionRecoveryQueued = false;
   const recoverAdmissionPlans = (force = false): void => {
     const currentTime = now();
-    if (admissionRecoveryHandle) {
+    if (admissionRecoveryHandle || (force && (pendingAdmissionEvents.size > 0 || admissionDispatching))) {
       if (force) forceAdmissionRecoveryQueued = true;
       return;
     }
@@ -826,7 +829,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (closed) return;
         const plan = plans[index++];
         if (!plan) {
-          if (forceAdmissionRecoveryQueued) {
+          if (forceAdmissionRecoveryQueued && pendingAdmissionEvents.size === 0 && !admissionDispatching) {
             forceAdmissionRecoveryQueued = false;
             recoverAdmissionPlans(true);
           }
@@ -850,7 +853,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         if (index < plans.length) {
           admissionRecoveryHandle = setTimeout(recoverNext, 0);
-        } else if (forceAdmissionRecoveryQueued) {
+        } else if (forceAdmissionRecoveryQueued && pendingAdmissionEvents.size === 0 && !admissionDispatching) {
           forceAdmissionRecoveryQueued = false;
           recoverAdmissionPlans(true);
         }

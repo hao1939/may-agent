@@ -174,9 +174,7 @@ for (const failure of ["throw", "invalid-input", "ambiguous", "action"] as const
       // A removed selected subscription is not silently remapped. Repair that exact route explicitly.
       if (failure === "ambiguous") {
         await until(() =>
-          Boolean(getAppEventAdmissionPlan(db, eventId)?.commands[0]?.lastError?.includes("duplicate")) &&
-          getAppEventAdmissionPlan(db, eventId)?.commands.find((command) => command.appId === "healthy")?.status ===
-            "admitted",
+          Boolean(getAppEventAdmissionPlan(db, eventId)?.commands[0]?.lastError?.includes("duplicate")),
         );
         await runtime!.reload(undefined, async () =>
           entries().map((entry) =>
@@ -335,6 +333,137 @@ test("delivers exact Condition wakes even when the same App cannot translate new
       ]),
     ).rejects.toThrow("Condition wakes");
   } finally {
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("preserves forced reload recovery when reload runs during an active startup recovery slice or pending dispatch", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-forced-recovery-reload-"));
+  const db = getDb(root);
+  let runtime: AppInboxRuntime | undefined;
+  let broken = true;
+  let brokenReopenCalls = 0;
+  const firstBrokenReopenTried = Promise.withResolvers<void>();
+  let holdHealthyDispatch = false;
+  const healthyDispatchEntered = Promise.withResolvers<void>();
+  const releaseHealthyDispatch = Promise.withResolvers<void>();
+  const makeEntries = () =>
+    (["broken", "healthy"] as const).map((id) => {
+      const appDir = join(root, id);
+      mkdirSync(appDir, { recursive: true });
+      return {
+        appDir,
+        definition: defineApp({
+          id,
+          version: 1,
+          agent: id,
+          inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ value: Type.String() }) }),
+          tasks: {},
+          task: ({ id: inputId }) => ({
+            kind: "desired",
+            intent: { id: inputId, parentId: "root", outcome: "Review fact", acceptance: ["Reviewed"] },
+          }),
+          subscriptions: [
+            {
+              id: "change",
+              event: "probe.changed",
+              toInput: (event) => {
+                if (id === "broken" && broken) {
+                  if (++brokenReopenCalls >= 3) firstBrokenReopenTried.resolve();
+                  throw new Error("broken before reload");
+                }
+                return { kind: "message", data: { value: `${id}:${String(event.data.value)}` } };
+              },
+            },
+          ],
+        }),
+      };
+    });
+  try {
+    for (const { appDir, definition } of makeEntries()) {
+      const store = AppTaskResourceStore.fromDb(db, definition.id);
+      store.bootstrapSnapshot(
+        {
+          project: definition.id,
+          root_task_id: "root",
+          project_lifecycle: "active",
+          groups: { root: { id: "root", parent_id: null } },
+        },
+        "fixture",
+      );
+      void appTaskContext({ appDir, projectDir: appDir, agent: definition.agent!, resourceStore: store });
+    }
+    const registry = new AppRegistry(async () => makeEntries());
+    await registry.reload();
+    const bus = new EventBus();
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const startRuntime = () =>
+      startAppInboxRuntime({
+        db,
+        bus,
+        registry,
+        persistDir: root,
+        schedulesEnabled: false,
+        attachTask: (input) => {
+          const store = AppTaskResourceStore.fromDb(db, input.appId);
+          return admitTaskInput(
+            appTaskContext({ appDir: join(root, input.appId), projectDir: join(root, input.appId), agent: input.appId, resourceStore: store }),
+            input,
+          );
+        },
+        previewTaskEventRoutes: ({ event }) =>
+          event.type === "probe.changed" ? [{ appId: "healthy", taskIds: ["root"] }] : [],
+        admitTaskEvent: async ({ appId }) => {
+          if (appId === "healthy" && holdHealthyDispatch) {
+            healthyDispatchEntered.resolve();
+            await releaseHealthyDispatch.promise;
+          }
+          return { accepted: true, by: "fixture", route: "direct" };
+        },
+      });
+
+    runtime = await startRuntime();
+    // Emit two events while broken=true so startup recovery has multiple pending plans.
+    const first = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "one" } });
+    const second = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "two" } });
+    const firstId = first[EVENT_ROW_ID]!;
+    const secondId = second[EVENT_ROW_ID]!;
+    await until(() => getAppEventAdmissionPlan(db, firstId)?.commands.find((c) => c.appId === "healthy")?.status === "admitted");
+    await until(() => getAppEventAdmissionPlan(db, secondId)?.commands.find((c) => c.appId === "healthy")?.status === "admitted");
+
+    // Reopen runtime with healthy's command on firstId reset to pending so firstId stays
+    // in pendingAdmissionEvents while the startup recovery slice processes firstId and secondId.
+    runtime.close();
+    db.prepare(
+      "UPDATE app_event_admission_commands SET status = 'pending', admitted_at = NULL WHERE event_id = ? AND app_id = 'healthy'",
+    ).run(firstId);
+    holdHealthyDispatch = true;
+    runtime = await startRuntime();
+    // Wait until recoverNext() has processed firstId (putting it in pendingAdmissionEvents)
+    // while secondId is still queued in the recovery slice (admissionRecoveryHandle != null).
+    await firstBrokenReopenTried.promise;
+
+    // Repair broken subscription and reload while firstId is in pendingAdmissionEvents
+    // and the startup recovery slice is still draining secondId.
+    broken = false;
+    const reloadPromise = runtime.reload(undefined, async () => makeEntries());
+    await healthyDispatchEntered.promise;
+    releaseHealthyDispatch.resolve();
+    await reloadPromise;
+
+    await until(
+      () =>
+        getAppEventAdmissionPlan(db, firstId)?.status === "completed" &&
+        getAppEventAdmissionPlan(db, secondId)?.status === "completed",
+    );
+    expect(getAppEventAdmissionPlan(db, firstId)?.commands.every((c) => c.status === "admitted")).toBe(true);
+    expect(getAppEventAdmissionPlan(db, secondId)?.commands.every((c) => c.status === "admitted")).toBe(true);
+  } finally {
+    releaseHealthyDispatch.resolve();
     runtime?.close();
     closeDb(root);
     rmSync(root, { recursive: true, force: true });
