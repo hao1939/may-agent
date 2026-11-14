@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 /** Session kind: chat (human-owned), job (fire-and-forget, auto-resumed), call (parent-owned). */
@@ -39,7 +39,6 @@ function bashProcessGroupsPath(persistDir: string, sessionId: string): string {
  * block cleanup rather than authorize releasing execution capacity.
  */
 export function readSessionBashProcessGroups(persistDir: string, sessionId: string): number[] {
-  if (!existsSync(bashProcessGroupsPath(persistDir, sessionId))) return [];
   try {
     const parsed: unknown = JSON.parse(readFileSync(bashProcessGroupsPath(persistDir, sessionId), "utf-8"));
     if (

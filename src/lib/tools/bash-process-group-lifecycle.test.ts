@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { addSessionBashProcessGroup, readSessionBashProcessGroups, removeSessionBashProcessGroup, sessionDir } from "../persistence.js";
@@ -159,30 +159,42 @@ describe("exact-session bash process-group lifecycle", () => {
     expect(readFileSync(path, "utf8")).toBe(damaged);
   });
 
-  it.each(["invalid-json", "invalid-shape", "invalid-member", "unreadable"] as const)(
+  it.each(["invalid-json", "invalid-shape", "invalid-member", "unreadable", "permission-denied"] as const)(
     "retains %s sidecar evidence and rejects live and recovery cleanup",
     async (kind) => {
+      if (kind === "permission-denied" && typeof process.getuid === "function" && process.getuid() === 0) return;
       const f = fixture();
       const dir = sessionDir(f.persistDir, "damaged");
       mkdirSync(dir, { recursive: true });
       const path = join(dir, "bash-process-groups.json");
       const bytes =
-        kind === "invalid-json" ? '{"pgids":[' : kind === "invalid-shape" ? "null" : '{"pgids":[999999999,"invalid"]}';
+        kind === "invalid-json"
+          ? '{"pgids":['
+          : kind === "invalid-shape"
+            ? "null"
+            : kind === "permission-denied"
+              ? '{"pgids":[999999999]}'
+              : '{"pgids":[999999999,"invalid"]}';
       if (kind === "unreadable") mkdirSync(path);
       else writeFileSync(path, bytes);
-      expect(() => readSessionBashProcessGroups(f.persistDir, "damaged")).toThrow("bash process-group evidence");
-      await expect(drainSessionBashProcessGroups(f.persistDir, "damaged")).rejects.toThrow(
-        "bash process-group evidence",
-      );
-      expect(() => drainPersistedSessionBashProcessGroups(f.persistDir, "damaged")).toThrow(
-        "bash process-group evidence",
-      );
-      expect(() => addSessionBashProcessGroup(f.persistDir, "damaged", 999999998)).toThrow(
-        "bash process-group evidence",
-      );
-      expect(() => removeSessionBashProcessGroup(f.persistDir, "damaged", 999999999)).toThrow(
-        "bash process-group evidence",
-      );
+      if (kind === "permission-denied") chmodSync(dir, 0o000);
+      try {
+        expect(() => readSessionBashProcessGroups(f.persistDir, "damaged")).toThrow("bash process-group evidence");
+        await expect(drainSessionBashProcessGroups(f.persistDir, "damaged")).rejects.toThrow(
+          "bash process-group evidence",
+        );
+        expect(() => drainPersistedSessionBashProcessGroups(f.persistDir, "damaged")).toThrow(
+          "bash process-group evidence",
+        );
+        expect(() => addSessionBashProcessGroup(f.persistDir, "damaged", 999999998)).toThrow(
+          "bash process-group evidence",
+        );
+        expect(() => removeSessionBashProcessGroup(f.persistDir, "damaged", 999999999)).toThrow(
+          "bash process-group evidence",
+        );
+      } finally {
+        if (kind === "permission-denied") chmodSync(dir, 0o700);
+      }
       expect(existsSync(path)).toBe(true);
       if (kind !== "unreadable") expect(readFileSync(path, "utf8")).toBe(bytes);
       expect(readSessionBashProcessGroups(f.persistDir, "legacy")).toEqual([]);
