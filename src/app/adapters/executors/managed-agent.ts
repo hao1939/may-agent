@@ -3,7 +3,7 @@ import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sd
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
-import type { SubagentManager } from "../../../lib/index.js";
+import type { SubagentManager } from "../../../lib/manager.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { childEventTrace } from "../../core/events/bus.js";
 import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";

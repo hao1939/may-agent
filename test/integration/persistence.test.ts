@@ -1,6 +1,6 @@
 import { Type } from "typebox";
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { SubagentManager } from "../../src/lib/index.js";
+import { SubagentManager } from "../../src/lib/manager.js";
 import { mkdtempSync, rmSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
-import type { SubagentManager } from "../lib/index.js";
+import type { SubagentManager } from "../lib/manager.js";
 import { buildAgentDefinition, readFileWritePolicy } from "@may-agent/sdk/runtime";
 import type { ModelWithApiKey } from "@may-agent/sdk/runtime";
 import { createCodexGoalExecutor } from "./adapters/executors/codex/codex-goal-executor.js";

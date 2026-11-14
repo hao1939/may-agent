@@ -1,5 +1,5 @@
 import { eventData, type EventBus } from "./core/events/bus.js";
-import type { SubagentManager } from "../lib/index.js";
+import type { SubagentManager } from "../lib/manager.js";
 import { DbWriter } from "../lib/db-writer.js";
 import { setAgentSessionId } from "./agent-loader.js";
 import { getDb } from "../lib/db/connection.js";

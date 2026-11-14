@@ -1,4 +1,4 @@
-import type { SubagentManager } from "../../lib/index.js";
+import type { SubagentManager } from "../../lib/manager.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { captureAgentDefinitions } from "../adapters/executors/agent-definitions.js";
 import { createTaskAgentRunner } from "../adapters/executors/managed-agent.js";

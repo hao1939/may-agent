@@ -2,7 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { basename, resolve } from "node:path";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { closeAllDbs, getDb } from "../../../lib/db/connection.js";
-import { SubagentManager } from "../../../lib/index.js";
+import { SubagentManager } from "../../../lib/manager.js";
 import { enterTaskWorkerProcess } from "../../../lib/task-worker-context.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
 import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";

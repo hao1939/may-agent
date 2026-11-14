@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline";
 import { EVENT_RECORD_ONLY, type EventBus } from "./core/events/bus.js";
-import type { SubagentManager } from "../lib/index.js";
+import type { SubagentManager } from "../lib/manager.js";
 import { readSqlPerformance } from "../lib/db/query-performance.js";
 
 export async function runInteractiveLoop(opts: {

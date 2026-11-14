@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import type { SubagentManager } from "../../../lib/index.js";
+import type { SubagentManager } from "../../../lib/manager.js";
 import { getDb } from "../../../lib/db/connection.js";
 import { readSessionLastActivityAt, updateSessionDb } from "../../../lib/db/sessions.js";
 import {

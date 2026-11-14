@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachCommandRouter } from "../../src/app/command-router.js";
 import { EVENT_DELIVERY_RESULT, EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
-import type { SubagentManager } from "../../src/lib/index.js";
+import type { SubagentManager } from "../../src/lib/manager.js";
 import { RegistryStore } from "../../src/lib/persistence.js";
 
 const roots: string[] = [];
