@@ -1,6 +1,14 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+
+declare const Bun: {
+  build(options: {
+    entrypoints: string[];
+    compile: { outfile: string };
+    define: Record<string, string>;
+  }): Promise<{ success: boolean; logs: unknown[] }>;
+};
 
 type PackageIdentity = { name: string; version: string };
 
@@ -22,7 +30,7 @@ function sourceCommit(): string {
 }
 
 const outfile = resolve(option("--outfile", "bundle/may-agent"));
-const packageIdentity = (await Bun.file(resolve("package.json")).json()) as PackageIdentity;
+const packageIdentity = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as PackageIdentity;
 if (!packageIdentity.name?.trim() || !packageIdentity.version?.trim()) {
   throw new Error("package.json must declare a non-empty name and version");
 }
