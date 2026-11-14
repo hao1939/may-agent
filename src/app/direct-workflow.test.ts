@@ -10,6 +10,7 @@ import {
 import { executePreparedAgent } from "../lib/agent-execution.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
+import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
 import { runDirectWorkflow } from "./direct-workflow.js";
 
@@ -595,6 +596,86 @@ export async function execute(ctx) {
     expect(seenPrompts[1]?.some((msg) => msg.includes("finish()"))).toBe(true);
   });
 
+  test.each([false, true])("excludes a malformed unused agent and retains its diagnostic (lookup=%s)", async (lookup) => {
+    const env = setupDirectLayout();
+    const brokenDir = join(env.agentsRoot, "broken");
+    mkdirSync(brokenDir, { recursive: true });
+    writeFileSync(join(brokenDir, "agent.json"), "{ malformed JSON");
+    const run = await runDirectWorkflow({
+      ...env, agentName: "owner", input: {}, models: {},
+      module: {
+        name: "healthy", description: "Independent supplied module",
+        async execute(ctx) {
+          if (lookup) {
+            try { await ctx.call("broken", "must not run"); }
+            catch (error) { return ctx.done("healthy", String(error)); }
+            throw new Error("Malformed owner was admitted");
+          }
+          return ctx.done("healthy");
+        },
+      },
+    });
+    expect(run.ok).toBe(true);
+    expect(run.result).toMatchObject({ type: "done", summary: "healthy" });
+    if (lookup) {
+      expect(run.result?.output).toContain("Catalog diagnostics");
+      expect(run.result?.output).toContain(join(brokenDir, "agent.json"));
+    }
+  });
+
+  test.each(["unused", "timeout", "cancel"])("defers unrelated imports and bounds called owner catalog preparation on %s", async (mode) => {
+    const env = setupDirectLayout();
+    const gate = await controlledWorkflowImport(env.root);
+    const reviewerDir = join(env.agentsRoot, "reviewer", "workflows");
+    const marker = join(env.root, "imported-after-stop");
+    writeFileSync(join(reviewerDir, "a-slow.ts"), gate.source);
+    writeFileSync(join(reviewerDir, "z-after.ts"), `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(marker)}, "imported");
+export const name = "after";
+export const description = "Must not import after cancellation";
+export async function execute(ctx) { return ctx.done("after"); }
+`);
+    if (mode === "unused") {
+      const run = await observeBoundedResult(runDirectWorkflow({
+        ...env, agentName: "owner", input: {}, models: {}, timeoutMs: 500,
+        module: { name: "healthy", description: "Does not touch reviewer/*", async execute(ctx) {
+          return ctx.done("healthy");
+        } },
+      }));
+      expect(run?.result.ok).toBe(true);
+      expect(run?.result.result).toMatchObject({ type: "done", summary: "healthy" });
+      expect(existsSync(marker)).toBe(false);
+      return;
+    }
+    const controller = new AbortController();
+    let settledAfterCall = false;
+    const run = runDirectWorkflow({
+      ...env, agentName: "owner", input: {}, models: {},
+      signal: controller.signal, timeoutMs: mode === "timeout" ? 500 : 10_000,
+      module: { name: "caller", description: "Calls reviewer/after whose catalog import stalls", async execute(ctx) {
+        await ctx.call("reviewer/after", {});
+        settledAfterCall = true;
+        return ctx.done("must not complete");
+      } },
+    });
+    try {
+      expect(await observeBoundedResult(gate.started)).toBeDefined();
+      if (mode === "cancel") controller.abort(new Error("cancel catalog preparation"));
+      const stopped = await observeBoundedResult(run);
+      expect(stopped).toBeDefined();
+      expect(stopped?.result.ok).toBe(false);
+      expect(stopped?.result.report.cleanup.confirmed).toBe(false);
+    } finally {
+      gate.release();
+      await observeBoundedResult(gate.completed);
+      await observeBoundedResult(run);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    expect(settledAfterCall).toBe(false);
+    expect(existsSync(marker)).toBe(false);
+  });
+
   test.each(["global", "app-local"])("isolates %s callers from other Apps' procedures", async (layout) => {
     const env = setupDirectLayout();
     const projectsRoot = join(env.projectRoot, "projects");
@@ -623,11 +704,24 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
     const run = await runDirectWorkflow({
       ...env, agentsRoot, projectsRoot, agentName: "owner", input: {}, models: {},
       module: { name: "caller", description: "Boundary probe", async execute(ctx) {
-        return ctx.call("foreign-owner/secret", {});
+        const failures = [];
+        for (const probe of [
+          () => ctx.call("foreign-owner/secret", {}),
+          () => ctx.agents.call("foreign-owner", "probe"),
+        ]) {
+          try { await probe(); } catch (err) { failures.push(String(err)); }
+        }
+        return ctx.done("isolated", failures);
       } },
     });
-    expect(run.ok).toBe(false);
-    expect(String(run.error)).toContain('Callable procedure "foreign-owner/secret" not found');
+    expect(run.ok).toBe(true);
+    expect(run.result).toMatchObject({
+      type: "done",
+      output: [
+        expect.stringContaining('Callable procedure "foreign-owner/secret" not found'),
+        expect.stringContaining('Agent "foreign-owner" was not found'),
+      ],
+    });
   });
 
   test("executes the App-local prompt admitted by the catalog instead of resolving a global namesake", async () => {

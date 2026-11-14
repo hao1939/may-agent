@@ -130,19 +130,52 @@ export function listWorkflowFiles(workflowDir: string | undefined): string[] {
   }
 }
 
-async function loadWorkflowScope(
+function raceWithAbort<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise;
+  if (signal.aborted) {
+    return Promise.reject(signal.reason ?? new Error("Operation aborted"));
+  }
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      reject(signal.reason ?? new Error("Operation aborted"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (val) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(val);
+      },
+      (err) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(err);
+      },
+    );
+  });
+}
+
+export async function loadWorkflowScope(
   dir: string | undefined,
   scope: "agent" | "project",
+  signal?: AbortSignal,
+  hooks?: { onImportStart?: () => void; onImportSettled?: () => void },
 ): Promise<{ workflows: Map<string, WorkflowModule>; diagnostics: string[] }> {
   const grouped = new Map<string, WorkflowModule[]>();
   const diagnostics: string[] = [];
   for (const filePath of listWorkflowFiles(dir)) {
+    signal?.throwIfAborted();
     try {
-      const workflow = await loadWorkflowModuleFromFile(filePath, scope);
+      hooks?.onImportStart?.();
+      const rawImport = loadWorkflowModuleFromFile(filePath, scope);
+      if (hooks?.onImportSettled) {
+        void rawImport.finally(() => hooks.onImportSettled!());
+      }
+      const workflow = await raceWithAbort(rawImport, signal);
+      signal?.throwIfAborted();
       const matches = grouped.get(workflow.name) ?? [];
       matches.push(workflow);
       grouped.set(workflow.name, matches);
     } catch (err) {
+      signal?.throwIfAborted();
       diagnostics.push(`${filePath}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
@@ -160,8 +193,14 @@ async function loadWorkflowScope(
   return { workflows, diagnostics };
 }
 
-export async function buildWorkflowCatalog(workflowDir: string): Promise<WorkflowCatalog> {
-  const agent = await loadWorkflowScope(workflowDir, "agent");
+export async function buildWorkflowCatalog(
+  workflowDir: string,
+  signal?: AbortSignal,
+  hooks?: { onImportStart?: () => void; onImportSettled?: () => void },
+): Promise<WorkflowCatalog> {
+  signal?.throwIfAborted();
+  const agent = await loadWorkflowScope(workflowDir, "agent", signal, hooks);
+  signal?.throwIfAborted();
   return Object.freeze({
     workflows: new Map(agent.workflows),
     diagnostics: Object.freeze([...agent.diagnostics]),

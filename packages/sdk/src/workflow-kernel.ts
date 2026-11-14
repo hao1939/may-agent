@@ -307,7 +307,7 @@ export type WorkflowKernelBindings<TInput = unknown> = {
     stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult>;
   /** Optional classifier so runBoundStep knows whether target is prompt ("agent") or code ("workflow") before invocation. */
-  resolveTargetKind?(target: string, input: unknown): "agent" | "workflow";
+  resolveTargetKind?(target: string, input: unknown): "agent" | "workflow" | Promise<"agent" | "workflow">;
   callAgent(
     agent: string,
     task: string,
@@ -946,17 +946,17 @@ export async function runWorkflowInvocation<TInput = unknown>(
     } catch (err) {
       return Promise.reject(err);
     }
-    const kind: "agent" | "workflow" = bindings.resolveTargetKind
-      ? bindings.resolveTargetKind(target, input)
-      : typeof target === "string" && target.includes("/")
-        ? "workflow"
-        : typeof input === "string"
-          ? "agent"
-          : "workflow";
     const promptPreview =
       typeof input === "string" ? input : JSON.stringify(input ?? null);
-    return trackOperation(
-      runBoundStep(kind, target, promptPreview, options, (stepControl, effectiveOptions) => {
+    return trackOperation((async () => {
+      const kind: "agent" | "workflow" = bindings.resolveTargetKind
+        ? await bindings.resolveTargetKind(target, input)
+        : typeof target === "string" && target.includes("/")
+          ? "workflow"
+          : typeof input === "string"
+            ? "agent"
+            : "workflow";
+      return runBoundStep(kind, target, promptPreview, options, (stepControl, effectiveOptions) => {
         if (bindings.callTarget) {
           return bindings.callTarget(target, input, effectiveOptions, stepControl);
         }
@@ -972,8 +972,8 @@ export async function runWorkflowInvocation<TInput = unknown>(
           ...stepControl,
           options: effectiveOptions,
         });
-      }),
-    ) as Promise<ExecutionResult<Static<S>>>;
+      });
+    })()) as Promise<ExecutionResult<Static<S>>>;
   }) as WorkflowContext["call"];
 
   const callAgentOverload = (<S extends TSchema>(
