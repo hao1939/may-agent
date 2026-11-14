@@ -10,11 +10,12 @@ import {
 } from "@may-agent/sdk/testing";
 import { Type } from "typebox";
 import { executePreparedAgent } from "../lib/agent-execution.js";
+import { runCliAgent } from "../lib/cli-agent.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
-import { run, runDirect, runDirectWorkflow } from "./standalone.js";
+import { listStandaloneTargets, run, runDirect, runDirectWorkflow } from "./standalone.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -1344,5 +1345,264 @@ export async function execute(ctx) {
     } finally {
       gate.release();
     }
+  });
+
+  test("recovers App-local prompt callerProjectId without agentFixtures, admits global agents from App procedures, enforces explicit App scope, defaults workRoot to cwd, retains scratch outputRoot on unconfirmed cleanup, supports array outputSchema on CLI runner, and lists exported procedure names", async () => {
+    const env = setupDirectLayout();
+    const projectsRoot = join(env.projectRoot, "projects");
+    const alphaAppDir = join(projectsRoot, "alpha.app");
+    const betaAppDir = join(projectsRoot, "beta.app");
+    const alphaLeadDir = join(alphaAppDir, "agents", "alpha-lead");
+    const betaOwnerDir = join(betaAppDir, "agents", "beta-owner");
+
+    mkdirSync(join(alphaLeadDir, "workflows"), { recursive: true });
+    mkdirSync(join(betaOwnerDir, "workflows"), { recursive: true });
+    writeFileSync(join(alphaAppDir, "app.ts"), "export default {};\n");
+    writeFileSync(join(betaAppDir, "app.ts"), "export default {};\n");
+
+    writeFileSync(
+      join(alphaLeadDir, "agent.json"),
+      JSON.stringify({
+        name: "alpha-lead",
+        description: "Alpha App lead",
+        domain: "test",
+        model: "test",
+        tools: ["finish"],
+      }),
+    );
+    writeFileSync(join(alphaLeadDir, "AGENTS.md"), "# alpha-lead\n");
+
+    writeFileSync(
+      join(betaOwnerDir, "agent.json"),
+      JSON.stringify({
+        name: "beta-owner",
+        description: "Beta App owner",
+        domain: "test",
+        model: "test",
+        tools: ["finish"],
+      }),
+    );
+    writeFileSync(join(betaOwnerDir, "AGENTS.md"), "# beta-owner\n");
+    writeFileSync(
+      join(betaOwnerDir, "workflows", "beta-probe.ts"),
+      `
+export const name = "beta-probe";
+export const description = "Beta procedure";
+export async function execute(ctx) {
+  return ctx.done("beta-ran");
+}
+`,
+    );
+
+    // File named z-aliased.ts exporting name = "aliased-proc" (and calling global "reviewer"):
+    writeFileSync(
+      join(alphaLeadDir, "workflows", "z-aliased.ts"),
+      `
+export const name = "aliased-proc";
+export const description = "Aliased procedure calling global reviewer";
+export async function execute(ctx) {
+  const step = await ctx.call("reviewer", "Check from App procedure");
+  return ctx.done("alpha->global:" + step.summary);
+}
+`,
+    );
+    // Duplicate exported name in another file to verify ambiguity exclusion in listStandaloneTargets:
+    writeFileSync(
+      join(betaOwnerDir, "workflows", "dup-a.ts"),
+      `
+export const name = "dup-proc";
+export const description = "Duplicate A";
+export async function execute(ctx) { return ctx.done("a"); }
+`,
+    );
+    writeFileSync(
+      join(betaOwnerDir, "workflows", "dup-b.ts"),
+      `
+export const name = "dup-proc";
+export const description = "Duplicate B";
+export async function execute(ctx) { return ctx.done("b"); }
+`,
+    );
+
+    // 1. Bare App-local prompt target AND App-prefixed prompt target WITHOUT agentFixtures:
+    const seenRunAgentWorkRoots: string[] = [];
+    const nestedCwd = join(env.workRoot, "nested-repo");
+    mkdirSync(nestedCwd, { recursive: true });
+
+    for (const promptTarget of ["alpha-lead", "alpha.app/alpha-lead"] as const) {
+      const bareAppPrompt = await run(promptTarget, "Run bare App prompt", {
+        cwd: nestedCwd,
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+        runAgent: async (agentOpts) => {
+          seenRunAgentWorkRoots.push(agentOpts.workRoot);
+          return {
+            sessionId: "s_alpha_prompt",
+            sessionPath: join(agentOpts.outputRoot, "s_alpha_prompt"),
+            status: "completed",
+            lastAssistantText: "done",
+            messages: [],
+            durationMs: 5,
+            finishResult: {
+              status: "success",
+              summary: `ran:${agentOpts.agentName}:${agentOpts.task}`,
+            },
+          };
+        },
+      });
+      expect(bareAppPrompt.ok).toBe(true);
+      expect(bareAppPrompt.result).toMatchObject({
+        type: "done",
+        summary: "ran:alpha-lead:Run bare App prompt",
+      });
+    }
+    // 2. workRoot defaults to cwd (nestedCwd) rather than inferred projectRoot:
+    expect(seenRunAgentWorkRoots).toEqual([nestedCwd, nestedCwd]);
+
+    // 3. Auto-discovered App procedure can call a global agent ("reviewer") without agentFixtures:
+    const appCallsGlobal = await run(
+      "alpha-lead/aliased-proc",
+      {},
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+        runAgent: async (agentOpts) => ({
+          sessionId: "s_global_reviewer",
+          sessionPath: join(agentOpts.outputRoot, "s_global_reviewer"),
+          status: "completed",
+          lastAssistantText: "done",
+          messages: [],
+          durationMs: 5,
+          finishResult: {
+            status: "success",
+            summary: `global-${agentOpts.agentName}`,
+          },
+        }),
+      },
+    );
+    expect(appCallsGlobal.ok).toBe(true);
+    expect(appCallsGlobal.result).toEqual({
+      type: "done",
+      summary: "alpha->global:global-reviewer",
+    });
+
+    // 4. Explicit App scope (--app or <app>.app/<target>) rejects sibling App procedures:
+    await expect(
+      run(
+        "beta-owner/beta-probe",
+        {},
+        {
+          projectRoot: env.projectRoot,
+          app: "alpha",
+          models: { test: fakeModel() as any },
+        },
+      ),
+    ).rejects.toThrow("beta-owner/beta-probe");
+
+    await expect(
+      run(
+        "alpha.app/beta-owner/beta-probe",
+        {},
+        {
+          projectRoot: env.projectRoot,
+          models: { test: fakeModel() as any },
+        },
+      ),
+    ).rejects.toThrow("beta-owner/beta-probe");
+
+    // 5. listStandaloneTargets advertises exported `name` ("alpha-lead/aliased-proc", not "alpha-lead/z-aliased") and excludes ambiguous duplicates:
+    const listed = await listStandaloneTargets({ projectRoot: env.projectRoot });
+    const targetNames = listed.map((item) => item.target);
+    expect(targetNames).toContain("alpha-lead/aliased-proc");
+    expect(targetNames).not.toContain("alpha-lead/z-aliased");
+    expect(targetNames).not.toContain("beta-owner/dup-proc");
+
+    // 6. Array outputSchema through the real runCliAgent runner + scratch outputRoot retention when drainProcessGroup returns false:
+    const arraySchema = Type.Array(Type.String());
+    const arrayCliRun = await run("codex", "Return JSON array", {
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      outputSchema: arraySchema,
+      models: {},
+      runCli: (cliInput, cliOpts) =>
+        runCliAgent(cliInput, {
+          ...cliOpts,
+          spawnCommand: (() => {
+            const { EventEmitter } = require("node:events");
+            const { PassThrough } = require("node:stream");
+            const child = new EventEmitter();
+            child.pid = 42424;
+            child.stdout = new PassThrough();
+            child.stderr = new PassThrough();
+            child.kill = () => true;
+            setImmediate(() => {
+              const outIdx = cliInput.tool === "codex" ? 9 : -1;
+              void outIdx;
+              // Write JSON array to resultPath via finalText in codex stream:
+              child.stdout.write(
+                `${JSON.stringify({
+                  type: "item.completed",
+                  item: { type: "agent_message", text: '["alpha","beta"]' },
+                })}\n${JSON.stringify({ type: "turn.completed" })}\n`,
+              );
+              child.stdout.end();
+              child.stderr.end();
+              child.emit("exit", 0, null);
+              child.emit("close", 0, null);
+            });
+            return child;
+          }) as any,
+          drainProcessGroup: async () => true,
+        }),
+    });
+    expect(arrayCliRun.ok).toBe(true);
+    expect(arrayCliRun.result).toMatchObject({
+      type: "done",
+      output: ["alpha", "beta"],
+    });
+
+    // 7. Scratch outputRoot is retained when drainProcessGroup returns false (unconfirmed cleanup) and outputRoot was omitted:
+    const unconfirmedScratchRun = await run("codex", "Leaky process group", {
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      models: {},
+      drainProcessGroup: async () => false,
+      runCli: (cliInput, cliOpts) =>
+        runCliAgent(cliInput, {
+          ...cliOpts,
+          spawnCommand: (() => {
+            const { EventEmitter } = require("node:events");
+            const { PassThrough } = require("node:stream");
+            const child = new EventEmitter();
+            child.pid = 52525;
+            child.stdout = new PassThrough();
+            child.stderr = new PassThrough();
+            child.kill = () => true;
+            setImmediate(() => {
+              child.stdout.write(
+                `${JSON.stringify({
+                  type: "item.completed",
+                  item: { type: "agent_message", text: "ok" },
+                })}\n${JSON.stringify({ type: "turn.completed" })}\n`,
+              );
+              child.stdout.end();
+              child.stderr.end();
+              child.emit("exit", 0, null);
+              child.emit("close", 0, null);
+            });
+            return child;
+          }) as any,
+        }),
+    });
+    expect(unconfirmedScratchRun.ok).toBe(false);
+    expect(unconfirmedScratchRun.report.cleanup.confirmed).toBe(false);
+    expect(unconfirmedScratchRun.outputRoot).toBeDefined();
+    roots.push(unconfirmedScratchRun.outputRoot!);
+    expect(existsSync(unconfirmedScratchRun.outputRoot!)).toBe(true);
+    const stepSessionId = unconfirmedScratchRun.report.steps[0]?.sessionId;
+    expect(stepSessionId).toBeDefined();
+    expect(
+      existsSync(join(unconfirmedScratchRun.outputRoot!, "sessions", stepSessionId!, "bash-process-groups.json")),
+    ).toBe(true);
   });
 });

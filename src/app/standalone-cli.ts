@@ -255,7 +255,9 @@ export async function runStandaloneCli(
     stdinText?: string;
     readStdin?: () => string | undefined;
     execute?: typeof run;
-    listTargets?: (opts: { cwd?: string; projectRoot?: string; app?: string }) => DiscoveredTargetSummary[];
+    listTargets?: (
+      opts: { cwd?: string; projectRoot?: string; app?: string },
+    ) => Promise<DiscoveredTargetSummary[]> | DiscoveredTargetSummary[];
     stdout?: (text: string) => void;
     stderr?: (text: string) => void;
   } = {},
@@ -279,7 +281,7 @@ export async function runStandaloneCli(
 
   if (parsed.command === "list") {
     const discover = deps.listTargets ?? listStandaloneTargets;
-    const targets = discover({
+    const targets = await discover({
       cwd: parsed.options.cwd,
       projectRoot: parsed.options.projectRoot,
       app: parsed.options.app,
@@ -306,7 +308,36 @@ export async function runStandaloneCli(
   }
 
   const execute = deps.execute ?? run;
-  const runResult = await execute(parsed.target, effectiveInput, parsed.options);
+  const sigController = new AbortController();
+  const callerSignal = parsed.options.signal;
+  const onCallerAbort = () => {
+    sigController.abort(callerSignal?.reason ?? new Error("Standalone execution cancelled"));
+  };
+  if (callerSignal?.aborted) {
+    onCallerAbort();
+  } else if (callerSignal) {
+    callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+  }
+  const onSigInt = () => {
+    sigController.abort(new Error("Standalone execution interrupted by SIGINT"));
+  };
+  const onSigTerm = () => {
+    sigController.abort(new Error("Standalone execution terminated by SIGTERM"));
+  };
+  process.on("SIGINT", onSigInt);
+  process.on("SIGTERM", onSigTerm);
+
+  let runResult: DirectRunResult;
+  try {
+    runResult = await execute(parsed.target, effectiveInput, {
+      ...parsed.options,
+      signal: sigController.signal,
+    });
+  } finally {
+    process.off("SIGINT", onSigInt);
+    process.off("SIGTERM", onSigTerm);
+    callerSignal?.removeEventListener("abort", onCallerAbort);
+  }
 
   if (parsed.json) {
     writeOut(JSON.stringify(runResult, null, 2));
