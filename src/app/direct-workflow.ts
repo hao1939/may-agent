@@ -189,11 +189,20 @@ type DirectPromptDefinition = {
   config?: AgentConfig;
 };
 
-async function buildDirectCatalog(
+type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
+  prompts: Map<string, { owner: string; definition: DirectPromptDefinition }>;
+  proceduresByOwner: Map<string, ReadonlyMap<string, WorkflowExecutableModule>>;
+  diagnostics: string[];
+  pendingImports: number;
+};
+
+async function buildDirectPromptCatalog(
   options: DirectWorkflowRunOptions<any>,
   callerOwner: string,
   explicitWorkflowDir?: string,
-): Promise<PreparedCatalog<DirectPromptDefinition>> {
+  signal?: AbortSignal,
+): Promise<DirectCatalogState> {
+  signal?.throwIfAborted();
   // An App-local agentsRoot can also appear through projectsRoot. Keep its
   // project metadata instead of treating that duplicate path as a global root.
   const dirs = [...new Map(
@@ -212,11 +221,18 @@ async function buildDirectCatalog(
   const diagnostics: string[] = [];
 
   for (const agentDir of dirs) {
+    signal?.throwIfAborted();
     // Enforce App-local boundary isolation: only include global agents or agents in the same App projectId.
     if (agentDir.projectId && agentDir.projectId !== callerProjectId) {
       continue;
     }
-    const config = readAgentConfigFile(agentDir.dir);
+    let config: ReturnType<typeof readAgentConfigFile>;
+    try {
+      config = readAgentConfigFile(agentDir.dir);
+    } catch (error) {
+      diagnostics.push(`${join(agentDir.dir, "agent.json")}: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
     if (!config) continue;
     const existing = prompts.get(config.name);
     // Prompt and procedure definitions must come from the same admitted owner.
@@ -225,21 +241,6 @@ async function buildDirectCatalog(
       throw new Error(`Ambiguous callable owner "${config.name}": ${existing.definition.source.dir}, ${agentDir.dir}`);
     }
     prompts.set(config.name, { owner: config.name, definition: { source: agentDir, config } });
-    const wfCatalog = await buildWorkflowCatalog(join(agentDir.dir, "workflows"));
-    proceduresByOwner.set(config.name, wfCatalog.workflows);
-    for (const diag of wfCatalog.diagnostics) {
-      diagnostics.push(diag);
-    }
-  }
-
-  if (explicitWorkflowDir) {
-    const explicitCatalog = await buildWorkflowCatalog(explicitWorkflowDir);
-    if (explicitCatalog.workflows.size > 0 || !proceduresByOwner.has(callerOwner)) {
-      proceduresByOwner.set(callerOwner, explicitCatalog.workflows);
-    }
-    for (const diag of explicitCatalog.diagnostics) {
-      if (!diagnostics.includes(diag)) diagnostics.push(diag);
-    }
   }
 
   for (const fixtureAgent of Object.keys(options.agentFixtures ?? {})) {
@@ -262,6 +263,7 @@ async function buildDirectCatalog(
     prompts,
     proceduresByOwner,
     diagnostics,
+    pendingImports: 0,
   };
 }
 
@@ -273,7 +275,7 @@ export async function runDirectWorkflow<TInput = unknown>(
   internal?: {
     depth: number;
     allowance?: WorkflowExecutionAllowance;
-    catalog?: PreparedCatalog<DirectPromptDefinition>;
+    catalog?: DirectCatalogState;
     callerOwner?: string;
     tools?: "full" | "readonly";
   },
@@ -335,18 +337,77 @@ export async function runDirectWorkflow<TInput = unknown>(
       ? options.target.slice(0, options.target.indexOf("/")).trim()
       : options.target.trim();
   }
+  const initialOwner = callerOwner;
   const workflowDir = resolveWorkflowDir({ ...options, agentName: callerOwner });
   const wfCatalog = !options.module && workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
-  const preparedCatalog =
-    internal?.catalog ?? (await buildDirectCatalog({ ...options, agentName: callerOwner }, callerOwner, workflowDir));
+  let preparedCatalog: DirectCatalogState = internal?.catalog ?? {
+    prompts: new Map(),
+    proceduresByOwner: new Map(),
+    diagnostics: [],
+    pendingImports: 0,
+  };
+
+  const ensureOwnerProcedures = async (owner: string, signal?: AbortSignal): Promise<void> => {
+    if (preparedCatalog.proceduresByOwner.has(owner)) return;
+    if (owner === initialOwner && wfCatalog) {
+      preparedCatalog.proceduresByOwner.set(owner, wfCatalog.workflows);
+      for (const diag of wfCatalog.diagnostics) {
+        if (!preparedCatalog.diagnostics.includes(diag)) preparedCatalog.diagnostics.push(diag);
+      }
+      return;
+    }
+    const ownerDir =
+      owner === initialOwner && workflowDir
+        ? workflowDir
+        : preparedCatalog.prompts.get(owner)?.definition.source.dir
+          ? join(preparedCatalog.prompts.get(owner)!.definition.source.dir, "workflows")
+          : undefined;
+    if (!ownerDir) return;
+    const loaded = await buildWorkflowCatalog(ownerDir, signal, {
+      onImportStart: () => {
+        preparedCatalog.pendingImports += 1;
+      },
+      onImportSettled: () => {
+        preparedCatalog.pendingImports -= 1;
+      },
+    });
+    signal?.throwIfAborted();
+    preparedCatalog.proceduresByOwner.set(owner, loaded.workflows);
+    for (const diag of loaded.diagnostics) {
+      if (!preparedCatalog.diagnostics.includes(diag)) preparedCatalog.diagnostics.push(diag);
+    }
+  };
+
+  const loadTargetOwnerProcedures = async (target: string, signal?: AbortSignal): Promise<void> => {
+    const normalized = typeof target === "string" ? target.trim() : "";
+    if (!normalized) return;
+    const slash = normalized.indexOf("/");
+    if (slash !== -1) {
+      const owner = normalized.slice(0, slash).trim();
+      if (owner) await ensureOwnerProcedures(owner, signal);
+      return;
+    }
+    await ensureOwnerProcedures(callerOwner, signal);
+  };
 
   let targetModule = options.module;
+  let catalogCapturedAtRoot = false;
   if (!targetModule) {
     const requestedTarget = options.target?.trim() ?? options.workflowName?.trim();
     if (!requestedTarget) {
       throw new Error("runDirect requires `module`, `target`, or (`workflowName` and resolvable `workflowDir`/`agentName`)");
     }
     if (options.target) {
+      if (!internal?.catalog) {
+        preparedCatalog = await buildDirectPromptCatalog(
+          { ...options, agentName: callerOwner },
+          callerOwner,
+          workflowDir,
+          options.signal,
+        );
+        catalogCapturedAtRoot = true;
+      }
+      await loadTargetOwnerProcedures(requestedTarget, options.signal);
       const resolved = resolveCallable(callerOwner, requestedTarget, preparedCatalog);
       callerOwner = resolved.owner;
       if (resolved.kind === "code") {
@@ -567,7 +628,26 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
-  const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(targetModule, {
+  const authoredModule = targetModule;
+  let activeScopeSignal: AbortSignal | undefined;
+  const outcome: WorkflowKernelOutcome = await runWorkflowInvocation({
+    ...authoredModule,
+    async execute(ctx) {
+      activeScopeSignal = ctx.signal;
+      if (!internal?.catalog && !catalogCapturedAtRoot) {
+        const captured = await buildDirectPromptCatalog(
+          { ...options, agentName: callerOwner },
+          callerOwner,
+          workflowDir,
+          ctx.signal,
+        );
+        ctx.signal.throwIfAborted();
+        preparedCatalog = captured;
+      }
+      ctx.signal.throwIfAborted();
+      return authoredModule.execute(ctx);
+    },
+  }, {
     executionId: internal ? undefined : options.executionId,
     input: options.input,
     taskOwned: Boolean(options.task || options.reconciliation),
@@ -614,8 +694,12 @@ export async function runDirectWorkflow<TInput = unknown>(
     reconciliation,
     onStep: options.onStep,
     onLog: options.onLog,
-    resolveTargetKind: (target) => {
+    // Native imports cannot be forcibly stopped. Keep uncertainty visible if
+    // preparation outlives this invocation, and fence its late continuation.
+    confirmCleanup: () => preparedCatalog.pendingImports === 0,
+    resolveTargetKind: async (target) => {
       try {
+        if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
         const resolved = resolveCallable(callerOwner, target, preparedCatalog);
         return resolved.kind === "prompt" ? "agent" : "workflow";
       } catch {
@@ -623,6 +707,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       }
     },
     callTarget: async (target, input, callOpts, stepControl) => {
+      await loadTargetOwnerProcedures(target, stepControl.signal);
       const resolved = resolveCallable(callerOwner, target, preparedCatalog);
       if (resolved.kind === "prompt") {
         if (typeof input !== "string") {
@@ -631,22 +716,6 @@ export async function runDirectWorkflow<TInput = unknown>(
         return executePromptStep(resolved.name, input, callOpts, stepControl);
       }
       return executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts);
-    },
-    callAgent: (agent, prompt, callOpts, stepControl) =>
-      executePromptStep(agent, prompt, callOpts, stepControl),
-    runWorkflow: async (wfName, wfInput, stepControl) => {
-      const resolved = resolveCallable(callerOwner, wfName, preparedCatalog);
-      if (resolved.kind !== "code") {
-        throw new Error(`Callable target "${wfName}" is not a code procedure`);
-      }
-      return executeCodeStep(
-        resolved.name,
-        resolved.module,
-        resolved.owner,
-        wfInput,
-        stepControl,
-        stepControl.options,
-      );
     },
   });
 

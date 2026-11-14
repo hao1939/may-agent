@@ -17,7 +17,11 @@ import type { ExecutionScope } from "./execution-scope.js";
 import { readIdentity } from "./instance-identity.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
-import { buildWorkflowCatalog, findWorkflow } from "./workflow-catalog.js";
+import {
+  resolveCallable,
+  type PreparedCatalog,
+} from "../../packages/sdk/src/workflow-kernel.js";
+import { buildWorkflowCatalog } from "./workflow-catalog.js";
 import { createWorkflowRunner } from "./workflow-tool.js";
 import type { WorkflowEvent } from "./workflow.js";
 import type { EventTrace } from "../app/core/events/bus.js";
@@ -236,6 +240,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     caller: string | undefined,
     target: string,
     sessionId?: string,
+    signal?: AbortSignal,
   ): Promise<
     | { kind: "none" }
     | { kind: "error"; error: string }
@@ -244,6 +249,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
         owner: string;
         name: string;
         workflowDir: string;
+        catalog: Awaited<ReturnType<typeof buildWorkflowCatalog>>;
       }
   > => {
     const slashIndex = target.indexOf("/");
@@ -260,26 +266,43 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
         return { kind: "error", error: `Procedure owner "${owner}" not registered. Use 'list' to see available targets.` };
       }
       const workflowDir = join(ownerDef.agentDir, "workflows");
-      const catalog = await buildWorkflowCatalog(workflowDir);
-      const found = findWorkflow(catalog, name);
-      if (!found.workflow) {
-        return { kind: "error", error: found.error ?? `Procedure "${owner}/${name}" not found.` };
+      const wfCatalog = await buildWorkflowCatalog(workflowDir, signal);
+      const snapshot: PreparedCatalog<SubagentDefinition> = {
+        proceduresByOwner: new Map([[owner, wfCatalog.workflows]]),
+        diagnostics: wfCatalog.diagnostics,
+      };
+      try {
+        const resolved = resolveCallable(caller ?? owner, target, snapshot);
+        if (resolved.kind === "code") {
+          return { kind: "procedure", owner, name: resolved.name, workflowDir, catalog: wfCatalog };
+        }
+      } catch (err) {
+        return { kind: "error", error: err instanceof Error ? err.message : String(err) };
       }
-      return { kind: "procedure", owner, name: found.workflow.name, workflowDir };
+      return { kind: "none" };
     }
 
     const callerDef = callerDefinition(caller, sessionId);
     if (callerDef?.agentDir) {
       const workflowDir = join(callerDef.agentDir, "workflows");
-      const catalog = await buildWorkflowCatalog(workflowDir);
-      const found = findWorkflow(catalog, target);
-      if (found.workflow) {
-        return {
-          kind: "procedure",
-          owner: callerDef.name,
-          name: found.workflow.name,
-          workflowDir,
-        };
+      const wfCatalog = await buildWorkflowCatalog(workflowDir, signal);
+      const snapshot: PreparedCatalog<SubagentDefinition> = {
+        proceduresByOwner: new Map([[callerDef.name, wfCatalog.workflows]]),
+        diagnostics: wfCatalog.diagnostics,
+      };
+      try {
+        const resolved = resolveCallable(callerDef.name, target, snapshot);
+        if (resolved.kind === "code") {
+          return {
+            kind: "procedure",
+            owner: callerDef.name,
+            name: resolved.name,
+            workflowDir,
+            catalog: wfCatalog,
+          };
+        }
+      } catch {
+        // Not a local code procedure; fall through to prompt agent lookup.
       }
     }
     return { kind: "none" };
@@ -317,7 +340,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               }
             }
 
-            const codeLookup = await resolveCodeProcedure(callerAgentCall, params.agent, parentSid);
+            const codeLookup = await resolveCodeProcedure(callerAgentCall, params.agent, parentSid, signal);
             if (codeLookup.kind === "error") {
               return textResult(JSON.stringify({ error: codeLookup.error }));
             }
@@ -355,7 +378,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                   : undefined,
                 ...(hasInput ? { workflowInput: params.input } : {}),
               });
-              const wfResult = await runner.run(codeLookup.name, taskText);
+              const wfResult = await runner.run(codeLookup.name, taskText, codeLookup.catalog);
               return textResult(
                 JSON.stringify({ ...wfResult, ...workflowExecutionResult(wfResult) }, null, 2),
               );
@@ -415,7 +438,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
             const callerAgentRun = getCallerAgentName?.();
             const parentSidRun = getCallerSessionId?.();
-            const codeForkCheck = await resolveCodeProcedure(callerAgentRun, params.agent, parentSidRun);
+            const codeForkCheck = await resolveCodeProcedure(callerAgentRun, params.agent, parentSidRun, signal);
             if (codeForkCheck.kind === "procedure" || params.agent.includes("/")) {
               return textResult(
                 JSON.stringify({

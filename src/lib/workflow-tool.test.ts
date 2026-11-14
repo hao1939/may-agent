@@ -9,6 +9,7 @@ import { createWorkflowRunner } from "./workflow-tool.js";
 import { workflowExecutionResult } from "./execution-handoff.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
+import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 import type { SubagentDefinition } from "./types.js";
 
 const workerDef: SubagentDefinition = {
@@ -30,6 +31,110 @@ afterEach(() => {
 });
 
 describe("workflow execution boundaries", () => {
+  it.each(["provided", "manager"])("keeps ctx.call prompt resolution inside the %s captured catalog and blocks foreign-App agents", async (source) => {
+    const root = workflowRoot("workflow-legacy-isolation-");
+    writeFileSync(join(root, "parent.ts"), `
+export const name = "parent";
+export const description = "ctx.call must reject an excluded foreign-App prompt target";
+export async function execute(ctx) {
+  try {
+    await ctx.call("foreign", "input");
+    throw new Error("Foreign prompt target should not execute");
+  } catch (error) {
+    return ctx.done("checked", [error.message]);
+  }
+}
+`);
+    const foreign: SubagentDefinition = {
+      name: "foreign", description: "Foreign", domain: "test", model: fakeModel(), tools: [],
+      appLocal: true, projectId: "other-app",
+    };
+    let calls = 0;
+    const executeForeign = async () => {
+      calls++;
+      return { sessionId: "s_foreign", status: "done", messages: [],
+        finishResult: { status: "success", summary: "must not run" } };
+    };
+    const result = await createWorkflowRunner({
+      manager: {
+        agentNames: () => ["foreign"], getAgentDefinition: () => foreign,
+        callAgent: executeForeign, callAgentDefinition: executeForeign,
+      } as any,
+      workflowDir: root, agentName: "owner", projectId: "sample",
+      ...(source === "provided" ? { agentDefinitions: new Map([["foreign", foreign]]) } : {}),
+    }).run("parent", "input");
+    expect(result).toMatchObject({ type: "done", output: [expect.stringContaining("foreign")] });
+    expect(calls).toBe(0);
+  });
+
+  it.each(["unused", "timeout", "cancel"])("defers unrelated Hosted imports and bounds called owner catalog preparation on %s", async (mode) => {
+    const root = workflowRoot("workflow-catalog-stop-");
+    const gate = await controlledWorkflowImport(root);
+    const workflowDir = join(root, "workflows");
+    const otherDir = join(root, "other");
+    mkdirSync(workflowDir);
+    mkdirSync(join(otherDir, "workflows"), { recursive: true });
+    const marker = join(root, "executed-after-stop");
+    writeFileSync(join(workflowDir, "parent.ts"), mode === "unused"
+      ? `
+export const name = "parent";
+export const description = "Does not touch other/*";
+export async function execute(ctx) { return ctx.done("healthy"); }
+`
+      : `
+import { writeFileSync } from "node:fs";
+export const name = "parent";
+export const description = "Calls other/after whose catalog import stalls";
+export async function execute(ctx) {
+  await ctx.call("other/after", {});
+  writeFileSync(${JSON.stringify(marker)}, "executed");
+  return ctx.done("late");
+}
+`);
+    writeFileSync(join(otherDir, "workflows", "a-slow.ts"), gate.source);
+    const afterImport = join(root, "imported-after-stop");
+    writeFileSync(join(otherDir, "workflows", "z-after.ts"), `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(afterImport)}, "imported");
+export const name = "after";
+export const description = "Must not import after stop";
+export async function execute(ctx) { return ctx.done("after"); }
+`);
+    const other: SubagentDefinition = {
+      name: "other", description: "Other owner", domain: "test", model: fakeModel(), tools: [], agentDir: otherDir,
+    };
+    if (mode === "unused") {
+      const result = await observeBoundedResult(createWorkflowRunner({
+        manager: {} as any, workflowDir, agentName: "owner", persistDir: root,
+        agentDefinitions: new Map([["other", other]]), executionTimeoutMs: 500,
+      }).run("parent", "input"));
+      expect(result?.result).toMatchObject({ type: "done", summary: "healthy" });
+      expect(existsSync(afterImport)).toBe(false);
+      return;
+    }
+    const controller = new AbortController();
+    const run = createWorkflowRunner({
+      manager: {} as any, workflowDir, agentName: "owner", persistDir: root,
+      agentDefinitions: new Map([["other", other]]), signal: controller.signal,
+      executionTimeoutMs: mode === "timeout" ? 500 : 10_000,
+    }).run("parent", "input");
+    try {
+      expect(await observeBoundedResult(gate.started)).toBeDefined();
+      if (mode === "cancel") controller.abort(new Error("cancel catalog preparation"));
+      const stopped = await observeBoundedResult(run);
+      expect(stopped).toBeDefined();
+      expect(stopped?.result).toMatchObject({ type: "error", error: expect.stringContaining("unconfirmed") });
+    } finally {
+      gate.release();
+      await observeBoundedResult(gate.completed);
+      await observeBoundedResult(run);
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    expect(existsSync(marker)).toBe(false);
+    expect(existsSync(afterImport)).toBe(false);
+    expect(getDb(root).prepare("SELECT status FROM workflow_runs").all()).toEqual([{ status: "error" }]);
+  });
+
   it("resolves cross-owner code and prompt calls from one scoped catalog while retaining Task owner facts", async () => {
     const root = workflowRoot("workflow-scoped-calls-");
     const workflowDir = join(root, "owner", "workflows");
