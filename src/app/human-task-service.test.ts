@@ -7,7 +7,6 @@ import { listRuntimeTaskViews, readRuntimeTaskView } from "./core/reads/app-read
 import { createAppInboxItem } from "./core/state/app-inbox-store.js";
 import { AppTaskResourceStore } from "./core/state/app-task-resource-store.js";
 import { linkTaskInput } from "./core/state/inbox.js";
-import { migrateTaskCompletionReceipts } from "./migrations/task-receipt-cutover.js";
 import {
   ensureTaskReferenceIndex,
   indexTaskReference,
@@ -17,6 +16,7 @@ import {
 import {
   cancelAppTask,
   claimObservedAppTask,
+  closeAppTask,
   completeAppTask,
   deferAppTask,
   observeAppTaskIntent,
@@ -2193,8 +2193,28 @@ describe("Human Task service", () => {
         );
       }
     }
-    insertReceipt(db, "alpha", "previously-finished", 20);
-    expect(migrateTaskCompletionReceipts(config, { oldRuntimeStopped: true }).imported).toBe(1);
+    insertTask(db, { appId: "alpha", taskId: "previously-finished", phase: "waiting", updatedAt: 5 });
+    const claim = claimObservedAppTask(config, {
+      taskId: "previously-finished",
+      appAgent: "owner",
+      handler: "agent:owner",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    completeAppTask(config, claim, {
+      summary: "previously-finished summary",
+      response: "previously-finished result",
+    });
+    const currentFinished = store.readTask("previously-finished")!;
+    closeAppTask(config, {
+      appId: "alpha",
+      taskId: "previously-finished",
+      expectedGeneration: currentFinished.metadata.generation,
+      expectedResourceVersion: currentFinished.metadata.resourceVersion,
+      afterResult: claim.attemptId,
+      reason: "Already completed",
+      decision: "app-policy",
+    });
+    db.prepare("UPDATE app_task_cancellations SET requested_at = 5 WHERE app_id = 'alpha' AND task_id = 'previously-finished'").run();
 
     expect(service.getTask({ appId: "alpha", taskId: "withdrawn" })).toMatchObject({
       status: "closed",

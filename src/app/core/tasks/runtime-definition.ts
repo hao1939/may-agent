@@ -118,7 +118,6 @@ function validatePreparedAppTaskRuntime(descriptor: AppTaskRuntimeDescriptor): v
   ) {
     throw new Error(`App ${id} task maxAttemptMs must be an integer from 1 to 2147483647, unlimited, or a function`);
   }
-  descriptor.resourceStore.assertCompletionReceiptsImported();
 }
 
 function discoverAppTaskResourceStore(
