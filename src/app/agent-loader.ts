@@ -2,7 +2,7 @@
  * Dynamic agent loader.
  *
  * Scans agents/ for agent.json configs and registers them with SubagentManager.
- * Tool presets map strings like "coding", "agents", "workflow" to actual tool
+ * Tool presets map strings like "coding", "agents", "finish" to actual tool
  * constructors. Adding a new agent = create agents/<name>/agent.json + restart
  * (or send reload_agents command).
  *

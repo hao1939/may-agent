@@ -442,33 +442,6 @@ describe("shared agent execution preparation", () => {
       .toBeUndefined();
   });
 
-  test("synthesizes exactly one checkpoint for explicit full non-persistent preparation", () => {
-    let checkpointCreations = 0;
-    const prepared = prepareAgentExecution({
-      definition: {
-        name: "sample",
-        description: "sample",
-        domain: "tests",
-        systemPrompt: "identity",
-        model: { contextWindow: 10_000 } as any,
-        tools: [tool("read")],
-      },
-      projectRoot: "/tmp",
-      sessionId: "full-checkpoint-1",
-      task: "do bounded work",
-      toolPolicy: "full",
-      createCheckpoint: () => {
-        checkpointCreations += 1;
-        return tool("checkpoint");
-      },
-    });
-
-    expect(checkpointCreations).toBe(1);
-    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(["read", "checkpoint"]);
-    expect(prepared.tools.filter((candidate) => candidate.name === "checkpoint")).toHaveLength(1);
-    expect(prepared.tools.find((candidate) => candidate.name === "checkpoint")?.executionMode).toBe("sequential");
-  });
-
   test.each(["full", "full-no-tasks"] as const)("respects the explicitly selected or saved Task tool policy: %s", (toolPolicy) => {
     const prepared = prepareAgentExecution({
       definition: {
@@ -483,67 +456,9 @@ describe("shared agent execution preparation", () => {
       sessionId: "supplied-dependency-observation",
       task: "judge the supplied observation",
       toolPolicy,
-      createCheckpoint: () => tool("checkpoint"),
     });
 
-    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(toolPolicy === "full" ? ["read", "tasks", "finish", "checkpoint"] : ["read", "finish", "checkpoint"]);
-  });
-
-  test("preserves one existing checkpoint without synthesizing a duplicate", () => {
-    let checkpointCreations = 0;
-    const existingCheckpoint = tool("checkpoint");
-    const prepared = prepareAgentExecution({
-      definition: {
-        name: "sample",
-        description: "sample",
-        domain: "tests",
-        systemPrompt: "identity",
-        model: { contextWindow: 10_000 } as any,
-        tools: [tool("read"), existingCheckpoint],
-      },
-      projectRoot: "/tmp",
-      sessionId: "existing-checkpoint-1",
-      task: "continue bounded work",
-      toolPolicy: "full",
-      createCheckpoint: () => {
-        checkpointCreations += 1;
-        return tool("checkpoint");
-      },
-    });
-
-    expect(checkpointCreations).toBe(0);
-    expect(prepared.tools.filter((candidate) => candidate.name === "checkpoint")).toHaveLength(1);
-  });
-
-  test("does not broaden checkpoint access outside explicit full non-persistent preparation", () => {
-    for (const scenario of [
-      { sessionId: "readonly-checkpoint", toolPolicy: "readonly" as const },
-      { sessionId: "deputy-checkpoint", toolPolicy: "deputy" as const },
-      { sessionId: "persistent-checkpoint", toolPolicy: "full" as const, persistentChat: true },
-      { sessionId: "default-direct-checkpoint" },
-    ]) {
-      let checkpointCreations = 0;
-      const prepared = prepareAgentExecution({
-        definition: {
-          name: "sample",
-          description: "sample",
-          domain: "tests",
-          systemPrompt: "identity",
-          model: { contextWindow: 10_000 } as any,
-          tools: [tool("read")],
-        },
-        projectRoot: "/tmp",
-        task: "inspect without checkpoint synthesis",
-        createCheckpoint: () => {
-          checkpointCreations += 1;
-          return tool("checkpoint");
-        },
-        ...scenario,
-      });
-
-      expect(checkpointCreations).toBe(0);
-      expect(prepared.tools.some((candidate) => candidate.name === "checkpoint")).toBe(false);
-    }
+    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(toolPolicy === "full" ? ["read", "tasks", "finish"] : ["read", "finish"]);
   });
 
   test("keeps App owners inside the disposition ownership boundary", () => {
@@ -557,7 +472,6 @@ describe("shared agent execution preparation", () => {
         "agents",
         "background_exec",
         "bash",
-        "checkpoint",
         "cron",
         "edit",
         "finish",
@@ -565,7 +479,6 @@ describe("shared agent execution preparation", () => {
         "query_db",
         "read",
         "run_cli_agent",
-        "workflow",
         "write",
       ].map(tool),
     };
@@ -576,7 +489,6 @@ describe("shared agent execution preparation", () => {
       sessionId: "app-owner-full",
       task: "handle project input",
       toolPolicy: "app-owner-full",
-      createCheckpoint: () => tool("checkpoint"),
     });
     const deputy = prepareAgentExecution({
       definition,
@@ -594,7 +506,6 @@ describe("shared agent execution preparation", () => {
       "query_db",
       "read",
       "run_cli_agent",
-      "workflow",
       "write",
     ]);
     expect(deputy.tools.map((candidate) => candidate.name)).toEqual(["agents", "finish", "query_db", "read", "run_cli_agent"]);

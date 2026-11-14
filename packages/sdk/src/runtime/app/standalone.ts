@@ -76,10 +76,8 @@ export const DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH = 3;
 
 const DIRECT_HOST_TOOL_DENIALS: Readonly<Record<string, string>> = {
   agents: "isolated direct workflow runs do not dispatch hosted supporting agents",
-  workflow: "nested agent steps do not expose hosted workflow dispatch",
   message: "isolated direct workflow runs must not notify real users or agents",
   cron: "isolated direct workflow runs must not change autonomous schedules",
-  checkpoint: "direct workflow runs do not expose hosted checkpoint storage",
   "cli-delegation": "isolated direct workflow runs do not delegate to external agent CLIs",
   query_db: "isolated direct workflow runs do not expose the production database",
   "query-db": "isolated direct workflow runs do not expose the production database",

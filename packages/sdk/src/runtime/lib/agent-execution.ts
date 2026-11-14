@@ -45,11 +45,9 @@ import { readOnlyTaskTool } from "./tools/task-read-policy.js";
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
   "background_exec",
-  "checkpoint",
   "cron",
   "edit",
   "finish",
-  "workflow",
   "write",
 ]);
 
@@ -68,19 +66,17 @@ const DEPUTY_TOOL_ALLOWLIST = new Set([
 // An App owner must return durable ownership changes through its fenced
 // disposition. These tools create asynchronous work or lifecycle state
 // outside that admission boundary and belong only to compatibility sessions.
-const APP_OWNER_TOOL_DENYLIST = new Set(["background_exec", "checkpoint", "cron", "message"]);
+const APP_OWNER_TOOL_DENYLIST = new Set(["background_exec", "cron", "message"]);
 
 const SEQUENTIAL_TOOL_NAMES = new Set([
   "agents",
   "background_exec",
   "bash",
-  "checkpoint",
   "cron",
   "edit",
   "finish",
   "message",
   "run_cli_agent",
-  "workflow",
   "write",
 ]);
 
@@ -214,8 +210,6 @@ export type AgentPreparationOptions = {
   /** Host-authored execution facts/guidance; never caller task text or source content. */
   executionContext?: string;
   createFinish?: () => AgentTool;
-  /** Create a durable checkpoint capability scoped to this exact execution. */
-  createCheckpoint?: () => AgentTool;
   /** Exact durable owner for local bash setsid process groups. */
   bashProcessGroupOwner?: { persistDir: string; sessionId: string };
   onCompact?: (info: CompactionInfo, messages: AgentMessage[]) => void;
@@ -340,14 +334,6 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   let tools = options.persistentChat
     ? definition.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name))
     : definition.tools;
-  if (
-    (options.toolPolicy === "full" || options.toolPolicy === "full-no-tasks") &&
-    !options.persistentChat &&
-    !tools.some((tool) => tool.name === "checkpoint")
-  ) {
-    const checkpoint = options.createCheckpoint?.();
-    if (checkpoint) tools = [...tools, checkpoint];
-  }
   if (options.toolPolicy === "full-no-tasks") {
     tools = tools.filter((tool) => tool.name !== "tasks");
   } else if (options.toolPolicy === "readonly") {

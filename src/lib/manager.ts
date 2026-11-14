@@ -67,7 +67,6 @@ import {
 import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "./session-cleanup.js";
 import type { ToolPolicy } from "./session-policy.js";
 import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
-import { createCheckpointTool } from "./tools/checkpoint.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import {
@@ -452,12 +451,6 @@ export class SubagentManager {
         createFinish: () =>
           createFinishTool({
             projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
-          }),
-        createCheckpoint: () =>
-          createCheckpointTool({
-            sessionId,
-            agentName: def.name,
-            persistDir: this._persistDir,
           }),
         bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
         onCompact: (info, messages) => {
