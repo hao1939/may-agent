@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Second companion note to agent-evaluation.md containing evaluation research patterns §23–§36 on evaluation beyond outputs. The retained substrate foundations cover temporal state, reasoning trajectories, composition boundaries, social channels, supervision, and diagnostic infrastructure; newer source-level evidence adds that candidate cohorts, test cases, hostile staging, and observed effects need admitted identities and failure-complete receipts before comparison. The August–September §37–§40 diagnostic layers continue in agent-evaluation-research-diagnostic-layers.md."
-triggers: ["evaluation beyond outputs", "surface fidelity", "plausibility gradient", "unobserved margin", "composition blindspot", "dual channel", "engagement ordering", "reasoning precedence", "DRIFTLENS", "human gate", "trimodal oversight", "announcement gap", "ToolFailBench", "tool-use failure", "When Agents Lie", "premeditated deception", "overclaiming", "OverclaimBench", "completion claim", "review coverage", "capability mutual exclusion", "structural inevitability", "EMPATH", "run-to-run variance", "QVal", "TRIAGE", "decomposed supervision", "sub-surface evaluation", "activation-based evaluation", "kNNGuard", "SkillCoach", "designed ignorance", "semantic collapse", "ghost memory", "regression accumulation", "Theoria", "SkillFuzz", "SkillDetonate", "prompt coverage", "verification hierarchy", "diagnostic architecture", "cascaded grading", "noise-corrected evaluation", "evaluation cohort", "test case identity", "effect ledger", "probe isolation", "partial acceptance"]
-last_updated: "2026-11-13"
-source_basis: "Extracted from agent-evaluation-research.md §23–§35 during library-health split (2026-07-09). §23–§31 originally extracted from agent-evaluation.md on 2026-07-14 (July 2026 arXiv-sourced patterns appended to parent instead of companion). §32 added 2026-07-08. §33–§35 added before 2026-07-09. §37–§40, including the active September source additions, were preserved and moved intact to agent-evaluation-research-diagnostic-layers.md on 2026-09-11. §36a added 2026-11-13 from pinned producer-authored NeMo Helix and Argus source assessments saved as linked findings; Scout did not execute either system."
+summary: "Second companion note to agent-evaluation.md containing evaluation research patterns §23–§36 on evaluation beyond outputs. The retained substrate foundations cover temporal state, reasoning trajectories, composition boundaries, social channels, supervision, and diagnostic infrastructure; newer source-level evidence adds that memory evaluation must distinguish evidence availability, criterion-level answer use, downstream consequence, and total cost, while candidate cohorts and effects need admitted identities before comparison. The August–September §37–§40 diagnostic layers continue in agent-evaluation-research-diagnostic-layers.md."
+triggers: ["evaluation beyond outputs", "surface fidelity", "plausibility gradient", "unobserved margin", "composition blindspot", "dual channel", "engagement ordering", "reasoning precedence", "DRIFTLENS", "memory receipts", "answer evidence use", "next-task memory value", "counterfactual memory evaluation", "CoReMem", "Cairn Memory", "human gate", "trimodal oversight", "announcement gap", "ToolFailBench", "tool-use failure", "When Agents Lie", "premeditated deception", "overclaiming", "OverclaimBench", "completion claim", "review coverage", "capability mutual exclusion", "structural inevitability", "EMPATH", "run-to-run variance", "QVal", "TRIAGE", "decomposed supervision", "sub-surface evaluation", "activation-based evaluation", "kNNGuard", "SkillCoach", "designed ignorance", "semantic collapse", "ghost memory", "regression accumulation", "Theoria", "SkillFuzz", "SkillDetonate", "prompt coverage", "verification hierarchy", "diagnostic architecture", "cascaded grading", "noise-corrected evaluation", "evaluation cohort", "test case identity", "effect ledger", "probe isolation", "partial acceptance"]
+last_updated: "2026-11-14"
+source_basis: "Extracted from agent-evaluation-research.md §23–§35 during library-health split (2026-07-09). §23–§31 originally extracted from agent-evaluation.md on 2026-07-14 (July 2026 arXiv-sourced patterns appended to parent instead of companion). §32 added 2026-07-08. §33–§35 added before 2026-07-09. §37–§40, including the active September source additions, were preserved and moved intact to agent-evaluation-research-diagnostic-layers.md on 2026-09-11. §30a added 2026-11-14 from the linked CoReMem abstract assessment and pinned Cairn Memory source assessment; §36a added 2026-11-13 from pinned producer-authored NeMo Helix and Argus source assessments. Scout did not execute any of those systems."
 parent_note: "agent-evaluation.md"
 sibling_note: "agent-evaluation-research.md"
 continuation_note: "agent-evaluation-research-diagnostic-layers.md"
@@ -339,6 +339,43 @@ quality is a critical threat. Personalization memory does exactly this —
 corrupting the one resource that matters most.
 
 Source: findings/2026-07-06-hn-arxiv-github-scan-417.md, https://arxiv.org/abs/2607.02374
+
+### §30a Memory evaluation needs both stage receipts and consequence receipts (2026-11-14)
+
+Two newer sources expose opposite false positives in memory evaluation. Cairn
+Memory's producer-authored pilot includes a case where selected, untruncated
+source evidence reached the answer stage but essential facts were still omitted.
+CoReMem's abstract instead values memory segments by matched performance on the
+unknown next repository task while charging writing, reading, steps, and
+cache-aware tokens. Together they show that neither retrieval success nor later
+success alone identifies whether memory helped.
+
+A reusable evaluation chain should keep five receipts separate:
+
+1. **Source and admission:** the retained bytes have source identity, revision,
+   authorization, and a current validity check.
+2. **Retrieval and delivery:** the required evidence was selected without hidden
+   omission or truncation and the exact packed context reached the answer stage.
+3. **Criterion-level use:** the answer preserved every required supported fact,
+   distinguished unknown from negative, and avoided unsupported inference.
+4. **Downstream consequence:** a matched comparison shows whether memory changed
+   task resolution, errors, steps, or other relevant outcomes.
+5. **Net value:** the consequence is evaluated after charging write, retrieval,
+   context, validation, and action costs.
+
+These receipts diagnose different defects. A retrieval receipt cannot certify
+answer use, while a positive later outcome cannot prove which memory segment
+caused it or whether a cheaper repository search would have worked. Memory
+systems should therefore route failures to the earliest unsupported stage and
+reserve durable promotion for memories whose provenance remains valid and whose
+later-task benefit exceeds their full lifecycle cost.
+
+- **Sources and limits:** [Cairn Memory evidence-use finding](./findings/2026-11-13-memory-receipts-do-not-prove-answer-use.md)
+  comes from pinned static source inspection and a four-case producer-authored
+  pilot; Scout did not run the software, models, or experiment. [CoReMem
+  next-task-value finding](./findings/2026-11-13-agent-memory-needs-next-task-value-receipts.md)
+  is based only on the arXiv title, metadata, and abstract; Scout did not inspect
+  the paper, implementation, benchmark, trajectories, or ablations.
 
 ## §31 The Human Gate — Oversight Quality as Trait Function (2026-07-07)
 
