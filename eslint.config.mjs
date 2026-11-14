@@ -2,6 +2,51 @@ import eslintPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import eslintConfigPrettier from "eslint-config-prettier";
 
+const sdkNoHostPatterns = [
+  {
+    group: [
+      "bun:sqlite",
+      "**/src/app/**",
+      "**/src/lib/**",
+      "**/core/events/**",
+      "**/core/tasks/**",
+    ],
+    message: "@may-agent/sdk owns the self-contained Agent & Workflow Runtime and must not import Host src/ modules or SQLite.",
+  },
+];
+
+const hostNoInternalSdkPatterns = [
+  {
+    group: [
+      "**/packages/sdk/src/runtime/app/**",
+      "**/packages/sdk/src/runtime/lib/**",
+    ],
+    message: "Host src/ modules must import through the explicit SDK runtime barrel (`packages/sdk/src/runtime/index.js`) or `@may-agent/sdk/standalone`, never internal SDK runtime files.",
+  },
+];
+
+const boundedExecutionPatterns = [
+  {
+    group: [
+      "bun:sqlite",
+      "**/event-bus",
+      "**/event-bus.*",
+      "**/core/events/**",
+      "**/core/tasks/**",
+      "**/persistence",
+      "**/persistence.*",
+      "**/app-task*",
+      "**/metrics",
+      "**/metrics.*",
+      "**/cron",
+      "**/cron.*",
+      "**/manager",
+      "**/manager.*",
+    ],
+    message: "Bounded agent execution must not depend on durable Host orchestration.",
+  },
+];
+
 export default [
   // Global ignores
   {
@@ -48,18 +93,7 @@ export default [
       "no-restricted-imports": [
         "error",
         {
-          patterns: [
-            {
-              group: [
-                "bun:sqlite",
-                "**/src/app/**",
-                "**/src/lib/**",
-                "**/core/events/**",
-                "**/core/tasks/**",
-              ],
-              message: "@may-agent/sdk owns the self-contained Agent & Workflow Runtime and must not import Host src/ modules or SQLite.",
-            },
-          ],
+          patterns: sdkNoHostPatterns,
         },
       ],
     },
@@ -70,15 +104,7 @@ export default [
       "no-restricted-imports": [
         "error",
         {
-          patterns: [
-            {
-              group: [
-                "**/packages/sdk/src/runtime/app/**",
-                "**/packages/sdk/src/runtime/lib/**",
-              ],
-              message: "Host src/ modules must import through the explicit SDK runtime barrel (`packages/sdk/src/runtime/index.js`) or `@may-agent/sdk/standalone`, never internal SDK runtime files.",
-            },
-          ],
+          patterns: hostNoInternalSdkPatterns,
         },
       ],
     },
@@ -87,6 +113,21 @@ export default [
     files: [
       "src/lib/agent-runner.ts",
       "src/lib/agent-execution.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            ...hostNoInternalSdkPatterns,
+            ...boundedExecutionPatterns,
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: [
       "packages/sdk/src/runtime/lib/agent-execution.ts",
     ],
     rules: {
@@ -94,25 +135,8 @@ export default [
         "error",
         {
           patterns: [
-            {
-              group: [
-                "bun:sqlite",
-                "**/event-bus",
-                "**/event-bus.*",
-                "**/core/events/**",
-                "**/core/tasks/**",
-                "**/persistence",
-                "**/persistence.*",
-                "**/app-task*",
-                "**/metrics",
-                "**/metrics.*",
-                "**/cron",
-                "**/cron.*",
-                "**/manager",
-                "**/manager.*",
-              ],
-              message: "Bounded agent execution must not depend on durable Host orchestration.",
-            },
+            ...sdkNoHostPatterns,
+            ...boundedExecutionPatterns,
           ],
         },
       ],
@@ -125,6 +149,7 @@ export default [
         "error",
         {
           patterns: [
+            ...hostNoInternalSdkPatterns,
             {
               group: ["**/app-task-runtime", "**/app-task-runtime.*"],
               message: "Use the App Task capability, not runtime internals.",
@@ -143,6 +168,7 @@ export default [
         "error",
         {
           patterns: [
+            ...hostNoInternalSdkPatterns,
             {
               group: [
                 "**/adapters/**", "**/composition/**",
@@ -168,6 +194,7 @@ export default [
         "error",
         {
           patterns: [
+            ...hostNoInternalSdkPatterns,
             {
               group: [
                 "**/app-task-runtime", "**/app-task-runtime.*",
@@ -192,6 +219,7 @@ export default [
         "error",
         {
           patterns: [
+            ...hostNoInternalSdkPatterns,
             {
               group: [
                 "**/core/tasks/**",
@@ -219,6 +247,7 @@ export default [
         "error",
         {
           patterns: [
+            ...hostNoInternalSdkPatterns,
             {
               group: [
                 "**/core/tasks/**",
@@ -248,6 +277,7 @@ export default [
         "error",
         {
           patterns: [
+            ...hostNoInternalSdkPatterns,
             {
               group: ["**/lib/index", "**/lib/index.*"],
               message: "Import the owning module; the runtime barrel exports this loader.",
