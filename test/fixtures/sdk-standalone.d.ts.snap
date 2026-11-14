@@ -1,0 +1,14 @@
+/**
+ * `@may-agent/sdk/standalone` — Self-contained standalone Agent & Workflow Runtime.
+ *
+ * Canonical public API:
+ *   - `run(target, input, options?)` / `run(options)` — execute any prompt agent (`alex`),
+ *     code procedure (`tech-lead/verified-coder`), or CLI executor (`codex`/`claude`).
+ *   - `listTargets(options?)` — list admitted callable prompt, code, and CLI targets.
+ *   - `createModelRegistry()` — build the provider model map from environment variables.
+ */
+export * from "./runtime/app/standalone.js";
+export { createModelRegistry, type ModelRegistry, type ModelWithFallback } from "./runtime/app/model-registry.js";
+export { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory, type AgentDirectory, } from "./runtime/app/loader/agent-config.js";
+export { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError, } from "./runtime/app/loader/agent-config.js";
+export type { FinishResult, InstabilityMetrics, ModelWithApiKey, SubagentDefinition, TaskResult, ToolContext, ToolFactory, } from "./runtime/lib/manager-utils.js";
