@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { liveTaskEventMessage, observeTaskFeedback } from "./runtime/lib/task-execution-context.js";
 import { listTargets, run as sdkRun } from "./standalone.js";
 import { createTestAppWorkflowContext, resolveCallable, runWorkflowTest } from "./testing.js";
 import {
@@ -773,5 +774,41 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       type: "done",
       summary: "SDK run: Audit via @may-agent/sdk/standalone (readonly)",
     });
+
+    // Regression: liveTaskEventMessage & observeTaskFeedback preserve both flat and enveloped event payloads:
+    const flatMsg = liveTaskEventMessage({
+      [Symbol.for("may-agent.eventRowId")]: 42,
+      type: "task.feedback",
+      instruction: "revise the answer",
+      target: { taskId: "t_1" },
+    });
+    expect(flatMsg).toContain('"eventId":42');
+    expect(flatMsg).toContain('"instruction":"revise the answer"');
+
+    const envelopedMsg = liveTaskEventMessage({
+      id: 43,
+      type: "task.feedback",
+      data: { instruction: "enveloped correction" },
+    });
+    expect(envelopedMsg).toContain('"eventId":43');
+    expect(envelopedMsg).toContain('"instruction":"enveloped correction"');
+
+    const seenFeedback: Array<{ msg: string; trace: unknown }> = [];
+    observeTaskFeedback(
+      {
+        observeEvents: (cb) => {
+          cb({
+            [Symbol.for("may-agent.eventRowId")]: 44,
+            type: "task.feedback",
+            instruction: "flat callback payload",
+          } as any);
+          return () => {};
+        },
+      },
+      (msg, trace) => seenFeedback.push({ msg, trace }),
+    );
+    expect(seenFeedback).toHaveLength(1);
+    expect(seenFeedback[0]?.msg).toContain('"instruction":"flat callback payload"');
+    expect(seenFeedback[0]?.trace).toEqual({ traceId: "event:44", parentEventId: 44 });
   });
 });

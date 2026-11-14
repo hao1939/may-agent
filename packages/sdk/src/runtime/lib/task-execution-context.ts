@@ -69,7 +69,10 @@ function normalizeIncomingAppEvent(raw: unknown): { eventId?: number; trace?: Ev
         ? { traceId: `event:${eventId}`, parentEventId: eventId }
         : undefined;
   const target = asRecord(envelope.target) as AppEventTarget;
-  const data = asRecord(envelope.data);
+  const data =
+    envelope.data && typeof envelope.data === "object" && !Array.isArray(envelope.data)
+      ? (envelope.data as Record<string, unknown>)
+      : envelope;
   const urgency = envelope.urgency;
   const action = typeof envelope.action === "string" && envelope.action.trim() ? envelope.action.trim() : undefined;
   return {
