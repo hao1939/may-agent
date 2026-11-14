@@ -1851,5 +1851,43 @@ export async function execute(ctx) {
         },
       ),
     ).rejects.toThrow("Conflicting Task IDs");
+
+    await expect(
+      run(
+        "reviewer/inspect-task-owner",
+        {},
+        {
+          projectRoot: env.projectRoot,
+          task: taskB,
+          context: { reconciliation: reconciliationA },
+          models: { test: fakeModel() as any },
+        },
+      ),
+    ).rejects.toThrow("Conflicting Task IDs");
+
+    await expect(
+      run(
+        "reviewer/inspect-task-owner",
+        {},
+        {
+          projectRoot: env.projectRoot,
+          context: { task: taskB },
+          reconciliation: reconciliationA,
+          models: { test: fakeModel() as any },
+        },
+      ),
+    ).rejects.toThrow("Conflicting Task IDs");
+
+    await expect(
+      run(
+        "reviewer/inspect-task-owner",
+        {},
+        {
+          projectRoot: env.projectRoot,
+          reconciliation: { ...reconciliationA, taskId: "task-a", task: taskB },
+          models: { test: fakeModel() as any },
+        },
+      ),
+    ).rejects.toThrow("Conflicting Task IDs");
   });
 });

@@ -1086,28 +1086,34 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const childSessions: DirectWorkflowRunResult["childSessions"] = [];
   const env = options.context;
+  const checkReconciliationIds = (
+    rec: WorkflowContext<TInput>["reconciliation"] | undefined,
+    label: string,
+  ) => {
+    if (rec?.task && rec.task.id !== rec.taskId) {
+      throw new Error(
+        `Conflicting Task IDs in ${label}.taskId ("${rec.taskId}") and ${label}.task.id ("${rec.task.id}")`,
+      );
+    }
+  };
+  checkReconciliationIds(env?.reconciliation, "context.reconciliation");
+  checkReconciliationIds(options.reconciliation, "reconciliation");
+  const suppliedTaskIds = [
+    env?.task?.id,
+    options.task?.id,
+    env?.reconciliation?.taskId,
+    env?.reconciliation?.task?.id,
+    options.reconciliation?.taskId,
+    options.reconciliation?.task?.id,
+  ].filter((id): id is string => typeof id === "string" && id.length > 0);
+  const distinctTaskIds = [...new Set(suppliedTaskIds)];
+  if (distinctTaskIds.length > 1) {
+    throw new Error(
+      `Conflicting Task IDs across task and reconciliation inputs: ${distinctTaskIds.map((id) => `"${id}"`).join(", ")}`,
+    );
+  }
   const candidateTask = env?.task ?? options.task;
   const candidateReconciliation = env?.reconciliation ?? options.reconciliation;
-  if (
-    env?.task &&
-    env?.reconciliation &&
-    env.task.id !== env.reconciliation.taskId &&
-    env.task.id !== env.reconciliation.task?.id
-  ) {
-    throw new Error(
-      `Conflicting Task IDs in context.task ("${env.task.id}") and context.reconciliation ("${env.reconciliation.taskId}")`,
-    );
-  }
-  if (
-    options.task &&
-    options.reconciliation &&
-    options.task.id !== options.reconciliation.taskId &&
-    options.task.id !== options.reconciliation.task?.id
-  ) {
-    throw new Error(
-      `Conflicting Task IDs in task ("${options.task.id}") and reconciliation ("${options.reconciliation.taskId}")`,
-    );
-  }
   const reconciliation: WorkflowContext<TInput>["reconciliation"] | undefined =
     candidateReconciliation ??
     (candidateTask
