@@ -1,5 +1,5 @@
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import type { SubagentManager } from "../lib/index.js";
+import type { SubagentManager } from "../lib/manager.js";
 import { log } from "@may-agent/sdk/runtime";
 import { validateSessionControl } from "./adapters/executors/session-control.js";
 import {

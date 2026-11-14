@@ -146,9 +146,8 @@ belong to the Evaluation App; agent names carry no Host health policy.
 The agents tool consumes the existing typed manager interface directly, with
 read-only views of the agent and active-session maps.
 
-Database callers use the focused `db/` modules directly.
-`index.ts` is a broad compatibility export and also re-exports the App loader;
-internal code imports the owning module directly to avoid loader cycles.
+Database callers use the focused `db/` modules directly; internal code imports
+each owning module directly.
 
 Event receipt expiry uses the saved status, publication time and TTL. Every
 new publication has an App-admission marker; either marker value, or an existing

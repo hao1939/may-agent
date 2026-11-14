@@ -3,7 +3,7 @@ import type { AppInput, TaskListOptions } from "@may-agent/sdk";
 import { randomUUID } from "node:crypto";
 import { basename, dirname, resolve } from "node:path";
 import { closeAllDbs, getDb } from "../lib/db/connection.js";
-import { SubagentManager } from "../lib/index.js";
+import { SubagentManager } from "../lib/manager.js";
 import { discoverAppDefinitions, listAppDefinitionFiles } from "./adapters/discovery/app-definitions.js";
 import { prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import type { AppArgs } from "./app-args.js";

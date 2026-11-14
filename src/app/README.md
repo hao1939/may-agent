@@ -102,8 +102,8 @@ store mutation implementations. The persisted executor/recovery identity lives
 beside the small `core/tasks/session-binding.ts` contract. Task claims select their capacity lane from trusted input origin.
 Input admission itself consumes no worker capacity.
 
-Internal loaders import owning modules directly: `../lib/index.ts` also exports the loader,
-so importing back through it creates a cycle. The public SDK and control exports
+Internal loaders import their owning modules directly so configuration,
+local tools, and registry publication remain cycle-free. The public SDK and control exports
 remain the App/client boundaries. Database callers import the owning `../lib/db/` modules directly: connection,
 sessions, workflows, notifications or evaluations.
 

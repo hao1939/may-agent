@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import type { SubagentManager } from "../lib/index.js";
+import type { SubagentManager } from "../lib/manager.js";
 import type { InstanceIdentity } from "../lib/instance-identity.js";
 import { invalidateRuntimeModuleCache } from "@may-agent/sdk/runtime";
 import type { AgentLoaderOptions } from "./agent-loader.js";
