@@ -27,7 +27,7 @@ import {
 import { constants } from "fs";
 import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
 import { resolveReadPath } from "./path-utils.js";
-import { withAbortSignal } from "./abort-utils.js";
+import { withAbortSignal } from "./path-utils.js";
 
 const readSchema: TSchema = Type.Object({
   path: Type.String({

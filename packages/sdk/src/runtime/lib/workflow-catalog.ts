@@ -9,8 +9,23 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, realpathSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import type { TSchema } from "typebox";
+import type { ExecutionResult, TaskReconcileResult, WorkflowContext } from "../../index.js";
 import { importRuntimeModule } from "./runtime-import.js";
-import type { WorkflowModule } from "./workflow.js";
+
+export interface WorkflowModule {
+  name: string;
+  description: string;
+  readonly?: boolean;
+  inputSchema?: TSchema;
+  outputSchema?: TSchema;
+  executionTimeoutMs?: number;
+  workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
+  execute: (ctx: WorkflowContext) => Promise<ExecutionResult | TaskReconcileResult>;
+  verify?: (context: unknown, result: unknown) => Promise<unknown>;
+  sourcePath: string;
+  sourceScope: "agent" | "project";
+  entryContentHash: string;
+}
 
 export interface WorkflowCatalog {
   readonly workflows: ReadonlyMap<string, WorkflowModule>;

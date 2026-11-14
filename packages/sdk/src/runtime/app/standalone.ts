@@ -43,7 +43,7 @@ import {
 import { agentExecutionResult, enforceStructuredWorkflowResult } from "../lib/execution-handoff.js";
 import type { ModelWithApiKey, TaskResult } from "../lib/types.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/workflow-catalog.js";
-import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
+import { validateOperationAllowance } from "../lib/agent-execution.js";
 import { readAgentConfigFile, type AgentConfig } from "./loader/agent-config.js";
 import {
   listRuntimeAgentDirectories,
@@ -403,6 +403,66 @@ async function buildDirectPromptCatalog(
   };
 }
 
+function buildPreStartFailureResult(params: {
+  workflowName: string;
+  input: unknown;
+  startedAt: number;
+  error: Error;
+  status: WorkflowRunReport["status"];
+  executionId: string;
+  traceDir?: string;
+  timeoutMs?: number;
+  allowance?: WorkflowExecutionAllowance;
+  unconfirmed?: string[];
+}): DirectWorkflowRunResult {
+  const endedAt = Date.now();
+  const report: WorkflowRunReport = {
+    workflow: params.workflowName,
+    executionId: params.executionId,
+    started: false,
+    status: params.status,
+    startedAt: params.startedAt,
+    endedAt,
+    durationMs: Math.max(0, endedAt - params.startedAt),
+    input: params.input,
+    error: {
+      name: params.error.name,
+      message: params.error.message,
+      ...(params.error.stack ? { stack: params.error.stack } : {}),
+    },
+    steps: [],
+    stepsTruncated: 0,
+    logs: [],
+    logsTruncated: 0,
+    limits: {
+      timeoutMs: params.timeoutMs ?? 0,
+      deadlineAt: params.allowance?.deadlineAt ?? endedAt,
+      ...(params.allowance?.maxConcurrentCalls !== undefined
+        ? { maxConcurrentCalls: params.allowance.maxConcurrentCalls }
+        : {}),
+    },
+    cleanup: params.unconfirmed
+      ? { confirmed: false, unconfirmed: params.unconfirmed }
+      : { confirmed: true },
+    observerErrors: [],
+  };
+  let reportPath: string | undefined;
+  if (params.traceDir) {
+    mkdirSync(params.traceDir, { recursive: true });
+    reportPath = join(params.traceDir, "run.json");
+    writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+  }
+  return {
+    ok: false,
+    started: false,
+    status: params.status,
+    error: params.error,
+    report,
+    ...(reportPath ? { reportPath } : {}),
+    childSessions: [],
+  };
+}
+
 /**
  * Run a workflow or target end-to-end without booting Host SQLite, EventBus, or SubagentManager.
  */
@@ -428,43 +488,15 @@ export async function runDirectWorkflow<TInput = unknown>(
       internal === undefined && options.executionId
         ? options.executionId
         : `wr_${now}_${Math.random().toString(36).slice(2, 6)}`;
-    const report: WorkflowRunReport = {
-      workflow: options.module?.name ?? options.target ?? options.workflowName ?? "unknown",
-      executionId,
-      started: false,
-      status: "error",
-      startedAt: now,
-      endedAt: now,
-      durationMs: 0,
+    return buildPreStartFailureResult({
+      workflowName: options.module?.name ?? options.target ?? options.workflowName ?? "unknown",
       input: options.input,
-      error: {
-        name: depthErr.name,
-        message: depthErr.message,
-        ...(depthErr.stack ? { stack: depthErr.stack } : {}),
-      },
-      steps: [],
-      stepsTruncated: 0,
-      logs: [],
-      logsTruncated: 0,
-      limits: { timeoutMs: 0, deadlineAt: now },
-      cleanup: { confirmed: true },
-      observerErrors: [],
-    };
-    let reportPath: string | undefined;
-    if (options.traceDir) {
-      mkdirSync(options.traceDir, { recursive: true });
-      reportPath = join(options.traceDir, "run.json");
-      writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
-    }
-    return {
-      ok: false,
-      started: false,
-      status: "error",
+      startedAt: now,
       error: depthErr,
-      report,
-      ...(reportPath ? { reportPath } : {}),
-      childSessions: [],
-    };
+      status: "error",
+      executionId,
+      traceDir: options.traceDir,
+    });
   }
 
   let callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
@@ -554,56 +586,22 @@ export async function runDirectWorkflow<TInput = unknown>(
       effectiveError: Error,
       status: WorkflowRunReport["status"],
       unconfirmed?: string[],
-    ): DirectWorkflowRunResult => {
-      const endedAt = Date.now();
-      const executionId =
-        internal === undefined && options.executionId
-          ? options.executionId
-          : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`;
-      const report: WorkflowRunReport = {
-        workflow: requestedTarget,
-        executionId,
-        started: false,
-        status,
-        startedAt: prepNow,
-        endedAt,
-        durationMs: endedAt - prepNow,
+    ): DirectWorkflowRunResult =>
+      buildPreStartFailureResult({
+        workflowName: requestedTarget,
         input: options.input,
-        error: {
-          name: effectiveError.name,
-          message: effectiveError.message,
-          ...(effectiveError.stack ? { stack: effectiveError.stack } : {}),
-        },
-        steps: [],
-        stepsTruncated: 0,
-        logs: [],
-        logsTruncated: 0,
-        limits: {
-          timeoutMs: prepTimeoutMs ?? 0,
-          deadlineAt: prepAllowance?.deadlineAt ?? endedAt,
-          ...(prepAllowance?.maxConcurrentCalls !== undefined
-            ? { maxConcurrentCalls: prepAllowance.maxConcurrentCalls }
-            : {}),
-        },
-        cleanup: unconfirmed ? { confirmed: false, unconfirmed } : { confirmed: true },
-        observerErrors: [],
-      };
-      let reportPath: string | undefined;
-      if (options.traceDir) {
-        mkdirSync(options.traceDir, { recursive: true });
-        reportPath = join(options.traceDir, "run.json");
-        writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
-      }
-      return {
-        ok: false,
-        started: false,
-        status,
+        startedAt: prepNow,
         error: effectiveError,
-        report,
-        ...(reportPath ? { reportPath } : {}),
-        childSessions: [],
-      };
-    };
+        status,
+        executionId:
+          internal === undefined && options.executionId
+            ? options.executionId
+            : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`,
+        traceDir: options.traceDir,
+        timeoutMs: prepTimeoutMs,
+        allowance: prepAllowance,
+        unconfirmed,
+      });
 
     if (!prepAllowance && !options.signal?.aborted) {
       try {

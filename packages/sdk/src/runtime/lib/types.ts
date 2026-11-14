@@ -1,4 +1,4 @@
-import type { FileWritePolicy } from "./tools/file-write-policy.js";
+import type { FileWritePolicy } from "./tools/path-utils.js";
 import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./persistence.js";

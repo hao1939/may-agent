@@ -68,7 +68,6 @@ export default [
     files: [
       "src/lib/agent-runner.ts",
       "src/lib/agent-execution.ts",
-      "packages/sdk/src/runtime/lib/agent-runner.ts",
       "packages/sdk/src/runtime/lib/agent-execution.ts",
     ],
     rules: {
