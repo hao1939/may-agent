@@ -181,6 +181,47 @@ export function parseStandaloneCliArgs(
       i = nextIndex;
       continue;
     }
+    if (arg === "--task" || arg.startsWith("--task=")) {
+      const { value, nextIndex } = consumeOptionValue(argv, i, "--task");
+      const parsedTask = parseStandaloneInput(value);
+      if (Array.isArray(parsedTask)) {
+        throw new Error("Invalid --task value: expected an outcome string or JSON Task object, not an array");
+      }
+      if (parsedTask && typeof parsedTask === "object") {
+        const record = parsedTask as Record<string, unknown>;
+        if (typeof record.outcome !== "string" || !record.outcome.trim()) {
+          throw new Error("Invalid --task JSON object: 'outcome' must be a non-empty string");
+        }
+        if (record.id !== undefined && (typeof record.id !== "string" || !record.id.trim())) {
+          throw new Error("Invalid --task JSON object: 'id' must be a non-empty string when provided");
+        }
+        if (
+          record.generation !== undefined &&
+          (typeof record.generation !== "number" || !Number.isSafeInteger(record.generation) || record.generation < 1)
+        ) {
+          throw new Error("Invalid --task JSON object: 'generation' must be a positive integer when provided");
+        }
+        if (
+          record.acceptance !== undefined &&
+          (!Array.isArray(record.acceptance) ||
+            record.acceptance.some((item) => typeof item !== "string" || !item.trim()))
+        ) {
+          throw new Error("Invalid --task JSON object: 'acceptance' must be an array of non-empty strings");
+        }
+        if (
+          record.constraints !== undefined &&
+          (!Array.isArray(record.constraints) ||
+            record.constraints.some((item) => typeof item !== "string" || !item.trim()))
+        ) {
+          throw new Error("Invalid --task JSON object: 'constraints' must be an array of non-empty strings");
+        }
+        options.task = parsedTask as NonNullable<StandaloneRunOptions<unknown>["task"]>;
+      } else {
+        options.task = { outcome: String(value) };
+      }
+      i = nextIndex;
+      continue;
+    }
     if (arg.startsWith("-")) {
       throw new Error(`Unknown flag: ${arg}`);
     }
@@ -229,6 +270,7 @@ export const MAY_RUN_CLI_USAGE = `Usage:
 
 Examples:
   may run alex "Summarize README.md" --readonly
+  may run alex/develop-change '{"verify":["bun","test"]}' --task "Fix bug" --cwd /tmp/worktree
   may run tech-lead/verified-coder '{"task":"Fix bug","verify":["bun","test"]}'
   may run codex "Inspect package.json"
   git diff | may run alex/review-change --readonly
@@ -237,6 +279,7 @@ Examples:
 Options:
   --readonly            Enforce read-only tool & procedure restrictions
   --input <text|json>   Explicit input string or JSON object
+  --task <text|json>    Task envelope (outcome string or JSON Task object) for Task-owned procedures
   --cwd <dir>           Working directory for execution (default: current directory)
   --out <dir>           Output directory for run.json and sessions/
   --timeout <duration>  Timeout (e.g. 45000, 45s, 2m)

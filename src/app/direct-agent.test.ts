@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { prepareAgentExecution } from "../lib/agent-execution.js";
-import { prepareDirectAgentExecution, resolveDirectToolPolicy, runDirectAgent } from "./direct-agent.js";
+import {
+  prepareDirectAgentExecution,
+  resolveDirectToolPolicy,
+  runDirectAgent,
+} from "./standalone.js";
 
 describe("direct agent tool policy", () => {
   test("preserves protections and grants in a distinct execution root", async () => {

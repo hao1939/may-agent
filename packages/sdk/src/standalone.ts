@@ -8,32 +8,9 @@
  *   - `createModelRegistry()` — build the provider model map from environment variables.
  */
 
-export {
-  DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS,
-  DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH,
-  DEFAULT_STANDALONE_LIST_TIMEOUT_MS,
-  defaultDirectToolDenials,
-  inferWorkspaceRoot,
-  listTargets,
-  prepareDirectAgentExecution,
-  resolveDirectToolPolicy,
-  run,
-  runDirectAgent,
-  type AgentExecutionManifest,
-  type DirectAgentFixtureHandler,
-  type DirectAgentRunOptions,
-  type DirectAgentRunResult,
-  type RunOptions,
-  type RunResult,
-  type TargetSummary,
-  type ToolDenial,
-} from "./runtime/app/standalone.js";
+export * from "./runtime/app/standalone.js";
 
-export {
-  createModelRegistry,
-  type ModelRegistry,
-  type ModelWithFallback,
-} from "./runtime/app/model-registry.js";
+export { createModelRegistry, type ModelRegistry, type ModelWithFallback } from "./runtime/app/model-registry.js";
 
 export {
   listRuntimeAgentDirectories,
