@@ -344,11 +344,10 @@ test("preserves forced reload recovery when reload runs during an active startup
   const db = getDb(root);
   let runtime: AppInboxRuntime | undefined;
   let broken = true;
-  let brokenReopenCalls = 0;
-  const firstBrokenReopenTried = Promise.withResolvers<void>();
-  let holdHealthyDispatch = false;
-  const healthyDispatchEntered = Promise.withResolvers<void>();
-  const releaseHealthyDispatch = Promise.withResolvers<void>();
+  let clock = Date.now();
+  let holdHealthyWorker = false;
+  const healthyWorkerEntered = Promise.withResolvers<void>();
+  const releaseHealthyWorker = Promise.withResolvers<void>();
   const makeEntries = () =>
     (["broken", "healthy"] as const).map((id) => {
       const appDir = join(root, id);
@@ -365,19 +364,19 @@ test("preserves forced reload recovery when reload runs during an active startup
             kind: "desired",
             intent: { id: inputId, parentId: "root", outcome: "Review fact", acceptance: ["Reviewed"] },
           }),
-          subscriptions: [
-            {
-              id: "change",
-              event: "probe.changed",
-              toInput: (event) => {
-                if (id === "broken" && broken) {
-                  if (++brokenReopenCalls >= 3) firstBrokenReopenTried.resolve();
-                  throw new Error("broken before reload");
-                }
-                return { kind: "message", data: { value: `${id}:${String(event.data.value)}` } };
-              },
-            },
-          ],
+          subscriptions:
+            id === "broken"
+              ? [
+                  {
+                    id: "change",
+                    event: "probe.changed",
+                    toInput: (event) => {
+                      if (broken) throw new Error("broken before reload");
+                      return { kind: "message", data: { value: `${id}:${String(event.data.value)}` } };
+                    },
+                  },
+                ]
+              : [],
         }),
       };
     });
@@ -408,6 +407,7 @@ test("preserves forced reload recovery when reload runs during an active startup
         registry,
         persistDir: root,
         schedulesEnabled: false,
+        now: () => clock,
         attachTask: (input) => {
           const store = AppTaskResourceStore.fromDb(db, input.appId);
           return admitTaskInput(
@@ -415,19 +415,25 @@ test("preserves forced reload recovery when reload runs during an active startup
             input,
           );
         },
+        createTaskAdmissionWorker: () => ({
+          dispatch: async (command) => {
+            if (command.appId === "healthy" && holdHealthyWorker) {
+              healthyWorkerEntered.resolve();
+              await releaseHealthyWorker.promise;
+            }
+            return { taskIds: [] };
+          },
+          close: () => {},
+        }),
         previewTaskEventRoutes: ({ event }) =>
           event.type === "probe.changed" ? [{ appId: "healthy", taskIds: ["root"] }] : [],
-        admitTaskEvent: async ({ appId }) => {
-          if (appId === "healthy" && holdHealthyDispatch) {
-            healthyDispatchEntered.resolve();
-            await releaseHealthyDispatch.promise;
-          }
-          return { accepted: true, by: "fixture", route: "direct" };
-        },
+        admitTaskEvent: () => ({ accepted: true, by: "fixture", route: "direct" }),
       });
 
     runtime = await startRuntime();
     // Emit two events while broken=true so startup recovery has multiple pending plans.
+    // healthy has no subscription, so its conditionTaskIds route resolves to kind: "task"
+    // and dispatches asynchronously through createTaskAdmissionWorker().dispatch().
     const first = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "one" } });
     const second = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "two" } });
     const firstId = first[EVENT_ROW_ID]!;
@@ -435,25 +441,26 @@ test("preserves forced reload recovery when reload runs during an active startup
     await until(() => getAppEventAdmissionPlan(db, firstId)?.commands.find((c) => c.appId === "healthy")?.status === "admitted");
     await until(() => getAppEventAdmissionPlan(db, secondId)?.commands.find((c) => c.appId === "healthy")?.status === "admitted");
 
-    // Reopen runtime with healthy's command on firstId reset to pending so firstId stays
-    // in pendingAdmissionEvents while the startup recovery slice processes firstId and secondId.
+    // Reopen runtime with healthy's task command on firstId reset to pending so its async
+    // worker dispatch is held in flight across reload(), a due periodic scanNow(), and the
+    // end of the startup recovery slice.
     runtime.close();
     db.prepare(
       "UPDATE app_event_admission_commands SET status = 'pending', admitted_at = NULL WHERE event_id = ? AND app_id = 'healthy'",
     ).run(firstId);
-    holdHealthyDispatch = true;
+    holdHealthyWorker = true;
     runtime = await startRuntime();
-    // Wait until recoverNext() has processed firstId (putting it in pendingAdmissionEvents)
-    // while secondId is still queued in the recovery slice (admissionRecoveryHandle != null).
-    await firstBrokenReopenTried.promise;
+    await healthyWorkerEntered.promise;
 
-    // Repair broken subscription and reload while firstId is in pendingAdmissionEvents
-    // and the startup recovery slice is still draining secondId.
+    // Repair broken subscription and reload while healthy's async worker dispatch is held in flight.
     broken = false;
-    const reloadPromise = runtime.reload(undefined, async () => makeEntries());
-    await healthyDispatchEntered.promise;
-    releaseHealthyDispatch.resolve();
-    await reloadPromise;
+    await runtime.reload(undefined, async () => makeEntries());
+    // Advance clock past ADMISSION_RECOVERY_INTERVAL_MS so a periodic scanNow() is due while
+    // the reload retry is queued behind the held dispatch.
+    clock += 120_000;
+    runtime.scanNow();
+    holdHealthyWorker = false;
+    releaseHealthyWorker.resolve();
 
     await until(
       () =>
@@ -463,7 +470,7 @@ test("preserves forced reload recovery when reload runs during an active startup
     expect(getAppEventAdmissionPlan(db, firstId)?.commands.every((c) => c.status === "admitted")).toBe(true);
     expect(getAppEventAdmissionPlan(db, secondId)?.commands.every((c) => c.status === "admitted")).toBe(true);
   } finally {
-    releaseHealthyDispatch.resolve();
+    releaseHealthyWorker.resolve();
     runtime?.close();
     closeDb(root);
     rmSync(root, { recursive: true, force: true });

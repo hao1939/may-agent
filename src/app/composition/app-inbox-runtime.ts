@@ -811,7 +811,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       return;
     }
     if (!force && currentTime < nextAdmissionRecoveryAt) return;
-    forceAdmissionRecoveryQueued = false;
+    if (force) forceAdmissionRecoveryQueued = false;
     nextAdmissionRecoveryAt = currentTime + ADMISSION_RECOVERY_INTERVAL_MS;
     // Freeze this bounded recovery slice before yielding. Otherwise the
     // zero-delay callback can accidentally capture and immediately retry a
