@@ -6,17 +6,12 @@
  * database, EventBus, SubagentManager, schedule, or daemon state.
  */
 
+import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import type { TSchema } from "typebox";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type {
-  AgentCallOptions,
-  AppRead,
-  CallOptions,
-  TaskDetail,
-  WorkflowContext,
-} from "@may-agent/sdk";
+import type { AgentCallOptions, AppRead, CallOptions, TaskDetail, WorkflowContext } from "@may-agent/sdk";
 import { createTestAppRead } from "@may-agent/sdk/testing";
 import {
   WorkflowUnconfirmedCleanupError,
@@ -35,41 +30,369 @@ import {
   type WorkflowStepTrace,
 } from "../../workflow-kernel.js";
 import {
-  runCliAgent,
-  type CliAgentInput,
-  type CliAgentOptions,
-  type CliAgentResult,
-} from "../lib/cli-agent.js";
-import { agentExecutionResult, enforceStructuredWorkflowResult } from "../lib/manager-utils.js";
+  assertUniqueToolNames,
+  executePreparedAgent,
+  prepareAgentExecution,
+  validateOperationAllowance,
+  type DirectAgentExecutionResult,
+  type PreparedAgentExecution,
+  type ToolPolicy,
+} from "../lib/agent-execution.js";
+import { runCliAgent, type CliAgentInput, type CliAgentOptions, type CliAgentResult } from "../lib/cli-agent.js";
+import { agentExecutionResult, enforceStructuredWorkflowResult, generateId } from "../lib/manager-utils.js";
 import type { ModelWithApiKey, TaskResult } from "../lib/manager-utils.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/runtime-import.js";
-import { validateOperationAllowance } from "../lib/agent-execution.js";
-import { readAgentConfigFile, type AgentConfig } from "./loader/agent-config.js";
+import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
+import { createCodingTools } from "../lib/tools/edit.js";
+import { createFinishTool } from "../lib/tools/lifecycle.js";
+import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/path-utils.js";
+import { createReadTool } from "../lib/tools/read.js";
 import {
+  buildAgentDefinition,
   listRuntimeAgentDirectories,
+  loadAgentLocalTools,
+  readAgentConfigFile,
   resolveRuntimeAgentDirectory,
+  validateAgentConfig,
+  type AgentConfig,
   type AgentDirectory,
 } from "./loader/agent-config.js";
 import { createModelRegistry } from "./model-registry.js";
-import {
-  prepareDirectAgentExecution,
-  resolveDirectToolPolicy,
-  runDirectAgent,
-  type AgentExecutionManifest,
-  type DirectAgentRunOptions,
-  type DirectAgentRunResult,
-  type ToolDenial,
-} from "./direct-agent.js";
 
-export {
-  prepareDirectAgentExecution,
-  resolveDirectToolPolicy,
-  runDirectAgent,
-  type AgentExecutionManifest,
-  type DirectAgentRunOptions,
-  type DirectAgentRunResult,
-  type ToolDenial,
+export type ToolDenial = {
+  name: string;
+  reason: string;
 };
+
+export type AgentExecutionManifest = {
+  agent: string;
+  configuredTools: string[];
+  deniedTools: ToolDenial[];
+  effectiveTools: string[];
+};
+
+export type DirectAgentRunOptions = {
+  agentName: string;
+  /** Trusted source already selected by the invocation's captured catalog. */
+  agentSource?: AgentDirectory;
+  /** Pre-read agent.json configuration captured at catalog snapshot time. */
+  agentConfig?: AgentConfig;
+  task: string;
+  projectRoot: string;
+  /** Explicit installation-layout workspace, possibly separate from projectRoot. */
+  workRoot: string;
+  agentsRoot: string;
+  sharedRoot: string;
+  projectsRoot?: string;
+  globalAgentsRoot?: string;
+  /**
+   * Agent files exposed inside an isolated execution root. Configuration and
+   * local tools still load from agentsRoot, while prompt identity and skills
+   * resolve from this readable copy.
+   */
+  visibleAgentDir?: string;
+  outputRoot: string;
+  models: Record<string, ModelWithApiKey>;
+  /** Optional caller-owned structured result contract, enforced by finish(). */
+  outputSchema?: TSchema;
+  /** Require finish() termination even when outputSchema is omitted. */
+  requireFinish?: boolean;
+  /** Per-call capability restriction (for example "readonly"), applied after tool expansion. */
+  toolPolicy?: ToolPolicy;
+  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  operationAllowance?: number;
+  toolDenials?: ToolDenial[];
+  timeoutMs?: number;
+  signal?: AbortSignal;
+  deadlineAt?: number;
+  /** Fixed only when deterministic preparation/evaluation facts are required. */
+  promptTimestamp?: string;
+  /** Fixed only when deterministic preparation/evaluation facts are required. */
+  sessionId?: string;
+  /** Optional override for background process-group draining in tests. */
+  drainProcessGroup?: (pgid: number) => Promise<boolean>;
+  onNotice?: (message: string) => void;
+};
+
+export type DirectAgentRunResult = DirectAgentExecutionResult & {
+  sessionId: string;
+  sessionPath: string;
+  systemPrompt: string;
+  model: string;
+  executionManifest: AgentExecutionManifest;
+  cleanupConfirmed: boolean;
+};
+
+export type DirectAgentPreparation = {
+  prepared: PreparedAgentExecution;
+  sessionId: string;
+  sessionPath: string;
+  model: string;
+  executionManifest: AgentExecutionManifest;
+  cleanup(): void;
+  cleanupAsync(): Promise<boolean>;
+};
+
+function resolveAgentSource(options: DirectAgentRunOptions): AgentDirectory {
+  if (options.agentSource) return options.agentSource;
+  const explicit = resolveRuntimeAgentDirectory(options.agentsRoot, options.agentName);
+  const source = explicit ?? resolveRuntimeAgentDirectory(options.agentsRoot, options.agentName, options.projectsRoot);
+  if (!source) {
+    throw new Error(`Agent "${options.agentName}" was not found under ${options.agentsRoot}`);
+  }
+  return source;
+}
+
+export function resolveDirectToolPolicy(
+  agent: string,
+  configuredTools: string[],
+  denials: ToolDenial[] = [],
+): AgentExecutionManifest {
+  const configured = new Set(configuredTools);
+  const seen = new Set<string>();
+  const normalizedDenials = denials.map((denial) => ({
+    name: denial.name.trim(),
+    reason: denial.reason.trim(),
+  }));
+  for (const denial of normalizedDenials) {
+    if (!denial.name) throw new Error(`Direct run for ${agent} has a tool denial with no name`);
+    if (!denial.reason) throw new Error(`Direct run denial for tool "${denial.name}" requires a reason`);
+    if (!configured.has(denial.name)) {
+      throw new Error(`Direct run denial names unconfigured tool "${denial.name}" for agent ${agent}`);
+    }
+    if (seen.has(denial.name)) throw new Error(`Direct run denies tool "${denial.name}" more than once`);
+    seen.add(denial.name);
+  }
+  return {
+    agent,
+    configuredTools: [...configuredTools],
+    deniedTools: normalizedDenials,
+    effectiveTools: configuredTools.filter((name) => !seen.has(name)),
+  };
+}
+
+async function buildDirectTools(
+  config: AgentConfig,
+  source: AgentDirectory,
+  options: DirectAgentRunOptions,
+  sessionId: string,
+  effectiveTools: string[],
+  fileWritePolicy: FileWritePolicy,
+): Promise<{
+  tools: AgentTool[];
+  cleanupSync: Array<() => void>;
+  cleanupAsync: Array<() => Promise<boolean>>;
+}> {
+  const tools: AgentTool[] = [];
+  const sources: string[] = [];
+  const cleanupSync: Array<() => void> = [];
+  const cleanupAsync: Array<() => Promise<boolean>> = [];
+  for (const capability of effectiveTools) {
+    switch (capability) {
+      case "coding":
+        tools.push(
+          ...createCodingTools(options.workRoot, {
+            agentName: config.name,
+            fileWritePolicy,
+            processGroupOwner: { persistDir: options.outputRoot, sessionId },
+          }),
+        );
+        cleanupAsync.push(() => drainSessionBashProcessGroups(options.outputRoot, sessionId));
+        break;
+      case "read-only":
+        tools.push(createReadTool(options.workRoot) as AgentTool);
+        break;
+      case "finish":
+        tools.push(
+          createFinishTool({
+            projectRoot: options.workRoot,
+          }),
+        );
+        break;
+      default:
+        throw new Error(
+          `Direct run cannot construct effective tool "${capability}" for agent ${config.name}; ` +
+            `the caller must provide an explicit denial or a direct tool implementation`,
+        );
+    }
+    while (sources.length < tools.length) sources.push(`configured capability "${capability}"`);
+  }
+  const localTools = await loadAgentLocalTools(config.name, source.dir, {
+    projectRoot: options.workRoot,
+    persistDir: options.outputRoot,
+    onNotice: options.onNotice,
+  });
+  tools.push(...localTools);
+  sources.push(...localTools.map(() => `agent-local tools for "${config.name}"`));
+  assertUniqueToolNames(
+    tools.map((tool, index) => ({ tool, source: sources[index]! })),
+    config.name,
+  );
+  return { tools, cleanupSync, cleanupAsync };
+}
+
+/** Prepare one direct run without constructing autonomous infrastructure. */
+export async function prepareDirectAgentExecution(options: DirectAgentRunOptions): Promise<DirectAgentPreparation> {
+  validateOperationAllowance(options.operationAllowance);
+  const source = resolveAgentSource(options);
+  const config = options.agentConfig ?? readAgentConfigFile(source.dir);
+  if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
+  const configErrors = validateAgentConfig(config, options.models, options.agentsRoot);
+  if (configErrors.length > 0) {
+    throw new Error(
+      `Invalid agent ${options.agentName}: ${configErrors.map((error) => `${error.field}: ${error.message}`).join("; ")}`,
+    );
+  }
+  if (config.name !== options.agentName) {
+    throw new Error(`Agent directory ${source.dir} declares ${config.name}, not ${options.agentName}`);
+  }
+  const model = options.models[config.model];
+  if (!model) throw new Error(`Agent ${config.name} uses unknown model ${config.model}`);
+  const sessionId = options.sessionId ?? generateId("direct");
+  const sessionPath = resolve(options.outputRoot, "sessions", sessionId);
+  let executionManifest = resolveDirectToolPolicy(config.name, config.tools, options.toolDenials);
+  const fileWritePolicy: FileWritePolicy = {
+    ...readFileWritePolicy(options.sharedRoot, options.projectRoot),
+    execution: { root: resolve(options.workRoot), sourceRoot: resolve(options.projectRoot) },
+  };
+  const { tools, cleanupSync, cleanupAsync } = await buildDirectTools(
+    config,
+    source,
+    options,
+    sessionId,
+    executionManifest.effectiveTools,
+    fileWritePolicy,
+  );
+  const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
+  const definition = await buildAgentDefinition({
+    config,
+    source: definitionSource,
+    model,
+    tools,
+    projectRoot: options.workRoot,
+    sharedRoot: options.sharedRoot,
+    globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
+  });
+  definition.fileWritePolicy = fileWritePolicy;
+  for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
+
+  const prepared = prepareAgentExecution({
+    definition,
+    projectRoot: options.projectRoot,
+    sessionId,
+    task: options.task,
+    outputSchema: options.outputSchema,
+    requireFinish: options.requireFinish === true || options.outputSchema !== undefined,
+    toolPolicy: options.toolPolicy,
+    promptTimestamp: options.promptTimestamp,
+    createFinish: () =>
+      createFinishTool({
+        projectRoot: options.workRoot,
+      }),
+    onNotice: options.onNotice,
+  });
+  // Keep configured capability policy unchanged, but report the concrete tools
+  // that the model can actually see after local and schema-driven preparation.
+  executionManifest = {
+    ...executionManifest,
+    effectiveTools: prepared.tools.map((tool) => tool.name),
+  };
+
+  return {
+    prepared,
+    sessionId,
+    sessionPath,
+    model: config.model,
+    executionManifest,
+    cleanup: () => {
+      for (const close of cleanupSync) close();
+    },
+    cleanupAsync: async () => {
+      const outcomes = await Promise.all(
+        cleanupAsync.map(async (fn) => {
+          try {
+            return await fn();
+          } catch {
+            return false;
+          }
+        }),
+      );
+      return outcomes.every(Boolean);
+    },
+  };
+}
+
+/**
+ * Load and run one agent directly. This adapter intentionally does not create
+ * EventBus, SQLite, SubagentManager, schedules, task state, or recovery.
+ */
+export async function runDirectAgent(options: DirectAgentRunOptions): Promise<DirectAgentRunResult> {
+  const direct = await prepareDirectAgentExecution(options);
+  const { prepared, sessionId, sessionPath, executionManifest } = direct;
+  mkdirSync(sessionPath, { recursive: true });
+  const transcriptPath = join(sessionPath, "session.jsonl");
+  writeFileSync(
+    join(sessionPath, "meta.json"),
+    `${JSON.stringify(
+      {
+        sessionId,
+        agent: prepared.definition.name,
+        model: direct.model,
+        kind: "direct",
+        executionManifest,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+
+  let result: Awaited<ReturnType<typeof executePreparedAgent>> | undefined;
+  let caught: unknown;
+  let cleanupConfirmed = true;
+  try {
+    result = await executePreparedAgent(prepared, {
+      timeoutMs: options.timeoutMs,
+      signal: options.signal,
+      deadlineAt: options.deadlineAt,
+      operationAllowance: options.operationAllowance,
+      onObservation: (event) => {
+        if (event.type === "message_end" && "message" in event) {
+          appendFileSync(transcriptPath, `${JSON.stringify((event as { message: AgentMessage }).message)}\n`);
+        }
+      },
+    });
+    try {
+      writeFileSync(
+        join(sessionPath, "usage.json"),
+        JSON.stringify({ sessionId, outcome: result.status, durationMs: result.durationMs, ...result.usage }, null, 2) +
+          "\n",
+      );
+    } catch (error) {
+      try {
+        options.onNotice?.(`Could not save usage measurements: ${String(error)}`);
+      } catch {
+        /* optional evidence */
+      }
+    }
+  } catch (err) {
+    caught = err;
+  } finally {
+    cleanupConfirmed = await direct.cleanupAsync();
+  }
+  if (!cleanupConfirmed && caught !== undefined) {
+    throw new WorkflowUnconfirmedCleanupError(options.agentName, [`agent:${options.agentName} (${sessionId})`], caught);
+  }
+  if (caught !== undefined) throw caught;
+  return {
+    ...result!,
+    sessionId,
+    sessionPath,
+    systemPrompt: prepared.systemPrompt,
+    model: direct.model,
+    executionManifest,
+    cleanupConfirmed,
+  };
+}
 
 export const DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS = 4;
 export const DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH = 3;
@@ -84,9 +407,7 @@ const DIRECT_HOST_TOOL_DENIALS: Readonly<Record<string, string>> = {
   tasks: "isolated direct workflow runs do not expose live Host Task mutations",
 };
 
-export function defaultDirectToolDenials(
-  configuredTools: readonly string[],
-): ToolDenial[] {
+export function defaultDirectToolDenials(configuredTools: readonly string[]): ToolDenial[] {
   return configuredTools.flatMap((name) => {
     const reason = DIRECT_HOST_TOOL_DENIALS[name];
     return reason ? [{ name, reason }] : [];
@@ -240,18 +561,10 @@ function validateExplicitAppScopeAlignment(
       (dir) => resolve(dir.agentsRoot) === resolvedAgentsRoot && dir.projectId === explicitProjectId,
     );
     const rootsInOtherApp = [...byPath.values()].find(
-      (dir) =>
-        resolve(dir.agentsRoot) === resolvedAgentsRoot &&
-        dir.projectId &&
-        dir.projectId !== explicitProjectId,
+      (dir) => resolve(dir.agentsRoot) === resolvedAgentsRoot && dir.projectId && dir.projectId !== explicitProjectId,
     );
-    if (
-      rootsInOtherApp ||
-      (expectedAppAgentsRoot && resolvedAgentsRoot !== expectedAppAgentsRoot && !rootsInApp)
-    ) {
-      throw new Error(
-        `Conflicting App scope "${explicitProjectId}.app" for agentsRoot "${options.agentsRoot}"`,
-      );
+    if (rootsInOtherApp || (expectedAppAgentsRoot && resolvedAgentsRoot !== expectedAppAgentsRoot && !rootsInApp)) {
+      throw new Error(`Conflicting App scope "${explicitProjectId}.app" for agentsRoot "${options.agentsRoot}"`);
     }
   }
   if (explicitWorkflowDir) {
@@ -346,7 +659,9 @@ async function buildDirectPromptCatalog(
       : undefined) ??
     resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner) ??
     (explicitApp ? undefined : resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner, options.projectsRoot));
-  const callerSource = rawCallerSource ? (dedupedByPath.get(resolve(rawCallerSource.dir)) ?? rawCallerSource) : undefined;
+  const callerSource = rawCallerSource
+    ? (dedupedByPath.get(resolve(rawCallerSource.dir)) ?? rawCallerSource)
+    : undefined;
   const callerProjectId = explicitProjectId ?? callerSource?.projectId;
 
   const prompts = new Map<string, { owner: string; definition: DirectPromptDefinition }>();
@@ -363,7 +678,9 @@ async function buildDirectPromptCatalog(
     try {
       config = readAgentConfigFile(agentDir.dir);
     } catch (error) {
-      diagnostics.push(`${join(agentDir.dir, "agent.json")}: ${error instanceof Error ? error.message : String(error)}`);
+      diagnostics.push(
+        `${join(agentDir.dir, "agent.json")}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       continue;
     }
     if (!config) continue;
@@ -438,9 +755,7 @@ function buildPreStartFailureResult(params: {
         ? { maxConcurrentCalls: params.allowance.maxConcurrentCalls }
         : {}),
     },
-    cleanup: params.unconfirmed
-      ? { confirmed: false, unconfirmed: params.unconfirmed }
-      : { confirmed: true },
+    cleanup: params.unconfirmed ? { confirmed: false, unconfirmed: params.unconfirmed } : { confirmed: true },
     observerErrors: [],
   };
   let reportPath: string | undefined;
@@ -570,10 +885,14 @@ export async function runDirectWorkflow<TInput = unknown>(
   if (!targetModule) {
     const requestedTarget = options.target?.trim() ?? options.workflowName?.trim();
     if (!requestedTarget) {
-      throw new Error("runDirect requires `module`, `target`, or (`workflowName` and resolvable `workflowDir`/`agentName`)");
+      throw new Error(
+        "runDirect requires `module`, `target`, or (`workflowName` and resolvable `workflowDir`/`agentName`)",
+      );
     }
     if (!options.target && !workflowDir) {
-      throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
+      throw new Error(
+        "runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)",
+      );
     }
 
     const prepNow = rootStartedAt;
@@ -622,7 +941,9 @@ export async function runDirectWorkflow<TInput = unknown>(
     const prepController = new AbortController();
     let prepTimer: ReturnType<typeof setTimeout> | undefined;
     const onParentPrepAbort = () => {
-      prepController.abort(options.signal?.reason ?? new Error(`Direct target "${requestedTarget}" cancelled before start`));
+      prepController.abort(
+        options.signal?.reason ?? new Error(`Direct target "${requestedTarget}" cancelled before start`),
+      );
     };
     if (options.signal?.aborted) {
       onParentPrepAbort();
@@ -722,16 +1043,13 @@ export async function runDirectWorkflow<TInput = unknown>(
             ? options.executionId
             : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`;
         const unconfirmed =
-          preparedCatalog.pendingImports > 0
-            ? [`workflow:${requestedTarget} (${executionId})`]
-            : undefined;
+          preparedCatalog.pendingImports > 0 ? [`workflow:${requestedTarget} (${executionId})`] : undefined;
         const effectiveError = unconfirmed
           ? new WorkflowUnconfirmedCleanupError(requestedTarget, unconfirmed, prepErr)
           : prepErr instanceof Error
             ? prepErr
             : new Error(String(prepErr));
-        const status: WorkflowRunReport["status"] =
-          !unconfirmed && options.signal?.aborted ? "interrupted" : "error";
+        const status: WorkflowRunReport["status"] = !unconfirmed && options.signal?.aborted ? "interrupted" : "error";
         const result = makePrepFailureReport(effectiveError, status, unconfirmed);
         result.report.executionId = executionId;
         if (result.reportPath) {
@@ -803,8 +1121,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     },
   });
 
-  const maxConcurrentCalls =
-    options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
+  const maxConcurrentCalls = options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
   const executeAgent = options.runAgent ?? runDirectAgent;
   const executeCli = options.runCli ?? runCliAgent;
 
@@ -821,9 +1138,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         ? {
             deadlineAt: created.deadlineAt,
             ...(created.deadlineReason ? { deadlineReason: created.deadlineReason } : {}),
-            ...(created.maxConcurrentCalls !== undefined
-              ? { maxConcurrentCalls: created.maxConcurrentCalls }
-              : {}),
+            ...(created.maxConcurrentCalls !== undefined ? { maxConcurrentCalls: created.maxConcurrentCalls } : {}),
             acquireCall: () => preparedAllowance.acquireCall(),
           }
         : created;
@@ -917,9 +1232,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     const denials = options.resolveToolDenials
       ? options.resolveToolDenials(agent, config.tools)
       : defaultDirectToolDenials(config.tools);
-    const effectivePrompt = callOpts?.skill
-      ? `Apply skill "${callOpts.skill}" when relevant.\n\n${prompt}`
-      : prompt;
+    const effectivePrompt = callOpts?.skill ? `Apply skill "${callOpts.skill}" when relevant.\n\n${prompt}` : prompt;
 
     const directRun = await executeAgent({
       agentName: agent,
@@ -953,10 +1266,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       sessionId: directRun.sessionId,
       transcriptPath,
     });
-    const taskResult = enforceStructuredWorkflowResult(
-      directResultToTaskResult(directRun),
-      Boolean(callOpts?.schema),
-    );
+    const taskResult = enforceStructuredWorkflowResult(directResultToTaskResult(directRun), Boolean(callOpts?.schema));
     const mapped = agentExecutionResult(taskResult);
     return {
       ...mapped,
@@ -1003,9 +1313,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       childSessions.push(session);
     }
     if (!sub.ok) {
-      const thrown = sub.error instanceof Error
-        ? sub.error
-        : new Error(String(sub.error ?? sub.report.error?.message));
+      const thrown = sub.error instanceof Error ? sub.error : new Error(String(sub.error ?? sub.report.error?.message));
       if (sub.started) {
         (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
       }
@@ -1024,110 +1332,113 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const authoredModule = targetModule;
   let activeScopeSignal: AbortSignal | undefined;
-  const outcome: WorkflowKernelOutcome = await runWorkflowInvocation({
-    ...authoredModule,
-    async execute(ctx) {
-      activeScopeSignal = ctx.signal;
-      if (!internal?.catalog && !catalogCapturedAtRoot) {
-        const captured = await buildDirectPromptCatalog(
-          { ...options, agentName: callerOwner },
-          callerOwner,
-          workflowDir,
-          ctx.signal,
-        );
-        ctx.signal.throwIfAborted();
-        for (const [name, entry] of captured.prompts) {
-          preparedCatalog.prompts.set(name, entry);
-        }
-        for (const diag of captured.diagnostics) {
-          if (!preparedCatalog.diagnostics.includes(diag)) {
-            preparedCatalog.diagnostics.push(diag);
+  const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
+    {
+      ...authoredModule,
+      async execute(ctx) {
+        activeScopeSignal = ctx.signal;
+        if (!internal?.catalog && !catalogCapturedAtRoot) {
+          const captured = await buildDirectPromptCatalog(
+            { ...options, agentName: callerOwner },
+            callerOwner,
+            workflowDir,
+            ctx.signal,
+          );
+          ctx.signal.throwIfAborted();
+          for (const [name, entry] of captured.prompts) {
+            preparedCatalog.prompts.set(name, entry);
+          }
+          for (const diag of captured.diagnostics) {
+            if (!preparedCatalog.diagnostics.includes(diag)) {
+              preparedCatalog.diagnostics.push(diag);
+            }
           }
         }
-      }
-      ctx.signal.throwIfAborted();
-      return authoredModule.execute(ctx);
+        ctx.signal.throwIfAborted();
+        return authoredModule.execute(ctx);
+      },
     },
-  }, {
-    executionId: internal ? undefined : options.executionId,
-    startedAt: internal ? undefined : rootStartedAt,
-    input: options.input,
-    taskOwned: Boolean(options.task || options.reconciliation),
-    tools: internal?.tools ?? options.tools,
-    outputSchema: internal ? undefined : options.outputSchema,
-    signal: options.signal,
-    timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
-    deadlineAt: rootAllowance?.deadlineAt ?? options.deadlineAt,
-    maxConcurrentCalls,
-    allowance: rootAllowance,
-    read,
-    events: options.events
-      ? {
-          emit:
-            options.events.emit ??
-            (async () => {
-              throw new Error("events.emit is not configured in runDirectWorkflow");
-            }),
-          read:
-            options.events.read ??
-            (async () => {
-              throw new Error("events.read is not configured in runDirectWorkflow");
-            }),
-          onEvent:
-            options.events.onEvent ??
-            (() => {
-              throw new Error("events.onEvent is not configured in runDirectWorkflow");
-            }),
+    {
+      executionId: internal ? undefined : options.executionId,
+      startedAt: internal ? undefined : rootStartedAt,
+      input: options.input,
+      taskOwned: Boolean(options.task || options.reconciliation),
+      tools: internal?.tools ?? options.tools,
+      outputSchema: internal ? undefined : options.outputSchema,
+      signal: options.signal,
+      timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
+      deadlineAt: rootAllowance?.deadlineAt ?? options.deadlineAt,
+      maxConcurrentCalls,
+      allowance: rootAllowance,
+      read,
+      events: options.events
+        ? {
+            emit:
+              options.events.emit ??
+              (async () => {
+                throw new Error("events.emit is not configured in runDirectWorkflow");
+              }),
+            read:
+              options.events.read ??
+              (async () => {
+                throw new Error("events.read is not configured in runDirectWorkflow");
+              }),
+            onEvent:
+              options.events.onEvent ??
+              (() => {
+                throw new Error("events.onEvent is not configured in runDirectWorkflow");
+              }),
+          }
+        : undefined,
+      metrics: options.metrics
+        ? {
+            define: options.metrics.define ?? (() => undefined),
+            defineMany: options.metrics.defineMany ?? (() => undefined),
+            record: options.metrics.record ?? (async () => undefined),
+            evaluate: options.metrics.evaluate ?? (() => []),
+          }
+        : undefined,
+      workspace: options.workspace ?? {
+        appRoot: resolve(options.projectRoot),
+        projectRoot: resolve(options.workRoot),
+        root: resolve(options.workRoot),
+        output: resolve(options.workRoot),
+      },
+      reconciliation,
+      onStep: options.onStep,
+      onLog: options.onLog,
+      // Native imports cannot be forcibly stopped. Keep uncertainty visible if
+      // preparation outlives this invocation, and fence its late continuation.
+      confirmCleanup: () => preparedCatalog.pendingImports === 0,
+      resolveTargetKind: async (target) => {
+        try {
+          if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
+          if (typeof target === "string" && isNativeCliFallback(target)) return "agent";
+          const resolved = resolveCallable(callerOwner, target, preparedCatalog);
+          return resolved.kind === "prompt" ? "agent" : "workflow";
+        } catch {
+          return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
         }
-      : undefined,
-    metrics: options.metrics
-      ? {
-          define: options.metrics.define ?? (() => undefined),
-          defineMany: options.metrics.defineMany ?? (() => undefined),
-          record: options.metrics.record ?? (async () => undefined),
-          evaluate: options.metrics.evaluate ?? (() => []),
+      },
+      callTarget: async (target, input, callOpts, stepControl) => {
+        await loadTargetOwnerProcedures(target, stepControl.signal);
+        if (typeof target === "string" && isNativeCliFallback(target)) {
+          if (typeof input !== "string" || !input.trim()) {
+            throw new Error(`CLI target "${target}" requires a non-empty string prompt input`);
+          }
+          return executeCliStep(target.trim() as "codex" | "claude", input, callOpts, stepControl);
         }
-      : undefined,
-    workspace: options.workspace ?? {
-      appRoot: resolve(options.projectRoot),
-      projectRoot: resolve(options.workRoot),
-      root: resolve(options.workRoot),
-      output: resolve(options.workRoot),
-    },
-    reconciliation,
-    onStep: options.onStep,
-    onLog: options.onLog,
-    // Native imports cannot be forcibly stopped. Keep uncertainty visible if
-    // preparation outlives this invocation, and fence its late continuation.
-    confirmCleanup: () => preparedCatalog.pendingImports === 0,
-    resolveTargetKind: async (target) => {
-      try {
-        if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
-        if (typeof target === "string" && isNativeCliFallback(target)) return "agent";
         const resolved = resolveCallable(callerOwner, target, preparedCatalog);
-        return resolved.kind === "prompt" ? "agent" : "workflow";
-      } catch {
-        return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
-      }
-    },
-    callTarget: async (target, input, callOpts, stepControl) => {
-      await loadTargetOwnerProcedures(target, stepControl.signal);
-      if (typeof target === "string" && isNativeCliFallback(target)) {
-        if (typeof input !== "string" || !input.trim()) {
-          throw new Error(`CLI target "${target}" requires a non-empty string prompt input`);
+        if (resolved.kind === "prompt") {
+          if (typeof input !== "string") {
+            throw new Error(`Prompt target "${target}" requires a string prompt input`);
+          }
+          return executePromptStep(resolved.name, input, callOpts, stepControl);
         }
-        return executeCliStep(target.trim() as "codex" | "claude", input, callOpts, stepControl);
-      }
-      const resolved = resolveCallable(callerOwner, target, preparedCatalog);
-      if (resolved.kind === "prompt") {
-        if (typeof input !== "string") {
-          throw new Error(`Prompt target "${target}" requires a string prompt input`);
-        }
-        return executePromptStep(resolved.name, input, callOpts, stepControl);
-      }
-      return executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts);
+        return executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts);
+      },
     },
-  });
+  );
 
   let reportPath: string | undefined;
   if (options.traceDir) {
@@ -1157,7 +1468,7 @@ export function inferWorkspaceRoot(startDir: string): string {
     if (parent === current) break;
     current = parent;
   }
-  return resolve(startDir);
+  return resolve(process.cwd());
 }
 
 function inferCwdAppName(cwd: string, projectsRoot: string): string | undefined {
@@ -1198,15 +1509,17 @@ export type TargetSummary = {
 
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
 
-export async function listTargets(options: {
-  cwd?: string;
-  projectRoot?: string;
-  projectsRoot?: string;
-  globalAgentsRoot?: string;
-  app?: string;
-  timeoutMs?: number;
-  signal?: AbortSignal;
-} = {}): Promise<TargetSummary[]> {
+export async function listTargets(
+  options: {
+    cwd?: string;
+    projectRoot?: string;
+    projectsRoot?: string;
+    globalAgentsRoot?: string;
+    app?: string;
+    timeoutMs?: number;
+    signal?: AbortSignal;
+  } = {},
+): Promise<TargetSummary[]> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_STANDALONE_LIST_TIMEOUT_MS;
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     throw new Error(`Invalid listTargets timeoutMs: ${String(options.timeoutMs)}`);
@@ -1316,10 +1629,7 @@ function normalizeAppDirName(app: string): string {
   return trimmed.endsWith(".app") ? trimmed : `${trimmed}.app`;
 }
 
-function parseTargetAndOptionalAppPrefix(
-  rawTarget: string,
-  explicitApp?: string,
-): { target: string; app?: string } {
+function parseTargetAndOptionalAppPrefix(rawTarget: string, explicitApp?: string): { target: string; app?: string } {
   const trimmed = rawTarget.trim();
   const parts = trimmed.split("/").map((p) => p.trim());
   if (parts.length === 3 && parts[0]?.endsWith(".app") && parts[1] && parts[2]) {
@@ -1361,17 +1671,17 @@ function discoverAgentsRootForTarget(params: {
 
   const candidateOwner =
     params.agentName?.trim() ||
-    (params.target.includes("/")
-      ? params.target.slice(0, params.target.indexOf("/")).trim()
-      : params.target.trim());
+    (params.target.includes("/") ? params.target.slice(0, params.target.indexOf("/")).trim() : params.target.trim());
 
   if (!candidateOwner || params.agentFixtures?.[candidateOwner]) {
     return params.globalAgentsRoot;
   }
 
-  const dirs = [...new Map(
-    listRuntimeAgentDirectories(params.globalAgentsRoot, params.projectsRoot).map((d) => [resolve(d.dir), d]),
-  ).values()];
+  const dirs = [
+    ...new Map(
+      listRuntimeAgentDirectories(params.globalAgentsRoot, params.projectsRoot).map((d) => [resolve(d.dir), d]),
+    ).values(),
+  ];
 
   const matches: AgentDirectory[] = [];
   for (const dir of dirs) {
@@ -1413,9 +1723,7 @@ export async function run<TInput = unknown>(
   input: TInput,
   options?: RunOptions<TInput>,
 ): Promise<RunResult>;
-export async function run<TInput = unknown>(
-  options: RunOptions<TInput> & { input: TInput },
-): Promise<RunResult>;
+export async function run<TInput = unknown>(options: RunOptions<TInput> & { input: TInput }): Promise<RunResult>;
 export async function run<TInput = unknown>(
   targetOrOptions: string | (RunOptions<TInput> & { input: TInput }),
   maybeInput?: TInput,
@@ -1452,9 +1760,7 @@ export async function run<TInput = unknown>(
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
   const ownsTempOutputRoot = !options.outputRoot;
-  const outputRoot = options.outputRoot
-    ? resolve(options.outputRoot)
-    : mkdtempSync(join(tmpdir(), "may-run-"));
+  const outputRoot = options.outputRoot ? resolve(options.outputRoot) : mkdtempSync(join(tmpdir(), "may-run-"));
   const models = options.models ?? createModelRegistry();
 
   let cleanupConfirmed = false;
@@ -1478,9 +1784,7 @@ export async function run<TInput = unknown>(
     return retainOutputRoot ? { ...res, outputRoot } : res;
   } catch (err) {
     cleanupConfirmed =
-      Boolean(err) &&
-      typeof err === "object" &&
-      (err as { cleanupConfirmed?: unknown }).cleanupConfirmed === true;
+      Boolean(err) && typeof err === "object" && (err as { cleanupConfirmed?: unknown }).cleanupConfirmed === true;
     if (!cleanupConfirmed && err && typeof err === "object" && !("outputRoot" in err)) {
       try {
         Object.defineProperty(err, "outputRoot", {

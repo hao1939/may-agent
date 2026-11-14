@@ -14,8 +14,15 @@ import { runCliAgent } from "../lib/cli-agent.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
-import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
-import { listTargets as listStandaloneTargets, run, runDirectWorkflow, runDirectWorkflow as runDirect } from "./standalone.js";
+import {
+  inferWorkspaceRoot,
+  listTargets as listStandaloneTargets,
+  prepareDirectAgentExecution,
+  run,
+  runDirectWorkflow,
+  runDirectWorkflow as runDirect,
+  type DirectAgentRunResult,
+} from "./standalone.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -96,6 +103,13 @@ export async function execute(ctx) {
 }
 
 describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)", () => {
+  test("inferWorkspaceRoot falls back to process.cwd() outside a workspace tree", () => {
+    const externalTmpDir = mkdtempSync(join(tmpdir(), "may-external-workspace-"));
+    roots.push(externalTmpDir);
+
+    expect(inferWorkspaceRoot(externalTmpDir)).toBe(process.cwd());
+  });
+
   test("runs workflow with lab-overlaid agentsRoot, denies hosted tools, and writes run.json without SQLite/EventBus", async () => {
     const env = setupDirectLayout();
     const seenCalls: Array<{ agent: string; systemPrompt: string; effectiveTools: string[] }> = [];
