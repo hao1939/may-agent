@@ -39,18 +39,6 @@ export interface MetricRecordOptions {
   measuredAt?: number;
 }
 
-export interface ManualAlertOptions {
-  priority?: MetricPriority;
-  alertType?: string;
-  facts?: string;
-}
-
-export interface MetricFilter {
-  owner?: string;
-  project?: string;
-  status?: string;
-}
-
 export interface Metric {
   id: string;
   name: string | null;
@@ -107,10 +95,7 @@ export interface MetricService {
   defineMany(defs: MetricDefinition[]): void;
   record(id: string, value: number, opts?: MetricRecordOptions): void;
   evaluate(id?: string): MetricEvaluationResult[];
-  alert(id: string, message: string, opts?: ManualAlertOptions): void;
-  resolveAlert(alertId: number, reason?: string): void;
   get(id: string): Metric | null;
-  list(filter?: MetricFilter): Metric[];
 }
 
 
@@ -512,71 +497,6 @@ const configuredCount = alertConfig.count ?? alertConfig.consecutive;
     return results;
   }
 
-  function alert(id: string, message: string, opts?: ManualAlertOptions): void {
-    const db = options.getDb();
-    stateTransaction(db, () => {
-      const ts = now();
-      const row = db
-        .prepare(
-          `SELECT m.id, m.name, m.owner as explicitOwner, p.owner as projectOwner, m.project,
-                m.current, m.threshold, m.target, m.alert_op,
-                COALESCE(m.priority, 'P2') as priority
-         FROM metrics m
-         LEFT JOIN projects p ON m.project IS NOT NULL AND trim(m.project) != ''
-           AND (p.id = m.project OR p.path = m.project OR p.name = m.project)
-         WHERE m.id = ?`,
-        )
-        .get(id) as Record<string, any> | null;
-      if (!row) throw new Error(`metric not found: ${id}`);
-
-      const openAlert = db
-        .prepare("SELECT id FROM metric_alerts WHERE metric_id = ? AND resolved_at IS NULL LIMIT 1")
-        .get(id) as { id: number } | null;
-      const alertType = opts?.alertType ?? "manual";
-      const finalMessage = opts?.facts ? `${message}\n\nFacts: ${opts.facts}` : message;
-      if (openAlert) {
-        db.run("UPDATE metric_alerts SET alert_type = ?, message = ? WHERE id = ?", [
-          alertType,
-          finalMessage,
-          openAlert.id,
-        ]);
-        return;
-      }
-      const inserted = db.run("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, ?, ?, ?)", [
-        id,
-        alertType,
-        finalMessage,
-        ts,
-      ]);
-      const alertId = Number(inserted.lastInsertRowid);
-      const owner = resolveOwner({
-        id,
-        explicitOwner: row.explicitOwner,
-        projectOwner: row.projectOwner,
-        project: row.project,
-      });
-      emitMetricEvent("metric.breach", owner, {
-        metricId: id,
-        metricName: row.name,
-        project: row.project ?? undefined,
-        alertId,
-        alertType,
-        current: row.current,
-        threshold: row.threshold,
-        target: row.target,
-        alertOp: row.alert_op,
-        measuredAt: ts,
-        trend: recentTrend(db, id),
-        message: finalMessage,
-        priority: opts?.priority ?? row.priority ?? "P2",
-      });
-    });
-  }
-
-  function resolveAlert(alertId: number, _reason?: string): void {
-    options.getDb().run("UPDATE metric_alerts SET resolved_at = COALESCE(resolved_at, ?) WHERE id = ?", [now(), alertId]);
-  }
-
   function get(id: string): Metric | null {
     const db = options.getDb();
     const metric = db.prepare("SELECT * FROM metrics WHERE id = ?").get(id) as Metric | null;
@@ -589,28 +509,6 @@ const configuredCount = alertConfig.count ?? alertConfig.consecutive;
       calculation: calculateMetric(db, { ...metric, config: parseConfig(metric.config) }, now()) };
   }
 
-  function list(filter?: MetricFilter): Metric[] {
-    const clauses: string[] = [];
-    const params: unknown[] = [];
-    if (filter?.owner) {
-      clauses.push("owner = ?");
-      params.push(filter.owner);
-    }
-    if (filter?.project) {
-      clauses.push("project = ?");
-      params.push(filter.project);
-    }
-    if (filter?.status) {
-      clauses.push("status = ?");
-      params.push(filter.status);
-    }
-    const where = clauses.length > 0 ? ` WHERE ${clauses.join(" AND ")}` : "";
-    return options
-      .getDb()
-      .prepare(`SELECT * FROM metrics${where} ORDER BY owner, id`)
-      .all(...params) as unknown as Metric[];
-  }
-
   return {
     define,
     defineMany: (defs) => {
@@ -618,10 +516,7 @@ const configuredCount = alertConfig.count ?? alertConfig.consecutive;
     },
     record,
     evaluate,
-    alert,
-    resolveAlert,
     get,
-    list,
   };
 }
 
@@ -634,9 +529,6 @@ export function createUnavailableMetricService(reason = "metrics unavailable"): 
     defineMany: fail,
     record: fail,
     evaluate: fail,
-    alert: fail,
-    resolveAlert: fail,
     get: fail,
-    list: fail,
   };
 }

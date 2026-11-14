@@ -100,13 +100,11 @@ describe("MetricService", () => {
     const firstId = Number(insert.run(id, "first opening", 2000, null).lastInsertRowid);
     expect(() => insert.run(id, "another duplicate", 3000, null)).toThrow("UNIQUE constraint failed");
 
-    service.resolveAlert(closedId); // Repeated administrative closure preserves its first timestamp.
     expect(db.prepare("SELECT id, message, resolved_at FROM metric_alerts ORDER BY id").all()).toEqual([
       { id: closedId, message: "previous episode", resolved_at: 600 },
       { id: firstId, message: "first opening", resolved_at: null },
     ]);
 
-    service.alert(id, "manual evidence");
     expect(service.evaluate(id)[0]).toMatchObject({ status: "breached", alertId: firstId });
     expect(emitted).toEqual([]);
     service.record(id, 0);
@@ -156,7 +154,7 @@ describe("MetricService", () => {
     expect(db.prepare("SELECT value FROM metric_snapshots ORDER BY id").all()).toEqual([{ value: 0 }, { value: 5 }]);
   });
 
-  it.each(["automatic breach", "manual breach", "recovery"] as const)(
+  it.each(["automatic breach", "recovery"] as const)(
     "delivers %s only after the outer commit and discards delivery on rollback",
     (transition) => {
       const { root, db } = harness();
@@ -176,7 +174,7 @@ describe("MetricService", () => {
       metrics.record(id, 1);
       if (transition === "recovery") { metrics.evaluate(id); metrics.record(id, 0); }
       observed.length = 0;
-      const attempt = () => transition === "manual breach" ? metrics.alert(id, "Queue needs attention") : metrics.evaluate(id);
+      const attempt = () => metrics.evaluate(id);
       const before = db.prepare("SELECT * FROM metric_alerts").all();
       const eventsBefore = db.prepare("SELECT * FROM events").all();
       const exec = db.exec.bind(db);
@@ -300,7 +298,7 @@ describe("MetricService", () => {
     });
   });
 
-  it.each(["automatic breach", "manual breach", "recovery"] as const)(
+  it.each(["automatic breach", "recovery"] as const)(
     "retries %s after required event persistence fails without losing or repeating the transition",
     (transition) => {
       const { root, db } = harness();
@@ -324,8 +322,7 @@ describe("MetricService", () => {
         metrics.evaluate(id);
         metrics.record(id, 0);
       }
-      const attempt = () =>
-        transition === "manual breach" ? metrics.alert(id, "Queue needs attention") : metrics.evaluate(id);
+      const attempt = () => metrics.evaluate(id);
       const beforeAlerts = db.prepare("SELECT * FROM metric_alerts").all();
       const beforeEvents = db.prepare("SELECT event_type, alert_id FROM events ORDER BY id").all();
       const beforeDelivered = [...delivered];
@@ -352,7 +349,7 @@ describe("MetricService", () => {
     },
   );
 
-  it.each(["automatic breach", "manual breach", "recovery", "new sample"] as const)(
+  it.each(["automatic breach", "recovery", "new sample"] as const)(
     "uses current state when another connection commits %s before the write lock",
     (transition) => {
       const { root, db, service, emitted } = harness();
@@ -369,8 +366,7 @@ describe("MetricService", () => {
         now: () => 10_000,
         emit: (type, data) => emitted.push({ type, data }),
       });
-      const attempt = (metrics: typeof service) =>
-        transition === "manual breach" ? metrics.alert(id, "Queue needs attention") : metrics.evaluate(id);
+      const attempt = (metrics: typeof service) => metrics.evaluate(id);
       const exec = db.exec.bind(db);
       let interleaved = false;
       // Deterministically let a second connection commit just before this caller
@@ -407,20 +403,20 @@ describe("MetricService", () => {
     },
   );
 
-  it.each(["automatic breach", "manual breach", "recovery"] as const)(
+  it.each(["automatic breach", "recovery"] as const)(
     "dates %s after acquiring the write lock, separately from sample time",
     (transition) => {
-      const { root, db, service, emitted } = harness();
+      const { root, db, emitted } = harness();
       const id = "sample.queue-depth";
-      service.define({ id, threshold: 0, alertOp: ">" });
-      let clock = 10_000;
-      const otherDb = openDatabase(join(root, "may.db"));
       const metrics = (connection: typeof db) => createMetricService({
         getDb: () => connection,
         now: () => clock,
         emit: (type, data) => emitted.push({ type, data }),
       });
+      let clock = 10_000;
       const waiting = metrics(db);
+      waiting.define({ id, threshold: 0, alertOp: ">" });
+      const otherDb = openDatabase(join(root, "may.db"));
       const other = metrics(otherDb);
       const exec = db.exec.bind(db);
       let interleaved = false;
@@ -433,23 +429,18 @@ describe("MetricService", () => {
             other.evaluate(id);
             clock = 25_000;
             other.record(id, 0);
-            if (transition === "manual breach") other.evaluate(id);
           }
           clock = 30_000;
         }
         exec(sql);
       };
       try {
-        if (transition === "manual breach") waiting.alert(id, "New incident");
-        else waiting.evaluate(id);
+        waiting.evaluate(id);
         expect(interleaved).toBe(true);
         const alerts = db.prepare("SELECT created_at, resolved_at FROM metric_alerts ORDER BY id").all();
         expect(alerts).toEqual(transition === "recovery"
           ? [{ created_at: 20_000, resolved_at: 30_000 }]
-          : [
-              ...(transition === "manual breach" ? [{ created_at: 20_000, resolved_at: 25_000 }] : []),
-              { created_at: 30_000, resolved_at: null },
-            ]);
+          : [{ created_at: 30_000, resolved_at: null }]);
         expect(emitted.at(-1)).toMatchObject({
           type: transition === "recovery" ? "metric.recovered" : "metric.breach",
           data: { measuredAt: 30_000 },
@@ -563,56 +554,6 @@ describe("MetricService", () => {
     expect(service.evaluate("guard.blocked-count-15m")).toMatchObject([
       { metricId: "guard.blocked-count-15m", status: "recovered" },
     ]);
-  });
-
-  it("shares one alert episode across manual reports and source measurements", () => {
-    const { db, service, emitted } = harness();
-
-    service.define({
-      id: "custom.queue-depth",
-      owner: "may",
-      threshold: 10,
-      target: 0,
-      unit: "count",
-      alertOp: ">",
-      sourceQuery: "SELECT 12 AS value",
-      sourceCommand: undefined,
-    });
-    service.alert("custom.queue-depth", "Queue depth needs attention", { priority: "P1", facts: "manual test" });
-
-    const metric = db.prepare("SELECT owner, source_query FROM metrics WHERE id = ?").get("custom.queue-depth") as any;
-    expect(metric).toMatchObject({ owner: "may", source_query: "SELECT 12 AS value" });
-    expect(emitted[0]).toMatchObject({
-      type: "metric.breach",
-      envelope: { owner: "agent:may", source: "test", urgency: "high" },
-      data: {
-        metricId: "custom.queue-depth",
-        priority: "P1",
-      },
-    });
-    expect(emitted[0].data).not.toHaveProperty("owner");
-
-    const firstAlertId = emitted[0].data!.alertId as number;
-    service.alert("custom.queue-depth", "Queue depth needs attention", { priority: "P1", facts: "manual test" });
-    service.alert("custom.queue-depth", "Queue is still growing", { facts: "updated evidence" });
-    expect(emitted).toHaveLength(1);
-    expect(db.prepare("SELECT id, message, resolved_at FROM metric_alerts").all()).toEqual([
-      { id: firstAlertId, message: "Queue is still growing\n\nFacts: updated evidence", resolved_at: null },
-    ]);
-
-    service.record("custom.queue-depth", 12);
-    expect(service.evaluate("custom.queue-depth")[0]).toMatchObject({ status: "breached", alertId: firstAlertId });
-    service.alert("custom.queue-depth", "Confirmed by owner", { facts: "source and manual evidence agree" });
-    expect(emitted).toHaveLength(1);
-    expect(db.prepare("SELECT id, message FROM metric_alerts").all()).toEqual([
-      { id: firstAlertId, message: "Confirmed by owner\n\nFacts: source and manual evidence agree" },
-    ]);
-
-    service.resolveAlert(firstAlertId);
-    service.alert("custom.queue-depth", "A new incident");
-    expect(emitted).toHaveLength(2);
-    expect(emitted[1].type).toBe("metric.breach");
-    expect(emitted[1].data!.alertId).not.toBe(firstAlertId);
   });
 
   it("suppresses alert lifecycle for metrics with disabled alert config", () => {

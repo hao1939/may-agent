@@ -465,7 +465,9 @@ describe("served workflow and metric health pages", () => {
           db.prepare("DELETE FROM metric_alerts WHERE metric_id = ?").run(id);
           metrics.define(definition);
           metrics.record(id, value);
-          if (retained) metrics.alert(id, "Existing alert still needs resolution");
+          if (retained) {
+            db.prepare("INSERT INTO metric_alerts (metric_id, alert_type, message, created_at) VALUES (?, 'manual', 'Existing alert still needs resolution', ?)").run(id, now);
+          }
           // Changing policy must not resolve the existing alert as a side effect.
           metrics.define({ ...definition, config: { alert: { disabled } } });
           const response = await fetch(base + "/api/metrics?id=" + id, { signal: AbortSignal.timeout(5000) });
