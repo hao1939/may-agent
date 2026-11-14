@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 // Register the `@may-agent/sdk` bare-specifier resolver as the very first
 // thing the dev-mode process does. The same plugin is registered in
 // binary-entry.ts for compiled builds. Putting it before any other import
