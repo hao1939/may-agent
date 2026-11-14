@@ -20,18 +20,23 @@ Source review is separate from installed behavior; no activation is proposed.
 
 ## Decision
 
-Use one Host event service, called **EventHub** here, with two internal paths:
+Use one Host event service, called **EventHub** here, with explicit durable and
+ephemeral production paths sharing a bounded observation channel:
 
-- **Durable publication:** validate input, journal it, retain or apply admission,
+- **`publish`:** validate durable input, journal it, retain or apply admission,
   and return an EventReceipt. Existing resource owners execute the work.
-- **Live observation:** send committed facts, resource wakes and transient
-  execution output to bounded subscribers. Observation never accepts work.
+- **`broadcast`:** deliver ephemeral output to matching live observers, with
+  no event-journal access, admission route, durable identity or receipt.
+- **`subscribe`:** observe committed durable Events and/or ephemeral broadcasts.
+  Observation never accepts work.
 
 Expose that service through ordinary calls and a thin Unix HTTP/SSE adapter.
 Event middleware adapts these same operations; it adds no second router or
 subscription authority. Keep typed resource reads alongside it. The external vocabulary is
 **publish, read, subscribe**; `publish` and `subscribe` alone cannot replace Task,
 Conversation, workload, action-discovery and runtime-status reads.
+`broadcast` is a runner-side observation capability, not a new external command
+ingress or a way for App code to bypass its scoped durable publisher.
 
 ```text
 Caller / adapter
@@ -41,6 +46,7 @@ Caller / adapter
        -> receipt: recorded or accepted
        -> post-commit live notifications
 
+Runner -> broadcast(transient output) -> matching live observers only
 Reader -> typed resource read -> current Task / Conversation / Event / status
 Observer -> subscribe(filter) -> committed notifications or transient output
 ```
@@ -49,6 +55,50 @@ One service means one entry and authority boundary, with small internal
 components. It does not mean merging storage, controls and streaming into one
 large class. Internal resource writers remain ordinary typed calls and
 transactions; this is not a requirement to turn every mutation into an event.
+
+## Explicit durability
+
+Choose the path by what must survive interruption, independently of whether
+the Event requires a work owner:
+
+| Kind | Examples | Persistence and consumer contract |
+| --- | --- | --- |
+| Durable input or fact | App input, Conversation messages, exact Task controls, retained result/evidence facts | `publish`; Event identity and receipt; required admission where declared |
+| Ephemeral output | Text/tool previews, turn-progress indicators, display notices | `broadcast`; live only, no durable ID or receipt |
+| Replaceable change hint | A Task/Conversation view needs rereading after a commit | May be ephemeral when authoritative state and existing recovery cover a missed hint |
+
+The last two rows use the same ephemeral mechanism. A wake that carries the
+only copy of pending work cannot use it: retain the obligation through its
+existing owner first. Session end, Task results, approval evidence and caller
+delivery receipts do not become disposable because a UI also displays them.
+
+**Record-only is durable.** It means persistence is sufficient for that Event's
+admission contract; it does not mean “skip persistence.” Required delivery,
+deduplication and pending-route recovery remain independent durable concerns.
+The existing symbol flags represent those concerns, not a durable/ephemeral
+classifier. Replace them with explicit internal values where that simplifies
+the implementation, preserving their meaning rather than deleting the checks.
+
+Proposed interface sketch; this is not a currently callable SDK API:
+
+```ts
+interface EventHub {
+  publish(input: EventInput, context: EventPublisherContext): EventReceipt;
+  broadcast(event: EphemeralEvent): void;
+  subscribe(
+    filter: EventSubscriptionFilter,
+    listener: (event: StreamEvent) => void | Promise<void>,
+  ): () => void;
+}
+```
+
+`EphemeralEvent` is a narrow union of permitted observation types. Its owning
+contract fixes durability; there is no per-call persistence toggle. `broadcast`
+rejects durable command/fact types; callers cannot downgrade an obligation by
+choosing another method. `StreamEvent` distinguishes durable and ephemeral
+messages; only the durable variant carries a persisted Event ID. Filters can
+select either kind, types and execution/resource scope. Event inspection and
+other resource reads remain with their existing canonical readers.
 
 ## What the current size tells us
 
@@ -68,6 +118,7 @@ The useful reduction is to delete overlapping dispatch and obsolete behavior:
 | Persistence subscriber and delivery-recorder installation | Replace with explicit journal/admission dependencies |
 | `first` and `normal` synchronous tiers | Remove after migrating the two ordinary production subscribers to explicit hooks; no production caller uses `first` |
 | Durable route subscribers | Explicit bounded admission composition using existing App and control owners; retain independent route recovery |
+| Persistence dispatch for transient output | Replace with `broadcast`; no journal dependency on that path |
 | Passive `listen` queues | Keep one bounded observer mechanism shared by local and transport subscribers |
 | Pair matching and TTLs | Retire family by family after handling restart, health, trace and retention consumers |
 | `subscriber.failed` machinery | Simplify reporting while retaining failure visibility and its existing metric consumer |
@@ -151,10 +202,31 @@ the prior outcome before deliberately submitting new work.
 
 ## Live observation and optional journal replay
 
-Transient text, tool output and progress remain live-only. They have no durable
-cursor and need not be inserted into SQLite. Durable facts and resource wakes
-join this observation path after commit. A listener receives both today; the
-current synchronous tiers are not simply an ephemeral stream.
+`broadcast` does no event-journal read/write, starts no transaction and invokes
+no admission route. If no active subscriber matches its kind/type/scope, return
+before cloning, serialization or enqueueing. Match against all consumers,
+including local observers and daemon logging, not just connected human viewers.
+The caller's work to create an event has already happened; there is no promise
+of nanosecond or zero-cost delivery.
+
+This guarantee concerns EventHub's observation path. Execution still maintains
+usage, liveness, transcripts and result evidence through their existing owners,
+even when nobody watches. A subscriber can write a log; “ephemeral” does not
+promise that the entire execution and every observer perform zero I/O. Saved
+session transcripts can restore supported message/tool history, not every
+token preview or transient notice. Losing such output is an accepted tradeoff.
+
+Transient previews may describe in-flight execution. Resource change hints must
+be scheduled after their owning commit so a reread cannot miss the actual
+change. Durable publications enter this same observation channel after commit;
+a listener receives both kinds without becoming an admission route.
+
+Across worker processes, ephemeral output needs a distinct bounded best-effort
+relay if remote viewing is supported; it cannot use the durable-ID relay or
+acquire an Event ID just to cross IPC. Skip that relay when no parent observer
+is interested. Interest propagation and reconnect must be validated before
+claiming a no-viewer fast path across processes. Durable worker admission and
+relay recovery remain independent of viewers.
 
 Use one filtered, bounded queue per subscriber. Preserve per-listener order
 and event-loop fairness, contain exceptions, and disconnect/reset slow remote
@@ -169,6 +241,12 @@ The first transport version keeps this **live + reread** contract. This is
 sufficient for Task/Conversation views and avoids building a second work queue.
 It accepts lost transient output; committed input and current results remain
 recoverable from their owners.
+
+On that live-only SSE stream, durable identity is a field in the data payload;
+do not emit an SSE `id` implying an implemented resume cursor. When ordered
+journal replay is implemented, durable frames may set `id` to its cursor;
+ephemeral frames omit the `id` field entirely, leaving the prior durable cursor
+unchanged. A shared connection does not make ephemeral messages replayable.
 
 `afterEventId` is a separately scoped extension for journal inspection, not a
 prerequisite for replacing the bus or transport. If a concrete consumer needs
@@ -262,7 +340,7 @@ is future work; use source-only fixtures and existing owning tests.
 
 | Step | Change and deletion | Evidence required |
 | --- | --- | --- |
-| 1. Explicit event core | Separate the catalogue, inject journal/admission directly, migrate session binding and worker relay hooks, delete generic priority tiers | Public and internal publish, nested commit/rollback and projection failures, keyed retry, worker append/parent delivery, reload without duplicate hooks |
+| 1. Explicit event core | Separate the catalogue, add the explicit `broadcast` path, inject journal/admission directly, migrate session binding and worker relay hooks, delete generic priority tiers | Public/internal publish; ephemeral path cannot reach journal/admission or carry commands; no-match and local-consumer behavior; nested commit/rollback and projection failures; keyed retry; worker append/parent delivery; reload without duplicate hooks |
 | 2. One control write path | Migrate redundant mutation handlers and slash-command rewriting to canonical input/builders; retain action translation | Same authority/version rejection and acceptance from all adapters; replay after target state changes; unknown post-send disposition |
 | 3. HTTP/SSE transport | Replace custom framing and mutation dispatch after migrating current clients; retain typed reads | Real Unix client/daemon fixtures, subscribe/read race, disconnect/overflow, fairness, ownership-safe socket cleanup; no status SQL on connect |
 | 4. Retire redundant lifecycle machinery | Migrate or retire pair consumers family by family; simplify failure reporting | Interrupted execution/restart and historical health/trace/retention checks; remaining App admission still recovers independently |
@@ -279,7 +357,9 @@ Host PR is ready, run the repository's full Quality/Container gates on the final
 revision. Add regressions for broken contracts, not parallel tests of every
 wrapper. Compare publication latency and interface responsiveness during worker
 bursts and a slow subscriber; count deleted production code and compatibility
-code together. Run `bun run check:may-design` for documentation changes.
+code together. Include matched and unmatched ephemeral output with no UI but a
+local logger, and show that usage/result persistence remains intact. Run
+`bun run check:may-design` for documentation changes.
 
 The next implementation slice is **step 1**, preserving the current wire and
 receipt contracts. Its result should be an easier-to-follow publish path and

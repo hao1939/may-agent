@@ -141,6 +141,43 @@ these supports promising complete history from `afterEventId` without another
 explicit contract. The proposal defers that additional capability and keeps
 live notifications plus canonical rereads first.
 
+## Explicit ephemeral path follow-up
+
+At the same Host revision, `DbWriter.handler` already omits journal insertion
+for non-dotted observation types such as `text`, `tool_call`, `tool_result`,
+`turn_end` and `info`. The proposed `broadcast` removes their persistence and
+admission dispatch overhead; it cannot claim to eliminate SQLite inserts that
+the existing writer already skips.
+
+[Manager observation production](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/lib/manager.ts#L1852)
+maintains progress and emits tool previews, assistant text at `message_end`,
+and turn notifications. This path does not emit one bus `text` per token.
+No token-rate benchmark or nanosecond/no-allocation claim was established.
+Execution progress, transcripts, usage and results have owners outside optional
+fanout; dropping a UI notification cannot skip their persistence.
+
+[Daemon info logging](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/transport/daemon-info-log.ts#L22)
+is a local `info` listener intended to preserve operational visibility when
+Console is absent. Thus “no UI viewer” is insufficient to skip all broadcasts;
+the fast path must inspect matching local and remote consumers.
+
+`EVENT_RECORD_ONLY` governs durable admission semantics. `EVENT_INTERFACE_INPUT`
+affects canonical identity/provenance hashing; `EVENT_DEDUPLICATED` and
+`EVENT_REDELIVERY_REQUIRED` preserve receipt reuse and interrupted admission.
+Their responsibilities remain when ephemeral output bypasses the journal.
+This split alone does not establish an 800-line deletion opportunity.
+
+The worker's relay subscriber requires a positive durable row ID. A separate
+ephemeral relay/interest path would be new behavior, not an automatic benefit
+of renaming `emit`. It must remain bounded and optional without affecting
+durable admission. The proposal now makes that boundary explicit.
+
+Durable Event identity is also distinct from an SSE resume cursor. The initial
+live-only transport exposes identity in its payload without promising replay;
+only an ordered journal-resume implementation may supply a replay cursor as
+SSE `id`. Ephemeral frames omit `id`, preserving the last durable cursor when
+that extension exists.
+
 ## Validation and limits
 
 This audit is static source evidence. No behavioral test was added or claimed
