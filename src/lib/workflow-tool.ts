@@ -776,15 +776,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
       const outcome = await runWorkflowInvocation(workflow, {
         ...bindings,
         callTarget: (target, input, callOptions, stepControl) => {
-          let resolved: ReturnType<typeof resolveCallable>;
-          try {
-            resolved = resolveCallable(callerOwner, target, catalog);
-          } catch (err) {
-            if (typeof target === "string" && !target.includes("/") && typeof input === "string") {
-              return bindings.callAgent(target, input, callOptions, stepControl);
-            }
-            throw err;
-          }
+          const resolved = resolveCallable(callerOwner, target, catalog);
           if (resolved.kind === "code") {
             return bindings.runWorkflow(target, input, { ...stepControl, options: callOptions });
           }
