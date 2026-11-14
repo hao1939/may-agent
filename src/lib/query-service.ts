@@ -45,7 +45,6 @@ export interface EventDeliveryHealth {
 export interface QueryAPI {
   events(filter?: EventQuery): QueryResult;
   eventDeliveryHealth(filter?: EventDeliveryHealthQuery): EventDeliveryHealth;
-  sql(sql: string, params?: unknown[], opts?: QueryOptions): QueryResult;
 }
 
 export interface QueryServiceOptions {
@@ -57,50 +56,6 @@ export interface QueryServiceOptions {
 function clampLimit(value: unknown, defaultLimit: number, maxLimit: number): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return defaultLimit;
   return Math.max(1, Math.min(maxLimit, Math.floor(value)));
-}
-
-function normalizeSql(input: string): string {
-  let sql = input.trim();
-  if (!sql) throw new Error("sql is required");
-  if (sql.endsWith(";")) sql = sql.slice(0, -1).trim();
-  if (sql.includes(";")) throw new Error("query.sql accepts one statement at a time");
-  return sql;
-}
-
-function assertReadOnlySql(sql: string): void {
-  const lower = sql.toLowerCase();
-  const firstWord = lower.match(/^\s*([a-z]+)/)?.[1];
-
-  if (firstWord === "pragma") {
-    const pragma = lower.match(/^\s*pragma\s+([a-z_]+)/)?.[1] ?? "";
-    const allowed = new Set([
-      "database_list",
-      "foreign_key_list",
-      "index_info",
-      "index_list",
-      "integrity_check",
-      "quick_check",
-      "schema_version",
-      "table_info",
-      "table_list",
-      "table_xinfo",
-      "user_version",
-    ]);
-    if (!allowed.has(pragma) || lower.includes("=")) {
-      throw new Error(`PRAGMA ${pragma || "<unknown>"} is not allowed by query.sql`);
-    }
-    return;
-  }
-
-  if (firstWord !== "select" && firstWord !== "with") {
-    throw new Error("query.sql only allows SELECT, WITH, and read-only PRAGMA statements");
-  }
-
-  const writePattern =
-    /\b(attach|alter|analyze|begin|commit|create|delete|detach|drop|insert|reindex|replace|rollback|update|vacuum)\b/i;
-  if (writePattern.test(sql)) {
-    throw new Error("query.sql is read-only; write or schema-changing statements are not allowed");
-  }
 }
 
 function normalizeValue(value: unknown): unknown {
@@ -258,17 +213,6 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         orphanPairs: normalizeRows(orphanPairs),
         overdueOpenPairs: normalizeRows(overdueOpenPairs),
       };
-    },
-
-    sql(input, params = [], queryOpts = {}) {
-      const sql = normalizeSql(input);
-      assertReadOnlySql(sql);
-      const limit = clampLimit(queryOpts.limit, defaultLimit, maxLimit);
-      const db = opts.getDb();
-      const isPragma = /^\s*pragma\b/i.test(sql);
-      const statement = db.prepare(isPragma ? sql : `SELECT * FROM (${sql}) LIMIT ?`);
-      const rows = statement.all(...(isPragma ? params : [...params, limit + 1]));
-      return result(rows, limit);
     },
   };
 }
