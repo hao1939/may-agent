@@ -299,6 +299,8 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   deadlineAt?: number;
   maxConcurrentCalls?: number;
   allowance?: WorkflowExecutionAllowance;
+  /** Optional caller-side output schema enforced in addition to module.outputSchema when status === "done". */
+  outputSchema?: TSchema;
   /** Unified target resolver and invoker for ctx.call. */
   callTarget(
     target: string,
@@ -1104,11 +1106,18 @@ export async function runWorkflowInvocation<TInput = unknown>(
       const authored = await module.execute(ctx);
       assertActive();
       const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
-      if (module.outputSchema && normalized.type === "done") {
-        if (!Check(module.outputSchema, normalized.output)) {
+      if (normalized.type === "done") {
+        if (module.outputSchema && !Check(module.outputSchema, normalized.output)) {
           throw new WorkflowValidationError(
             "output",
             `Invalid workflow output for "${module.name}": ${schemaDiagnostic(module.outputSchema, normalized.output)}`,
+            normalized.output,
+          );
+        }
+        if (bindings.outputSchema && !Check(bindings.outputSchema, normalized.output)) {
+          throw new WorkflowValidationError(
+            "output",
+            `Invalid caller output schema for "${module.name}": ${schemaDiagnostic(bindings.outputSchema, normalized.output)}`,
             normalized.output,
           );
         }

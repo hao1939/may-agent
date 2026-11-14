@@ -7,7 +7,13 @@
   "workspaces": [
     "packages/*"
   ],
+  "bin": {
+    "may": "./src/app/may.ts",
+    "may-agent": "./src/app/may.ts"
+  },
   "scripts": {
+    "may": "bun src/app/may.ts",
+    "standalone": "bun src/app/standalone-cli.ts",
     "check": "tsc --noEmit",
     "check:ci": "bun run check && bun run check:sdk && bun run check:canonical-app-boundary && bun run lint --quiet",
     "ci": "bun run check:ci && bun run test",

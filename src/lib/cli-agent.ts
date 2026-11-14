@@ -39,6 +39,10 @@ export type CliAgentResult = {
   status: "completed" | "failed";
   tool: CliTool;
   summary: string;
+  /** Bounded full text emitted by the CLI up to MAX_RESULT_BYTES when completed. */
+  outputText?: string;
+  /** False when the spawned native process group failed to drain or close pipes cleanly. */
+  cleanupConfirmed: boolean;
   resultPath: string;
   structuredResultPath: string;
   eventsPath: string;
@@ -309,7 +313,7 @@ async function executeNative(input: {
   tool: CliTool;
   opts: CliAgentOptions;
   started: (pid?: number) => void;
-}): Promise<CliOutputSnapshot & { exitCode: number | null; stop?: "timeout" | "cancelled"; error?: string }> {
+}): Promise<CliOutputSnapshot & { exitCode: number | null; stop?: "timeout" | "cancelled"; error?: string; cleanupConfirmed: boolean }> {
   const { opts } = input;
   opts.signal?.throwIfAborted();
   let lastProgressAt = -Infinity;
@@ -335,6 +339,7 @@ async function executeNative(input: {
   return await new Promise((resolveDone, reject) => {
     let settling = false;
     let captureClosed = false;
+    let cleanupConfirmed = true;
     let stop: "timeout" | "cancelled" | undefined;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     let closeChild!: () => void;
@@ -347,6 +352,9 @@ async function executeNative(input: {
       settling = true;
       if (timeout) clearTimeout(timeout);
       opts.signal?.removeEventListener("abort", abort);
+      if (child.pid) {
+        cleanupConfirmed = false;
+      }
       try {
         if (child.pid) {
           const drained = await (opts.drainProcessGroup ?? drainBashProcessGroup)(child.pid);
@@ -370,8 +378,17 @@ async function executeNative(input: {
         } finally {
           clearTimeout(closeDeadline);
         }
-        resolveDone({ ...collector.finish(), exitCode, ...(stop ? { stop } : {}), ...(error ? { error } : {}) });
+        cleanupConfirmed = true;
+        resolveDone({
+          ...collector.finish(),
+          exitCode,
+          cleanupConfirmed,
+          ...(stop ? { stop } : {}),
+          ...(error ? { error } : {}),
+        });
       } catch (drainError) {
+        cleanupConfirmed = false;
+        (drainError as Error & { cleanupConfirmed?: boolean }).cleanupConfirmed = false;
         reject(drainError);
       } finally {
         captureClosed = true;
@@ -460,6 +477,7 @@ export async function runCliAgent(input: CliAgentInput, opts: CliAgentOptions): 
     tool: input.tool,
     status: "failed",
     summary: "CLI execution did not complete",
+    cleanupConfirmed: true,
     resultPath,
     structuredResultPath,
     eventsPath,
@@ -561,9 +579,13 @@ export async function runCliAgent(input: CliAgentInput, opts: CliAgentOptions): 
       if (!result.error) {
         result.status = "completed";
         result.summary = text.trim().split("\n")[0]!.slice(0, 300);
+        result.outputText = text;
       }
     }
   } catch (error) {
+    if (error && typeof error === "object" && (error as { cleanupConfirmed?: boolean }).cleanupConfirmed === false) {
+      result.cleanupConfirmed = false;
+    }
     fail(opts.signal?.aborted ? "cancelled" : "process", error instanceof Error ? error.message : String(error));
   }
   writeFileSync(structuredResultPath, JSON.stringify(result, null, 2) + "\n");

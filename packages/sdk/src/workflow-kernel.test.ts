@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
-import { createTestAppWorkflowContext, resolveCallable, runWorkflowTest } from "./testing.js";
+import { run as sdkRun, runStandalone } from "./standalone.js";
+import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -694,5 +695,82 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     );
     expect(skillOnCode.ok).toBe(false);
     expect(String(skillOnCode.error)).toContain('Call option "skill" is only supported for prompt targets');
+
+    // SDK-only string target execution via runTargetTest / runWorkflowTest
+    const sdkDirectPrompt = await runTargetTest("reviewer", {
+      input: "Check HEAD",
+      tools: "readonly",
+      mocks: {
+        reviewer: ({ task, options }) => ({
+          status: "done",
+          summary: `SDK prompt: ${task} (${options?.tools ?? "default"})`,
+          facts: { checkedFiles: 3 },
+        }),
+      },
+    });
+    expect(sdkDirectPrompt.ok).toBe(true);
+    expect(sdkDirectPrompt.result).toEqual({
+      type: "done",
+      summary: "SDK prompt: Check HEAD (readonly)",
+      facts: { checkedFiles: 3 },
+    });
+
+    for (const nonSuccessStatus of ["blocked", "error", "interrupted"] as const) {
+      const nonSuccessRun = await runTargetTest("reviewer", {
+        input: "Check HEAD",
+        mocks: {
+          reviewer: {
+            status: nonSuccessStatus,
+            summary: `ended:${nonSuccessStatus}`,
+            output: { partial: true },
+            facts: { reasonCode: nonSuccessStatus },
+          },
+        },
+      });
+      expect(nonSuccessRun.ok).toBe(true);
+      expect(nonSuccessRun.status).toBe(nonSuccessStatus);
+      expect(nonSuccessRun.result).toMatchObject({
+        type: nonSuccessStatus,
+        reason: `ended:${nonSuccessStatus}`,
+        output: { partial: true },
+        facts: { reasonCode: nonSuccessStatus },
+      });
+    }
+
+    const sdkDirectCode = await runStandalone("owner/review-change", {
+      input: { subjectRef: "HEAD~1..HEAD" },
+      mocks: {
+        "owner/review-change": reviewWorkflow,
+        reviewer: {
+          status: "done",
+          summary: "Clean diff",
+          output: {
+            subjectRef: "HEAD~1..HEAD",
+            verdict: "pass",
+            summary: "All good",
+          },
+        },
+      },
+    });
+    expect(sdkDirectCode.ok).toBe(true);
+    expect(sdkDirectCode.result?.type).toBe("done");
+
+    const sdkStandaloneRun = await sdkRun("reviewer", "Audit via @may-agent/sdk/standalone", {
+      tools: "readonly",
+      models: {},
+      agentFixtures: {
+        reviewer: async (call) => ({
+          id: "sdk_run_1",
+          kind: "agent",
+          status: "done",
+          summary: `SDK run: ${call.task} (${call.options?.tools ?? "full"})`,
+        }),
+      },
+    });
+    expect(sdkStandaloneRun.ok).toBe(true);
+    expect(sdkStandaloneRun.result).toEqual({
+      type: "done",
+      summary: "SDK run: Audit via @may-agent/sdk/standalone (readonly)",
+    });
   });
 });
