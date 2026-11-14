@@ -12,7 +12,7 @@ describe("generateId()", () => {
 
   it("does not reuse session identities across fresh workers at the same millisecond", async () => {
     const script = `
-      import { generateId } from ${JSON.stringify(new URL("./manager-utils.ts", import.meta.url).href)};
+      import { generateId } from ${JSON.stringify(new URL("../../packages/sdk/src/runtime/index.ts", import.meta.url).href)};
       Date.now = () => 1788848558229;
       console.log(JSON.stringify(Array.from({ length: 4 }, () => generateId())));
     `;
