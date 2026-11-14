@@ -255,9 +255,13 @@ export async function runStandaloneCli(
     stdinText?: string;
     readStdin?: () => string | undefined;
     execute?: typeof run;
-    listTargets?: (
-      opts: { cwd?: string; projectRoot?: string; app?: string },
-    ) => Promise<DiscoveredTargetSummary[]> | DiscoveredTargetSummary[];
+    listTargets?: (opts: {
+      cwd?: string;
+      projectRoot?: string;
+      app?: string;
+      timeoutMs?: number;
+      signal?: AbortSignal;
+    }) => Promise<DiscoveredTargetSummary[]> | DiscoveredTargetSummary[];
     stdout?: (text: string) => void;
     stderr?: (text: string) => void;
   } = {},
@@ -279,35 +283,6 @@ export async function runStandaloneCli(
     return { exitCode: 0 };
   }
 
-  if (parsed.command === "list") {
-    const discover = deps.listTargets ?? listStandaloneTargets;
-    const targets = await discover({
-      cwd: parsed.options.cwd,
-      projectRoot: parsed.options.projectRoot,
-      app: parsed.options.app,
-    });
-    if (parsed.json) {
-      writeOut(JSON.stringify(targets, null, 2));
-    } else if (targets.length === 0) {
-      writeOut("No callable targets discovered.");
-    } else {
-      for (const item of targets) {
-        const scope = item.app ? ` [${item.app}]` : "";
-        writeOut(`${item.target.padEnd(32)} (${item.kind})${scope} — ${item.description}`);
-      }
-    }
-    return { exitCode: 0, targets };
-  }
-
-  let effectiveInput = parsed.input;
-  if (parsed.needsStdin && deps.readStdin) {
-    const piped = deps.readStdin();
-    if (piped !== undefined) {
-      effectiveInput = parseStandaloneInput(piped);
-    }
-  }
-
-  const execute = deps.execute ?? run;
   const sigController = new AbortController();
   const callerSignal = parsed.options.signal;
   const onCallerAbort = () => {
@@ -327,43 +302,73 @@ export async function runStandaloneCli(
   process.on("SIGINT", onSigInt);
   process.on("SIGTERM", onSigTerm);
 
-  let runResult: DirectRunResult;
   try {
-    runResult = await execute(parsed.target, effectiveInput, {
+    if (parsed.command === "list") {
+      const discover = deps.listTargets ?? listStandaloneTargets;
+      const targets = await discover({
+        cwd: parsed.options.cwd,
+        projectRoot: parsed.options.projectRoot,
+        app: parsed.options.app,
+        timeoutMs: parsed.options.timeoutMs,
+        signal: sigController.signal,
+      });
+      if (parsed.json) {
+        writeOut(JSON.stringify(targets, null, 2));
+      } else if (targets.length === 0) {
+        writeOut("No callable targets discovered.");
+      } else {
+        for (const item of targets) {
+          const scope = item.app ? ` [${item.app}]` : "";
+          writeOut(`${item.target.padEnd(32)} (${item.kind})${scope} — ${item.description}`);
+        }
+      }
+      return { exitCode: 0, targets };
+    }
+
+    let effectiveInput = parsed.input;
+    if (parsed.needsStdin && deps.readStdin) {
+      const piped = deps.readStdin();
+      if (piped !== undefined) {
+        effectiveInput = parseStandaloneInput(piped);
+      }
+    }
+
+    const execute = deps.execute ?? run;
+    const runResult = await execute(parsed.target, effectiveInput, {
       ...parsed.options,
       signal: sigController.signal,
     });
+
+    if (parsed.json) {
+      writeOut(JSON.stringify(runResult, null, 2));
+    } else if (runResult.ok && runResult.result) {
+      const summary =
+        runResult.result.type === "done" ? runResult.result.summary : runResult.result.reason;
+      writeOut(`[${runResult.status}] ${summary}`);
+      if (runResult.result.output !== undefined) {
+        writeOut(
+          typeof runResult.result.output === "string"
+            ? runResult.result.output
+            : JSON.stringify(runResult.result.output, null, 2),
+        );
+      }
+    } else {
+      const msg =
+        runResult.error instanceof Error
+          ? runResult.error.message
+          : (runResult.report.error?.message ?? "Execution failed");
+      writeErr(`[${runResult.status}] ${msg}`);
+    }
+
+    return {
+      exitCode: runResult.ok && runResult.status === "done" ? 0 : 1,
+      result: runResult,
+    };
   } finally {
     process.off("SIGINT", onSigInt);
     process.off("SIGTERM", onSigTerm);
     callerSignal?.removeEventListener("abort", onCallerAbort);
   }
-
-  if (parsed.json) {
-    writeOut(JSON.stringify(runResult, null, 2));
-  } else if (runResult.ok && runResult.result) {
-    const summary =
-      runResult.result.type === "done" ? runResult.result.summary : runResult.result.reason;
-    writeOut(`[${runResult.status}] ${summary}`);
-    if (runResult.result.output !== undefined) {
-      writeOut(
-        typeof runResult.result.output === "string"
-          ? runResult.result.output
-          : JSON.stringify(runResult.result.output, null, 2),
-      );
-    }
-  } else {
-    const msg =
-      runResult.error instanceof Error
-        ? runResult.error.message
-        : (runResult.report.error?.message ?? "Execution failed");
-    writeErr(`[${runResult.status}] ${msg}`);
-  }
-
-  return {
-    exitCode: runResult.ok && runResult.status === "done" ? 0 : 1,
-    result: runResult,
-  };
 }
 
 export function readPipedStdinSync(): string | undefined {

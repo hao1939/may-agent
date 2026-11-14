@@ -1604,5 +1604,82 @@ export async function execute(ctx) { return ctx.done("b"); }
     expect(
       existsSync(join(unconfirmedScratchRun.outputRoot!, "sessions", stepSessionId!, "bash-process-groups.json")),
     ).toBe(true);
+
+    // 8. Duplicate owner in alpha.app and beta.app with cwd inside beta.app executes beta's procedure (not alpha's):
+    const alphaSharedDir = join(alphaAppDir, "agents", "shared-owner");
+    const betaSharedDir = join(betaAppDir, "agents", "shared-owner");
+    mkdirSync(join(alphaSharedDir, "workflows"), { recursive: true });
+    mkdirSync(join(betaSharedDir, "workflows"), { recursive: true });
+    for (const [dir, label] of [
+      [alphaSharedDir, "alpha"],
+      [betaSharedDir, "beta"],
+    ] as const) {
+      writeFileSync(
+        join(dir, "agent.json"),
+        JSON.stringify({
+          name: "shared-owner",
+          description: `${label} shared owner`,
+          domain: "test",
+          model: "test",
+          tools: ["finish"],
+        }),
+      );
+      writeFileSync(join(dir, "AGENTS.md"), `# ${label} shared-owner\n`);
+      writeFileSync(
+        join(dir, "workflows", "which-app.ts"),
+        `
+export const name = "which-app";
+export const description = "Reports owning app";
+export async function execute(ctx) {
+  return ctx.done(${JSON.stringify(label)});
+}
+`,
+      );
+    }
+
+    const betaCwdRun = await run(
+      "shared-owner/which-app",
+      {},
+      {
+        cwd: betaAppDir,
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+      },
+    );
+    expect(betaCwdRun.ok).toBe(true);
+    expect(betaCwdRun.result).toEqual({
+      type: "done",
+      summary: "beta",
+    });
+
+    // 9. Explicit app scope ("alpha") combined with sibling agentsRoot ("beta.app/agents") is rejected before importing beta procedures:
+    await expect(
+      run(
+        "beta-owner/beta-probe",
+        {},
+        {
+          projectRoot: env.projectRoot,
+          app: "alpha",
+          agentsRoot: join(betaAppDir, "agents"),
+          models: { test: fakeModel() as any },
+        },
+      ),
+    ).rejects.toThrow("Conflicting App scope");
+
+    // 10. listStandaloneTargets bounds stalled top-level await imports via timeoutMs/signal:
+    const gate = await controlledWorkflowImport(env.root);
+    writeFileSync(join(alphaLeadDir, "workflows", "stalled-list.ts"), gate.source);
+    try {
+      const listPromise = listStandaloneTargets({
+        projectRoot: env.projectRoot,
+        app: "alpha",
+        timeoutMs: 150,
+      });
+      expect(await observeBoundedResult(gate.started)).toBeDefined();
+      await expect(listPromise).rejects.toThrow("timed out");
+    } finally {
+      gate.release();
+      await observeBoundedResult(gate.completed);
+    }
   });
 });

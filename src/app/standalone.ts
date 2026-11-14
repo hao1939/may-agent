@@ -205,27 +205,98 @@ function directResultToTaskResult(run: DirectAgentRunResult): TaskResult {
   };
 }
 
+function collectDeduplicatedRuntimeAgentDirs(options: {
+  agentsRoot: string;
+  projectsRoot?: string;
+  globalAgentsRoot?: string;
+}): { dirs: AgentDirectory[]; byPath: Map<string, AgentDirectory> } {
+  const rawDirs = [
+    ...(options.globalAgentsRoot && resolve(options.globalAgentsRoot) !== resolve(options.agentsRoot)
+      ? listRuntimeAgentDirectories(options.globalAgentsRoot)
+      : []),
+    ...listRuntimeAgentDirectories(options.agentsRoot, options.projectsRoot, options.projectsRoot),
+  ];
+  const byPath = new Map<string, AgentDirectory>();
+  for (const dir of rawDirs) {
+    const key = resolve(dir.dir);
+    const prev = byPath.get(key);
+    if (!prev || (!prev.projectId && dir.projectId)) {
+      byPath.set(key, dir);
+    }
+  }
+  return { dirs: [...byPath.values()], byPath };
+}
+
+function validateExplicitAppScopeAlignment(
+  explicitProjectId: string,
+  options: DirectWorkflowRunOptions<any>,
+  byPath: ReadonlyMap<string, AgentDirectory>,
+  explicitWorkflowDir?: string,
+): void {
+  const globalRoot = options.globalAgentsRoot ? resolve(options.globalAgentsRoot) : undefined;
+  const resolvedAgentsRoot = resolve(options.agentsRoot);
+  if (!globalRoot || resolvedAgentsRoot !== globalRoot) {
+    const expectedAppAgentsRoot = options.projectsRoot
+      ? resolve(options.projectsRoot, `${explicitProjectId}.app`, "agents")
+      : undefined;
+    const rootsInApp = [...byPath.values()].some(
+      (dir) => resolve(dir.agentsRoot) === resolvedAgentsRoot && dir.projectId === explicitProjectId,
+    );
+    const rootsInOtherApp = [...byPath.values()].find(
+      (dir) =>
+        resolve(dir.agentsRoot) === resolvedAgentsRoot &&
+        dir.projectId &&
+        dir.projectId !== explicitProjectId,
+    );
+    if (
+      rootsInOtherApp ||
+      (expectedAppAgentsRoot && resolvedAgentsRoot !== expectedAppAgentsRoot && !rootsInApp)
+    ) {
+      throw new Error(
+        `Conflicting App scope "${explicitProjectId}.app" for agentsRoot "${options.agentsRoot}"`,
+      );
+    }
+  }
+  if (explicitWorkflowDir) {
+    const wfOwnerDir = [...byPath.values()].find(
+      (dir) => resolve(dir.dir, "workflows") === resolve(explicitWorkflowDir),
+    );
+    if (wfOwnerDir?.projectId && wfOwnerDir.projectId !== explicitProjectId) {
+      throw new Error(
+        `Conflicting App scope "${explicitProjectId}.app" for workflowDir "${explicitWorkflowDir}" (belongs to "${wfOwnerDir.projectId}.app")`,
+      );
+    }
+  }
+}
+
 function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | undefined {
-  if (options.workflowDir) return resolve(options.workflowDir);
-  if (!options.agentName) return undefined;
   const explicitApp = options.appScope?.trim()
     ? options.appScope.trim().endsWith(".app")
       ? options.appScope.trim()
       : `${options.appScope.trim()}.app`
     : undefined;
-  const candidateDirs = [
-    ...(options.globalAgentsRoot && resolve(options.globalAgentsRoot) !== resolve(options.agentsRoot)
-      ? listRuntimeAgentDirectories(options.globalAgentsRoot)
-      : []),
-    ...listRuntimeAgentDirectories(
-      options.agentsRoot,
-      options.projectsRoot,
-      options.projectsRoot,
-      explicitApp ? [explicitApp] : undefined,
-    ),
-  ];
+  const explicitProjectId = explicitApp ? explicitApp.slice(0, -".app".length) : undefined;
+  const { dirs, byPath } = collectDeduplicatedRuntimeAgentDirs(options);
+  if (explicitProjectId) {
+    validateExplicitAppScopeAlignment(explicitProjectId, options, byPath, options.workflowDir);
+  }
+  if (options.workflowDir) return resolve(options.workflowDir);
+  if (!options.agentName) return undefined;
+
+  // Prefer the already-selected agentsRoot first, recovering its projectId metadata from byPath:
+  const directInAgentsRoot = resolveRuntimeAgentDirectory(options.agentsRoot, options.agentName);
+  if (directInAgentsRoot) {
+    const hydrated = byPath.get(resolve(directInAgentsRoot.dir)) ?? directInAgentsRoot;
+    if (!explicitProjectId || !hydrated.projectId || hydrated.projectId === explicitProjectId) {
+      return join(hydrated.dir, "workflows");
+    }
+  }
+
   let selected: AgentDirectory | undefined;
-  for (const agentDir of candidateDirs) {
+  for (const agentDir of dirs) {
+    if (explicitProjectId && agentDir.projectId && agentDir.projectId !== explicitProjectId) {
+      continue;
+    }
     try {
       const cfg = readAgentConfigFile(agentDir.dir);
       if (!cfg || cfg.name !== options.agentName) continue;
@@ -265,29 +336,12 @@ async function buildDirectPromptCatalog(
     : undefined;
   const explicitProjectId = explicitApp ? explicitApp.slice(0, -".app".length) : undefined;
 
-  // Include both globalAgentsRoot and agentsRoot before deduplicating so
-  // auto-discovered App runs still admit global agents and their procedures
-  // while preserving App projectId metadata on duplicate paths.
-  const rawDirs = [
-    ...(options.globalAgentsRoot && resolve(options.globalAgentsRoot) !== resolve(options.agentsRoot)
-      ? listRuntimeAgentDirectories(options.globalAgentsRoot)
-      : []),
-    ...listRuntimeAgentDirectories(
-      options.agentsRoot,
-      options.projectsRoot,
-      options.projectsRoot,
-      explicitApp ? [explicitApp] : undefined,
-    ),
-  ];
-  const dedupedByPath = new Map<string, AgentDirectory>();
-  for (const dir of rawDirs) {
-    const key = resolve(dir.dir);
-    const prev = dedupedByPath.get(key);
-    if (!prev || (!prev.projectId && dir.projectId)) {
-      dedupedByPath.set(key, dir);
-    }
+  // Include both globalAgentsRoot and agentsRoot + unfiltered projectsRoot before
+  // deduplicating so every directory retains its true projectId metadata before App filtering.
+  const { dirs, byPath: dedupedByPath } = collectDeduplicatedRuntimeAgentDirs(options);
+  if (explicitProjectId) {
+    validateExplicitAppScopeAlignment(explicitProjectId, options, dedupedByPath, explicitWorkflowDir);
   }
-  const dirs = [...dedupedByPath.values()];
 
   const rawCallerSource =
     (explicitWorkflowDir
@@ -1149,92 +1203,119 @@ export type DiscoveredTargetSummary = {
   description: string;
 };
 
+export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
+
 export async function listStandaloneTargets(options: {
   cwd?: string;
   projectRoot?: string;
   projectsRoot?: string;
   globalAgentsRoot?: string;
   app?: string;
+  timeoutMs?: number;
   signal?: AbortSignal;
 } = {}): Promise<DiscoveredTargetSummary[]> {
-  const cwd = resolve(options.cwd ?? process.cwd());
-  const projectRoot = resolve(options.projectRoot ?? inferWorkspaceRoot(cwd));
-  const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
-  const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
-  const appFilter = options.app?.trim()
-    ? options.app.trim().endsWith(".app")
-      ? options.app.trim()
-      : `${options.app.trim()}.app`
-    : undefined;
-
-  const rawDirs = listRuntimeAgentDirectories(
-    globalAgentsRoot,
-    projectsRoot,
-    projectsRoot,
-    appFilter ? [appFilter] : undefined,
-  );
-  const dedupedByPath = new Map<string, AgentDirectory>();
-  for (const dir of rawDirs) {
-    const key = resolve(dir.dir);
-    const prev = dedupedByPath.get(key);
-    if (!prev || (!prev.projectId && dir.projectId)) {
-      dedupedByPath.set(key, dir);
-    }
+  const timeoutMs = options.timeoutMs ?? DEFAULT_STANDALONE_LIST_TIMEOUT_MS;
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new Error(`Invalid listStandaloneTargets timeoutMs: ${String(options.timeoutMs)}`);
   }
-  const dirs = [...dedupedByPath.values()];
-
-  const ownersByScope = new Map<string, { dir: AgentDirectory; config: AgentConfig }[]>();
-  for (const dir of dirs) {
-    if (appFilter && dir.projectId !== appFilter.slice(0, -".app".length)) {
-      continue;
-    }
-    let config: AgentConfig | null = null;
-    try {
-      config = readAgentConfigFile(dir.dir);
-    } catch {
-      continue;
-    }
-    if (!config) continue;
-    const scopeKey = `${dir.projectId ?? ""}:${config.name}`;
-    const list = ownersByScope.get(scopeKey) ?? [];
-    list.push({ dir, config });
-    ownersByScope.set(scopeKey, list);
+  options.signal?.throwIfAborted();
+  const listController = new AbortController();
+  const onParentAbort = () => {
+    listController.abort(options.signal?.reason ?? new Error("Target discovery cancelled"));
+  };
+  if (options.signal) {
+    options.signal.addEventListener("abort", onParentAbort, { once: true });
   }
+  const timer = setTimeout(() => {
+    listController.abort(new Error(`Target discovery timed out after ${timeoutMs}ms`));
+  }, timeoutMs);
 
-  const items: DiscoveredTargetSummary[] = [];
-  for (const [, entries] of ownersByScope) {
-    // Skip ambiguous owner definitions within the same scope.
-    if (entries.length !== 1) continue;
-    const { dir, config } = entries[0]!;
-    const app = dir.projectId ? `${dir.projectId}.app` : undefined;
-    items.push({
-      target: config.name,
-      kind: "prompt",
-      owner: config.name,
-      ...(app ? { app } : {}),
-      description: config.description,
-    });
-    const wfDir = join(dir.dir, "workflows");
-    if (existsSync(wfDir)) {
-      const catalog = await buildWorkflowCatalog(wfDir, options.signal);
-      for (const wf of catalog.workflows.values()) {
-        items.push({
-          target: `${config.name}/${wf.name}`,
-          kind: "code",
-          owner: config.name,
-          ...(app ? { app } : {}),
-          description: wf.description,
-        });
+  try {
+    const cwd = resolve(options.cwd ?? process.cwd());
+    const projectRoot = resolve(options.projectRoot ?? inferWorkspaceRoot(cwd));
+    const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
+    const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
+    const appFilter = options.app?.trim()
+      ? options.app.trim().endsWith(".app")
+        ? options.app.trim()
+        : `${options.app.trim()}.app`
+      : undefined;
+
+    const rawDirs = listRuntimeAgentDirectories(
+      globalAgentsRoot,
+      projectsRoot,
+      projectsRoot,
+      appFilter ? [appFilter] : undefined,
+    );
+    const dedupedByPath = new Map<string, AgentDirectory>();
+    for (const dir of rawDirs) {
+      const key = resolve(dir.dir);
+      const prev = dedupedByPath.get(key);
+      if (!prev || (!prev.projectId && dir.projectId)) {
+        dedupedByPath.set(key, dir);
       }
     }
+    const dirs = [...dedupedByPath.values()];
+
+    const ownersByScope = new Map<string, { dir: AgentDirectory; config: AgentConfig }[]>();
+    for (const dir of dirs) {
+      listController.signal.throwIfAborted();
+      if (appFilter && dir.projectId !== appFilter.slice(0, -".app".length)) {
+        continue;
+      }
+      let config: AgentConfig | null = null;
+      try {
+        config = readAgentConfigFile(dir.dir);
+      } catch {
+        continue;
+      }
+      if (!config) continue;
+      const scopeKey = `${dir.projectId ?? ""}:${config.name}`;
+      const list = ownersByScope.get(scopeKey) ?? [];
+      list.push({ dir, config });
+      ownersByScope.set(scopeKey, list);
+    }
+
+    const items: DiscoveredTargetSummary[] = [];
+    for (const [, entries] of ownersByScope) {
+      listController.signal.throwIfAborted();
+      // Skip ambiguous owner definitions within the same scope.
+      if (entries.length !== 1) continue;
+      const { dir, config } = entries[0]!;
+      const app = dir.projectId ? `${dir.projectId}.app` : undefined;
+      items.push({
+        target: config.name,
+        kind: "prompt",
+        owner: config.name,
+        ...(app ? { app } : {}),
+        description: config.description,
+      });
+      const wfDir = join(dir.dir, "workflows");
+      if (existsSync(wfDir)) {
+        const catalog = await buildWorkflowCatalog(wfDir, listController.signal);
+        listController.signal.throwIfAborted();
+        for (const wf of catalog.workflows.values()) {
+          items.push({
+            target: `${config.name}/${wf.name}`,
+            kind: "code",
+            owner: config.name,
+            ...(app ? { app } : {}),
+            description: wf.description,
+          });
+        }
+      }
+    }
+    if (!appFilter) {
+      items.push(
+        { target: "codex", kind: "cli", owner: "codex", description: "Built-in Codex CLI executor" },
+        { target: "claude", kind: "cli", owner: "claude", description: "Built-in Claude CLI executor" },
+      );
+    }
+    return items.sort((a, b) => a.target.localeCompare(b.target));
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener("abort", onParentAbort);
   }
-  if (!appFilter) {
-    items.push(
-      { target: "codex", kind: "cli", owner: "codex", description: "Built-in Codex CLI executor" },
-      { target: "claude", kind: "cli", owner: "claude", description: "Built-in Claude CLI executor" },
-    );
-  }
-  return items.sort((a, b) => a.target.localeCompare(b.target));
 }
 
 function normalizeAppDirName(app: string): string {

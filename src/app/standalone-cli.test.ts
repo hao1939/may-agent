@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { spawn } from "node:child_process";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { drainBashProcessGroup } from "../lib/tools/bash.js";
+import { spawnFixtureProcess } from "../../test/fixtures/owned-process.js";
 import { parseStandaloneCliArgs, runStandaloneCli } from "./standalone-cli.js";
 
 describe("may run / may list standalone CLI", () => {
@@ -156,6 +157,8 @@ describe("may run / may list standalone CLI", () => {
 
     // 1. Direct bin invocation via executable symlink:
     const tempDir = mkdtempSync(join(tmpdir(), "may-bin-test-"));
+    let child: ReturnType<typeof spawnFixtureProcess> | undefined;
+    let spawnedCodexPid = 0;
     try {
       chmodSync(mayEntry, 0o755);
       const helpProc = Bun.spawn([mayEntry, "run", "--help"], {
@@ -184,15 +187,13 @@ setInterval(() => {}, 1000);
       );
       chmodSync(fakeCodexPath, 0o755);
 
-      const child = spawn(mayEntry, ["run", "codex", "Long task", "--cwd", workDir], {
+      child = spawnFixtureProcess([mayEntry, "run", "codex", "Long task", "--cwd", workDir], {
         env: {
           ...process.env,
           PATH: `${fakeBinDir}:${process.env.PATH ?? ""}`,
         },
-        stdio: ["ignore", "pipe", "pipe"],
       });
 
-      let spawnedCodexPid = 0;
       const deadline = Date.now() + 5_000;
       while (Date.now() < deadline) {
         try {
@@ -208,11 +209,20 @@ setInterval(() => {}, 1000);
       }
       expect(spawnedCodexPid).toBeGreaterThan(0);
 
-      // Send SIGINT to `may` CLI process:
+      // Send SIGINT to `may` CLI process and wait with a bounded timeout:
       child.kill("SIGINT");
-      await new Promise<void>((resolveExit) => {
-        child.once("close", () => resolveExit());
-      });
+      await Promise.race([
+        new Promise<void>((resolveExit) => {
+          if (child?.exitCode !== null || child?.signalCode !== null) {
+            resolveExit();
+            return;
+          }
+          child.once("close", () => resolveExit());
+        }),
+        new Promise<never>((_, rejectTimeout) =>
+          setTimeout(() => rejectTimeout(new Error("Timed out waiting for may CLI to exit after SIGINT")), 5_000),
+        ),
+      ]);
 
       // Verify the detached codex child process group was drained:
       let codexStillAlive = true;
@@ -223,6 +233,21 @@ setInterval(() => {}, 1000);
       }
       expect(codexStillAlive).toBe(false);
     } finally {
+      if (child && child.exitCode === null && child.signalCode === null) {
+        try {
+          child.stdin?.end();
+          child.kill("SIGKILL");
+        } catch {
+          // Ignore already exited child.
+        }
+        await Promise.race([
+          new Promise<void>((resolveExit) => child!.once("close", () => resolveExit())),
+          new Promise<void>((resolveTimeout) => setTimeout(resolveTimeout, 1_000)),
+        ]);
+      }
+      if (spawnedCodexPid > 0) {
+        await drainBashProcessGroup(spawnedCodexPid);
+      }
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
