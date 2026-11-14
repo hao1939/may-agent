@@ -352,13 +352,42 @@ function isExecutableModuleFixture(fixture: unknown): fixture is WorkflowExecuta
 }
 
 /**
- * Execute an authored workflow module through the real portable kernel with
- * strict schema validation, scripted step consumption checks, and zero Host setup.
+ * Execute an authored workflow module or named target through the real portable
+ * kernel with strict schema validation, scripted step consumption checks, and
+ * zero Host setup.
  */
 export async function runWorkflowTest<TInput = unknown>(
-  module: WorkflowExecutableModule<TInput>,
+  moduleOrTarget: WorkflowExecutableModule<TInput> | string,
   options: WorkflowTestOptions<TInput>,
 ): Promise<WorkflowTestRunResult> {
+   const module: WorkflowExecutableModule<TInput> =
+     typeof moduleOrTarget === "string"
+       ? (() => {
+           const targetName = moduleOrTarget.trim();
+           const mockEntry = options.mocks?.[targetName] ?? options.workflows?.[targetName];
+           if (isExecutableModuleFixture(mockEntry)) {
+             return mockEntry as WorkflowExecutableModule<TInput>;
+           }
+           return {
+             name: targetName,
+             description: `Standalone SDK test invocation for ${targetName}`,
+             ...(options.tools === "readonly" ? { readonly: true } : {}),
+             async execute(ctx) {
+               const step = await ctx.call(targetName, ctx.input, {
+                 ...(options.tools ? { tools: options.tools } : {}),
+               });
+               if (step.status === "done") return ctx.done(step.summary, step.output);
+               if (step.status === "blocked") {
+                 return {
+                   ...ctx.blocked(step.summary, step.facts),
+                   ...(step.output !== undefined ? { output: step.output } : {}),
+                 };
+               }
+               throw new Error(step.summary || `Target "${targetName}" failed with status "${step.status}"`);
+             },
+           };
+         })()
+       : moduleOrTarget;
   const mockQueues = new Map<string, ScriptedStepResponse[]>();
   for (const [name, fixture] of Object.entries(options.mocks ?? {})) {
     if (Array.isArray(fixture)) {
@@ -687,3 +716,6 @@ export async function runWorkflowTest<TInput = unknown>(
     unconsumedFixtures,
   };
 }
+
+export const runTargetTest = runWorkflowTest;
+

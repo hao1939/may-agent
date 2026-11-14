@@ -8,6 +8,7 @@
     "packages/*"
   ],
   "scripts": {
+    "standalone": "bun src/app/standalone-cli.ts",
     "check": "tsc --noEmit",
     "check:ci": "bun run check && bun run check:sdk && bun run check:canonical-app-boundary && bun run lint --quiet",
     "ci": "bun run check:ci && bun run test",

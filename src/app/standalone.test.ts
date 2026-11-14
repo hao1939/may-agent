@@ -12,7 +12,7 @@ import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
-import { runDirect, runDirectWorkflow } from "./direct-workflow.js";
+import { run, runDirect, runDirectWorkflow } from "./standalone.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -951,6 +951,25 @@ export async function execute(ctx) {
     expect(collisionAndReadonlyRun.result).toMatchObject({
       type: "done",
       summary: "prompt:Readonly prompt check",
+    });
+
+    const codexRun = await run("codex", "Inspect package.json", {
+      projectRoot: env.projectRoot,
+      tools: "readonly",
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        codex: async (call) => ({
+          id: "cli_codex_1",
+          kind: "agent",
+          status: "done",
+          summary: `Codex ran: ${call.task} (${call.options?.tools ?? "default"})`,
+        }),
+      },
+    });
+    expect(codexRun.ok).toBe(true);
+    expect(codexRun.result).toEqual({
+      type: "done",
+      summary: "Codex ran: Inspect package.json (readonly)",
     });
   });
 });

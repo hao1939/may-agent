@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
-import { createTestAppWorkflowContext, resolveCallable, runWorkflowTest } from "./testing.js";
+import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -694,5 +694,40 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     );
     expect(skillOnCode.ok).toBe(false);
     expect(String(skillOnCode.error)).toContain('Call option "skill" is only supported for prompt targets');
+
+    // SDK-only string target execution via runTargetTest / runWorkflowTest
+    const sdkDirectPrompt = await runTargetTest("reviewer", {
+      input: "Check HEAD",
+      tools: "readonly",
+      mocks: {
+        reviewer: ({ task, options }) => ({
+          status: "done",
+          summary: `SDK prompt: ${task} (${options?.tools ?? "default"})`,
+        }),
+      },
+    });
+    expect(sdkDirectPrompt.ok).toBe(true);
+    expect(sdkDirectPrompt.result).toEqual({
+      type: "done",
+      summary: "SDK prompt: Check HEAD (readonly)",
+    });
+
+    const sdkDirectCode = await runTargetTest("owner/review-change", {
+      input: { subjectRef: "HEAD~1..HEAD" },
+      mocks: {
+        "owner/review-change": reviewWorkflow,
+        reviewer: {
+          status: "done",
+          summary: "Clean diff",
+          output: {
+            subjectRef: "HEAD~1..HEAD",
+            verdict: "pass",
+            summary: "All good",
+          },
+        },
+      },
+    });
+    expect(sdkDirectCode.ok).toBe(true);
+    expect(sdkDirectCode.result?.type).toBe("done");
   });
 });
