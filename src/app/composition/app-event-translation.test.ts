@@ -476,3 +476,177 @@ test("preserves forced reload recovery when reload runs during an active startup
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("isolated forced reload regressions: reload before startup timer fires, and reload during held dispatch under post-reload ingress without clock advancement", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-forced-recovery-isolated-"));
+  const db = getDb(root);
+  let runtime: AppInboxRuntime | undefined;
+  let brokenPreReload = true;
+  let postReloadThrows = 0;
+  let holdHealthyWorker = false;
+  let heldEventId: number | null = null;
+  let healthyWorkerEntered = Promise.withResolvers<void>();
+  let releaseHealthyWorker = Promise.withResolvers<void>();
+  const makeEntries = () =>
+    (["broken", "healthy"] as const).map((id) => {
+      const appDir = join(root, id);
+      mkdirSync(appDir, { recursive: true });
+      return {
+        appDir,
+        definition: defineApp({
+          id,
+          version: 1,
+          agent: id,
+          inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ value: Type.String() }) }),
+          tasks: {},
+          task: ({ id: inputId }) => ({
+            kind: "desired",
+            intent: { id: inputId, parentId: "root", outcome: "Review fact", acceptance: ["Reviewed"] },
+          }),
+          subscriptions:
+            id === "broken"
+              ? [
+                  {
+                    id: "change",
+                    event: "probe.changed",
+                    toInput: (event) => {
+                      if (event.data.value === "post-reload-broken") {
+                        postReloadThrows++;
+                        throw new Error("post-reload translation failure");
+                      }
+                      if (brokenPreReload) throw new Error("broken before reload");
+                      return { kind: "message", data: { value: `${id}:${String(event.data.value)}` } };
+                    },
+                  },
+                ]
+              : [],
+        }),
+      };
+    });
+  try {
+    for (const { appDir, definition } of makeEntries()) {
+      const store = AppTaskResourceStore.fromDb(db, definition.id);
+      store.bootstrapSnapshot(
+        {
+          project: definition.id,
+          root_task_id: "root",
+          project_lifecycle: "active",
+          groups: { root: { id: "root", parent_id: null } },
+        },
+        "fixture",
+      );
+      void appTaskContext({ appDir, projectDir: appDir, agent: definition.agent!, resourceStore: store });
+    }
+    const registry = new AppRegistry(async () => makeEntries());
+    await registry.reload();
+    const bus = new EventBus();
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const startRuntime = () =>
+      startAppInboxRuntime({
+        db,
+        bus,
+        registry,
+        persistDir: root,
+        schedulesEnabled: false,
+        attachTask: (input) => {
+          const store = AppTaskResourceStore.fromDb(db, input.appId);
+          return admitTaskInput(
+            appTaskContext({ appDir: join(root, input.appId), projectDir: join(root, input.appId), agent: input.appId, resourceStore: store }),
+            input,
+          );
+        },
+        createTaskAdmissionWorker: () => ({
+          dispatch: async (command, event) => {
+            const eid = Number((event as unknown as Record<PropertyKey, unknown>)[EVENT_ROW_ID]);
+            if (command.appId === "healthy" && holdHealthyWorker && (heldEventId === null || eid === heldEventId)) {
+              healthyWorkerEntered.resolve();
+              await releaseHealthyWorker.promise;
+            }
+            return { taskIds: [] };
+          },
+          close: () => {},
+        }),
+        previewTaskEventRoutes: ({ event }) =>
+          event.type === "probe.changed" ? [{ appId: "healthy", taskIds: ["root"] }] : [],
+        admitTaskEvent: () => ({ accepted: true, by: "fixture", route: "direct" }),
+      });
+
+    // Case 1: reload immediately after startAppInboxRuntime(), BEFORE the startup 0ms recovery timer fires,
+    // with NO clock advancement and NO scanNow().
+    runtime = await startRuntime();
+    const startupEvent = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "startup" } });
+    const startupEventId = startupEvent[EVENT_ROW_ID]!;
+    await until(() => getAppEventAdmissionPlan(db, startupEventId)?.commands.find((c) => c.appId === "healthy")?.status === "admitted");
+    runtime.close();
+
+    runtime = await startRuntime();
+    brokenPreReload = false;
+    await runtime.reload(undefined, async () => makeEntries());
+    await until(() => getAppEventAdmissionPlan(db, startupEventId)?.status === "completed");
+    expect(getAppEventAdmissionPlan(db, startupEventId)?.commands.every((c) => c.status === "admitted")).toBe(true);
+
+    // Case 2: reload with dispatch held across a timer turn, plus post-reload ingress (including a post-reload
+    // failing event that must NOT bypass the 60s cooldown when the pre-reload dispatch drains).
+    runtime.close();
+    brokenPreReload = true;
+    runtime = await startRuntime();
+    const heldEvent = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "held" } });
+    const heldId = heldEvent[EVENT_ROW_ID]!;
+    await until(() => getAppEventAdmissionPlan(db, heldId)?.commands.find((c) => c.appId === "healthy")?.status === "admitted");
+    runtime.close();
+
+    db.prepare(
+      "UPDATE app_event_admission_commands SET status = 'pending', admitted_at = NULL WHERE event_id = ? AND app_id = 'healthy'",
+    ).run(heldId);
+    holdHealthyWorker = true;
+    heldEventId = heldId;
+    healthyWorkerEntered = Promise.withResolvers<void>();
+    releaseHealthyWorker = Promise.withResolvers<void>();
+    runtime = await startRuntime();
+    await healthyWorkerEntered.promise;
+
+    brokenPreReload = false;
+    await runtime.reload(undefined, async () => makeEntries());
+    // Wait a timer turn while dispatch is still held, and emit both a post-reload failing event and
+    // another post-reload event whose healthy dispatch is also held so the global queue is non-empty
+    // when heldId finishes.
+    await Bun.sleep(15);
+    const postBroken = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "post-reload-broken" } });
+    const postBrokenId = postBroken[EVENT_ROW_ID]!;
+    expect(postReloadThrows).toBe(1);
+
+    // Hold postBroken's healthy worker dispatch only after heldId is re-queued by the forced recovery slice,
+    // or release postBroken once postHealthyEntered fires so dispatchNextAdmissionCommand can proceed to heldId!
+    heldEventId = postBrokenId;
+    const postHealthyEntered = Promise.withResolvers<void>();
+    const releasePostHealthy = Promise.withResolvers<void>();
+    const origRelease = releaseHealthyWorker;
+    releaseHealthyWorker = releasePostHealthy;
+    healthyWorkerEntered = postHealthyEntered;
+    origRelease.resolve();
+    await postHealthyEntered.promise;
+    // Emit another event while postBroken is held so pendingAdmissionEvents remains non-empty
+    const trailing = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "trailing" } });
+    const trailingId = trailing[EVENT_ROW_ID]!;
+    heldEventId = trailingId;
+    const releaseTrailing = Promise.withResolvers<void>();
+    releaseHealthyWorker = releaseTrailing;
+    releasePostHealthy.resolve();
+
+    // Even while trailingId is held in dispatch, heldId (captured at reload time)
+    // is retried and completes without waiting for trailingId or bypassing postBroken's 60s cooldown!
+    await until(() => getAppEventAdmissionPlan(db, heldId)?.status === "completed");
+    expect(getAppEventAdmissionPlan(db, heldId)?.commands.every((c) => c.status === "admitted")).toBe(true);
+    expect(postReloadThrows).toBe(1);
+    holdHealthyWorker = false;
+    releaseTrailing.resolve();
+  } finally {
+    holdHealthyWorker = false;
+    releaseHealthyWorker.resolve();
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
