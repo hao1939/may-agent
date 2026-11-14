@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/lib/skills.js";
+export * from "../../packages/sdk/src/runtime/index.js";

@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/app/model-registry.js";
+export * from "../../packages/sdk/src/runtime/index.js";

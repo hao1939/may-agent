@@ -65,6 +65,25 @@ export default [
     },
   },
   {
+    files: ["src/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "**/packages/sdk/src/runtime/app/**",
+                "**/packages/sdk/src/runtime/lib/**",
+              ],
+              message: "Host src/ modules must import through the explicit SDK runtime barrel (`packages/sdk/src/runtime/index.js`) or `@may-agent/sdk/standalone`, never internal SDK runtime files.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: [
       "src/lib/agent-runner.ts",
       "src/lib/agent-execution.ts",

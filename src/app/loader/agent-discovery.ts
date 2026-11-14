@@ -1,1 +1,1 @@
-export * from "../../../packages/sdk/src/runtime/app/loader/agent-discovery.js";
+export * from "../../../packages/sdk/src/runtime/index.js";

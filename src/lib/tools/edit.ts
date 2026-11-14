@@ -1,1 +1,1 @@
-export * from "../../../packages/sdk/src/runtime/lib/tools/edit.js";
+export * from "../../../packages/sdk/src/runtime/index.js";

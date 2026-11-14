@@ -1,9 +1,15 @@
 import { Type, type Static } from "typebox";
 
-import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { CliCallFacts } from "@may-agent/sdk";
 import type { EventTrace } from "../../../packages/sdk/src/event.js";
-import { runCliAgent, type CliAgentOptions } from "../cli-agent.js";
+import {
+  cliCallFacts,
+  runCliAgent,
+  type CliAgentOptions,
+} from "../../../packages/sdk/src/runtime/index.js";
+
+export { cliCallFacts };
 
 const paramsSchema = Type.Object({
   tool: Type.Union([Type.Literal("claude"), Type.Literal("codex")], {
@@ -74,21 +80,6 @@ export interface RunCliAgentToolOptions {
   getCallerTrace?: () => EventTrace | undefined;
   spawnCommand?: CliAgentOptions["spawnCommand"];
   drainProcessGroup?: CliAgentOptions["drainProcessGroup"];
-}
-
-/** Read runtime metadata, never assistant prose or JSON copied into tool text. */
-export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCallFacts[] {
-  const calls = new Map<string, CliCallFacts>();
-  for (const message of messages) {
-    if (message.role !== "toolResult" || message.toolName !== "run_cli_agent") continue;
-    const call = (message.details as { cliCall?: CliCallFacts } | undefined)?.cliCall;
-    if (!call || call.sessionId !== sessionId || call.toolCallId !== message.toolCallId) continue;
-    if (!call.taskId || (call.tool !== "codex" && call.tool !== "claude")) continue;
-    if (call.status !== "completed" && call.status !== "failed") continue;
-    if (!call.resultPath || !call.structuredResultPath || !call.eventsPath) continue;
-    calls.set(call.taskId, call);
-  }
-  return [...calls.values()].slice(-64);
 }
 
 export function createRunCliAgentTool(opts: RunCliAgentToolOptions): AgentTool {

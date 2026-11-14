@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/lib/workflow-catalog.js";
+export * from "../../packages/sdk/src/runtime/index.js";

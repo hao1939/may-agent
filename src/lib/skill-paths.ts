@@ -1,1 +1,1 @@
-export { resolveSkillRoots } from "../../packages/sdk/src/runtime/lib/skills.js";
+export { resolveSkillRoots } from "../../packages/sdk/src/runtime/index.js";
