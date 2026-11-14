@@ -724,7 +724,7 @@ describe("workflow runner: agent name validation", () => {
 
     expect(parsed.type).toBe("error");
     if (parsed.type === "error") {
-      expect(parsed.error).toContain("invalid agent name");
+      expect(parsed.error).toContain("ctx.call invoked with invalid target name");
     }
   });
 
@@ -748,7 +748,7 @@ describe("workflow runner: agent name validation", () => {
 
     expect(parsed.type).toBe("error");
     if (parsed.type === "error") {
-      expect(parsed.error).toContain("invalid agent name");
+      expect(parsed.error).toContain("ctx.call invoked with invalid target name");
     }
   });
 });
