@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { extractFinishParams } from "./manager.js";
+import { extractFinishParams } from "@may-agent/sdk/runtime";
 
 function finishCall(id: string, args: Record<string, unknown>) {
   return {

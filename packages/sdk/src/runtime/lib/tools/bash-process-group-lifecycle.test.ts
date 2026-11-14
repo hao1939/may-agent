@@ -2,16 +2,22 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { addSessionBashProcessGroup, readSessionBashProcessGroups, removeSessionBashProcessGroup, sessionDir } from "../persistence.js";
 import {
   BASH_PROCESS_GROUP_TERM_GRACE_MS,
+  addSessionBashProcessGroup,
   createBashTool,
   createLocalBashOperations,
   drainBashProcessGroup,
   drainPersistedSessionBashProcessGroups,
   drainSessionBashProcessGroups,
   processGroupContainsLiveMember,
+  readSessionBashProcessGroups,
+  removeSessionBashProcessGroup,
 } from "@may-agent/sdk/runtime";
+
+function sessionDir(persistDir: string, sessionId: string): string {
+  return join(persistDir, "sessions", sessionId);
+}
 
 const fixtures: string[] = [];
 
