@@ -15,9 +15,7 @@ export interface BackgroundRuntimeOptions {
 /** Process role, not optional schedules, determines ownership of background work. */
 export function runsBackgroundWork(args: AppArgs, interactiveConsole: boolean): boolean {
   if (
-    args.oneshotMode ||
     args.statusMode ||
-    args.messageMode ||
     args.emitMode ||
     args.webOnlyMode ||
     args.taskWorkerRequest ||
