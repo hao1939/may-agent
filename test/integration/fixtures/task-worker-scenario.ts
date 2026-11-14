@@ -806,8 +806,8 @@ export async function execute(ctx) {
     const output = join(f.root, "ordinary-command-result.json");
     const childScript = join(f.root, "ordinary-command.ts");
     const dbConnectionUrl = pathToFileURL(resolve(process.cwd(), "src/lib/db/connection.ts")).href;
-    const bashToolUrl = pathToFileURL(resolve(process.cwd(), "src/lib/tools/bash.ts")).href;
-    const cliAgentUrl = pathToFileURL(resolve(process.cwd(), "src/lib/cli-agent.ts")).href;
+    const bashToolUrl = pathToFileURL(resolve(process.cwd(), "packages/sdk/src/runtime/index.ts")).href;
+    const cliAgentUrl = pathToFileURL(resolve(process.cwd(), "packages/sdk/src/runtime/index.ts")).href;
     const helperBin = join(f.root, "bin");
     const helperProbe = join(f.root, "native-helper-command.json");
     mkdirSync(helperBin, { recursive: true });
