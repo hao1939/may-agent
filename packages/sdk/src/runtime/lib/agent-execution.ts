@@ -382,8 +382,6 @@ import {
   isRetryableEmptyAssistantFailure,
 } from "./manager-utils.js";
 import executionInstructions from "./execution-instructions.md" with { type: "text" };
-export const WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD = 24;
-export const WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS = 300_000;
 export const RESPONSES_STREAM_TERMINAL_ERROR = "OpenAI Responses stream ended before a terminal response event";
 
 export function validateOperationAllowance(value: number | undefined): number | undefined {
@@ -410,13 +408,12 @@ export function shouldRequestBoundedWorkflowFinish(
   timing?: { admittedTimeoutMs?: number; elapsedMs?: number; operationAllowance?: number },
 ): boolean {
   const operationAllowance = validateOperationAllowance(timing?.operationAllowance);
-  const threshold = operationAllowance ?? WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD;
-  if (!requireFinish || alreadyRequested || toolCalls < threshold) return false;
-  // An explicit allowance is the operation boundary. Timeout only governs elapsed runtime.
-  if (operationAllowance !== undefined) return true;
-  const admittedTimeoutMs = timing?.admittedTimeoutMs;
-  if (admittedTimeoutMs === undefined || admittedTimeoutMs <= WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS) return true;
-  return Math.max(0, timing?.elapsedMs ?? 0) >= admittedTimeoutMs - WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS;
+  return (
+    requireFinish &&
+    !alreadyRequested &&
+    operationAllowance !== undefined &&
+    toolCalls >= operationAllowance
+  );
 }
 
 export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
