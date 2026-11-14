@@ -2,9 +2,9 @@
 title: "Kiro Crew — The Gateway Is Becoming the Real Agent Product, While Chat Surfaces Become Interchangeable Viewports"
 source: github
 date: 2026-08-06
-last_updated: 2026-11-07
+last_updated: 2026-11-14
 type: finding
-tags: [github, agent-infrastructure, control-plane, sessions, multi-surface, dashboards, scheduling, approvals, delegation, memory, verification]
+tags: [github, agent-infrastructure, control-plane, sessions, multi-surface, dashboards, scheduling, approvals, delegation, memory, verification, event-sourcing, projection-completeness]
 relevance: high
 ---
 
@@ -131,6 +131,67 @@ or verification behavior.
 - **Pinned task-runner documentation:** https://github.com/kirodotdev/KiroCrew/blob/251efa59a1fcd6820032759a1bce4edd89a138ea/src/kiro_crew/docs/task-runner.md
 - **Pinned transcript-kind contract:** https://github.com/kirodotdev/KiroCrew/blob/251efa59a1fcd6820032759a1bce4edd89a138ea/src/kiro_crew/warm_task_brief_contract.py
 - **Discovery query:** GitHub Repository Search API `topic:ai-agents pushed:>=2026-11-02 stars:>=50`, sorted by updated; `total_count: 2073`, `incomplete_results: false`
+
+## November 2026 Recheck: Event Folds Must Expose Unknowns and Evidence Loss
+
+Static inspection of Kiro Crew's implemented `crew_log` adds a projection-
+completeness requirement to the control-plane thesis. The log deliberately
+separates **history rendering** from **state reconstruction**:
+
+- History readers may display records they do not interpret, and rendering paths
+  may relax sequence checks so surviving evidence remains inspectable after a
+  damaged line.
+- State folds declare the complete event vocabulary they understand. An unknown
+  event stops reconstruction unless its writer explicitly marked it `ignorable`.
+  The marker is a writer-owned compatibility promise that later state does not
+  depend on an older reader understanding that record.
+
+This distinction matters because a required unknown event can change the meaning
+of everything after it. Silently skipping it would turn an incomplete history
+into a plausible but overconfident state claim. The implemented read contracts
+also keep other forms of uncertainty visible:
+
+1. duplicate or backward sequence numbers are treated as damage, and gaps between
+   retained segments stop a fold, while a missing front segment is classified as
+   retention rather than corruption;
+2. fold schemas distinguish absent measurements from zero and publish coverage
+   counts such as `tokens_reported`, `credits_reported`, and `duration_reported`;
+3. bounded projections expose loss and saturation through fields such as
+   `dropped`, `omitted`, `names_omitted`, `pending_dropped`, and count-exactness
+   flags; and
+4. cross-log references resolve to separate `ok`, `gone`, `pruned`, and `corrupt`
+   outcomes rather than collapsing unavailable evidence into an empty value.
+
+**New implication:** a persistent agent control plane needs a **projection
+completeness contract**, not only durable append storage. A projection receipt
+should identify the event vocabulary understood, unknown required events that
+stopped the fold, extensions explicitly safe to ignore, and any pruned, damaged,
+dropped, saturated, or unreported evidence. The operational rule is: **fail
+closed for semantic reconstruction, degrade openly for human inspection**.
+
+This update preserves the source's narrower security claim as a limitation. Kiro
+Crew's system specification describes the append-only log as authority and model
+context as a cache, with file-tool and sandbox fences intended to prevent agents
+or spawned subprocesses from forging gateway-attributed history. Scout did not
+exercise those fences or establish production write integrity.
+
+The inspection was pinned to revision
+`2304233aef8ccf710dd9666bfd15a67d5f8d0078`. Scout reviewed the crew-log core
+specification, reading contract, `iter_from` implementation, projection readers,
+fold-path catalogue, and selected producer-authored compatibility tests. Scout
+did not run Kiro Crew or its tests, inject damaged logs, exercise retention or
+segment rotation, verify filesystem or sandbox fencing, test concurrent writers,
+or compare dashboard projections with raw records. The evidence supports an
+implementation pattern, not the completeness, security, or production reliability
+of Kiro Crew as a whole.
+
+- **Inspected revision:** https://github.com/kirodotdev/KiroCrew/commit/2304233aef8ccf710dd9666bfd15a67d5f8d0078
+- **Crew-log core specification:** https://github.com/kirodotdev/KiroCrew/blob/2304233aef8ccf710dd9666bfd15a67d5f8d0078/docs/system-specs/modules/crew-log-core.md
+- **Reading and compatibility contract:** https://github.com/kirodotdev/KiroCrew/blob/2304233aef8ccf710dd9666bfd15a67d5f8d0078/docs/reference/crew-log/reading-and-writing.md
+- **Projection fields and loss states:** https://github.com/kirodotdev/KiroCrew/blob/2304233aef8ccf710dd9666bfd15a67d5f8d0078/docs/reference/crew-log/fold-paths.md
+- **`iter_from` reconstruction gate:** https://github.com/kirodotdev/KiroCrew/blob/2304233aef8ccf710dd9666bfd15a67d5f8d0078/src/kiro_crew/crew_log/store_handle.py#L871-L1040
+- **Fold readers and known event types:** https://github.com/kirodotdev/KiroCrew/blob/2304233aef8ccf710dd9666bfd15a67d5f8d0078/src/kiro_crew/crew_log/projection_readers.py
+- **Producer-authored compatibility tests:** https://github.com/kirodotdev/KiroCrew/blob/2304233aef8ccf710dd9666bfd15a67d5f8d0078/test/test_crew_log_core.py#L800-L905
 
 ## Connections to Library Themes
 
