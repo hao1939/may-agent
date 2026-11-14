@@ -192,11 +192,6 @@ remaining in that assistant batch are blocked, and queued steering or follow-up
 input remains available for a later invocation. A rejected finish remains
 correctable in the current invocation.
 
-`isOverflowError` accepts the provider name for provider-specific errors. A
-bodyless HTTP 400/413 alone does not prove a context overflow; Pi recognizes
-that response for Cerebras only. Explicit token-limit errors still work without
-a provider name.
-
 ## Agent cooperation tools
 
 `manager-agents-tool.ts` offers bounded `call` and `fork` using a `task`
