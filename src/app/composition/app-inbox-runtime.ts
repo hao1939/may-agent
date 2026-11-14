@@ -693,6 +693,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const pendingAdmissionEvents = new Map<number, { event: AgentEvent; appIds: string[] }>();
   let admissionDispatchHandle: ReturnType<typeof setTimeout> | null = null;
   let admissionDispatching = false;
+  let nextAdmissionRecoveryAt = 0;
 
   const scheduleAdmissionDispatch = (plan: AppEventAdmissionPlan, event: AgentEvent): void => {
     if (plan.status !== "pending" || pendingAdmissionEvents.has(plan.eventId)) return;
@@ -740,7 +741,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
       if (plan?.status === "pending") completeAppEventAdmissionPlan(options.db, eventId, now());
     } catch {
-      //The journal retains responsibility for bounded recovery after coordinator failure.
+      // The journal retains responsibility for bounded recovery after coordinator failure.
     } finally {
       pendingAdmissionEvents.delete(eventId);
       if (!closed && pending.appIds.length > 0) pendingAdmissionEvents.set(eventId, pending);
@@ -801,7 +802,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     );
   };
 
-  let nextAdmissionRecoveryAt = 0;
   let admissionRecoveryHandle: ReturnType<typeof setTimeout> | null = null;
   let forceAdmissionRecoveryQueued = false;
   const recoverAdmissionPlans = (force = false): void => {
@@ -823,18 +823,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     admissionRecoveryHandle = setTimeout(() => {
       admissionRecoveryHandle = null;
       if (closed) return;
-      let index = 0;
-      const recoverNext = (): void => {
-        admissionRecoveryHandle = null;
+      for (const plan of plans) {
         if (closed) return;
-        const plan = plans[index++];
-        if (!plan) {
-          if (forceAdmissionRecoveryQueued && pendingAdmissionEvents.size === 0 && !admissionDispatching) {
-            forceAdmissionRecoveryQueued = false;
-            recoverAdmissionPlans(true);
-          }
-          return;
-        }
         const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
         if (!event) {
           for (const command of plan.commands) {
@@ -846,19 +836,16 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
               now: now(),
             });
           }
-        } else {
-          // EventBus re-runs only idempotent durable routes and records delivery
-          // acceptance on the original row; ordinary subscribers never replay.
-          options.bus.redeliverPersisted(event, plan.eventId, "app-inbox-route");
+          continue;
         }
-        if (index < plans.length) {
-          admissionRecoveryHandle = setTimeout(recoverNext, 0);
-        } else if (forceAdmissionRecoveryQueued && pendingAdmissionEvents.size === 0 && !admissionDispatching) {
-          forceAdmissionRecoveryQueued = false;
-          recoverAdmissionPlans(true);
-        }
-      };
-      recoverNext();
+        // EventBus re-runs only idempotent durable routes and records delivery
+        // acceptance on the original row; ordinary subscribers never replay.
+        options.bus.redeliverPersisted(event, plan.eventId, "app-inbox-route");
+      }
+      if (forceAdmissionRecoveryQueued && pendingAdmissionEvents.size === 0 && !admissionDispatching) {
+        forceAdmissionRecoveryQueued = false;
+        recoverAdmissionPlans(true);
+      }
     }, 0);
   };
 
