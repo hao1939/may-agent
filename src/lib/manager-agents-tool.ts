@@ -17,8 +17,8 @@ import {
   buildWorkflowCatalog,
   deferredExecutionResult,
   workflowExecutionResult,
+  type ExecutionScope,
 } from "../../packages/sdk/src/runtime/index.js";
-import type { ExecutionScope } from "./execution-scope.js";
 import { readIdentity } from "./instance-identity.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";

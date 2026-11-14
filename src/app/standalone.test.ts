@@ -10,7 +10,6 @@ import {
 } from "@may-agent/sdk/testing";
 import { Type } from "typebox";
 import { executePreparedAgent } from "../lib/agent-execution.js";
-import { runCliAgent } from "../lib/cli-agent.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
@@ -19,10 +18,11 @@ import {
   listTargets as listStandaloneTargets,
   prepareDirectAgentExecution,
   run,
+  runCliAgent,
   runDirectWorkflow,
   runDirectWorkflow as runDirect,
   type DirectAgentRunResult,
-} from "./standalone.js";
+} from "../../packages/sdk/src/runtime/index.js";
 
 const roots: string[] = [];
 afterEach(() => {

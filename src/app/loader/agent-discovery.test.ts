@@ -9,7 +9,7 @@ import {
   listConfiguredAgentNames,
   listProjectAgentDirectories,
   resolveRuntimeAgentDirectory,
-} from "./agent-discovery.ts";
+} from "../../../packages/sdk/src/runtime/index.js";
 
 function tempRoot(): string {
   const root = join(tmpdir(), `agent-discovery-${Date.now()}-${Math.random().toString(36).slice(2)}`);

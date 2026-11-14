@@ -2,8 +2,12 @@ import { afterEach, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { discoverAgentSkills, formatBoundedSkillCatalog, invokeCatalogSkill } from "./skills.js";
-import { createModelRegistry } from "../app/model-registry.js";
+import {
+  createModelRegistry,
+  discoverAgentSkills,
+  formatBoundedSkillCatalog,
+  invokeCatalogSkill,
+} from "../../packages/sdk/src/runtime/index.js";
 
 const roots: string[] = [];
 afterEach(() => {

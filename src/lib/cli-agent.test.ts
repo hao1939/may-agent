@@ -16,11 +16,12 @@ import { fileURLToPath } from "node:url";
 import {
   CLI_DIAGNOSTIC_TAIL_BYTES,
   createCliOutputCollector,
+  currentAgentSessionId,
   runCliAgent,
+  runWithAgentSessionContext,
   type CliAgentInput,
   type CliAgentOptions,
-} from "./cli-agent.js";
-import { currentAgentSessionId, runWithAgentSessionContext } from "./agent-session-context.js";
+} from "../../packages/sdk/src/runtime/index.js";
 import {
   appendSessionMessage,
   ensureSessionDir,

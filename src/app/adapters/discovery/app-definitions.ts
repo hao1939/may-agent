@@ -4,7 +4,7 @@ import {
   importRuntimeModule,
   invalidateRuntimeModuleCache,
   type RuntimeImportOptions,
-} from "../../../lib/runtime-import.js";
+} from "../../../../packages/sdk/src/runtime/index.js";
 import type { AppDefinitionSource } from "../../core/apps/registry.js";
 
 export function listAppDefinitionFiles(

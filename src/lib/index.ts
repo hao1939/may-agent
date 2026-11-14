@@ -9,11 +9,15 @@ export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { RunOptions, SubagentManagerOptions } from "./manager.js";
 export type { SessionStore } from "./persistence.js";
 // Session recovery (Ambulance Protocol — P62)
-export { classifyError } from "../../packages/sdk/src/runtime/index.js";
-export type { ErrorClass } from "../../packages/sdk/src/runtime/index.js";
-// Core coding tools (synced from pi-coding-agent)
-export { extractKeyFacts } from "./compaction.js";
-export type { KeyFacts } from "./compaction.js";
+export {
+  classifyError,
+  discoverAgentSkills,
+  extractKeyFacts,
+  formatBoundedSkillCatalog,
+  invokeCatalogSkill,
+  parseExplicitSkill,
+} from "../../packages/sdk/src/runtime/index.js";
+export type { ErrorClass, KeyFacts, MaySkill, MaySkillScope, SkillCatalog } from "../../packages/sdk/src/runtime/index.js";
 export {
   RegistryStore,
   appendSessionMessage,
@@ -29,8 +33,6 @@ export {
   sessionOutputDir,
   writeSessionMeta,
 } from "./persistence.js";
-export { discoverAgentSkills, formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill } from "./skills.js";
-export type { MaySkill, MaySkillScope, SkillCatalog } from "./skills.js";
 export {
   DEFAULT_MAX_BYTES,
   DEFAULT_MAX_LINES,

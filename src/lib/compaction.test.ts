@@ -2,12 +2,13 @@ import { Type } from "typebox";
 import { describe, it, expect, vi } from "bun:test";
 import {
   createCompactionTransform,
-  trimAccumulatedSummary,
   extractKeyFacts,
-  formatKeyFacts,
   extractOriginalTask,
-} from "./compaction.js";
-import type { CompactionInfo, KeyFacts } from "./compaction.js";
+  formatKeyFacts,
+  trimAccumulatedSummary,
+  type CompactionInfo,
+  type KeyFacts,
+} from "../../packages/sdk/src/runtime/index.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { getCurrentSystemPrompt, getCurrentTools, type Model } from "@earendil-works/pi-ai";
 

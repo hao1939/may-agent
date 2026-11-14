@@ -8,7 +8,7 @@ import {
   invokeCatalogSkill,
   parseExplicitSkill,
   type SkillCatalog,
-} from "./skills.js";
+} from "../../packages/sdk/src/runtime/index.js";
 
 const roots: string[] = [];
 

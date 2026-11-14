@@ -3,12 +3,12 @@ import { describe, expect, it } from "bun:test";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 import { taskAgentResultSchema } from "@may-agent/sdk";
-import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
 import {
   RESPONSES_STREAM_TERMINAL_ERROR,
   WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS,
   WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD,
   boundedWorkflowFinishPrompt,
+  createWorkflowFinishTool,
   recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
   shouldRequestBoundedWorkflowFinish,

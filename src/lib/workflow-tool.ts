@@ -14,7 +14,6 @@ import {
 import { join } from "node:path";
 import { type TSchema } from "typebox";
 import { getDb } from "./db/connection.js";
-import { executionTimeout } from "./execution-scope.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 
@@ -38,6 +37,7 @@ import {
   buildWorkflowCatalog,
   deferredExecutionResult,
   enforceStructuredWorkflowResult,
+  executionTimeout,
   findWorkflow,
   inspectWorkflowDefinition,
   validateOperationAllowance,

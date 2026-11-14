@@ -23,7 +23,7 @@ import { runTaskAgent, runTaskWorkflow, runRegisteredTaskExecutor, runTaskExecut
 import { createRuntimeAppRead } from "../../src/app/core/reads/app-read.js";
 import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
-import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
+import { currentAgentSessionId } from "../../packages/sdk/src/runtime/index.js";
 import { fakeModel } from "../fixtures/model.js";
 import { usageReply } from "../fixtures/execution-usage.js";
 

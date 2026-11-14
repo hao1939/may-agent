@@ -25,7 +25,7 @@ import { closeDb } from "../../src/lib/db/connection.js";
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { createAgentRun, type AgentRuntimeListener } from "../../src/lib/agent-runner.js";
-import { discoverAgentSkills } from "../../src/lib/skills.js";
+import { discoverAgentSkills } from "../../packages/sdk/src/runtime/index.js";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../packages/sdk/src/runtime/index.js";
 import { fakeModel } from "../fixtures/model.js";
 

@@ -5,7 +5,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "./manager.js";
-import { executionTimeout } from "./execution-scope.js";
+import { executionTimeout } from "../../packages/sdk/src/runtime/index.js";
 import { closeDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { EventBus } from "../app/core/events/bus.js";

@@ -2,7 +2,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "../adapters/reporting/metric-observations.js";
-import { listConfiguredAgentNames } from "../loader/agent-discovery.js";
+import { listConfiguredAgentNames } from "../../../packages/sdk/src/runtime/index.js";
 import type { SqliteDb } from "./read-model/state-db.js";
 
 const DASHBOARD_SESSION_ROW_LIMIT = 2_000;
