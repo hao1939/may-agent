@@ -80,7 +80,8 @@ async function taskWorkspaceRequirement(
   input: { intent: AppTaskIntent; agent: string; generation: number },
 ) {
   const workflow = input.intent.workflow?.trim();
-  const workspace = workflow && opts.workflows ? (await opts.workflows.inspect({
+  const inspectWorkflow = opts.workflows?.inspect ?? opts.runner?.inspect;
+  const workspace = workflow && inspectWorkflow ? (await inspectWorkflow({
     source: opts, appDir: descriptor.appDir, agent: input.agent, workflow,
   })).workspace : undefined;
   const workflowNeedsWorktree = workspace === "task" || (typeof workspace === "object" && workspace.kind === "task");

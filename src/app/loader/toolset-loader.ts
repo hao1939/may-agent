@@ -62,11 +62,40 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
 
       case "agents": {
         const denyConfig = config.delegateDeny;
+        const runtimeCtx = buildRuntimeCtx({
+          bus,
+          persistDir,
+          projectRoot,
+          agentsRoot: opts.agentsRoot,
+          sharedRoot: opts.sharedRoot,
+          projectsRoot: opts.projectsRoot,
+          agentName: config.name,
+        });
         tools.push(
           manager.createAgentsTool({
             getCallerSessionId: () => currentAgentSessionId(config.name),
             getCallerAgentName: () => config.name,
             callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
+            runtimeCtx,
+            createRead: (context) =>
+              createRuntimeAppRead({
+                readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),
+                getDb: runtimeCtx.getDb,
+                taskRead: context?.taskRead,
+                readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
+              }),
+            onWorkflowEvent: (event: WorkflowEvent) => {
+              const label = `workflow:${config.name}`;
+              if (event.type === "workflow.started") {
+                bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
+              } else if (event.type === "workflow.completed") {
+                bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
+              } else if (event.type === "workflow.blocked") {
+                bus.emit({ type: "info", message: `[${label}] Blocked: ${event.reason}` });
+              } else if (event.type === "workflow.step_started") {
+                bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
+              }
+            },
           }),
         );
         break;

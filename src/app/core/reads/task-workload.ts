@@ -25,7 +25,8 @@ export function runtimeWorkloadSource(
   dispatch?: AppTaskDispatch,
   taskId?: string,
 ): TaskWorkloadSource {
-  const executionRecipient = opts.agents?.executionRecipient?.bind(opts.agents);
+  const runnerSource = opts.agents ?? opts.runner;
+  const executionRecipient = runnerSource?.executionRecipient?.bind(runnerSource);
   return {
     ...(taskId ? { currentTaskId: taskId } : {}),
     ...(executionRecipient ? { executionRecipient } : {}),

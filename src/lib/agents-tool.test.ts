@@ -463,6 +463,90 @@ describe("agents tool", () => {
       "done",
     );
   });
+
+  it("discovers and invokes code procedures via action: 'call' with structured input while rejecting fork/peek/follow-up on procedures", async () => {
+    const ownerDir = join(persistDir, "owner");
+    mkdirSync(join(ownerDir, "workflows"), { recursive: true });
+    writeFileSync(
+      join(ownerDir, "workflows", "intake.ts"),
+      `
+export const name = "intake";
+export const description = "Structured intake procedure";
+export async function execute(ctx) {
+  if (!ctx.input || typeof ctx.input.appId !== "string" || typeof ctx.input.taskId !== "string") {
+    return ctx.blocked("Missing appId or taskId");
+  }
+  return ctx.done("intake:" + ctx.input.appId + "/" + ctx.input.taskId, {
+    checked: true,
+    subject: ctx.input,
+  });
+}
+`,
+    );
+
+    manager.register({
+      name: "owner",
+      description: "Owner",
+      domain: "platform",
+      model: mockModel(),
+      tools: [echoTool()],
+      agentDir: ownerDir,
+    });
+    manager.activeSessions.set("s_owner", {
+      sessionId: "s_owner",
+      agentName: "owner",
+      task: "test",
+      startedAt: Date.now(),
+      status: "running",
+      definition: manager.getAgentDefinition("owner"),
+    } as any);
+
+    const tool = manager.createAgentsTool({
+      getCallerAgentName: () => "owner",
+      getCallerSessionId: () => "s_owner",
+    });
+
+    const listed = await callTool(tool, { action: "list" });
+    expect(listed.procedures).toEqual([
+      { name: "intake", owner: "owner", description: "Structured intake procedure" },
+    ]);
+
+    const calledLocal = await callTool(tool, {
+      action: "call",
+      agent: "intake",
+      input: { appId: "alex", taskId: "work/1" },
+    });
+    expect(calledLocal).toMatchObject({
+      type: "done",
+      kind: "workflow",
+      status: "done",
+      summary: "intake:alex/work/1",
+      output: { checked: true, subject: { appId: "alex", taskId: "work/1" } },
+    });
+
+    const calledQualified = await callTool(tool, {
+      action: "call",
+      agent: "owner/intake",
+      input: { appId: "scout", taskId: "work/2" },
+    });
+    expect(calledQualified).toMatchObject({
+      type: "done",
+      kind: "workflow",
+      status: "done",
+      summary: "intake:scout/work/2",
+    });
+
+    expect((await callTool(tool, { action: "fork", agent: "intake", task: "run" })).error).toContain(
+      "use action: 'call' for synchronous code procedures",
+    );
+    expect((await callTool(tool, { action: "peek", sessionId: "owner/intake" })).error).toContain(
+      "use action: 'call' for synchronous code procedures",
+    );
+    expect(
+      (await callTool(tool, { action: "follow-up", sessionId: "owner/intake", content: "steer" })).error,
+    ).toContain("use action: 'call' for synchronous code procedures");
+    manager.activeSessions.delete("s_owner");
+  });
 });
 
 describe("callAgent depth limit", () => {

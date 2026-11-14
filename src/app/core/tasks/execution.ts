@@ -87,6 +87,13 @@ export type TaskWorkflowRunner = {
   snapshot?(): TaskWorkflowRunner;
 };
 
+/** Unified Task execution runner covering both prompt agents and code workflows. */
+export type TaskRunner = Omit<TaskAgentRunner, "snapshot"> & {
+  inspect: TaskWorkflowRunner["inspect"];
+  executeWorkflow: TaskWorkflowRunner["execute"];
+  snapshot(): TaskRunner;
+};
+
 export type TaskSessionRecovery = {
   read(sessionId: string): { status: string; taskBinding?: unknown; workflowRunId?: string } | null;
   isLive(sessionId: string): boolean;

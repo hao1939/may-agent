@@ -4,7 +4,7 @@ import { type EventBus } from "../events/bus.js";
 import type { TaskOutcomeReader } from "../reads/reporting.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { type AppTaskDispatch } from "./controller.js";
-import type { TaskAgentRunner, TaskSessionRecovery, TaskWorkflowRunner } from "./execution.js";
+import type { TaskAgentRunner, TaskRunner, TaskSessionRecovery, TaskWorkflowRunner } from "./execution.js";
 import { type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { TaskWorkspaces } from "./workspace.js";
 
@@ -14,6 +14,8 @@ export interface AppTaskRuntimeOptions {
   persistDir?: string;
   agentsRoot?: string;
   sharedRoot?: string;
+  /** Unified Task runner for prompt agents and code workflows. */
+  runner?: TaskRunner;
   agents?: TaskAgentRunner;
   sessions?: TaskSessionRecovery;
   bus: EventBus;

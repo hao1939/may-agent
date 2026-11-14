@@ -177,6 +177,7 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
   projectRoot?: string;
   agentsRoot?: string;
   sharedRoot?: string;
+  runner?: AppTaskRuntimeOptions["runner"];
   workflows?: AppTaskRuntimeOptions["workflows"];
   executors?: AppTaskRuntimeOptions["executors"];
 }): Promise<AppTaskRuntimeDescriptor[]> {
@@ -198,8 +199,9 @@ export async function prepareAppTaskRuntimeDescriptors(opts: {
           typeof coordination.workflow !== "string" || !coordination.workflow.trim() || coordination.workflow !== coordination.workflow.trim() ||
           !Number.isSafeInteger(coordination.maxAttemptMs) || coordination.maxAttemptMs < 1_000 || coordination.maxAttemptMs > 120_000)
         throw new Error(`App ${id} coordination requires an exact Task/workflow and a 1–120 second attempt bound`);
-      if (!opts.workflows) throw new Error(`App ${id} coordination workflow runner is unavailable`);
-      const inspected = await opts.workflows.inspect({
+      const inspectWorkflow = opts.workflows?.inspect ?? opts.runner?.inspect;
+      if (!inspectWorkflow) throw new Error(`App ${id} coordination workflow runner is unavailable`);
+      const inspected = await inspectWorkflow({
         source: { ...opts, projectRoot: opts.projectRoot ?? opts.projectsRoot }, appDir,
         agent: configuredAppAgent(app, appDir), workflow: coordination.workflow,
       });
