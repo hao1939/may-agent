@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
-import { readFileWritePolicy } from "../lib/tools/file-write-policy.js";
+import { buildAgentDefinition, readFileWritePolicy } from "../../packages/sdk/src/runtime/index.js";
 import type { ModelWithApiKey } from "../lib/types.js";
 import { createCodexGoalExecutor } from "./adapters/executors/codex/codex-goal-executor.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
@@ -13,7 +13,6 @@ import type { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { installAppTaskRuntimes } from "./core/tasks/app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "./core/tasks/runtime-options.js";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
-import { buildAgentDefinition } from "../../packages/sdk/src/runtime/index.js";
 import { buildTools } from "./loader/toolset-loader.js";
 
 export async function prepareDaemonAgents(opts: {

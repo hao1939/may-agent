@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import type { SubagentManager } from "../lib/index.js";
 import type { InstanceIdentity } from "../lib/instance-identity.js";
-import { invalidateRuntimeModuleCache } from "../lib/runtime-import.js";
+import { invalidateRuntimeModuleCache } from "../../packages/sdk/src/runtime/index.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import type { EventBus } from "./core/events/bus.js";

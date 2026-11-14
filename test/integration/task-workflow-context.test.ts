@@ -10,7 +10,7 @@ import { Type } from "typebox";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { buildTools } from "../../src/app/loader/toolset-loader.js";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
-import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
+import { currentAgentSessionId } from "../../packages/sdk/src/runtime/index.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb } from "../../src/lib/db/connection.js";
 import type { TaskExecutionContext } from "../../src/lib/task-execution-context.js";

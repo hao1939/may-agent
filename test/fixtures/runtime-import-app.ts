@@ -1,4 +1,4 @@
-import { importRuntimeModule } from "../../src/lib/runtime-import.js";
+import { importRuntimeModule } from "../../packages/sdk/src/runtime/index.js";
 
 // No preloaded App/SDK: isolate Bun's bundler from the test runner's module cache.
 const mod = await importRuntimeModule<{ default: { id: string } }>(process.argv[2]!, {

@@ -1,11 +1,14 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { resolve } from "node:path";
-import { currentAgentSessionId } from "../../lib/agent-session-context.js";
 import type { SubagentManager } from "../../lib/manager.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import { assertUniqueToolNames, loadAgentLocalTools } from "../../../packages/sdk/src/runtime/index.js";
-import { createCodingTools } from "../../lib/tools/coding.js";
-import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
+import {
+  assertUniqueToolNames,
+  createCodingTools,
+   currentAgentSessionId,
+  loadAgentLocalTools,
+  type FileWritePolicy,
+} from "../../../packages/sdk/src/runtime/index.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import { createQueryDbTool } from "../../lib/tools/query-db.js";
 import { createReadTool } from "../../lib/tools/read.js";

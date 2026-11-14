@@ -23,8 +23,7 @@ import type { AppTaskDispatch } from "../../core/tasks/controller.js";
 import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
 import { mergeTaskChecks, readTaskChecks } from "../../core/tasks/task-check-observations.js";
 import { prepareDaemonAgents } from "../../daemon-agents.js";
-import { listConfiguredAgentNames } from "../../loader/agent-discovery.js";
-import type { ModelRegistry } from "../../model-registry.js";
+import { listConfiguredAgentNames, type ModelRegistry } from "../../../../packages/sdk/src/runtime/index.js";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
 const WORKER_RELAY_BATCH_SIZE = 1;

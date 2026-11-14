@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { currentAgentSessionId } from "../../src/lib/agent-session-context.js";
+import { currentAgentSessionId } from "../../packages/sdk/src/runtime/index.js";
 import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { createRunCliAgentTool } from "../../src/lib/tools/run-cli-agent.js";
 import { drainBashProcessGroup } from "../../src/lib/tools/bash.js";

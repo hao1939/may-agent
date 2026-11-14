@@ -1,13 +1,17 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { SubagentManager } from "../../lib/manager.js";
-import { readFileWritePolicy } from "../../lib/tools/file-write-policy.js";
+import {
+  agentProjectRoot,
+  agentsRootForAgentDir,
+  buildAgentDefinition,
+  listRuntimeAgentDirectories,
+  readFileWritePolicy,
+} from "../../../packages/sdk/src/runtime/index.js";
 import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
-import { buildAgentDefinition } from "../../../packages/sdk/src/runtime/index.js";
-import { agentProjectRoot, agentsRootForAgentDir, listRuntimeAgentDirectories } from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
 
 export interface AgentLoaderOptions {

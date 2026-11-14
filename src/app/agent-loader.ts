@@ -18,7 +18,13 @@
  * Domain files, skills, lessons, and knowledge indexes are read on demand.
  */
 
-import { currentAgentSessionId } from "../lib/agent-session-context.js";
+import {
+  currentAgentSessionId,
+  listAgentDirectories,
+  listConfiguredAgentNames,
+  listProjectAgentDirectories,
+  listRuntimeAgentDirectories,
+} from "../../packages/sdk/src/runtime/index.js";
 import {
   loadAgents as loadAgentsFromRegistry,
   prepareAgents as prepareAgentsFromRegistry,
@@ -35,7 +41,7 @@ export {
   listConfiguredAgentNames,
   listProjectAgentDirectories,
   listRuntimeAgentDirectories,
-} from "./loader/agent-discovery.js";
+};
 export type { AgentLoaderOptions, LoadResult } from "./loader/agent-registry-loader.js";
 export { buildTools, loadLocalTools } from "./loader/toolset-loader.js";
 

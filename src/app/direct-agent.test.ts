@@ -9,7 +9,7 @@ import {
   prepareDirectAgentExecution,
   resolveDirectToolPolicy,
   runDirectAgent,
-} from "./standalone.js";
+} from "../../packages/sdk/src/runtime/index.js";
 
 describe("direct agent tool policy", () => {
   test("preserves protections and grants in a distinct execution root", async () => {

@@ -1,5 +1,4 @@
 export * from "./bash.js";
-export * from "./coding.js";
 export * from "../../../packages/sdk/src/runtime/index.js";
 export * from "./edit.js";
 export * from "./path-utils.js";

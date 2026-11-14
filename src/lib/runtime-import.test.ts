@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
-import { importRuntimeModule, invalidateRuntimeModuleCache } from "./runtime-import.js";
+import { importRuntimeModule, invalidateRuntimeModuleCache } from "../../packages/sdk/src/runtime/index.js";
 
 describe("importRuntimeModule", () => {
   const roots: string[] = [];

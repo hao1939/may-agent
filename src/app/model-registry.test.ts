@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { Type } from "typebox";
-import { createModelRegistry } from "./model-registry.js";
+import { createModelRegistry } from "../../packages/sdk/src/runtime/index.js";
 
 describe("model registry", () => {
   it("routes models through the configured endpoint with canonical model names", () => {

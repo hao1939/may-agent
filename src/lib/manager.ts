@@ -20,14 +20,20 @@ import { drainSessionBashProcessGroups } from "./tools/bash.js";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
 import {
+  ExecutionScope,
+  ExecutionWorkEnded,
   boundedWorkflowFinishPrompt,
   classifyError,
+  executionTimeout,
   extractFinishParams,
+  invokeCatalogSkill,
+  parseExplicitSkill,
   recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
   shouldRequestBoundedWorkflowFinish,
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
+  type MaySkill,
   type ToolPolicy,
 } from "../../packages/sdk/src/runtime/index.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
@@ -46,7 +52,6 @@ import {
   listRunningWorkflowRunIdsBefore,
   updateWorkflowRun,
 } from "./db/workflows.js";
-import { ExecutionScope, ExecutionWorkEnded, executionTimeout } from "./execution-scope.js";
 import { log } from "./log.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import {
@@ -75,7 +80,6 @@ import {
   sessionOutputDir,
 } from "./persistence.js";
 import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "./session-cleanup.js";
-import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 

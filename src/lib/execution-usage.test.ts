@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { calculateCost } from "@earendil-works/pi-ai";
-import { createModelRegistry } from "../app/model-registry.js";
+import { createModelRegistry } from "../../packages/sdk/src/runtime/index.js";
 import { createExecutionUsage } from "./execution-usage.js";
 import { preparationFixture, usageReply, observeReply } from "../../test/fixtures/execution-usage.js";
 
