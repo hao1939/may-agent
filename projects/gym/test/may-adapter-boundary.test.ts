@@ -10,9 +10,8 @@ describe("May Gym adapter boundary", () => {
     expect(source).toContain("runDirectAgent");
     expect(source).toContain("visibleAgentDir: agentDest");
     expect(source).toContain("systemPrompt: result.systemPrompt");
-    expect(source).toContain("toolDenials: gymToolDenials(agentDir, allowWorkflow)");
+    expect(source).toContain("toolDenials: gymToolDenials(agentDir)");
     expect(source).toContain("runGymWorkflowEntry");
-    expect(source).toContain("createGymAgentWorkflowTool");
     expect(source).toContain("execution_manifest");
     expect(source).toContain("tools: configured");
     expect(source).toContain(

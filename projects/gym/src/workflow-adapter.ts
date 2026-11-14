@@ -1,9 +1,8 @@
 /**
  * Host-free Gym workflow execution adapter.
  *
- * Bridges Gym scenarios (`workflow_entry` and `allow_workflow`) onto
- * `runDirectWorkflow` and `createDirectWorkflowTool` without importing SQLite,
- * EventBus, or SubagentManager.
+ * Bridges Gym `workflow_entry` scenarios onto `runDirectWorkflow` without
+ * importing SQLite, EventBus, or SubagentManager.
  */
 
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -15,7 +14,6 @@ import type {
   ToolDenial,
 } from "../../may-agent/src/app/direct-agent.js";
 import {
-  createDirectWorkflowTool,
   runDirectWorkflow,
   type DirectAgentFixtureHandler,
   type DirectWorkflowRunResult,
@@ -25,7 +23,7 @@ import type { WorkflowScenarioEntry } from "./scenarios/types";
 
 export const GYM_TOOL_DENIAL_REASONS: Readonly<Record<string, string>> = {
   agents: "isolated Gym scenarios do not dispatch supporting agents",
-  workflow: "the direct Gym adapter denies workflow unless allow_workflow is enabled",
+  workflow: "isolated Gym scenarios do not expose the legacy workflow tool",
   cron: "isolated Gym scenarios must not change autonomous schedules",
   checkpoint: "the direct Gym adapter has no hosted durable checkpoint service",
   "cli-delegation": "isolated Gym scenarios do not delegate to external agent CLIs",
@@ -48,17 +46,13 @@ export function resolveGymAgentDir(
   return discovered?.dir ?? null;
 }
 
-export function buildGymToolDenials(
-  agentDir: string,
-  options: { allowWorkflow?: boolean } = {},
-): ToolDenial[] {
+export function buildGymToolDenials(agentDir: string): ToolDenial[] {
   const config = JSON.parse(readFileSync(join(agentDir, "agent.json"), "utf8")) as {
     tools?: unknown;
   };
   if (!Array.isArray(config.tools)) return [];
   return config.tools.flatMap((name) => {
     if (typeof name !== "string") return [];
-    if (name === "workflow" && options.allowWorkflow) return [];
     const reason = GYM_TOOL_DENIAL_REASONS[name];
     return reason ? [{ name, reason }] : [];
   });
@@ -77,7 +71,6 @@ export interface GymWorkflowRunConfig {
   globalAgentsRoot: string;
   models: Record<string, ModelWithApiKey>;
   timeoutMs: number;
-  allowChildAgentWorkflowTool?: boolean;
   agentFixtures?: Record<string, DirectAgentFixtureHandler>;
   runAgent?: (options: DirectAgentRunOptions) => Promise<DirectAgentRunResult>;
   onNotice?: (message: string) => void;
@@ -123,7 +116,6 @@ export async function runGymWorkflowEntry(
     traceDir,
     models: config.models,
     timeoutMs: config.timeoutMs,
-    allowChildAgentWorkflowTool: config.allowChildAgentWorkflowTool,
     agentFixtures: config.agentFixtures,
     runAgent: config.runAgent,
     onNotice: config.onNotice,
@@ -147,16 +139,6 @@ export async function runGymWorkflowEntry(
   }
   if (combinedJsonl) {
     writeFileSync(join(combinedSessionDir, "session.jsonl"), combinedJsonl);
-  } else {
-    writeFileSync(
-      join(combinedSessionDir, "session.jsonl"),
-      `${JSON.stringify({
-        role: "system",
-        workflow: wfRun.report.workflow,
-        status: wfRun.status,
-        steps: wfRun.report.steps.length,
-      })}\n`,
-    );
   }
 
   return {
@@ -166,42 +148,4 @@ export async function runGymWorkflowEntry(
     ...(wfRun.report.error?.message ? { error: wfRun.report.error.message } : {}),
     workflowRun: wfRun,
   };
-}
-
-export function createGymAgentWorkflowTool(options: {
-  agentName: string;
-  agentDir: string;
-  repoRoot: string;
-  workDir: string;
-  gymState: string;
-  agentsRoot: string;
-  projectsRoot: string;
-  sharedRoot: string;
-  globalAgentsRoot: string;
-  models: Record<string, ModelWithApiKey>;
-  timeoutMs: number;
-  agentFixtures?: Record<string, DirectAgentFixtureHandler>;
-  runAgent?: (options: DirectAgentRunOptions) => Promise<DirectAgentRunResult>;
-  onUnconfirmedCleanup?: (unconfirmed: readonly string[]) => void;
-  onNotice?: (message: string) => void;
-}): ReturnType<typeof createDirectWorkflowTool> {
-  return createDirectWorkflowTool({
-    agentName: options.agentName,
-    workflowDir: join(options.agentDir, "workflows"),
-    projectRoot: options.repoRoot,
-    workRoot: options.workDir,
-    agentsRoot: options.agentsRoot,
-    projectsRoot: options.projectsRoot,
-    globalAgentsRoot: options.globalAgentsRoot,
-    sharedRoot: options.sharedRoot,
-    outputRoot: options.gymState,
-    traceDir: join(options.gymState, "workflow-trace"),
-    models: options.models,
-    timeoutMs: options.timeoutMs,
-    allowChildAgentWorkflowTool: true,
-    agentFixtures: options.agentFixtures,
-    runAgent: options.runAgent,
-    onUnconfirmedCleanup: options.onUnconfirmedCleanup,
-    onNotice: options.onNotice,
-  });
 }

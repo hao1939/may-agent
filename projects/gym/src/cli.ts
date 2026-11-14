@@ -59,7 +59,6 @@ import {
 } from "./scoring/semantic-judge";
 import {
   buildGymToolDenials,
-  createGymAgentWorkflowTool,
   resolveGymAgentDir,
   runGymWorkflowEntry,
 } from "./workflow-adapter";
@@ -189,8 +188,8 @@ const SCENARIOS_DIR = resolve(
       : join(LEGACY_APP_ROOT, "gym/scenarios")),
 );
 
-function gymToolDenials(agentDir: string, allowWorkflow = false): ToolDenial[] {
-  return buildGymToolDenials(agentDir, { allowWorkflow });
+function gymToolDenials(agentDir: string): ToolDenial[] {
+  return buildGymToolDenials(agentDir);
 }
 
 // ── Adapter: may-agent ─────────────────────────────────────────────────
@@ -200,7 +199,6 @@ function createMayAgentAdapter(): Adapter {
   let agentName = "";
   let gymRoot = "";
   let outputContract: ScenarioMeta["output_contract"];
-  let allowWorkflow = false;
 
   return {
     name: "may-agent",
@@ -209,7 +207,6 @@ function createMayAgentAdapter(): Adapter {
       agentName = opts.agentName;
       gymRoot = opts.gymRoot;
       outputContract = opts.outputContract;
-      allowWorkflow = Boolean(opts.allowWorkflow);
 
       // Resolve agents root (with optional lab fork overlay)
       if (opts.labFork) {
@@ -299,22 +296,6 @@ function createMayAgentAdapter(): Adapter {
       try {
         const models = createControlledModelRegistry();
         const timeoutMs = timeoutMin * 60 * 1000;
-        const workflowTool = allowWorkflow
-          ? createGymAgentWorkflowTool({
-              agentName,
-              agentDir,
-              repoRoot: REPO_ROOT,
-              workDir,
-              gymState,
-              agentsRoot,
-              projectsRoot: join(REPO_ROOT, "projects"),
-              sharedRoot: join(REPO_ROOT, "shared"),
-              globalAgentsRoot: join(REPO_ROOT, "agents"),
-              models,
-              timeoutMs,
-              onNotice: (message) => console.error(`  [may-direct-wf] ${message}`),
-            })
-          : undefined;
 
         const result = await runDirectAgent({
           agentName,
@@ -328,8 +309,7 @@ function createMayAgentAdapter(): Adapter {
           projectsRoot: join(REPO_ROOT, "projects"),
           outputRoot: gymState,
           models,
-          toolDenials: gymToolDenials(agentDir, allowWorkflow),
-          workflowTool,
+          toolDenials: gymToolDenials(agentDir),
           timeoutMs,
           outputSchema:
             outputContract === "task-agent-result"
@@ -400,7 +380,6 @@ function createMayAgentAdapter(): Adapter {
           globalAgentsRoot: join(REPO_ROOT, "agents"),
           models: createControlledModelRegistry(),
           timeoutMs: timeoutMin * 60 * 1000,
-          allowChildAgentWorkflowTool: allowWorkflow,
           onNotice: (message) => console.error(`  [may-direct-wf] ${message}`),
         });
         console.error(

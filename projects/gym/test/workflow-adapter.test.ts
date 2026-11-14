@@ -13,15 +13,14 @@ import { runWorkflowTest } from "../../may-agent/packages/sdk/src/testing.js";
 import * as reviewChangeExemplar from "../../alex.app/docs/examples/review-change";
 import {
   prepareDirectAgentExecution,
+  type DirectAgentRunOptions,
   type DirectAgentRunResult,
 } from "../../may-agent/src/app/direct-agent.js";
 import { fakeModel } from "../../may-agent/test/fixtures/model.js";
 import {
   buildGymToolDenials,
-  createGymAgentWorkflowTool,
   runGymWorkflowEntry,
 } from "../src/workflow-adapter";
-
 const tempRoots: string[] = [];
 afterEach(() => {
   for (const dir of tempRoots.splice(0)) {
@@ -115,8 +114,8 @@ export const inputSchema = {
   additionalProperties: false,
 };
 export async function execute(ctx) {
-  const first = await ctx.agents.call("reviewer", "Phase 1: " + ctx.input.target, { tools: "readonly" });
-  const second = await ctx.agents.call("reviewer", "Phase 2: " + ctx.input.target);
+  const first = await ctx.call("reviewer", "Phase 1: " + ctx.input.target, { tools: "readonly" });
+  const second = await ctx.call("reviewer", "Phase 2: " + ctx.input.target);
   return ctx.done(first.summary + " + " + second.summary, { target: ctx.input.target });
 }
 `,
@@ -196,7 +195,7 @@ export async function execute(ctx) {
     ]);
   });
 
-  test("denies workflow tool by default in Gym and exposes sandboxed workflow tool when allow_workflow is enabled", async () => {
+  test("denies hosted tools including workflow by default in Gym", async () => {
     const root = mkdtempSync(join(tmpdir(), "gym-allow-workflow-"));
     tempRoots.push(root);
     const ownerDir = join(root, "agents", "owner");
@@ -213,64 +212,9 @@ export async function execute(ctx) {
         tools: ["coding", "workflow", "checkpoint", "finish"],
       }),
     );
-    writeFileSync(
-      join(ownerDir, "workflows", "ping.ts"),
-      `
-export const name = "ping";
-export const description = "Simple ping workflow";
-export async function execute(ctx) {
-  return ctx.done("pong:" + String(ctx.input));
-}
-`,
-    );
 
     const defaultDenials = buildGymToolDenials(ownerDir);
     expect(defaultDenials.map((d) => d.name)).toEqual(["workflow", "checkpoint"]);
-
-    const optedInDenials = buildGymToolDenials(ownerDir, { allowWorkflow: true });
-    expect(optedInDenials.map((d) => d.name)).toEqual(["checkpoint"]);
-
-    const wfTool = createGymAgentWorkflowTool({
-      agentName: "owner",
-      agentDir: ownerDir,
-      repoRoot: root,
-      workDir: join(root, "work"),
-      gymState: join(root, "state"),
-      agentsRoot: join(root, "agents"),
-      projectsRoot: join(root, "projects"),
-      sharedRoot: join(root, "shared"),
-      globalAgentsRoot: join(root, "agents"),
-      models: { test: fakeModel() as any },
-      timeoutMs: 10_000,
-    });
-
-    const prep = await prepareDirectAgentExecution({
-      agentName: "owner",
-      task: "Run ping workflow",
-      projectRoot: root,
-      workRoot: join(root, "work"),
-      agentsRoot: join(root, "agents"),
-      sharedRoot: join(root, "shared"),
-      outputRoot: join(root, "state"),
-      models: { test: fakeModel() as any },
-      toolDenials: optedInDenials,
-      workflowTool: wfTool,
-    });
-    try {
-      expect(prep.executionManifest.effectiveTools).toContain("workflow");
-      const raw = await wfTool.execute("tc_ping", {
-        action: "run",
-        name: "ping",
-        input: "gym",
-      } as any);
-      expect(JSON.parse((raw.content[0] as { text: string }).text)).toMatchObject({
-        type: "done",
-        status: "done",
-        summary: "pong:gym",
-      });
-    } finally {
-      await prep.cleanupAsync();
-    }
   });
 
   test("executes and scores real alex.app verified-coder workflow_entry scenario end to end", async () => {
