@@ -34,6 +34,9 @@ export interface AppArgs {
 }
 
 export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessEnv = process.env): AppArgs {
+  if (argv.some((arg) => arg === "--run-workflow" || arg.startsWith("--run-workflow="))) {
+    throw new Error("--run-workflow has been retired; use runDirect or the unified agents tool");
+  }
   const cronEnabled = argv.includes("--cron");
   const telegramEnabled = argv.includes("--telegram");
   const consoleEnabled = argv.includes("--console") || argv.includes("--chat");

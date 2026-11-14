@@ -907,5 +907,50 @@ export async function execute(ctx) {
       type: "done",
       summary: "Reviewed HEAD~1..HEAD",
     });
+
+    // Regression: when agentName="owner" calls prompt target="reviewer", and reviewer also owns
+    // a procedure named "reviewer", runDirect must invoke the resolved prompt (not the procedure),
+    // and must forward tools: "readonly" without failing readonly module checks.
+    writeFileSync(
+      join(env.agentsRoot, "reviewer", "workflows", "reviewer.ts"),
+      `
+export const name = "reviewer";
+export const description = "Procedure with same name as owning prompt agent";
+export const readonly = true;
+export async function execute(ctx) {
+  return ctx.done("wrong-procedure-invoked");
+}
+`,
+    );
+    let seenToolsPolicy: string | undefined;
+    const collisionAndReadonlyRun = await runDirect({
+      agentName: "owner",
+      target: "reviewer",
+      input: "Readonly prompt check",
+      tools: "readonly",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async ({ task, options: stepOpts }) => {
+          seenToolsPolicy = stepOpts?.tools;
+          return {
+            id: "s_direct_readonly_prompt",
+            kind: "agent",
+            status: "done",
+            summary: `prompt:${task}`,
+          };
+        },
+      },
+    });
+    expect(collisionAndReadonlyRun.ok).toBe(true);
+    expect(seenToolsPolicy).toBe("readonly");
+    expect(collisionAndReadonlyRun.result).toMatchObject({
+      type: "done",
+      summary: "prompt:Readonly prompt check",
+    });
   });
 });

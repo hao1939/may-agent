@@ -409,13 +409,14 @@ export async function runDirectWorkflow<TInput = unknown>(
       }
       await loadTargetOwnerProcedures(requestedTarget, options.signal);
       const resolved = resolveCallable(callerOwner, requestedTarget, preparedCatalog);
-      callerOwner = resolved.owner;
       if (resolved.kind === "code") {
+        callerOwner = resolved.owner;
         targetModule = resolved.module as WorkflowExecutableModule<TInput>;
       } else {
         targetModule = {
           name: resolved.name,
           description: `Direct prompt invocation for ${resolved.name}`,
+          ...(options.tools === "readonly" ? { readonly: true } : {}),
           async execute(ctx) {
             return options.outputSchema
               ? ctx.call(resolved.name, ctx.input, {
