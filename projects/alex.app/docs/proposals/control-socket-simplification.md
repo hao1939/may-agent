@@ -9,7 +9,7 @@ and [robust enough for the goal](../1-principles/design-philosophy.md#robust-eno
 Retain owed input and exact control evidence; allow replaceable display updates
 to be lost and repaired by reading current resources.
 
-**Design status:** Refined to a pragmatic, low-risk 2-PR plan (2026-11-14) incorporating the R1–R6 review comments. Earlier drafts proposed a new `EventHub` interface, an HTTP/SSE wire-protocol rewrite across `may-console.cjs` and `http/server.ts`, and immediate `event_pair_runs` trigger removal; those over-complicated rewrites are **dropped** in favor of keeping the working `EventInterface` + `EventBus` and JSON-line socket wire protocol while pruning dead branches, skipping SQLite writes on replaceable `conversation.updated` wakes, table-driving `server.ts`, and unifying socket writes onto `publish(EventInput)`.
+**Design status:** Completed & shipped (2026-11-14, Host PRs #523 and #524) incorporating the R1–R6 review comments. Earlier drafts proposed a new `EventHub` interface, an HTTP/SSE wire-protocol rewrite across `may-console.cjs` and `http/server.ts`, and immediate `event_pair_runs` trigger removal; those over-complicated rewrites were **dropped** in favor of keeping the working `EventInterface` + `EventBus` and JSON-line socket wire protocol while pruning dead branches, skipping SQLite writes on replaceable `conversation.updated` wakes, table-driving `server.ts`, and unifying socket writes onto `publish(EventInput)`.
 
 ---
 
@@ -38,20 +38,18 @@ Evaluating the earlier full-rewrite proposal against the review comments (R1–R
 
 ## 3. Execution Plan (2 Focused PRs)
 
-### PR 1: Ephemeral `conversation.updated` Wakes, Prune Dead Socket State, & Table-Drive `server.ts`
+### PR 1 (Completed — Host PR #523): Ephemeral `conversation.updated` Wakes, Prune Dead Socket State, & Table-Drive `server.ts`
 - **Where:** `src/lib/db-writer.ts`, `packages/control/src/server.ts`, `src/app/transport/socket.ts`.
-- **Changes:**
-  1. **Ephemeral `conversation.updated` in `DbWriter.handler`:** Skip `insertEventRow` for `conversation.updated` (still deferring live fanout via `afterStateCommit` if emitted inside an open SQLite transaction so readers never observe uncommitted state), and skip `inStateTransaction` on non-persisted transient events (`text`, `tool_call`, `tool_result`, `turn_end`, `info`).
-  2. **Delete dead session-era socket state:** Remove `getSessionId`, `client.chatMode`, `sessions.includes("chat")`, `socketStatus`, and `exactRuntimeControl` / `exactAppInputControl` from `packages/control/src/server.ts` (making `may-console.cjs` publish `runtime.reload.requested` / `runtime.restart.requested` directly on `/reload` and `/restart`).
-  3. **Table-drive `packages/control/src/server.ts`:** Replace the repetitive `if (normalized.kind === "control" && normalized.command === ...)` read blocks with a clean handler table while keeping the JSON-line wire protocol 100% compatible.
-- **Verification:** `bun run check:ci`, `bun test packages/control/ src/lib/ src/app/ test/integration/`.
+- **Completed changes (`-441` net LOC):**
+  1. **Ephemeral `conversation.updated` in `DbWriter.handler`:** Skipped `insertEventRow` for `conversation.updated` (still deferring live fanout via `afterStateCommit` if emitted inside an open SQLite transaction so readers never observe uncommitted state), and skipped `inStateTransaction` on non-persisted transient events (`text`, `tool_call`, `tool_result`, `turn_end`, `info`).
+  2. **Deleted dead session-era socket state:** Removed `getSessionId`, `client.chatMode`, `sessions.includes("chat")`, `socketStatus`, and `exactRuntimeControl` / `exactAppInputControl` from `packages/control/src/server.ts`.
+  3. **Table-drove `packages/control/src/server.ts`:** Replaced the repetitive `if (normalized.kind === "control" && normalized.command === ...)` read blocks with a clean handler table while keeping the JSON-line wire protocol 100% compatible.
 
-### PR 2: Collapse Socket Write Commands onto `publish(EventInput)`
-- **Where:** `packages/control/src/{server.ts,protocol.ts,client.ts}`, `src/app/http/{task-input.ts,project-routes.ts,server.ts}`, `packages/terminal/bin/may-console.cjs`.
-- **Changes:**
-  1. Route `app.input.admit`, `app.task.retry`, `task.cancel`, `task.close`, and `task.reopen` callers through `publish(EventInput)` (preserving caller `idempotencyKey` and `project.action.invoke` schema translation).
-  2. Delete the duplicate `app.input.admit`, `app.task.retry`, `task.close`, `task.reopen`, and `task.cancel` handlers from `packages/control/src/server.ts` and `protocol.ts`.
-- **Verification:** `bun run check:ci` and full `packages/control`, `src/app/http`, `packages/terminal`, and `test/integration` suites.
+### PR 2 (Completed — Host PR #524): Collapse Socket Write Commands onto `publish(EventInput)`
+- **Where:** `packages/control/src/{server.ts,protocol.ts}`, `src/app/http/{task-input.ts,project-routes.ts,server.ts}`, `src/app/core/events/interface.ts`.
+- **Completed changes (`-178` net LOC):**
+  1. Routed HTTP Task feedback and project comment admission (`app.input.admit`) through `publish(EventInput)` (`app.input.requested`) with shared `data.source` canonicalization between `publish()` and `findEventPublication()`.
+  2. Deleted the duplicate `app.input.admit`, `app.task.retry`, `task.close`, and `task.reopen` handlers from `packages/control/src/server.ts` and `protocol.ts` (preserving `task.cancel` friendly-ref lookup and `project.action.invoke` action schema translation).
 
 *(Deferred / Out of Scope unless needed later: `event_pair_runs` trigger migration, `chat.start.requested` caller retirement, and HTTP/SSE socket wire-protocol replacement.)*
 
