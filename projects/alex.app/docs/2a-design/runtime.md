@@ -39,7 +39,7 @@ recovery.
 | ------------------------------ | ---------- | ----------------------------------- |
 | Daemon with `--cron`            | Yes | Yes, including background Tasks          |
 | Daemon without `--cron`         | Yes | Yes, including background Tasks; optional schedules disabled |
-| Direct agent/workflow          | No         | Yes                                 |
+| Standalone (`may run` / `may list`) | No     | Yes (`src/app/standalone.ts` — prompt, code & CLI targets) |
 | Gym                            | No         | Yes                                 |
 | Web/read-only process          | No         | Only through explicit control calls |
 | Status CLI                     | No         | No                                  |
@@ -83,7 +83,7 @@ The final synchronous publication switches manager definitions, App registry
 consumers, each stable App controller's definition pointer, and the durable
 `current` release link as one generation; a rejected publication restores the
 previous set. Each attempt captures the release's App descriptor, global and
-local agent definitions, workflow/guard roots, and shared definition root when
+local agent definitions, workflow roots, and shared definition root when
 it starts. New attempts can therefore start from the new release while old
 attempts finish from the old release; reload does not create or drain a
 replacement controller. Generation-owned timers, subscriptions, and tool

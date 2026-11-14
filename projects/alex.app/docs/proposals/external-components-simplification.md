@@ -84,8 +84,8 @@ exceptions in shared execution preparation. Keep ordinary filesystem errors,
 read/Bash output limits, cancellation, declared file-write permissions,
 required-result validation and App Task acceptance. Truncation limits each
 response; a sequence of wasteful calls can still consume the execution budget.
-Keep the existing finish and commit diagnostics and App-authored workflow guards
-in this scope. Saved tool evidence and historical guard events remain readable.
+Keep the existing finish and commit diagnostics in this slice (later retired in
+#471 and #512). Saved tool evidence and historical guard events remain readable.
 No migration, runtime toggle or replacement detector is needed.
 
 Verification should exercise supported pagination and refreshed transcript reads
@@ -144,8 +144,10 @@ model quality, lower token cost or measured completion latency from deletion.
 Required result/schema validation, caller admission, missing-deliverable
 rejection, the accepted-finish fence, file-write permissions, execution budgets
 and cancellation remain. Apps own their acceptance criteria, including verified
-or committed source when required. App-authored workflow guards retain their
-SDK/runtime path; they may still implement explicit App Git/process checks.
+or committed source when required. The former `WorkflowGuard` callback directory
+(`guards/*.ts`) was subsequently retired in Host PR #512 (`68aae4963b`) in favor
+of declarative `inputSchema` / `outputSchema` validation on the shared invocation
+kernel and explicit TypeScript verification helpers.
 Historical tool events and the shared `guard.triggered` schema remain readable.
 
 The scoped current App and Host source search found no App consumers of the

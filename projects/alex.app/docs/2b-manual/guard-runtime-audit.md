@@ -59,11 +59,12 @@ If one session emits many repeated guard events for the same condition, prefer
 per-session dedup or a narrower detector. If many sessions each emit one guard
 event, dedup will not help; fix the workflow, prompt, or tool surface.
 
-## Historical Tool Diagnostics
+## Historical Tool & Workflow Guard Diagnostics
 
-Merged Host source has no default tool diagnostics or their composition;
-workflow guards continue to emit current signals. Check source
-revision and installed adoption before interpreting tool rows as current work.
+Merged Host source has retired both default tool diagnostics (#470/#471) and
+the `WorkflowGuard` callback directory (`guards/*.ts`, #512). Check source
+revision and installed adoption before interpreting retained `guard.triggered`
+rows as current work.
 Retained newer tool rows identify the guard in structured data; use the
 guard/action query above. Older rows may share `guard: "beforeToolCall"`;
 for those retained rows, bucket by reason prefix:

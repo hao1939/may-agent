@@ -42,9 +42,10 @@ owns only one bounded execution attempt.
 A workflow may ask an agent to apply a skill. The workflow controls sequence;
 the skill guides judgment inside one step. Neither owns the enclosing App/task.
 
-The [executable-skill and runner proposal](../proposals/workflow-business-host-boundary.md)
-routes Unit (`runWorkflowTest`), Host-free Direct/Gym (`runDirectWorkflow`), and
-Hosted execution through one shared portable invocation kernel while keeping
+The [unified invocation runtime](../proposals/unified-agent-instance-runtime.md)
+routes Unit (`runTargetTest` / `runWorkflowTest` / `runStandalone`), Host-free
+Standalone/Gym (`run` / `runDirect` in `src/app/standalone.ts`), and
+Hosted execution (`TaskRunner`) through one shared portable invocation kernel while keeping
 `@may-agent/sdk` as the single authoring contract.
 
 ### Procedural evidence and agent judgment
@@ -151,9 +152,9 @@ unavailable. The method must inspect saved operation receipts or destination
 state before repeating external writes. Repeated work is an accepted cost;
 exactly-once external effects are not guaranteed.
 
-Ordinary workflow guards, bounded automatic repair, cancellation and result
-validation remain supported. Removing crash replay did not remove local repair
-within an executing workflow.
+Bounded automatic repair, cancellation, and declarative input/output schema
+validation remain supported inside the shared invocation kernel. Removing crash
+replay did not remove local repair within an executing workflow.
 
 ### Task reconciliation input
 

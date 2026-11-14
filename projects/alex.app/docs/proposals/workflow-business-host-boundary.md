@@ -13,16 +13,8 @@ Stick with May's plain TypeScript `async execute(ctx)` contract on
 fixtures, Gym (`runDirectAgent`) or the full Host at the entry point. Keep
 the existing authoring surface and Task runtime as the integration boundary.
 
-**Design status:** Accepted direction; shared invocation kernel, SDK test runner,
-Host-free Direct/Gym runner, confirmed process-group cleanup, and dead
-guard-injection removal are merged.
-**Implementation status:** Implemented across Host [#455](https://github.com/hao1939/may-agent/pull/455)
-(`52ff184177`: `packages/sdk/src/workflow-kernel.ts`, `packages/sdk/src/testing.ts`,
-`src/lib/workflow-catalog.ts`, `src/lib/workflow-tool.ts`, `src/app/direct-workflow.ts`,
-`src/app/direct-agent.ts`) and Gym
-(`projects/gym/src/workflow-adapter.ts`, `projects/gym/src/cli.ts`,
-`projects/gym/test/workflow-adapter.test.ts`). Broader per-workflow migration to
-`inputSchema` / `runWorkflowTest` proceeds incrementally as workflows are touched.
+**Design status:** Implemented and extended into the unified Agent/Workflow invocation runtime in [unified-agent-instance-runtime.md](unified-agent-instance-runtime.md).
+**Implementation status:** Implemented across Host [#455](https://github.com/hao1939/may-agent/pull/455) (`52ff184177`) and extended in Host PRs #512–#515, #517, #518, and #520 (`packages/sdk/src/workflow-kernel.ts`, `packages/sdk/src/testing.ts`, `packages/sdk/src/standalone.ts`, `src/lib/workflow-catalog.ts`, `src/lib/workflow-tool.ts`, `src/app/standalone.ts`, `src/app/standalone-cli.ts`, `src/app/direct-agent.ts`) and Gym (`projects/gym/src/workflow-adapter.ts`, `projects/gym/src/cli.ts`, `projects/gym/test/workflow-adapter.test.ts`). See [unified-agent-instance-runtime.md](unified-agent-instance-runtime.md) for the current normative contracts (`ctx.call`, `TaskRunner`, `may run` / `may list`, and `@may-agent/sdk/standalone`).
 
 ## 1. Decision: plain TypeScript executable skills, no workflow framework
 

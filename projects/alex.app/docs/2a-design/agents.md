@@ -154,15 +154,15 @@ cancellation and remaining allowance; the agent does not construct that context.
 
 The model-facing `agents` tool manages bounded execution:
 
-| Action     | Behavior                                   | When to use                                                          |
-| ---------- | ------------------------------------------ | -------------------------------------------------------------------- |
-| `call`     | Await one child session result             | Current attempt needs the result                                     |
-| `fork`     | Start a child session and return its ID    | Bounded background exploration whose lifecycle the caller still owns |
-| `list`     | List registered agents and active sessions | Discovery                                                            |
-| `peek`     | Read recent output from a running child    | Observe a fork                                                       |
-| `cancel`   | Cancel a running child                     | Stop obsolete bounded execution                                      |
-| `context`  | Read caller/session lineage context        | Agent context management                                             |
-| `sessions` | Query persisted execution summaries        | Diagnostics/history                                                  |
+| Action     | Behavior                                                         | When to use                                                          |
+| ---------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `call`     | Await one child prompt agent or code procedure (`input` / `task`) | Current attempt needs the result                                     |
+| `fork`     | Start a child prompt session and return its ID                   | Bounded background exploration whose lifecycle the caller still owns |
+| `list`     | List registered prompt agents, code procedures, and active sessions | Discovery                                                         |
+| `peek`     | Read recent output from a running child                          | Observe a fork                                                       |
+| `cancel`   | Cancel a running child                                           | Stop obsolete bounded execution                                      |
+| `context`  | Read caller/session lineage context                              | Agent context management                                             |
+| `sessions` | Query persisted execution summaries                              | Diagnostics/history                                                  |
 
 `call` and `fork` create causal child sessions. Only `call` blocks.
 

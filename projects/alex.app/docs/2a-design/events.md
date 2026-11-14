@@ -594,7 +594,7 @@ remaining implementation gap. Transport admission stays deterministic and does
 not wait for the model to recognize an ask.
 
 Conversation and Task state remain the resources readers inspect. A
-`conversation.updated` Event is a coalescible, record-only wake emitted after
+`conversation.updated` Event is a coalescible, non-journaled wake emitted after
 new content is durably readable. It carries no content and cannot create work.
 The publication stack never waits for an adapter read or render.
 

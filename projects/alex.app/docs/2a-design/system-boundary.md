@@ -493,7 +493,7 @@ If no route matches, the fact remains a fact. The Host does not guess an owner.
 The App/agent also decides whether information updates evidence or changes the
 assignment. Source and arrival time do not establish that meaning. An exact Task
 observation route can retain history after closure; a new requirement needs
-explicit authorized continuation, carrying ordinary App input in `task.reopen`.
+explicit authorized continuation, carrying ordinary App input in `app.task.reopen.requested`.
 The Host owns the atomic state change and replay fences, not this judgment.
 
 
@@ -760,10 +760,10 @@ state-changing operation:
 publish(event)
 ```
 
-The operator socket's `task.close` command is a thin adapter over that same
-publication boundary. It requires the Task's current generation and resource
-version plus the exact accepted attempt ID, then publishes
-`app.task.close.requested`; omission or an empty result identity is invalid even
+Operator-initiated Task closure publishes `app.task.close.requested` through
+that same `publish(event)` boundary (`taskCloseRequestedEvent`). It requires
+the Task's current generation and resource version plus the exact accepted
+attempt ID (`afterResult`); omission or an empty result identity is invalid even
 when an earlier receipt could otherwise replay. The shared Task runtime checks
 that identity and both fences, the stored converged phase, absence of a current
 attempt, and absence of a pending trigger. Rejection leaves every Task fact and

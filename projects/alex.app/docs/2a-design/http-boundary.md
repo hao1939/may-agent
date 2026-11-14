@@ -209,7 +209,7 @@ Examples:
 | ------------------------------- | ------------------------------------------------------------------------------------------- |
 | May conversation adapter        | Publish human `conversation.message.created` for `Conversation may:primary`                 |
 | Explicitly steer/cancel session | Publish an exact required session event                                                     |
-| Comment on project              | Publish `project.comment.created`; declared App subscription may admit input and a task     |
+| Comment on project              | Publish `app.input.requested` (`publish` on the control socket; or `project.comment.created` for legacy markdown projects) |
 | Invoke App action               | Discover schema, validate, call `toInput`, admit input and its linked request/task           |
 | Submit approval                 | Update exact owning task/Condition through typed control                                    |
 | Reload/restart/shutdown         | Publish a required Host-control event                                                       |

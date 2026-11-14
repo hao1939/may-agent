@@ -146,12 +146,13 @@ Tasks without waking them. Do not archive requirements solely because their
 Task is closed, and do not infer reopening permission from a provider message.
 
 When the user explicitly asks to continue the same ordinary Task, read its
-current `generation` and `resourceVersion`. Send the operator command with the
-reviewed identity, continuation reason and the responsible App's normal input.
-For the sample App's review contract:
+current `generation` and `resourceVersion`. Publish `app.task.reopen.requested`
+through the operator socket (`publish`) with the reviewed identity, continuation
+reason and the responsible App's normal input. For the sample App's review
+contract:
 
 ```json
-{"type":"task.reopen","appId":"sample","taskId":"work","expectedGeneration":2,"expectedResourceVersion":8,"reason":"User requested another review including Linux support","input":{"kind":"review","data":{"subject":"Review the sample App including Linux support","references":["projects/sample.app/app.ts"]}}}
+{"type":"publish","event":{"type":"app.task.reopen.requested","target":{"appId":"sample","taskId":"work"},"data":{"expectedGeneration":2,"expectedResourceVersion":8,"reason":"User requested another review including Linux support","input":{"kind":"review","data":{"subject":"Review the sample App including Linux support","references":["projects/sample.app/app.ts"]}}},"idempotencyKey":"app-task-reopen:sample:work:2:8"}}
 ```
 
 The App maps the input to requirements. The Host reopens the same Task and
@@ -169,7 +170,7 @@ history. Reopen a closed parent first. Conversation input continues through its
 existing successor mechanism.
 
 These are paired Host and May App source contracts. Deploy a reviewed Host with
-`task.reopen` input support and admission-failure publication before relying on the May review
+`app.task.reopen.requested` input support and admission-failure publication before relying on the May review
 subscription; source verification is not installed-release evidence.
 
 ## Task recovery

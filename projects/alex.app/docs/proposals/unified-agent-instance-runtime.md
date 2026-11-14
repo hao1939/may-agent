@@ -29,7 +29,7 @@ Three identities remain separate:
 | Layer | Current "Agent" Path | Current "Workflow" Path | Essential Convergence |
 | :--- | :--- | :--- | :--- |
 | **Discovery & Snapshot** | `agent-discovery.ts` + `SubagentManager` | `workflow-catalog.ts` | 1 immutable `PreparedCatalog` snapshot |
-| **Standalone & Gym** | `direct-agent.ts` + `gym/src/cli.ts` | `direct-workflow.ts` + `gym/src/workflow-adapter.ts` | 1 kernel runner; delete `unconfirmedToolWorkflows` & Gym stitcher |
+| **Standalone & Gym** | `direct-agent.ts` + `gym/src/cli.ts` | `standalone.ts` + `gym/src/workflow-adapter.ts` | 1 kernel runner; delete `unconfirmedToolWorkflows` & Gym stitcher |
 | **Nested Code Calls** | `ctx.agents.call(agent, task, opts)` (`9` live files) | `ctx.workflows.run(name, input)` (`0` live files) | `ctx.call(name, input, opts)` |
 | **Model Delegation** | `agents` tool (`manager-agents-tool.ts`) | `workflow` tool (`1` live skill call) | `agents` (`action: "call"`); retire `createWorkflowTool` |
 | **Hosted Task Dispatch** | `TaskAgentRunner` (`runTaskAgent`) | `TaskWorkflowRunner` (`runTaskWorkflow`) | 1 `TaskRunner` (`inspect`, `execute`, `snapshot`) |
@@ -234,19 +234,19 @@ Start by pruning dead/unused scenarios so the core runtime unification stays sma
   2. Removed unused `"workflow"` entries from `alex`, `gym`, and `scout` `agent.json` manifests (and updated `scout-knowledge-lib.app/app.test.ts`).
 
 ### Phase 1A (Completed — Host PR #513): SDK Unified `ctx.call`, Owner-Scoped Resolver, & Testing `mocks`
-- **Where:** `packages/sdk/src/workflow.ts`, `packages/sdk/src/workflow-kernel.ts`, `packages/sdk/src/testing.ts`, `src/app/direct-workflow.ts`, `src/lib/workflow-catalog.ts`, `src/lib/workflow-tool.ts`.
+- **Where:** `packages/sdk/src/workflow.ts`, `packages/sdk/src/workflow-kernel.ts`, `packages/sdk/src/testing.ts`, `src/app/standalone.ts`, `src/lib/workflow-catalog.ts`, `src/lib/workflow-tool.ts`.
 - **Completed changes:**
   1. Added `ctx.call(name, input, options?)` to `WorkflowContext` (with `AgentContext` alias) returning `ExecutionResult<T>`, routing `ctx.agents.call` and `ctx.workflows.run` through the same kernel step runner.
   2. Implemented stateless owner-scoped resolution (with App-local isolation), honest `readonly` enforcement, dual output schema validation (on `done` results while preserving partial `blocked`/`error`/`interrupted` evidence), and unified `mocks` in `packages/sdk/src/testing.ts`.
 
 ### Phase 1B (Completed — Host PR #514): Prune Unused Standalone `workflowTool` Plumbing & Converge Standalone/Gym
-- **Where:** `src/app/direct-agent.ts`, `src/app/direct-workflow.ts`, `src/lib/workflow-tool.ts`, `projects/gym/src/cli.ts`, `projects/gym/src/workflow-adapter.ts`.
+- **Where:** `src/app/direct-agent.ts`, `src/app/standalone.ts`, `src/lib/workflow-tool.ts`, `projects/gym/src/cli.ts`, `projects/gym/src/workflow-adapter.ts`.
 - **Why drop instead of rebuild:** Live repo audit shows **`0` Gym scenarios** use `allow_workflow` (`createDirectWorkflowTool` / `createGymAgentWorkflowTool`).
 - **Completed changes:**
   1. Deleted unused `createDirectWorkflowTool`, `allowChildAgentWorkflowTool`, `options.workflowTool`, `unconfirmedToolWorkflows`, and `createGymAgentWorkflowTool` instead of rebuilding standalone LLM-tool-to-workflow recursion.
   2. Pinned full prepared prompt definitions (instructions, skills, and config—not just directory paths) in `PreparedCatalog` so running invocations never reread mutable files from disk, and shared one step-completion/schema helper across Standalone and Hosted prompt adapters.
   3. Updated Gym to consume `run.json` (`WorkflowRunReport`) and per-session `session.jsonl` evidence directly and retired duplicate Gym adapter stitching.
-- **Proof:** `bun test packages/sdk/`, `direct-agent.test.ts`, `direct-workflow.test.ts`, and `projects/gym` suites pass, including mixed recursion, mid-flight disk-edit snapshot isolation, and swallowed child-cleanup failure detection.
+- **Proof:** `bun test packages/sdk/`, `direct-agent.test.ts`, `standalone.test.ts`, and `projects/gym` suites pass, including mixed recursion, mid-flight disk-edit snapshot isolation, and swallowed child-cleanup failure detection.
 
 ### Phase 2 (Completed — Host PR #515): Converge Host Environment (`TaskRunner`) & Model Delegation (`agents` Tool)
 - **Where:** `src/app/core/tasks/execution.ts`, `src/app/core/tasks/attempt-execution.ts`, `src/app/core/tasks/attempt-runner.ts`, `src/app/adapters/executors/`, `src/lib/manager-agents-tool.ts`, `src/lib/workflow-tool.ts`.
@@ -450,7 +450,7 @@ The manual `unconfirmedToolWorkflows` plumbing is a good simplification target.
 Its responsibility remains: a nested cleanup failure must stay visible even
 when authored code or the model catches the child error and reports success.
 The existing
-[`direct workflow tests`](../../../may-agent/src/app/direct-workflow.test.ts)
+[`standalone workflow tests`](../../../may-agent/src/app/standalone.test.ts)
 already exercise that case. Put descendant tracking and finalization under one
 invocation scope, and join/cancel children before returning or releasing their
 reservations. Checking a returned cleanup flag alone is insufficient.
@@ -558,7 +558,7 @@ The `AgentRegistry` class in Section 3.3 uses a mutable global `Map` where the f
 To keep the codebase lean:
 
 1. **SDK (`@may-agent/sdk`):** Add `ctx.call(target, input, options)` + unified `mocks` in `@may-agent/sdk/testing`, with `ctx.agents.call` and `ctx.workflows.run` as thin temporary shims.
-2. **Unified Runner (`workflow-kernel` + `direct-*` + `gym`):** Route both prompt turns and code modules through one invocation scope, deleting manual `options.workflowTool` injection, `unconfirmedToolWorkflows` arrays in [`direct-agent.ts`](../../../may-agent/src/app/direct-agent.ts) / [`direct-workflow.ts`](../../../may-agent/src/app/direct-workflow.ts), and duplicate stitching in [`workflow-adapter.ts`](../../../gym/src/workflow-adapter.ts).
+2. **Unified Runner (`workflow-kernel` + `direct-*` + `gym`):** Route both prompt turns and code modules through one invocation scope, deleting manual `options.workflowTool` injection, `unconfirmedToolWorkflows` arrays in [`direct-agent.ts`](../../../may-agent/src/app/direct-agent.ts) / [`standalone.ts`](../../../may-agent/src/app/standalone.ts), and duplicate stitching in [`workflow-adapter.ts`](../../../gym/src/workflow-adapter.ts).
 3. **Hosted Tasks & Model Delegation:** Collapse `TaskAgentRunner` + `TaskWorkflowRunner` into one unified Task target runner, route model-side synchronous workflow calls through `action: "call"` in [`manager-agents-tool.ts`](../../../may-agent/src/lib/manager-agents-tool.ts), and retire the separate model-facing `workflow` tool surface in [`workflow-tool.ts`](../../../may-agent/src/lib/workflow-tool.ts).
 
 ---
@@ -649,7 +649,7 @@ Section 3.2 types `ctx.call(target: string, input: unknown, options?)` so one ov
 - Make sure the prompt adapter validates `typeof input === "string" && input.trim().length > 0` before start and throws `WorkflowValidationError("step", ...)` (matching the existing `WorkflowValidationError` phase contract) if a caller accidentally passes an object or empty string to a prompt target.
 
 ### 10.3 Align `MAY_TEST_SHARDS=4 bun run ci` (from PR #450) as the verification gate across phases
-Since PR #450 established native Bun file sharding (`bun run ci` with 16 local shards / `MAY_TEST_SHARDS=4` in CI and 4,393 cases), keep each phase's test additions inside the existing suite owners (`packages/sdk/src/workflow-kernel.test.ts`, `src/app/direct-workflow.test.ts`, `src/app/core/tasks/app-task-runtime.test.ts`) rather than spawning new slow standalone test files, so full-suite wall time stays within PR #450's budget.
+Since PR #450 established native Bun file sharding (`bun run ci` with 16 local shards / `MAY_TEST_SHARDS=4` in CI and 4,393 cases), keep each phase's test additions inside the existing suite owners (`packages/sdk/src/workflow-kernel.test.ts`, `src/app/standalone.test.ts`, `src/app/core/tasks/app-task-runtime.test.ts`) rather than spawning new slow standalone test files, so full-suite wall time stays within PR #450's budget.
 
 ### 10.4 Sync Host (`#510`) `session-recovery` simplification with `TaskTargetRunner`
 Host PR #510 retired `claim.handoff` / `fallbackReason` plumbing (`attempt.previousAttempt` is now the single retry context channel). When implementing Phase 2 (`TaskTargetRunner` in `attempt-runner.ts` and `executors/{managed-agent,workflow}.ts`), build directly on the post-#510 `attempt.previousAttempt` contract without reintroducing `fallbackReason` or `claim.handoff` fields.

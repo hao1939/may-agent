@@ -95,7 +95,7 @@ flowchart TB
     subgraph Executors["5. Pluggable Attempt Executors (src/app/adapters/executors & src/lib)"]
         direction LR
         ManagedAgent["Managed Agent Executor<br/>(managed-agent.ts -> src/lib/manager.ts)<br/>AGENTS.md + Skills + Tools + Decision Brief<br/>@earendil-works/pi-agent-core loop"]
-        WorkflowExec["Workflow Executor & Portable Kernel<br/>(workflow.ts -> workflow-tool.ts /<br/>@may-agent/sdk workflow-kernel.ts / direct-workflow.ts)"]
+        WorkflowExec["Workflow Executor & Portable Kernel<br/>(workflow.ts -> workflow-tool.ts /<br/>@may-agent/sdk workflow-kernel.ts / standalone.ts)"]
         NativeExec["Registered / CLI Executor<br/>(codex-goal / claude / custom)<br/>Isolated git worktrees (adapters/workspaces/git.ts)"]
     end
 
@@ -127,7 +127,7 @@ flowchart TB
 4. **Bounded attempt execution (`attempt-execution.ts`):**
    `runClaimedTask()` opens `runTaskExecutorAttempt()` (managing lease renewal, live event observation, and confirmed descendant cleanup via `session-cleanup.ts`) and dispatches to the selected executor:
    - **Managed agent (`agent:<name>`):** assembles system instructions (`shared/` + `agents/<name>/AGENTS.md` + skills + Host `execution-instructions.md`), injects a fresh `TaskDecisionContext` brief, and runs the `@earendil-works/pi-agent-core` model/tool loop.
-   - **Workflow (`workflow:<name>`):** runs a bounded TypeScript procedure built on the portable invocation kernel (`packages/sdk/src/workflow-kernel.ts` and `src/lib/workflow-tool.ts`, also runnable Host-free via `src/app/direct-workflow.ts`).
+   - **Workflow (`workflow:<name>`):** runs a bounded TypeScript procedure built on the portable invocation kernel (`packages/sdk/src/workflow-kernel.ts` and `src/lib/workflow-tool.ts`, also runnable Host-free via `src/app/standalone.ts`).
    - **Registered executor (`codex-goal`, etc.):** invokes a native CLI coding adapter in the prepared worktree.
 5. **Fenced settlement and loop closure (`app-task-reconciler.ts`, `task-communication.ts`):**
    `runClaimedTask()` validates the returned `TaskReconcileResult` (`converged` | `waiting` | `incomplete`) against the claim fence. `task-communication.ts` applies human-facing replies, updates or closes `conversation_requests` (rejecting convergence if covered `inputKeys` leave an associated human Request open without a wait), submits delegated `requests` to target Apps, and commits atomically in SQLite before calling `refreshTaskResults()` (`app.dependency.updated`) to wake waiting callers or Conversations.

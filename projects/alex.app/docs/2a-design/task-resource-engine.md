@@ -155,7 +155,7 @@ result schema has no close action. Closure preserves exact input answers,
 accepted result evidence and independent children. It cannot certify the
 substance of the owner's judgment.
 
-Explicit `task.reopen` requires current versions and trusted operator verification of the user's continuation request.
+Explicit reopening (`app.task.reopen.requested`) requires current versions and trusted operator verification of the user's continuation request.
 The App maps its optional `input`; Host atomically installs requirements, advances generation once, admits input and archives closure, preserving Task identity.
 The App/agent distinguishes observations from requirements. Closed-Task observation routes retain history without waking or retrying;
 requirement inputs are never silently archived. Authorized continuation needs no prior rejection. Old accepted answers and input closures remain history.

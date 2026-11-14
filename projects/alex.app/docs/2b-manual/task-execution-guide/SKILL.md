@@ -272,7 +272,7 @@ who owns it, and what exact input or fact should cause more work?** Follow the
   exact target. Supply `appId`, `taskId`, `expectedGeneration`,
   `expectedResourceVersion`, `afterResult` (the accepted attempt ID), and a
   disposition `reason`. The agent tool uses `target.appId` for a cross-App
-  target. Root/App-created assignments use trusted App/operator `task.close`.
+  target. Root/App-created assignments use trusted App/operator `app.task.close.requested`.
   A worker cannot close itself. If a newer input or version rejects the close,
   reread and reconcile it; do not replay stale judgment. Do not write storage
   directly or invent a close action in the worker result schema.
@@ -416,7 +416,7 @@ continuation is part of your assignment. A repaired prerequisite does not
 complete the original ask or reset an exhausted retry allowance.
 
 Use an available authorized retry capability and check its acceptance result.
-An App with control authority can expose the existing `app.task.retry` command
+An App with control authority can expose `app.task.retry.requested` (`taskRetryRequestedEvent`)
 through an App-local tool. That command obtains the current resource revision
 and checks admission; the agent supplies the exact Task and expected generation.
 Keep transport wiring in the tool. Raw event publication only proving that an

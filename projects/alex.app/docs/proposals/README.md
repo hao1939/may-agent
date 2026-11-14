@@ -43,7 +43,6 @@ Prompt/checker cleanup is already assigned elsewhere.
 
 | Record | Current status and remaining scope |
 | --- | --- |
-| [Event and control plane simplification](control-socket-simplification.md) | Proposal: durable `publish`, ephemeral `broadcast`, shared bounded `subscribe`, then Unix HTTP/SSE; typed reads remain. Pair retirement and history replay need separate consumer evidence. |
 | [Teaching agents](agent-behavior-and-capability-extension.md) | Use existing instructions/skills/workflows; the remaining question is one discover-author-activate-fresh-use path with useful outcomes, not a new trainer. |
 | [App author usability](app-environment-review-20260928.md) | Choose one concrete author/worker discovery failure and compare the smallest correction. Avoid another capability inventory. |
 | [Current gaps and historical leads](design-implementation-convergence.md) | Host #456 closed freshness-by-event-name. Other September rows are historical leads requiring reproduction, not confirmed current defects. |
@@ -52,12 +51,14 @@ Prompt/checker cleanup is already assigned elsewhere.
 | [Observation ownership and freshness](observer-feedback-and-resource-conventions.md) | Publication/observer-accounting foundations exist, including #371. Explicit Condition freshness merged in #456; installed adoption is unverified and provider convention trials stay conditional. |
 | [Task entry and evidence readability](task-resource-layout-20260929.md) | Clarify assigned/considered inputs versus pending unclaimed input using current readers and artifacts. One missed-review/correction comparison can bound the change. |
 | [Recovery to the original outcome](unified-agent-recovery-20261017.md) | Single active recovery proposal. Connected, restart, timer, real-model and human-reply trials have bounded evidence. The accepted-release probe confirms selected admission and missing controller routes; capable execution and original return through the actual App correction remain, alongside broader reliability. |
-| [Workflow as an executable skill](workflow-business-host-boundary.md) | Shared invocation kernel on `@may-agent/sdk` for Unit, Host-free Gym (`runDirectWorkflow`) and Host, with inherited limits, confirmed adapter cleanup, retired `run_step` guard injection, Task-owned admission and offline fixtures; merged in Host #455 (`52ff184177`) and wired in Gym. Incremental per-workflow adoption remains. |
 
 ## Implemented foundation; specific adoption remains
 
 | Record | Current status and remaining scope |
 | --- | --- |
+| [Unified Agent and Workflow invocation](unified-agent-instance-runtime.md) | Shipped in Host PRs #512–#515, #517, #518, and #520 (`ctx.call`, `resolveCallable`, `TaskRunner`, `agents` tool code procedures, `may run` / `may list`, `@may-agent/sdk/standalone`, and retirement of `WorkflowGuard` and `createWorkflowTool`). All 9 App workflows + May intake skill migrated. |
+| [Event and control socket simplification](control-socket-simplification.md) | Shipped in Host PRs #523 and #524 (non-journaled `conversation.updated` wakes, removal of dead `getSessionId` / `chatMode` / slash-command rewriting, table-driven `server.ts`, and consolidation of `app.input.admit` and Task controls onto `publish(EventInput)`). |
+| [Workflow as an executable skill](workflow-business-host-boundary.md) | Shared invocation kernel on `@may-agent/sdk` for Unit, Host-free Standalone/Gym (`src/app/standalone.ts`) and Host, merged in Host #455 (`52ff184177`) and extended into the unified invocation runtime above. |
 | [Workload implementation](agent-task-workload-implementation.md) | Host #443 merged the consolidated stack; retain its candidate history. Complete selected installation/result-disposition acceptance before broader activation. |
 | [Workload model](agent-task-workload-model.md) | Shared budgets, limits and feedback exist. Remaining work concerns funded scope, caller disposition and observed choices; standalone admission remains separate. |
 | [Alex organization and migration](alex-improvement-app.md) | The source migration is complete; dated handover records report activation. Residual retained-state withdrawal and end-to-end improvement acceptance are separate work. |
