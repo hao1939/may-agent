@@ -84,7 +84,6 @@ describe("control routing e2e", () => {
     bus.setPersistenceSubscriber(writer.handler);
 
     const core = createControlSocketCore({
-      getSessionId: () => "",
       getStatus: () => [],
       emitEvent: (event: ControlEvent) => {
         emitted.push(event);
@@ -168,7 +167,6 @@ describe("control routing e2e", () => {
     bus.setPersistenceSubscriber(writer.handler);
 
     const core = createControlSocketCore({
-      getSessionId: () => "",
       getStatus: () => [],
       emitEvent: (event: ControlEvent) => {
         emitted.push(event);

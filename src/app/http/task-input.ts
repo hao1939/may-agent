@@ -1,7 +1,16 @@
-export type TaskInputCommand = Record<string, unknown> & {
-  type: "app.input.admit";
-  idempotencyKey: string;
-  source: { kind: "human"; id: string };
+export type TaskInputCommand = {
+  type: "publish";
+  event: {
+    type: "app.input.requested";
+    target: { appId: string; taskId?: string };
+    data: {
+      targetTaskId: string;
+      input: { kind: string; data: { message: string; context: { intent: string; taskId: string; expectedGeneration: unknown } } };
+      source: { kind: "human"; id: string };
+      channel: string;
+    };
+    idempotencyKey: string;
+  };
 };
 
 export function taskInputIdempotencyKey(appId: string, taskId: string, key: string): string {
@@ -59,19 +68,24 @@ export function createTaskInputHandler(options: {
     if (!Number.isSafeInteger(body.expectedGeneration) || Number(body.expectedGeneration) < 1)
       return options.json({ error: "expectedGeneration must be a positive integer" }, 400);
     const frame: TaskInputCommand = {
-      type: "app.input.admit",
-      appId,
-      targetTaskId: taskId,
-      input: {
-        kind,
+      type: "publish",
+      event: {
+        type: "app.input.requested",
+        target: { appId },
         data: {
-          message,
-          context: { intent: "task-feedback", taskId, expectedGeneration: body.expectedGeneration },
+          targetTaskId: taskId,
+          input: {
+            kind,
+            data: {
+              message,
+              context: { intent: "task-feedback", taskId, expectedGeneration: body.expectedGeneration },
+            },
+          },
+          source: { kind: "human", id: `web-task:${key}` },
+          channel: "web-ui",
         },
+        idempotencyKey: taskInputIdempotencyKey(appId, taskId, key),
       },
-      source: { kind: "human", id: `web-task:${key}` },
-      channel: "web-ui",
-      idempotencyKey: taskInputIdempotencyKey(appId, taskId, key),
     };
     try {
       const recorded = options.confirm?.(frame);

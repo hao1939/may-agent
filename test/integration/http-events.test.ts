@@ -108,13 +108,17 @@ describe("HTTP event reads", () => {
     const publications: unknown[] = [];
     control = await attachControlSocket({
       socketPath: daemonSocketPath(root, { instance: "http-events", interfaceAgent: "helper" }),
-      agentName: "helper", getSessionId: () => "fixture", getStatus: () => [],
+      agentName: "helper", getStatus: () => [],
       emitEvent: () => {}, subscribeEvents: () => () => {},
-      admitAppInput: (input) => {
-        admissions.push(input);
-        return { eventId: 71, eventType: "app.input.requested" };
-      },
       publishEvent: (event) => {
+        if (event.type === "app.input.requested") {
+          admissions.push({
+            appId: event.target?.appId,
+            ...event.data,
+            idempotencyKey: event.idempotencyKey,
+          });
+          return { eventId: 71, eventType: "app.input.requested", delivery: "accepted" };
+        }
         publications.push(event);
         return { eventId: 72, eventType: event.type, delivery: "accepted" };
       },

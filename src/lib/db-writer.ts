@@ -605,6 +605,11 @@ export class DbWriter {
         break;
       }
 
+      case "conversation.updated":
+        // Replaceable view wake hint; skip SQLite event journal insertion,
+        // while still deferring live fanout until outer transaction commit.
+        break;
+
       default:
         if (DURABLE_COMMAND_EVENTS.has(event.type) || event.type.startsWith("trigger.")) {
           const ev = event as any;
@@ -619,8 +624,9 @@ export class DbWriter {
           if (!isCanonicalEventEnvelope(ev)) break;
           const data = eventPayload(ev);
           this.insertEventRow(event, data, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev));
+          break;
         }
-        break;
+        return;
     }
     if (inStateTransaction(this.db)) {
       return { afterCommit: (deliver) => afterStateCommit(this.db, deliver) };

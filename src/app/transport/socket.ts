@@ -24,7 +24,6 @@ export interface SocketUIOptions {
   agentName: string;
   /** Daemon instance label. */
   instance: string;
-  admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
@@ -76,16 +75,12 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   const { socketPath, events, agentName, instance } = opts;
   return attachControlSocket({
     socketPath,
-    // The canonical daemon has no mutable current-session authority. Keep the
-    // legacy control-socket field empty; clients subscribe explicitly.
-    getSessionId: () => "",
     getStatus: opts.getStatus,
     getDiagnostics: () => ({ sql: readSqlPerformance() }),
     emitEvent: (event) => opts.publishOperatorEvent(operatorEventInput(event)),
     publishEvent: opts.publishEvent,
     getEvent: events.get,
     describeProjectActions: opts.describeProjectActions,
-    admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,

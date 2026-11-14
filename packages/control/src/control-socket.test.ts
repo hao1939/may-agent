@@ -102,7 +102,6 @@ function createCore(overrides: Partial<Parameters<typeof createControlSocketCore
   let broadcast: ((event: ControlEvent) => void) | undefined;
   const core = createControlSocketCore({
     conversationAppId: "may",
-    getSessionId: () => "chat-session",
     getStatus: () => [],
     emitEvent: (event) => emitted.push(event),
     subscribeEvents: (handler) => {
@@ -231,13 +230,29 @@ describe("control socket protocol", () => {
     ]);
   });
 
-  it("persists a flat trigger command and returns its durable event id", async () => {
+  it("persists a flat trigger command and returns its durable event id while skipping conversation.updated wakes", async () => {
     const persistDir = mkdtempSync(join(tmpdir(), "may-control-socket-flat-trigger-"));
     persistDirs.push(persistDir);
     const bus = new EventBus();
     const writer = new DbWriter(persistDir);
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
+    const observedWakes: ControlEvent[] = [];
+    bus.subscribe((event) => {
+      if (event.type === "conversation.updated") observedWakes.push(event as ControlEvent);
+    });
+    bus.emit({
+      type: "conversation.updated",
+      source: "app-inbox",
+      owner: "app:may",
+      data: { appId: "may", conversationId: "may:primary" },
+    } as AgentEvent);
+    expect(observedWakes).toHaveLength(1);
+    const wakeCount = getDb(persistDir)
+      .prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'conversation.updated'")
+      .get() as { count: number };
+    expect(wakeCount.count).toBe(0);
+
     const core = createCore({
       emitEvent: (event) => {
         Object.defineProperty(event, EVENT_INGRESS_SOURCE, {
@@ -362,112 +377,6 @@ describe("control socket protocol", () => {
         data: {},
       }),
     ).rejects.toThrow("was not durably persisted");
-  });
-
-  it("validates and admits App input through the explicit control command", async () => {
-    const core = createCore({
-      admitAppInput: (input) => {
-        expect(input).toEqual({
-          appId: "alpha-project",
-          targetTaskId: "normalization/current",
-          input: {
-            kind: "message",
-            data: { message: "Review the current normalization gap." },
-          },
-          source: { kind: "human", id: "web-ui:project-comment-17" },
-          conversationId: "web-ui:project:alpha-project",
-          channel: "web-ui",
-          idempotencyKey: "project-comment-17",
-        });
-        return { eventId: 72, eventType: "app.input.requested" };
-      },
-    });
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "app.input.admit",
-        appId: "alpha-project",
-        targetTaskId: "normalization/current",
-        input: {
-          kind: "message",
-          data: { message: "Review the current normalization gap." },
-        },
-        source: { kind: "human", id: "web-ui:project-comment-17" },
-        conversationId: "web-ui:project:alpha-project",
-        channel: "web-ui",
-        idempotencyKey: "project-comment-17",
-      }),
-    ).resolves.toMatchObject({
-      type: "ok",
-      command: "app.input.admit",
-      appId: "alpha-project",
-      eventId: 72,
-      eventType: "app.input.requested",
-    });
-  });
-
-  it("normalizes stale May reload input before it can become conversation work", async () => {
-    const published: unknown[] = [];
-    const core = createCore({
-      admitAppInput: () => {
-        throw new Error("reload must not enter the May inbox");
-      },
-      publishEvent: (event) => {
-        published.push(event);
-        return { eventId: 73, eventType: event.type, delivery: "accepted" };
-      },
-    });
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "app.input.admit",
-        appId: "may",
-        input: { kind: "message", data: { message: "/reload" } },
-        source: { kind: "human", id: "stale-console:1" },
-        conversationId: "may:primary",
-        idempotencyKey: "stale-console:1",
-      }),
-    ).resolves.toMatchObject({ eventId: 73, eventType: "runtime.reload.requested" });
-    expect(published).toEqual([
-      {
-        type: "runtime.reload.requested",
-        data: { reason: "human control command" },
-        idempotencyKey: "stale-console:1",
-      },
-    ]);
-  });
-
-  it("normalizes a published human reload command before persistence", async () => {
-    const published: unknown[] = [];
-    const core = createCore({
-      publishEvent: (event) => {
-        published.push(event);
-        return { eventId: 74, eventType: event.type, delivery: "accepted" };
-      },
-    });
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "publish",
-        event: {
-          type: "conversation.message.created",
-          target: { appId: "may" },
-          data: {
-            conversationId: "may:primary",
-            author: { kind: "human", id: "stale-console:2" },
-            text: "/reload",
-          },
-          idempotencyKey: "stale-console:2",
-        },
-      }),
-    ).resolves.toMatchObject({ eventId: 74, eventType: "runtime.reload.requested" });
-    expect(published).toEqual([
-      {
-        type: "runtime.reload.requested",
-        data: { reason: "human control command" },
-        idempotencyKey: "stale-console:2",
-      },
-    ]);
   });
 
   it("reads a derived App conversation without emitting an event", async () => {
@@ -600,154 +509,12 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
-  it("publishes an exact generation-and-resource-fenced App Task retry", async () => {
-    const receipt = {
-      eventId: 71,
-      eventType: "app.task.retry.requested",
-      delivery: "accepted" as const,
-    };
-    const core = createCore({
-      getTask: (input) => {
-        expect(input).toEqual({ appId: "evaluation", taskId: "review/docs" });
-        return { appId: "evaluation", taskId: "review/docs", generation: 2, resourceVersion: 7 };
-      },
-      publishEvent: (input) => {
-        expect(input).toEqual({
-          type: "app.task.retry.requested",
-          target: { appId: "evaluation", taskId: "review/docs" },
-          data: { expectedGeneration: 2, expectedResourceVersion: 7 },
-          idempotencyKey: "app-task-retry:evaluation:review/docs:2:7",
-        });
-        return receipt;
-      },
-    });
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "app.task.retry",
-        appId: "evaluation",
-        taskId: "review/docs",
-        expectedGeneration: 2,
-      }),
-    ).resolves.toEqual({ type: "ok", command: "app.task.retry", receipt });
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "app.task.retry",
-        appId: "evaluation",
-        taskId: "review/docs",
-        expectedGeneration: 0,
-      }),
-    ).rejects.toThrow("expectedGeneration must be a positive integer");
-    expect(core.emitted).toEqual([]);
-  });
-
-  it("publishes caller-fenced guarded Task completion without selecting cancellation", async () => {
-    const published: unknown[] = [];
-    const core = createCore({
-      getTask: (input) => ({ ...input, generation: 2, resourceVersion: 8, status: "done" }),
-      publishEvent: (input) => {
-        published.push(input);
-        return { eventId: 75, eventType: input.type, delivery: "accepted" };
-      },
-    });
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "task.close",
-        appId: "evaluation",
-        taskId: "review/docs",
-        expectedGeneration: 2,
-        expectedResourceVersion: 7,
-        afterResult: "r_2_answer",
-        reason: "accepted answer consumed",
-      }),
-    ).resolves.toMatchObject({
-      type: "ok",
-      command: "task.close",
-      receipt: { eventId: 75, eventType: "app.task.close.requested", delivery: "accepted" },
-      task: { appId: "evaluation", taskId: "review/docs", resourceVersion: 8, status: "done" },
-    });
-    expect(published).toEqual([
-      {
-        type: "app.task.close.requested",
-        target: { appId: "evaluation", taskId: "review/docs" },
-        data: {
-          expectedGeneration: 2,
-          expectedResourceVersion: 7,
-          afterResult: "r_2_answer",
-          reason: "accepted answer consumed",
-        },
-        idempotencyKey: "app-task-close:evaluation:review/docs:2:7:r_2_answer",
-      },
-    ]);
-
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "task.close",
-        appId: "evaluation",
-        taskId: "review/docs",
-        expectedGeneration: 2,
-        expectedResourceVersion: 7,
-        reason: "missing result identity",
-      }),
-    ).rejects.toThrow("afterResult must be a non-empty accepted attempt ID");
-  });
-
-  it("requires the caller's current version and continuation reason for explicit reopening", async () => {
-    const published: unknown[] = [];
-    const core = createCore({
-      publishEvent: (input) => {
-        published.push(input);
-        return { eventId: 77, eventType: input.type, delivery: "accepted" };
-      },
-    });
-    const command = {
-      type: "task.reopen",
-      appId: "sample",
-      taskId: "work",
-      expectedGeneration: 2,
-      expectedResourceVersion: 8,
-      reason: "User requested continuation",
-      input: { kind: "continue", data: { platform: "Linux" } },
-    };
-    await expect(sendSocketCommand(core.endpoint, command)).resolves.toMatchObject({
-      type: "ok",
-      command: "task.reopen",
-    });
-    expect(published).toEqual([
-      {
-        type: "app.task.reopen.requested",
-        target: { appId: "sample", taskId: "work" },
-        data: {
-          expectedGeneration: 2,
-          expectedResourceVersion: 8,
-          reason: "User requested continuation",
-          input: command.input,
-        },
-        idempotencyKey: "app-task-reopen:sample:work:2:8",
-      },
-    ]);
-    await expect(sendSocketCommand(core.endpoint, { ...command, expectedResourceVersion: undefined })).rejects.toThrow(
-      "current generation and resourceVersion",
-    );
-    await expect(sendSocketCommand(core.endpoint, { ...command, reason: "" })).rejects.toThrow("continuation request");
-    expect(published).toHaveLength(1);
-  });
-
   it("does not report a recorded but unaccepted Task control as success", async () => {
     const core = createCore({
       getTask: () => ({ appId: "evaluation", taskId: "review/docs", generation: 2, resourceVersion: 7 }),
       publishEvent: (input) => ({ eventId: 73, eventType: input.type, delivery: "recorded" }),
     });
 
-    await expect(
-      sendSocketCommand(core.endpoint, {
-        type: "app.task.retry",
-        appId: "evaluation",
-        taskId: "review/docs",
-        expectedGeneration: 2,
-      }),
-    ).rejects.toThrow("retry was recorded but not accepted");
     await expect(
       sendSocketCommand(core.endpoint, {
         type: "task.cancel",
@@ -903,7 +670,6 @@ describe("control socket protocol", () => {
 
   it("serves status locally without emitting a daemon event", async () => {
     const core = createCore({
-      getSessionId: () => "",
       getStatus: () => [
         { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate a long task name" },
         { agent: "dev", sessionId: "s_2", status: "done", kind: "call", task: "finished" },
@@ -954,12 +720,12 @@ describe("control socket protocol", () => {
     });
   });
 
-  it("reports active work independently of the synthetic ready chat", async () => {
+  it("reports active work independently of active agent sessions", async () => {
     let activeWork = false;
     const core = createCore({ getStatus: () => ({ sessions: [], activeWork }) });
     const idle = await sendSocketCommand(core.endpoint, { type: "status" });
     expect(idle.activeWork).toBe(false);
-    expect(idle.activeAgents).toMatchObject([{ status: "ready" }]);
+    expect(idle.activeAgents).toEqual([]);
     activeWork = true; // A workflow can run without an agent session.
     expect((await sendSocketCommand(core.endpoint, { type: "status" })).activeWork).toBe(true);
     expect(core.emitted).toEqual([]);
@@ -978,24 +744,6 @@ describe("control socket protocol", () => {
     expect(connected.activeAgents).toBeUndefined();
     stream.destroy();
     await expect(sendSocketCommand(core.endpoint, { type: "status" })).rejects.toThrow("Execution status unavailable");
-  });
-
-  it("includes the current chat target as ready when it is not active", async () => {
-    const core = createCore({
-      getSessionId: () => "s_chat_done",
-      getStatus: () => [{ agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" }],
-    });
-
-    const status = await sendSocketCommand(core.endpoint, { type: "status" });
-
-    expect(status).toEqual({
-      type: "status",
-      command: "status",
-      activeAgents: [
-        { agent: "scout", sessionId: "s_1", status: "running", kind: "call", task: "investigate" },
-        { agent: "may", sessionId: "s_chat_done", status: "ready", kind: "chat", task: "Interface chat" },
-      ],
-    });
   });
 
   it("filters subscribed event streams by session", async () => {
@@ -1318,7 +1066,6 @@ describe("control socket protocol", () => {
       const socketPath = join(root, "missing", "nested", "may.sock");
       const socket = await attachControlSocket({
         socketPath,
-        getSessionId: () => "",
         getStatus: () => [],
         getDiagnostics: () => ({ sql: { calls: 7 } }),
         emitEvent: () => {},
@@ -1342,7 +1089,6 @@ describe("control socket protocol", () => {
       const socketPath = join(root, "may.sock");
       const first = await attachControlSocket({
         socketPath,
-        getSessionId: () => "",
         getStatus: () => [],
         emitEvent: () => {},
         subscribeEvents: () => () => {},
@@ -1354,7 +1100,6 @@ describe("control socket protocol", () => {
       await expect(
         attachControlSocket({
           socketPath,
-          getSessionId: () => "",
           getStatus: () => [],
           emitEvent: () => {},
           subscribeEvents: () => () => {},

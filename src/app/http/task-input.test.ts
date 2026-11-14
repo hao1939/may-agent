@@ -42,25 +42,30 @@ describe("Task-scoped human feedback", () => {
     expect(await replay.json()).toMatchObject({ accepted: true, replayed: true });
     expect(f.frames[0]).toEqual(f.frames[1]);
     expect(f.frames[0]).toEqual({
-      type: "app.input.admit",
-      appId: "example",
-      targetTaskId: "support/version",
-      input: {
-        kind: "message",
+      type: "publish",
+      event: {
+        type: "app.input.requested",
+        target: { appId: "example" },
         data: {
-          message: input.message,
-          context: { intent: "task-feedback", taskId: "support/version", expectedGeneration: 3 },
+          targetTaskId: "support/version",
+          input: {
+            kind: "message",
+            data: {
+              message: input.message,
+              context: { intent: "task-feedback", taskId: "support/version", expectedGeneration: 3 },
+            },
+          },
+          source: { kind: "human", id: "web-task:message-1" },
+          channel: "web-ui",
         },
+        idempotencyKey: "web-task:7:example:15:support/version:message-1",
       },
-      source: { kind: "human", id: "web-task:message-1" },
-      channel: "web-ui",
-      idempotencyKey: "web-task:7:example:15:support/version:message-1",
     });
   });
   test("the App selects its accepted input kind without changing Task identity", async () => {
     const f = fixture();
     expect((await f.handler(request({ ...input, inputKind: "owner-review" }))).status).toBe(202);
-    expect(f.frames[0].input).toMatchObject({ kind: "owner-review", data: { message: input.message } });
+    expect((f.frames[0].event as any).data.input).toMatchObject({ kind: "owner-review", data: { message: input.message } });
   });
   test("refuses stale scope, a foreign returned Task, and closed or missing work before admission", async () => {
     for (const [task, status] of [
@@ -139,7 +144,7 @@ describe("Task-scoped human feedback", () => {
         task: { appId: frame.appId, taskId: frame.taskId, generation: 1, status: "running", terminal: false },
       }),
       admit: async (frame) => {
-        seenKeys.push(frame.idempotencyKey);
+        seenKeys.push(frame.event.idempotencyKey);
         if (seenKeys.length === 1) return { type: "ok", eventId: 41, eventType: "app.input.requested", delivery: "recorded" };
         return { type: "ok", eventId: 40 + seenKeys.length, eventType: "app.input.requested", delivery: "accepted", inboxId: `in-${seenKeys.length}` };
       },
