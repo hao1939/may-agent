@@ -953,4 +953,51 @@ export async function execute(ctx) {
       summary: "prompt:Readonly prompt check",
     });
   });
+
+  test.each(["timeout", "cancel"] as const)(
+    "bounds root runDirect({ target }) catalog preparation on %s and reports unconfirmed import cleanup",
+    async (mode) => {
+      const env = setupDirectLayout();
+      const gate = await controlledWorkflowImport(env.root);
+      const reviewerDir = join(env.agentsRoot, "reviewer", "workflows");
+      const marker = join(env.root, "imported-after-root-stop");
+      writeFileSync(join(reviewerDir, "a-slow.ts"), gate.source);
+      writeFileSync(
+        join(reviewerDir, "z-probe.ts"),
+        `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(marker)}, "imported");
+export const name = "probe";
+export const description = "Must not import after root target timeout/cancel";
+export async function execute(ctx) { return ctx.done("probe"); }
+`,
+      );
+      const controller = new AbortController();
+      const run = runDirect({
+        ...env,
+        agentName: "owner",
+        target: "reviewer/probe",
+        input: {},
+        models: {},
+        signal: controller.signal,
+        timeoutMs: mode === "timeout" ? 500 : 10_000,
+      });
+      try {
+        expect(await observeBoundedResult(gate.started)).toBeDefined();
+        if (mode === "cancel") controller.abort(new Error("cancel root target preparation"));
+        const stopped = await observeBoundedResult(run);
+        expect(stopped).toBeDefined();
+        expect(stopped?.result.ok).toBe(false);
+        expect(stopped?.result.started).toBe(false);
+        expect(stopped?.result.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+        expect(stopped?.result.report.cleanup.confirmed).toBe(false);
+      } finally {
+        gate.release();
+        await observeBoundedResult(gate.completed);
+        await observeBoundedResult(run);
+        await new Promise<void>((resolve) => setImmediate(resolve));
+      }
+      expect(existsSync(marker)).toBe(false);
+    },
+  );
 });

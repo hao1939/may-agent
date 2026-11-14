@@ -18,6 +18,7 @@ import type {
 } from "@may-agent/sdk";
 import { createTestAppRead } from "@may-agent/sdk/testing";
 import {
+  WorkflowUnconfirmedCleanupError,
   createWorkflowAllowance,
   resolveCallable,
   runWorkflowInvocation,
@@ -339,7 +340,6 @@ export async function runDirectWorkflow<TInput = unknown>(
   }
   const initialOwner = callerOwner;
   const workflowDir = resolveWorkflowDir({ ...options, agentName: callerOwner });
-  const wfCatalog = !options.module && workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
   let preparedCatalog: DirectCatalogState = internal?.catalog ?? {
     prompts: new Map(),
     proceduresByOwner: new Map(),
@@ -349,13 +349,6 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const ensureOwnerProcedures = async (owner: string, signal?: AbortSignal): Promise<void> => {
     if (preparedCatalog.proceduresByOwner.has(owner)) return;
-    if (owner === initialOwner && wfCatalog) {
-      preparedCatalog.proceduresByOwner.set(owner, wfCatalog.workflows);
-      for (const diag of wfCatalog.diagnostics) {
-        if (!preparedCatalog.diagnostics.includes(diag)) preparedCatalog.diagnostics.push(diag);
-      }
-      return;
-    }
     const ownerDir =
       owner === initialOwner && workflowDir
         ? workflowDir
@@ -397,47 +390,170 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (!requestedTarget) {
       throw new Error("runDirect requires `module`, `target`, or (`workflowName` and resolvable `workflowDir`/`agentName`)");
     }
-    if (options.target) {
-      if (!internal?.catalog) {
-        preparedCatalog = await buildDirectPromptCatalog(
-          { ...options, agentName: callerOwner },
-          callerOwner,
-          workflowDir,
-          options.signal,
-        );
-        catalogCapturedAtRoot = true;
+    if (!options.target && !workflowDir) {
+      throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
+    }
+
+    const prepNow = Date.now();
+    let prepAllowance: WorkflowExecutionAllowance | undefined = internal?.allowance;
+    let prepTimeoutMs: number | undefined;
+    if (!prepAllowance && !options.signal?.aborted) {
+      try {
+        const created = createWorkflowAllowance({
+          timeoutMs: options.timeoutMs,
+          deadlineAt: options.deadlineAt,
+          maxConcurrentCalls: options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS,
+          now: prepNow,
+        });
+        prepAllowance = created;
+        prepTimeoutMs = created.timeoutMs;
+      } catch {
+        // Invalid timeoutMs/deadlineAt will be surfaced cleanly by runWorkflowInvocation below.
       }
-      await loadTargetOwnerProcedures(requestedTarget, options.signal);
-      const resolved = resolveCallable(callerOwner, requestedTarget, preparedCatalog);
-      if (resolved.kind === "code") {
-        callerOwner = resolved.owner;
-        targetModule = resolved.module as WorkflowExecutableModule<TInput>;
+    } else if (prepAllowance) {
+      prepTimeoutMs = Math.max(0, prepAllowance.deadlineAt - prepNow);
+    }
+    const prepController = new AbortController();
+    let prepTimer: ReturnType<typeof setTimeout> | undefined;
+    const onParentPrepAbort = () => {
+      prepController.abort(options.signal?.reason ?? new Error(`Direct target "${requestedTarget}" cancelled before start`));
+    };
+    if (options.signal?.aborted) {
+      onParentPrepAbort();
+    } else if (options.signal) {
+      options.signal.addEventListener("abort", onParentPrepAbort, { once: true });
+    }
+    if (prepAllowance && !prepController.signal.aborted) {
+      const waitMs = Math.max(0, prepAllowance.deadlineAt - Date.now());
+      prepTimer = setTimeout(() => {
+        prepController.abort(
+          new Error(
+            prepAllowance.deadlineReason ??
+              `Workflow "${requestedTarget}" timed out after ${prepTimeoutMs ?? waitMs}ms`,
+          ),
+        );
+      }, waitMs);
+      prepTimer.unref?.();
+    }
+
+    try {
+      if (options.target) {
+        if (!internal?.catalog) {
+          preparedCatalog = await buildDirectPromptCatalog(
+            { ...options, agentName: callerOwner },
+            callerOwner,
+            workflowDir,
+            prepController.signal,
+          );
+          catalogCapturedAtRoot = true;
+        }
+        await loadTargetOwnerProcedures(requestedTarget, prepController.signal);
+        const resolved = resolveCallable(callerOwner, requestedTarget, preparedCatalog);
+        if (resolved.kind === "code") {
+          callerOwner = resolved.owner;
+          targetModule = resolved.module as WorkflowExecutableModule<TInput>;
+        } else {
+          targetModule = {
+            name: resolved.name,
+            description: `Direct prompt invocation for ${resolved.name}`,
+            ...(options.tools === "readonly" ? { readonly: true } : {}),
+            async execute(ctx) {
+              return options.outputSchema
+                ? ctx.call(resolved.name, ctx.input, {
+                    schema: options.outputSchema,
+                    ...(options.tools ? { tools: options.tools } : {}),
+                  })
+                : ctx.call(resolved.name, ctx.input, {
+                    ...(options.tools ? { tools: options.tools } : {}),
+                  });
+            },
+          };
+        }
       } else {
-        targetModule = {
-          name: resolved.name,
-          description: `Direct prompt invocation for ${resolved.name}`,
-          ...(options.tools === "readonly" ? { readonly: true } : {}),
-          async execute(ctx) {
-            return options.outputSchema
-              ? ctx.call(resolved.name, ctx.input, {
-                  schema: options.outputSchema,
-                  ...(options.tools ? { tools: options.tools } : {}),
-                })
-              : ctx.call(resolved.name, ctx.input, {
-                  ...(options.tools ? { tools: options.tools } : {}),
-                });
+        const wfCatalog = await buildWorkflowCatalog(workflowDir!, prepController.signal, {
+          onImportStart: () => {
+            preparedCatalog.pendingImports += 1;
           },
+          onImportSettled: () => {
+            preparedCatalog.pendingImports -= 1;
+          },
+        });
+        preparedCatalog.proceduresByOwner.set(initialOwner, wfCatalog.workflows);
+        for (const diag of wfCatalog.diagnostics) {
+          if (!preparedCatalog.diagnostics.includes(diag)) preparedCatalog.diagnostics.push(diag);
+        }
+        const found = findWorkflow(wfCatalog, requestedTarget);
+        if (!found.workflow) {
+          throw new Error(found.error ?? `Workflow "${requestedTarget}" not found`);
+        }
+        targetModule = found.workflow as WorkflowExecutableModule<TInput>;
+      }
+    } catch (prepErr) {
+      if (prepController.signal.aborted || preparedCatalog.pendingImports > 0) {
+        const endedAt = Date.now();
+        const executionId =
+          internal === undefined && options.executionId
+            ? options.executionId
+            : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`;
+        const unconfirmed =
+          preparedCatalog.pendingImports > 0
+            ? [`workflow:${requestedTarget} (${executionId})`]
+            : undefined;
+        const effectiveError = unconfirmed
+          ? new WorkflowUnconfirmedCleanupError(requestedTarget, unconfirmed, prepErr)
+          : prepErr instanceof Error
+            ? prepErr
+            : new Error(String(prepErr));
+        const status: WorkflowRunReport["status"] =
+          !unconfirmed && options.signal?.aborted ? "interrupted" : "error";
+        const report: WorkflowRunReport = {
+          workflow: requestedTarget,
+          executionId,
+          started: false,
+          status,
+          startedAt: prepNow,
+          endedAt,
+          durationMs: endedAt - prepNow,
+          input: options.input,
+          error: {
+            name: effectiveError.name,
+            message: effectiveError.message,
+            ...(effectiveError.stack ? { stack: effectiveError.stack } : {}),
+          },
+          steps: [],
+          stepsTruncated: 0,
+          logs: [],
+          logsTruncated: 0,
+          limits: {
+            timeoutMs: prepTimeoutMs ?? 0,
+            deadlineAt: prepAllowance?.deadlineAt ?? endedAt,
+            ...(prepAllowance?.maxConcurrentCalls !== undefined
+              ? { maxConcurrentCalls: prepAllowance.maxConcurrentCalls }
+              : {}),
+          },
+          cleanup: unconfirmed ? { confirmed: false, unconfirmed } : { confirmed: true },
+          observerErrors: [],
+        };
+        let reportPath: string | undefined;
+        if (options.traceDir) {
+          mkdirSync(options.traceDir, { recursive: true });
+          reportPath = join(options.traceDir, "run.json");
+          writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
+        }
+        return {
+          ok: false,
+          started: false,
+          status,
+          error: effectiveError,
+          report,
+          ...(reportPath ? { reportPath } : {}),
+          childSessions: [],
         };
       }
-    } else {
-      if (!wfCatalog) {
-        throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
-      }
-      const found = findWorkflow(wfCatalog, requestedTarget);
-      if (!found.workflow) {
-        throw new Error(found.error ?? `Workflow "${requestedTarget}" not found`);
-      }
-      targetModule = found.workflow as WorkflowExecutableModule<TInput>;
+      throw prepErr;
+    } finally {
+      clearTimeout(prepTimer);
+      options.signal?.removeEventListener("abort", onParentPrepAbort);
     }
   }
 
