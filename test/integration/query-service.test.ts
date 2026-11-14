@@ -23,12 +23,12 @@ describe("QueryService", () => {
     return { root, db, query };
   }
 
-  it("exposes event and read-only SQL queries without evaluator selection or alert-triage helpers", () => {
+  it("exposes event and delivery-health queries without raw SQL, evaluator selection, or alert-triage helpers", () => {
     const { query } = harness();
-    expect(Object.keys(query).sort()).toEqual(["eventDeliveryHealth", "events", "sql"]);
+    expect(Object.keys(query).sort()).toEqual(["eventDeliveryHealth", "events"]);
   });
 
-  it("keeps arbitrary SQL read-only and bounded", () => {
+  it("keeps event queries bounded by limit", () => {
     const { db, query } = harness();
 
     for (let i = 0; i < 4; i++) {
@@ -41,7 +41,7 @@ describe("QueryService", () => {
       ]);
     }
 
-    const result = query.sql("SELECT id, event_type FROM events ORDER BY id ASC", [], { limit: 3 });
+    const result = query.events({ limit: 3 });
     expect(result.rowCount).toBe(3);
     expect(result.truncated).toBe(true);
     expect(result.rows.map((row) => row.event_type)).toEqual(["example", "example", "example"]);
@@ -100,46 +100,5 @@ describe("QueryService", () => {
         project_id: "scout-knowledge-lib",
       },
     ]);
-  });
-
-  it("keeps stored workflow run history readable after reopening the database", () => {
-    const { root, db } = harness();
-    db.run("INSERT INTO sessions (sessionId, agent, task, status, startedAt) VALUES (?, ?, ?, ?, ?)", [
-      "reviewed-session",
-      "dev",
-      "Inspect result",
-      "done",
-      100,
-    ]);
-    db.run(
-      "INSERT INTO workflow_runs (runId, workflow, task, status, parentSessionId, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
-      ["wr_1", "verify", "Inspect result", "done", "reviewed-session", 200],
-    );
-    closeDb(root);
-
-    const query = createQueryService({ getDb: () => getDb(root) });
-    expect(
-      query.sql(
-        `SELECT s.sessionId, s.status, w.workflow FROM sessions s
-      JOIN workflow_runs w ON w.parentSessionId = s.sessionId WHERE s.sessionId = ?`,
-        ["reviewed-session"],
-      ).rows,
-    ).toEqual([
-      { sessionId: "reviewed-session", status: "done", workflow: "verify" },
-    ]);
-  });
-
-  it("rejects writes and multi-statement SQL", () => {
-    const { query } = harness();
-
-    expect(() => query.sql("UPDATE sessions SET status = 'done'")).toThrow(/read-only|only allows/);
-    expect(() => query.sql("SELECT 1; SELECT 2")).toThrow(/one statement/);
-  });
-
-  it("allows bounded schema inspection pragmas", () => {
-    const { query } = harness();
-
-    expect(query.sql("PRAGMA table_info(sessions)").rows.some((row) => row.name === "sessionId")).toBe(true);
-    expect(() => query.sql("PRAGMA user_version = 1")).toThrow(/not allowed/);
   });
 });
