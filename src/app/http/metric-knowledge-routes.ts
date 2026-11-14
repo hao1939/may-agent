@@ -424,32 +424,6 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     return json({ query: q, results });
   }
 
-  async function handleMetricThreshold(req: Request, metricId: string): Promise<Response> {
-    if (!metricId) return json({ error: "metricId required" }, 400);
-    let body: { threshold?: number };
-    try {
-      body = (await req.json()) as { threshold?: number };
-    } catch {
-      return json({ error: "invalid json" }, 400);
-    }
-    if (typeof body.threshold !== "number" || !Number.isFinite(body.threshold)) {
-      return json({ error: "threshold (finite number) required" }, 400);
-    }
-    const existing = _db().prepare("SELECT id, owner, threshold FROM metrics WHERE id = ?").get(metricId) as
-      { id: string; owner?: string | null; threshold: number | null } | undefined;
-    if (!existing) return json({ error: "metric not found" }, 404);
-    const result = await sendDaemonFrame(
-      buildPublishFrame("metric.threshold_changed", {
-        metricId,
-        from: existing.threshold,
-        to: body.threshold,
-        metricOwner: existing.owner ?? "system:host",
-      }),
-    );
-    if (!result.ok) return json({ error: result.error }, 503);
-    return json({ ok: true, accepted: true, metric: metricId, from: existing.threshold, to: body.threshold });
-  }
-
   async function handleAlertResolve(req: Request, alertId: string): Promise<Response> {
     const id = parseInt(alertId, 10);
     if (!Number.isFinite(id)) return json({ error: "numeric alertId required" }, 400);
@@ -486,7 +460,6 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     handleMetrics,
     handleBrowse,
     handleKnowledgeSearch,
-    handleMetricThreshold,
     handleAlertResolve,
   };
 }

@@ -260,8 +260,6 @@ describe("served workflow and metric health pages", () => {
   test("steering rejects invalid and missing targets without touching installed state", async () => {
     for (const [path, body, status] of [
       ["/api/sessions/missing/message", {}, 400],
-      ["/api/metrics/missing/threshold", { threshold: "not-a-number" }, 400],
-      ["/api/metrics/missing/threshold", { threshold: 0.5 }, 404],
       ["/api/alerts/0/resolve", { reason: "fixture" }, 404],
       ["/api/alerts/notanumber/resolve", { reason: "fixture" }, 400],
     ] as const) {

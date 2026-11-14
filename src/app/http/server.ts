@@ -500,7 +500,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     readProjects,
     handleProjects,
     handleProjectContent,
-    handleProjectArtifact,
     handleProjectDetail,
     handleProjectSessions,
     handleProjectComment,
@@ -540,7 +539,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     handleMetrics,
     handleBrowse,
     handleKnowledgeSearch,
-    handleMetricThreshold,
     handleAlertResolve,
   } = createMetricAndKnowledgeRouteHandlers({
     agentsRoot: AGENTS_ROOT,
@@ -677,7 +675,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       const appTasksMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks$/);
       if (appTasksMatch && req.method === "GET") return handleAppTasks(url, decodeURIComponent(appTasksMatch[1]));
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
-      if (url.pathname === "/api/projects/artifact") return handleProjectArtifact(url);
       if (url.pathname === "/api/conversation" && req.method === "GET") return handleConversationRead(url);
       if (url.pathname === "/api/task/transcript")
         return req.method === "GET" ? handleTaskTranscript(url) : json({ error: "GET required" }, 405);
@@ -734,8 +731,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
         const agentMessageMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/message$/);
         if (agentMessageMatch) return handleAgentMessage(req, agentMessageMatch[1], url);
-        const thresholdMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/threshold$/);
-        if (thresholdMatch) return handleMetricThreshold(req, decodeURIComponent(thresholdMatch[1]));
         const alertResolveMatch = url.pathname.match(/^\/api\/alerts\/([^/]+)\/resolve$/);
         if (alertResolveMatch) return handleAlertResolve(req, alertResolveMatch[1]);
       }

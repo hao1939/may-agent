@@ -351,16 +351,6 @@ async function verbResolveAlert(alertId, ev) {
   scheduleLivenessRefresh();
 }
 
-async function verbEditThreshold(metricId, current, ev) {
-  stopEv(ev);
-  const raw = prompt(`New threshold for ${metricId} (current: ${current ?? '—'}):`, String(current ?? ''));
-  if (raw == null) return;
-  const n = Number(raw);
-  if (!Number.isFinite(n)) { toast('threshold must be a number', 'error'); return; }
-  await steer('POST', `/api/metrics/${encodeURIComponent(metricId)}/threshold`, { threshold: n }, { label: `threshold ${metricId}` });
-  if (typeof loadMetricsTab === 'function') loadMetricsTab();
-}
-
 async function verbCancelSession(sessionId, ev) {
   stopEv(ev);
   await steer('POST', `/api/sessions/${encodeURIComponent(sessionId)}/cancel`, {}, {

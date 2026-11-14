@@ -42,18 +42,6 @@ import type { TaskBinding } from "./persistence.js";
 const INLINE_EVENT_DATA_BYTES = 4_096;
 const MAX_EVENT_PROJECTION_LENGTH = 12_000;
 
-const DURABLE_COMMAND_EVENTS = new Set([
-  "fork",
-  "input",
-  "steer",
-  "cancel",
-  "cancel_all",
-  "resume",
-  "reload",
-  "restart",
-  "shutdown",
-]);
-
 const DEFAULT_UNACCEPTED_TTL_MS = 2 * 60 * 1000;
 const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
 export const EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS = 30_000;
@@ -611,7 +599,7 @@ export class DbWriter {
         break;
 
       default:
-        if (DURABLE_COMMAND_EVENTS.has(event.type) || event.type.startsWith("trigger.")) {
+        if (event.type.startsWith("trigger.")) {
           const ev = event as any;
           const data = eventPayload(ev);
           this.insertEventRow(event, data, eventSource(ev), eventOwner(ev), eventUrgency(ev), eventTtlMs(ev));
