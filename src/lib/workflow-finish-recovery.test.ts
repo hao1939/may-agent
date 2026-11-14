@@ -14,7 +14,7 @@ import {
   shouldRequestBoundedWorkflowFinish,
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
-} from "./workflow-finish-recovery.js";
+} from "../../packages/sdk/src/runtime/index.js";
 
 function abortedFinish(arguments_: unknown, id = "finish-captured") {
   return {

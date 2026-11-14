@@ -136,7 +136,7 @@ it("enforces the SDK <-> Host runtime barrel across specialized ESLint rule path
     ["src/lib/agent-execution.ts", "../../"],
     ["src/app/app-runtime.ts", "../../"],
     ["src/app/agent-loader.ts", "../../"],
-    ["src/app/loader/agent-definition.ts", "../../../"],
+    ["src/app/loader/agent-registry-loader.ts", "../../../"],
     ["src/app/core/tasks/controller.ts", "../../../../"],
     ["src/app/adapters/executors/managed-agent.ts", "../../../../"],
     ["src/app/transport/telegram.ts", "../../../"],

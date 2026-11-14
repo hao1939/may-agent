@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner, runWorkflowDirect, WorkflowExecutionFailure } from "./workflow-tool.js";
-import { workflowExecutionResult } from "./execution-handoff.js";
+import { workflowExecutionResult } from "../../packages/sdk/src/runtime/index.js";
 import { readWorkflowFacts } from "./workflow-facts.js";
 import { closeDb } from "./db/connection.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";

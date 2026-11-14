@@ -6,7 +6,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
-import { workflowExecutionResult } from "./execution-handoff.js";
+import { workflowExecutionResult } from "../../packages/sdk/src/runtime/index.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";

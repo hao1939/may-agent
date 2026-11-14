@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { contextUsageQuery, readContextUsage } from "../../src/app/adapters/reporting/context-usage.js";
-import { buildAgentDefinition } from "../../src/app/loader/agent-definition.js";
+import { buildAgentDefinition } from "../../packages/sdk/src/runtime/index.js";
 import { createAgentRun } from "../../src/lib/agent-runner.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { SubagentManager } from "../../src/lib/manager.js";

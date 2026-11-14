@@ -17,7 +17,7 @@ import {
 } from "node:fs";
 import { basename, join, relative, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
-import { resolveSkillRoots } from "../lib/skill-paths.js";
+import { resolveSkillRoots } from "../../packages/sdk/src/runtime/index.js";
 
 export type DefinitionSourceRelease = Readonly<{
   id: string;

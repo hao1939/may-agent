@@ -35,22 +35,21 @@ import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
 import { getWorkflowRun, insertWorkflowRun, updateWorkflowRun } from "./db/workflows.js";
 import {
   agentExecutionResult,
+  buildWorkflowCatalog,
   deferredExecutionResult,
   enforceStructuredWorkflowResult,
+  findWorkflow,
+  inspectWorkflowDefinition,
+  validateOperationAllowance,
   workflowExecutionResult,
-} from "./execution-handoff.js";
+  type WorkflowCatalog,
+} from "../../packages/sdk/src/runtime/index.js";
 import type { SubagentManager } from "./manager.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import type { TaskBinding } from "./persistence.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import type { SubagentDefinition } from "./types.js";
-import {
-  buildWorkflowCatalog,
-  findWorkflow,
-  type WorkflowCatalog,
-} from "./workflow-catalog.js";
 import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
-import { validateOperationAllowance } from "./workflow-finish-recovery.js";
 import { retainWorkflowResultPayload } from "./workflow-payload.js";
 import type {
   CompletedStep,
@@ -62,7 +61,7 @@ import type {
 } from "./workflow.js";
 import { WorkflowInterrupted } from "./workflow.js";
 
-export { inspectWorkflowDefinition } from "./workflow-catalog.js";
+export { inspectWorkflowDefinition };
 // ── In-memory workflow types (used during execution) ────────────────────
 
 /** In-memory record of a workflow execution. */

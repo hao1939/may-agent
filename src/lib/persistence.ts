@@ -29,7 +29,7 @@ import {
 import { currentProcessInstance, isProcessInstanceAlive, type PersistedProcessInstance } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "./log.js";
-import type { ToolPolicy } from "./session-policy.js";
+import type { ToolPolicy } from "../../packages/sdk/src/runtime/index.js";
 
 export {
   addSessionBashProcessGroup,

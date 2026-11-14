@@ -6,7 +6,7 @@ import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
-import { buildAgentDefinition } from "./agent-definition.js";
+import { buildAgentDefinition } from "../../../packages/sdk/src/runtime/index.js";
 import { agentProjectRoot, agentsRootForAgentDir, listRuntimeAgentDirectories } from "./agent-discovery.js";
 import { buildTools } from "./toolset-loader.js";
 

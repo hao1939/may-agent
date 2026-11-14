@@ -12,7 +12,7 @@ import { createFinishTool } from "./tools/lifecycle.js";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import { readSessionMessages } from "./persistence.js";
-import { extractFinishParams } from "./agent-result.js";
+import { extractFinishParams } from "../../packages/sdk/src/runtime/index.js";
 
 const roots: string[] = [];
 afterEach(() => {

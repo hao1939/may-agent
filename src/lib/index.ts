@@ -9,8 +9,8 @@ export { SubagentManager, generateId, truncateForPrompt } from "./manager.js";
 export type { RunOptions, SubagentManagerOptions } from "./manager.js";
 export type { SessionStore } from "./persistence.js";
 // Session recovery (Ambulance Protocol — P62)
-export { classifyError } from "./classify-error.js";
-export type { ErrorClass } from "./classify-error.js";
+export { classifyError } from "../../packages/sdk/src/runtime/index.js";
+export type { ErrorClass } from "../../packages/sdk/src/runtime/index.js";
 // Core coding tools (synced from pi-coding-agent)
 export { extractKeyFacts } from "./compaction.js";
 export type { KeyFacts } from "./compaction.js";

@@ -6,7 +6,7 @@ import type { AgentConfig } from "../../loader/agent-config.js";
 import { buildTools, type ToolsetLoaderOptions } from "../../loader/toolset-loader.js";
 import { EventBus } from "../events/bus.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { readOnlyTaskTool } from "../../../lib/tools/task-read-policy.js";
+import { readOnlyTaskTool } from "../../../../packages/sdk/src/runtime/index.js";
 import { readCreatedTasks } from "./task-created.js";
 
 test("the production model tool resolves the live creator reader for each session and fails visibly when unavailable", async () => {

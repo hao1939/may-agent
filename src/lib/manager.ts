@@ -19,7 +19,17 @@ import { drainSessionBashProcessGroups } from "./tools/bash.js";
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
-import { extractFinishParams } from "./agent-result.js";
+import {
+  boundedWorkflowFinishPrompt,
+  classifyError,
+  extractFinishParams,
+  recoverCapturedWorkflowFinish,
+  shouldAttemptWorkflowFinishRecovery,
+  shouldRequestBoundedWorkflowFinish,
+  validateOperationAllowance,
+  workflowFinishRecoveryPrompt,
+  type ToolPolicy,
+} from "../../packages/sdk/src/runtime/index.js";
 import { createAgentRun, type AgentRun } from "./agent-runner.js";
 import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
 
@@ -65,22 +75,12 @@ import {
   sessionOutputDir,
 } from "./persistence.js";
 import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "./session-cleanup.js";
-import type { ToolPolicy } from "./session-policy.js";
 import { invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import { createFinishTool } from "./tools/lifecycle.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
-import {
-  boundedWorkflowFinishPrompt,
-  recoverCapturedWorkflowFinish,
-  shouldAttemptWorkflowFinishRecovery,
-  shouldRequestBoundedWorkflowFinish,
-  validateOperationAllowance,
-  workflowFinishRecoveryPrompt,
-} from "./workflow-finish-recovery.js";
 
 // Re-export utilities that other modules import from manager
-export { extractFinishParams } from "./agent-result.js";
-export { classifyError } from "./classify-error.js";
+export { classifyError, extractFinishParams };
 export {
   TOOL_PIVOT_LIMIT,
   computeToolArgsKey,

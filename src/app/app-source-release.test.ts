@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import { discoverAppDefinitions } from "./adapters/discovery/app-definitions.js";
 import { DefinitionSourceReleaseStore } from "./app-source-release.js";
 import { AppRegistry } from "./core/apps/registry.js";
-import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
+import { loadAgentLocalTools } from "../../packages/sdk/src/runtime/index.js";
 
 const git = (cwd: string, ...args: string[]) => promisify(execFile)("git", args, { cwd, timeout: 10_000 });
 
