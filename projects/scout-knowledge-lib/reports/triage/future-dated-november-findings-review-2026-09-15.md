@@ -84,3 +84,24 @@ The seven retained HN targets already stated 2026-07-12. No source claim, URL,
 scan ID, finding path, or alias path changed. The nine future-dated filenames
 remain deliberately readable solely for interface compatibility; their content
 and all nine retained targets now consistently identify July 12.
+
+## 2026-11-14 recurrence review
+
+The observer named six of the already repaired historical aliases: arXiv scan
+283 and HN scans 280, 282, and 284–286. This is an unchanged filename-only
+signal, not new future-dated source content.
+
+Direct read-back confirmed that every named alias still:
+
+- states the verified observation identity `2026-07-12` inside the finding;
+- labels its November filename false and preserved only as a historical path;
+- links to the matching retained July finding; and
+- preserves the original source URLs, scan ID, claims, and prose.
+
+All six linked July targets exist. Git history also confirms that every named
+November path was introduced together on 2026-07-13 in commit
+`a2d3df9f847459d464360835ef2831e95f470e8c`, before its filename date could
+have been observed. No rename, deletion, duplicate finding, digest repair, or
+additional source synthesis is warranted. The aliases remain readable because
+previously returned paths are published interfaces; source truth is carried by
+the corrected body and retained July target.
