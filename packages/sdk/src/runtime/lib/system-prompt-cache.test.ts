@@ -3,10 +3,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAssistantMessageEventStream, getCurrentSystemPrompt, type TranscriptContext } from "@earendil-works/pi-ai";
-import { prepareAgentExecution } from "./agent-execution.js";
-import { createAgentRun } from "@may-agent/sdk/runtime";
-import { fakeModel } from "../../test/fixtures/model.js";
-import { usageReply } from "../../test/fixtures/execution-usage.js";
+import { createAgentRun, prepareAgentExecution } from "@may-agent/sdk/runtime";
+import { fakeModel } from "../../../../../test/fixtures/model.js";
+import { usageReply } from "../../../../../test/fixtures/execution-usage.js";
 
 test("chat observations refresh as data while standing instructions remain stable", async () => {
   const root = mkdtempSync(join(tmpdir(), "chat-prompt-"));
