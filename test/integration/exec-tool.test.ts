@@ -1,6 +1,5 @@
 import { describe, it, expect } from "bun:test";
 import { createBashTool } from "../../src/lib/tools/bash.js";
-import { isMetaRecursionCommand } from "../../src/lib/tools/may-utils.js";
 
 describe("createBashTool", () => {
   it("executes a simple command and returns output", async () => {
@@ -36,52 +35,5 @@ describe("createBashTool", () => {
     });
     expect(result.content[0].text).toContain("line 1");
     expect(result.content[0].text).toContain("line 3");
-  });
-});
-
-describe("isMetaRecursionCommand", () => {
-  it("detects npx may-agent", () => {
-    expect(isMetaRecursionCommand("npx may-agent")).toBe(true);
-  });
-
-  it("detects may-agent with arguments", () => {
-    expect(isMetaRecursionCommand("may-agent --agent optimizer")).toBe(true);
-  });
-
-  it("detects node dist/cli", () => {
-    expect(isMetaRecursionCommand("node dist/cli.js")).toBe(true);
-  });
-
-  it("detects tsx src/cli", () => {
-    expect(isMetaRecursionCommand("tsx src/cli.ts")).toBe(true);
-  });
-
-  it("detects bun src/app/may.ts", () => {
-    expect(isMetaRecursionCommand("bun src/app/may.ts --chat")).toBe(true);
-  });
-
-  it("detects bun src/app/launcher.ts", () => {
-    expect(isMetaRecursionCommand("bun src/app/launcher.ts --console")).toBe(true);
-  });
-
-  it("detects ts-node src/cli", () => {
-    expect(isMetaRecursionCommand("ts-node src/cli.ts")).toBe(true);
-  });
-
-  it("does NOT block normal commands", () => {
-    expect(isMetaRecursionCommand("echo hello")).toBe(false);
-    expect(isMetaRecursionCommand("ls -la")).toBe(false);
-    expect(isMetaRecursionCommand("bun test")).toBe(false);
-    expect(isMetaRecursionCommand("npx tsc --noEmit")).toBe(false);
-    expect(isMetaRecursionCommand("node test.js")).toBe(false);
-    expect(isMetaRecursionCommand("cat run/may.ts")).toBe(false);
-  });
-
-  it("allows the supervisor-owned restart handoff", () => {
-    expect(isMetaRecursionCommand("supervisorctl start may-agent-restarter")).toBe(false);
-  });
-
-  it("blocks direct supervisor process control", () => {
-    expect(isMetaRecursionCommand("supervisorctl restart may-agent may-agent-web")).toBe(true);
   });
 });

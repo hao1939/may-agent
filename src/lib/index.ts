@@ -14,7 +14,6 @@ export type { ErrorClass } from "./classify-error.js";
 // Core coding tools (synced from pi-coding-agent)
 export { extractKeyFacts } from "./compaction.js";
 export type { KeyFacts } from "./compaction.js";
-export { isOverflowError } from "./overflow.js";
 export {
   RegistryStore,
   appendSessionMessage,
@@ -45,7 +44,6 @@ export {
   createWriteTool,
   expandPath,
   formatSize,
-  isMetaRecursionCommand,
   resolveReadPath,
   resolveToCwd,
   truncateHead,
@@ -105,5 +103,3 @@ export type { EventEnvelope } from "../app/core/events/bus.js";
 // RuntimeCtx is internal — imported directly by workflow-tool.ts and maintenance-api-impl.ts
 export { loadAgents, reloadAgents, validateAgentConfig } from "../app/agent-loader.js";
 export type { AgentConfig, AgentLoaderOptions, ValidationError } from "../app/agent-loader.js";
-export { retryWithBackoff } from "./retry-with-backoff.js";
-export type { RetryWithBackoffOptions } from "./retry-with-backoff.js";
