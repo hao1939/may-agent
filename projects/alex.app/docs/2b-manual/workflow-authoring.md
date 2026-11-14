@@ -520,14 +520,17 @@ SDK test, and Hosted runs enforce identical contracts.
 
 ## Testing
 
-Use `runWorkflowTest` from `@may-agent/sdk/testing` to execute a workflow module
-through the shared invocation kernel with scripted `agents` / `workflows`
-responses, symmetric `inputSchema` / step `schema` / `outputSchema` checks,
-inherited cancellation/deadlines, and strict fixture-consumption checks—with
-zero SQLite or daemon setup. `createTestAppWorkflowContext` remains available
-for passive context unit stubs. For end-to-end prompt and workflow trials
-without booting the Host, `runDirectWorkflow` composes the same kernel with
-`runDirectAgent` and emits a bounded `WorkflowRunReport` (`run.json`).
+Use `runStandalone` from `@may-agent/sdk/standalone` (or `runTargetTest` /
+`runWorkflowTest` from `@may-agent/sdk/testing`) to execute a workflow module or
+named target through the shared invocation kernel with plugged or scripted
+`mocks` responses, symmetric `inputSchema` / step `schema` / `outputSchema`
+checks, inherited cancellation/deadlines, and strict fixture-consumption
+checks—with zero SQLite or daemon setup.
+`createTestAppWorkflowContext` remains available for passive context unit stubs.
+For end-to-end standalone prompt, code-procedure, and CLI trials without booting
+the Host, use `may run <target> [input]` or `import { run } from "@may-agent/sdk/standalone"`,
+which auto-discovers the owning App across `projects/*.app` and emits a bounded
+`WorkflowRunReport` (`run.json`) when `--out` / `outputRoot` is supplied.
 
 For the review example, useful checks would include a complete negative review
 remaining a completed review, incomplete findings surviving in a blocker, and a

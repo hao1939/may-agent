@@ -155,9 +155,15 @@ bun src/app/may.ts --console --socket --cron --telegram --web
 # Cron-only daemon (no interactive chat)
 bun src/app/may.ts --cron --socket
 
-# One-off task (runs and exits)
+# One-off task through the daemon (runs and exits)
 bun src/app/may.ts --task "run the daily review"
 bun src/app/may.ts --agent bob --task "check your periodic tasks"
+
+# Standalone zero-daemon execution (no SQLite, socket, or Task recovery started):
+bun src/app/may.ts list
+bun src/app/may.ts run alex "Summarize architecture risks in src/app" --readonly
+bun src/app/may.ts run tech-lead/verified-coder '{"task":"Fix parser","verify":["bun","test"]}' --out /tmp/vc-run
+git diff | bun src/app/may.ts run alex/review-change --readonly --json
 ```
 
 ### Flags
@@ -173,8 +179,10 @@ bun src/app/may.ts --agent bob --task "check your periodic tasks"
 | `--status`                       | Print system dashboard and exit (agent quality, process health, trends) |
 | `--status --notify`              | Print dashboard and also send it to Telegram                            |
 | `--send <agent> --message "msg"` | Send a message through the running daemon and exit                      |
+| `run <target> [input]`           | Run a prompt agent, `<owner>/<procedure>`, or CLI executor standalone (no SQLite or daemon) |
+| `list`                           | List callable standalone prompt agents, code procedures, and CLI executors |
 
-At least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
+Use `run <target> [input]` / `list` for ephemeral, Host-free standalone execution (zero SQLite, socket, or daemon startup); use `--task "<prompt>"` when submitting durable Task work through the Host runtime with SQLite persistence. Otherwise, at least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
 `--send --message`, `--emit`, `--web`, `--socket`, or `--telegram` is required.
 
 ### Environment Variables

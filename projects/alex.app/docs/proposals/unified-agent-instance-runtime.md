@@ -4,7 +4,7 @@
 
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource) (*"One authority for each resource"*, *"Simple first"*, *"Composition preserves execution rules"*).
 
-**Design status:** Completed & shipped (2026-11-14, Host PRs #512–#515, #517, #518) — Sections 1–5 are the single normative specification (incorporating all review feedback from Sections 6–11). Sections 6–11 are retained in the Appendix as historical, non-normative review notes.
+**Design status:** Completed & shipped (2026-11-14, Host PRs #512–#515, #517, #518, #520) — Sections 1–5 are the single normative specification (incorporating all review feedback from Sections 6–11). Sections 6–11 are retained in the Appendix as historical, non-normative review notes.
 
 ---
 
@@ -205,12 +205,14 @@ Resolution and contract rules:
 
 Both execution environments bind their capabilities into the shared invocation kernel without duplicating validation, deadline, child-join, or cleanup logic:
 
-1. **Standalone Environment (CLI / Gym / SDK Unit Tests — `runDirect`):**
-   - Exposes **one root standalone entrypoint (`runDirect(options)`)** (`src/app/direct-workflow.ts`) resolving any `target` (`"alex"` or `"tech-lead/verified-coder"`) against the pinned `PreparedCatalog` (including pre-read `AgentConfig` snapshots) via `resolveCallable(callerOwner, target, snapshot)`.
-   - Retires the legacy `--run-workflow` CLI exit mode (`src/app/modes/run-workflow.ts`).
+1. **Standalone Environment (CLI / Gym / Scripts / SDK Unit Tests — `may run`, `may list`, `run`, `runTargetTest`):**
+   - **CLI Surface (`src/app/may.ts` + `src/app/standalone-cli.ts`):** Exposes **`may run <target> [input]`** (alias `may call`) and **`may list`** at the top of `may.ts`—before any SQLite, socket, or daemon Task recovery runs—working identically in source mode (`bun run may run ...`) and in the compiled `may-agent` binary, and retiring the legacy `--run-workflow` CLI exit mode (`src/app/modes/run-workflow.ts`).
+     - **Zero-`--app` Auto-Discovery:** `run(target, input, options?)` (`src/app/standalone.ts`) automatically infers `projectRoot` from `cwd`, discovers the owning App across `projects/*.app/agents/*` and `agents/*`, and locks `PreparedCatalog` to that App's boundary (requiring `<app>/<target>` or `--app` only if two enabled Apps share an agent name).
+     - **Minimal Orthogonal Flags & Safe Stdin:** Supports `--readonly`, `--cwd <dir>`, `--out <dir>`, `--timeout <45s|2m|45000>`, `--skill <name>`, and `--json`; reads piped stdin lazily only when no positional or `--input` payload is supplied (never blocking `--help`, `list`, or explicit inputs).
+   - **Programmatic & SDK Standalone Surfaces:** Exposes `run(target, input, options?)`, `listStandaloneTargets(options?)`, `runDirect(options)`, and `runStandalone(moduleOrTarget, options)` directly from `@may-agent/sdk/standalone` (implemented in `src/app/standalone.ts` and `packages/sdk/src/standalone.ts`, with `runTargetTest` in `@may-agent/sdk/testing`) so callers can run prompt agents, `<owner>/<procedure>` code modules, and native `codex`/`claude` CLI executors by importing `@may-agent/sdk/standalone` alone.
    - **Explicitly supplied local reads vs. unbound Host authority:** Standalone execution has no durable Task ownership, no SQLite, and no implicit live Host authority; unbound Host operations (`events.emit`, Task mutations, unconfigured reads) fail explicitly, while explicitly supplied local reads, Task-shaped snapshots, and fixtures remain available.
    - Creates an independent per-root `WorkflowExecutionAllowance` (`maxConcurrentCalls`) on each root invocation to prevent **cross-root call-allowance interference**.
-   - Writes `<outputRoot>/run.json` (`WorkflowRunReport`) and per-session `sessions/<id>/session.jsonl` when `outputRoot` / `traceDir` is provided; omitting `outputRoot` disables **runtime-managed artifact writes** (and code-only runs never fabricate empty `session.jsonl` files).
+   - Writes `<outputRoot>/run.json` (`WorkflowRunReport`) and per-session `sessions/<id>/session.jsonl` when `--out` / `outputRoot` / `traceDir` is provided; omitting `--out` / `outputRoot` cleans up temporary scratch output directories automatically (and code-only runs never fabricate empty `session.jsonl` files).
 2. **Host Environment (`TaskRunner` in `src/app/composition/task-execution.ts` & `src/app/core/tasks/execution.ts`):**
    - Unifies `TaskAgentRunner` + `TaskWorkflowRunner` behind **`TaskRunner`** (`createTaskRunner` in `src/app/composition/task-execution.ts`), wired into `AppTaskRuntimeOptions.runner` with zero SQLite or `TaskSpec` migration:
      - `available`, `prepare`, `role`, `executionRecipient`, `execute`: handles prompt-backed Task execution, preserving `15m` default timeout, `"task"` worktree allocation on non-conversation `git` Apps, in-turn `validateResult` (`preflightTaskChanges` + final settlement check during `finish()`), and canonical workspace residue checks.
@@ -260,6 +262,13 @@ Start by pruning dead/unused scenarios so the core runtime unification stays sma
   2. Deleted `ctx.agents.call`, `ctx.workflows.run`, and `createWorkflowTool` / `WorkflowTool` in `src/lib/workflow-tool.ts` so one invocation path is permanent.
   3. Updated accepted design, principles, and authoring docs (`evolution.md`, `agents.md`, `workflows.md`, `sdk.md`, `escalation.md`, `system-boundary.md`, `agent-app.md`, `task-attempts.md`, `execution-contributions.md`, `workflow-authoring.md`, `handler-authoring.md`, `user-guide.md`, `task-execution-guide/SKILL.md`).
 - **Proof:** `bun run check:may-design` and full Host + App verification pass with zero legacy alias callers remaining.
+
+### Phase 4 (Completed — Host PR #520): Unified `may run` / `may list` CLI & Zero-Config `run(target, input)`
+- **Where:** `src/app/may.ts`, `src/app/standalone-cli.ts`, `src/app/standalone.ts`, `packages/sdk/src/standalone.ts`, `packages/sdk/src/testing.ts`, `projects/alex.app/docs/2b-manual/{user-guide,workflow-authoring}.md`.
+- **Completed changes:**
+  1. Exposed `may run <target> [input]` and `may list` at the top of `may.ts` (zero SQLite/daemon startup) with `--readonly`, `--cwd`, `--out`, `--timeout`, `--skill`, `--json`, and lazy stdin reading.
+  2. Auto-discovered App-local target owners in `run(target, input, options?)` without requiring `--app`, while preserving strict App-local catalog isolation and honest `readonly` / `cleanupConfirmed` enforcement across prompt, code, and native CLI (`codex` / `claude`) targets.
+  3. Added `@may-agent/sdk/standalone` (`runStandalone`) and `runTargetTest(moduleOrTarget, options)` in `@may-agent/sdk/testing`, and consolidated standalone exports through `src/app/standalone.ts`.
 
 ---
 

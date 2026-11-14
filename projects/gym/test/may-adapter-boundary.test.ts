@@ -32,7 +32,7 @@ describe("May Gym adapter boundary", () => {
   test("the direct agent and workflow adapters do not import hosted infrastructure", () => {
     for (const relPath of [
       "../../may-agent/src/app/direct-agent.ts",
-      "../../may-agent/src/app/direct-workflow.ts",
+      "../../may-agent/src/app/standalone.ts",
       "../src/workflow-adapter.ts",
     ]) {
       const source = readFileSync(new URL(relPath, import.meta.url), "utf8");

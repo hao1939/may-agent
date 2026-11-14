@@ -8,16 +8,14 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ModelWithApiKey } from "../../may-agent/src/lib/types.js";
-import type {
-  DirectAgentRunOptions,
-  DirectAgentRunResult,
-  ToolDenial,
-} from "../../may-agent/src/app/direct-agent.js";
 import {
   runDirectWorkflow,
   type DirectAgentFixtureHandler,
+  type DirectAgentRunOptions,
+  type DirectAgentRunResult,
   type DirectWorkflowRunResult,
-} from "../../may-agent/src/app/direct-workflow.js";
+  type ToolDenial,
+} from "@may-agent/sdk/standalone";
 import { resolveRuntimeAgentDirectory } from "../../may-agent/src/app/loader/agent-discovery.js";
 import type { WorkflowScenarioEntry } from "./scenarios/types";
 

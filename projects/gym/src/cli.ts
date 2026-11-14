@@ -41,7 +41,7 @@ import {
   runDirectAgent,
   type AgentExecutionManifest,
   type ToolDenial,
-} from "../../may-agent/src/app/direct-agent.js";
+} from "@may-agent/sdk/standalone";
 import { createControlledModelRegistry } from "./model-registry";
 
 import {
