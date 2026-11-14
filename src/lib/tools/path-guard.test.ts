@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { checkCrossEditGuard } from "./cross-edit-guard.js";
+import { checkCrossEditGuard } from "../../../packages/sdk/src/runtime/index.js";
 
 const PROJECT_ROOT = "/app";
 

@@ -9,9 +9,6 @@ export * from "./app/standalone.js";
 export * from "./app/direct-agent.js";
 export * from "./app/model-registry.js";
 export * from "./app/loader/agent-config.js";
-export * from "./app/loader/agent-config.js";
-export * from "./app/loader/agent-config.js";
-export * from "./app/loader/agent-config.js";
 
 export * from "./lib/agent-execution.js";
 export * from "./lib/cli-agent.js";

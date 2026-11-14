@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { SubagentDefinition } from "../../src/lib/types.js";
-import { buildWorkflowCatalog } from "../../src/lib/workflow-catalog.js";
+import { buildWorkflowCatalog } from "../../packages/sdk/src/runtime/index.js";
 import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
 import { fakeModel } from "../fixtures/model.js";

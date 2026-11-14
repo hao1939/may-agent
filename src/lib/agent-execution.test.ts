@@ -14,7 +14,7 @@ import {
 import { readFileWritePolicy } from "./tools/file-write-policy.js";
 import { currentAgentSessionId } from "./agent-session-context.js";
 import { createFinishTool } from "./tools/lifecycle.js";
-import { agentExecutionResult } from "./execution-handoff.js";
+import { agentExecutionResult } from "../../packages/sdk/src/runtime/index.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { taskAgentResultSchema } from "@may-agent/sdk";

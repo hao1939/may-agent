@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { currentAgentSessionId } from "../../lib/agent-session-context.js";
 import type { SubagentManager } from "../../lib/manager.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
-import { assertUniqueToolNames } from "../../lib/tool-name-audit.js";
+import { assertUniqueToolNames, loadAgentLocalTools } from "../../../packages/sdk/src/runtime/index.js";
 import { createCodingTools } from "../../lib/tools/coding.js";
 import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
@@ -18,7 +18,6 @@ import type { EventBus } from "../core/events/bus.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
 import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
 import type { AgentConfig } from "./agent-config.js";
-import { loadAgentLocalTools } from "./agent-local-tools.js";
 
 export interface ToolsetLoaderOptions {
   appRegistry?: AppRegistry;

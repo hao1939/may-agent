@@ -11,7 +11,7 @@ import {
   type AgentConfig,
 } from "../../src/app/agent-loader.js";
 import { createModelRegistry } from "../../src/app/model-registry.js";
-import { VALID_TOOL_PRESETS } from "../../src/lib/tool-preset-registry.js";
+import { VALID_TOOL_PRESETS } from "../../packages/sdk/src/runtime/index.js";
 
 // Installed catalog policy belongs to the separate deployment check. Portable
 // loader behavior below is exercised with generated temporary fixtures.

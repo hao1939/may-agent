@@ -13,7 +13,7 @@ import type { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { installAppTaskRuntimes } from "./core/tasks/app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "./core/tasks/runtime-options.js";
 import { loadAgentConfig, validateAgentConfig } from "./loader/agent-config.js";
-import { buildAgentDefinition } from "./loader/agent-definition.js";
+import { buildAgentDefinition } from "../../packages/sdk/src/runtime/index.js";
 import { buildTools } from "./loader/toolset-loader.js";
 
 export async function prepareDaemonAgents(opts: {

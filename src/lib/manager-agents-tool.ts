@@ -12,7 +12,12 @@ import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
 import type { PersistedSession, TaskBinding } from "./persistence.js";
 import { getDb } from "./db/connection.js";
-import { agentExecutionResult, deferredExecutionResult, workflowExecutionResult } from "./execution-handoff.js";
+import {
+  agentExecutionResult,
+  buildWorkflowCatalog,
+  deferredExecutionResult,
+  workflowExecutionResult,
+} from "../../packages/sdk/src/runtime/index.js";
 import type { ExecutionScope } from "./execution-scope.js";
 import { readIdentity } from "./instance-identity.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
@@ -21,7 +26,6 @@ import {
   resolveCallable,
   type PreparedCatalog,
 } from "../../packages/sdk/src/workflow-kernel.js";
-import { buildWorkflowCatalog } from "./workflow-catalog.js";
 import { createWorkflowRunner } from "./workflow-tool.js";
 import type { WorkflowEvent } from "./workflow.js";
 import type { EventTrace } from "../app/core/events/bus.js";
