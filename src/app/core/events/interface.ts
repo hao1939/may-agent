@@ -434,6 +434,32 @@ function eventOwner(input: EventInput): string {
   return "system:host";
 }
 
+function normalizeAppInputSource(
+  explicitSource: unknown,
+  context: EventPublisherContext,
+  fallbackSource: string,
+): { kind: "human" | "app" | "system"; id: string } {
+  if (explicitSource !== undefined) {
+    if (
+      !explicitSource ||
+      typeof explicitSource !== "object" ||
+      Array.isArray(explicitSource) ||
+      (((explicitSource as Record<string, unknown>).kind !== "human" &&
+        (explicitSource as Record<string, unknown>).kind !== "app" &&
+        (explicitSource as Record<string, unknown>).kind !== "system") ||
+        typeof (explicitSource as Record<string, unknown>).id !== "string" ||
+        !String((explicitSource as Record<string, unknown>).id).trim())
+    ) {
+      throw new Error("App input source requires kind human, app, or system and a non-empty id");
+    }
+    return {
+      kind: (explicitSource as { kind: "human" | "app" | "system" }).kind,
+      id: String((explicitSource as { id: string }).id).trim(),
+    };
+  }
+  return context.inputSource ?? { kind: "system", id: fallbackSource };
+}
+
 function canonicalEvent(input: EventInput, context: EventPublisherContext): AgentEvent {
   const source = requiredText(context.source, "Event source");
   const address = Object.fromEntries((EVENT_DEFINITIONS[input.type]?.addressFields ?? []).flatMap((field) => {
@@ -448,7 +474,7 @@ function canonicalEvent(input: EventInput, context: EventPublisherContext): Agen
 
   switch (input.type) {
     case "app.input.requested": {
-      data.source = context.inputSource ?? { kind: "system", id: source };
+      data.source = normalizeAppInputSource(input.data.source, context, source);
       break;
     }
   }

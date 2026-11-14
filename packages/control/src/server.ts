@@ -4,8 +4,6 @@ import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import {
   taskCancelRequestedEvent,
-  taskCloseRequestedEvent,
-  taskReopenRequestedEvent,
   type EventInput,
   type EventReceipt,
   type EventView,
@@ -41,23 +39,6 @@ export interface AttachControlSocketOptions {
   publishEvent?: (event: EventInput, approvalAuthorization?: ApprovalIngressAuthorization) => EventReceipt;
   getEvent?: (eventId: number) => EventView | undefined;
   describeProjectActions?: (projectId: string) => unknown[];
-  admitAppInput?: (input: {
-    appId: string;
-    targetTaskId?: string;
-    input: Record<string, unknown>;
-    source: Record<string, unknown>;
-    conversationId?: string;
-    conversationSequence?: number;
-    channel?: string;
-    channelTargetId?: string;
-    channelThreadId?: string;
-    channelMessageId?: number;
-    replyToSourceId?: string;
-    idempotencyKey: string;
-  }) => {
-    eventId: number;
-    eventType: string;
-  };
   getAppConversation?: (
     appId: string,
     conversationId: string,
@@ -227,7 +208,6 @@ export interface ControlSocketCoreOptions {
   publishEvent?: AttachControlSocketOptions["publishEvent"];
   getEvent?: AttachControlSocketOptions["getEvent"];
   describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
-  admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
@@ -251,7 +231,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     emitEvent,
     publishEvent,
     getEvent,
-    admitAppInput,
     getAppConversation,
     listAppTasks,
     getAppTaskWorkload,
@@ -410,45 +389,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       if (!event) throw new Error(`Event ${eventId} was not found`);
       return { event };
     },
-    "app.input.admit": (frame) => {
-      const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-      const input = frame.input;
-      const source = frame.source;
-      const idempotencyKey = typeof frame.idempotencyKey === "string" ? frame.idempotencyKey.trim() : "";
-      if (!appId) throw new Error("appId is required");
-      if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("input must be an object");
-      if (!source || typeof source !== "object" || Array.isArray(source)) throw new Error("source must be an object");
-      if (!idempotencyKey) throw new Error("idempotencyKey is required");
-      if (!admitAppInput) throw new Error("App input admission is unavailable");
-      const hasTargetTaskId = frame.targetTaskId !== undefined;
-      const targetTaskId = typeof frame.targetTaskId === "string" ? frame.targetTaskId.trim() : "";
-      if (hasTargetTaskId && !targetTaskId) throw new Error("targetTaskId must be a non-empty string");
-      const result = admitAppInput({
-        appId,
-        input: input as Record<string, unknown>,
-        source: source as Record<string, unknown>,
-        ...(targetTaskId ? { targetTaskId } : {}),
-        ...(typeof frame.conversationId === "string" && frame.conversationId.trim()
-          ? { conversationId: frame.conversationId.trim() }
-          : {}),
-        ...(typeof frame.conversationSequence === "number"
-          ? { conversationSequence: frame.conversationSequence }
-          : {}),
-        ...(typeof frame.channel === "string" && frame.channel.trim() ? { channel: frame.channel.trim() } : {}),
-        ...(typeof frame.channelTargetId === "string" && frame.channelTargetId.trim()
-          ? { channelTargetId: frame.channelTargetId.trim() }
-          : {}),
-        ...(typeof frame.channelThreadId === "string" && frame.channelThreadId.trim()
-          ? { channelThreadId: frame.channelThreadId.trim() }
-          : {}),
-        ...(typeof frame.channelMessageId === "number" ? { channelMessageId: frame.channelMessageId } : {}),
-        ...(typeof frame.replyToSourceId === "string" && frame.replyToSourceId.trim()
-          ? { replyToSourceId: frame.replyToSourceId.trim() }
-          : {}),
-        idempotencyKey,
-      });
-      return { appId, ...result };
-    },
     "app.conversation.get": (frame) => {
       const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
       const conversationId = typeof frame.conversationId === "string" ? frame.conversationId.trim() : "";
@@ -528,40 +468,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         }),
       };
     },
-    "app.task.retry": (frame) => {
-      const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-      const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
-      const expectedGeneration = frame.expectedGeneration;
-      if (!appId) throw new Error("appId is required");
-      if (!taskId) throw new Error("taskId is required");
-      if (typeof expectedGeneration !== "number" || !Number.isSafeInteger(expectedGeneration) || expectedGeneration < 1) {
-        throw new Error("expectedGeneration must be a positive integer");
-      }
-      if (!publishEvent || !getTask) throw new Error("App Task retry is unavailable");
-      const task = getTask({ appId, taskId }) as Record<string, unknown> | null;
-      if (!task) throw new Error(`Task ${appId}/${taskId} was not found`);
-      if (task.generation !== expectedGeneration) {
-        throw new Error(
-          `Task ${appId}/${taskId} generation changed: expected ${expectedGeneration}, current ${String(task.generation)}`,
-        );
-      }
-      if (!Number.isSafeInteger(task.resourceVersion) || Number(task.resourceVersion) < 1) {
-        throw new Error(`Task ${appId}/${taskId} has no valid resource version`);
-      }
-      const receipt = publishEvent({
-        type: "app.task.retry.requested",
-        target: { appId, taskId },
-        data: {
-          expectedGeneration,
-          expectedResourceVersion: Number(task.resourceVersion),
-        },
-        idempotencyKey: `app-task-retry:${appId}:${taskId}:${expectedGeneration}:${Number(task.resourceVersion)}`,
-      });
-      if (receipt.delivery !== "accepted") {
-        throw new Error(`Task ${appId}/${taskId} retry was recorded but not accepted; read the Task and retry`);
-      }
-      return { receipt };
-    },
     "apps.list": (frame) => {
       if (!listApps) throw new Error("App reads are unavailable");
       const appId = typeof frame.appId === "string" && frame.appId.trim() ? frame.appId.trim() : undefined;
@@ -599,8 +505,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         }),
       };
     },
-    "task.close": (frame) => handleTaskCloseOrReopen("task.close", frame),
-    "task.reopen": (frame) => handleTaskCloseOrReopen("task.reopen", frame),
     "task.cancel": (frame) => {
       if (!getTask || !publishEvent) throw new Error("Task cancellation is unavailable");
       const input = {
@@ -652,49 +556,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       return { projectId, actionId, ...result };
     },
   };
-
-  function handleTaskCloseOrReopen(
-    command: "task.close" | "task.reopen",
-    frame: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const appId = typeof frame.appId === "string" ? frame.appId.trim().replace(/\.app$/, "") : "";
-    const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
-    const expectedGeneration = frame.expectedGeneration;
-    const expectedResourceVersion = frame.expectedResourceVersion;
-    const afterResult = typeof frame.afterResult === "string" ? frame.afterResult.trim() : "";
-    const reason = typeof frame.reason === "string" ? frame.reason.trim() : "";
-    if (!publishEvent) throw new Error("guarded Task control is unavailable");
-    const receipt = publishEvent(
-      command === "task.reopen"
-        ? taskReopenRequestedEvent(
-            {
-              appId,
-              taskId,
-              generation: expectedGeneration as number,
-              resourceVersion: expectedResourceVersion as number,
-            },
-            reason,
-            frame.input as { kind: string; data: unknown } | undefined,
-          )
-        : taskCloseRequestedEvent(
-            {
-              appId,
-              taskId,
-              generation: expectedGeneration as number,
-              resourceVersion: expectedResourceVersion as number,
-            },
-            afterResult,
-            reason,
-          ),
-    );
-    if (receipt.delivery !== "accepted") {
-      throw new Error(`Task ${appId}/${taskId} control was recorded but not accepted; read the Task and retry`);
-    }
-    return {
-      receipt,
-      ...(getTask ? { task: getTask({ appId, taskId }) } : {}),
-    };
-  }
 
   function attachClient(socket: Duplex): void {
     for (const [clientSocket] of clients) {
@@ -937,7 +798,6 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     emitEvent,
     publishEvent,
     getEvent,
-    admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTaskWorkload: opts.getAppTaskWorkload,

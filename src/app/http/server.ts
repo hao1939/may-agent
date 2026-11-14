@@ -190,7 +190,11 @@ export async function sendDaemonFrameWithRetry(
   };
 }
 
-type RetrySafeControlCommand = Record<string, unknown> & { type: string; idempotencyKey: string };
+type RetrySafeControlCommand = Record<string, unknown> & {
+  type: string;
+  idempotencyKey?: string;
+  event?: { idempotencyKey?: string; [key: string]: unknown };
+};
 
 async function sendRetrySafeControlCommand(
   endpoint: SocketEndpoint,
@@ -199,6 +203,7 @@ async function sendRetrySafeControlCommand(
   confirm: ConfirmDurableControl | undefined,
   exhaustedMessage: string,
 ): Promise<SocketResponse> {
+  const idempotencyKey = command.idempotencyKey ?? command.event?.idempotencyKey ?? "";
   for (const timeoutMs of [2_000, 10_000]) {
     try {
       return await send(endpoint, command, { timeoutMs });
@@ -210,7 +215,7 @@ async function sendRetrySafeControlCommand(
         kind === "post-send-unknown" || message === "Socket timeout" || message.includes("outcome unknown");
       if (!outcomeMayBeDurable) throw error;
       if (timeoutMs === 2_000) continue;
-      const durable = await confirm?.(command.idempotencyKey);
+      const durable = idempotencyKey ? await confirm?.(idempotencyKey) : undefined;
       if (durable) {
         return {
           type: "ok",
@@ -242,7 +247,7 @@ export async function sendProjectActionWithRetry(
 
 export async function sendAppInputWithRetry(
   endpoint: SocketEndpoint,
-  command: Record<string, unknown> & { type: "app.input.admit"; idempotencyKey: string },
+  command: RetrySafeControlCommand,
   send: typeof sendSocketCommand = sendSocketCommand,
   confirm?: ConfirmDurableControl,
 ): Promise<SocketResponse> {
@@ -457,10 +462,14 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
   const confirmTaskInput = (command: TaskInputCommand) =>
     confirmAcceptedAppInput(
-      String(command.appId),
-      command.idempotencyKey,
-      { input: command.input, targetTaskId: command.targetTaskId, channel: command.channel },
-      command.source,
+      command.event.target.appId,
+      command.event.idempotencyKey,
+      {
+        input: command.event.data.input,
+        targetTaskId: command.event.data.targetTaskId,
+        channel: command.event.data.channel,
+      },
+      command.event.data.source,
     );
   const handleTaskInput = createTaskInputHandler({
     daemonRead,

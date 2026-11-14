@@ -59,30 +59,56 @@ export function projectEventTargetForPath(path: string, fallbackProjectId: strin
   return projectName.endsWith(".app") ? projectName.slice(0, -".app".length) : fallbackProjectId;
 }
 
+export type AppAdmissionPublishCommand = {
+  type: "publish";
+  event: {
+    type: "app.input.requested";
+    target: { appId: string };
+    data: {
+      input: {
+        kind: "message";
+        data: {
+          message: string;
+          context: { intent: "project-comment"; projectId: string; projectPath: string };
+        };
+      };
+      source: { kind: "human"; id: string };
+      conversationId: string;
+      channel: "web-ui";
+    };
+    idempotencyKey: string;
+  };
+};
+
 export function buildAppAdmissionCommand(input: {
   projectPath: string;
   projectId: string;
   comment: string;
   idempotencyKey: string;
-}): Record<string, unknown> & { type: "app.input.admit"; idempotencyKey: string } {
+}): AppAdmissionPublishCommand {
   return {
-    type: "app.input.admit",
-    appId: input.projectId,
-    input: {
-      kind: "message",
+    type: "publish",
+    event: {
+      type: "app.input.requested",
+      target: { appId: input.projectId },
       data: {
-        message: input.comment,
-        context: {
-          intent: "project-comment",
-          projectId: input.projectId,
-          projectPath: input.projectPath,
+        input: {
+          kind: "message",
+          data: {
+            message: input.comment,
+            context: {
+              intent: "project-comment",
+              projectId: input.projectId,
+              projectPath: input.projectPath,
+            },
+          },
         },
+        source: { kind: "human", id: `web-ui:${input.idempotencyKey}` },
+        conversationId: `web-ui:project:${input.projectId}`,
+        channel: "web-ui",
       },
+      idempotencyKey: input.idempotencyKey,
     },
-    source: { kind: "human", id: `web-ui:${input.idempotencyKey}` },
-    conversationId: `web-ui:project:${input.projectId}`,
-    channel: "web-ui",
-    idempotencyKey: input.idempotencyKey,
   };
 }
 
@@ -96,7 +122,7 @@ export function createProjectRouteHandlers(options: {
   platformUiContentTypeFor: (path: string) => string;
   sendAppInputWithRetry: (
     endpoint: SocketEndpoint,
-    command: Record<string, unknown> & { type: "app.input.admit"; idempotencyKey: string },
+    command: AppAdmissionPublishCommand,
     send?: typeof sendSocketCommand,
     confirm?: ConfirmDurableControl,
   ) => Promise<SocketResponse>;
@@ -580,7 +606,11 @@ export function createProjectRouteHandlers(options: {
           confirmAcceptedAppInput(
             projectId,
             key,
-            { input: command.input, conversationId: command.conversationId, channel: command.channel },
+            {
+              input: command.event.data.input,
+              conversationId: command.event.data.conversationId,
+              channel: command.event.data.channel,
+            },
             { kind: "human", id: `web-ui:${key}` },
           ),
         );

@@ -41,18 +41,18 @@ test.each([
         const frame = JSON.parse(buffer.slice(0, buffer.indexOf("\n")));
         frames.push(frame.type);
         try {
-          if (scenario === "collision" && frame.type === "app.input.admit") {
+          if (scenario === "collision" && frame.type === "publish") {
             // Simulate an unknown transport outcome before this publication
             // reaches persistence. An unrelated receipt must not stand in for it.
             socket.destroy();
             return;
           }
           const response = await sendSocketCommand(upstreamPath, frame);
-          if (frame.type === "app.input.admit") {
+          if (frame.type === "publish") {
             // Persistence and routing happen in the real daemon. Only its reply
             // is lost. Disconnect after sending: the result is still unknown
             // to the HTTP caller. Control-client tests own timer expiration.
-            dropped.push({ key: frame.idempotencyKey, eventId: response.eventId });
+            dropped.push({ key: frame.event?.idempotencyKey, eventId: response.eventId });
             socket.destroy();
             return;
           }
@@ -104,7 +104,7 @@ test.each([
           const responseBody = await response.json();
           expect(responseBody).toMatchObject({ ok: status === 202, triggered: status === 202 });
           expect(frames).toEqual(
-            status === 202 || scenario === "collision" ? ["app.input.admit", "app.input.admit"] : ["app.input.admit"],
+            status === 202 || scenario === "collision" ? ["publish", "publish"] : ["publish"],
           );
           return responseBody;
         } catch (error) {

@@ -190,6 +190,64 @@ describe("simple event interface", () => {
     },
   );
 
+  it("confirms app.input.requested with explicit data.source and rejects same-key different-source lookups", () => {
+    const { db, events } = fixture();
+    const context = {
+      source: "control-socket",
+      inputSource: { kind: "human" as const, id: "control-socket" },
+    };
+    const publishedInput = {
+      type: "app.input.requested",
+      target: { appId: "sample" },
+      idempotencyKey: "explicit-source-key",
+      data: {
+        input: { kind: "message", data: { message: "Review explicit source" } },
+        source: { kind: "human", id: "web-ui:comment-1" },
+        channel: "web-ui",
+      },
+    };
+    const receipt = events.publish(publishedInput, context);
+
+    // 1. Exact explicit source is recovered even when context.inputSource differs or is omitted:
+    expect(findEventPublication(db, publishedInput, { source: "control-socket" })).toBe(receipt.eventId);
+    expect(findEventPublication(db, publishedInput, context)).toBe(receipt.eventId);
+
+    // 2. Same key with a different explicit source or default source must not match:
+    expect(
+      findEventPublication(
+        db,
+        {
+          ...publishedInput,
+          data: {
+            ...publishedInput.data,
+            source: { kind: "human", id: "web-ui:other-user" },
+          },
+        },
+        { source: "control-socket" },
+      ),
+    ).toBeUndefined();
+    const withoutExplicitSource = {
+      ...publishedInput,
+      data: {
+        input: publishedInput.data.input,
+        channel: publishedInput.data.channel,
+      },
+    };
+    expect(findEventPublication(db, withoutExplicitSource, { source: "control-socket" })).toBeUndefined();
+    expect(() =>
+      events.publish(
+        {
+          ...publishedInput,
+          data: {
+            ...publishedInput.data,
+            source: { kind: "human", id: "web-ui:other-user" },
+          },
+        },
+        context,
+      ),
+    ).toThrow("Idempotency");
+  });
+
   it("rejects an App address on direct chat even when it is not the Conversation App", () => {
     const { events, db } = fixture();
     expect(() => events.publish({ type: "chat.start.requested", target: { appId: "sample" },

@@ -45,9 +45,27 @@ import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 
+export type AppInputAdmission = (input: {
+  appId: string;
+  targetTaskId?: string;
+  input: Record<string, unknown>;
+  source: Record<string, unknown>;
+  conversationId?: string;
+  conversationSequence?: number;
+  channel?: string;
+  channelTargetId?: string;
+  channelThreadId?: string;
+  channelMessageId?: number;
+  replyToSourceId?: string;
+  idempotencyKey: string;
+}) => {
+  eventId: number;
+  eventType: string;
+};
+
 export function createAppInputAdmission(options: {
   events: Pick<EventInterface, "publish">;
-}): NonNullable<AttachControlSocketOptions["admitAppInput"]> {
+}): AppInputAdmission {
   return (input) => {
     const sourceKind = input.source.kind;
     const sourceId = input.source.id;
@@ -85,7 +103,7 @@ export function createAppInputAdmission(options: {
 
 export function createProjectActionAccess(options: {
   getRuntime: () => AppInboxRuntime | null;
-  admit: NonNullable<AttachControlSocketOptions["admitAppInput"]>;
+  admit: AppInputAdmission;
 }): {
   describe: NonNullable<AttachControlSocketOptions["describeProjectActions"]>;
   invoke: NonNullable<AttachControlSocketOptions["invokeProjectAction"]>;
@@ -527,7 +545,6 @@ export async function runAppRuntime(opts: {
     events,
     getStatus: () => readExecutionStatus(opts.persistDir),
     reportInfo: (message) => bus.emit({ type: "info", message }),
-    admitAppInput,
     getAppConversation: (appId, conversationId, options) =>
       readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
     listAppTasks: (appId, options) => {

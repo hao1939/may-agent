@@ -129,23 +129,28 @@ describe("HTTP project comment App ingress", () => {
 
   it("addresses Web UI project comments through explicit App admission", () => {
     expect(command).toEqual({
-      type: "app.input.admit",
-      appId: "alpha-project",
-      input: {
-        kind: "message",
+      type: "publish",
+      event: {
+        type: "app.input.requested",
+        target: { appId: "alpha-project" },
         data: {
-          message: "Review the current normalization gap.",
-          context: {
-            intent: "project-comment",
-            projectId: "alpha-project",
-            projectPath: "projects/alpha-project.app",
+          input: {
+            kind: "message",
+            data: {
+              message: "Review the current normalization gap.",
+              context: {
+                intent: "project-comment",
+                projectId: "alpha-project",
+                projectPath: "projects/alpha-project.app",
+              },
+            },
           },
+          source: { kind: "human", id: "web-ui:project-comment-17" },
+          conversationId: "web-ui:project:alpha-project",
+          channel: "web-ui",
         },
+        idempotencyKey: "project-comment-17",
       },
-      source: { kind: "human", id: "web-ui:project-comment-17" },
-      conversationId: "web-ui:project:alpha-project",
-      channel: "web-ui",
-      idempotencyKey: "project-comment-17",
     });
   });
 
@@ -154,13 +159,13 @@ describe("HTTP project comment App ingress", () => {
     const response = await sendAppInputWithRetry("/tmp/may.sock", command, async (_endpoint, sent, options) => {
       calls.push({ command: structuredClone(sent), timeoutMs: options?.timeoutMs });
       if (calls.length === 1) throw new Error("Socket timeout");
-      return { type: "ok", command: "app.input.admit", eventId: 101, eventType: "app.input.requested" };
+      return { type: "ok", command: "publish", eventId: 101, eventType: "app.input.requested" };
     });
 
     expect(response).toMatchObject({ eventId: 101, eventType: "app.input.requested" });
     expect(calls.map((call) => call.timeoutMs)).toEqual([2_000, 10_000]);
     expect(calls[0]?.command).toEqual(calls[1]?.command);
-    expect(calls[1]?.command.idempotencyKey).toBe("project-comment-17");
+    expect((calls[1]?.command.event as any).idempotencyKey).toBe("project-comment-17");
   });
 
   it("does not retry a definitive App schema rejection", async () => {
@@ -193,7 +198,7 @@ describe("HTTP project comment App ingress", () => {
     expect(keys).toEqual(["project-comment-17"]);
     expect(response).toMatchObject({
       type: "ok",
-      command: "app.input.admit",
+      command: "publish",
       eventId: 102,
       eventType: "app.input.requested",
     });
