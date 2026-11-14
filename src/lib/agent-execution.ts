@@ -30,6 +30,7 @@ export type ToolPolicy =
 const READ_ACTIONS = ["list", "created", "workload", "outcomes", "get", "contract", "communication"] as const;
 const READ_ACTION_SET = new Set<string>(READ_ACTIONS);
 const CHAT_TOOL_DENYLIST = new Set(["bash", "background_exec", "cron", "edit", "finish", "write"]);
+const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "tasks"]);
 const DEPUTY_TOOL_ALLOWLIST = new Set([
   "agents",
   "conversation_context",
@@ -97,7 +98,9 @@ function hostTools(
   if (toolPolicy === "full-no-tasks") {
     selected = selected.filter((tool) => tool.name !== "tasks");
   } else if (toolPolicy === "readonly") {
-    selected = selected.map((tool) => (tool.name === "tasks" ? readOnlyTaskTool(tool) : tool));
+    selected = selected
+      .filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name))
+      .map((tool) => (tool.name === "tasks" ? readOnlyTaskTool(tool) : tool));
   } else if (
     toolPolicy === "deputy" ||
     toolPolicy === "app-agent-deputy" ||
@@ -175,14 +178,13 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
     tools: hostTools(registeredDefinition.tools, toolPolicy, persistentChat),
   };
   const finishFactory = createFinish ?? (originalFinish ? () => originalFinish : undefined);
-  const sdkToolPolicy = toolPolicy === "readonly" ? "readonly" : "full";
   let observedPreparation: PreparedAgentExecution["preparation"] | undefined;
   let prepared: PreparedAgentExecution;
   try {
     prepared = prepareSdkAgentExecution({
       ...sdkOptions,
       definition: filteredDefinition,
-      toolPolicy: sdkToolPolicy,
+      toolPolicy: "full",
       sourceRoot,
       contextMessages,
       enableCompaction: persistentChat || enableCompaction,

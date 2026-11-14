@@ -222,6 +222,58 @@ describe("environment-agnostic SDK execution preparation", () => {
     ...overrides,
   });
 
+  test("keeps Task policy in the Host readonly adapter", async () => {
+    let mutations = 0;
+    const tasks: AgentTool = {
+      name: "tasks",
+      label: "tasks",
+      description: "Mutating Task fixture",
+      parameters: Type.Object({ action: Type.String() }),
+      execute: async () => {
+        mutations++;
+        return { content: [{ type: "text", text: "mutated" }] };
+      },
+    };
+    const tools = [tool("finish"), tool("query_db"), tool("read"), tasks, tool("write")];
+    const options = {
+      definition: definition({ tools }),
+      projectRoot: "/tmp",
+      sessionId: "readonly-boundary",
+      task: "Inspect without mutation",
+      toolPolicy: "readonly" as const,
+    };
+
+    const sdkPrepared = prepareSdkAgentExecution(options);
+    expect(sdkPrepared.tools.map((candidate) => candidate.name)).toEqual(["finish", "query_db", "read"]);
+    expect(sdkPrepared.runner.initialState.tools.map((candidate) => candidate.name)).toEqual([
+      "finish",
+      "query_db",
+      "read",
+    ]);
+
+    const hostPrepared = prepareAgentExecution(options);
+    expect(hostPrepared.tools.map((candidate) => candidate.name)).toEqual([
+      "finish",
+      "query_db",
+      "read",
+      "tasks",
+    ]);
+    expect(hostPrepared.runner.initialState.tools.map((candidate) => candidate.name)).toEqual([
+      "finish",
+      "query_db",
+      "read",
+      "tasks",
+    ]);
+    const hostTasks = hostPrepared.tools.find((candidate) => candidate.name === "tasks")!;
+    const rejected = await hostTasks.execute("call", { action: "apply" });
+    expect(JSON.parse((rejected.content[0] as { text: string }).text)).toEqual({
+      error: "Read-only Task capability does not allow this action",
+    });
+    expect(mutations).toBe(0);
+    await hostTasks.execute("call", { action: "list" });
+    expect(mutations).toBe(1);
+  });
+
   test("maps sourceRoot explicitly and rejects stale implicit execution mappings", () => {
     const executionRoot = "/tmp/sdk-execution";
     const policy = { root: "/tmp/source", protectedPaths: [], grants: [] };
