@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from "bun:test";
 import { execFile } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -10,26 +10,36 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
-it("verifies bundled App artifacts through core registration", async () => {
+it("verifies bundled App artifacts through core registration and ignores workspace/ or .disabled Apps", async () => {
   const root = mkdtempSync(join(tmpdir(), "app-artifact-test-"));
   roots.push(root);
   const appDir = join(root, "sample.app");
-  mkdirSync(appDir);
+  mkdirSync(join(appDir, "agents", "worker", "workspace"), { recursive: true });
+  symlinkSync(join(appDir, "missing-target"), join(appDir, "agents", "worker", "workspace", "dangling-link"));
+  const retiredAppDir = join(root, "retired.app");
+  mkdirSync(retiredAppDir);
+  writeFileSync(join(retiredAppDir, ".disabled"), "retired\n");
   const modulePath = join(appDir, "app.ts");
   writeFileSync(
     modulePath,
-    `import { defineApp } from "@may-agent/sdk/app";
-export default defineApp({ id: "sample", version: 1, agent: "worker", inputSchema: { type: "object" } });\n`,
+    `import { defineApp } from "@may-agent/sdk/app";\nexport default defineApp({ id: "sample", version: 1, agent: "worker", inputSchema: { type: "object" } });\n`,
   );
   const repoRoot = resolve(import.meta.dir, "..");
+  const env = {
+    ...process.env,
+    MAY_AGENT_VERIFY_APPS_ROOT: root,
+    MAY_AGENT_VERIFY_SDK_ROOT: join(repoRoot, "packages/sdk"),
+  };
+  const boundary = await promisify(execFile)(process.execPath, ["scripts/check-canonical-app-boundary.ts"], {
+    cwd: repoRoot,
+    env,
+    timeout: 10_000,
+  });
+  expect(boundary.stdout).toContain("Canonical App boundary: 0 error(s); Runtime + Apps");
   const verify = () =>
     promisify(execFile)(process.execPath, ["scripts/verify-app-artifact-compatibility.ts"], {
       cwd: repoRoot,
-      env: {
-        ...process.env,
-        MAY_AGENT_VERIFY_APPS_ROOT: root,
-        MAY_AGENT_VERIFY_SDK_ROOT: join(repoRoot, "packages/sdk"),
-      },
+      env,
       timeout: 10_000,
     });
   const result = await verify();
