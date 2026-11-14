@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
-  listStandaloneTargets,
+  listTargets as listStandaloneTargets,
   run,
-  type DirectRunResult,
-  type DiscoveredTargetSummary,
-  type StandaloneRunOptions,
+  type RunOptions as StandaloneRunOptions,
+  type RunResult as DirectRunResult,
+  type TargetSummary as DiscoveredTargetSummary,
 } from "@may-agent/sdk/standalone";
 
 export type ParsedStandaloneCliArgs =
