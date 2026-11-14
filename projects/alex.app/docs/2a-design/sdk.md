@@ -491,8 +491,8 @@ serve different boundaries:
 
 | Intent                                         | Model tool                   | Workflow capability        |
 | ---------------------------------------------- | ---------------------------- | -------------------------- |
-| Ask another agent and await its bounded result | agent call                   | `ctx.agents.call`          |
-| Run a reusable bounded workflow                | workflow tool                | `ctx.workflows.run`        |
+| Ask another agent and await its bounded result | `agents` (`action: "call"`)  | `ctx.call`                 |
+| Run a reusable bounded workflow                | `agents` (`action: "call"`)  | `ctx.call`                 |
 | Publish a fact                                 | event tool where authorized  | `ctx.events.emit`          |
 | Publish from the current fenced Task attempt   | `tasks` publish              | `ctx.events.emit`          |
 | Record a domain sample                         | metric tool where authorized | `ctx.metrics.record`       |

@@ -171,7 +171,7 @@ function reader(data: ReturnType<typeof fixture>, evidenceHash?: string) {
 describe("May Evaluation report intake procedure", () => {
   test("shows the exact flat workflow call and rejects a wrapped publication actionably", async () => {
     expect(description).toContain(
-      'workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication})',
+      'agents({action:"call",agent:"evaluation-report-intake",input:message.context.publication})',
     );
     expect(description).toContain("preserve the complete publication object");
 
@@ -183,7 +183,7 @@ describe("May Evaluation report intake procedure", () => {
     expect(execution).toMatchObject({ status: "blocked" });
     const blocked = JSON.stringify(execution);
     expect(blocked).toContain(
-      'workflow({action:\\"run\\",name:\\"evaluation-report-intake\\",input:message.context.publication})',
+      'agents({action:\\"call\\",agent:\\"evaluation-report-intake\\",input:message.context.publication})',
     );
     expect(blocked).toContain("all publication fields must be preserved");
     expect(blocked).toContain("input.publication is not accepted");

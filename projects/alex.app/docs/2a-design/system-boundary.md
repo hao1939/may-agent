@@ -342,7 +342,7 @@ The App owns the declared execution procedure and its recovery decisions.
 The Host runs that procedure on every eligible attempt, retains failed and
 accepted evidence, and supplies scoped capabilities and normal retry mechanics.
 A workflow can call its responsible agent for judgment with ordinary
-`ctx.agents.call`, use the contribution and return the Task result. Neither
+`ctx.call`, use the contribution and return the Task result. Neither
 failure nor the helper session becomes authority to select a different procedure
 on future attempts. Convergence does not establish repair. App subscriptions
 and metric policies route failures into owned investigation; the Host keeps
@@ -574,7 +574,7 @@ default and explicit positive configured limits remain supported. Each active
 direct chat turn gets a fresh allowance; idle time consumes none. These are
 execution limits, not instructions for an agent to track time or judge progress.
 
-Keep bounded agent calls as ordinary capabilities; `ctx.agents.call` and the
+Keep bounded agent calls as ordinary capabilities; `ctx.call` and the
 model-facing call can be thin wrappers. Required work that outlives a caller
 uses existing Task ownership or a supported provider operation with durable
 feedback. A session ID alone is no such promise. See

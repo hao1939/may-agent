@@ -173,7 +173,7 @@ async function reviewPublicationFailure(
   ];
   let review: ExecutionResult;
   try {
-    review = await ctx.agents.call(
+    review = await ctx.call(
       "scout",
       `Publication failed after your writer call.
 Review this failure against the original Task and return an ordinary Task result.
@@ -480,7 +480,7 @@ ${experienceContext}
 ## Canonical reconciliation context (authoritative requirement)
 ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
-  const result = await ctx.agents.call("scout", prompt, {
+  const result = await ctx.call("scout", prompt, {
     timeoutMs: 1_800_000,
     schema: taskAgentResultSchema,
   });

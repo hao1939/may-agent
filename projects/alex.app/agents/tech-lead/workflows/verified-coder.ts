@@ -104,7 +104,7 @@ export async function execute(
       `Report a blocker if the allocation or requested scope is unsuitable.\n` +
       `A passing check is verification evidence, not permission to merge or deploy.`;
 
-    const coder = await ctx.agents.call(agent, coderTask);
+    const coder = await ctx.call(agent, coderTask);
     if (coder.status !== "done") {
       return ctx.blocked(
         `Coder did not complete attempt ${attempt}/${maxAttempts}`,

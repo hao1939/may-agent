@@ -6,7 +6,6 @@
   "heartbeat": false,
   "tools": [
     "read-only",
-    "workflow",
     "finish"
   ]
 }

@@ -145,7 +145,7 @@ responsible beyond the current bounded attempt.
 
 These relationships guide capability implementation, not a second routing job
 for the model. A helper remains an ordinary tool: supply input and receive a
-result. Retain `ctx.agents.call` and the model-facing `agents.call` as thin scoped
+result. Retain `ctx.call` and the model-facing `agents.call` as thin scoped
 wrappers, preserving useful agent cooperation without independent session recovery.
 The caller's trusted execution context supplies permissions, exact ownership,
 cancellation and remaining allowance; the agent does not construct that context.
@@ -192,14 +192,14 @@ hierarchy. Different profiles are not automatically ordered by name.
 
 ## Workflow capability
 
-Canonical workflows call agents through their scoped context:
+Canonical workflows call agents and procedures through their scoped context:
 
 ```ts
-const result = await ctx.agents.call("dev", task);
+const result = await ctx.call("dev", task);
 
 const [implementation, review] = await Promise.all([
-  ctx.agents.call("dev", implementationTask),
-  ctx.agents.call("reviewer", reviewTask),
+  ctx.call("dev", implementationTask),
+  ctx.call("reviewer", reviewTask),
 ]);
 ```
 
@@ -349,13 +349,13 @@ records source and test status separately from deployment and behavioral quality
 
 | Situation                                                      | Mechanism                               |
 | -------------------------------------------------------------- | --------------------------------------- |
-| Need another capability before this bounded attempt can finish | `agents.call` / `ctx.agents.call`       |
+| Need another capability before this bounded attempt can finish | `agents.call` / `ctx.call`              |
 | Several independent bounded checks                             | parallel awaited calls                  |
 | Short exploration still owned by this live caller              | `agents.fork`, then inspect/join/cancel |
 | Another domain owes an eventual result                         | Cross-App task dependency               |
 | Durable desired outcome needs repeated attempts                | App task                                |
 | Optional FYI with no result obligation                         | `message` notification                  |
-| Repeatable multi-step bounded process                          | `ctx.workflows.run`                     |
+| Repeatable multi-step bounded process                          | `ctx.call`                              |
 
 The fork row follows the bounded caller contract above. Do not rely on
 detached auto-resume to fulfill an App obligation.

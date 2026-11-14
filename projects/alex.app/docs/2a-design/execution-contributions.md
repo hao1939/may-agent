@@ -106,18 +106,18 @@ that procedure. General assignments do not need a new public input kind for
 each workflow. Procedure parameters belong to the workflow invocation; the
 owning Task remains authoritative for the desired outcome and acceptance.
 
-The model tool lists and invokes the selected agent's catalog:
+The model `agents` tool lists and invokes the selected agent's catalog:
 
 ```ts
-workflow({ action: "list" });
-workflow({ action: "run", name: "implement-and-verify", input: {
+agents({ action: "list" });
+agents({ action: "call", agent: "implement-and-verify", input: {
   objective: "Update the parser", maxIterations: 2,
 } });
 ```
 
-The legacy `task` string remains an alternative input for existing callers;
-passing both `input` and `task` is an error. Nested workflows use
-`ctx.workflows.run(name, input)`. Neither interface permits selecting another
+The `task` string remains available for prompt targets; code procedures accept
+structured `input`. Nested procedures and agents use
+`ctx.call(name, input, options)`. Neither interface permits selecting another
 App's private workflow catalog. Adding a workflow normally changes only its
 owning agent's files and guidance.
 
@@ -582,7 +582,7 @@ Retain original evidence alongside the accepted interpretation.
 With the existing workflow API, the supplied schema describes the representations
 the App accepts before canonicalization. If an identifier can be text or a number,
 declare that union and use the same App helper to normalize and validate reports
-from code and from `ctx.agents.call`. Host checks that accepted shape and returns
+from code and from `ctx.call`. Host checks that accepted shape and returns
 it unchanged; the App helper produces the canonical value for its consumers.
 Do not publish a string-only schema while the App helper intentionally accepts
 numbers, or rely on the tool library's independent conversions to bridge that
@@ -684,7 +684,7 @@ For task-owned work:
 - continue locally while bounded in-scope repair remains;
 - return exact Conditions only after establishing the corresponding external
   dependency;
-- call `ctx.agents.call` for exceptional same-App judgment the learned workflow
+- call `ctx.call` for exceptional same-App judgment the learned workflow
   cannot safely resolve;
 - create cross-App/human escalation only through an explicit App/task
   dependency; and

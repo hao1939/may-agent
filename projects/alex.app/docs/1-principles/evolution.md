@@ -108,7 +108,7 @@ export const description = "Implement one bounded change and verify it.";
 export async function execute(
   ctx: WorkflowContext<Input>,
 ): Promise<ExecutionResult> {
-  const implementation = await ctx.agents.call("dev", ctx.input.objective);
+  const implementation = await ctx.call("dev", ctx.input.objective);
   if (implementation.status !== "done") {
     return ctx.blocked("Implementation failed", {
       executionId: implementation.id,

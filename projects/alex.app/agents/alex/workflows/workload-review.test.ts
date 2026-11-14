@@ -47,6 +47,11 @@ function fixture(heavy = false, notifyOwners = false) {
         get: async (id: string) => { reads.push(id); return structuredClone(tasks.find(task => task.id === id) ?? null); },
         list: async () => ({ items: structuredClone(tasks) }) },
     },
+    call: async (_agent: string, prompt: string, options: Record<string, unknown>) => {
+      prompts.push(prompt);
+      expect(options).toMatchObject({ tools: "readonly", timeoutMs: 60_000, operationAllowance: 8 });
+      return response;
+    },
     agents: { call: async (_agent: string, prompt: string, options: Record<string, unknown>) => {
       prompts.push(prompt);
       expect(options).toMatchObject({ tools: "readonly", timeoutMs: 60_000, operationAllowance: 8 });
@@ -168,13 +173,13 @@ test.each(["disabled", "retain", "input-only", "pending-owner", "changed-target"
       reason: "Keep the obligation.", nextStep: "Reconsider the current method." } });
     if (kind === "pending-owner") f.own.conditions.push({ id: "pending", type: "app.dependency.updated", subject: "id:pending" } as never);
     if (kind === "changed-target" || kind === "closed-target") {
-      const call = f.ctx.agents.call;
-      f.ctx.agents.call = async (...args: Parameters<typeof call>) => {
-        const result = await call(...args);
+      const call = f.ctx.call;
+      f.ctx.call = (async (...args: Parameters<typeof call>) => {
+        const result = await (call as any)(...args);
         if (kind === "changed-target") f.task.generation++;
         else f.task.status = "closed";
         return result;
-      };
+      }) as typeof f.ctx.call;
     }
     const result = await execute(f.ctx);
     expect(result.status).toBe("done");
@@ -591,7 +596,7 @@ test("the helper contract admits only one subject actually supplied in this revi
   f.workload.unadmittedInputs!.items.push({ id: "retained-demand", kind: "work", source: { kind: "app", id: "caller" },
     receivedAt: now, changedAt: now });
   f.workload.unadmittedInputs!.coverage.scanned = 1;
-  f.ctx.agents.call = (async (_agent: string, _prompt: string, options: { schema: Parameters<typeof Check>[0] }) => {
+  f.ctx.call = (async (_agent: string, _prompt: unknown, options: { schema: Parameters<typeof Check>[0] }) => {
     const advice = { decision: "reconsider", reason: "Keep the required delivery and choose a smaller method." };
     expect(Check(options.schema, advice)).toBe(true);
     expect(Check(options.schema, { ...advice, taskId: f.task.id })).toBe(true);
@@ -600,7 +605,7 @@ test("the helper contract admits only one subject actually supplied in this revi
     expect(Check(options.schema, { ...advice, taskId: "unread-task" })).toBe(false);
     expect(Check(options.schema, { ...advice, inputId: "review-request-itself" })).toBe(false);
     return { status: "done", output: { ...advice, taskId: f.task.id, nextStep: "Use the smaller local method." } };
-  }) as typeof f.ctx.agents.call;
+  }) as typeof f.ctx.call;
   const result = await execute(f.ctx);
   expect(result.status).toBe("done");
   expect(result.output).toHaveProperty("requests");

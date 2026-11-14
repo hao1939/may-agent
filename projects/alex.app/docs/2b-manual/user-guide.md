@@ -300,7 +300,7 @@ the exact one-shot result and error. These source defaults do not identify an in
 | ------ | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | `chat` | Explicit direct-agent chat                                                 | Persistent execution context; never May App work authority. |
 | `job`  | Scoped `agents.fork` or a direct managed invocation                       | Bounded execution; no independent recovery or durable Task ownership. |
-| `call` | `agents.call`, workflow `ctx.agents.call`, standalone heartbeat agent step | Bounded synchronous work owned by its caller/workflow.      |
+| `call` | `agents.call`, workflow `ctx.call`, standalone heartbeat agent step        | Bounded synchronous work owned by its caller/workflow.      |
 
 See [sessions.md](../2a-design/sessions.md) for details.
 

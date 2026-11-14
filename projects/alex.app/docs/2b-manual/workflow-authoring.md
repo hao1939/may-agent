@@ -95,8 +95,7 @@ The stable capabilities are:
 | `ctx.read.tasks.list(options)`           | List one bounded page of current-App task summaries                            |
 | `ctx.read.execution(id)`                 | Read one bounded execution projection                                          |
 | `ctx.read.metric(id)`                    | Read one metric projection                                                     |
-| `ctx.agents.call(agent, task, options?)` | Run and await one bounded agent execution                                      |
-| `ctx.workflows.run(name, input)`         | Run and await one nested workflow                                              |
+| `ctx.call(name, input, options?)`        | Run and await one bounded agent or code procedure execution                    |
 | `ctx.events.emit(event)`                 | Publish an immediate durable fact from the current bounded attempt             |
 | `ctx.events.read(type, localKey)`         | Inspect a retained publication in this Task generation                          |
 | `ctx.events.onEvent(listener)`           | Observe live Task input; returns an unsubscribe function, not an acknowledgment |
@@ -184,7 +183,7 @@ For a resource-backed task, publish facts only with
 Return cross-App result work as a typed dependency; do not emit
 `app.input.requested` directly.
 
-Use `ctx.agents.call` for judgment and incorporate its contribution in the
+Use `ctx.call` for judgment and incorporate its contribution in the
 ordinary workflow result. The workflow remains the procedure for later attempts.
 The call can be part of normal work or an error handler. Return its contribution
 through the same result admission and authored verification. Do not return
@@ -237,16 +236,16 @@ result, without an action to unblock the executing Task itself.
 
 ## Agent And Nested Workflow Calls
 
-Use `ctx.agents.call(...)` when another agent can return a bounded result during
+Use `ctx.call(...)` when another agent or procedure can return a bounded result during
 this run:
 
 ```ts
-const implementation = await ctx.agents.call("dev", implementPrompt);
+const implementation = await ctx.call("dev", implementPrompt);
 if (implementation.status !== "done") {
   return ctx.blocked("Implementation failed", { implementation });
 }
 
-const review = await ctx.agents.call("qa", reviewPrompt, {
+const review = await ctx.call("qa", reviewPrompt, {
   schema: ReviewResultSchema,
 });
 if (review.status !== "done" || !review.output || review.output.verdict !== "pass") {
@@ -258,10 +257,10 @@ This example assumes a passing review is required for the implementation
 procedure. That is an App requirement, not a rule that every completed review
 must be positive. Names, prompts and schema are owned by this example's App.
 
-Use `ctx.workflows.run(...)` for another bounded recipe:
+Use `ctx.call(...)` for another bounded recipe:
 
 ```ts
-const result = await ctx.workflows.run("verify-change", {
+const result = await ctx.call("verify-change", {
   changeId: ctx.input.changeId,
 });
 if (result.status !== "done") {
@@ -405,7 +404,7 @@ its effects or fulfilling the whole assignment.
 
 Follow the [common recovery flow](../2a-design/system-boundary.md#retry-and-recovery-ownership):
 run the known code path, let the owning capability handle safe mechanical retry,
-and use `ctx.agents.call` when the unresolved problem needs judgment. If an agent
+and use `ctx.call` when the unresolved problem needs judgment. If an agent
 is already producing the result, return knowable validation errors before its
 invocation ends. Share the new-output schema/checks with the consumer. Code and
 agents must meet the same contribution requirements. Keep historical evidence
@@ -513,22 +512,11 @@ workflow or expose it as a live service.
 
 ## Guards
 
-Workflow guards are pure event-to-demand functions authored through the stable
-`WorkflowGuard` contract. Add one only for a repeated, precise mechanical risk
-or an immediate high-impact boundary. Guards `observe`, `warn`, or `block` under
-explicit policy; multi-step verification and bounded repair belong explicitly in
-workflow TypeScript rather than hidden guard step injection. Guards do not own
-retries, App requests, or task state.
-
-Check the callback the runner actually dispatches. Hosted shared guards receive
-`workflow_start`, agent `step_done`, and `workflow_done`; the SDK's declared
-`step_start` is not currently dispatched. `workflow.step_started` presentation
-notifications and `ctx.events.emit()` publications do not invoke guards. Direct
-workflow and SDK test runners do not discover shared guards, so required checks
-must be explicit in the workflow to apply across runners.
-
-Guard evidence should remain observable through canonical trace/metric facts.
-Do not add App-specific domain routing to a shared guard.
+Required checks and bounded repair belong explicitly in workflow TypeScript,
+exported TypeBox `inputSchema` / `outputSchema` contracts, optional final
+`verify` hooks, and Task acceptance admission—the legacy shared/agent
+`WorkflowGuard` callback directory (`guards/*.ts`) is retired so Direct, Gym,
+SDK test, and Hosted runs enforce identical contracts.
 
 ## Testing
 

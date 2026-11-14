@@ -491,7 +491,7 @@ The Task's assigned agent owns the outcome; its App owns the procedure. Read
 current input, accepted effects and `previousAttempt` before deciding what needs
 repair. A read timeout means evidence is unavailable, not an empty population.
 
-Workflow authors call `ctx.agents.call` when judgment is useful, then use the
+Workflow authors call `ctx.call` when judgment is useful, then use the
 returned contribution and submit the ordinary result. Future attempts still run
 the declared workflow. The Host handles bounded execution, retry/backoff and
 restart; there is no action to select or hand back the next executor. A partial

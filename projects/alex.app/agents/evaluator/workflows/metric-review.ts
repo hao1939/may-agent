@@ -245,7 +245,7 @@ export async function reviewMetric(
         ],
       });
     }
-    const execution = await ctx.agents.call(
+    const execution = await ctx.call(
       profile.agent,
       [
         "Assess this external App metric observation and its comparison windows. A Task is not required: admission, collection or delivery may fail before execution exists.",

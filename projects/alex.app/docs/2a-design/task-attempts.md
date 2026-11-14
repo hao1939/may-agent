@@ -251,7 +251,7 @@ the Host runs that workflow or executor on every eligible attempt. This supports
 Neither a failure nor an earlier agent session changes the procedure. Results,
 input fulfillment and Conditions remain independent of how execution runs.
 
-A workflow composes agent judgment with `ctx.agents.call`. It receives the
+A workflow composes agent judgment with `ctx.call`. It receives the
 contribution, decides how to use it and returns the ordinary Task result.
 The nested agent inherits the Task context and scoped authority; it does not
 become the next attempt's executor. The procedure can use the retained previous

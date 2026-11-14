@@ -51,7 +51,7 @@ Return the existing attempt `state`:
   to schedule another attempt for useful independent work.
 - `incomplete` retains failure evidence and unfinished work for recovery.
 
-Workflows call `ctx.agents.call` for bounded judgment, then return the ordinary
+Workflows call `ctx.call` for bounded judgment, then return the ordinary
 result. The Host does not accept execution-switch decisions from any handler.
 
 The [checked `waitingResult`](../examples/app.ts) illustrates an exact fact contract

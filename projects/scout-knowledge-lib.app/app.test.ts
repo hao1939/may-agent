@@ -142,7 +142,7 @@ describe("Scout task reconciliation", () => {
     expect(context).toContain("## Source Access");
     expect(context).toContain("`python3`");
     expect(config).not.toHaveProperty("context_files");
-    expect(config.tools).toContain("workflow");
+    expect(config.tools).toEqual(["coding", "finish"]);
   });
 
   it("keeps digest-link preservation in Scout's active instructions", async () => {

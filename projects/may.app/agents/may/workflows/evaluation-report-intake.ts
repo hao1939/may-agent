@@ -22,10 +22,10 @@ import {
 
 export const name = "evaluation-report-intake";
 export const description =
-  'Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); preserve the complete publication object, with appId and taskId or metricId at the top level, not { publication: ... }. Integrity-check that report and reread its canonical current subject.';
+  'Run agents({action:"call",agent:"evaluation-report-intake",input:message.context.publication}); preserve the complete publication object, with appId and taskId or metricId at the top level, not { publication: ... }. Integrity-check that report and reread its canonical current subject.';
 
 const missingPublicationIdentity =
-  'Evaluation report intake requires the complete flat publication object. Run workflow({action:"run",name:"evaluation-report-intake",input:message.context.publication}); appId and taskId (or metricId and optional alertId) must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
+  'Evaluation report intake requires the complete flat publication object. Run agents({action:"call",agent:"evaluation-report-intake",input:message.context.publication}); appId and taskId (or metricId and optional alertId) must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
 
 type Input = PublishedReportRequest;
 type SubjectReader = (subject: {

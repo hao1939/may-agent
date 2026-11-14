@@ -157,7 +157,7 @@ function trial() {
           facts: { retained: "execution evidence" },
           output: judgment(stage),
         };
-      }) as WorkflowContext["agents"]["call"],
+      }) as WorkflowContext["call"],
     });
   const run = async (ctx = context()) => {
     const response = await execute(ctx);
@@ -248,8 +248,8 @@ describe("development workflow using real Git and verification", () => {
       workspace: ctx.workspace,
       read: ctx.read,
       agents: {
-        bob: ({ task, options }) => ctx.agents.call("bob", task, options),
-        "tech-lead": ({ task, options }) => ctx.agents.call("tech-lead", task, options),
+        bob: ({ task, options }) => ctx.call("bob", task, options),
+        "tech-lead": ({ task, options }) => ctx.call("tech-lead", task, options),
       },
     });
     expect(run.ok).toBe(true);

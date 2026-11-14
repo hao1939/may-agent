@@ -24,7 +24,7 @@ export async function execute(ctx: WorkflowContext<Input>): Promise<ExecutionRes
     return ctx.blocked("An exact subject reference is required");
   }
 
-  const review = await ctx.agents.call(
+  const review = await ctx.call(
     "reviewer",
     [
       "Review this exact subject within the caller's assignment:",

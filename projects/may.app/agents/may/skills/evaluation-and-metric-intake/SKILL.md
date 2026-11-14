@@ -30,7 +30,7 @@ or an improvement approval/application cycle.
 
 ## Evaluation publications (`evaluation.task_report_published`)
 
-1. Run `workflow({ action: "run", name: "evaluation-report-intake", input: message.context.publication })`
+1. Run `agents({ action: "call", agent: "evaluation-report-intake", input: message.context.publication })`
    with top-level `appId` and `taskId` (not `{ publication: ... }`) before
    declaring duplicate or reuse.
 2. Retain the publication subject, evidence/content hashes, report references,

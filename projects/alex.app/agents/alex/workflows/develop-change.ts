@@ -354,7 +354,7 @@ export async function execute(ctx: WorkflowContext) {
           ? "Inspect unfinished work first. Implement directly, check the diff and commit on this Task branch before ready. Do not push, merge, deploy or start another worker."
           : "Read the relevant source. Return judgment only; no writes. Review must cover the requirement and adequacy of tests, not only the design's internal consistency.",
       ].join("\n\n");
-      const response = await ctx.agents.call(agent, prompt, {
+      const response = await ctx.call(agent, prompt, {
         schema,
       });
       const evidence = await archive.record(

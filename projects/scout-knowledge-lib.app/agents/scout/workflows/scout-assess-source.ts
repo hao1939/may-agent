@@ -199,7 +199,7 @@ export async function executeSourceAssessment(
     const coverage = packet
       ? coverageSummary(packet)
       : "No source text was supplied to the assessment agent. Retrieval/extraction failed; source content and any unrecorded redirect remain unknown.";
-    const result = await ctx.agents.call(
+    const result = await ctx.call(
       "scout",
       `
 Assess this exact source against the complete current assignment below.

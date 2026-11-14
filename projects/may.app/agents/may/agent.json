@@ -6,7 +6,6 @@
   "tools": [
     "coding",
     "query_db",
-    "workflow",
     "agents",
     "cli-delegation",
     "finish"

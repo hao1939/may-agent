@@ -668,7 +668,7 @@ task.workflow present -> agents/<agent>/workflows/<workflow>.ts
 task.workflow absent  -> one bounded run of the selected agent
 ```
 
-A workflow calls `ctx.agents.call` directly when it needs judgment and decides
+A workflow calls `ctx.call` directly when it needs judgment and decides
 how to use the contribution. It returns the same ordinary result contract as an
 agent or registered executor. Future attempts still run the declared procedure.
 Unavailable named workflows produce visible paced retry and the App's declared

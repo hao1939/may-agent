@@ -1163,7 +1163,7 @@ run Git publication or edit the canonical library in this call.`;
     ),
   );
 
-  const result = await ctx.agents.call(agent, agentTask, {
+  const result = await ctx.call(agent, agentTask, {
     schema: ExploreAgentResultSchema,
     // Source retrieval, duplicate checks, integration and read-back exceeded
     // the default 24 operations in a real cycle. Keep one bounded call and

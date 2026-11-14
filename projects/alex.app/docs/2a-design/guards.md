@@ -4,22 +4,23 @@
 
 **Choice basis:** [Choosing the Right Mechanism](../1-principles/code-vs-data.md#why-not-default-to-prompt-rules-or-blocking-guards).
 
-**Design status:** Accepted.
-**Implementation status:** Implemented; the runtime and public SDK recognize
-`observe`, `warn`, and `block` (hidden `run_step` / `repair` step injection was
-retired after `EXP-216` in favor of explicit workflow TypeScript repair loops).
-The three Host path/read heuristics were retired in
-[Host PR 470](https://github.com/hao1939/may-agent/pull/470), merged as
-`c5b9b9a70f47`, and the remaining unused `extractHallucinatedRelPath` helper
-and legacy `memory-sanitizer.ts` file-write regex filter were retired in
-[Host PR 479](https://github.com/hao1939/may-agent/pull/479), merged as
-`9149a60268`; see [the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics).
-The remaining default finish/commit diagnostics and their tool-guard
-composition were retired in
-[Host PR 471](https://github.com/hao1939/may-agent/pull/471), merged as
-`e5f373cc459d`; see
-[the completion reduction](../proposals/external-components-simplification.md#retire-default-tool-completion-diagnostics).
-Source removal is complete; installed adoption remains unverified.
+**Design status:** Accepted (historical signal contract; runtime guard-module discovery retired).
+**Implementation status:** Concrete capability boundaries, TypeBox schemas,
+explicit workflow TypeScript checks, and `finish` / Task result admission own
+active runtime enforcement; historical `guard.triggered` events remain readable
+in retained storage and metrics. Hidden `run_step` / `repair` step injection was
+retired after `EXP-216`, the three Host path/read heuristics were retired in
+[Host PR 470](https://github.com/hao1939/may-agent/pull/470) (`c5b9b9a70f47`),
+the remaining `extractHallucinatedRelPath` helper and `memory-sanitizer.ts`
+regex filter were retired in
+[Host PR 479](https://github.com/hao1939/may-agent/pull/479) (`9149a60268`; see
+[the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics)),
+default finish/commit diagnostics and tool-guard composition were retired in
+[Host PR 471](https://github.com/hao1939/may-agent/pull/471) (`e5f373cc459d`; see
+[the completion reduction](../proposals/external-components-simplification.md#retire-default-tool-completion-diagnostics)),
+and the unused `WorkflowGuard` / `guardsDir` callback loader (`0` production
+guard files) was retired so Direct, Gym, SDK test, and Hosted workflow runs share
+one execution contract.
 
 Guards are detection signals first. Blocking is only one intervention mode.
 
@@ -145,47 +146,26 @@ Target invariant: every guard trigger emits `guard.triggered`.
 
 ## Architecture
 
-App-authored workflow guards emit `guard.triggered` events. Concrete tool
-contracts are enforced by their capability boundaries rather than a default
-Host diagnostic layer. Historical tool guard events remain readable.
+Concrete tool and workflow contracts are enforced at their capability boundaries
+(TypeBox schemas, explicit workflow TypeScript verification, `finish` admission,
+and Task settlement) rather than a separate `guards/*.ts` callback directory or
+default Host diagnostic layer. Historical `guard.triggered` events (`source: "workflow" | "tool"`)
+remain readable in storage and metrics.
 
-### Workflow Guards
+### Retired Workflow Guards (`WorkflowGuard`)
 
-Workflow guards are App/shared modules exporting `guard: WorkflowGuard`.
-`loadGuards()` in Host `src/lib/workflow-tool.ts` discovers the supplied guard
-directories. The hosted runner dispatches `workflow_start`, agent `step_done`,
-and `workflow_done` callbacks. The SDK still declares `step_start`, but the
-current runner does not dispatch it. Its `workflow.step_started` presentation
-callback is separate, as are App events published through `ctx.events.emit()`.
-Direct workflow and SDK test runners do not discover shared guard modules.
-
-Each guard exports `guard: WorkflowGuard` with a `handle()` method. The guard
-returns demands from the supported SDK vocabulary. The SDK step callback type
-admits `source: "agent"` or `"function"`; current hosted step callbacks identify
-agent results. Emitted `guard.triggered` diagnostics use
-`source: "workflow"` and the guard's own name in the `guard` field.
-
-Standard callbacks carry no repository-root or write-ownership fields. The shared
-`finish-guard` inspects the supplied task and result for its workflow-selection
-rule; its dormant Git-warning fallback is retired. When acceptance requires a
-repository-state check, the owning workflow checks its actual workspace rather
-than inferring edit ownership from paths and shell text in a guard. This adds no
-automatic commit requirement or replacement detector.
-
-Workflow guards can inspect completed-step evidence for expectations such as
-build confirmation or secret leakage. The dormant shared read/verify primers
-and milestone scorer are retired: they depended on the undispatched
-`step_start` callback, and the scorer also required a retired worker process.
-Required verification and acceptance criteria remain explicit in the owning
-workflow. Historical experiment results do not establish current activation.
+The former `WorkflowGuard` / `loadGuards()` callback mechanism (`guards/*.ts`
+dispatching `workflow_start`, `step_done`, and `workflow_done` in Hosted runs
+only) had zero production callers and caused Hosted workflow execution to diverge
+from Direct, Gym, and SDK test runs. Required repository-state, verification,
+and acceptance checks belong explicitly in the owning workflow or App acceptance
+boundary so every execution mode enforces the same contract.
 
 ### Tool Contracts And Completion
 
 The selected Host contract has no default tool-guard composition or diagnostic
 callback. Path/read heuristics, finish write-activity guessing and automatic Git
 scans at completion are retired. No replacement detector or toggle is required.
-This gives up automatic tool diagnostic signals; App workflow guards retain
-their separate SDK/runtime path and may enforce explicit App expectations.
 
 Required-result checks, tool argument validation and file-write permissions
 remain at their concrete capability boundaries. A success report claiming a

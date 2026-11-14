@@ -117,7 +117,7 @@ function workflowContext(
           : {}),
         ...(result.evidence !== undefined ? { facts: result.evidence } : {}),
       };
-    }) as WorkflowContext["agents"]["call"],
+    }) as WorkflowContext["call"],
   });
 }
 

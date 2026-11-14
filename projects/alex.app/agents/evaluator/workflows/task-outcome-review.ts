@@ -645,7 +645,7 @@ export async function reviewTaskOutcome(
   }
 
   const observerEvidence = await readObserverEvidence(subject.task, command);
-  const execution = await ctx.agents.call(
+  const execution = await ctx.call(
     profile.agent,
     [
       assessment.purpose === "ongoing"

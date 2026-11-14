@@ -3,7 +3,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync,
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type, type AppDefinition, type AppTaskInput } from "@may-agent/sdk";
-import type { SubagentManager } from "../may-agent/src/lib/manager.ts";
+import { SubagentManager } from "../may-agent/src/lib/manager.ts";
 import {
   createAssistantMessageEventStream,
   type ToolCall,
@@ -13,7 +13,6 @@ import {
   executePreparedAgent,
 } from "../may-agent/src/lib/agent-execution.ts";
 import { createFinishTool } from "../may-agent/src/lib/tools/lifecycle.ts";
-import { createWorkflowTool } from "../may-agent/src/lib/workflow-tool.ts";
 import { createWriteTool } from "../may-agent/src/lib/tools/write.ts";
 import { closeDb, getDb } from "../may-agent/src/lib/db/connection.ts";
 import { DbWriter } from "../may-agent/src/lib/db-writer.ts";
@@ -304,10 +303,23 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
       expect(attempt.task.input).toMatchObject({
         data: { context: { publication, originalEvidence: before[0]!.toString() } },
       });
-      const tool = createWorkflowTool({
-        manager: {} as never,
-        workflowDir: join(f.root, "workflows"),
-        agentName: "alex",
+      const manager = new SubagentManager({ persistDir: join(f.root, ".state") });
+      const alexDef = {
+        name: "alex",
+        description: "Offline recovery trial",
+        domain: "tests",
+        systemPrompt: "Consider the exact supplied evidence and failure; preserve uncertainty.",
+        model: fakeModel(),
+        tools: [],
+        agentDir: f.root,
+      };
+      manager.register(alexDef);
+      manager.activeSessions.set(attempt.attemptId, {
+        definition: alexDef,
+      } as never);
+      const tool = manager.createAgentsTool({
+        getCallerAgentName: () => "alex",
+        getCallerSessionId: () => attempt.attemptId,
       });
       const prepared = prepareAgentExecution({
         definition: {
@@ -346,8 +358,8 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
         const arguments_: ToolCall["arguments"] =
           replies === 1
             ? {
-                action: "run",
-                name: "read-report",
+                action: "call",
+                agent: "read-report",
                 input: { operation: "read-publication", publication },
               }
             : {

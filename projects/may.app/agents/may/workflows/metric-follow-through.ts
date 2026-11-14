@@ -27,7 +27,7 @@ export async function execute(
     // A saved handoff is evidence and context, not a current owner judgment.
     // Always reconcile the complete current packet so an honest incomplete
     // result, a later admitted input, or a corrected wait can change the plan.
-    const response = await ctx.agents.call(
+    const response = await ctx.call(
       rec.agent,
       [
         "Review this metric follow-through Task against its full current outcome and acceptance.",

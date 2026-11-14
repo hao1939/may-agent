@@ -1,4 +1,4 @@
-# Proposal: simplify the event and control plane
+# Proposal: Pragmatic Event & Control Socket Simplification (Keep Existing Protocol, Prune & Deduplicate)
 
 **Supports:** [Events and Task admission](../2a-design/events.md) and the
 [Host/App boundary](../2a-design/system-boundary.md). Give callers one way to
@@ -9,359 +9,191 @@ and [robust enough for the goal](../1-principles/design-philosophy.md#robust-eno
 Retain owed input and exact control evidence; allow replaceable display updates
 to be lost and repaired by reading current resources.
 
-**Design status:** Proposal for review. Expands the earlier control-socket
-proposal; its JSON-line framing and multiplexing plan is superseded by the
-HTTP transport direction below.
-**Implementation status:** Unimplemented. The existing EventInterface already
-provides `publish`, `get` and live `subscribe`; this proposal simplifies their
-implementation and transport. Source findings and counts are pinned in the
-[November 14 audit](../archive/reviews/event-control-simplification-20261114.md).
-Source review is separate from installed behavior; no activation is proposed.
+**Design status:** Refined to a pragmatic, low-risk 2-PR plan (2026-11-14) incorporating the R1–R6 review comments. Earlier drafts proposed a new `EventHub` interface, an HTTP/SSE wire-protocol rewrite across `may-console.cjs` and `http/server.ts`, and immediate `event_pair_runs` trigger removal; those over-complicated rewrites are **dropped** in favor of keeping the working `EventInterface` + `EventBus` and JSON-line socket wire protocol while pruning dead branches, skipping SQLite writes on replaceable `conversation.updated` wakes, table-driving `server.ts`, and unifying socket writes onto `publish(EventInput)`.
 
-## Decision
+---
 
-Use one Host event service, called **EventHub** here, with explicit durable and
-ephemeral production paths sharing a bounded observation channel:
+## 1. Decision: Why Not Rewrite to `EventHub` + HTTP/SSE?
 
-- **`publish`:** validate durable input, journal it, retain or apply admission,
-  and return an EventReceipt. Existing resource owners execute the work.
-- **`broadcast`:** deliver ephemeral output to matching live observers, with
-  no event-journal access, admission route, durable identity or receipt.
-- **`subscribe`:** observe committed durable Events and/or ephemeral broadcasts.
-  Observation never accepts work.
+Evaluating the earlier full-rewrite proposal against the review comments (R1–R6) and *"critical first, drop or clean up the rest"* shows that a full wire-protocol and bus rewrite creates unnecessary risk and complexity:
 
-Expose that service through ordinary calls and a thin Unix HTTP/SSE adapter.
-Event middleware adapts these same operations; it adds no second router or
-subscription authority. Keep typed resource reads alongside it. The external vocabulary is
-**publish, read, subscribe**; `publish` and `subscribe` alone cannot replace Task,
-Conversation, workload, action-discovery and runtime-status reads.
-`broadcast` is a runner-side observation capability, not a new external command
-ingress or a way for App code to bypass its scoped durable publisher.
+1. **The existing JSON-line Unix socket protocol already works across Node (`may-console.cjs`) and Bun (`src/app/http/server.ts`):** Switching to `Bun.serve({ unix })` HTTP + SSE breaks Node's `fetch()` (R2), requires rewriting `may-console.cjs` and 50+ socket tests, and still requires keeping operation completion maps like `pendingRuntimeControls` (R4).
+2. **`event_pair_runs` is coupled to SQLite retention triggers (`trg_events_referential_retention`) and `cli.task.*` / `workflow.interrupted` restart recovery (R1):** Touching `event_pair_runs` requires SQLite trigger and schema migrations for minimal practical benefit.
+3. **Existing transient stream events (`text`, `tool_call`, `tool_result`, `turn_end`, `info`) already skip SQLite row insertion (R5):** We do not need to invent a new `EventHub` interface to avoid SQLite writes on replaceable wakes—`conversation.updated` is the concrete dot-separated wake that currently inserts rows into `events`, and skipping journal insertion on `conversation.updated` (and avoiding `DbWriter` transaction checks on non-persisted events) is a 15-line surgical fix!
 
-```text
-Caller / adapter
-  -> publish(input, trusted context)
-       -> event journal + local required projections
-       -> existing admission owners / retained admission plans
-       -> receipt: recorded or accepted
-       -> post-commit live notifications
+> **Tradeoff Decision Note:**  
+> Choose **surgical in-place cleanup of `DbWriter` and `packages/control/src/server.ts` (preserving the existing JSON-line socket wire protocol, `EventInterface` / `EventBus` APIs, and `event_pair_runs` schema)** over **introducing a new `EventHub` abstraction and rewriting the socket protocol to HTTP/SSE** because 80%+ of the code and write-amplification savings come from three small, low-risk changes with zero wire-protocol or schema churn.
 
-Runner -> broadcast(transient output) -> matching live observers only
-Reader -> typed resource read -> current Task / Conversation / Event / status
-Observer -> subscribe(filter) -> committed notifications or transient output
-```
+---
 
-One service means one entry and authority boundary, with small internal
-components. It does not mean merging storage, controls and streaming into one
-large class. Internal resource writers remain ordinary typed calls and
-transactions; this is not a requirement to turn every mutation into an event.
+## 2. The Three Pragmatic Cleanups (Low Risk, High Impact)
 
-## Explicit durability
+| Cleanup | Current Problem | Surgical Fix |
+| :--- | :--- | :--- |
+| **1. Skip SQLite Journal Writes on Ephemeral Wakes (`conversation.updated`)** | `text`, `tool_call`, `tool_result`, `turn_end`, and `info` already skip `insertEventRow`, and `app.task.updated` is synthesized on the socket, **but** `conversation.updated` has a dot (`.`) so `DbWriter.handler` (`if (event.type.includes("."))`) writes a row to the SQLite `events` table on every Conversation update (while `readAppConversationResource` actually reads `conversation.message.created` facts + `app_inbox_items`). Furthermore, non-persisted events still run `inStateTransaction(this.db)` at the end of `DbWriter.handler`. | Treat `conversation.updated` as an ephemeral wake in `DbWriter.handler` (returning immediately before `insertEventRow` and `inStateTransaction`, or scheduling live fanout after commit when inside a state transaction) while keeping `conversation.message.created` durable. |
+| **2. Prune Dead Socket State & Table-Drive `packages/control/src/server.ts`** | `src/app/transport/socket.ts` hardcodes `getSessionId: () => ""`, yet `server.ts` still carries ~80 lines of dead `getSessionId()`, `client.chatMode`, `sessions.includes("chat")`, `socketStatus` synthetic chat injection, and `/reload` / `/restart` message-body rewriting (`exactRuntimeControl` / `exactAppInputControl`), plus ~900 lines of repetitive `if (normalized.command === ...)` boilerplate. | Delete `getSessionId`, `chatMode`, `socketStatus`, and hidden message-body rewriting, and replace the repetitive read blocks with a compact, table-driven command dispatcher in `server.ts` **without changing a single wire frame**. |
+| **3. Collapse Duplicate Socket Write Commands onto `publish(EventInput)`** | `server.ts` maintains 5 separate mutation commands (`app.input.admit`, `app.task.retry`, `task.cancel`, `task.close`, `task.reopen`) that duplicate pre-read fencing checks already enforced by `attachTaskControlEventRoute` and `EventInterface.publish`. | Migrate `may-console.cjs`, HTTP routes (`task-input.ts`, `project-routes.ts`), and `client.ts` to `publish(EventInput)` (using `app.input.requested` and `task*RequestedEvent` builders) and delete the duplicate socket mutation handlers. |
 
-Choose the path by what must survive interruption, independently of whether
-the Event requires a work owner:
+---
 
-| Kind | Examples | Persistence and consumer contract |
-| --- | --- | --- |
-| Durable input or fact | App input, Conversation messages, exact Task controls, retained result/evidence facts | `publish`; Event identity and receipt; required admission where declared |
-| Ephemeral output | Text/tool previews, turn-progress indicators, display notices | `broadcast`; live only, no durable ID or receipt |
-| Replaceable change hint | A Task/Conversation view needs rereading after a commit | May be ephemeral when authoritative state and existing recovery cover a missed hint |
+## 3. Execution Plan (2 Focused PRs)
 
-The last two rows use the same ephemeral mechanism. A wake that carries the
-only copy of pending work cannot use it: retain the obligation through its
-existing owner first. Session end, Task results, approval evidence and caller
-delivery receipts do not become disposable because a UI also displays them.
+### PR 1: Ephemeral `conversation.updated` Wakes, Prune Dead Socket State, & Table-Drive `server.ts`
+- **Where:** `src/lib/db-writer.ts`, `packages/control/src/server.ts`, `src/app/transport/socket.ts`.
+- **Changes:**
+  1. **Ephemeral `conversation.updated` in `DbWriter.handler`:** Skip `insertEventRow` for `conversation.updated` (still deferring live fanout via `afterStateCommit` if emitted inside an open SQLite transaction so readers never observe uncommitted state), and skip `inStateTransaction` on non-persisted transient events (`text`, `tool_call`, `tool_result`, `turn_end`, `info`).
+  2. **Delete dead session-era socket state:** Remove `getSessionId`, `client.chatMode`, `sessions.includes("chat")`, `socketStatus`, and `exactRuntimeControl` / `exactAppInputControl` from `packages/control/src/server.ts` (making `may-console.cjs` publish `runtime.reload.requested` / `runtime.restart.requested` directly on `/reload` and `/restart`).
+  3. **Table-drive `packages/control/src/server.ts`:** Replace the repetitive `if (normalized.kind === "control" && normalized.command === ...)` read blocks with a clean handler table while keeping the JSON-line wire protocol 100% compatible.
+- **Verification:** `bun run check:ci`, `bun test packages/control/ src/lib/ src/app/ test/integration/`.
 
-**Record-only is durable.** It means persistence is sufficient for that Event's
-admission contract; it does not mean “skip persistence.” Required delivery,
-deduplication and pending-route recovery remain independent durable concerns.
-The existing symbol flags represent those concerns, not a durable/ephemeral
-classifier. Replace them with explicit internal values where that simplifies
-the implementation, preserving their meaning rather than deleting the checks.
+### PR 2: Collapse Socket Write Commands onto `publish(EventInput)`
+- **Where:** `packages/control/src/{server.ts,protocol.ts,client.ts}`, `src/app/http/{task-input.ts,project-routes.ts,server.ts}`, `packages/terminal/bin/may-console.cjs`.
+- **Changes:**
+  1. Route `app.input.admit`, `app.task.retry`, `task.cancel`, `task.close`, and `task.reopen` callers through `publish(EventInput)` (preserving caller `idempotencyKey` and `project.action.invoke` schema translation).
+  2. Delete the duplicate `app.input.admit`, `app.task.retry`, `task.close`, `task.reopen`, and `task.cancel` handlers from `packages/control/src/server.ts` and `protocol.ts`.
+- **Verification:** `bun run check:ci` and full `packages/control`, `src/app/http`, `packages/terminal`, and `test/integration` suites.
 
-Proposed interface sketch; this is not a currently callable SDK API:
+*(Deferred / Out of Scope unless needed later: `event_pair_runs` trigger migration, `chat.start.requested` caller retirement, and HTTP/SSE socket wire-protocol replacement.)*
 
-```ts
-interface EventHub {
-  publish(input: EventInput, context: EventPublisherContext): EventReceipt;
-  broadcast(event: EphemeralEvent): void;
-  subscribe(
-    filter: EventSubscriptionFilter,
-    listener: (event: StreamEvent) => void | Promise<void>,
-  ): () => void;
-}
-```
+---
 
-`EphemeralEvent` is a narrow union of permitted observation types. Its owning
-contract fixes durability; there is no per-call persistence toggle. `broadcast`
-rejects durable command/fact types; callers cannot downgrade an obligation by
-choosing another method. `StreamEvent` distinguishes durable and ephemeral
-messages; only the durable variant carries a persisted Event ID. Filters can
-select either kind, types and execution/resource scope. Event inspection and
-other resource reads remain with their existing canonical readers.
+## Appendix: Historical Review Record (2026-11-14)
 
-## What the current size tells us
+> *Note: The review comments below evaluated the earlier `EventHub` + HTTP/SSE + `event_pair_runs` draft and directly informed the decision in Sections 1–3 above to keep the existing wire protocol and `event_pair_runs` schema.*
 
-The three named files contain 3,469 lines at the audited revision. However,
-`bus.ts` includes roughly 800 lines of event declarations; the EventBus class
-itself is about 380 lines. `interface.ts` includes the admission catalogue and
-Event read/link projection. `DbWriter` also owns payload artifacts, deduplication,
-traces, attempt fences, exact wakes, session projections and lifecycle evidence.
-The control package implements reads and privileged controls as well as fanout.
-These are distinct responsibilities, not four interchangeable event buses.
+### R1 — P1: Phase 0 has not accounted for active pair consumers and retained state
 
-The useful reduction is to delete overlapping dispatch and obsolete behavior:
+Having authoritative execution tables does not establish that all pair behavior
+is dead. [CLI execution](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/lib/cli-agent.ts#L475)
+still publishes `cli.task.requested`, `started` and terminal Events.
+[Workflow restart recovery](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/daemon-events.ts#L68)
+uses pair records to emit `workflow.interrupted`; simply reading a workflow row
+does not preserve that notification. The
+[retention trigger](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/lib/db/schema.ts#L328)
+also queries `event_pair_runs`. Removing the table without migrating the trigger
+can break Event deletion; leaving old open pairs without expiry can retain old
+Events indefinitely. Phase 0 names query/maintenance removal but gives no
+retained-schema or historical-closure disposition. Passing revised tests alone
+cannot establish that those behaviors are unused.
 
-| Current mechanism | Proposed disposition |
-| --- | --- |
-| EventInterface validation and receipt view | Keep as EventHub's public facade; keep one admission catalogue |
-| Persistence subscriber and delivery-recorder installation | Replace with explicit journal/admission dependencies |
-| `first` and `normal` synchronous tiers | Remove after migrating the two ordinary production subscribers to explicit hooks; no production caller uses `first` |
-| Durable route subscribers | Explicit bounded admission composition using existing App and control owners; retain independent route recovery |
-| Persistence dispatch for transient output | Replace with `broadcast`; no journal dependency on that path |
-| Passive `listen` queues | Keep one bounded observer mechanism shared by local and transport subscribers |
-| Pair matching and TTLs | Retire family by family after handling restart, health, trace and retention consumers |
-| `subscriber.failed` machinery | Simplify reporting while retaining failure visibility and its existing metric consumer |
-| Separate socket mutation handlers | Translate to existing event builders and publish; resource owners retain fencing and authority |
-| Custom JSON-line request protocol | Replace with standard HTTP requests and SSE responses after migrating clients |
+**Suggestion:** separate proven dead producer branches from retiring pair
+behavior. For each still-useful consumer, derive its evidence from an existing
+owner; explicitly retire unwanted diagnostics instead of claiming equivalent
+behavior. Include the trigger, fresh and retained schemas, restart facts and
+historical trace reads in that decision. Keep this as its own slice rather than
+a prerequisite for `broadcast`. A zero-literal-emitter search in Host source
+also does not establish absence of retained history or App/operator publishers.
 
-Moving the event catalogue out of `bus.ts` makes the runtime easier to inspect;
-it is not a LOC saving. There is no defensible 400-line service or 4,500-line
-saving estimate yet. Measure production code deleted, remaining responsibilities
-and whole-path cost after each cut, including new clients and compatibility code.
+### R2 — P1: choose a Unix HTTP client that works in Console's runtime
 
-## Participants and responsibilities
+The transport section assumes every client can use
+`fetch(url, { unix: socketPath })`. However,
+[may-console](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/packages/terminal/bin/may-console.cjs#L1)
+starts with `#!/usr/bin/env node`; the `unix` fetch option is Bun-specific.
+A disposable Node `v24.20.0` probe with separate TCP and Unix HTTP fixtures
+confirmed that `fetch` with `unix` reached the TCP fixture, while
+`node:http.get({ socketPath })` reached the Unix fixture. Applying the proposed
+call directly would leave Console unable to reach the intended daemon.
 
-| Participant | Owns |
-| --- | --- |
-| Publisher / ingress adapter | Semantic input and retry identity; trusted adapter supplies provenance and authorization context |
-| EventHub facade and journal | Admission schema, immutable event identity/body, exact replay identity, traces and receipt inspection |
-| Admission/resource owner | Exact controls or durable responsibility for input; per-route recovery and resource updates |
-| Task and execution runtime | Work, capacity, attempts, settlement and recovery; execution evidence remains separate from Task closure |
-| Observer / transport | Bounded delivery of hints and output, reconnect and reread; no acceptance or business interpretation |
+**Suggestion:** keep Bun's Unix HTTP server, and use a small shared Unix HTTP
+client based on `node:http` for Node/Bun consumers. Alternatively, explicitly
+migrate Console's runtime and packaging in the same cut. Verify a real Console
+request with an SSE subscription already open; the long-lived stream must not
+occupy the only connection available for reads and controls. Native HTTP
+correlation is useful, but it does not make Bun's fetch options portable.
 
-Apps still own meaning, requirements and closure. Funding and event transport
-grant no additional authority. App subscriptions that create obligations stay
-in durable App admission; they must not become passive EventHub listeners.
+### R3 — P1: make missed-wake recovery observable to every subscriber
 
-## Durable publish contract
+The proposal says to reread after overflow, but the interface exposes only
+an event callback and unsubscribe. It does not define how a local subscriber
+learns that a notification was dropped, or when remote subscription setup is
+complete. A saved Task or answer cannot refresh its own consumer. If the last
+Conversation wake is dropped and no later change occurs, a connected consumer
+can stay stale; wake-driven answer delivery can also be delayed indefinitely.
+The current
+[listener overflow path](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/core/events/bus.ts#L1187)
+only logs dropped notifications, while
+[Telegram](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/transport/telegram.ts#L641)
+schedules Conversation reads from those wakes. Its provider polling loop is
+not a periodic Conversation rescan.
 
-An ordinary example is `app.input.requested`: the caller supplies an App, input
-and idempotency key. The Host validates trusted context and shape, saves the
-Event, and records the existing input or admission plan. It returns the Event
-identity and known links. The caller follows the Task or request for results.
+**Suggestion:** specify a subscription-level dirty/reset notification for local
+as well as remote consumers, delivered independently of the dropping payload
+queue. A remote consumer must know registration is active before its initial
+read. On a gap, coalesce one reread through the consumer's existing refresh
+mechanism. This needs no durable queue or new scheduler. Cover the case where
+the final wake is lost and no further business event arrives. Durable storage
+makes a missed hint recoverable; an explicit resync trigger makes it recover.
 
-Preserve the accepted [admission contract](../2a-design/events.md#admission-contracts):
+### R4 — P2: HTTP correlation does not replace operation completion tracking
 
-1. Normalize input and assign trusted provenance. An exact keyed replay must
-   match the saved canonical input before reusing its identity. Reuse must not
-   fail merely because mutable target state changed after the original request.
-   Changed input under the same key is rejected.
-2. Save the Event, verified complete body/reference, trace and required local
-   projections in the owning SQL transaction. Validate Task-attempt emission
-   fences before admitting a new effect; exact replay follows its existing rule.
-3. Run only bounded admission updates on the publication path. Broader App
-   translation may proceed from the existing frozen admission plan in its
-   worker. Do not execute workflows, model calls or external I/O there.
-4. Return `recorded` when saved but not yet accepted, or `accepted` when the
-   relevant admission authority has retained responsibility. Neither means
-   Task completion, all independent routes succeeded, or caller delivery.
-5. Notify observers only after the relevant commit. Publication inside a
-   resource transaction defers routing/notification until the outer commit;
-   rollback exposes no committed Event or notification.
+The claim that HTTP deletes all six Console response-matching queues includes
+`pendingRuntimeControls`, which is a Map for a different purpose. It binds a
+submitted `/reload` to a later
+[`runtime.reload.finished`](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/packages/terminal/bin/may-console.cjs#L1221)
+notification. The Host
+[performs reload asynchronously](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/command-router.ts#L70)
+after accepting its command. A POST receipt therefore cannot replace the later
+success/failure result. Deleting that correlation without a replacement loses
+the completion view or encourages presenting admission as successful reload.
 
-**One publish call does not imply one transaction around every route.** Today
-the append can commit before routing, routes can have their own transactions,
-and broad admission crosses a worker boundary. Keep the existing journal and
-admission markers to recover these gaps. Combine local writes where their
-owner requires atomicity; do not hold a SQLite writer lock across workers,
-App execution or runtime effects to make the diagram look atomic. Current
-session projection calls can precede journal insertion; extraction must check
-that failure boundary rather than claim all existing writes are already atomic.
+**Suggestion:** remove request/response FIFO matching, while retaining the
+small amount of operation-specific state needed to await results. Keep the
+current request identity and completion event unless an existing read exposes
+the same result. Separate transport bookkeeping from business/operation state
+in the deletion list; the latter does not disappear with HTTP.
 
-If a process stops after append and before admission, recovery loads that
-same verified Event and resumes only its pending idempotent routes. Another
-route's acceptance cannot erase an outstanding App admission, and recovery
-cannot repeat already accepted ordinary effects. Denials retain their exact
-input, responsible route, failure/disposition and existing next wake. No second
-outbox, broker or recovery scheduler is needed.
+### R5 — P2: correct the event and storage baseline before estimating deletion
 
-Worker publication remains the same Event: the worker appends through the
-journal, relays its durable ID, and the parent performs its pending admission
-and local notification without another insert. Child persistence alone cannot
-claim parent-route delivery. Lost relays recover through retained admission.
+The concrete-type table mixes proposed names with current behavior. Current
+Host stream names are
+[`text`, `tool_call`, `tool_result`, `turn_end`](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/core/events/bus.ts#L101),
+and those already skip journal insertion. `app.task.updated` is constructed as
+an outbound wake by the
+[control transport](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/packages/control/src/server.ts#L380),
+rather than appended by DbWriter. `conversation.updated` does currently pass
+through the journal, so removing that write is a real, narrower opportunity.
+The claimed universal transient/wake write amplification is not established.
+Also, canonical Task rows are `app_tasks`; the
+[Conversation reader](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/core/state/conversations.ts#L139)
+combines journal facts and Inbox results, rather than reading a standalone
+`conversations` table.
 
-Retry returns the same event identity with its **current** admission view;
-the receipt need not be byte-for-byte identical as admission advances. A
-transport may retry a post-send-unknown result only for a type with a durable,
-retained idempotency contract covering that effect. A key on an Event alone
-does not make restart, Stop or external sends exactly-once. Preserve existing
-operation-specific replay rules and define the retry horizon before deleting
-keyed records. Automatic retry stops at that horizon; the caller must resolve
-the prior outcome before deliberately submitting new work.
+**Suggestion:** retain the current stream names for the first cut, or label
+new names as a separate producer/consumer migration. Refer to canonical typed
+readers instead of presumed tables. State savings separately: dispatch avoided
+for existing transient output, and journal writes removed for specifically
+identified replaceable wakes. Retain the message/result Events that actually
+back Conversation reads.
 
-## Live observation and optional journal replay
+### R6 — P2: non-Task callers are still present, rather than already replaced
 
-`broadcast` does no event-journal read/write, starts no transaction and invokes
-no admission route. If no active subscriber matches its kind/type/scope, return
-before cloning, serialization or enqueueing. Match against all consumers,
-including local observers and daemon logging, not just connected human viewers.
-The caller's work to create an event has already happened; there is no promise
-of nanosecond or zero-cost delivery.
+The deletion table says non-Task chat and legacy CLI modes are replaced, but
+[sendAgentMessage](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/packages/control/src/client.ts#L374)
+still publishes `chat.start.requested` for a non-interface recipient, the
+[HTTP agent route](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/http/agent-routes.ts#L359)
+still admits it, and
+[command routing](https://github.com/hao1939/may-agent/blob/b16392bea9c445506ec5ef20bd6c5407690b2e3d/src/app/command-router.ts#L124)
+starts the direct session. App Tasks and standalone invocation provide the
+direction, but do not automatically migrate these callers. Deleting the route
+changes a working capability, including its target and caller-result path.
 
-This guarantee concerns EventHub's observation path. Execution still maintains
-usage, liveness, transcripts and result evidence through their existing owners,
-even when nobody watches. A subscriber can write a log; “ephemeral” does not
-promise that the entire execution and every observer perform zero I/O. Saved
-session transcripts can restore supported message/tool history, not every
-token preview or transient notice. Losing such output is an accepted tradeoff.
+**Suggestion:** list each retained caller and its disposition: move to declared
+App input, move to standalone execution, or deliberately retire the surface.
+Keep this behavior change separate from framing cleanup. Mark replacement as
+pending until those callers change at a cited revision; do not count it as
+already-dead Phase 0 baggage.
 
-Transient previews may describe in-flight execution. Resource change hints must
-be scheduled after their owning commit so a reread cannot miss the actual
-change. Durable publications enter this same observation channel after commit;
-a listener receives both kinds without becoming an admission route.
+### Suggested smaller first implementation
 
-Across worker processes, ephemeral output needs a distinct bounded best-effort
-relay if remote viewing is supported; it cannot use the durable-ID relay or
-acquire an Event ID just to cross IPC. Skip that relay when no parent observer
-is interested. Interest propagation and reconnect must be validated before
-claiming a no-viewer fast path across processes. Durable worker admission and
-relay recovery remain independent of viewers.
+Start with `broadcast` and the existing transient producers, preserving event
+names, durable publication and the wire protocol. Establish the no-journal
+path and local/remote resync behavior before changing journal wiring. Then
+remove generic priority registration through explicit hooks, followed by the
+HTTP client/server migration. Keep pair retirement and history replay in their
+separate later slices. This makes each change remove one mechanism without
+also changing event names, execution entry points and caller-result handling.
 
-Use one filtered, bounded queue per subscriber. Preserve per-listener order
-and event-loop fairness, contain exceptions, and disconnect/reset slow remote
-consumers rather than accumulating unbounded buffers. A slow observer cannot
-veto admission. On reconnect or overflow, subscribe first and then reread the
-watched resource, retaining wakes during the read so a racing change triggers
-another read. Coalesce only replaceable resource wakes, never business facts
-or transcript chunks. Async notifications can arrive after an attempt settles;
-they must not start another attempt from stale execution evidence.
-
-The first transport version keeps this **live + reread** contract. This is
-sufficient for Task/Conversation views and avoids building a second work queue.
-It accepts lost transient output; committed input and current results remain
-recoverable from their owners.
-
-On that live-only SSE stream, durable identity is a field in the data payload;
-do not emit an SSE `id` implying an implemented resume cursor. When ordered
-journal replay is implemented, durable frames may set `id` to its cursor;
-ephemeral frames omit the `id` field entirely, leaving the prior durable cursor
-unchanged. A shared connection does not make ephemeral messages replayable.
-
-`afterEventId` is a separately scoped extension for journal inspection, not a
-prerequisite for replacing the bus or transport. If a concrete consumer needs
-continuous history, its implementation must satisfy all of these rules:
-
-- Replay only durable Events, never transient output or admission/control effects.
-- Drain bounded SQL pages in committed ID order from one journal cursor;
-  register for commit hints before the initial drain. Hints trigger another
-  drain rather than appending independently ordered callback payloads.
-- Include worker commits and missed relay recovery. In-memory notifications
-  alone cannot establish completeness across processes; use a bounded catch-up
-  read, reusing an existing wake/maintenance cadence where suitable.
-- Bind the cursor to the database identity and subscription filter. Expose a
-  reset when retention has removed required history or the database changed;
-  event IDs need not be consecutive, and a remaining minimum ID does not prove
-  an intact retained interval. Bound catch-up work and retained-history promises.
-- Load verified complete bodies through the persisted-event reader. A damaged
-  body cannot be replayed as a truncated projection. Clients deduplicate IDs;
-  a cursor records observation, never successful work consumption.
-
-This extension requires an explicit retention/completeness contract first.
-`GET /api/events` already serves bounded historical queries; SSE must not
-silently replace that response or promise unlimited event history.
-
-## Thin control transport and reads
-
-Proposed local daemon endpoints, using standard HTTP over a Unix socket:
-
-| Operation | Endpoint / owner |
-| --- | --- |
-| Publish | `POST /events` -> EventHub with trusted ingress context |
-| Inspect receipt | `GET /events/:id` -> existing Event view |
-| Subscribe | `GET /events/stream` -> filtered live SSE; replay only when separately implemented |
-| Read resources | Typed Task, Conversation, workload, action-discovery and status handlers |
-
-HTTP supplies request/response correlation and connection reuse. SSE supplies
-stream framing. Do not first build custom `requestId` multiplexing and a new
-JSON-line parser that the next phase removes. The adapter still owns request
-size/connection limits, subscription cleanup, backpressure, socket permissions
-and inode-safe shutdown. Connecting must not implicitly scan status tables.
-
-All external Task controls use existing event builders with exact generations,
-resource versions and reasons. Remove duplicate transport checks only when the
-owning control route covers them. Formal approvals and operator-only reopening
-retain their trusted authorization context; changing wire format cannot turn
-payload `source` claims into authority. App actions keep one declared schema
-validation/`toInput` translation before publishing ordinary App input.
-
-Keep typed reads using the same canonical reader in and out of process.
-SQLite WAL permits concurrent reads; it does not make raw tables a public API
-or provide in-memory registry and runtime status. Existing direct reads of
-Host-owned stores may remain where already supported. Do not move Task,
-Conversation or workload semantics into each client under “direct WAL reads.”
-Read failures must remain failures rather than empty boards.
-
-The browser-facing HTTP/WebSocket adapter may forward to these same operations.
-Replacing browser WebSockets with SSE is independent: terminal interaction and
-other bidirectional streams need their existing transports. CLI, Console,
-Telegram, web mode and maintenance clients must be inventoried before cutover.
-Use a temporary fixture socket for validation; production reuse of `host.sock`
-requires a coordinated Host/client upgrade. An old protocol must fail explicitly.
-Do not dual-publish to old and new transports. Any necessary compatibility
-adapter calls the same service and has a named removal point.
-
-## Pair tracking and failure reporting
-
-Tasks own durable work, but they do not automatically replace session,
-workflow, handler, escalation and CLI execution evidence. Current pairs support
-restart interruption facts, health reads, trace closure links and retention.
-An orphan is diagnostic evidence, not proof of Task failure or permission to
-rerun work. These are separate from App admission redelivery.
-
-Start with session/workflow pairs where authoritative execution records already
-exist. For each family, either derive the still-useful bounded diagnostic from
-its owner or explicitly retire that diagnostic and its consumer. Preserve
-historical trace/receipt reads and referenced Events. Remove fallback acceptance,
-pair writes, sweeps and schema protection only with that family's callers and
-restart behavior accounted for. Do not create another generic pair tracker in
-the replacement journal.
-
-The bus already defers `subscriber.failed` and prevents reporting failures from
-recursing. Replace its generic failure dispatch only if the existing failure
-metric and admission diagnostics still have evidence. Retain the original Event
-and route identity; reporting remains passive, with a logger fallback when
-storage fails. Observer reporting cannot change accepted state or create work.
-
-## Incremental delivery and verification
-
-Each step removes a mechanism before expanding scope. Runtime implementation
-is future work; use source-only fixtures and existing owning tests.
-
-| Step | Change and deletion | Evidence required |
-| --- | --- | --- |
-| 1. Explicit event core | Separate the catalogue, add the explicit `broadcast` path, inject journal/admission directly, migrate session binding and worker relay hooks, delete generic priority tiers | Public/internal publish; ephemeral path cannot reach journal/admission or carry commands; no-match and local-consumer behavior; nested commit/rollback and projection failures; keyed retry; worker append/parent delivery; reload without duplicate hooks |
-| 2. One control write path | Migrate redundant mutation handlers and slash-command rewriting to canonical input/builders; retain action translation | Same authority/version rejection and acceptance from all adapters; replay after target state changes; unknown post-send disposition |
-| 3. HTTP/SSE transport | Replace custom framing and mutation dispatch after migrating current clients; retain typed reads | Real Unix client/daemon fixtures, subscribe/read race, disconnect/overflow, fairness, ownership-safe socket cleanup; no status SQL on connect |
-| 4. Retire redundant lifecycle machinery | Migrate or retire pair consumers family by family; simplify failure reporting | Interrupted execution/restart and historical health/trace/retention checks; remaining App admission still recovers independently |
-
-Retiring `chat.start.requested` and old CLI execution modes is a separate
-behavior cut: Hosted App work uses Tasks and ad-hoc execution uses standalone.
-Migrate current non-interface callers before deletion; a transport cleanup must
-not silently remove a supported execution mode. Coordinate with the invocation
-proposal through its owning [workflow contract](../2a-design/workflows.md).
-
-Use focused event, persistence, transaction, admission, worker and control
-suites for the changed boundary, plus real adapter integration tests. Before a
-Host PR is ready, run the repository's full Quality/Container gates on the final
-revision. Add regressions for broken contracts, not parallel tests of every
-wrapper. Compare publication latency and interface responsiveness during worker
-bursts and a slow subscriber; count deleted production code and compatibility
-code together. Include matched and unmatched ephemeral output with no UI but a
-local logger, and show that usage/result persistence remains intact. Run
-`bun run check:may-design` for documentation changes.
-
-The next implementation slice is **step 1**, preserving the current wire and
-receipt contracts. Its result should be an easier-to-follow publish path and
-fewer dispatch mechanisms. HTTP migration, pair retirement and optional history
-replay remain separately reviewable changes.
+Review evidence is source inspection plus the disposable Node transport probe;
+no live Host, Task, deployment or external provider was used. Design checks
+validate document structure and existing examples, not the proposed transport.

@@ -106,8 +106,7 @@ Rules:
   supplied Task context and scoped reads;
 - return one terminal contribution, normally with `ctx.done(...)` or
   `ctx.blocked(...)`; preserve failure evidence and allow control failures to throw;
-- call agents with `ctx.agents.call` and nested workflows with
-  `ctx.workflows.run`;
+- call agents and nested procedures with `ctx.call`;
 - keep deterministic mechanics in imported TypeScript helpers;
 - use `ctx.read` only for exact bounded current facts;
 - publish facts with `ctx.events.emit`, never as a work-dispatch shortcut; and
