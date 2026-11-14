@@ -756,6 +756,42 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(sdkDirectCode.ok).toBe(true);
     expect(sdkDirectCode.result?.type).toBe("done");
 
+    const overlappingRun = await runWorkflowTest(
+      {
+        name: "overlapping-mock-and-workflow",
+        description: "Calls reviewer with prompt options when both mocks and workflows define reviewer",
+        async execute(ctx) {
+          const step = await ctx.call("reviewer", "Check diff", {
+            skill: "review",
+            operationAllowance: 2,
+          });
+          return ctx.done(step.summary);
+        },
+      },
+      {
+        input: {},
+        assertAllFixturesConsumed: false,
+        mocks: {
+          reviewer: (call) => ({
+            status: "done",
+            summary: `mock:${call.options?.skill}:${call.options?.operationAllowance}`,
+          }),
+        },
+        workflows: {
+          reviewer: {
+            status: "done",
+            summary: "workflow-fallback",
+          },
+        },
+      },
+    );
+    expect(overlappingRun.ok).toBe(true);
+    expect(overlappingRun.result).toEqual({
+      type: "done",
+      summary: "mock:review:2",
+    });
+    expect(overlappingRun.steps[0]?.kind).toBe("agent");
+
     const sdkStandaloneRun = await sdkRun("reviewer", "Audit via @may-agent/sdk/standalone", {
       tools: "readonly",
       models: {},

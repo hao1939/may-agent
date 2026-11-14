@@ -39,7 +39,7 @@ export {
   listRuntimeAgentDirectories,
   resolveRuntimeAgentDirectory,
   type AgentDirectory,
-} from "./runtime/app/loader/agent-discovery.js";
+} from "./runtime/app/loader/agent-config.js";
 
 export {
   readAgentConfigFile,
@@ -56,4 +56,4 @@ export type {
   TaskResult,
   ToolContext,
   ToolFactory,
-} from "./runtime/lib/types.js";
+} from "./runtime/lib/manager-utils.js";

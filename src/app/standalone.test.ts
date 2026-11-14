@@ -15,7 +15,7 @@ import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
-import { listStandaloneTargets, run, runDirect, runDirectWorkflow } from "./standalone.js";
+import { listTargets as listStandaloneTargets, run, runDirectWorkflow, runDirectWorkflow as runDirect } from "./standalone.js";
 
 const roots: string[] = [];
 afterEach(() => {

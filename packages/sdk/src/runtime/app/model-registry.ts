@@ -1,6 +1,6 @@
 import type { Api, Model } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
-import type { ModelWithApiKey } from "../lib/types.js";
+import type { ModelWithApiKey } from "../lib/manager-utils.js";
 
 // Endpoint routes retained from Pi 0.87.1 after their upstream catalog removal.
 // A catalog refresh must not silently change the model served by these IDs.
