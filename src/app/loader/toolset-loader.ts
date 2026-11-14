@@ -4,7 +4,6 @@ import { currentAgentSessionId } from "../../lib/agent-session-context.js";
 import type { SubagentManager } from "../../lib/manager.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
 import { assertUniqueToolNames } from "../../lib/tool-name-audit.js";
-import { createCheckpointTool } from "../../lib/tools/checkpoint.js";
 import { createCodingTools } from "../../lib/tools/coding.js";
 import type { FileWritePolicy } from "../../lib/tools/file-write-policy.js";
 import { createFinishTool } from "../../lib/tools/lifecycle.js";
@@ -59,8 +58,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         break;
       }
 
-      case "agents":
-      case "workflow": {
+      case "agents": {
         if (tools.some((t) => t.name === "agents")) {
           break;
         }
@@ -108,17 +106,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         tools.push(
           createFinishTool({
             projectRoot,
-          }),
-        );
-        break;
-      }
-
-      case "checkpoint": {
-        tools.push(
-          createCheckpointTool({
-            sessionId: () => currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name) ?? "unknown",
-            agentName: config.name,
-            persistDir,
           }),
         );
         break;

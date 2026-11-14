@@ -20,4 +20,3 @@ export type { TruncationOptions, TruncationResult } from "@earendil-works/pi-cod
 export * from "./write.js";
 export * from "./query-db.js";
 export * from "./lifecycle.js";
-export * from "./checkpoint.js";

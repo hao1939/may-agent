@@ -234,19 +234,19 @@ describe("direct agent tool policy", () => {
     expect(
       resolveDirectToolPolicy(
         "may",
-        ["coding", "checkpoint", "finish"],
-        [{ name: "checkpoint", reason: "isolated benchmark has no durable checkpoint service" }],
+        ["coding", "agents", "finish"],
+        [{ name: "agents", reason: "isolated benchmark has no hosted agent delegation" }],
       ),
     ).toEqual({
       agent: "may",
-      configuredTools: ["coding", "checkpoint", "finish"],
-      deniedTools: [{ name: "checkpoint", reason: "isolated benchmark has no durable checkpoint service" }],
+      configuredTools: ["coding", "agents", "finish"],
+      deniedTools: [{ name: "agents", reason: "isolated benchmark has no hosted agent delegation" }],
       effectiveTools: ["coding", "finish"],
     });
   });
 
   test("rejects unknown, duplicate, and unexplained denials", () => {
-    expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: "checkpoint", reason: "not configured" }])).toThrow(
+    expect(() => resolveDirectToolPolicy("may", ["coding"], [{ name: "agents", reason: "not configured" }])).toThrow(
       "unconfigured tool",
     );
     expect(() =>
@@ -275,7 +275,7 @@ describe("direct agent tool policy", () => {
         description: "example",
         domain: "test",
         model: "test",
-        tools: ["checkpoint"],
+        tools: ["query_db"],
       }),
     );
     try {
@@ -290,7 +290,7 @@ describe("direct agent tool policy", () => {
           outputRoot: join(root, "output"),
           models: { test: {} as any },
         }),
-      ).rejects.toThrow('cannot construct effective tool "checkpoint"');
+      ).rejects.toThrow('cannot construct effective tool "query_db"');
     } finally {
       await rm(root, { recursive: true, force: true });
     }

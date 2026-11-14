@@ -142,7 +142,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       },
     });
     const bus = new EventBus();
-    const tools = await buildTools({ name: "owner", tools: ["workflow", "agents", "finish"] } as never, {
+    const tools = await buildTools({ name: "owner", tools: ["agents", "finish"] } as never, {
       manager,
       bus,
       agentDir,

@@ -11,9 +11,7 @@ export const VALID_TOOL_PRESETS = new Set([
   "coding",
   "read-only",
   "agents",
-  "workflow",
   "finish",
-  "checkpoint",
   "cli-delegation",
   "query_db",
 ]);

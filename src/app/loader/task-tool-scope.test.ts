@@ -2,8 +2,6 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runWithAgentSessionContext } from "../../lib/agent-session-context.js";
-import { readCheckpoints } from "../../lib/tools/checkpoint.js";
 import { EventBus } from "../core/events/bus.js";
 import type { AgentConfig } from "./agent-config.js";
 import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
@@ -88,41 +86,4 @@ test("Task-bound workflow tools use their exact binding; unbound workflows get n
   session.source = "app-task-agent";
   session.projectId = "legacy";
   expect(await get()).toEqual({ error: "App legacy has no loaded Task runtime" });
-});
-
-test("checkpoint preset isolates same-name agent session contexts and falls back when no context is active", async () => {
-  const root = mkdtempSync(join(tmpdir(), "may-tool-checkpoint-"));
-  roots.push(root);
-  let fallbackSessionId: string | undefined = "s-fallback";
-  const tools = await buildTools(
-    { name: "worker", tools: ["checkpoint"] } as unknown as AgentConfig,
-    {
-      ...fixtureOptions(root),
-      getAgentSessionId: (agentName) => (agentName === "worker" ? fallbackSessionId : undefined),
-    },
-  );
-  const checkpoint = tools.find((row) => row.name === "checkpoint")!;
-
-  await runWithAgentSessionContext("worker", "s-ctx-1", () =>
-    checkpoint.execute("cp-1", { summary: "Context one progress", data: { step: "one" } }),
-  );
-  await runWithAgentSessionContext("worker", "s-ctx-2", () =>
-    checkpoint.execute("cp-2", { summary: "Context two progress", data: { step: "two" } }),
-  );
-  await checkpoint.execute("cp-fallback", { summary: "Fallback session progress" });
-  fallbackSessionId = undefined;
-  await checkpoint.execute("cp-unknown", { summary: "No context progress" });
-
-  expect(readCheckpoints(root, "s-ctx-1")).toMatchObject([
-    { sessionId: "s-ctx-1", agentName: "worker", step: 1, summary: "Context one progress", data: { step: "one" } },
-  ]);
-  expect(readCheckpoints(root, "s-ctx-2")).toMatchObject([
-    { sessionId: "s-ctx-2", agentName: "worker", step: 1, summary: "Context two progress", data: { step: "two" } },
-  ]);
-  expect(readCheckpoints(root, "s-fallback")).toMatchObject([
-    { sessionId: "s-fallback", agentName: "worker", step: 1, summary: "Fallback session progress", data: {} },
-  ]);
-  expect(readCheckpoints(root, "unknown")).toMatchObject([
-    { sessionId: "unknown", agentName: "worker", step: 1, summary: "No context progress", data: {} },
-  ]);
 });

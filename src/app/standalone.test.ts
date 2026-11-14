@@ -37,7 +37,7 @@ function setupDirectLayout() {
   mkdirSync(sharedRoot, { recursive: true });
 
   for (const [name, tools, promptText] of [
-    ["owner", ["coding", "workflow", "checkpoint", "finish"], "Owner instructions"],
+    ["owner", ["coding", "agents", "finish"], "Owner instructions"],
     ["reviewer", ["coding", "agents", "finish"], "Lab-forked reviewer instructions v2"],
   ] as const) {
     const dir = join(agentsRoot, name);

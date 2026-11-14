@@ -27,6 +27,7 @@ const fakeModels = {
   "gpt-5.4": { id: "gpt-5.4", provider: "github-copilot" },
   "gpt-5.5": { id: "gpt-5.5", provider: "github-copilot" },
   "gpt-5.6-sol": { id: "gpt-5.6-sol", provider: "github-copilot" },
+  "gpt-6-astra": { id: "gpt-6-astra", provider: "github-copilot" },
   "gemini-3.1-pro-preview": { id: "gemini-3.1-pro-preview", provider: "github-copilot" },
 };
 
