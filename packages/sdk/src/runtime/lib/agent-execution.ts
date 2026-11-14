@@ -920,7 +920,7 @@ export function createExecutionUsage(preparation: PreparationMeasurement) {
   };
 }
 
-const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "tasks"]);
+const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read"]);
 
 const SEQUENTIAL_TOOL_NAMES = new Set([
   "agents",
