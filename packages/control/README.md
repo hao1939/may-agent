@@ -245,7 +245,7 @@ or new scheduler. Thresholds, review and remediation remain App policy.
 
 ## Selecting a human interface
 
-The CLI resolves one interface binding before selecting runtime, send, emit,
+The CLI resolves one interface binding before selecting runtime, emit,
 web-only or maintenance mode. Agent precedence is `--agent` (including
 `--agent=name`), then `AGENT`, then `DAEMON_AGENT`, then `host`. The App and
 Conversation come from `CONVERSATION_APP` and optional `CONVERSATION_ID`;
@@ -255,7 +255,6 @@ path rather than selecting the agent again from the environment.
 | Setting | Selects |
 | --- | --- |
 | `--agent` / `AGENT` | Interface identity and daemon socket name |
-| `--send <recipient>` | Agent receiving this message |
 | `CONVERSATION_APP` | App admitting human-interface input |
 | `CONVERSATION_ID` | Retained communication context; defaults to `<app>:primary` |
 

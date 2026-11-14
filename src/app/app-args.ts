@@ -1,7 +1,5 @@
 import { interfaceBinding, type InterfaceBinding } from "@may-agent/control";
-import { existsSync, readFileSync } from "node:fs";
 import { parseEmitMode } from "./modes/emit.js";
-import { parseOneshotTimeoutMinutes } from "./modes/oneshot.js";
 
 export interface AppArgs {
   cronEnabled: boolean;
@@ -10,19 +8,12 @@ export interface AppArgs {
   socketEnabled: boolean;
   webEnabled: boolean;
   quietConsole: boolean;
-  oneshotMode: boolean;
   statusMode: boolean;
-  messageMode: boolean;
   emitMode: ReturnType<typeof parseEmitMode>;
   dryRun: boolean;
-  initialTask: string | null;
   humanInterface: InterfaceBinding;
   webOnlyMode: boolean;
-  oneshotTimeoutMinutes: number;
   notify: boolean;
-  envSessionId?: string;
-  envParentSessionId?: string;
-  envParentAgent?: string;
   /** Private parent-to-child payload for one isolated Task attempt. */
   taskWorkerRequest?: string;
   /** Private one-shot Task recovery worker. */
@@ -43,12 +34,9 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   const socketEnabled = argv.includes("--socket");
   const webEnabled = argv.includes("--web");
   const quietConsole = argv.includes("--chat");
-  const oneshotMode = argv.includes("--oneshot");
   const statusMode = argv.includes("--status");
-  const messageMode = argv.includes("--send");
   const emitMode = parseEmitMode(argv);
   const dryRun = argv.includes("--dry-run");
-  const initialTask = parseInitialTask(argv);
   const humanInterface = interfaceBinding(env, parseInterfaceAgent(argv));
   const taskWorkerIndex = argv.indexOf("--task-worker-once");
   const taskWorkerRequest = taskWorkerIndex >= 0 ? argv[taskWorkerIndex + 1] : undefined;
@@ -70,12 +58,9 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     socketEnabled,
     webEnabled,
     quietConsole,
-    oneshotMode,
     statusMode,
-    messageMode,
     emitMode,
     dryRun,
-    initialTask,
     humanInterface,
     webOnlyMode:
       webEnabled &&
@@ -83,34 +68,13 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
       !cronEnabled &&
       !socketEnabled &&
       !telegramEnabled &&
-      !oneshotMode &&
-      !statusMode &&
-      !messageMode &&
-      !initialTask,
-    oneshotTimeoutMinutes: parseOneshotTimeoutMinutes(argv),
+      !statusMode,
     notify: argv.includes("--notify"),
-    envSessionId: env.SESSION_ID || undefined,
-    envParentSessionId: env.PARENT_SESSION_ID || undefined,
-    envParentAgent: env.PARENT_AGENT || undefined,
     ...(taskWorkerRequest ? { taskWorkerRequest } : {}),
     taskRecoveryWorker,
     ...(taskWorkerSource ? { taskWorkerSource } : {}),
     taskAdmissionWorker,
   };
-}
-
-function parseInitialTask(argv: string[]): string | null {
-  const idx = argv.indexOf("--task");
-  if (idx !== -1 && argv[idx + 1]) return argv[idx + 1];
-
-  const fileIdx = argv.indexOf("--task-file");
-  if (fileIdx !== -1 && argv[fileIdx + 1]) {
-    const taskFile = argv[fileIdx + 1];
-    if (existsSync(taskFile)) return readFileSync(taskFile, "utf-8").trim();
-    throw new Error(`Task file not found: ${taskFile}`);
-  }
-
-  return null;
 }
 
 function parseInterfaceAgent(argv: string[]): string | undefined {

@@ -74,16 +74,12 @@ Options:
   -h, --help                 Show this help and exit
   -v, --version              Show version and git SHA
   --agent <name>             Select the interface agent
-  --task <text>              Run an initial task
-  --task-file <path>         Read the initial task from a file
-  --oneshot                  Run one task and exit
   --console, --chat          Enable the console interface
   --telegram                 Enable the Telegram interface
   --cron                     Enable optional schedules (Tasks run without it)
   --socket                   Enable the daemon socket
   --web                      Enable the web interface (alone: web-only mode)
   --status                   Print runtime status
-  --send                     Send a message
   --emit <event-type>        Emit an event through the running daemon
   --maintenance-once         Run one maintenance pass and exit`);
   process.exit(0);
@@ -142,7 +138,6 @@ if (process.argv.includes("--maintenance") || process.argv.includes("--maintenan
 const controlExitCode = await runRequestedControlExitMode({
   appArgs,
   persistDir: PERSIST_DIR,
-  socketPath: controlSocketPath,
 });
 if (controlExitCode !== null) process.exit(controlExitCode);
 

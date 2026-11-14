@@ -32,7 +32,6 @@ import {
   prepareDaemonAgents,
   runDaemonKeepalive,
   runInteractiveLoop,
-  startInitialTask,
   type InstanceIdentity,
 } from "./daemon.js";
 import { HumanTaskService } from "./human-task-service.js";
@@ -159,11 +158,7 @@ export async function runAppRuntime(opts: {
     socketEnabled: SOCKET_ENABLED,
     webEnabled: WEB_ENABLED,
     quietConsole: QUIET_CONSOLE,
-    initialTask: INITIAL_TASK,
     humanInterface,
-    envSessionId: ENV_SESSION_ID,
-    envParentSessionId: ENV_PARENT_SESSION_ID,
-    envParentAgent: ENV_PARENT_AGENT,
   } = opts.appArgs;
   const interfaceAgent = humanInterface.agent;
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
@@ -177,13 +172,12 @@ export async function runAppRuntime(opts: {
   attachEventPersistence({ bus, persistDir: opts.persistDir });
   markStartupPhase("database");
 
-  let taskSessionId: string | undefined;
   let activeRL: { close: () => void } | null = null;
 
   if (interactiveConsole) {
     attachConsoleUI(
       bus,
-      () => taskSessionId ?? null,
+      () => null,
       QUIET_CONSOLE,
       () => {
         if (activeRL) emitPrompt();
@@ -501,7 +495,7 @@ export async function runAppRuntime(opts: {
   });
   const handleInput = commandRouter.handleInput;
 
-  if ((interactiveConsole || INITIAL_TASK) && !manager.hasAgent(interfaceAgent)) {
+  if (interactiveConsole && !manager.hasAgent(interfaceAgent)) {
     console.error(`Agent "${interfaceAgent}" is not registered. Available: ${manager.agentNames().join(", ")}`);
     process.exit(1);
   }
@@ -580,13 +574,6 @@ export async function runAppRuntime(opts: {
 
   await runRequestedExitMode({
     appArgs: opts.appArgs,
-    agentsRoot: opts.agentsRoot,
-    sharedRoot: opts.sharedRoot,
-    projectsRoot: opts.projectsRoot,
-    projectRoot: opts.projectRoot,
-    persistDir: opts.persistDir,
-    bus,
-    manager,
   });
 
   if (backgroundEnabled) {
@@ -599,17 +586,6 @@ export async function runAppRuntime(opts: {
     });
   }
 
-  taskSessionId = await startInitialTask({
-    bus,
-    manager,
-    interfaceAgent,
-    initialTask: INITIAL_TASK,
-    interactiveMode: interactiveConsole,
-    envSessionId: ENV_SESSION_ID,
-    envParentSessionId: ENV_PARENT_SESSION_ID,
-    envParentAgent: ENV_PARENT_AGENT,
-  });
-
   opts.writeIdentity({
     pid: process.pid,
     agent: interfaceAgent,
@@ -621,15 +597,11 @@ export async function runAppRuntime(opts: {
       : opts.instance.startsWith("job-")
         ? "cron:" + opts.instance.replace("job-", "")
         : "task",
-    task: INITIAL_TASK,
+    task: null,
     status: "running",
-    sessionId: taskSessionId,
   });
 
-  if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
-    bus.emit({ type: "info", message: "[task] Task completed. Exiting." });
-    process.exit(0);
-  } else if (interactiveConsole) {
+  if (interactiveConsole) {
     await runInteractiveLoop({
       bus,
       manager,

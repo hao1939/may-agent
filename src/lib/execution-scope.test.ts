@@ -8,8 +8,6 @@ import { SubagentManager } from "./manager.js";
 import { executionTimeout } from "./execution-scope.js";
 import { closeDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
-import { runOneshotMode } from "../app/modes/oneshot.js";
-import { fileURLToPath } from "node:url";
 import { EventBus } from "../app/core/events/bus.js";
 import { createTaskSessionRecovery } from "../app/adapters/executors/session-recovery.js";
 
@@ -53,32 +51,6 @@ function fixture(behavior: (text: string, stopped: Promise<void>) => Promise<str
 }
 
 describe("shared execution scope", () => {
-  it.each(["success", "failure"])("one-shot subprocess reports %s after execution cleanup", async (mode) => {
-    const root = mkdtempSync(join(tmpdir(), "may-oneshot-result-"));
-    roots.push(root);
-    const child = Bun.spawn(
-      [process.execPath, fileURLToPath(new URL("../../test/fixtures/oneshot-result.ts", import.meta.url)), root, mode],
-      {
-        stdout: "pipe",
-        stderr: "pipe",
-        timeout: 10_000,
-      },
-    );
-    const [stdout, stderr, exit] = await Promise.all([
-      new Response(child.stdout).text(),
-      new Response(child.stderr).text(),
-      child.exited,
-    ]);
-    expect(exit).toBe(mode === "success" ? 0 : 1);
-    const result = JSON.parse(stdout.trim().split("\n").at(-1)!);
-    expect(result.status).toBe(mode === "success" ? "success" : "error");
-    if (mode === "success") expect(result.result).toBe("fixture answer");
-    else {
-      expect(result.error).toBe("fixture execution failed");
-      expect(stderr).toContain("fixture execution failed");
-    }
-  });
-
   it("validates limits and clamps to the remaining caller allowance", () => {
     expect(executionTimeout()).toBe(1_800_000);
     for (const value of [0, -1, NaN, Infinity, 2_147_483_648]) expect(() => executionTimeout(value)).toThrow();
@@ -86,28 +58,14 @@ describe("shared execution scope", () => {
     expect(() => executionTimeout(60_000, Date.now() - 1)).toThrow("expired");
   });
 
-  it("one-shot returns an exact failed result after the session leaves the live map", async () => {
+  it("waitFor returns an exact failed result after the session leaves the live map", async () => {
     const manager = fixture(async () => {
       throw new Error("fixture failure");
     });
-    const logs: string[] = [];
-    const original = console.log;
-    console.log = (text) => logs.push(String(text));
-    try {
-      expect(
-        await runOneshotMode({
-          manager,
-          agentName: "worker",
-          task: "fail",
-          timeoutMinutes: 1,
-          formatDurationMs: String,
-        }),
-      ).toBe(1);
-    } finally {
-      console.log = original;
-    }
+    const sessionId = manager.run("worker", "fail", { kind: "call", timeoutMs: 60_000 });
+    const execution = await manager.waitFor(sessionId);
     expect(manager.status()).toEqual([]);
-    expect(JSON.parse(logs.at(-1)!)).toMatchObject({ status: "error", error: "fixture failure" });
+    expect(execution).toMatchObject({ status: "error", error: "fixture failure" });
   });
 
   it("cancels and joins a nested helper before returning the parent result", async () => {
