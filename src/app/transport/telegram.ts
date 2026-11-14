@@ -15,7 +15,7 @@ import type { AppConversationResource, AppConversationTopic } from "@may-agent/s
 import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
 import type { EventBus } from "../core/events/bus.js";
 import { readPersistedTelegramReloadCompletion, resumeRecordedTelegramInput } from "../core/events/persisted.js";
-import { log } from "../../lib/log.js";
+import { log } from "../../../packages/sdk/src/runtime/index.js";
 import {
   isTaskDerivedViewWake,
   TASK_UPDATE_EVENT_TYPES,

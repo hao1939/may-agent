@@ -12,7 +12,7 @@ import {
   withGithubCopilotIdeTokenRecovery,
 } from "./agent-execution.js";
 import { agentExecutionResult, currentAgentSessionId, readFileWritePolicy } from "../../packages/sdk/src/runtime/index.js";
-import { createFinishTool } from "./tools/lifecycle.js";
+import { createFinishTool } from "../../packages/sdk/src/runtime/index.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { taskAgentResultSchema } from "@may-agent/sdk";

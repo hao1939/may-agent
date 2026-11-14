@@ -82,7 +82,7 @@ export type { InstanceIdentity } from "./instance-identity.js";
 export type { PersistedSession, SessionKind } from "./persistence.js";
 export { sendSocketCommand, waitForSocketEvent } from "@may-agent/control/client";
 export type { SocketEvent, SocketResponse } from "@may-agent/control/client";
-export type { ModelWithApiKey, SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
+export type { ModelWithApiKey, SessionInfo, SubagentDefinition, TaskResult } from "../../packages/sdk/src/runtime/index.js";
 
 export {
   getExecutionResultFromDb,

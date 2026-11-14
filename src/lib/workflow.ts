@@ -4,7 +4,7 @@ import type {
   TaskReconcileResult,
   WorkflowContext,
 } from "@may-agent/sdk";
-import type { TaskResult } from "./types.js";
+import type { TaskResult } from "../../packages/sdk/src/runtime/index.js";
 export type { WorkflowContext } from "@may-agent/sdk";
 
 // ── Workflow Lifecycle Callback Events ────────────────────────────────

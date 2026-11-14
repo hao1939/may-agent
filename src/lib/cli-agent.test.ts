@@ -28,7 +28,7 @@ import {
   readSessionMessagesTail,
   readSessionBashProcessGroups,
 } from "./persistence.js";
-import { drainBashProcessGroup, processGroupContainsLiveMember } from "./tools/bash.js";
+import { drainBashProcessGroup, processGroupContainsLiveMember } from "../../packages/sdk/src/runtime/index.js";
 import { cliCallFacts, createRunCliAgentTool } from "./tools/run-cli-agent.js";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { EventBus, EVENT_DELIVERY_RESULT, type AgentEvent } from "../app/core/events/bus.js";

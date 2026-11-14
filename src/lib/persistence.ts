@@ -28,7 +28,7 @@ import {
 } from "../../packages/sdk/src/runtime/index.js";
 import { currentProcessInstance, isProcessInstanceAlive, type PersistedProcessInstance } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
-import { log } from "./log.js";
+import { log } from "../../packages/sdk/src/runtime/index.js";
 import type { ToolPolicy } from "../../packages/sdk/src/runtime/index.js";
 
 export {

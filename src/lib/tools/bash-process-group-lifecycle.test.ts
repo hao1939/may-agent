@@ -11,7 +11,7 @@ import {
   drainPersistedSessionBashProcessGroups,
   drainSessionBashProcessGroups,
   processGroupContainsLiveMember,
-} from "./bash.js";
+} from "../../../packages/sdk/src/runtime/index.js";
 
 const fixtures: string[] = [];
 

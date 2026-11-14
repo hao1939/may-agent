@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
 import type { SubagentManager } from "../../../lib/index.js";
-import type { SubagentDefinition } from "../../../lib/types.js";
+import type { SubagentDefinition } from "../../../../packages/sdk/src/runtime/index.js";
 import { childEventTrace } from "../../core/events/bus.js";
 import { projectAppTaskChildPromptContext } from "../../core/tasks/app-task-context.js";
 import type { TaskAgentInput, TaskAgentRunner } from "../../core/tasks/execution.js";

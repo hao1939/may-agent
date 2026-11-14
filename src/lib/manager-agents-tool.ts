@@ -8,8 +8,8 @@ import { Type, type Static } from "typebox";
 
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { StringEnum } from "@earendil-works/pi-ai";
-import type { RegisteredAgent } from "./manager-utils.js";
-import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
+import type { RegisteredAgent } from "../../packages/sdk/src/runtime/index.js";
+import type { SessionInfo, SubagentDefinition, TaskResult } from "../../packages/sdk/src/runtime/index.js";
 import type { PersistedSession, TaskBinding } from "./persistence.js";
 import { getDb } from "./db/connection.js";
 import {

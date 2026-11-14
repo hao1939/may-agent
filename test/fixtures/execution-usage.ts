@@ -1,5 +1,5 @@
 import type { AssistantMessage } from "@earendil-works/pi-ai";
-import { createExecutionUsage, type PreparationMeasurement } from "../../src/lib/execution-usage.js";
+import { createExecutionUsage, type PreparationMeasurement } from "../../packages/sdk/src/runtime/index.js";
 
 export const preparationFixture: PreparationMeasurement = {
   preparer: "full",

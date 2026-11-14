@@ -5,7 +5,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { SubagentManager } from "./manager.js";
-import type { SubagentDefinition, TaskResult } from "./types.js";
+import type { SubagentDefinition, TaskResult } from "../../packages/sdk/src/runtime/index.js";
 import { closeDb } from "./db/connection.js";
 import { getWorkflowRun } from "./db/workflows.js";
 import { createWorkflowRunner } from "./workflow-tool.js";

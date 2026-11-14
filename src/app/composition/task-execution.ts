@@ -1,5 +1,5 @@
 import type { SubagentManager } from "../../lib/index.js";
-import type { SubagentDefinition } from "../../lib/types.js";
+import type { SubagentDefinition } from "../../../packages/sdk/src/runtime/index.js";
 import { captureAgentDefinitions } from "../adapters/executors/agent-definitions.js";
 import { createTaskAgentRunner } from "../adapters/executors/managed-agent.js";
 import { createTaskSessionRecovery } from "../adapters/executors/session-recovery.js";

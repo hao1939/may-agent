@@ -5,7 +5,7 @@ import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { resolvedExecutionRecipient } from "./execution-recipient.js";
 import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
-import { drainSessionBashProcessGroups } from "./tools/bash.js";
+import { drainSessionBashProcessGroups } from "../../packages/sdk/src/runtime/index.js";
 /**
  * Durable agent session runtime.
  *
@@ -36,7 +36,7 @@ import {
   type MaySkill,
   type ToolPolicy,
 } from "../../packages/sdk/src/runtime/index.js";
-import { createAgentRun, type AgentRun } from "./agent-runner.js";
+import { createAgentRun, type AgentRun } from "../../packages/sdk/src/runtime/index.js";
 import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";
 
 import { existsSync, mkdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
@@ -52,7 +52,7 @@ import {
   listRunningWorkflowRunIdsBefore,
   updateWorkflowRun,
 } from "./db/workflows.js";
-import { log } from "./log.js";
+import { log } from "../../packages/sdk/src/runtime/index.js";
 import { createAgentsTool as createAgentsToolFn, type CreateAgentsToolOptions } from "./manager-agents-tool.js";
 import {
   classifyTerminalAssistantFailure,
@@ -63,7 +63,7 @@ import {
   isRetryableEmptyAssistantFailure,
   trimTerminalEmptyAssistantTurn,
   truncateForPrompt,
-} from "./manager-utils.js";
+} from "../../packages/sdk/src/runtime/index.js";
 import type { PersistedSession, SessionKind, TaskBinding } from "./persistence.js";
 import {
   RegistryStore,
@@ -80,8 +80,8 @@ import {
   sessionOutputDir,
 } from "./persistence.js";
 import { confirmSessionExecutionStopped, hasLiveSessionExecution } from "./session-cleanup.js";
-import { createFinishTool } from "./tools/lifecycle.js";
-import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
+import { createFinishTool } from "../../packages/sdk/src/runtime/index.js";
+import type { SessionInfo, SubagentDefinition, TaskResult } from "../../packages/sdk/src/runtime/index.js";
 
 // Re-export utilities that other modules import from manager
 export { classifyError, extractFinishParams };
@@ -92,9 +92,9 @@ export {
   generateId,
   isToolError,
   truncateForPrompt,
-} from "./manager-utils.js";
-export type { RegisteredAgent } from "./manager-utils.js";
-export type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
+} from "../../packages/sdk/src/runtime/index.js";
+export type { RegisteredAgent } from "../../packages/sdk/src/runtime/index.js";
+export type { SessionInfo, SubagentDefinition, TaskResult } from "../../packages/sdk/src/runtime/index.js";
 
 // ── Types ─────────────────────────────────────────────────────────────
 

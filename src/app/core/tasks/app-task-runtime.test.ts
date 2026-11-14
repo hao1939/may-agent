@@ -14,7 +14,7 @@ import {
   type AppInputContext,
   type TaskExecutor,
 } from "@may-agent/sdk";
-import { addLogSubscriber } from "../../../lib/log.js";
+import { addLogSubscriber } from "../../../../packages/sdk/src/runtime/index.js";
 import { readTaskChecks } from "./task-check-observations.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
 import { DbWriter } from "../../../lib/db-writer.js";

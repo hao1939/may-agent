@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentConfig } from "../../loader/agent-config.js";
+import type { AgentConfig } from "../../../../packages/sdk/src/runtime/index.js";
 import { buildTools, type ToolsetLoaderOptions } from "../../loader/toolset-loader.js";
 import { EventBus } from "../events/bus.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";

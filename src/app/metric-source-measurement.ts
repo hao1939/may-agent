@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { openReadOnlyDatabase } from "../lib/db.js";
 import { readSqlQueryEvidence } from "../lib/db/query-performance.js";
 import { createMetricService } from "../lib/metrics.js";
-import { log } from "../lib/log.js";
+import { log } from "../../packages/sdk/src/runtime/index.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
 import { getDb } from "../lib/db/connection.js";
 import { withSqliteInitializationRetry } from "../lib/db/busy-retry.js";

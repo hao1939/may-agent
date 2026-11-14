@@ -10,7 +10,7 @@ import {
   sessionDir,
   type TaskBinding,
 } from "../../../lib/persistence.js";
-import type { drainPersistedSessionBashProcessGroups } from "../../../lib/tools/bash.js";
+import type { drainPersistedSessionBashProcessGroups } from "../../../../packages/sdk/src/runtime/index.js";
 import { confirmSessionExecutionStopped, hasLiveSessionExecution, readSessionCleanupMeta } from "../../../lib/session-cleanup.js";
 import { writeSessionResult } from "../../../lib/artifacts.js";
 import type { AgentEvent, EventBus } from "../../core/events/bus.js";

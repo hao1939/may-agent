@@ -35,7 +35,7 @@ import {
   type PreparedAgentGeneration,
 } from "./loader/agent-registry-loader.js";
 
-export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "./loader/agent-config.js";
+export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "../../packages/sdk/src/runtime/index.js";
 export {
   listAgentDirectories,
   listConfiguredAgentNames,

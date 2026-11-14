@@ -1,7 +1,7 @@
 import type { SubagentManager } from "./manager.js";
 import { readSessionProcessOwner, readSessionMetaRecoveryEvidence, type PersistedSession, type TaskBinding } from "./persistence.js";
 import { isProcessInstanceAlive } from "./process-identity.js";
-import { drainPersistedSessionBashProcessGroups } from "./tools/bash.js";
+import { drainPersistedSessionBashProcessGroups } from "../../packages/sdk/src/runtime/index.js";
 
 type SessionCleanupOptions = {
   manager: Pick<SubagentManager, "hasActiveSession">;

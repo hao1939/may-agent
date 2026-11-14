@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { createBashTool } from "../../src/lib/tools/bash.js";
+import { createBashTool } from "../../packages/sdk/src/runtime/index.js";
 
 describe("createBashTool", () => {
   it("executes a simple command and returns output", async () => {

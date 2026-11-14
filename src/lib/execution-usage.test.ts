@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import { calculateCost } from "@earendil-works/pi-ai";
 import { createModelRegistry } from "../../packages/sdk/src/runtime/index.js";
-import { createExecutionUsage } from "./execution-usage.js";
+import { createExecutionUsage } from "../../packages/sdk/src/runtime/index.js";
 import { preparationFixture, usageReply, observeReply } from "../../test/fixtures/execution-usage.js";
 
 test("usage counts new model replies, caches and fallback separately, including empty error responses", () => {

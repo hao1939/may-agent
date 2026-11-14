@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { generateId } from "./manager-utils.js";
+import { generateId } from "../../packages/sdk/src/runtime/index.js";
 
 describe("generateId()", () => {
   it("uses default prefix and custom prefix", () => {

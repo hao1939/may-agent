@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { createAgentRun } from "../../src/lib/agent-runner.js";
+import { createAgentRun } from "../../packages/sdk/src/runtime/index.js";
 import { createTaskAgentRunner } from "../../src/app/adapters/executors/managed-agent.js";
 import { createTaskWorkflowRunner } from "../../src/app/adapters/executors/workflow.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";

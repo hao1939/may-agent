@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { processGroupContainsLiveMember } from "./bash.js";
+import { processGroupContainsLiveMember } from "../../../packages/sdk/src/runtime/index.js";
 
 function procStat(pid: number, state: string, pgid: number): string {
   return `${pid} (command) ${state} 1 ${pgid} 0 0`;

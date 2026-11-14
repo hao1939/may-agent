@@ -1,6 +1,6 @@
 import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import type { SubagentManager } from "../lib/index.js";
-import { log } from "../lib/log.js";
+import { log } from "../../packages/sdk/src/runtime/index.js";
 import { validateSessionControl } from "./adapters/executors/session-control.js";
 import {
   EVENT_RECORD_ONLY,

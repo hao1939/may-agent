@@ -10,7 +10,7 @@ import { workflowExecutionResult } from "../../packages/sdk/src/runtime/index.js
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
-import type { SubagentDefinition } from "./types.js";
+import type { SubagentDefinition } from "../../packages/sdk/src/runtime/index.js";
 
 const workerDef: SubagentDefinition = {
   name: "worker", description: "Worker", domain: "test", model: fakeModel(), tools: [],

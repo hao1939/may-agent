@@ -8,10 +8,10 @@ import {
   listRuntimeAgentDirectories,
   readFileWritePolicy,
 } from "../../../packages/sdk/src/runtime/index.js";
-import type { ModelWithApiKey, SubagentDefinition } from "../../lib/types.js";
+import type { ModelWithApiKey, SubagentDefinition } from "../../../packages/sdk/src/runtime/index.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
-import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "./agent-config.js";
+import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "../../../packages/sdk/src/runtime/index.js";
 import { buildTools } from "./toolset-loader.js";
 
 export interface AgentLoaderOptions {

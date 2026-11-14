@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { contextUsageQuery, readContextUsage } from "../../src/app/adapters/reporting/context-usage.js";
 import { buildAgentDefinition } from "../../packages/sdk/src/runtime/index.js";
-import { createAgentRun } from "../../src/lib/agent-runner.js";
+import { createAgentRun } from "../../packages/sdk/src/runtime/index.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { readSessionMeta } from "../../src/lib/persistence.js";

@@ -33,7 +33,7 @@ import { afterStateCommit, inStateTransaction, stateTransaction } from "./db/tra
 import { persistEventClosure, persistEventTrace, readEventTraceMetadata } from "./db/event-traces.js";
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
-import { log } from "./log.js";
+import { log } from "../../packages/sdk/src/runtime/index.js";
 import { escalationFeedbackTarget } from "./escalation-feedback.js";
 import { applyMetricMutation } from "./db/metric-mutation.js";
 import type { TaskBinding } from "./persistence.js";

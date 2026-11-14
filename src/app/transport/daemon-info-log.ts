@@ -18,7 +18,7 @@
  */
 
 import type { EventBus } from "../core/events/bus.js";
-import { log } from "../../lib/log.js";
+import { log } from "../../../packages/sdk/src/runtime/index.js";
 
 export function attachDaemonInfoLog(bus: EventBus): void {
   bus.listen(

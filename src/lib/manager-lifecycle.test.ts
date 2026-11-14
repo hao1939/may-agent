@@ -13,12 +13,12 @@ import { join } from "node:path";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { markStaleSession } from "../../test/fixtures/stale-session.js";
 import { EventBus } from "../app/core/events/bus.js";
-import { createAgentRun } from "./agent-runner.js";
+import { createAgentRun } from "../../packages/sdk/src/runtime/index.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
 import { appendSessionMessage, loadAllSessionMetas } from "./persistence.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
-import type { SubagentDefinition } from "./types.js";
+import type { SubagentDefinition } from "../../packages/sdk/src/runtime/index.js";
 
 function definition(version: string) {
   return {

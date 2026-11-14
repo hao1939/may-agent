@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { applyErrorNudges, type ErrorNudge } from "./bash.js";
+import { applyErrorNudges, type ErrorNudge } from "../../../packages/sdk/src/runtime/index.js";
 
 describe("applyErrorNudges", () => {
 	it("appends sqlite3 hint when 'sqlite3: command not found' appears", () => {
