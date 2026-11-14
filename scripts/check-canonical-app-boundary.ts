@@ -85,7 +85,7 @@ function rejectDeepSdkImports(path: string): void {
 function isAppRuntimeDeclaration(path: string, appDir: string): boolean {
   const display = relative(appDir, path).replaceAll("\\", "/");
   if (/\.test\.[^.]+$/.test(display)) return false;
-  return /^(?:app\.[^/]+|watchers\/|agents\/[^/]+\/workflows\/)/.test(display);
+  return /^(?:app\.[^/]+|watchers\/|agents\/(?:[^/]+\/)*workflows\/)/.test(display);
 }
 
 function rejectAppSdkImports(path: string, appDir: string, displayRoot: string): void {

@@ -30,16 +30,20 @@ test("canonical boundary recognizes import-type expressions and preserves allowe
   const appsRoot = join(root, "projects");
   const appDir = join(appsRoot, "sample.app");
   const workflowDir = join(appDir, "agents", "worker", "workflows");
+  const nestedWorkflowDir = join(appDir, "agents", "group", "worker", "workflows");
   mkdirSync(join(runtimeRoot, "packages", "sdk", "src"), { recursive: true });
   mkdirSync(join(runtimeRoot, "src"), { recursive: true });
   mkdirSync(join(runtimeRoot, "test"), { recursive: true });
   mkdirSync(workflowDir, { recursive: true });
+  mkdirSync(nestedWorkflowDir, { recursive: true });
   writeFileSync(join(runtimeRoot, "packages", "sdk", "package.json"), JSON.stringify({ exports: {} }));
   writeFileSync(join(appDir, "app.ts"), 'import { defineApp } from "@may-agent/sdk/app";\nexport default defineApp;\n');
-  writeFileSync(
-    join(workflowDir, "allowed.test.ts"),
-    'type Runner = import("@may-agent/sdk/standalone").DirectRunOptions;\n',
-  );
+  for (const dir of [workflowDir, nestedWorkflowDir]) {
+    writeFileSync(
+      join(dir, "allowed.test.ts"),
+      'type Runner = import("@may-agent/sdk/standalone").DirectRunOptions;\n',
+    );
+  }
 
   const allowed = await runBoundary(runtimeRoot, appsRoot);
   expect(allowed.stdout).toContain("Canonical App boundary: 0 error(s); Runtime + Apps");
@@ -58,8 +62,15 @@ test("canonical boundary recognizes import-type expressions and preserves allowe
   });
   unlinkSync(runtimeImport);
 
+  const shallowBlocked = join(workflowDir, "blocked.ts");
+  writeFileSync(shallowBlocked, 'type Runner = import("@may-agent/sdk/standalone").DirectRunOptions;\n');
+  await expect(runBoundary(runtimeRoot, appsRoot)).rejects.toMatchObject({
+    stderr: expect.stringContaining("App runtime declarations cannot import @may-agent/sdk/standalone"),
+  });
+  unlinkSync(shallowBlocked);
+
   writeFileSync(
-    join(workflowDir, "blocked.ts"),
+    join(nestedWorkflowDir, "blocked.ts"),
     'type Runner = import("@may-agent/sdk/standalone").DirectRunOptions;\n',
   );
   await expect(runBoundary(runtimeRoot, appsRoot)).rejects.toMatchObject({
