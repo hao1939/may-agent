@@ -293,13 +293,10 @@ export async function execute(ctx) {
       assert.equal(exitedCode, 0);
       assert.equal(order.includes("keepalive"), false);
       assert.equal(order.includes("interactive"), false);
-      exitSpy.mockRestore();
-      console.log("startup-contract-ok");
-      process.exit(0);
     } finally {
       exitSpy.mockRestore();
     }
-  }
+  } else {
   await runAppRuntime({
     ...(reportingFailure
       ? {
@@ -548,6 +545,7 @@ export async function execute(ctx) {
       assert.equal(acceptedState(previousTask.taskId), "converged", "accepted work survives rollback");
       await runTask("work/after");
     }
+  }
   }
   console.log("startup-contract-ok");
 } finally {
