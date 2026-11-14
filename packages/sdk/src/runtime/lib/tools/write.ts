@@ -1,13 +1,13 @@
 import { Type, type TSchema } from "typebox";
-import type { FileWritePolicy } from "./file-write-policy.js";
+import type { FileWritePolicy } from "./path-utils.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 
 import { mkdir as fsMkdir, readFile as fsReadFile, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
 import { dirname } from "path";
 import { resolveToCwd } from "./path-utils.js";
-import { checkCrossEditGuard } from "./cross-edit-guard.js";
-import { withAbortSignal } from "./abort-utils.js";
+import { checkCrossEditGuard } from "./path-utils.js";
+import { withAbortSignal } from "./path-utils.js";
 import { generateDiffString } from "./edit-diff.js";
 
 const writeSchema: TSchema = Type.Object({

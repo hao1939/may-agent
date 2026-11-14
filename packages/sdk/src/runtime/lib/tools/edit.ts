@@ -1,5 +1,5 @@
 import { Type, type TSchema } from "typebox";
-import type { FileWritePolicy } from "./file-write-policy.js";
+import type { FileWritePolicy } from "./path-utils.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 
@@ -15,8 +15,8 @@ import {
 	stripBom,
 } from "./edit-diff.js";
 import { resolveToCwd } from "./path-utils.js";
-import { checkCrossEditGuard } from "./cross-edit-guard.js";
-import { withAbortSignal } from "./abort-utils.js";
+import { checkCrossEditGuard } from "./path-utils.js";
+import { withAbortSignal } from "./path-utils.js";
 
 const editSchema: TSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to edit (relative or absolute). The file must already exist." }),

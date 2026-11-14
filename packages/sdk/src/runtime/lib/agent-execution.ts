@@ -1,46 +1,602 @@
-import { type TSchema } from "typebox";
-import type {
-  AgentMessage,
-  AgentTool,
-  BeforeToolCallContext as PiBeforeToolCallContext,
+import { Type, type TSchema } from "typebox";
+import {
+  Agent,
+  type AgentMessage,
+  type AgentTool,
+  type BeforeToolCallContext as PiBeforeToolCallContext,
 } from "@earendil-works/pi-agent-core";
-import { createAssistantMessageEventStream, type Api, type AssistantMessage, type AssistantMessageEvent, type StreamFunction, type SimpleStreamOptions } from "@earendil-works/pi-ai";
+import { createAssistantMessageEventStream, createInitialSystemMessage, toToolDeclaration, validateToolArguments, type Api, type AssistantMessage, type AssistantMessageEvent, type StreamFunction, type SimpleStreamOptions, type ToolCall } from "@earendil-works/pi-ai";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { createCompactionTransform, type CompactionInfo } from "./compaction.js";
-import type { TaskExecutionContext } from "./task-execution-context.js";
-import { createTaskDecisionContext } from "./task-decision-context.js";
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./types.js";
-import { createWorkflowFinishTool } from "./tools/workflow-finish.js";
+import { createWorkflowFinishTool } from "./tools/lifecycle.js";
 import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
 import { createEditTool } from "./tools/edit.js";
 import { createWriteTool } from "./tools/write.js";
-import { createAgentRun, restoreAgentMessages, type AgentRunnerConfig, type AgentRuntimeListener } from "./agent-runner.js";
-import { extractFinishParams, type FinishParams } from "./agent-result.js";
 import {
+  classifyError,
   classifyTerminalAssistantFailure,
   extractLastAssistantError,
   extractLastAssistantText,
   isRetryableEmptyAssistantFailure,
 } from "./manager-utils.js";
-import {
-  boundedWorkflowFinishPrompt,
-  recoverCapturedWorkflowFinish,
-  shouldAttemptWorkflowFinishRecovery,
-  shouldRequestBoundedWorkflowFinish,
-  validateOperationAllowance,
-  workflowFinishRecoveryPrompt,
-} from "./workflow-finish-recovery.js";
-import { runWithAgentSessionContext } from "./agent-session-context.js";
-import type { ToolPolicy } from "./session-policy.js";
-import { ExecutionScope } from "./execution-scope.js";
-import { createExecutionUsage, type ExecutionUsage, type PreparationMeasurement } from "./execution-usage.js";
 import executionInstructions from "./execution-instructions.md" with { type: "text" };
-import { assertUniqueToolNames } from "./tool-name-audit.js";
-import { readOnlyTaskTool } from "./tools/task-read-policy.js";
+const READ_ACTIONS = ["list", "created", "workload", "outcomes", "get", "contract", "communication"] as const;
+const allowed = new Set<string>(READ_ACTIONS);
+
+/** Narrow this execution's built-in Task capability without mutating the shared definition. */
+export function readOnlyTaskTool(tool: AgentTool): AgentTool {
+  const parameters = tool.parameters as TSchema & { properties: Record<string, TSchema> };
+  return {
+    ...tool,
+    description: "Read scoped Task lists, workloads, accepted outcomes, exact assignments, App contracts and current communication. This read-only execution can return recommendations; publishing facts, applying changes, revision and closure require an authorized writing execution.",
+    parameters: {
+      ...parameters,
+      properties: { ...parameters.properties, action: Type.Union(READ_ACTIONS.map(action => Type.Literal(action))) },
+    },
+    execute: async (...args) => {
+      const input = args[1];
+      if (!input || typeof input !== "object" || !allowed.has((input as { action?: string }).action ?? ""))
+        return { content: [{ type: "text", text: JSON.stringify({ error: "Read-only Task capability does not allow this action" }) }], details: undefined };
+      return tool.execute(...args);
+    },
+  };
+}
+
+export const WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD = 24;
+export const WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS = 300_000;
+export const RESPONSES_STREAM_TERMINAL_ERROR = "OpenAI Responses stream ended before a terminal response event";
+
+export function validateOperationAllowance(value: number | undefined): number | undefined {
+  if (value === undefined) return undefined;
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
+    throw new TypeError("operationAllowance must be a finite positive integer");
+  }
+  return value;
+}
+
+export function shouldAttemptWorkflowFinishRecovery(reason: string | undefined): boolean {
+  if (!reason) return false;
+  return (
+    reason === RESPONSES_STREAM_TERMINAL_ERROR ||
+    isRetryableEmptyAssistantFailure(reason) ||
+    classifyError(reason) === "infra"
+  );
+}
+
+export function shouldRequestBoundedWorkflowFinish(
+  requireFinish: boolean,
+  toolCalls: number,
+  alreadyRequested: boolean,
+  timing?: { admittedTimeoutMs?: number; elapsedMs?: number; operationAllowance?: number },
+): boolean {
+  const operationAllowance = validateOperationAllowance(timing?.operationAllowance);
+  const threshold = operationAllowance ?? WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD;
+  if (!requireFinish || alreadyRequested || toolCalls < threshold) return false;
+  // An explicit allowance is the operation boundary. Timeout only governs elapsed runtime.
+  if (operationAllowance !== undefined) return true;
+  const admittedTimeoutMs = timing?.admittedTimeoutMs;
+  if (admittedTimeoutMs === undefined || admittedTimeoutMs <= WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS) return true;
+  return Math.max(0, timing?.elapsedMs ?? 0) >= admittedTimeoutMs - WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS;
+}
+
+export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
+  return (
+    "Bounded completion guardrail: stop expanding the investigation. Use only facts already gathered and call finish() now with the smallest facts-honest payload" +
+    (outputSchema ? ", including every required schema-validated result field." : ".") +
+    " Report confirmed progress, unfinished work and uncertain effects honestly through that contract. " +
+    "Interrupted helpers or tools do not establish completion. Do not start further work; the remaining allowance is for submitting and correcting your result."
+  );
+}
+
+export function workflowFinishRecoveryPrompt(outputSchema?: TSchema, reason?: string): string {
+  const prefix = shouldAttemptWorkflowFinishRecovery(reason)
+    ? "Your last turn ended with a transient runtime/provider failure or no visible answer. "
+    : "Your last turn ended with no visible answer. ";
+  return (
+    prefix +
+    "Continue the original bounded assignment within its scope and remaining budget. " +
+    "Do not repeat successful work or committed effects. " +
+    "Use the App's instructions and current facts to choose the next step; inspect current state before repeating an uncertain effect. " +
+    "When the facts support an outcome, call finish() with all required fields" +
+    (outputSchema
+      ? ", including the schema-validated result payload. If you are blocked, use finish() with a blocked/partial status and include the required result payload."
+      : ".")
+  );
+}
+
+type RecoveryDisposition = "recovered" | "rejected" | "ineligible" | "already-committed";
+export type CapturedFinishRecovery = {
+  disposition: RecoveryDisposition;
+  toolCallId?: string;
+  error?: string;
+};
+
+const recoveriesInFlight = new Map<string, Promise<CapturedFinishRecovery>>();
+
+function matchingToolResult(messages: any[], id: string): any | undefined {
+  return messages.find((message) => message?.role === "toolResult" && message.toolCallId === id);
+}
+
+function capturedAbortedFinish(messages: any[], reason: string | undefined): ToolCall | null {
+  if (reason !== RESPONSES_STREAM_TERMINAL_ERROR) return null;
+  const assistant = [...messages].reverse().find((message: any) => message?.role === "assistant") as any;
+  if (assistant?.stopReason !== "aborted" || assistant.errorMessage !== reason) return null;
+  const calls = Array.isArray(assistant.content)
+    ? assistant.content.filter((block: any) => block?.type === "toolCall" && block.name === "finish")
+    : [];
+  if (calls.length !== 1 || typeof calls[0].id !== "string" || !calls[0].id) return null;
+  const raw = calls[0].arguments ?? calls[0].args;
+  if (raw === undefined) return null;
+  try {
+    const args = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!args || typeof args !== "object" || Array.isArray(args)) return null;
+    return { type: "toolCall", id: calls[0].id, name: "finish", arguments: args } as ToolCall;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Commit a complete finish call captured by the exact Responses aborted-terminal
+ * failure. Use the same argument preparation and schema validation as the model
+ * loop, followed by the real finish tool's semantic checks.
+ */
+export async function recoverCapturedWorkflowFinish(options: {
+  sessionId: string;
+  messages: AgentMessage[];
+  tools: AgentTool[];
+  reason?: string;
+}): Promise<CapturedFinishRecovery> {
+  const call = capturedAbortedFinish(options.messages as any[], options.reason);
+  if (!call) return { disposition: "ineligible" };
+  if (matchingToolResult(options.messages as any[], call.id)) {
+    return { disposition: "already-committed", toolCallId: call.id };
+  }
+  const identity = `${options.sessionId}:${call.id}`;
+  const existing = recoveriesInFlight.get(identity);
+  if (existing) return existing;
+
+  const recovery = (async (): Promise<CapturedFinishRecovery> => {
+    const finish = options.tools.find((tool) => tool.name === "finish");
+    if (!finish) return { disposition: "rejected", toolCallId: call.id, error: "finish tool unavailable" };
+    let result: Awaited<ReturnType<AgentTool["execute"]>>;
+    try {
+      const preparedCall = finish.prepareArguments
+        ? { ...call, arguments: finish.prepareArguments(call.arguments) as ToolCall["arguments"] }
+        : call;
+      const params = validateToolArguments(finish, preparedCall);
+      result = await finish.execute(call.id, params);
+    } catch (cause) {
+      const error = `Captured finish recovery validation failed: ${cause instanceof Error ? cause.message : String(cause)}`;
+      options.messages.push({
+        role: "toolResult",
+        toolCallId: call.id,
+        toolName: "finish",
+        content: [{ type: "text", text: error }],
+        isError: true,
+        timestamp: Date.now(),
+      } as any);
+      return { disposition: "rejected", toolCallId: call.id, error };
+    }
+
+    const semanticError = result.content.find(
+      (block: any) =>
+        block?.type === "text" &&
+        String(block.text ?? "")
+          .trimStart()
+          .startsWith("finish() error:"),
+    );
+    options.messages.push({
+      role: "toolResult",
+      toolCallId: call.id,
+      toolName: "finish",
+      content: result.content,
+      isError: Boolean(semanticError),
+      timestamp: Date.now(),
+    } as any);
+    return semanticError
+      ? { disposition: "rejected", toolCallId: call.id, error: String((semanticError as any).text) }
+      : { disposition: "recovered", toolCallId: call.id };
+  })();
+  recoveriesInFlight.set(identity, recovery);
+  try {
+    return await recovery;
+  } finally {
+    recoveriesInFlight.delete(identity);
+  }
+}
+
+/** Runtime capability profile persisted with a session so recovery cannot broaden its tools. */
+export type ToolPolicy =
+  | "full"
+  /** Retained-session restriction; feedback no longer selects this policy. */
+  | "full-no-tasks"
+  | "readonly"
+  /** @deprecated Retained-session restriction; do not select for new Conversation work. */
+  | "deputy"
+  | "app-agent-full"
+  /** @deprecated Retained-session restriction; do not select for new Conversation work. */
+  | "app-agent-deputy"
+  /** @deprecated Compatibility with retained session metadata. */
+  | "app-owner-full"
+  /** @deprecated Compatibility with retained session metadata. */
+  | "app-owner-deputy";
+
+import { AsyncLocalStorage } from "node:async_hooks";
+
+type AgentSessionContext = {
+  agentName: string;
+  sessionId: string;
+};
+
+const agentSessionContext = new AsyncLocalStorage<AgentSessionContext>();
+
+export function runWithAgentSessionContext<T>(agentName: string, sessionId: string, fn: () => T): T {
+  return agentSessionContext.run({ agentName, sessionId }, fn);
+}
+
+export function currentAgentSessionId(agentName: string): string | undefined {
+  const context = agentSessionContext.getStore();
+  return context?.agentName === agentName ? context.sessionId : undefined;
+}
+
+export type SourcedAgentTool = {
+  tool: AgentTool;
+  source: string;
+};
+
+/** Fail closed when two construction paths expose the same concrete model tool name. */
+export function assertUniqueToolNames(entries: readonly SourcedAgentTool[], agentName: string): void {
+  const seen = new Map<string, string>();
+  for (const { tool, source } of entries) {
+    const prior = seen.get(tool.name);
+    if (prior !== undefined) {
+      throw new Error(
+        `Agent ${agentName} has duplicate model-visible tool name "${tool.name}" from ${prior} and ${source}`,
+      );
+    }
+    seen.set(tool.name, source);
+  }
+}
+
+/** A finish call is committed only when its matching tool result succeeded. */
+function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined): boolean {
+  if (!toolCallId) return false;
+  const result = messages.find((message) => message?.role === "toolResult" && message.toolCallId === toolCallId);
+  if (!result) return false;
+  if (result.isError === true) return false;
+  const content = Array.isArray(result.content) ? result.content : [];
+  return !content.some(
+    (block: any) =>
+      block?.type === "text" &&
+      String(block.text ?? "")
+        .trimStart()
+        .startsWith("finish() error:"),
+  );
+}
+
+export type FinishParams = {
+  status: string;
+  summary: string;
+  blockers?: { reason: string; context: string }[];
+  deliverables?: { path: string; description: string }[];
+  next_steps?: string;
+  completed_items?: string[];
+  new_items?: string[];
+  lessons?: { category: string; content: string }[];
+  verification_facts?: string[];
+  context_updates?: { action: string; content: string }[];
+  result?: unknown;
+};
+
+export function extractFinishParams(messages: any[]): FinishParams | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    if (message.role !== "assistant" || !Array.isArray(message.content)) continue;
+    for (const block of message.content) {
+      const rawArgs = block?.arguments ?? block?.args;
+      if (block?.type !== "toolCall" || block.name !== "finish" || !rawArgs) continue;
+      if (!finishToolCallSucceeded(messages, block.id ?? block.toolCallId)) continue;
+      try {
+        const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
+        return {
+          status: args.status,
+          summary: args.summary,
+          blockers: args.blockers,
+          deliverables: args.deliverables,
+          next_steps: args.next_steps,
+          completed_items: args.completed_items,
+          new_items: args.new_items,
+          lessons: args.lessons,
+          verification_facts: args.verification_facts ?? args.verification_evidence,
+          context_updates: args.context_updates,
+          result: args.result,
+        };
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
+}
+
+export type AgentRunnerConfig = ConstructorParameters<typeof Agent>[0];
+export type AgentRuntimeListener = Parameters<Agent["subscribe"]>[0];
+
+/**
+ * Infrastructure-neutral handle for one model/tool loop.
+ *
+ * This module deliberately knows nothing about sessions, files, SQLite,
+ * EventBus, projects, tasks, metrics, scheduling, or recovery. Callers may
+ * subscribe to the Pi runtime observations and add those concerns outside the
+ * agent execution boundary.
+ */
+export interface AgentRun {
+  readonly state: Agent["state"];
+  prompt: Agent["prompt"];
+  followUp: Agent["followUp"];
+  continue: Agent["continue"];
+  waitForIdle: Agent["waitForIdle"];
+  steer: Agent["steer"];
+  cancel(): void;
+  subscribe(listener: AgentRuntimeListener): ReturnType<Agent["subscribe"]>;
+}
+
+class PiAgentRun implements AgentRun {
+  readonly prompt: Agent["prompt"];
+  readonly followUp: Agent["followUp"];
+  readonly continue: Agent["continue"];
+  readonly waitForIdle: Agent["waitForIdle"];
+  readonly steer: Agent["steer"];
+
+  constructor(private readonly agent: Agent) {
+    this.prompt = agent.prompt.bind(agent) as Agent["prompt"];
+    this.followUp = agent.followUp.bind(agent) as Agent["followUp"];
+    this.continue = agent.continue.bind(agent) as Agent["continue"];
+    this.waitForIdle = agent.waitForIdle.bind(agent) as Agent["waitForIdle"];
+    this.steer = agent.steer.bind(agent) as Agent["steer"];
+  }
+
+  get state(): Agent["state"] {
+    return this.agent.state;
+  }
+
+  cancel(): void {
+    this.agent.abort();
+  }
+
+  subscribe(listener: AgentRuntimeListener): ReturnType<Agent["subscribe"]> {
+    return this.agent.subscribe(listener);
+  }
+}
+
+export function createAgentRun(config: AgentRunnerConfig): AgentRun {
+  return new PiAgentRun(new Agent(config));
+}
+
+/**
+ * Restore work history under this invocation's current instructions and tools.
+ * Saved transcripts may predate Pi's system messages or carry an older loadout.
+ */
+export function restoreAgentMessages(agent: AgentRun, messages: AgentMessage[]): void {
+  const baseline = createInitialSystemMessage(agent.state.systemPrompt, agent.state.tools.map(toToolDeclaration));
+  const history = messages.filter((message) => message.role !== "system");
+  agent.state.messages = baseline ? [baseline, ...history] : history;
+}
+
+/** One invocation's limits. No storage, Task lifecycle, provider or retry policy. */
+export const DEFAULT_EXECUTION_TIMEOUT_MS = 30 * 60_000;
+
+/** A work stop leaves the model alive to judge and submit its existing result. */
+export class ExecutionWorkEnded extends Error {
+  constructor() {
+    super(
+      "Execution work allowance ended. Use retained evidence and call finish(); unfinished or interrupted work remains incomplete.",
+    );
+    this.name = "ExecutionWorkEnded";
+  }
+}
+
+export function executionTimeout(timeoutMs = DEFAULT_EXECUTION_TIMEOUT_MS, deadlineAt?: number): number {
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647) {
+    throw new Error("Execution timeout must be a positive bounded timer duration");
+  }
+  if (deadlineAt === undefined) return timeoutMs;
+  const remaining = deadlineAt - Date.now();
+  if (!Number.isFinite(remaining) || remaining <= 0) throw new Error("Caller execution deadline expired");
+  return Math.min(timeoutMs, remaining);
+}
+
+export class ExecutionScope {
+  private readonly controller = new AbortController();
+  private readonly workController = new AbortController();
+  readonly signal = this.controller.signal;
+  readonly workSignal = this.workController.signal;
+  readonly timeoutMs: number;
+  readonly deadlineAt: number;
+  readonly workDeadlineAt: number;
+  timedOut = false;
+  private readonly timer: ReturnType<typeof setTimeout>;
+  private readonly workTimer?: ReturnType<typeof setTimeout>;
+  private readonly parentAbort: () => void;
+
+  constructor(
+    timeoutMs?: number,
+    private readonly parentSignal?: AbortSignal,
+    deadlineAt?: number,
+    private readonly onStop?: (reason: Error) => void,
+    onFinishRequested?: () => void,
+  ) {
+    parentSignal?.throwIfAborted();
+    this.timeoutMs = executionTimeout(timeoutMs, deadlineAt);
+    this.deadlineAt = Date.now() + this.timeoutMs;
+    // Reserve at most one minute, or one fifth of a short invocation. This is
+    // part of the existing allowance, never a timeout extension.
+    const finishMs = onFinishRequested ? Math.min(60_000, Math.floor(this.timeoutMs / 5)) : 0;
+    this.workDeadlineAt = this.deadlineAt - finishMs;
+    this.parentAbort = () => {
+      const reason = parentSignal?.reason;
+      // Preserve the work-stop distinction at every depth so joined helper
+      // evidence can return while ordinary cancellation still interrupts.
+      this.stop(
+        reason instanceof ExecutionWorkEnded ? reason : new Error("Caller execution stopped", { cause: reason }),
+      );
+    };
+    parentSignal?.addEventListener("abort", this.parentAbort, { once: true });
+    this.timer = setTimeout(() => {
+      this.timedOut = true;
+      this.stop(new Error(`Agent timed out after ${this.timeoutMs}ms`));
+    }, this.timeoutMs);
+    this.timer.unref?.();
+    if (finishMs > 0) {
+      this.workTimer = setTimeout(() => {
+        if (this.signal.aborted) return;
+        this.workController.abort(new ExecutionWorkEnded());
+        onFinishRequested?.();
+      }, this.timeoutMs - finishMs);
+      this.workTimer.unref?.();
+    }
+  }
+
+  stop(reason = new Error("Execution cancelled")): void {
+    if (this.signal.aborted) return;
+    this.controller.abort(reason);
+    this.workController.abort(reason);
+    this.onStop?.(reason);
+  }
+
+  close(): void {
+    clearTimeout(this.timer);
+    clearTimeout(this.workTimer);
+    this.parentSignal?.removeEventListener("abort", this.parentAbort);
+    // Remaining scoped children stop too; completing this invocation is not
+    // cancellation of its already accepted result.
+    this.controller.abort(new Error("Caller execution finished"));
+    this.workController.abort(this.signal.reason);
+  }
+}
+
+export type PreparationMeasurement = {
+  preparer: string;
+  entryHash: string | null;
+  durationMs: number;
+  taskBytes: number;
+  promptBytes: number | null;
+  systemBytes: number | null;
+  failed: boolean;
+};
+
+export type ModelUsage = {
+  provider: string;
+  model: string;
+  replies: number;
+  measuredReplies: number;
+  estimatedCostReplies: number;
+  input: number;
+  cacheRead: number;
+  cacheWrite: number;
+  output: number;
+  estimatedCost: number;
+};
+
+export type ExecutionUsage = {
+  preparation: PreparationMeasurement;
+  models: ModelUsage[];
+  totals: Omit<ModelUsage, "provider" | "model">;
+  toolCalls: number;
+};
+
+const nonnegative = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value >= 0;
+
+/** New replies only. Never reads a transcript or attributes a child's usage to its parent. */
+export function createExecutionUsage(preparation: PreparationMeasurement) {
+  const models = new Map<string, ModelUsage>();
+  const seen = new WeakSet<object>();
+  let toolCalls = 0;
+  const observe: AgentRuntimeListener = (event) => {
+    if (event.type === "tool_execution_start") toolCalls++;
+    if (event.type !== "message_end" || event.message.role !== "assistant") return;
+    const message = event.message;
+    if (seen.has(message)) return;
+    seen.add(message);
+    const provider = message.provider || "unknown";
+    const model = message.model || "unknown";
+    const key = JSON.stringify([provider, model]);
+    let row = models.get(key);
+    if (!row) {
+      row = {
+        provider,
+        model,
+        replies: 0,
+        measuredReplies: 0,
+        estimatedCostReplies: 0,
+        input: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+        output: 0,
+        estimatedCost: 0,
+      };
+      models.set(key, row);
+    }
+    row.replies++;
+    const usage = message.usage;
+    // Pi normalizes input to exclude cache reads AND writes. Synthetic failure
+    // messages use all-zero usage; that is not evidence of a free request.
+    if (
+      !usage ||
+      ![usage.input, usage.cacheRead, usage.cacheWrite, usage.output].every(nonnegative) ||
+      usage.input + usage.cacheRead + usage.cacheWrite + usage.output === 0
+    )
+      return;
+    row.measuredReplies++;
+    row.input += usage.input;
+    row.cacheRead += usage.cacheRead;
+    row.cacheWrite += usage.cacheWrite;
+    row.output += usage.output;
+    if (nonnegative(usage.cost?.total)) {
+      row.estimatedCostReplies++;
+      row.estimatedCost += usage.cost.total;
+    }
+  };
+  return {
+    observe,
+    snapshot: (): ExecutionUsage => ({
+      preparation: { ...preparation },
+      models: [...models.values()]
+        .sort((a, b) => JSON.stringify([a.provider, a.model]).localeCompare(JSON.stringify([b.provider, b.model])))
+        .map((row) => ({ ...row })),
+      totals: [...models.values()].reduce(
+        (sum, row) => ({
+          replies: sum.replies + row.replies,
+          measuredReplies: sum.measuredReplies + row.measuredReplies,
+          estimatedCostReplies: sum.estimatedCostReplies + row.estimatedCostReplies,
+          input: sum.input + row.input,
+          cacheRead: sum.cacheRead + row.cacheRead,
+          cacheWrite: sum.cacheWrite + row.cacheWrite,
+          output: sum.output + row.output,
+          estimatedCost: sum.estimatedCost + row.estimatedCost,
+        }),
+        {
+          replies: 0,
+          measuredReplies: 0,
+          estimatedCostReplies: 0,
+          input: 0,
+          cacheRead: 0,
+          cacheWrite: 0,
+          output: 0,
+          estimatedCost: 0,
+        },
+      ),
+      toolCalls,
+    }),
+  };
+}
 
 const CHAT_TOOL_DENYLIST = new Set([
   "bash",
@@ -196,7 +752,11 @@ export type AgentPreparationOptions = {
   task: string;
   /** Optional Host rendering; explicit App context preparation still receives the original task. */
   contextPrompt?: string;
-  taskContext?: TaskExecutionContext;
+  taskContext?: {
+    executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
+  };
+  /** Optional Host-supplied Task decision context packet generator. */
+  taskDecisionContext?: () => Promise<AgentMessage>;
   persistentChat?: boolean;
   skill?: string;
   /** Interpret a leading $skill command; false keeps delegated task text literal. */
@@ -558,7 +1118,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
           },
         })
       : undefined;
-  const taskDecisionContext = options.taskContext ? createTaskDecisionContext(options.taskContext) : undefined;
+  const taskDecisionContext = options.taskDecisionContext;
   const transformContext =
     compact || taskDecisionContext || options.chatContext
       ? async (messages: AgentMessage[]) => {

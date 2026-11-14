@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/lib/skill-paths.js";
+export { resolveSkillRoots } from "../../packages/sdk/src/runtime/lib/skills.js";

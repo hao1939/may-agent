@@ -1,6 +1,6 @@
 import { type TSchema } from "typebox";
 import { WorkflowUnconfirmedCleanupError } from "../../workflow-kernel.js";
-import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/file-write-policy.js";
+import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/path-utils.js";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
@@ -12,18 +12,18 @@ import {
   type PreparedAgentExecution,
 } from "../lib/agent-execution.js";
 import { generateId } from "../lib/manager-utils.js";
-import type { ToolPolicy } from "../lib/session-policy.js";
+import type { ToolPolicy } from "../lib/agent-execution.js";
 import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import { createCodingTools } from "../lib/tools/coding.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
 import { createReadTool } from "../lib/tools/read.js";
 import type { ModelWithApiKey } from "../lib/types.js";
-import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
+import { validateOperationAllowance } from "../lib/agent-execution.js";
 import { buildAgentDefinition } from "./loader/agent-definition.js";
 import { resolveRuntimeAgentDirectory, type AgentDirectory } from "./loader/agent-discovery.js";
 import { readAgentConfigFile, validateAgentConfig, type AgentConfig } from "./loader/agent-config.js";
 import { loadAgentLocalTools } from "./loader/agent-local-tools.js";
-import { assertUniqueToolNames } from "../lib/tool-name-audit.js";
+import { assertUniqueToolNames } from "../lib/agent-execution.js";
 
 export type ToolDenial = {
   name: string;
