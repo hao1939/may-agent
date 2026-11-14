@@ -1,4 +1,4 @@
-import { ExecutionDeferredError } from "@may-agent/sdk";
+import { ExecutionDeferredError, type AppRead } from "@may-agent/sdk";
 import { Type, type Static } from "typebox";
 /**
  * Agents tool — bounded calls, helper follow-up, inspection and cancellation.
@@ -10,11 +10,18 @@ import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/p
 import { StringEnum } from "@earendil-works/pi-ai";
 import type { RegisteredAgent } from "./manager-utils.js";
 import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
-import type { PersistedSession } from "./persistence.js";
+import type { PersistedSession, TaskBinding } from "./persistence.js";
 import { getDb } from "./db/connection.js";
-import { agentExecutionResult, deferredExecutionResult } from "./execution-handoff.js";
+import { agentExecutionResult, deferredExecutionResult, workflowExecutionResult } from "./execution-handoff.js";
+import type { ExecutionScope } from "./execution-scope.js";
 import { readIdentity } from "./instance-identity.js";
+import type { RuntimeCtx } from "./runtime-ctx.js";
+import type { TaskExecutionContext } from "./task-execution-context.js";
+import { buildWorkflowCatalog, findWorkflow } from "./workflow-catalog.js";
+import { createWorkflowRunner } from "./workflow-tool.js";
+import type { WorkflowEvent } from "./workflow.js";
 import type { EventTrace } from "../app/core/events/bus.js";
+import { join } from "node:path";
 
 // ── Manager interface ──────────────────────────────────────────────────
 // Instead of importing the full SubagentManager class (circular dependency),
@@ -33,6 +40,9 @@ export interface AgentsToolManagerDeps {
       projectId?: string;
       requestId?: string;
       trace?: EventTrace;
+      taskBinding?: TaskBinding;
+      taskContext?: TaskExecutionContext;
+      executionScope?: ExecutionScope;
     }
   >;
   callAgent(
@@ -65,6 +75,11 @@ export interface CreateAgentsToolOptions {
   /** Agent names that cannot be called directly. Returns error with hint. */
   callDeny?: { agents: string[]; hint: string };
   validateControl?: (sessionId: string, callerSessionId?: string) => void;
+  /** Optional runtime context for executing code procedures via action: "call". */
+  runtimeCtx?: RuntimeCtx;
+  /** Optional App read factory for code procedures invoked via action: "call". */
+  createRead?: (taskContext?: TaskExecutionContext) => AppRead;
+  onWorkflowEvent?: (event: WorkflowEvent) => void;
 }
 
 // ── Main export ────────────────────────────────────────────────────────
@@ -96,13 +111,19 @@ const AgentsToolParams = Type.Object({
   agent: Type.Optional(
     Type.String({
       description:
-        "Target agent name. Required for 'call' and 'fork'. Optional for 'sessions' (filters by agent). Use 'list' first to see available agents if unsure.",
+        "Target agent or code procedure name (e.g. 'reviewer' or 'may/evaluation-report-intake'). Required for 'call' and 'fork'. Optional for 'sessions' (filters by agent). Use 'list' first to see available targets if unsure.",
     }),
   ),
   task: Type.Optional(
     Type.String({
       description:
-        "Task description for 'call' or 'fork'. Give the outcome, constraints, and relevant file references; the receiver chooses its method. The agent runs to completion and returns a summary (call) or session id (fork).",
+        "Task description for prompt agents ('call' or 'fork'). Give the outcome, constraints, and relevant file references; the receiver chooses its method. The agent runs to completion and returns a summary (call) or session id (fork).",
+    }),
+  ),
+  input: Type.Optional(
+    Type.Unknown({
+      description:
+        "Structured input payload for code procedures on 'call' (or string prompt input).",
     }),
   ),
   sessionId: Type.Optional(
@@ -211,24 +232,79 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     return `Agent "${target}" is app-local to "${project}". Send the desired outcome and proof to that app instead of selecting its internal agent. A linked May break-glass attempt may cross this boundary when the normal owner path cannot fulfill the human outcome.`;
   };
 
+  const resolveCodeProcedure = async (
+    caller: string | undefined,
+    target: string,
+    sessionId?: string,
+  ): Promise<
+    | { kind: "none" }
+    | { kind: "error"; error: string }
+    | {
+        kind: "procedure";
+        owner: string;
+        name: string;
+        workflowDir: string;
+      }
+  > => {
+    const slashIndex = target.indexOf("/");
+    if (slashIndex !== -1) {
+      const owner = target.slice(0, slashIndex).trim();
+      const name = target.slice(slashIndex + 1).trim();
+      if (!owner || !name || name.includes("/")) {
+        return { kind: "error", error: `Invalid qualified target "${target}" (expected "<owner>/<name>")` };
+      }
+      const boundary = appBoundaryError(caller, owner, sessionId);
+      if (boundary) return { kind: "error", error: boundary };
+      const ownerDef = manager.getAgentDefinition(owner, sessionId);
+      if (!ownerDef?.agentDir) {
+        return { kind: "error", error: `Procedure owner "${owner}" not registered. Use 'list' to see available targets.` };
+      }
+      const workflowDir = join(ownerDef.agentDir, "workflows");
+      const catalog = await buildWorkflowCatalog(workflowDir);
+      const found = findWorkflow(catalog, name);
+      if (!found.workflow) {
+        return { kind: "error", error: found.error ?? `Procedure "${owner}/${name}" not found.` };
+      }
+      return { kind: "procedure", owner, name: found.workflow.name, workflowDir };
+    }
+
+    const callerDef = callerDefinition(caller, sessionId);
+    if (callerDef?.agentDir) {
+      const workflowDir = join(callerDef.agentDir, "workflows");
+      const catalog = await buildWorkflowCatalog(workflowDir);
+      const found = findWorkflow(catalog, target);
+      if (found.workflow) {
+        return {
+          kind: "procedure",
+          owner: callerDef.name,
+          name: found.workflow.name,
+          workflowDir,
+        };
+      }
+    }
+    return { kind: "none" };
+  };
+
   return {
     name: "agents",
     label: "Agents",
     description:
-      "Cooperate with other agents. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Durable cross-App work uses App Task requests; helper updates use the exact sessionId.",
+      "Cooperate with other agents and procedures. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Durable cross-App work uses App Task requests; helper updates use the exact sessionId.",
     parameters: AgentsToolParams,
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
       try {
         switch (params.action) {
           case "call": {
-            if (!params.agent || !params.task) {
-              return textResult(JSON.stringify({ error: "'call' requires 'agent' and 'task'" }));
+            const hasInput = Object.hasOwn(params, "input") && params.input !== undefined;
+            if (!params.agent || (!params.task && !hasInput)) {
+              return textResult(JSON.stringify({ error: "'call' requires 'agent' and 'task' (or 'input' for code procedures)" }));
             }
-            // Guard: reject if target matches a tool in caller's toolset
             const callerAgentCall = getCallerAgentName?.();
+            const parentSid = getCallerSessionId?.();
+            // Guard: reject if target matches a tool in caller's toolset
             if (callerAgentCall) {
-              const definition = callerDefinition(callerAgentCall);
+              const definition = callerDefinition(callerAgentCall, parentSid);
               if (definition) {
                 const toolNames = definition.tools.map((t) => t.name);
                 if (toolNames.includes(params.agent)) {
@@ -240,14 +316,67 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 }
               }
             }
-            if (!manager.getAgentDefinition(params.agent, getCallerSessionId?.())) {
+
+            const codeLookup = await resolveCodeProcedure(callerAgentCall, params.agent, parentSid);
+            if (codeLookup.kind === "error") {
+              return textResult(JSON.stringify({ error: codeLookup.error }));
+            }
+            if (codeLookup.kind === "procedure") {
+              if (!parentSid || !manager.activeSessions.has(parentSid)) {
+                throw new Error("Procedure call requires its live caller session");
+              }
+              const session = manager.activeSessions.get(parentSid);
+              if (session?.taskBinding && !session.taskContext) {
+                throw new Error("Current Task execution context is unavailable");
+              }
+              const context = session?.taskContext;
+              const lineage = getCallerLineage(parentSid);
+              const rawInput = hasInput ? params.input : params.task!;
+              const taskText = typeof rawInput === "string" ? rawInput : JSON.stringify(rawInput);
+              const runner = createWorkflowRunner({
+                manager: manager as any,
+                workflowDir: codeLookup.workflowDir,
+                persistDir: manager.registry.persistDir,
+                agentName: codeLookup.owner,
+                runtimeCtx: opts?.runtimeCtx,
+                ...context,
+                taskContext: context,
+                read: opts?.createRead ? opts.createRead(context) : undefined,
+                callerSessionId: parentSid,
+                projectId: lineage.projectId,
+                trace: lineage.trace,
+                onEvent: opts?.onWorkflowEvent,
+                signal:
+                  signal && session?.executionScope
+                    ? AbortSignal.any([signal, session.executionScope.signal])
+                    : (signal ?? session?.executionScope?.signal),
+                executionTimeoutMs: session?.executionScope
+                  ? session.executionScope.deadlineAt - Date.now()
+                  : undefined,
+                ...(hasInput ? { workflowInput: params.input } : {}),
+              });
+              const wfResult = await runner.run(codeLookup.name, taskText);
+              return textResult(
+                JSON.stringify({ ...wfResult, ...workflowExecutionResult(wfResult) }, null, 2),
+              );
+            }
+
+            if (hasInput && typeof params.input !== "string" && !params.task) {
+              return textResult(
+                JSON.stringify({
+                  error: `Prompt agent "${params.agent}" requires a string 'task' prompt, not structured 'input'.`,
+                }),
+              );
+            }
+            const promptTaskText = params.task ?? String(params.input);
+
+            if (!manager.getAgentDefinition(params.agent, parentSid)) {
               return textResult(
                 JSON.stringify({
                   error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.`,
                 }),
               );
             }
-            const parentSid = getCallerSessionId?.();
             const boundaryError = appBoundaryError(callerAgentCall, params.agent, parentSid);
             if (boundaryError) return textResult(JSON.stringify({ error: boundaryError }));
             if (!isBreakGlassCaller(parentSid) && callDeny && callDeny.agents.includes(params.agent)) {
@@ -260,7 +389,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             }
 
             // Sync call: blocks until done
-            const task = appendContextFiles(params.task, params.context_files, params.success_criteria);
+            const task = appendContextFiles(promptTaskText, params.context_files, params.success_criteria);
             const result = await manager.callAgent(params.agent, task, {
               parentSessionId: parentSid,
               workflowRunId: lineage.workflowRunId,
@@ -284,11 +413,20 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             if (!params.agent || !params.task) {
               return textResult(JSON.stringify({ error: "'fork' requires 'agent' and 'task'" }));
             }
+            const callerAgentRun = getCallerAgentName?.();
+            const parentSidRun = getCallerSessionId?.();
+            const codeForkCheck = await resolveCodeProcedure(callerAgentRun, params.agent, parentSidRun);
+            if (codeForkCheck.kind === "procedure" || params.agent.includes("/")) {
+              return textResult(
+                JSON.stringify({
+                  error: `Cannot 'fork' code procedure "${params.agent}"; use action: 'call' for synchronous code procedures.`,
+                }),
+              );
+            }
             const forkTask = appendContextFiles(params.task, params.context_files, params.success_criteria);
             // Guard: reject if target matches a tool in caller's toolset
-            const callerAgentRun = getCallerAgentName?.();
             if (callerAgentRun) {
-              const definition = callerDefinition(callerAgentRun);
+              const definition = callerDefinition(callerAgentRun, parentSidRun);
               if (definition) {
                 const toolNames = definition.tools.map((t) => t.name);
                 if (toolNames.includes(params.agent)) {
@@ -300,14 +438,13 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 }
               }
             }
-            if (!manager.getAgentDefinition(params.agent, getCallerSessionId?.())) {
+            if (!manager.getAgentDefinition(params.agent, parentSidRun)) {
               return textResult(
                 JSON.stringify({
                   error: `Agent "${params.agent}" not registered. Use 'list' to see available agents.`,
                 }),
               );
             }
-            const parentSidRun = getCallerSessionId?.();
             const boundaryError = appBoundaryError(callerAgentRun, params.agent, parentSidRun);
             if (boundaryError) return textResult(JSON.stringify({ error: boundaryError }));
             if (!isBreakGlassCaller(parentSidRun) && callDeny && callDeny.agents.includes(params.agent)) {
@@ -338,12 +475,34 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           }
 
           case "list": {
+            const callerName = getCallerAgentName?.();
+            const callerSid = getCallerSessionId?.();
+            const callerDef = callerDefinition(callerName, callerSid);
             const agents = Array.from(manager.agents.values()).map((a) => ({
               name: a.definition.name,
               description: a.definition.description,
               domain: a.definition.domain,
               ...(a.definition.appLocal ? { project: a.definition.projectId } : {}),
             }));
+            const procedures: Array<{ name: string; owner: string; description: string }> = [];
+            for (const a of manager.agents.values()) {
+              if (
+                a.definition.appLocal &&
+                (!callerDef?.appLocal || callerDef.projectId !== a.definition.projectId) &&
+                !isBreakGlassCaller(callerSid)
+              ) {
+                continue;
+              }
+              if (!a.definition.agentDir) continue;
+              const catalog = await buildWorkflowCatalog(join(a.definition.agentDir, "workflows"));
+              for (const wf of catalog.workflows.values()) {
+                procedures.push({
+                  name: a.definition.name === callerName ? wf.name : `${a.definition.name}/${wf.name}`,
+                  owner: a.definition.name,
+                  description: wf.description,
+                });
+              }
+            }
             const sessions = manager.status().map((s) => ({
               sessionId: s.sessionId,
               agent: s.agent,
@@ -351,12 +510,29 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               status: s.status,
               runtime: s.runtime,
             }));
-            return textResult(JSON.stringify({ agents, runningSessions: sessions }, null, 2));
+            return textResult(
+              JSON.stringify(
+                {
+                  agents,
+                  ...(procedures.length > 0 ? { procedures } : {}),
+                  runningSessions: sessions,
+                },
+                null,
+                2,
+              ),
+            );
           }
 
           case "peek": {
             if (!params.sessionId) {
               return textResult(JSON.stringify({ error: "'peek' requires 'sessionId'" }));
+            }
+            if (params.sessionId.includes("/")) {
+              return textResult(
+                JSON.stringify({
+                  error: `Cannot 'peek' code procedure "${params.sessionId}"; use action: 'call' for synchronous code procedures.`,
+                }),
+              );
             }
             try {
               const messages = manager.progress(params.sessionId, params.limit ?? 20);
@@ -373,6 +549,13 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
           case "follow-up": {
             if (!params.sessionId || !params.content?.trim()) {
               return textResult(JSON.stringify({ error: "'follow-up' requires 'sessionId' and non-empty 'content'" }));
+            }
+            if (params.sessionId.includes("/")) {
+              return textResult(
+                JSON.stringify({
+                  error: `Cannot 'follow-up' code procedure "${params.sessionId}"; use action: 'call' for synchronous code procedures.`,
+                }),
+              );
             }
             manager.followUpHelper(params.sessionId, params.content, getCallerSessionId?.());
             return textResult(JSON.stringify({

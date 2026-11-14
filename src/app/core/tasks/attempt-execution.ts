@@ -123,7 +123,8 @@ export async function runTaskWorkflow(
   input: TaskHandlerInput & { capability: WorkflowCapability },
 ): Promise<TaskCapabilityRun> {
   const { opts, descriptor, claim, ...execution } = input;
-  if (!opts.workflows)
+  const executeWorkflow = opts.workflows?.execute ?? opts.runner?.executeWorkflow;
+  if (!executeWorkflow)
     return {
       handlerResult: {
         state: "error",
@@ -159,7 +160,7 @@ export async function runTaskWorkflow(
     input.attempt.maxAttemptMs === "unlimited"
       ? coordinationMaxAttemptMs!
       : (input.attempt.maxAttemptMs ?? APP_TASK_WORKFLOW_TIMEOUT_MS);
-  return opts.workflows.execute({
+  return executeWorkflow({
     ...execution,
     handler: claim.handler,
     source: {
@@ -240,13 +241,14 @@ function runtimeTaskAttempt(
     try { workload = readTaskWorkload(taskReadOptions, { agent: claim.agent }); }
     catch { workload = { available: false }; }
   }
+  const roleSource = opts.agents ?? opts.runner;
   const attempt: TaskAttempt = {
     appId: descriptor.id,
     attemptId: claim.attemptId,
     signal: controller.signal,
     resourceVersion: claim.resourceVersion,
     ...(maxAttemptMs !== undefined ? { maxAttemptMs } : {}),
-    role: opts.agents?.role(claim.agent) ?? {
+    role: roleSource?.role(claim.agent) ?? {
       agent: claim.agent,
       instructions: `Act as the selected May agent ${claim.agent}.`,
     },
@@ -509,7 +511,8 @@ export async function runTaskExecutorAttempt(
 
 export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
   const { opts, descriptor, claim, ...execution } = input;
-  if (!opts.agents?.available(claim.agent))
+  const agentRunner = opts.agents ?? opts.runner;
+  if (!agentRunner?.available(claim.agent))
     return {
       handlerResult: {
         state: "error",
@@ -534,7 +537,7 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
     };
   let preflightAcceptedLiveEventIds: number[] | undefined;
   let preflightReviewAt: number | undefined;
-  const report = await opts.agents.execute({
+  const report = await agentRunner.execute({
     ...execution,
     executionTimeoutMs: input.attempt.maxAttemptMs ?? APP_TASK_AGENT_TIMEOUT_MS,
     descriptor: {

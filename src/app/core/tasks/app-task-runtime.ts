@@ -122,11 +122,17 @@ function publishAppTaskTiming(
 }
 
 function snapshotTaskExecution(opts: AppTaskRuntimeOptions): AppTaskRuntimeOptions {
+  const runner = opts.runner?.snapshot();
   return {
     ...opts,
     appRegistrySnapshot: opts.appRegistrySnapshot ?? opts.appRegistry?.snapshot(),
-    agents: opts.agents?.snapshot(),
-    workflows: opts.workflows?.snapshot?.() ?? opts.workflows,
+    ...(runner ? { runner } : {}),
+    agents: opts.agents ? opts.agents.snapshot() : runner,
+    workflows: opts.workflows
+      ? (opts.workflows.snapshot?.() ?? opts.workflows)
+      : runner
+        ? { inspect: runner.inspect, execute: runner.executeWorkflow }
+        : undefined,
   };
 }
 
@@ -1428,9 +1434,10 @@ async function commitAppTaskRuntimeDescriptors(
   const installed: AppTaskRuntimeDescriptor[] = [];
   for (const descriptor of prepared) {
     const { id } = descriptor;
+    const agentPrep = opts.agents ?? opts.runner;
     if (
-      opts.agents &&
-      !(await opts.agents.prepare({ source: opts, appDir: descriptor.appDir, agent: descriptor.agent }))
+      agentPrep &&
+      !(await agentPrep.prepare({ source: opts, appDir: descriptor.appDir, agent: descriptor.agent }))
     ) {
       opts.bus.emit({
         type: "info",
