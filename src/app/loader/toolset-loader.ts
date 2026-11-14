@@ -102,6 +102,10 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       }
 
       case "workflow": {
+        if (config.tools.includes("agents") || tools.some((t) => t.name === "agents")) {
+          // Folded into the unified `agents` tool (action: "call" / "list").
+          break;
+        }
         const workflowDir = resolve(agentDir, "workflows");
         const workflowOptions = {
           manager,

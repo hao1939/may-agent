@@ -33,7 +33,7 @@ export const name = "inspect";
 export const description = "Inspect with a specialist; input {marker:string}";
 export async function execute(ctx) {
   const task = await ctx.read.tasks.get(ctx.reconciliation.taskId);
-  const result = await ctx.agents.call("worker", ctx.input.marker);
+  const result = await ctx.call("worker", ctx.input.marker);
   await ctx.reviseTask({ appId: "worker", taskId: "child-" + ctx.input.marker, expectedGeneration: 1,
     input: { kind: "message", data: { marker: ctx.input.marker } } });
   return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, taskFile: ctx.workspace.taskFile, result });
@@ -52,7 +52,7 @@ export async function execute(ctx) {
         `
 export const name = "inspect";
 export const description = "Nested contribution";
-export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.input); }
+export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
 `,
       );
     }
@@ -76,7 +76,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
       persistDir,
       agentRunFactory: (config) => {
         let step = 0;
-        const owner = config.initialState!.tools!.some((tool) => tool.name === "workflow");
+        const owner = config.initialState!.tools!.some((tool) => tool.name === "agents");
         return createAgentRun({
           ...config,
           streamFn: (_model, context) => {
@@ -94,11 +94,11 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
                     {
                       type: "toolCall",
                       id: "operation",
-                      name: owner ? (route === "agent" ? "agents" : "workflow") : "hold",
+                      name: owner ? "agents" : "hold",
                       arguments: owner
                         ? route === "agent"
                           ? { action: "call", agent: "worker", task: marker }
-                          : { action: "run", name: "inspect", input: { marker } }
+                          : { action: "call", agent: "inspect", input: { marker } }
                         : { marker },
                     },
                   ]
@@ -153,7 +153,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
       persistDir,
       getAgentSessionId: () => "wrong-same-name-session",
     });
-    manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools });
+    manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools, agentDir });
     manager.register({
       name: "worker",
       description: "Worker",
@@ -347,8 +347,7 @@ export async function execute(ctx) { return ctx.workflows.run("delegate", ctx.in
           const result = results[i];
           if (result.status !== "fulfilled") throw result.reason;
           const reply = result.value.messages.find(
-            (message) =>
-              message.role === "toolResult" && message.toolName === (route === "agent" ? "agents" : "workflow"),
+            (message) => message.role === "toolResult" && message.toolName === "agents",
           );
           if (!reply || reply.role !== "toolResult") throw new Error("Missing handoff result");
           const text = reply.content.find((part) => part.type === "text");
