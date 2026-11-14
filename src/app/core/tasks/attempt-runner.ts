@@ -8,7 +8,7 @@ import {
   type TaskAttempt,
 } from "@may-agent/sdk";
 import { join } from "node:path";
-import { log } from "../../../lib/log.js";
+import { log } from "@may-agent/sdk/runtime";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
 import type { EventEnvelope } from "../events/bus.js";
 import { EVENT_RECORD_ONLY, childEventTrace, type AgentEvent, type EventBus } from "../events/bus.js";

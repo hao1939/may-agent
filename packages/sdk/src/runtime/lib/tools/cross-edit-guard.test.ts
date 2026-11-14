@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { checkCrossEditGuard, type FileWritePolicy } from "../../../packages/sdk/src/runtime/index.js";
+import { checkCrossEditGuard, type FileWritePolicy } from "@may-agent/sdk/runtime";
 
 const root = "/tmp/file-policy-fixture";
 const config = `${root}/projects/support.app/agents/worker/agent.json`;

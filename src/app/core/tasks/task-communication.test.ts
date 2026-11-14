@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
 import { fakeModel } from "../../../../test/fixtures/model.js";
-import { createAgentRun } from "../../../lib/agent-runner.js";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { SubagentManager } from "../../../lib/manager.js";
 import { closeDb, getDb } from "../../../lib/db/connection.js";

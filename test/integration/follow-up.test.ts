@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../../src/lib/manager.js";
-import type { SubagentDefinition } from "../../src/lib/types.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync, rmSync } from "node:fs";

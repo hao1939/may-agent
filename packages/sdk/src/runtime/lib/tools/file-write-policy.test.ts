@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createCodingTools, readFileWritePolicy } from "../../../packages/sdk/src/runtime/index.js";
+import { createCodingTools, readFileWritePolicy } from "@may-agent/sdk/runtime";
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });

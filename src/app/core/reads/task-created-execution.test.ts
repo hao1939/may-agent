@@ -2,11 +2,11 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentConfig } from "../../loader/agent-config.js";
+import type { AgentConfig } from "@may-agent/sdk/runtime";
 import { buildTools, type ToolsetLoaderOptions } from "../../loader/toolset-loader.js";
 import { EventBus } from "../events/bus.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
-import { readOnlyTaskTool } from "../../../../packages/sdk/src/runtime/index.js";
+import { readOnlyTaskTool } from "@may-agent/sdk/runtime";
 import { readCreatedTasks } from "./task-created.js";
 
 test("the production model tool resolves the live creator reader for each session and fails visibly when unavailable", async () => {

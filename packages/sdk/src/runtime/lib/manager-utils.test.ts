@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import { isRetryableEmptyAssistantFailure, trimTerminalEmptyAssistantTurn } from "./manager-utils.js";
+import { isRetryableEmptyAssistantFailure, trimTerminalEmptyAssistantTurn } from "@may-agent/sdk/runtime";
 
 describe("empty assistant recovery", () => {
   it("recognizes only empty assistant failures as retryable", () => {

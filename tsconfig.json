@@ -27,6 +27,9 @@
       ],
       "@may-agent/sdk/testing": [
         "./packages/sdk/src/testing.ts"
+      ],
+      "@may-agent/sdk/runtime": [
+        "./packages/sdk/src/runtime/index.ts"
       ]
     }
   },

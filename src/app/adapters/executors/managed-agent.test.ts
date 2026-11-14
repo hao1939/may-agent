@@ -10,9 +10,9 @@ import { executePreparedAgent, prepareAgentExecution } from "../../../lib/agent-
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
 import type { CallAgentOptions } from "../../../lib/manager.js";
-import type { SubagentDefinition } from "../../../lib/types.js";
-import { createWriteTool } from "../../../lib/tools/write.js";
-import { createFinishTool } from "../../../lib/tools/lifecycle.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
+import { createWriteTool } from "@may-agent/sdk/runtime";
+import { createFinishTool } from "@may-agent/sdk/runtime";
 
 test.each(["success", "partial", "blocked", "failure"])("a valid %s report retains useful work and the Task's continuation decision", async (status) => {
   const root = mkdtempSync(join(tmpdir(), "may-task-report-"));

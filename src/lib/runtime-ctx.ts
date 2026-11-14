@@ -7,7 +7,7 @@
 import type { EventBus } from "../app/core/events/bus.js";
 import type { SqliteDb } from "./db.js";
 import { getDb } from "./db/connection.js";
-import { log as globalLog } from "./log.js";
+import { log as globalLog } from "@may-agent/sdk/runtime";
 import { createMetricService, type MetricService } from "./metrics.js";
 import { buildCanonicalEventEnvelope } from "../../packages/control/src/event-envelope.js";
 

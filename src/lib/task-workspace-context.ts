@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:f
 import { join } from "node:path";
 import { writeJsonArtifact } from "./artifacts.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
-import type { SubagentDefinition } from "./types.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { taskWorkContext, taskWorkGuidance, taskWorkloadGuidance } from "./task-work-context.js";
 
 export type TaskWorkspaceBrief = { taskFile: string } | { error: string };

@@ -10,7 +10,7 @@ import {
 } from "@may-agent/sdk";
 import type { SqliteDb } from "../../lib/db.js";
 import { withSqliteBusyRetry } from "../../lib/db/busy-retry.js";
-import { log } from "../../lib/log.js";
+import { log } from "@may-agent/sdk/runtime";
 import { createAppObserverRuntime } from "../adapters/producers/app-observer-runtime.js";
 import { createAppScheduleProducer } from "../adapters/producers/app-schedules.js";
 import { canonicalAppEvent } from "../canonical-app-event.js";

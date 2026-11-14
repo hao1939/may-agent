@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createAssistantMessageEventStream, getCurrentSystemPrompt, type TranscriptContext } from "@earendil-works/pi-ai";
 import { prepareAgentExecution } from "./agent-execution.js";
-import { createAgentRun } from "./agent-runner.js";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 

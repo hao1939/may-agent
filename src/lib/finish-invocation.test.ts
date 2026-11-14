@@ -7,12 +7,12 @@ import { createAssistantMessageEventStream, type ToolCall } from "@earendil-work
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareAgentExecution, executePreparedAgent } from "./agent-execution.js";
-import { createAgentRun } from "./agent-runner.js";
-import { createFinishTool } from "./tools/lifecycle.js";
+import { createAgentRun } from "@may-agent/sdk/runtime";
+import { createFinishTool } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import { readSessionMessages } from "./persistence.js";
-import { extractFinishParams } from "../../packages/sdk/src/runtime/index.js";
+import { extractFinishParams } from "@may-agent/sdk/runtime";
 
 const roots: string[] = [];
 afterEach(() => {

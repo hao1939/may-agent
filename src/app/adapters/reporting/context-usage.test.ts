@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { getDb, closeDb } from "../../../lib/db/connection.js";
 import { runDbMaintenancePass } from "../../../lib/db/maintenance.js";
 import { saveExecutionUsage, observeExecutionUsage } from "../../../lib/db/execution-usage.js";
-import { createExecutionUsage } from "../../../lib/execution-usage.js";
+import { createExecutionUsage } from "@may-agent/sdk/runtime";
 import { preparationFixture, usageReply, observeReply } from "../../../../test/fixtures/execution-usage.js";
 import { contextUsageQuery, readContextUsage } from "./context-usage.js";
 

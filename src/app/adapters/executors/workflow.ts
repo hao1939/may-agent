@@ -3,7 +3,7 @@ import { taskExecutionContext } from "./task-context.js";
 import { basename, join } from "node:path";
 import type { TaskVerifier as AppTaskVerifier } from "@may-agent/sdk";
 import type { SubagentManager } from "../../../lib/index.js";
-import type { SubagentDefinition } from "../../../lib/types.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { captureAgentDefinitions } from "./agent-definitions.js";
 import { buildRuntimeCtx } from "../../../lib/runtime-ctx.js";
 import {

@@ -7,7 +7,7 @@ import {
   discoverAgentSkills,
   formatBoundedSkillCatalog,
   invokeCatalogSkill,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 
 const roots: string[] = [];
 afterEach(() => {

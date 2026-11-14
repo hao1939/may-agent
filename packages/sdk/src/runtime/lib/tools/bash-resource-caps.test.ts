@@ -6,7 +6,7 @@ import {
   createLocalBashOperations,
   DEFAULT_BASH_TIMEOUT,
   type BashToolDetails,
-} from "./bash.js";
+} from "@may-agent/sdk/runtime";
 
 describe("P113 Bash Resource Caps", () => {
   it("DEFAULT_BASH_TIMEOUT is 120 seconds", () => {

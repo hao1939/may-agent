@@ -6,7 +6,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { attachDaemonInfoLog } from "../../src/app/transport/daemon-info-log.js";
-import { addLogSubscriber } from "../../src/lib/log.js";
+import { addLogSubscriber } from "@may-agent/sdk/runtime";
 
 async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;

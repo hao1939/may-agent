@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { InterfaceBinding } from "@may-agent/control";
 import { metricThresholdBreached } from "../../lib/metrics.js";
-import { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory } from "../../../packages/sdk/src/runtime/index.js";
+import { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory } from "@may-agent/sdk/runtime";
 import { ChatPublicationConflict, readChatPublication } from "./read-model/chat-publication.js";
 import type { SqliteDb } from "./read-model/state-db.js";
 

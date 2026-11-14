@@ -10,7 +10,7 @@
  */
 
 import { eventData, isSessionEvent, type EventBus } from "../core/events/bus.js";
-import { addLogSubscriber, type LogLevel } from "../../lib/log.js";
+import { addLogSubscriber, type LogLevel } from "@may-agent/sdk/runtime";
 
 const DIM = "\x1b[2m";
 const RESET = "\x1b[0m";

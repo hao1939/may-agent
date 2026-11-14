@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { RegistryStore, ensureSessionDir, markSessionActive, sessionOutputDir } from "../../src/lib/persistence.js";
-import type { SubagentDefinition } from "../../src/lib/types.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { fakeModel } from "../fixtures/model.js";
 import { markStaleSession } from "../fixtures/stale-session.js";
 

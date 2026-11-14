@@ -15,7 +15,8 @@
     "./app": "./src/app.ts",
     "./task": "./src/task.ts",
     "./standalone": "./src/standalone.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./runtime": "./src/runtime/index.ts"
   },
   "files": [
     "src"

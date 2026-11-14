@@ -9,12 +9,12 @@ import { dirname, join } from "node:path";
 import { Type } from "typebox";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { buildTools } from "../../src/app/loader/toolset-loader.js";
-import { createAgentRun } from "../../src/lib/agent-runner.js";
-import { currentAgentSessionId } from "../../packages/sdk/src/runtime/index.js";
+import { createAgentRun } from "@may-agent/sdk/runtime";
+import { currentAgentSessionId } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb } from "../../src/lib/db/connection.js";
 import type { TaskExecutionContext } from "../../src/lib/task-execution-context.js";
-import { createFinishTool } from "../../src/lib/tools/lifecycle.js";
+import { createFinishTool } from "@may-agent/sdk/runtime";
 import { fakeModel } from "../fixtures/model.js";
 
 // Real loader/model tools and managed executions. Only the provider is synthetic.

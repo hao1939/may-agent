@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadAgentLocalTools } from "../../../packages/sdk/src/runtime/index.js";
+import { loadAgentLocalTools } from "@may-agent/sdk/runtime";
 
 describe("agent local tool loader", () => {
   it("imports runtime tool factories but ignores tests, specs, and declarations", async () => {

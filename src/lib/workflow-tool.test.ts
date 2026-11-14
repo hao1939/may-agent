@@ -6,11 +6,11 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
-import { workflowExecutionResult } from "../../packages/sdk/src/runtime/index.js";
+import { workflowExecutionResult } from "@may-agent/sdk/runtime";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
-import type { SubagentDefinition } from "./types.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 
 const workerDef: SubagentDefinition = {
   name: "worker", description: "Worker", domain: "test", model: fakeModel(), tools: [],

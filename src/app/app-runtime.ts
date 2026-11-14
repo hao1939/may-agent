@@ -36,7 +36,7 @@ import {
 } from "./daemon.js";
 import { HumanTaskService } from "./human-task-service.js";
 import { startInterfaceRuntime } from "./interface-startup.js";
-import type { ModelRegistry } from "../../packages/sdk/src/runtime/index.js";
+import type { ModelRegistry } from "@may-agent/sdk/runtime";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachTaskControlEventRoute } from "./task-control-events.js";

@@ -11,7 +11,7 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { AppEventTarget, MetricCalculation } from "@may-agent/sdk";
-import { log } from "../../../lib/log.js";
+import { log } from "@may-agent/sdk/runtime";
 
 // ── Event Types ────────────────────────────────────────────────────────
 

@@ -14,7 +14,7 @@ import {
   settleConversationDelivery,
   type ConversationDelivery,
 } from "../../lib/db/telegram-conversation-deliveries.js";
-import { log } from "../../lib/log.js";
+import { log } from "@may-agent/sdk/runtime";
 import {
   renderTelegramConversationMessage,
   singleTaskReference,

@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
-import { classifyTerminalAssistantFailure, extractLastAssistantError } from "../../src/lib/manager-utils.js";
+import { classifyTerminalAssistantFailure, extractLastAssistantError } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "../../src/lib/manager.js";
 import {
   appendSessionMessage,
@@ -24,9 +24,9 @@ import {
 import { closeDb } from "../../src/lib/db/connection.js";
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { createAgentRun, type AgentRuntimeListener } from "../../src/lib/agent-runner.js";
-import { discoverAgentSkills } from "../../packages/sdk/src/runtime/index.js";
-import { RESPONSES_STREAM_TERMINAL_ERROR } from "../../packages/sdk/src/runtime/index.js";
+import { createAgentRun, type AgentRuntimeListener } from "@may-agent/sdk/runtime";
+import { discoverAgentSkills } from "@may-agent/sdk/runtime";
+import { RESPONSES_STREAM_TERMINAL_ERROR } from "@may-agent/sdk/runtime";
 import { fakeModel } from "../fixtures/model.js";
 
 function registerAgent(manager: SubagentManager, name = "test-agent") {

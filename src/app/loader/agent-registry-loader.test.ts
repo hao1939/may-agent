@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { invalidateRuntimeModuleCache } from "../../../packages/sdk/src/runtime/index.js";
+import { invalidateRuntimeModuleCache } from "@may-agent/sdk/runtime";
 import { DefinitionSourceReleaseStore } from "../app-source-release.js";
 import {
   loadAgents,

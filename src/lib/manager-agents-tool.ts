@@ -8,8 +8,8 @@ import { Type, type Static } from "typebox";
 
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { StringEnum } from "@earendil-works/pi-ai";
-import type { RegisteredAgent } from "./manager-utils.js";
-import type { SessionInfo, SubagentDefinition, TaskResult } from "./types.js";
+import type { RegisteredAgent } from "@may-agent/sdk/runtime";
+import type { SessionInfo, SubagentDefinition, TaskResult } from "@may-agent/sdk/runtime";
 import type { PersistedSession, TaskBinding } from "./persistence.js";
 import { getDb } from "./db/connection.js";
 import {
@@ -18,7 +18,7 @@ import {
   deferredExecutionResult,
   workflowExecutionResult,
   type ExecutionScope,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 import { readIdentity } from "./instance-identity.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";

@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { Value } from "typebox/value";
-import { createFinishTool } from "./lifecycle.js";
-import { createWorkflowFinishTool } from "../../../packages/sdk/src/runtime/index.js";
+import { createFinishTool } from "@may-agent/sdk/runtime";
+import { createWorkflowFinishTool } from "@may-agent/sdk/runtime";
 
 function toolCall(arguments_: Record<string, unknown>): ToolCall {
   return { type: "toolCall", id: "call-1", name: "finish", arguments: arguments_ };

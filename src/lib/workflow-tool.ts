@@ -44,12 +44,12 @@ import {
   workflowExecutionResult,
   type WorkflowCatalog,
   type WorkflowExecutionEnvironment,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 import type { SubagentManager } from "./manager.js";
 import { createUnavailableMetricService } from "./metrics.js";
 import type { TaskBinding } from "./persistence.js";
 import type { RuntimeCtx } from "./runtime-ctx.js";
-import type { SubagentDefinition } from "./types.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { createWorkflowDiagnostics } from "./workflow-diagnostics.js";
 import { retainWorkflowResultPayload } from "./workflow-payload.js";
 import type {

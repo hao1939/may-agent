@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { drainBashProcessGroup } from "../lib/tools/bash.js";
+import { drainBashProcessGroup } from "@may-agent/sdk/runtime";
 import { spawnFixtureProcess } from "../../test/fixtures/owned-process.js";
 import { parseStandaloneCliArgs, runStandaloneCli } from "./standalone-cli.js";
 
