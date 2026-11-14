@@ -4,7 +4,6 @@ import { formatDurationMs } from "./daemon.js";
 import type { EventBus } from "./core/events/bus.js";
 import { runMessageMode, runStatusMode } from "./modes/command.js";
 import { runOneshotMode } from "./modes/oneshot.js";
-import { runWorkflowMode } from "./modes/run-workflow.js";
 
 /**
  * Run client-only control modes before daemon lifecycle ownership is created.
@@ -41,36 +40,14 @@ export async function runRequestedExitMode(opts: {
   const {
     consoleEnabled,
     cronEnabled,
-    dryRun,
     initialTask,
     humanInterface,
     oneshotMode,
     oneshotTimeoutMinutes,
-    runWorkflow,
     socketEnabled,
     telegramEnabled,
     webEnabled,
   } = opts.appArgs;
-
-  if (runWorkflow) {
-    try {
-      await runWorkflowMode({
-        mode: runWorkflow,
-        dryRun,
-        agentsRoot: opts.agentsRoot,
-        sharedRoot: opts.sharedRoot,
-        projectsRoot: opts.projectsRoot,
-        projectRoot: opts.projectRoot,
-        persistDir: opts.persistDir,
-        bus: opts.bus,
-        manager: opts.manager,
-      });
-      process.exit(0);
-    } catch (err) {
-      console.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
-  }
 
   if (
     !consoleEnabled &&

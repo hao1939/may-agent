@@ -11,7 +11,7 @@ import { executePreparedAgent } from "../lib/agent-execution.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareDirectAgentExecution, type DirectAgentRunResult } from "./direct-agent.js";
-import { runDirectWorkflow } from "./direct-workflow.js";
+import { runDirect, runDirectWorkflow } from "./direct-workflow.js";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -758,6 +758,60 @@ export async function execute(ctx) {
         },
         agentSummary: "prompt-ok",
       },
+    });
+  });
+
+  test("runDirect dispatches both prompt targets and code targets through one standalone entrypoint", async () => {
+    const env = setupDirectLayout();
+    const promptRun = await runDirect({
+      target: "reviewer",
+      input: "Inspect HEAD",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async ({ task }) => ({
+          id: "s_direct_prompt",
+          kind: "agent",
+          status: "done",
+          summary: `reviewed:${task}`,
+          output: { verdict: "pass" },
+        }),
+      },
+    });
+    expect(promptRun.ok).toBe(true);
+    expect(promptRun.result).toMatchObject({
+      type: "done",
+      summary: "reviewed:Inspect HEAD",
+      output: { verdict: "pass" },
+    });
+
+    const codeRun = await runDirect({
+      target: "owner/review-change",
+      input: { subjectRef: "HEAD~1..HEAD" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async () => ({
+          id: "s_direct_code_child",
+          kind: "agent",
+          status: "done",
+          summary: "ok",
+          output: { subjectRef: "HEAD~1..HEAD", verdict: "pass", summary: "Clean" },
+        }),
+      },
+    });
+    expect(codeRun.ok).toBe(true);
+    expect(codeRun.result).toMatchObject({
+      type: "done",
+      summary: "Reviewed HEAD~1..HEAD",
     });
   });
 });

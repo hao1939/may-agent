@@ -2,7 +2,6 @@ import { interfaceBinding, type InterfaceBinding } from "@may-agent/control";
 import { existsSync, readFileSync } from "node:fs";
 import { parseEmitMode } from "./modes/emit.js";
 import { parseOneshotTimeoutMinutes } from "./modes/oneshot.js";
-import { parseRunWorkflowMode } from "./modes/run-workflow.js";
 
 export interface AppArgs {
   cronEnabled: boolean;
@@ -15,7 +14,6 @@ export interface AppArgs {
   statusMode: boolean;
   messageMode: boolean;
   emitMode: ReturnType<typeof parseEmitMode>;
-  runWorkflow: ReturnType<typeof parseRunWorkflowMode>;
   dryRun: boolean;
   initialTask: string | null;
   humanInterface: InterfaceBinding;
@@ -46,7 +44,6 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   const statusMode = argv.includes("--status");
   const messageMode = argv.includes("--send");
   const emitMode = parseEmitMode(argv);
-  const runWorkflow = parseRunWorkflowMode(argv);
   const dryRun = argv.includes("--dry-run");
   const initialTask = parseInitialTask(argv);
   const humanInterface = interfaceBinding(env, parseInterfaceAgent(argv));
@@ -74,7 +71,6 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
     statusMode,
     messageMode,
     emitMode,
-    runWorkflow,
     dryRun,
     initialTask,
     humanInterface,
@@ -87,7 +83,6 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
       !oneshotMode &&
       !statusMode &&
       !messageMode &&
-      !runWorkflow &&
       !initialTask,
     oneshotTimeoutMinutes: parseOneshotTimeoutMinutes(argv),
     notify: argv.includes("--notify"),

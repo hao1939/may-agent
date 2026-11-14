@@ -5,9 +5,26 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { SubagentManager } from "../../src/lib/manager.js";
+import type { SubagentDefinition } from "../../src/lib/types.js";
 import { buildWorkflowCatalog } from "../../src/lib/workflow-catalog.js";
 import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
+import { fakeModel } from "../fixtures/model.js";
+
+const workerDef: SubagentDefinition = {
+  name: "worker", description: "Worker", domain: "test", model: fakeModel(), tools: [],
+};
+const reviewerDef: SubagentDefinition = {
+  name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(), tools: [],
+};
+const coderDef: SubagentDefinition = {
+  name: "coder", description: "Coder", domain: "test", model: fakeModel(), tools: [],
+};
+const testAgentDefs = new Map<string, SubagentDefinition>([
+  ["worker", workerDef],
+  ["reviewer", reviewerDef],
+  ["coder", coderDef],
+]);
 
 // ── Test fixtures ──────────────────────────────────────────────────────
 
@@ -246,22 +263,26 @@ describe("workflow tool: typed execution", () => {
     `,
     );
     const calls: Array<Record<string, unknown>> = [];
+    const callAgent = async (_agent: string, _task: string, options: Record<string, unknown>) => {
+      calls.push(options);
+      return {
+        sessionId: "step-session",
+        status: "done",
+        lastAssistantText: "done",
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+      };
+    };
     const manager = {
-      async callAgent(_agent: string, _task: string, options: Record<string, unknown>) {
-        calls.push(options);
-        return {
-          sessionId: "step-session",
-          status: "done",
-          lastAssistantText: "done",
-          messages: [],
-          duration: "0s",
-          outputDir: "",
-        };
-      },
+      callAgent,
+      callAgentDefinition: (_def: SubagentDefinition, task: string, options: Record<string, unknown>) =>
+        callAgent(_def.name, task, options),
     } as unknown as SubagentManager;
     const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       projectId: "sample",
       recoveryOwner: "app-task-reconciler",
     });
@@ -753,26 +774,29 @@ describe("workflow runner: structured agent results", () => {
     );
 
     let receivedOpts: Record<string, unknown> | undefined;
+    const callAgent = async (_agent: string, _task: string, opts: Record<string, unknown>) => {
+      receivedOpts = opts;
+      return {
+        sessionId: "s_structured",
+        status: "done" as const,
+        lastAssistantText: "Review complete",
+        messages: [],
+        duration: "0.0s",
+        outputDir: "",
+        finishResult: { status: "success", summary: "Review complete", result: { verdict: "pass" } },
+        structuredResult: { verdict: "pass" },
+      };
+    };
     const manager = {
       result: () => {
         throw new Error("no replay");
       },
-      callAgent: async (_agent: string, _task: string, opts: Record<string, unknown>) => {
-        receivedOpts = opts;
-        return {
-          sessionId: "s_structured",
-          status: "done" as const,
-          lastAssistantText: "Review complete",
-          messages: [],
-          duration: "0.0s",
-          outputDir: "",
-          finishResult: { status: "success", summary: "Review complete", result: { verdict: "pass" } },
-          structuredResult: { verdict: "pass" },
-        };
-      },
+      callAgent,
+      callAgentDefinition: (_def: SubagentDefinition, task: string, opts: Record<string, unknown>) =>
+        callAgent(_def.name, task, opts),
     } as unknown as SubagentManager;
 
-    const runner = createWorkflowRunner({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, agentDefinitions: testAgentDefs });
     const parsed: WorkflowToolResult = await runner.run("structured-result", "test");
 
     expect(parsed.type).toBe("done");
@@ -795,21 +819,23 @@ describe("workflow runner: structured agent results", () => {
     `,
     );
 
+    const callAgent = async () => ({
+      sessionId: "s_prose",
+      status: "done" as const,
+      lastAssistantText: "I finished the task.",
+      messages: [],
+      duration: "0.0s",
+      outputDir: "",
+    });
     const manager = {
       result: () => {
         throw new Error("no replay");
       },
-      callAgent: async () => ({
-        sessionId: "s_prose",
-        status: "done" as const,
-        lastAssistantText: "I finished the task.",
-        messages: [],
-        duration: "0.0s",
-        outputDir: "",
-      }),
+      callAgent,
+      callAgentDefinition: callAgent,
     } as unknown as SubagentManager;
 
-    const runner = createWorkflowRunner({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, agentDefinitions: testAgentDefs });
     const parsed: WorkflowToolResult = await runner.run("reject-prose", "test");
 
     expect(parsed.type).toBe("done");
@@ -944,6 +970,7 @@ describe("workflow runner: steering", () => {
     const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       onEvent: (e) => events.push(e),
     });
 
@@ -996,6 +1023,7 @@ describe("workflow runner: steering", () => {
     const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       onEvent: (e) => events.push(e),
     });
 
@@ -1038,6 +1066,7 @@ describe("workflow runner: steering", () => {
     const runner = createWorkflowRunner({
       manager,
       workflowDir,
+      agentDefinitions: testAgentDefs,
       onEvent: (e) => events.push(e),
     });
 

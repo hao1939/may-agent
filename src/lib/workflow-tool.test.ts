@@ -11,6 +11,11 @@ import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import type { SubagentDefinition } from "./types.js";
 
+const workerDef: SubagentDefinition = {
+  name: "worker", description: "Worker", domain: "test", model: fakeModel(), tools: [],
+};
+const workerDefs = new Map([["worker", workerDef]]);
+
 const roots: string[] = [];
 function workflowRoot(prefix: string): string {
   const root = mkdtempSync(join(tmpdir(), prefix));
@@ -82,7 +87,7 @@ export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); 
     expect(promptCalls).toBe(1);
   });
 
-  it.each([undefined, "sample"])("does not resolve another App's procedures from project %j", async (projectId) => {
+  it.each([undefined, "sample"])("does not resolve another App's procedures or prompt agents from project %j", async (projectId) => {
     const root = workflowRoot("workflow-app-isolation-");
     const foreignDir = join(root, "foreign");
     mkdirSync(join(foreignDir, "workflows"), { recursive: true });
@@ -99,16 +104,33 @@ export const name = "parent";
 export const description = "Attempts cross-App delegation";
 export async function execute(ctx) { return ctx.call("foreign/secret", {}); }
 `);
+    writeFileSync(join(root, "parent-prompt.ts"), `
+export const name = "parent-prompt";
+export const description = "Attempts cross-App prompt delegation";
+export async function execute(ctx) { return ctx.call("foreign", "do secret work"); }
+`);
     const foreign: SubagentDefinition = {
       name: "foreign", description: "Foreign", domain: "test", model: fakeModel(), tools: [],
       agentDir: foreignDir, appLocal: true, projectId: "other-app",
     };
+    let foreignPromptCalls = 0;
+    const manager = {
+      callAgent: async () => { foreignPromptCalls++; throw new Error("must not call foreign prompt"); },
+      callAgentDefinition: async () => { foreignPromptCalls++; throw new Error("must not call foreign prompt"); },
+    } as any;
     const result = await createWorkflowRunner({
-      manager: {} as any, workflowDir: root, agentName: "owner", projectId,
+      manager, workflowDir: root, agentName: "owner", projectId,
       agentDefinitions: new Map([["foreign", foreign]]),
     }).run("parent", "input");
     expect(result).toMatchObject({ type: "error", error: expect.stringContaining('Callable procedure "foreign/secret" not found') });
     expect(existsSync(marker)).toBe(false);
+
+    const promptResult = await createWorkflowRunner({
+      manager, workflowDir: root, agentName: "owner", projectId,
+      agentDefinitions: new Map([["foreign", foreign]]),
+    }).run("parent-prompt", "input");
+    expect(promptResult).toMatchObject({ type: "error", error: expect.stringContaining('Callable target "foreign" not found') });
+    expect(foreignPromptCalls).toBe(0);
   });
 
   it("lets the caller recover from an unavailable nested workflow without inventing a child execution", async () => {
@@ -240,13 +262,16 @@ export async function execute(ctx) {
     let cancelled = 0;
     const stopped = Promise.withResolvers<void>();
     const cleanup = Promise.withResolvers<void>();
+    const callAgent = (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
+      workflowRunId = opts.workflowRunId ?? "";
+      return new Promise((resolve) => {
+        resolveStep = resolve;
+      });
+    };
     const manager = {
-      callAgent: (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
-        workflowRunId = opts.workflowRunId ?? "";
-        return new Promise((resolve) => {
-          resolveStep = resolve;
-        });
-      },
+      callAgent,
+      callAgentDefinition: (_def: SubagentDefinition, task: string, opts: { workflowRunId?: string }) =>
+        callAgent(_def.name, task, opts),
       status: () => (workflowRunId ? [{ sessionId: "step-session", workflowRunId }] : []),
       cancel: () => {
         cancelled += 1;
@@ -262,7 +287,7 @@ export async function execute(ctx) {
       },
     } as any;
     const controller = new AbortController();
-    const runner = createWorkflowRunner({ manager, workflowDir, agentName: "owner", signal: controller.signal });
+    const runner = createWorkflowRunner({ manager, workflowDir, agentName: "owner", agentDefinitions: workerDefs, signal: controller.signal });
 
     let settled = false;
     const running = runner.run("cancel", "test").then((result) => { settled = true; return result; });
@@ -298,17 +323,20 @@ export async function execute(ctx) {
     const entered = Promise.withResolvers<void>();
     const stopped = Promise.withResolvers<void>();
     const cleanup = Promise.withResolvers<void>();
+    const callAgent = async (_agent: string, _task: string, opts: { signal: AbortSignal }) => {
+      entered.resolve();
+      opts.signal.addEventListener("abort", () => stopped.resolve(), { once: true });
+      await stopped.promise;
+      await cleanup.promise;
+      return { sessionId: "child-helper", status: "interrupted", messages: [], duration: "0s", outputDir: "" };
+    };
     const manager = {
       status: () => [],
-      callAgent: async (_agent: string, _task: string, opts: { signal: AbortSignal }) => {
-        entered.resolve();
-        opts.signal.addEventListener("abort", () => stopped.resolve(), { once: true });
-        await stopped.promise;
-        await cleanup.promise;
-        return { sessionId: "child-helper", status: "interrupted", messages: [], duration: "0s", outputDir: "" };
-      },
+      callAgent,
+      callAgentDefinition: (_def: SubagentDefinition, task: string, opts: { signal: AbortSignal }) =>
+        callAgent(_def.name, task, opts),
     } as any;
-    const runner = createWorkflowRunner({ manager, workflowDir: root, agentName: "owner",
+    const runner = createWorkflowRunner({ manager, workflowDir: root, agentName: "owner", agentDefinitions: workerDefs,
       read: { execution: () => entered.promise } as any });
     let settled = false;
     const running = runner.run("parent", "test").then((result) => { settled = true; return result; });
@@ -340,13 +368,16 @@ export async function execute(ctx) {
     let workflowRunId = "";
     let resolveStep!: (result: any) => void;
     let cancelled = 0;
+    const callAgent = (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
+      workflowRunId = opts.workflowRunId ?? "";
+      return new Promise((resolve) => {
+        resolveStep = resolve;
+      });
+    };
     const manager = {
-      callAgent: (_agent: string, _task: string, opts: { workflowRunId?: string }) => {
-        workflowRunId = opts.workflowRunId ?? "";
-        return new Promise((resolve) => {
-          resolveStep = resolve;
-        });
-      },
+      callAgent,
+      callAgentDefinition: (_def: SubagentDefinition, task: string, opts: { workflowRunId?: string }) =>
+        callAgent(_def.name, task, opts),
       status: () => (workflowRunId ? [{ sessionId: "step-session", workflowRunId }] : []),
       cancel: (sessionId: string) => {
         expect(sessionId).toBe("step-session");
@@ -366,6 +397,7 @@ export async function execute(ctx) {
       manager,
       workflowDir,
       agentName: "owner",
+      agentDefinitions: workerDefs,
       executionTimeoutMs: 10,
       onEvent: (event) => events.push(event),
     });
@@ -776,15 +808,18 @@ export async function execute(ctx) {
 
     let releaseAgent!: (value: unknown) => void;
     const emitted: Array<{ type: string; data?: unknown }> = [];
+    const callAgent = () =>
+      new Promise((resolve) => {
+        releaseAgent = resolve;
+      });
     const runner = createWorkflowRunner({
       manager: {
-        callAgent: () =>
-          new Promise((resolve) => {
-            releaseAgent = resolve;
-          }),
+        callAgent,
+        callAgentDefinition: callAgent,
       } as any,
       workflowDir,
       agentName: "owner",
+      agentDefinitions: workerDefs,
       runtimeCtx: {
         emit: (event) => emitted.push(event as { type: string; data?: unknown }),
         dispatchEvent: () => undefined,
@@ -844,15 +879,18 @@ export async function execute(ctx) {
     let taskListener: ((event: any) => void) | undefined;
     let unsubscribed = 0;
     let releaseAgent!: (value: unknown) => void;
+    const callAgent = () =>
+      new Promise((resolve) => {
+        releaseAgent = resolve;
+      });
     const runner = createWorkflowRunner({
       manager: {
-        callAgent: () =>
-          new Promise((resolve) => {
-            releaseAgent = resolve;
-          }),
+        callAgent,
+        callAgentDefinition: callAgent,
       } as any,
       workflowDir,
       agentName: "owner",
+      agentDefinitions: workerDefs,
       taskEmitter: {
         read: () => null,
         publish: () => 41,
@@ -912,34 +950,38 @@ export async function execute(ctx) {
     };
     let agentSessionSource: string | undefined;
     let operationAllowance: number | undefined;
+    const callAgent = async (_agent: string, _task: string, options: { source?: string; operationAllowance?: number }) => {
+      agentSessionSource = options.source;
+      operationAllowance = options.operationAllowance;
+      return {
+        sessionId: "s_app_step",
+        status: "done",
+        lastAssistantText: "fallback",
+        messages: [
+          {
+            role: "toolResult",
+            toolName: "run_cli_agent",
+            toolCallId: "native-call",
+            details: { cliCall },
+            content: [],
+            isError: false,
+            timestamp: Date.now(),
+          },
+        ],
+        duration: "0s",
+        outputDir: "",
+        finishResult: { status: "success", summary: "bounded move complete", result: { ok: true } },
+      };
+    };
     const runner = createWorkflowRunner({
       manager: {
-        callAgent: async (_agent: string, _task: string, options: { source?: string; operationAllowance?: number }) => {
-          agentSessionSource = options.source;
-          operationAllowance = options.operationAllowance;
-          return {
-            sessionId: "s_app_step",
-            status: "done",
-            lastAssistantText: "fallback",
-            messages: [
-              {
-                role: "toolResult",
-                toolName: "run_cli_agent",
-                toolCallId: "native-call",
-                details: { cliCall },
-                content: [],
-                isError: false,
-                timestamp: Date.now(),
-              },
-            ],
-            duration: "0s",
-            outputDir: "",
-            finishResult: { status: "success", summary: "bounded move complete", result: { ok: true } },
-          };
-        },
+        callAgent,
+        callAgentDefinition: (_def: SubagentDefinition, task: string, options: { source?: string; operationAllowance?: number }) =>
+          callAgent(_def.name, task, options),
       } as any,
       workflowDir,
       agentName: "owner",
+      agentDefinitions: workerDefs,
       sessionSource: "heartbeat",
       runtimeCtx: {
         emit: () => undefined,
@@ -1091,25 +1133,29 @@ export async function execute(ctx) {
     const workflowInput = { failed: true };
     let inherited: unknown;
     let helperPrompt = "";
+    const callAgent = async (_agent: string, task: string, options: { taskContext?: unknown }) => {
+      helperCalls++;
+      helperPrompt = task;
+      inherited = options.taskContext;
+      return {
+        sessionId: "s_context_helper",
+        status: "done",
+        lastAssistantText: "Context considered",
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+        finishResult: { status: "success", summary: "Context considered" },
+      };
+    };
     const runner = createWorkflowRunner({
       manager: {
-        callAgent: async (_agent: string, task: string, options: { taskContext?: unknown }) => {
-          helperCalls++;
-          helperPrompt = task;
-          inherited = options.taskContext;
-          return {
-            sessionId: "s_context_helper",
-            status: "done",
-            lastAssistantText: "Context considered",
-            messages: [],
-            duration: "0s",
-            outputDir: "",
-            finishResult: { status: "success", summary: "Context considered" },
-          };
-        },
+        callAgent,
+        callAgentDefinition: (_def: SubagentDefinition, task: string, options: { taskContext?: unknown }) =>
+          callAgent(_def.name, task, options),
       } as any,
       workflowDir,
       agentName: "owner",
+      agentDefinitions: workerDefs,
       persistDir: root,
       taskContext,
       workflowInput,
@@ -1162,9 +1208,14 @@ export async function execute(ctx) {
           calls += 1;
           throw new Error("provider should not run");
         },
+        callAgentDefinition: async () => {
+          calls += 1;
+          throw new Error("provider should not run");
+        },
       } as any,
       workflowDir,
       agentName: "owner",
+      agentDefinitions: workerDefs,
     });
 
     const result = await runner.run("invalid-allowance", "input");
@@ -1187,20 +1238,23 @@ export async function execute(ctx) {
 }
 `,
     );
+    const callAgent = async () => ({
+      sessionId: "s_app_error",
+      status: "error",
+      error: "bounded move failed",
+      lastAssistantText: null,
+      messages: [],
+      duration: "0s",
+      outputDir: "",
+    });
     const runner = createWorkflowRunner({
       manager: {
-        callAgent: async () => ({
-          sessionId: "s_app_error",
-          status: "error",
-          error: "bounded move failed",
-          lastAssistantText: null,
-          messages: [],
-          duration: "0s",
-          outputDir: "",
-        }),
+        callAgent,
+        callAgentDefinition: callAgent,
       } as any,
       workflowDir,
       agentName: "owner",
+      agentDefinitions: workerDefs,
     });
 
     const result = await runner.run("app-error", "input");

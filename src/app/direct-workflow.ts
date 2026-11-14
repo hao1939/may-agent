@@ -84,8 +84,9 @@ export type DirectAgentFixtureHandler = (call: {
 }) => WorkflowStepInvocationResult | Promise<WorkflowStepInvocationResult>;
 
 export type DirectWorkflowRunOptions<TInput = unknown> = {
-  /** Provide either an imported workflow module or owning `agentName` + `workflowName`. */
+  /** Provide an imported workflow module, `target` ("agent" or "owner/workflow"), or owning `agentName` + `workflowName`. */
   module?: WorkflowExecutableModule<TInput>;
+  target?: string;
   agentName?: string;
   workflowName?: string;
   workflowDir?: string;
@@ -115,6 +116,8 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   resolveToolDenials?: (agentName: string, configuredTools: readonly string[]) => ToolDenial[];
   /** Optional tool restriction ("readonly") for this execution scope. */
   tools?: "full" | "readonly";
+  /** Optional caller-side output schema for root prompt targets. */
+  outputSchema?: TSchema;
   drainProcessGroup?: (pgid: number) => Promise<boolean>;
   timeoutMs?: number;
   deadlineAt?: number;
@@ -126,6 +129,9 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   onLog?: (entry: WorkflowLogEntry) => void;
   onNotice?: (message: string) => void;
 };
+
+export type DirectRunOptions<TInput = unknown> = DirectWorkflowRunOptions<TInput>;
+export type DirectRunResult = DirectWorkflowRunResult;
 
 export type DirectWorkflowRunResult = {
   ok: boolean;
@@ -323,22 +329,54 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   }
 
-  const callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
-  const workflowDir = resolveWorkflowDir(options);
+  let callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
+  if (!internal && !options.agentName && options.target) {
+    callerOwner = options.target.includes("/")
+      ? options.target.slice(0, options.target.indexOf("/")).trim()
+      : options.target.trim();
+  }
+  const workflowDir = resolveWorkflowDir({ ...options, agentName: callerOwner });
   const wfCatalog = !options.module && workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
   const preparedCatalog =
-    internal?.catalog ?? (await buildDirectCatalog(options, callerOwner, workflowDir));
+    internal?.catalog ?? (await buildDirectCatalog({ ...options, agentName: callerOwner }, callerOwner, workflowDir));
 
   let targetModule = options.module;
   if (!targetModule) {
-    if (!options.workflowName || !wfCatalog) {
-      throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
+    const requestedTarget = options.target?.trim() ?? options.workflowName?.trim();
+    if (!requestedTarget) {
+      throw new Error("runDirect requires `module`, `target`, or (`workflowName` and resolvable `workflowDir`/`agentName`)");
     }
-    const found = findWorkflow(wfCatalog, options.workflowName);
-    if (!found.workflow) {
-      throw new Error(found.error ?? `Workflow "${options.workflowName}" not found`);
+    if (options.target) {
+      const resolved = resolveCallable(callerOwner, requestedTarget, preparedCatalog);
+      callerOwner = resolved.owner;
+      if (resolved.kind === "code") {
+        targetModule = resolved.module as WorkflowExecutableModule<TInput>;
+      } else {
+        targetModule = {
+          name: resolved.name,
+          description: `Direct prompt invocation for ${resolved.name}`,
+          async execute(ctx) {
+            return options.outputSchema
+              ? ctx.call(resolved.name, ctx.input, {
+                  schema: options.outputSchema,
+                  ...(options.tools ? { tools: options.tools } : {}),
+                })
+              : ctx.call(resolved.name, ctx.input, {
+                  ...(options.tools ? { tools: options.tools } : {}),
+                });
+          },
+        };
+      }
+    } else {
+      if (!wfCatalog) {
+        throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
+      }
+      const found = findWorkflow(wfCatalog, requestedTarget);
+      if (!found.workflow) {
+        throw new Error(found.error ?? `Workflow "${requestedTarget}" not found`);
+      }
+      targetModule = found.workflow as WorkflowExecutableModule<TInput>;
     }
-    targetModule = found.workflow as WorkflowExecutableModule<TInput>;
   }
 
   const childSessions: DirectWorkflowRunResult["childSessions"] = [];
@@ -629,3 +667,8 @@ export async function runDirectWorkflow<TInput = unknown>(
     childSessions,
   };
 }
+
+/**
+ * Unified standalone entrypoint for both prompt agents ("alex") and code procedures ("tech-lead/verified-coder").
+ */
+export const runDirect = runDirectWorkflow;

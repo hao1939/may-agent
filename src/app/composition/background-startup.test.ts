@@ -29,7 +29,6 @@ describe("background startup", () => {
     [["--task-recovery-once", "--cron"], false, false],
     [["--task-worker-once", "{}", "--cron"], false, false],
     [["--task-admission-worker", "--cron"], false, false],
-    [["--run-workflow", "probe", "--cron"], false, false],
   ] as const)("selects background work from process role: %j", (flags, tty, expected) => {
     expect(runsBackgroundWork(parseAppArgs(["bun", "may", ...flags], {}), tty)).toBe(expected);
   });

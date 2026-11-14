@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
+import { fakeModel } from "../fixtures/model.js";
 
 let testDir: string;
 let workflowDir: string;
@@ -217,6 +218,7 @@ describe("workflow composition: runWorkflow", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
+    manager.register({ name: "coder", description: "Coder", domain: "test", model: fakeModel(), tools: [] });
     const runner = createWorkflowRunner({
       manager,
       workflowDir,
