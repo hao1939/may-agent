@@ -13,7 +13,6 @@ export interface InterfaceStartupOptions {
   events: EventInterface;
   getStatus: AttachControlSocketOptions["getStatus"];
   reportInfo: (message: string) => void;
-  admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
@@ -65,7 +64,6 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
           }),
         getStatus: options.getStatus,
         reportInfo: options.reportInfo,
-        admitAppInput: options.admitAppInput,
         getAppConversation: options.getAppConversation,
         listAppTasks: options.listAppTasks,
         getAppTask: options.getAppTask,

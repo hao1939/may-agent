@@ -24,7 +24,6 @@ export interface SocketUIOptions {
   agentName: string;
   /** Daemon instance label. */
   instance: string;
-  admitAppInput?: AttachControlSocketOptions["admitAppInput"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
   listAppTasks?: AttachControlSocketOptions["listAppTasks"];
   getAppTask?: AttachControlSocketOptions["getAppTask"];
@@ -82,7 +81,6 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     publishEvent: opts.publishEvent,
     getEvent: events.get,
     describeProjectActions: opts.describeProjectActions,
-    admitAppInput: opts.admitAppInput,
     getAppConversation: opts.getAppConversation,
     listAppTasks: opts.listAppTasks,
     getAppTask: opts.getAppTask,

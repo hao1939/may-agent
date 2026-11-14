@@ -60,7 +60,7 @@ identity fencing, hidden content, bounded results and shutdown on failures.
 `appId`, `taskId`, `expectedGeneration`, `message` and stable `idempotencyKey`;
 optional `inputKind` selects an input declared by the App (default `message`).
 The handler checks current Task identity, generation and terminal state before
-sending feedback through existing `app.input.admit` with `targetTaskId` and
+sending feedback through `publish` (`app.input.requested`) with `targetTaskId` and
 server-owned human attribution. This is a pre-send generation check, not an
 atomic requirement revision or native thread control. The App owns how feedback
 is considered; accepted requirement changes use its existing typed revision path.

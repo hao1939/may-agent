@@ -782,14 +782,37 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
 
   return {
     publish(rawInput, context) {
-      const input = publicationInput(rawInput, context);
+      let inputSource = context.inputSource;
+      if (rawInput?.type === "app.input.requested" && rawInput.data && typeof rawInput.data === "object" && !Array.isArray(rawInput.data)) {
+        const explicitSource = (rawInput.data as Record<string, unknown>).source;
+        if (explicitSource !== undefined) {
+          if (
+            !explicitSource ||
+            typeof explicitSource !== "object" ||
+            Array.isArray(explicitSource) ||
+            (((explicitSource as Record<string, unknown>).kind !== "human" &&
+              (explicitSource as Record<string, unknown>).kind !== "app" &&
+              (explicitSource as Record<string, unknown>).kind !== "system") ||
+              typeof (explicitSource as Record<string, unknown>).id !== "string" ||
+              !String((explicitSource as Record<string, unknown>).id).trim())
+          ) {
+            throw new Error("App input source requires kind human, app, or system and a non-empty id");
+          }
+          inputSource = {
+            kind: (explicitSource as { kind: "human" | "app" | "system" }).kind,
+            id: String((explicitSource as { id: string }).id).trim(),
+          };
+        }
+      }
+      const effectiveContext = inputSource ? { ...context, inputSource } : context;
+      const input = publicationInput(rawInput, effectiveContext);
       const definition = EVENT_DEFINITIONS[input.type];
-      if (!definition && !context.allowUnregisteredFact) {
+      if (!definition && !effectiveContext.allowUnregisteredFact) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);
       }
-      if (input.type === "app.task.reopen.requested" && context.source !== "control-socket")
+      if (input.type === "app.task.reopen.requested" && effectiveContext.source !== "control-socket")
         throw new Error("Task reopening requires explicit operator control");
-      const event = canonicalEvent(input, context);
+      const event = canonicalEvent(input, effectiveContext);
       // Canonical source and payload must match before reusing a submission.
       // Normal publication still lets the bus finish interrupted delivery.
       const savedSubmission = definition?.receiptReplay && findPersistedEventId(options.db, event);

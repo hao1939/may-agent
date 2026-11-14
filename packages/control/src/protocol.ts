@@ -5,17 +5,13 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "status",
   "publish",
   "event.get",
-  "app.input.admit",
   "app.conversation.get",
   "app.tasks.list",
   "app.tasks.workload",
   "app.task.get",
-  "app.task.retry",
   "apps.list",
   "tasks.list",
   "task.get",
-  "task.close",
-  "task.reopen",
   "task.cancel",
   "project.actions.describe",
   "project.action.invoke",
@@ -29,17 +25,13 @@ export type SocketFrame =
         | "status"
         | "publish"
         | "event.get"
-        | "app.input.admit"
         | "app.conversation.get"
         | "app.tasks.list"
         | "app.tasks.workload"
         | "app.task.get"
-        | "app.task.retry"
         | "apps.list"
         | "tasks.list"
         | "task.get"
-        | "task.close"
-        | "task.reopen"
         | "task.cancel"
         | "project.actions.describe"
         | "project.action.invoke";
@@ -87,17 +79,13 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
         | "status"
         | "publish"
         | "event.get"
-        | "app.input.admit"
         | "app.conversation.get"
         | "app.tasks.list"
         | "app.tasks.workload"
         | "app.task.get"
-        | "app.task.retry"
         | "apps.list"
         | "tasks.list"
         | "task.get"
-        | "task.close"
-        | "task.reopen"
         | "task.cancel"
         | "project.actions.describe"
         | "project.action.invoke",

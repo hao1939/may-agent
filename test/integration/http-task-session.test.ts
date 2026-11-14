@@ -3,7 +3,7 @@ import type { ChildProcess } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { attachControlSocket, type AttachControlSocketOptions, type ControlSocket } from "../../packages/control/src/server.js";
+import { attachControlSocket, type ControlSocket } from "../../packages/control/src/server.js";
 import { daemonSocketPath } from "../../packages/control/src/client.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { createEventInterface, type EventInterface } from "../../src/app/core/events/interface.js";
@@ -12,7 +12,14 @@ import { closeDb } from "../../src/lib/db/connection.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 
-type AdmittedInput = Parameters<NonNullable<AttachControlSocketOptions["admitAppInput"]>>[0];
+type AdmittedInput = {
+  appId: string;
+  targetTaskId?: string;
+  input: Record<string, unknown>;
+  source: Record<string, unknown>;
+  channel?: string;
+  idempotencyKey: string;
+};
 
 describe("HTTP Task transcript and feedback transport", () => {
   const identity = { appId: "example", taskId: "support/version", generation: 3 };
@@ -58,6 +65,43 @@ describe("HTTP Task transcript and feedback transport", () => {
       emitEvent: () => {},
       subscribeEvents: () => () => {},
       publishEvent: (event) => {
+        if (event.type === "app.input.requested") {
+          const input: AdmittedInput = {
+            appId: String(event.target?.appId ?? ""),
+            ...(typeof event.data.targetTaskId === "string" ? { targetTaskId: event.data.targetTaskId } : {}),
+            input: event.data.input as Record<string, unknown>,
+            source: event.data.source as Record<string, unknown>,
+            ...(typeof event.data.channel === "string" ? { channel: event.data.channel } : {}),
+            idempotencyKey: String(event.idempotencyKey ?? ""),
+          };
+          if (rejectInput) throw new Error("fixture App does not accept this input kind");
+          admitted.push(input);
+          if (persistInput) {
+            if (!events) {
+              const bus = new EventBus();
+              const writer = new DbWriter(root);
+              bus.setPersistenceSubscriber(writer.handler);
+              bus.setDeliveryRecorder(writer.recordDelivery);
+              bus.subscribeDurableRoute(() => {
+                if (failDurableRoute) throw new Error("fixture durable inbox route failed");
+                return { accepted: true, by: "fixture-admission", route: "direct" };
+              });
+              events = createEventInterface({
+                bus,
+                db,
+                validateAppInput: () => {},
+                hasApp: (appId) => appId === identity.appId,
+                hasAgent: () => false,
+                hasSession: () => false,
+              });
+            }
+            const receipt = events.publish(event, {
+              source: "control-socket",
+            });
+            return receipt.delivery === "accepted" ? ({ ...receipt, requestId: `input-${receipt.eventId}` } as any) : receipt;
+          }
+          return { eventId: 101, eventType: "app.input.requested", delivery: "accepted", requestId: "input-101" } as any;
+        }
         publishedControls.push(event);
         return { eventId: 999, eventType: event.type, delivery: "accepted" };
       },
@@ -65,41 +109,6 @@ describe("HTTP Task transcript and feedback transport", () => {
         reads.push(input);
         if (rejectRead) throw new Error("fixture Task read unavailable");
         return task;
-      },
-      admitAppInput: (input) => {
-        if (rejectInput) throw new Error("fixture App does not accept this input kind");
-        admitted.push(input);
-        if (persistInput) {
-          if (!events) {
-            const bus = new EventBus();
-            const writer = new DbWriter(root);
-            bus.setPersistenceSubscriber(writer.handler);
-            bus.setDeliveryRecorder(writer.recordDelivery);
-            bus.subscribeDurableRoute(() => {
-              if (failDurableRoute) throw new Error("fixture durable inbox route failed");
-              return { accepted: true, by: "fixture-admission", route: "direct" };
-            });
-            events = createEventInterface({
-              bus,
-              db,
-              validateAppInput: () => {},
-              hasApp: (appId) => appId === identity.appId,
-              hasAgent: () => false,
-              hasSession: () => false,
-            });
-          }
-          const receipt = events.publish({
-            type: "app.input.requested",
-            target: { appId: input.appId },
-            idempotencyKey: input.idempotencyKey,
-            data: { input: input.input, targetTaskId: input.targetTaskId, channel: input.channel },
-          }, {
-            source: "control-socket",
-            inputSource: { kind: "human", id: String(input.source.id) },
-          });
-          return receipt.delivery === "accepted" ? { ...receipt, requestId: `input-${receipt.eventId}` } : receipt;
-        }
-        return { eventId: 101, eventType: "app.input.requested", requestId: "input-101" };
       },
     });
     // Explicit fixture environment has no provider credentials, and its empty
