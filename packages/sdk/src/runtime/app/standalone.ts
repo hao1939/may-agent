@@ -1475,17 +1475,19 @@ export async function runDirectWorkflow<TInput = unknown>(
   };
 }
 
-export function inferWorkspaceRoot(startDir: string): string {
-  let current = resolve(startDir);
-  for (;;) {
-    if (existsSync(join(current, "projects")) && existsSync(join(current, "shared"))) {
-      return current;
+export function inferWorkspaceRoot(startDir: string, launchDir: string = process.cwd()): string {
+  for (const candidateStart of [resolve(startDir), resolve(launchDir)]) {
+    let current = candidateStart;
+    for (;;) {
+      if (existsSync(join(current, "projects")) && existsSync(join(current, "shared"))) {
+        return current;
+      }
+      const parent = dirname(current);
+      if (parent === current) break;
+      current = parent;
     }
-    const parent = dirname(current);
-    if (parent === current) break;
-    current = parent;
   }
-  return resolve(process.cwd());
+  return resolve(startDir);
 }
 
 function inferCwdAppName(cwd: string, projectsRoot: string): string | undefined {

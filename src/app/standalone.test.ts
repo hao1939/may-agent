@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -103,11 +103,25 @@ export async function execute(ctx) {
 }
 
 describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)", () => {
-  test("inferWorkspaceRoot falls back to process.cwd() outside a workspace tree", () => {
+  test("inferWorkspaceRoot searches workspace ancestors from startDir or a nested launch directory", () => {
+    const env = setupDirectLayout();
+    const nestedLaunchDir = join(env.projectRoot, "projects", "example.app", "nested");
+    mkdirSync(nestedLaunchDir, { recursive: true });
     const externalTmpDir = mkdtempSync(join(tmpdir(), "may-external-workspace-"));
     roots.push(externalTmpDir);
 
-    expect(inferWorkspaceRoot(externalTmpDir)).toBe(process.cwd());
+    const prevCwd = process.cwd();
+    try {
+      process.chdir(nestedLaunchDir);
+      expect(inferWorkspaceRoot(externalTmpDir)).toBe(resolve(env.projectRoot));
+    } finally {
+      process.chdir(prevCwd);
+    }
+
+    // When neither startDir nor launchDir is inside a workspace tree, returns resolve(startDir):
+    const otherExternalDir = mkdtempSync(join(tmpdir(), "may-external-launch-"));
+    roots.push(otherExternalDir);
+    expect(inferWorkspaceRoot(externalTmpDir, otherExternalDir)).toBe(resolve(externalTmpDir));
   });
 
   test("runs workflow with lab-overlaid agentsRoot, denies hosted tools, and writes run.json without SQLite/EventBus", async () => {
