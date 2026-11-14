@@ -424,7 +424,20 @@ export type DirectAgentFixtureHandler = (call: {
   stepIndex: number;
 }) => WorkflowStepInvocationResult | Promise<WorkflowStepInvocationResult>;
 
-export type DirectWorkflowRunOptions<TInput = unknown> = {
+export type WorkflowExecutionEnvironment<TInput = unknown> = {
+  workspace?: WorkflowContext["workspace"];
+  read?: Partial<AppRead>;
+  events?: Partial<WorkflowContext["events"]>;
+  metrics?: Partial<WorkflowContext["metrics"]>;
+  task?: TaskDetail;
+  reconciliation?: WorkflowContext<TInput>["reconciliation"];
+  reviseTask?: WorkflowContext["reviseTask"];
+  closeTask?: WorkflowContext["closeTask"];
+  applyTaskChanges?: WorkflowContext["applyTaskChanges"];
+  readCommunication?: WorkflowContext["readCommunication"];
+};
+
+export type DirectWorkflowRunOptions<TInput = unknown> = WorkflowExecutionEnvironment<TInput> & {
   /** Provide an imported workflow module, `target` ("agent" or "owner/workflow"), or owning `agentName` + `workflowName`. */
   module?: WorkflowExecutableModule<TInput>;
   target?: string;
@@ -444,13 +457,9 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   /** Optional directory where `<traceDir>/run.json` (`WorkflowRunReport`) is written. */
   traceDir?: string;
   models: Record<string, ModelWithApiKey>;
-  /** Optional local Task snapshot for workflows that read `ctx.read.tasks.get` / `ctx.reconciliation`. */
-  task?: TaskDetail;
-  reconciliation?: WorkflowContext<TInput>["reconciliation"];
-  workspace?: WorkflowContext["workspace"];
-  read?: Partial<AppRead>;
-  events?: Partial<WorkflowContext["events"]>;
-  metrics?: Partial<WorkflowContext["metrics"]>;
+  /** Optional grouped execution environment supplied by Host or standalone caller. */
+  context?: WorkflowExecutionEnvironment<TInput>;
+  onCancelActive?: () => void;
   /** Optional deterministic overrides for selected agents during tuning or hybrid tests. */
   agentFixtures?: Record<string, DirectAgentFixtureHandler>;
   /** Custom direct agent runner (defaults to `runDirectAgent`). */
@@ -1076,8 +1085,10 @@ export async function runDirectWorkflow<TInput = unknown>(
   }
 
   const childSessions: DirectWorkflowRunResult["childSessions"] = [];
-  const taskDetail = options.task;
+  const env = options.context;
+  const taskDetail = env?.task ?? options.task ?? env?.reconciliation?.task ?? options.reconciliation?.task;
   const reconciliation: WorkflowContext<TInput>["reconciliation"] | undefined =
+    env?.reconciliation ??
     options.reconciliation ??
     (taskDetail
       ? {
@@ -1086,8 +1097,8 @@ export async function runDirectWorkflow<TInput = unknown>(
           taskId: taskDetail.id,
           generation: taskDetail.generation,
           resourceVersion: taskDetail.resourceVersion ?? 1,
-          agent: taskDetail.agent ?? options.agentName ?? "direct-agent",
-          owner: taskDetail.agent ?? options.agentName ?? "direct-agent",
+          agent: taskDetail.agent ?? options.agentName ?? callerOwner,
+          owner: taskDetail.agent ?? options.agentName ?? callerOwner,
           outcome: taskDetail.outcome,
           acceptance: taskDetail.acceptance,
           input: taskDetail.input as TInput,
@@ -1098,12 +1109,13 @@ export async function runDirectWorkflow<TInput = unknown>(
         }
       : undefined);
 
+  const readOverrides = env?.read ?? options.read;
   const read: AppRead = createTestAppRead({
-    ...options.read,
+    ...readOverrides,
     tasks: {
-      list: options.read?.tasks?.list ?? (async () => ({ items: taskDetail ? [taskDetail] : [] })),
+      list: readOverrides?.tasks?.list ?? (async () => ({ items: taskDetail ? [taskDetail] : [] })),
       outcomes:
-        options.read?.tasks?.outcomes ??
+        readOverrides?.tasks?.outcomes ??
         (async () => ({
           projection: "outcomes" as const,
           manifestVersion: null,
@@ -1112,12 +1124,12 @@ export async function runDirectWorkflow<TInput = unknown>(
           outcomes: [],
         })),
       get:
-        options.read?.tasks?.get ??
+        readOverrides?.tasks?.get ??
         (async (id: string) => {
           if (taskDetail && id === taskDetail.id) return structuredClone(taskDetail);
           throw new Error(`Direct workflow run has no configured Task snapshot for "${id}"`);
         }),
-      ...(options.read?.tasks?.workload ? { workload: options.read.tasks.workload } : {}),
+      ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
     },
   });
 
@@ -1362,7 +1374,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       executionId: internal ? undefined : options.executionId,
       startedAt: internal ? undefined : rootStartedAt,
       input: options.input,
-      taskOwned: Boolean(options.task || options.reconciliation),
+      taskOwned: Boolean(taskDetail || reconciliation),
       tools: internal?.tools ?? options.tools,
       outputSchema: internal ? undefined : options.outputSchema,
       signal: options.signal,
@@ -1371,40 +1383,45 @@ export async function runDirectWorkflow<TInput = unknown>(
       maxConcurrentCalls,
       allowance: rootAllowance,
       read,
-      events: options.events
+      events: (env?.events ?? options.events)
         ? {
             emit:
-              options.events.emit ??
+              (env?.events ?? options.events)!.emit ??
               (async () => {
                 throw new Error("events.emit is not configured in runDirectWorkflow");
               }),
             read:
-              options.events.read ??
+              (env?.events ?? options.events)!.read ??
               (async () => {
                 throw new Error("events.read is not configured in runDirectWorkflow");
               }),
             onEvent:
-              options.events.onEvent ??
+              (env?.events ?? options.events)!.onEvent ??
               (() => {
                 throw new Error("events.onEvent is not configured in runDirectWorkflow");
               }),
           }
         : undefined,
-      metrics: options.metrics
+      metrics: (env?.metrics ?? options.metrics)
         ? {
-            define: options.metrics.define ?? (() => undefined),
-            defineMany: options.metrics.defineMany ?? (() => undefined),
-            record: options.metrics.record ?? (async () => undefined),
-            evaluate: options.metrics.evaluate ?? (() => []),
+            define: (env?.metrics ?? options.metrics)!.define ?? (() => undefined),
+            defineMany: (env?.metrics ?? options.metrics)!.defineMany ?? (() => undefined),
+            record: (env?.metrics ?? options.metrics)!.record ?? (async () => undefined),
+            evaluate: (env?.metrics ?? options.metrics)!.evaluate ?? (() => []),
           }
         : undefined,
-      workspace: options.workspace ?? {
+      workspace: env?.workspace ?? options.workspace ?? {
         appRoot: resolve(options.projectRoot),
         projectRoot: resolve(options.workRoot),
         root: resolve(options.workRoot),
         output: resolve(options.workRoot),
       },
       reconciliation,
+      reviseTask: env?.reviseTask ?? options.reviseTask,
+      closeTask: env?.closeTask ?? options.closeTask,
+      applyTaskChanges: env?.applyTaskChanges ?? options.applyTaskChanges,
+      readCommunication: env?.readCommunication ?? options.readCommunication,
+      onCancelActive: options.onCancelActive,
       onStep: options.onStep,
       onLog: options.onLog,
       // Native imports cannot be forcibly stopped. Keep uncertainty visible if
@@ -1480,14 +1497,66 @@ function inferCwdAppName(cwd: string, projectsRoot: string): string | undefined 
   return firstSegment && firstSegment.endsWith(".app") ? firstSegment : undefined;
 }
 
+export type StandaloneTaskInput = {
+  id?: string;
+  generation?: number;
+  outcome: string;
+  acceptance?: string[];
+  constraints?: string[];
+  input?: unknown;
+};
+
+function normalizeStandaloneTaskDetail(
+  task: TaskDetail | StandaloneTaskInput | undefined,
+  fallbackInput: unknown,
+): TaskDetail | undefined {
+  if (!task) return undefined;
+  if ("status" in task && "conditions" in task && "acceptedEvidence" in task && Array.isArray(task.acceptance)) {
+    return task as TaskDetail;
+  }
+  const simple = task as StandaloneTaskInput;
+  const acceptance = Array.isArray(simple.acceptance) && simple.acceptance.length > 0
+    ? simple.acceptance
+    : [simple.outcome];
+  const rawInput =
+    simple.input ??
+    (simple.constraints
+      ? {
+          kind: "goal",
+          data: {
+            outcome: simple.outcome,
+            acceptance,
+            constraints: simple.constraints,
+          },
+        }
+      : fallbackInput);
+  const taskInput: Record<string, unknown> =
+    rawInput && typeof rawInput === "object" && !Array.isArray(rawInput)
+      ? (rawInput as Record<string, unknown>)
+      : { value: rawInput };
+  return {
+    id: simple.id?.trim() || "standalone-task",
+    parentId: "root",
+    generation: simple.generation ?? 1,
+    status: "running",
+    outcome: simple.outcome,
+    acceptance,
+    input: taskInput,
+    conditions: [],
+    acceptedEvidence: { available: false, maxPageSize: 8 },
+  };
+}
+
 export type RunOptions<TInput = unknown> = Omit<
   DirectWorkflowRunOptions<TInput>,
-  "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models"
+  "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models" | "task"
 > & {
   /** Optional App disambiguator when two Apps define the same agent name (e.g. `"alex.app"`). */
   app?: string;
   /** Working directory for tools and execution (defaults to `process.cwd()`). */
   cwd?: string;
+  /** Optional Task envelope (either full `TaskDetail` or `{ outcome, acceptance?, constraints? }`) for Task-reconciling procedures. */
+  task?: TaskDetail | StandaloneTaskInput;
   input?: TInput;
   projectRoot?: string;
   workRoot?: string;
@@ -1762,11 +1831,13 @@ export async function run<TInput = unknown>(
   const ownsTempOutputRoot = !options.outputRoot;
   const outputRoot = options.outputRoot ? resolve(options.outputRoot) : mkdtempSync(join(tmpdir(), "may-run-"));
   const models = options.models ?? createModelRegistry();
+  const normalizedTask = normalizeStandaloneTaskDetail(options.task ?? options.context?.task, input);
 
   let cleanupConfirmed = false;
   try {
     const res = await runDirectWorkflow({
       ...options,
+      task: normalizedTask,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
       input,
       projectRoot,

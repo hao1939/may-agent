@@ -43,6 +43,7 @@ import {
   validateOperationAllowance,
   workflowExecutionResult,
   type WorkflowCatalog,
+  type WorkflowExecutionEnvironment,
 } from "../../packages/sdk/src/runtime/index.js";
 import type { SubagentManager } from "./manager.js";
 import { createUnavailableMetricService } from "./metrics.js";
@@ -589,27 +590,84 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         );
       }
 
-      const metricService = () =>
-        opts.runtimeCtx?.metrics ?? createUnavailableMetricService("No runtimeCtx - metrics unavailable");
-      const appRead =
-        opts.read ??
-        createRuntimeAppRead({
-          getDb:
-            opts.runtimeCtx?.getDb ??
-            (() => {
-              throw new Error("No runtimeCtx - read unavailable");
-            }),
-          readMetric: async (id) => readMetricView(metricService(), id),
-        });
+      const prepareHostWorkflowEnvironment = (): WorkflowExecutionEnvironment => {
+        const metricService = () =>
+          opts.runtimeCtx?.metrics ?? createUnavailableMetricService("No runtimeCtx - metrics unavailable");
+        const appRead =
+          opts.read ??
+          createRuntimeAppRead({
+            getDb:
+              opts.runtimeCtx?.getDb ??
+              (() => {
+                throw new Error("No runtimeCtx - read unavailable");
+              }),
+            readMetric: async (id) => readMetricView(metricService(), id),
+          });
+        const taskBrief =
+          opts.taskContext && persistDir
+            ? prepareTaskWorkspaceContext(
+                opts.taskContext,
+                persistDir,
+                opts.taskContext.agentDefinitions?.values() ?? [],
+              )
+            : undefined;
+        return {
+          read: appRead,
+          metrics: {
+            define: (definition) => metricService().define(definition),
+            defineMany: (definitions) => metricService().defineMany(definitions),
+            record: (id, value, options) =>
+              metricService().record(id, value, typeof options === "string" ? { note: options } : options),
+            evaluate: (id) => metricService().evaluate(id),
+          },
+          ...(opts.executionPaths
+            ? {
+                workspace: {
+                  appRoot: opts.executionPaths.appDir,
+                  projectRoot: opts.executionPaths.projectDir,
+                  root: opts.executionPaths.workspaceDir,
+                  output: opts.executionPaths.workspaceDir,
+                  ...(taskBrief && "taskFile" in taskBrief ? { taskFile: taskBrief.taskFile } : {}),
+                },
+              }
+            : {}),
+          ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
+          ...(opts.taskBinding && opts.reviseTask ? { reviseTask: opts.reviseTask } : {}),
+          ...(opts.taskBinding && opts.closeTask ? { closeTask: opts.closeTask } : {}),
+          ...(opts.taskBinding && opts.taskContext?.readCommunication
+            ? { readCommunication: opts.taskContext.readCommunication }
+            : {}),
+          ...(opts.taskBinding && opts.taskContext?.applyTaskChanges
+            ? { applyTaskChanges: opts.taskContext.applyTaskChanges }
+            : {}),
+          events: {
+            read: async (type, localKey) => {
+              if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can read its published events");
+              return opts.taskEmitter.read(type, localKey);
+            },
+            emit: async (event: { type: string; data: unknown; localKey?: string }) => {
+              if (opts.taskEmitter) {
+                if (!event.localKey?.trim()) {
+                  throw new Error("Task-owned workflow events require a stable localKey");
+                }
+                const { localKey, ...published } = event;
+                opts.taskEmitter.publish(localKey, published as { type: string; data: Record<string, unknown> });
+              } else {
+                emitRuntimeEvent(event);
+              }
+              onEvent?.(event as WorkflowEvent);
+            },
+            onEvent: (listener) => {
+              if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can observe Task events");
+              return opts.taskContext
+                ? opts.taskContext.observeEvents((event) => listener(event))
+                : opts.taskEmitter.onEvent((event) => listener(canonicalAppEvent(event)));
+            },
+          },
+        };
+      };
+      const hostEnv = prepareHostWorkflowEnvironment();
       const recordDiagnostic = createWorkflowDiagnostics(persistDir, runId);
-      const taskBrief =
-        opts.taskContext && persistDir
-          ? prepareTaskWorkspaceContext(
-              opts.taskContext,
-              persistDir,
-              opts.taskContext.agentDefinitions?.values() ?? [],
-            )
-          : undefined;
 
       const executePromptStep = async (
         agentName: string,
@@ -755,58 +813,10 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
             return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
           }
         },
-        read: appRead,
-        metrics: {
-          define: (definition) => metricService().define(definition),
-          defineMany: (definitions) => metricService().defineMany(definitions),
-          record: (id, value, options) =>
-            metricService().record(id, value, typeof options === "string" ? { note: options } : options),
-          evaluate: (id) => metricService().evaluate(id),
-        },
-        ...(opts.executionPaths
-          ? {
-              workspace: {
-                appRoot: opts.executionPaths.appDir,
-                projectRoot: opts.executionPaths.projectDir,
-                root: opts.executionPaths.workspaceDir,
-                output: opts.executionPaths.workspaceDir,
-                ...(taskBrief && "taskFile" in taskBrief ? { taskFile: taskBrief.taskFile } : {}),
-              },
-            }
-          : {}),
-        ...(opts.reconciliation ? { reconciliation: opts.reconciliation } : {}),
-        ...(opts.taskBinding && opts.reviseTask ? { reviseTask: opts.reviseTask } : {}),
-        ...(opts.taskBinding && opts.closeTask ? { closeTask: opts.closeTask } : {}),
-        ...(opts.taskBinding && opts.taskContext?.readCommunication
-          ? { readCommunication: opts.taskContext.readCommunication }
-          : {}),
-        ...(opts.taskBinding && opts.taskContext?.applyTaskChanges
-          ? { applyTaskChanges: opts.taskContext.applyTaskChanges }
-          : {}),
-        events: {
-          read: async (type, localKey) => {
-            if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can read its published events");
-            return opts.taskEmitter.read(type, localKey);
-          },
-          emit: async (event: { type: string; data: unknown; localKey?: string }) => {
-            if (opts.taskEmitter) {
-              if (!event.localKey?.trim()) {
-                throw new Error("Task-owned workflow events require a stable localKey");
-              }
-              const { localKey, ...published } = event;
-              opts.taskEmitter.publish(localKey, published as { type: string; data: Record<string, unknown> });
-            } else {
-              emitRuntimeEvent(event);
-            }
-            onEvent?.(event as WorkflowEvent);
-          },
-          onEvent: (listener) => {
-            if (!opts.taskEmitter) throw new Error("Only a Task-owned workflow can observe Task events");
-            return opts.taskContext
-              ? opts.taskContext.observeEvents((event) => listener(event))
-              : opts.taskEmitter.onEvent((event) => listener(canonicalAppEvent(event)));
-          },
-        },
+        ...(hostEnv as Pick<
+          WorkflowKernelBindings,
+          "read" | "metrics" | "workspace" | "reconciliation" | "reviseTask" | "closeTask" | "readCommunication" | "applyTaskChanges" | "events"
+        >),
         onLog: ({ level, message }) => {
           if (run.status !== "running") return;
           const safe = recordDiagnostic(level, message);

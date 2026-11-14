@@ -1695,5 +1695,45 @@ export async function execute(ctx) {
       gate.release();
       await observeBoundedResult(gate.completed);
     }
+
+    // 11. run() normalizes StandaloneTaskInput ({ outcome, acceptance, constraints }) into ctx.reconciliation and ctx.read.tasks.get:
+    writeFileSync(
+      join(alphaLeadDir, "workflows", "task-reconcile-probe.ts"),
+      `
+export const name = "task-reconcile-probe";
+export const description = "Reads ctx.reconciliation and ctx.read.tasks.get";
+export async function execute(ctx) {
+  const rec = ctx.reconciliation;
+  if (!rec) return ctx.blocked("No reconciliation");
+  const detail = await ctx.read.tasks.get(rec.taskId);
+  return {
+    state: "converged",
+    summary: \`\${detail.outcome} | \${detail.acceptance.join(",")} | \${JSON.stringify(detail.input.data.constraints)}\`,
+  };
+}
+`,
+    );
+    const taskEnvRun = await run(
+      "alpha-lead/task-reconcile-probe",
+      { verify: ["bun", "test"] },
+      {
+        projectRoot: env.projectRoot,
+        task: {
+          outcome: "Converge workflow context",
+          acceptance: ["Runs standalone and on Host"],
+          constraints: ["Preserve Task contract"],
+        },
+        models: { test: fakeModel() as any },
+      },
+    );
+    expect(taskEnvRun.ok).toBe(true);
+    expect(taskEnvRun.result).toEqual({
+      type: "done",
+      summary: 'Converge workflow context | Runs standalone and on Host | ["Preserve Task contract"]',
+      output: {
+        state: "converged",
+        summary: 'Converge workflow context | Runs standalone and on Host | ["Preserve Task contract"]',
+      },
+    });
   });
 });

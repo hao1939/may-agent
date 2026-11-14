@@ -181,6 +181,17 @@ export function parseStandaloneCliArgs(
       i = nextIndex;
       continue;
     }
+    if (arg === "--task" || arg.startsWith("--task=")) {
+      const { value, nextIndex } = consumeOptionValue(argv, i, "--task");
+      const parsedTask = parseStandaloneInput(value);
+      if (parsedTask && typeof parsedTask === "object" && !Array.isArray(parsedTask)) {
+        options.task = parsedTask as NonNullable<StandaloneRunOptions<unknown>["task"]>;
+      } else {
+        options.task = { outcome: String(value) };
+      }
+      i = nextIndex;
+      continue;
+    }
     if (arg.startsWith("-")) {
       throw new Error(`Unknown flag: ${arg}`);
     }
@@ -229,6 +240,7 @@ export const MAY_RUN_CLI_USAGE = `Usage:
 
 Examples:
   may run alex "Summarize README.md" --readonly
+  may run alex/develop-change '{"verify":["bun","test"]}' --task "Fix bug" --cwd /tmp/worktree
   may run tech-lead/verified-coder '{"task":"Fix bug","verify":["bun","test"]}'
   may run codex "Inspect package.json"
   git diff | may run alex/review-change --readonly
@@ -237,6 +249,7 @@ Examples:
 Options:
   --readonly            Enforce read-only tool & procedure restrictions
   --input <text|json>   Explicit input string or JSON object
+  --task <text|json>    Task envelope (outcome string or JSON Task object) for Task-owned procedures
   --cwd <dir>           Working directory for execution (default: current directory)
   --out <dir>           Output directory for run.json and sessions/
   --timeout <duration>  Timeout (e.g. 45000, 45s, 2m)
