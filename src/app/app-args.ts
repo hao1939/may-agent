@@ -28,6 +28,15 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   if (argv.some((arg) => arg === "--run-workflow" || arg.startsWith("--run-workflow="))) {
     throw new Error("--run-workflow has been retired; use `may run <target> [input]` or `run(target, input)` from @may-agent/sdk/standalone");
   }
+  const retiredTaskFlag = argv.find((arg) =>
+    ["--oneshot", "--task", "--task-file", "--send"].some((flag) => arg === flag || arg.startsWith(`${flag}=`)),
+  );
+  if (retiredTaskFlag) {
+    const flagName = retiredTaskFlag.split("=")[0];
+    throw new Error(
+      `${flagName} has been retired; use \`may run <target> [input]\` for standalone execution or \`may-agent --emit <event-type> <json>\` for daemon events`,
+    );
+  }
   const cronEnabled = argv.includes("--cron");
   const telegramEnabled = argv.includes("--telegram");
   const consoleEnabled = argv.includes("--console") || argv.includes("--chat");

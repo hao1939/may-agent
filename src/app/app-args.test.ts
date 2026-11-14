@@ -73,9 +73,13 @@ describe("app args", () => {
   });
 
   it.each([
-    [["--run-workflow", "probe", "--dry-run", "--cron"]],
-    [["--run-workflow=probe", "--cron"]],
-  ] as const)("rejects retired --run-workflow CLI flag before background startup: %j", (flags) => {
-    expect(() => parseAppArgs(["bun", "may", ...flags], {})).toThrow("--run-workflow has been retired");
+    [["--run-workflow", "probe", "--dry-run", "--cron"], "--run-workflow has been retired"],
+    [["--run-workflow=probe", "--cron"], "--run-workflow has been retired"],
+    [["--socket", "--oneshot", "--task", "work"], "--oneshot has been retired"],
+    [["--web", "--task", "work"], "--task has been retired"],
+    [["--cron", "--task-file", "/tmp/work.txt"], "--task-file has been retired"],
+    [["--socket", "--send", "may", "--message", "hi"], "--send has been retired"],
+  ] as const)("rejects retired CLI flags before background startup: %j", (flags, expectedMessage) => {
+    expect(() => parseAppArgs(["bun", "may", ...flags], {})).toThrow(expectedMessage);
   });
 });

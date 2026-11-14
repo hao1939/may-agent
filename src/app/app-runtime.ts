@@ -601,7 +601,10 @@ export async function runAppRuntime(opts: {
     status: "running",
   });
 
-  if (interactiveConsole) {
+  if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
+    bus.emit({ type: "info", message: "[console] Non-TTY console invocation has no active daemon interfaces. Exiting." });
+    process.exit(0);
+  } else if (interactiveConsole) {
     await runInteractiveLoop({
       bus,
       manager,
