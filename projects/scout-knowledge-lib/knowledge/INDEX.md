@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-14
 
+- [Always-on agents are durable event cycles, not continuous sessions](./findings/2026-11-14-always-on-agents-are-durable-event-cycles.md) — Anthropic's first-party guide places brief agent runs inside a durable inbox, timer, memory, permission, and outbox cycle; it does not specify cross-store atomicity, external-effect idempotency, or delivery settlement, and Scout inspected no implementation, tests, production traces, or independent reliability evidence.
 - [Dynamic agent evaluation needs evidence revalidation](./findings/2026-11-14-dynamic-agent-evaluation-needs-evidence-revalidation.md) — LiveGeo's abstract describes tasks in an evolving geographic world that require evidence acquisition, validity checks, and plan revision, and reports that strong static performance does not ensure dynamic reliability; Scout reviewed only the arXiv title, metadata, and abstract, not the paper, platform, benchmark, tasks, histories, traces, code, or data.
 
 ### 2026-11-13
