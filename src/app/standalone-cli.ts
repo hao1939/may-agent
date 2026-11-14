@@ -290,8 +290,6 @@ Options:
   -h, --help            Show this usage text
 `;
 
-export const STANDALONE_CLI_USAGE = MAY_RUN_CLI_USAGE;
-
 export async function runStandaloneCli(
   argv: readonly string[],
   deps: {
