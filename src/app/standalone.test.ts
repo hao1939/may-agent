@@ -6,7 +6,9 @@ import { join } from "node:path";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
+  WorkflowValidationError,
 } from "@may-agent/sdk/testing";
+import { Type } from "typebox";
 import { executePreparedAgent } from "../lib/agent-execution.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
@@ -953,23 +955,394 @@ export async function execute(ctx) {
       summary: "prompt:Readonly prompt check",
     });
 
+    // Exercise the real executeCliStep adapter (not agentFixtures.codex):
+    let seenCliProjectRoot: string | undefined;
+    const codexSchema = Type.Object({ ok: Type.Boolean(), files: Type.Number() });
     const codexRun = await run("codex", "Inspect package.json", {
       projectRoot: env.projectRoot,
-      tools: "readonly",
+      workRoot: env.workRoot,
+      outputSchema: codexSchema,
       models: { test: fakeModel() as any },
-      agentFixtures: {
-        codex: async (call) => ({
-          id: "cli_codex_1",
-          kind: "agent",
-          status: "done",
-          summary: `Codex ran: ${call.task} (${call.options?.tools ?? "default"})`,
-        }),
+      runCli: async (cliInput, cliOpts) => {
+        seenCliProjectRoot = cliOpts.projectRoot;
+        expect(cliInput.tool).toBe("codex");
+        expect(cliInput.expectedOutput).toEqual({ format: "json" });
+        return {
+          taskId: "cli_codex_real",
+          tool: "codex",
+          status: "completed",
+          summary: "Inspected JSON",
+          outputText: JSON.stringify({ ok: true, files: 4 }),
+          cleanupConfirmed: true,
+          resultPath: "/tmp/result.md",
+          structuredResultPath: "/tmp/result.json",
+          eventsPath: "/tmp/events.jsonl",
+          factsRefs: [],
+          effectiveSandbox: "danger-full-access",
+        };
       },
     });
     expect(codexRun.ok).toBe(true);
+    expect(seenCliProjectRoot).toBe(env.workRoot);
     expect(codexRun.result).toEqual({
       type: "done",
-      summary: "Codex ran: Inspect package.json (readonly)",
+      summary: "Inspected JSON",
+      output: { ok: true, files: 4 },
+      facts: {
+        tool: "codex",
+        resultPath: "/tmp/result.md",
+        eventsPath: "/tmp/events.jsonl",
+      },
     });
+
+    // Reject readonly native CLI calls before spawning:
+    let spawnedOnReadonly = false;
+    const readonlyCliRejected = await run("codex", "Must not run", {
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      tools: "readonly",
+      models: {},
+      runCli: async () => {
+        spawnedOnReadonly = true;
+        throw new Error("unreachable");
+      },
+    });
+    expect(readonlyCliRejected.ok).toBe(false);
+    expect(spawnedOnReadonly).toBe(false);
+    expect(String(readonlyCliRejected.error)).toContain('cannot enforce tools: "readonly"');
+
+    // Propagate unconfirmed CLI process-group drain:
+    const failedDrainCli = await run("codex", "Spawn leaky child", {
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      models: {},
+      runCli: async () => ({
+        taskId: "cli_leaky",
+        tool: "codex",
+        status: "failed",
+        summary: "CLI process group did not drain",
+        error: "CLI process group did not drain",
+        cleanupConfirmed: false,
+        resultPath: "/tmp/result.md",
+        structuredResultPath: "/tmp/result.json",
+        eventsPath: "/tmp/events.jsonl",
+        factsRefs: [],
+        effectiveSandbox: "danger-full-access",
+      }),
+    });
+    expect(failedDrainCli.ok).toBe(false);
+    expect(failedDrainCli.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(failedDrainCli.report.cleanup.confirmed).toBe(false);
+  });
+
+  test.each(["timeout", "cancel"] as const)(
+    "bounds root runDirect({ target }) catalog preparation on %s and reports unconfirmed import cleanup",
+    async (mode) => {
+      const env = setupDirectLayout();
+      const gate = await controlledWorkflowImport(env.root);
+      const reviewerDir = join(env.agentsRoot, "reviewer", "workflows");
+      const marker = join(env.root, "imported-after-root-stop");
+      writeFileSync(join(reviewerDir, "a-slow.ts"), gate.source);
+      writeFileSync(
+        join(reviewerDir, "z-probe.ts"),
+        `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(marker)}, "imported");
+export const name = "probe";
+export const description = "Must not import after root target timeout/cancel";
+export async function execute(ctx) { return ctx.done("probe"); }
+`,
+      );
+      const controller = new AbortController();
+      const run = runDirect({
+        ...env,
+        agentName: "owner",
+        target: "reviewer/probe",
+        input: {},
+        models: {},
+        signal: controller.signal,
+        timeoutMs: mode === "timeout" ? 500 : 10_000,
+      });
+      try {
+        expect(await observeBoundedResult(gate.started)).toBeDefined();
+        if (mode === "cancel") controller.abort(new Error("cancel root target preparation"));
+        const stopped = await observeBoundedResult(run);
+        expect(stopped).toBeDefined();
+        expect(stopped?.result.ok).toBe(false);
+        expect(stopped?.result.started).toBe(false);
+        expect(stopped?.result.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+        expect(stopped?.result.report.cleanup.confirmed).toBe(false);
+      } finally {
+        gate.release();
+        await observeBoundedResult(gate.completed);
+        await observeBoundedResult(run);
+        await new Promise<void>((resolve) => setImmediate(resolve));
+      }
+      expect(existsSync(marker)).toBe(false);
+    },
+  );
+
+  test("handles malformed sibling workflow without unhandledRejection, preserves pinned helper revision on workflowName runs, carries prep deadline, and rejects expired deadline before import", async () => {
+    const env = setupDirectLayout();
+    const ownerDir = join(env.agentsRoot, "owner", "workflows");
+
+    // 1. Malformed sibling workflow + pinned helper revision on workflowName runs:
+    const unhandled: unknown[] = [];
+    const onUnhandled = (reason: unknown) => {
+      unhandled.push(reason);
+    };
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      const helperPath = join(ownerDir, "pinned-helper.ts");
+      writeFileSync(
+        join(ownerDir, "a-malformed.ts"),
+        `export const name = 123;\n`, // invalid export fails validation in loadWorkflowModuleFromFile
+      );
+      writeFileSync(
+        helperPath,
+        `
+export const name = "pinned-helper";
+export const description = "Initial helper v1";
+export async function execute(ctx) { return ctx.done("v1"); }
+`,
+      );
+      writeFileSync(
+        join(ownerDir, "mutate-and-call.ts"),
+        `
+import { writeFileSync } from "node:fs";
+export const name = "mutate-and-call";
+export const description = "Mutates helper on disk after root prep and calls it";
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(helperPath)}, \`
+export const name = "pinned-helper";
+export const description = "Mutated helper v2";
+export async function execute(ctx) { return ctx.done("v2"); }
+\`);
+  const sub = await ctx.call("pinned-helper", {});
+  return ctx.done("ran:" + sub.summary);
+}
+`,
+      );
+      const pinnedRun = await runDirectWorkflow({
+        ...env,
+        agentName: "owner",
+        workflowName: "mutate-and-call",
+        input: {},
+        models: {},
+      });
+      await new Promise<void>((resolve) => setTimeout(resolve, 25));
+      expect(unhandled).toEqual([]);
+      expect(pinnedRun.ok).toBe(true);
+      expect(pinnedRun.result).toMatchObject({ type: "done", summary: "ran:v1" });
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+    }
+
+    // 2. Expired deadline fails before starting any catalog import:
+    const importMarker = join(env.root, "expired-should-not-import");
+    writeFileSync(
+      join(env.agentsRoot, "reviewer", "workflows", "marker.ts"),
+      `
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(importMarker)}, "started");
+export const name = "marker";
+export const description = "Should not import when deadlineAt is already expired";
+export async function execute(ctx) { return ctx.done("ok"); }
+`,
+    );
+    const expiredRun = await runDirect({
+      ...env,
+      agentName: "owner",
+      target: "reviewer/marker",
+      input: {},
+      models: {},
+      deadlineAt: Date.now() - 100,
+    });
+    expect(expiredRun.ok).toBe(false);
+    expect(expiredRun.started).toBe(false);
+    expect(String(expiredRun.error)).toContain("deadline expired");
+    expect(existsSync(importMarker)).toBe(false);
+
+    // 3. Preparation time counts against the shared execution budget:
+    const budgetDir = join(env.agentsRoot, "reviewer", "workflows");
+    writeFileSync(
+      join(budgetDir, "slow-prep-then-exec.ts"),
+      `
+await new Promise((r) => setTimeout(r, 180));
+export const name = "slow-prep-then-exec";
+export const description = "Consumes 180ms during import and 180ms during execute";
+export async function execute(ctx) {
+  await new Promise((r, reject) => {
+    const t = setTimeout(r, 180);
+    ctx.signal.addEventListener("abort", () => { clearTimeout(t); reject(ctx.signal.reason); }, { once: true });
+  });
+  return ctx.done("should-have-timed-out");
+}
+`,
+    );
+    const budgetRun = await runDirect({
+      ...env,
+      agentName: "owner",
+      target: "reviewer/slow-prep-then-exec",
+      input: {},
+      models: {},
+      timeoutMs: 260,
+    });
+    expect(budgetRun.ok).toBe(false);
+    expect(String(budgetRun.error)).toContain("timed out");
+
+    // 4. Module-declared executionTimeoutMs takes precedence over caller fallback timeoutMs across target/workflowName entrypoints:
+    writeFileSync(
+      join(budgetDir, "longer-module-timeout.ts"),
+      `
+export const name = "longer-module-timeout";
+export const description = "Module declares 1000ms timeout while caller supplies 100ms fallback";
+export const executionTimeoutMs = 1000;
+export async function execute(ctx) {
+  await new Promise((r, reject) => {
+    const t = setTimeout(r, 180);
+    ctx.signal.addEventListener("abort", () => { clearTimeout(t); reject(ctx.signal.reason); }, { once: true });
+  });
+  return ctx.done("completed-within-module-timeout");
+}
+`,
+    );
+    const parityRun = await runDirect({
+      ...env,
+      agentName: "owner",
+      target: "reviewer/longer-module-timeout",
+      input: {},
+      models: {},
+      timeoutMs: 100,
+    });
+    expect(parityRun.ok).toBe(true);
+    expect(parityRun.result).toMatchObject({
+      type: "done",
+      summary: "completed-within-module-timeout",
+    });
+  });
+
+  test("auto-discovers App-local owners in run(target, input) without --app, enforces dual outputSchema, prefers local procedures named codex, and skips prompt owner procedure imports", async () => {
+    const env = setupDirectLayout();
+    const projectsRoot = join(env.projectRoot, "projects");
+    const appDir = join(projectsRoot, "alpha.app");
+    const alphaAgentDir = join(appDir, "agents", "alpha-lead");
+    mkdirSync(join(alphaAgentDir, "workflows"), { recursive: true });
+    writeFileSync(join(appDir, "app.ts"), "export default {};\n");
+    writeFileSync(
+      join(alphaAgentDir, "agent.json"),
+      JSON.stringify({
+        name: "alpha-lead",
+        description: "Alpha App lead",
+        domain: "test",
+        model: "test",
+        tools: ["finish"],
+      }),
+    );
+    writeFileSync(join(alphaAgentDir, "AGENTS.md"), "# alpha-lead\n");
+    writeFileSync(
+      join(alphaAgentDir, "workflows", "verify-alpha.ts"),
+      `
+export const name = "verify-alpha";
+export const description = "Module with loose outputSchema";
+export const outputSchema = {
+  type: "object",
+  properties: { score: { type: "number" } },
+  required: ["score"],
+  additionalProperties: false,
+};
+export async function execute(ctx) {
+  return ctx.done("scored", { score: ctx.input.score });
+}
+`,
+    );
+    // Local procedure named "codex" must take precedence over built-in codex CLI executor:
+    writeFileSync(
+      join(alphaAgentDir, "workflows", "codex.ts"),
+      `
+export const name = "codex";
+export const description = "Local procedure named codex";
+export async function execute(ctx) {
+  return ctx.done("local-codex-procedure", { received: ctx.input });
+}
+`,
+    );
+
+    // 1. Auto-discovers alpha-lead/verify-alpha in projects/alpha.app without `app` option:
+    const autoRun = await run(
+      "alpha-lead/verify-alpha",
+      { score: 95 },
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+      },
+    );
+    expect(autoRun.ok).toBe(true);
+    expect(autoRun.result).toEqual({
+      type: "done",
+      summary: "scored",
+      output: { score: 95 },
+    });
+
+    // 2. Caller outputSchema is enforced in addition to module.outputSchema:
+    const stricterCallerSchemaFail = await run(
+      "alpha-lead/verify-alpha",
+      { score: 50 }, // passes module.outputSchema (Number), fails caller outputSchema (minimum: 90)
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+        outputSchema: Type.Object({ score: Type.Number({ minimum: 90 }) }),
+      },
+    );
+    expect(stricterCallerSchemaFail.ok).toBe(false);
+    expect(stricterCallerSchemaFail.error).toBeInstanceOf(WorkflowValidationError);
+
+    // 3. Local procedure named "codex" wins over native CLI executor when agentName="alpha-lead":
+    const localCodexProc = await run(
+      "codex",
+      { customObject: true },
+      {
+        projectRoot: env.projectRoot,
+        agentName: "alpha-lead",
+        models: { test: fakeModel() as any },
+        runCli: async () => {
+          throw new Error("Native codex CLI must not intercept local procedure");
+        },
+      },
+    );
+    expect(localCodexProc.ok).toBe(true);
+    expect(localCodexProc.result).toEqual({
+      type: "done",
+      summary: "local-codex-procedure",
+      output: { received: { customObject: true } },
+    });
+
+    // 4. Bare root prompt target `run("reviewer", ...)` does not import reviewer/workflows/*.ts:
+    const gate = await controlledWorkflowImport(env.root);
+    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "stalled-unused.ts"), gate.source);
+    try {
+      const barePrompt = await observeBoundedResult(
+        run("reviewer", "Fast prompt without importing workflows", {
+          projectRoot: env.projectRoot,
+          timeoutMs: 500,
+          models: { test: fakeModel() as any },
+          agentFixtures: {
+            reviewer: async ({ task }) => ({
+              id: "s_fast_prompt",
+              kind: "agent",
+              status: "done",
+              summary: `fast:${task}`,
+            }),
+          },
+        }),
+      );
+      expect(barePrompt?.result.ok).toBe(true);
+      expect(barePrompt?.result.result).toMatchObject({
+        type: "done",
+        summary: "fast:Fast prompt without importing workflows",
+      });
+    } finally {
+      gate.release();
+    }
   });
 });

@@ -2,8 +2,9 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const runtimeRoot = resolve(import.meta.dir, "..");
+const runtimeRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const appsRoot = process.env.MAY_AGENT_VERIFY_APPS_ROOT?.trim()
   ? resolve(process.env.MAY_AGENT_VERIFY_APPS_ROOT)
   : undefined;

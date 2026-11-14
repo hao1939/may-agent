@@ -21,8 +21,6 @@ Run commands below from the Host checkout unless stated otherwise.
 | CLI protocol verification | `bun run check:codex-goal-protocol` | Runs the production client against the installed Codex CLI and a loopback Responses fixture: paused-goal notification and persistence, actual request capture, process restart/resume, fresh canonical packet and prior rejection delivery, plus old-turn fencing. Disposable state, no inherited credentials or external model call. This client-boundary fixture does not prove full executor orchestration, compaction, or live recovery; see the executor README. Also runs in image smoke. |
 | Deployment | `MAY_AGENT_DEPLOY_CORRELATION=STABLE_ID bun run deploy`; optional `MAY_AGENT_DEPLOY_OWNER_APP=APP_ID MAY_AGENT_DEPLOY_TASK_ID=TASK_ID` | Standalone deployment needs no App, Task, or Task database. The optional pair requests only a best-effort settled notification and must be supplied together; destination state or delivery cannot change deployment success. Builds/stages a release and restarts through the supported restarter, so use the operations manual rather than this as a test command. Record the printed receipt path before restart. Reusing a correlation reads its existing receipt before build/staging instead of redeploying. |
 | Deployment facts | `bun scripts/deploy-receipt.ts read RECEIPT_PATH`; compatibility: `read-task RECEIPT_DIR APP_ID TASK_ID` | Reads one exact requested/terminal receipt after caller interruption without deploying. `read-task` remains available for older targeted receipts. Unreadable/corrupt facts fail rather than implying absence or authorizing a retry. |
-| Task interface benchmark | `bun scripts/benchmark-human-task-interface.ts` | Creates 20,000 synthetic rows in memory; prints p95 latency and fails its explicit budgets. No installed state or model. Machine-sensitive benchmark, not a default CI gate. |
-| Offline transcripts | Open `scripts/log-viewer.html` in a browser and select a JSONL file | Reads local message records, not daemon event logs. No upload or live service. Format and limits below. |
 
 When optional notification metadata is present, the restarter attempts to emit
 `deployment.settled` with `target: { appId, taskId }` and the settled receipt in
@@ -35,8 +33,7 @@ authorize another deployment nor close the Task.
 
 Colocated `*.test.ts` files protect these commands and repository CI, lint,
 publication and deployment contracts. They run through `bun run ci`; no separate
-wrapper is needed. The browser test requires Chrome (or `CHROME_PATH`), like the
-other portable UI checks. `E2E_NO_UI=1` explicitly skips it locally, not in CI.
+wrapper is needed.
 
 `MAY_AGENT_UI_DIR` explicitly selects the HTTP adapter's served static directory
 (relative values use its working directory). Without it, the deployed default
@@ -51,26 +48,6 @@ selection and result recording belong to their consumer repositories. Check
 those consumers before changing the adapter, but do not require a sibling App
 checkout for Host CI. Relocating a recorder must leave its existing data intact
 and provide an explicit path when adopting a retained result database.
-
-## Offline transcript format
-
-The viewer supports the message-per-line JSONL written by
-`src/lib/persistence.ts` (`sessions/SESSION_ID/session.jsonl`): `user`,
-`assistant` and `toolResult` messages. Text content may be a string or typed
-content blocks; tool calls/results, timestamps and supplied usage are rendered.
-For example, save these synthetic lines in a local `.jsonl` file:
-
-```jsonl
-{"role":"user","content":"Inspect the sample","timestamp":1000}
-{"role":"assistant","content":[{"type":"text","text":"Reading the evidence."},{"type":"toolCall","id":"read-1","name":"read","arguments":{"path":"sample.txt"}}],"timestamp":2000}
-{"role":"toolResult","toolCallId":"read-1","toolName":"read","isError":true,"content":[{"type":"text","text":"Sample file unavailable"}],"timestamp":3000}
-```
-
-It is a convenience viewer, not an integrity audit: malformed JSON lines are
-skipped, unsupported message roles are not a conversation turn, missing usage
-does not prove zero cost, and the whole file is read into browser memory.
-Keep real transcripts private even if automatic redaction has run. The portable
-browser regression uses the actual persistence writer and synthetic data only.
 
 ## Retired experiments
 

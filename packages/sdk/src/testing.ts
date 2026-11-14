@@ -373,17 +373,9 @@ export async function runWorkflowTest<TInput = unknown>(
              description: `Standalone SDK test invocation for ${targetName}`,
              ...(options.tools === "readonly" ? { readonly: true } : {}),
              async execute(ctx) {
-               const step = await ctx.call(targetName, ctx.input, {
+               return ctx.call(targetName, ctx.input, {
                  ...(options.tools ? { tools: options.tools } : {}),
                });
-               if (step.status === "done") return ctx.done(step.summary, step.output);
-               if (step.status === "blocked") {
-                 return {
-                   ...ctx.blocked(step.summary, step.facts),
-                   ...(step.output !== undefined ? { output: step.output } : {}),
-                 };
-               }
-               throw new Error(step.summary || `Target "${targetName}" failed with status "${step.status}"`);
              },
            };
          })()

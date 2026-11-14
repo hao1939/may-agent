@@ -703,6 +703,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         reviewer: ({ task, options }) => ({
           status: "done",
           summary: `SDK prompt: ${task} (${options?.tools ?? "default"})`,
+          facts: { checkedFiles: 3 },
         }),
       },
     });
@@ -710,7 +711,30 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(sdkDirectPrompt.result).toEqual({
       type: "done",
       summary: "SDK prompt: Check HEAD (readonly)",
+      facts: { checkedFiles: 3 },
     });
+
+    for (const nonSuccessStatus of ["blocked", "error", "interrupted"] as const) {
+      const nonSuccessRun = await runTargetTest("reviewer", {
+        input: "Check HEAD",
+        mocks: {
+          reviewer: {
+            status: nonSuccessStatus,
+            summary: `ended:${nonSuccessStatus}`,
+            output: { partial: true },
+            facts: { reasonCode: nonSuccessStatus },
+          },
+        },
+      });
+      expect(nonSuccessRun.ok).toBe(true);
+      expect(nonSuccessRun.status).toBe(nonSuccessStatus);
+      expect(nonSuccessRun.result).toMatchObject({
+        type: nonSuccessStatus,
+        reason: `ended:${nonSuccessStatus}`,
+        output: { partial: true },
+        facts: { reasonCode: nonSuccessStatus },
+      });
+    }
 
     const sdkDirectCode = await runTargetTest("owner/review-change", {
       input: { subjectRef: "HEAD~1..HEAD" },

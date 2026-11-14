@@ -167,7 +167,8 @@ export async function loadWorkflowScope(
       hooks?.onImportStart?.();
       const rawImport = loadWorkflowModuleFromFile(filePath, scope);
       if (hooks?.onImportSettled) {
-        void rawImport.finally(() => hooks.onImportSettled!());
+        const notifySettled = () => hooks.onImportSettled!();
+        rawImport.then(notifySettled, notifySettled);
       }
       const workflow = await raceWithAbort(rawImport, signal);
       signal?.throwIfAborted();

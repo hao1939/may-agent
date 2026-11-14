@@ -1,15 +1,15 @@
 /**
- * Host-free direct workflow runner for Gym, CLI debugging, and standalone runs.
+ * Host-free direct workflow & standalone target runner for CLI, Gym, and scripts.
  *
- * Composes the portable workflow invocation kernel with `runDirectAgent` and
- * `buildWorkflowCatalog`. Intentionally constructs no SQLite database,
- * EventBus, SubagentManager, schedule, or daemon state.
+ * Composes the portable workflow invocation kernel with `runDirectAgent`,
+ * `runCliAgent`, and `buildWorkflowCatalog`. Intentionally constructs no SQLite
+ * database, EventBus, SubagentManager, schedule, or daemon state.
  */
 
 import type { TSchema } from "typebox";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type {
   AgentCallOptions,
   AppRead,
@@ -19,6 +19,7 @@ import type {
 } from "@may-agent/sdk";
 import { createTestAppRead } from "@may-agent/sdk/testing";
 import {
+  WorkflowUnconfirmedCleanupError,
   createWorkflowAllowance,
   resolveCallable,
   runWorkflowInvocation,
@@ -33,10 +34,15 @@ import {
   type WorkflowStepInvocationResult,
   type WorkflowStepTrace,
 } from "../../packages/sdk/src/workflow-kernel.js";
-import { runCliAgent } from "../lib/cli-agent.js";
+import {
+  runCliAgent,
+  type CliAgentInput,
+  type CliAgentOptions,
+  type CliAgentResult,
+} from "../lib/cli-agent.js";
 import { agentExecutionResult, enforceStructuredWorkflowResult } from "../lib/execution-handoff.js";
 import type { ModelWithApiKey, TaskResult } from "../lib/types.js";
-import { buildWorkflowCatalog, findWorkflow } from "../lib/workflow-catalog.js";
+import { buildWorkflowCatalog, findWorkflow, listWorkflowFiles } from "../lib/workflow-catalog.js";
 import { validateOperationAllowance } from "../lib/workflow-finish-recovery.js";
 import { readAgentConfigFile, type AgentConfig } from "./loader/agent-config.js";
 import {
@@ -115,11 +121,13 @@ export type DirectWorkflowRunOptions<TInput = unknown> = {
   agentFixtures?: Record<string, DirectAgentFixtureHandler>;
   /** Custom direct agent runner (defaults to `runDirectAgent`). */
   runAgent?: (options: DirectAgentRunOptions) => Promise<DirectAgentRunResult>;
+  /** Custom native CLI runner (defaults to `runCliAgent`). */
+  runCli?: (input: CliAgentInput, opts: CliAgentOptions) => Promise<CliAgentResult>;
   /** Custom tool denial policy for real child agent runs. */
   resolveToolDenials?: (agentName: string, configuredTools: readonly string[]) => ToolDenial[];
   /** Optional tool restriction ("readonly") for this execution scope. */
   tools?: "full" | "readonly";
-  /** Optional caller-side output schema for root prompt targets. */
+  /** Optional caller-side output schema enforced in addition to any module outputSchema. */
   outputSchema?: TSchema;
   /** Optional prompt-target skill selection when root target resolves to a prompt agent. */
   skill?: string;
@@ -275,7 +283,7 @@ async function buildDirectPromptCatalog(
 }
 
 /**
- * Run a workflow end-to-end without booting Host SQLite, EventBus, or SubagentManager.
+ * Run a workflow or target end-to-end without booting Host SQLite, EventBus, or SubagentManager.
  */
 export async function runDirectWorkflow<TInput = unknown>(
   options: DirectWorkflowRunOptions<TInput>,
@@ -300,7 +308,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         ? options.executionId
         : `wr_${now}_${Math.random().toString(36).slice(2, 6)}`;
     const report: WorkflowRunReport = {
-      workflow: options.module?.name ?? options.workflowName ?? "unknown",
+      workflow: options.module?.name ?? options.target ?? options.workflowName ?? "unknown",
       executionId,
       started: false,
       status: "error",
@@ -339,14 +347,17 @@ export async function runDirectWorkflow<TInput = unknown>(
   }
 
   let callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
-  if (!internal && !options.agentName && options.target) {
-    callerOwner = options.target.includes("/")
-      ? options.target.slice(0, options.target.indexOf("/")).trim()
-      : options.target.trim();
+  const inferredRootOwner = !internal && !options.agentName && options.target;
+  if (inferredRootOwner) {
+    callerOwner = options.target!.includes("/")
+      ? options.target!.slice(0, options.target!.indexOf("/")).trim()
+      : options.target!.trim();
   }
   const initialOwner = callerOwner;
-  const workflowDir = resolveWorkflowDir({ ...options, agentName: callerOwner });
-  const wfCatalog = !options.module && workflowDir ? await buildWorkflowCatalog(workflowDir) : undefined;
+  const workflowDir = resolveWorkflowDir({
+    ...options,
+    agentName: inferredRootOwner && !options.target!.includes("/") ? undefined : callerOwner,
+  });
   let preparedCatalog: DirectCatalogState = internal?.catalog ?? {
     prompts: new Map(),
     proceduresByOwner: new Map(),
@@ -356,13 +367,6 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const ensureOwnerProcedures = async (owner: string, signal?: AbortSignal): Promise<void> => {
     if (preparedCatalog.proceduresByOwner.has(owner)) return;
-    if (owner === initialOwner && wfCatalog) {
-      preparedCatalog.proceduresByOwner.set(owner, wfCatalog.workflows);
-      for (const diag of wfCatalog.diagnostics) {
-        if (!preparedCatalog.diagnostics.includes(diag)) preparedCatalog.diagnostics.push(diag);
-      }
-      return;
-    }
     const ownerDir =
       owner === initialOwner && workflowDir
         ? workflowDir
@@ -394,82 +398,235 @@ export async function runDirectWorkflow<TInput = unknown>(
       if (owner) await ensureOwnerProcedures(owner, signal);
       return;
     }
+    if (inferredRootOwner && normalized === callerOwner) {
+      // Do not import procedures on a bare prompt target when no caller agentName was supplied.
+      return;
+    }
     await ensureOwnerProcedures(callerOwner, signal);
   };
 
-  const isBuiltInCliExecutor = (name: string): name is "codex" | "claude" => {
+  const isNativeCliFallback = (name: string): name is "codex" | "claude" => {
     const trimmed = name.trim();
-    return (trimmed === "codex" || trimmed === "claude") && !preparedCatalog.prompts.has(trimmed);
+    if (trimmed !== "codex" && trimmed !== "claude") return false;
+    if (preparedCatalog.proceduresByOwner.get(callerOwner)?.has(trimmed)) return false;
+    if (preparedCatalog.prompts.has(trimmed)) return false;
+    return true;
   };
 
   let targetModule = options.module;
   let catalogCapturedAtRoot = false;
+  const rootStartedAt = Date.now();
+  let preparedAllowance: WorkflowExecutionAllowance | undefined = internal?.allowance;
   if (!targetModule) {
     const requestedTarget = options.target?.trim() ?? options.workflowName?.trim();
     if (!requestedTarget) {
       throw new Error("runDirect requires `module`, `target`, or (`workflowName` and resolvable `workflowDir`/`agentName`)");
     }
-    if (options.target) {
-      if (!internal?.catalog) {
-        preparedCatalog = await buildDirectPromptCatalog(
-          { ...options, agentName: callerOwner },
-          callerOwner,
-          workflowDir,
-          options.signal,
-        );
-        catalogCapturedAtRoot = true;
+    if (!options.target && !workflowDir) {
+      throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
+    }
+
+    const prepNow = rootStartedAt;
+    let prepAllowance: WorkflowExecutionAllowance | undefined = internal?.allowance;
+    let prepTimeoutMs: number | undefined;
+    const makePrepFailureReport = (
+      effectiveError: Error,
+      status: WorkflowRunReport["status"],
+      unconfirmed?: string[],
+    ): DirectWorkflowRunResult => {
+      const endedAt = Date.now();
+      const executionId =
+        internal === undefined && options.executionId
+          ? options.executionId
+          : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`;
+      const report: WorkflowRunReport = {
+        workflow: requestedTarget,
+        executionId,
+        started: false,
+        status,
+        startedAt: prepNow,
+        endedAt,
+        durationMs: endedAt - prepNow,
+        input: options.input,
+        error: {
+          name: effectiveError.name,
+          message: effectiveError.message,
+          ...(effectiveError.stack ? { stack: effectiveError.stack } : {}),
+        },
+        steps: [],
+        stepsTruncated: 0,
+        logs: [],
+        logsTruncated: 0,
+        limits: {
+          timeoutMs: prepTimeoutMs ?? 0,
+          deadlineAt: prepAllowance?.deadlineAt ?? endedAt,
+          ...(prepAllowance?.maxConcurrentCalls !== undefined
+            ? { maxConcurrentCalls: prepAllowance.maxConcurrentCalls }
+            : {}),
+        },
+        cleanup: unconfirmed ? { confirmed: false, unconfirmed } : { confirmed: true },
+        observerErrors: [],
+      };
+      let reportPath: string | undefined;
+      if (options.traceDir) {
+        mkdirSync(options.traceDir, { recursive: true });
+        reportPath = join(options.traceDir, "run.json");
+        writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`);
       }
-      await loadTargetOwnerProcedures(requestedTarget, options.signal);
-      if (isBuiltInCliExecutor(requestedTarget)) {
-        targetModule = {
-          name: requestedTarget,
-          description: `Direct CLI executor invocation for ${requestedTarget}`,
-          ...(options.tools === "readonly" ? { readonly: true } : {}),
-          async execute(ctx) {
-            return options.outputSchema
-              ? ctx.call(requestedTarget, ctx.input, {
-                  schema: options.outputSchema,
-                  ...(options.tools ? { tools: options.tools } : {}),
-                })
-              : ctx.call(requestedTarget, ctx.input, {
-                  ...(options.tools ? { tools: options.tools } : {}),
-                });
-          },
-        };
-      } else {
-        const resolved = resolveCallable(callerOwner, requestedTarget, preparedCatalog);
-        if (resolved.kind === "code") {
-          callerOwner = resolved.owner;
-          targetModule = resolved.module as WorkflowExecutableModule<TInput>;
-        } else {
+      return {
+        ok: false,
+        started: false,
+        status,
+        error: effectiveError,
+        report,
+        ...(reportPath ? { reportPath } : {}),
+        childSessions: [],
+      };
+    };
+
+    if (!prepAllowance && !options.signal?.aborted) {
+      try {
+        const created = createWorkflowAllowance({
+          timeoutMs: options.timeoutMs,
+          deadlineAt: options.deadlineAt,
+          maxConcurrentCalls: options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS,
+          now: prepNow,
+        });
+        prepAllowance = created;
+        prepTimeoutMs = created.timeoutMs;
+      } catch (allowanceErr) {
+        return makePrepFailureReport(
+          allowanceErr instanceof Error ? allowanceErr : new Error(String(allowanceErr)),
+          "error",
+        );
+      }
+    } else if (prepAllowance) {
+      prepTimeoutMs = Math.max(0, prepAllowance.deadlineAt - prepNow);
+    }
+    const prepController = new AbortController();
+    let prepTimer: ReturnType<typeof setTimeout> | undefined;
+    const onParentPrepAbort = () => {
+      prepController.abort(options.signal?.reason ?? new Error(`Direct target "${requestedTarget}" cancelled before start`));
+    };
+    if (options.signal?.aborted) {
+      onParentPrepAbort();
+    } else if (options.signal) {
+      options.signal.addEventListener("abort", onParentPrepAbort, { once: true });
+    }
+    if (prepAllowance && !prepController.signal.aborted) {
+      const waitMs = Math.max(0, prepAllowance.deadlineAt - Date.now());
+      prepTimer = setTimeout(() => {
+        prepController.abort(
+          new Error(
+            prepAllowance.deadlineReason ??
+              `Workflow "${requestedTarget}" timed out after ${prepTimeoutMs ?? waitMs}ms`,
+          ),
+        );
+      }, waitMs);
+      prepTimer.unref?.();
+    }
+
+    try {
+      if (options.target) {
+        if (!internal?.catalog) {
+          preparedCatalog = await buildDirectPromptCatalog(
+            { ...options, agentName: callerOwner },
+            callerOwner,
+            workflowDir,
+            prepController.signal,
+          );
+          catalogCapturedAtRoot = true;
+        }
+        await loadTargetOwnerProcedures(requestedTarget, prepController.signal);
+        if (isNativeCliFallback(requestedTarget)) {
           targetModule = {
-            name: resolved.name,
-            description: `Direct prompt invocation for ${resolved.name}`,
+            name: requestedTarget,
+            description: `Direct CLI executor invocation for ${requestedTarget}`,
             ...(options.tools === "readonly" ? { readonly: true } : {}),
             async execute(ctx) {
-              const baseOpts = {
-                ...(options.tools ? { tools: options.tools } : {}),
-                ...(options.skill ? { skill: options.skill } : {}),
-                ...(options.operationAllowance !== undefined
-                  ? { operationAllowance: options.operationAllowance }
-                  : {}),
-              };
               return options.outputSchema
-                ? ctx.call(resolved.name, ctx.input, { ...baseOpts, schema: options.outputSchema })
-                : ctx.call(resolved.name, ctx.input, baseOpts);
+                ? ctx.call(requestedTarget, ctx.input, {
+                    schema: options.outputSchema,
+                    ...(options.tools ? { tools: options.tools } : {}),
+                  })
+                : ctx.call(requestedTarget, ctx.input, {
+                    ...(options.tools ? { tools: options.tools } : {}),
+                  });
             },
           };
+        } else {
+          const resolved = resolveCallable(callerOwner, requestedTarget, preparedCatalog);
+          if (resolved.kind === "code") {
+            callerOwner = resolved.owner;
+            targetModule = resolved.module as WorkflowExecutableModule<TInput>;
+          } else {
+            targetModule = {
+              name: resolved.name,
+              description: `Direct prompt invocation for ${resolved.name}`,
+              ...(options.tools === "readonly" ? { readonly: true } : {}),
+              async execute(ctx) {
+                const baseOpts = {
+                  ...(options.tools ? { tools: options.tools } : {}),
+                  ...(options.skill ? { skill: options.skill } : {}),
+                  ...(options.operationAllowance !== undefined
+                    ? { operationAllowance: options.operationAllowance }
+                    : {}),
+                };
+                return options.outputSchema
+                  ? ctx.call(resolved.name, ctx.input, { ...baseOpts, schema: options.outputSchema })
+                  : ctx.call(resolved.name, ctx.input, baseOpts);
+              },
+            };
+          }
         }
+      } else {
+        const wfCatalog = await buildWorkflowCatalog(workflowDir!, prepController.signal, {
+          onImportStart: () => {
+            preparedCatalog.pendingImports += 1;
+          },
+          onImportSettled: () => {
+            preparedCatalog.pendingImports -= 1;
+          },
+        });
+        preparedCatalog.proceduresByOwner.set(initialOwner, wfCatalog.workflows);
+        for (const diag of wfCatalog.diagnostics) {
+          if (!preparedCatalog.diagnostics.includes(diag)) preparedCatalog.diagnostics.push(diag);
+        }
+        const found = findWorkflow(wfCatalog, requestedTarget);
+        if (!found.workflow) {
+          throw new Error(found.error ?? `Workflow "${requestedTarget}" not found`);
+        }
+        targetModule = found.workflow as WorkflowExecutableModule<TInput>;
       }
-    } else {
-      if (!wfCatalog) {
-        throw new Error("runDirectWorkflow requires either `module` or (`workflowName` and resolvable `workflowDir`/`agentName`)");
+      preparedAllowance = prepAllowance;
+    } catch (prepErr) {
+      if (prepController.signal.aborted || preparedCatalog.pendingImports > 0) {
+        const executionId =
+          internal === undefined && options.executionId
+            ? options.executionId
+            : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`;
+        const unconfirmed =
+          preparedCatalog.pendingImports > 0
+            ? [`workflow:${requestedTarget} (${executionId})`]
+            : undefined;
+        const effectiveError = unconfirmed
+          ? new WorkflowUnconfirmedCleanupError(requestedTarget, unconfirmed, prepErr)
+          : prepErr instanceof Error
+            ? prepErr
+            : new Error(String(prepErr));
+        const status: WorkflowRunReport["status"] =
+          !unconfirmed && options.signal?.aborted ? "interrupted" : "error";
+        const result = makePrepFailureReport(effectiveError, status, unconfirmed);
+        result.report.executionId = executionId;
+        if (result.reportPath) {
+          writeFileSync(result.reportPath, `${JSON.stringify(result.report, null, 2)}\n`);
+        }
+        return result;
       }
-      const found = findWorkflow(wfCatalog, requestedTarget);
-      if (!found.workflow) {
-        throw new Error(found.error ?? `Workflow "${requestedTarget}" not found`);
-      }
-      targetModule = found.workflow as WorkflowExecutableModule<TInput>;
+      throw prepErr;
+    } finally {
+      clearTimeout(prepTimer);
+      options.signal?.removeEventListener("abort", onParentPrepAbort);
     }
   }
 
@@ -522,15 +679,27 @@ export async function runDirectWorkflow<TInput = unknown>(
   const maxConcurrentCalls =
     options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
   const executeAgent = options.runAgent ?? runDirectAgent;
+  const executeCli = options.runCli ?? runCliAgent;
 
   let rootAllowance = internal?.allowance;
   if (!rootAllowance && !options.signal?.aborted) {
     try {
-      rootAllowance = createWorkflowAllowance({
+      const created = createWorkflowAllowance({
         timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
         deadlineAt: options.deadlineAt,
         maxConcurrentCalls,
+        now: rootStartedAt,
       });
+      rootAllowance = preparedAllowance
+        ? {
+            deadlineAt: created.deadlineAt,
+            ...(created.deadlineReason ? { deadlineReason: created.deadlineReason } : {}),
+            ...(created.maxConcurrentCalls !== undefined
+              ? { maxConcurrentCalls: created.maxConcurrentCalls }
+              : {}),
+            acquireCall: () => preparedAllowance.acquireCall(),
+          }
+        : created;
     } catch {
       // Pre-start deadline/timeout validation errors are surfaced cleanly by runWorkflowInvocation.
     }
@@ -542,44 +711,56 @@ export async function runDirectWorkflow<TInput = unknown>(
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: { signal: AbortSignal; timeoutMs: number; deadlineAt: number; stepIndex: number },
   ): Promise<WorkflowStepInvocationResult> => {
-    const fixture = options.agentFixtures?.[tool];
-    if (fixture) {
-      return fixture({ agent: tool, task: prompt, options: callOpts, ...stepControl });
+    if (callOpts?.tools === "readonly") {
+      throw new Error(
+        `Native CLI executor "${tool}" cannot enforce tools: "readonly" because native CLI runners execute with unrestricted sandbox permissions`,
+      );
     }
-    const cliRun = await runCliAgent(
+    const cliSessionId = `direct_cli_${Date.now()}_${stepControl.stepIndex}`;
+    const executionRoot = resolve(options.workRoot);
+    const cliRun = await executeCli(
       {
         tool,
         prompt,
-        mode: callOpts?.tools === "readonly" ? "review" : "patch",
-        sandbox: callOpts?.tools === "readonly" ? "read-only" : "workspace-write",
-        cwd: options.workRoot,
+        mode: "patch",
+        sandbox: "danger-full-access",
+        cwd: ".",
         timeoutMs: stepControl.timeoutMs,
         ...(callOpts?.schema ? { expectedOutput: { format: "json" } } : {}),
       },
       {
         agentName: callerOwner,
-        projectRoot: options.projectRoot,
+        projectRoot: executionRoot,
         persistDir: options.outputRoot,
-        sessionId: `direct_cli_${Date.now()}_${stepControl.stepIndex}`,
+        sessionId: cliSessionId,
         signal: stepControl.signal,
         drainProcessGroup: options.drainProcessGroup,
       },
     );
     const status = cliRun.status === "completed" ? "done" : "error";
+    let parsedOutput: unknown = cliRun.outputText;
+    if (status === "done" && callOpts?.schema && typeof cliRun.outputText === "string") {
+      try {
+        parsedOutput = JSON.parse(cliRun.outputText);
+      } catch {
+        // Leave raw text so kernel schema check produces a structured schema diagnostic.
+      }
+    }
     return {
       id: cliRun.taskId,
       kind: "agent",
       status,
       summary: cliRun.summary || cliRun.error || `${tool} ${cliRun.status}`,
+      ...(parsedOutput !== undefined ? { output: parsedOutput } : {}),
       facts: {
         tool: cliRun.tool,
         resultPath: cliRun.resultPath,
         eventsPath: cliRun.eventsPath,
         ...(cliRun.nativeSessionId ? { nativeSessionId: cliRun.nativeSessionId } : {}),
       },
-      sessionId: cliRun.taskId,
+      sessionId: cliSessionId,
       transcriptPath: cliRun.eventsPath,
-      cleanupConfirmed: true,
+      cleanupConfirmed: cliRun.cleanupConfirmed !== false,
     };
   };
 
@@ -670,7 +851,9 @@ export async function runDirectWorkflow<TInput = unknown>(
         ...options,
         executionId: undefined,
         module: targetMod,
+        target: undefined,
         workflowName: wfName,
+        outputSchema: undefined,
         input: wfInput,
         signal: stepControl.signal,
         timeoutMs: stepControl.timeoutMs,
@@ -722,19 +905,28 @@ export async function runDirectWorkflow<TInput = unknown>(
           ctx.signal,
         );
         ctx.signal.throwIfAborted();
-        preparedCatalog = captured;
+        for (const [name, entry] of captured.prompts) {
+          preparedCatalog.prompts.set(name, entry);
+        }
+        for (const diag of captured.diagnostics) {
+          if (!preparedCatalog.diagnostics.includes(diag)) {
+            preparedCatalog.diagnostics.push(diag);
+          }
+        }
       }
       ctx.signal.throwIfAborted();
       return authoredModule.execute(ctx);
     },
   }, {
     executionId: internal ? undefined : options.executionId,
+    startedAt: internal ? undefined : rootStartedAt,
     input: options.input,
     taskOwned: Boolean(options.task || options.reconciliation),
     tools: internal?.tools ?? options.tools,
+    outputSchema: internal ? undefined : options.outputSchema,
     signal: options.signal,
     timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
-    deadlineAt: options.deadlineAt,
+    deadlineAt: rootAllowance?.deadlineAt ?? options.deadlineAt,
     maxConcurrentCalls,
     allowance: rootAllowance,
     read,
@@ -779,8 +971,8 @@ export async function runDirectWorkflow<TInput = unknown>(
     confirmCleanup: () => preparedCatalog.pendingImports === 0,
     resolveTargetKind: async (target) => {
       try {
-        if (typeof target === "string" && isBuiltInCliExecutor(target)) return "agent";
         if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
+        if (typeof target === "string" && isNativeCliFallback(target)) return "agent";
         const resolved = resolveCallable(callerOwner, target, preparedCatalog);
         return resolved.kind === "prompt" ? "agent" : "workflow";
       } catch {
@@ -788,13 +980,13 @@ export async function runDirectWorkflow<TInput = unknown>(
       }
     },
     callTarget: async (target, input, callOpts, stepControl) => {
-      if (typeof target === "string" && isBuiltInCliExecutor(target)) {
+      await loadTargetOwnerProcedures(target, stepControl.signal);
+      if (typeof target === "string" && isNativeCliFallback(target)) {
         if (typeof input !== "string" || !input.trim()) {
           throw new Error(`CLI target "${target}" requires a non-empty string prompt input`);
         }
         return executeCliStep(target.trim() as "codex" | "claude", input, callOpts, stepControl);
       }
-      await loadTargetOwnerProcedures(target, stepControl.signal);
       const resolved = resolveCallable(callerOwner, target, preparedCatalog);
       if (resolved.kind === "prompt") {
         if (typeof input !== "string") {
@@ -829,12 +1021,36 @@ export async function runDirectWorkflow<TInput = unknown>(
  */
 export const runDirect = runDirectWorkflow;
 
+export function inferWorkspaceRoot(startDir: string): string {
+  let current = resolve(startDir);
+  for (;;) {
+    if (existsSync(join(current, "projects")) && existsSync(join(current, "shared"))) {
+      return current;
+    }
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return resolve(startDir);
+}
+
+function inferCwdAppName(cwd: string, projectsRoot: string): string | undefined {
+  const resolvedCwd = resolve(cwd);
+  const resolvedProjects = resolve(projectsRoot);
+  if (!resolvedCwd.startsWith(`${resolvedProjects}/`)) return undefined;
+  const rest = resolvedCwd.slice(resolvedProjects.length + 1);
+  const firstSegment = rest.split("/")[0];
+  return firstSegment && firstSegment.endsWith(".app") ? firstSegment : undefined;
+}
+
 export type StandaloneRunOptions<TInput = unknown> = Omit<
   DirectWorkflowRunOptions<TInput>,
   "target" | "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models"
 > & {
-  /** Optional App directory name under `<projectRoot>/projects/<app>` (e.g. `"alex.app"`). */
+  /** Optional App disambiguator when two Apps define the same agent name (e.g. `"alex.app"`). */
   app?: string;
+  /** Working directory for tools and execution (defaults to `process.cwd()`). */
+  cwd?: string;
   projectRoot?: string;
   workRoot?: string;
   agentsRoot?: string;
@@ -843,41 +1059,230 @@ export type StandaloneRunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
+export type DiscoveredTargetSummary = {
+  target: string;
+  kind: "prompt" | "code" | "cli";
+  owner: string;
+  app?: string;
+  description: string;
+};
+
+export function listStandaloneTargets(options: {
+  cwd?: string;
+  projectRoot?: string;
+  projectsRoot?: string;
+  globalAgentsRoot?: string;
+  app?: string;
+} = {}): DiscoveredTargetSummary[] {
+  const cwd = resolve(options.cwd ?? process.cwd());
+  const projectRoot = resolve(options.projectRoot ?? inferWorkspaceRoot(cwd));
+  const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
+  const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
+  const appFilter = options.app?.trim()
+    ? options.app.trim().endsWith(".app")
+      ? options.app.trim()
+      : `${options.app.trim()}.app`
+    : undefined;
+
+  const dirs = [...new Map(
+    listRuntimeAgentDirectories(
+      globalAgentsRoot,
+      projectsRoot,
+      projectsRoot,
+      appFilter ? [appFilter] : undefined,
+    ).map((dir) => [resolve(dir.dir), dir]),
+  ).values()];
+
+  const items: DiscoveredTargetSummary[] = [];
+  for (const dir of dirs) {
+    let config: AgentConfig | null = null;
+    try {
+      config = readAgentConfigFile(dir.dir);
+    } catch {
+      continue;
+    }
+    if (!config) continue;
+    const app = dir.projectId ? `${dir.projectId}.app` : undefined;
+    items.push({
+      target: config.name,
+      kind: "prompt",
+      owner: config.name,
+      ...(app ? { app } : {}),
+      description: config.description,
+    });
+    for (const wfFile of listWorkflowFiles(join(dir.dir, "workflows"))) {
+      const wfBase = wfFile.split("/").pop()?.replace(/\.ts$/, "") ?? "";
+      if (!wfBase) continue;
+      items.push({
+        target: `${config.name}/${wfBase}`,
+        kind: "code",
+        owner: config.name,
+        ...(app ? { app } : {}),
+        description: `Code procedure (${wfBase}.ts)`,
+      });
+    }
+  }
+  if (!appFilter) {
+    items.push(
+      { target: "codex", kind: "cli", owner: "codex", description: "Built-in Codex CLI executor" },
+      { target: "claude", kind: "cli", owner: "claude", description: "Built-in Claude CLI executor" },
+    );
+  }
+  return items.sort((a, b) => a.target.localeCompare(b.target));
+}
+
+function normalizeAppDirName(app: string): string {
+  const trimmed = app.trim();
+  return trimmed.endsWith(".app") ? trimmed : `${trimmed}.app`;
+}
+
+function parseTargetAndOptionalAppPrefix(
+  rawTarget: string,
+  explicitApp?: string,
+): { target: string; app?: string } {
+  const trimmed = rawTarget.trim();
+  const parts = trimmed.split("/").map((p) => p.trim());
+  if (parts.length === 3 && parts[0]?.endsWith(".app") && parts[1] && parts[2]) {
+    if (explicitApp && normalizeAppDirName(explicitApp) !== parts[0]) {
+      throw new Error(
+        `Conflicting App scope: target "${rawTarget}" specifies "${parts[0]}" while --app specifies "${explicitApp}"`,
+      );
+    }
+    return { target: `${parts[1]}/${parts[2]}`, app: parts[0] };
+  }
+  if (parts.length === 2 && parts[0]?.endsWith(".app") && parts[1]) {
+    if (explicitApp && normalizeAppDirName(explicitApp) !== parts[0]) {
+      throw new Error(
+        `Conflicting App scope: target "${rawTarget}" specifies "${parts[0]}" while --app specifies "${explicitApp}"`,
+      );
+    }
+    return { target: parts[1], app: parts[0] };
+  }
+  return {
+    target: trimmed,
+    ...(explicitApp?.trim() ? { app: normalizeAppDirName(explicitApp) } : {}),
+  };
+}
+
+function discoverAgentsRootForTarget(params: {
+  target: string;
+  explicitApp?: string;
+  explicitAgentsRoot?: string;
+  agentName?: string;
+  cwd: string;
+  projectsRoot: string;
+  globalAgentsRoot: string;
+  agentFixtures?: Record<string, DirectAgentFixtureHandler>;
+}): string {
+  if (params.explicitAgentsRoot) return resolve(params.explicitAgentsRoot);
+  if (params.explicitApp) {
+    return resolve(join(params.projectsRoot, normalizeAppDirName(params.explicitApp), "agents"));
+  }
+
+  const candidateOwner =
+    params.agentName?.trim() ||
+    (params.target.includes("/")
+      ? params.target.slice(0, params.target.indexOf("/")).trim()
+      : params.target.trim());
+
+  if (!candidateOwner || params.agentFixtures?.[candidateOwner]) {
+    return params.globalAgentsRoot;
+  }
+
+  const dirs = [...new Map(
+    listRuntimeAgentDirectories(params.globalAgentsRoot, params.projectsRoot).map((d) => [resolve(d.dir), d]),
+  ).values()];
+
+  const matches: AgentDirectory[] = [];
+  for (const dir of dirs) {
+    try {
+      const cfg = readAgentConfigFile(dir.dir);
+      if (cfg && cfg.name === candidateOwner) {
+        matches.push(dir);
+      }
+    } catch {
+      // Malformed unrelated agent configs are surfaced as diagnostics if their App is selected.
+    }
+  }
+
+  const appMatches = matches.filter((m) => Boolean(m.projectId));
+  if (appMatches.length === 1) {
+    return resolve(appMatches[0]!.agentsRoot);
+  }
+  if (appMatches.length > 1) {
+    const cwdApp = inferCwdAppName(params.cwd, params.projectsRoot);
+    if (cwdApp) {
+      const inCwdApp = appMatches.find((m) => `${m.projectId}.app` === cwdApp);
+      if (inCwdApp) return resolve(inCwdApp.agentsRoot);
+    }
+    const apps = appMatches.map((m) => `${m.projectId}.app`).sort();
+    throw new Error(
+      `Target owner "${candidateOwner}" exists in multiple Apps (${apps.join(", ")}); specify "${apps[0]}/${params.target}" or pass --app ${apps[0]}`,
+    );
+  }
+  return params.globalAgentsRoot;
+}
+
 /**
- * Run any agent, workflow, or CLI executor standalone with positional `(target, input, options?)`,
- * matching `ctx.call(target, input, options?)` while defaulting repository paths
- * and model registry from `projectRoot` (`process.cwd()`).
+ * Run any prompt agent, code procedure, or native CLI executor standalone with
+ * positional `(target, input, options?)`—auto-discovering the owning App from
+ * `<projectRoot>/projects/*.app` without requiring `--app`.
  */
 export async function run<TInput = unknown>(
   target: string,
   input: TInput,
   options: StandaloneRunOptions<TInput> = {},
 ): Promise<DirectRunResult> {
-  const projectRoot = resolve(options.projectRoot ?? process.cwd());
-  const workRoot = resolve(options.workRoot ?? projectRoot);
+  const cwd = resolve(options.cwd ?? process.cwd());
+  const projectRoot = resolve(options.projectRoot ?? inferWorkspaceRoot(cwd));
+  const workRoot = resolve(options.workRoot ?? options.cwd ?? projectRoot);
   const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
   const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
-  const agentsRoot = resolve(
-    options.agentsRoot ??
-      (options.app ? join(projectsRoot, options.app, "agents") : globalAgentsRoot),
-  );
-  const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
-  const outputRoot = options.outputRoot
-    ? resolve(options.outputRoot)
-    : mkdtempSync(join(tmpdir(), "may-standalone-run-"));
-  const models = options.models ?? createModelRegistry();
 
-  return runDirectWorkflow({
-    ...options,
+  const { target: normalizedTarget, app: resolvedApp } = parseTargetAndOptionalAppPrefix(
     target,
-    input,
-    projectRoot,
-    workRoot,
-    agentsRoot,
-    sharedRoot,
+    options.app,
+  );
+
+  const agentsRoot = discoverAgentsRootForTarget({
+    target: normalizedTarget,
+    explicitApp: resolvedApp,
+    explicitAgentsRoot: options.agentsRoot,
+    agentName: options.agentName,
+    cwd,
     projectsRoot,
     globalAgentsRoot,
-    outputRoot,
-    models,
+    agentFixtures: options.agentFixtures,
   });
+
+  const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
+  const ownsTempOutputRoot = !options.outputRoot;
+  const outputRoot = options.outputRoot
+    ? resolve(options.outputRoot)
+    : mkdtempSync(join(tmpdir(), "may-run-"));
+  const models = options.models ?? createModelRegistry();
+
+  try {
+    return await runDirectWorkflow({
+      ...options,
+      target: normalizedTarget,
+      input,
+      projectRoot,
+      workRoot,
+      agentsRoot,
+      sharedRoot,
+      projectsRoot,
+      globalAgentsRoot,
+      outputRoot,
+      models,
+    });
+  } finally {
+    if (ownsTempOutputRoot && !options.traceDir) {
+      try {
+        rmSync(outputRoot, { recursive: true, force: true });
+      } catch {
+        // Best-effort scratch cleanup.
+      }
+    }
+  }
 }

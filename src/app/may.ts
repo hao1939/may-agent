@@ -47,6 +47,14 @@ const operatorArgs = process.argv
       !arg.endsWith("/binary-entry.ts") &&
       !arg.endsWith("/may.ts"),
   );
+if (operatorArgs[0] === "run" || operatorArgs[0] === "call" || operatorArgs[0] === "list") {
+  const { readPipedStdinSync, runStandaloneCli } = await import("./standalone-cli.js");
+  const { exitCode } = await runStandaloneCli(operatorArgs, {
+    readStdin: readPipedStdinSync,
+  });
+  process.exit(exitCode);
+}
+
 if (operatorArgs[0] === "status") {
   console.error('Unsupported positional command "status". Use "may-agent --status".');
   process.exit(2);
@@ -54,6 +62,12 @@ if (operatorArgs[0] === "status") {
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`Usage: may-agent [options]
+       may-agent run <target> [input] [options]
+       may-agent list [options]
+
+Standalone Commands (no SQLite or daemon started):
+  run <target> [input]       Run any prompt agent, <owner>/<procedure>, or CLI executor (see: may-agent run --help)
+  list                       List callable prompt agents, code procedures, and CLI executors
 
 Options:
   -h, --help                 Show this help and exit
