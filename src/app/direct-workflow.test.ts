@@ -1109,5 +1109,35 @@ export async function execute(ctx) {
     });
     expect(budgetRun.ok).toBe(false);
     expect(String(budgetRun.error)).toContain("timed out");
+
+    // 4. Module-declared executionTimeoutMs takes precedence over caller fallback timeoutMs across target/workflowName entrypoints:
+    writeFileSync(
+      join(budgetDir, "longer-module-timeout.ts"),
+      `
+export const name = "longer-module-timeout";
+export const description = "Module declares 1000ms timeout while caller supplies 100ms fallback";
+export const executionTimeoutMs = 1000;
+export async function execute(ctx) {
+  await new Promise((r, reject) => {
+    const t = setTimeout(r, 180);
+    ctx.signal.addEventListener("abort", () => { clearTimeout(t); reject(ctx.signal.reason); }, { once: true });
+  });
+  return ctx.done("completed-within-module-timeout");
+}
+`,
+    );
+    const parityRun = await runDirect({
+      ...env,
+      agentName: "owner",
+      target: "reviewer/longer-module-timeout",
+      input: {},
+      models: {},
+      timeoutMs: 100,
+    });
+    expect(parityRun.ok).toBe(true);
+    expect(parityRun.result).toMatchObject({
+      type: "done",
+      summary: "completed-within-module-timeout",
+    });
   });
 });

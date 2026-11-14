@@ -630,26 +630,27 @@ export async function runDirectWorkflow<TInput = unknown>(
     options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
   const executeAgent = options.runAgent ?? runDirectAgent;
 
-  let rootAllowance = preparedAllowance;
+  let rootAllowance = internal?.allowance;
   if (!rootAllowance && !options.signal?.aborted) {
     try {
-      rootAllowance = createWorkflowAllowance({
+      const created = createWorkflowAllowance({
         timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
         deadlineAt: options.deadlineAt,
         maxConcurrentCalls,
         now: rootStartedAt,
       });
+      rootAllowance = preparedAllowance
+        ? {
+            deadlineAt: created.deadlineAt,
+            ...(created.deadlineReason ? { deadlineReason: created.deadlineReason } : {}),
+            ...(created.maxConcurrentCalls !== undefined
+              ? { maxConcurrentCalls: created.maxConcurrentCalls }
+              : {}),
+            acquireCall: () => preparedAllowance.acquireCall(),
+          }
+        : created;
     } catch {
       // Pre-start deadline/timeout validation errors are surfaced cleanly by runWorkflowInvocation.
-    }
-  } else if (rootAllowance && targetModule.executionTimeoutMs !== undefined) {
-    const moduleDeadline = rootStartedAt + targetModule.executionTimeoutMs;
-    if (moduleDeadline < rootAllowance.deadlineAt) {
-      rootAllowance = {
-        ...rootAllowance,
-        deadlineAt: moduleDeadline,
-        deadlineReason: `Workflow "${targetModule.name}" timed out after ${targetModule.executionTimeoutMs}ms`,
-      };
     }
   }
 
