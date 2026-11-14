@@ -95,6 +95,66 @@ test("event persistence joins the caller transaction and can retry after its rol
   ).toEqual([{ delivery_status: "accepted" }]);
 });
 
+test("non-journaled conversation.updated wake is delivered only after stateTransaction commit and dropped on rollback with no events row", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-event-wake-tx-"));
+  roots.push(root);
+  const db = getDb(root);
+  const bus = new EventBus();
+  const writer = new DbWriter(root);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const subscribed: string[] = [];
+  const listened: string[] = [];
+  bus.subscribe((event) => {
+    if (event.type === "conversation.updated") subscribed.push(String((event as any).data?.conversationId));
+  });
+  bus.listen(
+    (event) => {
+      if (event.type === "conversation.updated") listened.push(String((event as any).data?.conversationId));
+    },
+    { label: "test-wake-listener", types: ["conversation.updated"] },
+  );
+
+  // 1. Rollback: neither subscriber nor listener receives the wake, and no events row is written.
+  expect(() =>
+    stateTransaction(db, () => {
+      bus.emit({
+        type: "conversation.updated",
+        source: "fixture",
+        owner: "app:sample",
+        data: { appId: "sample", conversationId: "rolled-back" },
+      });
+      expect(subscribed).toEqual([]);
+      expect(listened).toEqual([]);
+      throw new Error("rollback wake");
+    }),
+  ).toThrow("rollback wake");
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  expect(subscribed).toEqual([]);
+  expect(listened).toEqual([]);
+  expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'conversation.updated'").get()).toEqual({
+    count: 0,
+  });
+
+  // 2. Commit: neither subscriber nor listener sees the wake before commit; delivered once after commit, with 0 events rows.
+  stateTransaction(db, () => {
+    bus.emit({
+      type: "conversation.updated",
+      source: "fixture",
+      owner: "app:sample",
+      data: { appId: "sample", conversationId: "committed" },
+    });
+    expect(subscribed).toEqual([]);
+    expect(listened).toEqual([]);
+  });
+  expect(subscribed).toEqual(["committed"]);
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  expect(listened).toEqual(["committed"]);
+  expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'conversation.updated'").get()).toEqual({
+    count: 0,
+  });
+});
+
 test("input preparation fails before taking the Event writer slot", () => {
   const root = mkdtempSync(join(tmpdir(), "may-event-prepare-"));
   roots.push(root);

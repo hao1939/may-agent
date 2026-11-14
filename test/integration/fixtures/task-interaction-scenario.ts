@@ -131,7 +131,6 @@ async function conversation() {
   });
   const control = await attachControlSocket({
     socketPath,
-    getSessionId: () => "",
     getStatus: () => readExecutionStatus(f.persistDir),
     emitEvent: () => {},
     subscribeEvents: () => () => {},
