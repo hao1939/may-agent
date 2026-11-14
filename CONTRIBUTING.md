@@ -78,7 +78,7 @@ bun run test:changed
 It is a convenience, not merge proof: dynamic imports, subprocess fixtures, and
 served JavaScript may not be inferred. Run their owning tests explicitly.
 `test:components` selects `src/` and `packages/`; it includes real Git, worker,
-and build tests, not just unit tests. `test:unit` remains a compatibility alias.
+and build tests, not just unit tests.
 The complete `bun run ci` remains the PR gate. See [test coverage ownership](test/README.md).
 JUnit output is written separately for each shard: `--reporter-outfile=results.xml`
 produces `results.1.xml`, `results.2.xml`, etc., for nonempty shards. Inspect all
