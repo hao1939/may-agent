@@ -68,7 +68,6 @@ describe("HTTP human Task reads and board", () => {
     service = new HumanTaskService(db, registry);
     control = await attachControlSocket({
       socketPath: daemonSocketPath(root, { instance: "task-test", interfaceAgent: "helper" }),
-      getSessionId: () => "fixture",
       getStatus: () => activeStatus,
       emitEvent: () => {},
       subscribeEvents: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },

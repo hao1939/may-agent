@@ -54,7 +54,6 @@ describe("HTTP Task transcript and feedback transport", () => {
       agentName: "helper",
       instance: "task-session-test",
       conversationAppId: identity.appId,
-      getSessionId: () => "fixture",
       getStatus: () => [],
       emitEvent: () => {},
       subscribeEvents: () => () => {},

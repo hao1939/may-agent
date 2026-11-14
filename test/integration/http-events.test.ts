@@ -108,7 +108,7 @@ describe("HTTP event reads", () => {
     const publications: unknown[] = [];
     control = await attachControlSocket({
       socketPath: daemonSocketPath(root, { instance: "http-events", interfaceAgent: "helper" }),
-      agentName: "helper", getSessionId: () => "fixture", getStatus: () => [],
+      agentName: "helper", getStatus: () => [],
       emitEvent: () => {}, subscribeEvents: () => () => {},
       admitAppInput: (input) => {
         admissions.push(input);

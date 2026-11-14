@@ -76,9 +76,6 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
   const { socketPath, events, agentName, instance } = opts;
   return attachControlSocket({
     socketPath,
-    // The canonical daemon has no mutable current-session authority. Keep the
-    // legacy control-socket field empty; clients subscribe explicitly.
-    getSessionId: () => "",
     getStatus: opts.getStatus,
     getDiagnostics: () => ({ sql: readSqlPerformance() }),
     emitEvent: (event) => opts.publishOperatorEvent(operatorEventInput(event)),
