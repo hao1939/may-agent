@@ -424,16 +424,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     if (!store) throw new Error("Task execution requires canonical authority");
     assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "workflow start");
   };
-  const callAgent = (
-    agentName: string,
-    task: string,
-    callOptions: Parameters<SubagentManager["callAgent"]>[2],
-    definition = opts.agentDefinitions?.get(agentName),
-  ) => {
-    return definition
-      ? manager.callAgentDefinition(definition, task, callOptions)
-      : manager.callAgent(agentName, task, callOptions);
-  };
+  const hasStructuredAgentCatalog = Boolean(
+    opts.agentDefinitions || opts.taskContext?.agentDefinitions || typeof manager.agentNames === "function",
+  );
   const maxDepth = opts.maxDepth ?? 3;
   const resolveTrace = (): EventTrace | undefined => opts.callerTrace?.() ?? opts.trace;
   const emitRuntimeEvent = (event: { type: string; [key: string]: unknown }): void => {
@@ -489,10 +482,17 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     } as any);
   };
 
-  async function captureTargetCatalog(
+  type HostedCatalogState = PreparedCatalog<SubagentDefinition> & {
+    prompts: Map<string, { owner: string; definition: SubagentDefinition }>;
+    proceduresByOwner: Map<string, WorkflowCatalog["workflows"]>;
+    diagnostics: string[];
+    pendingImports: number;
+  };
+
+  function capturePromptCatalog(
     catalog: WorkflowCatalog,
     parentSessionId: string | undefined,
-  ): Promise<PreparedCatalog<SubagentDefinition>> {
+  ): HostedCatalogState {
     const definitions = opts.agentDefinitions ?? opts.taskContext?.agentDefinitions ?? new Map(
       (manager.agentNames?.() ?? []).flatMap((name) => {
         const definition = manager.getAgentDefinition(name, parentSessionId);
@@ -501,25 +501,22 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     );
     const projectId = opts.projectId ?? getCallerSessionMeta(parentSessionId).projectId ?? opts.taskBinding?.appId;
     const prompts = new Map<string, { owner: string; definition: SubagentDefinition }>();
-    const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>();
+    const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>([
+      [opts.agentName ?? "workflow", catalog.workflows],
+    ]);
     const diagnostics = [...catalog.diagnostics];
     for (const [name, definition] of definitions) {
       if (definition.appLocal && (!projectId || definition.projectId !== projectId)) continue;
       prompts.set(name, { owner: name, definition });
-      if (name === opts.agentName || !definition.agentDir) continue;
-      const procedures = await buildWorkflowCatalog(join(definition.agentDir, "workflows"));
-      proceduresByOwner.set(name, procedures.workflows);
-      diagnostics.push(...procedures.diagnostics);
     }
-    proceduresByOwner.set(opts.agentName ?? "workflow", catalog.workflows);
-    return { prompts, proceduresByOwner, diagnostics };
+    return { prompts, proceduresByOwner, diagnostics, pendingImports: 0 };
   }
 
   let activeSteeringQueue: string[] | null = null;
   let activeWorkflowName: string | null = null;
 
   async function executeWorkflow(
-    catalog: PreparedCatalog<SubagentDefinition>,
+    catalog: HostedCatalogState | WorkflowCatalog,
     workflow: WorkflowExecutableModule,
     task: string,
     depth: number,
@@ -535,6 +532,38 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     callerOwner = opts.agentName ?? "workflow",
   ): Promise<{ result: WorkflowResult; runId: string; steps: CompletedStep[] }> {
     if (depth > 1) assertWorkflowExecution();
+    const targetCatalog: HostedCatalogState =
+      "workflows" in catalog ? capturePromptCatalog(catalog, parentSessionId) : catalog;
+    let activeScopeSignal: AbortSignal | undefined;
+    const ensureOwnerProcedures = async (owner: string, signal: AbortSignal): Promise<void> => {
+      if (targetCatalog.proceduresByOwner.has(owner)) return;
+      const definition = targetCatalog.prompts.get(owner)?.definition;
+      if (!definition?.agentDir) return;
+      const procedures = await buildWorkflowCatalog(join(definition.agentDir, "workflows"), signal, {
+        onImportStart: () => {
+          targetCatalog.pendingImports += 1;
+        },
+        onImportSettled: () => {
+          targetCatalog.pendingImports -= 1;
+        },
+      });
+      signal.throwIfAborted();
+      targetCatalog.proceduresByOwner.set(owner, procedures.workflows);
+      for (const diag of procedures.diagnostics) {
+        if (!targetCatalog.diagnostics.includes(diag)) targetCatalog.diagnostics.push(diag);
+      }
+    };
+    const loadTargetOwnerProcedures = async (target: string, signal: AbortSignal): Promise<void> => {
+      const normalized = typeof target === "string" ? target.trim() : "";
+      if (!normalized) return;
+      const slash = normalized.indexOf("/");
+      if (slash !== -1) {
+        const owner = normalized.slice(0, slash).trim();
+        if (owner) await ensureOwnerProcedures(owner, signal);
+        return;
+      }
+      await ensureOwnerProcedures(callerOwner, signal);
+    };
     const localSteps: CompletedStep[] = [];
     const callerMeta = getCallerSessionMeta(parentSessionId);
     const effectiveProjectId = opts.projectId ?? callerMeta.projectId;
@@ -657,9 +686,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
         timeoutMs: declaredTimeoutMs,
         timeoutLimitMs: executionTimeoutLimitMs,
         allowance: inheritedAllowance,
-        resolveTargetKind: (target) => {
+        resolveTargetKind: async (target) => {
           try {
-            return resolveCallable(callerOwner, target, catalog).kind === "code" ? "workflow" : "agent";
+            if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
+            return resolveCallable(callerOwner, target, targetCatalog).kind === "code" ? "workflow" : "agent";
           } catch {
             return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
           }
@@ -726,6 +756,9 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           }
         },
         onCancelActive: cancelActiveStepSessions,
+        // An unfinished native import is not confirmed cleanup. Its eventual
+        // continuation checks the scope signal before publishing or executing.
+        confirmCleanup: () => targetCatalog.pendingImports === 0,
         callAgent: async (
           agentName: string,
           agentTask: string,
@@ -736,8 +769,12 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           const steering = steeringQueue.shift();
           if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
 
+          const definition = targetCatalog.prompts.get(agentName)?.definition;
+          if (hasStructuredAgentCatalog && !definition) {
+            throw new Error(`Prompt target "${agentName}" not found in the captured catalog`);
+          }
           onEvent?.({ type: "workflow.step_started", step: agentName });
-          let taskResult = await callAgent(agentName, agentTask, {
+          const stepCallOptions = {
             parentSessionId,
             source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
             workflowRunId: runId,
@@ -756,7 +793,10 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             outputSchema: stepOpts?.schema,
             toolPolicy: stepOpts?.tools,
             executionRoot: opts.executionPaths?.workspaceDir,
-          }, catalog.prompts?.get(agentName)?.definition);
+          };
+          let taskResult = definition
+            ? await manager.callAgentDefinition(definition, agentTask, stepCallOptions)
+            : await manager.callAgent(agentName, agentTask, stepCallOptions);
           let sid = taskResult.sessionId;
           stepControl.signal.throwIfAborted();
 
@@ -795,7 +835,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           if (depth + 1 > maxDepth) {
             throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
           }
-          const resolved = resolveCallable(callerOwner, wfName, catalog);
+          await loadTargetOwnerProcedures(wfName, stepControl.signal);
+          const resolved = resolveCallable(callerOwner, wfName, targetCatalog);
           if (resolved.kind !== "code") {
             throw new Error(`Callable target "${wfName}" is not a code procedure`);
           }
@@ -807,7 +848,7 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
             typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
           onEvent?.({ type: "workflow.started", workflow: subWorkflow.name, task: nestedTask });
           const sub = await executeWorkflow(
-            catalog,
+            targetCatalog,
             subWorkflow,
             nestedTask,
             depth + 1,
@@ -838,10 +879,27 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
           };
         },
       };
-      const outcome = await runWorkflowInvocation(workflow, {
+      const outcome = await runWorkflowInvocation({
+        ...workflow,
+        async execute(ctx) {
+          activeScopeSignal = ctx.signal;
+          ctx.signal.throwIfAborted();
+          return workflow.execute(ctx);
+        },
+      }, {
         ...bindings,
-        callTarget: (target, input, callOptions, stepControl) => {
-          const resolved = resolveCallable(callerOwner, target, catalog);
+        callTarget: async (target, input, callOptions, stepControl) => {
+          await loadTargetOwnerProcedures(target, stepControl.signal);
+          if (!hasStructuredAgentCatalog && typeof target === "string" && !target.includes("/")) {
+            if (targetCatalog.proceduresByOwner.get(callerOwner)?.has(target)) {
+              return bindings.runWorkflow(target, input, { ...stepControl, options: callOptions });
+            }
+            if (typeof input !== "string") {
+              throw new Error(`Prompt target "${target}" requires a string prompt input`);
+            }
+            return bindings.callAgent(target, input, callOptions, stepControl);
+          }
+          const resolved = resolveCallable(callerOwner, target, targetCatalog);
           if (resolved.kind === "code") {
             return bindings.runWorkflow(target, input, { ...stepControl, options: callOptions });
           }
@@ -972,9 +1030,8 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       activeSteeringQueue = steeringQueue;
       activeWorkflowName = workflow.name;
       onEvent?.({ type: "workflow.started", workflow: workflow.name, task });
-      const targetCatalog = await captureTargetCatalog(catalog, parentSessionId);
       const { result } = await executeWorkflow(
-        targetCatalog,
+        catalog,
         workflow,
         task,
         depth,
