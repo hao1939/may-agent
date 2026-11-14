@@ -488,6 +488,8 @@ export async function runWorkflowTest<TInput = unknown>(
       if (isExecutableModuleFixture(slot.mock.fixture)) return "workflow";
       const queuedKind = slot.mock.queue?.[0]?.kind;
       if (queuedKind) return queuedKind;
+      if (target.includes("/")) return "workflow";
+      return typeof fallbackInput === "string" ? "agent" : "workflow";
     }
     if (slot?.workflow) return "workflow";
     if (slot?.agent) return "agent";
