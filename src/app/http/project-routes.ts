@@ -416,31 +416,6 @@ export function createProjectRouteHandlers(options: {
     }
   }
 
-  function handleProjectArtifact(url: URL): Response {
-    const path = url.searchParams.get("path");
-    const file = url.searchParams.get("file");
-    if (!path) return json({ error: "path required" }, 400);
-    if (!file) return json({ error: "file required" }, 400);
-    if (path.endsWith(".md")) return json({ error: "artifact reads require a project directory path" }, 400);
-    if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
-    if (file.startsWith("/") || file.includes("\0") || file.split(/[\\/]+/).includes("..")) {
-      return json({ error: "invalid file path" }, 400);
-    }
-
-    const projectDir = resolveProjectDir(path);
-    const artifactPath = resolve(projectDir, file);
-    if (artifactPath !== projectDir && !artifactPath.startsWith(`${projectDir}/`)) {
-      return json({ error: "Access denied" }, 403);
-    }
-
-    try {
-      const content = readFileSync(artifactPath, "utf-8");
-      return json({ content });
-    } catch {
-      return json({ error: "Artifact not found" }, 404);
-    }
-  }
-
   function handleProjectDetail(url: URL): Response {
     const path = url.searchParams.get("path");
     if (!path) return json({ error: "path required" }, 400);
@@ -715,7 +690,6 @@ export function createProjectRouteHandlers(options: {
     readProjects,
     handleProjects,
     handleProjectContent,
-    handleProjectArtifact,
     handleProjectDetail,
     handleProjectSessions,
     handleProjectComment,

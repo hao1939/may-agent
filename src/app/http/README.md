@@ -10,8 +10,8 @@ steering verbs (`/api/sessions/:id`, `/transcript`, `/raw-log`, `/cancel`,
 `/message`), agent rollups and direct chat (`/api/agents`, `/about`,
 `/default-session`, `/message`), project metadata, static/UI serving, comments
 and actions (`/api/projects*`, `/projects*`), liveness/metric/knowledge reads
-and metric/alert actions (`/api/liveness`, `/api/metrics`, `/api/browse`,
-`/api/knowledge/search`, `/api/metrics/:id/threshold`, `/api/alerts/:id/resolve`),
+and alert actions (`/api/liveness`, `/api/metrics`, `/api/browse`,
+`/api/knowledge/search`, `/api/alerts/:id/resolve`),
 and event reads/ingress (`/api/events*`).
 
 `task-read-routes.ts` handles the related read endpoints:
