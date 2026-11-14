@@ -1767,6 +1767,25 @@ export async function execute(ctx) {
       },
     });
 
+    // 11b. run(target, { task, acceptance, constraints, verify }) auto-extracts the Task envelope from input:
+    const implicitTaskRun = await run(
+      "alpha-lead/task-reconcile-probe",
+      {
+        task: "Implicit task outcome",
+        acceptance: ["Single JSON payload"],
+        constraints: ["No --task flag needed"],
+        verify: ["bun", "test"],
+      },
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+      },
+    );
+    expect(implicitTaskRun.ok).toBe(true);
+    expect(implicitTaskRun.result?.summary).toBe(
+      'Implicit task outcome | Single JSON payload | ["No --task flag needed"] | alpha-lead:alpha-lead:Implicit task outcome',
+    );
+
     // 12. Default read.tasks.get uses the selected reconciliation snapshot, and conflicting task/reconciliation IDs are rejected:
     const taskA = {
       id: "task-a",

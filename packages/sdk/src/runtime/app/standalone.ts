@@ -1531,6 +1531,43 @@ export type StandaloneTaskInput = {
   input?: unknown;
 };
 
+function extractImplicitStandaloneTaskFromInput<TInput>(input: TInput): {
+  extractedTask?: StandaloneTaskInput;
+  cleanedInput: TInput;
+} {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return { cleanedInput: input };
+  }
+  const record = input as Record<string, unknown>;
+  if (!("verify" in record)) {
+    return { cleanedInput: input };
+  }
+  const rawOutcome =
+    typeof record.outcome === "string" && record.outcome.trim()
+      ? record.outcome
+      : typeof record.task === "string" && record.task.trim()
+        ? record.task
+        : undefined;
+  if (!rawOutcome) {
+    return { cleanedInput: input };
+  }
+  const {
+    task: _task,
+    outcome: _outcome,
+    acceptance: rawAcceptance,
+    constraints: rawConstraints,
+    ...rest
+  } = record;
+  return {
+    extractedTask: {
+      outcome: rawOutcome,
+      ...(rawAcceptance !== undefined ? { acceptance: rawAcceptance as string[] } : {}),
+      ...(rawConstraints !== undefined ? { constraints: rawConstraints as string[] } : {}),
+    },
+    cleanedInput: rest as TInput,
+  };
+}
+
 function normalizeStandaloneTaskDetail(
   task: TaskDetail | StandaloneTaskInput | undefined,
   fallbackInput: unknown,
@@ -1883,8 +1920,14 @@ export async function run<TInput = unknown>(
   });
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
-  const normalizedContextTask = normalizeStandaloneTaskDetail(options.context?.task, input);
-  const normalizedTopTask = normalizeStandaloneTaskDetail(options.task, input);
+  const hasExplicitTaskEnvelope = Boolean(
+    options.task || options.context?.task || options.reconciliation || options.context?.reconciliation,
+  );
+  const { extractedTask, cleanedInput } = hasExplicitTaskEnvelope
+    ? { extractedTask: undefined, cleanedInput: input }
+    : extractImplicitStandaloneTaskFromInput(input);
+  const normalizedContextTask = normalizeStandaloneTaskDetail(options.context?.task, cleanedInput);
+  const normalizedTopTask = normalizeStandaloneTaskDetail(options.task ?? extractedTask, cleanedInput);
   if (normalizedContextTask && normalizedTopTask && normalizedContextTask.id !== normalizedTopTask.id) {
     throw new Error(
       `Conflicting Task IDs in context.task ("${normalizedContextTask.id}") and task ("${normalizedTopTask.id}")`,
@@ -1902,7 +1945,7 @@ export async function run<TInput = unknown>(
       ...(options.context ? { context: { ...options.context, ...(normalizedContextTask ? { task: normalizedContextTask } : {}) } } : {}),
       task: normalizedTask,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
-      input,
+      input: cleanedInput,
       projectRoot,
       workRoot,
       agentsRoot,
