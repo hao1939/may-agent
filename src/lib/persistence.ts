@@ -25,11 +25,11 @@ import {
   type PersistedBashProcessGroups,
   type SessionKind,
   type TaskBinding,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 import { currentProcessInstance, isProcessInstanceAlive, type PersistedProcessInstance } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
-import { log } from "../../packages/sdk/src/runtime/index.js";
-import type { ToolPolicy } from "../../packages/sdk/src/runtime/index.js";
+import { log } from "@may-agent/sdk/runtime";
+import type { ToolPolicy } from "@may-agent/sdk/runtime";
 
 export {
   addSessionBashProcessGroup,

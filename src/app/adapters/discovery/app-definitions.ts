@@ -4,7 +4,7 @@ import {
   importRuntimeModule,
   invalidateRuntimeModuleCache,
   type RuntimeImportOptions,
-} from "../../../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 import type { AppDefinitionSource } from "../../core/apps/registry.js";
 
 export function listAppDefinitionFiles(

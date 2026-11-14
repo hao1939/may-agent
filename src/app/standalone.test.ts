@@ -22,7 +22,7 @@ import {
   runDirectWorkflow,
   runDirectWorkflow as runDirect,
   type DirectAgentRunResult,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 
 const roots: string[] = [];
 afterEach(() => {

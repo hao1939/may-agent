@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { SubagentManager } from "../../src/lib/manager.js";
-import type { SubagentDefinition } from "../../packages/sdk/src/runtime/index.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import type { Model } from "@earendil-works/pi-ai";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

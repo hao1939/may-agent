@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { createBashTool } from "../../packages/sdk/src/runtime/index.js";
+import { createBashTool } from "@may-agent/sdk/runtime";
 
 describe("createBashTool", () => {
   it("executes a simple command and returns output", async () => {

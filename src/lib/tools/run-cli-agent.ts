@@ -7,7 +7,7 @@ import {
   cliCallFacts,
   runCliAgent,
   type CliAgentOptions,
-} from "../../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 
 export { cliCallFacts };
 

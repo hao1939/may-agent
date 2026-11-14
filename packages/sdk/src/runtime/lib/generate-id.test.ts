@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { generateId } from "../../packages/sdk/src/runtime/index.js";
+import { generateId } from "@may-agent/sdk/runtime";
 
 describe("generateId()", () => {
   it("uses default prefix and custom prefix", () => {
@@ -12,7 +12,7 @@ describe("generateId()", () => {
 
   it("does not reuse session identities across fresh workers at the same millisecond", async () => {
     const script = `
-      import { generateId } from ${JSON.stringify(new URL("../../packages/sdk/src/runtime/index.ts", import.meta.url).href)};
+      import { generateId } from ${JSON.stringify(new URL("./manager-utils.ts", import.meta.url).href)};
       Date.now = () => 1788848558229;
       console.log(JSON.stringify(Array.from({ length: 4 }, () => generateId())));
     `;

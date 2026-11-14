@@ -11,7 +11,7 @@ import { stateTransaction } from "../../src/lib/db/transaction.js";
 import { createWorkflowDiagnostics } from "../../src/lib/workflow-diagnostics.js";
 import { createMetricService } from "../../src/lib/metrics.js";
 import { saveExecutionUsage } from "../../src/lib/db/execution-usage.js";
-import { createExecutionUsage } from "../../packages/sdk/src/runtime/index.js";
+import { createExecutionUsage } from "@may-agent/sdk/runtime";
 import { preparationFixture, observeReply, usageReply } from "../fixtures/execution-usage.js";
 
 const chrome = [

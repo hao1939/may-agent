@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { createBashTool } from "../../../packages/sdk/src/runtime/index.js";
+import { createBashTool } from "@may-agent/sdk/runtime";
 
 describe("bash tool PATH env", () => {
 	it("should make bun available without explicit PATH export", async () => {

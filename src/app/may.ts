@@ -13,7 +13,7 @@ import packageIdentity from "../../package.json" with { type: "json" };
 import { createIdentityWriter } from "./daemon.js";
 import { runEmitMode } from "./modes/emit.js";
 import { parseWebPort, runWebOnlyMode } from "./modes/web.js";
-import { createModelRegistry } from "../../packages/sdk/src/runtime/index.js";
+import { createModelRegistry } from "@may-agent/sdk/runtime";
 import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
 import { createAppReporting } from "./composition/reporting.js";

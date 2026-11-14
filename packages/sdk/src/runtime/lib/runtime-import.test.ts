@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 
-import { importRuntimeModule, invalidateRuntimeModuleCache } from "../../packages/sdk/src/runtime/index.js";
+import { importRuntimeModule, invalidateRuntimeModuleCache } from "@may-agent/sdk/runtime";
 
 describe("importRuntimeModule", () => {
   const roots: string[] = [];
@@ -123,7 +123,7 @@ describe("importRuntimeModule", () => {
     // directory when bundling again in the mixed test process (EISDIR).
     // Exercise the real bundler in a clean process, not a retry or mocked build.
     const { stdout } = await promisify(execFile)(process.execPath, [
-      new URL("../../test/fixtures/runtime-import-app.ts", import.meta.url).pathname,
+      new URL("../../../../../test/fixtures/runtime-import-app.ts", import.meta.url).pathname,
       modulePath, join(root, ".cache"),
     ], { timeout: 10_000 });
     expect(stdout.trim()).toBe("standalone-canary");

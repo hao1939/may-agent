@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { createWriteTool } from "../../../packages/sdk/src/runtime/index.js";
+import { createWriteTool } from "@may-agent/sdk/runtime";
 import { mkdirSync, readFileSync, rmSync, existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

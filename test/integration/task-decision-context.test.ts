@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { createAgentRun } from "../../packages/sdk/src/runtime/index.js";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { createTaskAgentRunner } from "../../src/app/adapters/executors/managed-agent.js";
 import { createTaskWorkflowRunner } from "../../src/app/adapters/executors/workflow.js";
 import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
@@ -23,7 +23,7 @@ import { runTaskAgent, runTaskWorkflow, runRegisteredTaskExecutor, runTaskExecut
 import { createRuntimeAppRead } from "../../src/app/core/reads/app-read.js";
 import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
-import { currentAgentSessionId } from "../../packages/sdk/src/runtime/index.js";
+import { currentAgentSessionId } from "@may-agent/sdk/runtime";
 import { fakeModel } from "../fixtures/model.js";
 import { usageReply } from "../fixtures/execution-usage.js";
 

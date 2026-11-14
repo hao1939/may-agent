@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { mkdtempSync } from "node:fs";
 import { SubagentManager } from "../../src/lib/manager.js";
-import type { SubagentDefinition } from "../../packages/sdk/src/runtime/index.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { fakeModel } from "../fixtures/model.js";
 
 function makeDef(overrides: Partial<SubagentDefinition> = {}): SubagentDefinition {

@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import { join } from "node:path";
 import { readJsonArtifact, writeJsonArtifact } from "./artifacts.js";
-import { log, type LogLevel } from "../../packages/sdk/src/runtime/index.js";
+import { log, type LogLevel } from "@may-agent/sdk/runtime";
 import { redactTranscriptSecrets } from "./persistence.js";
 
 // Small author logs, not transcripts. Stop writing at the bound rather than

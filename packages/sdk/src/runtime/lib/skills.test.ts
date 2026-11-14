@@ -8,7 +8,7 @@ import {
   invokeCatalogSkill,
   parseExplicitSkill,
   type SkillCatalog,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 
 const roots: string[] = [];
 

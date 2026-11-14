@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import type { SubagentManager } from "../lib/index.js";
-import { buildAgentDefinition, readFileWritePolicy } from "../../packages/sdk/src/runtime/index.js";
-import type { ModelWithApiKey } from "../../packages/sdk/src/runtime/index.js";
+import { buildAgentDefinition, readFileWritePolicy } from "@may-agent/sdk/runtime";
+import type { ModelWithApiKey } from "@may-agent/sdk/runtime";
 import { createCodexGoalExecutor } from "./adapters/executors/codex/codex-goal-executor.js";
 import type { AgentLoaderOptions } from "./agent-loader.js";
 import { getAgentSessionId, loadAgents } from "./agent-loader.js";
@@ -12,7 +12,7 @@ import type { EventBus } from "./core/events/bus.js";
 import type { HostCapacity } from "./core/scheduling/host-capacity.js";
 import { installAppTaskRuntimes } from "./core/tasks/app-task-runtime.js";
 import type { AppTaskRuntimeOptions } from "./core/tasks/runtime-options.js";
-import { loadAgentConfig, validateAgentConfig } from "../../packages/sdk/src/runtime/index.js";
+import { loadAgentConfig, validateAgentConfig } from "@may-agent/sdk/runtime";
 import { buildTools } from "./loader/toolset-loader.js";
 
 export async function prepareDaemonAgents(opts: {

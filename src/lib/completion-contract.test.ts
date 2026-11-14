@@ -9,7 +9,7 @@ import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { admitTaskReconcileResult, taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
 import type { TSchema } from "typebox";
 import { prepareAgentExecution } from "./agent-execution.js";
-import { createFinishTool } from "../../packages/sdk/src/runtime/index.js";
+import { createFinishTool } from "@may-agent/sdk/runtime";
 
 describe("prepared completion contract", () => {
   let projectRoot: string;

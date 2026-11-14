@@ -14,7 +14,7 @@ import {
   shouldRequestBoundedWorkflowFinish,
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 
 function abortedFinish(arguments_: unknown, id = "finish-captured") {
   return {

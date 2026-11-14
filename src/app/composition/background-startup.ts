@@ -1,4 +1,4 @@
-import { log } from "../../../packages/sdk/src/runtime/index.js";
+import { log } from "@may-agent/sdk/runtime";
 import type { SubagentManager } from "../../lib/manager.js";
 import type { AppArgs } from "../app-args.js";
 import type { EventBus } from "../core/events/bus.js";

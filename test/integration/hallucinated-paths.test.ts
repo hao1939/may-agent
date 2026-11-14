@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { createReadTool } from "../../packages/sdk/src/runtime/index.js";
+import { createReadTool } from "@may-agent/sdk/runtime";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";

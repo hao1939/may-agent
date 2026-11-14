@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EventBus } from "../core/events/bus.js";
-import type { AgentConfig } from "../../../packages/sdk/src/runtime/index.js";
+import type { AgentConfig } from "@may-agent/sdk/runtime";
 import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
 
 const roots: string[] = [];

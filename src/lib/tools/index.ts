@@ -1,4 +1,4 @@
-export * from "../../../packages/sdk/src/runtime/index.js";
+export * from "@may-agent/sdk/runtime";
 export * from "./run-cli-agent.js";
 export {
   DEFAULT_MAX_BYTES,

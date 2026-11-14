@@ -24,7 +24,7 @@ import {
   listConfiguredAgentNames,
   listProjectAgentDirectories,
   listRuntimeAgentDirectories,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 import {
   loadAgents as loadAgentsFromRegistry,
   prepareAgents as prepareAgentsFromRegistry,
@@ -35,7 +35,7 @@ import {
   type PreparedAgentGeneration,
 } from "./loader/agent-registry-loader.js";
 
-export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "../../packages/sdk/src/runtime/index.js";
+export { loadAgentConfig, validateAgentConfig, type AgentConfig, type ValidationError } from "@may-agent/sdk/runtime";
 export {
   listAgentDirectories,
   listConfiguredAgentNames,

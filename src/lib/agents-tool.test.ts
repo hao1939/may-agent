@@ -14,7 +14,7 @@ import { appendSessionMessage } from "./persistence.js";
 import { closeDb } from "./db/connection.js";
 import { upsertSession } from "./db/sessions.js";
 import { prepareAgentExecution } from "./agent-execution.js";
-import { createReadTool } from "../../packages/sdk/src/runtime/index.js";
+import { createReadTool } from "@may-agent/sdk/runtime";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 
 // ── Helpers ─────────────────────────────────────────────────────────────

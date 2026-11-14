@@ -11,7 +11,7 @@ import { observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
 import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../core/tasks/app-task-runtime.js";
 import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import type { TaskAgentRunner } from "../core/tasks/execution.js";
-import type { AgentConfig } from "../../../packages/sdk/src/runtime/index.js";
+import type { AgentConfig } from "@may-agent/sdk/runtime";
 import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
 
 test("one-App worker tools read exact registered peer Tasks without installing their execution runtimes", async () => {

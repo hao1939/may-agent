@@ -5,14 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createAssistantMessageEventStream, type AssistantMessage, type Model } from "@earendil-works/pi-ai";
-import { createAgentRun } from "../../packages/sdk/src/runtime/index.js";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { createRunCliAgentTool } from "./tools/run-cli-agent.js";
 import { SubagentManager } from "./manager.js";
 import { closeAllDbs, getDb } from "./db/connection.js";
 import { upsertSession } from "./db/sessions.js";
 import { readSessionBashProcessGroups } from "./persistence.js";
 import { EventBus } from "../app/core/events/bus.js";
-import { drainBashProcessGroup } from "../../packages/sdk/src/runtime/index.js";
+import { drainBashProcessGroup } from "@may-agent/sdk/runtime";
 
 const roots: string[] = [];
 const pids: number[] = [];

@@ -3,7 +3,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fakeModel } from "../../test/fixtures/model.js";
-import { createAgentRun } from "../../packages/sdk/src/runtime/index.js";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "../lib/manager.js";
 import { readSessionMeta } from "../lib/persistence.js";
 import { closeDb } from "../lib/db/connection.js";

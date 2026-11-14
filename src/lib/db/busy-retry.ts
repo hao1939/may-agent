@@ -1,5 +1,5 @@
 import { isTaskWorkerProcess } from "../task-worker-context.js";
-import { log } from "../../../packages/sdk/src/runtime/index.js";
+import { log } from "@may-agent/sdk/runtime";
 
 const SQLITE_BUSY_PATTERNS = [/database is locked/i, /SQLITE_BUSY/i];
 const WORKER_RETRY_DELAYS_MS = [250, 500, 1_000, 2_000];

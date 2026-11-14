@@ -16,8 +16,8 @@ export {
   formatBoundedSkillCatalog,
   invokeCatalogSkill,
   parseExplicitSkill,
-} from "../../packages/sdk/src/runtime/index.js";
-export type { ErrorClass, KeyFacts, MaySkill, MaySkillScope, SkillCatalog } from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
+export type { ErrorClass, KeyFacts, MaySkill, MaySkillScope, SkillCatalog } from "@may-agent/sdk/runtime";
 export {
   RegistryStore,
   appendSessionMessage,
@@ -82,7 +82,7 @@ export type { InstanceIdentity } from "./instance-identity.js";
 export type { PersistedSession, SessionKind } from "./persistence.js";
 export { sendSocketCommand, waitForSocketEvent } from "@may-agent/control/client";
 export type { SocketEvent, SocketResponse } from "@may-agent/control/client";
-export type { ModelWithApiKey, SessionInfo, SubagentDefinition, TaskResult } from "../../packages/sdk/src/runtime/index.js";
+export type { ModelWithApiKey, SessionInfo, SubagentDefinition, TaskResult } from "@may-agent/sdk/runtime";
 
 export {
   getExecutionResultFromDb,

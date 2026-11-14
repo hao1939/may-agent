@@ -10,8 +10,8 @@ import {
   validateAgentConfig,
   type AgentConfig,
 } from "../../src/app/agent-loader.js";
-import { createModelRegistry } from "../../packages/sdk/src/runtime/index.js";
-import { VALID_TOOL_PRESETS } from "../../packages/sdk/src/runtime/index.js";
+import { createModelRegistry } from "@may-agent/sdk/runtime";
+import { VALID_TOOL_PRESETS } from "@may-agent/sdk/runtime";
 
 // Installed catalog policy belongs to the separate deployment check. Portable
 // loader behavior below is exercised with generated temporary fixtures.

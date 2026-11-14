@@ -11,7 +11,7 @@ import {
   drainPersistedSessionBashProcessGroups,
   drainSessionBashProcessGroups,
   processGroupContainsLiveMember,
-} from "../../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 
 const fixtures: string[] = [];
 

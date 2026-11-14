@@ -8,10 +8,10 @@ import {
    currentAgentSessionId,
   loadAgentLocalTools,
   type FileWritePolicy,
-} from "../../../packages/sdk/src/runtime/index.js";
-import { createFinishTool } from "../../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
+import { createFinishTool } from "@may-agent/sdk/runtime";
 import { createQueryDbTool } from "../../lib/tools/query-db.js";
-import { createReadTool } from "../../../packages/sdk/src/runtime/index.js";
+import { createReadTool } from "@may-agent/sdk/runtime";
 import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
@@ -20,7 +20,7 @@ import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
 import { getLoadedAppInputContract } from "../core/tasks/app-task-runtime.js";
-import type { AgentConfig } from "../../../packages/sdk/src/runtime/index.js";
+import type { AgentConfig } from "@may-agent/sdk/runtime";
 
 export interface ToolsetLoaderOptions {
   appRegistry?: AppRegistry;

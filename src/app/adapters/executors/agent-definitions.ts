@@ -1,5 +1,5 @@
 import type { SubagentManager } from "../../../lib/index.js";
-import type { SubagentDefinition } from "../../../../packages/sdk/src/runtime/index.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 
 export function captureAgentDefinitions(input: SubagentManager): ReadonlyMap<string, SubagentDefinition> | undefined {
   const manager = input as SubagentManager & {

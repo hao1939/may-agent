@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
-import type { SubagentDefinition } from "../../packages/sdk/src/runtime/index.js";
+import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 
 function context(root: string, appId = "example", attemptId = "attempt-1"): TaskExecutionContext {
   return {

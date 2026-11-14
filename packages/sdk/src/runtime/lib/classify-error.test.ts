@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { classifyError } from "../../packages/sdk/src/runtime/index.js";
+import { classifyError } from "@may-agent/sdk/runtime";
 
 describe("classifyError", () => {
   // ── Null / undefined / empty ──────────────────────────────────────

@@ -8,7 +8,7 @@ import {
   trimAccumulatedSummary,
   type CompactionInfo,
   type KeyFacts,
-} from "../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import { getCurrentSystemPrompt, getCurrentTools, type Model } from "@earendil-works/pi-ai";
 

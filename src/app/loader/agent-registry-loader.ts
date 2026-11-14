@@ -7,11 +7,11 @@ import {
   buildAgentDefinition,
   listRuntimeAgentDirectories,
   readFileWritePolicy,
-} from "../../../packages/sdk/src/runtime/index.js";
-import type { ModelWithApiKey, SubagentDefinition } from "../../../packages/sdk/src/runtime/index.js";
+} from "@may-agent/sdk/runtime";
+import type { ModelWithApiKey, SubagentDefinition } from "@may-agent/sdk/runtime";
 import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
-import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "../../../packages/sdk/src/runtime/index.js";
+import { readAgentConfigFile, validateAgentConfig, type AgentConfig, type ValidationError } from "@may-agent/sdk/runtime";
 import { buildTools } from "./toolset-loader.js";
 
 export interface AgentLoaderOptions {
