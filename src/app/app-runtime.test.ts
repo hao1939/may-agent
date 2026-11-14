@@ -9,8 +9,8 @@ describe("app runtime startup", () => {
   it.each([
     "headless",
     "tty",
+    "non-tty-console-only",
     "no-schedules",
-    "startup-job",
     "activation-failure",
     "reporting-failure",
     "no-interfaces",

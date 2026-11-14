@@ -1,7 +1,4 @@
 import { describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { parseAppArgs } from "./app-args.js";
 
 describe("app args", () => {
@@ -14,24 +11,8 @@ describe("app args", () => {
       .toThrow("requires CONVERSATION_APP");
   });
 
-  it.each([["--agent"], ["--agent", "--send"], ["--agent="], ["--agent", " "]])("rejects missing agent values: %j", (...flags) => {
+  it.each([["--agent"], ["--agent", "--web"], ["--agent="], ["--agent", " "]])("rejects missing agent values: %j", (...flags) => {
     expect(() => parseAppArgs(["may-agent", ...flags], {})).toThrow("--agent requires an agent name");
-  });
-
-  it("parses agent selection and task-file content", () => {
-    const root = mkdtempSync(join(tmpdir(), "app-args-"));
-    try {
-      const taskFile = join(root, "task.txt");
-      writeFileSync(taskFile, "do the work\n");
-
-      const args = parseAppArgs(["may-agent", "--agent", "scout", "--task-file", taskFile], {});
-
-      expect(args.humanInterface.agent).toBe("scout");
-      expect(args.initialTask).toBe("do the work");
-      expect(args.webOnlyMode).toBe(false);
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
   });
 
   it("uses conventional env defaults and detects web-only mode", () => {
@@ -63,12 +44,6 @@ describe("app args", () => {
     expect(args.humanInterface.agent).toBe("aks-explorer");
   });
 
-  it("throws a clear error when task-file is missing", () => {
-    expect(() => parseAppArgs(["may-agent", "--task-file", "/tmp/no-such-task-file"], {})).toThrow(
-      "Task file not found: /tmp/no-such-task-file",
-    );
-  });
-
   it("parses the private one-attempt worker payload", () => {
     const payload = JSON.stringify({ appId: "sample", taskId: "work/one" });
     const args = parseAppArgs(["may-agent", "--task-worker-once", payload], {});
@@ -98,9 +73,13 @@ describe("app args", () => {
   });
 
   it.each([
-    [["--run-workflow", "probe", "--dry-run", "--cron"]],
-    [["--run-workflow=probe", "--cron"]],
-  ] as const)("rejects retired --run-workflow CLI flag before background startup: %j", (flags) => {
-    expect(() => parseAppArgs(["bun", "may", ...flags], {})).toThrow("--run-workflow has been retired");
+    [["--run-workflow", "probe", "--dry-run", "--cron"], "--run-workflow has been retired"],
+    [["--run-workflow=probe", "--cron"], "--run-workflow has been retired"],
+    [["--socket", "--oneshot", "--task", "work"], "--oneshot has been retired"],
+    [["--web", "--task", "work"], "--task has been retired"],
+    [["--cron", "--task-file", "/tmp/work.txt"], "--task-file has been retired"],
+    [["--socket", "--send", "may", "--message", "hi"], "--send has been retired"],
+  ] as const)("rejects retired CLI flags before background startup: %j", (flags, expectedMessage) => {
+    expect(() => parseAppArgs(["bun", "may", ...flags], {})).toThrow(expectedMessage);
   });
 });

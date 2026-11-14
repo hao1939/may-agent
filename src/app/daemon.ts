@@ -7,4 +7,3 @@ export {
   type InstanceIdentity,
 } from "./daemon-lifecycle.js";
 export { runDaemonKeepalive, runInteractiveLoop } from "./daemon-loops.js";
-export { startInitialTask } from "./daemon-task-startup.js";

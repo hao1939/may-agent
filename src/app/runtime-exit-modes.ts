@@ -1,9 +1,5 @@
-import type { SubagentManager } from "../lib/index.js";
 import type { AppArgs } from "./app-args.js";
-import { formatDurationMs } from "./daemon.js";
-import type { EventBus } from "./core/events/bus.js";
-import { runMessageMode, runStatusMode } from "./modes/command.js";
-import { runOneshotMode } from "./modes/oneshot.js";
+import { runStatusMode } from "./modes/command.js";
 
 /**
  * Run client-only control modes before daemon lifecycle ownership is created.
@@ -13,15 +9,10 @@ import { runOneshotMode } from "./modes/oneshot.js";
 export async function runRequestedControlExitMode(opts: {
   appArgs: AppArgs;
   persistDir: string;
-  socketPath: string;
 }): Promise<number | null> {
   if (opts.appArgs.statusMode) {
     await runStatusMode({ persistDir: opts.persistDir, notify: opts.appArgs.notify });
     return 0;
-  }
-
-  if (opts.appArgs.messageMode) {
-    return runMessageMode({ argv: process.argv, socketPath: opts.socketPath, interface: opts.appArgs.humanInterface });
   }
 
   return null;
@@ -29,21 +20,10 @@ export async function runRequestedControlExitMode(opts: {
 
 export async function runRequestedExitMode(opts: {
   appArgs: AppArgs;
-  agentsRoot: string;
-  sharedRoot: string;
-  projectsRoot: string;
-  projectRoot: string;
-  persistDir: string;
-  bus: EventBus;
-  manager: SubagentManager;
 }): Promise<void> {
   const {
     consoleEnabled,
     cronEnabled,
-    initialTask,
-    humanInterface,
-    oneshotMode,
-    oneshotTimeoutMinutes,
     socketEnabled,
     telegramEnabled,
     webEnabled,
@@ -51,32 +31,14 @@ export async function runRequestedExitMode(opts: {
 
   if (
     !consoleEnabled &&
-    !initialTask &&
     !cronEnabled &&
-    !oneshotMode &&
     !webEnabled &&
     !socketEnabled &&
     !telegramEnabled
   ) {
     console.error(
-      "Error: need --chat, --task, --oneshot, --status, --message, --emit, --web, --socket, --telegram, or --cron.",
+      "Error: need --chat, --status, --emit, --web, --socket, --telegram, or --cron.",
     );
     process.exit(1);
-  }
-
-  if (oneshotMode) {
-    try {
-      const exitCode = await runOneshotMode({
-        task: initialTask,
-        agentName: humanInterface.agent,
-        manager: opts.manager,
-        timeoutMinutes: oneshotTimeoutMinutes,
-        formatDurationMs,
-      });
-      process.exit(exitCode);
-    } catch (err) {
-      console.error(err instanceof Error ? err.message : String(err));
-      process.exit(1);
-    }
   }
 }
