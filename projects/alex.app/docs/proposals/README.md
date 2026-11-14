@@ -43,6 +43,7 @@ Prompt/checker cleanup is already assigned elsewhere.
 
 | Record | Current status and remaining scope |
 | --- | --- |
+| [Event and control plane simplification](control-socket-simplification.md) | Proposal: one event facade, explicit durable admission and bounded live observation, then Unix HTTP/SSE; typed reads remain. Pair retirement and history replay need separate consumer evidence. |
 | [Teaching agents](agent-behavior-and-capability-extension.md) | Use existing instructions/skills/workflows; the remaining question is one discover-author-activate-fresh-use path with useful outcomes, not a new trainer. |
 | [App author usability](app-environment-review-20260928.md) | Choose one concrete author/worker discovery failure and compare the smallest correction. Avoid another capability inventory. |
 | [Current gaps and historical leads](design-implementation-convergence.md) | Host #456 closed freshness-by-event-name. Other September rows are historical leads requiring reproduction, not confirmed current defects. |
