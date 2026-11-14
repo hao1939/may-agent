@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/app/standalone.js";
+export * from "../../packages/sdk/src/runtime/index.js";

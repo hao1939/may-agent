@@ -1,7 +1,32 @@
 import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk";
 import type { TaskResult } from "./types.js";
-import type { WorkflowToolResult } from "./workflow.js";
-import { cliCallFacts } from "./tools/run-cli-agent.js";
+import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import type { CliCallFacts } from "@may-agent/sdk";
+
+export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCallFacts[] {
+  const calls = new Map<string, CliCallFacts>();
+  for (const message of messages) {
+    if (message.role !== "toolResult" || message.toolName !== "run_cli_agent") continue;
+    const call = (message.details as { cliCall?: CliCallFacts } | undefined)?.cliCall;
+    if (!call || call.sessionId !== sessionId || call.toolCallId !== message.toolCallId) continue;
+    if (!call.taskId || (call.tool !== "codex" && call.tool !== "claude")) continue;
+    if (call.status !== "completed" && call.status !== "failed") continue;
+    if (!call.resultPath || !call.structuredResultPath || !call.eventsPath) continue;
+    calls.set(call.taskId, call);
+  }
+  return [...calls.values()].slice(-64);
+}
+
+export type WorkflowToolResult = (
+  | { type: "done"; summary: string; output?: unknown; facts?: unknown }
+  | { type: "blocked"; reason: string; context?: unknown; output?: unknown; facts?: unknown }
+  | { type: "error"; error: string; partialContext?: string; output?: unknown; facts?: unknown }
+  | { type: "interrupted"; steeringMessage: string; output?: unknown; facts?: unknown }
+  | { type: "list"; workflows: { name: string; description: string; inputSchema?: Record<string, unknown> }[] }
+) & {
+  workflowRunId?: string;
+  sessionIds?: string[];
+};
 
 /** Enforce required finish() and optional schema-backed result payload on workflow prompt steps. */
 export function enforceStructuredWorkflowResult(result: TaskResult, expectsPayload: boolean): TaskResult {

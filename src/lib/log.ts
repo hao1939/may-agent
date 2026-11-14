@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/lib/log.js";
+export * from "../../packages/sdk/src/runtime/index.js";

@@ -129,3 +129,41 @@ it("keeps executor value imports out of lifecycle mutation modules while allowin
     expect(testResult.messages).toEqual([]);
   }
 });
+
+it("enforces the SDK <-> Host runtime barrel across specialized ESLint rule paths", async () => {
+  const eslint = new ESLint({ cwd: fileURLToPath(new URL("../", import.meta.url)) });
+  for (const [filePath, prefix] of [
+    ["src/lib/agent-execution.ts", "../../"],
+    ["src/app/app-runtime.ts", "../../"],
+    ["src/app/agent-loader.ts", "../../"],
+    ["src/app/loader/agent-definition.ts", "../../../"],
+    ["src/app/core/tasks/controller.ts", "../../../../"],
+    ["src/app/adapters/executors/managed-agent.ts", "../../../../"],
+    ["src/app/transport/telegram.ts", "../../../"],
+    ["src/app/transport/socket.ts", "../../../"],
+  ] as const) {
+    const source = [
+      `import { run } from "${prefix}packages/sdk/src/runtime/app/standalone.js"; void run;`,
+      `import { log } from "${prefix}packages/sdk/src/runtime/lib/log.js"; void log;`,
+      `import { createModelRegistry } from "${prefix}packages/sdk/src/runtime/index.js"; void createModelRegistry;`,
+    ].join("\n");
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(result.messages.map(({ ruleId, line }) => [ruleId, line])).toEqual([
+      ["no-restricted-imports", 1],
+      ["no-restricted-imports", 2],
+    ]);
+  }
+
+  const sdkExecSource = [
+    'import { getDb } from "../../../../src/lib/db/connection.js"; void getDb;',
+    'import { createTaskDecisionContext } from "../../../../src/lib/task-decision-context.js"; void createTaskDecisionContext;',
+    'import { log } from "./log.js"; void log;',
+  ].join("\n");
+  const [sdkResult] = await eslint.lintText(sdkExecSource, {
+    filePath: "packages/sdk/src/runtime/lib/agent-execution.ts",
+  });
+  expect(sdkResult.messages.map(({ ruleId, line }) => [ruleId, line])).toEqual([
+    ["no-restricted-imports", 1],
+    ["no-restricted-imports", 2],
+  ]);
+});

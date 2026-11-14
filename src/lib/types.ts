@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/lib/types.js";
+export * from "../../packages/sdk/src/runtime/index.js";

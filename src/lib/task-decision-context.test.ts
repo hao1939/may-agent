@@ -12,7 +12,7 @@ import { createFinishTool } from "./tools/lifecycle.js";
 import { createAgentRun, restoreAgentMessages } from "./agent-runner.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareAgentExecution } from "./agent-execution.js";
-import type { TaskExecutionContext } from "./task-execution-context.js";
+import { liveTaskEventMessage, observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { workloadObservation } from "../../test/fixtures/task-workload.js";
 
@@ -792,4 +792,41 @@ test("missing, failed or mismatched creator discovery remains unavailable withou
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("liveTaskEventMessage and observeTaskFeedback preserve both flat and enveloped event payloads", () => {
+  const flatMsg = liveTaskEventMessage({
+    [Symbol.for("may-agent.eventRowId")]: 42,
+    type: "task.feedback",
+    instruction: "revise the answer",
+    target: { taskId: "t_1" },
+  });
+  expect(flatMsg).toContain('"eventId":42');
+  expect(flatMsg).toContain('"instruction":"revise the answer"');
+
+  const envelopedMsg = liveTaskEventMessage({
+    id: 43,
+    type: "task.feedback",
+    data: { instruction: "enveloped correction" },
+  });
+  expect(envelopedMsg).toContain('"eventId":43');
+  expect(envelopedMsg).toContain('"instruction":"enveloped correction"');
+
+  const seenFeedback: Array<{ msg: string; trace: unknown }> = [];
+  observeTaskFeedback(
+    {
+      observeEvents: (cb) => {
+        cb({
+          [Symbol.for("may-agent.eventRowId")]: 44,
+          type: "task.feedback",
+          instruction: "flat callback payload",
+        } as any);
+        return () => {};
+      },
+    },
+    (msg, trace) => seenFeedback.push({ msg, trace }),
+  );
+  expect(seenFeedback).toHaveLength(1);
+  expect(seenFeedback[0]?.msg).toContain('"instruction":"flat callback payload"');
+  expect(seenFeedback[0]?.trace).toEqual({ traceId: "event:44", parentEventId: 44 });
 });

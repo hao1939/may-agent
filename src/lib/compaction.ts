@@ -1,1 +1,1 @@
-export * from "../../packages/sdk/src/runtime/lib/compaction.js";
+export * from "../../packages/sdk/src/runtime/index.js";

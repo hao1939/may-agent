@@ -1,1 +1,1 @@
-export * from "../../../packages/sdk/src/runtime/app/loader/agent-local-tools.js";
+export * from "../../../packages/sdk/src/runtime/index.js";

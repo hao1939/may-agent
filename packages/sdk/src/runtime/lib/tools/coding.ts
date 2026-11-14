@@ -1,5 +1,5 @@
 import { type TSchema } from "typebox";
-import type { FileWritePolicy } from "./file-write-policy.js";
+import type { FileWritePolicy } from "./path-utils.js";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
 import { createReadTool } from "./read.js";

@@ -1,1 +1,1 @@
-export * from "../../../packages/sdk/src/runtime/lib/tools/coding.js";
+export * from "../../../packages/sdk/src/runtime/index.js";
