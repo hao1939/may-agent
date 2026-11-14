@@ -23,9 +23,15 @@ test("chat observations refresh as data while standing instructions remain stabl
       projectRoot: root,
       sessionId: "chat-1",
       task: "Review the proposal",
-      persistentChat: true,
+      enableCompaction: true,
       promptTimestamp: "2026-07-20T00:00:00.000Z",
-      chatContext: () => observation,
+      contextMessages: () => [
+        {
+          role: "user",
+          content: [{ type: "text", text: `Current observations (source data):\n${observation}` }],
+          timestamp: Date.now(),
+        },
+      ],
     });
     const agent = createAgentRun({
       ...prepared.runner,

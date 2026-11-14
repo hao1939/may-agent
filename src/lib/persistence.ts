@@ -29,7 +29,9 @@ import {
 import { currentProcessInstance, isProcessInstanceAlive, type PersistedProcessInstance } from "./process-identity.js";
 // DB writes removed from RegistryStore — handled by DbWriter subscriber via EventBus.
 import { log } from "@may-agent/sdk/runtime";
-import type { ToolPolicy } from "@may-agent/sdk/runtime";
+import type { ToolPolicy } from "./agent-execution.js";
+
+export type { ToolPolicy } from "./agent-execution.js";
 
 export {
   addSessionBashProcessGroup,

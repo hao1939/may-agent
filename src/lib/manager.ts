@@ -18,7 +18,7 @@ import { drainSessionBashProcessGroups } from "@may-agent/sdk/runtime";
  */
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { bindToolsToExecutionScope, prepareAgentExecution } from "./agent-execution.js";
+import { bindToolsToExecutionScope, prepareAgentExecution, type ToolPolicy } from "./agent-execution.js";
 import {
   ExecutionScope,
   ExecutionWorkEnded,
@@ -34,7 +34,6 @@ import {
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
   type MaySkill,
-  type ToolPolicy,
 } from "@may-agent/sdk/runtime";
 import { createAgentRun, type AgentRun } from "@may-agent/sdk/runtime";
 import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from "./db/execution-usage.js";

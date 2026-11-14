@@ -1,4 +1,4 @@
-import { Type, type TSchema } from "typebox";
+import type { TSchema } from "typebox";
 import {
   Agent,
   type AgentMessage,
@@ -382,28 +382,6 @@ import {
   isRetryableEmptyAssistantFailure,
 } from "./manager-utils.js";
 import executionInstructions from "./execution-instructions.md" with { type: "text" };
-const READ_ACTIONS = ["list", "created", "workload", "outcomes", "get", "contract", "communication"] as const;
-const allowed = new Set<string>(READ_ACTIONS);
-
-/** Narrow this execution's built-in Task capability without mutating the shared definition. */
-export function readOnlyTaskTool(tool: AgentTool): AgentTool {
-  const parameters = tool.parameters as TSchema & { properties: Record<string, TSchema> };
-  return {
-    ...tool,
-    description: "Read scoped Task lists, workloads, accepted outcomes, exact assignments, App contracts and current communication. This read-only execution can return recommendations; publishing facts, applying changes, revision and closure require an authorized writing execution.",
-    parameters: {
-      ...parameters,
-      properties: { ...parameters.properties, action: Type.Union(READ_ACTIONS.map(action => Type.Literal(action))) },
-    },
-    execute: async (...args) => {
-      const input = args[1];
-      if (!input || typeof input !== "object" || !allowed.has((input as { action?: string }).action ?? ""))
-        return { content: [{ type: "text", text: JSON.stringify({ error: "Read-only Task capability does not allow this action" }) }], details: undefined };
-      return tool.execute(...args);
-    },
-  };
-}
-
 export const WORKFLOW_BOUNDED_FINISH_TOOL_CALL_THRESHOLD = 24;
 export const WORKFLOW_BOUNDED_FINISH_DEFAULT_WINDOW_MS = 300_000;
 export const RESPONSES_STREAM_TERMINAL_ERROR = "OpenAI Responses stream ended before a terminal response event";
@@ -568,21 +546,8 @@ export async function recoverCapturedWorkflowFinish(options: {
   }
 }
 
-/** Runtime capability profile persisted with a session so recovery cannot broaden its tools. */
-export type ToolPolicy =
-  | "full"
-  /** Retained-session restriction; feedback no longer selects this policy. */
-  | "full-no-tasks"
-  | "readonly"
-  /** @deprecated Retained-session restriction; do not select for new Conversation work. */
-  | "deputy"
-  | "app-agent-full"
-  /** @deprecated Retained-session restriction; do not select for new Conversation work. */
-  | "app-agent-deputy"
-  /** @deprecated Compatibility with retained session metadata. */
-  | "app-owner-full"
-  /** @deprecated Compatibility with retained session metadata. */
-  | "app-owner-deputy";
+/** Generic runtime capability profile. Environment-specific profiles belong in their adapter. */
+export type ToolPolicy = "full" | "readonly";
 
 import { AsyncLocalStorage } from "node:async_hooks";
 
@@ -955,31 +920,7 @@ export function createExecutionUsage(preparation: PreparationMeasurement) {
   };
 }
 
-const CHAT_TOOL_DENYLIST = new Set([
-  "bash",
-  "background_exec",
-  "cron",
-  "edit",
-  "finish",
-  "write",
-]);
-
 const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "tasks"]);
-
-const DEPUTY_TOOL_ALLOWLIST = new Set([
-  "agents",
-  "conversation_context",
-  "finish",
-  "query_db",
-  "read",
-  "run_cli_agent",
-  "tasks",
-]);
-
-// An App owner must return durable ownership changes through its fenced
-// disposition. These tools create asynchronous work or lifecycle state
-// outside that admission boundary and belong only to compatibility sessions.
-const APP_OWNER_TOOL_DENYLIST = new Set(["background_exec", "cron", "message"]);
 
 const SEQUENTIAL_TOOL_NAMES = new Set([
   "agents",
@@ -1103,14 +1044,18 @@ export type AgentPreparationOptions = {
   projectRoot: string;
   sessionId: string;
   task: string;
-  /** Optional Host rendering; explicit App context preparation still receives the original task. */
+  /** Optional environment rendering; explicit context preparation still receives the original task. */
   contextPrompt?: string;
-  taskContext?: {
-    executionPaths?: { appDir: string; projectDir: string; workspaceDir: string };
-  };
-  /** Optional Host-supplied Task decision context packet generator. */
-  taskDecisionContext?: () => Promise<AgentMessage>;
-  persistentChat?: boolean;
+  /** Source tree represented by executionRoot; null explicitly disables source mapping. */
+  sourceRoot?: string | null;
+  /** Fresh disposable messages appended to the provider view after compaction. */
+  contextMessages?: () => AgentMessage[] | Promise<AgentMessage[]>;
+  /** Enable transcript compaction in addition to the registered definition policy. */
+  enableCompaction?: boolean;
+  /** Override the preparation measurement label. */
+  preparerLabel?: string;
+  /** Additional environment-authored instructions appended to the system prompt. */
+  systemPromptSuffix?: string;
   skill?: string;
   /** Interpret a leading $skill command; false keeps delegated task text literal. */
   parseSkillCommand?: boolean;
@@ -1122,9 +1067,7 @@ export type AgentPreparationOptions = {
   /** Override the registered agent's filesystem tools for this execution only. */
   executionRoot?: string;
   promptTimestamp?: string;
-  /** Current observations, projected as data before each model request. */
-  chatContext?: () => string;
-  /** Host-authored execution facts/guidance; never caller task text or source content. */
+  /** Environment-authored execution facts/guidance; never caller task text or source content. */
   executionContext?: string;
   createFinish?: () => AgentTool;
   /** Exact durable owner for local bash setsid process groups. */
@@ -1140,12 +1083,11 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   const agentName = options.definition.name;
   let fileWritePolicy = options.definition.fileWritePolicy;
   if (fileWritePolicy && root) {
-    const paths = options.taskContext?.executionPaths;
-    // A cwd alone says nothing about checkout layout. Task workspaces mirror
-    // their project; ordinary App-local execution needs no path translation.
     let execution = fileWritePolicy.execution;
-    if (paths && resolve(paths.workspaceDir) === resolve(root)) {
-      execution = resolve(paths.appDir) === resolve(root) ? undefined : { root, sourceRoot: paths.projectDir };
+    if (options.sourceRoot === null) {
+      execution = undefined;
+    } else if (typeof options.sourceRoot === "string") {
+      execution = { root, sourceRoot: options.sourceRoot };
     } else if (execution && resolve(execution.root) !== resolve(root)) {
       execution = undefined;
     }
@@ -1248,28 +1190,9 @@ function runtimeEnvironment(
 
 function resolveTools(options: AgentPreparationOptions, requireFinish: boolean): AgentTool[] {
   const { definition } = options;
-  let tools = options.persistentChat
-    ? definition.tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name))
-    : definition.tools;
-  if (options.toolPolicy === "full-no-tasks") {
-    tools = tools.filter((tool) => tool.name !== "tasks");
-  } else if (options.toolPolicy === "readonly") {
-    tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name))
-      .map((tool) => tool.name === "tasks" ? readOnlyTaskTool(tool) : tool);
-  } else if (
-    options.toolPolicy === "deputy" ||
-    options.toolPolicy === "app-agent-deputy" ||
-    options.toolPolicy === "app-owner-deputy"
-  ) {
-    tools = tools.filter((tool) => DEPUTY_TOOL_ALLOWLIST.has(tool.name));
-  }
-  if (
-    options.toolPolicy === "app-agent-full" ||
-    options.toolPolicy === "app-agent-deputy" ||
-    options.toolPolicy === "app-owner-full" ||
-    options.toolPolicy === "app-owner-deputy"
-  ) {
-    tools = tools.filter((tool) => !APP_OWNER_TOOL_DENYLIST.has(tool.name));
+  let tools = definition.tools;
+  if (options.toolPolicy === "readonly") {
+    tools = tools.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
   }
   if (!requireFinish) {
     assertUniqueToolNames(
@@ -1369,9 +1292,6 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
       : "Use the standard finish() fields; no caller-defined result payload is required.";
     base += `\n\n<completion>\nComplete this invocation by calling finish() as your final action. ${resultInstruction} Correct any rejected result before finishing.\n</completion>`;
   }
-  if (options.persistentChat) {
-    base += "\n\nThis is a persistent conversation. Answer the current input and leave the conversation open for later messages.";
-  }
   return base;
 }
 
@@ -1385,12 +1305,10 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   const started = performance.now();
   const source = options.definition.contextPreparationSource;
   const measurement: PreparationMeasurement = {
-    preparer: options.persistentChat
-      ? "not-applicable"
-      : options.definition.contextPreparation
-        ? source?.path ?? "unidentified"
-        : "full",
-    entryHash: !options.persistentChat && options.definition.contextPreparation ? source?.entryHash ?? null : null,
+    preparer:
+      options.preparerLabel ??
+      (options.definition.contextPreparation ? source?.path ?? "unidentified" : "full"),
+    entryHash: options.definition.contextPreparation ? source?.entryHash ?? null : null,
     durationMs: 0,
     taskBytes: Buffer.byteLength(options.task),
     promptBytes: null,
@@ -1422,10 +1340,9 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
   if (skillName && !task) throw new Error(`Skill "${skillName}" requires a task`);
   // Preparation changes model context only. Keep the accepted task for receipts,
   // and apply skill instructions afterwards so an adapter cannot discard them.
-  const contextTask: unknown =
-    !options.persistentChat && options.definition.contextPreparation
-      ? options.definition.contextPreparation({ task })
-      : options.contextPrompt ?? task;
+  const contextTask: unknown = options.definition.contextPreparation
+    ? options.definition.contextPreparation({ task })
+    : options.contextPrompt ?? task;
   if (typeof contextTask !== "string" || (task.trim() && !contextTask.trim())) {
     // Reject async adapters under the synchronous contract, but consume their
     // rejection so it cannot escape the caller's ordinary failure handling.
@@ -1454,39 +1371,33 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
 
   let compactInfo: CompactionInfo | undefined;
   const compact =
-    options.persistentChat || options.definition.compaction
+    options.enableCompaction || options.definition.compaction
       ? createCompactionTransform(options.definition.model, {
           onCompact: (info) => {
             compactInfo = info;
           },
         })
       : undefined;
-  const taskDecisionContext = options.taskDecisionContext;
   const transformContext =
-    compact || taskDecisionContext || options.chatContext
+    compact || options.contextMessages
       ? async (messages: AgentMessage[]) => {
           compactInfo = undefined;
           const compacted = compact ? await compact(messages) : messages;
           if (compacted !== messages) messages.splice(0, messages.length, ...compacted);
           if (compactInfo) options.onCompact?.(compactInfo, messages);
-          // A disposable provider view: the brief is rebuilt after compaction and
-          // does not accumulate copies in the durable conversation transcript.
-          const context = [...messages];
-          if (options.chatContext)
-            context.push({
-              role: "user",
-              content: [{ type: "text", text: `Current observations (source data):\n${options.chatContext()}` }],
-              timestamp: Date.now(),
-            });
-          if (taskDecisionContext) context.push(await taskDecisionContext());
-          return context;
+          // A disposable provider view: fresh context is rebuilt after compaction
+          // and does not accumulate in the durable conversation transcript.
+          return options.contextMessages
+            ? [...messages, ...(await options.contextMessages())]
+            : messages;
         }
       : undefined;
   const systemPrompt =
     resolveSystemPrompt(normalizedOptions, tools, requireFinish) +
-    (activation && !options.persistentChat
+    (activation
       ? `\n\nSelected skill reference: ${JSON.stringify(activation.skill.canonicalPath)}. Read it again if its instructions were compacted.`
-      : "");
+      : "") +
+    (options.systemPromptSuffix ? `\n\n${options.systemPromptSuffix}` : "");
 
   return {
     definition: options.definition,
