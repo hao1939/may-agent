@@ -263,12 +263,18 @@ Start by pruning dead/unused scenarios so the core runtime unification stays sma
   3. Updated accepted design, principles, and authoring docs (`evolution.md`, `agents.md`, `workflows.md`, `sdk.md`, `escalation.md`, `system-boundary.md`, `agent-app.md`, `task-attempts.md`, `execution-contributions.md`, `workflow-authoring.md`, `handler-authoring.md`, `user-guide.md`, `task-execution-guide/SKILL.md`).
 - **Proof:** `bun run check:may-design` and full Host + App verification pass with zero legacy alias callers remaining.
 
-### Phase 4 (Completed — Host PR #520): Unified `may run` / `may list` CLI & Zero-Config `run(target, input)`
+### Phase 4 (Completed — Host PR #520 & Follow-up PR #525): Unified `may run` / `may list` CLI & Zero-Config `run(target, input)`
 - **Where:** `src/app/may.ts`, `src/app/standalone-cli.ts`, `src/app/standalone.ts`, `packages/sdk/src/standalone.ts`, `packages/sdk/src/testing.ts`, `projects/alex.app/docs/2b-manual/{user-guide,workflow-authoring}.md`.
 - **Completed changes:**
-  1. Exposed `may run <target> [input]` and `may list` at the top of `may.ts` (zero SQLite/daemon startup) with `--readonly`, `--cwd`, `--out`, `--timeout`, `--skill`, `--json`, and lazy stdin reading.
-  2. Auto-discovered App-local target owners in `run(target, input, options?)` without requiring `--app`, while preserving strict App-local catalog isolation and honest `readonly` / `cleanupConfirmed` enforcement across prompt, code, and native CLI (`codex` / `claude`) targets.
-  3. Added `@may-agent/sdk/standalone` (`runStandalone`) and `runTargetTest(moduleOrTarget, options)` in `@may-agent/sdk/testing`, and consolidated standalone exports through `src/app/standalone.ts`.
+  1. Exposed `may run <target> [input]` and `may list` at the top of `may.ts` (with `#!/usr/bin/env bun` shebang, zero SQLite/daemon startup, and scoped `SIGINT`/`SIGTERM` process-group draining) supporting `--readonly`, `--cwd`, `--out`, `--timeout`, `--skill`, `--json`, and lazy stdin reading.
+  2. Auto-discovered App-local target owners in `run(target, input, options?)` without requiring `--app`, while preserving strict App-local catalog isolation (recovering `callerProjectId`, admitting global agents alongside App-local agents, and locking explicit `--app` / `<app>.app/<target>` scopes), defaulting `workRoot` to `cwd`, retaining scratch `outputRoot` when cleanup is unconfirmed, supporting non-object schemas on native CLI targets, and deriving `listStandaloneTargets` from `buildWorkflowCatalog`.
+  3. Added `@may-agent/sdk/standalone` (`run`, `listStandaloneTargets`, `runStandalone`) and `runTargetTest(moduleOrTarget, options)` in `@may-agent/sdk/testing`, and consolidated standalone exports through `src/app/standalone.ts`.
+
+### Phase 5 (Planned): Self-Contained `@may-agent/sdk` Stateless Agent Runtime vs. Durable Host (`src/app/`)
+- **Why:** Currently `packages/sdk/src/standalone.ts` re-exports `run(target, input, options?)` from `../../../src/app/standalone.js`. Inverting that dependency arrow so `@may-agent/sdk` physically owns the stateless agent & workflow runtime makes `@may-agent/sdk` completely self-contained and guarantees at the package boundary that stateless agent execution never depends on Host SQLite, `EventBus`, or daemon state.
+- **Target Two-Layer Split:**
+  1. **`@may-agent/sdk` (Stateless Agent & Workflow Runtime):** Owns contracts/schemas, pure-FS agent & workflow discovery/loading (`agent.json`, `AGENTS.md`, `SKILL.md`, `workflows/*.ts`), the invocation kernel (`runWorkflowInvocation`), stateless prompt-turn execution (`pi-agent-core` + local coding/bash/finish tools), native CLI execution (`codex`/`claude`), and `run(target, input, options?)` / `listStandaloneTargets()`.
+  2. **`may-agent` Host (`src/app/` — Durable Multi-Agent Service):** Imports `@may-agent/sdk` to execute agents and workflows inside durable SQLite `Task` claims (`TaskRunner`), `EventBus`, `Conversation` sessions, worktree lifecycle, cron scheduling, Control Socket, HTTP/WebUI, and Telegram.
 
 ---
 
