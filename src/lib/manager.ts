@@ -86,11 +86,8 @@ import type { SessionInfo, SubagentDefinition, TaskResult } from "@may-agent/sdk
 // Re-export utilities that other modules import from manager
 export { classifyError, extractFinishParams };
 export {
-  TOOL_PIVOT_LIMIT,
-  computeToolArgsKey,
   formatDuration,
   generateId,
-  isToolError,
   truncateForPrompt,
 } from "@may-agent/sdk/runtime";
 export type { RegisteredAgent } from "@may-agent/sdk/runtime";
