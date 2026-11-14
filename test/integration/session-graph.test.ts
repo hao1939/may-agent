@@ -4,7 +4,7 @@ import { readSessionMeta } from "../../src/lib/persistence.js";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { getWorkflowRun, listWorkflowRunIds } from "../../src/lib/db/workflows.js";
 import type { WorkflowToolResult } from "../../src/lib/workflow.js";
 import { fakeModel } from "../fixtures/model.js";
@@ -126,10 +126,9 @@ describe("workflow run persistence", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "simple", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("simple", "test");
 
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
@@ -164,10 +163,9 @@ describe("workflow run persistence", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "no-steps", task: "task" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("no-steps", "task");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
@@ -190,10 +188,9 @@ describe("workflow run persistence", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "esc", task: "hard task" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("esc", "hard task");
     expect(parsed.type).toBe("blocked");
     if (parsed.type !== "blocked") return;
 
@@ -215,10 +212,9 @@ describe("workflow run persistence", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "crash", task: "doomed" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("crash", "doomed");
     expect(parsed.type).toBe("error");
 
     // The run should be persisted with error status
@@ -241,10 +237,10 @@ describe("workflow run persistence", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    await tool.execute("tc1", { action: "run", name: "list-test", task: "first" });
-    await tool.execute("tc2", { action: "run", name: "list-test", task: "second" });
+    await runner.run("list-test", "first");
+    await runner.run("list-test", "second");
 
     const runs = listWorkflowRunIds(persistDir);
     expect(runs.length).toBe(2);
@@ -268,10 +264,9 @@ describe("workflow result: step summaries", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "no-agents", task: "task" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("no-agents", "task");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
@@ -292,10 +287,9 @@ describe("workflow result: step summaries", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "esc-steps", task: "task" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("esc-steps", "task");
     expect(parsed.type).toBe("blocked");
     if (parsed.type !== "blocked") return;
 
@@ -314,7 +308,7 @@ describe("workflow nesting depth cap", () => {
       export const name = "outer";
       export const description = "Calls inner";
       export async function execute(ctx) {
-        const inner = await ctx.workflows.run("inner", "sub-task");
+        const inner = await ctx.call("inner", "sub-task");
         if (inner.status === "done") return ctx.done("outer+inner: " + inner.summary);
         return ctx.blocked("inner failed");
       }
@@ -332,10 +326,9 @@ describe("workflow nesting depth cap", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir, maxDepth: 3 });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir, maxDepth: 3 });
 
-    const result = await tool.execute("tc1", { action: "run", name: "outer", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("outer", "test");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
     expect(parsed.summary).toContain("inner done");
@@ -349,7 +342,7 @@ describe("workflow nesting depth cap", () => {
       export const description = "Calls itself";
       export async function execute(ctx) {
         try {
-          const sub = await ctx.workflows.run("recursive", "recurse");
+          const sub = await ctx.call("recursive", "recurse");
           if (sub.status === "blocked") return ctx.blocked("hit depth: " + sub.summary);
           return ctx.done("should not get here");
         } catch (error) {
@@ -360,10 +353,9 @@ describe("workflow nesting depth cap", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir, maxDepth: 2 });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir, maxDepth: 2 });
 
-    const result = await tool.execute("tc1", { action: "run", name: "recursive", task: "go" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("recursive", "go");
     expect(parsed.type).toBe("blocked");
     if (parsed.type !== "blocked") return;
     expect(parsed.reason).toContain("depth");
@@ -376,7 +368,7 @@ describe("workflow nesting depth cap", () => {
       export const name = "parent-wf";
       export const description = "Parent";
       export async function execute(ctx) {
-        const sub = await ctx.workflows.run("child-wf", "child task");
+        const sub = await ctx.call("child-wf", "child task");
         if (sub.status === "done") return ctx.done("parent+child");
         return ctx.blocked("child failed");
       }
@@ -394,10 +386,9 @@ describe("workflow nesting depth cap", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "parent-wf", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("parent-wf", "test");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
@@ -434,15 +425,14 @@ describe("callerSessionId", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       persistDir,
       callerSessionId: "s_may_session",
     });
 
-    const result = await tool.execute("tc1", { action: "run", name: "caller-test", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("caller-test", "test");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
@@ -463,10 +453,9 @@ describe("callerSessionId", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({ manager, workflowDir, persistDir });
+    const runner = createWorkflowRunner({ manager, workflowDir, persistDir });
 
-    const result = await tool.execute("tc1", { action: "run", name: "no-caller", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("no-caller", "test");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
@@ -487,15 +476,14 @@ describe("callerSessionId", () => {
     );
 
     const manager = new SubagentManager({ persistDir });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       persistDir,
       projectId: "scout/scout-second-brain-learning",
     });
 
-    const result = await tool.execute("tc1", { action: "run", name: "project-tag-test", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("project-tag-test", "test");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 
@@ -525,15 +513,14 @@ describe("callerSessionId", () => {
       workflowRunId: "wr_parent",
       projectId: "scout/scout-second-brain-learning",
     });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       persistDir,
       callerSessionId: callerSid,
     });
 
-    const result = await tool.execute("tc1", { action: "run", name: "caller-lineage-test", task: "test" });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("caller-lineage-test", "test");
     expect(parsed.type).toBe("done");
     if (parsed.type !== "done") return;
 

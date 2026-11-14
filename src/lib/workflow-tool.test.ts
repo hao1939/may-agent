@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createWorkflowRunner, createWorkflowTool } from "./workflow-tool.js";
+import { createWorkflowRunner } from "./workflow-tool.js";
+import { workflowExecutionResult } from "./execution-handoff.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import type { SubagentDefinition } from "./types.js";
@@ -45,10 +46,9 @@ export const name = "deep";
 export const description = "Uses the callee lexical catalog";
 export const readonly = true;
 export async function execute(ctx) {
-  const legacy = await ctx.workflows.run("local", {});
-  const unified = await ctx.call("local", {});
+  const local = await ctx.call("local", {});
   const prompt = await ctx.call("reviewer", "Review HEAD", { skill: "review" });
-  return ctx.done(prompt.summary, { legacy: legacy.summary, unified: unified.summary });
+  return ctx.done(prompt.summary, { local: local.summary });
 }
 `);
     writeFileSync(join(reviewerDir, "workflows", "local.ts"), `
@@ -77,7 +77,7 @@ export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); 
       reconciliation: { agent: "owner" } as any,
     });
     await expect(runner.run("parent", "input")).resolves.toMatchObject({
-      type: "done", summary: "captured prompt", output: { legacy: "owner", unified: "owner" },
+      type: "done", summary: "captured prompt", output: { local: "owner" },
     });
     expect(promptCalls).toBe(1);
   });
@@ -118,7 +118,7 @@ export const name = "parent";
 export const description = "Recover from a missing method";
 export async function execute(ctx) {
   try {
-    const child = await ctx.workflows.run("missing", {});
+    const child = await ctx.call("missing", {});
     return ctx.done("unexpected child result", { child });
   } catch (error) {
     return ctx.done("caller can choose another method", { reason: error.message });
@@ -139,12 +139,10 @@ export const name = "review";
 export const description = "Review with missing evidence";
 export async function execute(ctx) { return ctx.blocked("Specification missing", { report: "review.md" }); }
 `);
-    const tool = createWorkflowTool({ manager: {} as any, workflowDir: root });
+    const runner = createWorkflowRunner({ manager: {} as any, workflowDir: root, workflowInput: {} });
     for (const name of ["review", "missing"]) {
-      const response = await tool.execute("call", { action: "run", name, input: {} });
-      const part = response.content[0];
-      if (part.type !== "text") throw new Error("Missing result text");
-      const result = JSON.parse(part.text);
+      const raw = await runner.run(name, "{}");
+      const result = { ...raw, ...workflowExecutionResult(raw) } as Record<string, unknown>;
       if (name === "review") {
         expect(result).toMatchObject({ kind: "workflow", status: "blocked", summary: "Specification missing", facts: { report: "review.md" } });
         expect(result.id).toBe(result.workflowRunId);
@@ -232,7 +230,7 @@ export async function execute(ctx) {
 export const name = "cancel";
 export const description = "Cancellation test workflow";
 export async function execute(ctx) {
-  await ctx.agents.call("worker", "wait forever");
+  await ctx.call("worker", "wait forever");
   return ctx.done("must not complete");
 }
 `,
@@ -286,7 +284,7 @@ export async function execute(ctx) {
 export const name = "parent";
 export const description = "Unawaited child fixture";
 export async function execute(ctx) {
-  void ${kind === "workflow" ? 'ctx.workflows.run("child", {})' : 'ctx.agents.call("worker", "work")'};
+  void ${kind === "workflow" ? 'ctx.call("child", {})' : 'ctx.call("worker", "work")'};
   await ctx.read.execution("entered");
   return ctx.done("parent result");
 }`);
@@ -294,7 +292,7 @@ export async function execute(ctx) {
 export const name = "child";
 export const description = "Required helper fixture";
 export async function execute(ctx) {
-  await ctx.agents.call("worker", "work");
+  await ctx.call("worker", "work");
   return ctx.done("child result");
 }`);
     const entered = Promise.withResolvers<void>();
@@ -331,7 +329,7 @@ export const name = "timeout";
 export const description = "Timeout test workflow";
 export async function execute(ctx) {
   try {
-    await ctx.agents.call("worker", "wait forever");
+    await ctx.call("worker", "wait forever");
   } catch {}
   await ctx.events.emit({ type: "test.late-effect", data: {} });
   return ctx.done("late completion");
@@ -392,7 +390,7 @@ export const name = "timeout";
 export const description = "Setup timeout test workflow";
 export async function execute(ctx) {
   try {
-    await ctx.agents.call("worker", "must not start after the deadline");
+    await ctx.call("worker", "must not start after the deadline");
   } catch {}
   await ctx.events.emit({ type: "test.late-effect", data: {} });
   return ctx.done("late completion");
@@ -468,7 +466,7 @@ export async function execute(ctx) {
         `
       export const name = "parent";
       export const description = "Parent bound fixture";
-      export async function execute(ctx) { return await ctx.workflows.run("child", {}); }
+      export async function execute(ctx) { return await ctx.call("child", {}); }
     `,
       );
       writeFileSync(
@@ -770,7 +768,7 @@ export const name = "coordinate";
 export const description = "Immediate coordination event test";
 export async function execute(ctx) {
   await ctx.events.emit({ type: "test.child.requested", data: { key: "child-one" } });
-  await ctx.agents.call("worker", "finish parent work");
+  await ctx.call("worker", "finish parent work");
   return ctx.done("parent complete");
 }
 `,
@@ -838,7 +836,7 @@ export const description = "Live Task feedback test";
 export async function execute(ctx) {
   let instruction = "none";
   ctx.events.onEvent((event) => { instruction = event.data.instruction; });
-  await ctx.agents.call("worker", "wait for feedback");
+  await ctx.call("worker", "wait for feedback");
   return ctx.done(instruction);
 }
 `,
@@ -895,7 +893,7 @@ export async function execute(ctx) {
 export const name = "app-agent";
 export const description = "App SDK Agent adapter test";
 export async function execute(ctx) {
-  const result = await ctx.agents.call("worker", String(ctx.input), { operationAllowance: 50 });
+  const result = await ctx.call("worker", String(ctx.input), { operationAllowance: 50 });
   ctx.log.info(result.summary);
   return ctx.done("adapted", result);
 }
@@ -989,7 +987,7 @@ export async function execute(ctx) {
   try {
     throw new Error("Synthetic read failure");
   } catch {
-    return ctx.agents.call("worker", "Use the Host-supplied Task entry; do not copy reconciliation into this prompt.");
+    return ctx.call("worker", "Use the Host-supplied Task entry; do not copy reconciliation into this prompt.");
   }
 }
 `);
@@ -1153,7 +1151,7 @@ export async function execute(ctx) {
 export const name = "invalid-allowance";
 export const description = "Invalid operation allowance test";
 export async function execute(ctx) {
-  return ctx.agents.call("worker", "must not run", { operationAllowance: Number.POSITIVE_INFINITY });
+  return ctx.call("worker", "must not run", { operationAllowance: Number.POSITIVE_INFINITY });
 }
 `,
     );
@@ -1185,7 +1183,7 @@ export async function execute(ctx) {
 export const name = "app-error";
 export const description = "App SDK error normalization test";
 export async function execute(ctx) {
-  return ctx.agents.call("worker", "fail once");
+  return ctx.call("worker", "fail once");
 }
 `,
     );
@@ -1229,7 +1227,7 @@ export async function execute(ctx) {
 export const name = "app-parent";
 export const description = "App SDK parent";
 export async function execute(ctx) {
-  const child = await ctx.workflows.run("app-child", { probe: "kept-structured" });
+  const child = await ctx.call("app-child", { probe: "kept-structured" });
   return ctx.done("parent complete", child);
 }
 `,
@@ -1517,7 +1515,7 @@ export async function execute(ctx) {
         export const description = "Run a nested method in the same attempt";
         export async function execute(ctx) {
           ctx.log.info("Before nested");
-          const result = await ${mode === "legacy" ? 'ctx.workflows.run("inspect", {})' : mode === "qualified" ? 'ctx.call("owner/inspect", {})' : 'ctx.call("reviewer/inspect", {})'};
+          const result = await ${mode === "legacy" ? 'ctx.call("inspect", {})' : mode === "qualified" ? 'ctx.call("owner/inspect", {})' : 'ctx.call("reviewer/inspect", {})'};
           return ctx.done(result.summary);
         }
       `,

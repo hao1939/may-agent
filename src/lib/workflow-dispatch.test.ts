@@ -42,7 +42,7 @@ describe("direct workflow dispatch snapshot", () => {
 export const name = "versioned";
 export const description = "Versioned execution and verification fixture";
 export async function execute(ctx) {
-  const child = await ctx.workflows.run("child", {});
+  const child = await ctx.call("child", {});
   return ctx.${status}("${version}:" + child.summary);
 }
 export async function verify(_context, result) {

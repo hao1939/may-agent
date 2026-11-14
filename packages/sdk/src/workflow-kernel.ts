@@ -976,23 +976,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
     ) as Promise<ExecutionResult<Static<S>>>;
   }) as WorkflowContext["call"];
 
-  const callAgentOverload = (<S extends TSchema>(
-    agent: string,
-    task: string,
-    options?: AgentCallOptions & { schema?: S },
-  ): Promise<ExecutionResult<Static<S>>> => {
-    try {
-      assertActive();
-    } catch (err) {
-      return Promise.reject(err);
-    }
-    return trackOperation(
-      runBoundStep("agent", agent, task, options, (stepControl, effectiveOptions) =>
-        bindings.callAgent(agent, task, effectiveOptions, stepControl),
-      ),
-    ) as Promise<ExecutionResult<Static<S>>>;
-  }) as WorkflowContext["agents"]["call"];
-
   const ctx: WorkflowContext<TInput> = {
     input: bindings.input as WorkflowContext<TInput>["input"],
     signal: controller.signal,
@@ -1060,28 +1043,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
       : {}),
     ...(bindings.readCommunication ? { readCommunication: bindings.readCommunication } : {}),
     call: callOverload,
-    agents: {
-      call: callAgentOverload,
-    },
-    workflows: {
-      run: (name: string, workflowInput: unknown): Promise<ExecutionResult> => {
-        try {
-          assertActive();
-        } catch (err) {
-          return Promise.reject(err);
-        }
-        const promptPreview =
-          typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
-        return trackOperation(
-          runBoundStep("workflow", name, promptPreview, undefined, (stepControl, effectiveOptions) =>
-            bindings.runWorkflow(name, workflowInput, {
-              ...stepControl,
-              options: effectiveOptions,
-            }),
-          ),
-        );
-      },
-    },
     events: {
       read: (type, localKey) => {
         try {

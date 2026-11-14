@@ -65,8 +65,8 @@ export type {
   TruncationResult,
   WriteToolOptions,
 } from "./tools/index.js";
-export { createWorkflowTool } from "./workflow-tool.js";
-export type { WorkflowTool } from "./workflow-tool.js";
+export { createWorkflowRunner } from "./workflow-tool.js";
+export type { WorkflowRunner } from "./workflow-tool.js";
 export { WorkflowInterrupted } from "./workflow.js";
 export type {
   CompletedStep,

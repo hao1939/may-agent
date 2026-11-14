@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync, existsSync, mkdtempSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { createWorkflowTool } from "../../src/lib/workflow-tool.js";
+import { createWorkflowRunner } from "../../src/lib/workflow-tool.js";
 import { SubagentManager } from "../../src/lib/manager.js";
 import type { WorkflowEvent, WorkflowToolResult } from "../../src/lib/workflow.js";
 
@@ -32,7 +32,7 @@ afterEach(() => {
 });
 
 describe("workflow composition: runWorkflow", () => {
-  it("runs a sub-workflow via ctx.workflows.run()", async () => {
+  it("runs a sub-workflow via ctx.call()", async () => {
     writeWorkflow(
       "sub.ts",
       `
@@ -50,7 +50,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent";
       export const description = "Parent workflow that calls sub";
       export async function execute(ctx) {
-        const result = await ctx.workflows.run("sub", "child task");
+        const result = await ctx.call("sub", "child task");
         if (result.status === "done") {
           return ctx.done("parent got: " + result.summary);
         }
@@ -60,14 +60,9 @@ describe("workflow composition: runWorkflow", () => {
     );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "parent",
-      task: "parent task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("parent", "parent task");
 
     expect(parsed.type).toBe("done");
     if (parsed.type === "done") {
@@ -93,7 +88,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-esc";
       export const description = "Parent that handles sub blocker";
       export async function execute(ctx) {
-        const result = await ctx.workflows.run("failing-sub", "task");
+        const result = await ctx.call("failing-sub", "task");
         if (result.status === "blocked") {
           return ctx.blocked("sub blocked: " + result.summary);
         }
@@ -103,14 +98,9 @@ describe("workflow composition: runWorkflow", () => {
     );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "parent-esc",
-      task: "task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("parent-esc", "task");
 
     expect(parsed.type).toBe("blocked");
     if (parsed.type === "blocked") {
@@ -126,7 +116,7 @@ describe("workflow composition: runWorkflow", () => {
       export const description = "Calls nonexistent sub";
       export async function execute(ctx) {
         try {
-          await ctx.workflows.run("nonexistent", "task");
+          await ctx.call("nonexistent", "task");
           return ctx.done("should not reach");
         } catch (error) {
           return ctx.blocked("sub not found: " + error.message);
@@ -136,14 +126,9 @@ describe("workflow composition: runWorkflow", () => {
     );
 
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({ manager, workflowDir });
+    const runner = createWorkflowRunner({ manager, workflowDir });
 
-    const result = await tool.execute("tc1", {
-      action: "run",
-      name: "parent-missing",
-      task: "task",
-    });
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed: WorkflowToolResult = await runner.run("parent-missing", "task");
 
     expect(parsed.type).toBe("blocked");
     if (parsed.type === "blocked") {
@@ -170,7 +155,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-events";
       export const description = "Parent with sub events";
       export async function execute(ctx) {
-        const result = await ctx.workflows.run("sub-events", "task");
+        const result = await ctx.call("sub-events", "task");
         return ctx.done("parent done");
       }
     `,
@@ -178,17 +163,13 @@ describe("workflow composition: runWorkflow", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       onEvent: (e) => events.push(e),
     });
 
-    await tool.execute("tc1", {
-      action: "run",
-      name: "parent-events",
-      task: "task",
-    });
+    await runner.run("parent-events", "task");
 
     // Expected events:
     // 1. workflow.started (parent)
@@ -216,7 +197,7 @@ describe("workflow composition: runWorkflow", () => {
         await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.agents.call("coder", "something");
+        const result = await ctx.call("coder", "something");
         return ctx.done("should not reach");
       }
     `,
@@ -228,7 +209,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-steerable";
       export const description = "Parent that delegates to steerable sub";
       export async function execute(ctx) {
-        const result = await ctx.workflows.run("sub-steerable", "task");
+        const result = await ctx.call("sub-steerable", "task");
         return ctx.done("done");
       }
     `,
@@ -236,7 +217,7 @@ describe("workflow composition: runWorkflow", () => {
 
     const events: WorkflowEvent[] = [];
     const manager = new SubagentManager({ persistDir: mkdtempSync(join(tmpdir(), "may-test-")) });
-    const tool = createWorkflowTool({
+    const runner = createWorkflowRunner({
       manager,
       workflowDir,
       onEvent: (e) => events.push(e),
@@ -257,20 +238,15 @@ describe("workflow composition: runWorkflow", () => {
       });
     }
 
-    const execPromise = tool.execute("tc1", {
-      action: "run",
-      name: "parent-steerable",
-      task: "task",
-    });
+    const execPromise = runner.run("parent-steerable", "task");
 
     await waitForEvent((e) => e.type === "test.ready" && "data" in e && (e.data as { step?: string }).step === "ready-for-steering");
 
     // Steer the parent — should propagate to sub-workflow since they share the queue
-    expect(tool.isRunning).toBe(true);
-    tool.steer("interrupt!");
+    expect(runner.isRunning).toBe(true);
+    runner.steer("interrupt!");
 
-    const result = await execPromise;
-    const parsed = JSON.parse(result.content[0].text) as WorkflowToolResult;
+    const parsed = await execPromise;
 
     // The interruption should propagate from sub-workflow through parent
     expect(parsed.type).toBe("interrupted");

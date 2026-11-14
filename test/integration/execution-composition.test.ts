@@ -123,7 +123,7 @@ test.each(["complete", "cancel"] as const)(
 export const name = "inspect";
 export const description = "One scoped helper";
 export async function execute(ctx) {
-  const result = await ctx.agents.call("worker", "Inspect fixture facts");
+  const result = await ctx.call("worker", "Inspect fixture facts");
   return result.status === "done" ? ctx.done(result.summary, result.output) : ctx.blocked(result.summary);
 }`,
     );

@@ -864,26 +864,6 @@ export type WorkflowContext<TInput = unknown> = {
     input: unknown,
     options?: CallOptions,
   ): Promise<ExecutionResult<TOut>>;
-  agents: {
-    /** Resource admission can throw ExecutionDeferredError before a helper starts.
-     * Catch it to choose another method or retain demand; it has no helper ID.
-     * Schema for the contribution report, including incomplete work. Make
-     * unavailable information optional; a valid report does not imply Task
-     * fulfillment. Missing optional fields do not require a correction turn.
-     * Declare every representation the App accepts, including inputs to its
-     * normalization (e.g. a string-or-number identifier). Use one App admission
-     * helper for code and agent reports. Host checks this accepted shape without
-     * silently broadening it; the App owns normalization and usefulness. */
-    call<S extends TSchema>(
-      agent: string,
-      task: string,
-      options: AgentCallOptions & { schema: S },
-    ): Promise<ExecutionResult<Static<S>>>;
-    call(agent: string, task: string, options?: AgentCallOptions): Promise<ExecutionResult>;
-  };
-  workflows: {
-    run(name: string, input: unknown): Promise<ExecutionResult>;
-  };
   events: {
     emit(event: AppEvent): Promise<void>;
     /**

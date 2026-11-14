@@ -135,7 +135,7 @@ creator retains closure. This source option does not authorize App activation.
 The assigned agent owns the outcome. The App declares the execution procedure;
 Host claims use that workflow or executor on every attempt. A failed procedure,
 an old agent fallback, partial progress or convergence cannot change it.
-Workflows compose judgment through `ctx.agents.call`; the nested call inherits
+Workflows compose judgment through `ctx.call`; the nested call inherits
 the Task context and authority and does not replace future workflow attempts.
 The App decides how to use its returned contribution and publishes the result.
 

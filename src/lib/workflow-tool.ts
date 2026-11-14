@@ -1,7 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
-import { StringEnum } from "@earendil-works/pi-ai";
 import { ExecutionDeferredError } from "@may-agent/sdk";
 import {
   resolveCallable,
@@ -13,13 +12,12 @@ import {
   type WorkflowStepInvocationResult,
 } from "../../packages/sdk/src/workflow-kernel.js";
 import { join } from "node:path";
-import { Type, type TSchema } from "typebox";
+import { type TSchema } from "typebox";
 import { getDb } from "./db/connection.js";
 import { executionTimeout } from "./execution-scope.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 
-import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type {
   AgentCallOptions,
   ExecutionResult as AppExecutionResult,
@@ -100,59 +98,7 @@ export interface WorkflowStep {
   lastAssistantText: string | null;
 }
 
-// ── Tool schema ────────────────────────────────────────────────────────
-
-const WorkflowToolParams: TSchema = Type.Object({
-  action: StringEnum(["list", "run"] as const, {
-    description:
-      "'list': show available workflows with descriptions. 'run': execute a workflow by name (blocks until complete).",
-  }),
-  name: Type.Optional(
-    Type.String({
-      description:
-        "Workflow name to execute (required for 'run'). Use 'list' first to see available workflows and their descriptions.",
-    }),
-  ),
-  input: Type.Optional(
-    Type.Unknown({
-      description:
-        "Structured workflow input. Check the workflow description. Required for run unless using the legacy task string.",
-    }),
-  ),
-  task: Type.Optional(
-    Type.String({
-      description:
-        "Legacy string input (prefer input for new callers). Format depends on the workflow — check the workflow description from 'list' for expected format.",
-    }),
-  ),
-
-});
-interface WorkflowInput {
-  action: "list" | "run";
-  name?: string;
-  task?: string;
-  input?: unknown;
-}
-
 // ── Helpers ────────────────────────────────────────────────────────────
-
-function textResult(text: string): AgentToolResult<string> {
-  return {
-    content: [{ type: "text", text }],
-    details: text,
-  };
-}
-
-/** Model tools expose a denied helper start as data; typed callers retain the exception. */
-async function workflowModelExecution(execute: () => Promise<WorkflowToolResult>): Promise<AgentToolResult<string>> {
-  try {
-    const result = await execute();
-    return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
-  } catch (error) {
-    if (error instanceof ExecutionDeferredError) return textResult(JSON.stringify(deferredExecutionResult(error)));
-    throw error;
-  }
-}
 
 function truncate(text: string, maxLen: number): string {
   if (text.length <= maxLen) return text;
@@ -198,16 +144,6 @@ function pruneCompletedSteps(completedSteps: CompletedStep[]): void {
       };
     }
   }
-}
-
-// ── WorkflowTool type ──────────────────────────────────────────────────
-
-export interface WorkflowTool extends AgentTool {
-  /** Typed internal execution path; tool.execute() only serializes this result at the model boundary. */
-  run(name: string, task: string): Promise<WorkflowToolResult>;
-  steer(message: string): boolean;
-  readonly isRunning: boolean;
-  readonly activeWorkflow: string | null;
 }
 
 export interface WorkflowRunner {
@@ -406,9 +342,8 @@ export interface WorkflowToolOptions {
   callerTrace?: () => EventTrace | undefined;
 }
 
-function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: false): WorkflowRunner;
-function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: true): WorkflowTool;
-function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: boolean): WorkflowRunner | WorkflowTool {
+/** Typed workflow execution for SDK, handlers, and other system callers. */
+export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner {
   if (opts.taskContext?.taskBinding) {
     if (opts.taskBinding && !isDeepStrictEqual(opts.taskBinding, opts.taskContext.taskBinding)) {
       throw new Error("Task execution binding does not match its Task context");
@@ -841,7 +776,15 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
       const outcome = await runWorkflowInvocation(workflow, {
         ...bindings,
         callTarget: (target, input, callOptions, stepControl) => {
-          const resolved = resolveCallable(callerOwner, target, catalog);
+          let resolved: ReturnType<typeof resolveCallable>;
+          try {
+            resolved = resolveCallable(callerOwner, target, catalog);
+          } catch (err) {
+            if (typeof target === "string" && !target.includes("/") && typeof input === "string") {
+              return bindings.callAgent(target, input, callOptions, stepControl);
+            }
+            throw err;
+          }
           if (resolved.kind === "code") {
             return bindings.runWorkflow(target, input, { ...stepControl, options: callOptions });
           }
@@ -1102,80 +1045,5 @@ function createWorkflowRuntime(opts: WorkflowToolOptions, includeModelTool: bool
     },
   };
 
-  if (!includeModelTool) return runner;
-
-  const tool: WorkflowTool = {
-    name: "workflow",
-    label: "Workflow",
-    description:
-      "List available workflows or run a workflow by name. " +
-      "Workflows are predefined step sequences that coordinate sub-agents efficiently. " +
-      "Use 'list' to see what's available, 'run' to execute one. " +
-      "Terminal runs return id, kind, status, summary and output/facts; workflowRunId and steps retain diagnostic references. Completion is evidence for your assignment, not Task acceptance.",
-    parameters: WorkflowToolParams,
-    run: runner.run,
-    steer: runner.steer,
-    get isRunning(): boolean {
-      return runner.isRunning;
-    },
-    get activeWorkflow(): string | null {
-      return runner.activeWorkflow;
-    },
-
-    execute: async (_toolCallId, _params) => {
-      const params = _params as WorkflowInput;
-      const catalog = await buildWorkflowCatalog(workflowDir);
-      switch (params.action) {
-        case "list": {
-          const workflows = [...catalog.workflows.values()]
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((workflow) => ({
-              name: workflow.name,
-              description: workflow.description,
-              sourceScope: workflow.sourceScope,
-            }));
-          const result: WorkflowToolResult = {
-            type: "list",
-            workflows,
-            ...(catalog.diagnostics.length > 0 ? { diagnostics: [...catalog.diagnostics] } : {}),
-          };
-          return textResult(JSON.stringify({ ...result, ...workflowExecutionResult(result) }, null, 2));
-        }
-
-        case "run": {
-          const hasInput = Object.hasOwn(params, "input");
-          if (!params.name || (!hasInput && !params.task) || (hasInput && params.task !== undefined)) {
-            return textResult(
-              JSON.stringify({
-                type: "error",
-                error: "action 'run' requires 'name' and exactly one of 'input' or legacy 'task'",
-              }),
-            );
-          }
-          const task = hasInput
-            ? typeof params.input === "string"
-              ? params.input
-              : JSON.stringify(params.input)
-            : params.task!;
-          return workflowModelExecution(() => runTyped(params.name!, task, catalog, hasInput ? { value: params.input } : undefined));
-        }
-
-        default: {
-          return textResult(JSON.stringify({ error: `Unknown action: ${params.action}` }));
-        }
-      }
-    },
-  };
-
-  return tool;
-}
-
-/** Typed workflow execution for SDK, handlers, and other system callers. */
-export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner {
-  return createWorkflowRuntime(opts, false);
-}
-
-/** Model-facing JSON/schema adapter around the typed workflow runner. */
-export function createWorkflowTool(opts: WorkflowToolOptions): WorkflowTool {
-  return createWorkflowRuntime(opts, true);
+  return runner;
 }

@@ -29,7 +29,7 @@ test("configured preparation uses ordinary workflow execution across corrections
 export const name = "review";
 export const description = "Context component integration fixture";
 export async function execute(ctx) {
-  const result = await ctx.agents.call("worker", ctx.input, { tools: "readonly", timeoutMs: 5000 });
+  const result = await ctx.call("worker", ctx.input, { tools: "readonly", timeoutMs: 5000 });
   return ctx.done(result.summary, result);
 }
 `,

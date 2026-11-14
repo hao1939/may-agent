@@ -11,7 +11,6 @@ import { createFinishTool } from "../../lib/tools/lifecycle.js";
 import { createQueryDbTool } from "../../lib/tools/query-db.js";
 import { createReadTool } from "../../lib/tools/read.js";
 import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
-import { createWorkflowTool } from "../../lib/workflow-tool.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
 import { createAppTaskReadTool } from "../app-task-read-tool.js";
@@ -60,7 +59,11 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         break;
       }
 
-      case "agents": {
+      case "agents":
+      case "workflow": {
+        if (tools.some((t) => t.name === "agents")) {
+          break;
+        }
         const denyConfig = config.delegateDeny;
         const runtimeCtx = buildRuntimeCtx({
           bus,
@@ -98,82 +101,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
             },
           }),
         );
-        break;
-      }
-
-      case "workflow": {
-        if (config.tools.includes("agents") || tools.some((t) => t.name === "agents")) {
-          // Folded into the unified `agents` tool (action: "call" / "list").
-          break;
-        }
-        const workflowDir = resolve(agentDir, "workflows");
-        const workflowOptions = {
-          manager,
-          workflowDir,
-          persistDir,
-          agentName: config.name,
-          runtimeCtx: buildRuntimeCtx({
-            bus,
-            persistDir,
-            projectRoot,
-            agentsRoot: opts.agentsRoot,
-            sharedRoot: opts.sharedRoot,
-            projectsRoot: opts.projectsRoot,
-            agentName: config.name,
-          }),
-          callerSessionId: () => {
-            const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
-            if (!sid) throw new Error(`No active ${config.name} session`);
-            return sid;
-          },
-          callerTrace: () => {
-            const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
-            return sid ? manager.activeSessions.get(sid)?.trace : undefined;
-          },
-          onEvent: (event: WorkflowEvent) => {
-            const label = `workflow:${config.name}`;
-            if (event.type === "workflow.started") {
-              bus.emit({ type: "info", message: `[${label}] Starting: ${event.workflow}` });
-            } else if (event.type === "workflow.completed") {
-              bus.emit({ type: "info", message: `[${label}] Done: ${event.summary.slice(0, 100)}` });
-            } else if (event.type === "workflow.blocked") {
-              bus.emit({ type: "info", message: `[${label}] Blocked: ${event.reason}` });
-            } else if (event.type === "workflow.step_started") {
-              bus.emit({ type: "info", message: `[${label}] Step: ${event.step}` });
-            }
-          },
-        };
-        const workflowTool = createWorkflowTool(workflowOptions);
-        tools.push({
-          ...workflowTool,
-          execute: async (id, params, signal, onUpdate) => {
-            const sid = currentAgentSessionId(config.name) ?? opts.getAgentSessionId(config.name);
-            const session = sid ? manager.activeSessions.get(sid) : undefined;
-            if (session?.taskBinding && !session.taskContext)
-              throw new Error("Current Task execution context is unavailable");
-            const context = session?.taskContext;
-            // A registered tool is shared by same-name sessions. Each invocation
-            // gets its own runner and the exact caller's capabilities and limits.
-            return createWorkflowTool({
-              ...workflowOptions,
-              ...context,
-              taskContext: context,
-              read: createRuntimeAppRead({
-                readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),
-                getDb: workflowOptions.runtimeCtx.getDb,
-                taskRead: context?.taskRead,
-                readMetric: async (id) => readMetricView(workflowOptions.runtimeCtx.metrics, id),
-              }),
-              callerSessionId: sid,
-              trace: session?.trace,
-              signal:
-                signal && session?.executionScope
-                  ? AbortSignal.any([signal, session.executionScope.signal])
-                  : (signal ?? session?.executionScope?.signal),
-              executionTimeoutMs: session?.executionScope ? session.executionScope.deadlineAt - Date.now() : undefined,
-            }).execute(id, params, signal, onUpdate);
-          },
-        });
         break;
       }
 
