@@ -1,0 +1,194 @@
+import { Type, type TSchema } from "typebox";
+import type { FileWritePolicy } from "./file-write-policy.js";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
+
+
+import { mkdir as fsMkdir, readFile as fsReadFile, writeFile as fsWriteFile, stat as fsStat } from "fs/promises";
+import { dirname } from "path";
+import { resolveToCwd } from "./path-utils.js";
+import { checkCrossEditGuard } from "./cross-edit-guard.js";
+import { withAbortSignal } from "./abort-utils.js";
+import { generateDiffString } from "./edit-diff.js";
+
+const writeSchema: TSchema = Type.Object({
+	path: Type.String({ description: "Path to the file to write (relative or absolute). Parent directories are created automatically. For small changes to existing files, prefer edit() instead." }),
+	content: Type.String({ description: "Complete content to write to the file. This replaces the entire file — if the file exists and you only want to change part of it, use edit() instead. A preview of the written content is returned for quick inspection; read the file back before finish(success)." }),
+});
+
+export interface WriteToolInput { path: string; content: string; }
+
+/**
+ * Pluggable operations for the write tool.
+ * Override these to delegate file writing to remote systems (e.g., SSH).
+ */
+export interface WriteOperations {
+	/** Write content to a file */
+	writeFile: (absolutePath: string, content: string) => Promise<void>;
+	/** Create directory (recursively) */
+	mkdir: (dir: string) => Promise<void>;
+	/** Get file size in bytes. Returns null if file doesn't exist. */
+	fileSize?: (absolutePath: string) => Promise<number | null>;
+	/** Read file contents as string. Returns null if file doesn't exist. */
+	readFile?: (absolutePath: string) => Promise<string | null>;
+}
+
+const defaultWriteOperations: WriteOperations = {
+	writeFile: (path, content) => fsWriteFile(path, content, "utf-8"),
+	mkdir: (dir) => fsMkdir(dir, { recursive: true }).then(() => {}),
+	fileSize: async (path) => {
+		try {
+			const s = await fsStat(path);
+			return s.size;
+		} catch {
+			return null;
+		}
+	},
+	readFile: async (path) => {
+		try {
+			return await fsReadFile(path, "utf-8");
+		} catch {
+			return null;
+		}
+	},
+};
+
+export interface WriteToolOptions {
+	/** Captured trusted installation scope; never read from task text. */
+	fileWritePolicy?: FileWritePolicy;
+	/** Custom operations for file writing. Default: local filesystem */
+	operations?: WriteOperations;
+	/** Allow writing content smaller than 50% of existing file. Default: false */
+	allowShrink?: boolean;
+	/** Agent name for cross-edit protection. If set, blocks writes to other agents' protected files. */
+	agentName?: string;
+	/** Project root directory (needed for cross-edit guard path resolution). Defaults to cwd. */
+	projectRoot?: string;
+}
+
+/** Minimum existing file size (bytes) for the shrink guard to apply */
+const SHRINK_GUARD_MIN_SIZE = 500;
+/** Below this ratio, block the write entirely */
+const SHRINK_BLOCK_RATIO = 0.5;
+/** Below this ratio, warn but allow */
+const SHRINK_WARN_RATIO = 0.8;
+
+export function createWriteTool(cwd: string, options?: WriteToolOptions): AgentTool<TSchema> {
+	const ops = options?.operations ?? defaultWriteOperations;
+	const allowShrink = options?.allowShrink ?? false;
+	const agentName = options?.agentName;
+	const projectRoot = options?.projectRoot ?? cwd;
+
+	return {
+		name: "write",
+		label: "write",
+		description: [
+			"Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+			"For small changes to existing files, prefer edit() — it's safer (no accidental data loss).",
+			"A content preview is returned for quick inspection; read() the file back before finish(success).",
+			"Writes that shrink a file below 50% of its original size are blocked (use edit() or read the full file first).",
+		].join(" "),
+		parameters: writeSchema,
+		execute: async (
+			_toolCallId: string,
+			_params: unknown,
+			signal?: AbortSignal,
+		) => {
+			const { path, content } = _params as WriteToolInput;
+			const absolutePath = resolveToCwd(path, cwd);
+			const dir = dirname(absolutePath);
+
+			// Cross-edit guard: block writes to other agents' protected files
+			const guard = checkCrossEditGuard(absolutePath, agentName, projectRoot, options?.fileWritePolicy);
+			if (guard.blocked) {
+				return {
+					content: [{ type: "text" as const, text: guard.message! }],
+					details: undefined,
+				};
+			}
+
+			return withAbortSignal(signal, async (isAborted) => {
+				// Create parent directories if needed
+				await ops.mkdir(dir);
+
+				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
+
+				// Read existing file content before any modifications (for diff preview)
+				let existingContent: string | null = null;
+				if (ops.readFile) {
+					existingContent = await ops.readFile(absolutePath);
+				}
+
+				// Shrink guard: check if new content is significantly smaller than existing file
+				let shrinkWarning = "";
+				if (!allowShrink && ops.fileSize) {
+					const existingSize = await ops.fileSize(absolutePath);
+					if (existingSize !== null && existingSize >= SHRINK_GUARD_MIN_SIZE) {
+						const newSize = Buffer.byteLength(content, "utf-8");
+						const ratio = newSize / existingSize;
+						if (ratio < SHRINK_BLOCK_RATIO) {
+							return {
+								content: [{ type: "text" as const, text: `⚠️ WRITE BLOCKED: New content (${newSize} bytes) is ${Math.round(ratio * 100)}% of existing file (${existingSize} bytes). This looks like a truncated rewrite that would lose data. Use edit() for surgical changes, or read the full file first to ensure you have all content.\n\nIf this edit is needed, report the blocked path and reason to your caller; do not bypass the guard.` }],
+								details: undefined,
+							};
+						} else if (ratio < SHRINK_WARN_RATIO) {
+							shrinkWarning = ` ⚠️ WARNING: New content is ${Math.round(ratio * 100)}% of previous size (${existingSize} → ${newSize} bytes). Verify no data was lost.`;
+						}
+					}
+				}
+
+				// Write the file
+				await ops.writeFile(absolutePath, content);
+
+				if (isAborted()) return { content: [{ type: "text" as const, text: "" }], details: undefined };
+
+				// Smart Write: include content preview for immediate inspection.
+				// Agents still need a read-back before finish(success).
+				// For overwrites: show unified diff (like edit() does)
+				// For new files: show content preview
+				const lines = content.split("\n");
+				const isOverwrite = existingContent !== null;
+
+				let responseText: string;
+				if (isOverwrite && existingContent !== null) {
+					// Generate unified diff between old and new content
+					const diffResult = generateDiffString(existingContent, content);
+					const diffPreview = diffResult.diff;
+					const diffLines = diffPreview.split("\n");
+					const maxDiffLines = 60;
+					const isDiffTruncated = diffLines.length > maxDiffLines;
+					const shownDiff = isDiffTruncated
+						? diffLines.slice(0, maxDiffLines).join("\n") + `\n... (diff truncated, ${diffLines.length} total diff lines)`
+						: diffPreview;
+
+					responseText = [
+						`✅ Wrote ${content.length} bytes to ${path} (${lines.length} lines, overwrite)${shrinkWarning}`,
+						"```diff",
+						shownDiff,
+						"```",
+						isDiffTruncated ? "Diff truncated. Inspect the changes above, then read() this file before finish(success)." : "Inspect the diff above, then read() this file before finish(success).",
+					].join("\n");
+				} else {
+					// New file: show content preview
+					const previewLines = 30;
+					const isTruncated = lines.length > previewLines;
+					const preview = isTruncated
+						? lines.slice(0, previewLines).join("\n") + `\n... (${lines.length} total lines, showing first ${previewLines})`
+						: content;
+
+					responseText = [
+						`✅ Wrote ${content.length} bytes to ${path} (${lines.length} lines)${shrinkWarning}`,
+						"```",
+						preview,
+						"```",
+						isTruncated ? "Inspect the preview above, then read() this file before finish(success)." : "Inspect the content above, then read() this file before finish(success).",
+					].join("\n");
+				}
+
+				return {
+					content: [{ type: "text" as const, text: responseText }],
+					details: undefined,
+				};
+			});
+		},
+	};
+}

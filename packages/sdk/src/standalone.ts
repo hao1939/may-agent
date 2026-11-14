@@ -1,5 +1,5 @@
 /**
- * `@may-agent/sdk/standalone` — Unified standalone execution surface.
+ * `@may-agent/sdk/standalone` — Self-contained standalone Agent & Workflow Runtime.
  *
  * Allows any script, App, or evaluation harness to run prompt agents (`alex`),
  * code procedures (`tech-lead/verified-coder`), or CLI executors (`codex`/`claude`)
@@ -10,10 +10,12 @@
 export {
   DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS,
   DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH,
+  DEFAULT_STANDALONE_LIST_TIMEOUT_MS,
   defaultDirectToolDenials,
   inferWorkspaceRoot,
   listStandaloneTargets,
   prepareDirectAgentExecution,
+  resolveDirectToolPolicy,
   run,
   runDirect,
   runDirectAgent,
@@ -29,7 +31,36 @@ export {
   type DiscoveredTargetSummary,
   type StandaloneRunOptions,
   type ToolDenial,
-} from "../../../src/app/standalone.js";
+} from "./runtime/app/standalone.js";
+
+export {
+  createModelRegistry,
+  type ModelRegistry,
+  type ModelWithFallback,
+} from "./runtime/app/model-registry.js";
+
+export {
+  listRuntimeAgentDirectories,
+  resolveRuntimeAgentDirectory,
+  type AgentDirectory,
+} from "./runtime/app/loader/agent-discovery.js";
+
+export {
+  readAgentConfigFile,
+  validateAgentConfig,
+  type AgentConfig,
+  type ValidationError,
+} from "./runtime/app/loader/agent-config.js";
+
+export type {
+  FinishResult,
+  InstabilityMetrics,
+  ModelWithApiKey,
+  SubagentDefinition,
+  TaskResult,
+  ToolContext,
+  ToolFactory,
+} from "./runtime/lib/types.js";
 
 export {
   WorkflowAllowanceExhaustedError,

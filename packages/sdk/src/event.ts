@@ -9,6 +9,16 @@ export type AppEventTarget = {
   human?: boolean;
 };
 
+export type EventTrace = {
+  traceId: string;
+  parentEventId?: number;
+};
+
+export type EventTraceMetadata = {
+  visibility?: "default" | "detail";
+  trace?: EventTrace;
+};
+
 /** Canonical fact published by App-authored observers and workflows. */
 export type AppEvent<TData = unknown> = {
   type: string;
