@@ -9,11 +9,11 @@ import {
   WorkflowValidationError,
 } from "@may-agent/sdk/testing";
 import { Type } from "typebox";
-import { executePreparedAgent } from "../lib/agent-execution.js";
-import { fakeModel } from "../../test/fixtures/model.js";
-import { usageReply } from "../../test/fixtures/execution-usage.js";
-import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
+import { fakeModel } from "../../../../../test/fixtures/model.js";
+import { usageReply } from "../../../../../test/fixtures/execution-usage.js";
+import { controlledWorkflowImport, observeBoundedResult } from "../../../../../test/fixtures/workflow-import.js";
 import {
+  executePreparedAgent,
   inferWorkspaceRoot,
   listTargets as listStandaloneTargets,
   prepareDirectAgentExecution,

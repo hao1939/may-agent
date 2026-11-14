@@ -8,8 +8,7 @@ import { validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { admitTaskReconcileResult, taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
 import type { TSchema } from "typebox";
-import { prepareAgentExecution } from "./agent-execution.js";
-import { createFinishTool } from "@may-agent/sdk/runtime";
+import { createFinishTool, prepareAgentExecution } from "@may-agent/sdk/runtime";
 
 describe("prepared completion contract", () => {
   let projectRoot: string;
