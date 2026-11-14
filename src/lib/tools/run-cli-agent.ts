@@ -2,11 +2,11 @@ import { Type, type Static } from "typebox";
 
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import type { CliCallFacts } from "@may-agent/sdk";
-import type { EventTrace } from "../../../packages/sdk/src/event.js";
 import {
   cliCallFacts,
   runCliAgent,
   type CliAgentOptions,
+  type EventTrace,
 } from "@may-agent/sdk/runtime";
 
 export { cliCallFacts };

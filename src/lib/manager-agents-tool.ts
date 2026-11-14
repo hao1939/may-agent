@@ -25,7 +25,7 @@ import type { TaskExecutionContext } from "./task-execution-context.js";
 import {
   resolveCallable,
   type PreparedCatalog,
-} from "../../packages/sdk/src/workflow-kernel.js";
+} from "@may-agent/sdk/runtime";
 import { createWorkflowRunner } from "./workflow-tool.js";
 import type { WorkflowEvent } from "./workflow.js";
 import type { EventTrace } from "../app/core/events/bus.js";

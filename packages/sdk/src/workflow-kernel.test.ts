@@ -1,11 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
 import { listTargets, run as sdkRun } from "./standalone.js";
-import { createTestAppWorkflowContext, resolveCallable, runWorkflowTest } from "./testing.js";
+import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
   WorkflowValidationError,
+  runWorkflowInvocation,
+  type WorkflowKernelBindings,
 } from "./workflow-kernel.js";
 
 const ReviewInput = Type.Object(
@@ -86,6 +88,155 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
     expect(run.logs[0]?.message).toBe("reviewing HEAD~1..HEAD");
     expect(run.unconsumedFixtures).toEqual([]);
+  });
+
+  test("ctx.call rejects hostile non-string prompt inputs asynchronously with failed step traces", async () => {
+    for (const input of [
+      { value: 1n },
+      (() => {
+        const circular: Record<string, unknown> = {};
+        circular.self = circular;
+        return circular;
+      })(),
+      {
+        toJSON() {
+          throw new Error("toJSON boom");
+        },
+        [Symbol.toPrimitive]() {
+          throw new Error("coercion boom");
+        },
+      },
+    ]) {
+      let threwSynchronously = false;
+      let returnedPromise = false;
+      const run = await runWorkflowTest(
+        {
+          name: "async-call-errors",
+          description: "Checks ctx.call promise behavior",
+          async execute(ctx) {
+            let pending: Promise<unknown>;
+            try {
+              pending = ctx.call("reviewer", input);
+              returnedPromise = pending instanceof Promise;
+            } catch (error) {
+              threwSynchronously = true;
+              throw error;
+            }
+            await pending;
+            return ctx.done("unreachable");
+          },
+        },
+        {
+          input: {},
+          agents: { reviewer: { summary: "unused" } },
+        },
+      );
+
+      expect(threwSynchronously).toBe(false);
+      expect(returnedPromise).toBe(true);
+      expect(run.ok).toBe(false);
+      expect(run.steps).toHaveLength(1);
+      expect(run.steps[0]?.status).toBe("error");
+      expect(run.steps[0]?.target).toBe("reviewer");
+    }
+  });
+
+  test("ctx.call uses the current invalid-target diagnostic", async () => {
+    const run = await runWorkflowTest(
+      {
+        name: "invalid-target",
+        description: "Calls an invalid target",
+        async execute(ctx) {
+          await ctx.call("unknown", "work");
+          return ctx.done("unreachable");
+        },
+      },
+      { input: {} },
+    );
+    expect(run.ok).toBe(false);
+    expect(String(run.error)).toContain('ctx.call invoked with invalid target name: "unknown"');
+  });
+
+  test("ctx.call resolves each target once per invocation", async () => {
+    let resolutions = 0;
+    const bindings: WorkflowKernelBindings = {
+      input: {},
+      resolveTarget: (target, input) => {
+        resolutions++;
+        return {
+          kind: "agent",
+          invoke: async () => ({
+            id: `s_${target}`,
+            kind: "agent",
+            status: "done",
+            summary: String(input),
+          }),
+        };
+      },
+    };
+    const outcome = await runWorkflowInvocation(
+      {
+        name: "single-resolution",
+        description: "Resolves one target",
+        async execute(ctx) {
+          await ctx.call("reviewer", "review");
+          return ctx.done("done");
+        },
+      },
+      bindings,
+    );
+    expect(outcome.ok).toBe(true);
+    expect(resolutions).toBe(1);
+  });
+
+  test("runTargetTest forwards root skill and outputSchema options and preserves root executable concurrency allowance", async () => {
+    const outputSchema = Type.Object({ verdict: Type.Literal("pass") });
+    let observedSkill: string | undefined;
+    let observedSchema: unknown;
+    const valid = await runTargetTest("reviewer", {
+      input: "Check HEAD",
+      skill: "review",
+      outputSchema,
+      mocks: {
+        reviewer: ({ options }) => {
+          observedSkill = options?.skill;
+          observedSchema = options?.schema;
+          return { output: { verdict: "pass" } };
+        },
+      },
+    });
+    expect(valid.ok).toBe(true);
+    expect(observedSkill).toBe("review");
+    expect(observedSchema).toBe(outputSchema);
+    expect(valid.result?.output).toEqual({ verdict: "pass" });
+
+    const invalid = await runTargetTest("reviewer", {
+      input: "Check HEAD",
+      outputSchema,
+      mocks: { reviewer: { output: { verdict: "fail" } } },
+    });
+    expect(invalid.status).toBe("error");
+    expect(invalid.steps[0]?.summary).toContain("output failed step schema");
+
+    const rootCodeRun = await runTargetTest("owner/review-change", {
+      input: { subjectRef: "HEAD~1..HEAD" },
+      maxConcurrentCalls: 1,
+      mocks: {
+        "owner/review-change": reviewWorkflow,
+        reviewer: {
+          status: "done",
+          summary: "Clean diff",
+          output: {
+            subjectRef: "HEAD~1..HEAD",
+            verdict: "pass",
+            summary: "All good",
+          },
+        },
+      },
+    });
+    expect(rootCodeRun.ok).toBe(true);
+    expect(rootCodeRun.status).toBe("done");
+    expect(rootCodeRun.unconsumedFixtures).toEqual([]);
   });
 
   test("rejects invalid input before execute() runs", async () => {

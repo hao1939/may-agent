@@ -8,9 +8,10 @@ import {
   type PreparedCatalog,
   type WorkflowExecutableModule,
   type WorkflowKernelBindings,
+  type WorkflowKernelStepControl,
   type WorkflowExecutionAllowance,
   type WorkflowStepInvocationResult,
-} from "../../packages/sdk/src/workflow-kernel.js";
+} from "@may-agent/sdk/runtime";
 import { join } from "node:path";
 import { type TSchema } from "typebox";
 import { getDb } from "./db/connection.js";
@@ -673,7 +674,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         agentName: string,
         agentTask: string,
         stepOpts: (AgentCallOptions & { schema?: TSchema }) | undefined,
-        stepControl: Parameters<WorkflowKernelBindings["callTarget"]>[3],
+        stepControl: WorkflowKernelStepControl,
       ): Promise<WorkflowStepInvocationResult> => {
         validateOperationAllowance(stepOpts?.operationAllowance);
         const steering = steeringQueue.shift();
@@ -741,20 +742,16 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
       };
 
       const executeCodeStep = async (
-        wfName: string,
+        resolved: Extract<ReturnType<typeof resolveCallable>, { kind: "code" }>,
         workflowInput: unknown,
         stepOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
-        stepControl: Parameters<WorkflowKernelBindings["callTarget"]>[3],
+        stepControl: WorkflowKernelStepControl,
       ): Promise<WorkflowStepInvocationResult> => {
+        const wfName = resolved.name;
         const steering = steeringQueue.shift();
         if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
         if (depth + 1 > maxDepth) {
           throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
-        }
-        await loadTargetOwnerProcedures(wfName, stepControl.signal);
-        const resolved = resolveCallable(callerOwner, wfName, targetCatalog);
-        if (resolved.kind !== "code") {
-          throw new Error(`Callable target "${wfName}" is not a code procedure`);
         }
         const subWorkflow = resolved.module;
         if (stepOpts?.tools === "readonly" && !resolved.readonly) {
@@ -805,14 +802,6 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         timeoutMs: declaredTimeoutMs,
         timeoutLimitMs: executionTimeoutLimitMs,
         allowance: inheritedAllowance,
-        resolveTargetKind: async (target) => {
-          try {
-            if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
-            return resolveCallable(callerOwner, target, targetCatalog).kind === "code" ? "workflow" : "agent";
-          } catch {
-            return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
-          }
-        },
         ...(hostEnv as Pick<
           WorkflowKernelBindings,
           "read" | "metrics" | "workspace" | "reconciliation" | "reviseTask" | "closeTask" | "readCommunication" | "applyTaskChanges" | "events"
@@ -830,27 +819,46 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         // An unfinished native import is not confirmed cleanup. Its eventual
         // continuation checks the scope signal before publishing or executing.
         confirmCleanup: () => targetCatalog.pendingImports === 0,
-        callTarget: async (target, input, callOptions, stepControl) => {
-          const steering = steeringQueue.shift();
-          if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-          await loadTargetOwnerProcedures(target, stepControl.signal);
+        resolveTarget: async (target, input) => {
+          if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
           if (!hasStructuredAgentCatalog && typeof target === "string" && !target.includes("/")) {
-            if (targetCatalog.proceduresByOwner.get(callerOwner)?.has(target)) {
-              return executeCodeStep(target, input, callOptions, stepControl);
+            const codeModule = targetCatalog.proceduresByOwner.get(callerOwner)?.get(target);
+            if (!codeModule) {
+              return {
+                kind: "agent" as const,
+                invoke: async (callOptions, stepControl) => {
+                  const steering = steeringQueue.shift();
+                  if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+                  if (typeof input !== "string") {
+                    throw new Error(`Prompt target "${target}" requires a string prompt input`);
+                  }
+                  return executePromptStep(target, input, callOptions, stepControl);
+                },
+              };
             }
-            if (typeof input !== "string") {
-              throw new Error(`Prompt target "${target}" requires a string prompt input`);
-            }
-            return executePromptStep(target, input, callOptions, stepControl);
           }
           const resolved = resolveCallable(callerOwner, target, targetCatalog);
           if (resolved.kind === "code") {
-            return executeCodeStep(target, input, callOptions, stepControl);
+            return {
+              kind: "workflow" as const,
+              invoke: async (callOptions, stepControl) => {
+                const steering = steeringQueue.shift();
+                if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+                return executeCodeStep(resolved, input, callOptions, stepControl);
+              },
+            };
           }
-          if (typeof input !== "string") {
-            throw new Error(`Prompt target "${target}" requires a string prompt input`);
-          }
-          return executePromptStep(resolved.name, input, callOptions, stepControl);
+          return {
+            kind: "agent" as const,
+            invoke: async (callOptions, stepControl) => {
+              const steering = steeringQueue.shift();
+              if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
+              if (typeof input !== "string") {
+                throw new Error(`Prompt target "${target}" requires a string prompt input`);
+              }
+              return executePromptStep(resolved.name, input, callOptions, stepControl);
+            },
+          };
         },
       };
       const outcome = await runWorkflowInvocation({
