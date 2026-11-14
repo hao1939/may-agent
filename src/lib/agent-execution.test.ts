@@ -1,6 +1,6 @@
 import { Type, type TSchema } from "typebox";
 import { afterEach, describe, expect, test } from "bun:test";
-import type { AgentTool } from "@earendil-works/pi-agent-core";
+import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { createAssistantMessageEventStream, type AssistantMessage, normalizeContext, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext, type Model, type StreamFunction } from "@earendil-works/pi-ai";
 import { Value } from "typebox/value";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -11,7 +11,12 @@ import {
   prepareAgentExecution,
   withGithubCopilotIdeTokenRecovery,
 } from "./agent-execution.js";
-import { agentExecutionResult, currentAgentSessionId, readFileWritePolicy } from "@may-agent/sdk/runtime";
+import {
+  agentExecutionResult,
+  currentAgentSessionId,
+  prepareAgentExecution as prepareSdkAgentExecution,
+  readFileWritePolicy,
+} from "@may-agent/sdk/runtime";
 import { createFinishTool } from "@may-agent/sdk/runtime";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
@@ -206,6 +211,135 @@ describe("GitHub Copilot IDE token recovery", () => {
   });
 });
 
+describe("environment-agnostic SDK execution preparation", () => {
+  const definition = (overrides: Record<string, unknown> = {}) => ({
+    name: "sdk-worker",
+    description: "SDK fixture",
+    domain: "test",
+    systemPrompt: "SDK identity",
+    model: { ...streamTestModel, contextWindow: 200 },
+    tools: [] as AgentTool[],
+    ...overrides,
+  });
+
+  test("maps sourceRoot explicitly and rejects stale implicit execution mappings", () => {
+    const executionRoot = "/tmp/sdk-execution";
+    const policy = { root: "/tmp/source", protectedPaths: [], grants: [] };
+    const prepare = (sourceRoot: string | null | undefined, mappedRoot: string) =>
+      prepareSdkAgentExecution({
+        definition: definition({
+          fileWritePolicy: { ...policy, execution: { root: mappedRoot, sourceRoot: "/tmp/original" } },
+        }),
+        projectRoot: "/tmp/source",
+        executionRoot,
+        ...(sourceRoot === undefined ? {} : { sourceRoot }),
+        sessionId: `source-${String(sourceRoot)}`,
+        task: "Inspect mapping",
+      }).definition.fileWritePolicy?.execution;
+
+    expect(prepare(null, executionRoot)).toBeUndefined();
+    expect(prepare("/tmp/project-source", "/tmp/stale-root")).toEqual({
+      root: executionRoot,
+      sourceRoot: "/tmp/project-source",
+    });
+    expect(prepare(undefined, executionRoot)).toEqual({ root: executionRoot, sourceRoot: "/tmp/original" });
+    expect(prepare(undefined, "/tmp/stale-root")).toBeUndefined();
+  });
+
+  test.each(["sync", "async"] as const)(
+    "builds repeated %s disposable context views after compaction without transcript accumulation",
+    async (mode) => {
+      let calls = 0;
+      let compactions = 0;
+      const contextMessages = () => {
+        const messages: AgentMessage[] = [{
+          role: "user",
+          content: [{ type: "text", text: `disposable-${++calls}` }],
+          timestamp: calls,
+        }];
+        return mode === "async" ? Promise.resolve(messages) : messages;
+      };
+      const prepared = prepareSdkAgentExecution({
+        definition: definition(),
+        projectRoot: "/tmp",
+        sessionId: `context-${mode}`,
+        task: "Inspect context",
+        enableCompaction: true,
+        contextMessages,
+        onCompact: () => compactions++,
+      });
+      const durable: AgentMessage[] = [1, 2, 3, 4].map((timestamp) => ({
+        role: "user",
+        content: [{ type: "text", text: "x".repeat(400) }],
+        timestamp,
+      }));
+
+      const first = await prepared.runner.transformContext!(durable);
+      expect(compactions).toBeGreaterThan(0);
+      expect(first).toHaveLength(durable.length + 1);
+      expect(JSON.stringify(first.at(-1))).toContain("disposable-1");
+      expect(JSON.stringify(durable)).not.toContain("disposable-");
+
+      const second = await prepared.runner.transformContext!(durable);
+      expect(second).toHaveLength(durable.length + 1);
+      expect(JSON.stringify(second.at(-1))).toContain("disposable-2");
+      expect(JSON.stringify(second)).not.toContain("disposable-1");
+      expect(JSON.stringify(durable)).not.toContain("disposable-");
+    },
+  );
+
+  test("enables compaction from either the execution or registered definition", () => {
+    const prepare = (enableCompaction: boolean | undefined, compaction: boolean | undefined) =>
+      prepareSdkAgentExecution({
+        definition: definition({ compaction }),
+        projectRoot: "/tmp",
+        sessionId: `compact-${String(enableCompaction)}-${String(compaction)}`,
+        task: "Inspect compaction",
+        enableCompaction,
+      }).runner.transformContext;
+
+    expect(prepare(undefined, undefined)).toBeUndefined();
+    expect(prepare(true, undefined)).toBeFunction();
+    expect(prepare(false, true)).toBeFunction();
+  });
+
+  test("applies preparer labels and places the environment suffix after completion and skill guidance", () => {
+    const skill = {
+      name: "proof-first",
+      description: "Use proof",
+      filePath: "/tmp/proof-first/SKILL.md",
+      canonicalPath: "/tmp/proof-first/SKILL.md",
+      content: "Collect proof first.",
+      scope: "agent" as const,
+      contentHash: "proof-first-hash",
+    };
+    const measurements: Array<{ preparer: string; systemBytes: number | null }> = [];
+    const prepared = prepareSdkAgentExecution({
+      definition: definition({
+        tools: [tool("finish")],
+        skillCatalog: { skills: new Map([[skill.name, skill]]), diagnostics: [], omittedFromPrompt: [] },
+      }),
+      projectRoot: "/tmp",
+      sessionId: "generic-options",
+      task: "$proof-first Verify the result",
+      requireFinish: true,
+      preparerLabel: "environment-adapter",
+      systemPromptSuffix: "Environment-specific final guidance.",
+      onPreparation: (measurement) => measurements.push(measurement),
+    });
+
+    expect(prepared.preparation.preparer).toBe("environment-adapter");
+    expect(measurements).toEqual([expect.objectContaining({ preparer: "environment-adapter" })]);
+    expect(prepared.systemPrompt.indexOf("</completion>")).toBeLessThan(
+      prepared.systemPrompt.indexOf("Selected skill reference:"),
+    );
+    expect(prepared.systemPrompt.indexOf("Selected skill reference:")).toBeLessThan(
+      prepared.systemPrompt.indexOf("Environment-specific final guidance."),
+    );
+    expect(prepared.systemPrompt).toEndWith("Environment-specific final guidance.");
+  });
+});
+
 describe("shared agent execution preparation", () => {
   test("replaces only the task brief, retaining current execution controls and original input", () => {
     const options = {
@@ -254,6 +388,93 @@ describe("shared agent execution preparation", () => {
       },
     });
     expect(chat.prompt).toBe(options.task);
+  });
+
+  test("composes Host observations, explicit Task context, and generic messages in order", async () => {
+    const taskContext = { reconciliation: { task: {} } } as TaskExecutionContext;
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "worker",
+        description: "fixture",
+        domain: "test",
+        systemPrompt: "Current authority",
+        model: streamTestModel,
+        tools: [],
+      },
+      projectRoot: "/tmp",
+      sessionId: "host-context-order",
+      task: "Judge current state",
+      taskContext,
+      chatContext: () => "observation packet",
+      taskDecisionContext: async () => ({
+        role: "user",
+        content: [{ type: "text", text: "explicit Task packet" }],
+        timestamp: 2,
+      }),
+      contextMessages: () => [{
+        role: "user",
+        content: [{ type: "text", text: "generic environment packet" }],
+        timestamp: 3,
+      }],
+    });
+    const durable: AgentMessage[] = [{
+      role: "user",
+      content: [{ type: "text", text: "durable transcript" }],
+      timestamp: 1,
+    }];
+
+    const view = await prepared.runner.transformContext!(durable);
+    expect(view.map((message) => JSON.stringify(message))).toEqual([
+      expect.stringContaining("durable transcript"),
+      expect.stringContaining("Current observations (source data):\\nobservation packet"),
+      expect.stringContaining("explicit Task packet"),
+      expect.stringContaining("generic environment packet"),
+    ]);
+    expect(JSON.stringify(view)).not.toContain("Task decision context unavailable");
+    expect(durable).toHaveLength(1);
+  });
+
+  test("keeps persistent-chat explicit-skill prompts and published measurements aligned", () => {
+    const skill = {
+      name: "proof-first",
+      description: "Use proof",
+      filePath: "/tmp/proof-first/SKILL.md",
+      canonicalPath: "/tmp/proof-first/SKILL.md",
+      content: "Collect proof first.",
+      scope: "agent" as const,
+      contentHash: "proof-first-hash",
+    };
+    const measurements: Array<{ preparer: string; systemBytes: number | null }> = [];
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "worker",
+        description: "fixture",
+        domain: "test",
+        systemPrompt: "Current authority",
+        model: streamTestModel,
+        tools: [],
+        skillCatalog: { skills: new Map([[skill.name, skill]]), diagnostics: [], omittedFromPrompt: [] },
+      },
+      projectRoot: "/tmp",
+      sessionId: "persistent-skill",
+      task: "$proof-first Verify the result",
+      persistentChat: true,
+      onPreparation: (measurement) => measurements.push(measurement),
+    });
+
+    expect(prepared.prompt).toContain(skill.content);
+    expect(prepared.systemPrompt).not.toContain("Selected skill reference:");
+    expect(prepared.runner.initialState.systemPrompt).toBe(prepared.systemPrompt);
+    expect(prepared.preparation).toMatchObject({
+      preparer: "not-applicable",
+      systemBytes: Buffer.byteLength(prepared.systemPrompt),
+    });
+    expect(measurements).toEqual([
+      expect.objectContaining({
+        preparer: "not-applicable",
+        systemBytes: Buffer.byteLength(prepared.systemPrompt),
+      }),
+    ]);
   });
 
   test.each([undefined, null, "", "   ", {}, Promise.resolve("async")])(
