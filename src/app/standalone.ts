@@ -52,11 +52,22 @@ import {
 } from "./loader/agent-discovery.js";
 import { createModelRegistry } from "./model-registry.js";
 import {
+  prepareDirectAgentExecution,
   runDirectAgent,
+  type AgentExecutionManifest,
   type DirectAgentRunOptions,
   type DirectAgentRunResult,
   type ToolDenial,
 } from "./direct-agent.js";
+
+export {
+  prepareDirectAgentExecution,
+  runDirectAgent,
+  type AgentExecutionManifest,
+  type DirectAgentRunOptions,
+  type DirectAgentRunResult,
+  type ToolDenial,
+};
 
 export const DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS = 4;
 export const DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH = 3;

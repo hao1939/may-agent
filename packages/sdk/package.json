@@ -11,6 +11,7 @@
     ".": "./src/index.ts",
     "./app": "./src/app.ts",
     "./task": "./src/task.ts",
+    "./standalone": "./src/standalone.ts",
     "./testing": "./src/testing.ts"
   },
   "files": [

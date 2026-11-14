@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { run as sdkRun, runStandalone } from "./standalone.js";
 import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
@@ -736,7 +737,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       });
     }
 
-    const sdkDirectCode = await runTargetTest("owner/review-change", {
+    const sdkDirectCode = await runStandalone("owner/review-change", {
       input: { subjectRef: "HEAD~1..HEAD" },
       mocks: {
         "owner/review-change": reviewWorkflow,
@@ -753,5 +754,23 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
     expect(sdkDirectCode.ok).toBe(true);
     expect(sdkDirectCode.result?.type).toBe("done");
+
+    const sdkStandaloneRun = await sdkRun("reviewer", "Audit via @may-agent/sdk/standalone", {
+      tools: "readonly",
+      models: {},
+      agentFixtures: {
+        reviewer: async (call) => ({
+          id: "sdk_run_1",
+          kind: "agent",
+          status: "done",
+          summary: `SDK run: ${call.task} (${call.options?.tools ?? "full"})`,
+        }),
+      },
+    });
+    expect(sdkStandaloneRun.ok).toBe(true);
+    expect(sdkStandaloneRun.result).toEqual({
+      type: "done",
+      summary: "SDK run: Audit via @may-agent/sdk/standalone (readonly)",
+    });
   });
 });

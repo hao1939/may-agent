@@ -22,6 +22,9 @@
       "@may-agent/sdk/task": [
         "./packages/sdk/src/task.ts"
       ],
+      "@may-agent/sdk/standalone": [
+        "./packages/sdk/src/standalone.ts"
+      ],
       "@may-agent/sdk/testing": [
         "./packages/sdk/src/testing.ts"
       ]
