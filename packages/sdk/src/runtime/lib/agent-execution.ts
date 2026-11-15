@@ -369,7 +369,7 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
 }
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./manager-utils.js";
-import { createWorkflowFinishTool } from "./tools/lifecycle.js";
+import { createWorkflowFinishTool, providerCompatibleToolSchema } from "./tools/lifecycle.js";
 import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
 import { createEditTool } from "./tools/edit.js";
@@ -1009,14 +1009,31 @@ export function withGithubCopilotIdeTokenRecovery(stream: SimpleStreamFunction):
 }
 
 const boundedStreamSimple = withGithubCopilotIdeTokenRecovery((model, context, options) =>
-  streamSimple(model, context, {
-    ...options,
-    signal: options?.signal
-      ? AbortSignal.any([options.signal, AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS)])
-      : AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS),
-    timeoutMs: options?.timeoutMs ?? DEFAULT_MODEL_REQUEST_TIMEOUT_MS,
-    maxRetries: options?.maxRetries ?? 1,
-  }),
+  streamSimple(
+    model,
+    {
+      ...context,
+      messages: context.messages.map((message) =>
+        message.role === "system" && message.toolsAdded
+          ? {
+              ...message,
+              toolsAdded: message.toolsAdded.map((tool) => ({
+                ...tool,
+                parameters: providerCompatibleToolSchema(tool.parameters as unknown as TSchema) as unknown as typeof tool.parameters,
+              })),
+            }
+          : message,
+      ),
+    },
+    {
+      ...options,
+      signal: options?.signal
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS)])
+        : AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS),
+      timeoutMs: options?.timeoutMs ?? DEFAULT_MODEL_REQUEST_TIMEOUT_MS,
+      maxRetries: options?.maxRetries ?? 1,
+    },
+  ),
 );
 
 export type PreparedAgentExecution = {

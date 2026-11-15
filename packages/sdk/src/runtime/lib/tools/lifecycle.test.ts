@@ -254,11 +254,11 @@ describe("provider-compatible workflow finish schema", () => {
   beforeEach(setup);
   afterEach(cleanup);
 
-  it("removes negative Task branches from serialized parameters without mutating the contract", () => {
+  it("removes negative Task branches from provider-compatible schema while keeping full tool.parameters for local validation", () => {
     const original = JSON.stringify(taskAgentResultSchema);
     const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskAgentResultSchema);
-    const parameters = JSON.parse(JSON.stringify(tool.parameters));
-    const result = parameters.properties.result;
+    const compatible = JSON.parse(JSON.stringify(providerCompatibleToolSchema(tool.parameters)));
+    const result = compatible.properties.result;
 
     expect(result).not.toHaveProperty("anyOf");
     expect(JSON.stringify(result)).not.toContain('"not":');
@@ -268,24 +268,30 @@ describe("provider-compatible workflow finish schema", () => {
     );
     expect(result.$id).toBe(taskAgentResultSchema.$id);
     expect(result.additionalProperties).toBe(false);
-    expect(parameters.required).toContain("result");
+    expect(compatible.required).toContain("result");
     expect(JSON.stringify(taskAgentResultSchema)).toBe(original);
     expect(taskAgentResultSchema.anyOf).toHaveLength(4);
-    expect(tool.parameters.properties.result).not.toBe(taskAgentResultSchema);
+    expect(tool.parameters.properties.result).toBe(taskAgentResultSchema);
   });
 
-  it("recursively strips direct and nested negatives while cloning ordinary unions and metadata", () => {
+  it("recursively strips direct and nested negatives (anyOf/oneOf/allOf) while preserving properties/literals named not", () => {
     const schema = Type.Object({
+      not: Type.String({ minLength: 1 }),
+      literal: Type.Literal("ok", { default: { not: "preserved" } } as any),
       value: Type.String({ not: { const: "forbidden" } }),
+      exclusive: Type.String({ oneOf: [{ not: { const: "bad" } }, { const: "good" }] }),
       nested: Type.Array(Type.Object({
         choice: Type.String({ anyOf: [{ allOf: [{ not: { const: "forbidden" } }] }, { const: "ok" }] }),
         ordinary: Type.Union([Type.Literal("a"), Type.Literal("b")]),
       })),
     });
     const original = JSON.stringify(schema);
-    const compatible = providerCompatibleToolSchema(schema);
+    const compatible = providerCompatibleToolSchema(schema) as any;
 
+    expect(compatible.properties.not).toEqual({ type: "string", minLength: 1 });
+    expect(compatible.properties.literal.default).toEqual({ not: "preserved" });
     expect(compatible.properties.value).not.toHaveProperty("not");
+    expect(compatible.properties.exclusive).not.toHaveProperty("oneOf");
     expect(compatible.properties.nested.items.properties.choice).not.toHaveProperty("anyOf");
     expect(compatible.properties.nested.items.properties.ordinary.anyOf).toEqual(
       schema.properties.nested.items.properties.ordinary.anyOf,
@@ -308,8 +314,10 @@ describe("provider-compatible workflow finish schema", () => {
       status: "partial", summary: "Attempt report",
       result: { summary: "Task report", facts: [], ...result },
     };
-    // These combinations are deliberately allowed by the relaxed provider schema.
-    expect(Compile(tool.parameters).Check(params)).toBe(true);
+    // These combinations are deliberately allowed by the relaxed provider schema,
+    // while tool.parameters retains the full schema for Pi's validateToolArguments.
+    expect(Compile(providerCompatibleToolSchema(tool.parameters)).Check(params)).toBe(true);
+    expect(Compile(tool.parameters).Check(params)).toBe(false);
     expect(() => tool.prepareArguments!(params)).toThrow("supplied schema");
     await expect(tool.execute("invalid-report", params)).rejects.toThrow("supplied schema");
   });

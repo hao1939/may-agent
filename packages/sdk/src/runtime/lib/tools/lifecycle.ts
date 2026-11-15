@@ -284,26 +284,46 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
 
 
 /**
- * Providers cannot represent negative cross-field constraints. Advertise a
- * relaxed clone while retaining the original schema for local validation.
+ * Providers (such as Gemini 4 over OpenAI completions) reject negative JSON
+ * Schema clauses (`not`). Advertise a relaxed clone in the provider payload
+ * while retaining the original schema on `tool.parameters` for local validation.
  */
 export function providerCompatibleToolSchema(schema: TSchema): TSchema {
-  const containsNot = (value: unknown): boolean => {
+  const DATA_CONTAINERS = new Set(["const", "enum", "default", "examples"]);
+  const MAP_CONTAINERS = new Set(["properties", "patternProperties", "dependentSchemas", "$defs", "definitions"]);
+  const containsNot = (value: unknown, inMap = false): boolean => {
     if (!value || typeof value !== "object") return false;
-    if (Array.isArray(value)) return value.some(containsNot);
-    return Object.hasOwn(value, "not") || Object.values(value).some(containsNot);
+    if (Array.isArray(value)) return value.some((item) => containsNot(item, false));
+    const record = value as Record<string, unknown>;
+    if (!inMap && Object.hasOwn(record, "not")) return true;
+    for (const [k, v] of Object.entries(record)) {
+      if (!inMap && DATA_CONTAINERS.has(k)) continue;
+      if (containsNot(v, !inMap && MAP_CONTAINERS.has(k))) return true;
+    }
+    return false;
   };
-  const clone = (value: unknown): unknown => {
+  const clone = (value: unknown, inMap = false): unknown => {
     if (!value || typeof value !== "object") return value;
-    if (Array.isArray(value)) return value.map(clone);
+    if (Array.isArray(value)) return value.map((item) => clone(item, false));
     const source = value as Record<PropertyKey, unknown>;
     const result: Record<PropertyKey, unknown> = {};
     // Keep TypeBox's symbol metadata as well as the JSON Schema fields.
     for (const key of Reflect.ownKeys(source)) {
-      if (key === "not") continue;
-      if (key === "anyOf" && Array.isArray(source[key]) && source[key].some(containsNot)) continue;
+      if (!inMap && key === "not") continue;
+      if (
+        !inMap &&
+        (key === "anyOf" || key === "oneOf" || key === "allOf") &&
+        Array.isArray(source[key]) &&
+        source[key].some((branch) => containsNot(branch, false))
+      ) {
+        continue;
+      }
+      const nextVal =
+        !inMap && typeof key === "string" && DATA_CONTAINERS.has(key)
+          ? structuredClone(source[key])
+          : clone(source[key], !inMap && typeof key === "string" && MAP_CONTAINERS.has(key));
       Object.defineProperty(result, key, {
-        value: clone(source[key]),
+        value: nextVal,
         enumerable: Object.getOwnPropertyDescriptor(source, key)?.enumerable ?? true,
         configurable: true,
         writable: true,
@@ -342,11 +362,8 @@ export function createWorkflowFinishTool(
   outputSchema?: TSchema,
   validateOutput?: (result: unknown) => string | null,
 ): AgentTool {
-  const fullParameters = outputSchema ? addRequiredResult(baseFinish.parameters, outputSchema) : baseFinish.parameters;
-  const validator = Compile(fullParameters);
-  const parameters = outputSchema
-    ? addRequiredResult(baseFinish.parameters, providerCompatibleToolSchema(outputSchema))
-    : baseFinish.parameters;
+  const parameters = outputSchema ? addRequiredResult(baseFinish.parameters, outputSchema) : baseFinish.parameters;
+  const validator = Compile(parameters);
   const validateReport = (params: unknown) => {
     if (!validator.Check(params)) {
       // The schema declares accepted representations, including inputs to the
