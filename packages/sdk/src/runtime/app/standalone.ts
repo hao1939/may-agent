@@ -1456,32 +1456,36 @@ export async function runDirectWorkflow<TInput = unknown>(
       // Native imports cannot be forcibly stopped. Keep uncertainty visible if
       // preparation outlives this invocation, and fence its late continuation.
       confirmCleanup: () => preparedCatalog.pendingImports === 0,
-      resolveTargetKind: async (target) => {
-        try {
-          if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
-          if (typeof target === "string" && isNativeCliFallback(target)) return "agent";
-          const resolved = resolveCallable(callerOwner, target, preparedCatalog);
-          return resolved.kind === "prompt" ? "agent" : "workflow";
-        } catch {
-          return typeof target === "string" && target.includes("/") ? "workflow" : "agent";
-        }
-      },
-      callTarget: async (target, input, callOpts, stepControl) => {
-        await loadTargetOwnerProcedures(target, stepControl.signal);
+      resolveTarget: async (target, input) => {
+        if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
         if (typeof target === "string" && isNativeCliFallback(target)) {
-          if (typeof input !== "string" || !input.trim()) {
-            throw new Error(`CLI target "${target}" requires a non-empty string prompt input`);
-          }
-          return executeCliStep(target.trim() as "codex" | "claude", input, callOpts, stepControl);
+          return {
+            kind: "agent" as const,
+            invoke: async (callOpts, stepControl) => {
+              if (typeof input !== "string" || !input.trim()) {
+                throw new Error(`CLI target "${target}" requires a non-empty string prompt input`);
+              }
+              return executeCliStep(target.trim() as "codex" | "claude", input, callOpts, stepControl);
+            },
+          };
         }
         const resolved = resolveCallable(callerOwner, target, preparedCatalog);
         if (resolved.kind === "prompt") {
-          if (typeof input !== "string") {
-            throw new Error(`Prompt target "${target}" requires a string prompt input`);
-          }
-          return executePromptStep(resolved.name, input, callOpts, stepControl);
+          return {
+            kind: "agent" as const,
+            invoke: async (callOpts, stepControl) => {
+              if (typeof input !== "string") {
+                throw new Error(`Prompt target "${target}" requires a string prompt input`);
+              }
+              return executePromptStep(resolved.name, input, callOpts, stepControl);
+            },
+          };
         }
-        return executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts);
+        return {
+          kind: "workflow" as const,
+          invoke: (callOpts, stepControl) =>
+            executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts),
+        };
       },
     },
   );

@@ -18,6 +18,19 @@ describe("model registry", () => {
       contextWindow: 400_000,
     });
     expect(registry["gpt-6-astra"]?.fallbackModel).toBeUndefined();
+    expect(registry["gemini-4-argon"]).toMatchObject({
+      id: "gemini-4-argon",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 400_000,
+    });
+    expect(registry["gpt-6.1-sol"]).toMatchObject({
+      id: "gpt-6.1-sol",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 400_000,
+    });
+    expect(registry["gpt-6.1-sol"]?.fallbackModel).toBe(registry["claude-opus-5"]);
     expect(registry["gpt-5.6-sol"]?.apiKey).toBe("endpoint-key");
     expect(registry["claude-opus-5"]?.id).toBe("claude-opus-5");
     expect(registry["claude-opus-5"]?.contextWindow).toBe(200_000);
@@ -107,7 +120,7 @@ describe("model registry", () => {
         Type.Object({ decision: Type.Literal("blocked"), reason: Type.String() }),
       ]),
     });
-    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "deepseek-v4-flash"]) {
+    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-6.1-sol", "deepseek-v4-flash"]) {
       let payload: unknown;
       const model = registry[name]!;
       const response = streamSimple(

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
-test("public SDK root preserves the reviewed value and type exports", async () => {
+test("public SDK entrypoints preserve the reviewed value and type exports", async () => {
   const repoRoot = resolve(import.meta.dir, "../../..");
   const outputDir = await mkdtemp(join(tmpdir(), "sdk-declarations-"));
   try {
@@ -29,9 +29,15 @@ test("public SDK root preserves the reviewed value and type exports", async () =
       ],
       { cwd: repoRoot, timeout: 20_000, killSignal: "SIGKILL" },
     );
-    const actual = await readFile(join(outputDir, "src/index.d.ts"), "utf8");
-    const expected = await readFile(join(repoRoot, "test/fixtures/sdk-root.d.ts.snap"), "utf8");
-    expect(actual).toBe(expected);
+    for (const [declaration, snapshot] of [
+      ["src/index.d.ts", "test/fixtures/sdk-root.d.ts.snap"],
+      ["src/testing.d.ts", "test/fixtures/sdk-testing.d.ts.snap"],
+      ["src/standalone.d.ts", "test/fixtures/sdk-standalone.d.ts.snap"],
+    ] as const) {
+      const actual = await readFile(join(outputDir, declaration), "utf8");
+      const expected = await readFile(join(repoRoot, snapshot), "utf8");
+      expect(actual).toBe(expected);
+    }
   } finally {
     await rm(outputDir, { recursive: true, force: true });
   }

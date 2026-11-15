@@ -166,6 +166,8 @@ export const LEGACY_ENDPOINT_MODELS = {
 // explicit so catalog changes cannot silently delay compaction.
 const ENDPOINT_CONTEXT_WINDOWS = {
   "gpt-6-astra": 400_000,
+  "gemini-4-argon": 400_000,
+  "gpt-6.1-sol": 400_000,
   "claude-opus-4-6": 72_000,
   "gpt-5.4": 400_000,
   "gpt-5.5": 400_000,
@@ -206,6 +208,19 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-6-astra"],
       baseUrl,
       apiKey,
+    },
+    "gemini-4-argon": {
+      ...getBuiltinModel("github-copilot", "gemini-4-argon"),
+      contextWindow: ENDPOINT_CONTEXT_WINDOWS["gemini-4-argon"],
+      baseUrl,
+      apiKey,
+    },
+    "gpt-6.1-sol": {
+      ...getBuiltinModel("github-copilot", "gpt-6.1-sol"),
+      contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-6.1-sol"],
+      baseUrl,
+      apiKey,
+      fallbackModel: claudeOpus5,
     },
     "claude-opus-4-6": {
       ...getBuiltinModel("anthropic", "claude-opus-4-6"),

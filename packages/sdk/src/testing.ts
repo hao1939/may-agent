@@ -283,6 +283,8 @@ export type WorkflowTestOptions<TInput> = {
   executionId?: string;
   taskOwned?: boolean;
   tools?: "full" | "readonly";
+  skill?: string;
+  outputSchema?: TSchema;
   task?: TaskDetail;
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
   workspace?: WorkflowContext["workspace"];
@@ -360,26 +362,45 @@ export async function runWorkflowTest<TInput = unknown>(
   moduleOrTarget: WorkflowExecutableModule<TInput> | string,
   options: WorkflowTestOptions<TInput>,
 ): Promise<WorkflowTestRunResult> {
-   const module: WorkflowExecutableModule<TInput> =
-     typeof moduleOrTarget === "string"
-       ? (() => {
-           const targetName = moduleOrTarget.trim();
-           const mockEntry = options.mocks?.[targetName] ?? options.workflows?.[targetName];
-           if (isExecutableModuleFixture(mockEntry)) {
-             return mockEntry as WorkflowExecutableModule<TInput>;
-           }
-           return {
-             name: targetName,
-             description: `Standalone SDK test invocation for ${targetName}`,
-             ...(options.tools === "readonly" ? { readonly: true } : {}),
-             async execute(ctx) {
-               return ctx.call(targetName, ctx.input, {
-                 ...(options.tools ? { tools: options.tools } : {}),
-               });
-             },
-           };
-         })()
-       : moduleOrTarget;
+  const targetName = typeof moduleOrTarget === "string" ? moduleOrTarget.trim() : undefined;
+  const rootFixture = targetName
+    ? options.mocks?.[targetName] ?? options.workflows?.[targetName]
+    : undefined;
+  const rootExecutable = isExecutableModuleFixture(rootFixture)
+    ? (rootFixture as WorkflowExecutableModule<TInput>)
+    : undefined;
+  const module: WorkflowExecutableModule<TInput> =
+    typeof moduleOrTarget !== "string"
+      ? moduleOrTarget
+      : rootExecutable
+        ? {
+            ...rootExecutable,
+            async execute(ctx) {
+              if (options.skill !== undefined) {
+                throw new Error(
+                  `Call option "skill" is only supported for prompt targets, not code procedure "${targetName}"`,
+                );
+              }
+              return rootExecutable.execute(ctx);
+            },
+          }
+        : {
+            name: targetName ?? "",
+            description: `Standalone SDK test invocation for ${targetName ?? ""}`,
+            ...(options.tools === "readonly" ? { readonly: true } : {}),
+            async execute(ctx) {
+              const callOptions = {
+                ...(options.tools ? { tools: options.tools } : {}),
+                ...(options.skill ? { skill: options.skill } : {}),
+              };
+              return options.outputSchema
+                ? ctx.call(targetName ?? "", ctx.input, {
+                    ...callOptions,
+                    schema: options.outputSchema,
+                  })
+                : ctx.call(targetName ?? "", ctx.input, callOptions);
+            },
+          };
   type NormalizedFixtureEntry = {
     source: "mock" | "agent" | "workflow";
     fixture: ScriptedTargetFixture | ScriptedAgentFixture | ScriptedWorkflowFixture;
@@ -531,11 +552,11 @@ export async function runWorkflowTest<TInput = unknown>(
   const invokeMockTarget = async (
     target: string,
     input: unknown,
+    kind: "agent" | "workflow",
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult> => {
     const slot = entriesByTarget.get(target);
-    const kind = resolveMockKind(target, input);
     const selected =
       slot?.mock ??
       (kind === "workflow" ? (slot?.workflow ?? slot?.agent) : (slot?.agent ?? slot?.workflow));
@@ -592,6 +613,7 @@ export async function runWorkflowTest<TInput = unknown>(
     deadlineAt: nestedControl?.deadlineAt ?? options.deadlineAt,
     maxConcurrentCalls: options.maxConcurrentCalls,
     allowance: nestedControl?.allowance,
+    outputSchema: nestedControl ? undefined : options.outputSchema,
     read,
     events,
     metrics,
@@ -603,9 +625,14 @@ export async function runWorkflowTest<TInput = unknown>(
     confirmCleanup: options.confirmCleanup,
     onStep: options.onStep,
     onLog: options.onLog,
-    resolveTargetKind: (target, input) => resolveMockKind(target, input),
-    callTarget: (target, input, callOpts, stepControl) =>
-      invokeMockTarget(target, input, callOpts, stepControl),
+    resolveTarget: (target, input) => {
+      const kind = resolveMockKind(target, input);
+      return {
+        kind,
+        invoke: (callOpts, stepControl) =>
+          invokeMockTarget(target, input, kind, callOpts, stepControl),
+      };
+    },
   });
 
   const outcome = await runWorkflowInvocation(module, buildBindings(options.input));
@@ -651,5 +678,13 @@ export async function runWorkflowTest<TInput = unknown>(
     logs: outcome.report.logs,
     unconsumedFixtures,
   };
+}
+
+/** Execute a named root target with the same test harness used for authored workflows. */
+export function runTargetTest<TInput = unknown>(
+  target: string,
+  options: WorkflowTestOptions<TInput>,
+): Promise<WorkflowTestRunResult> {
+  return runWorkflowTest(target, options);
 }
 

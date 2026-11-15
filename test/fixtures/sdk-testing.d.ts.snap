@@ -1,0 +1,144 @@
+/** Test doubles for the canonical App authoring surface. */
+import type { AgentCallOptions, AppRead, CallOptions, ExecutionResult, Logger, ObserverContext, TSchema, TaskDetail, WorkflowContext } from "./app.js";
+import { type NormalizedWorkflowContribution, type WorkflowExecutableModule, type WorkflowLogEntry, type WorkflowRunReport, type WorkflowStepTrace } from "./workflow-kernel.js";
+export { WorkflowAllowanceExhaustedError, WorkflowUnconfirmedCleanupError, WorkflowValidationError, createWorkflowAllowance, normalizeWorkflowContribution, resolveCallable, resolveCallableTarget, runWorkflowInvocation, type NormalizedWorkflowContribution, type PreparedCatalog, type PreparedDefinition, type PreparedTarget, type PreparedTargetCatalog, type WorkflowCleanupStatus, type WorkflowExecutableModule, type WorkflowExecutionAllowance, type WorkflowKernelBindings, type WorkflowKernelOutcome, type WorkflowKernelStepControl, type WorkflowLogEntry, type WorkflowRunReport, type WorkflowStepInvocationResult, type WorkflowStepTrace, } from "./workflow-kernel.js";
+export type MockFn<T extends (...args: any[]) => any> = T & {
+    calls: Parameters<T>[];
+    mock: {
+        calls: Parameters<T>[];
+    };
+};
+export type MockFnFactory = <T extends (...args: any[]) => any>(impl?: T) => T;
+/** Optionally use the active test runner's mock implementation. */
+export declare function setMockFn(factory: MockFnFactory): void;
+export declare function createTestAppRead(overrides?: Partial<AppRead>): AppRead;
+export declare function createTestAppLogger(overrides?: Partial<Logger>): Logger;
+export declare function createTestObserverContext(options?: {
+    previousObservation?: ObserverContext["previousObservation"];
+    read?: AppRead;
+    log?: Logger;
+    workspace?: ObserverContext["workspace"];
+}): ObserverContext;
+export type TestAppWorkflowContextOptions<TInput> = {
+    input: TInput;
+    signal?: AbortSignal;
+    reconciliation?: WorkflowContext<TInput>["reconciliation"];
+    reviseTask?: WorkflowContext["reviseTask"];
+    closeTask?: WorkflowContext["closeTask"];
+    read?: AppRead;
+    log?: Logger;
+    call?: WorkflowContext["call"];
+    callAgent?: (agent: string, task: string, options?: CallOptions<any>) => Promise<ExecutionResult<any>>;
+    runWorkflow?: (name: string, input: unknown) => Promise<ExecutionResult<any>>;
+    emit?: WorkflowContext["events"]["emit"];
+    readEvent?: WorkflowContext["events"]["read"];
+    onEvent?: WorkflowContext["events"]["onEvent"];
+    recordMetric?: WorkflowContext["metrics"]["record"];
+    workspace?: WorkflowContext["workspace"];
+    executionId?: string;
+};
+/** Small fake with no database, queue, or global runtime paths. */
+export declare function createTestAppWorkflowContext<TInput>(options: TestAppWorkflowContextOptions<TInput>): WorkflowContext<TInput>;
+export type ScriptedStepResponse = {
+    id?: string;
+    kind?: "agent" | "workflow";
+    status?: ExecutionResult["status"];
+    summary?: string;
+    output?: unknown;
+    facts?: unknown;
+    sessionId?: string;
+    transcriptPath?: string;
+    cleanupConfirmed?: boolean;
+};
+export type ScriptedCallContext = {
+    target: string;
+    input: unknown;
+    agent: string;
+    task: string;
+    name: string;
+    options?: CallOptions<TSchema> & {
+        schema?: TSchema;
+    };
+    signal: AbortSignal;
+    timeoutMs: number;
+    deadlineAt: number;
+    stepIndex: number;
+};
+export type ScriptedAgentCallContext = {
+    agent: string;
+    task: string;
+    options?: AgentCallOptions & {
+        schema?: TSchema;
+    };
+    signal: AbortSignal;
+    timeoutMs: number;
+    deadlineAt: number;
+    stepIndex: number;
+};
+export type ScriptedWorkflowCallContext = {
+    name: string;
+    input: unknown;
+    options?: CallOptions<TSchema> & {
+        schema?: TSchema;
+    };
+    signal: AbortSignal;
+    timeoutMs: number;
+    deadlineAt: number;
+    stepIndex: number;
+};
+export type ScriptedTargetFixture = ScriptedStepResponse | WorkflowExecutableModule | readonly ScriptedStepResponse[] | ((call: ScriptedCallContext) => ScriptedStepResponse | Promise<ScriptedStepResponse>);
+export type ScriptedAgentFixture = ScriptedStepResponse | readonly ScriptedStepResponse[] | ((call: ScriptedAgentCallContext) => ScriptedStepResponse | Promise<ScriptedStepResponse>);
+export type ScriptedWorkflowFixture = ScriptedStepResponse | WorkflowExecutableModule | readonly ScriptedStepResponse[] | ((call: ScriptedWorkflowCallContext) => ScriptedStepResponse | Promise<ScriptedStepResponse>);
+export type WorkflowTestOptions<TInput> = {
+    input: TInput;
+    executionId?: string;
+    taskOwned?: boolean;
+    tools?: "full" | "readonly";
+    skill?: string;
+    outputSchema?: TSchema;
+    task?: TaskDetail;
+    reconciliation?: WorkflowContext<TInput>["reconciliation"];
+    workspace?: WorkflowContext["workspace"];
+    /** Unified target fixtures keyed by target name (supports both prompt and code targets). */
+    mocks?: Record<string, ScriptedTargetFixture>;
+    agents?: Record<string, ScriptedAgentFixture>;
+    workflows?: Record<string, ScriptedWorkflowFixture>;
+    read?: Partial<AppRead>;
+    events?: Partial<WorkflowContext["events"]>;
+    metrics?: Partial<WorkflowContext["metrics"]>;
+    reviseTask?: WorkflowContext["reviseTask"];
+    closeTask?: WorkflowContext["closeTask"];
+    applyTaskChanges?: WorkflowContext["applyTaskChanges"];
+    signal?: AbortSignal;
+    timeoutMs?: number;
+    deadlineAt?: number;
+    maxConcurrentCalls?: number;
+    confirmCleanup?: () => boolean | Promise<boolean>;
+    onStep?: (step: WorkflowStepTrace) => void;
+    onLog?: (entry: WorkflowLogEntry) => void;
+    /** Fail when scripted array responses remain unused after completion (default: true). */
+    assertAllFixturesConsumed?: boolean;
+};
+export type WorkflowTestRunResult = {
+    ok: boolean;
+    started: boolean;
+    status: WorkflowRunReport["status"];
+    result?: NormalizedWorkflowContribution;
+    error?: unknown;
+    report: WorkflowRunReport;
+    steps: WorkflowStepTrace[];
+    logs: WorkflowLogEntry[];
+    unconsumedFixtures: Array<{
+        kind: "agent" | "workflow";
+        target: string;
+        remaining: number;
+    }>;
+};
+/**
+ * Execute an authored workflow module or named target through the real portable
+ * kernel with strict schema validation, scripted step consumption checks, and
+ * zero Host setup.
+ */
+export declare function runWorkflowTest<TInput = unknown>(moduleOrTarget: WorkflowExecutableModule<TInput> | string, options: WorkflowTestOptions<TInput>): Promise<WorkflowTestRunResult>;
+/** Execute a named root target with the same test harness used for authored workflows. */
+export declare function runTargetTest<TInput = unknown>(target: string, options: WorkflowTestOptions<TInput>): Promise<WorkflowTestRunResult>;
