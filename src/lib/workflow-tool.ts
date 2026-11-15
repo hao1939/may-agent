@@ -685,6 +685,18 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           throw new Error(`Prompt target "${agentName}" not found in the captured catalog`);
         }
         onEvent?.({ type: "workflow.step_started", step: agentName });
+        emitRuntimeEvent({
+          type: "workflow.step_started",
+          source: `workflow:${workflow.name}`,
+          owner: normalizeEventOwner(opts.agentName),
+          data: {
+            workflowRunId: runId,
+            workflow: workflow.name,
+            projectId: effectiveProjectId,
+            step: agentName,
+            stepIndex: run.steps.length,
+          },
+        });
         const stepCallOptions = {
           parentSessionId,
           source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
@@ -730,6 +742,21 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         });
 
         onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
+        emitRuntimeEvent({
+          type: "workflow.step_completed",
+          source: `workflow:${workflow.name}`,
+          owner: normalizeEventOwner(opts.agentName),
+          data: {
+            workflowRunId: runId,
+            workflow: workflow.name,
+            projectId: effectiveProjectId,
+            step: agentName,
+            stepIndex: run.steps.length - 1,
+            sessionId: sid,
+            status: taskResult.status,
+            durationMs: taskResult.duration,
+          },
+        });
 
         const steeringAfter = steeringQueue.shift();
         if (steeringAfter) throw new WorkflowInterrupted(steeringAfter, completedSteps, runId);
