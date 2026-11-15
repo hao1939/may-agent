@@ -2021,8 +2021,8 @@ describe("Human Task service", () => {
       insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
       insertReceipt(db, "alpha", "completed-but-stale", 40);
       const config = taskConfig(db, AppTaskResourceStore.fromDb(db, "alpha"), "alpha");
-      expect(readRuntimeTaskView({ taskStateConfig: config }, "completed-but-stale")).toMatchObject({ status: "done", closed: true });
-      expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).toHaveLength(1);
+      expect(readRuntimeTaskView({ taskStateConfig: config }, "completed-but-stale")).toBeNull();
+      expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).toEqual([]);
       expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["attention"] }).items).toEqual([]);
       const service = new HumanTaskService(db, registry("alpha"));
 

@@ -949,7 +949,6 @@ export class AppTaskResourceStore {
   }): string[] {
     const after = input.after ?? "";
     const statuses = input.statuses ? [...input.statuses] : [];
-    const includeDone = !input.statuses || input.statuses.has("done");
     const livePhases = input.statuses
       ? statuses.flatMap((status) =>
           status === "idle" ? ["converged"] : ["done", "closed", "cancelled"].includes(status) ? [] : [status],
@@ -971,19 +970,6 @@ export class AppTaskResourceStore {
                AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation)`,
       );
       values.push(this.appId, after, ...storedPhases, ...livePhases);
-    }
-    if (includeDone) {
-      clauses.push(`SELECT receipt_id AS id FROM app_task_receipts
-        WHERE app_id = ? AND receipt_id > ?
-          AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
-            WHERE c.app_id = app_task_receipts.app_id AND c.task_id = app_task_receipts.receipt_id)
-          AND NOT EXISTS (
-            SELECT 1 FROM app_tasks current
-            WHERE current.app_id = app_task_receipts.app_id
-              AND current.task_id = app_task_receipts.receipt_id
-              AND current.generation > json_extract(app_task_receipts.receipt_json, '$.metadata.generation')
-          )`);
-      values.push(this.appId, after);
     }
     const terminalKinds = ["closed", "cancelled"].filter((kind) => !input.statuses || input.statuses.has(kind as "closed" | "cancelled"));
     if (terminalKinds.length) {
@@ -1263,26 +1249,16 @@ export class AppTaskResourceStore {
         )
       : {};
     const dependencyIds = new Set(Object.values(resources).flatMap((resource) => resource.spec.dependsOn ?? []));
-    const receiptIds = new Set([...requested, ...dependencyIds]);
+    const receiptIds = new Set([...requested, ...taskIds, ...dependencyIds]);
     track("receipt", receiptIds);
-    const receiptRows = [
-      ...(receiptIds.size
-        ? (this.db
-            .prepare(
-              `SELECT receipt_id, receipt_json FROM app_task_receipts
-               WHERE app_id = ? AND receipt_id IN (${[...receiptIds].map(() => "?").join(", ")})`,
-            )
-            .all(this.appId, ...receiptIds) as Array<{ receipt_id?: string; receipt_json?: string }>)
-        : []),
-      ...(options.includeHistory !== false && requested.size
-        ? (this.db
-            .prepare(
-              `SELECT receipt_id, receipt_json FROM app_task_receipts
-               WHERE app_id = ? AND parent_id IN (${[...requested].map(() => "?").join(", ")})`,
-            )
-            .all(this.appId, ...requested) as Array<{ receipt_id?: string; receipt_json?: string }>)
-        : []),
-    ];
+    const receiptRows = receiptIds.size
+      ? (this.db
+          .prepare(
+            `SELECT receipt_id, receipt_json FROM app_task_receipts
+             WHERE app_id = ? AND receipt_id IN (${[...receiptIds].map(() => "?").join(", ")})`,
+          )
+          .all(this.appId, ...receiptIds) as Array<{ receipt_id?: string; receipt_json?: string }>)
+      : [];
     const receipts = Object.fromEntries(
       receiptRows.flatMap((row) =>
         row.receipt_id && row.receipt_json
