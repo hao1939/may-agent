@@ -224,7 +224,6 @@ function acceptedAttempt(f: ReturnType<typeof fixture>) {
   const task = f.store.readTask("work/one")!;
   assert(task, "Accepting an outcome must retain the Task");
   assert.equal(f.store.readCancellation("work/one"), null);
-  assert.equal(f.store.readReceipt("work/one"), null);
   const attempt = task.status.observedAttemptId ? f.store.readAttempt(task.status.observedAttemptId) : null;
   assert.equal(attempt?.acceptedResult?.state, "converged", JSON.stringify({
     status: task.status, attempts: f.store.readTaskContext({ taskIds: ["work/one"] }).attempts,
@@ -530,7 +529,6 @@ const scenarios: Record<string, () => Promise<void>> = {
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     assert.equal(f.store.readTask("work/one")?.metadata.generation, task.metadata.generation);
     assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, before.attempts);
-    assert.equal(f.store.readReceipt("work/one"), null);
     await run(f, true);
     assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, before.attempts);
     assert.equal(
@@ -610,7 +608,6 @@ export async function execute(ctx) {
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     assert.equal(f.store.readTask("work/one")?.metadata.generation, task.metadata.generation);
-    assert.equal(f.store.readReceipt("work/one"), null);
     assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, attempts);
     await run(f, true);
     assert.deepEqual(f.store.readTaskContext({ taskIds: ["work/one"] }).attempts, attempts);
@@ -632,7 +629,6 @@ export async function execute(ctx) {
     });
     await assert.rejects(run(f), /code 143/);
     const attemptId = f.store.readTask("work/one")!.status.currentAttemptId!;
-    assert.equal(f.store.readReceipt("work/one"), null);
     await run(f, true);
     assert.equal(f.store.readTask("work/one")?.status.phase, "pending");
     assert.equal(f.store.readAttempt(attemptId)?.state, "interrupted");
@@ -1010,7 +1006,6 @@ export async function execute(ctx) {
     });
     await execution;
     assert.deepEqual(readExecutionStatus(f.persistDir), { sessions: [], activeWork: false });
-    assert.equal(f.store.readReceipt("work/one"), null);
     assert(f.store.readCancellation("work/one"));
     assert.deepEqual(
       f.db

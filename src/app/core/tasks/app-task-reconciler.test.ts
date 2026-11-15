@@ -6,7 +6,6 @@ import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
 import {
   readTaskSnapshot,
   type AppTaskContext,
-  type TaskCompletionReceipt,
 } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "../state/app-task-resource-store.js";
 import { admitTaskInput } from "../state/inbox.js";
@@ -49,7 +48,6 @@ import {
   recordAppTaskAttemptSession,
   recordAppTaskAttemptWorkspace,
   renewAppTaskAttemptLease,
-  type AppTaskClaim,
 } from "./app-task-reconciler.ts";
 
 const roots: string[] = [];
@@ -268,7 +266,6 @@ describe("worker failure facts and owner closure", () => {
     const revised = claimObservedAppTask(config, { taskId: intent.id, appAgent: "app-owner", handler: "agent" });
     expect(revised.kind).toBe("claimed");
     expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(accepted);
-    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
   });
 
   it("rejects retry after a failed Task is cancelled without relabelling its terminal state", () => {
@@ -326,7 +323,6 @@ describe("worker failure facts and owner closure", () => {
         }),
       ).toThrow(`Incomplete report ${reason}`);
     expect(config.resourceStore.readCancellation(intent.id)).toBeNull();
-    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
   });
 
   it("retains an honest incomplete report while preserving genuinely newer input", () => {
@@ -423,7 +419,6 @@ describe("worker failure facts and owner closure", () => {
         expect(peer.readTask(child.id)?.spec.parentId).toBe(
           order === "child-first" ? base.intent.id : relation === "reparent" ? "operations" : undefined,
         );
-        expect(store.readReceipt(base.intent.id)).toBeNull();
       },
     );
   }
@@ -494,7 +489,6 @@ describe("worker failure facts and owner closure", () => {
             facts: decision.facts,
           });
     expect(result.status).toBe("applied");
-    expect(config.resourceStore.readReceipt(intent.id)).toBeNull();
     expect(config.resourceStore.isCancelled(intent.id)).toBe(false);
     expect(config.resourceStore.isCancelled("parent")).toBe(false);
     expect(isAppTaskConverged(config, "parent")).toBe(state === "converged");
@@ -680,46 +674,6 @@ function declareAndClaimTask(
   });
 }
 
-/** Seed the pre-controller receipt shape; current completion must never produce it. */
-function seedHistoricalCompletion(config: AppTaskContext, claim: AppTaskClaim, summary: string) {
-  const resource = config.resourceStore.readTask(claim.taskId)!;
-  const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
-  const receipt: TaskCompletionReceipt = {
-    metadata: { id: claim.taskId, generation: claim.generation, resourceVersion: 1 },
-    specHash: claim.specHash,
-    parentId: claim.intent.parentId,
-    outcome: claim.intent.outcome,
-    acceptance: [...claim.intent.acceptance],
-    owner: claim.agent,
-    workflow: claim.intent.workflow,
-    input: claim.intent.input,
-    handler: claim.handler,
-    summary,
-    facts: [],
-    acceptanceBasis: { method: "workflow-contract", facts: [] },
-    failureFingerprints: [],
-    completedAt: new Date().toISOString(),
-  };
-  const completed = {
-    ...attempt,
-    metadata: { ...attempt.metadata, resourceVersion: attempt.metadata.resourceVersion + 1 },
-    state: "completed" as const,
-    summary,
-  };
-  delete completed.lease;
-  expect(
-    config.resourceStore.commit({
-      fences: [
-        { taskId: claim.taskId, resourceVersion: resource.metadata.resourceVersion, currentAttemptId: claim.attemptId },
-      ],
-      deleteTaskIds: [claim.taskId],
-      receipts: [receipt],
-      attempts: [completed],
-    }),
-  ).toBe(true);
-  return receipt;
-}
-
 afterEach(() => {
   setSystemTime();
   for (const store of stores.splice(0)) store.close();
@@ -778,7 +732,6 @@ describe("App task reconciler state", () => {
 
     expect(completeAppTask(config, second, { summary: "completed after retry" }).status).toBe("applied");
     expect(committed?.attempts?.map((attempt) => attempt.metadata.id)).toEqual([second.attemptId]);
-    expect(committed?.receipts ?? []).toEqual([]);
     expect(store.readAttempt(first.attemptId)?.state).toBe("interrupted");
     expect(store.readAttempt(second.attemptId)?.acceptedResult?.summary).toBe("completed after retry");
     expect(store.readTask(second.taskId)?.status.observedAttemptId).toBe(second.attemptId);
@@ -820,7 +773,6 @@ describe("App task reconciler state", () => {
     ).toBe("applied");
     expect(committed?.fences.map((fence) => fence.taskId)).toEqual(expect.arrayContaining([claim.taskId, parent.id]));
     expect(committed?.tasks?.map((write) => write.resource.metadata.id)).toEqual([claim.taskId]);
-    expect(committed?.deleteReceiptIds).toBeUndefined();
   });
 
   it("renews only the current bounded workflow attempt lease", () => {
@@ -894,7 +846,6 @@ describe("App task reconciler state", () => {
     expect(tree.attempts?.[claim.attemptId]?.acceptedResult).toMatchObject({
       state: "incomplete", result: { cleanupProof: "resource-group-absent" },
     });
-    expect(tree.receipts?.[claim.taskId]).toBeUndefined();
   });
 
   it("keeps a maintain task pending when a durable wake arrives during its attempt", () => {
@@ -963,7 +914,6 @@ describe("App task reconciler state", () => {
     });
 
     const tree = readTaskSnapshot(config);
-    expect(tree.receipts?.[claim.taskId]).toBeUndefined();
     expect(tree.resources?.[claim.taskId]?.status.phase).toBe("pending");
     const next = claimObservedAppTask(config, {
       taskId: claim.taskId,
@@ -1092,7 +1042,6 @@ describe("App task reconciler state", () => {
     expect(tree.taskTriggers?.[claim.taskId]?.events?.map((row) => row.event.eventId)).toEqual(
       state === "attention" ? [100, 101, 102] : [102],
     );
-    expect(tree.receipts?.[claim.taskId]).toBeUndefined();
     if (state === "attention") {
       expect(listRunnableAppTaskIds(config, "app-owner")).not.toContain(claim.taskId);
       advanceToTaskRetry(config, claim.taskId);
@@ -2703,7 +2652,6 @@ describe("App task reconciler state", () => {
       observedAttemptId: claim.attemptId,
     });
     expect(config.resourceStore.isCancelled(claim.taskId)).toBe(false);
-    expect(tree.receipts?.[claim.taskId]).toBeUndefined();
     expect(tree.attempts?.[claim.attemptId]?.acceptedResult).toMatchObject({
       state: "converged",
       summary: "session evaluated",
@@ -2939,52 +2887,6 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("excludes a receipt-superseded sibling reloaded via dependsOn or its parent chain from live child context", () => {
-    const { config } = fixture();
-    const fence = config.resourceStore.readTask("categorized-task")!;
-    const resources = Array.from({ length: 18 }, (_, index) => {
-      const resource = structuredClone(fence);
-      resource.metadata = { id: `child-${String(index).padStart(2, "0")}`, generation: 1, resourceVersion: 1 };
-      resource.spec.parentId = "pipeline-monitor";
-      resource.status.phase = "pending";
-      if (index === 2) resource.spec.dependsOn = ["child-00", "grandchild-of-01"];
-      return resource;
-    });
-    const grandchild = structuredClone(fence);
-    grandchild.metadata = { id: "grandchild-of-01", generation: 1, resourceVersion: 1 };
-    grandchild.spec.parentId = "child-01";
-    grandchild.status.phase = "converged";
-    grandchild.status.observedGeneration = 1;
-    const receipts: TaskCompletionReceipt[] = ["child-00", "child-01"].map((id) => ({
-      metadata: { id, generation: 1, resourceVersion: 1 },
-      specHash: "historical-spec",
-      parentId: "pipeline-monitor",
-      outcome: resources[0]!.spec.outcome,
-      acceptance: resources[0]!.spec.acceptance,
-      owner: "app-owner",
-      handler: "agent:app-owner",
-      summary: "Accepted historical completion",
-      facts: ["historical-result-preserved"],
-      acceptanceBasis: { method: "agent-judgment", facts: [] },
-      failureFingerprints: [],
-      completedAt: new Date().toISOString(),
-    }));
-    expect(
-      config.resourceStore.commit({
-        fences: [{ taskId: fence.metadata.id, resourceVersion: fence.metadata.resourceVersion }],
-        tasks: [...resources, grandchild].map((resource) => ({ resource, ready: resource.status.phase === "pending" })),
-        receipts,
-      }),
-    ).toBe(true);
-
-    const context = readAppTaskChildContext(config, "pipeline-monitor");
-    expect(context.live).toHaveLength(16);
-    expect(context.live.map(({ taskId }) => taskId)).not.toContain("child-00");
-    expect(context.live.map(({ taskId }) => taskId)).not.toContain("child-01");
-    expect(context.live.map(({ taskId }) => taskId)).toContain("child-17");
-    expect(context.completed).toEqual([]);
-  });
-
   it("loads current accepted dependencies under other parents for queued child readiness", () => {
     const { config } = fixture();
     const dependency = { ...intent(), id: "outside-dependency", outcome: "Produce reusable evidence" };
@@ -3187,16 +3089,11 @@ describe("App task reconciler state", () => {
       handler: "workflow:known-workflow",
     });
     if (old.kind !== "claimed") throw new Error("expected old claim");
-    const revised = config.resourceStore.readTask(old.taskId)!;
-    const receipt = seedHistoricalCompletion(config, old, "Original measurement accepted");
-    revised.metadata = { id: old.taskId, generation: 2, resourceVersion: 1 };
-    revised.spec.outcome = "Repeat the measurement for the changed sample";
-    revised.status = { phase: "pending", observedGeneration: 1, updatedAt: new Date().toISOString() };
-    expect(config.resourceStore.commit({
-      fences: [],
-      expectMissingTaskIds: [old.taskId],
-      tasks: [{ resource: revised, ready: true }],
-    })).toBe(true);
+    completeAppTask(config, old, { summary: "Original measurement accepted" });
+    observeAppTaskIntent(config, {
+      intent: { ...assignment, outcome: "Repeat the measurement for the changed sample" },
+      appAgent: "app-owner",
+    });
     const dependent = { ...assignment, id: "work/assess-new-sample", dependsOn: [old.taskId] };
     observeAppTaskIntent(config, { intent: dependent, appAgent: "app-owner" });
     expect(isAppTaskConverged(config, old.taskId)).toBe(false);
@@ -3216,7 +3113,6 @@ describe("App task reconciler state", () => {
     expect(claimObservedAppTask(config, {
       taskId: dependent.id, appAgent: "app-owner", handler: "agent",
     })).toMatchObject({ kind: "claimed", taskId: dependent.id });
-    expect(config.resourceStore.readReceipt(old.taskId)).toEqual(receipt);
   });
 
   it("releases only the exact expired agent attempt after its session is terminal", () => {
@@ -4430,7 +4326,6 @@ describe("App task reconciler state", () => {
     expect(config.resourceStore.isCancelled(childIntent.id)).toBe(false);
     const tree = readTaskSnapshot(config);
     expect(tree.resources?.[parentIntent.id]?.status.phase).toBe("converged");
-    expect(tree.receipts?.[parentIntent.id]).toBeUndefined();
     expect(tree.resources?.[childIntent.id]).toBeDefined();
   });
 
@@ -4519,7 +4414,6 @@ describe("App task reconciler state", () => {
     expect(config.resourceStore.isCancelled(parentIntent.id)).toBe(true);
     expect(config.resourceStore.isCancelled(childIntent.id)).toBe(false);
     expect(tree.resources?.[parentIntent.id]).toBeDefined();
-    expect(tree.receipts?.[parentIntent.id]).toBeUndefined();
     expect(tree.resources?.[childIntent.id]?.spec.parentId).toBe("operations");
   });
 
@@ -5141,7 +5035,6 @@ describe("App task reconciler state", () => {
     });
     expect(readTaskSnapshot(config)).toEqual(before);
     expect(config.resourceStore.readAttempt(claim.attemptId)).toEqual(accepted);
-    expect(config.resourceStore.readReceipt(claim.taskId)).toBeNull();
     expect(config.resourceStore.readTask(claim.taskId)).not.toBeNull();
   });
 
@@ -5186,7 +5079,6 @@ describe("App task reconciler state", () => {
     const tree = readTaskSnapshot(config);
     expect(tree.resources?.["receipt-update-review"]?.status.phase).toBe("running");
     expect(config.resourceStore.isCancelled("categorized-task")).toBe(true);
-    expect(tree.receipts?.["categorized-task"]).toBeUndefined();
   });
 
   it("rejects mutation of an owner-closed Task", () => {
@@ -5231,7 +5123,6 @@ describe("App task reconciler state", () => {
     const tree = readTaskSnapshot(config);
     expect(tree.resources?.["receipt-create-review"]?.status.phase).toBe("running");
     expect(config.resourceStore.isCancelled("categorized-task")).toBe(true);
-    expect(tree.receipts?.["categorized-task"]).toBeUndefined();
   });
 
   it("rejects malformed action payloads and blank facts before mutation", () => {

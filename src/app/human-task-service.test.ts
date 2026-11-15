@@ -294,7 +294,7 @@ test("exact diagnostics preserve bounded Conditions and dependency states withou
   insertTask(db, { appId: "alpha", taskId: "work", phase: "pending", updatedAt: 30 });
   insertTask(db, { appId: "alpha", taskId: "live", phase: "waiting", updatedAt: 20 });
   insertTask(db, { appId: "other", taskId: "missing", phase: "running", updatedAt: 20 });
-  insertReceipt(db, "alpha", "finished", 40);
+  insertClosedTask(db, "alpha", "finished", 40);
   db.prepare("INSERT INTO app_task_groups VALUES ('alpha', 'root', '{}')").run();
   const resource = JSON.parse(
     (
@@ -342,7 +342,7 @@ test("exact diagnostics preserve bounded Conditions and dependency states withou
   expect(detail.diagnostics!.dependencies).toHaveLength(100);
   expect(detail.diagnostics!.dependencies.slice(0, 4)).toEqual([
     { id: "live", status: "waiting" },
-    { id: "finished", status: "done" },
+    { id: "finished", status: "closed" },
     { id: "root", status: "group" },
     { id: "missing", status: "missing" },
   ]);
@@ -402,11 +402,11 @@ test("history is exact, indexed, bounded, and never a substitute for terminal au
   expect(historyPlans).toHaveLength(1);
   expect(historyPlans[0]).toContain("USING INDEX idx_events_project_task_history (project_id=? AND task_id=?)");
   expect(historyPlans[0]).not.toContain("TEMP B-TREE");
-  insertReceipt(db, "alpha", "work", 50);
+  insertClosedTask(db, "alpha", "work", 50);
   expect(service.listTasks({ appId: "alpha", includeDone: true, status: ["waiting"] }).items).toEqual([]);
-  expect(service.listTasks({ appId: "alpha", includeDone: true, status: ["done"] }).items).toHaveLength(1);
+  expect(service.listTasks({ appId: "alpha", includeDone: true, status: ["closed"] }).items).toHaveLength(1);
   expect(service.getTask({ appId: "alpha", taskId: "work" })).toMatchObject({
-    status: "done",
+    status: "closed",
     summary: "work finished",
     response: "work result",
   });
@@ -420,7 +420,7 @@ test("history is exact, indexed, bounded, and never a substitute for terminal au
   };
   const failedHistory = new HumanTaskService(failedHistoryDb, registry("alpha"));
   expect(failedHistory.getTask({ appId: "alpha", taskId: "work" })).toMatchObject({
-    status: "done",
+    status: "closed",
     summary: "work finished",
     historyError: expect.any(String),
   });
@@ -653,8 +653,8 @@ test("shows a converged Task with pending work as queued in detail, lists, and s
   })]);
   expect(db.prepare("SELECT DISTINCT phase FROM app_tasks").all()).toEqual([{ phase: "converged" }]);
 
-  insertReceipt(db, "research", "scheduled", 3);
-  expect(service.getTask({ appId: "research", taskId: "scheduled" })).toMatchObject({ status: "done", terminal: true });
+  insertClosedTask(db, "research", "scheduled", 3);
+  expect(service.getTask({ appId: "research", taskId: "scheduled" })).toMatchObject({ status: "closed", terminal: true });
   expect(service.listTasks({ status: ["pending"] }).items).toHaveLength(2);
 });
 
@@ -691,36 +691,34 @@ test("status-filtered human reads retain the stored-phase index", () => {
   expect(plans).toHaveLength(3);
 });
 
-function insertReceipt(db: SqliteDb, appId: string, taskId: string, completedAt: number): void {
+function insertClosedTask(db: SqliteDb, appId: string, taskId: string, closedAt: number): void {
   db.prepare(
-    `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
-     VALUES (?, ?, 'root', ?, ?)`,
+    `INSERT OR REPLACE INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
+     VALUES (?, ?, ?, 'Already completed', ?)`,
   ).run(
     appId,
     taskId,
-    completedAt,
+    closedAt,
     JSON.stringify({
-      metadata: { id: taskId, generation: 4, resourceVersion: 5 },
-      specHash: "hash",
-      parentId: "root",
+      kind: "closed",
+      appId,
+      taskId,
+      generation: 4,
+      resourceVersion: 5,
       outcome: `Finish ${taskId}`,
-      acceptance: ["done"],
-      owner: `${appId}-owner`,
-      handler: "agent",
+      reason: "Already completed",
       summary: `${taskId} finished`,
       response: `${taskId} result`,
       facts: ["proof"],
-      acceptanceBasis: { kind: "owner" },
-      failureFingerprints: [],
-      completedAt: new Date(completedAt).toISOString(),
+      cancelledAt: new Date(closedAt).toISOString(),
     }),
   );
+  indexTaskReference(db, appId, taskId);
 }
 
-test.each(["resource", "receipt", "cancellation"])("preserves historical %s facts in human Task detail", (kind) => {
+test.each(["resource", "cancellation"])("preserves historical %s facts in human Task detail", (kind) => {
   const db = database();
   insertTask(db, { appId: "alpha", taskId: "work", phase: "waiting", updatedAt: 10 });
-  if (kind === "receipt") insertReceipt(db, "alpha", "work", 20);
   if (kind === "cancellation") {
     const store = AppTaskResourceStore.fromDb(db, "alpha");
     const current = store.readTask("work")!;
@@ -735,9 +733,7 @@ test.each(["resource", "receipt", "cancellation"])("preserves historical %s fact
   const [table, column] =
     kind === "resource"
       ? ["app_tasks", "resource_json"]
-      : kind === "receipt"
-        ? ["app_task_receipts", "receipt_json"]
-        : ["app_task_cancellations", "cancellation_json"];
+      : ["app_task_cancellations", "cancellation_json"];
   const row = db.prepare(`SELECT ${column} AS payload FROM ${table} WHERE app_id = 'alpha'`).get() as {
     payload: string;
   };
@@ -886,7 +882,7 @@ describe("Task reference index", () => {
   test("derives stable length-safe references and backfills live and completed identities", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "one", phase: "running", updatedAt: 20 });
-    insertReceipt(db, "beta", "two", 10);
+    insertTask(db, { appId: "beta", taskId: "two", phase: "converged", updatedAt: 10 });
     ensureTaskReferenceIndex(db);
 
     const digest = taskReferenceDigest("alpha", "one");
@@ -908,7 +904,7 @@ describe("Task reference index", () => {
   test("backfills all references atomically", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "one", phase: "running", updatedAt: 20 });
-    insertReceipt(db, "beta", "two", 10);
+    insertTask(db, { appId: "beta", taskId: "two", phase: "converged", updatedAt: 10 });
     db.exec(`
       CREATE TRIGGER reject_second_task_reference
       BEFORE INSERT ON app_task_refs WHEN NEW.task_id = 'two'
@@ -971,7 +967,7 @@ describe("Human Task service", () => {
       owner: "human:Hao",
       requestedAction: "Review work that is already complete.",
     });
-    insertReceipt(db, "alpha", "completed", 90);
+    insertClosedTask(db, "alpha", "completed", 90);
     insertCondition(db, {
       appId: "alpha",
       taskId: "approval",
@@ -1079,7 +1075,7 @@ describe("Human Task service", () => {
       recurring: false,
       humanAction: { requestedAction: "Choose the maintenance window." },
     });
-    expect(service.getTask({ appId: "alpha", taskId: "completed" })?.status).toBe("done");
+    expect(service.getTask({ appId: "alpha", taskId: "completed" })?.status).toBe("closed");
     expect(service.getTask({ appId: "alpha", taskId: "completed" })?.humanAction).toBeUndefined();
     expect(service.getTask({ appId: "alpha", taskId: "may-owned" })?.humanAction).toBeUndefined();
     expect(service.getTask({ appId: "alpha", taskId: "agent-owned" })?.humanAction).toBeUndefined();
@@ -1137,7 +1133,7 @@ describe("Human Task service", () => {
       state: "true",
     });
     insertCondition(db, { appId: "current", taskId: "completed", conditionId: "completed", owner: "human" });
-    insertReceipt(db, "current", "completed", 70);
+    insertClosedTask(db, "current", "completed", 70);
 
     const plans: Array<Array<{ detail: string }>> = [];
     const observed: SqliteDb = {
@@ -1275,7 +1271,7 @@ describe("Human Task service", () => {
     const db = database();
     insertTask(db, { appId: "root-app", taskId: "root", phase: "waiting", updatedAt: 50 });
     insertTask(db, { appId: "middle-app", taskId: "completed-middle", phase: "waiting", updatedAt: 40 });
-    insertReceipt(db, "middle-app", "completed-middle", 41);
+    insertClosedTask(db, "middle-app", "completed-middle", 41);
     insertTask(db, { appId: "leaf-app", taskId: "human-leaf", phase: "waiting", updatedAt: 30 });
     insertTask(db, { appId: "prefix-decoy", taskId: "prefix-human", phase: "waiting", updatedAt: 20 });
     insertTask(db, { appId: "subject-decoy", taskId: "subject-human", phase: "waiting", updatedAt: 10 });
@@ -1416,7 +1412,7 @@ describe("Human Task service", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "old", phase: "waiting", updatedAt: 10 });
     insertTask(db, { appId: "beta", taskId: "new", phase: "attention", updatedAt: 30 });
-    insertReceipt(db, "alpha", "done", 20);
+    insertClosedTask(db, "alpha", "done", 20);
     const service = new HumanTaskService(db, registry("alpha", "beta"));
 
     expect(service.listApps()).toEqual([
@@ -1426,7 +1422,7 @@ describe("Human Task service", () => {
     const first = service.listTasks({ includeDone: true, limit: 2 });
     expect(first.items.map((item) => [item.appId, item.taskId, item.status])).toEqual([
       ["beta", "new", "attention"],
-      ["alpha", "done", "done"],
+      ["alpha", "done", "closed"],
     ]);
     expect(first.items.every((item) => /^[0-9a-f]{8}$/.test(item.ref))).toBe(true);
     expect(first.nextCursor).toBeString();
@@ -1711,7 +1707,7 @@ describe("Human Task service", () => {
   test("resolves exact detail by stable ref and preserves terminal results", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "maintain", phase: "running", updatedAt: 10 });
-    insertReceipt(db, "alpha", "finished", 20);
+    insertClosedTask(db, "alpha", "finished", 20);
     indexTaskReference(db, "alpha", "maintain");
     indexTaskReference(db, "alpha", "finished");
     const service = new HumanTaskService(db, registry("alpha"));
@@ -1722,7 +1718,7 @@ describe("Human Task service", () => {
     expect(finished).toMatchObject({
       appId: "alpha",
       taskId: "finished",
-      status: "done",
+      status: "closed",
       terminal: true,
       response: "finished result",
     });
@@ -1960,7 +1956,7 @@ describe("Human Task service", () => {
 
   test("lets a terminal Task result replace passive executor progress", () => {
     const db = database();
-    insertReceipt(db, "alpha", "finished", 20);
+    insertClosedTask(db, "alpha", "finished", 20);
     insertProgress(db, {
       appId: "alpha",
       taskId: "finished",
@@ -1980,20 +1976,20 @@ describe("Human Task service", () => {
 
   test("keeps list cards bounded and reserves full results for exact detail", () => {
     const db = database();
-    insertReceipt(db, "alpha", "large", 20);
+    insertClosedTask(db, "alpha", "large", 20);
     const row = db
-      .prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = 'alpha' AND receipt_id = 'large'")
+      .prepare("SELECT cancellation_json FROM app_task_cancellations WHERE app_id = 'alpha' AND task_id = 'large'")
       .get() as {
-      receipt_json: string;
+      cancellation_json: string;
     };
-    const receipt = JSON.parse(row.receipt_json);
-    receipt.outcome = "目".repeat(1_000);
-    receipt.summary = "摘".repeat(1_000);
-    receipt.response = "full response";
-    receipt.result = { content: "x".repeat(3_000) };
-    receipt.facts = ["full facts"];
-    db.prepare("UPDATE app_task_receipts SET receipt_json = ? WHERE app_id = 'alpha' AND receipt_id = 'large'").run(
-      JSON.stringify(receipt),
+    const closed = JSON.parse(row.cancellation_json);
+    closed.outcome = "目".repeat(1_000);
+    closed.summary = "摘".repeat(1_000);
+    closed.response = "full response";
+    closed.result = { content: "x".repeat(3_000) };
+    closed.facts = ["full facts"];
+    db.prepare("UPDATE app_task_cancellations SET cancellation_json = ? WHERE app_id = 'alpha' AND task_id = 'large'").run(
+      JSON.stringify(closed),
     );
     const service = new HumanTaskService(db, registry("alpha"));
 
@@ -2007,50 +2003,11 @@ describe("Human Task service", () => {
     expect(Buffer.byteLength(JSON.stringify(card), "utf8")).toBeLessThan(2_048);
 
     const detail = service.getTask({ ref: card.ref });
-    expect(detail?.outcome).toBe(receipt.outcome);
-    expect(detail?.summary).toBe(receipt.summary);
+    expect(detail?.outcome).toBe(closed.outcome);
+    expect(detail?.summary).toBe(closed.summary);
     expect(detail?.response).toBe("full response");
-    expect(detail?.result).toEqual(receipt.result);
+    expect(detail?.result).toEqual(closed.result);
     expect(detail?.facts).toEqual(["full facts"]);
-  });
-
-  test.each([2, 4])(
-    "does not project live generation %s as active after its completion receipt exists",
-    (generation) => {
-      const db = database();
-      insertTask(db, { appId: "alpha", taskId: "completed-but-stale", phase: "attention", updatedAt: 30, generation });
-      insertReceipt(db, "alpha", "completed-but-stale", 40);
-      const config = taskConfig(db, AppTaskResourceStore.fromDb(db, "alpha"), "alpha");
-      expect(readRuntimeTaskView({ taskStateConfig: config }, "completed-but-stale")).toBeNull();
-      expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).toEqual([]);
-      expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["attention"] }).items).toEqual([]);
-      const service = new HumanTaskService(db, registry("alpha"));
-
-      expect(service.listTasks().items).toEqual([]);
-      expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 0, attentionTasks: 0 })]);
-      expect(service.listTasks({ includeDone: true }).items).toEqual([
-        expect.objectContaining({ taskId: "completed-but-stale", status: "done", terminal: true }),
-      ]);
-    },
-  );
-
-  test("a newer live generation supersedes historical completion in detail, lists, and App counts", () => {
-    const db = database();
-    insertReceipt(db, "alpha", "same-pr", 40);
-    insertTask(db, { appId: "alpha", taskId: "same-pr", generation: 8, phase: "attention", updatedAt: 50 });
-    const service = new HumanTaskService(db, registry("alpha"));
-    const expected = { taskId: "same-pr", generation: 8, status: "attention", terminal: false };
-    const config = taskConfig(db, AppTaskResourceStore.fromDb(db, "alpha"), "alpha");
-    expect(readRuntimeTaskView({ taskStateConfig: config }, "same-pr")).toMatchObject({ generation: 8, status: "attention" });
-    expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["done"] }).items).toEqual([]);
-    expect(listRuntimeTaskViews({ taskStateConfig: config }, { status: ["attention"] }).items).toHaveLength(1);
-    expect(service.getTask({ appId: "alpha", taskId: "same-pr" })).toMatchObject(expected);
-    expect(service.listTasks().items).toEqual([expect.objectContaining(expected)]);
-    expect(service.listTasks({ includeDone: true }).items).toEqual([expect.objectContaining(expected)]);
-    expect(service.listTasks({ status: ["done"] }).items).toEqual([]);
-    expect(service.listApps()).toEqual([expect.objectContaining({ id: "alpha", activeTasks: 1, attentionTasks: 1 })]);
-    const ref = service.listTasks().items[0]!.ref;
-    expect(service.getTask({ ref })).toMatchObject(expected);
   });
 
   test("does not present the previous observation as progress for a newer running attempt", () => {

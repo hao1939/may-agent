@@ -730,9 +730,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         });
       }
     }
+    const appIds = plan.commands.filter((command) => command.status === "pending").map((command) => command.appId);
+    if (appIds.length === 0) {
+      completeAppEventAdmissionPlan(options.db, plan.eventId, now());
+      return;
+    }
     pendingAdmissionEvents.set(plan.eventId, {
       event,
-      appIds: plan.commands.filter((command) => command.status === "pending").map((command) => command.appId),
+      appIds,
     });
     if (!admissionDispatchHandle) {
       admissionDispatchHandle = setTimeout(dispatchNextAdmissionCommand, ADMISSION_COMMAND_TURN_GAP_MS);
@@ -834,7 +839,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           return;
         }
         const plan = getAppEventAdmissionPlan(options.db, rawPlan.eventId);
-        if (plan?.status === "pending") {
+        if (plan?.status === "pending" && !pendingAdmissionEvents.has(plan.eventId) && activeDispatchedEventId !== plan.eventId) {
           const event = loadPersistedEvent(options.db, plan.eventId, options.persistDir);
           if (!event) {
             for (const command of plan.commands) {

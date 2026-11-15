@@ -1712,8 +1712,7 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
     { childLimit: MAX_LIVE_CHILD_CONTEXT },
   );
   const children = Object.values(tree.resources ?? {})
-    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id] &&
-      (tree.receipts?.[resource.metadata.id]?.metadata.generation ?? -1) < resource.metadata.generation)
+    .filter((resource) => resource.spec.parentId === taskId && !tree.cancellations?.[resource.metadata.id])
     .sort((left, right) => left.metadata.id.localeCompare(right.metadata.id))
     .slice(0, MAX_LIVE_CHILD_CONTEXT);
   const viewPhases = config.resourceStore.readTaskViewPhases(children.map(({ metadata }) => metadata.id));

@@ -36,7 +36,7 @@ export function ensureTaskReferenceIndex(db: SqliteDb): void {
     .prepare(
       `SELECT app_id, task_id FROM app_tasks
        UNION
-       SELECT app_id, receipt_id AS task_id FROM app_task_receipts
+       SELECT app_id, task_id FROM app_task_cancellations
        EXCEPT
        SELECT app_id, task_id FROM app_task_refs`,
     )

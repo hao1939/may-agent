@@ -56,9 +56,6 @@ export function readCreatedTasks(
       AND (t.app_id, t.task_id) > (?, ?)
       AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
         WHERE c.app_id = t.app_id AND c.task_id = t.task_id)
-      AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
-        WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
-          AND json_extract(r.receipt_json, '$.metadata.generation') >= t.generation)
     ORDER BY t.app_id, t.task_id LIMIT ?
   `,
     )

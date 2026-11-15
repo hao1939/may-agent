@@ -583,24 +583,6 @@ describe("App read projections", () => {
     }]));
     store.bootstrapSnapshot({
       groups: { review: { id: "review", parent_id: null } }, cancellations,
-      receipts: {
-        "second-terminal": {
-          metadata: { id: "second-terminal", generation: 1, resourceVersion: 2 },
-          specHash: "old-result",
-          parentId: "review",
-          outcome: "Historical outcome",
-          acceptance: ["Original acceptance"],
-          owner: "historical-owner",
-          handler: "auto",
-          input: { original: true },
-          summary: "Historical completion",
-          result: { scope: "receipt" },
-          facts: ["receipt:evidence"],
-          acceptanceBasis: { method: "agent-judgment", facts: [] },
-          failureFingerprints: [],
-          completedAt: new Date(2).toISOString(),
-        },
-      },
     }, "seed:terminal-history");
     const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: { ...config, resourceStore: store } });
     const first = await read.tasks.list({ status: [status], limit: 1 });
@@ -623,42 +605,6 @@ describe("App read projections", () => {
     expect(detail).not.toHaveProperty("agent");
     await expect(read.tasks.list()).resolves.toEqual({ items });
     await expect(read.tasks.list({ status: ["idle", "done", status === "closed" ? "cancelled" : "closed"] })).resolves.toEqual({ items: [] });
-  });
-
-  it("skips receipt-only IDs during pagination so limit: 1 returns the first live Task", async () => {
-    const config = resourceConfig();
-    const store = AppTaskResourceStore.fromDb(db, "mixed-pagination");
-    store.bootstrapSnapshot({
-      groups: { review: { id: "review", parent_id: null } },
-      receipts: {
-        "a-receipt-only": {
-          metadata: { id: "a-receipt-only", generation: 1, resourceVersion: 1 },
-          specHash: "old-result",
-          parentId: "review",
-          outcome: "Historical outcome",
-          acceptance: ["Original acceptance"],
-          owner: "historical-owner",
-          handler: "auto",
-          summary: "Historical completion",
-          facts: ["receipt:evidence"],
-          acceptanceBasis: { method: "agent-judgment", facts: [] },
-          failureFingerprints: [],
-          completedAt: new Date(1).toISOString(),
-        },
-      },
-      resources: {
-        "z-current": {
-          metadata: { id: "z-current", generation: 1, resourceVersion: 1 },
-          spec: { parentId: "review", outcome: "Current work", acceptance: ["Done"] },
-          status: { phase: "pending", observedGeneration: 0, updatedAt: new Date(2).toISOString() },
-        },
-      },
-    }, "seed:mixed-pagination");
-    const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: { ...config, resourceStore: store } });
-    const page = await read.tasks.list({ limit: 1 });
-    expect(page.items.map(({ id }) => id)).toEqual(["z-current"]);
-    expect(page.nextCursor).toBeUndefined();
-    await expect(read.tasks.list({ status: ["done"], limit: 1 })).resolves.toEqual({ items: [] });
     await expect(read.tasks.get("missing")).resolves.toBeNull();
   });
 

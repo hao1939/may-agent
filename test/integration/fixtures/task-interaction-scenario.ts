@@ -226,7 +226,6 @@ async function conversation() {
         assert.equal(getAppInboxItem(f.db, "first")?.status, "done");
         assert(readAppConversationResource(f.db, "sample", "primary").messages.some(({text}) => text === "Reply to first"));
         assert.equal(f.store.isCancelled(first.taskId), false);
-        assert.equal(f.store.readReceipt(first.taskId), null);
         assert.equal(claimAppInboxItem(f.db, "first", "old-inbox", 1_000), null);
         const accepted = f.store.readTask(first.taskId)!.status.observedAttemptId!;
         assert.equal(f.store.readAttempt(accepted)?.acceptedResult?.state, "converged");
@@ -516,7 +515,6 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
           assert.equal(ids.length, nested ? 3 : 2);
           for (const id of ids) {
             assert.equal(f.store.isCancelled(id), false);
-            assert.equal(f.store.readReceipt(id), null);
             assert.equal(f.store.readTask(id)?.status.executionFailures ?? 0, 0);
           }
           assert.equal(

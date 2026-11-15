@@ -3,6 +3,7 @@ import { existsSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase } from "../../../lib/db.js";
+import { HumanTaskService } from "../../human-task-service.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
 import { AppTaskRecoveryScheduler } from "../tasks/app-task-recovery.js";
 import { admitConversationTaskInput } from "./conversation-task-turns.js";
@@ -528,7 +529,6 @@ describe("AppTaskResourceStore", () => {
       const full = store.readTaskContext({ taskIds: ["normal"] });
       expect(Object.keys(full.cancellations ?? {})).toHaveLength(18);
       expect(full.cancellations).toEqual(store.readSnapshot().cancellations);
-      expect(full.receipts).toEqual({});
     } finally {
       store.close();
     }
@@ -684,7 +684,6 @@ describe("AppTaskResourceStore", () => {
       });
       for (const taskId of ["human", "optional"]) {
         expect(reopened.isCancelled(taskId)).toBe(true);
-        expect(reopened.readReceipt(taskId)).toBeNull();
         expect(claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent" }).kind).toBe("completed");
       }
       expect(reopened.listRecoveryCandidates().items).toEqual([]);
@@ -706,6 +705,279 @@ describe("AppTaskResourceStore", () => {
     expect(store.sourceRevision()).toBe("seed:revision-1");
     expect(store.readTask("human")).toEqual(tree.resources?.human);
     store.close();
+  });
+
+  it("prunes already-converted app_task_receipts rows on upgrade while rejecting unconverted receipts", () => {
+    const root = mkdtempSync(join(tmpdir(), "app-task-legacy-receipts-"));
+    roots.push(root);
+    const path = join(root, "tasks.sqlite");
+    const store = AppTaskResourceStore.openStandalone(path, "example");
+    store.bootstrapSnapshot(fixture(), "seed:v4-with-receipts");
+    store.db.exec(`
+      CREATE TABLE IF NOT EXISTS app_task_receipts (
+        app_id TEXT NOT NULL, receipt_id TEXT NOT NULL, parent_id TEXT NOT NULL,
+        completed_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
+        PRIMARY KEY(app_id, receipt_id)
+      );
+    `);
+    // Converted receipt: has a matching retired:task-receipt attempt and closed Task.
+    store.db
+      .prepare(
+        `INSERT INTO app_task_attempts(
+           app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json
+         ) VALUES ('example', 'receipt:converted-1', 'converted-task', 1, 'completed', 10, ?)`,
+      )
+      .run(
+        JSON.stringify({
+          metadata: { id: "receipt:converted-1", resourceVersion: 1 },
+          taskId: "converted-task",
+          taskGeneration: 1,
+          specHash: "hash-converted",
+          owner: "owner",
+          handler: "agent:owner",
+          runtimeId: "retired:task-receipt",
+          state: "completed",
+          summary: "Converted outcome",
+          startedAt: new Date(10).toISOString(),
+          finishedAt: new Date(10).toISOString(),
+          acceptedResult: {
+            state: "converged",
+            summary: "Converted outcome",
+            response: "Converted response",
+            facts: ["converted:proof"],
+          },
+        }),
+      );
+    store.db
+      .prepare(
+        `INSERT INTO app_task_cancellations(app_id, task_id, requested_at, reason, cancellation_json)
+         VALUES ('example', 'converted-task', 10, 'Already completed', ?)`,
+      )
+      .run(
+        JSON.stringify({
+          kind: "closed",
+          appId: "example",
+          taskId: "converted-task",
+          generation: 1,
+          resourceVersion: 2,
+          acceptedResultAttemptId: "receipt:converted-1",
+          outcome: "Finish converted-task",
+          reason: "Already completed",
+          summary: "Converted outcome",
+          response: "Converted response",
+          facts: ["converted:proof"],
+          cancelledAt: new Date(10).toISOString(),
+        }),
+      );
+    store.db
+      .prepare(
+        `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
+         VALUES ('example', 'converted-task', 'project', 10, ?)`,
+      )
+      .run(JSON.stringify({ metadata: { id: "converted-task", generation: 1, resourceVersion: 1 }, specHash: "hash-converted" }));
+    store.close();
+
+    // Reopening a database whose receipts were all converted prunes the legacy table and preserves results.
+    const upgraded = AppTaskResourceStore.openStandalone(path, "example");
+    try {
+      expect(
+        upgraded.db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts'").get(),
+      ).toBeNull();
+      expect(upgraded.readCancellation("converted-task")).toMatchObject({
+        kind: "closed",
+        summary: "Converted outcome",
+        response: "Converted response",
+      });
+      const service = new HumanTaskService(upgraded.db, {
+        snapshot: () => ({ id: "v4", generation: 1, entries: [] }),
+      });
+      const listed = service.listTasks({ includeDone: true }).items.find((item) => item.taskId === "converted-task");
+      expect(listed).toMatchObject({
+        appId: "example",
+        taskId: "converted-task",
+        status: "closed",
+        summary: "Converted outcome",
+      });
+      expect(service.getTask({ ref: listed!.ref })).toMatchObject({
+        appId: "example",
+        taskId: "converted-task",
+        status: "closed",
+        summary: "Converted outcome",
+        response: "Converted response",
+      });
+      expect(service.getTask({ appId: "example", taskId: "converted-task" })).toMatchObject({
+        status: "closed",
+        summary: "Converted outcome",
+        response: "Converted response",
+      });
+      const insertRetiredAttempt = (appId: string, attemptId: string, taskId: string, generation: number, specHash: string) =>
+        upgraded.db
+          .prepare(
+            `INSERT INTO app_task_attempts(
+               app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json
+             ) VALUES (?, ?, ?, ?, 'completed', 10, ?)`,
+          )
+          .run(
+            appId,
+            attemptId,
+            taskId,
+            generation,
+            JSON.stringify({
+              metadata: { id: attemptId, resourceVersion: 1 },
+              taskId,
+              taskGeneration: generation,
+              specHash,
+              owner: "owner",
+              handler: "agent:owner",
+              runtimeId: "retired:task-receipt",
+              state: "completed",
+              summary: "Converted outcome",
+              startedAt: new Date(10).toISOString(),
+              finishedAt: new Date(10).toISOString(),
+            }),
+          );
+      insertRetiredAttempt("example", "receipt:gen-mismatch", "gen-mismatch", 1, "hash-match");
+      insertRetiredAttempt("example", "receipt:hash-mismatch", "hash-mismatch", 1, "hash-one");
+      insertRetiredAttempt("other-app", "receipt:app-mismatch", "app-mismatch", 1, "hash-match");
+
+      // Reconstruct the legacy table to verify that generation, specHash, and appId mismatches
+      // are NOT deleted by ensureTaskResourceSchema() and fail closed on open:
+      upgraded.db.exec(`
+        CREATE TABLE IF NOT EXISTS app_task_receipts (
+          app_id TEXT NOT NULL, receipt_id TEXT NOT NULL, parent_id TEXT NOT NULL,
+          completed_at INTEGER NOT NULL, receipt_json TEXT NOT NULL,
+          PRIMARY KEY(app_id, receipt_id)
+        );
+      `);
+    } finally {
+      upgraded.close();
+    }
+
+    for (const [expectedId, generation, specHash] of [
+      ["gen-mismatch", 2, "hash-match"],
+      ["hash-mismatch", 1, "hash-two"],
+      ["app-mismatch", 1, "hash-match"],
+      ["receipt-only", 1, "missing"],
+      ["normal", 1, "missing"],
+    ] as const) {
+      const seedDb = openDatabase(path);
+      try {
+        seedDb
+          .prepare(
+            `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
+             VALUES ('example', ?, 'project', 10, ?)`,
+          )
+          .run(expectedId, JSON.stringify({ metadata: { id: expectedId, generation, resourceVersion: 1 }, specHash }));
+      } finally {
+        seedDb.close();
+      }
+      expect(() => AppTaskResourceStore.openStandalone(path, "example")).toThrow(
+        new RegExp(`still contains unconverted legacy app_task_receipts rows \\(Task ${expectedId}\\)`),
+      );
+      const checkDb = openDatabase(path);
+      try {
+        // Verify ensureTaskResourceSchema() did not delete the mismatched row
+        expect(
+          checkDb.prepare("SELECT receipt_id FROM app_task_receipts WHERE app_id = 'example' AND receipt_id = ?").get(expectedId),
+        ).toEqual({ receipt_id: expectedId });
+        expect(() => AppTaskResourceStore.activeFromDb(checkDb, "example")).toThrow(
+          new RegExp(`still contains unconverted legacy app_task_receipts rows \\(Task ${expectedId}\\)`),
+        );
+        expect(() => AppTaskResourceStore.inspectFromDb(checkDb, "example")).toThrow(
+          new RegExp(`still contains unconverted legacy app_task_receipts rows \\(Task ${expectedId}\\)`),
+        );
+        expect(
+          () =>
+            new HumanTaskService(checkDb, {
+              snapshot: () => ({ id: "v4", generation: 1, entries: [] }),
+            }),
+        ).toThrow(new RegExp(`still contains unconverted legacy app_task_receipts rows \\(Task ${expectedId}\\)`));
+        checkDb.prepare("DELETE FROM app_task_receipts WHERE app_id = 'example' AND receipt_id = ?").run(expectedId);
+      } finally {
+        checkDb.close();
+      }
+    }
+
+    const freshStore = open();
+    try {
+      expect(() =>
+        freshStore.bootstrapSnapshot(
+          {
+            ...fixture(),
+            receipts: {
+              "receipt-only": { metadata: { id: "receipt-only", generation: 1, resourceVersion: 1 }, specHash: "missing" },
+            },
+          } as unknown as TaskTree,
+          "seed:receipt-only",
+        ),
+      ).toThrow(/snapshot still contains unconverted legacy completion receipts/);
+      expect(() =>
+        freshStore.bootstrapSnapshot(
+          {
+            ...fixture(),
+            receipts: {
+              normal: { metadata: { id: "normal", generation: 1, resourceVersion: 1 }, specHash: "missing" },
+            },
+          } as unknown as TaskTree,
+          "seed:superseded-by-receipt",
+        ),
+      ).toThrow(/snapshot still contains unconverted legacy completion receipts/);
+      expect(() =>
+        freshStore.bootstrapSnapshot(
+          {
+            ...fixture(),
+            attempts: {
+              "receipt:mismatch": {
+                metadata: { id: "receipt:mismatch", resourceVersion: 1 },
+                taskId: "normal",
+                taskGeneration: 1,
+                specHash: "hash-one",
+                owner: "owner",
+                handler: "agent:owner",
+                runtimeId: "retired:task-receipt",
+                state: "completed",
+                summary: "Converted outcome",
+                startedAt: new Date(10).toISOString(),
+                finishedAt: new Date(10).toISOString(),
+              },
+            },
+            receipts: {
+              normal: { metadata: { id: "normal", generation: 2, resourceVersion: 1 }, specHash: "hash-one" },
+            },
+          } as unknown as TaskTree,
+          "seed:gen-mismatch",
+        ),
+      ).toThrow(/snapshot still contains unconverted legacy completion receipts \(normal\)/);
+      expect(() =>
+        freshStore.bootstrapSnapshot(
+          {
+            ...fixture(),
+            attempts: {
+              "receipt:mismatch": {
+                metadata: { id: "receipt:mismatch", resourceVersion: 1 },
+                taskId: "normal",
+                taskGeneration: 1,
+                specHash: "hash-one",
+                owner: "owner",
+                handler: "agent:owner",
+                runtimeId: "retired:task-receipt",
+                state: "completed",
+                summary: "Converted outcome",
+                startedAt: new Date(10).toISOString(),
+                finishedAt: new Date(10).toISOString(),
+              },
+            },
+            receipts: {
+              normal: { metadata: { id: "normal", generation: 1, resourceVersion: 1 }, specHash: "hash-two" },
+            },
+          } as unknown as TaskTree,
+          "seed:hash-mismatch",
+        ),
+      ).toThrow(/snapshot still contains unconverted legacy completion receipts \(normal\)/);
+      expect(freshStore.isActive()).toBeFalse();
+    } finally {
+      freshStore.close();
+    }
   });
 
   it("projects loaded App concurrency without changing it when the value is unchanged", () => {
@@ -1345,7 +1617,6 @@ describe("AppTaskResourceStore", () => {
     expect(store.readTask("normal")?.status.phase).toBe("converged");
     expect(store.readAttempt(claim.attemptId)?.state).toBe("completed");
     expect(store.readAttempt(claim.attemptId)?.acceptedResult?.summary).toBe("resource task complete");
-    expect(store.readReceipt("normal")).toBeNull();
     expect(store.readCancellation("normal")).toBeNull();
     expect(
       observeAppTaskIntent(config, {

@@ -33,7 +33,6 @@ import type {
   AppTaskCondition,
   AppTaskResource,
 } from "./core/tasks/app-task-state.js";
-import type { TaskCompletionReceipt } from "./core/tasks/app-task-store.js";
 import { isHumanActionOwner } from "./core/tasks/human-condition.js";
 import { getDb } from "../lib/db/connection.js";
 import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk";
@@ -321,10 +320,9 @@ function resolveRequestedAppId(
       .prepare(
         `SELECT 1 FROM app_tasks WHERE app_id = ?
          UNION ALL SELECT 1 FROM app_task_cancellations WHERE app_id = ?
-         UNION ALL SELECT 1 FROM app_task_receipts WHERE app_id = ?
          LIMIT 1`,
       )
-      .get(raw, raw, raw),
+      .get(raw, raw),
   );
   if (hasExactRows) return raw;
   return raw.replace(/\.app$/, "") || undefined;
@@ -553,11 +551,6 @@ function reachableHumanConditionOwners(
               FROM app_tasks task
               WHERE task.phase IN ('pending', 'running', 'waiting', 'attention', 'converged')
                 AND NOT EXISTS (
-                  SELECT 1 FROM app_task_receipts receipt
-                  WHERE receipt.app_id = task.app_id AND receipt.receipt_id = task.task_id
-                    AND json_extract(receipt.receipt_json, '$.metadata.generation') >= task.generation
-                )
-                AND NOT EXISTS (
                   SELECT 1 FROM app_task_cancellations cancellation
                   WHERE cancellation.app_id = task.app_id AND cancellation.task_id = task.task_id
                 )
@@ -631,7 +624,6 @@ function projectTask(
   const appId = row.app_id;
   const taskId = row.task_id;
   if (!appId || !taskId) return null;
-  const terminal = row.terminal !== 0;
   const recurrence = taskRecurrence(configuredRecurrence);
   if (row.terminal === 2) {
     const cancellation = parseJson<AppTaskCancellation>(row.payload);
@@ -652,32 +644,6 @@ function projectTask(
       ...(cancellation.result ? { result: structuredClone(cancellation.result) } : {}),
       ...(cancellation.facts ? { facts: [...cancellation.facts] } : {}),
       updatedAt: row.updated_at ?? Date.parse(cancellation.cancelledAt),
-      recurring: Boolean(recurrence),
-      ...(recurrence ? { recurrence } : {}),
-      terminal: true,
-      cancellable: false,
-    };
-    return detail ? view : listCard(view);
-  }
-  if (terminal) {
-    const receipt = parseJson<TaskCompletionReceipt>(row.payload);
-    if (!receipt) return null;
-    storedResultFacts(receipt);
-    const view: HumanTaskView = {
-      appId,
-      taskId,
-      ref,
-      status: "done",
-      generation: receipt.metadata.generation,
-      resourceVersion: receipt.metadata.resourceVersion,
-      outcome: receipt.outcome,
-      ...(Array.isArray(receipt.acceptance) ? { acceptance: [...receipt.acceptance] } : {}),
-      statusDetail: taskStatusDetail("done"),
-      summary: receipt.summary,
-      ...(receipt.response ? { response: receipt.response } : {}),
-      ...(receipt.result ? { result: structuredClone(receipt.result) } : {}),
-      ...(receipt.facts ? { facts: [...receipt.facts] } : {}),
-      updatedAt: row.updated_at ?? Date.parse(receipt.completedAt),
       recurring: Boolean(recurrence),
       ...(recurrence ? { recurrence } : {}),
       terminal: true,
@@ -763,15 +729,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
         AND oa.attempt_id = json_extract(t.resource_json, '$.status.observedAttemptId')
        WHERE t.app_id = ? AND t.task_id = ?
        UNION ALL
-       SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-         r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json,
-         NULL AS observed_attempt_json, NULL AS human_conditions_json,
-         ${taskScheduleSourceIdsSql("r.app_id", "r.receipt_id")} AS schedule_source_ids,
-         json_extract(r.receipt_json, '$.metadata.generation') AS current_generation
-       FROM app_task_receipts r
-       WHERE r.app_id = ? AND r.receipt_id = ?
-       UNION ALL
-       SELECT c.app_id, c.task_id, 'cancelled' AS phase, c.requested_at AS updated_at,
+       SELECT c.app_id, c.task_id, COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') AS phase, c.requested_at AS updated_at,
          c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json,
          NULL AS observed_attempt_json, NULL AS human_conditions_json,
          ${taskScheduleSourceIdsSql("c.app_id", "c.task_id")} AS schedule_source_ids,
@@ -780,7 +738,7 @@ function readTaskRow(db: SqliteDb, appId: string, taskId: string): TaskRow | nul
        WHERE c.app_id = ? AND c.task_id = ?
        ) ORDER BY (terminal = 2) DESC, current_generation DESC, terminal DESC LIMIT 1`,
     )
-    .get(appId, taskId, appId, taskId, appId, taskId) as TaskRow | null;
+    .get(appId, taskId, appId, taskId) as TaskRow | null;
 }
 
 function taskWaits(db: SqliteDb, appId: string, taskId: string): HumanTaskWait[] {
@@ -970,7 +928,9 @@ function taskDiagnostics(db: SqliteDb, row: TaskRow): HumanTaskDiagnostics {
         id,
         status: dependency
           ? dependency.terminal === 2
-            ? "cancelled"
+            ? dependency.phase === "closed"
+              ? "closed"
+              : "cancelled"
             : taskStatus(dependency.phase, dependency.terminal === 1)
           : group
             ? "group"
@@ -1035,6 +995,32 @@ export class HumanTaskService {
     private readonly readObserverHealth?: (appId: string) => ObserverHealth[],
   ) {
     ensureTaskReferenceIndex(db);
+    const hasReceiptsTable = Boolean(
+      db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1").get(),
+    );
+    if (hasReceiptsTable) {
+      const unconverted = db
+        .prepare(
+          `SELECT r.app_id, r.receipt_id FROM app_task_receipts r
+           WHERE NOT EXISTS (
+             SELECT 1 FROM app_task_attempts a
+             WHERE a.app_id = r.app_id AND a.task_id = r.receipt_id
+               AND a.task_generation = json_extract(r.receipt_json, '$.metadata.generation')
+               AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
+               AND json_extract(a.attempt_json, '$.specHash') = json_extract(r.receipt_json, '$.specHash')
+           ) LIMIT 1`,
+        )
+        .get() as {
+        app_id?: string;
+        receipt_id?: string;
+      } | null;
+      if (unconverted?.receipt_id) {
+        throw new Error(
+          `App ${unconverted.app_id ?? "unknown"} still contains unconverted legacy app_task_receipts rows (Task ${unconverted.receipt_id}); ` +
+            "convert and remove legacy completion receipts before reading Task state",
+        );
+      }
+    }
   }
 
   listApps(appId?: string): HumanAppView[] {
@@ -1051,11 +1037,6 @@ export class HumanTaskService {
            SUM(CASE WHEN view_phase = 'waiting' THEN 1 ELSE 0 END) AS waiting_tasks
          FROM (SELECT app_tasks.*, ${taskViewPhaseSql("app_tasks")} AS view_phase FROM app_tasks) tasks
          WHERE phase IN ('pending', 'running', 'waiting', 'attention', 'converged')
-           AND NOT EXISTS (
-             SELECT 1 FROM app_task_receipts r
-             WHERE r.app_id = tasks.app_id AND r.receipt_id = tasks.task_id
-               AND json_extract(r.receipt_json, '$.metadata.generation') >= tasks.generation
-           )
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c
              WHERE c.app_id = tasks.app_id AND c.task_id = tasks.task_id
@@ -1129,8 +1110,6 @@ export class HumanTaskService {
     const statuses = input.status ? new Set(input.status) : null;
     const humanActionOnly = input.humanActionOnly === true;
     const includeLive = !statuses || [...statuses].some((status) => !["done", "closed", "cancelled"].includes(status));
-    const includeDone =
-      !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("done") === true);
     const includeCancelled =
       !humanActionOnly && ((!statuses && input.includeDone === true) || statuses?.has("cancelled") === true);
     const includeClosed =
@@ -1189,10 +1168,6 @@ export class HumanTaskService {
          WHERE t.phase IN (${storedPhases.map(() => "?").join(", ")})
            AND (${LIVE_TASK_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (
-             SELECT 1 FROM app_task_receipts r WHERE r.app_id = t.app_id AND r.receipt_id = t.task_id
-               AND json_extract(r.receipt_json, '$.metadata.generation') >= t.generation
-           )
-           AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
            )${appId && !humanActionOnly ? " AND t.app_id = ?" : ""}${scopedHumanOwnerClause}${directGlobalHumanOwnerFilter}${directGlobalHumanOwnerGroup}`,
       );
@@ -1202,21 +1177,6 @@ export class HumanTaskService {
         ...(appId && !humanActionOnly ? [appId] : []),
         ...scopedHumanOwnerValues,
       );
-    }
-    if (includeDone) {
-      parts.push(
-        `SELECT r.app_id, r.receipt_id AS task_id, 'done' AS phase, r.completed_at AS updated_at,
-           r.receipt_json AS payload, 1 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
-           ${taskScheduleSourceIdsSql("r.app_id", "r.receipt_id")} AS schedule_source_ids
-         FROM app_task_receipts r
-         WHERE NOT EXISTS (
-           SELECT 1 FROM app_task_cancellations c WHERE c.app_id = r.app_id AND c.task_id = r.receipt_id
-         ) AND NOT EXISTS (
-           SELECT 1 FROM app_tasks t WHERE t.app_id = r.app_id AND t.task_id = r.receipt_id
-             AND t.generation > json_extract(r.receipt_json, '$.metadata.generation')
-         )${appId ? " AND r.app_id = ?" : ""}`,
-      );
-      if (appId) values.push(appId);
     }
     if (includeCancelled || includeClosed) {
       const closureKinds = [includeCancelled ? "cancelled" : null, includeClosed ? "closed" : null].filter(Boolean);

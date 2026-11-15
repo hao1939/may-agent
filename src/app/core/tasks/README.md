@@ -62,8 +62,8 @@ acceptance. The rule creates no extra place, budget or Task-control authority.
 `read.tasks.created({limit?, cursor?})`, or the model `tasks` action `created`,
 discovers open assignments whose immutable creator is this exact App/Task.
 It returns eight items by default, spans Apps and grouping parents, preserves
-both App and Task identities, and excludes closed/cancelled assignments and
-retired completion receipts. Follow `nextCursor`; a partial page is not the
+both App and Task identities, and excludes closed/cancelled assignments.
+Follow `nextCursor`; a partial page is not the
 full workload. The App's executor decides when to read and review returned work.
 Older Hosts may omit this optional read; absence is unavailable, not an empty
 list. Discovery uses an indexed creator read and makes no state change.
@@ -403,7 +403,6 @@ This is not a general progress stream. Apps can still declare relevant event rou
 | Public `idle` (stored `converged`) | No current runnable work; the assignment stays open pending a declared next responsibility or owner disposition |
 | `closeAppTask()` / public `closed` | Authorized owner ends the assignment against an exact accepted result; preserves evidence without certifying semantic fulfillment |
 | `cancelAppTask()` / public `cancelled` | Authorized withdrawal, including during execution; preserves unresolved disposition |
-| Public `done` | Legacy immutable completion receipts only |
 | Worker result `converged`, `waiting`, `incomplete` | Scoped attempt judgments, separate from Task lifecycle and exact App input `done` |
 | Turn Stop / `stopAppTaskAttempt()` | Stop the observed attempt; keep the Task and accepted Requests |
 
