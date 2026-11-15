@@ -142,7 +142,7 @@ describe("prepared completion contract", () => {
   });
 
   it.each(["waiting", "incomplete"])(
-    "rejects an empty %s report before finish and accepts its correction",
+    "rejects an empty %s report at finish validation and accepts its correction",
     async (state) => {
       const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
       const args = {
@@ -155,7 +155,17 @@ describe("prepared completion contract", () => {
           facts: [] as string[],
         },
       };
-      expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
+      const invalidCtx = context(args);
+      const invalidResult = await finish.execute(
+        invalidCtx.toolCall.id,
+        validateToolArguments(finish, invalidCtx.toolCall),
+      );
+      expect(invalidResult.terminate).toBeUndefined();
+      expect(invalidResult.content).toContainEqual({
+        type: "text",
+        text: expect.stringContaining("report requires waiting or incomplete, true, and non-empty facts"),
+      });
+
       args.result.facts.push("source:access-denied");
       const ctx = context(args);
       const params = validateToolArguments(finish, ctx.toolCall);
@@ -177,7 +187,17 @@ describe("prepared completion contract", () => {
         facts: ["review:scheduled"],
       },
     };
-    expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
+    const invalidCtx = context(args);
+    const invalidResult = await finish.execute(
+      invalidCtx.toolCall.id,
+      validateToolArguments(finish, invalidCtx.toolCall),
+    );
+    expect(invalidResult.terminate).toBeUndefined();
+    expect(invalidResult.content).toContainEqual({
+      type: "text",
+      text: expect.stringContaining("waiting cannot include response"),
+    });
+
     const { response: _response, ...correctedResult } = args.result;
     const corrected = { ...args, result: correctedResult };
     const ctx = context(corrected);

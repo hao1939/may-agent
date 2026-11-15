@@ -283,57 +283,6 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
 }
 
 
-/**
- * Providers (such as Gemini 4 over OpenAI completions) reject negative JSON
- * Schema clauses (`not`). Advertise a relaxed clone in the provider payload
- * while retaining the original schema on `tool.parameters` for local validation.
- */
-export function providerCompatibleToolSchema(schema: TSchema): TSchema {
-  const DATA_CONTAINERS = new Set(["const", "enum", "default", "examples"]);
-  const MAP_CONTAINERS = new Set(["properties", "patternProperties", "dependentSchemas", "$defs", "definitions"]);
-  const containsNot = (value: unknown, inMap = false): boolean => {
-    if (!value || typeof value !== "object") return false;
-    if (Array.isArray(value)) return value.some((item) => containsNot(item, false));
-    const record = value as Record<string, unknown>;
-    if (!inMap && Object.hasOwn(record, "not")) return true;
-    for (const [k, v] of Object.entries(record)) {
-      if (!inMap && DATA_CONTAINERS.has(k)) continue;
-      if (containsNot(v, !inMap && MAP_CONTAINERS.has(k))) return true;
-    }
-    return false;
-  };
-  const clone = (value: unknown, inMap = false): unknown => {
-    if (!value || typeof value !== "object") return value;
-    if (Array.isArray(value)) return value.map((item) => clone(item, false));
-    const source = value as Record<PropertyKey, unknown>;
-    const result: Record<PropertyKey, unknown> = {};
-    // Keep TypeBox's symbol metadata as well as the JSON Schema fields.
-    for (const key of Reflect.ownKeys(source)) {
-      if (!inMap && key === "not") continue;
-      if (
-        !inMap &&
-        (key === "anyOf" || key === "oneOf" || key === "allOf") &&
-        Array.isArray(source[key]) &&
-        source[key].some((branch) => containsNot(branch, false))
-      ) {
-        continue;
-      }
-      const nextVal =
-        !inMap && typeof key === "string" && DATA_CONTAINERS.has(key)
-          ? structuredClone(source[key])
-          : clone(source[key], !inMap && typeof key === "string" && MAP_CONTAINERS.has(key));
-      Object.defineProperty(result, key, {
-        value: nextVal,
-        enumerable: Object.getOwnPropertyDescriptor(source, key)?.enumerable ?? true,
-        configurable: true,
-        writable: true,
-      });
-    }
-    return result;
-  };
-  return clone(schema) as TSchema;
-}
-
 function addRequiredResult(base: TSchema, result: TSchema): TSchema {
   const objectSchema = base as {
     type?: unknown;

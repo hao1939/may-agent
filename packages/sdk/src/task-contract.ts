@@ -202,34 +202,6 @@ export const taskAgentResultSchema = Type.Object(
     additionalProperties: false,
     description:
       "Report one Task attempt: converged (answer/completed scope; omit reviewAt/Conditions), waiting (keep input open on saved waits, Conditions, requests, reviewAt, or continue:true; no response), or incomplete (unsuccessful attempt with non-empty facts; no waits/requests/actions). Omitting unchanged Conditions preserves existing waits; use retire-condition to withdraw one. Delegate work via requests (stable id) and add conditions:[{requestId}] with waiting to await its result.",
-    anyOf: [
-      {
-        properties: { state: { const: "converged" } },
-        not: { anyOf: [{ required: ["continue"] }, { required: ["report"] }] },
-      },
-      {
-        properties: { state: { const: "waiting" } },
-        not: { anyOf: [{ required: ["response"] }, { required: ["report"] }] },
-      },
-      {
-        required: ["report"],
-        properties: { state: { const: "waiting" }, facts: { minItems: 1 } },
-        not: { required: ["response"] },
-      },
-      {
-        properties: { state: { const: "incomplete" }, facts: { minItems: 1 } },
-        not: {
-          anyOf: [
-            { required: ["communication"] },
-            { required: ["reviewAt"] },
-            { required: ["actions"] },
-            { required: ["conditions"] },
-            { required: ["requests"] },
-            { required: ["continue"] },
-          ],
-        },
-      },
-    ],
   },
 );
 
@@ -401,8 +373,13 @@ export function admitTaskReconcileResult(output: unknown): TaskReconcileAdmissio
   }
   if (output.state === "incomplete") {
     if (facts.length === 0) return { ok: false, error: "incomplete requires facts for the decision" };
-    if (output.actions !== undefined || output.conditions !== undefined || output.requests !== undefined) {
-      return { ok: false, error: "incomplete cannot include actions, Conditions, or requests" };
+    if (
+      output.actions !== undefined ||
+      output.conditions !== undefined ||
+      output.requests !== undefined ||
+      output.communication !== undefined
+    ) {
+      return { ok: false, error: "incomplete cannot include actions, Conditions, requests, or communication" };
     }
   }
   const admittedOutput = output as Record<string, unknown>;

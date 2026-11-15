@@ -123,8 +123,8 @@ describe("App stop contract", () => {
   it.each([{ facts: [] }, { actions: [] }, { conditions: [] }, { dependencies: [] }])(
     "rejects incomplete or mixed stop decisions: %j",
     (extra) => {
-      expect(Check(taskAgentResultSchema, { ...incomplete, ...extra })).toBe(false);
       expect(admitTaskReconcileResult({ ...incomplete, ...extra }).ok).toBe(false);
+      expect(admitTaskResultForSchema(taskAgentResultSchema, { ...incomplete, ...extra })?.ok).toBe(false);
     },
   );
 });
@@ -152,7 +152,7 @@ describe("project task handler contract", () => {
     expect(Check(taskAgentResultSchema, output)).toBe(valid);
     expect(admitTaskReconcileResult(output).ok).toBe(valid);
   });
-  it("agrees with the finish schema on quiet waits and explicit facts-backed reports", () => {
+  it("agrees with the finish admission boundary on quiet waits and explicit facts-backed reports", () => {
     for (const state of ["waiting", "incomplete", "converged", "needs-agent"] as const) {
       for (const facts of [[], ["source:access-denied"]]) {
         for (const report of [undefined, true, false]) {
@@ -162,7 +162,10 @@ describe("project task handler contract", () => {
             report !== false &&
             (report !== true || (state !== "converged" && facts.length > 0)) &&
             (state !== "incomplete" || facts.length > 0);
-          expect({ output, valid: Check(taskAgentResultSchema, output) }).toEqual({ output, valid });
+          expect({ output, valid: admitTaskResultForSchema(taskAgentResultSchema, output)?.ok ?? false }).toEqual({
+            output,
+            valid,
+          });
           const admitted = admitTaskReconcileResult(output);
           expect({ output, valid: admitted.ok }).toEqual({ output, valid });
           if (admitted.ok) {
@@ -673,6 +676,7 @@ describe("project task handler contract", () => {
     const changesJson = JSON.stringify(taskChangesSchema);
     expect(resultJson.length).toBeLessThanOrEqual(8_400);
     expect(changesJson.length).toBeLessThanOrEqual(6_500);
+    expect(resultJson).not.toContain('"not":');
     expect(resultJson.match(/"expectedConditionGeneration":\{/g)?.length).toBe(1);
     expect(resultJson.match(/"requestUpdates":\{/g)?.length).toBe(1);
 
@@ -683,7 +687,8 @@ describe("project task handler contract", () => {
       { state: "incomplete", summary: "Blocked", facts: ["err"], requests: [] },
       { state: "incomplete", summary: "Blocked", facts: ["err"], communication: [] },
     ]) {
-      expect(Check(taskAgentResultSchema, disallowed)).toBe(false);
+      expect(admitTaskReconcileResult(disallowed).ok).toBe(false);
+      expect(admitTaskResultForSchema(taskAgentResultSchema, disallowed)?.ok).toBe(false);
     }
   });
 });

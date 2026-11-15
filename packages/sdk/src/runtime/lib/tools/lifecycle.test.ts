@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createFinishTool, createWorkflowFinishTool } from "@may-agent/sdk/runtime";
 import { taskAgentResultSchema } from "@may-agent/sdk";
-import { Type } from "typebox";
-import { Compile } from "typebox/compile";
-import { providerCompatibleToolSchema } from "./lifecycle";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -254,72 +251,36 @@ describe("provider-compatible workflow finish schema", () => {
   beforeEach(setup);
   afterEach(cleanup);
 
-  it("removes negative Task branches from provider-compatible schema while keeping full tool.parameters for local validation", () => {
-    const original = JSON.stringify(taskAgentResultSchema);
+  it("keeps taskAgentResultSchema free of JSON Schema not keywords so Gemini 4 and all providers accept it natively", () => {
     const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskAgentResultSchema);
-    const compatible = JSON.parse(JSON.stringify(providerCompatibleToolSchema(tool.parameters)));
-    const result = compatible.properties.result;
+    const serialized = JSON.stringify(tool.parameters.properties.result);
 
-    expect(result).not.toHaveProperty("anyOf");
-    expect(JSON.stringify(result)).not.toContain('"not":');
-    expect(result.properties.state.anyOf).toEqual(taskAgentResultSchema.properties.state.anyOf);
-    expect(result.properties.conditions.items.anyOf).toEqual(
-      JSON.parse(JSON.stringify(taskAgentResultSchema.properties.conditions.items.anyOf)),
-    );
-    expect(result.$id).toBe(taskAgentResultSchema.$id);
-    expect(result.additionalProperties).toBe(false);
-    expect(compatible.required).toContain("result");
-    expect(JSON.stringify(taskAgentResultSchema)).toBe(original);
-    expect(taskAgentResultSchema.anyOf).toHaveLength(4);
+    expect(serialized).not.toContain('"not":');
+    expect(taskAgentResultSchema).not.toHaveProperty("anyOf");
     expect(tool.parameters.properties.result).toBe(taskAgentResultSchema);
-  });
-
-  it("recursively strips direct and nested negatives (anyOf/oneOf/allOf) while preserving properties/literals named not", () => {
-    const schema = Type.Object({
-      not: Type.String({ minLength: 1 }),
-      literal: Type.Literal("ok", { default: { not: "preserved" } } as any),
-      value: Type.String({ not: { const: "forbidden" } }),
-      exclusive: Type.String({ oneOf: [{ not: { const: "bad" } }, { const: "good" }] }),
-      nested: Type.Array(Type.Object({
-        choice: Type.String({ anyOf: [{ allOf: [{ not: { const: "forbidden" } }] }, { const: "ok" }] }),
-        ordinary: Type.Union([Type.Literal("a"), Type.Literal("b")]),
-      })),
-    });
-    const original = JSON.stringify(schema);
-    const compatible = providerCompatibleToolSchema(schema) as any;
-
-    expect(compatible.properties.not).toEqual({ type: "string", minLength: 1 });
-    expect(compatible.properties.literal.default).toEqual({ not: "preserved" });
-    expect(compatible.properties.value).not.toHaveProperty("not");
-    expect(compatible.properties.exclusive).not.toHaveProperty("oneOf");
-    expect(compatible.properties.nested.items.properties.choice).not.toHaveProperty("anyOf");
-    expect(compatible.properties.nested.items.properties.ordinary.anyOf).toEqual(
-      schema.properties.nested.items.properties.ordinary.anyOf,
-    );
-    expect(compatible.properties.nested.items.properties.ordinary.anyOf).not.toBe(
-      schema.properties.nested.items.properties.ordinary.anyOf,
-    );
-    expect(Object.getOwnPropertySymbols(compatible)).toEqual(Object.getOwnPropertySymbols(schema));
-    expect(JSON.stringify(schema)).toBe(original);
   });
 
   it.each([
     { state: "converged", continue: true },
+    { state: "converged", report: true, facts: ["ok"] },
     { state: "waiting", response: "Not allowed while waiting" },
+    { state: "waiting", report: true, facts: [] },
     { state: "incomplete", facts: [] },
     { state: "incomplete", facts: ["Failed"], requests: [] },
-  ])("still rejects invalid state/field combinations locally: %j", async (result) => {
+    { state: "incomplete", facts: ["Failed"], communication: [] },
+  ])("still rejects invalid state/field combinations at finish execution: %j", async (result) => {
     const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskAgentResultSchema);
     const params = {
-      status: "partial", summary: "Attempt report",
+      status: "partial",
+      summary: "Attempt report",
       result: { summary: "Task report", facts: [], ...result },
     };
-    // These combinations are deliberately allowed by the relaxed provider schema,
-    // while tool.parameters retains the full schema for Pi's validateToolArguments.
-    expect(Compile(providerCompatibleToolSchema(tool.parameters)).Check(params)).toBe(true);
-    expect(Compile(tool.parameters).Check(params)).toBe(false);
-    expect(() => tool.prepareArguments!(params)).toThrow("supplied schema");
-    await expect(tool.execute("invalid-report", params)).rejects.toThrow("supplied schema");
+    const res = await tool.execute("invalid-report", params);
+    expect(res.terminate).toBeUndefined();
+    expect(res.content[0]).toMatchObject({
+      type: "text",
+      text: expect.stringContaining("finish() error:"),
+    });
   });
 
   it.each([
