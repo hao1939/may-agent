@@ -7,6 +7,7 @@ agents_root="${AGENTS_ROOT:-${project_root}/agents}"
 shared_root="${SHARED_ROOT:-${project_root}/shared}"
 projects_root="${PROJECTS_ROOT:-${project_root}/projects}"
 state_dir="${STATE_DIR:-${project_root}/.state}"
+runtime_home="${HOME:-/var/lib/mayagent}"
 ownership_path="${MAY_RUNTIME_OWNERSHIP_PATH:-${projects_root}}"
 [ -e "${ownership_path}" ] || ownership_path="${project_root}"
 
@@ -43,15 +44,46 @@ fi
 export MAY_RUNTIME_UID="${configured_uid}"
 export MAY_RUNTIME_GID="${configured_gid}"
 
-mkdir -p "${project_root}" "${state_dir}" "${agents_root}" "${projects_root}" "${shared_root}" "${state_dir}/runtime-logs"
+mkdir -p \
+  "${project_root}" \
+  "${state_dir}" \
+  "${agents_root}" \
+  "${projects_root}" \
+  "${shared_root}" \
+  "${state_dir}/runtime-logs" \
+  "${state_dir}/cli-state/herdr/state" \
+  "${state_dir}/cli-state/codex/sessions" \
+  "${state_dir}/cli-state/codex/memories" \
+  "${state_dir}/cli-state/pi/sessions" \
+  "${state_dir}/cli-state/gemini/history" \
+  "${state_dir}/cli-state/gemini/tmp" \
+  "${state_dir}/cli-state/claude/projects" \
+  "${state_dir}/ssh" \
+  "${runtime_home}"
+
 if [ "$(id -u)" = "0" ]; then
   chown "${runtime_user}:${runtime_user}" \
-    "${project_root}" "${state_dir}" "${agents_root}" "${projects_root}" "${shared_root}" "${state_dir}/runtime-logs" \
+    "${project_root}" "${state_dir}" "${agents_root}" "${projects_root}" "${shared_root}" \
+    "${state_dir}/runtime-logs" "${state_dir}/cli-state" "${state_dir}/ssh" \
+    "${state_dir}/cli-state/herdr" "${state_dir}/cli-state/herdr/state" \
+    "${state_dir}/cli-state/codex" "${state_dir}/cli-state/codex/sessions" "${state_dir}/cli-state/codex/memories" \
+    "${state_dir}/cli-state/pi" "${state_dir}/cli-state/pi/sessions" \
+    "${state_dir}/cli-state/gemini" "${state_dir}/cli-state/gemini/history" "${state_dir}/cli-state/gemini/tmp" \
+    "${state_dir}/cli-state/claude" "${state_dir}/cli-state/claude/projects" \
     2>/dev/null || true
-  # This directory is image-owned and bounded. Persisted session trees are not
-  # recursively walked during startup. Root-squashed mounts may reject chown;
+  # These directories are image-owned or bounded. Persisted session trees are
+  # not recursively walked during startup. Root-squashed mounts may reject chown;
   # the access check below remains authoritative.
   chown -R "${runtime_user}:${runtime_user}" "${state_dir}/runtime-logs" 2>/dev/null || true
+  if [ "${runtime_home}" = "/var/lib/mayagent" ]; then
+    chown -R "${runtime_user}:${runtime_user}" "${runtime_home}" 2>/dev/null || true
+  fi
+fi
+
+# Ensure git inside mounted /app or worktrees never fails with dubious ownership
+# when host bind-mount subtrees have mixed group/user metadata.
+if command -v git >/dev/null 2>&1 && [ "$(id -u)" = "0" ]; then
+  git config --system --replace-all safe.directory '*' 2>/dev/null || true
 fi
 
 if [ "$(id -u)" = "0" ]; then
@@ -59,7 +91,7 @@ if [ "$(id -u)" = "0" ]; then
 else
   path_accessible() { test -r "$1" -a -w "$1" -a -x "$1"; }
 fi
-for path in "${project_root}" "${state_dir}" "${agents_root}" "${projects_root}" "${shared_root}"; do
+for path in "${project_root}" "${state_dir}" "${agents_root}" "${projects_root}" "${shared_root}" "${runtime_home}"; do
   if ! path_accessible "${path}"; then
     echo "May runtime user ${runtime_user} (${configured_uid}:${configured_gid}) cannot use ${path}. Set MAY_RUNTIME_UID/MAY_RUNTIME_GID to the mounted installation owner." >&2
     return 1

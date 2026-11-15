@@ -46,7 +46,19 @@ const managedSettings = {
   check_for_update_on_startup: false,
   approval_policy: "never",
   sandbox_mode: "danger-full-access",
-  projects: { [projectRoot]: { trust_level: "trusted" } },
+  features: { hooks: true },
+  notice: {
+    hide_full_access_warning: true,
+    hide_world_writable_warning: true,
+    hide_rate_limit_model_nudge: true,
+  },
+  tui: { screen_reader_detection_done: true },
+  projects: {
+    [projectRoot]: { trust_level: "trusted" },
+    [`${projectRoot}/projects`]: { trust_level: "trusted" },
+    [`${projectRoot}/worktrees`]: { trust_level: "trusted" },
+    "/tmp": { trust_level: "trusted" },
+  },
 };
 
 function provider(baseUrl: string) {
@@ -64,7 +76,7 @@ describe("Codex startup configuration", () => {
   test("writes usable default model, endpoint and execution settings", async () => {
     expect(await configure(isolatedHome())).toEqual({
       ...managedSettings,
-      model: "gpt-5.6-sol",
+      model: "gpt-6.1-sol",
       model_reasoning_effort: "high",
       model_providers: provider("http://host.docker.internal:4000/v1"),
     });
@@ -95,5 +107,11 @@ describe("Codex startup configuration", () => {
         hooks: { state: { [hook]: { trusted_hash: "sha256:trusted-definition" } } },
       });
     }
+  });
+
+  test("the shipped codex wrapper injects --dangerously-bypass-hook-trust for execution commands", () => {
+    const wrapper = readFileSync(resolve(import.meta.dirname, "../../container/codex-wrapper.sh"), "utf8");
+    expect(wrapper).toContain("--dangerously-bypass-hook-trust");
+    expect(wrapper).toContain("/opt/may-agent-cli/node_modules/.bin/codex");
   });
 });

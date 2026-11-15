@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-export HOME="${HOME:-/app/.state}"
+export HOME="${HOME:-/var/lib/mayagent}"
 export PROJECT_ROOT="${PROJECT_ROOT:-/app}"
 export MODEL_BASE_URL="${MODEL_BASE_URL:-http://host.docker.internal:4000}"
 export MODEL_API_KEY="${MODEL_API_KEY:-not-needed}"
 codex_home="${CODEX_HOME:-${MAY_CODEX_HOME:-${HOME}/.codex}}"
 
-codex_model="${CODEX_MODEL:-gpt-5.6-sol}"
+codex_model="${CODEX_MODEL:-${OPENAI_DEFAULT_MODEL:-gpt-6.1-sol}}"
 codex_reasoning_effort="${CODEX_REASONING_EFFORT:-high}"
 codex_base_url="${MODEL_BASE_URL}"
 codex_base_url="${codex_base_url%/}"
@@ -17,6 +17,19 @@ case "${codex_base_url}" in
 esac
 
 mkdir -p "${codex_home}"
+if [ -n "${STATE_DIR:-}" ] && [ -d "${STATE_DIR}/cli-state/codex" ] && [ "${codex_home}" != "${STATE_DIR}/cli-state/codex" ]; then
+  for sub in sessions memories; do
+    mkdir -p "${STATE_DIR}/cli-state/codex/${sub}"
+    if [ ! -e "${codex_home}/${sub}" ] && [ ! -L "${codex_home}/${sub}" ]; then
+      ln -sfn "${STATE_DIR}/cli-state/codex/${sub}" "${codex_home}/${sub}"
+    fi
+  done
+  touch "${STATE_DIR}/cli-state/codex/history.jsonl"
+  if [ ! -e "${codex_home}/history.jsonl" ] && [ ! -L "${codex_home}/history.jsonl" ]; then
+    ln -sfn "${STATE_DIR}/cli-state/codex/history.jsonl" "${codex_home}/history.jsonl"
+  fi
+fi
+
 preserved_hook_state=""
 if [ -f "${codex_home}/config.toml" ]; then
   # Codex records approval for each exact hook definition under hooks.state.
@@ -29,6 +42,16 @@ if [ -f "${codex_home}/config.toml" ]; then
   ' "${codex_home}/config.toml")"
 fi
 
+extra_project_trust=""
+for root_candidate in "${PROJECT_ROOT}/projects" "${PROJECT_ROOT}/worktrees" "/tmp"; do
+  if [ "${root_candidate}" != "${PROJECT_ROOT}" ]; then
+    extra_project_trust="${extra_project_trust}
+[projects.\"${root_candidate}\"]
+trust_level = \"trusted\"
+"
+  fi
+done
+
 cat > "${codex_home}/config.toml" <<EOF
 model_provider = "model_endpoint"
 model = "${codex_model}"
@@ -38,6 +61,17 @@ check_for_update_on_startup = false
 approval_policy = "never"
 sandbox_mode = "danger-full-access"
 
+[features]
+hooks = true
+
+[notice]
+hide_full_access_warning = true
+hide_world_writable_warning = true
+hide_rate_limit_model_nudge = true
+
+[tui]
+screen_reader_detection_done = true
+
 [model_providers.model_endpoint]
 name = "Configured model endpoint"
 base_url = "${codex_base_url}"
@@ -46,12 +80,15 @@ wire_api = "responses"
 
 [projects."${PROJECT_ROOT}"]
 trust_level = "trusted"
+${extra_project_trust}
 EOF
 if [ -n "${preserved_hook_state}" ]; then
   printf '\n%s\n' "${preserved_hook_state}" >> "${codex_home}/config.toml"
 fi
 
-if command -v codex >/dev/null 2>&1; then
+if command -v codex-cli >/dev/null 2>&1; then
+  codex_current_version="$(codex-cli --version 2>/dev/null | awk '{print $2}')"
+elif command -v codex >/dev/null 2>&1; then
   codex_current_version="$(codex --version 2>/dev/null | awk '{print $2}')"
 else
   codex_current_version="0.0.0"

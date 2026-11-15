@@ -11,6 +11,8 @@ export AGENTS_ROOT="${AGENTS_ROOT:-${APP_ROOT}/agents}"
 export SHARED_ROOT="${SHARED_ROOT:-${APP_ROOT}/shared}"
 export PROJECTS_ROOT="${PROJECTS_ROOT:-${APP_ROOT}/projects}"
 export STATE_DIR="${STATE_DIR:-/app/.state}"
+export HOME="${HOME:-/var/lib/mayagent}"
+export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-${HOME}/.pi/agent}"
 
 # Match the unprivileged runtime identity to the mounted installation before
 # creating state or agent configuration. This keeps local and remote hosts
@@ -30,14 +32,21 @@ chown mayagent:mayagent "${STATE_DIR}/chrome-profile" 2>/dev/null || true
 # block the dashboard event loop.
 export MAY_ARGS="${MAY_ARGS:---cron --telegram --socket}"
 
-# SSH config
-mkdir -p "${HOME}/.ssh"
-chmod 700 "${HOME}/.ssh"
-if ! grep -q "StrictHostKeyChecking accept-new" "${HOME}/.ssh/config" 2>/dev/null; then
-  printf "Host *\n  StrictHostKeyChecking accept-new\n" >> "${HOME}/.ssh/config"
-  chmod 600 "${HOME}/.ssh/config"
+# Persist SSH keys on mounted STATE_DIR/ssh while exposing them at ~/.ssh.
+ssh_persist_dir="${STATE_DIR}/ssh"
+mkdir -p "${ssh_persist_dir}"
+chmod 700 "${ssh_persist_dir}"
+if [ "${HOME}" != "${STATE_DIR}" ]; then
+  if [ -d "${HOME}/.ssh" ] && [ ! -L "${HOME}/.ssh" ]; then
+    rm -rf "${HOME}/.ssh"
+  fi
+  ln -sfn "${ssh_persist_dir}" "${HOME}/.ssh"
 fi
-chown mayagent:mayagent "${HOME}/.ssh" "${HOME}/.ssh/config" 2>/dev/null || true
+if ! grep -q "StrictHostKeyChecking accept-new" "${ssh_persist_dir}/config" 2>/dev/null; then
+  printf "Host *\n  StrictHostKeyChecking accept-new\n" >> "${ssh_persist_dir}/config"
+  chmod 600 "${ssh_persist_dir}/config"
+fi
+chown mayagent:mayagent "${ssh_persist_dir}" "${ssh_persist_dir}/config" 2>/dev/null || true
 export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -i ${HOME}/.ssh/id_rsa"
 
 # Keep plain Claude launches unrestricted inside the container sandbox.
@@ -47,7 +56,7 @@ source /usr/local/bin/setup-claude-config.sh
 # sandbox prompts. This also applies when Herdr restores `codex resume`.
 source /usr/local/bin/setup-codex-config.sh
 
-# Configure Pi Coding Agent with both OpenAI Responses and Anthropic Messages.
+# Configure Pi Coding Agent with OpenAI Responses, Google Gemini, and Anthropic Messages.
 source /usr/local/bin/setup-pi-config.sh
 
 # Configure Gemini CLI against the same endpoint, with the container as its
@@ -57,12 +66,15 @@ source /usr/local/bin/setup-gemini-config.sh
 [ -L "${AGENTS_ROOT}/shared" ] && rm -f "${AGENTS_ROOT}/shared"
 [ -L "${SHARED_ROOT}/projects" ] && rm -f "${SHARED_ROOT}/projects"
 
-# Install Herdr's official hooks after the agent setup scripts have updated
-# their config files. The hooks record native conversation IDs so Herdr can
-# resume Codex, Claude, and Pi panes after its server (or container) restarts.
+# Install Herdr's official hooks (plus Gemini session hook) after the agent
+# setup scripts have generated clean ephemeral config files. The hooks record
+# native conversation IDs so Herdr can resume Pi, Codex, Gemini, and Claude
+# panes after its server (or container) restarts.
 if [ "$(id -u)" = "0" ] && id mayagent >/dev/null 2>&1; then
   /usr/sbin/runuser -u mayagent -- env \
     HOME="${HOME}" \
+    STATE_DIR="${STATE_DIR}" \
+    PROJECT_ROOT="${PROJECT_ROOT}" \
     PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR}" \
     /usr/local/bin/setup-herdr-integrations.sh
 else

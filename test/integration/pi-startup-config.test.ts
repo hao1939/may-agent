@@ -23,11 +23,9 @@ describe("Pi startup configuration", () => {
     expect(source).toContain('find "${PI_CODING_AGENT_DIR}" -mindepth 1 -maxdepth 1');
   });
 
-  test("writes both configured providers without persisting the API key", async () => {
+  test("writes OpenAI, Google, and Anthropic providers without persisting the API key", async () => {
     const fixtureRoot = mkdtempSync(join(tmpdir(), "may-pi-config-"));
     tempDirs.push(fixtureRoot);
-    // Keep the test runner responsive if a startup subprocess stalls; inherited
-    // Pi configuration must not redirect this fixture into an installation.
     await exec("bash", [setupScript], {
       timeout: 10_000,
       env: {
@@ -36,6 +34,7 @@ describe("Pi startup configuration", () => {
         MODEL_BASE_URL: "https://models.example.test/",
         MODEL_API_KEY: "must-not-be-persisted",
         CODEX_MODEL: "gpt-test",
+        GEMINI_PRO_MODEL: "gemini-pro-test",
         CLAUDE_MODEL: "claude-test",
       },
       encoding: "utf8",
@@ -43,32 +42,41 @@ describe("Pi startup configuration", () => {
 
     const source = readFileSync(join(fixtureRoot, ".pi/agent/models.json"), "utf8");
     const config = JSON.parse(source);
-    expect(config.providers["may-openai"]).toEqual({
+    expect(config.providers["may-openai"]).toMatchObject({
       baseUrl: "https://models.example.test/v1",
       api: "openai-responses",
       apiKey: "$MODEL_API_KEY",
-      models: [{
-        id: "gpt-test",
-        name: "gpt-test",
-        reasoning: true,
-        input: ["text", "image"],
-        contextWindow: 400000,
-        maxTokens: 128000,
-      }],
     });
-    expect(config.providers["may-anthropic"]).toEqual({
+    expect(config.providers["may-openai"].models[0]).toEqual({
+      id: "gpt-test",
+      name: "gpt-test",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 400000,
+      maxTokens: 128000,
+    });
+    expect(config.providers["may-openai"].models.map((m: { id: string }) => m.id)).toContain("gpt-6.1-sol");
+    expect(config.providers["may-google"]).toMatchObject({
+      baseUrl: "https://models.example.test/v1beta",
+      api: "google-generative-ai",
+      apiKey: "$MODEL_API_KEY",
+    });
+    expect(config.providers["may-google"].models.map((m: { id: string }) => m.id)).toEqual(
+      expect.arrayContaining(["gemini-pro-test", "gemini-4-argon", "gemini-3.8-flash"]),
+    );
+    expect(config.providers["may-anthropic"]).toMatchObject({
       baseUrl: "https://models.example.test",
       api: "anthropic-messages",
       apiKey: "$MODEL_API_KEY",
-      models: [{
-        id: "claude-test",
-        name: "claude-test",
-        reasoning: true,
-        input: ["text", "image"],
-        contextWindow: 200000,
-        maxTokens: 128000,
-        compat: { forceAdaptiveThinking: true },
-      }],
+    });
+    expect(config.providers["may-anthropic"].models[0]).toEqual({
+      id: "claude-test",
+      name: "claude-test",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: 200000,
+      maxTokens: 128000,
+      compat: { forceAdaptiveThinking: true },
     });
     expect(source).not.toContain("must-not-be-persisted");
 
@@ -90,7 +98,7 @@ describe("Pi startup configuration", () => {
     });
 
     expect(JSON.parse(readFileSync(join(configDir, "models.json"), "utf8")))
-      .toHaveProperty("providers.may-openai.models.0.id", "gpt-5.6-sol");
+      .toHaveProperty("providers.may-openai.models.0.id", "gpt-6.1-sol");
   });
 
   test("preserves unrelated Pi preferences while restoring the managed endpoint defaults", async () => {
@@ -111,7 +119,7 @@ describe("Pi startup configuration", () => {
     });
     expect(JSON.parse(readFileSync(join(configDir, "settings.json"), "utf8"))).toEqual({
       defaultProvider: "may-openai",
-      defaultModel: "gpt-5.6-sol",
+      defaultModel: "gpt-6.1-sol",
       theme: "light",
       defaultThinkingLevel: "high",
     });

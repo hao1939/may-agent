@@ -69,6 +69,10 @@ describe("Gemini startup configuration", () => {
     expect(policy).toContain('decision = "allow"');
     expect(policy).toContain('modes = ["plan", "default", "autoEdit", "yolo"]');
     expect(policy).toContain("allowRedirection = true");
+
+    const trustedFolders = JSON.parse(readFileSync(join(geminiRoot, "trustedFolders.json"), "utf8"));
+    expect(trustedFolders["/workspace/example"]).toBe("TRUST_PARENT");
+    expect(trustedFolders["/app"]).toBe("TRUST_PARENT");
   });
 
   test("resolves GEMINI_CLI_HOME as the parent of the managed .gemini directory", async () => {
@@ -82,14 +86,15 @@ describe("Gemini startup configuration", () => {
     });
 
     expect(JSON.parse(readFileSync(join(cliHome, ".gemini/settings.json"), "utf8")))
-      .toHaveProperty("model.name", "gemini-3.5-flash");
+      .toHaveProperty("model.name", "gemini-4-argon");
   });
 
-  test("the shipped command wrapper forces YOLO, trust bypass and host execution", () => {
+  test("the shipped command wrapper passes informational commands cleanly and defaults prompt runs to --yolo", () => {
     const source = readFileSync(wrapper, "utf8");
     expect(source).toContain('GEMINI_API_KEY="${GEMINI_API_KEY:-${MODEL_API_KEY}}"');
     expect(source).toContain('GOOGLE_GEMINI_BASE_URL="${GOOGLE_GEMINI_BASE_URL:-${MODEL_BASE_URL%/}}"');
     expect(source).toContain('${GEMINI_CLI_HOME:-${HOME}}/.gemini/settings.json');
-    expect(source).toContain("/usr/local/bin/gemini-cli --yolo --skip-trust --no-sandbox");
+    expect(source).toContain('exec /opt/may-agent-cli/node_modules/.bin/gemini --yolo "$@"');
+    expect(source).not.toContain("--skip-trust");
   });
 });

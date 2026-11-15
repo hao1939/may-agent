@@ -80,6 +80,7 @@ docker run --rm --network none --read-only --user mayagent \
 # the complete supervisor stack, not only the setup helper.
 nonroot_container_id=$(docker run --detach --network none --user mayagent \
   --tmpfs /app:rw,uid=1000,gid=1000,mode=0775 \
+  --tmpfs /var/lib/mayagent:rw,uid=1000,gid=1000,mode=0755 \
   --tmpfs /tmp:rw,uid=1000,gid=1000,mode=1777 \
   --env MODEL_BASE_URL=http://127.0.0.1:9 \
   --env MODEL_API_KEY=ci-unused \
@@ -119,15 +120,25 @@ test "$(stat -c %u /app)" = "$(id -u)"
 grep -q 'base_url = "https://models.example.test/v1"' "$HOME/.codex/config.toml"
 grep -q 'approval_policy = "never"' "$HOME/.codex/config.toml"
 grep -q 'sandbox_mode = "danger-full-access"' "$HOME/.codex/config.toml"
+grep -q 'hooks = true' "$HOME/.codex/config.toml"
+test -L "$HOME/.codex/sessions"
+test -L "$HOME/.pi/agent/sessions"
+test -L "$HOME/.gemini/history"
+test -x "$HOME/.gemini/hooks/herdr-agent-state.sh"
+may-herdr integration status | grep -q 'pi: current'
+may-herdr integration status | grep -q 'codex: current'
+may-herdr integration status | grep -q 'claude: current'
 node -e '
   const fs = require("fs");
   const pi = JSON.parse(fs.readFileSync(process.env.HOME + "/.pi/agent/models.json"));
   const settings = JSON.parse(fs.readFileSync(process.env.HOME + "/.pi/agent/settings.json"));
   const gemini = JSON.parse(fs.readFileSync(process.env.HOME + "/.gemini/settings.json"));
   if (pi.providers["may-openai"].baseUrl !== "https://models.example.test/v1") process.exit(1);
+  if (pi.providers["may-google"].baseUrl !== "https://models.example.test/v1beta") process.exit(1);
   if (settings.defaultProvider !== "may-openai") process.exit(1);
   if (gemini.model.name !== "gemini-fixture" || gemini.tools.sandbox !== false) process.exit(1);
   if (gemini.modelConfigs.modelIdResolutions.gemini4.default !== "gemini-4-argon") process.exit(1);
+  if (!Array.isArray(gemini.hooks?.SessionStart) || gemini.hooks.SessionStart.length === 0) process.exit(1);
 '
 grep -q 'decision = "allow"' "$HOME/.gemini/policies/full-access.toml"
 RUNTIME_CHECK
@@ -143,9 +154,11 @@ runtime_container_id=$(docker create --network none --user root \
   --entrypoint /bin/bash \
   "$image_ref" -ec '
     source /usr/local/bin/setup-runtime-user.sh
+    source /usr/local/bin/setup-claude-config.sh
     source /usr/local/bin/setup-codex-config.sh
     source /usr/local/bin/setup-pi-config.sh
     source /usr/local/bin/setup-gemini-config.sh
+    /usr/sbin/runuser -u mayagent -- /usr/local/bin/setup-herdr-integrations.sh
     /usr/sbin/runuser -u mayagent -- /runtime-check.sh
   ')
 docker cp "$runtime_root/runtime-check.sh" "$runtime_container_id:/runtime-check.sh"

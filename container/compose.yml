@@ -8,8 +8,9 @@ services:
     image: localhost/may-agent:latest
     container_name: may-agent
     hostname: may-agent
+    init: true
     restart: unless-stopped
-    stop_grace_period: 10s
+    stop_grace_period: 20s
     healthcheck:
       test: ["CMD", "curl", "-fsS", "--max-time", "6", "http://127.0.0.1:8080/api/readiness"]
       interval: 10s
@@ -33,7 +34,10 @@ services:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
       - MODEL_API_KEY=${MODEL_API_KEY:-not-needed}
+      - CODEX_MODEL=${CODEX_MODEL:-gpt-6.1-sol}
+      - PI_OPENAI_MODEL=${PI_OPENAI_MODEL:-gpt-6.1-sol}
       - GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-4-argon}
+      - GEMINI_FAST_MODEL=${GEMINI_FAST_MODEL:-gemini-3.8-flash}
       # Empty values auto-detect the mounted projects (or installation) owner.
       # Remote installations can pin these when their mount has mixed owners.
       - MAY_RUNTIME_UID=${MAY_RUNTIME_UID:-}

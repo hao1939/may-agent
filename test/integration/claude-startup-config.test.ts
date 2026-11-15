@@ -23,6 +23,16 @@ describe("Claude startup configuration", () => {
       permissions: { defaultMode: "bypassPermissions" },
       skipDangerousModePermissionPrompt: true,
     });
+    expect(JSON.parse(readFileSync(join(home, ".claude.json"), "utf8"))).toMatchObject({
+      hasCompletedOnboarding: true,
+      bypassPermissionsModeAccepted: true,
+      projects: {
+        "/app": {
+          hasTrustDialogAccepted: true,
+          hasTrustDialogHooksAccepted: true,
+        },
+      },
+    });
   });
 
   test("preserves existing Claude settings while enforcing the container permission mode", () => {
