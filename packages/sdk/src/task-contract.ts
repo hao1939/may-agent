@@ -167,15 +167,17 @@ const resultFields = {
   ),
 };
 
-const TASK_AGENT_RESULT_SCHEMA_ID = "may.task-agent-result.v1";
 const TASK_RECONCILE_RESULT_SCHEMA_ID = "may.task-reconcile-result.v1";
+const LEGACY_TASK_AGENT_RESULT_SCHEMA_ID = "may.task-agent-result.v1";
 
 /**
- * Single-object Task attempt schema. Defining shared fields once with compact
- * per-state `anyOf` constraints preserves exact validation while avoiding 3x
- * inline schema duplication across every model call.
+ * Single-object Task attempt schema shared by both prompt agents and workflows.
+ * Defining shared fields once avoids 3x inline schema duplication across every
+ * model call and remains compatible with all model providers (including those
+ * that reject JSON Schema `not`). Cross-field per-state rules are enforced by
+ * `admitTaskReconcileResult`.
  */
-export const taskAgentResultSchema = Type.Object(
+export const taskReconcileResultSchema = Type.Object(
   {
     state: Type.Union([Type.Literal("converged"), Type.Literal("waiting"), Type.Literal("incomplete")]),
     ...resultFields,
@@ -198,15 +200,15 @@ export const taskAgentResultSchema = Type.Object(
     ),
   },
   {
-    $id: TASK_AGENT_RESULT_SCHEMA_ID,
+    $id: TASK_RECONCILE_RESULT_SCHEMA_ID,
     additionalProperties: false,
     description:
       "Report one Task attempt: converged (answer/completed scope; omit reviewAt/Conditions), waiting (keep input open on saved waits, Conditions, requests, reviewAt, or continue:true; no response), or incomplete (unsuccessful attempt with non-empty facts; no waits/requests/actions). Omitting unchanged Conditions preserves existing waits; use retire-condition to withdraw one. Delegate work via requests (stable id) and add conditions:[{requestId}] with waiting to await its result.",
   },
 );
 
-/** Workflows and agents share one Task result contract. Keep the schema ID for saved sessions. */
-export const taskReconcileResultSchema = { ...taskAgentResultSchema, $id: TASK_RECONCILE_RESULT_SCHEMA_ID };
+/** Workflows and agents share one canonical Task result contract. */
+export const taskAgentResultSchema = taskReconcileResultSchema;
 
 const changeFields = {
   communication: resultFields.communication,
@@ -551,7 +553,7 @@ export function admitTaskChanges(output: unknown): { ok: true; changes: TaskChan
  */
 export function admitTaskResultForSchema(schema: TSchema | undefined, output: unknown): TaskReconcileAdmission | null {
   const id = (schema as (TSchema & { $id?: unknown }) | undefined)?.$id;
-  if (id === TASK_AGENT_RESULT_SCHEMA_ID || id === TASK_RECONCILE_RESULT_SCHEMA_ID) {
+  if (id === TASK_RECONCILE_RESULT_SCHEMA_ID || id === LEGACY_TASK_AGENT_RESULT_SCHEMA_ID) {
     return admitTaskReconcileResult(output);
   }
   return null;

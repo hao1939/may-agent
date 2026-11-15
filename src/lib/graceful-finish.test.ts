@@ -74,7 +74,6 @@ const progress = {
 const partial = {
   status: "partial",
   summary: progress.summary,
-  next_steps: "Finish the review",
   result: progress,
 };
 
@@ -324,7 +323,6 @@ test("a managed Task accepts progress after helper cancellation and continues fr
             return call("finish", {
               status: "success",
               summary: "Reviewed retained draft",
-              verification_facts: ["draft:reviewed"],
               result: { state: "converged", summary: "Reviewed retained draft", facts: ["draft:reviewed"] },
             });
           }

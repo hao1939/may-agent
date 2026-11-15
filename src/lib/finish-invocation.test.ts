@@ -21,7 +21,7 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
   }
 });
-const args = { status: "success", summary: "Measured", verification_facts: ["Fixture measurement"], result: { value: 7 } };
+const args = { status: "success", summary: "Measured", result: { value: 7 } };
 const call = (id = "finish", arguments_ = args): ToolCall => ({ type: "toolCall", id, name: "finish", arguments: arguments_ });
 function stream(calls: ToolCall[]) {
   const result = createAssistantMessageEventStream();
@@ -114,19 +114,19 @@ test.each(["steering", "follow-up"] as const)("finish fences a mixed batch and p
 test("the managed ordinary-helper path keeps the result without continuing model work", async () => {
   const { root, definition } = fixture();
   mkdirSync(join(root, ".state"), { recursive: true });
-  const lessons = [{ category: "insight", content: "Compare retained evidence before changing guidance" }];
+  const blockers = [{ reason: "Compare retained evidence", context: "Before changing guidance" }];
   let requests = 0;
   const manager = new SubagentManager({
     persistDir: root,
     agentRunFactory: (config) => createAgentRun({ ...config, streamFn: () => stream(++requests <= 3
-      ? [{ ...call(), arguments: { ...args, lessons } }] : []) }),
+      ? [{ ...call(), arguments: { ...args, blockers } }] : []) }),
   });
   manager.register(definition);
   const session = manager.run("helper", "Measure once");
   try {
     expect(await manager.waitFor(session)).toMatchObject({ status: "done", lastAssistantText: "Measured" });
     expect(requests).toBe(1);
-    expect(extractFinishParams(readSessionMessages(root, session))?.lessons).toEqual(lessons);
+    expect(extractFinishParams(readSessionMessages(root, session))?.blockers).toEqual(blockers);
     expect(existsSync(join(root, ".state", "memory-stream.jsonl"))).toBe(false);
     expect(existsSync(join(root, "memory-stream.jsonl"))).toBe(false);
   } finally {

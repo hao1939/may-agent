@@ -515,7 +515,6 @@ function directResultToTaskResult(run: DirectAgentRunResult): TaskResult {
         summary: run.finishResult.summary,
         ...(run.finishResult.deliverables ? { deliverables: run.finishResult.deliverables } : {}),
         ...(run.finishResult.blockers ? { blockers: run.finishResult.blockers } : {}),
-        ...(run.finishResult.next_steps ? { next_steps: run.finishResult.next_steps } : {}),
         ...(run.finishResult.result !== undefined ? { result: run.finishResult.result } : {}),
       }
     : undefined;

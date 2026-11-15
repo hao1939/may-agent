@@ -72,7 +72,6 @@ describe("prepared completion contract", () => {
   const review = {
     status: "success",
     summary: "Reviewed the supplied result",
-    verification_facts: ["Compared the supplied result with the requested contract"],
     result: { verdict: "pass" },
   };
 

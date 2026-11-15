@@ -1000,7 +1000,6 @@ describe("shared agent execution preparation", () => {
       status: "success",
       summary: "verified worktree facts",
       deliverables: [{ path: "proof.txt", description: "worktree proof" }],
-      verification_facts: ["read(proof.txt) showed task workspace"],
     } as never);
     expect(JSON.stringify(result)).not.toContain("Deliverables not found on disk");
     expect(JSON.stringify(result)).toContain("SUCCESS");
@@ -1081,8 +1080,8 @@ describe("direct structured judgment execution", () => {
     { ...finishArgs, result: { ...judgment, summary: null } },
     { ...finishArgs, result: { state: "incomplete" } },
     { ...finishArgs, summary: 42 },
-    { ...finishArgs, verification_facts: [false] },
-    { ...finishArgs, verification_facts: null },
+    { ...finishArgs, deliverables: [false] },
+    { ...finishArgs, deliverables: null },
   ])("corrects original report types before acceptance without losing the rejected report %#", async (invalid) => {
     const prepared = prepare();
     let calls = 0;
@@ -1145,7 +1144,7 @@ describe("direct structured judgment execution", () => {
     const invalid = {
       ...finishArgs,
       summary: "retained-large-report:" + "x".repeat(100_000),
-      verification_facts: Array.from({ length: 1000 }, () => ({ unexpected: "report" })),
+      deliverables: Array.from({ length: 1000 }, () => "not-an-object"),
     };
     let calls = 0;
     prepared.runner.streamFn = () => ++calls === 1
@@ -1157,8 +1156,8 @@ describe("direct structured judgment execution", () => {
     const rejection = result.messages.find((message) => message.role === "toolResult" && message.toolCallId === "large-report");
     const feedback = JSON.stringify(rejection);
     expect(feedback.length).toBeLessThan(4000);
-    expect(feedback).toContain("/verification_facts/0");
-    expect(feedback).toContain("must be string");
+    expect(feedback).toContain("/deliverables/0");
+    expect(feedback).toContain("must be object");
     expect(feedback).toContain("up to 8 errors shown");
     expect(feedback).not.toContain("retained-large-report");
     expect(result.messages).toContainEqual(expect.objectContaining({
@@ -1215,7 +1214,7 @@ describe("direct structured judgment execution", () => {
       if (++calls === 2) {
         message.stopReason = "toolUse";
         message.content = [{ type: "toolCall", id: "usage-finish", name: "finish", arguments: {
-          status: "success", summary: "Finished", verification_facts: ["Fixture checked"],
+          status: "success", summary: "Finished",
         } }];
       }
       stream.push({ type: "done", reason: message.stopReason === "toolUse" ? "toolUse" : "stop", message });

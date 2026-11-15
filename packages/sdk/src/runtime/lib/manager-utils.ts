@@ -144,7 +144,6 @@ export interface FinishResult {
   summary: string;
   deliverables?: { path: string; description: string }[];
   blockers?: { reason: string; context: string }[];
-  next_steps?: string;
   /** Caller-defined payload for a schema-backed workflow step. */
   result?: unknown;
 }

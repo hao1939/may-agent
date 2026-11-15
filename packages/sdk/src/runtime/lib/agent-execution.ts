@@ -604,12 +604,6 @@ export type FinishParams = {
   summary: string;
   blockers?: { reason: string; context: string }[];
   deliverables?: { path: string; description: string }[];
-  next_steps?: string;
-  completed_items?: string[];
-  new_items?: string[];
-  lessons?: { category: string; content: string }[];
-  verification_facts?: string[];
-  context_updates?: { action: string; content: string }[];
   result?: unknown;
 };
 
@@ -628,12 +622,6 @@ export function extractFinishParams(messages: any[]): FinishParams | null {
           summary: args.summary,
           blockers: args.blockers,
           deliverables: args.deliverables,
-          next_steps: args.next_steps,
-          completed_items: args.completed_items,
-          new_items: args.new_items,
-          lessons: args.lessons,
-          verification_facts: args.verification_facts ?? args.verification_evidence,
-          context_updates: args.context_updates,
           result: args.result,
         };
       } catch {
