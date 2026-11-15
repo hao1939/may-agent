@@ -54,12 +54,12 @@
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
-    "@typescript-eslint/eslint-plugin": "^8.72.1",
-    "@typescript-eslint/parser": "^8.72.1",
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
+    "@typescript-eslint/parser": "^8.72.2",
     "eslint": "^10.14.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.9.10",
-    "puppeteer-core": "25.16.0",
+    "prettier": "^3.10.0",
+    "puppeteer-core": "25.17.0",
     "typescript": "^6.0.3"
   },
   "overrides": {
