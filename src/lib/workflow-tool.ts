@@ -29,7 +29,7 @@ import type {
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
 import { readMetricView } from "../app/adapters/reporting/metric-read.js";
 import { canonicalAppEvent } from "../app/canonical-app-event.js";
-import type { EventTrace } from "../app/core/events/bus.js";
+import { EVENT_RECORD_ONLY, type EventTrace } from "../app/core/events/bus.js";
 import { createRuntimeAppRead } from "../app/core/reads/app-read.js";
 import type { AppTaskEvents } from "../app/core/tasks/app-task-emitter.js";
 import { getWorkflowRun, insertWorkflowRun, updateWorkflowRun } from "./db/workflows.js";
@@ -366,9 +366,14 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
   );
   const maxDepth = opts.maxDepth ?? 3;
   const resolveTrace = (): EventTrace | undefined => opts.callerTrace?.() ?? opts.trace;
-  const emitRuntimeEvent = (event: { type: string; [key: string]: unknown }): void => {
+  const emitRuntimeEvent = (event: { type: string; [key: string]: unknown; [EVENT_RECORD_ONLY]?: boolean }): void => {
     const trace = resolveTrace();
-    opts.runtimeCtx?.emit(event.trace || !trace ? event : { ...event, trace });
+    const recordOnly = event[EVENT_RECORD_ONLY];
+    const emitted = event.trace || !trace ? event : { ...event, trace };
+    if (recordOnly !== undefined) {
+      Object.defineProperty(emitted, EVENT_RECORD_ONLY, { value: recordOnly, configurable: true });
+    }
+    opts.runtimeCtx?.emit(emitted);
   };
 
   const resolveCallerSessionId = (): string | undefined => {
@@ -684,8 +689,10 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         if (hasStructuredAgentCatalog && !definition) {
           throw new Error(`Prompt target "${agentName}" not found in the captured catalog`);
         }
+        const stepStartedAt = Date.now();
         onEvent?.({ type: "workflow.step_started", step: agentName });
         emitRuntimeEvent({
+          [EVENT_RECORD_ONLY]: true,
           type: "workflow.step_started",
           source: `workflow:${workflow.name}`,
           owner: normalizeEventOwner(opts.agentName),
@@ -694,7 +701,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
             workflow: workflow.name,
             projectId: effectiveProjectId,
             step: agentName,
-            stepIndex: run.steps.length,
+            stepIndex: stepControl.stepIndex,
           },
         });
         const stepCallOptions = {
@@ -731,18 +738,20 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         completedSteps.push(step);
         pruneCompletedSteps(completedSteps);
 
+        const stepEndedAt = Date.now();
         run.steps.push({
           sessionId: sid,
           agent: agentName,
           task: agentTask,
           status: taskResult.status,
-          startedAt: taskResult.messages[0]?.timestamp ?? Date.now(),
-          endedAt: Date.now(),
+          startedAt: taskResult.messages[0]?.timestamp ?? stepStartedAt,
+          endedAt: stepEndedAt,
           lastAssistantText: taskResult.lastAssistantText,
         });
 
         onEvent?.({ type: "workflow.step_completed", step: agentName, sessionId: sid, result: taskResult });
         emitRuntimeEvent({
+          [EVENT_RECORD_ONLY]: true,
           type: "workflow.step_completed",
           source: `workflow:${workflow.name}`,
           owner: normalizeEventOwner(opts.agentName),
@@ -751,10 +760,10 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
             workflow: workflow.name,
             projectId: effectiveProjectId,
             step: agentName,
-            stepIndex: run.steps.length - 1,
+            stepIndex: stepControl.stepIndex,
             sessionId: sid,
             status: taskResult.status,
-            durationMs: taskResult.duration,
+            durationMs: Math.max(0, stepEndedAt - stepStartedAt),
           },
         });
 

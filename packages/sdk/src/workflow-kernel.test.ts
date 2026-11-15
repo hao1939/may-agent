@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { Type, taskReconcileResultSchema, type AgentContext, type Static, type WorkflowContext } from "./index.js";
 import { listTargets, run as sdkRun } from "./standalone.js";
 import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
 import {
@@ -960,5 +960,46 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       type: "done",
       summary: "SDK run: Audit via @may-agent/sdk/standalone (readonly)",
     });
+
+    const invalidTaskWorkflow = await runWorkflowTest(
+      {
+        name: "invalid-task-output",
+        description: "Returns a converged Task result with continue: true",
+        outputSchema: taskReconcileResultSchema,
+        async execute(ctx) {
+          const step = await ctx.call("reviewer", "Check task", {
+            schema: taskReconcileResultSchema,
+          });
+          expect(step.status).toBe("error");
+          expect(step.summary).toContain("converged cannot include continue");
+          return ctx.done("Done", {
+            state: "converged",
+            summary: "Done",
+            facts: [],
+            continue: true,
+          });
+        },
+      },
+      {
+        input: {},
+        agents: {
+          reviewer: [
+            {
+              status: "done",
+              summary: "Malformed step result",
+              output: {
+                state: "converged",
+                summary: "Done",
+                facts: [],
+                continue: true,
+              },
+            },
+          ],
+        },
+      },
+    );
+    expect(invalidTaskWorkflow.ok).toBe(false);
+    expect(invalidTaskWorkflow.status).toBe("error");
+    expect(String(invalidTaskWorkflow.error)).toContain("converged cannot include continue");
   });
 });
