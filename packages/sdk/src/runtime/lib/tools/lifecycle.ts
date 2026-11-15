@@ -283,6 +283,37 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
 }
 
 
+/**
+ * Providers cannot represent negative cross-field constraints. Advertise a
+ * relaxed clone while retaining the original schema for local validation.
+ */
+export function providerCompatibleToolSchema(schema: TSchema): TSchema {
+  const containsNot = (value: unknown): boolean => {
+    if (!value || typeof value !== "object") return false;
+    if (Array.isArray(value)) return value.some(containsNot);
+    return Object.hasOwn(value, "not") || Object.values(value).some(containsNot);
+  };
+  const clone = (value: unknown): unknown => {
+    if (!value || typeof value !== "object") return value;
+    if (Array.isArray(value)) return value.map(clone);
+    const source = value as Record<PropertyKey, unknown>;
+    const result: Record<PropertyKey, unknown> = {};
+    // Keep TypeBox's symbol metadata as well as the JSON Schema fields.
+    for (const key of Reflect.ownKeys(source)) {
+      if (key === "not") continue;
+      if (key === "anyOf" && Array.isArray(source[key]) && source[key].some(containsNot)) continue;
+      Object.defineProperty(result, key, {
+        value: clone(source[key]),
+        enumerable: Object.getOwnPropertyDescriptor(source, key)?.enumerable ?? true,
+        configurable: true,
+        writable: true,
+      });
+    }
+    return result;
+  };
+  return clone(schema) as TSchema;
+}
+
 function addRequiredResult(base: TSchema, result: TSchema): TSchema {
   const objectSchema = base as {
     type?: unknown;
@@ -311,8 +342,11 @@ export function createWorkflowFinishTool(
   outputSchema?: TSchema,
   validateOutput?: (result: unknown) => string | null,
 ): AgentTool {
-  const parameters = outputSchema ? addRequiredResult(baseFinish.parameters, outputSchema) : baseFinish.parameters;
-  const validator = Compile(parameters);
+  const fullParameters = outputSchema ? addRequiredResult(baseFinish.parameters, outputSchema) : baseFinish.parameters;
+  const validator = Compile(fullParameters);
+  const parameters = outputSchema
+    ? addRequiredResult(baseFinish.parameters, providerCompatibleToolSchema(outputSchema))
+    : baseFinish.parameters;
   const validateReport = (params: unknown) => {
     if (!validator.Check(params)) {
       // The schema declares accepted representations, including inputs to the

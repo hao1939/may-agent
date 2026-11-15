@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { createFinishTool } from "@may-agent/sdk/runtime";
+import { createFinishTool, createWorkflowFinishTool } from "@may-agent/sdk/runtime";
+import { taskAgentResultSchema } from "@may-agent/sdk";
+import { Type } from "typebox";
+import { Compile } from "typebox/compile";
+import { providerCompatibleToolSchema } from "./lifecycle";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -243,5 +247,84 @@ describe("createFinishTool", () => {
     expect(existsSync(stateDir)).toBe(state !== "absent");
     expect(existsSync(streamPath)).toBe(state === "historical");
     if (state === "historical") expect(readFileSync(streamPath, "utf8")).toBe(historical);
+  });
+});
+
+describe("provider-compatible workflow finish schema", () => {
+  beforeEach(setup);
+  afterEach(cleanup);
+
+  it("removes negative Task branches from serialized parameters without mutating the contract", () => {
+    const original = JSON.stringify(taskAgentResultSchema);
+    const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskAgentResultSchema);
+    const parameters = JSON.parse(JSON.stringify(tool.parameters));
+    const result = parameters.properties.result;
+
+    expect(result).not.toHaveProperty("anyOf");
+    expect(JSON.stringify(result)).not.toContain('"not":');
+    expect(result.properties.state.anyOf).toEqual(taskAgentResultSchema.properties.state.anyOf);
+    expect(result.properties.conditions.items.anyOf).toEqual(
+      JSON.parse(JSON.stringify(taskAgentResultSchema.properties.conditions.items.anyOf)),
+    );
+    expect(result.$id).toBe(taskAgentResultSchema.$id);
+    expect(result.additionalProperties).toBe(false);
+    expect(parameters.required).toContain("result");
+    expect(JSON.stringify(taskAgentResultSchema)).toBe(original);
+    expect(taskAgentResultSchema.anyOf).toHaveLength(4);
+    expect(tool.parameters.properties.result).not.toBe(taskAgentResultSchema);
+  });
+
+  it("recursively strips direct and nested negatives while cloning ordinary unions and metadata", () => {
+    const schema = Type.Object({
+      value: Type.String({ not: { const: "forbidden" } }),
+      nested: Type.Array(Type.Object({
+        choice: Type.String({ anyOf: [{ allOf: [{ not: { const: "forbidden" } }] }, { const: "ok" }] }),
+        ordinary: Type.Union([Type.Literal("a"), Type.Literal("b")]),
+      })),
+    });
+    const original = JSON.stringify(schema);
+    const compatible = providerCompatibleToolSchema(schema);
+
+    expect(compatible.properties.value).not.toHaveProperty("not");
+    expect(compatible.properties.nested.items.properties.choice).not.toHaveProperty("anyOf");
+    expect(compatible.properties.nested.items.properties.ordinary.anyOf).toEqual(
+      schema.properties.nested.items.properties.ordinary.anyOf,
+    );
+    expect(compatible.properties.nested.items.properties.ordinary.anyOf).not.toBe(
+      schema.properties.nested.items.properties.ordinary.anyOf,
+    );
+    expect(Object.getOwnPropertySymbols(compatible)).toEqual(Object.getOwnPropertySymbols(schema));
+    expect(JSON.stringify(schema)).toBe(original);
+  });
+
+  it.each([
+    { state: "converged", continue: true },
+    { state: "waiting", response: "Not allowed while waiting" },
+    { state: "incomplete", facts: [] },
+    { state: "incomplete", facts: ["Failed"], requests: [] },
+  ])("still rejects invalid state/field combinations locally: %j", async (result) => {
+    const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskAgentResultSchema);
+    const params = {
+      status: "partial", summary: "Attempt report",
+      result: { summary: "Task report", facts: [], ...result },
+    };
+    // These combinations are deliberately allowed by the relaxed provider schema.
+    expect(Compile(tool.parameters).Check(params)).toBe(true);
+    expect(() => tool.prepareArguments!(params)).toThrow("supplied schema");
+    await expect(tool.execute("invalid-report", params)).rejects.toThrow("supplied schema");
+  });
+
+  it.each([
+    { state: "converged", response: "Done" },
+    { state: "waiting", facts: ["More work remains"], continue: true },
+    { state: "incomplete", facts: ["Unable to finish"] },
+  ])("accepts valid Task reports: %j", async (result) => {
+    const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskAgentResultSchema);
+    const params = {
+      status: "partial", summary: "Attempt report",
+      result: { summary: "Task report", facts: [], ...result },
+    };
+    expect(tool.prepareArguments!(params)).toEqual(params);
+    expect((await tool.execute("valid-report", params)).terminate).toBe(true);
   });
 });
