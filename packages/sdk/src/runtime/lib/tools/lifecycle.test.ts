@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { createFinishTool } from "@may-agent/sdk/runtime";
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "fs";
+import { createFinishTool, createWorkflowFinishTool } from "@may-agent/sdk/runtime";
+import { taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
+import { existsSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 
-// ── Test scaffolding ───────────────────────────────────────────────────
+// ── Test scaffolding ─────────────────────────────────────────────────────
 
 let testDir: string;
 let projectRoot: string;
@@ -35,12 +36,12 @@ function createTool() {
   return createFinishTool({ projectRoot });
 }
 
-async function callFinish(tool: ReturnType<typeof createTool>, params: Record<string, unknown>) {
-  const result = await tool.execute("test-call-id", params);
+async function callFinish(tool: ReturnType<typeof createFinishTool>, params: Record<string, unknown>) {
+  const result = await tool.execute("call-1", params);
   return (result.content[0] as { type: string; text: string }).text;
 }
 
-// ── Tests ──────────────────────────────────────────────────────────────
+// ── Tests ────────────────────────────────────────────────────────────────
 
 describe("createFinishTool", () => {
   beforeEach(setup);
@@ -52,7 +53,6 @@ describe("createFinishTool", () => {
       status: "success",
       summary: "Implemented the widget feature.",
       deliverables: [{ path: "src/lib/feature.ts", description: "Widget implementation" }],
-      verification_facts: ["Step 3: read(src/lib/feature.ts) confirmed export exists"],
     });
 
     expect(text).toContain("✅");
@@ -93,14 +93,11 @@ describe("createFinishTool", () => {
       status: "blocked",
       summary: "Waiting on permissions.",
       blockers: [{ reason: "No root access", context: "Need sudo for node_modules" }],
-      next_steps: "Ask admin for permissions.",
     });
 
     expect(text).toContain("🚫");
     expect(text).toContain("BLOCKED");
     expect(text).toContain("No root access");
-    expect(text).toContain("Next steps");
-    expect(text).toContain("Ask admin for permissions");
   });
 
   it("returns failure output", async () => {
@@ -116,18 +113,17 @@ describe("createFinishTool", () => {
     expect(text).toContain("Type errors");
   });
 
-  it("returns partial output with next_steps", async () => {
+  it("returns partial output", async () => {
     const tool = createTool();
     const text = await callFinish(tool, {
       status: "partial",
       summary: "Implemented 2 of 3 endpoints.",
       deliverables: [{ path: "src/lib/feature.ts", description: "Endpoints A and B" }],
-      next_steps: "Still need endpoint C.",
     });
 
     expect(text).toContain("⚠️");
     expect(text).toContain("PARTIAL");
-    expect(text).toContain("Still need endpoint C");
+    expect(text).toContain("Implemented 2 of 3 endpoints.");
   });
 
   it("rejects missing summary", async () => {
@@ -146,50 +142,10 @@ describe("createFinishTool", () => {
     const text = await callFinish(tool, {
       status: "success",
       summary: "Reviewed and found no issues.",
-      verification_facts: ["Step 2: read(README.md) confirmed no issues"],
     });
 
     expect(text).toContain("✅");
     expect(text).toContain("SUCCESS");
-  });
-
-  it("accepts success without optional verification_facts", async () => {
-    const tool = createTool();
-    const text = await callFinish(tool, {
-      status: "success",
-      summary: "Done.",
-      deliverables: [{ path: "src/lib/feature.ts", description: "Feature" }],
-    });
-
-    expect(text).not.toContain("finish() error");
-    expect(text).toContain("SUCCESS");
-    expect(text).not.toContain("Verification facts");
-  });
-
-  it("includes verification facts in output", async () => {
-    const tool = createTool();
-    const text = await callFinish(tool, {
-      status: "success",
-      summary: "Done.",
-      deliverables: [{ path: "src/lib/feature.ts", description: "Feature" }],
-      verification_facts: ["Step 5: read(src/lib/feature.ts) confirmed changes", "Step 8: bash test exit code 0"],
-    });
-
-    expect(text).toContain("Verification facts");
-    expect(text).toContain("Step 5: read(src/lib/feature.ts) confirmed changes");
-    expect(text).toContain("Step 8: bash test exit code 0");
-  });
-
-  it("allows non-success status without verification_facts", async () => {
-    const tool = createTool();
-    const text = await callFinish(tool, {
-      status: "partial",
-      summary: "Halfway done.",
-      next_steps: "Finish remaining items.",
-    });
-
-    expect(text).toContain("⚠️");
-    expect(text).toContain("PARTIAL");
   });
 
   it("allows partial with missing deliverables (warning only)", async () => {
@@ -198,7 +154,6 @@ describe("createFinishTool", () => {
       status: "partial",
       summary: "Started work.",
       deliverables: [{ path: "not/here.ts", description: "Incomplete file" }],
-      next_steps: "Finish the file.",
     });
 
     // Partial status should NOT reject for missing deliverables (unlike success)
@@ -207,41 +162,80 @@ describe("createFinishTool", () => {
     expect(text).toContain("MISSING");
   });
 
-  it("has correct tool metadata", () => {
+  it("has a minimal 4-field schema without vestigial memory/task fields", () => {
     const tool = createTool();
     expect(tool.name).toBe("finish");
     expect(tool.description).toContain("structured completion");
-    // The schema is what the model sees, not just developer documentation.
-    const fields = tool.parameters.properties;
-    expect(fields.completed_items.description).toContain("does not complete");
-    expect(fields.new_items.description).toContain("does not create");
-    expect(fields.context_updates.description).toContain("suggestions only");
-    expect(fields.context_updates.description).toContain("retains these suggestions in its result");
-    expect(fields.context_updates.description).toContain("verified activation");
-    expect(fields.lessons.description).toContain("retained in the completion report");
+    const fields = Object.keys(tool.parameters.properties).sort();
+    expect(fields).toEqual(["blockers", "deliverables", "status", "summary"]);
   });
 
-  it.each(["absent", "empty", "historical"])("reports notes without writing memory (state: %s)", async (state) => {
-    const streamPath = join(stateDir, "memory-stream.jsonl");
-    const historical = '{"agent":"example-agent","category":"insight","content":"Historical evidence"}\n';
-    if (state === "absent") rmSync(stateDir, { recursive: true });
-    if (state === "historical") writeFileSync(streamPath, historical);
+  it("does not write context or memory files when executed", async () => {
     const text = await callFinish(createTool(), {
       status: "partial",
       summary: "Reviewed the change; follow-up needs an owner decision.",
-      next_steps: "Ask the owner to authorize the follow-up.",
-      completed_items: ["Reviewed change"],
-      new_items: ["Apply follow-up"],
-      context_updates: [{ action: "add", content: "Project prefers concise reviews" }],
-      lessons: [{ category: "insight", content: "Verify the selected revision" }],
     });
     expect(text).toContain("PARTIAL");
-    expect(text).toContain("Lessons reported:");
-    expect(text).toContain("Verify the selected revision");
-    expect(text).not.toContain("Lessons recorded:");
     expect(existsSync(join(projectRoot, "agents/tech-lead/context.md"))).toBe(false);
-    expect(existsSync(stateDir)).toBe(state !== "absent");
-    expect(existsSync(streamPath)).toBe(state === "historical");
-    if (state === "historical") expect(readFileSync(streamPath, "utf8")).toBe(historical);
+  });
+});
+
+describe("provider-compatible workflow finish schema", () => {
+  beforeEach(setup);
+  afterEach(cleanup);
+
+  it("unifies taskReconcileResultSchema and taskAgentResultSchema as one canonical schema without JSON Schema not keywords", () => {
+    expect(taskAgentResultSchema).toBe(taskReconcileResultSchema);
+    const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskReconcileResultSchema);
+    const serialized = JSON.stringify(tool.parameters.properties.result);
+
+    expect(serialized).not.toContain('"not":');
+    expect(taskReconcileResultSchema).not.toHaveProperty("anyOf");
+    expect(tool.parameters.properties.result).toBe(taskReconcileResultSchema);
+    expect(Object.keys(tool.parameters.properties).sort()).toEqual([
+      "blockers",
+      "deliverables",
+      "result",
+      "status",
+      "summary",
+    ]);
+  });
+
+  it.each([
+    { state: "converged", continue: true },
+    { state: "converged", report: true, facts: ["ok"] },
+    { state: "waiting", response: "Not allowed while waiting" },
+    { state: "waiting", report: true, facts: [] },
+    { state: "incomplete", facts: [] },
+    { state: "incomplete", facts: ["Failed"], requests: [] },
+    { state: "incomplete", facts: ["Failed"], communication: [] },
+  ])("still rejects invalid state/field combinations at finish execution: %j", async (result) => {
+    const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskReconcileResultSchema);
+    const params = {
+      status: "partial",
+      summary: "Attempt report",
+      result: { summary: "Task report", facts: [], ...result },
+    };
+    const res = await tool.execute("invalid-report", params);
+    expect(res.terminate).toBeUndefined();
+    expect(res.content[0]).toMatchObject({
+      type: "text",
+      text: expect.stringContaining("finish() error:"),
+    });
+  });
+
+  it.each([
+    { state: "converged", response: "Done" },
+    { state: "waiting", facts: ["More work remains"], continue: true },
+    { state: "incomplete", facts: ["Unable to finish"] },
+  ])("accepts valid Task reports: %j", async (result) => {
+    const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskReconcileResultSchema);
+    const params = {
+      status: "partial",
+      summary: "Attempt report",
+      result: { summary: "Task report", facts: [], ...result },
+    };
+    expect(tool.prepareArguments!(params)).toEqual(params);
+    expect((await tool.execute("valid-report", params)).terminate).toBe(true);
   });
 });

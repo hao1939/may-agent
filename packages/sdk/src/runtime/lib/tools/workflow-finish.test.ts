@@ -124,7 +124,7 @@ describe("workflow finish contract", () => {
       expect(() =>
         validateToolArguments(
           tool,
-          toolCall({ status: "success", summary: "Review complete", verification_facts: ["test facts"] }),
+          toolCall({ status: "success", summary: "Review complete" }),
         ),
       ).toThrow("result");
     } finally {

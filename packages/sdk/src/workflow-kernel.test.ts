@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { Type, taskReconcileResultSchema, type AgentContext, type Static, type WorkflowContext } from "./index.js";
 import { listTargets, run as sdkRun } from "./standalone.js";
 import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
 import {
@@ -960,5 +960,52 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       type: "done",
       summary: "SDK run: Audit via @may-agent/sdk/standalone (readonly)",
     });
+
+    let observedStepStatus: string | undefined;
+    let observedStepSummary: string | undefined;
+    const invalidTaskWorkflow = await runWorkflowTest(
+      {
+        name: "invalid-task-output",
+        description: "Returns a converged Task result with continue: true",
+        outputSchema: taskReconcileResultSchema,
+        async execute(ctx) {
+          const step = await ctx.call("reviewer", "Check task", {
+            schema: taskReconcileResultSchema,
+          });
+          observedStepStatus = step.status;
+          observedStepSummary = step.summary;
+          return ctx.done("Done", {
+            state: "converged",
+            summary: "Done",
+            facts: [],
+            continue: true,
+          });
+        },
+      },
+      {
+        input: {},
+        agents: {
+          reviewer: [
+            {
+              status: "done",
+              summary: "Malformed step result",
+              output: {
+                state: "converged",
+                summary: "Done",
+                facts: [],
+                continue: true,
+              },
+            },
+          ],
+        },
+      },
+    );
+    expect(observedStepStatus).toBe("error");
+    expect(observedStepSummary).toContain("continue requires waiting and progress facts");
+    expect(invalidTaskWorkflow.ok).toBe(false);
+    expect(invalidTaskWorkflow.status).toBe("error");
+    expect(invalidTaskWorkflow.error).toBeInstanceOf(WorkflowValidationError);
+    expect((invalidTaskWorkflow.error as WorkflowValidationError).phase).toBe("output");
+    expect(String(invalidTaskWorkflow.error)).toContain("continue requires waiting and progress facts");
   });
 });

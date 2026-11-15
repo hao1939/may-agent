@@ -26,20 +26,17 @@ import { Type, type TSchema } from "typebox";
  */
 
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-
-
 import { existsSync } from "fs";
 import { resolve } from "path";
 
-
-// ── Types ──────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────
 
 export interface FinishToolOptions {
   /** Project root for resolving deliverable paths. */
   projectRoot: string;
 }
 
-// ── Schema ─────────────────────────────────────────────────────────────
+// ── Schema ───────────────────────────────────────────────────────────────
 
 const finishSchema: TSchema = Type.Object({
   status: Type.Union(
@@ -72,73 +69,9 @@ const finishSchema: TSchema = Type.Object({
         reason: Type.String({ description: "What is blocking progress" }),
         context: Type.String({ description: "Additional context: what you tried, why it failed, what's needed" }),
       }),
-      { description: "Additional details about what prevented completion, when available. The summary can explain the blocker without this field." },
-    ),
-  ),
-  next_steps: Type.Optional(
-    Type.String({
-      description:
-        "Recommended next actions for whoever picks this up, when known.",
-    }),
-  ),
-  completed_items: Type.Optional(
-    Type.Array(
-      Type.String({
-        description:
-          "Description of work completed this session, for the caller's report.",
-      }),
       {
         description:
-          "Reported completed work. This does not complete tracked Tasks or Requests; use the owning App's authorized controls when needed.",
-      },
-    ),
-  ),
-  new_items: Type.Optional(
-    Type.Array(Type.String({ description: "Suggested follow-up work for the owner to consider" }), {
-      description: "Reported follow-up suggestions. This does not create Tasks or Requests.",
-    }),
-  ),
-  lessons: Type.Optional(
-    Type.Array(
-      Type.Object({
-        category: Type.Union([Type.Literal("fix"), Type.Literal("pattern"), Type.Literal("insight")], {
-          description:
-            "'fix': what you learned from a bug/error. 'pattern': a reusable approach worth remembering. 'insight': an observation about the system or codebase.",
-        }),
-        content: Type.String({
-          description:
-            "The lesson — specific and actionable, not generic. Bad: 'always test'. Good: 'manager.ts uses lazy DB init, must call getDb() not import db directly'.",
-        }),
-      }),
-      { description: "Reported lessons, retained in the completion report. This does not write a separate memory file, load lessons into future sessions or activate guidance." },
-    ),
-  ),
-  verification_facts: Type.Optional(
-    Type.Array(
-      Type.String({
-        description:
-          "Available evidence or a reference supporting your report. Example: 'bash test exit code 0' or 'Accepted test receipt: artifact/tests.json'.",
-      }),
-      {
-        description:
-          "Optional supporting observations. Required domain evidence belongs in the caller's result contract; this field need not repeat it or require another tool call.",
-      },
-    ),
-  ),
-  context_updates: Type.Optional(
-    Type.Array(
-      Type.Object({
-        action: Type.Union([Type.Literal("add"), Type.Literal("remove")], {
-          description: "Proposed context change: 'add' a fact or 'remove' a stale/incorrect fact.",
-        }),
-        content: Type.String({
-          description:
-            "The proposed fact to add or remove. Keep short (one line). Example: 'Project uses Vitest', 'DB uses node:sqlite'.",
-        }),
-      }),
-      {
-        description:
-          "Reported context-change suggestions only. finish() retains these suggestions in its result without writing context.md or activating guidance. Future-session loading is not automatic. Lasting behavior changes need an authorized source edit and verified activation.",
+          "Additional details about what prevented completion, when available. The summary can explain the blocker without this field.",
       },
     ),
   ),
@@ -149,22 +82,16 @@ interface FinishParams {
   summary: string;
   deliverables?: { path: string; description: string }[];
   blockers?: { reason: string; context: string }[];
-  next_steps?: string;
-  completed_items?: string[];
-  new_items?: string[];
-  lessons?: Array<{ category: "fix" | "pattern" | "insight"; content: string }>;
-  verification_facts?: string[];
-  context_updates?: Array<{ action: "add" | "remove"; content: string }>;
 }
 
-// ── Tool factory ───────────────────────────────────────────────────────
+// ── Tool factory ─────────────────────────────────────────────────────────
 
 /**
  * Create a `finish` tool for structured session completion.
  *
  * When called:
  * 1. Validates deliverable paths exist (if status is success)
- * 2. Returns a formatted summary, including reported lessons, as the tool output
+ * 2. Returns a formatted summary as the tool output
  *
  * The caller extracts accepted finish arguments from session facts and owns
  * the resulting work state. Report fields are not additional state-changing tools.
@@ -183,9 +110,9 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
     parameters: finishSchema,
     execute: async (_toolCallId: string, _params: unknown) => {
       const params = _params as FinishParams;
-      const { status, summary, deliverables, blockers, next_steps } = params;
+      const { status, summary, deliverables, blockers } = params;
 
-      // ── Validate required fields ───────────────────────────────
+      // ── Validate required fields ─────────────────────────────────
       if (!status) {
         return {
           content: [{ type: "text" as const, text: "finish() error: 'status' is required." }],
@@ -225,7 +152,7 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         };
       }
 
-      // ── Build formatted output ─────────────────────────────────
+      // ── Build formatted output ───────────────────────────────────
       const statusEmoji = {
         success: "✅",
         failure: "❌",
@@ -252,27 +179,6 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
         }
       }
 
-      if (next_steps) {
-        parts.push("");
-        parts.push(`**Next steps:** ${next_steps}`);
-      }
-
-      if (params.lessons && params.lessons.length > 0) {
-        parts.push("");
-        parts.push("**Lessons reported:**");
-        for (const l of params.lessons) {
-          parts.push(`- [${l.category}] ${l.content}`);
-        }
-      }
-
-      if (params.verification_facts && params.verification_facts.length > 0) {
-        parts.push("");
-        parts.push("**Verification facts:**");
-        for (const ev of params.verification_facts) {
-          parts.push(`- ${ev}`);
-        }
-      }
-
       return {
         content: [{ type: "text" as const, text: parts.join("\n") }],
         details: undefined,
@@ -281,7 +187,6 @@ export function createFinishTool(options: FinishToolOptions): AgentTool<TSchema>
     },
   };
 }
-
 
 function addRequiredResult(base: TSchema, result: TSchema): TSchema {
   const objectSchema = base as {

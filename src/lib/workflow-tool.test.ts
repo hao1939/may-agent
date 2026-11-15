@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { EVENT_RECORD_ONLY } from "../app/core/events/bus.js";
 import { appTaskContext, cancelAppTask, claimObservedAppTask, observeAppTaskIntent } from "../app/core/tasks/app-task-reconciler.js";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { afterEach, describe, expect, it } from "bun:test";
@@ -1755,5 +1756,101 @@ export async function execute(ctx) {
     // Parent run was created before cancellation (total 3), but nested run was rejected before creating a row
     expect((db.prepare("SELECT count(*) AS n FROM workflow_runs").get() as { n: number })?.n).toBe(3);
     expect(store.isCancelled("work")).toBe(true);
+  });
+
+  it("emits record-only workflow.step_started and workflow.step_completed events with invocation stepIndex and numeric durationMs", async () => {
+    const root = workflowRoot("workflow-step-events-");
+    writeFileSync(
+      join(root, "helper-proc.ts"),
+      `
+export const name = "helper-proc";
+export const description = "Code procedure";
+export async function execute(ctx) {
+  return ctx.done("Code procedure finished");
+}
+`,
+    );
+    writeFileSync(
+      join(root, "parent.ts"),
+      `
+export const name = "parent";
+export const description = "Interleaved code and concurrent prompt calls";
+export async function execute(ctx) {
+  await ctx.call("helper-proc", {});
+  await Promise.all([
+    ctx.call("slow", "slow prompt"),
+    ctx.call("fast", "fast prompt"),
+  ]);
+  return ctx.done("All steps complete");
+}
+`,
+    );
+
+    const emitted: Array<Record<string, any>> = [];
+    const manager = {
+      callAgentDefinition: async (def: { name: string }) => {
+        if (def.name === "slow") {
+          await new Promise((resolve) => setTimeout(resolve, 25));
+        } else {
+          await new Promise((resolve) => setTimeout(resolve, 2));
+        }
+        return {
+          sessionId: `s_${def.name}`,
+          status: "done",
+          duration: "12s",
+          messages: [],
+          lastAssistantText: `${def.name} done`,
+          finishResult: { status: "success", summary: `${def.name} done` },
+        };
+      },
+    } as any;
+
+    const result = await createWorkflowRunner({
+      manager,
+      workflowDir: root,
+      agentName: "owner",
+      projectId: "sample",
+      trace: { traceId: "tr_step_events", spanId: "sp_parent" } as any,
+      runtimeCtx: {
+        emit: (event: Record<string, any>) => {
+          emitted.push(event);
+        },
+      } as any,
+      agentDefinitions: new Map([
+        ["slow", { ...workerDef, name: "slow" }],
+        ["fast", { ...workerDef, name: "fast" }],
+      ]),
+    }).run("parent", "Run interleaved steps");
+
+    expect(result).toMatchObject({ type: "done", summary: "All steps complete" });
+
+    const stepEvents = emitted.filter(
+      (event) => event.type === "workflow.step_started" || event.type === "workflow.step_completed",
+    );
+    expect(stepEvents).toHaveLength(4);
+    for (const event of stepEvents) {
+      expect(event[EVENT_RECORD_ONLY]).toBe(true);
+    }
+
+    const startedByStep = new Map(
+      stepEvents
+        .filter((event) => event.type === "workflow.step_started")
+        .map((event) => [event.data.step, event.data.stepIndex]),
+    );
+    const completedByStep = new Map(
+      stepEvents
+        .filter((event) => event.type === "workflow.step_completed")
+        .map((event) => [event.data.step, event.data]),
+    );
+
+    // stepIndex 0 is `helper-proc` (code procedure), so `slow` and `fast` get invocation indices 1 and 2
+    // even though `fast` finishes before `slow`.
+    expect(startedByStep.get("slow")).toBe(1);
+    expect(startedByStep.get("fast")).toBe(2);
+    expect(completedByStep.get("slow")?.stepIndex).toBe(1);
+    expect(completedByStep.get("fast")?.stepIndex).toBe(2);
+    expect(typeof completedByStep.get("slow")?.durationMs).toBe("number");
+    expect(typeof completedByStep.get("fast")?.durationMs).toBe("number");
+    expect(completedByStep.get("slow")?.durationMs).toBeGreaterThanOrEqual(0);
   });
 });
