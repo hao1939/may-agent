@@ -961,6 +961,8 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       summary: "SDK run: Audit via @may-agent/sdk/standalone (readonly)",
     });
 
+    let observedStepStatus: string | undefined;
+    let observedStepSummary: string | undefined;
     const invalidTaskWorkflow = await runWorkflowTest(
       {
         name: "invalid-task-output",
@@ -970,8 +972,8 @@ describe("portable workflow kernel & runWorkflowTest", () => {
           const step = await ctx.call("reviewer", "Check task", {
             schema: taskReconcileResultSchema,
           });
-          expect(step.status).toBe("error");
-          expect(step.summary).toContain("converged cannot include continue");
+          observedStepStatus = step.status;
+          observedStepSummary = step.summary;
           return ctx.done("Done", {
             state: "converged",
             summary: "Done",
@@ -998,8 +1000,12 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         },
       },
     );
+    expect(observedStepStatus).toBe("error");
+    expect(observedStepSummary).toContain("continue requires waiting and progress facts");
     expect(invalidTaskWorkflow.ok).toBe(false);
     expect(invalidTaskWorkflow.status).toBe("error");
-    expect(String(invalidTaskWorkflow.error)).toContain("converged cannot include continue");
+    expect(invalidTaskWorkflow.error).toBeInstanceOf(WorkflowValidationError);
+    expect((invalidTaskWorkflow.error as WorkflowValidationError).phase).toBe("output");
+    expect(String(invalidTaskWorkflow.error)).toContain("continue requires waiting and progress facts");
   });
 });
