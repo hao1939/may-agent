@@ -1515,6 +1515,7 @@ The [reconstruction audit](../reports/review/scout-provenance-reconstruction-cyc
 
 ## Recent GUI-agent verification findings
 
+- [Agent sensory verification needs diagnostics plus the artifact](findings/2026-11-15-agent-sensory-verification-needs-diagnostics-plus-artifact.md) — Three pinned producer-authored READMEs converge on pairing machine-readable repair diagnostics with the rendered or audible artifact; Scout did not run the repositories, reproduce benchmarks, or independently validate perceptual quality.
 - [GlassPane: GUI-agent verification needs an effect record, not another screenshot](findings/2026-10-16-glasspane-macos-gui-verification.md) — A pinned implementation combines accessibility state, local pixel deltas, and contamination-aware attribution, but Scout did not execute its macOS runtime or tests.
 
 ## Recent agent-credential findings
