@@ -571,11 +571,11 @@ describe("App read projections", () => {
 
   it.each([
     ["closed", 1], ["closed", 2], ["cancelled", 1], ["cancelled", 2], [undefined, 1], [undefined, 2],
-  ] as const)("retains resource-free terminal records with kind %s and generation %s before historical receipts", async (kind, generation) => {
+  ] as const)("retains resource-free terminal records with kind %s and generation %s", async (kind, generation) => {
     const config = resourceConfig();
     const store = AppTaskResourceStore.fromDb(db, "history");
     const status = kind ?? "cancelled";
-    const cancellations = Object.fromEntries(["only-terminal", "with-receipt"].map((taskId) => [taskId, {
+    const cancellations = Object.fromEntries(["only-terminal", "second-terminal"].map((taskId) => [taskId, {
       ...(kind ? { kind } : {}), appId: "history", taskId, generation, resourceVersion: 3,
       outcome: "Retain the owner disposition", reason: "Owner ended the assignment",
       summary: "Explicit terminal decision", response: "Retained answer", result: { scope: "terminal" },
@@ -583,14 +583,24 @@ describe("App read projections", () => {
     }]));
     store.bootstrapSnapshot({
       groups: { review: { id: "review", parent_id: null } }, cancellations,
-      receipts: { "with-receipt": {
-        metadata: { id: "with-receipt", generation: 1, resourceVersion: 2 }, specHash: "old-result",
-        parentId: "review", outcome: "Historical outcome", acceptance: ["Original acceptance"],
-        owner: "historical-owner", handler: "auto", input: { original: true },
-        summary: "Historical completion", result: { scope: "receipt" }, facts: ["receipt:evidence"],
-        acceptanceBasis: { method: "agent-judgment", facts: [] }, failureFingerprints: [],
-        completedAt: new Date(2).toISOString(),
-      } },
+      receipts: {
+        "second-terminal": {
+          metadata: { id: "second-terminal", generation: 1, resourceVersion: 2 },
+          specHash: "old-result",
+          parentId: "review",
+          outcome: "Historical outcome",
+          acceptance: ["Original acceptance"],
+          owner: "historical-owner",
+          handler: "auto",
+          input: { original: true },
+          summary: "Historical completion",
+          result: { scope: "receipt" },
+          facts: ["receipt:evidence"],
+          acceptanceBasis: { method: "agent-judgment", facts: [] },
+          failureFingerprints: [],
+          completedAt: new Date(2).toISOString(),
+        },
+      },
     }, "seed:terminal-history");
     const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: { ...config, resourceStore: store } });
     const first = await read.tasks.list({ status: [status], limit: 1 });
@@ -598,7 +608,7 @@ describe("App read projections", () => {
     expect(first.nextCursor).toBeString();
     expect(second.nextCursor).toBeUndefined();
     const items = [...first.items, ...second.items];
-    expect(items.map(({ id }) => id)).toEqual(["only-terminal", "with-receipt"]);
+    expect(items.map(({ id }) => id)).toEqual(["only-terminal", "second-terminal"]);
     for (const item of items) {
       expect(item).toMatchObject({ status, closed: true, generation,
         summary: "Explicit terminal decision", response: "Retained answer",
@@ -608,16 +618,47 @@ describe("App read projections", () => {
       });
       expect(store.readTask(item.id)).toBeNull();
     }
-    const detail = await read.tasks.get("with-receipt");
-    if (generation === 1) expect(detail).toMatchObject({
-      parentId: "review", acceptance: ["Original acceptance"], input: { original: true }, agent: "historical-owner",
-    });
-    else {
-      expect(detail).toMatchObject({ parentId: "", acceptance: [], input: {} });
-      expect(detail).not.toHaveProperty("agent");
-    }
+    const detail = await read.tasks.get("second-terminal");
+    expect(detail).toMatchObject({ parentId: "", acceptance: [], input: {} });
+    expect(detail).not.toHaveProperty("agent");
     await expect(read.tasks.list()).resolves.toEqual({ items });
     await expect(read.tasks.list({ status: ["idle", "done", status === "closed" ? "cancelled" : "closed"] })).resolves.toEqual({ items: [] });
+  });
+
+  it("skips receipt-only IDs during pagination so limit: 1 returns the first live Task", async () => {
+    const config = resourceConfig();
+    const store = AppTaskResourceStore.fromDb(db, "mixed-pagination");
+    store.bootstrapSnapshot({
+      groups: { review: { id: "review", parent_id: null } },
+      receipts: {
+        "a-receipt-only": {
+          metadata: { id: "a-receipt-only", generation: 1, resourceVersion: 1 },
+          specHash: "old-result",
+          parentId: "review",
+          outcome: "Historical outcome",
+          acceptance: ["Original acceptance"],
+          owner: "historical-owner",
+          handler: "auto",
+          summary: "Historical completion",
+          facts: ["receipt:evidence"],
+          acceptanceBasis: { method: "agent-judgment", facts: [] },
+          failureFingerprints: [],
+          completedAt: new Date(1).toISOString(),
+        },
+      },
+      resources: {
+        "z-current": {
+          metadata: { id: "z-current", generation: 1, resourceVersion: 1 },
+          spec: { parentId: "review", outcome: "Current work", acceptance: ["Done"] },
+          status: { phase: "pending", observedGeneration: 0, updatedAt: new Date(2).toISOString() },
+        },
+      },
+    }, "seed:mixed-pagination");
+    const read = createRuntimeAppRead({ getDb: () => db, taskStateConfig: { ...config, resourceStore: store } });
+    const page = await read.tasks.list({ limit: 1 });
+    expect(page.items.map(({ id }) => id)).toEqual(["z-current"]);
+    expect(page.nextCursor).toBeUndefined();
+    await expect(read.tasks.list({ status: ["done"], limit: 1 })).resolves.toEqual({ items: [] });
     await expect(read.tasks.get("missing")).resolves.toBeNull();
   });
 

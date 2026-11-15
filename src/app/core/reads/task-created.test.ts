@@ -122,3 +122,30 @@ test("creator pages retain cross-App identity and reject a cursor from another c
     expect(() => f.read({ cursor })).toThrow("cursor");
   for (const limit of [0, 101, 1.5]) expect(() => f.read({ limit })).toThrow("limit");
 });
+
+// Retain generation-aware receipt filtering in readCreatedTasks() until app_task_receipts is retired across all storage selectors.
+test("creator discovery excludes a retained Task superseded by a completion receipt, matching exact Task reads", () => {
+  const f = fixture();
+  f.add(f.worker, "superseded");
+  f.worker.resourceStore.db.prepare(
+    `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
+     VALUES ('worker', 'superseded', 'root', 10, ?)`,
+  ).run(
+    JSON.stringify({
+      metadata: { id: "superseded", generation: 1, resourceVersion: 1 },
+      specHash: "hash",
+      parentId: "root",
+      outcome: "Finished",
+      acceptance: ["Evidence retained"],
+      owner: "worker",
+      handler: "auto",
+      summary: "Done",
+      facts: [],
+      acceptanceBasis: { method: "agent-judgment", facts: [] },
+      failureFingerprints: [],
+      completedAt: new Date(10).toISOString(),
+    }),
+  );
+  expect(f.read().items).toEqual([]);
+  expect(f.worker.resourceStore.readTaskForView("superseded")).toBeNull();
+});

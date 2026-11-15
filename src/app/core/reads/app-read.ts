@@ -194,9 +194,7 @@ function readTaskDetail(
     );
   }
   const terminal = store.readCancellation(taskId);
-  const receipt = store.readReceipt(taskId);
-  if (terminal) return terminalTaskDetail(terminal, receipt, acceptedEvidence);
-  return receipt ? receiptTaskDetail(receipt, acceptedEvidence) : null;
+  return terminal ? terminalTaskDetail(terminal, acceptedEvidence) : null;
 }
 
 function terminalTaskView(terminal: AppTaskCancellation): TaskView {
@@ -215,33 +213,17 @@ function terminalTaskView(terminal: AppTaskCancellation): TaskView {
 
 function terminalTaskDetail(
   terminal: AppTaskCancellation,
-  receipt: NonNullable<TaskTree["receipts"]>[string] | null,
   acceptedEvidence: TaskDetail["acceptedEvidence"],
 ): TaskDetail {
-  // Only a receipt for the ended assignment can supplement its missing spec.
-  const historical = receipt?.metadata.generation === terminal.generation
-    ? receiptTaskDetail(receipt, acceptedEvidence)
-    : { parentId: "", acceptance: [], input: {}, conditions: [] };
   return {
-    ...historical,
+    parentId: "",
+    acceptance: [],
+    input: {},
+    conditions: [],
     ...terminalTaskView(terminal),
     resourceVersion: terminal.resourceVersion,
     currentObligations: { available: false },
     acceptedEvidence,
-  };
-}
-
-function receiptTaskView(receipt: NonNullable<TaskTree["receipts"]>[string]): TaskView {
-  return {
-    id: receipt.metadata.id,
-    closed: true,
-    status: "done",
-    generation: receipt.metadata.generation,
-    outcome: receipt.outcome,
-    summary: receipt.summary,
-    response: receipt.response,
-    result: receipt.result ? structuredClone(receipt.result) : undefined,
-    facts: [...receipt.facts],
   };
 }
 
@@ -261,26 +243,6 @@ function resourceTaskView(
     response: resource.status.response,
     result: resource.status.result ? structuredClone(resource.status.result) : undefined,
     facts: resource.status.facts ? [...resource.status.facts] : undefined,
-  };
-}
-
-function receiptTaskDetail(
-  receipt: NonNullable<TaskTree["receipts"]>[string],
-  acceptedEvidence: TaskDetail["acceptedEvidence"],
-): TaskDetail {
-  return {
-    ...receiptTaskView(receipt),
-    currentObligations: { available: false },
-    acceptedEvidence,
-    parentId: receipt.parentId,
-    acceptance: [...receipt.acceptance],
-    input: structuredClone(receipt.input ?? {}),
-    agent: receipt.owner,
-    owner: receipt.owner,
-    ...(receipt.workflow ? { workflow: receipt.workflow } : {}),
-    ...(receipt.executor ? { executor: receipt.executor } : {}),
-    ...(receipt.priority ? { priority: receipt.priority } : {}),
-    conditions: [],
   };
 }
 
@@ -395,9 +357,7 @@ export function listRuntimeTaskViews(
       const current = store.readTaskForView(id);
       if (current) return [resourceTaskView(current.resource, current.phase, current.closure)];
       const terminal = store.readCancellation(id);
-      if (terminal) return [terminalTaskView(terminal)];
-      const receipt = store.readReceipt(id);
-      return receipt ? [receiptTaskView(receipt)] : [];
+      return terminal ? [terminalTaskView(terminal)] : [];
     }),
     ...(ids.length > limit && pageIds.length > 0 ? { nextCursor: encodeTaskCursor(pageIds.at(-1)!) } : {}),
   };

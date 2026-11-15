@@ -2898,112 +2898,6 @@ describe("App task reconciler state", () => {
     ).toMatchObject({ kind: "claimed", generation: 2 });
   });
 
-  it("preserves historical receipts while recording new outcomes only on attempts", () => {
-    const { config } = fixture();
-    const tree = readTaskSnapshot(config);
-    tree.receipts = Object.fromEntries(
-      Array.from({ length: 1_001 }, (_, index) => {
-        const id = `completed-${index}`;
-        return [
-          id,
-          {
-            metadata: { id, generation: 1, resourceVersion: 1 },
-            specHash: `hash-${index}`,
-            parentId: "operations",
-            outcome: `Completed outcome ${index}`,
-            acceptance: ["Completed"],
-            owner: "app-owner",
-            handler: "agent:app-owner",
-            summary: "Completed",
-            facts: [],
-            acceptanceBasis: { method: "agent-judgment", facts: [] },
-            failureFingerprints: [],
-            completedAt: new Date(index).toISOString(),
-          },
-        ];
-      }),
-    );
-    const fence = tree.resources?.["categorized-task"];
-    if (!fence) throw new Error("expected receipt fixture fence");
-    expect(
-      config.resourceStore.commit({
-        fences: [{ taskId: fence.metadata.id, resourceVersion: fence.metadata.resourceVersion }],
-        receipts: Object.values(tree.receipts ?? {}),
-      }),
-    ).toBe(true);
-
-    const claim = declareAndClaimTask(config, {
-      intent: intent(),
-      appAgent: "app-owner",
-      handler: "workflow:known-workflow",
-    });
-    if (claim.kind !== "claimed") throw new Error("expected claim");
-    completeAppTask(config, claim, { summary: "new completion" });
-
-    const completed = readTaskSnapshot(config);
-    expect(Object.keys(completed.receipts ?? {})).toHaveLength(1_001);
-    expect(completed.receipts?.["completed-0"]).toBeTruthy();
-    expect(completed.receipts?.[claim.taskId]).toBeUndefined();
-    expect(completed.attempts?.[claim.attemptId]?.acceptedResult?.summary).toBe("new completion");
-    expect(completed.resources?.[claim.taskId]?.status.observedAttemptId).toBe(claim.attemptId);
-  });
-
-  it("keeps reconciliation child history small and decision-ready", () => {
-    const f = fixture();
-    const { config } = f;
-    const tree = readTaskSnapshot(config);
-    const longText = "x".repeat(700);
-    tree.receipts = Object.fromEntries(
-      Array.from({ length: 12 }, (_, index) => {
-        const id = `child-${index}`;
-        return [
-          id,
-          {
-            metadata: { id, generation: 1, resourceVersion: 1 },
-            specHash: `hash-${index}`,
-            parentId: "pipeline-monitor",
-            outcome: longText,
-            acceptance: ["Completed"],
-            owner: "app-owner",
-            handler: "agent:app-owner",
-            summary: longText,
-            facts: Array.from({ length: 6 }, () => longText),
-            acceptanceBasis: { method: "agent-judgment", facts: [] },
-            failureFingerprints: [],
-            completedAt: new Date(index).toISOString(),
-          },
-        ];
-      }),
-    );
-    const fence = tree.resources?.["categorized-task"];
-    if (!fence) throw new Error("expected child-context fixture fence");
-    expect(
-      config.resourceStore.commit({
-        fences: [{ taskId: fence.metadata.id, resourceVersion: fence.metadata.resourceVersion }],
-        receipts: Object.values(tree.receipts ?? {}),
-      }),
-    ).toBe(true);
-
-    const resource = f;
-    const context = readAppTaskChildContext(resource.config, "pipeline-monitor");
-
-    expect(context.completed).toHaveLength(8);
-    expect(context.completed.map(({ taskId }) => taskId)).toEqual([
-      "child-11",
-      "child-10",
-      "child-9",
-      "child-8",
-      "child-7",
-      "child-6",
-      "child-5",
-      "child-4",
-    ]);
-    expect(context.completed[0]?.outcome.length).toBeLessThanOrEqual(512);
-    expect(context.completed[0]?.summary.length).toBeLessThanOrEqual(512);
-    expect(context.completed[0]?.facts).toHaveLength(4);
-    expect(context.completed[0]?.facts[0]?.length).toBeLessThanOrEqual(512);
-  });
-
   it("keeps child readiness aware of running tasks outside the parent graph", () => {
     const { config } = fixture();
     config.maxConcurrent = 1;
@@ -3045,24 +2939,28 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it.each([1, 2])("excludes attention children ended by generation-%s receipts before the live limit", (receiptGeneration) => {
+  it("excludes a receipt-superseded sibling reloaded via dependsOn or its parent chain from live child context", () => {
     const { config } = fixture();
     const fence = config.resourceStore.readTask("categorized-task")!;
-    const resources = Array.from({ length: 20 }, (_, index) => {
+    const resources = Array.from({ length: 18 }, (_, index) => {
       const resource = structuredClone(fence);
       resource.metadata = { id: `child-${String(index).padStart(2, "0")}`, generation: 1, resourceVersion: 1 };
       resource.spec.parentId = "pipeline-monitor";
-      resource.status.phase = index < 18 ? "attention" : "pending";
+      resource.status.phase = "pending";
+      if (index === 2) resource.spec.dependsOn = ["child-00", "grandchild-of-01"];
       return resource;
     });
-    // An older receipt must not hide a newer assignment with the same identity.
-    resources[18]!.metadata.generation = receiptGeneration + 1;
-    const receipts: TaskCompletionReceipt[] = resources.slice(0, 19).map((resource) => ({
-      metadata: { ...resource.metadata, generation: receiptGeneration },
+    const grandchild = structuredClone(fence);
+    grandchild.metadata = { id: "grandchild-of-01", generation: 1, resourceVersion: 1 };
+    grandchild.spec.parentId = "child-01";
+    grandchild.status.phase = "converged";
+    grandchild.status.observedGeneration = 1;
+    const receipts: TaskCompletionReceipt[] = ["child-00", "child-01"].map((id) => ({
+      metadata: { id, generation: 1, resourceVersion: 1 },
       specHash: "historical-spec",
-      parentId: resource.spec.parentId,
-      outcome: resource.spec.outcome,
-      acceptance: resource.spec.acceptance,
+      parentId: "pipeline-monitor",
+      outcome: resources[0]!.spec.outcome,
+      acceptance: resources[0]!.spec.acceptance,
       owner: "app-owner",
       handler: "agent:app-owner",
       summary: "Accepted historical completion",
@@ -3071,20 +2969,20 @@ describe("App task reconciler state", () => {
       failureFingerprints: [],
       completedAt: new Date().toISOString(),
     }));
-    expect(config.resourceStore.commit({
-      fences: [{ taskId: fence.metadata.id, resourceVersion: fence.metadata.resourceVersion }],
-      tasks: resources.map((resource) => ({ resource, ready: resource.status.phase === "pending" })),
-      receipts,
-    })).toBe(true);
+    expect(
+      config.resourceStore.commit({
+        fences: [{ taskId: fence.metadata.id, resourceVersion: fence.metadata.resourceVersion }],
+        tasks: [...resources, grandchild].map((resource) => ({ resource, ready: resource.status.phase === "pending" })),
+        receipts,
+      }),
+    ).toBe(true);
 
     const context = readAppTaskChildContext(config, "pipeline-monitor");
-    expect(context.live.map(({ taskId }) => taskId)).toEqual(["child-18", "child-19"]);
-    expect(context.completed).toHaveLength(8);
-    for (const resource of resources.slice(0, 18)) {
-      expect(readRuntimeTaskView({ taskStateConfig: config }, resource.metadata.id)).toMatchObject({ status: "done" });
-      expect(config.resourceStore.listLiveTaskIds("pipeline-monitor")).not.toContain(resource.metadata.id);
-    }
-    expect(readRuntimeTaskView({ taskStateConfig: config }, "child-18")).toMatchObject({ status: "pending" });
+    expect(context.live).toHaveLength(16);
+    expect(context.live.map(({ taskId }) => taskId)).not.toContain("child-00");
+    expect(context.live.map(({ taskId }) => taskId)).not.toContain("child-01");
+    expect(context.live.map(({ taskId }) => taskId)).toContain("child-17");
+    expect(context.completed).toEqual([]);
   });
 
   it("loads current accepted dependencies under other parents for queued child readiness", () => {

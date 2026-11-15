@@ -1720,26 +1720,7 @@ export function readAppTaskChildContext(config: AppTaskContext, taskId: string):
   const readinessById = appTaskReadinessById(tree, config.maxConcurrent, viewPhases);
   const live = children.map((resource) =>
     liveTaskContext(tree, resource, readinessById[resource.metadata.id], viewPhases[resource.metadata.id]));
-  const completed = Object.values(tree.receipts ?? {})
-    .filter((receipt) => receipt.parentId === taskId)
-    .sort((left, right) => right.completedAt.localeCompare(left.completedAt))
-    .slice(0, MAX_COMPLETED_CHILD_CONTEXT)
-    .map((receipt) => ({
-      taskId: receipt.metadata.id,
-      parentId: receipt.parentId,
-      generation: receipt.metadata.generation,
-      outcome: boundedChildContextText(receipt.outcome),
-      agent: receipt.owner,
-      ...(receipt.workflow ? { workflow: receipt.workflow } : {}),
-      ...(receipt.executor ? { executor: receipt.executor } : {}),
-      input: structuredClone(receipt.input ?? {}),
-      ...(receipt.priority ? { priority: receipt.priority } : {}),
-      conditions: [],
-      hasLiveChildren: false as const,
-      summary: boundedChildContextText(receipt.summary),
-      facts: boundedChildFacts([...receipt.facts]),
-      completedAt: receipt.completedAt,
-    }));
+  const completed: AppTaskChildContext["completed"] = [];
   const cancelled = config.resourceStore.readCancelledChildren(taskId, MAX_COMPLETED_CHILD_CONTEXT).map((child) => ({
     kind: child.kind ?? "cancelled",
     taskId: child.taskId,
