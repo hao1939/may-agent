@@ -4,10 +4,12 @@
 
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first) and [bounded procedures versus durable coordination](../2a-design/workflows.md#bounded-procedure-versus-durable-coordination). The operator coordinates early trials; agents execute bounded passes. Host later replaces that coordination, not the agent implementation or judgment.
 
-**Status:** One native hosted trial completed through workflow execution, PR
-publication, watcher-driven same-Task CI follow-up, retained caller return and
-actual Telegram notification. It used one operator queue continuation, so
-zero-intervention operation is still unproved. See the [dated trial and limits](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-paired-activation-and-native-delivery-trial).
+**Status:** Existing PR #574 reached green current-head CI, resolved substantive
+review, same-Task watcher follow-up, retained caller return and an addressed
+Telegram approval notice against the original human input (provider message
+50618). The run required diagnostic interventions and a direct-repair exception
+after workflow exhaustion; pure workflow implementation and zero-intervention
+operation remain unproved. See the [final receipts and limits](../archive/implementation/host-ingress-sdk-source-review-20261116.md#green-head-caller-return-and-original-addressed-notice).
 This page owns the experiment method. The
 [shared runtime contract](../2a-design/agent-runtime.md) and
 [current delivery recipe](../development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
@@ -248,15 +250,17 @@ current remaining work and the next action. This is an operator record, not a
 scheduler, watch registry or executable phase store. When Host takes over,
 continuity belongs to Task state; evidence remains referenced artifacts.
 
-- [ ] Phase 0: assignment, authority and execution path agreed.
-- [ ] Phase 1: bounded input/contribution contract exercised.
-- [ ] Phase 2: real candidate verified, reviewed and published/read back.
-- [ ] Phase 3: same-PR external-feedback continuation observed.
+- [x] Phase 0: assignment, authority and execution path agreed for #574.
+- [x] Phase 1: bounded input/contribution contract exercised.
+- [x] Phase 2: real candidate verified, reviewed and published/read back; later direct repairs retain separate evidence.
+- [x] Phase 3: same-PR external-feedback continuation observed, including warranted review and CI repairs.
 - [ ] Phase 4: process frozen; maturity evidence and limitations reviewed.
-- [ ] Phase 5: compatible activation and native Task + Watcher cycle verified.
-- [ ] Current-head readiness assessed and Telegram PR-review notification delivered;
+- [x] Phase 5: compatible activation and native Task + Watcher cycle verified; runtime parity and restart remain separate.
+- [x] Current-head readiness assessed and addressed Telegram PR-review notification delivered;
       human review and approval take place on GitHub.
 
-**Next action:** Select the first narrow assignment and its exact standalone
-runner/checkout. No task submission, model-backed run, PR publication or
+**Next action:** Review the #574 evidence and freeze the useful process before a
+fresh narrow assignment tests operation without diagnostic relays or a direct
+repair exception. Give the workflow sufficient caller time and preserve cumulative
+allowance through recovery. No new submission, model-backed run, publication or
 activation is authorized merely by marking this plan agreed.

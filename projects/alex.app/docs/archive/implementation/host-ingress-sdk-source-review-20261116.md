@@ -522,10 +522,65 @@ the recovery sidecar. Four real GNU-timeout regressions cover normal settlement,
 abort, live recovery after leader exit, and persisted recovery; a separate
 session survives. All four fail against the original implementation. Fifty-five
 focused Bash tests and full local CI pass (3,439 passed, no failures, two existing
-skips; browser and Compose configuration coverage ran). Independent review and
-hosted checks remain pending. No binary was deployed. Descendants creating a
+skips; browser and Compose configuration coverage ran). Both hosted Quality and Container passed in run 43975733574. Independent review
+remains pending and the PR stays draft. No binary was deployed. Descendants creating a
 separate session remain outside the scope; this is not universal process-tree
 containment or installed recovery proof.
+
+### Green head, caller return and original addressed notice
+
+PR #574 final head `6be71088136af3087e22b9c3ec2d47a3f7232896` passed
+Container at 23:08:07 UTC and Quality at 23:09:35 UTC in
+[run 43976195138](https://github.com/hao1939/may-agent/actions/runs/43976195138).
+Independent provider readback confirms all nine review threads resolved; the
+remaining `REVIEW_REQUIRED` means human GitHub approval, not a notification
+prerequisite. No PR was merged or coding contribution deployed.
+
+Native observer event 6731211 carried the final current-head fingerprint
+`9e7239d420dfc844b92a5e6e0538b01ec7e1fed5ef93488f0080cbbe3b1eb3a2` and
+woke the same generation-4 Alex Task. Session
+`s_1794870628062_2310b15f-da55-4575-9507-f0e44f08cad1` checked the final PR,
+updated/read back its accurate readiness body, retired the completed observation
+Condition and converged the retained caller inputs. App request
+`appdep_1ee136a45d4c842a8ae0f507` became done at 23:11:37 UTC with exact PR,
+head, check links, review disposition, watcher proof and canonical development
+references. The historical workflow reference still certifies d66; the later
+direct-exception changes retain their separate evidence.
+
+May initially completed a later diagnostic input and delivered readiness
+message 50616. That did not settle the original promise. The existing 23:15
+review timer then woke May session
+`s_1794870902813_e45a6aa5-17a5-4be6-850f-238f00fcedbf`, without operator
+continuation. She reconciled the retained inputs and addressed communication
+`pr574-ready-final-20261116` to original assignment
+`app_56f19632-af16-486c-97a1-0bb49c1a7bd5`, which became done at 23:15:27 UTC.
+Event 6731237 records the exact notice beginning:
+
+> Please review and approve on GitHub: https://github.com/hao1939/may-agent/pull/574
+
+Its durable message identity is
+`task-message:94fff9a6e0164b3b5fd42dc82ac25cafdb747ad300d145ab86306bcce902777b`.
+The linked Telegram operation
+`d25eda02f687fdc64e1194b07b47b7bf98382b25acfda3fb2ad8eaef96e8b9e6`
+reached `delivered` with provider message **50618** at 23:15:29 UTC. This is
+addressed final delivery against the original input, not a mirror or saved-summary
+claim. Provider delivery does not prove the human read it or approved on GitHub.
+
+Local evidence index: `.state/pr574-delivery-e2e-20261116/README.md`.
+Key receipts include `pr574-green-6be.json`, `pr574-review-threads-6be.json`,
+`event-6731211.json`, `alex-caller-result-full.json`,
+`original-human-promise-final.json`, `final-addressed-message-event.json` and
+`final-addressed-telegram-delivery.json`. Apps `b6075771dd` passed nine-agent
+model-surface and design-integrity checks; activation 6731160 succeeded.
+
+The delivery/notification milestone is achieved on this intervened run. It does
+not establish unattended diagnosis or pure workflow implementation: initial
+specialist work preceded the workflow verification, deadline/exhaustion required
+May's explicit direct-repair exception, and operator evidence helped diagnose
+both CI failures. No consumed allowance was reset. The next controlled proof
+should start one fresh narrow assignment with enough workflow time and complete
+without those interventions; closure, restart delivery, shared-worker parity and
+separate-session Bash containment remain distinct gaps.
 
 ## Historical performance observations
 

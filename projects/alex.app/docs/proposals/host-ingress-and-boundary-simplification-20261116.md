@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last verified at `e78e66d207`; binary activation is distinct from App reload and current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
+**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last activated at `b6075771dd`; binary activation is distinct from App reload and current `main`. PR #574 reached green current-head CI and addressed Telegram readiness delivery through the native May/Alex path, with explicit diagnostic interventions and a direct-repair exception after workflow exhaustion. An unattended workflow implementation is not established. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -300,8 +300,9 @@ identified the matching existing correction rather than supplying a CI rerun.
 Guidance now requires reading the failing assertion/source and related open fixes
 before treating local passes as grounds for credential escalation. Current-head
 green CI, accurate repaired-candidate evidence, the caller return and the final
-addressed Telegram provider receipt remain required. This is not yet a completed
-autonomous delivery claim.
+addressed Telegram provider receipt remained required at that checkpoint. The
+final receipt below completes the notification milestone without establishing
+an autonomous delivery claim.
 
 Bounded reproduction narrowed the stall to a single live-input test. A repair
 workflow reached its caller deadline before implementation; Host automatically
@@ -315,17 +316,31 @@ workflow execution, not evidence that the repair ran through `develop-change`.
 The same source also fixes pinned workflow evidence recovery when a creator
 revision changes the execution output directory. Sixty-four workflow/evidence
 tests pass, including the failing-before regression and conservative exhausted
-or corrupt usage; successful activation is 6731019. The original delivery promise
-and final readiness/notification gates remain open.
+or corrupt usage; successful activation is 6731019. The original promise and
+readiness/notification gates stayed open until the later final receipt below.
 
 The run also exposed Bash cleanup that confirmed only the original process
 group, allowing nested GNU `timeout` groups in the same session to survive.
 Supporting draft [#582](https://github.com/hao1939/may-agent/pull/582) drains the
 owned session for live and persisted cleanup. Its four real-process regressions
 fail before the fix; 55 focused tests and full local CI (3,439 pass, two skips)
-pass afterward. This is unpublished-to-runtime source evidence, not installed
-cleanup proof. Descendants that create a separate session remain outside scope.
+pass afterward. Both current-head hosted checks also pass. This source is not
+deployed and does not establish installed cleanup proof. Descendants that create
+a separate session remain outside scope.
 Apps use `timeout --foreground --kill-after=5s` when an inner timeout is needed.
+
+**Completed delivery milestone:** Final head `6be71088136af3087e22b9c3ec2d47a3f7232896`
+passed Quality and Container in run 43976195138; all nine review threads are
+resolved. Real observer event 6731211 woke the same generation-4 Alex Task.
+Alex read back the final PR body, returned its readiness result through the
+original caller, and retired its completed PR wait. May first answered a later
+diagnostic input (Telegram 50616), then the existing 23:15 review timer woke her
+without operator relay. She settled the original human assignment and emitted
+its exact addressed readiness notice in event 6731237; Telegram delivery 50618
+is confirmed. The PR remains open and unmerged, and no coding contribution was
+deployed. The [evidence record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#green-head-caller-return-and-original-addressed-notice)
+retains the exact promise, message and provider receipt identities. This proves
+the repaired integration on an intervened run, not zero-intervention operation.
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |
@@ -337,17 +352,19 @@ Apps use `timeout --foreground --kill-after=5s` when an inner timeout is needed.
 | Crash and effect recovery | Lose the acknowledgment after commit and interrupt after an external effect; replay the same receipt, preserve accepted work, inspect uncertain effects, and block unsafe replacement until cleanup is known. | Reuse existing receipts and operation-safety contracts; prove the complete connected worker path, without claiming exactly-once arbitrary effects. |
 | Failure ownership | Return correctable feedback to the active invocation; deliver exhausted/unstartable work to the declared owner, preserving the original obligation. Missing route/recipient stays visible. | Connected recipient-startup/pre-attempt evidence remains separate; saving or admitting a notice does not prove it was handled. |
 | Finite closure | Accepted complete finite assignment closes atomically; oversized/rejected/stale/partial/helper results and standing duties do not. Replay preserves that decision. | Component checks exist; the native trial finished its caller Request but left Alex converged/idle with a closure recommendation. Creator closure and end-to-end replay remain. |
-| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Local repair is running; live delegation, same-Task CI follow-up, caller return and a Telegram send are verified. Restart and addressed durable delivery remain separate proof obligations. |
+| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Live delegation, same-Task CI follow-up, accepted caller return, original-promise disposition and addressed Telegram delivery are verified for #574. Restart/replay delivery remains a separate proof obligation. |
 | Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility, activation and the native PR-delivery loop pass. Shared-worker blocked/resumed/finished and restart evidence remain. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The immediate next movement is to complete the #574 trial through the owning
-May/Alex path, repair demonstrated gaps at their App or generic Host boundary,
-and retain explicit interventions. No operator relay of each coding, publication
-or CI stage should be needed. Observe a real repair/comment cycle; do not
-manufacture feedback or count a historical mirror send as the requested final
-notification. Creator closure, restart delivery and shared-worker parity remain
-separate acceptance obligations after this trial.
+The next acceptance target is one fresh, narrow coding assignment that reaches
+the same notification boundary without diagnostic relays or a direct-repair
+exception. The highest-value execution gap is starting development with too
+little caller time, then exhausting recovery before implementation. Preserve
+consumed rounds while making useful workflow continuation explicit; an expired
+caller must not silently renew allowance or erase the original promise. The
+completed #574 run supplies the baseline, not proof this gap is fixed. Creator
+closure, restart delivery and shared-worker parity remain separate obligations.
+Supporting #582 still needs independent review and separate deployment authority.
 
 Removal of mechanical housekeeping and Conversation ownership cutover follow
 that evidence. Source checks remain separate from wider rollout or an unmeasured
