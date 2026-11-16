@@ -3,8 +3,7 @@ import { type TSchema } from "typebox";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { resolvedExecutionRecipient } from "./execution-recipient.js";
-import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
-import { prepareTaskWorkspaceContext, taskWorkspacePrompt } from "./task-workspace-context.js";
+import { observeTaskFeedback, taskDetailRoot, type TaskExecutionContext } from "./task-execution-context.js";
 import { drainSessionBashProcessGroups } from "@may-agent/sdk/runtime";
 /**
  * Durable agent session runtime.
@@ -353,17 +352,7 @@ export class SubagentManager {
       if (!opts.taskBinding) opts = { ...opts, taskBinding: opts.taskContext.taskBinding };
     }
     if (opts?.taskContext) {
-      const brief = prepareTaskWorkspaceContext(
-        opts.taskContext,
-        this._persistDir,
-        opts.taskContext.agentDefinitions?.values() ?? [...this.agents.values()].map((agent) => agent.definition),
-      );
-      task = `${task}\n\n${taskWorkspacePrompt(brief)}`;
-      if (opts.contextPrompt) opts = {
-        ...opts,
-        // If discovery cannot be saved, preserve the full original inline input.
-        contextPrompt: "taskFile" in brief ? `${opts.contextPrompt}\n\n${taskWorkspacePrompt(brief)}` : undefined,
-      };
+      opts.taskContext.detailRoot ??= taskDetailRoot(this._persistDir, opts.taskContext.taskBinding);
     }
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);
