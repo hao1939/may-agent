@@ -119,6 +119,10 @@ test("runtime-pattern-audit compares latest and preceding windows deterministica
     expect(res.summary).toContain("1 signal(s), 1 workflow delta(s)");
     expect(res.output).toMatchObject({
       state: "converged",
+      result: {
+        generatedAt: now,
+        latestTotals: { workflows: expect.any(Number) },
+      },
       requests: [
         {
           localKey: expect.stringMatching(/^workflow-audit:[0-9a-f]{16}$/),

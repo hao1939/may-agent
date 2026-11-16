@@ -215,7 +215,6 @@ export async function execute(
     ],
     requests,
     result: packet,
-    ...packet,
   });
 }
 
