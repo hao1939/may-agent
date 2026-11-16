@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-16
 
+- [Derived-output ACLs require complete mediation, not just lineage](./findings/2026-11-16-derived-output-acls-complete-mediation.md) — TrustGraph intersects every input's reader set for derived outputs and permits an action only when its audience remains inside that result; the design still depends on complete source reporting, effect-boundary checks, and an exclusive credential gateway, and Scout did not run the repository, reproduce its demo or proofs, or conduct a security review.
 - [Whole-database diffs expose the gap between task success and clean success](./findings/2026-11-16-whole-database-diffs-agent-benchmark.md) — Software World Model's producer-authored Phase 0 corpus separates target success from collateral, irreversible, and false-completion verdicts; Scout reviewed the pinned README and report statically but did not run the benchmark, reproduce its 635 scored episodes, or independently validate its tables.
 
 ### 2026-11-15
