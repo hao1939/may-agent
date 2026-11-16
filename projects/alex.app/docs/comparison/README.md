@@ -25,3 +25,6 @@ evidence and historical experiments remain reachable through
 The [standalone improvement trial plan](standalone-improvement-plan.md) describes
 manual experiments alongside Alex's Host work, from reproducible stage execution
 through one trustworthy cycle and later Host-driven execution.
+
+Use the [manual stage runner guide](standalone-stage.md) for executable inputs,
+fixture/live mode, observation and result interpretation.
