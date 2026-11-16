@@ -200,6 +200,9 @@ const SCENARIOS_DIR = resolve(
       ? join(REPO_ROOT, "projects/gym/scenarios")
       : join(LEGACY_APP_ROOT, "gym/scenarios")),
 );
+const CANDIDATE_SNAPSHOT = process.env["GYM_CANDIDATE_SNAPSHOT"]
+  ? resolve(process.env["GYM_CANDIDATE_SNAPSHOT"])
+  : null;
 
 function gymToolDenials(agentDir: string): ToolDenial[] {
   return buildGymToolDenials(agentDir);
@@ -235,6 +238,9 @@ function createMayAgentAdapter(): Adapter {
           gymRoot: opts.gymRoot,
           agentName: opts.agentName,
           ...(opts.labFork ? { labFork: opts.labFork } : {}),
+          ...(opts.labFork && CANDIDATE_SNAPSHOT
+            ? { labDir: CANDIDATE_SNAPSHOT }
+            : {}),
         });
       } else {
         agentsRoot = APP_AGENTS_ROOT;

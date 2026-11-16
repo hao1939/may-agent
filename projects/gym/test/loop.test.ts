@@ -780,6 +780,145 @@ describe("loop evaluation", () => {
       }
     }));
 
+  it("executes the retained candidate snapshot across trials after live mutation and deletion", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(join(candidateDir, "AGENTS.md"), "Retained candidate bytes.\n");
+      const observed: string[] = [];
+      try {
+        const created = await runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 2,
+            agentsRoot,
+          },
+          async (input) => {
+            expect(input.candidateSnapshot).not.toBeNull();
+            observed.push(
+              readFileSync(join(input.candidateSnapshot!, "AGENTS.md"), "utf8"),
+            );
+            if (observed.length === 1) {
+              writeFileSync(join(candidateDir, "AGENTS.md"), "Mutated live bytes.\n");
+              rmSync(candidateDir, { recursive: true, force: true });
+            }
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision-produced", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        );
+        expect(observed).toEqual([
+          "Retained candidate bytes.\n",
+          "Retained candidate bytes.\n",
+        ]);
+        expect(created.manifest.trials).toHaveLength(2);
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("fails closed before a second execution when the retained snapshot is missing", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(join(candidateDir, "AGENTS.md"), "Candidate.\n");
+      let executions = 0;
+      try {
+        await expect(runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 2,
+            agentsRoot,
+          },
+          async (input) => {
+            executions++;
+            rmSync(input.candidateSnapshot!, { recursive: true, force: true });
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision-produced", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        )).rejects.toThrow("Candidate snapshot is missing");
+        expect(executions).toBe(1);
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("fails closed before a second execution when the retained snapshot is corrupt", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(join(candidateDir, "AGENTS.md"), "Candidate.\n");
+      let executions = 0;
+      try {
+        await expect(runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 2,
+            agentsRoot,
+          },
+          async (input) => {
+            executions++;
+            writeFileSync(
+              join(input.candidateSnapshot!, "AGENTS.md"),
+              "Corrupt snapshot.\n",
+            );
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision-produced", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        )).rejects.toThrow("Candidate snapshot fingerprint mismatch");
+        expect(executions).toBe(1);
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
   it("rejects verification when a frozen benchmark input no longer matches", async () =>
     withTempDirAsync(async (root) => {
       const previousState = process.env["GYM_STATE_DIR"];

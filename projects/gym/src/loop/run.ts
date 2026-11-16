@@ -59,6 +59,8 @@ export type ScenarioExecutor = (input: {
   scenariosDir: string;
   agent: string;
   candidate: string;
+  candidateSnapshot: string | null;
+  candidateFingerprint: string | null;
   timeout?: number;
   agentsRoot?: string;
 }) => Promise<ExecutionResult>;
@@ -119,6 +121,9 @@ export const executeScenario: ScenarioExecutor = async (input) => {
         "agents",
       ),
       ...(input.agentsRoot ? { GYM_AGENTS_ROOT: input.agentsRoot } : {}),
+      ...(input.candidateSnapshot
+        ? { GYM_CANDIDATE_SNAPSHOT: input.candidateSnapshot }
+        : {}),
     },
     stdout: "pipe",
     stderr: "pipe",
@@ -164,6 +169,29 @@ function candidateEvidence(
     throw new Error(`Candidate not found: ${candidatePath}`);
   }
   return { fingerprint: fingerprintTree(candidatePath), path: candidatePath };
+}
+
+function retainedCandidateSnapshot(
+  runDir: string,
+  manifest: LoopRunManifest,
+): string | null {
+  if (manifest.candidate === "baseline") return null;
+  const snapshot = manifest.source.candidate_snapshot;
+  const expected = manifest.proof.candidate_fingerprint;
+  if (!snapshot || !expected) {
+    throw new Error("Candidate snapshot proof is missing; refusing live fallback");
+  }
+  const snapshotPath = resolve(runDir, snapshot);
+  if (!existsSync(snapshotPath)) {
+    throw new Error(`Candidate snapshot is missing: ${snapshotPath}`);
+  }
+  const actual = fingerprintTree(snapshotPath);
+  if (actual !== expected) {
+    throw new Error(
+      `Candidate snapshot fingerprint mismatch: expected ${expected}, found ${actual}`,
+    );
+  }
+  return snapshotPath;
 }
 
 function refreshObservedProvenance(manifest: LoopRunManifest): void {
@@ -360,6 +388,10 @@ export async function runLoop(
       process.stderr.write(
         `${scenario} trial ${trial}/${options.trials} (${options.candidate})... `,
       );
+      const candidateSnapshot = retainedCandidateSnapshot(
+        created.runDir,
+        created.manifest,
+      );
       const execution = await executor({
         scenario,
         scenariosDir: join(
@@ -368,6 +400,8 @@ export async function runLoop(
         ),
         agent: options.agent,
         candidate: options.candidate,
+        candidateSnapshot,
+        candidateFingerprint: created.manifest.proof.candidate_fingerprint,
         timeout: options.timeout,
         agentsRoot: options.agentsRoot,
       });
