@@ -1087,8 +1087,11 @@ export class EventBus {
           note: "A required durable route failed; see linked subscriber.failed evidence",
         });
       } else {
-        delivery ??= pairTrackerFallback(event);
-        if (!delivery && (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY]) {
+        if (
+          !delivery &&
+          ((event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY] ||
+            isPassiveLifecycleObservation(event))
+        ) {
           delivery = {
             accepted: true,
             by: "event-interface:record",
@@ -1271,40 +1274,28 @@ function preferredDelivery(
   return preferred;
 }
 
-function pairTrackerFallback(event: AgentEvent): DeliveryResult | undefined {
-  if (!isPairTrackedEvent(event.type)) return undefined;
-  if (!hasPairCorrelationKey(event)) return undefined;
-  return {
-    accepted: true,
-    by: "event-pair-tracker",
-    route: "direct",
-    note: "lifecycle event accepted by pair tracker",
-  };
-}
+const PASSIVE_LIFECYCLE_TYPES = new Set<string>([
+  "session.start",
+  "session.end",
+  "session.idle",
+  "workflow.started",
+  "workflow.completed",
+  "workflow.failed",
+  "workflow.blocked",
+  "workflow.interrupted",
+  "handler.failed",
+  "cli.task.requested",
+  "cli.task.started",
+  "cli.task.completed",
+  "cli.task.failed",
+]);
 
-function isPairTrackedEvent(eventType: string): boolean {
-  return new Set([
-    "session.start",
-    "session.end",
-    "session.idle",
-    "workflow.started",
-    "workflow.completed",
-    "workflow.failed",
-    "workflow.blocked",
-    "workflow.interrupted",
-    "handler.failed",
-    "cli.task.requested",
-    "cli.task.started",
-    "cli.task.completed",
-    "cli.task.failed",
-  ]).has(eventType);
-}
-
-function hasPairCorrelationKey(event: AgentEvent): boolean {
+function isPassiveLifecycleObservation(event: AgentEvent): boolean {
+  if (!PASSIVE_LIFECYCLE_TYPES.has(event.type)) return false;
   const data = eventData(event);
   if (event.type.startsWith("session.")) return hasKey(data.sessionId);
   if (event.type.startsWith("workflow.")) return hasKey(data.workflowRunId);
-  if (event.type.startsWith("handler."))
+  if (event.type === "handler.failed")
     return hasKey(data.handlerRunId) || hasKey(data.workflowRunId) || hasKey(data.handler);
   if (event.type.startsWith("cli.task.")) return hasKey(data.taskId);
   return false;

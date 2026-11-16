@@ -342,18 +342,6 @@ export class AppInboxHost {
     if (!hasHandler) throw new Error(`App ${app.id} has no handler for input kind ${input.kind}`);
   }
 
-  matchingAppIds(owner: string, input: AppInput): string[] {
-    const normalizedOwner = requiredText(owner, "App owner").replace(/^agent:/, "");
-    return [...this.#apps.values()]
-      .filter(
-        (app) =>
-          app.agent.trim().replace(/^agent:/, "") === normalizedOwner &&
-          Check(app.inputSchema, input),
-      )
-      .map((app) => app.id)
-      .sort();
-  }
-
   /** Select responsibility without invoking App code. */
   subscriptionRoutes(event: AppEvent<Record<string, unknown>>): Array<{ appId: string; subscriptionId: string }> {
     return (this.#subscriptionsByEventType.get(event.type) ?? [])
@@ -368,16 +356,6 @@ export class AppInboxHost {
     const input = subscription.toInput(event);
     if (input !== null) assertValidAppInput(app, input);
     return input;
-  }
-
-  isOwnedApp(appId: string, owner: string): boolean {
-    const app = this.#apps.get(appId.trim());
-    const normalizedOwner = owner.trim().replace(/^(?:agent|app):/, "");
-    return Boolean(
-      app &&
-      (app.id.trim().replace(/^app:/, "") === normalizedOwner ||
-        app.agent.trim().replace(/^agent:/, "") === normalizedOwner),
-    );
   }
 
   admit(input: AdmitAppInput): { item: AppInboxItem; created: boolean } {

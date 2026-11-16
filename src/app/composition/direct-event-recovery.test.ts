@@ -166,14 +166,14 @@ test("recovers a report saved before its first App plan, independent of global d
     // admission obligation.
     new DbWriter(root).recordDelivery(event, {
       accepted: true,
-      by: "event-pair-tracker",
+      by: "unrelated-durable-route",
       route: "direct",
-      note: "worker lifecycle pair accepted before parent relay",
+      note: "worker route accepted before parent relay",
     });
     expect(db.prepare(`SELECT delivery_status, accepted_by, app_admission_pending
       FROM events WHERE id = ?`).get(eventId)).toEqual({
       delivery_status: "accepted",
-      accepted_by: "event-pair-tracker",
+      accepted_by: "unrelated-durable-route",
       app_admission_pending: 1,
     });
     closeDb(root);

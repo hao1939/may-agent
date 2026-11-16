@@ -208,7 +208,6 @@ function capEventData(payload: Record<string, unknown>): string {
     "metricId",
     "metric",
     "alertId",
-    "escalationId",
     "durationMs",
     "lane",
     "reason",
@@ -253,7 +252,6 @@ function eventCorrelation(payload: Record<string, unknown>) {
     handler: stringField(payload, "handler"),
     metricId: stringField(payload, "metricId", "metric_id", "metric"),
     alertId: stringField(payload, "alertId", "alert_id"),
-    escalationId: stringField(payload, "escalationId", "escalation_id"),
     status: stringField(payload, "status"),
     durationMs: numberField(payload, "durationMs", "duration_ms"),
   };
@@ -686,10 +684,10 @@ export class DbWriter {
         `INSERT INTO events
           (event_type, source, owner, data, envelope_json, body_ref, body_sha256, body_bytes,
            session_id, workflow_run_id, project_id, task_id, attempt_id, handler,
-           metric_id, alert_id, escalation_id, subject_status, duration_ms,
+           metric_id, alert_id, subject_status, duration_ms,
            timestamp, urgency, ttl_ms, idempotency_key, idempotency_scope,
            idempotency_hash, ingress_source, record_only, app_admission_pending)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
         [
           event.type,
           source,
@@ -707,7 +705,6 @@ export class DbWriter {
           correlation.handler,
           correlation.metricId,
           correlation.alertId,
-          correlation.escalationId,
           correlation.status,
           correlation.durationMs,
           timestamp,

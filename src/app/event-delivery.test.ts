@@ -464,8 +464,8 @@ describe("event delivery metadata", () => {
         .get() as Record<string, unknown>;
       expect(event).toMatchObject({
         delivery_status: "accepted",
-        accepted_by: "event-pair-tracker",
-        delivery_route: "direct",
+        accepted_by: "event-interface:record",
+        delivery_route: "noop",
       });
     } finally {
       closeDb(root);
@@ -645,10 +645,10 @@ describe("event delivery metadata", () => {
       } as any);
       await new Promise((resolve) => setTimeout(resolve, 5));
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
+        data: { handler: "sample", agent: "may", error: "failed", durationMs: 5 },
       } as any);
 
       const db = getDb(root);
@@ -686,24 +686,24 @@ describe("event delivery metadata", () => {
       bus.emit({ type: "test.unhandled", source: "test", owner: "agent:may", data: {}, ttl_ms: 1 } as any);
       await new Promise((resolve) => setTimeout(resolve, 5));
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "first", agent: "may", durationMs: 5 },
+        data: { handler: "first", agent: "may", error: "failed", durationMs: 5 },
       } as any);
 
       const db = getDb(root);
       expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'test.unhandled'").get()).toEqual({
         delivery_status: "pending",
       });
-      expect(db.prepare("SELECT id FROM events WHERE event_type = 'handler.completed'").get()).toBeTruthy();
+      expect(db.prepare("SELECT id FROM events WHERE event_type = 'handler.failed'").get()).toBeTruthy();
 
       await new Promise((resolve) => setTimeout(resolve, 550));
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "second", agent: "may", durationMs: 5 },
+        data: { handler: "second", agent: "may", error: "failed", durationMs: 5 },
       } as any);
       expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'test.unhandled'").get()).toEqual({
         delivery_status: "pending",
@@ -744,10 +744,10 @@ describe("event delivery metadata", () => {
       ).run(eventId, Date.now());
 
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
+        data: { handler: "sample", agent: "may", error: "failed", durationMs: 5 },
       } as any);
 
       expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(eventId)).toEqual({
@@ -796,13 +796,13 @@ describe("event delivery metadata", () => {
         for (const row of rows()) {
           expect(row).toMatchObject(scenario === "failed-consumer"
             ? { delivery_status: "pending", accepted_by: null }
-            : { delivery_status: "accepted", accepted_by: "event-pair-tracker", delivery_route: "direct" });
+            : { delivery_status: "accepted", accepted_by: "event-interface:record", delivery_route: "noop" });
         }
         writer.runHousekeeping(Date.now() + 10);
         for (const row of rows()) {
           expect(row).toMatchObject(scenario === "failed-consumer"
             ? { delivery_status: "unhandled", accepted_by: null }
-            : { delivery_status: "accepted", accepted_by: "event-pair-tracker", delivery_route: "direct" });
+            : { delivery_status: "accepted", accepted_by: "event-interface:record", delivery_route: "noop" });
         }
         const retained = rows();
         closeDb(root);
