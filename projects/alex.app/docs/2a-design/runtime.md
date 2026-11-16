@@ -466,12 +466,12 @@ active-work grace and restart cooldown. Those are process-liveness checks, not
 proof of work completion. App policy judges useful progress, exhausted retries
 and needed intervention through existing observations and routes.
 
-**Source gap:** `app-runtime.ts` and `task-attempt-process.ts` now wire
-conservative parent-side worker timeouts (`2h + 60s` for attempts and `10m` for
-recovery) so a non-cooperative worker cannot hold a capacity slot or stall
-startup indefinitely. Resolving the parent deadline dynamically from each
-execution policy and the explicit ongoing-executor exception remain
-implementation work.
+**Source status:** `app-runtime.ts` and `task-attempt-process.ts` bound
+recovery workers with `DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS` (`10m`) and
+supervise attempt workers through a parent-side IPC heartbeat liveness bound
+(`DEFAULT_TASK_WORKER_LIVENESS_TIMEOUT_MS`, `5m` with `30s` worker heartbeats)
+so an unresponsive or synchronously wedged worker cannot hold a capacity slot
+while preserving ongoing native goal execution.
 
 ## Recovery
 

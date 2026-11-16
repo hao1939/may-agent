@@ -83,12 +83,12 @@ still apply; recovery/escalation does not invent a new assignment or authority.
 | --- | --- | --- |
 | 1 — ingress cleanup | #568 merged | Preserve canonical declared input/control routing. |
 | 2 — event journal | #568 merged | This does not remove child SQLite writers. |
-| 3 — reads and App identity | #569 merged reads/action removal; local attachment fence | App/Project identity remains; publish and integrate the verified fence. |
+| 3 — reads and App identity | #569, #576, #577 merged | Project read-model sync retired; fenced Task inputs and external reads active. |
 | 4 — reconciler modules | Deferred | Optional mechanical extraction after settlement stabilizes. |
-| 5a — SDK/shared execution | #566 merged authoring, helpers and settlement component | No production shared-`run()` settlement callers; Host still wraps execution and opens SQLite in the attempt child. |
-| Cross-cutting — execution supervision | `app-runtime.ts` and `task-attempt-process.ts` wire conservative parent timeouts (`2h + 60s` attempts, `10m` recovery) | Resolve parent bounds per execution policy and explicit ongoing-executor exceptions. |
+| 5a — SDK/shared execution | #566, #578 merged authoring, helpers, native preflight and settlement component | No production shared-`run()` settlement callers; Host still wraps execution and opens SQLite in the attempt child. |
+| Cross-cutting — execution supervision | #577 merged parent heartbeat liveness (`5m`) and recovery timeout (`10m`) | Preserve responsiveness and confirmed exit cleanup across worker lifecycle transitions. |
 | 5b — App/Gym adoption | Local SDK context/import migration passes the 25-workflow paired check | Domain-only development and automatic blocked/resume are not established by compatibility checks. |
-| 6 — Conversation ownership | #570 removed discovery; local retained-return repair | Integrate the repair before retiring the stable execution Task or adding completion Hooks. |
+| 6 — Conversation ownership | #570, #577 merged retained-return repair | Retain compatibility reader until single-Task Conversation ownership and completion Hooks land. |
 
 ## Remaining gaps and implementation order
 
