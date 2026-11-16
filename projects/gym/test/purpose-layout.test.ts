@@ -254,7 +254,7 @@ test("migration preserves all 119 assignments, fixtures, answers and approval re
         ]) {
           const outcomeRevision = outcomeCompletionRevisions[id]?.[file];
           if (outcomeRevision) {
-            expect(current.suite.version).toBe(3);
+            expect(current.suite.version).toBe(4);
             expect(fingerprintTree(join(before, file))).toBe(outcomeRevision[0]);
             expect(fingerprintTree(join(after, file))).toBe(outcomeRevision[1]);
             continue;

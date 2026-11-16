@@ -1,30 +1,26 @@
 import { describe, expect, test } from "bun:test";
 import { cpSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { findOwnedCase, listOwnedCases } from "../../src/cases/catalog";
 import { fingerprintValue, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../../src/loop/store";
-import type { BenchmarkSuite, InlineBenchmarkCase } from "../../src/loop/types";
+import type { InlineBenchmarkCase } from "../../src/loop/types";
 import { buildSemanticJudgeInput, evaluateSemanticJudgeRuns, validateSemanticControlSet, type SemanticCaseResult, type SemanticVerdict } from "../../src/scoring/semantic-judge";
 import { withTempDir } from "../../test/support/temp-dir";
 
-// Proposed replacement only. Production discovery still reads native v3 cases.
-// These tests validate admission, materialization and gates, NOT semantic truth.
+// Native v4 is authoritative; the former draft is retained as review history.
+// These tests validate promotion, admission and gates, NOT model calibration.
 const project = resolve(import.meta.dirname, "../..");
 const owner = import.meta.dirname;
 const draft = JSON.parse(readFileSync(join(owner, "drafts/style-evidence-v4.case.json"), "utf8")) as InlineBenchmarkCase;
-const controls = validateSemanticControlSet(draft.semantic_controls);
+const activeCase = findOwnedCase(project, draft.id)!.inlineCase!;
+const controls = validateSemanticControlSet(activeCase.semantic_controls);
 const { scoreDecision } = require("../intent-and-follow-through/score-decision.cjs");
 const priorFingerprint = "f4f62be05abd957795027f11737eaae055470fb448a0afbb8c860b153aafe7f7";
 const { label: _draftLabel, ...replacement } = draft;
 
 function materialize(root: string) {
-  const active = loadSuite("outcome-completion").suite;
-  const suite: BenchmarkSuite = {
-    ...active, name: "outcome-completion-v4-style-draft-tests", version: 4,
-    scenarios: [draft.id], case_ids: [draft.id], cases: [replacement], core_cases: undefined,
-    core_scenarios: undefined,
-  };
+  const { suite } = loadSuite("outcome-completion");
   const input = join(root, "input"), work = join(root, "work");
   materializeScenarioOrInlineCase({ scenario: draft.id, suite, sourceBenchmarkDir: owner, evaluatorOwner: null, destination: input });
   cpSync(join(input, "environment"), work, { recursive: true });
@@ -32,7 +28,7 @@ function materialize(root: string) {
 }
 function control(id: string) {
   const row = controls.cases.find((item) => item.id === id);
-  if (!row) throw new Error(`Missing proposed control ${id}`);
+  if (!row) throw new Error(`Missing reviewed control ${id}`);
   return row;
 }
 function score(input: string, work: string, value: unknown) {
@@ -40,15 +36,19 @@ function score(input: string, work: string, value: unknown) {
   return scoreDecision(work, input);
 }
 
-describe("inactive style-evidence v4 draft (no models)", () => {
-  test("keeps native v3 ownership, truth approval and all nonmeasurement case metadata", () => {
+describe("style-evidence v4 promotion and controls (no models)", () => {
+  test("promotes exactly the reviewed replacement with native ownership and fingerprint-bound approval", () => {
     const { suite } = loadSuite("outcome-completion"), active = findOwnedCase(project, draft.id)!;
-    expect(suite.version).toBe(3);
+    expect(suite.version).toBe(4);
     expect(active.benchmark).toBe("outcome-completion");
-    expect(fingerprintValue(active.inlineCase)).toBe(priorFingerprint);
-    expect(loadLabels("outcome-completion", suite).catalog!.labels[draft.id]!.rationale).toContain(priorFingerprint);
+    expect(fingerprintValue(active.inlineCase)).toBe("a6b65334f045abac377efe7ef81319e2b794469203921985bee5d85b437ad3a6");
+    const label = loadLabels("outcome-completion", suite).catalog!.labels[draft.id]!;
+    expect(label.status).toBe("approved");
+    expect(label.rationale).toContain(fingerprintValue(active.inlineCase));
+    expect(label.rationale).toContain("message: continue");
     expect(listOwnedCases(project).filter((item) => item.id === draft.id)).toHaveLength(1);
-    expect(active.inlineCase).not.toEqual(replacement);
+    expect(active.inlineCase).toEqual(replacement);
+    expect(active.inlineCase!.label).toBeUndefined();
     const metadata = ({ task: _task, expected: _expected, semantic_criteria: _criteria, semantic_controls: _controls, label: _label, ...rest }: InlineBenchmarkCase) => rest;
     expect(metadata(draft)).toEqual(metadata(active.inlineCase!));
     expect(draft.label).toMatchObject({ status: "draft", approved_by: null, approved_at: null });
@@ -58,9 +58,15 @@ describe("inactive style-evidence v4 draft (no models)", () => {
   });
 
   test("preserves the original stopping facts and two authored controls while making missing evidence explicit", () => {
-    const active = findOwnedCase(project, draft.id)!.inlineCase!;
-    for (const line of active.task.split("\n").filter((line) => line.startsWith("- "))) expect(draft.task).toContain(line);
-    for (const row of validateSemanticControlSet(active.semantic_controls).cases) expect(control(row.id)).toEqual(row);
+    const archive = loadSuite("alex-judgment", undefined, join(project, "archive/pre-purpose-layout")).suite;
+    const old = archive.cases!.find((item) => item.id === draft.id)!;
+    const priorCase = {
+      ...activeCase, task: old.task.trim() + (archive.defaults?.task_suffix ? `\n\n${archive.defaults.task_suffix.trim()}` : ""),
+      expected: old.expected, semantic_criteria: old.semantic_criteria, semantic_controls: old.semantic_controls,
+    };
+    expect(fingerprintValue(priorCase)).toBe(priorFingerprint);
+    for (const line of old.task.split("\n").filter((line) => line.startsWith("- "))) expect(activeCase.task).toContain(line);
+    for (const row of validateSemanticControlSet(old.semantic_controls).cases) expect(control(row.id)).toEqual(row);
     expect(draft.task).toContain("no exact command name, invocation receipt");
     expect(draft.task).toContain("No Task-closure authorization or completed closure is supplied");
     expect(draft.task).toContain("does not itself close a Task");
@@ -85,7 +91,7 @@ describe("inactive style-evidence v4 draft (no models)", () => {
     const { input, work } = materialize(root);
     expect(readdirSync(work)).toEqual([]);
     for (const row of controls.cases.filter((item) => item.expected === "pass")) expect({ id: row.id, passed: score(input, work, row.decision).passed }).toEqual({ id: row.id, passed: true });
-    const packet = buildSemanticJudgeInput(control("stop-when-enough").decision, controls, draft.task);
+    const packet = buildSemanticJudgeInput(control("stop-when-enough").decision, controls, activeCase.task);
     for (const row of packet.cases) expect(Object.keys(row).sort()).toEqual(["decision", "id"]);
   }));
 

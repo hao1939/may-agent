@@ -1,6 +1,6 @@
 # Revised Gym tests — review the exact answers
 
-**Outcome-completion version 3 now has explicit expectation/rubric approval;
+**Outcome-completion version 4 now has explicit expectation/rubric approval;
 the other revised case answers and checks remain draft.**
 
 The [owning benchmark](outcome-completion/README.md#approval-provenance) records

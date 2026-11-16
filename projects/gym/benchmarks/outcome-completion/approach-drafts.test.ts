@@ -57,6 +57,12 @@ export const outcomeCompletionV3RubricRevision = [
   "bf85c8b399272036bc35d75481c7708ff9a618016a662c4e3c7588d6d0688209",
   "27260e70bb87cbc2a3b6b0d64051eb45943d4031d21794bad76bfa3970bf7d61",
 ] as const;
+export const outcomeCompletionV4StyleRevisions = {
+  "task.md": ["02d959a3cf241f9b1be7988ceb7a0d1d96facbbd9bc771bc69364d0edecb9375", "807e8d195a2ef97af99e9ebc02db47780b05dd247347eb4085793ad7066d47e2"],
+  "expected.json": ["2f05f9a1a2bcfba5ea179d2aaf0f4063e4412a79e427e70ecebd0ccf03228b5c", "ed175b1bb3db6d61448c7016b6e9234d25d9dd9f1250e07453b9ff4a392c31c0"],
+  "semantic_criteria.md": ["0f04cd55d5d339c991788c4aa280291d6bf59544e14391913d6a67cf04368934", "77f0412f7a9003fedc730fe22cfefda791746466dce376fd16d05e3ac5bb03da"],
+  "semantic_controls.json": ["b035ac543d0779d57a1a356a5aec0eac48cec643dbd1ab362e6aa44ba2d962ac", "26b57a97740d21342d6764234953572002ccfec711d6f0dbc7db355a0b08221a"],
+} as const;
 export const outcomeCompletionRevisions: typeof outcomeCompletionV2Revisions = {
   ...outcomeCompletionV2Revisions,
   [ids[1]!]: {
@@ -66,6 +72,7 @@ export const outcomeCompletionRevisions: typeof outcomeCompletionV2Revisions = {
       outcomeCompletionV3RubricRevision[1],
     ],
   },
+  "alex-judge-cap-review-loop-at-three-rounds": outcomeCompletionV4StyleRevisions,
 };
 
 const approvalCatalog = JSON.parse(readFileSync(join(import.meta.dirname, "labels.json"), "utf8")) as GroundTruthCatalog;
@@ -92,26 +99,27 @@ function materialize(root: string, c: InlineBenchmarkCase) {
   return { input, work };
 }
 
-describe("outcome-completion v3 cases (no models)", () => {
+describe("outcome-completion v4 cases (no models)", () => {
   test("five owned members, unchanged core selection and explicit fingerprint-bound approvals", () => {
     const { suite } = loadSuite("outcome-completion"), labels = loadLabels("outcome-completion", suite).catalog!;
-    expect(suite.name).toBe("outcome-completion-v3");
-    expect(suite.version).toBe(3);
+    expect(suite.name).toBe("outcome-completion-v4");
+    expect(suite.version).toBe(4);
     expect(suite.scenarios).toHaveLength(5);
     expect(suite.scenarios).toEqual(native.map((c) => c.id));
     expect(suite.core_cases).toEqual(ids.slice(0, 2));
-    expect(approvalCatalog.version).toBe(3);
+    expect(approvalCatalog.version).toBe(4);
     expect(approvalCatalog.benchmark).toBe("outcome-completion");
     expect(Object.keys(approvalCatalog.labels).sort()).toEqual([...suite.scenarios].sort());
     expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_by)).size).toBe(1);
-    expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_at)).size).toBe(2);
+    expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_at)).size).toBe(3);
     for (const id of suite.scenarios) {
       expect(findOwnedCase(project, id)?.benchmark).toBe("outcome-completion");
       const label = labels.labels[id]!;
       expect(label.status).toBe("approved");
       expect(label.approved_by).toMatch(/^session-user:[a-f0-9-]{36}$/);
       expect(Number.isFinite(Date.parse(label.approved_at!))).toBe(true);
-      if (id === ids[1]) expect(Date.parse(label.approved_at!)).toBeGreaterThan(Date.parse("2026-11-16T14:15:39.364Z"));
+      if (id === ids[1]) expect(label.approved_at).toBe("2026-11-16T15:41:21.864Z");
+      else if (id === "alex-judge-cap-review-loop-at-three-rounds") expect(Date.parse(label.approved_at!)).toBeGreaterThan(Date.parse("2026-11-16T15:41:21.864Z"));
       else expect(label.approved_at).toBe("2026-11-16T14:15:39.364Z");
       expect(label.rationale).toContain(fingerprintValue(native.find((c) => c.id === id)));
       expect(label.rationale).toContain("No model-run or agent-change authorization");

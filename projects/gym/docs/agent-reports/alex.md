@@ -1,7 +1,7 @@
 # alex: evaluation plan and evidence
 
-Plan revision 10; owner: alex; fingerprint: `0d59680bbcb37733f1105dfcbd0b853d2e3abd6d0039f043ee1517a87a3541ac`.
-Generated 2026-11-16T16:55:43.332Z; 15 retained runs for this agent.
+Plan revision 11; owner: alex; fingerprint: `0fb3259dcf776556d1910b42b043dbf9eba10e2cbcd8d0e3b1fa58561bc15b30`.
+Generated 2026-11-16T17:57:24.705Z; 15 retained runs for this agent.
 
 North star: correct useful delivery, fewer operator corrections, acceptable total time/cost.
 
@@ -14,12 +14,12 @@ Current evidence matches the benchmark and planned evaluation setup under its re
 
 | Benchmark / goal | Kind | Latest current evidence | Selected baseline |
 | --- | --- | --- | --- |
-| outcome-completion v3 (5 cases): Choose when an assignment is fulfilled and when implementation or review remains. | judgment | [outcome-completion-test-20261116T154647Z-811047b3](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T154647Z-811047b3/manifest.json>): 5 pass / 0 fail / 0 invalid; approved truth | outcome-completion-test-20261116T154647Z-811047b3 |
-| improvement-stage-selection v1 (1 case): Choose a justified prompt, procedure or workflow intervention before expanding machinery. | judgment | [improvement-stage-selection-test-20261116T130602Z-66da86f7](</app/projects/gym/.state/benchmarks/improvement-stage-selection-test-20261116T130602Z-66da86f7/manifest.json>): 1 pass / 0 fail / 0 invalid; draft/missing truth; diagnostic only | unmeasured |
+| outcome-completion v4 (5 cases): Choose when an assignment is fulfilled and when implementation or review remains. | judgment | unmeasured | unmeasured |
+| improvement-stage-selection v1 (1 case): Choose a justified prompt, procedure or workflow intervention before expanding machinery. | judgment | unmeasured | unmeasured |
 
 ## Current improvement
 
-The approved outcome-completion v3 judgment baseline is complete (5 pass, 0 fail, 0 invalid), but it does not establish reliable delivery of a useful authorized improvement. The next gap is observing Alex carry real work through its actual acceptance or a supported disposition, with human correction, time and cost evidence. No new improvement incident is selected.
+Outcome-completion v4's reviewed style-evidence boundaries are active but unrun. The complete v3 judgment runs remain historical evidence, not reliable delivery of a useful authorized improvement. The next gap is observing Alex carry real work through its actual acceptance or a supported disposition, with human correction, time and cost evidence. No new improvement incident is selected.
 
 Hypothesis: Using existing task ownership, one bounded problem and explicit acceptance/stop limits can let Alex carry a useful improvement through its supported delivery boundary with acceptable human steering, elapsed time and model cost. One observed delivery tests that task only; improvement claims require comparable prior evidence.
 
@@ -46,7 +46,7 @@ Stop when: The next selected authorized task reaches its actual acceptance or a 
 - Evidence: [projects/gym/docs/measurement-identity-repair-20261116.md](</app/projects/gym/docs/measurement-identity-repair-20261116.md>)
 - Evidence: [projects/gym/docs/alex-real-delivery-observation-20261116.md](</app/projects/gym/docs/alex-real-delivery-observation-20261116.md>)
 
-**Next action:** At the existing system-wide review due November 17, 2026 09:00 UTC, read this current plan and live Task; its saved revision-6 calibration gate is historical. Follow projects/gym/docs/alex-real-delivery-observation-20261116.md: use fresh existing evidence to select at most one worthwhile authorized problem, define its acceptance and stopping limit, and retain Task/attempt identity, exact output/check/review receipts, human corrections, operator audit effort and scoped elapsed time/model cost through delivery or a supported disposition. If no worthwhile changed evidence exists, record no-change and rearm the same standing Task. Preserve the selected v3 judgment baseline and its recorded-harness requirement; do not manufacture a Task or reopen the retired reporting incident.
+**Next action:** At the existing system-wide review due November 17, 2026 09:00 UTC, read this current plan and live Task; its saved revision-6 calibration gate is historical. Follow projects/gym/docs/alex-real-delivery-observation-20261116.md: use fresh existing evidence to select at most one worthwhile authorized problem, define its acceptance and stopping limit, and retain Task/attempt identity, exact output/check/review receipts, human corrections, operator audit effort and scoped elapsed time/model cost through delivery or a supported disposition. If no worthwhile changed evidence exists, record no-change and rearm the same standing Task. Preserve the historical v3 judgment runs and their recorded-harness requirements; the active v4 measurement is unrun and model execution remains uncommissioned; do not manufacture a Task or reopen the retired reporting incident.
 
 ## Coverage gaps
 
@@ -60,7 +60,7 @@ Stop when: The next selected authorized task reaches its actual acceptance or a 
 - The manual system-wide pass demonstrated bounded selection and same-Task rearming to the unchanged November 17, 2026 09:00 UTC deadline. Automatic due-day wake, cross-day allowance retention and repeated unattended reliability remain unobserved.
 - Zero operator correction messages in one delivery does not measure operator audit effort or demonstrate a general improvement. Existing model-cost estimates are scoped historical estimates; billing, operator cost and cost improvement remain unknown.
 - The active handoff guard rejects the known standing policy and guides finite incident handoff, but automatic enforcement across direct calls, separate Tasks and the standing Task lifetime remains unverified.
-- Measurement identity bookkeeping is repaired: the retained v3 run is selected as an approved complete judgment baseline without rewriting history or rerunning models. Its frozen execution harness differs from today's source (harness_matches_current=false). A future matched candidate comparison must use that recorded harness, or separately commission a fresh matched baseline when an execution-harness change warrants it; the default verifier remains strict. Operational transfer and repeated-run stability are still unmeasured.
+- Measurement identity bookkeeping was repaired: the retained v3 run was selected as an approved complete judgment baseline without rewriting history or rerunning models. Activating the reviewed v4 style-case change cleared that now-historical selection; v4 has no commissioned run or baseline. Its frozen execution harness differs from today's source (harness_matches_current=false). A matched comparison of v3 results must use that recorded harness; current v4 comparisons need a separately commissioned fresh matched baseline; the default verifier remains strict. Operational transfer and repeated-run stability are still unmeasured.
 
 ## Evaluation allowance
 
@@ -85,10 +85,10 @@ Historical counts below are retained machine verdicts, not current benchmark sco
 | [alex-judgment-verify-20261115T015413Z-40c2d1fb](</app/projects/gym/.state/benchmarks/alex-judgment-verify-20261115T015413Z-40c2d1fb/manifest.json>) / 2026-11-15T01:54:13.133Z | alex-judgment v1 / alex-tuned | unclassified | 3 / 0 / 0; approved | 31669 / 63836 / 6 | historical benchmark/version; fresh baseline required |
 | [alex-judgment-test-20261115T022522Z-406af311](</app/projects/gym/.state/benchmarks/alex-judgment-test-20261115T022522Z-406af311/manifest.json>) / 2026-11-15T02:25:22.340Z | alex-judgment v1 / baseline | unclassified | 2 / 1 / 0; approved | 35066 / 44233 / 4 | historical benchmark/version; fresh baseline required |
 | [alex-judgment-verify-20261115T022919Z-d3bb3d9b](</app/projects/gym/.state/benchmarks/alex-judgment-verify-20261115T022919Z-d3bb3d9b/manifest.json>) / 2026-11-15T02:29:19.345Z | alex-judgment v1 / alex-tuned | unclassified | 3 / 0 / 0; approved | 29165 / 32428 / 3 | historical benchmark/version; fresh baseline required |
-| [improvement-stage-selection-test-20261116T130602Z-66da86f7](</app/projects/gym/.state/benchmarks/improvement-stage-selection-test-20261116T130602Z-66da86f7/manifest.json>) / 2026-11-16T13:06:02.385Z | improvement-stage-selection v1 / baseline | judgment | 1 / 0 / 0; draft | 8511 / 11093 / 1 | complete measurement; use recorded harness for comparison |
+| [improvement-stage-selection-test-20261116T130602Z-66da86f7](</app/projects/gym/.state/benchmarks/improvement-stage-selection-test-20261116T130602Z-66da86f7/manifest.json>) / 2026-11-16T13:06:02.385Z | improvement-stage-selection v1 / baseline | judgment | 1 / 0 / 0; draft | 8511 / 11093 / 1 | benchmark definition changed or commissioning fingerprint inconsistent; fresh baseline required |
 | [outcome-completion-test-20261116T150121Z-080f4da5](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T150121Z-080f4da5/manifest.json>) / 2026-11-16T15:01:21.858Z | outcome-completion v2 / baseline | judgment | 2 / 0 / 1; approved | unknown / unknown / unknown | historical benchmark/version; fresh baseline required |
-| [outcome-completion-test-20261116T154647Z-811047b3](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T154647Z-811047b3/manifest.json>) / 2026-11-16T15:46:47.530Z | outcome-completion v3 / baseline | judgment | 5 / 0 / 0; approved | 49260 / 46872 / 5 | complete measurement; use recorded harness for comparison |
-| [outcome-completion-test-20261116T160023Z-62955f54](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T160023Z-62955f54/manifest.json>) / 2026-11-16T16:00:23.376Z | outcome-completion v3 / baseline | judgment | 5 / 0 / 0; approved | 53172 / 66013 / 7 | historical run without a commissioning plan; current coverage unmeasured |
+| [outcome-completion-test-20261116T154647Z-811047b3](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T154647Z-811047b3/manifest.json>) / 2026-11-16T15:46:47.530Z | outcome-completion v3 / baseline | judgment | 5 / 0 / 0; approved | 49260 / 46872 / 5 | historical benchmark/version; fresh baseline required |
+| [outcome-completion-test-20261116T160023Z-62955f54](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T160023Z-62955f54/manifest.json>) / 2026-11-16T16:00:23.376Z | outcome-completion v3 / baseline | judgment | 5 / 0 / 0; approved | 53172 / 66013 / 7 | historical benchmark/version; fresh baseline required |
 
 ## Execution identity and failures
 
@@ -121,10 +121,10 @@ Historical counts below are retained machine verdicts, not current benchmark sco
 - alex-judgment-test-20261115T022522Z-406af311: model gemini-4-argon; framework 4fa9ff1818; candidate fingerprint unknown; inputs cd3c77700a00d86bfdd2c5e81781b895477ac4e06cd0617a61a85570eeb5eef1; prompts 0cc589e831f3, 4a5bc1dd56c7, f08a99ceb4e9; plan revision unknown; comparison series unestablished; gate unavailable.
   - [alex-judge-stage-progression-prompt-before-workflow trial 1: fail](</app/projects/gym/.state/benchmarks/alex-judgment-test-20261115T022522Z-406af311/cases/alex-judge-stage-progression-prompt-before-workflow/trial-1/result.json>)
 - alex-judgment-verify-20261115T022919Z-d3bb3d9b: model gemini-4-argon; framework 4fa9ff1818; candidate fingerprint c9278e75b4fcc26864317a40e25f6583132610283a0923f1f3c0c868bec1f890; inputs cd3c77700a00d86bfdd2c5e81781b895477ac4e06cd0617a61a85570eeb5eef1; prompts 6a13680c9115, cfecf03a8ca1, ddc2a65c59e6; plan revision unknown; comparison series unestablished; gate unavailable.
-- improvement-stage-selection-test-20261116T130602Z-66da86f7: model gpt-5.6-sol; framework d4ee090960; candidate fingerprint unknown; inputs 24e0b081c973306f84e1e259bca14f4f5397fc41bb90913d25914d2a89efa7cb; prompts 773ae11a2d5c; plan revision 1; comparison series f7995cae0235a316720c4f4f281acdb04e22da5cbce412b87be3cdf7ece19dd9; gate unavailable.
+- improvement-stage-selection-test-20261116T130602Z-66da86f7: model gpt-5.6-sol; framework d4ee090960; candidate fingerprint unknown; inputs 24e0b081c973306f84e1e259bca14f4f5397fc41bb90913d25914d2a89efa7cb; prompts 773ae11a2d5c; plan revision 1; comparison series unestablished; gate unavailable.
 - outcome-completion-test-20261116T150121Z-080f4da5: model gpt-5.6-sol; framework 49668e6cd3; candidate fingerprint unknown; inputs e5baac31ab0cec293ea9175b3835f5ed470743b0885faeadc3944360b87eb573; prompts 45dd6d14bcee, 4f1b3148ec64, 7ea9346ba119; plan revision unknown; comparison series unestablished; gate unavailable.
   - [alex-judge-close-verified-bounded-outcome trial 1: invalid](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T150121Z-080f4da5/cases/alex-judge-close-verified-bounded-outcome/trial-1/result.json>): semantic evaluation is invalid because a judge or calibration failed
-- outcome-completion-test-20261116T154647Z-811047b3: model gpt-5.6-sol; framework 29bf16eb71; candidate fingerprint unknown; inputs af34e7d205661dacf65e42c4fdf6bf1b19a71cf117d23147de3a039d694724a9; prompts 07ef231c1ebf, 6655dcf3ef6d, d32dd6234e73, d3e6e8e77660, ef20d39a307d; plan revision 7; comparison series 71a8ce9510dd20d10c26741ce1073afafff9ecc64b4e1b58d8d5fcf038372bda; gate unavailable.
+- outcome-completion-test-20261116T154647Z-811047b3: model gpt-5.6-sol; framework 29bf16eb71; candidate fingerprint unknown; inputs af34e7d205661dacf65e42c4fdf6bf1b19a71cf117d23147de3a039d694724a9; prompts 07ef231c1ebf, 6655dcf3ef6d, d32dd6234e73, d3e6e8e77660, ef20d39a307d; plan revision 7; comparison series unestablished; gate unavailable.
 - outcome-completion-test-20261116T160023Z-62955f54: model gpt-5.6-sol; framework 22cf5fdb13; candidate fingerprint unknown; inputs ad2df8ad4f16b260b4e447b54089844e2ba26f6463bb058d8b6339442b254e8c; prompts 0dbcd3724fed, 19a905ce9dc8, 598320fef541, 65c01f363cf6, eb4562bb34a1; plan revision unknown; comparison series unestablished; gate unavailable.
 
 ## Owner decisions and delivery

@@ -1,7 +1,7 @@
 # Proposed judgment checks — understand the outcome and use what we have
 
-**Proposal and diagnostic history. The four registered approach cases, plus the
-unchanged style case in outcome-completion (now v3), have explicit truth approval.
+**Proposal and diagnostic history. The four registered approach cases and the
+reviewed style case in outcome-completion (now v4) have explicit truth approval.
 No model runs were authorized by that approval.**
 
 A [two-question diagnostic pilot](../docs/approach-pilot-20261116.md) now records
@@ -13,7 +13,10 @@ candidate. Neither pilot is an approved score or evidence of actual execution.
 The four cases are registered with **approved expectations** in
 [outcome-completion](outcome-completion/README.md): version 2 revised two existing
 cases and added two contrasts. Version 3 changes only B's contextual-evidence
-rubric under [explicit approval](outcome-completion/CALIBRATION-REVIEW.md). Its native `cases.json` is the authoritative
+rubric under [explicit approval](outcome-completion/CALIBRATION-REVIEW.md).
+Version 4 activates only the separately reviewed
+[style evidence/authority boundaries](outcome-completion/STYLE-EVIDENCE-REVIEW.md).
+Its native `cases.json` is the authoritative
 input/rubric/control source; the [exact review draft](outcome-completion/APPROACH-CASES-REVIEW.md)
 is retained as history. Owner-local checks run through normal validation and use
 SDK admission, including the rule that waiting results cannot contain `response`.
@@ -24,7 +27,8 @@ exact native-case fingerprints. The [first v2 attempt](../docs/outcome-v2-attemp
 stopped at calibration and remains incomplete. The separately commissioned
 [frozen-Alex v3 baseline](../docs/outcome-v3-frozen496-20261116.md) passed all five
 cases with calibrated judges; it includes two recovered format errors and is not
-operational-delivery evidence. Truth approval itself did not authorize those calls.
+operational-delivery evidence. Those v3 results remain historical, not v4 scores;
+v4 has no commissioned model run. Truth approval itself did not authorize those calls.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
@@ -197,8 +201,8 @@ unnecessary work. Confirm the exact supplied catalog, authority, acceptable
 alternatives and examples before implementing any new or revised definitions.
 Existing approved answers do not automatically approve a changed rubric; retain
 historical definitions and start a fresh baseline after accepted changes.
-Current expectations, including the version-3 B-only clarification, have explicit
-truth approval; any further measurement change needs renewed review. A fresh
+Current expectations, including the v3 B-only clarification and v4 style-case
+boundaries, have explicit truth approval; any further measurement change needs renewed review. A fresh
 baseline still requires execution permission. No models ran and no agent instructions
 changed for this implementation. Earlier diagnostic runs retain their separate
 inputs, limitations and reports; they are not a baseline for the changed definitions.

@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "benchmark": "outcome-completion",
   "labels": {
     "alex-judge-helper-recommendation-not-completion": {
@@ -12,9 +12,9 @@
     "alex-judge-cap-review-loop-at-three-rounds": {
       "status": "approved",
       "source": "synthetic",
-      "rationale": "Explicit user approval of the version-2 input, expectations, rubric and controls in this conversation (message: approve). Approved measurement fingerprint: f4f62be05abd957795027f11737eaae055470fb448a0afbb8c860b153aafe7f7. No model-run or agent-change authorization is implied.",
+      "rationale": "User authorized continuation after review of the exact style-evidence-v4 replacement, rubric and ten control labels (message: continue). Version 4 changes only this style case; the other four cases and their approval records are unchanged. The reviewed proposal and v3 definition remain in Git at b7a216de6f. Approved measurement fingerprint: a6b65334f045abac377efe7ef81319e2b794469203921985bee5d85b437ad3a6. No model-run or agent-change authorization is implied.",
       "approved_by": "session-user:01a1e283-1450-7757-932e-b81864601339",
-      "approved_at": "2026-11-16T14:15:39.364Z"
+      "approved_at": "2026-11-16T17:36:08.149Z"
     },
     "alex-judge-close-verified-bounded-outcome": {
       "status": "approved",

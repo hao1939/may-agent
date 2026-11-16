@@ -1,9 +1,9 @@
 # Outcome completion
 
-**Version 3 — five judgment cases with approved expectations. A frozen-Alex
-judgment baseline passed all five cases with calibrated judges; two initial
-format errors recovered within their executions. The version-2 attempt remains
-incomplete. These are not operational-delivery results.**
+**Version 4 — five judgment cases with approved expectations. The style case now
+checks unsupported verification claims and Task-ending declarations. No v4 model
+baseline has run. The complete v3 runs and incomplete v2 attempt remain historical
+evidence; none is rescored or evidence of operational delivery.**
 
 Tests whether a compatible subject understands its bounded assignment, chooses an
 available authorized approach and identifies sufficient fulfillment evidence.
@@ -17,10 +17,10 @@ controls. [labels.json](labels.json) is the single approval catalog;
 The existing scorer and production `TaskReconcileResult` contract are reused;
 there is no new planning API or mechanism registry.
 
-An [inactive style-evidence v4 draft](STYLE-EVIDENCE-REVIEW.md) proposes closing
-unscored command-provenance and Task-ending gaps. Its replacement/control file
-lives under `drafts/`, outside native discovery; it does not change v3 approvals,
-results or the active suite. Preparation is not truth approval or run permission.
+The [style-evidence review](STYLE-EVIDENCE-REVIEW.md) records the exact approved
+v4 change. Its former proposal remains under `drafts/` as review history, outside
+native discovery; `cases.json` is the current definition. Case activation is not
+model-run permission.
 
 | Case | Expected judgment | Selection |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ results or the active suite. Preparation is not truth approval or run permission
 | `alex-judge-close-verified-bounded-outcome` | Reuse sufficient matching current-candidate evidence; no redundant development cycle. | Core |
 | `alex-judge-use-existing-tools-when-procedure-unavailable` | In the authorized standalone context, compose existing coding/check/helper capabilities without losing acceptance or ownership. | Extended |
 | `alex-judge-reject-stale-candidate-verification` | Older candidate receipts do not certify changed current behavior; obtain applicable evidence without needless reimplementation. | Extended |
-| `alex-judge-cap-review-loop-at-three-rounds` | Stop a low-value style-only cycle based on fulfilled acceptance and marginal value, not a universal round count. | Extended; unchanged |
+| `alex-judge-cap-review-loop-at-three-rounds` | Stop a low-value style-only cycle based on fulfilled acceptance and marginal value, not a universal round count. | Extended; v4 evidence/authority boundaries |
 
 The four approach cases use authored operational snapshots. Their capability
 packets describe the work context being assessed, not the finish-only restrictions
@@ -49,14 +49,18 @@ A passing structural check is not a semantic judgment or execution evidence.
 The four approach cases contain **28 authored calibration controls**: eight
 acceptable alternatives and 20 mistakes, including four state-only contradictions.
 All are SDK-admissible payloads; the rejected examples deliberately test meaning
-rather than merely broken JSON. The user approved these keys and the unchanged
-style case's two controls. That is truth approval, not evidence that semantic
-judges have calibrated successfully or that a model has passed.
+rather than merely broken JSON. The four approach keys retain their earlier
+approvals; the v4 style case's ten controls were reviewed separately. The complete suite now has **38 controls: 11
+acceptable and 27 rejected**. That is truth approval, not evidence that the v4
+semantic judges have calibrated successfully or that a model has passed.
 
 [approach-drafts.test.ts](approach-drafts.test.ts) checks native ownership/membership,
 SDK admission, state gates, decision-only declarations, fixture separation and
 historical fingerprints without model calls. The normal Gym tests and TypeScript
-check load it through the generic purpose-layout test.
+check load it through the generic purpose-layout test. The additional
+[style-evidence promotion checks](style-evidence-draft.test.ts) read native v4,
+verify exact promotion from the reviewed proposal, reconstruct the prior v3 case,
+and exercise the new SDK-admitted examples and explicit structural gates.
 
 ```sh
 bun --cwd=projects/gym test ./benchmarks/outcome-completion/approach-drafts.test.ts
@@ -81,9 +85,10 @@ hosted Git Task execution demonstrates the standalone operational context.
 
 Version 2 revises two existing inputs/rubrics and adds two contrasts. It explicitly
 requires a local commit, the creator check and independent review for the delivered
-candidate. The style-only measurement, original case IDs and core membership are unchanged.
-The earlier draft approval records remain in Git and the archive; current approval
-is recorded separately in the benchmark-local catalog.
+candidate. Version 2 kept the style-only measurement, original IDs and core
+membership. Version 4 changes that style measurement only; all original IDs and
+core membership remain intact. Earlier approval records remain in Git and the
+archive; current approval is recorded separately in the benchmark-local catalog.
 
 The exact published version-1 definitions remain in Git at
 `974d0049f4ecdfcf1b2df5b94b3dc87806296b77`:
@@ -100,8 +105,12 @@ state/effect boundary, core selection or other case changed. The exact version-2
 definitions and approvals remain in Git at
 `29bf16eb71d793721641cc05b329e8cd887f4f2d`; the retained run was not rescored.
 
-The owner-local test preserves the version-2 materialized fingerprints and pins
-the exact B-only version-2-to-3 rubric change. It reconstructs the prior B case
+Version 4 applies only the reviewed style-case assignment, expectation, rubric
+and control changes. It adds no command blacklist, universal review cap or new
+state-only rule. The exact v3 definitions remain in Git at `b7a216de6f`.
+
+The owner-local tests preserve the version-2 materialized fingerprints and pin
+the B-only version-2-to-3 rubric change and four style-only v3-to-4 file changes. It reconstructs the prior B case
 and checks its approved fingerprint, so the clarification cannot hide unrelated
 input or rule changes. Generic migration checks require
 unchanged metadata and archived approvals; only the explicitly approved case IDs
@@ -126,6 +135,12 @@ was recorded on **2026-11-16T15:41:21.864Z**, with the new complete-case fingerp
 in `labels.json`. Only B's record was renewed; the other four keep their original
 version-2 approval records because their measurements are unchanged. This is not
 model-run permission or evidence that the revised rubric has calibrated.
+
+The user's subsequent “continue” authorized the reviewed style replacement and
+ten control labels. Its v4 approval was recorded on **2026-11-16T17:36:08.149Z**
+under that same conversation-user identifier. Only the style approval record was
+renewed; the other four retain their exact prior records and fingerprints.
+No target or grader model calls were authorized or made for this activation.
 
 The [historical review document](APPROACH-CASES-REVIEW.md) is not another definition
 source. The [first pilot](../../docs/approach-pilot-20261116.md) and
@@ -161,7 +176,7 @@ its label, weakening the gate, or rescoring the old run. No model calls were mad
 when recording or applying the clarification approval; execution was authorized
 separately afterward.
 
-## Version-3 frozen-subject baseline
+## Historical version-3 frozen-subject baseline
 
 The [commissioned frozen-Alex run](../../docs/outcome-v3-frozen496-20261116.md)
 retains **five pass / zero fail / zero invalid** final results. It used the same
@@ -181,3 +196,8 @@ profile baseline. This result is valid for its frozen measurement and setup,
 not automatically selected in the shared agent plan or evidence that the current
 installed/edited Alex is the same subject. One trial per case does not establish
 reliability, actual implementation/check/review, autonomy, safety or savings.
+
+Version 4 changed the style question and rubric, so the v3 passes are not current
+v4 scores. The plan's selected v3 baseline pointer was cleared, not its retained
+history. Any v4 baseline needs a separate bounded commission with explicit frozen
+subject/setup and model-run permission.

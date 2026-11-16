@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, cpSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { scoreScenario } from "../benchmarks/bounded-task-completion/score-task";
 import { benchmarkDir, loadLabels, loadSuite, machineVerdict, materializeScenarioOrInlineCase } from "../src/loop/store";
 import { validateSemanticControlSet } from "../src/scoring/semantic-judge";

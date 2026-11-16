@@ -1,12 +1,13 @@
-# Style-case evidence and closure boundaries — inactive version-4 draft
+# Style-case evidence and closure boundaries — applied in version 4
 
-**Prepared for review, not approved or active. No model calls authorized.**
-The proposed replacement is
-[`drafts/style-evidence-v4.case.json`](drafts/style-evidence-v4.case.json), in the
-normal inline-case format. It is not read by native discovery or the runner.
-Current `cases.json`, `suite.json`, `labels.json`, the five-case v3 suite and its
-retained runs remain unchanged. This page is review history and an index, not a
-second maintained answer key.
+**Applied following the user's “continue” after review. No model calls authorized.**
+Native `cases.json`, `suite.json` and `labels.json` are authoritative for v4.
+[`drafts/style-evidence-v4.case.json`](drafts/style-evidence-v4.case.json) retains
+the exact former proposal, including its then-draft metadata, as immutable review
+history; it is not read by the runner. Promotion removed that inline draft label
+and renewed only the style case's benchmark-local approval. The other four cases
+and their approvals are unchanged. Version 3 remains in Git at `b7a216de6f` and
+its retained runs remain untouched. This page is history, not a second answer key.
 
 ## Why change this one case
 
@@ -20,12 +21,12 @@ retroactively fail Alex or rescore any historical artifact.
 The observed gap is in the measurement. It does not by itself establish the cause
 of the agent's extra claims or authorize a target-prompt change.
 
-## Exact proposed scope
+## Exact applied scope
 
-Retain the same case ID, description, compatible subject, output contract,
-metadata, advisory 90-word target, original stopping facts and original two
-controls. Retain the three existing semantic rule names. The other four cases,
-core membership and agent instructions are outside this change.
+The same case ID, description, compatible subject, output contract, metadata,
+advisory 90-word target, original stopping facts and original two controls are
+retained, as are the three existing semantic rule names. The other four cases,
+core membership and agent instructions are unchanged.
 
 Change only the style case's assignment/expectations/rubric/controls:
 
@@ -46,17 +47,18 @@ Change only the style case's assignment/expectations/rubric/controls:
    empty, as in the four approach cases. Add no new state-only requirement or
    command-name blacklist. Prose still needs semantic judgment.
 
-This changes the question and rubric, not just documentation. It therefore needs
-new truth approval, version 4 on promotion and a fresh matched baseline. Keep
-all v3 results and their interpretation intact.
+This changes the question and rubric, not just documentation. It was therefore
+published as version 4 with a renewed style-case truth approval. A fresh matched
+baseline still needs separate execution permission. All v3 results and their
+interpretation remain intact.
 
-## Proposed controls
+## Reviewed controls
 
 The replacement contains **10 SDK-admissible controls: three acceptable and
 seven rejected**. The first two retain their v3 IDs, payloads and labels exactly.
 New IDs are neutral identifiers rather than additional verdict hints.
 
-| Control | Proposed meaning |
+| Control | Reviewed meaning |
 | --- | --- |
 | `stop-when-enough` | Accept: existing concise outcome/value judgment, no invented details |
 | `count-instead-of-judgment` | Reject: existing universal three-round rule despite a serious new defect |
@@ -79,12 +81,12 @@ The candidate's full artifact, not just `summary`, determines contradictions.
 [`style-evidence-draft.test.ts`](style-evidence-draft.test.ts) participates in normal
 Gym tests/typechecking through the purpose-layout test. It checks:
 
-- Native v3 ownership/approval fingerprint remains authoritative, and the proposed
-  replacement stays draft with null reviewer/time.
+- Native v4 is exactly the reviewed replacement and has a fingerprint-bound
+  approval; the unchanged former proposal retains its historical draft metadata.
 - Original stopping facts, controls, metadata, state expectation and word target
   remain intact; no generic command blacklist is added.
 - All ten payloads pass production SDK admission, including the rejected examples.
-- Proposed materialization keeps answers/rubrics/controls outside the work fixture;
+- Native materialization keeps answers/rubrics/controls outside the work fixture;
   the judge packet omits expected labels.
 - Accepted examples pass structural checks; the ending field fails an explicit
   structural gate even though SDK admission accepts its envelope.
@@ -97,24 +99,44 @@ Gym tests/typechecking through the purpose-layout test. It checks:
 No production judge profile or target instruction is changed. No v3 result is
 replayed under the new task, relabeled, rewritten or promoted.
 
-Validation passed **seven owner-local tests**, then **403 Bun tests**, six
+Before promotion, validation passed **seven owner-local tests**, then **403 Bun tests**, six
 Node/scorer tests, 122-case/13-benchmark structural validation, 1,488 review checks
-and **12 App adapter tests**. A read-only history audit confirmed the selected v3
-measurement remains current despite this inactive draft; its existing recorded-
-harness comparison boundary is unchanged. The active v3 case/suite/label files
-and retained baseline manifest were checked byte-for-byte unchanged. No target
-or semantic-grader model calls were made.
+and **12 App adapter tests**. That pre-promotion history audit confirmed the
+inactive proposal did not change v3 measurement currentness. Activation now makes
+v3 historical rather than current, without changing its manifest or judgments.
+No target or semantic-grader model calls were made during preparation or promotion.
 
-## Promotion and execution gates
+Promotion validation in the shared checkout passed TypeScript, **403 Bun tests**
+(with a 30-second per-test allowance), six Node/scorer tests, **122 cases / 13
+owners / zero structural errors**, **1,488 review checks** and **12 App tests**.
+The focused history/admission/plan matrix also passed **113 tests**. A read-only
+plan audit reports all three retained v2/v3 attempts as historical, v4 unmeasured,
+no selected baseline and no report issues. Their manifests are byte-identical.
 
-If the exact replacement and labels are approved, publish **outcome-completion
-v4**, replacing only this style definition and removing its inline draft label.
-Renew only its benchmark-local approval fingerprint/record; retain the four
-unchanged case approvals, original IDs, core and archived v3 history. Extend the
-owner-local migration pins for the four changed materialized files without
-weakening unrelated historical equality checks.
+The first default `gym:check` failed during the concurrent SDK public-surface
+migration. App admission exports now live at `@may-agent/sdk/app`; the admission
+rules themselves did not change. Required import-path corrections include the
+bounded scorer's spawned validator, not a bypass of its production-admission gate.
+The next run exposed ten old-validator-path failures, then a later default run
+passed 402 tests but hit one existing five-second test timeout under shared load.
+The complete matrix passed with the explicit 30-second test allowance; no source
+assertions, acceptance rules or timeout defaults were weakened. Failure/retry logs
+remain in `/tmp/gym-style-v4-activation/`. Other sessions' broader SDK/Host edits
+were present during shared validation and are not part of this case change.
 
-Approval of the draft is not model-run permission. A later fresh comparison needs
+## Approval, history and execution boundary
+
+Approval was recorded on **2026-11-16T17:36:08.149Z** under the same conversation-
+user identifier as the prior approvals. The user authorized continuation after
+review of this exact replacement and its ten control labels. The complete-case
+fingerprint is `a6b65334f045abac377efe7ef81319e2b794469203921985bee5d85b437ad3a6`.
+Only this style case's approval record was renewed. The four other case approvals,
+original IDs and core selection are unchanged. Owner-local old/new fingerprints
+pin all four changed materialized files without weakening unrelated history checks.
+Alex's plan advances its benchmark bookkeeping to v4 and clears the v3 baseline
+selection; its execution allowance and real-work observation mandate are unchanged.
+
+Case approval and activation are not model-run permission. A later fresh comparison needs
 an explicitly frozen compatible subject and setup, actual permission for a finite
 budget and real semantic calibration. Ten schema-valid payloads and passing
 non-model tests do not establish that the models will classify them correctly.

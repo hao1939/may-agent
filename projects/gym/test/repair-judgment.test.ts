@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { cpSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { benchmarkDir, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../src/loop/store";

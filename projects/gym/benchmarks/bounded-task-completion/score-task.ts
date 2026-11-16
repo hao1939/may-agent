@@ -112,7 +112,7 @@ export function scoreScenario(workDir: string, scenarioDir: string) {
   if (result) {
     const admitted = spawnSync("bun", ["-e", `
       import {readFileSync} from 'node:fs';
-      import {admitTaskReconcileResult} from '@may-agent/sdk';
+      import {admitTaskReconcileResult} from '@may-agent/sdk/app';
       process.stdout.write(JSON.stringify(admitTaskReconcileResult(JSON.parse(readFileSync(process.argv[1],'utf8')))));
     `, resultPath], { cwd: process.cwd(), encoding: "utf8", timeout: 10_000 });
     if (admitted.error || admitted.status !== 0) add("production-validator-available", false, admitted.error?.message || admitted.stderr, "harness");
