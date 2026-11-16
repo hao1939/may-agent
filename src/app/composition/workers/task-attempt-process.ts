@@ -25,7 +25,6 @@ import { prepareDaemonAgents } from "../../daemon-agents.js";
 import { listConfiguredAgentNames, type ModelRegistry } from "@may-agent/sdk/runtime";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
-export const DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS = 2 * 60_000;
 const WORKER_RELAY_BATCH_SIZE = 1;
 const WORKER_RELAY_TURN_DELAY_MS = 5;
 const WORKER_RELAY_BACKLOG_LIMIT = 256;
@@ -216,7 +215,7 @@ export function createTaskRecoveryProcessExecutor(input: {
           "--task-recovery-once",
           ...(source ? ["--task-worker-source", JSON.stringify(source)] : []),
         ]),
-      input.timeoutMs ?? DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS,
+      input.timeoutMs,
     );
   };
 }
