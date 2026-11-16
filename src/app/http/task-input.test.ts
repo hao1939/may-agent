@@ -48,6 +48,7 @@ describe("Task-scoped human feedback", () => {
         target: { appId: "example" },
         data: {
           targetTaskId: "support/version",
+          targetTaskGeneration: 3,
           input: {
             kind: "message",
             data: {

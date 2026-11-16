@@ -13,6 +13,7 @@ import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { appendSessionMessage, ensureSessionDir } from "../../src/lib/persistence.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
+import { taskInputIdempotencyKey } from "../../src/app/http/task-input.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { createEventInterface } from "../../src/app/core/events/interface.js";
 
@@ -176,6 +177,38 @@ describe("HTTP human Task reads and board", () => {
       .run(sessionId, agent, "Earlier conversation", "idle", "chat", "web-ui", Date.now());
     return sessionId;
   }
+
+  test.each([false, true])("Task input replay after upgrade and generation change retains the accepted receipt (legacy=%s)", async (legacy) => {
+    task("work/feedback", 1);
+    const bus = new EventBus();
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const unsubscribe = bus.subscribeDurableRoute(() => ({ accepted: true, by: "fixture-input", route: "direct" }));
+    const events = createEventInterface({ bus, db: getDb(root), hasApp: () => true,
+      validateAppInput: () => {}, hasAgent: () => true, hasSession: () => true });
+    const message = "Preserve the accepted operation";
+    const idempotencyKey = "accepted-before-refresh";
+    const data = {
+      targetTaskId: "work/feedback",
+      ...(legacy ? {} : { targetTaskGeneration: 1 }),
+      input: { kind: "message", data: { message, context: { intent: "task-feedback", taskId: "work/feedback", expectedGeneration: 1 } } },
+      source: { kind: "human", id: `web-task:${idempotencyKey}` }, channel: "web-ui",
+    };
+    const receipt = events.publish({ type: "app.input.requested", target: { appId: "alpha" }, data,
+      idempotencyKey: taskInputIdempotencyKey("alpha", "work/feedback", idempotencyKey) }, { source: "control-socket" });
+    const send = (text = message) => fetch(base + "/api/task/input", { method: "POST",
+      headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(5000),
+      body: JSON.stringify({ appId: "alpha", taskId: "work/feedback", expectedGeneration: 1, message: text, idempotencyKey }) });
+    try {
+      // The current Task is generation 2; only the retained exact receipt can accept this retry.
+      const response = await send();
+      expect(response.status).toBe(202);
+      expect(await response.json()).toMatchObject({ accepted: true, eventId: receipt.eventId, generation: 1, replayed: true });
+      expect((await send("Different feedback")).status).toBe(409);
+      expect(published).toHaveLength(0);
+    } finally { unsubscribe(); }
+  });
 
   async function notificationBarrier(page: Page) {
     await page.waitForFunction("ws?.readyState === WebSocket.OPEN");

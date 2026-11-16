@@ -445,17 +445,19 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const { handleApps, handleConversationRead, handleHumanTaskRead } =
     createTaskReadHandlers({ daemonRead, json });
   const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
-  const confirmTaskInput = (command: TaskInputCommand) =>
-    confirmAcceptedAppInput(
-      command.event.target.appId,
-      command.event.idempotencyKey,
-      {
-        input: command.event.data.input,
-        targetTaskId: command.event.data.targetTaskId,
-        channel: command.event.data.channel,
-      },
-      command.event.data.source,
+  const confirmTaskInput = (command: TaskInputCommand) => {
+    const data = {
+      input: command.event.data.input,
+      targetTaskId: command.event.data.targetTaskId,
+      channel: command.event.data.channel,
+    };
+    const confirm = (data: Record<string, unknown>) => confirmAcceptedAppInput(
+      command.event.target.appId, command.event.idempotencyKey, data, command.event.data.source,
     );
+    // The old envelope still includes the exact generation in domain context.
+    // Only confirm an accepted receipt; never publish new unfenced input.
+    return confirm({ ...data, targetTaskGeneration: command.event.data.targetTaskGeneration }) ?? confirm(data);
+  };
   const handleTaskInput = createTaskInputHandler({
     daemonRead,
     json,

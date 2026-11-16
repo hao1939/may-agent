@@ -142,7 +142,11 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
     validate: (input, options) => {
       const appId = requiredTarget(input, "appId");
       optionalTextField(input.data, "targetTaskId", "app.input.requested data.targetTaskId");
-      readEventTaskTarget(input);
+      const target = readEventTaskTarget(input);
+      if (input.data.targetTaskGeneration !== undefined &&
+        (!target || !Number.isSafeInteger(input.data.targetTaskGeneration) || Number(input.data.targetTaskGeneration) < 1)) {
+        throw new Error("app.input.requested data.targetTaskGeneration requires an exact Task and a positive safe integer");
+      }
       const appInput = record(input.data.input, "app.input.requested data.input") as unknown as AppInput;
       if (!options.hasApp(appId)) throw new Error(`App ${appId} is not loaded`);
       options.validateAppInput(appId, appInput);

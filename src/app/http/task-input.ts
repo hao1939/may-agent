@@ -5,6 +5,7 @@ export type TaskInputCommand = {
     target: { appId: string; taskId?: string };
     data: {
       targetTaskId: string;
+      targetTaskGeneration: number;
       input: { kind: string; data: { message: string; context: { intent: string; taskId: string; expectedGeneration: unknown } } };
       source: { kind: "human"; id: string };
       channel: string;
@@ -74,6 +75,7 @@ export function createTaskInputHandler(options: {
         target: { appId },
         data: {
           targetTaskId: taskId,
+          targetTaskGeneration: Number(body.expectedGeneration),
           input: {
             kind,
             data: {

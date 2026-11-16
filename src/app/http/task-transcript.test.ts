@@ -279,6 +279,11 @@ describe("Task transcript read", () => {
               type: "userMessage",
               content: [{ type: "text", text: "Achieve May Task sample/review/one generation 1: PRIVATE_GOAL" }],
             },
+            {
+              id: "scoped-goal",
+              type: "userMessage",
+              content: [{ type: "text", text: "Reconcile assigned input for May Task sample/review/one generation 1: PRIVATE_SCOPED_GOAL" }],
+            },
             { id: "dev", type: "message", role: "developer", content: "PRIVATE_DEVELOPER" },
             { id: "sys", type: "message", role: "system", text: "PRIVATE_SYSTEM" },
             { id: "reason", type: "reasoning", text: "PRIVATE_REASONING" },

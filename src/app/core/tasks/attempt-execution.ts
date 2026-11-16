@@ -4,6 +4,7 @@ import {
   type TaskAttempt,
   type TaskExecutor,
   type TaskExecutorName,
+  type TaskReconcileResult,
 } from "@may-agent/sdk/app";
 import { getDb } from "../../../lib/db/connection.js";
 import type { TaskBinding } from "../../../lib/persistence.js";
@@ -188,6 +189,40 @@ type RuntimeTaskAttempt = {
   close(): void;
 };
 
+/** Use the real final-change path, rolled back, so adapters share admission rules. */
+function preflightTaskResult(
+  input: TaskAttemptInput,
+  result: TaskReconcileResult,
+  acceptedLiveEventIds: number[],
+): { reviewAt?: number } {
+  const { opts, descriptor, claim } = input;
+  const config = appTaskConfig(descriptor);
+  if (result.inputKeys !== undefined) readTaskChangeInputKeys(config, claim, result.inputKeys);
+  if (result.state !== "converged" && result.state !== "waiting") return {};
+  let resolved: { reviewAt?: number } = {};
+  preflightTaskChanges({
+    opts,
+    descriptor,
+    claim,
+    changes: {
+      requests: result.requests,
+      conditions: result.state === "waiting" ? result.conditions : undefined,
+      actions: result.actions,
+      facts: result.facts,
+      inputKeys: result.inputKeys,
+      communication: result.state === "converged"
+        ? taskResultCommunication(config, claim, result, acceptedLiveEventIds) : result.communication,
+    },
+    acceptedLiveEventIds,
+    settle: () => {
+      if (result.state === "converged")
+        assertCommunicationRequestsSettled(config, claim, result.inputKeys, acceptedLiveEventIds);
+      resolved = validateTaskFinalSettlement(config, claim, { ...result, acceptedLiveEventIds });
+    },
+  });
+  return resolved;
+}
+
 /** Build the one fenced Task interface shared by every executor adapter. */
 function runtimeTaskAttempt(
   input: TaskAttemptInput,
@@ -341,6 +376,20 @@ function runtimeTaskAttempt(
         : {}),
     },
     resultSchema: structuredClone(appTaskAgentResultSchema) as unknown as Record<string, unknown>,
+    validateResult(result) {
+      if (closed) return "Task attempt is closed";
+      try {
+        const normalized = normalizeTaskHandlerResult(result, { type: "done", summary: "", runId: null }, {
+          validateAction: descriptor.app.tasks?.validateAction,
+          validateCondition: descriptor.app.tasks?.validateCondition,
+        });
+        if (normalized.resultRejected) return normalized.summary;
+        preflightTaskResult(input, result, trustedEventIds());
+        return null;
+      } catch (error) {
+        return error instanceof Error ? error.message : String(error);
+      }
+    },
     async apply(changes) {
       if (closed) throw new Error("Task attempt is closed");
       return applyTaskChanges({ opts, descriptor, claim, changes, acceptedLiveEventIds: trustedEventIds() });
@@ -548,34 +597,12 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
     dependencies: appDependencyCatalog(configuredRegistryEntries(opts)),
     validateResult(result) {
       try {
-        const config = appTaskConfig(descriptor);
-        if (result.inputKeys !== undefined) readTaskChangeInputKeys(config, claim, result.inputKeys);
-        if (result.state !== "converged" && result.state !== "waiting") return null;
         const acceptedLiveEventIds = execution.acceptedLiveEventIds();
-        // Replay the complete final batch: communication is part of its receipt identity.
-        preflightTaskChanges({
-          opts,
-          descriptor,
-          claim,
-          changes: {
-            requests: result.requests,
-            conditions: result.state === "waiting" ? result.conditions : undefined,
-            actions: result.actions,
-            facts: result.facts,
-            inputKeys: result.inputKeys,
-            communication:
-              result.state === "converged"
-                ? taskResultCommunication(config, claim, result, acceptedLiveEventIds) : result.communication,
-          },
-          acceptedLiveEventIds,
-          settle: () => {
-            if (result.state === "converged")
-              assertCommunicationRequestsSettled(config, claim, result.inputKeys, acceptedLiveEventIds);
-            const resolved = validateTaskFinalSettlement(config, claim, { ...result, acceptedLiveEventIds });
-            preflightAcceptedLiveEventIds = acceptedLiveEventIds;
-            preflightReviewAt = resolved.reviewAt;
-          },
-        });
+        const resolved = preflightTaskResult(input, result, acceptedLiveEventIds);
+        if (result.state === "converged" || result.state === "waiting") {
+          preflightAcceptedLiveEventIds = acceptedLiveEventIds;
+          preflightReviewAt = resolved.reviewAt;
+        }
         return null;
       } catch (error) {
         return error instanceof Error ? error.message : String(error);
