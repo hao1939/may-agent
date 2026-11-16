@@ -1,5 +1,9 @@
 # Core benchmark — draft expectation review
 
+**Start with [the plain-language review proposal](REVIEW.md).** It explains each
+situation, the answer we expect, what would be wrong, and what you can approve or
+change. This page keeps the case IDs, commands and implementation details.
+
 This is a small, reviewable core, not a replacement for the existing incident
 and regression collection. It has **12 judgment cases in six pairs** and
 **four behavior cases**. All 16 core labels are **draft**. Selecting a case for

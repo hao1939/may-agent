@@ -13,8 +13,9 @@ The role decision suites are judgment tests, not behavior coverage.
 
 ## Start with the small core selection
 
-See [`CORE.md`](CORE.md) for six draft expectation pairs (12 judgment cases),
-four executable behavior cases, their observable evidence and remaining gaps.
+Start with [`REVIEW.md`](REVIEW.md) to review the proposed situations and expected
+answers in plain language. [`CORE.md`](CORE.md) has the six draft expectation
+pairs (12 judgment cases), four executable behavior cases, commands and details.
 `core_scenarios` in each participating suite defines its small core; other cases
 remain extended regressions. Use `gym test --benchmark <suite> --core` to select
 it. Selection is not human approval; all current core labels remain draft.
