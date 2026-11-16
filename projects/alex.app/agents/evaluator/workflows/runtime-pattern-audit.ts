@@ -1,13 +1,17 @@
-import { resolve } from "node:path";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import { createHash } from "node:crypto";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   auditWorkflows,
+  formatWorkflowAuditMarkdown,
   type WorkflowAuditReport,
 } from "../../../../../scripts/audit-workflows.js";
 
 export const name = "runtime-pattern-audit";
 export const description =
-  "Deterministically collect and compare latest vs. preceding runtime window workflow and contract evidence without a model call. Input {latestWindowMs?, compareWindowMs?, now?, rootDir?, dbPath?}.";
+  "Deterministically collect and compare latest vs. preceding runtime window workflow and contract evidence without a model call. Input {latestWindowMs?, compareWindowMs?, now?, rootDir?, dbPath?, persistSnapshot?}.";
 
 export type RuntimePatternAuditInput = {
   latestWindowMs?: number;
@@ -15,6 +19,7 @@ export type RuntimePatternAuditInput = {
   now?: number;
   rootDir?: string;
   dbPath?: string;
+  persistSnapshot?: boolean;
 };
 
 export type WindowDelta = {
@@ -41,6 +46,7 @@ export type RuntimePatternAuditPacket = {
   precedingTotals: WorkflowAuditReport["totals"];
   latestSignals: WorkflowAuditReport["signals"];
   regressions: WindowDelta[];
+  snapshotPaths?: { jsonPath: string; markdownPath: string };
 };
 
 const DEFAULT_WINDOW_MS = 3 * 60 * 60 * 1000;
@@ -118,6 +124,17 @@ export function buildRuntimePatternAuditPacket(
       a.workflow.localeCompare(b.workflow),
   );
 
+  let snapshotPaths: { jsonPath: string; markdownPath: string } | undefined;
+  if (input.persistSnapshot === true) {
+    const outDir = join(rootDir, ".state", "workflow-audits");
+    mkdirSync(outDir, { recursive: true });
+    const jsonPath = join(outDir, "latest.json");
+    const markdownPath = join(outDir, "latest.md");
+    writeFileSync(jsonPath, `${JSON.stringify(latest, null, 2)}\n`, "utf8");
+    writeFileSync(markdownPath, formatWorkflowAuditMarkdown(latest), "utf8");
+    snapshotPaths = { jsonPath, markdownPath };
+  }
+
   return {
     generatedAt: now,
     latestWindow: latest.window,
@@ -127,17 +144,19 @@ export function buildRuntimePatternAuditPacket(
     precedingTotals: preceding.totals,
     latestSignals: latest.signals,
     regressions: regressions.slice(0, 10),
+    ...(snapshotPaths ? { snapshotPaths } : {}),
   };
 }
 
 export async function execute(
-  ctx: WorkflowContext<RuntimePatternAuditInput>,
+  ctx: AppWorkflowContext<RuntimePatternAuditInput>,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
   const rootDir = ctx.workspace?.projectRoot || process.cwd();
   const packet = buildRuntimePatternAuditPacket({
     ...ctx.input,
     rootDir: ctx.input?.rootDir ?? rootDir,
+    persistSnapshot: ctx.input?.persistSnapshot ?? true,
   });
   ctx.signal.throwIfAborted();
 
@@ -146,5 +165,57 @@ export async function execute(
       ? `Runtime pattern audit: 0 signals across ${packet.latestTotals.workflows} workflows (${packet.latestTotals.finishedRuns} runs in latest window)`
       : `Runtime pattern audit: ${packet.latestSignals.length} signal(s), ${packet.regressions.length} workflow delta(s) across ${packet.latestTotals.workflows} workflows`;
 
-  return ctx.done(summary, packet as unknown as Record<string, unknown>);
+  const attentionSignals = packet.latestSignals.filter((s) => s.severity === "attention");
+  const requests =
+    attentionSignals.length > 0
+      ? [
+          {
+            localKey: `workflow-audit:${createHash("sha256")
+              .update(
+                JSON.stringify(
+                  attentionSignals.map((s) => ({
+                    appId: s.appId,
+                    workflow: s.workflow,
+                    code: s.code,
+                    sampleRunIds: s.sampleRunIds ?? [],
+                  })),
+                ),
+              )
+              .digest("hex")
+              .slice(0, 16)}`,
+            target: { appId: "alex" },
+            input: {
+              kind: "message",
+              data: {
+                message: `Workflow audit detected ${attentionSignals.length} attention signal(s): ${attentionSignals
+                  .map((s) => s.summary)
+                  .join("; ")}. Inspect the pinned workflow runs and repair or disposition the root cause.`,
+                context: {
+                  workflowAudit: {
+                    generatedAt: packet.generatedAt,
+                    signals: attentionSignals,
+                    regressions: packet.regressions,
+                  },
+                },
+              },
+            },
+          },
+        ]
+      : [];
+
+  return ctx.done(summary, {
+    state: "converged",
+    summary,
+    facts: [
+      `workflows:${packet.latestTotals.workflows}`,
+      `contractErrors:${packet.latestTotals.contractErrors}`,
+      `finishedRuns:${packet.latestTotals.finishedRuns}`,
+      `signals:${packet.latestSignals.length}`,
+      `regressions:${packet.regressions.length}`,
+    ],
+    requests,
+    result: packet,
+    ...packet,
+  });
 }
+

@@ -438,3 +438,29 @@ test("daily-work-learning schedule routes to alex/learn-from-daily-work", () => 
   });
 });
 
+test("workflow-audit-hourly schedule routes to evaluator/runtime-pattern-audit", () => {
+  const schedule = app.schedules?.find((entry) => entry.id === "workflow-audit-hourly");
+  expect(schedule).toMatchObject({
+    intervalMs: 3600000,
+    catchUp: "latest",
+    input: {
+      kind: "workflow-audit",
+      data: {
+        latestWindowMs: 86400000,
+        compareWindowMs: 86400000,
+        persistSnapshot: true,
+      },
+    },
+  });
+  const intent = taskForInput({
+    id: "wf-audit-1",
+    input: (schedule as any).input,
+  } as never).intent;
+  expect(intent).toMatchObject({
+    id: "runtime/workflow-audit",
+    agent: "evaluator",
+    workflow: "runtime-pattern-audit",
+    priority: "P2",
+  });
+});
+

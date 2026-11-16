@@ -97,11 +97,27 @@ test("runtime-pattern-audit compares latest and preceding windows deterministica
         now,
         latestWindowMs: windowMs,
         compareWindowMs: windowMs,
+        persistSnapshot: true,
       },
     });
     const res = await execute(ctx);
     expect(res.status).toBe("done");
     expect(res.summary).toContain("1 signal(s), 1 workflow delta(s)");
+    expect(res.output).toMatchObject({
+      state: "converged",
+      requests: [
+        {
+          localKey: expect.stringMatching(/^workflow-audit:[0-9a-f]{16}$/),
+          target: { appId: "alex" },
+          input: {
+            kind: "message",
+            data: {
+              message: expect.stringContaining("Workflow audit detected 1 attention signal(s)"),
+            },
+          },
+        },
+      ],
+    });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

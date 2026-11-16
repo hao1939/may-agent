@@ -33,6 +33,7 @@ const standingResearchAcceptance = [
   "Return a current-first Bob recommendation or a supported no-change, negative, or visible deferral outcome; retain source limits, linked evidence, owner and next action without applying a candidate.",
 ];
 export const RUNTIME_PATTERN_AUDIT_TASK_ID = "runtime/pattern-audit";
+export const WORKFLOW_AUDIT_TASK_ID = "runtime/workflow-audit";
 export const runtimePatternAuditOutcome =
   "Periodically audit recurring cross-Task runtime failures and wasted effort, and return bounded evidence for Alex to judge and repair.";
 export const runtimePatternAuditAcceptance = [
@@ -116,6 +117,14 @@ export const inputSchema = Type.Union([
   Type.Object({
     kind: Type.Literal("automatic-review"),
     data: details,
+  }, { additionalProperties: false }),
+  Type.Object({
+    kind: Type.Literal("workflow-audit"),
+    data: Type.Object({
+      latestWindowMs: Type.Optional(Type.Integer({ minimum: 60000 })),
+      compareWindowMs: Type.Optional(Type.Integer({ minimum: 60000 })),
+      persistSnapshot: Type.Optional(Type.Boolean()),
+    }, { additionalProperties: false }),
   }, { additionalProperties: false }),
 ]);
 
@@ -438,6 +447,21 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       priority: "P2" as const,
     }};
   }
+  if (admitted.input.kind === "workflow-audit") {
+    return { kind: "desired" as const, intent: {
+      id: WORKFLOW_AUDIT_TASK_ID,
+      parentId: "root",
+      agent: "evaluator",
+      workflow: "runtime-pattern-audit",
+      outcome: "Continuously audit all registered App workflows for static contract integrity, paired tests, reachability, and rolling runtime execution health.",
+      acceptance: [
+        "Execute deterministically with zero LLM calls and persist the latest audit snapshot.",
+        "Emit a deduplicated Alex request only when an attention-level workflow contract or runtime error-rate signal is detected.",
+      ],
+      input: data,
+      priority: "P2" as const,
+    }};
+  }
   if (admitted.input.kind === "review-metric") {
     const metricId = String(data.metricId);
     const reviewer = data.reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator";
@@ -640,6 +664,19 @@ export default defineApp({
             recordLimit: 3,
             candidateLimit: 1,
           } },
+        },
+      },
+    },
+    {
+      id: "workflow-audit-hourly",
+      intervalMs: 60 * 60 * 1000,
+      catchUp: "latest" as const,
+      input: {
+        kind: "workflow-audit" as const,
+        data: {
+          latestWindowMs: 24 * 60 * 60 * 1000,
+          compareWindowMs: 24 * 60 * 60 * 1000,
+          persistSnapshot: true,
         },
       },
     },

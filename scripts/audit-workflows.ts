@@ -165,6 +165,7 @@ function collectAppFiles(dir: string): string[] {
 const KNOWN_SCHEDULE_WORKFLOW_MAP: Record<string, Record<string, number>> = {
   alex: {
     "task-outcome-selector": 5 * 60 * 1000,
+    "runtime-pattern-audit": 60 * 60 * 1000,
     "learn-from-daily-work": 24 * 60 * 60 * 1000,
   },
   "scout-knowledge-lib": {
