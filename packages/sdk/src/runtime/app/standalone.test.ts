@@ -2032,6 +2032,9 @@ export default function createCustomRead() {
     description: "Custom restricted reader",
     parameters: { type: "object", properties: { path: { type: "string" }, customFlag: { type: "boolean" } } },
     async execute(_id, params) {
+      if (params.customFlag === false) {
+        throw new Error("Custom reader denied access to " + params.path);
+      }
       return { content: [{ type: "text", text: "custom-reader:" + params.path }] };
     },
   };
@@ -2058,7 +2061,13 @@ export default function createCustomRead() {
         join(customReaderSkillsDir, "SKILL.md"),
         "---\nname: custom-skill\ndescription: Mutated\n---\nMutated body\n",
       );
-      const pinnedRes = await readTool.execute("c2", { path: join(customReaderSkillsDir, "SKILL.md") });
+      await expect(
+        readTool.execute("c-denied", { path: join(customReaderSkillsDir, "SKILL.md"), customFlag: false }),
+      ).rejects.toThrow("Custom reader denied access");
+      const pinnedRes = await readTool.execute("c2", {
+        path: join(customReaderSkillsDir, "SKILL.md"),
+        customFlag: true,
+      });
       expect(pinnedRes.content.map((c: any) => c.text).join("")).toContain("Pinned skill body");
     } finally {
       customPrep.cleanup();

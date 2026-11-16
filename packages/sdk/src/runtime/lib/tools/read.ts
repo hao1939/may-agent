@@ -92,6 +92,12 @@ function lookupPinnedFile(pinnedFiles: ReadonlyMap<string, string> | undefined, 
   return undefined;
 }
 
+const BUILTIN_READ_PIN_FACTORY = Symbol("may.builtinReadPinFactory");
+
+type PinnedReadCapableTool = AgentTool<TSchema> & {
+  [BUILTIN_READ_PIN_FACTORY]?: (pinnedFiles: ReadonlyMap<string, string>) => AgentTool<TSchema>;
+};
+
 export function createReadTool(cwd: string, options?: ReadToolOptions): AgentTool<TSchema> {
   const baseOps = options?.operations ?? defaultReadOperations;
   const pinnedFiles = options?.pinnedFiles;
@@ -109,7 +115,7 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
       }
     : baseOps;
 
-  return {
+  const tool: PinnedReadCapableTool = {
     name: "read",
     label: "read",
     description: [
@@ -184,6 +190,11 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
       });
     },
   };
+  Object.defineProperty(tool, BUILTIN_READ_PIN_FACTORY, {
+    value: (nextPinned: ReadonlyMap<string, string>) => createReadTool(cwd, { ...options, pinnedFiles: nextPinned }),
+    enumerable: false,
+  });
+  return tool;
 }
 
 export function withPinnedReadFiles(
@@ -192,17 +203,26 @@ export function withPinnedReadFiles(
   pinnedFiles: ReadonlyMap<string, string>,
 ): AgentTool {
   if (pinnedFiles.size === 0) return tool;
+  const factory = (tool as PinnedReadCapableTool)[BUILTIN_READ_PIN_FACTORY];
+  if (factory) return factory(pinnedFiles);
   const pinnedReadTool = createReadTool(cwd, { pinnedFiles });
   return {
     ...tool,
-    execute: (toolCallId, params, signal, onUpdate) => {
-      if (params && typeof params === "object" && typeof (params as { path?: unknown }).path === "string") {
-        const absolutePath = resolveReadPath((params as { path: string }).path, cwd);
-        if (lookupPinnedFile(pinnedFiles, absolutePath) !== undefined) {
-          return pinnedReadTool.execute(toolCallId, params, signal, onUpdate);
-        }
+    execute: async (toolCallId, params, signal, onUpdate) => {
+      const customResult = await tool.execute(toolCallId, params, signal, onUpdate);
+      if (
+        (customResult as { isError?: boolean }).isError ||
+        !params ||
+        typeof params !== "object" ||
+        typeof (params as { path?: unknown }).path !== "string"
+      ) {
+        return customResult;
       }
-      return tool.execute(toolCallId, params, signal, onUpdate);
+      const absolutePath = resolveReadPath((params as { path: string }).path, cwd);
+      if (lookupPinnedFile(pinnedFiles, absolutePath) !== undefined) {
+        return pinnedReadTool.execute(toolCallId, params, signal, onUpdate);
+      }
+      return customResult;
     },
   };
 }
