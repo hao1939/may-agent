@@ -300,6 +300,101 @@ describe("direct agent tool policy", () => {
     }
   });
 
+  test("cleans acquired provider resources when later tool preparation fails", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-partial-cleanup-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db", "tasks"],
+    }));
+    let cleaned = 0;
+    try {
+      await expect(prepareDirectAgentExecution({
+        agentName: "example", task: "test", projectRoot: root, workRoot: root,
+        agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        capabilityProviders: {
+          query_db: () => ({
+            tools: [{ name: "query_db", description: "fixture", parameters: { type: "object", properties: {} } as any,
+              execute: async () => ({ content: [{ type: "text", text: "ok" }] }) }],
+            cleanup: () => { cleaned += 1; },
+          }),
+          tasks: () => { throw new Error("later provider failed"); },
+        },
+      })).rejects.toThrow("later provider failed");
+      expect(cleaned).toBe(1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test.each(["callback", "metadata"] as const)("cleans provider resources after %s failure", async (failure) => {
+    const root = await mkdtemp(join(tmpdir(), `may-direct-${failure}-cleanup-`));
+    const agentDir = join(root, "agents", "example");
+    const sessionId = `${failure}-session`;
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db"],
+    }));
+    if (failure === "metadata") {
+      await mkdir(join(root, "output", "sessions", sessionId, "meta.json"), { recursive: true });
+    }
+    let cleaned = 0;
+    try {
+      await expect(runDirectAgent({
+        agentName: "example", task: "test", projectRoot: root, workRoot: root, sessionId,
+        agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        capabilityProviders: {
+          query_db: () => ({
+            tools: [{ name: "query_db", description: "fixture", parameters: { type: "object", properties: {} } as any,
+              execute: async () => ({ content: [{ type: "text", text: "ok" }] }) }],
+            cleanup: () => { cleaned += 1; },
+          }),
+        },
+        ...(failure === "callback" ? { onSessionStarted: () => { throw new Error("session callback failed"); } } : {}),
+      })).rejects.toThrow(failure === "callback" ? "session callback failed" : /directory|EISDIR/i);
+      expect(cleaned).toBe(1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("preserves the original failure as evidence when cleanup is unconfirmed", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-unconfirmed-cleanup-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db"],
+    }));
+    try {
+      let caught: unknown;
+      try {
+        await runDirectAgent({
+          agentName: "example", task: "test", projectRoot: root, workRoot: root,
+          agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+          models: { test: { id: "test-model" } as any },
+          capabilityProviders: {
+            query_db: () => ({
+              tools: [{ name: "query_db", description: "fixture", parameters: { type: "object", properties: {} } as any,
+                execute: async () => ({ content: [{ type: "text", text: "ok" }] }) }],
+              cleanupAsync: async () => false,
+            }),
+          },
+          onSessionStarted: () => { throw new Error("original callback failure"); },
+        });
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(Error);
+      expect((caught as Error).name).toBe("WorkflowUnconfirmedCleanupError");
+      expect(((caught as any).causeError as Error).message).toBe("original callback failure");
+      expect((caught as any).unconfirmed).toEqual([expect.stringContaining("agent:example")]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("prepares the same prompt, model, tools, skills, guards, and finish policy as a hosted turn", async () => {
     const root = await mkdtemp(join(tmpdir(), "may-direct-parity-"));
     const agentDir = join(root, "agents", "example");

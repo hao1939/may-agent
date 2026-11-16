@@ -204,6 +204,66 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(persistedReport.cleanup).toEqual({ confirmed: true });
   });
 
+  test("invokes prompt helpers through the shared engine when agents is explicitly bound", async () => {
+    const env = setupDirectLayout();
+    const turns = new Map<string, number>();
+    const invoked: string[] = [];
+    const result = await runDirectWorkflow({
+      target: "owner",
+      input: "Delegate one bounded review",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      capabilityProviders: {
+        agents: () => { throw new Error("manager-bound agents backend must not be used"); },
+      },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        invoked.push(opts.agentName);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          const turn = (turns.get(opts.agentName) ?? 0) + 1;
+          turns.set(opts.agentName, turn);
+          const content = opts.agentName === "owner" && turn === 1
+            ? [{ type: "toolCall" as const, id: "tc_agents", name: "agents", arguments: {
+                action: "call", agent: "reviewer", task: "Review through the common engine",
+              } }]
+            : [{ type: "toolCall" as const, id: `tc_finish_${opts.agentName}_${turn}`, name: "finish", arguments: {
+                status: "done", summary: opts.agentName === "reviewer" ? "helper complete" : "owner complete",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } finally {
+          prep.cleanup();
+        }
+      },
+    });
+
+    expect(result.ok).toBeTrue();
+    expect(result.result).toMatchObject({ type: "done", summary: "owner complete" });
+    expect(invoked).toEqual(["owner", "reviewer"]);
+    expect(result.childSessions.map((session) => session.agent)).toEqual(["reviewer", "owner"]);
+  });
+
   test("surfaces unconfirmed descendant cleanup as an explicit error while retaining workspace and report evidence", async () => {
     const env = setupDirectLayout();
     writeFileSync(join(env.workRoot, "candidate.txt"), "important evidence");
