@@ -173,12 +173,16 @@ runs in YOLO mode with folder trust and its process sandbox disabled. Gemini
 also resolves `gemini4`, `gemini-4`, and `pro` to `GEMINI_PRO_MODEL` (default
 `gemini-4-argon`); the configured model endpoint must expose that model ID.
 Their normal working root is `/app`. Preserve the image entrypoint when supplying a
-custom supervisor configuration: it prepares these settings and aligns the
-`mayagent` uid/gid with the mounted installation. Ownership is detected from
-`PROJECTS_ROOT` (falling back to `PROJECT_ROOT`); mixed-owner installations can
-set `MAY_RUNTIME_UID`, `MAY_RUNTIME_GID`, or `MAY_RUNTIME_OWNERSHIP_PATH`
-explicitly. Startup changes only bounded top-level runtime paths, not the whole
-installation recursively.
+custom supervisor configuration: it prepares the native CLI settings and links
+durable histories. The container runs as root throughout: services, interactive
+terminals, and Docker exec share one identity and the same image-level HOME/XDG
+environment. HOME is `/root`, matching native OpenSSH lookup; durable histories
+and SSH state remain under `STATE_DIR`. Startup does not remap UID/GID or
+recursively change mounted ownership. Only the SSH directory/config metadata is
+normalized for OpenSSH's ownership checks. The runtime-user and mount-owner identity configuration knobs are
+removed. See the
+[container identity guide](container/README.md#runtime-identity-and-docker-exec)
+for attachment commands, compatibility, and writable-mount risks.
 
 The installation may commit `shared/file-write-policy.json`:
 
