@@ -11,8 +11,7 @@ import type { TSchema } from "typebox";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { AgentCallOptions, AppRead, CallOptions, TaskDetail, WorkflowContext } from "@may-agent/sdk/app";
-import { createTestAppRead } from "@may-agent/sdk/testing";
+import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
 import {
   WorkflowUnconfirmedCleanupError,
   createWorkflowAllowance,
@@ -429,7 +428,7 @@ export type WorkflowExecutionEnvironment<TInput = unknown> = {
   read?: Partial<AppRead>;
   events?: Partial<WorkflowContext["events"]>;
   metrics?: Partial<WorkflowContext["metrics"]>;
-  task?: TaskDetail;
+  /** Host/App adapters may pass an already-admitted orchestration context; standalone never creates one. */
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
   reviseTask?: WorkflowContext["reviseTask"];
   closeTask?: WorkflowContext["closeTask"];
@@ -1082,70 +1081,38 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const childSessions: DirectWorkflowRunResult["childSessions"] = [];
   const env = options.context;
-  const checkReconciliationIds = (
-    rec: WorkflowContext<TInput>["reconciliation"] | undefined,
-    label: string,
-  ) => {
-    if (rec?.task && rec.task.id !== rec.taskId) {
-      throw new Error(
-        `Conflicting Task IDs in ${label}.taskId ("${rec.taskId}") and ${label}.task.id ("${rec.task.id}")`,
-      );
-    }
-  };
-  checkReconciliationIds(env?.reconciliation, "context.reconciliation");
-  checkReconciliationIds(options.reconciliation, "reconciliation");
-  const suppliedTaskIds = [
-    env?.task?.id,
-    options.task?.id,
-    env?.reconciliation?.taskId,
-    env?.reconciliation?.task?.id,
-    options.reconciliation?.taskId,
-    options.reconciliation?.task?.id,
-  ].filter((id): id is string => typeof id === "string" && id.length > 0);
-  const distinctTaskIds = [...new Set(suppliedTaskIds)];
-  if (distinctTaskIds.length > 1) {
+  const reconciliation = env?.reconciliation ?? options.reconciliation;
+  if (
+    env?.reconciliation &&
+    options.reconciliation &&
+    env.reconciliation.taskId !== options.reconciliation.taskId
+  ) {
     throw new Error(
-      `Conflicting Task IDs across task and reconciliation inputs: ${distinctTaskIds.map((id) => `"${id}"`).join(", ")}`,
+      `Conflicting explicit reconciliation Task IDs: "${env.reconciliation.taskId}" and "${options.reconciliation.taskId}"`,
     );
   }
-  const candidateTask = env?.task ?? options.task;
-  const candidateReconciliation = env?.reconciliation ?? options.reconciliation;
-  const reconciliation: WorkflowContext<TInput>["reconciliation"] | undefined =
-    candidateReconciliation ??
-    (candidateTask
-      ? {
-          task: candidateTask,
-          appId: "direct-app",
-          taskId: candidateTask.id,
-          generation: candidateTask.generation,
-          resourceVersion: candidateTask.resourceVersion ?? 1,
-          agent: candidateTask.agent ?? options.agentName ?? callerOwner,
-          owner: candidateTask.agent ?? options.agentName ?? callerOwner,
-          outcome: candidateTask.outcome,
-          acceptance: candidateTask.acceptance,
-          input: candidateTask.input as TInput,
-          children: { live: [], completed: [] },
-          waits: { open: [], note: "direct snapshot" },
-          taskSnapshot: { live: [], truncated: false },
-          events: { items: [], truncated: false },
-        }
-      : undefined);
-  const taskDetail = reconciliation?.task ?? candidateTask;
+  if (reconciliation?.task && reconciliation.task.id !== reconciliation.taskId) {
+    throw new Error(
+      `Conflicting explicit reconciliation Task IDs: taskId "${reconciliation.taskId}" and task.id "${reconciliation.task.id}"`,
+    );
+  }
 
   const readOverrides = env?.read ?? options.read;
-  const read: AppRead = createTestAppRead({
-    ...readOverrides,
+  const unavailableRead = (capability: string) => async () => {
+    throw new Error(`${capability} is not configured in runDirectWorkflow`);
+  };
+  const read: AppRead = {
+    contract: readOverrides?.contract ?? unavailableRead("read.contract"),
+    appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
     tasks: {
-      list: readOverrides?.tasks?.list ?? (async () => ({ items: taskDetail ? [taskDetail] : [] })),
-      get:
-        readOverrides?.tasks?.get ??
-        (async (id: string) => {
-          if (taskDetail && id === taskDetail.id) return structuredClone(taskDetail);
-          throw new Error(`Direct workflow run has no configured Task snapshot for "${id}"`);
-        }),
+      list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
+      get: readOverrides?.tasks?.get ?? unavailableRead("read.tasks.get"),
+      ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
       ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
     },
-  });
+    execution: readOverrides?.execution ?? unavailableRead("read.execution"),
+    metric: readOverrides?.metric ?? unavailableRead("read.metric"),
+  };
 
   const maxConcurrentCalls = options.maxConcurrentCalls ?? DEFAULT_DIRECT_WORKFLOW_MAX_CONCURRENT_CALLS;
   const executeAgent = options.runAgent ?? runDirectAgent;
@@ -1316,7 +1283,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     const sub = await runDirectWorkflow(
       {
         ...options,
-        task: taskDetail,
         reconciliation,
         executionId: undefined,
         module: targetMod,
@@ -1390,7 +1356,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       executionId: internal ? undefined : options.executionId,
       startedAt: internal ? undefined : rootStartedAt,
       input: options.input,
-      taskOwned: Boolean(taskDetail || reconciliation),
+      taskOwned: Boolean(reconciliation),
       tools: internal?.tools ?? options.tools,
       outputSchema: internal ? undefined : options.outputSchema,
       signal: options.signal,
@@ -1519,133 +1485,14 @@ function inferCwdAppName(cwd: string, projectsRoot: string): string | undefined 
   return firstSegment && firstSegment.endsWith(".app") ? firstSegment : undefined;
 }
 
-export type StandaloneTaskInput = {
-  id?: string;
-  generation?: number;
-  outcome: string;
-  acceptance?: string[];
-  constraints?: string[];
-  input?: unknown;
-};
-
-function extractImplicitStandaloneTaskFromInput<TInput>(input: TInput): {
-  extractedTask?: StandaloneTaskInput;
-  cleanedInput: TInput;
-} {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return { cleanedInput: input };
-  }
-  const record = input as Record<string, unknown>;
-  if (!("verify" in record)) {
-    return { cleanedInput: input };
-  }
-  const rawOutcome =
-    typeof record.outcome === "string" && record.outcome.trim()
-      ? record.outcome
-      : typeof record.task === "string" && record.task.trim()
-        ? record.task
-        : undefined;
-  if (!rawOutcome) {
-    return { cleanedInput: input };
-  }
-  const {
-    task: _task,
-    outcome: _outcome,
-    acceptance: rawAcceptance,
-    constraints: rawConstraints,
-    ...rest
-  } = record;
-  return {
-    extractedTask: {
-      outcome: rawOutcome,
-      ...(rawAcceptance !== undefined ? { acceptance: rawAcceptance as string[] } : {}),
-      ...(rawConstraints !== undefined ? { constraints: rawConstraints as string[] } : {}),
-    },
-    cleanedInput: rest as TInput,
-  };
-}
-
-function normalizeStandaloneTaskDetail(
-  task: TaskDetail | StandaloneTaskInput | undefined,
-  fallbackInput: unknown,
-): TaskDetail | undefined {
-  if (!task) return undefined;
-  if (typeof task !== "object" || Array.isArray(task)) {
-    throw new Error("Invalid task envelope: expected a Task object with a non-empty string outcome");
-  }
-  if (typeof task.outcome !== "string" || !task.outcome.trim()) {
-    throw new Error("Invalid task envelope: outcome must be a non-empty string");
-  }
-  if ("status" in task && "conditions" in task && "acceptedEvidence" in task && Array.isArray(task.acceptance)) {
-    return task as TaskDetail;
-  }
-  const simple = task as StandaloneTaskInput;
-  if (simple.id !== undefined && (typeof simple.id !== "string" || !simple.id.trim())) {
-    throw new Error("Invalid task envelope: id must be a non-empty string when provided");
-  }
-  if (
-    simple.generation !== undefined &&
-    (typeof simple.generation !== "number" || !Number.isSafeInteger(simple.generation) || simple.generation < 1)
-  ) {
-    throw new Error("Invalid task envelope: generation must be a positive integer when provided");
-  }
-  if (
-    simple.acceptance !== undefined &&
-    (!Array.isArray(simple.acceptance) ||
-      simple.acceptance.some((item) => typeof item !== "string" || !item.trim()))
-  ) {
-    throw new Error("Invalid task envelope: acceptance must be an array of non-empty strings when provided");
-  }
-  if (
-    simple.constraints !== undefined &&
-    (!Array.isArray(simple.constraints) ||
-      simple.constraints.some((item) => typeof item !== "string" || !item.trim()))
-  ) {
-    throw new Error("Invalid task envelope: constraints must be an array of non-empty strings when provided");
-  }
-  const acceptance =
-    Array.isArray(simple.acceptance) && simple.acceptance.length > 0
-      ? simple.acceptance
-      : [simple.outcome];
-  const rawInput =
-    simple.input ??
-    (simple.constraints
-      ? {
-          kind: "goal",
-          data: {
-            outcome: simple.outcome,
-            acceptance,
-            constraints: simple.constraints,
-          },
-        }
-      : fallbackInput);
-  const taskInput: Record<string, unknown> =
-    rawInput && typeof rawInput === "object" && !Array.isArray(rawInput)
-      ? (rawInput as Record<string, unknown>)
-      : { value: rawInput };
-  return {
-    id: simple.id?.trim() || "standalone-task",
-    parentId: "root",
-    generation: simple.generation ?? 1,
-    status: "running",
-    outcome: simple.outcome,
-    acceptance,
-    input: taskInput,
-    conditions: [],
-    acceptedEvidence: { available: false, maxPageSize: 8 },
-  };
-}
-
 export type RunOptions<TInput = unknown> = Omit<
   DirectWorkflowRunOptions<TInput>,
-  "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models" | "task"
+  "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models"
 > & {
   /** Optional App disambiguator when two Apps define the same agent name (e.g. `"alex.app"`). */
   app?: string;
   /** Working directory for tools and execution (defaults to `process.cwd()`). */
   cwd?: string;
-  /** Optional Task envelope (either full `TaskDetail` or `{ outcome, acceptance?, constraints? }`) for Task-reconciling procedures. */
-  task?: TaskDetail | StandaloneTaskInput;
   input?: TInput;
   projectRoot?: string;
   workRoot?: string;
@@ -1917,20 +1764,6 @@ export async function run<TInput = unknown>(
   });
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
-  const hasExplicitTaskEnvelope = Boolean(
-    options.task || options.context?.task || options.reconciliation || options.context?.reconciliation,
-  );
-  const { extractedTask, cleanedInput } = hasExplicitTaskEnvelope
-    ? { extractedTask: undefined, cleanedInput: input }
-    : extractImplicitStandaloneTaskFromInput(input);
-  const normalizedContextTask = normalizeStandaloneTaskDetail(options.context?.task, cleanedInput);
-  const normalizedTopTask = normalizeStandaloneTaskDetail(options.task ?? extractedTask, cleanedInput);
-  if (normalizedContextTask && normalizedTopTask && normalizedContextTask.id !== normalizedTopTask.id) {
-    throw new Error(
-      `Conflicting Task IDs in context.task ("${normalizedContextTask.id}") and task ("${normalizedTopTask.id}")`,
-    );
-  }
-  const normalizedTask = normalizedContextTask ?? normalizedTopTask;
   const ownsTempOutputRoot = !options.outputRoot;
   const outputRoot = options.outputRoot ? resolve(options.outputRoot) : mkdtempSync(join(tmpdir(), "may-run-"));
   const models = options.models ?? createModelRegistry();
@@ -1939,10 +1772,8 @@ export async function run<TInput = unknown>(
   try {
     const res = await runDirectWorkflow({
       ...options,
-      ...(options.context ? { context: { ...options.context, ...(normalizedContextTask ? { task: normalizedContextTask } : {}) } } : {}),
-      task: normalizedTask,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
-      input: cleanedInput,
+      input,
       projectRoot,
       workRoot,
       agentsRoot,

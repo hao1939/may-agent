@@ -788,7 +788,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
     expect(run.result).toMatchObject({ type: "done", summary: "local executed" });
   });
 
-  test("resolves local and cross-owner <owner>/<name> procedures via ctx.call while preserving Task reconciliation owner", async () => {
+  test("resolves local and cross-owner <owner>/<name> procedures without inventing orchestration context", async () => {
     const env = setupDirectLayout();
     const reviewerWorkflowsDir = join(env.agentsRoot, "reviewer", "workflows");
     writeFileSync(
@@ -798,8 +798,8 @@ export const name = "local-helper";
 export const description = "Reviewer local helper";
 export const readonly = true;
 export async function execute(ctx) {
-  return ctx.done("helper:" + ctx.reconciliation?.agent, {
-    taskOwner: ctx.reconciliation?.agent,
+  return ctx.done("helper", {
+    reconciliationExposed: Boolean(ctx.reconciliation),
     reviseExposed: Boolean(ctx.reviseTask),
   });
 }
@@ -843,18 +843,6 @@ export async function execute(ctx) {
       sharedRoot: env.sharedRoot,
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
-      task: {
-        id: "task-1",
-        status: "running",
-        generation: 1,
-        outcome: "Verify cross-owner lexical vs Task authority owner",
-        parentId: "root",
-        acceptance: ["Owner stays owner"],
-        input: {},
-        agent: "owner",
-        conditions: [],
-        acceptedEvidence: { available: true, maxPageSize: 8 },
-      },
       agentFixtures: {
         reviewer: async () => ({
           id: "s_rev_1",
@@ -868,10 +856,10 @@ export async function execute(ctx) {
     expect(run.ok).toBe(true);
     expect(run.result).toEqual({
       type: "done",
-      summary: "helper:owner:prompt-ok",
+      summary: "helper:prompt-ok",
       output: {
         helper: {
-          taskOwner: "owner",
+          reconciliationExposed: false,
           reviseExposed: false,
         },
         agentSummary: "prompt-ok",
@@ -1703,184 +1691,48 @@ export async function execute(ctx) {
       await observeBoundedResult(gate.completed);
     }
 
-    // 11. run() normalizes StandaloneTaskInput ({ outcome, acceptance, constraints }) into ctx.reconciliation and ctx.read.tasks.get, and preserves root Task ownership across cross-owner calls:
-    const reviewerWfDir = join(env.agentsRoot, "reviewer", "workflows");
-    mkdirSync(reviewerWfDir, { recursive: true });
+    // 11. run() passes ordinary domain input unchanged and does not synthesize a Task snapshot.
     writeFileSync(
-      join(reviewerWfDir, "inspect-task-owner.ts"),
+      join(alphaLeadDir, "workflows", "domain-input-probe.ts"),
       `
-export const name = "inspect-task-owner";
-export const description = "Reports ctx.reconciliation.owner and ctx.read.tasks.get";
+export const name = "domain-input-probe";
+export const description = "Reports ordinary domain input without Task synthesis";
+export const inputSchema = {
+  type: "object",
+  properties: {
+    task: { type: "string" },
+    outcome: { type: "string" },
+    acceptance: { type: "array", items: { type: "string" } },
+    constraints: { type: "array", items: { type: "string" } },
+    verify: { type: "array", items: { type: "string" } },
+  },
+  required: ["task", "outcome", "acceptance", "constraints", "verify"],
+  additionalProperties: false,
+};
 export async function execute(ctx) {
-  const rec = ctx.reconciliation;
-  const detail = await ctx.read.tasks.get(rec.taskId);
-  return ctx.done(\`\${rec.owner}:\${rec.agent}:\${detail.outcome}\`);
+  return ctx.done("domain input retained", {
+    input: ctx.input,
+    reconciliation: ctx.reconciliation ?? null,
+  });
 }
 `,
     );
-    writeFileSync(
-      join(alphaLeadDir, "workflows", "task-reconcile-probe.ts"),
-      `
-export const name = "task-reconcile-probe";
-export const description = "Reads ctx.reconciliation, ctx.read.tasks.get, and calls cross-owner reviewer/inspect-task-owner";
-export async function execute(ctx) {
-  const rec = ctx.reconciliation;
-  if (!rec) return ctx.blocked("No reconciliation");
-  const detail = await ctx.read.tasks.get(rec.taskId);
-  const child = await ctx.call("reviewer/inspect-task-owner", {});
-  return {
-    state: "converged",
-    summary: \`\${detail.outcome} | \${detail.acceptance.join(",")} | \${JSON.stringify(detail.input.data.constraints)} | \${child.summary}\`,
-  };
-}
-`,
-    );
-    const taskEnvRun = await run(
-      "alpha-lead/task-reconcile-probe",
-      { verify: ["bun", "test"] },
-      {
-        projectRoot: env.projectRoot,
-        task: {
-          outcome: "Converge workflow context",
-          acceptance: ["Runs standalone and on Host"],
-          constraints: ["Preserve Task contract"],
-        },
-        models: { test: fakeModel() as any },
-      },
-    );
-    expect(taskEnvRun.ok).toBe(true);
-    expect(taskEnvRun.result).toEqual({
-      type: "done",
-      summary:
-        'Converge workflow context | Runs standalone and on Host | ["Preserve Task contract"] | alpha-lead:alpha-lead:Converge workflow context',
-      output: {
-        state: "converged",
-        summary:
-          'Converge workflow context | Runs standalone and on Host | ["Preserve Task contract"] | alpha-lead:alpha-lead:Converge workflow context',
-      },
+    const domainInput = {
+      task: "Domain field, not orchestration",
+      outcome: "Return unchanged input",
+      acceptance: ["No fake TaskDetail"],
+      constraints: ["No reconciliation envelope"],
+      verify: ["bun", "test"],
+    };
+    const domainRun = await run("alpha-lead/domain-input-probe", domainInput, {
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
     });
-
-    // 11b. run(target, { task, acceptance, constraints, verify }) auto-extracts the Task envelope from input:
-    const implicitTaskRun = await run(
-      "alpha-lead/task-reconcile-probe",
-      {
-        task: "Implicit task outcome",
-        acceptance: ["Single JSON payload"],
-        constraints: ["No --task flag needed"],
-        verify: ["bun", "test"],
-      },
-      {
-        projectRoot: env.projectRoot,
-        models: { test: fakeModel() as any },
-      },
-    );
-    expect(implicitTaskRun.ok).toBe(true);
-    expect(implicitTaskRun.result?.summary).toBe(
-      'Implicit task outcome | Single JSON payload | ["No --task flag needed"] | alpha-lead:alpha-lead:Implicit task outcome',
-    );
-
-    // 12. Default read.tasks.get uses the selected reconciliation snapshot, and conflicting task/reconciliation IDs are rejected:
-    const taskA = {
-      id: "task-a",
-      parentId: "root",
-      generation: 1,
-      status: "running" as const,
-      outcome: "Outcome A",
-      acceptance: ["Acceptance A"],
-      input: {},
-      conditions: [],
-      acceptedEvidence: { available: false, maxPageSize: 8 },
-    };
-    const taskB = { ...taskA, id: "task-b", outcome: "Outcome B" };
-    const reconciliationA = {
-      task: taskA,
-      appId: "alpha",
-      taskId: taskA.id,
-      generation: 1,
-      resourceVersion: 1,
-      agent: "alpha-lead",
-      owner: "alpha-lead",
-      outcome: taskA.outcome,
-      acceptance: taskA.acceptance,
-      input: {},
-      children: { live: [], completed: [] },
-      waits: { open: [], note: "" },
-      taskSnapshot: { live: [], truncated: false },
-      events: { items: [], truncated: false },
-    };
-    const recOnlyRun = await run(
-      "reviewer/inspect-task-owner",
-      {},
-      {
-        projectRoot: env.projectRoot,
-        context: { reconciliation: reconciliationA },
-        models: { test: fakeModel() as any },
-      },
-    );
-    expect(recOnlyRun.ok).toBe(true);
-    expect(recOnlyRun.result?.summary).toBe("alpha-lead:alpha-lead:Outcome A");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          context: { task: taskB, reconciliation: reconciliationA },
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          task: taskB,
-          reconciliation: reconciliationA,
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          task: taskB,
-          context: { reconciliation: reconciliationA },
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          context: { task: taskB },
-          reconciliation: reconciliationA,
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          reconciliation: { ...reconciliationA, taskId: "task-a", task: taskB },
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
+    expect(domainRun.ok).toBe(true);
+    expect(domainRun.result).toEqual({
+      type: "done",
+      summary: "domain input retained",
+      output: { input: domainInput, reconciliation: null },
+    });
   });
 });

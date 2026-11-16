@@ -7,7 +7,6 @@ import type {
   Logger,
   ObserverContext,
   TSchema,
-  TaskDetail,
   WorkflowContext,
 } from "./app.js";
 import {
@@ -231,24 +230,18 @@ export type ScriptedTargetFixture =
   | readonly ScriptedStepResponse[]
   | ((call: ScriptedCallContext) => ScriptedStepResponse | Promise<ScriptedStepResponse>);
 
-export type WorkflowTestOptions<TInput> = {
+export type TargetTestOptions<TInput> = {
   input: TInput;
   executionId?: string;
-  taskOwned?: boolean;
   tools?: "full" | "readonly";
   skill?: string;
   outputSchema?: TSchema;
-  task?: TaskDetail;
-  reconciliation?: WorkflowContext<TInput>["reconciliation"];
   workspace?: WorkflowContext["workspace"];
-  /** Unified target fixtures keyed by target name (supports both prompt and code targets). */
+  /** Explicit target fixtures keyed by target name (supports prompt and code targets). */
   mocks?: Record<string, ScriptedTargetFixture>;
   read?: Partial<AppRead>;
   events?: Partial<WorkflowContext["events"]>;
   metrics?: Partial<WorkflowContext["metrics"]>;
-  reviseTask?: WorkflowContext["reviseTask"];
-  closeTask?: WorkflowContext["closeTask"];
-  applyTaskChanges?: WorkflowContext["applyTaskChanges"];
   signal?: AbortSignal;
   timeoutMs?: number;
   deadlineAt?: number;
@@ -259,6 +252,9 @@ export type WorkflowTestOptions<TInput> = {
   /** Fail when scripted array responses remain unused after completion (default: true). */
   assertAllFixturesConsumed?: boolean;
 };
+
+/** @deprecated Use `TargetTestOptions`. */
+export type WorkflowTestOptions<TInput> = TargetTestOptions<TInput>;
 
 export type WorkflowTestRunResult = {
   ok: boolean;
@@ -309,9 +305,9 @@ function isExecutableModuleFixture(fixture: unknown): fixture is WorkflowExecuta
  * kernel with strict schema validation, scripted step consumption checks, and
  * zero Host setup.
  */
-export async function runWorkflowTest<TInput = unknown>(
+export async function runTargetTest<TInput = unknown>(
   moduleOrTarget: WorkflowExecutableModule<TInput> | string,
-  options: WorkflowTestOptions<TInput>,
+  options: TargetTestOptions<TInput>,
 ): Promise<WorkflowTestRunResult> {
   const targetName = typeof moduleOrTarget === "string" ? moduleOrTarget.trim() : undefined;
   const rootFixture = targetName ? options.mocks?.[targetName] : undefined;
@@ -366,59 +362,23 @@ export async function runWorkflowTest<TInput = unknown>(
     entriesByTarget.set(name, { fixture, queue: makeQueue(fixture) });
   }
 
-  const taskDetail = options.task;
-  const reconciliation: WorkflowContext<TInput>["reconciliation"] | undefined =
-    options.reconciliation ??
-    (taskDetail
-      ? {
-          task: taskDetail,
-          appId: "test-app",
-          taskId: taskDetail.id,
-          generation: taskDetail.generation,
-          resourceVersion: taskDetail.resourceVersion ?? 1,
-          agent: taskDetail.agent ?? "test-agent",
-          owner: taskDetail.agent ?? "test-agent",
-          outcome: taskDetail.outcome,
-          acceptance: taskDetail.acceptance,
-          input: taskDetail.input as TInput,
-          children: { live: [], completed: [] },
-          waits: { open: [], note: "test snapshot" },
-          taskSnapshot: { live: [], truncated: false },
-          events: { items: [], truncated: false },
-        }
-      : undefined);
-
-  const read: AppRead = createTestAppRead({
-    ...options.read,
-    tasks: {
-      list:
-        options.read?.tasks?.list ??
-        (async () => ({ items: taskDetail ? [taskDetail] : [] })),
-      get:
-        options.read?.tasks?.get ??
-        (async (id: string) => {
-          if (taskDetail && id === taskDetail.id) return structuredClone(taskDetail);
-          throw new Error(`Unconfigured task read for "${id}" in runWorkflowTest; supply task or read.tasks.get`);
-        }),
-      ...(options.read?.tasks?.workload ? { workload: options.read.tasks.workload } : {}),
-    },
-  });
+  const read: AppRead = createTestAppRead(options.read);
 
   const events: WorkflowContext["events"] = {
     emit:
       options.events?.emit ??
       (async () => {
-        throw new Error("Unconfigured events.emit in runWorkflowTest; supply events.emit when workflow publishes events");
+        throw new Error("Unconfigured events.emit in runTargetTest; supply events.emit when workflow publishes events");
       }),
     read:
       options.events?.read ??
       (async () => {
-        throw new Error("Unconfigured events.read in runWorkflowTest; supply events.read when workflow reads events");
+        throw new Error("Unconfigured events.read in runTargetTest; supply events.read when workflow reads events");
       }),
     onEvent:
       options.events?.onEvent ??
       (() => {
-        throw new Error("Unconfigured events.onEvent in runWorkflowTest; supply events.onEvent when workflow observes events");
+        throw new Error("Unconfigured events.onEvent in runTargetTest; supply events.onEvent when workflow observes events");
       }),
   };
 
@@ -525,7 +485,6 @@ export async function runWorkflowTest<TInput = unknown>(
   ): WorkflowKernelBindings<any> => ({
     executionId: nestedControl ? undefined : options.executionId,
     input: currentInput,
-    taskOwned: options.taskOwned ?? Boolean(options.task || options.reconciliation),
     tools: nestedControl?.tools ?? options.tools,
     signal: nestedControl?.signal ?? options.signal,
     timeoutMs: nestedControl?.timeoutMs ?? options.timeoutMs,
@@ -537,10 +496,6 @@ export async function runWorkflowTest<TInput = unknown>(
     events,
     metrics,
     workspace: options.workspace,
-    reconciliation,
-    reviseTask: options.reviseTask,
-    closeTask: options.closeTask,
-    applyTaskChanges: options.applyTaskChanges,
     confirmCleanup: options.confirmCleanup,
     onStep: options.onStep,
     onLog: options.onLog,
@@ -597,11 +552,11 @@ export async function runWorkflowTest<TInput = unknown>(
   };
 }
 
-/** Execute a named root target with the same test harness used for authored workflows. */
-export function runTargetTest<TInput = unknown>(
-  target: string,
-  options: WorkflowTestOptions<TInput>,
+/** @deprecated Use `runTargetTest(moduleOrTarget, { input, mocks })`. */
+export function runWorkflowTest<TInput = unknown>(
+  moduleOrTarget: WorkflowExecutableModule<TInput> | string,
+  options: TargetTestOptions<TInput>,
 ): Promise<WorkflowTestRunResult> {
-  return runWorkflowTest(target, options);
+  return runTargetTest(moduleOrTarget, options);
 }
 
