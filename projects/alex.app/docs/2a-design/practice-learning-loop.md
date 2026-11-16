@@ -85,6 +85,15 @@ accepts its structured comparison input or selects the `gym` specialist and
 primitives and returns evidence. Its contribution is comparison; preparation,
 approval, application, merge and deployment keep their own owners and authority.
 
+For daily signal harvesting and baseline diagnosis, Alex also owns
+`alex/learn-from-daily-work` (which harvests user corrections and efficiency
+signals across container and localhost sessions, synthesizes leak-free
+role-specific benchmark drafts via `bob`, and optionally stages them into
+`projects/gym/benchmarks/<role>-judgment/cases.json`) and
+`alex/diagnose-improvement` (which pre-reads a frozen Gym baseline and invokes
+the `gym` and `tech-lead` specialists to prepare an isolated `.lab/<candidate>`
+overlay).
+
 The [comparison contract](../comparison/frozen-comparison-service.md)
 owns quality gates, declared performance objectives, input/evidence identity and
 invalid-run handling. The

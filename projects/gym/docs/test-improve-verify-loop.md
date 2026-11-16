@@ -39,7 +39,7 @@ Gym tests three different layers. Passing one does not imply the others pass:
 
 Behavior and runtime scenarios score the full trajectory. Their ground truth
 includes accepted action receipts and final durable state, not only
-`alignment-decision.json`. A final answer cannot repair an action that was
+`task-result.json`. A final answer cannot repair an action that was
 never applied, was attached to the wrong request, or produced a duplicate
 human message.
 
@@ -76,11 +76,10 @@ changing an overlay requires a fresh baseline.
 
 ## 1. Test the baseline
 
-From `projects/gym`:
+From `/app` (or `projects/gym`):
 
 ```bash
-GYM_AGENTS_ROOT=/app/agents \
-bun run loop -- test \
+bun run gym test \
   --benchmark may-alignment \
   --scenario may-align-proof-before-adopt \
   --agent may \
@@ -89,10 +88,12 @@ bun run loop -- test \
 
 Declare the intended benefit before the baseline. The default is quality:
 more passing trials without a per-scenario regression. To measure execution
-time instead, add:
+time, token usage, or tool operations instead, add:
 
 ```bash
 --objective duration_ms --min-reduction-percent 20
+# or: --objective total_tokens --min-reduction-percent 20
+# or: --objective ops --min-reduction-percent 20
 ```
 
 This objective requires at least 20% lower total observed execution duration
@@ -257,7 +258,7 @@ bun run loop -- report --run <run-id>
     ├── result.json
     ├── evaluation.json
     ├── checks.json
-    ├── alignment-decision.json
+    ├── task-result.json
     ├── transcript.jsonl
     ├── runner.stderr.log
     └── session/

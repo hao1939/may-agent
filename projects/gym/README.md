@@ -9,14 +9,13 @@ Gym starts as a standalone project. It owns the runner, adapters, cases,
 fixtures, schemas, scorers, reports, and append-only human reviews. It must run
 from CLI or CI without loading `gym.app` or autonomous infrastructure.
 
-Any conforming agent or Agent App enters through an adapter. Infrastructure
-behavior is supplied as fixture context, fake capabilities, and steering when a
+Any conforming agent or Agent App enters through an adapter (`@may-agent/sdk/standalone`).
+Infrastructure behavior is supplied as fixture context, fake capabilities, and steering when a
 scenario needs it; the evaluated agent receives no Gym-specific API.
 
-[`../gym.app`](../gym.app) is the optional autonomous operator for this project.
-It schedules regression and learning work, prepares review proposals, monitors
-benchmark health, and proposes cases from real failures. Gym App is not a
-dependency of this runner and has no authority to approve labels or release
+[`../alex.app`](../alex.app) owns autonomous comparison (`gym/compare-candidate`),
+diagnosis (`alex/diagnose-improvement`), and daily signal harvesting & benchmark
+synthesis (`alex/learn-from-daily-work`). It has no authority to approve labels or release
 decisions.
 
 ### Project layout
@@ -65,14 +64,15 @@ default.
 
 ## Running
 
-From `/app`, use the root conveniences:
+From `/app`, use the verb-first `gym` CLI:
 
 ```bash
-bun run gym:list -- --tier smoke
-bun run gym -- phantom-fix --agent coder
+bun run gym list --tier smoke
+bun run gym show may-align-infer-safe-cleanup
+bun run gym run may-align-infer-safe-cleanup --target may/bounded-cleanup
+bun run gym test --benchmark bob-judgment --agent bob --trials 1
+bun run gym verify --benchmark bob-judgment --baseline <run-id> --candidate <lab-fork> --agent bob
 bun run gym:check
-bun run gym:review
-GYM_AGENTS_ROOT=/app/agents bun run gym:loop -- test --benchmark may-alignment --scenario may-align-proof-before-adopt --trials 3
 ```
 
 Or run the project package directly:
@@ -80,8 +80,7 @@ Or run the project package directly:
 ```bash
 cd projects/gym
 bun run scenario:list -- --tier smoke
-bun run scenario:run -- phantom-fix --agent coder
-bun run review:pending
+bun run scenario:run -- run phantom-fix --target coder
 bun run check
 ```
 
