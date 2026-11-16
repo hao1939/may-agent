@@ -81,11 +81,25 @@ function taskAttemptRole(
 
 function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
   const base = createFinishTool({ projectRoot: input.executionPaths.workspaceDir });
+  const managedOutputSchema = Type.Union([
+    Type.Unsafe({
+      ...structuredClone(appTaskAgentResultSchema),
+      description: "Required when status is done: the canonical Task attempt result.",
+    }),
+    Type.Unknown({
+      description: "When status is blocked, unrestricted domain checkpoint output; it is not a Task decision.",
+    }),
+  ], {
+    description:
+      "For status=done, return the canonical Task attempt result. For status=blocked, any domain checkpoint output is allowed.",
+  });
   const parameters = Type.Object(
     {
-      status: Type.Union([Type.Literal("done"), Type.Literal("blocked")]),
+      status: Type.Union([Type.Literal("done"), Type.Literal("blocked")], {
+        description: "done requires canonical Task output; blocked retains unrestricted checkpoint output.",
+      }),
       summary: Type.String({ pattern: "\\S" }),
-      output: Type.Optional(Type.Unknown()),
+      output: Type.Optional(managedOutputSchema),
       facts: Type.Optional(Type.Unknown()),
     },
     { additionalProperties: false },

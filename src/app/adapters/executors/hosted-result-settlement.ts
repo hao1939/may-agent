@@ -144,17 +144,17 @@ export function translateHostedBlockedContribution(
     }
   }
   const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
-  if (
-    (hint?.report === true || hint?.continue === true)
-    && (facts === undefined || (Array.isArray(facts) && facts.length === 0))
-  ) {
-    return rejectedBlockedResult(
-      "Blocked result report or continuation requires contribution facts; Host diagnostics are not agent evidence",
-      runId,
-    );
-  }
   if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
     return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
+  }
+  if (
+    (hint?.report === true || hint?.continue === true || (hint?.actions?.length ?? 0) > 0)
+    && !hasDomainProgressFacts(facts)
+  ) {
+    return rejectedBlockedResult(
+      "Blocked result report, continuation, or actions require non-empty contribution facts; Host diagnostics are not agent evidence",
+      runId,
+    );
   }
   if (hint && hint.report !== undefined && hint.report !== true) {
     return rejectedBlockedResult("Blocked result report must be true when supplied", runId);

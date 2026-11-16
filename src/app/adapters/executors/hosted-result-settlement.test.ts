@@ -464,6 +464,7 @@ test.each([
   ["report", { report: true }],
   ["continue", { continue: true }],
   ["report and continue", { report: true, continue: true }],
+  ["actions", { actions: [{ kind: "retire-condition", conditionId: "resolved", expectedConditionGeneration: 1, reason: "Verified" }] }],
 ] as const)("Host diagnostics cannot provide contribution evidence for %s", (_label, settlement) => {
   const translated = translateHostedExecutionResult(
     runResult({ type: "blocked", reason: "No agent evidence", facts: [] }),
@@ -498,6 +499,7 @@ test.each([
   ["report", { report: true }],
   ["continue", { continue: true }],
   ["report and continue", { report: true, continue: true }],
+  ["actions", { actions: [{ kind: "retire-condition", conditionId: "resolved", expectedConditionGeneration: 1, reason: "Verified" }] }],
 ] as const)("blank scalar facts cannot support %s", (_label, settlement) => {
   for (const facts of ["", "   ", "\t\n"]) {
     const translated = translateHostedExecutionResult(
@@ -583,7 +585,7 @@ test("blocked translator actions and reports use ordinary Task admission", () =>
   expect(malformedReport.handlerResult).toMatchObject({
     state: "error",
     resultRejected: true,
-    summary: expect.stringContaining("requires contribution facts"),
+    summary: expect.stringContaining("require non-empty contribution facts"),
   });
 
   const malformedAction = translateHostedExecutionResult(

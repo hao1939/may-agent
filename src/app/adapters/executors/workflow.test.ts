@@ -278,6 +278,26 @@ it.each([
   });
 });
 
+it.each([
+  ["oversized facts", '{ ...ctx.blocked("Retain evidence", { evidence: "x".repeat(70 * 1024) }), output: false }'],
+  ["combined output and facts", '{ ...ctx.blocked("Retain evidence", { evidence: "x".repeat(9 * 1024) }), output: { report: "y".repeat(60 * 1024) } }'],
+] as const)("rejects an unavailable workflow overflow projection: %s", async (_label, fields) => {
+  let policyCalls = 0;
+  const { root, result } = await executeBlockedWorkflow(
+    `  return ${fields};`,
+    () => { policyCalls++; return null; },
+  );
+  expect(policyCalls).toBe(0);
+  expect(result.handlerResult).toMatchObject({
+    state: "error",
+    resultRejected: true,
+    summary: expect.stringContaining("return a durable artifact reference"),
+    facts: [`workflow-run:${result.runId}`],
+    actions: [],
+  });
+  expect(getWorkflowRun(root, result.runId!)?.result_payload).toMatchObject({ state: "unavailable", reason: "too-large" });
+});
+
 it("inspects the current workflow definition without executing it", async () => {
   const root = mkdtempSync(join(tmpdir(), "task-workflow-inspection-"));
   roots.push(root);

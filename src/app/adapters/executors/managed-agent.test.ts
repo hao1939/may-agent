@@ -8,7 +8,6 @@ import type { TaskAgentInput } from "../../core/tasks/execution.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../../core/tasks/app-task-output-paths.js";
 import { executePreparedAgent, prepareAgentExecution } from "../../../lib/agent-execution.js";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
-import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
 import type { CallAgentOptions } from "../../../lib/manager.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
@@ -140,9 +139,21 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
     let prompt = "";
     const runner = createTaskAgentRunner({
       manager: {
-        callAgent: async (_agent: string, text: string, options: { createFinish: () => AgentTool }) => {
-          const finish = options.createFinish();
-          expect((finish.parameters as { type?: string }).type).toBe("object");
+        callAgent: async (_agent: string, text: string, options: CallAgentOptions) => {
+          const prepared = prepareAgentExecution({
+            ...options,
+            task: text,
+            projectRoot: root,
+            sessionId: "model-facing-finish",
+            definition: { name: "worker", description: "fixture", domain: "test", tools: [],
+              model: { api: "openai-responses", provider: "fixture", id: "model-a" } as SubagentDefinition["model"] },
+          });
+          const finish = prepared.tools.find((tool) => tool.name === "finish")!;
+          const parameters = finish.parameters as any;
+          expect(parameters.type).toBe("object");
+          expect(parameters.properties.output.anyOf[0].properties.state).toBeDefined();
+          expect(parameters.properties.output.description).toContain("canonical Task attempt result");
+          expect(parameters.properties.output.description).toContain("blocked");
           const missingDoneOutput = await finish.execute("missing-done", { status: "done", summary: "Missing output" }, undefined, undefined);
           expect(missingDoneOutput.content).toEqual([{ type: "text", text: expect.stringContaining("expected an object") }]);
           const invalid = await finish.execute("invalid", { status: "done", summary: "Pending", output: {
