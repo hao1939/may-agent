@@ -47,6 +47,8 @@ export type {
   AgentContext,
   AgentExecutableModule,
   AppRead,
+  AppWorkflowContext,
+  AppWorkflowContext as WorkflowContext,
   CallOptions,
   CliCallFacts,
   ExecutionResult,
@@ -82,7 +84,6 @@ export type {
   TaskView,
   TaskWorkload,
   TaskWorkloadOptions,
-  WorkflowContext,
   WorkflowInput,
   WorkflowMetricCapability,
 } from "./workflow.js";

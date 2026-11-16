@@ -810,16 +810,6 @@ export type AgentContext<TInput = unknown> = {
    * Does not preempt arbitrary JavaScript or undo completed external effects.
    */
   signal: AbortSignal;
-  /** Present only when a durable App task owns this workflow attempt. */
-  reconciliation?: TaskReconciliationContext<TInput>;
-  /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
-  reviseTask?: TaskAttempt["reviseTask"];
-  /** End an assignment created by this Task after reviewing its exact accepted result. */
-  closeTask?: TaskAttempt["closeTask"];
-  /** Apply the same changes accepted in a final result, while continuing this execution. */
-  applyTaskChanges?: TaskAttempt["apply"];
-  readCommunication?: TaskAttempt["read"]["communication"];
-  read: AppRead;
   /**
    * Canonical bounded invocation API for both prompt-backed and code-backed targets.
    * Production calls pass string target names resolved against the captured catalog snapshot.
@@ -834,32 +824,49 @@ export type AgentContext<TInput = unknown> = {
     input: unknown,
     options?: CallOptions,
   ): Promise<ExecutionResult<TOut>>;
-  events: {
-    emit(event: AppEvent): Promise<void>;
-    /**
-     * Verified original publication in this Task generation, including large bodies.
-     * Null means no publication; missing/corrupt facts throws. Task-owned workflows only.
-     */
-    read(type: string, localKey: string): Promise<{ eventId: number; data: Record<string, unknown> } | null>;
-    /** Live convenience for events addressed to the current Task; durable replay remains authoritative. */
-    onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
-  };
-  metrics: WorkflowMetricCapability;
   workspace?: {
-    /** Root of the App declaration that owns this workflow. */
+    /** Root of the App declaration that owns this agent execution. */
     appRoot: string;
     /** Root of the App's configured project workspace. */
     projectRoot: string;
-    /** Root of this bounded attempt's writable workspace. */
+    /** Root of this bounded execution's writable workspace. */
     root: string;
-    /** Output root admitted for this bounded attempt. */
+    /** Output root admitted for this bounded execution. */
     output: string;
-    /** Generated Task entry shared with agents; snapshot and discovery, not live state. */
-    taskFile?: string;
   };
   log: Logger;
   done<T>(summary: string, output?: T): ExecutionResult<T>;
   blocked(reason: string, facts?: unknown): ExecutionResult;
+};
+
+/**
+ * Host/App compatibility context for procedures that have not yet migrated to
+ * domain input and results. It is intentionally absent from the root authoring
+ * surface; App orchestration owns these Task-scoped capabilities.
+ */
+export type AppWorkflowContext<TInput = unknown> = AgentContext<TInput> & {
+  /** Present only when a durable App task owns this workflow attempt. */
+  reconciliation?: TaskReconciliationContext<TInput>;
+  /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
+  reviseTask?: TaskAttempt["reviseTask"];
+  /** End an assignment created by this Task after reviewing its exact accepted result. */
+  closeTask?: TaskAttempt["closeTask"];
+  /** Apply the same changes accepted in a final result, while continuing this execution. */
+  applyTaskChanges?: TaskAttempt["apply"];
+  readCommunication?: TaskAttempt["read"]["communication"];
+  read: AppRead;
+  events: {
+    emit(event: AppEvent): Promise<void>;
+    /** Verified original publication in this Task generation. */
+    read(type: string, localKey: string): Promise<{ eventId: number; data: Record<string, unknown> } | null>;
+    /** Live convenience for events addressed to the current Task. */
+    onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
+  };
+  metrics: WorkflowMetricCapability;
+  workspace?: AgentContext<TInput>["workspace"] & {
+    /** Generated Task entry shared with agents; snapshot and discovery, not live state. */
+    taskFile?: string;
+  };
 };
 
 export type AgentExecutableModule<TInput = unknown, TOutput = unknown> = {

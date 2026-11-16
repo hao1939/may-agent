@@ -10,7 +10,7 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import type { AgentExecutableModule, Logger, WorkflowContext } from "./workflow.js";
+import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 const MAX_TIMER_MS = 2_147_483_647;
