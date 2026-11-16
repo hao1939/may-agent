@@ -34,11 +34,18 @@ export const diagnoseImprovementInputSchema = Type.Object(
 export const improvementProposalSchema = Type.Object(
   {
     target: Type.String({ minLength: 1 }),
-    recommended_stage: Type.Union([
-      Type.Literal("stage1_prompt"),
-      Type.Literal("stage2_skill"),
-      Type.Literal("stage3_workflow"),
+    disposition: Type.Union([
+      Type.Literal("actionable"),
+      Type.Literal("no_change"),
+      Type.Literal("insufficient_evidence"),
     ]),
+    recommended_stage: Type.Optional(
+      Type.Union([
+        Type.Literal("stage1_prompt"),
+        Type.Literal("stage2_skill"),
+        Type.Literal("stage3_workflow"),
+      ]),
+    ),
     detected_regimes: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
     root_cause_summary: Type.String({ minLength: 1 }),
     proposed_changes: Type.Array(
@@ -49,20 +56,21 @@ export const improvementProposalSchema = Type.Object(
         },
         { additionalProperties: false },
       ),
-      { minItems: 1 },
     ),
-    verification_plan: Type.Object(
-      {
-        benchmark: Type.String({ minLength: 1 }),
-        scenarios: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
-        objective: Type.Union([
-          Type.Literal("quality"),
-          Type.Literal("duration_ms"),
-          Type.Literal("total_tokens"),
-          Type.Literal("ops"),
-        ]),
-      },
-      { additionalProperties: false },
+    verification_plan: Type.Optional(
+      Type.Object(
+        {
+          benchmark: Type.String({ minLength: 1 }),
+          scenarios: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
+          objective: Type.Union([
+            Type.Literal("quality"),
+            Type.Literal("duration_ms"),
+            Type.Literal("total_tokens"),
+            Type.Literal("ops"),
+          ]),
+        },
+        { additionalProperties: false },
+      ),
     ),
   },
   { additionalProperties: false },
@@ -87,6 +95,7 @@ export interface TrialDiagnostic {
   ops: number;
   totalTokens: number;
   failedChecks: string[];
+  evidenceIssues: string[];
   hasReadonlyWriteConflict: boolean;
 }
 
@@ -138,17 +147,36 @@ export function extractBaselineDiagnostics(baselineDir: string): {
   for (const trial of manifest.trials || []) {
     const resPath = trial.result_path ? join(baselineDir, trial.result_path) : "";
     const trPath = trial.transcript_path ? join(baselineDir, trial.transcript_path) : "";
+    const evidenceIssues: string[] = [];
     let failedChecks: string[] = [];
-    if (resPath && existsSync(resPath)) {
+    let agentStatus = "unknown";
+
+    if (!resPath) {
+      evidenceIssues.push("result_path is missing from the manifest trial");
+    } else if (!existsSync(resPath)) {
+      evidenceIssues.push(`result.json not found at ${resPath}`);
+    } else {
       try {
         const res = JSON.parse(readFileSync(resPath, "utf8")) as {
-          checks?: Array<{ name: string; passed: boolean; gate?: boolean; detail: string }>;
+          agent_status?: string;
+          checks?: Array<{ name: string; passed: boolean; gate?: boolean; detail?: string }>;
         };
-        failedChecks = (res.checks || [])
-          .filter((c) => !c.passed && c.gate !== false)
-          .map((c) => `${c.name}: ${c.detail}`);
-      } catch {
-        // Ignore parse error
+        if (typeof res.agent_status === "string" && res.agent_status.trim()) {
+          agentStatus = res.agent_status;
+        } else {
+          evidenceIssues.push("result.json is missing agent_status");
+        }
+        if (!Array.isArray(res.checks)) {
+          evidenceIssues.push("result.json is missing checks");
+        } else {
+          failedChecks = res.checks
+            .filter((c) => c && c.passed === false && c.gate !== false)
+            .map((c) => `${c.name}: ${c.detail || "failed"}`);
+        }
+      } catch (error) {
+        evidenceIssues.push(
+          `result.json is malformed: ${error instanceof Error ? error.message : String(error)}`,
+        );
       }
     }
 
@@ -156,7 +184,7 @@ export function extractBaselineDiagnostics(baselineDir: string): {
     if (trPath && existsSync(trPath)) {
       const trText = readFileSync(trPath, "utf8");
       if (
-        trial.agent_status === "blocked" &&
+        agentStatus === "blocked" &&
         (/no file-writing tool/i.test(trText) || /readonly tools/i.test(trText))
       ) {
         hasReadonlyWriteConflict = true;
@@ -168,27 +196,36 @@ export function extractBaselineDiagnostics(baselineDir: string): {
     const ops = trial.usage?.ops ?? 0;
     const totalTokens = trial.usage?.total_tokens ?? 0;
 
-    if (trial.machine_verdict === "fail") {
-      regimes.add("missing_regime_or_heuristic");
+    if (evidenceIssues.length > 0) {
+      regimes.add("insufficient_evidence");
+    } else if (agentStatus !== "success") {
+      regimes.add("execution_failure");
+    } else if (trial.machine_verdict === "fail") {
+      regimes.add("quality_failure");
     }
-    if (ops >= 3 || totalTokens >= 25_000) {
+    if (
+      evidenceIssues.length === 0 &&
+      agentStatus === "success" &&
+      (ops >= 3 || totalTokens >= 25_000)
+    ) {
       regimes.add("token_or_op_bloat");
     }
 
     trialDiagnostics.push({
       scenario: trial.scenario,
       verdict: trial.machine_verdict,
-      agentStatus: trial.agent_status || "unknown",
+      agentStatus,
       turns,
       ops,
       totalTokens,
       failedChecks,
+      evidenceIssues,
       hasReadonlyWriteConflict,
     });
   }
 
   if (regimes.size === 0) {
-    regimes.add("healthy_baseline_efficiency_tuning");
+    regimes.add("healthy_baseline");
   }
 
   return {
@@ -207,7 +244,21 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
   const diag = extractBaselineDiagnostics(baselineDir);
 
   const isWorkflowTarget = diag.target.includes("/");
-  const hasQualityFailure = diag.trials.some((t) => t.verdict !== "pass");
+  const hasEvidenceGap = diag.trials.some((t) => t.evidenceIssues.length > 0);
+  const hasExecutionFailure = diag.trials.some(
+    (t) => t.evidenceIssues.length === 0 && t.agentStatus !== "success",
+  );
+  const hasQualityFailure = diag.trials.some(
+    (t) =>
+      t.evidenceIssues.length === 0 && t.agentStatus === "success" && t.verdict === "fail",
+  );
+  const hasEfficiencyProblem = diag.detectedRegimes.includes("token_or_op_bloat");
+  const disposition: ImprovementProposal["disposition"] =
+    hasEvidenceGap || hasExecutionFailure
+      ? "insufficient_evidence"
+      : hasQualityFailure || hasEfficiencyProblem
+        ? "actionable"
+        : "no_change";
 
   // Step 1: Delegate diagnostic analysis to the `gym` specialist (`readonly`)
   const prompt = [
@@ -220,10 +271,12 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
     "## Trial Diagnostics",
     JSON.stringify(diag.trials, null, 2),
     "",
-    "## Improvement Rules",
-    "- If `readonly_write_conflict` is present, recommend `stage3_workflow` and strip conflicting `Write <file>.json` instructions before calling child agents with `tools: \"readonly\"`.",
-    "- If `missing_regime_or_heuristic` is present on a workflow target (`owner/workflow`), recommend `stage3_workflow` and add a deterministic regime classifier + post-call `normalizeDecision()` invariant normalizer.",
-    "- If `token_or_op_bloat` is present on a prompt agent without quality failures, recommend `stage1_prompt` (fast-path rule in `AGENTS.md`) or `stage3_workflow` (pre-read local state in code) with `objective: \"total_tokens\"`.",
+    "## Evidence Boundary",
+    `Deterministic disposition: \`${disposition}\``,
+    "- Treat result.json `agent_status` as authoritative for execution status; the manifest verdict remains scoring evidence.",
+    "- Report evidence gaps and execution failures explicitly. Do not prescribe a behavioral remediation for them.",
+    "- For `no_change` or `insufficient_evidence`, return no proposed changes, recommended stage, or verification plan.",
+    "- For `actionable`, recommend only the smallest mechanism supported by the diagnostics and include a verification plan.",
     "- Do NOT call any tools. Call `finish(status: \"done\", result: ...)` immediately with the structured proposal.",
   ].join("\n");
 
@@ -237,26 +290,49 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
   }
 
   const rawProposal = step.output as ImprovementProposal;
-  const proposal: ImprovementProposal = {
-    ...rawProposal,
-    target: diag.target,
-    recommended_stage: isWorkflowTarget
-      ? "stage3_workflow"
-      : rawProposal.recommended_stage,
-    detected_regimes: diag.detectedRegimes,
-    verification_plan: {
-      benchmark: diag.benchmark,
-      scenarios: diag.scenarios,
-      objective: hasQualityFailure ? "quality" : rawProposal.verification_plan.objective,
-    },
-  };
+  const proposal: ImprovementProposal =
+    disposition === "actionable"
+      ? {
+          ...rawProposal,
+          target: diag.target,
+          disposition,
+          recommended_stage: isWorkflowTarget
+            ? "stage3_workflow"
+            : rawProposal.recommended_stage,
+          detected_regimes: diag.detectedRegimes,
+          verification_plan: rawProposal.verification_plan
+            ? {
+                benchmark: diag.benchmark,
+                scenarios: diag.scenarios,
+                objective: hasQualityFailure
+                  ? "quality"
+                  : rawProposal.verification_plan.objective,
+              }
+            : undefined,
+        }
+      : {
+          target: diag.target,
+          disposition,
+          detected_regimes: diag.detectedRegimes,
+          root_cause_summary: rawProposal.root_cause_summary,
+          proposed_changes: [],
+        };
+
+  if (
+    disposition === "actionable" &&
+    (!proposal.recommended_stage ||
+      proposal.proposed_changes.length === 0 ||
+      !proposal.verification_plan)
+  ) {
+    return ctx.blocked("gym returned an incomplete actionable improvement proposal");
+  }
 
   let preparedLabDir: string | undefined;
   let candidateSummary: string | undefined;
 
   // Step 2 (optional): If `candidateName` is supplied, seed `.lab/<candidateName>`
   // and delegate candidate preparation to `tech-lead`.
-  if (ctx.input.candidateName?.trim()) {
+  if (ctx.input.candidateName?.trim() && proposal.disposition === "actionable") {
     const candidateName = ctx.input.candidateName.trim();
     const canonicalDir = resolveCanonicalAgentDir(projectRoot, diag.target);
     if (!canonicalDir) {
