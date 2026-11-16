@@ -36,6 +36,10 @@ Runtime owns scheduling, retry, cancellation and restart recovery.
   requirements. A distinct PR assignment without an existing owner needs its own
   finite responsibility, not the previous PR's exhausted Task. Preserve consumed
   allowances for the original incident; a new Task must never renew that incident.
+  If work was misrouted, withdraw that superseded finite assignment and use
+  the supported guarded controls to stop its execution before another Task
+  writes the same checkout. Confirm the old worker has drained; preserve its
+  edits and receipts for the correct owner instead of discarding or repeating them.
 - Routing, acknowledgment, or a worker claim is not completion:
   Return the requested schema and distinguish accepted input from proved results.
 - Convergence (`done`/`converged`) does not close a Task; only explicit owner
