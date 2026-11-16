@@ -62,7 +62,7 @@ describe("refined core judgment selection", () => {
       const { suite } = loadSuite(benchmark);
       const labels = loadLabels(benchmark, suite).catalog!;
       expect(suite.evaluation_kind).toBe("judgment");
-      expect(suite.version).toBe(1);
+      expect(suite.version).toBe(benchmark === "outcome-completion" ? 2 : 1);
       const selected = selectCoreScenarios(suite);
       expect(selected.length).toBe(benchmark === "authority-and-scope" ? 4 : 2);
       coreCases += selected.length;

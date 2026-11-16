@@ -1,7 +1,14 @@
-# Four draft checks: understand the assignment and choose an approach
+# Historical review: four outcome and approach checks
 
-**For exact review. Not registered or approved; no target runs of these drafts.
-Active case files are unchanged.**
+> Implemented as **draft** cases in [outcome-completion version 2](README.md).
+> [cases.json](cases.json) is now the sole runnable definition/control source;
+> [the local tests](approach-drafts.test.ts) read it, not this document.
+> The review-stage inputs, excerpts and status below are retained as history,
+> not a second maintained answer key. Registration does not approve their truth,
+> authorize model runs or establish execution behavior.
+
+**Review-stage status before implementation: not registered or approved;
+no target runs. Active case files were unchanged at that point.**
 
 These drafts replace the explanatory pilot questions with ordinary Task snapshots.
 Each asks what is owed, which existing path fits and what evidence is sufficient.

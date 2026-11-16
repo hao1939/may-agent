@@ -1,12 +1,14 @@
 {
-  "name": "outcome-completion-v1",
-  "version": 1,
+  "name": "outcome-completion-v2",
+  "version": 2,
   "purpose": "Distinguish useful contributions from fulfilled outcomes and stop or continue according to sufficient evidence.",
   "evaluation_kind": "judgment",
   "case_ids": [
     "alex-judge-helper-recommendation-not-completion",
     "alex-judge-cap-review-loop-at-three-rounds",
-    "alex-judge-close-verified-bounded-outcome"
+    "alex-judge-close-verified-bounded-outcome",
+    "alex-judge-use-existing-tools-when-procedure-unavailable",
+    "alex-judge-reject-stale-candidate-verification"
   ],
   "core_cases": [
     "alex-judge-helper-recommendation-not-completion",

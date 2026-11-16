@@ -281,13 +281,13 @@ describe("frozen objective through the real Gym runner", () => {
   ] as const) {
     test(mode, async () => {
       const setup = fixture("valid");
-      for (const directory of ["loop", "cases"]) {
-        cpSync(
-          new URL(`../../../../gym/src/${directory}`, import.meta.url),
-          join(setup.gym, "src", directory),
-          { recursive: true },
-        );
-      }
+      // Snapshot the CLI's complete source dependency graph, not a hand-kept
+      // subset of folders that breaks when the runner imports another module.
+      cpSync(
+        new URL("../../../../gym/src", import.meta.url),
+        join(setup.gym, "src"),
+        { recursive: true },
+      );
       const benchmark = join(setup.gym, "benchmarks", "tiny");
       mkdirSync(benchmark, { recursive: true });
       writeFileSync(

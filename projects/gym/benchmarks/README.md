@@ -12,7 +12,7 @@ or candidates in separate runs. Benchmarks do not own production agents.
 | Benchmark | Cases | Core | Kind |
 | --- | ---: | ---: | --- |
 | `authority-and-scope` | 5 | 4 | judgment |
-| `outcome-completion` | 3 | 2 | judgment |
+| `outcome-completion` | 5 | 2 | judgment |
 | `adoption-and-simplicity` | 5 | 2 | judgment |
 | `repair-and-verification` | 3 | 2 | judgment |
 | `research-evidence` | 4 | 2 | judgment |

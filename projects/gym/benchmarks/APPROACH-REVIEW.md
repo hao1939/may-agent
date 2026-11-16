@@ -1,6 +1,7 @@
 # Proposed judgment checks — understand the outcome and use what we have
 
-**Draft for review. No executable cases or approvals added.**
+**Proposal and diagnostic history. Four outcome-completion cases are now registered
+as drafts; no truth approvals or new model runs were added by implementation.**
 
 A [two-question diagnostic pilot](../docs/approach-pilot-20261116.md) now records
 actual Alex answers, costs and a disclosed harness-path fault. Two
@@ -8,13 +9,14 @@ actual Alex answers, costs and a disclosed harness-path fault. Two
 alternative when the procedure is unavailable and evidence for an outdated
 candidate. Neither pilot is an approved score or evidence of actual execution.
 
-The [four exact draft case inputs, rubrics and calibration excerpts](outcome-completion/APPROACH-CASES-REVIEW.md)
-are now ready for review in their proposed single owning benchmark. They extend
-the existing unfinished/fulfilled repair cases and add two contrasts. Active
-definitions remain unchanged; no models were run for this input/rubric revision.
-A no-model review now checks complete calibration envelopes against SDK admission,
-including the rule that `waiting` results cannot contain `response`. These checks
-do not validate the proposed semantic labels.
+The four cases are now registered as **drafts** in
+[outcome-completion version 2](outcome-completion/README.md): two existing cases
+revised and two contrasts added. Its native `cases.json` is the authoritative
+input/rubric/control source; the [exact review draft](outcome-completion/APPROACH-CASES-REVIEW.md)
+is retained as history. Owner-local checks run through normal validation and use
+SDK admission, including the rule that waiting results cannot contain `response`.
+No models ran for this implementation; registration and passing non-model checks
+do not approve labels or establish semantic-grader accuracy.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
@@ -55,17 +57,17 @@ scope, bounded contributions and durable work.
 
 ## Ten review situations, in contrasting pairs
 
-These are review references, not ten newly registered cases. Reuse an existing
-case when it already tests the same assignment; revise its rubric only through
-review. Proposed homes below keep each situation with one purpose benchmark,
-not in a new mixed-role “mechanism” collection. Membership is not changed here.
+These remain review references, not ten new cases. P1/P2 and two later contrasts
+are implemented in the linked version-2 benchmark; the other situations are still
+proposals. Reuse an existing case when it already tests the assignment. Homes below
+keep each situation with one purpose benchmark, not a mixed-role registry.
 
 ### Alex: use a procedure when it fits; reuse its result when work is already done
 
 **P1 — Existing development procedure fits.** Proposed home:
 `outcome-completion`; extend `alex-judge-helper-recommendation-not-completion`
 rather than duplicate its unfinished repair in `improvement-stage-selection`.
-The exact draft review above supersedes the earlier proposed home, not historical
+The version-2 owner above supersedes the earlier proposed home, not historical
 pilot metadata. A linked Git Task checkout has an authorized
 source change, an executable creator check, ignored `.state/`, and an installed
 `develop-change` entry in Alex's catalog. The assignment requires reviewed,
@@ -187,6 +189,7 @@ unnecessary work. Confirm the exact supplied catalog, authority, acceptable
 alternatives and examples before implementing any new or revised definitions.
 Existing approved answers do not automatically approve a changed rubric; retain
 historical definitions and start a fresh baseline after accepted changes.
-No models were run for the newly linked case-input/rubric revision, and no agent
-instructions were changed. Earlier diagnostic model runs retain their separate
-inputs, limitations and reports; they do not establish a baseline for this revision.
+The four-case implementation remains draft and requires fresh truth review and
+an explicitly authorized version-2 baseline. No models ran and no agent instructions
+changed for this implementation. Earlier diagnostic runs retain their separate
+inputs, limitations and reports; they are not a baseline for the changed definitions.

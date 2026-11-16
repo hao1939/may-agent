@@ -97,7 +97,7 @@ directories and ambiguous selections. A benchmark cannot borrow a foreign case
 by listing its ID. Production agent/App source remains outside the test definitions.
 Grading-agent configuration is part of evaluation machinery, not a tested agent.
 
-The active collection is 119 cases across eight purpose benchmarks. The smaller
+The active collection is 121 cases across eight purpose benchmarks. The smaller
 17-case review selection spans six of them; it is not one mixed-role benchmark
 run. `core_cases` selects cases inside one benchmark. Counts already include core
 cases. Core selection is neither a third evaluation kind nor human approval.

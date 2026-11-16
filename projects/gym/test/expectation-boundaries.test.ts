@@ -40,14 +40,13 @@ describe("judgment is not a prose-only pass", () => {
       evaluatorOwner: null, destination: scenario,
     });
     const result = {
-      state: "waiting", continue: true,
+      state: "waiting",
       summary: "Accept Bob's advice as progress, then implement the repair and verify notification.test.ts. This assignment remains unfinished; Task closure is separate.",
       facts: ["Bob's design review returned; implementation and the regression test are outstanding."],
     };
     save(work, "task-result.json", result);
     expect(scoreDecision(work, scenario).passed).toBe(true);
-    const { continue: _continue, ...closed } = result;
-    save(work, "task-result.json", { ...closed, state: "converged" });
+    save(work, "task-result.json", { ...result, state: "converged" });
     const scored = scoreDecision(work, scenario);
     expect(scored.checks.find((c: any) => c.name === "production-task-contract").passed).toBe(true);
     expect(scored.checks.find((c: any) => c.name === "one-of:task_result.state").passed).toBe(false);

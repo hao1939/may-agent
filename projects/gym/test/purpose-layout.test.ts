@@ -23,12 +23,13 @@ import {
   materializeScenarioOrInlineCase,
 } from "../src/loop/store";
 import { withTempDir } from "./support/temp-dir";
+import { outcomeCompletionV2Revisions } from "../benchmarks/outcome-completion/approach-drafts.test";
 
 const root = resolve(import.meta.dirname, ".."),
   archive = join(root, "archive/pre-purpose-layout");
 const counts = {
   "authority-and-scope": 5,
-  "outcome-completion": 3,
+  "outcome-completion": 5,
   "adoption-and-simplicity": 5,
   "repair-and-verification": 3,
   "research-evidence": 4,
@@ -54,10 +55,10 @@ function fixture(root: string, benchmark: string, id: string, inline = true) {
   return dir;
 }
 
-test("119 active cases have one purpose owner, not an agent-owned or global home", () => {
+test("121 active cases have one purpose owner, not an agent-owned or global home", () => {
   const entries = listOwnedCases(root);
-  expect(entries).toHaveLength(119);
-  expect(new Set(entries.map((item) => item.id)).size).toBe(119);
+  expect(entries).toHaveLength(121);
+  expect(new Set(entries.map((item) => item.id)).size).toBe(121);
   expect(
     Object.fromEntries(
       Object.keys(counts).map((name) => [
@@ -245,6 +246,13 @@ test("migration preserves all 119 assignments, fixtures, answers, rubrics and ap
           "semantic_criteria.md",
           "semantic_controls.json",
         ]) {
+          const outcomeRevision = outcomeCompletionV2Revisions[id]?.[file];
+          if (outcomeRevision) {
+            expect(current.suite.version).toBe(2);
+            expect(fingerprintTree(join(before, file))).toBe(outcomeRevision[0]);
+            expect(fingerprintTree(join(after, file))).toBe(outcomeRevision[1]);
+            continue;
+          }
           expect(existsSync(join(before, file))).toBe(
             existsSync(join(after, file)),
           );

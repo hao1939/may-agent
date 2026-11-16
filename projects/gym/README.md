@@ -36,7 +36,7 @@ Runtime/scorer faults are evaluation problems, not a third agent-quality score.
 | Benchmark | Evaluation question | Cases | Core selection |
 | --- | --- | ---: | ---: |
 | `authority-and-scope` | Act within authority, clarify missing targets and respect owned work? | 5 | 4 |
-| `outcome-completion` | Distinguish useful contributions from fulfilled assignments, and stop at sufficient evidence? | 3 | 2 |
+| `outcome-completion` | Distinguish useful contributions from fulfilled assignments, and stop at sufficient evidence? | 5 | 2 |
 | `adoption-and-simplicity` | Choose improvements by demonstrated value, existing capability and total cost? | 5 | 2 |
 | `repair-and-verification` | Choose the responsible repair layer and proportionate checks? | 3 | 2 |
 | `research-evidence` | Keep conclusions and research handling grounded in available evidence? | 4 | 2 |
@@ -44,7 +44,7 @@ Runtime/scorer faults are evaluation problems, not a third agent-quality score.
 | `intent-and-follow-through` | Interpret intent and carry authorized work toward useful outcomes? | 78 | — |
 | `outcome-coordination` | Choose valid ownership, requests, prerequisites and fulfillment dispositions? | 16 | — |
 
-There are **119 active cases**. The small review selection remains **12 judgment
+There are **121 active cases**. The small review selection remains **12 judgment
 and 5 behavior cases**; all 17 labels are draft. The older collections have mixed
 review history. Relocation did not approve any new answer or establish agent
 improvement. Case IDs retain historical prefixes to preserve identity; those
