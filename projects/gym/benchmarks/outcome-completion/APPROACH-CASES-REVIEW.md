@@ -4,8 +4,9 @@
 > [cases.json](cases.json) is now the sole runnable definition/control source;
 > [the local tests](approach-drafts.test.ts) read it, not this document.
 > The review-stage inputs, excerpts and status below are retained as history,
-> not a second maintained answer key. Registration does not approve their truth,
-> authorize model runs or establish execution behavior.
+> not a second maintained answer key. Subsequent user approval is recorded in
+> [labels.json](labels.json); registration itself did not approve truth, authorize
+> model runs or establish execution behavior.
 
 **Review-stage status before implementation: not registered or approved;
 no target runs. Active case files were unchanged at that point.**

@@ -1,7 +1,8 @@
 # Proposed judgment checks — understand the outcome and use what we have
 
-**Proposal and diagnostic history. Four outcome-completion cases are now registered
-as drafts; no truth approvals or new model runs were added by implementation.**
+**Proposal and diagnostic history. The four registered approach cases, plus the
+unchanged style case in outcome-completion v2, now have explicit truth approval.
+No model runs were authorized by that approval.**
 
 A [two-question diagnostic pilot](../docs/approach-pilot-20261116.md) now records
 actual Alex answers, costs and a disclosed harness-path fault. Two
@@ -9,14 +10,16 @@ actual Alex answers, costs and a disclosed harness-path fault. Two
 alternative when the procedure is unavailable and evidence for an outdated
 candidate. Neither pilot is an approved score or evidence of actual execution.
 
-The four cases are now registered as **drafts** in
+The four cases are registered with **approved expectations** in
 [outcome-completion version 2](outcome-completion/README.md): two existing cases
 revised and two contrasts added. Its native `cases.json` is the authoritative
 input/rubric/control source; the [exact review draft](outcome-completion/APPROACH-CASES-REVIEW.md)
 is retained as history. Owner-local checks run through normal validation and use
 SDK admission, including the rule that waiting results cannot contain `response`.
 No models ran for this implementation; registration and passing non-model checks
-do not approve labels or establish semantic-grader accuracy.
+did not themselves approve labels or establish semantic-grader accuracy. The
+separate user approval is recorded in that benchmark's `labels.json`, bound to
+exact native-case fingerprints.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
@@ -189,7 +192,7 @@ unnecessary work. Confirm the exact supplied catalog, authority, acceptable
 alternatives and examples before implementing any new or revised definitions.
 Existing approved answers do not automatically approve a changed rubric; retain
 historical definitions and start a fresh baseline after accepted changes.
-The four-case implementation remains draft and requires fresh truth review and
-an explicitly authorized version-2 baseline. No models ran and no agent instructions
+The version-2 expectations now have explicit truth approval; any measurement
+change needs renewed review. A fresh baseline still requires execution permission. No models ran and no agent instructions
 changed for this implementation. Earlier diagnostic runs retain their separate
 inputs, limitations and reports; they are not a baseline for the changed definitions.

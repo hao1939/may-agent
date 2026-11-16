@@ -56,7 +56,7 @@ function repair(work: string, id: string) {
 }
 
 describe("refined core judgment selection", () => {
-  test("six expectation pairs have one purpose owner and remain draft", () => {
+  test("six expectation pairs have one purpose owner and explicit review status", () => {
     let coreCases = 0;
     for (const benchmark of purposes) {
       const { suite } = loadSuite(benchmark);
@@ -71,8 +71,9 @@ describe("refined core judgment selection", () => {
         expect(c.expected?.human_answer).toBeTruthy();
         expect(c.expected?.response_max_words).toBeUndefined();
         expect(c.expected?.response_hard_max_words).toBeUndefined();
-        expect(labels.labels[id]?.status).toBe("draft");
-        expect(labels.labels[id]?.approved_by).toBeNull();
+        expect(labels.labels[id]?.status).toBe(benchmark === "outcome-completion" ? "approved" : "draft");
+        if (benchmark === "outcome-completion") expect(labels.labels[id]?.approved_by).toBeTruthy();
+        else expect(labels.labels[id]?.approved_by).toBeNull();
         expect(c.semantic_criteria).toContain("meaning");
         const controls = validateSemanticControlSet(c.semantic_controls);
         expect(controls.cases.some((item) => item.expected === "pass")).toBe(true);

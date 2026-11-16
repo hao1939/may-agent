@@ -1,6 +1,7 @@
 # Outcome completion
 
-**Version 2 — five judgment cases, all draft. No model baseline for this version.**
+**Version 2 — five judgment cases with approved expectations. No model baseline
+for this version; execution permission is separate.**
 
 Tests whether a compatible subject understands its bounded assignment, chooses an
 available authorized approach and identifies sufficient fulfillment evidence.
@@ -9,7 +10,8 @@ The target describes a decision; it does not perform the proposed repair.
 ## Authoritative definitions
 
 [cases.json](cases.json) owns inputs, expectations, semantic rubrics and calibration
-controls. [suite.json](suite.json) owns membership and the unchanged two-case core.
+controls. [labels.json](labels.json) is the single approval catalog;
+[suite.json](suite.json) owns membership and the unchanged two-case core.
 The existing scorer and production `TaskReconcileResult` contract are reused;
 there is no new planning API or mechanism registry.
 
@@ -40,8 +42,9 @@ A passing structural check is not a semantic judgment or execution evidence.
 The four approach cases contain **28 authored calibration controls**: eight
 acceptable alternatives and 20 mistakes, including four state-only contradictions.
 All are SDK-admissible payloads; the rejected examples deliberately test meaning
-rather than merely broken JSON. Their expected judgments remain draft, not named
-human approval or evidence that semantic judges are calibrated.
+rather than merely broken JSON. The user approved these keys and the unchanged
+style case's two controls. That is truth approval, not evidence that semantic
+judges have calibrated successfully or that a model has passed.
 
 [approach-drafts.test.ts](approach-drafts.test.ts) checks native ownership/membership,
 SDK admission, state gates, decision-only declarations, fixture separation and
@@ -71,8 +74,9 @@ hosted Git Task execution demonstrates the standalone operational context.
 
 Version 2 revises two existing inputs/rubrics and adds two contrasts. It explicitly
 requires a local commit, the creator check and independent review for the delivered
-candidate. The style-only case, original case IDs, core membership and existing
-per-case approval records are unchanged; new cases are explicitly draft.
+candidate. The style-only measurement, original case IDs and core membership are unchanged.
+The earlier draft approval records remain in Git and the archive; current approval
+is recorded separately in the benchmark-local catalog.
 
 The exact published version-1 definitions remain in Git at
 `974d0049f4ecdfcf1b2df5b94b3dc87806296b77`:
@@ -83,14 +87,30 @@ git show 974d0049f4ecdfcf1b2df5b94b3dc87806296b77:projects/gym/benchmarks/outcom
 ```
 
 The owner-local test pins exact old/new materialized input, expectation, rubric
-and control fingerprints for both revised cases. Generic migration checks continue
-to require unchanged metadata and approval records; no archive or retained model
-result was rewritten.
+and control fingerprints for both revised cases. Generic migration checks require
+unchanged metadata and archived approvals; only the explicitly approved case IDs
+may have the new current approval records. No archive or retained model result was
+rewritten.
+
+## Approval provenance
+
+Approval was recorded on **2026-11-16T14:15:39.364Z** after the user's explicit
+“approve” message and subsequent “next”. The reviewer identifier is
+`session-user:01a1e283-1450-7757-932e-b81864601339`: the user in this conversation,
+not an invented or independently verified personal name. Scope is all five current
+version-2 expectations/rubrics and their 30 controls (28 approach, two style).
+Each catalog rationale binds approval to the canonical native-case fingerprint;
+changing an input, expectation, rubric or control requires renewed review.
+The owner-local tests check those bindings. No new approval is inferred for any
+other benchmark, target instructions, execution behavior or model run.
 
 The [historical review document](APPROACH-CASES-REVIEW.md) is not another definition
 source. The [first pilot](../../docs/approach-pilot-20261116.md) and
 [follow-up](../../docs/approach-contrasts-20261116.md) used different inputs/result
 interpretation and cannot serve as a version-2 baseline. No model or semantic-grader
-calls were authorized by this implementation. Exact truth approval and explicit
-permission are still required before a fresh baseline; plans do not establish
-actual workflow use or delivery.
+calls were authorized by the implementation or truth approval. A fresh run still
+requires its own execution permission; plans do not establish actual workflow use
+or delivery. The semantic grader now receives the frozen original assignment as
+reference data in addition to the rubric and unlabeled answers, so it can check
+methods against the actual supplied facts and authority. That evaluator change
+also requires a fresh matched baseline.

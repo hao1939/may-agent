@@ -3,8 +3,8 @@ import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
 import { findOwnedCase } from "../../src/cases/catalog";
-import { benchmarkDir, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../../src/loop/store";
-import type { InlineBenchmarkCase } from "../../src/loop/types";
+import { benchmarkDir, fingerprintValue, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../../src/loop/store";
+import type { GroundTruthCatalog, GroundTruthLabel, InlineBenchmarkCase } from "../../src/loop/types";
 import { validateSemanticControlSet } from "../../src/scoring/semantic-judge";
 import { withTempDir } from "../../test/support/temp-dir";
 
@@ -35,8 +35,8 @@ function decision(id: string) {
 }
 
 // Case-specific historical assertions stay with their owner. The generic
-// migration test consumes these exact old/new materialized fingerprints; all
-// other historical case bytes and every approval record must remain unchanged.
+// migration test consumes these exact old/new materialized fingerprints. Old
+// approvals remain archived; current v2 approvals are checked separately below.
 export const outcomeCompletionV2Revisions: Record<string, Record<string, readonly [string, string]>> = {
   "alex-judge-helper-recommendation-not-completion": {
     "task.md": ["7e653f0c249e079b14ad4cc953a42d51fad6b296f4f46829a278c178839eef98", "442788430f1c5f7d5f0d43ee406fa824145f7573f09fe5ebca95196fcbc6dd4d"],
@@ -52,6 +52,21 @@ export const outcomeCompletionV2Revisions: Record<string, Record<string, readonl
   },
 };
 
+const approvalCatalog = JSON.parse(readFileSync(join(import.meta.dirname, "labels.json"), "utf8")) as GroundTruthCatalog;
+
+// Only these explicitly approved case IDs may differ from archived draft labels.
+// This helper stays with the case owner, not in a global approval exception list.
+export function assertOutcomeCompletionApprovalHistory(
+  id: string,
+  previous: GroundTruthLabel,
+  current: GroundTruthLabel,
+): boolean {
+  if (!Object.hasOwn(approvalCatalog.labels, id)) return false;
+  expect(previous).toMatchObject({ status: "draft", approved_by: null, approved_at: null });
+  expect(current).toEqual(approvalCatalog.labels[id]);
+  return true;
+}
+
 function materialize(root: string, c: InlineBenchmarkCase) {
   const { suite } = loadSuite("outcome-completion");
   const input = join(root, c.id, "input"), work = join(root, c.id, "work");
@@ -61,19 +76,28 @@ function materialize(root: string, c: InlineBenchmarkCase) {
   return { input, work };
 }
 
-describe("outcome-completion v2 draft cases (no models)", () => {
-  test("five owned members, unchanged core selection and draft approvals", () => {
+describe("outcome-completion v2 cases (no models)", () => {
+  test("five owned members, unchanged core selection and explicit fingerprint-bound approvals", () => {
     const { suite } = loadSuite("outcome-completion"), labels = loadLabels("outcome-completion", suite).catalog!;
     expect(suite.name).toBe("outcome-completion-v2");
     expect(suite.version).toBe(2);
     expect(suite.scenarios).toHaveLength(5);
     expect(suite.scenarios).toEqual(native.map((c) => c.id));
     expect(suite.core_cases).toEqual(ids.slice(0, 2));
+    expect(approvalCatalog.version).toBe(2);
+    expect(approvalCatalog.benchmark).toBe("outcome-completion");
+    expect(Object.keys(approvalCatalog.labels).sort()).toEqual([...suite.scenarios].sort());
+    expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_by)).size).toBe(1);
+    expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_at)).size).toBe(1);
     for (const id of suite.scenarios) {
       expect(findOwnedCase(project, id)?.benchmark).toBe("outcome-completion");
-      expect(labels.labels[id]?.status).toBe("draft");
-      expect(labels.labels[id]?.approved_by).toBeNull();
-      expect(labels.labels[id]?.approved_at).toBeNull();
+      const label = labels.labels[id]!;
+      expect(label.status).toBe("approved");
+      expect(label.approved_by).toMatch(/^session-user:[a-f0-9-]{36}$/);
+      expect(Number.isFinite(Date.parse(label.approved_at!))).toBe(true);
+      expect(label.rationale).toContain(fingerprintValue(native.find((c) => c.id === id)));
+      expect(label.rationale).toContain("No model-run or agent-change authorization");
+      expect(native.find((c) => c.id === id)?.label).toBeUndefined();
     }
   });
 

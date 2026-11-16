@@ -114,8 +114,13 @@ export function validateSemanticControlSet(value: unknown): SemanticControlSet {
 export function buildSemanticJudgeInput(
   candidate: unknown,
   controls: SemanticControlSet,
-): { cases: Array<{ id: string; decision: unknown }> } {
+  assignment?: string,
+): { assignment?: string; cases: Array<{ id: string; decision: unknown }> } {
+  if (assignment !== undefined && !assignment.trim()) {
+    throw new Error("semantic reference assignment must be non-empty");
+  }
   return {
+    ...(assignment === undefined ? {} : { assignment }),
     cases: [
       { id: "candidate", decision: candidate },
       ...controls.cases.map(({ id, decision }) => ({ id, decision })),

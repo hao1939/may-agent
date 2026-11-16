@@ -75,7 +75,8 @@ necessarily missing intent. The meaning-based judges decide; an explicitly
 supplied structured flag still has a hard check. Check other real production
 fields directly where possible. Do not silently add expected answers to approved
 cases: review changes and create a fresh baseline. The unfinished-work state
-check in `outcome-completion` remains draft.
+check is now part of the explicitly approved `outcome-completion` v2 measurement;
+that approval does not extend to other draft cases or establish a model result.
 
 ## Trustworthy evidence, bounded conclusions
 
