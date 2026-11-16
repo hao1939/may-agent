@@ -16,6 +16,7 @@ import {
   selectCoreScenarios,
 } from "./store";
 import { runLoop, verifyLoop } from "./run";
+import { loadPlan } from "../plans/plan";
 import type {
   HumanVerdict,
   ReviewClassification,
@@ -23,6 +24,7 @@ import type {
 } from "./types";
 
 interface Args {
+  planPath?: string;
   command: string;
   core: boolean;
   benchmark: string;
@@ -66,6 +68,11 @@ function parseArgs(argv: string[]): Args {
     const key = argv[index]!;
     const value = argv[index + 1]!;
     switch (key) {
+      case "--plan":
+        if (!value || value.startsWith("--")) throw new Error("--plan requires an evaluation-plan.json path");
+        args.planPath = value;
+        index++;
+        break;
       case "--benchmark":
         args.benchmark = value;
         explicitBenchmark = true;
@@ -178,8 +185,9 @@ function parseArgs(argv: string[]): Args {
 
 function usage(): never {
   console.error(`Usage:
-  bun run gym test [--benchmark PURPOSE] [--core | --case ID] --target <agent|owner/workflow> [--trials 3] [--objective quality|duration_ms|total_tokens|ops --min-reduction-percent 20]
-  bun run gym verify --baseline RUN_ID --candidate LAB_FORK [--trials 3]
+  bun run gym test [--plan PATH] [--benchmark PURPOSE] [--core | --case ID] --target <agent|owner/workflow> [--trials 3] [--objective quality|duration_ms|total_tokens|ops --min-reduction-percent 20]
+  bun run gym verify [--plan PATH] --baseline RUN_ID --candidate LAB_FORK [--trials 3]
+  bun run gym:plan <validate|report> PATH [--runs RETAINED_BENCHMARKS_DIR] [--json]
   bun run gym review --run RUN_ID --case ID --trial N --verdict pass|fail --reviewer NAME --reason TEXT [--classification may-behavior|ground-truth|scorer|harness|unclear] [--reason-code CODE]
   bun run gym rescore [--run] RUN_ID
   bun run gym report [--run] RUN_ID`);
@@ -190,6 +198,13 @@ export async function executeLoopCli(
   argv: string[] = process.argv,
 ): Promise<void> {
   const args = parseArgs(argv);
+  if (args.planPath) {
+    if (!["test", "verify"].includes(args.command)) throw new Error("--plan commissions test or verify runs only");
+    const plan = loadPlan(args.planPath, gymRoot);
+    args.agent ||= plan.evaluation.target;
+    args.trials ||= plan.evaluation.trials;
+    args.timeout ??= plan.evaluation.timeout_minutes;
+  }
   if (args.core && (args.command !== "test" || args.scenarios.length > 0)) {
     throw new Error(
       "--core selects a test baseline; do not combine it with --case (--scenario is the old alias). Verification inherits the frozen selection.",
@@ -218,6 +233,7 @@ export async function executeLoopCli(
           "--target is required: choose the agent or workflow for this purpose benchmark",
         );
       const created = await runLoop({
+        planPath: args.planPath,
         phase: "test",
         objective: parseComparisonObjective({
           metric: args.objective ?? "quality",
@@ -238,6 +254,7 @@ export async function executeLoopCli(
     case "verify": {
       if (!args.baseline || args.candidate === "baseline") usage();
       const verified = await verifyLoop({
+        planPath: args.planPath,
         baseline: args.baseline,
         candidate: args.candidate,
         trials: args.trials || undefined,

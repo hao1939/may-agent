@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "revision": 11,
+  "agent": "may",
+  "owner": "alex",
+  "outcomes": [
+    "Understand the user's intent, use existing bounded authority and ask only when missing information materially changes the action.",
+    "Direct useful improvement evidence to accountable ownership and follow-through with proportionate machinery.",
+    "Complete useful bounded local work, preserve unrelated changes, verify the result and accurately report the delivered outcome."
+  ],
+  "benchmarks": [
+    {
+      "id": "user-intent-and-authority",
+      "version": 2,
+      "goal": "Choose scoped action under clear authority and clarification when the target is materially ambiguous.",
+      "baseline_run_id": null
+    },
+    {
+      "id": "improvement-routing",
+      "version": 1,
+      "goal": "Choose evidence-based owner follow-through while allowing removal or reuse of redundant mechanisms.",
+      "baseline_run_id": null
+    },
+    {
+      "id": "bounded-task-completion",
+      "version": 1,
+      "goal": "Finish an authorized local configuration repair, preserve unrelated work, verify the exact final artifact and accurately report the bounded result.",
+      "baseline_run_id": null
+    }
+  ],
+  "evaluation": {
+    "target": "may",
+    "model": "gpt-5.6-sol",
+    "trials": 1,
+    "timeout_minutes": 4,
+    "max_runs_per_cycle": 2
+  },
+  "improvement": {
+    "problem": "The finite hosted May pilot reached accepted no_change. The recurring Alex Task initially narrowed scope to May; the accepted user correction makes it system-wide. May is one eligible target with no default priority. The first deadline remains 2026-11-17T09:00:00Z; due-day execution, rearming, system-wide selection and durable cumulative accounting remain unverified.",
+    "evidence": [
+      "projects/gym/docs/may-plan-trial-20261116.md",
+      "projects/gym/docs/agent-reports/may-pilot-20261116.json",
+      "projects/gym/docs/may-calibration-repair-20261116.md",
+      "projects/gym/docs/agent-reports/may-calibration-repair-20261116.json",
+      "projects/gym/docs/may-execution-trial-20261116.md",
+      "projects/gym/docs/agent-reports/may-execution-trial-20261116.json",
+      "projects/gym/docs/may-real-work-review-20261116.md",
+      "projects/gym/docs/agent-reports/may-real-work-review-20261116.json",
+      "projects/gym/docs/may-hosted-cycle-20261116.md",
+      "projects/gym/docs/agent-reports/may-hosted-cycle-20261116.json",
+      "projects/gym/docs/may-periodic-review-20261116.md",
+      "projects/gym/docs/agent-reports/may-periodic-review-20261116.json",
+      "projects/gym/docs/system-periodic-review-20261116.md",
+      "projects/gym/docs/agent-reports/system-periodic-review-20261116.json",
+      "projects/gym/docs/agent-manual-trials-20261116.md",
+      "projects/gym/docs/agent-reports/agent-manual-trials-20261116.json"
+    ],
+    "hypothesis": "A bounded system-wide review of changed evidence, with Alex choosing one active problem and reusing proof, can prioritize improvements by useful delivery, attributable human correction effort and total time/cost. May receives review when its evidence warrants selection; accepted setup and scope correction do not establish future benefit.",
+    "expected_benefit": "Keep Alex responsible for useful system-wide improvement and make scope, selected target, cadence, current decision, evidence, incident allowances and next action observable on one standing Task.",
+    "unchanged_alternative": "Keep May production instructions and current benchmark evidence unchanged whenever no supported candidate exists. The recurring review is authorized; automatic candidate publication/application, truth approval and baseline promotion are not.",
+    "stop_when": "The standing daily responsibility remains open until user/operator revision or withdrawal. Each review stops at supported no-change, a bounded verified local result, or an exact blocker; never spend runs merely to fill the cadence. Rearm only the same Task for the next daily 09:00 UTC and retain incident allowances across attempts/days.",
+    "next_action": "At 2026-11-17T09:00:00Z, standing Alex Task input/app_82bccb7e-cdab-4ea4-875b-7d99945fec93 should select from fresh system-wide signals, rather than automatically review May, and retain its next deadline, decision, source receipts and cumulative incident counts. If May is selected, use this plan and fitting whole benchmarks; otherwise retain May evidence unchanged. Its seeded setup-time observedCutoff is not an exhaustive processing cursor: use bounded overlapping discovery and deduplicate actual evidence identities. A new day does not reset an unresolved incident's two-run, one-development-invocation or three-review-round allowance. Observe the first due wake/rearming before claiming recurring reliability."
+  },
+  "coverage_gaps": [
+    "Current evidence is three draft judgment passes across user-intent-and-authority v2 and improvement-routing v1, plus one draft behavior pass in bounded-task-completion v1. The original authority v1 calibration-invalid case remains historical; changed measurement definitions do not form an agent-quality improvement comparison.",
+    "Each current case was measured once. All four expectations remain draft; variance and production reliability are unmeasured, no approved baseline is selected and no owner adoption decision exists.",
+    "The behavior score remains a small synthetic local config repair. A historical request was reviewed through retained creator acceptance and one live hosted selection cycle reached accepted no_change. Neither adds a benchmark score or representative reliability measurement. Candidate preparation/comparison, activation, subsequent transfer and restart recovery remain unmeasured by this pilot.",
+    "All three retained execution-trial model sessions have complete reply and SDK cost estimates. The attempt needed zero operator corrections, but benchmark authoring, checks and audit are operator work outside it. Billing, operator cost and full-cycle effort remain unknown; parallel grader durations are not elapsed time.",
+    "Cumulative cycle-run accounting is manual. Prior cycles used two pilot runs and one calibration run. The execution cycle used one whole benchmark run within the unchanged two-run ceiling, without retries or additional subject model runs.",
+    "The historical real-work review establishes correction and recovery in one request. Human/operator correction count, avoidable delay, full delivery-cycle cost and current recurrence remain unknown. Reviewer sessions sharing a Task binding are not independent owner failures. The review made zero new model calls and no live Task actions.",
+    "The hosted pilot used one Alex session, 21 measured replies, 137.068 seconds and $1.5698288 SDK model estimate; billing/operator effort remain unknown. Its original owner record retained an earlier $1.1752016 usage cut, supplemented by an independent final audit. Zero development/benchmark calls did not test cumulative budget enforcement. The accepted hosted no_change is in improvement.evidence; decisions remains the separate benchmark-run-linked list.",
+    "A standing Alex Task is canonically waiting with first reviewAt=1794906000000 (2026-11-17 09:00 UTC), also retained on its input wait. Setup used one Alex session, eight measured replies, 76.014 seconds and $0.4644896 model estimate, with zero benchmarks/helpers. A due-day wake, subsequent rearming and restart recovery have not been observed. Quiet no-change does not imply a no-model or free daily wake; incident accounting remains owner-maintained rather than a proven hard cumulative cap.",
+    "The same standing Task accepted system-wide selection at generation 1/resourceVersion 12, preserving the first deadline and zero incident counts. May is eligible without default priority or a guaranteed daily review. This scope correction adds no May score or production evidence; system-wide discovery and prioritization remain unobserved.",
+    "The manual five-agent pass retained a second successful observation of the same bounded-task-completion behavior case, not a new distinct capability or an agent improvement comparison. Its one-case draft result, exact run and costs are linked in improvement.evidence; the system-wide standing policy and next deadline are unchanged."
+  ],
+  "decisions": []
+}

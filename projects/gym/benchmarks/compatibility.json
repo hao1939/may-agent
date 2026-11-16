@@ -3,22 +3,27 @@
   "may-app-outcome-management": "outcome-coordination",
   "core-behavior": "verified-code-work",
   "may-judgment": [
-    "adoption-and-simplicity",
-    "authority-and-scope"
+    "user-intent-and-authority",
+    "improvement-routing"
   ],
   "alex-judgment": [
     "outcome-completion",
-    "adoption-and-simplicity"
+    "improvement-stage-selection"
   ],
   "bob-judgment": [
     "adoption-and-simplicity",
-    "authority-and-scope"
+    "workflow-ownership"
   ],
   "tech-lead-judgment": [
     "repair-and-verification",
-    "authority-and-scope"
+    "worktree-scope-and-preservation"
   ],
   "scout-judgment": [
     "research-evidence"
+  ],
+  "authority-and-scope": [
+    "user-intent-and-authority",
+    "worktree-scope-and-preservation",
+    "workflow-ownership"
   ]
 }

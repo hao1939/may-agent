@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "revision": 2,
+  "agent": "scout",
+  "owner": "alex",
+  "outcomes": [
+    "Assess the requested source and report conclusions only within the available evidence and required coverage.",
+    "Preserve reusable knowledge and links, distinguish research candidates from reference context, and return source-grounded recommendations."
+  ],
+  "benchmarks": [
+    {
+      "id": "research-evidence",
+      "version": 1,
+      "goal": "Distinguish required unread evidence from a completed bounded check, maintain authoritative knowledge and classify source leads proportionately.",
+      "baseline_run_id": null
+    }
+  ],
+  "evaluation": {
+    "target": "scout",
+    "model": "gpt-5.6-sol",
+    "trials": 1,
+    "timeout_minutes": 4,
+    "max_runs_per_cycle": 2
+  },
+  "improvement": {
+    "problem": "The first commissioned research-evidence v1 trial passed all four draft judgment cases, including incomplete disposition for missing required sections and completion when the requested evidence was supplied. Live research, publication and adoption usefulness remain unmeasured; the trial does not justify a Scout prompt change.",
+    "evidence": [
+      "projects/gym/docs/agent-manual-trials-20261116.md",
+      "projects/scout-knowledge-lib.app/agents/scout/AGENTS.md",
+      "projects/gym/docs/agent-reports/agent-manual-trials-20261116.json"
+    ],
+    "hypothesis": "The first trial supports using complete evidence-focused benchmarks to distinguish missing source coverage from a complete bounded assessment. A real research delivery problem should determine the next experiment.",
+    "expected_benefit": "Make current research judgment observable before selecting any improvement to Scout or its surrounding workflow.",
+    "unchanged_alternative": "Keep Scout's production sources and knowledge library unchanged and retain unsupported coverage as unknown.",
+    "stop_when": "The manual first pass is complete: retain its four draft passes and receipts without further runs. Start another cycle only for a concrete real-work problem or an explicitly chosen coverage question.",
+    "next_action": "Reuse the four-case research-evidence v1 result and keep Scout production guidance and the knowledge library unchanged. On the next concrete research delivery problem, inspect actual source coverage, retained record, publication evidence and correction effort; do not infer a live retrieval or publication failure from this decision-only benchmark."
+  },
+  "coverage_gaps": [
+    "Research-evidence v1 has one complete commissioned four-case draft judgment pass. The blocked-source case correctly returned incomplete, while the supported bounded check converged. Earlier Scout collections and production source assessments retain their original scope; these judgments are not live workflow proof.",
+    "This decision-only fixture does not establish live retrieval, durable archive publication, link preservation during real edits or useful research adoption.",
+    "One trial per case leaves variance and production reliability unmeasured; draft truth and absent approved baselines prevent promotion comparisons."
+  ],
+  "decisions": []
+}

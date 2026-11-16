@@ -1,0 +1,18 @@
+{
+  "name": "worktree-scope-and-preservation-v1",
+  "version": 1,
+  "purpose": "Preserve unrelated work and carry out explicitly authorized task-owned cleanup.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "tech-lead-judge-preserve-unrelated-worktree-changes",
+    "tech-lead-judge-remove-authorized-owned-scratch"
+  ],
+  "core_cases": [
+    "tech-lead-judge-preserve-unrelated-worktree-changes",
+    "tech-lead-judge-remove-authorized-owned-scratch"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs",
+  "subject_role": "tech-lead",
+  "output_contract": "task-agent-result"
+}

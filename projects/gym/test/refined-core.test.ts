@@ -12,7 +12,7 @@ import { validateSemanticControlSet } from "../src/scoring/semantic-judge";
 import { withTempDir, withTempDirAsync } from "./support/temp-dir";
 
 const project = resolve(import.meta.dirname, "..");
-const purposes = ["authority-and-scope", "outcome-completion", "adoption-and-simplicity", "repair-and-verification", "research-evidence"];
+const purposes = ["user-intent-and-authority", "worktree-scope-and-preservation", "outcome-completion", "adoption-and-simplicity", "repair-and-verification", "research-evidence"];
 const { scoreDecision } = require("../benchmarks/intent-and-follow-through/score-decision.cjs");
 const command = "node --test test/duration.test.cjs";
 
@@ -62,9 +62,9 @@ describe("refined core judgment selection", () => {
       const { suite } = loadSuite(benchmark);
       const labels = loadLabels(benchmark, suite).catalog!;
       expect(suite.evaluation_kind).toBe("judgment");
-      expect(suite.version).toBe(benchmark === "outcome-completion" ? 3 : 1);
+      expect(suite.version).toBe(benchmark === "outcome-completion" ? 3 : ["adoption-and-simplicity", "user-intent-and-authority", "repair-and-verification"].includes(benchmark) ? 2 : 1);
       const selected = selectCoreScenarios(suite);
-      expect(selected.length).toBe(benchmark === "authority-and-scope" ? 4 : 2);
+      expect(selected.length).toBe(2);
       coreCases += selected.length;
       for (const id of selected) {
         const c = suite.cases!.find((item) => item.id === id)!;
@@ -83,7 +83,7 @@ describe("refined core judgment selection", () => {
     }
     expect(coreCases).toBe(12);
     // Older cases were not deleted or silently promoted into core.
-    expect(loadSuite("adoption-and-simplicity").suite.scenarios).toContain("may-judge-route-unconsumed-detector-to-owner");
+    expect(loadSuite("improvement-routing").suite.scenarios).toContain("may-judge-route-unconsumed-detector-to-owner");
     expect(loadSuite("outcome-completion").suite.scenarios).toContain("alex-judge-cap-review-loop-at-three-rounds");
   });
 
@@ -144,11 +144,11 @@ describe("refined core judgment selection", () => {
 
   test("the older ownership case follows the assigned agent, not the App default", () => withTempDir((root) => {
     const id = "bob-judge-app-owner-workflow-ownership", scenario = join(root, "scenario"), work = join(root, "work");
-    const suite = materialize("authority-and-scope", id, scenario);
+    const suite = materialize("workflow-ownership", id, scenario);
     cpSync(join(scenario, "environment"), work, { recursive: true });
     const c = suite.cases!.find((item) => item.id === id)!;
-    expect(selectCoreScenarios(suite)).not.toContain(id);
-    expect(loadLabels("authority-and-scope", suite).catalog!.labels[id]?.status).toBe("draft");
+    expect(suite.core_cases ?? []).not.toContain(id);
+    expect(loadLabels("workflow-ownership", suite).catalog!.labels[id]?.status).toBe("draft");
     expect(c.expected?.contains_groups).toBeUndefined();
     const controls = validateSemanticControlSet(c.semantic_controls);
     for (const control of controls.cases) expect(admitTaskReconcileResult(control.decision).ok).toBe(true);
@@ -186,15 +186,15 @@ describe("refined core judgment selection", () => {
         checks:[{name:'synthetic-contract-fixture',passed:true}],prompt_hash:'fixture',framework_sha:'fixture',model:'fixture'}));
     `);
     chmodSync(mock, 0o755);
-    const child = Bun.spawnSync(["bun", join(project, "src/loop/cli.ts"), "test", "--benchmark", "authority-and-scope", "--core", "--target", "tech-lead", "--trials", "1"], {
+    const child = Bun.spawnSync(["bun", join(project, "src/loop/cli.ts"), "test", "--benchmark", "worktree-scope-and-preservation", "--core", "--target", "tech-lead", "--trials", "1"], {
       cwd: project, env: { ...process.env, GYM_STATE_DIR: join(root, "state"), BUN_EXEC_PATH: mock }, stdout: "pipe", stderr: "pipe",
     });
     expect(child.exitCode).toBe(0);
     const dir = child.stdout.toString().trim();
     const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
-    expect(manifest.scenarios).toEqual(selectCoreScenarios(loadSuite("authority-and-scope").suite));
+    expect(manifest.scenarios).toEqual(selectCoreScenarios(loadSuite("worktree-scope-and-preservation").suite));
     expect(manifest.agent).toBe("tech-lead");
-    expect(manifest.trials).toHaveLength(4);
+    expect(manifest.trials).toHaveLength(2);
     expect(manifest.trials.every((trial: any) => trial.label_status === "draft")).toBe(true);
   }));
 });

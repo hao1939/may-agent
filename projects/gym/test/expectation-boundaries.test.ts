@@ -185,21 +185,29 @@ describe("rescoring does not recreate missing behavior evidence", () => {
     test(evidence, () => withTempDir((root) => {
       // Use an extended deterministic case: diagnostic rescoring deliberately
       // cannot rerun the semantic judges used by the revised core/owner cases.
-      const id = "tech-lead-judge-fast-targeted-checks-and-local-commit-boundary";
+      const id = "bob-judge-converge-duplicate-entry-points";
+      const { suite } = loadSuite("adoption-and-simplicity");
+      const scenario = join(root, "fixture");
+      materializeScenarioOrInlineCase({ scenario: id, suite,
+        sourceBenchmarkDir: join(project, "benchmarks/adoption-and-simplicity"),
+        evaluatorOwner: null, destination: scenario });
       const manifest = run(false);
-      manifest.benchmark = "repair-and-verification";
+      manifest.benchmark = "adoption-and-simplicity";
+      manifest.benchmark_version = suite.version;
+      manifest.agent = "bob";
       manifest.scenarios = [id];
       const trial = manifest.trials[0]!;
       trial.scenario = id;
       trial.artifact_path = `cases/${id}/trial-1/task-result.json`;
       trial.result_path = `cases/${id}/trial-1/result.json`;
       const artifact = { state: "converged",
-        summary: "Use check:ci targeted verification, then a local commit on this branch. No PR, push, merge, or deploy is authorized.",
+        summary: "Remove runDirectWorkflow and converge on run() as the single unified SDK entry point.",
         facts: [] };
       save(root, trial.artifact_path, artifact);
       save(root, trial.result_path, { agent_status: "success" });
       if (evidence !== "legacy") {
         trial.workspace_path = `cases/${id}/trial-1/workspace`;
+        cpSync(join(scenario, "environment"), join(root, trial.workspace_path), { recursive: true });
         save(root, `${trial.workspace_path}/task-result.json`, artifact);
         if (evidence === "edited-workspace") save(root, `${trial.workspace_path}/proposals/unrequested.md`, "Unauthorized work");
       }

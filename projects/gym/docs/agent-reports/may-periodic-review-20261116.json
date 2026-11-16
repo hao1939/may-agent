@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-11-16T12:47:49.693485+00:00",
+  "kind": "standing-periodic-may-review-setup",
+  "owner": "alex",
+  "target": "may",
+  "admission_event_id": 6726807,
+  "task": {
+    "schema_version": 1,
+    "observed_at": "2026-11-16T12:46:48.899Z",
+    "app_id": "alex",
+    "task_id": "input/app_82bccb7e-cdab-4ea4-875b-7d99945fec93",
+    "generation": 1,
+    "resource_version": 6,
+    "status": "waiting",
+    "cadence": "daily 09:00 UTC",
+    "next_review_at": "2026-11-17T09:00:00Z",
+    "next_review_at_ms": 1794906000000,
+    "mechanism": "standing Task-owned reviewAt; one next deadline rearmed by Alex after each observation",
+    "accepted_setup_attempt": {
+      "id": "r_1_2dd0cbeb-311c-4e3b-bc83-cd153124b38a",
+      "generation": 1,
+      "startedAt": "2026-11-16T12:45:32.139Z",
+      "finishedAt": "2026-11-16T12:46:48.153Z"
+    },
+    "checkpoint": {
+      "path": "/app/.state/gym-may-periodic-20261116/alex-evidence/setup-checkpoint-20261116T1246Z.json",
+      "sha256": "7c88fcc4c91dd69d7361f2c7ca9e2910a187a7f54a98b50f8ce2ff5a2ba80e6b"
+    },
+    "recurring_cycle_executed": false
+  },
+  "canonical_deadline_verified": true,
+  "top_level_finish_review_at_verified": true,
+  "same_task_input_wait_review_at_verified": true,
+  "new_app_or_cron_schedule_added": false,
+  "scope": "Daily changed-evidence May improvement review and bounded local follow-through; unchanged evidence quiet, no automatic publication/application. Setup only armed the first review and did not repeat the finite pilot.",
+  "limits": {
+    "subjectRequestsPerReview": 10,
+    "supportingAlexRecordsPerReview": 3,
+    "activeProblems": 1,
+    "wholeBenchmarkRunsPerIncident": 2,
+    "developmentInvocationsPerIncident": 1,
+    "automatedReviewRepairRoundsPerIncident": 3
+  },
+  "budgets_reset_daily": false,
+  "setup": {
+    "sessions": 1,
+    "model": "gpt-5.6-sol",
+    "provider": "github-copilot",
+    "model_replies": 8,
+    "replies_with_usage_and_cost": 8,
+    "model_cost_estimate_usd": 0.4644896,
+    "accepted_attempt_elapsed_ms": 76014.0,
+    "billed_cost_usd": null,
+    "operator_cost_usd": null,
+    "new_benchmark_runs": 0,
+    "new_helpers": 0,
+    "development_invocations": 0,
+    "production_changes": 0,
+    "tool_calls": {
+      "read": 10,
+      "bash": 4,
+      "tasks": 1,
+      "write": 1,
+      "finish": 1
+    }
+  },
+  "limitations": [
+    "Only setup and persisted first deadline are verified. No due-day wake, subsequent rearming, restart recovery or general recurring reliability has been observed.",
+    "Daily owner wakes can use model tokens even on a no-change day. Silence suppresses unnecessary follow-up, not necessarily model execution.",
+    "Incident budgets are retained by the owner; durable automatic cumulative enforcement is still unproved.",
+    "Setup observed_cutoff is setup time, not proof of exhaustive subject inspection. The first due review must retain bounded coverage and deduplicate existing receipts without treating that time as proof that all earlier subjects were processed.",
+    "No automatic production application, publication, truth approval or baseline promotion."
+  ],
+  "preservation": {
+    "previous_hashes_verified": 5318,
+    "host_clean": true,
+    "host_revision": "d4ee0909607cbeb87765a7502ec047229dca8bda",
+    "may_production_source_unchanged": true
+  },
+  "evidence": [
+    {
+      "path": ".state/gym-may-periodic-20261116/status.json",
+      "sha256": "2aa256b70cd20dfbfef3a70e23beb48fe300760b8d7dc016221ad8fc1242e0a4"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/configuration.json",
+      "sha256": "3fa8065f21c5fa77898989cc0867e22c101b4363340188f64f52437292fc2ed3"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/trigger-command.json",
+      "sha256": "2b914814535b258e81fff692506cea4b5c543a4d1f0a74706a84acec1a0f1616"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/admission.json",
+      "sha256": "8403ffe36209d03130f9735c77b68ce53ccc898ae00ea1d3489ee8cfd3323e17"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/open-before.json",
+      "sha256": "53d380ff9d01466d33223b1418624258210da5c062bcf15daf0f68e57b72a8ee"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/inputs/manifest.json",
+      "sha256": "a7c976699ac6e803b09aaf2f592f7bd7783de5dc6ee4763578847ca88a36636a"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/task-1794833208911.json",
+      "sha256": "f46a7e591afcaa35a28c246fec3d36978d11483f3511de70e1b7164ad10aa6a0"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/alex-evidence/setup-checkpoint-20261116T1246Z.json",
+      "sha256": "7c88fcc4c91dd69d7361f2c7ca9e2910a187a7f54a98b50f8ce2ff5a2ba80e6b"
+    },
+    {
+      "path": ".state/sessions/s_1794833134454_dfa3e05c-b77f-4754-8b15-b5a90bb7967d/meta.json",
+      "sha256": "c749eb1420be49e552225f401c70d1775f11f12422ce587ee1d3ef9be4d408d7"
+    },
+    {
+      "path": ".state/sessions/s_1794833134454_dfa3e05c-b77f-4754-8b15-b5a90bb7967d/result.json",
+      "sha256": "5ec202a268716f9dce45c3937c4f716c33084a0ea082577d87860c29eedd562c"
+    },
+    {
+      "path": ".state/sessions/s_1794833134454_dfa3e05c-b77f-4754-8b15-b5a90bb7967d/session.jsonl",
+      "sha256": "6adf1765b0528f3ff7ac6a1a1f5303fb974daac045752108cd1e5fcd5e8bbf65"
+    }
+  ]
+}

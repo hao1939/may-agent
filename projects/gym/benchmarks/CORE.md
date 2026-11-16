@@ -5,7 +5,7 @@ one case, one purpose benchmark, one folder. The agent is selected for each run.
 See [organization](../docs/cases-benchmarks-and-agents.md).
 
 The small selection is still **12 judgment cases in six pairs and five behavior
-cases**. It spans six purpose benchmarks, not one mixed-role run. The two
+cases**. It spans seven purpose benchmarks, not one mixed-role run. The two
 [outcome-completion core cases](outcome-completion/README.md) now have explicit
 fingerprint-bound truth approval; the other **15 remain draft**. That approval does not
 transfer to other answers, checks or model runs. Relocation did not approve them.
@@ -28,7 +28,8 @@ retain their historical prefixes, but each now belongs to one purpose folder.
 
 | Benchmark | Selected case IDs |
 | --- | --- |
-| `authority-and-scope` | `may-judge-act-with-clear-authority`, `may-judge-clarify-material-target`, `tech-lead-judge-preserve-unrelated-worktree-changes`, `tech-lead-judge-remove-authorized-owned-scratch` |
+| `user-intent-and-authority` | `may-judge-act-with-clear-authority`, `may-judge-clarify-material-target` |
+| `worktree-scope-and-preservation` | `tech-lead-judge-preserve-unrelated-worktree-changes`, `tech-lead-judge-remove-authorized-owned-scratch` |
 | `outcome-completion` | `alex-judge-helper-recommendation-not-completion`, `alex-judge-close-verified-bounded-outcome` |
 | `adoption-and-simplicity` | `bob-judge-reject-unproven-research-adoption`, `bob-judge-evaluate-tool-for-verified-gap` |
 | `repair-and-verification` | `tech-lead-judge-preserve-creator-test-and-fix-source`, `tech-lead-judge-correct-mistaken-test` |
@@ -40,6 +41,12 @@ inferred from prose is advisory in semantic cases: a question mark does not
 establish missing intent. Explicit structured clarification flags are checked.
 Word targets are advisory. Two calibrated AI readers judge open-ended meaning;
 their agreement and examples are not independent proof of accuracy.
+
+`repair-and-verification` v2 names the source contract in its repair task and
+extends the same complete-result semantic judging to its non-core local-commit
+and publication case. The [measurement-repair record](../docs/tech-lead-scoring-repair-20261116.md)
+retains the v1 failures, counterexamples and fresh v2 evidence. Membership and
+the two-case core selection are unchanged; expectations remain draft.
 
 ## Behavior selection: `verified-code-work`
 
@@ -94,7 +101,8 @@ From `/app`, examples below **make model calls**. They have not been run as part
 of the layout migration:
 
 ```bash
-bun run gym test --benchmark authority-and-scope --core --target <compatible-agent> --trials 3
+bun run gym test --benchmark user-intent-and-authority --core --target may --trials 3
+bun run gym test --benchmark worktree-scope-and-preservation --core --target tech-lead --trials 3
 bun run gym test --benchmark outcome-completion --core --target alex --trials 3
 bun run gym test --benchmark adoption-and-simplicity --core --target bob --trials 3
 bun run gym test --benchmark repair-and-verification --core --target tech-lead --trials 3
@@ -103,8 +111,8 @@ bun run gym test --benchmark verified-code-work --core --target tech-lead --tria
 ```
 
 Choose a target suitable for the supplied case authority and output contract;
-run only compatible selections, rather than assuming every role suits every
-case. The target is not chosen by the benchmark folder. `--case` can select an
+each full benchmark has one role/result contract. Agent plans assign full
+benchmarks; core/individual selections remain diagnostic. The target is not chosen by the benchmark folder. `--case` can select an
 individual owned case; do not combine it with `--core`. Verification inherits
 the baseline's frozen selection.
 
@@ -115,3 +123,6 @@ approval. Old global/agent-named definitions remain in the
 rewritten. Moved definitions require fresh matched baselines. Review expectations
 and scorers before comparisons, use repeated trials, report the two purposes
 separately, and keep real user outcomes as the primary measure of value.
+
+The behavior scorer does not yet establish narrative delivery-claim honesty. See
+[the retained scoring gap](../docs/benchmark-scoring-gaps.md).

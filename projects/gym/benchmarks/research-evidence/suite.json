@@ -14,5 +14,7 @@
     "scout-judge-complete-supported-evidence-check"
   ],
   "artifact": "task-result.json",
-  "evaluator": "../intent-and-follow-through/score-decision.cjs"
+  "evaluator": "../intent-and-follow-through/score-decision.cjs",
+  "subject_role": "scout",
+  "output_contract": "task-agent-result"
 }

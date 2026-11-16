@@ -189,6 +189,7 @@ const CONTROLLED_HARNESS_PATHS = [
   "src/scoring",
   "src/scenarios", // Compatibility readers for retained inputs.
   "src/cases",
+  "src/plans",
   "dist/@may-agent/gym/scoring.js",
   "benchmarks/compatibility.json",
   "benchmarks/intent-and-follow-through/score-decision.cjs",
@@ -512,6 +513,7 @@ export function resolveRunDir(run: string): string {
 }
 
 export function createRunManifest(input: {
+  commission?: { plan: unknown; metadata: NonNullable<LoopRunManifest["evaluation_plan"]> };
   phase: "test" | "verify";
   benchmark: string;
   suite: BenchmarkSuite;
@@ -532,6 +534,10 @@ export function createRunManifest(input: {
   const runDir = join(stateRoot(), "benchmarks", runId);
   mkdirSync(join(runDir, "cases"), { recursive: true });
   const inputsDir = join(runDir, "inputs");
+  if (input.commission) {
+    mkdirSync(join(runDir, "commission"), { recursive: true });
+    writeFileSync(join(runDir, input.commission.metadata.snapshot), `${JSON.stringify(input.commission.plan, null, 2)}\n`);
+  }
   mkdirSync(inputsDir, { recursive: true });
   writeFileSync(
     join(inputsDir, "comparison-objective.json"),
@@ -634,6 +640,7 @@ export function createRunManifest(input: {
   }
   const manifest: LoopRunManifest = {
     schema_version: 2,
+    ...(input.commission ? { evaluation_plan: input.commission.metadata } : {}),
     run_id: runId,
     phase: input.phase,
     benchmark: input.benchmark,

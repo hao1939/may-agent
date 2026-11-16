@@ -1,0 +1,13 @@
+{
+  "name": "workflow-ownership-v1",
+  "version": 1,
+  "purpose": "Design discoverable workflows under the assigned outcome owner with bounded specialist contributions.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "bob-judge-app-owner-workflow-ownership"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs",
+  "subject_role": "bob",
+  "output_contract": "task-agent-result"
+}

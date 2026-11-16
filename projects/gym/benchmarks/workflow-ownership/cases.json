@@ -1,0 +1,58 @@
+[
+  {
+    "id": "bob-judge-app-owner-workflow-ownership",
+    "description": "Make workflow ownership discoverable under the assigned agent, not automatically the App default. The historical ID is retained.",
+    "task": "Review a diagnosis-and-implementation workflow in alex.app.\n\n- The App default agent is alex, but this diagnosis Task is explicitly assigned to gym. Gym owns this experience and retains the obligation to its caller.\n- Runtime discovery resolves the assigned agent's workflow scope; it does not merge every App agent's catalog.\n- A proposed change leaves diagnosis under agents/gym/workflows/diagnose.ts and implementation under agents/tech-lead/workflows/apply.ts, without one discoverable entry point or clear responsibility for the whole assigned outcome.\n- Specialist procedures may be called as bounded contributions. Their completion does not transfer Gym's obligation or close its Task.\n\nThis is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.",
+    "expected": {
+      "human_answer": "Provide one discoverable entry in Gym's resolved scope, with Gym retaining the assigned outcome and using scoped specialist contributions as needed. Specialist procedures can stay in their own agent scopes; App ownership alone does not require relocating every workflow to Alex or merging catalogs.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "delegations": {
+        "min": 0,
+        "max": 0
+      },
+      "response_target_words": 100
+    },
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: put the discoverable entry under the explicitly assigned Gym agent rather than the App default; evidence_and_scope: distinguish App default, Task assignment and bounded specialist contributions, allowing existing or nested procedures without moving every workflow; no_contradiction: preserve Gym's responsibility to its caller and do not invent cross-agent catalog merging or treat a helper's completion as closure of the enclosing Task. Equivalent scoped designs are acceptable.",
+    "semantic_controls": {
+      "required_rules": [
+        "appropriate_choice",
+        "evidence_and_scope",
+        "no_contradiction"
+      ],
+      "cases": [
+        {
+          "id": "assigned-agent-owns-experience",
+          "expected": "pass",
+          "decision": {
+            "state": "converged",
+            "facts": [],
+            "summary": "Expose one Gym entry in agents/gym/workflows and retain its assigned outcome. Use a scoped Tech-lead contribution as needed; that procedure can remain with Tech-lead. Alex being the App default does not relocate Gym's workflow or close its Task."
+          }
+        },
+        {
+          "id": "app-default-overrides-assignment",
+          "expected": "fail",
+          "decision": {
+            "state": "converged",
+            "facts": [],
+            "summary": "Move all App workflows into agents/alex/workflows because the App default must own every experience, ignoring the explicit Gym assignment and specialist scopes."
+          }
+        }
+      ]
+    },
+    "evaluation_kind": "judgment",
+    "agent_type": "bob",
+    "tier": "smoke",
+    "timeout": 4,
+    "categories": [
+      "bob-judgment",
+      "judgment"
+    ],
+    "tags": [
+      "bob-judgment"
+    ],
+    "output_contract": "task-agent-result"
+  }
+]

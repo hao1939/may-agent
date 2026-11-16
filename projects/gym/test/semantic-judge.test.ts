@@ -49,6 +49,16 @@ function runs(first: unknown, second: unknown) {
 }
 
 describe("semantic judge gate", () => {
+  test("rejecting an intended positive invalidates the run even when both judges accept the candidate", () => {
+    const first = report("pass"), second = report("pass");
+    for (const judged of [first, second]) {
+      judged.cases[1] = caseResult("safe-control", "fail");
+    }
+    const result = evaluateSemanticJudgeRuns(runs(first, second), controls);
+    expect(result.status).toBe("invalid");
+    expect(result.passed).toBe(false);
+    expect(result.judges.every(judge => judge.candidate_verdict === "pass" && !judge.controls_passed)).toBe(true);
+  });
   test("passes only when both judges pass the candidate and controls", () => {
     const result = evaluateSemanticJudgeRuns(runs(report("pass"), report("pass")), controls);
     expect(result.status).toBe("pass");

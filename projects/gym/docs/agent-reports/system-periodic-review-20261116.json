@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-11-16T12:59:03.231027+00:00",
+  "kind": "standing-system-improvement-review-scope-correction",
+  "owner": "alex",
+  "scope": "all installed agents, Apps, workflows, benchmarks/evaluation, tools, and improvement-process mechanics",
+  "eligible_targets": [
+    "may",
+    "alex",
+    "bob",
+    "tech-lead",
+    "scout",
+    "supporting workflows and process/tooling defects"
+  ],
+  "selection_policy": {
+    "agentsReviewedEveryDay": false,
+    "automaticPublicationAuthorized": false,
+    "changedEvidenceOnly": true,
+    "maxActiveIncidents": 1,
+    "mayDefaultPriority": false,
+    "noChangeDispositions": [
+      "no_change",
+      "insufficient_evidence"
+    ],
+    "objective": "Choose the highest-value supported bottleneck by reliable useful delivery, fewer attributable human corrections, and acceptable total time and cost.",
+    "productionApplicationAuthorized": false,
+    "reuseExistingAccountableWork": true,
+    "subjectRequestsTotalPerReview": 10,
+    "supportingRecordsTotalPerReview": 3,
+    "unchangedEvidenceAction": "No helper, benchmark, candidate, development invocation, or human notification; the owner wake itself may still consume model tokens."
+  },
+  "admission_event_id": 6726836,
+  "task": {
+    "app_id": "alex",
+    "task_id": "input/app_82bccb7e-cdab-4ea4-875b-7d99945fec93",
+    "generation": 1,
+    "resource_version": 12,
+    "status": "waiting",
+    "observed_at": "2026-11-16T12:57:22.601Z",
+    "accepted_attempt": {
+      "id": "r_1_1b71258a-7ff8-4ae3-a489-a388c392171e",
+      "generation": 1,
+      "startedAt": "2026-11-16T12:55:41.566Z",
+      "finishedAt": "2026-11-16T12:57:09.022Z"
+    },
+    "cadence": "daily 09:00 UTC",
+    "next_review_at_ms": 1794906000000,
+    "next_review_at": "2026-11-17T09:00:00Z",
+    "mechanism": "same standing Task top-level reviewAt; Alex rearms after each observation",
+    "spec_rewritten": false,
+    "original_metadata": "May-only outcome/acceptance retained as historical requirements; addressed scope correction and accepted result carry current system-wide policy"
+  },
+  "scope_correction": {
+    "inputKey": "task:app_b51bc910-4975-413a-8f87-80a5d3b07e9b",
+    "interpretation": "System-wide improvement is the standing direction; May was the first pilot only.",
+    "preserves": [
+      "same standing Task identity",
+      "existing 09:00 UTC deadline",
+      "prior May pilot and setup evidence",
+      "empty active-incident state",
+      "cumulative limits and authority boundaries"
+    ],
+    "requestId": "app_b51bc910-4975-413a-8f87-80a5d3b07e9b",
+    "supersedes": "May-only target-selection policy",
+    "userText": "why only review may?"
+  },
+  "checkpoint": {
+    "coverageGaps": [
+      "The initial May setup cutoff is bookkeeping, not exhaustive system-wide processing coverage.",
+      "No changed-evidence subject review was performed during this scope-update pass.",
+      "Evaluation-plan coverage is known for May, Alex and Tech-lead; other eligible installed targets may have unknown plan coverage.",
+      "Candidate, transfer, activation, and restart-recovery paths remain unmeasured.",
+      "Durable automatic cumulative-budget accounting remains unproved."
+    ],
+    "disposition": "scope_updated",
+    "frozenInputManifest": "/app/.state/gym-system-periodic-scope-20261116/inputs/manifest.json",
+    "frozenInputManifestSha256": "b171044a78abac9ce53d1881714abfa9f670501efe79cc93afed4508efd79fde",
+    "path": "/app/.state/gym-system-periodic-scope-20261116/alex-evidence/system-scope-correction-20261116T1255Z.json",
+    "sha256": "203911f263dbebb00a2777b4fe03074ada018e4c2126f92a7b3cb2406707aa29"
+  },
+  "cumulative_incident_counts": {
+    "activeIncidents": 0,
+    "automatedReviewRepairRounds": 0,
+    "candidatesPrepared": 0,
+    "developmentInvocations": 0,
+    "incidentsSelected": 0,
+    "productionChanges": 0,
+    "wholeBenchmarkRuns": 0
+  },
+  "incident_limits": {
+    "activeProblems": 1,
+    "automatedReviewRepairRoundsPerIncident": 3,
+    "developmentInvocationsPerIncident": 1,
+    "wholeBenchmarkRunsPerIncident": 2
+  },
+  "budgets_reset_daily": false,
+  "verification": {
+    "same_standing_task": true,
+    "canonical_deadline": true,
+    "both_input_waits_same_deadline": true,
+    "accepted_finish_covers_both_inputs": true,
+    "scope_policy_retained_in_current_result": true,
+    "prior_checkpoint_and_frozen_input_hashes": true,
+    "no_new_task_or_scheduler_in_attempt": true,
+    "no_investigation_helper_benchmark_candidate_or_production_action": true
+  },
+  "scope_update_execution": {
+    "sessions": 1,
+    "model": "gpt-5.6-sol",
+    "provider": "github-copilot",
+    "model_replies": 7,
+    "replies_with_usage_and_cost": 7,
+    "total_tokens": 332040,
+    "model_cost_estimate_usd": 0.502192,
+    "elapsed_ms": 87456.0,
+    "billed_cost_usd": null,
+    "operator_cost_usd": null,
+    "tool_calls": {
+      "read": 6,
+      "tasks": 1,
+      "write": 1,
+      "bash": 2,
+      "finish": 2
+    },
+    "recovered_issues": [
+      "python command unavailable; hash/JSON checks retried with Node",
+      "initial waiting result included response; corrected within the same attempt"
+    ],
+    "new_benchmark_runs": 0,
+    "new_helpers": 0,
+    "development_invocations": 0,
+    "production_changes": 0
+  },
+  "limitations": [
+    "First due wake, rearming, restart recovery and system-wide target selection have not been observed.",
+    "Incident budgets are owner-maintained; hard cumulative enforcement remains unproved.",
+    "Original Task metadata remains May-specific; this correction was accepted through addressed input and retained result, not a durable spec rewrite.",
+    "Prior setup cutoff is bookkeeping, not exhaustive processing coverage.",
+    "Daily owner wakes can cost model tokens.",
+    "Evaluation plans are known for May, Alex and Tech-lead; other eligible target coverage remains unknown."
+  ],
+  "evidence": [
+    {
+      "path": ".state/gym-system-periodic-scope-20261116/task-after-resume-02.json",
+      "sha256": "d464c8fb636fbc666199fcf9ec7abb93799d69fe96651b5da9486f7f764d09b0"
+    },
+    {
+      "path": ".state/gym-system-periodic-scope-20261116/admission.json",
+      "sha256": "7bfe0a026c58fd29cc29ebf78d23ed020cdc5668f2b6c9277c5b3c233ece01c0"
+    },
+    {
+      "path": ".state/gym-system-periodic-scope-20261116/scope-correction-command.json",
+      "sha256": "9467e6680523abb7750cb82ccaa619366f8dd7266addaae4ccd4eba9d40c25b4"
+    },
+    {
+      "path": ".state/gym-system-periodic-scope-20261116/inputs/manifest.json",
+      "sha256": "b171044a78abac9ce53d1881714abfa9f670501efe79cc93afed4508efd79fde"
+    },
+    {
+      "path": ".state/gym-system-periodic-scope-20261116/alex-evidence/system-scope-correction-20261116T1255Z.json",
+      "sha256": "203911f263dbebb00a2777b4fe03074ada018e4c2126f92a7b3cb2406707aa29"
+    },
+    {
+      "path": ".state/gym-may-periodic-20261116/alex-evidence/setup-checkpoint-20261116T1246Z.json",
+      "sha256": "7c88fcc4c91dd69d7361f2c7ca9e2910a187a7f54a98b50f8ce2ff5a2ba80e6b"
+    },
+    {
+      "path": ".state/sessions/s_1794833741648_ab905a05-f8c4-48e0-8e2c-95c375a129dc/meta.json",
+      "sha256": "1d0efcac35f747c03b7461787f52cb29eac3601e01c90fb2e8eb7c872b6b0500"
+    },
+    {
+      "path": ".state/sessions/s_1794833741648_ab905a05-f8c4-48e0-8e2c-95c375a129dc/result.json",
+      "sha256": "e9181db38fab484ef2389171fc24f3e47ed3aad08f80cf79b0068114a66bd518"
+    },
+    {
+      "path": ".state/sessions/s_1794833741648_ab905a05-f8c4-48e0-8e2c-95c375a129dc/session.jsonl",
+      "sha256": "c4969e685c30bf05e195843b1e41821dfd613fe5477a7baa8282406fb0f1d174"
+    }
+  ]
+}

@@ -18,5 +18,7 @@
     "behavior-recover-local-verification"
   ],
   "artifact": "task-result.json",
-  "evaluator": "../../dist/@may-agent/gym/core-behavior.cjs"
+  "evaluator": "../../dist/@may-agent/gym/core-behavior.cjs",
+  "subject_role": "tech-lead",
+  "output_contract": "task-agent-result"
 }

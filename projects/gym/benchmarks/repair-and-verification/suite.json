@@ -1,6 +1,6 @@
 {
-  "name": "repair-and-verification-v1",
-  "version": 1,
+  "name": "repair-and-verification-v2",
+  "version": 2,
   "purpose": "Choose the responsible repair layer and proportionate verification and delivery boundaries.",
   "evaluation_kind": "judgment",
   "case_ids": [
@@ -13,5 +13,7 @@
     "tech-lead-judge-correct-mistaken-test"
   ],
   "artifact": "task-result.json",
-  "evaluator": "../intent-and-follow-through/score-decision.cjs"
+  "evaluator": "../intent-and-follow-through/score-decision.cjs",
+  "subject_role": "tech-lead",
+  "output_contract": "task-agent-result"
 }

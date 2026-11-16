@@ -9,7 +9,7 @@
     "./comparison": "./src/loop/objective.ts"
   },
   "scripts": {
-    "build": "bun build ./src/scoring/gym-score-utils.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/scoring.js && bun build ./src/scoring/core-behavior.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/core-behavior.cjs",
+    "build": "bun build ./src/scoring/gym-score-utils.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/scoring.js && bun build ./src/scoring/core-behavior.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/core-behavior.cjs && bun build ./benchmarks/bounded-task-completion/score-task.ts --target=node --format=cjs --outfile ./dist/@may-agent/gym/bounded-task-completion.cjs",
     "case:list": "bun ./src/cli.ts list",
     "case:validate": "bun ./src/cases/validate-cli.ts",
     "case:run": "bun run build && bun ./src/cli.ts",

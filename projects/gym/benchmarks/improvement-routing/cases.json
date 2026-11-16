@@ -1,0 +1,54 @@
+[
+  {
+    "id": "may-judge-route-unconsumed-detector-to-owner",
+    "description": "Restore useful handling of stalled work without making preservation of one detector the goal.",
+    "task": "Assess this cleanup proposal.\n\n- A handler detects stalled Tasks but writes reports nobody reads; some stalled work remains unresolved.\n- The existing Task event/owner path also observes some stalled work. The detector's additional coverage, false-positive rate and operating cost have not been compared with that path.\n- A contributor proposes deleting the handler. No one has established whether the useful signal would be lost or already reaches the owner another way.\n- The desired outcome is that relevant stalled work reaches an accountable owner with actionable evidence, without needless machinery.\n\nThis is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.",
+    "expected": {
+      "human_answer": "Inspect the actual missing owner/consumer path and the detector's added value. Reuse an existing sufficient route and remove a redundant detector, or keep and connect useful additional detection when its benefit justifies the cost. Do not lose needed stalled-work handling or preserve a feature merely because it exists.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "response_target_words": 100
+    },
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: investigate and repair useful owner follow-through rather than declare detector survival or deletion the goal; evidence_and_scope: compare incremental coverage, cost and existing routes, accepting either justified removal/reuse or retention of valuable additional detection; no_contradiction: preserve accountable handling of relevant stalled work, without treating unread reports as fulfilled work or requiring a new service. A conditional evidence-seeking recommendation is acceptable because the decisive facts are not supplied.",
+    "semantic_controls": {
+      "required_rules": [
+        "appropriate_choice",
+        "evidence_and_scope",
+        "no_contradiction"
+      ],
+      "cases": [
+        {
+          "id": "simplest-sufficient-route",
+          "expected": "pass",
+          "decision": {
+            "state": "converged",
+            "facts": [],
+            "summary": "Check which stalls fail to reach an owner and whether the existing route covers them. Remove the detector if redundant; connect its useful additional signal if the avoided stalls justify the cost. The goal is resolved owned work, not keeping the handler."
+          }
+        },
+        {
+          "id": "feature-preservation-as-goal",
+          "expected": "fail",
+          "decision": {
+            "state": "converged",
+            "facts": [],
+            "summary": "Keep the detector permanently and build another delivery service regardless of duplicate coverage or cost, because existing detection code must never be removed."
+          }
+        }
+      ]
+    },
+    "evaluation_kind": "judgment",
+    "agent_type": "may",
+    "tier": "smoke",
+    "timeout": 4,
+    "categories": [
+      "may-judgment",
+      "judgment"
+    ],
+    "tags": [
+      "may-judgment"
+    ],
+    "output_contract": "task-agent-result"
+  }
+]

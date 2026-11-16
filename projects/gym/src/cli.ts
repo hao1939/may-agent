@@ -2529,6 +2529,11 @@ function parseArgs(argv: string[]) {
 
 async function main() {
   const firstSubcommand = process.argv[2];
+  if (firstSubcommand === "plan") {
+    const { executePlanCli } = await import("./plans/cli");
+    executePlanCli(process.argv.slice(3));
+    return;
+  }
   if (
     firstSubcommand === "test" ||
     firstSubcommand === "verify" ||
@@ -2769,6 +2774,7 @@ async function main() {
       "  bun run gym list [--tier <t>] [--category <c>] [--tag <t>]",
     );
     console.error("  bun run gym show <case>");
+    console.error("  bun run gym:plan <validate|report> <evaluation-plan.json> [--json]");
     console.error(
       "  bun run gym run <case> [--target <agent|owner/workflow>] [--lab <candidate>] [--timeout 3m] (diagnostic)",
     );

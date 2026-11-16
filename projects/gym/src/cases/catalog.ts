@@ -25,7 +25,7 @@ export function resolveBenchmarkName(root: string, name: string): string {
   const replacement = Object.hasOwn(mapping, name) ? mapping[name] : undefined;
   if (Array.isArray(replacement)) {
     throw new Error(
-      `Retired agent-named benchmark ${name}; select a purpose benchmark: ${replacement.join(", ")}. Historical runs remain readable; create a fresh baseline.`,
+      `Retired benchmark ${name}; select a purpose benchmark: ${replacement.join(", ")}. Historical runs remain readable; create a fresh baseline.`,
     );
   }
   if (replacement && !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(replacement))

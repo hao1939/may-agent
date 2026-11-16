@@ -15,6 +15,16 @@ export function validateCaseCatalog(root: string) {
     benchmarks = names.size;
     for (const entry of entries) {
       const { suite, benchmark, id, inlineCase, directory } = entry;
+      if (!suite.subject_role?.trim() || suite.output_contract !== "task-agent-result")
+        issues.push(`${benchmark}: subject_role and output_contract are required`);
+      if (suite.evaluation_kind !== "judgment" && suite.evaluation_kind !== "behavior")
+        issues.push(`${benchmark}: one evaluation_kind is required`);
+      const meta = inlineCase ?? (directory && existsSync(join(directory, "case.json"))
+        ? JSON.parse(readFileSync(join(directory, "case.json"), "utf8")) : null);
+      if (meta && (meta.agent_type !== suite.subject_role ||
+          (meta.output_contract ?? suite.defaults?.output_contract) !== suite.output_contract ||
+          (meta.evaluation_kind ?? suite.evaluation_kind) !== suite.evaluation_kind))
+        issues.push(`${benchmark}/${id}: case role, result contract and evaluation kind must match the whole benchmark`);
       if (!suite.purpose?.trim())
         issues.push(`${benchmark}: purpose is required`);
       if (!suite.case_ids)

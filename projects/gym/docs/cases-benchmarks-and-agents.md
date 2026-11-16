@@ -42,6 +42,11 @@ what rules?”**
 - If a genuinely different assignment or authority needs a different answer, define
   a distinct case/variant. Do not silently change the same case to help a target pass.
 
+Each complete benchmark has one `subject_role`, `output_contract` and evaluation
+kind. Cases vary the situation within that contract. Different subject roles or
+execution/result contracts need different benchmarks, rather than role filters
+inside one collection.
+
 **Share tooling, keep cases local, choose agents at run time.**
 
 ## Benchmark versus agent: not 1:1
@@ -51,7 +56,7 @@ compatible agents or candidates through separate runs. Benchmarks are no longer
 named after the production agents they happen to assess.
 
 For example, Tech-lead can take both `repair-and-verification` and
-`authority-and-scope`. Two Tech-lead candidates can take the same
+`worktree-scope-and-preservation`. Two Tech-lead candidates can take the same
 `verified-code-work` cases without copying the definitions.
 
 Compatibility matters: a research-only agent is not automatically a valid target
@@ -97,10 +102,12 @@ directories and ambiguous selections. A benchmark cannot borrow a foreign case
 by listing its ID. Production agent/App source remains outside the test definitions.
 Grading-agent configuration is part of evaluation machinery, not a tested agent.
 
-The active collection is 121 cases across eight purpose benchmarks. The smaller
-17-case review selection spans six of them; it is not one mixed-role benchmark
+The active collection is 122 cases across thirteen purpose benchmarks. The smaller
+17-case review selection spans seven of them; it is not one mixed-role benchmark
 run. `core_cases` selects cases inside one benchmark. Counts already include core
 cases. Core selection is neither a third evaluation kind nor human approval.
+The additional one-case `bounded-task-completion` pilot is a separate whole
+behavior benchmark for May, outside that core selection and still draft.
 
 ## “Scenario” means case, not another concept
 

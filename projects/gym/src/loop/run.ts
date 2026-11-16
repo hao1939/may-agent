@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { listOwnedCases, resolveBenchmarkName } from "../cases/catalog";
+import { commissionPlan } from "../plans/plan";
 import { join, resolve } from "node:path";
 
 import {
@@ -22,6 +23,7 @@ import {
   applyEvaluatorScenarioOverlay,
   createRunManifest,
   fingerprintTree,
+  fingerprintValue,
   gymRoot,
   isApprovedLabel,
   loadLabels,
@@ -44,6 +46,7 @@ import type {
 } from "./types";
 
 export interface RunOptions {
+  planPath?: string;
   phase: "test" | "verify";
   benchmark: string;
   scenarios?: string[];
@@ -239,7 +242,7 @@ function refreshObservedProvenance(manifest: LoopRunManifest): void {
   );
 }
 
-function currentHarnessFingerprint(): string {
+export function currentHarnessFingerprint(): string {
   const temporaryHarnessRoot = mkdtempSync(
     join(tmpdir(), "gym-harness-check-"),
   );
@@ -254,7 +257,10 @@ function currentHarnessFingerprint(): string {
 export function assertFrozenInputs(
   baselineDir: string,
   baseline: LoopRunManifest,
+  purpose: "verification" | "history" = "verification",
 ): void {
+  // History validates the recorded measurement under its retained harness.
+  // A new execution/comparison additionally requires the current harness to match.
   const objectiveFile = join(
     baselineDir,
     "inputs",
@@ -292,7 +298,8 @@ export function assertFrozenInputs(
   if (
     !existsSync(frozenHarness) ||
     fingerprintTree(frozenHarness) !== baseline.proof.harness_fingerprint ||
-    currentHarnessFingerprint() !== baseline.proof.harness_fingerprint
+    (purpose === "verification" &&
+      currentHarnessFingerprint() !== baseline.proof.harness_fingerprint)
   ) {
     throw new Error("Frozen Gym harness changed; create a new baseline");
   }
@@ -309,6 +316,12 @@ export function assertFrozenInputs(
     suite,
   );
   if (baseline.source.labels_snapshot) {
+    const frozenLabels = JSON.parse(readFileSync(
+      join(baselineDir, baseline.source.labels_snapshot), "utf8",
+    ));
+    if (fingerprintValue(labelsCatalog) !== fingerprintValue(frozenLabels)) {
+      throw new Error("Frozen labels changed; create a new baseline");
+    }
     if (labelsPath && !Array.isArray(suite.cases)) {
       assertSameFile(
         labelsPath,
@@ -459,12 +472,18 @@ export async function runLoop(
       `Cases are not in ${options.benchmark}: ${unknown.join(", ")}`,
     );
 
+  const commission = options.planPath ? commissionPlan({
+    path: options.planPath, root: gymRoot, benchmark: options.benchmark,
+    agent: options.agent, trials: options.trials, scenarios, timeout: options.timeout,
+  }) : undefined;
+  if (commission) options.timeout = commission.timeout;
   const candidate = candidateEvidence(
     options.candidate,
     options.agentsRoot,
     options.agent,
   );
   const created = createRunManifest({
+    commission,
     phase: options.phase,
     benchmark: options.benchmark,
     suite,
@@ -548,6 +567,7 @@ export async function runLoop(
 }
 
 export async function verifyLoop(input: {
+  planPath?: string;
   baseline: string;
   candidate: string;
   trials?: number;
@@ -560,6 +580,8 @@ export async function verifyLoop(input: {
 }> {
   const baselineDir = resolveRunDir(input.baseline);
   const baseline = readManifest(baselineDir);
+  if (baseline.evaluation_plan && !input.planPath)
+    throw new Error("A commissioned baseline requires --plan for candidate verification");
   assertFrozenInputs(baselineDir, baseline);
   const labels: GroundTruthCatalog | null = baseline.source.labels_snapshot
     ? JSON.parse(
@@ -584,6 +606,7 @@ export async function verifyLoop(input: {
     );
   }
   const created = await runLoop({
+    planPath: input.planPath,
     phase: "verify",
     benchmark: baseline.benchmark,
     scenarios: baseline.scenarios,

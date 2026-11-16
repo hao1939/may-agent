@@ -55,6 +55,9 @@ export interface InlineBenchmarkCase {
 }
 
 export interface BenchmarkSuite {
+  /** Intended subject capability, independent of a run's chosen implementation. */
+  subject_role?: string;
+  output_contract?: "task-agent-result";
   /** Default for cases; individual cases may override it. Missing means unclassified. */
   evaluation_kind?: EvaluationKind;
   name: string;
@@ -164,6 +167,14 @@ export interface StoredTrial {
 
 export interface LoopRunManifest {
   schema_version: 2;
+  /** Commissioning metadata is outside frozen evaluation inputs. */
+  evaluation_plan?: {
+    agent: string;
+    revision: number;
+    fingerprint: string;
+    snapshot: string;
+    benchmark_fingerprint: string;
+  };
   run_id: string;
   phase: "test" | "verify";
   benchmark: string;

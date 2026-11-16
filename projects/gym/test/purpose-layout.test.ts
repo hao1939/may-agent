@@ -28,9 +28,14 @@ import { assertOutcomeCompletionApprovalHistory, outcomeCompletionRevisions } fr
 const root = resolve(import.meta.dirname, ".."),
   archive = join(root, "archive/pre-purpose-layout");
 const counts = {
-  "authority-and-scope": 5,
+  "bounded-task-completion": 1,
+  "user-intent-and-authority": 2,
+  "worktree-scope-and-preservation": 2,
+  "workflow-ownership": 1,
+  "improvement-stage-selection": 1,
+  "improvement-routing": 1,
   "outcome-completion": 5,
-  "adoption-and-simplicity": 5,
+  "adoption-and-simplicity": 3,
   "repair-and-verification": 3,
   "research-evidence": 4,
   "verified-code-work": 5,
@@ -55,10 +60,10 @@ function fixture(root: string, benchmark: string, id: string, inline = true) {
   return dir;
 }
 
-test("121 active cases have one purpose owner, not an agent-owned or global home", () => {
+test("122 active cases have one purpose owner, not an agent-owned or global home", () => {
   const entries = listOwnedCases(root);
-  expect(entries).toHaveLength(121);
-  expect(new Set(entries.map((item) => item.id)).size).toBe(121);
+  expect(entries).toHaveLength(122);
+  expect(new Set(entries.map((item) => item.id)).size).toBe(122);
   expect(
     Object.fromEntries(
       Object.keys(counts).map((name) => [
@@ -125,7 +130,7 @@ test("compatibility does not resurrect agent-named collections or unowned cases"
     "verified-code-work",
   );
   expect(() => resolveBenchmarkName(root, "bob-judgment")).toThrow(
-    "Retired agent-named benchmark",
+    "Retired benchmark",
   );
   expect(findOwnedCase(root, "phantom-fix")).toBeUndefined();
   expect(resolveCaseDirectory(root, "phantom-fix", true)).toBe(
@@ -198,7 +203,7 @@ test("materialization rejects escaping fixtures and unregistered case selections
     ).toThrow("is not in this benchmark");
   }));
 
-test("migration preserves all 119 assignments, fixtures, answers, rubrics and approval records", () =>
+test("migration preserves all 119 assignments, fixtures, answers and approval records outside explicit versioned calibration revisions", () =>
   withTempDir((temp) => {
     const active = listOwnedCases(root),
       compared = new Set<string>();
@@ -253,13 +258,42 @@ test("migration preserves all 119 assignments, fixtures, answers, rubrics and ap
             expect(fingerprintTree(join(after, file))).toBe(outcomeRevision[1]);
             continue;
           }
-          expect(existsSync(join(before, file))).toBe(
-            existsSync(join(after, file)),
-          );
-          if (existsSync(join(before, file)))
-            expect(fingerprintTree(join(after, file))).toBe(
+          // Bind exact old/new bytes for justified measurement revisions,
+          // including newly added semantic files; keep all other bytes equal.
+          const revisions: Record<string, Record<string, [string | null, string | null]>> = {
+            "may-judge-act-with-clear-authority": {
+              "semantic_criteria.md": [
+                "27808dd9dc67960d35ff5cdf233b1f9876f5eb319e901487d72c4b71c28ce566",
+                "56f99699e034601e4e293676731a2137e01b82ec7908a560726c4d8a5228835e",
+              ],
+              "semantic_controls.json": [
+                "681ae395726a2a0b5ea137cc25ea1e9bb20aa6c39c36479f27e338a1d382791d",
+                "e0071bbe1653e2201727728c7d6b295562dc12621dba82f8a6bc34f6bf22981f",
+              ],
+            },
+            "tech-lead-judge-preserve-creator-test-and-fix-source": {
+              "task.md": ["667e252ae7460ffb4fa4e2b02930cf944d6d0f9066eb84a00e26c7d7e8504061", "41ed12b28be47b89327b5b9b3597a6625c3753216b53faa11978ccc856f01c37"],
+              "semantic_criteria.md": ["6efc6b88c19a173cb5a2650c609325d41c4a0c4a5393746ac9eb1a884100a598", "c4d284a9433d52c7086c64b59ed9a33b7396e619dec363fa3fc0e7b71ae12fec"],
+              "semantic_controls.json": ["4457c8145e85f773eaf7acfca517e151b9cfa10172bb67232f4ad50fc4352e3b", "baa2fe8ad41c2a8af5da924157f343126552fa3903a91a22707c3634a9047c16"],
+            },
+            "tech-lead-judge-fast-targeted-checks-and-local-commit-boundary": {
+              "semantic_criteria.md": [null, "e294a67013be48e51837c01e8a11fb912dc28fa2cf9874ec108e093e20b88932"],
+              "semantic_controls.json": [null, "e774b74e4f7b9e716f0c284fc136296a9f380253856bdfb516b0fbadfdc39496"],
+            },
+          };
+          const revised = revisions[id]?.[file];
+          if (revised) {
+            expect(current.suite.version).toBe(2);
+            for (const [directory, hash] of [[before, revised[0]], [after, revised[1]]] as const) {
+              expect(existsSync(join(directory, file))).toBe(hash !== null);
+              if (hash !== null) expect(fingerprintTree(join(directory, file))).toBe(hash);
+            }
+          } else {
+            expect(existsSync(join(before, file))).toBe(existsSync(join(after, file)));
+            if (existsSync(join(before, file))) expect(fingerprintTree(join(after, file))).toBe(
               fingerprintTree(join(before, file)),
             );
+          }
         }
         const meta = (dir: string) =>
           JSON.parse(

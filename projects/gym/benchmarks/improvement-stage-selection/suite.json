@@ -1,0 +1,13 @@
+{
+  "name": "improvement-stage-selection-v1",
+  "version": 1,
+  "purpose": "Choose the smallest justified improvement stage before expanding automation.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "alex-judge-stage-progression-prompt-before-workflow"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs",
+  "subject_role": "alex",
+  "output_contract": "task-agent-result"
+}

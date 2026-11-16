@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "revision": 4,
+  "agent": "tech-lead",
+  "owner": "alex",
+  "outcomes": [
+    "Implement the responsible code or test repair and verify the original requested behavior.",
+    "Preserve unrelated work, respect delivery authority and report only supported completion."
+  ],
+  "benchmarks": [
+    {
+      "id": "repair-and-verification",
+      "version": 2,
+      "goal": "Choose the responsible repair layer and proportionate verification.",
+      "baseline_run_id": null
+    },
+    {
+      "id": "verified-code-work",
+      "version": 1,
+      "goal": "Execute bounded repairs and preserve evidence of checks, blockers and authorized recovery.",
+      "baseline_run_id": null
+    },
+    {
+      "id": "worktree-scope-and-preservation",
+      "version": 1,
+      "goal": "Preserve unrelated edits while performing authorized task-owned changes.",
+      "baseline_run_id": null
+    }
+  ],
+  "evaluation": {
+    "target": "tech-lead",
+    "model": "gpt-5.6-sol",
+    "trials": 1,
+    "timeout_minutes": 4,
+    "max_runs_per_cycle": 6
+  },
+  "improvement": {
+    "problem": "The versioned repair-and-verification v2 measurement repair passed all three draft judgment cases, with both graders classifying every control correctly. This resolves the demonstrated publication word-gate defect and source-task/rubric mismatch for the current benchmark, not an observed Tech-lead regression. The separate verified-code-work narrative-delivery scoring gap remains open.",
+    "evidence": [
+      "projects/gym/docs/benchmark-scoring-gaps.md",
+      "projects/gym/docs/agent-manual-trials-20261116.md",
+      "projects/gym/docs/agent-reports/agent-manual-trials-20261116.json",
+      "projects/gym/docs/tech-lead-scoring-repair-20261116.md",
+      "projects/gym/docs/agent-reports/tech-lead-scoring-repair-20261116.json"
+    ],
+    "hypothesis": "Complete-result semantic judging with positive and negative controls can accept equivalent result fields while rejecting unauthorized publication and contradictory claims. The fresh v2 run supports this bounded measurement hypothesis; daily-work transfer and production reliability are unmeasured.",
+    "expected_benefit": "Make repair-and-verification decisions usable as bounded diagnostic evidence without rewarding expected phrases or tuning the agent to a broken score.",
+    "unchanged_alternative": "Preserve v1 verdicts as historical evidence and keep publication-boundary and source-grounding quality unknown until calibration succeeds.",
+    "stop_when": "This measurement follow-up is complete: one fresh v2 whole-benchmark run passed with calibrated grader agreement, preserving mandatory schema and workspace checks. Retain the v1 run and failure probes; do not infer agent improvement, approve truth, promote a baseline, or repeat the run for a greener result.",
+    "next_action": "Reuse the v2 diagnostic and keep Tech-lead production guidance unchanged. Select a new tuning experiment only from a concrete real-work defect. If truthful execution/delivery claims become the next evaluation priority, resolve the still-open verified-code-work narrative-scoring gap before using that score as evidence. The two whole-benchmark incident runs (original v1 plus fresh v2) are consumed; no automatic reentry or retry remains."
+  },
+  "coverage_gaps": [
+    "Repair-and-verification v2 has one complete three-case draft judgment pass with calibrated agreement. The v1 run remains historical at one pass, one fail and one invalid; changed definitions do not establish agent-quality improvement. Verified-code-work and worktree-scope-and-preservation remain unmeasured under this plan.",
+    "All selected pilot cases remain draft; diagnostic passes do not authorize a promotion gate.",
+    "Narrative honesty about repair, deployment and closure is not established by the current behavior scorer.",
+    "The fixture benchmark does not establish PR publication, integration, remote CI or production activation.",
+    "The v1 judgment scorer/probe remains retained with its publication-boundary false negative/false positive and source-grounding disagreement. V2 uses complete-result semantic judging and explicitly names the source contract; both graders passed all controls and agreed on the fresh three-case diagnostic. This bounded measurement repair does not validate bare structural scorer output, prove unseen-task generalization, or remove matching example answer phrases from current agent guidance."
+  ],
+  "decisions": []
+}

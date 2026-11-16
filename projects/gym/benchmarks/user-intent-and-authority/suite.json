@@ -1,0 +1,18 @@
+{
+  "name": "user-intent-and-authority-v2",
+  "version": 2,
+  "purpose": "Use explicit user authority and clarify only materially ambiguous targets.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "may-judge-act-with-clear-authority",
+    "may-judge-clarify-material-target"
+  ],
+  "core_cases": [
+    "may-judge-act-with-clear-authority",
+    "may-judge-clarify-material-target"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs",
+  "subject_role": "may",
+  "output_contract": "task-agent-result"
+}

@@ -4,8 +4,10 @@
 
 These **ten proposed cases** test performed work, not answers about what to do.
 Each has one proposed purpose benchmark and one coherent subject contract.
-Nothing is registered or moved. The existing five coding behavior cases remain
-basic checks; all 17 selected existing cases retain their draft status.
+None of these ten proposals is registered or moved. The existing five coding
+behavior cases remain basic checks. Of the 17 selected existing cases, the two
+outcome-completion core cases now have fingerprint-bound judgment approval; the
+other 15 remain draft. That approval does not approve any behavior proposal.
 
 Start more simply with [understanding the outcome and choosing existing mechanisms](APPROACH-REVIEW.md).
 Those are judgment checks: what the agent owes, which available path fits, and
@@ -118,6 +120,14 @@ contribution; owner acceptance may be claimed only when a real receiving owner
 accepts it. That stronger boundary still needs the decision in REAL-WORK-REVIEW.
 This case does not prove Alex's broader assignment was fulfilled merely because
 its development helper returned.
+
+A separately prepared [owner-delivery case specification](verified-source-delivery/REVIEW.md)
+and [unfilled run card](verified-source-delivery/RUN-CARD.md) now live with their
+proposed `verified-source-delivery` owner. That first slice observes the next
+genuinely authorized finite repair through Alex's own reconciliation; it does not
+replay the already-fixed source-root incident or replace A1's workflow-only scope.
+No Task is selected, native case registered, truth label approved or model run
+commissioned by that preparation.
 
 ### A2 — Recover the prerequisite and return proof to the original collector
 

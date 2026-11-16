@@ -19,14 +19,17 @@ The proposal has two parts:
 - **12 decision tests:** does the agent choose what we would want?
 - **5 action tests:** does the agent actually do the small job correctly?
 
-These 17 cases are a selection across six purpose benchmarks, not one mixed-role
+These 17 cases are a selection across seven purpose benchmarks, not one mixed-role
 run. Each case has one benchmark-local home. Benchmarks are organized by the
 question being tested; the agent is chosen separately for each run. Historical
 agent-name prefixes in case IDs are retained for identity, not ownership. See [how cases, benchmarks and agents relate](../docs/cases-benchmarks-and-agents.md).
 
-Apart from the explicitly approved outcome-completion cases, the revised
-definitions remain draft. No v3 baseline has run. Agreeing with the overall plan
-does not automatically approve every
+Apart from the explicitly approved outcome-completion cases, these test
+definitions remain draft. May's authority pair has now run in the
+[calibration trial](../docs/may-calibration-repair-20261116.md); a separate
+[local execution trial](../docs/may-execution-trial-20261116.md) is outside this
+17-case selection. Passing diagnostics do not approve the answer keys.
+Agreeing with the overall plan does not automatically approve every
 expected answer, the way answers are scored, or a later agent change.
 
 ## How to review
@@ -349,7 +352,8 @@ No approval is recorded by filling in a checkbox or by generating this document.
 
 ## Exact definitions, when needed
 
-- Cases 1A–1B and 6A–6B: [Authority and scope](authority-and-scope/cases.json).
+- Cases 1A–1B: [User intent and authority](user-intent-and-authority/cases.json).
+- Cases 6A–6B: [Worktree scope and preservation](worktree-scope-and-preservation/cases.json).
 - Cases 2A–2B: [Outcome completion](outcome-completion/cases.json).
 - Cases 3A–3B: [Adoption and simplicity](adoption-and-simplicity/cases.json).
 - Cases 4A–4B: [Repair and verification](repair-and-verification/cases.json).
@@ -357,7 +361,9 @@ No approval is recorded by filling in a checkbox or by generating this document.
 - B1–B5: [Verified code work](verified-code-work/cases.json).
 - Revised older rules: [Outcome completion](outcome-completion/cases.json),
   [adoption and simplicity](adoption-and-simplicity/cases.json) and
-  [authority and scope](authority-and-scope/cases.json).
+  [improvement stage selection](improvement-stage-selection/cases.json),
+  [improvement routing](improvement-routing/cases.json) and
+  [workflow ownership](workflow-ownership/cases.json).
 - [Proposed real-work case and evidence for review](REAL-WORK-REVIEW.md).
 - [Case IDs, commands and technical details](CORE.md).
 

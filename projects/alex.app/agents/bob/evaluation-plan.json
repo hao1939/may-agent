@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "revision": 2,
+  "agent": "bob",
+  "owner": "alex",
+  "outcomes": [
+    "Judge designs and research-adoption options by demonstrated benefit, evidence, simpler alternatives and total maintenance cost.",
+    "Keep workflow responsibility with its accountable owner and return bounded recommendations without claiming implementation or adoption."
+  ],
+  "benchmarks": [
+    {
+      "id": "adoption-and-simplicity",
+      "version": 2,
+      "goal": "Reject unjustified mechanisms while supporting a bounded comparison for a demonstrated worthwhile gap.",
+      "baseline_run_id": null
+    },
+    {
+      "id": "workflow-ownership",
+      "version": 1,
+      "goal": "Keep discoverable workflows under the accountable App owner with bounded specialist contributions.",
+      "baseline_run_id": null
+    }
+  ],
+  "evaluation": {
+    "target": "bob",
+    "model": "gpt-6-astra",
+    "trials": 1,
+    "timeout_minutes": 4,
+    "max_runs_per_cycle": 2
+  },
+  "improvement": {
+    "problem": "The first commissioned adoption-and-simplicity v2 trial passed all three draft judgment cases. Workflow-ownership remains unmeasured, and these fixture decisions do not establish real design/adoption quality or justify a Bob prompt change.",
+    "evidence": [
+      "projects/gym/docs/agent-manual-trials-20261116.md",
+      "projects/alex.app/agents/bob/AGENTS.md",
+      "projects/gym/docs/agent-reports/agent-manual-trials-20261116.json"
+    ],
+    "hypothesis": "The first trial supports using existing whole benchmarks to observe both unnecessary-mechanism rejection and a justified bounded comparison. A future real-work question should determine whether more evaluation or a candidate is worthwhile.",
+    "expected_benefit": "Establish reproducible decision evidence and select a justified next question rather than tuning Bob without a measured failure.",
+    "unchanged_alternative": "Keep Bob's production guidance unchanged and preserve unknown coverage where the diagnostic is insufficient.",
+    "stop_when": "The manual first pass is complete: retain its three draft passes and receipts without further runs. Start another cycle only for a concrete real-work problem or an explicitly chosen coverage question.",
+    "next_action": "Reuse the three-case adoption-and-simplicity v2 result and leave Bob production guidance unchanged. When real work warrants another cycle, choose either a demonstrated design/adoption problem or the still-unmeasured complete workflow-ownership benchmark; do not rerun merely to fill the cadence."
+  },
+  "coverage_gaps": [
+    "Adoption-and-simplicity v2 has one complete commissioned three-case draft judgment pass; workflow-ownership remains unmeasured. Historical agent-named collections retain their original definitions and models.",
+    "One trial per case cannot establish variance, actual implementation quality, real-world research adoption benefit or production reliability.",
+    "Draft expectations and missing approved baselines prevent a promotion comparison; owner recommendation does not authorize application."
+  ],
+  "decisions": []
+}

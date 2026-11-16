@@ -1,0 +1,837 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-11-16T12:25:55.945560+00:00",
+  "kind": "bounded-historical-selection-review",
+  "agent": "may",
+  "plan_owner": "alex",
+  "operator_disposition": "leave-agent-unchanged",
+  "owner_decision": null,
+  "live_owner_task_dispatched": false,
+  "new_model_runs": 0,
+  "new_model_calls": 0,
+  "new_benchmarks": 0,
+  "subject_source": [
+    {
+      "path": "projects/may.app/agents/may/agent.json",
+      "sha256": "d3c59dac55a592667ed2e1f4abc17b2d81aa76d991245c2a561f3a619c57c23d"
+    },
+    {
+      "path": "projects/may.app/agents/may/AGENTS.md",
+      "sha256": "588d4d619062a7010e2afeee2b1a8cfdaea3d07dd02dc137897fd9e3aafbfa0b"
+    }
+  ],
+  "previous_plan": {
+    "schema_version": 1,
+    "revision": 6,
+    "agent": "may",
+    "owner": "alex",
+    "outcomes": [
+      "Understand the user's intent, use existing bounded authority and ask only when missing information materially changes the action.",
+      "Direct useful improvement evidence to accountable ownership and follow-through with proportionate machinery.",
+      "Complete useful bounded local work, preserve unrelated changes, verify the result and accurately report the delivered outcome."
+    ],
+    "benchmarks": [
+      {
+        "id": "user-intent-and-authority",
+        "version": 2,
+        "goal": "Choose scoped action under clear authority and clarification when the target is materially ambiguous.",
+        "baseline_run_id": null
+      },
+      {
+        "id": "improvement-routing",
+        "version": 1,
+        "goal": "Choose evidence-based owner follow-through while allowing removal or reuse of redundant mechanisms.",
+        "baseline_run_id": null
+      },
+      {
+        "id": "bounded-task-completion",
+        "version": 1,
+        "goal": "Finish an authorized local configuration repair, preserve unrelated work, verify the exact final artifact and accurately report the bounded result.",
+        "baseline_run_id": null
+      }
+    ],
+    "evaluation": {
+      "target": "may",
+      "model": "gpt-5.6-sol",
+      "trials": 1,
+      "timeout_minutes": 4,
+      "max_runs_per_cycle": 2
+    },
+    "improvement": {
+      "problem": "The bounded standalone pilot now has three draft judgment passes and one synthetic local-execution pass. May completed the authorized config repair with final-artifact verification and no operator correction during the attempt. This narrow evidence exposes no May defect and does not measure representative production follow-through.",
+      "evidence": [
+        "projects/gym/docs/may-plan-trial-20261116.md",
+        "projects/gym/docs/agent-reports/may-pilot-20261116.json",
+        "projects/gym/docs/may-calibration-repair-20261116.md",
+        "projects/gym/docs/agent-reports/may-calibration-repair-20261116.json",
+        "projects/gym/docs/may-execution-trial-20261116.md",
+        "projects/gym/docs/agent-reports/may-execution-trial-20261116.json"
+      ],
+      "hypothesis": "A recent real May request that required operator correction or lacked completion proof can identify a useful reproducible improvement target more reliably than adding more passing synthetic tasks.",
+      "expected_benefit": "Keep future work tied to useful delivery and fewer actual corrections; retain the measured judgment and local-completion benchmarks as regressions.",
+      "unchanged_alternative": "Leave May unchanged and retain current diagnostic coverage if no concrete completion defect or high-value evidence gap is supported.",
+      "stop_when": "The execution cycle is complete after one whole benchmark run with all controls inspected, no retries and no agent change. Before another cycle, identify one evidenced real completion problem, its smallest reproducible acceptance check and the relevant regression benchmarks; otherwise stop without inventing a change.",
+      "next_action": "Review one recent real May request for an operator correction or missing delivery proof. Select a bounded reproducible problem and acceptance evidence if supported; otherwise leave May unchanged. Reuse bounded-task-completion v1 and the current judgment evidence as appropriate regressions. Do not expand benchmark count, tune prompts or trigger more runs merely because this pilot passed."
+    },
+    "coverage_gaps": [
+      "Current evidence is three draft judgment passes across user-intent-and-authority v2 and improvement-routing v1, plus one draft behavior pass in bounded-task-completion v1. The original authority v1 calibration-invalid case remains historical; changed measurement definitions do not form an agent-quality improvement comparison.",
+      "Each current case was measured once. All four expectations remain draft; variance and production reliability are unmeasured, no approved baseline is selected and no owner adoption decision exists.",
+      "The new behavior result establishes a small synthetic local config repair only. Representative real requests, multi-step recovery, coordination, production delivery and inter-agent acceptance remain unmeasured by this pilot; broader judgment collections remain outside it.",
+      "All three retained execution-trial model sessions have complete reply and SDK cost estimates. The attempt needed zero operator corrections, but benchmark authoring, checks and audit are operator work outside it. Billing, operator cost and full-cycle effort remain unknown; parallel grader durations are not elapsed time.",
+      "Cumulative cycle-run accounting is manual. Prior cycles used two pilot runs and one calibration run. The execution cycle used one whole benchmark run within the unchanged two-run ceiling, without retries or additional subject model runs."
+    ],
+    "decisions": []
+  },
+  "resulting_plan_revision": 7,
+  "selected_task": {
+    "app_id": "may",
+    "task_id": "goal/appdep_f589cb34b26748c1d9956641",
+    "generations_reviewed": [
+      1,
+      2,
+      3
+    ],
+    "pull_request": "https://github.com/hao1939/may-agent/pull/445",
+    "scope": "Historical May handling, correction, verification and creator acceptance; no Host implementation commissioned."
+  },
+  "finding": {
+    "historical_correction_observed": true,
+    "subsequent_recovery_evidenced": true,
+    "creator_acceptance_retained": true,
+    "current_may_instruction_defect_established": false,
+    "agent_quality_improvement_measured": false,
+    "representative_reliability_measured": false,
+    "reason": "The request includes implementation/review misses, later corrections and verified accepted delivery. It supplies no sufficiently supported current instruction change. Pre-agent capacity failures are excluded from May behavior attribution.",
+    "human_operator_corrections": null,
+    "full_delivery_cycle_cost_usd": null,
+    "operator_effort": null,
+    "attributable_avoidable_delay": null,
+    "current_recurrence": null
+  },
+  "observer_receipts": [
+    {
+      "path": ".state/sessions/s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48/session.jsonl",
+      "entry_index": 14,
+      "line": 15,
+      "tool": "finish",
+      "excerpt": "finish() error: Waiting result for input/appdep_c7460233bd58b188e5685d31 requires at least one exact Condition"
+    },
+    {
+      "path": ".state/sessions/s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48/session.jsonl",
+      "entry_index": 7,
+      "line": 8,
+      "tool": "tasks",
+      "excerpt": "{\"resourceVersion\": 34, \"conditions\": [{\"id\": \"pr445-eligible-approval\", \"expected\": {\"status\": \"completed\"}, \"owner\": \"human:Hao\", \"requestedAction\": \"PR #445 is ready at exact head 04e63d6273871e74e78bfaf76d1c4926a8acabe8: current-head technical review approved it, Quality/Container pass, main is included, and all review threads are resolved. Please obtain one repository-eligible APPROVED GitHub review on this exact head and return completion to Alex Task input/appdep_c7460233bd58b188e5685d31. Do not bypass protection, deploy, or restart.\", \"subject\": \"operator-help:may-agent-pr445-eligible-approval\", \"type\": \"human.action.required\", \"observation\": {\"generation\": 1, \"resourceVersion\": 1, \"createdAt\": \"2026-11-10T06:08:17.979Z\", \"observedAt\": \"2026-11-10T06:08:17.979Z\", \"observedGeneration\": 0, \"state\": \"unknown\"}}, {\"id\": \"pr445-state\", \"expected\": {\"equals\": \"04e63d6273871e74e78bfaf76d1c4926a8acabe8\", \"field\": \"headRefOid\", \"reviewDecision\": \"APPROVED\", \"source\": \"app:may:observer:github-pull-request\", \"state\": \"MERGED\"}, \"owner\": \"app:may\", \"requestedAction\": \"Recheck PR #445 after approval or merge-state changes; merge only through repository protection if the exact head, green checks, current-main ancestry, and resolved-thread state remain valid.\", \"subject\": \"resource:github:hao1939/may-agent#445\", \"type\": \"may.github.pull-request.state\", \"observation\": {\"generation\": 1, \"resourceVersion\": 1, \"createdAt\": \"2026-11-10T06:08:17.979Z\", \"observedAt\": \"2026-11-10T06:08:17.979Z\", \"observedGeneration\": 0, \"state\": \"unknown\"}}], \"acceptedAttempt\": {\"id\": \"r_1_cadaf611-b5e9-4250-acee-96b51674bdbb\", \"generation\": 1, \"startedAt\": \"2026-11-10T06:03:00.083Z\", \"finishedAt\": \"2026-11-10T06:08:17.984Z\"}}"
+    },
+    {
+      "path": ".state/sessions/s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48/session.jsonl",
+      "entry_index": 16,
+      "line": 17,
+      "tool": "tasks",
+      "excerpt": "{\"resourceVersion\": 34, \"conditions\": [{\"id\": \"pr445-eligible-approval\", \"expected\": {\"status\": \"completed\"}, \"owner\": \"human:Hao\", \"requestedAction\": \"PR #445 is ready at exact head 04e63d6273871e74e78bfaf76d1c4926a8acabe8: current-head technical review approved it, Quality/Container pass, main is included, and all review threads are resolved. Please obtain one repository-eligible APPROVED GitHub review on this exact head and return completion to Alex Task input/appdep_c7460233bd58b188e5685d31. Do not bypass protection, deploy, or restart.\", \"subject\": \"operator-help:may-agent-pr445-eligible-approval\", \"type\": \"human.action.required\", \"observation\": {\"generation\": 1, \"resourceVersion\": 1, \"createdAt\": \"2026-11-10T06:08:17.979Z\", \"observedAt\": \"2026-11-10T06:08:17.979Z\", \"observedGeneration\": 0, \"state\": \"unknown\"}}, {\"id\": \"pr445-state\", \"expected\": {\"equals\": \"04e63d6273871e74e78bfaf76d1c4926a8acabe8\", \"field\": \"headRefOid\", \"reviewDecision\": \"APPROVED\", \"source\": \"app:may:observer:github-pull-request\", \"state\": \"MERGED\"}, \"owner\": \"app:may\", \"requestedAction\": \"Recheck PR #445 after approval or merge-state changes; merge only through repository protection if the exact head, green checks, current-main ancestry, and resolved-thread state remain valid.\", \"subject\": \"resource:github:hao1939/may-agent#445\", \"type\": \"may.github.pull-request.state\", \"observation\": {\"generation\": 1, \"resourceVersion\": 1, \"createdAt\": \"2026-11-10T06:08:17.979Z\", \"observedAt\": \"2026-11-10T06:08:17.979Z\", \"observedGeneration\": 0, \"state\": \"unknown\"}}], \"acceptedAttempt\": {\"id\": \"r_1_cadaf611-b5e9-4250-acee-96b51674bdbb\", \"generation\": 1, \"startedAt\": \"2026-11-10T06:03:00.083Z\", \"finishedAt\": \"2026-11-10T06:08:17.984Z\"}}"
+    },
+    {
+      "path": ".state/sessions/s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48/session.jsonl",
+      "entry_index": 23,
+      "line": 24,
+      "tool": "finish",
+      "excerpt": "\u26a0\ufe0f **PARTIAL**: Verified PR #445 activation from the authorized v5.6.0 rollout and completed the required live ordinary Task-agent correction observation: malformed finish received actionable preflight feedback, the same executor remained open, rollback preserved both Conditions and Task state, and this corrected proposal is submitted in the same attempt. The existing May Task was revised in place to reconcile its stale activation wait and return final evidence; no duplicate implementation, deployment, restart, request, or effect was created.\n\n**Next steps:** On the next bounded pass, read May Task goal/appdep_f589cb34b26748c1d9956641 generation 3. If its converged result verifies the rollout, retires pr445-host-activation, and accepts this session's observation, close that delegated Task with guarded creator authority and converge the original Alex outcome.\n\n**Verification facts:**\n- controlled-observation-session:s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48\n- controlled-observation-attempt:r_1_b72907ed-a22a-4631-8619-aacfc238009c\n- malformed-finish-feedback:Waiting result for input/appdep_c7460233bd58b188e5685d31 requires at least one exact Condition\n- same-executor-correction:true\n- preflight-rollback-resourceVersion:34\n- preflight-rollback-conditions-preserved:pr445-eligible-approval@1,pr445-state@1\n- preflight-rollback-acceptedAttempt-unchanged:r_1_cadaf611-b5e9-4250-acee-96b51674bdbb\n- rollout-receipt:/app/.state/workload-v560-rollout-20261111/rollout.json\n- rollout-target-source:88bd9c2c400667e2edf49c1c423bc9de9a604c5b\n- rollout-artifact-sha256:2bb99071b63fe6a1f28e6832c96e85331bf51bb851ed6d2b70756cd8dd1d7ee9\n- pr445-merge-commit:d2cee42157e2ea5cfa4471b7de3d433c8b13bce5\n- may-task-revised:goal/appdep_f589cb34b26748c1d9956641@generation-3"
+    }
+  ],
+  "rollout": {
+    "receipt_path": ".state/workload-v560-rollout-20261111/rollout.json",
+    "receipt_sha256": "8018127bca72a32b395a07692d058563c6441a46a417eae2989045b10d89f158",
+    "merge_commit": "d2cee42157e2ea5cfa4471b7de3d433c8b13bce5",
+    "source_commit": "88bd9c2c400667e2edf49c1c423bc9de9a604c5b",
+    "merge_is_ancestor": true,
+    "phase": "verified",
+    "healthy": true,
+    "ready": true,
+    "artifact_sha256": "2bb99071b63fe6a1f28e6832c96e85331bf51bb851ed6d2b70756cd8dd1d7ee9"
+  },
+  "creator_acceptance": {
+    "snapshot_path": ".state/workload-live-review-20261111/alex-input_appdep_c7460233bd58b188e5685d31.json",
+    "phase": "converged",
+    "updated_at": "2026-11-10T18:05:30.747Z",
+    "facts": [
+      "pull-request:https://github.com/hao1939/may-agent/pull/445",
+      "pr445-merge-commit:d2cee42157e2ea5cfa4471b7de3d433c8b13bce5",
+      "source-integrated:true",
+      "activation-receipt:/app/.state/workload-v560-rollout-20261111/rollout.json",
+      "activation-target-source:88bd9c2c400667e2edf49c1c423bc9de9a604c5b",
+      "activation-artifact-sha256:2bb99071b63fe6a1f28e6832c96e85331bf51bb851ed6d2b70756cd8dd1d7ee9",
+      "activated:true",
+      "runtime-observed:true",
+      "ordinary-task-agent-path:true",
+      "controlled-observation-session:s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48",
+      "controlled-observation-attempt:r_1_b72907ed-a22a-4631-8619-aacfc238009c",
+      "malformed-finish-error:Waiting result for input/appdep_c7460233bd58b188e5685d31 requires at least one exact Condition",
+      "same-executor-remained-running:true",
+      "same-task-attempt-correction:true",
+      "preflight-rollback:true",
+      "strict-final-validation:preserved",
+      "silent-condition-coercion:false",
+      "duplicate-request-or-effect:false",
+      "may-task:goal/appdep_f589cb34b26748c1d9956641",
+      "may-task-accepted-attempt:r_3_a77b064f-7444-4504-99c8-0b0439dc44e2",
+      "may-task-closed:true",
+      "deployment-or-restart-this-attempt:false",
+      "duplicate-task-branch-or-pr:false",
+      "pr443-ownership:unchanged",
+      "pr399-reopened:false"
+    ],
+    "limit": "Retained historical caller state, not a current live read or a new Alex adoption decision."
+  },
+  "sessions": [
+    {
+      "session": "s_1794269122108_afd47ec5-eb1d-43d4-9425-274af44eae4a",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_14d298b1-e78c-4422-ae38-c4cdf32898f7"
+      },
+      "started_at_ms": 1794269122108,
+      "ended_at_ms": 1794269590615,
+      "executor_status": "done",
+      "reported_summary": "Prepared a tested Host candidate and obtained independent exact-patch review, but review found two material parity gaps; no flawed commit or PR was published. The existing Task remains open with a recoverable branch/worktree and a precise correction plan.",
+      "reported_state": "incomplete"
+    },
+    {
+      "session": "s_1794269458056_51c9cc63-1166-4282-9eca-0d78b7796e73",
+      "assignment": "independent-review",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_14d298b1-e78c-4422-ae38-c4cdf32898f7"
+      },
+      "started_at_ms": 1794269458056,
+      "ended_at_ms": 1794269561379,
+      "executor_status": "done",
+      "reported_summary": "Reviewed exact patch bytes (SHA-256 372864fe5eeda92d568fff29f508da18e973bc0fd9ba048856cfabf3e463e438) without editing. Found two material preflight/final-admission parity gaps: valid same-execution action replays are falsely rejected, and unresolved request Conditions can pass preflight but fail only after executor termination.",
+      "reported_state": null
+    },
+    {
+      "session": "s_1794269622771_a36447e5-9d87-446d-9b40-2fc3014b7f82",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_80819def-f544-4e08-a855-d04371064d12"
+      },
+      "started_at_ms": 1794269622771,
+      "ended_at_ms": 1794269767372,
+      "executor_status": "done",
+      "reported_summary": "Reworked the candidate to run final-result task changes through the authoritative admission path inside an always-rolled-back transaction, addressing the prior review\u2019s action-replay and request-condition parity concerns. TypeScript and the 20-test managed finish suite pass, but exact-candidate independent review and the two additional parity regressions remain before commit/PR publication.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794269768453_813e7835-7ebb-4d66-9f35-66d6db651217",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_f16b70ad-d844-4d17-a67d-335cb5e3bff0"
+      },
+      "started_at_ms": 1794269768453,
+      "ended_at_ms": 1794270273729,
+      "executor_status": "done",
+      "reported_summary": "Advanced the Host candidate to shared final-settlement helpers and added the two missing parity regressions; focused tests and typecheck pass. Independent review found one remaining acceptance gap: the tests do not yet prove rollback/no-duplicate publication for a valid App request plus requestId Condition or directly count one agent-run factory invocation, so the candidate remains uncommitted and unpublished.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794270154738_544c5f1e-3316-4505-a376-0c9317922cce",
+      "assignment": "independent-review",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_f16b70ad-d844-4d17-a67d-335cb5e3bff0"
+      },
+      "started_at_ms": 1794270154738,
+      "ended_at_ms": 1794270251540,
+      "executor_status": "done",
+      "reported_summary": "Verified exact patch SHA-256:\n\n`22a6b62e9144e1a0f86ddc2b1753bb7f26aca34643c9c1303df8d84e7e7ae3f0`\n\n## Finding\n\n**Medium \u2014 regressions do not prove rollback/no-duplicate behavior for App requests or prove executor identity directly.**  \n`generated/review/source/task-communication.test.ts:1041-1295`\n\nThe new tests establish:\n\n- actionable finish feedback,\n- two model calls,\n- one Task attempt,\n- correct final Conditions,\n- journaled retire-action replay,\n- rejection of an unknown `requestId`.\n\nThey do **not** exercise a valid request declared in the final changes together with `{requestId: ...}`. Consequently they do not prove that the rollback-only preflight at `task-changes.ts:172-187` leaves no App inbox request or publication behind, nor that final admission creates/publishes it exactly once. The unknown-request test at lines 1224-1295 only fails before request admission. Existing communication rollback coverage tests conversation effects, not `admitTaskAppRequests`.\n\nAlso, `modelRequests === 2` plus one Task attempt does not strictly prove the same executor/agent-run instance stayed open: the test does not count `agentRunFactory` invocations or compare a run/session identity.\n\nRecommended regression: submit a new valid App request and matching `{requestId}` Condition, inspect state during `validateResult` to prove zero durable request rows/events, then after settlement assert exactly one request/publication and one factory/run identity.\n\n## Remaining review\n\nNo material implementation defect found in the reviewed paths:\n\n- The sentinel exception rolls back the outer transaction.\n- Nested request/action/communication writes join that rollback.\n- Deferred publications and unblock events are not reached during preflight.\n- Journaled actions are replay-aware.\n- Retire/redeclare and no-route validation observe the post-change transactional state.\n\nIndependent focused run:\n\n`bun test src/app/core/tasks/task-communication.test.ts` \u2014 **22 passed, 0 failed**.",
+      "reported_state": null
+    },
+    {
+      "session": "s_1794270274907_0264fe7a-6a26-4728-8c80-6ce71f631900",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_7187679c-9ee3-40ee-80d8-c648d27fc1ee"
+      },
+      "started_at_ms": 1794270274907,
+      "ended_at_ms": 1794270802326,
+      "executor_status": "done",
+      "reported_summary": "Closed the prior proof gaps by adding direct one-agent-run assertions and an App-request rollback/exactly-once regression; focused tests and typecheck pass. A fresh independent review found two remaining preflight/final-settlement ordering defects, so the candidate remains deliberately uncommitted and unpublished rather than violating the before-executor-termination requirement.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794270506797_5c357bd9-778a-44d8-b935-33fc57c26629",
+      "assignment": "independent-review",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_7187679c-9ee3-40ee-80d8-c648d27fc1ee"
+      },
+      "started_at_ms": 1794270506797,
+      "ended_at_ms": 1794270764501,
+      "executor_status": "done",
+      "reported_summary": "Reviewed patch SHA-256 e53ab8587b884b3430348a6c2c7c6c4be8de063013665b0a79ce8160d96c7fab without edits. Found one high-severity and one medium-severity preflight/final-settlement ordering gap; focused tests (23/23), TypeScript check, diff check, rollback/exactly-once publication, one agentRunFactory invocation, and one Task-attempt evidence otherwise pass.",
+      "reported_state": null
+    },
+    {
+      "session": "s_1794270803477_cd6dbfa1-31fd-4d8c-9a25-81d875cfbbe7",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_d3a6281b-f1c6-40c3-b739-8fc36179a8cd"
+      },
+      "started_at_ms": 1794270803477,
+      "ended_at_ms": 1794271111652,
+      "executor_status": "done",
+      "reported_summary": "Fixed both ordering gaps in the isolated Host candidate and added focused regressions; all focused tests, TypeScript, and diff checks pass. Publication remains deliberately blocked because a fresh independent review of the exact v5 patch could not be completed within this attempt\u2014the CLI reviewer rejected the external worktree path\u2014so no commit, push, or PR was made.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794271112579_118a9f1e-9785-46b3-b808-788338725136",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_106cde20-4db2-4979-95f3-80fbf3615a48"
+      },
+      "started_at_ms": 1794271112579,
+      "ended_at_ms": 1794271396818,
+      "executor_status": "done",
+      "reported_summary": "Fresh independent review of v5 found one material empty-snapshot race; I fixed it and added a focused regression proving a live event accepted after preflight remains pending rather than being consumed by unvalidated final settlement. The exact v6 candidate passes the new focused test and TypeScript/diff checks inherited from this attempt, but requires fresh independent review before commit/publication.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794271166769_e4b868cc-d647-4627-aca6-f33327e94449",
+      "assignment": "independent-review",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_106cde20-4db2-4979-95f3-80fbf3615a48"
+      },
+      "started_at_ms": 1794271166769,
+      "ended_at_ms": 1794271253969,
+      "executor_status": "done",
+      "reported_summary": "Independent review completed for patch SHA-256 c0869fec335bff239bd51a2c77628c2f9e4a445dcbe68e156a841c4210d59bdd. Verdict: changes requested due to a material accepted-live-event snapshot race; retained reviewAt ordering and the two required malformed-case correction flows are otherwise adequately addressed.",
+      "reported_state": null
+    },
+    {
+      "session": "s_1794271397713_c1df1988-1e0f-4e53-b21f-83997d2c2047",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_1dbdf9ab-c3b5-4e9e-bb11-0550da0dcfb6"
+      },
+      "started_at_ms": 1794271397713,
+      "ended_at_ms": 1794271622548,
+      "executor_status": "done",
+      "reported_summary": "Implemented, independently reviewed, committed, pushed, and opened PR #445 for the ordinary Task-agent finish preflight correction. Focused tests pass; integration, activation, and natural runtime observation remain explicitly unclaimed and PR #443 was not changed.",
+      "reported_state": "converged"
+    },
+    {
+      "session": "s_1794271441321_d23d0511-1299-4fdd-b1b1-33cc2d0a0040",
+      "assignment": "independent-review",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_1dbdf9ab-c3b5-4e9e-bb11-0550da0dcfb6"
+      },
+      "started_at_ms": 1794271441321,
+      "ended_at_ms": 1794271555928,
+      "executor_status": "done",
+      "reported_summary": "Independent exact-patch review is clean: no material correctness, security, rollback, ordering, or race defect found in v6. Hash matched exactly; focused tests (26/26) and TypeScript check passed, and no files were edited.",
+      "reported_state": null
+    },
+    {
+      "session": "s_1794272406626_5a62c947-3004-45f5-b3b9-d025461e8e64",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_d75ab0ef-eba4-423b-a140-29b563458f50"
+      },
+      "started_at_ms": 1794272406626,
+      "ended_at_ms": 1794272507891,
+      "executor_status": "done",
+      "reported_summary": "Reviewed PR #445\u2019s new Copilot comment and confirmed a real stale live-event snapshot defect. Applied the minimal local source correction and verified the focused suite (26/26), TypeScript check, and diff check; the follow-up regression, exact-candidate review, commit, and PR update remain pending.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794272508804_f2f87a46-2eba-4a5f-be3f-a79994ebd45b",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_9596a5bf-f09d-42d8-acad-16e7bc06404c"
+      },
+      "started_at_ms": 1794272508804,
+      "ended_at_ms": 1794272734431,
+      "executor_status": "done",
+      "reported_summary": "Implemented and committed the PR #445 follow-up fix with a focused regression; 27 focused tests, TypeScript, and diff checks pass. Publication and independent review remain blocked this attempt: push failed because GitHub credential helper `gh` is unavailable, and the bounded CLI reviewer rejected the Host worktree as outside its authorized root.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794272735312_de7987de-0fff-4bcc-a93b-f23944e2843b",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_5f3cd15d-bab0-4725-a4f1-7e62ad4c412e"
+      },
+      "started_at_ms": 1794272735312,
+      "ended_at_ms": 1794273452101,
+      "executor_status": "done",
+      "reported_summary": "Published the complete Host correction to PR #445 at commit 04e63d6273, including the stale live-event follow-up and integration caller fix. Focused tests, integration tests, TypeScript, diff checks, and independent exact-candidate review pass; the PR remains open and unmerged, with activation and natural runtime observation not claimed.",
+      "reported_state": "converged"
+    },
+    {
+      "session": "s_1794273453024_aa91bb7f-6a60-4a90-bf0f-bbcb0c061f10",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 1,
+        "attemptId": "r_1_4e4b28d5-1c72-487f-ac6c-e8012a1baa3a"
+      },
+      "started_at_ms": 1794273453024,
+      "ended_at_ms": 1794273477281,
+      "executor_status": "done",
+      "reported_summary": "Reviewed the PR #445 state event against current authoritative GitHub state. The candidate remains open at the exact reviewed head; the event does not change the prior implementation disposition or establish integration, activation, or runtime improvement.",
+      "reported_state": "converged"
+    },
+    {
+      "session": "s_1794290878302_22a55130-d15b-499b-9e65-71f46aa5a373",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 2,
+        "attemptId": "r_2_01f58bcc-ded4-45ee-b3c6-4c9b66cec064"
+      },
+      "started_at_ms": 1794290878302,
+      "ended_at_ms": 1794290930703,
+      "executor_status": "done",
+      "reported_summary": "Revalidated PR #445 at exact head 04e63d6273871e74e78bfaf76d1c4926a8acabe8: Quality and Container pass, GitHub compare reports 0 commits behind main, the sole review thread is resolved, and the PR is mergeable but blocked only by the missing eligible APPROVED review. Retained the exact approval/merge dependency through a human action Condition and a direct merged-state observation; no merge, deployment, restart, activation, or runtime claim was made.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794291325777_ae4403d8-1bf5-454b-b42b-4266aa03f3e0",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 2,
+        "attemptId": "r_2_ca9cd86e-c3f1-4f8e-9da7-ba0df71dd827"
+      },
+      "started_at_ms": 1794291325777,
+      "ended_at_ms": 1794291342834,
+      "executor_status": "done",
+      "reported_summary": "Reviewed the new exact PR #445 observation. The required head remains open and unmerged with no eligible APPROVED review, so the existing human-approval and merge waits remain valid; activation and runtime observation cannot yet proceed.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794322840383_d41a852d-0524-476d-8749-ebe66e48c8d0",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 2,
+        "attemptId": "r_2_fd3f4e30-1e4f-499b-ba6e-fc719ab49b73"
+      },
+      "started_at_ms": 1794322840383,
+      "ended_at_ms": 1794323485679,
+      "executor_status": "done",
+      "reported_summary": "PR #445 moved to head 2b5f1c7040d68ab90793f3beb8fb9b3d0196c0c8 and remains open/unmerged. Re-review confirmed the original task patch is unchanged and checks pass, but a new current-head review finding was independently reproduced as a merge-blocking finish-preflight replay defect; the stale approval wait for the prior head should be retired while correction remains unfinished.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794323487927_69eeb02c-0dd6-468c-a4be-c96f4dec7402",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 2,
+        "attemptId": "r_2_0e032e18-edf2-4a13-a8e9-38851c6cdbd2"
+      },
+      "started_at_ms": 1794323487927,
+      "ended_at_ms": 1794324020426,
+      "executor_status": "done",
+      "reported_summary": "PR #445 advanced to corrected head 1c7015069e422f27c53d413d9efecff3b61b453e. The replay blocker is fixed and its thread resolved; exact-head CI, 205 focused/reconciler tests, TypeScript checking, and independent review all pass, but the author-owned PR still lacks an eligible non-author APPROVED review and remains open/unmerged.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794330016487_37d9d0b2-da4e-4355-9632-74d6d5205dd9",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 2,
+        "attemptId": "r_2_fc8ef287-fa52-4422-9a10-20cd8c671547"
+      },
+      "started_at_ms": 1794330016487,
+      "ended_at_ms": 1794330099908,
+      "executor_status": "done",
+      "reported_summary": "PR #445 passed the protected merge path at final head 26c73d14a4e10625ea35434a5860ea1d4bd13c23 and merged as d2cee42157e2ea5cfa4471b7de3d433c8b13bce5. The loaded Host is still the older 4f8d0188 revision, so I retired the obsolete approval/merge waits and retained an exact human/operator activation condition; no deployment, restart, or premature runtime trial was performed.",
+      "reported_state": "waiting"
+    },
+    {
+      "session": "s_1794333853460_0e0fa2a0-8bb8-4061-8803-1b376da5b5e4",
+      "assignment": "owner",
+      "binding": {
+        "appId": "may",
+        "taskId": "goal/appdep_f589cb34b26748c1d9956641",
+        "generation": 3,
+        "attemptId": "r_3_a77b064f-7444-4504-99c8-0b0439dc44e2"
+      },
+      "started_at_ms": 1794333853460,
+      "ended_at_ms": 1794333900869,
+      "executor_status": "done",
+      "reported_summary": "Verified the authorized v5.6.0 Host rollout contains merged PR #445, reconciled the bounded live same-executor malformed-finish observation, and retired the obsolete `pr445-host-activation` wait. No deployment, restart, duplicate implementation, request, or effect was performed in this attempt.",
+      "reported_state": "converged"
+    }
+  ],
+  "limits": [
+    "Selected historical request, not representative sampling or a fresh benchmark.",
+    "Historical agent/model/environment identities may differ; no current recurrence or prompt-causal attribution established.",
+    "Reviewer sessions sharing owner bindings must not be counted as independent owner failures.",
+    "No live Host read or database access; no Task retry, closure, condition edit, dispatch, messaging, deployment or activation.",
+    "Existing benchmark scores and draft expectations unchanged; no baseline or adoption decision."
+  ],
+  "preservation": {
+    "files_checked": 5312,
+    "host_revision": "d4ee0909607cbeb87765a7502ec047229dca8bda",
+    "host_status": "clean",
+    "evaluation_setup_unchanged": true,
+    "whole_benchmark_assignments_unchanged": true
+  },
+  "evidence": [
+    {
+      "path": ".state/sessions/s_1794269122108_afd47ec5-eb1d-43d4-9425-274af44eae4a/meta.json",
+      "sha256": "597a27327f4fe1e0f5eeff78bf97979ff7c9b35348d2f0ee56debc5499602db3"
+    },
+    {
+      "path": ".state/sessions/s_1794269122108_afd47ec5-eb1d-43d4-9425-274af44eae4a/result.json",
+      "sha256": "9ff84b9b034940a3830bdc22e907b0a709655b92cea73bc0d7cbb5402de2c518"
+    },
+    {
+      "path": ".state/sessions/s_1794269122108_afd47ec5-eb1d-43d4-9425-274af44eae4a/session.jsonl",
+      "sha256": "bc8bd2f8cea334b465e87c24b8c2317e9ea95bbd843e5a6a6e58d882d988987f"
+    },
+    {
+      "path": ".state/sessions/s_1794269458056_51c9cc63-1166-4282-9eca-0d78b7796e73/meta.json",
+      "sha256": "0e27195f51a16c53a17017011474c686fe68a8b15c2c435000d7ff3bb5cc538a"
+    },
+    {
+      "path": ".state/sessions/s_1794269458056_51c9cc63-1166-4282-9eca-0d78b7796e73/result.json",
+      "sha256": "9ecf4b2b71c385621512f5765ac73d6224a3aa2a195087333726cffe8bf4618c"
+    },
+    {
+      "path": ".state/sessions/s_1794269458056_51c9cc63-1166-4282-9eca-0d78b7796e73/session.jsonl",
+      "sha256": "041fd18997ec18b894cc18570a2a5f1cf5efa5c713cc8988dc9a0323a605bbfc"
+    },
+    {
+      "path": ".state/sessions/s_1794269622771_a36447e5-9d87-446d-9b40-2fc3014b7f82/meta.json",
+      "sha256": "a54ff8212a2a1e8fc3ff4fdc2de379e558168d1bf1c2fe6b466765a3702cf145"
+    },
+    {
+      "path": ".state/sessions/s_1794269622771_a36447e5-9d87-446d-9b40-2fc3014b7f82/result.json",
+      "sha256": "ea367fad2b4d3a4942947ffc0e5a139cfe78412aa817ab2ce2cf7f6ba1cf77aa"
+    },
+    {
+      "path": ".state/sessions/s_1794269622771_a36447e5-9d87-446d-9b40-2fc3014b7f82/session.jsonl",
+      "sha256": "4317ac5d4b73a8b81dc2e071334b53add89f202f03edab5c2131c1c4165c84ea"
+    },
+    {
+      "path": ".state/sessions/s_1794269768453_813e7835-7ebb-4d66-9f35-66d6db651217/meta.json",
+      "sha256": "b80fc9c7c7444d97fcc1da7c02eb731bc8145f03aef80ac739eed3faa5cc0579"
+    },
+    {
+      "path": ".state/sessions/s_1794269768453_813e7835-7ebb-4d66-9f35-66d6db651217/result.json",
+      "sha256": "12fd7f3cc1d3174cbf7bb6d5c13d5393b88bad242a84a165df4894508abf7828"
+    },
+    {
+      "path": ".state/sessions/s_1794269768453_813e7835-7ebb-4d66-9f35-66d6db651217/session.jsonl",
+      "sha256": "bd1c9050a5c2cd8220d19e3580b201034a28f86219a8cfa6c2b86a1223ddb2a4"
+    },
+    {
+      "path": ".state/sessions/s_1794270154738_544c5f1e-3316-4505-a376-0c9317922cce/meta.json",
+      "sha256": "33e97ca0a321b5d336ae0335aa8da4ca1b44302d2e32b39c1f0efd1ea27fe03c"
+    },
+    {
+      "path": ".state/sessions/s_1794270154738_544c5f1e-3316-4505-a376-0c9317922cce/result.json",
+      "sha256": "f3fe17f40fc7694a2d5358fb73300819599f729c73e751e7995e4be41592077e"
+    },
+    {
+      "path": ".state/sessions/s_1794270154738_544c5f1e-3316-4505-a376-0c9317922cce/session.jsonl",
+      "sha256": "715e5c8b48e7877b0961b529e3c8d8e6a3f17ea5b911924d1eaf37a1a0224776"
+    },
+    {
+      "path": ".state/sessions/s_1794270274907_0264fe7a-6a26-4728-8c80-6ce71f631900/meta.json",
+      "sha256": "7747a3ec9a1828aa83959d8406b5f0288b1c13fc74cce9f050ffad6e8932732f"
+    },
+    {
+      "path": ".state/sessions/s_1794270274907_0264fe7a-6a26-4728-8c80-6ce71f631900/result.json",
+      "sha256": "a665e9869a16f066233c45ba9ef1ac735743254af809d2bca75a20f513cacbe1"
+    },
+    {
+      "path": ".state/sessions/s_1794270274907_0264fe7a-6a26-4728-8c80-6ce71f631900/session.jsonl",
+      "sha256": "198fdea4bf288954650d2049fc5791496b63d598f2db6dc7de73efa77f1fec9b"
+    },
+    {
+      "path": ".state/sessions/s_1794270506797_5c357bd9-778a-44d8-b935-33fc57c26629/meta.json",
+      "sha256": "a4bcbd5d969043e36431d2194d9cb5e6a1c49309ecf7db4b30989d53c3889970"
+    },
+    {
+      "path": ".state/sessions/s_1794270506797_5c357bd9-778a-44d8-b935-33fc57c26629/result.json",
+      "sha256": "31592e9c629538f76a2539555c37426069bd7a4d9c26e2450b8b689e90340e2a"
+    },
+    {
+      "path": ".state/sessions/s_1794270506797_5c357bd9-778a-44d8-b935-33fc57c26629/session.jsonl",
+      "sha256": "669f1b1733cfb90adedf4b219b167cef375629187c8801c9418b37679d6d3da7"
+    },
+    {
+      "path": ".state/sessions/s_1794270803477_cd6dbfa1-31fd-4d8c-9a25-81d875cfbbe7/meta.json",
+      "sha256": "e7db40a1714fcb2c1c00d028a2e37deb2bb8a4523879e128854000834efef3df"
+    },
+    {
+      "path": ".state/sessions/s_1794270803477_cd6dbfa1-31fd-4d8c-9a25-81d875cfbbe7/result.json",
+      "sha256": "5394b5b2b3b1f7afd1e121bff8fd06cfced4af9a0452358db8e38d3571c919ea"
+    },
+    {
+      "path": ".state/sessions/s_1794270803477_cd6dbfa1-31fd-4d8c-9a25-81d875cfbbe7/session.jsonl",
+      "sha256": "b5c185eba8593a44a90c5cb10d448f2feabe76774850232b107d30a82f5c15a1"
+    },
+    {
+      "path": ".state/sessions/s_1794271112579_118a9f1e-9785-46b3-b808-788338725136/meta.json",
+      "sha256": "47e0da74d000a63979750301904a580f4693fbdad45fce1132249ea5c84fae6a"
+    },
+    {
+      "path": ".state/sessions/s_1794271112579_118a9f1e-9785-46b3-b808-788338725136/result.json",
+      "sha256": "0c7dc341e25fdce70c0b6af3d5c186baf3de651ee5b5513b2995f265cdd5ae78"
+    },
+    {
+      "path": ".state/sessions/s_1794271112579_118a9f1e-9785-46b3-b808-788338725136/session.jsonl",
+      "sha256": "b9d27d0222fcc89b1f0cab2d3fb18a9f7b13e59c0575548000abe70fa4ac5950"
+    },
+    {
+      "path": ".state/sessions/s_1794271166769_e4b868cc-d647-4627-aca6-f33327e94449/meta.json",
+      "sha256": "e0094136f07f825dfc13a8abbf3270b4a7109ade2cad7673013f9ddeb7461792"
+    },
+    {
+      "path": ".state/sessions/s_1794271166769_e4b868cc-d647-4627-aca6-f33327e94449/result.json",
+      "sha256": "bc95c6c04e15cb2b564baf3eee4cc9afea4524b9a0d83765a0a00546a9439e56"
+    },
+    {
+      "path": ".state/sessions/s_1794271166769_e4b868cc-d647-4627-aca6-f33327e94449/session.jsonl",
+      "sha256": "99a1f45bb72a9df9c994fbb9e63948bb96f6d743f37e587b7c90851f8c58f0c8"
+    },
+    {
+      "path": ".state/sessions/s_1794271397713_c1df1988-1e0f-4e53-b21f-83997d2c2047/meta.json",
+      "sha256": "96a6fbae8746b0433dff405dbb7c5de307db9b094ef24dc00599b9b8b61782fa"
+    },
+    {
+      "path": ".state/sessions/s_1794271397713_c1df1988-1e0f-4e53-b21f-83997d2c2047/result.json",
+      "sha256": "5943b34b7181a07729233d341b04a6906d6596003dab3924d1acdf1d4058a2cb"
+    },
+    {
+      "path": ".state/sessions/s_1794271397713_c1df1988-1e0f-4e53-b21f-83997d2c2047/session.jsonl",
+      "sha256": "08a2f4396b668ba5cc068c2bf9d98f18439af9764c4c4a1ae348d693d7682f5d"
+    },
+    {
+      "path": ".state/sessions/s_1794271441321_d23d0511-1299-4fdd-b1b1-33cc2d0a0040/meta.json",
+      "sha256": "ef92ca751dfe9c4747a233f40a194d0892ae2d5b7f949c375d73c4a2c23b7145"
+    },
+    {
+      "path": ".state/sessions/s_1794271441321_d23d0511-1299-4fdd-b1b1-33cc2d0a0040/result.json",
+      "sha256": "ed5bdb706821d11a6475c9e5ea09d67f38ac23053a55463c009f721669772e77"
+    },
+    {
+      "path": ".state/sessions/s_1794271441321_d23d0511-1299-4fdd-b1b1-33cc2d0a0040/session.jsonl",
+      "sha256": "d11c126abad4488c8157faeab24373d853f1da889ec9f04c845f64f953fd3093"
+    },
+    {
+      "path": ".state/sessions/s_1794272406626_5a62c947-3004-45f5-b3b9-d025461e8e64/meta.json",
+      "sha256": "6f566d97bec0810022552a22c3f42450b557f312cb20cd064081e67e594ae382"
+    },
+    {
+      "path": ".state/sessions/s_1794272406626_5a62c947-3004-45f5-b3b9-d025461e8e64/result.json",
+      "sha256": "b2e62c2382eb797d890f0130e55d75303410daab8ec9b6ccfcc990980b409321"
+    },
+    {
+      "path": ".state/sessions/s_1794272406626_5a62c947-3004-45f5-b3b9-d025461e8e64/session.jsonl",
+      "sha256": "4fa402dbff31270f74894e34193aff6d87ceafad8a87d87d7711bafeb70eb7a3"
+    },
+    {
+      "path": ".state/sessions/s_1794272508804_f2f87a46-2eba-4a5f-be3f-a79994ebd45b/meta.json",
+      "sha256": "fcacf08f5f74e93fabba064d7dfd3b953fad3d1822d6f388dea4c92b0b0b8f7f"
+    },
+    {
+      "path": ".state/sessions/s_1794272508804_f2f87a46-2eba-4a5f-be3f-a79994ebd45b/result.json",
+      "sha256": "7c4261a208b5f27a05b8f5bad1abe03887ca02edff5d82037f63ab02a6bd41f4"
+    },
+    {
+      "path": ".state/sessions/s_1794272508804_f2f87a46-2eba-4a5f-be3f-a79994ebd45b/session.jsonl",
+      "sha256": "dc3028549abcd582d4dd90aaf896de13850707dd61b1288b77721a3e2deac5f8"
+    },
+    {
+      "path": ".state/sessions/s_1794272735312_de7987de-0fff-4bcc-a93b-f23944e2843b/meta.json",
+      "sha256": "e0ea37bafbde290c800d8b7e315a2b6feee0b20bf95cdebf793498a09d9f5d8b"
+    },
+    {
+      "path": ".state/sessions/s_1794272735312_de7987de-0fff-4bcc-a93b-f23944e2843b/result.json",
+      "sha256": "55f513af5f5cd675aa963aa1326670e1f40e6bedb3319d23778dde364567b1f9"
+    },
+    {
+      "path": ".state/sessions/s_1794272735312_de7987de-0fff-4bcc-a93b-f23944e2843b/session.jsonl",
+      "sha256": "e60ab12be40dce92d399b8be776a91adc4d86742605b04dbed2c5b7f021ce6fc"
+    },
+    {
+      "path": ".state/sessions/s_1794273453024_aa91bb7f-6a60-4a90-bf0f-bbcb0c061f10/meta.json",
+      "sha256": "cc5f3802190d53ddace3e63353c4d24156ceaf240c28e8869a881deb92462dba"
+    },
+    {
+      "path": ".state/sessions/s_1794273453024_aa91bb7f-6a60-4a90-bf0f-bbcb0c061f10/result.json",
+      "sha256": "b37bcea20fff6a0e2046b981461f2f9341415a543104d30b3a8eae28163bf853"
+    },
+    {
+      "path": ".state/sessions/s_1794273453024_aa91bb7f-6a60-4a90-bf0f-bbcb0c061f10/session.jsonl",
+      "sha256": "1f92526fd9dce52e49cd7c5d08072b7797406115a72a21015fd2e9bddeb6f166"
+    },
+    {
+      "path": ".state/sessions/s_1794290878302_22a55130-d15b-499b-9e65-71f46aa5a373/meta.json",
+      "sha256": "76c4498ac8e2b1f12531f56660cd6529231f3c611bddcaa258830f99c3769d12"
+    },
+    {
+      "path": ".state/sessions/s_1794290878302_22a55130-d15b-499b-9e65-71f46aa5a373/result.json",
+      "sha256": "d359833a34b7f37fecefbaf8bc898f6899c197a6aaf36b7513d4a591b22f3195"
+    },
+    {
+      "path": ".state/sessions/s_1794290878302_22a55130-d15b-499b-9e65-71f46aa5a373/session.jsonl",
+      "sha256": "f93aa7ca382c5d63e834d2bf0c1d0310f6add992fcdbb0c24e8ed3e173b62e95"
+    },
+    {
+      "path": ".state/sessions/s_1794291325777_ae4403d8-1bf5-454b-b42b-4266aa03f3e0/meta.json",
+      "sha256": "e7e0919eebd498e3b231b0804ef7c73f716329802c79031fa53d30ce124433a3"
+    },
+    {
+      "path": ".state/sessions/s_1794291325777_ae4403d8-1bf5-454b-b42b-4266aa03f3e0/result.json",
+      "sha256": "2390e989631f51d00375472be682fd5773742bff5f271bcdc46afd038a182c26"
+    },
+    {
+      "path": ".state/sessions/s_1794291325777_ae4403d8-1bf5-454b-b42b-4266aa03f3e0/session.jsonl",
+      "sha256": "19cd494a9bc1c3c90e5a2493273524f1972ba49d9bf3936e418bc8e620e48684"
+    },
+    {
+      "path": ".state/sessions/s_1794322840383_d41a852d-0524-476d-8749-ebe66e48c8d0/meta.json",
+      "sha256": "4d6c7646a29b5793fbe142a230eaa15a28a4395730b74c09bfc0e52b7025b6ee"
+    },
+    {
+      "path": ".state/sessions/s_1794322840383_d41a852d-0524-476d-8749-ebe66e48c8d0/result.json",
+      "sha256": "fdf7d993d6898ac572fec0499a9af02cd4deed87ff2c34b2e8e0cc294fbcdfdb"
+    },
+    {
+      "path": ".state/sessions/s_1794322840383_d41a852d-0524-476d-8749-ebe66e48c8d0/session.jsonl",
+      "sha256": "fd504c3b367798db427b07a4602c60fae140af6a76db32c7da1db17ea45803ad"
+    },
+    {
+      "path": ".state/sessions/s_1794323487927_69eeb02c-0dd6-468c-a4be-c96f4dec7402/meta.json",
+      "sha256": "6c7051b9b31d35ce374769e82b7bbab59248b3e0c67adb930bcd11671dd8a567"
+    },
+    {
+      "path": ".state/sessions/s_1794323487927_69eeb02c-0dd6-468c-a4be-c96f4dec7402/result.json",
+      "sha256": "19ce94bb5a35dcde3e174818e471e0e848a9e3a1dbc4c331cf9451426fa343b7"
+    },
+    {
+      "path": ".state/sessions/s_1794323487927_69eeb02c-0dd6-468c-a4be-c96f4dec7402/session.jsonl",
+      "sha256": "c08c13ba050d9b5a65e8e22dcc91c7abed9dc54ddb4c97352861e4fcdb24283e"
+    },
+    {
+      "path": ".state/sessions/s_1794330016487_37d9d0b2-da4e-4355-9632-74d6d5205dd9/meta.json",
+      "sha256": "9d8f1167b758270858c45d8866aec9fdf53a164bde3bb8b5bfa6b156f448201a"
+    },
+    {
+      "path": ".state/sessions/s_1794330016487_37d9d0b2-da4e-4355-9632-74d6d5205dd9/result.json",
+      "sha256": "1900533839cfb3aaa1a1cc0e200ae4c5b2b15c2453d8c9f7552b320844a7a03e"
+    },
+    {
+      "path": ".state/sessions/s_1794330016487_37d9d0b2-da4e-4355-9632-74d6d5205dd9/session.jsonl",
+      "sha256": "5a0464056d1f3e209ca0cbee36c2aedbcdd756d3e7a25cc9a92850267d74dbda"
+    },
+    {
+      "path": ".state/sessions/s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48/meta.json",
+      "sha256": "90781968039a304990655cc83a26498dc6328dc4513f2351e48efb818ac7940a"
+    },
+    {
+      "path": ".state/sessions/s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48/result.json",
+      "sha256": "d4f9e0785d3f5a4ad13a2103510e1f8319e3de37e9e78bd8ff20db66afd6bd05"
+    },
+    {
+      "path": ".state/sessions/s_1794333797511_dd86e5d7-b03e-4b0e-8f7d-a78be2280b48/session.jsonl",
+      "sha256": "100b631375b5c51a9e29bb054c079f2d30854577cc215b1ee5a8fc3ae64ae8ee"
+    },
+    {
+      "path": ".state/sessions/s_1794333853460_0e0fa2a0-8bb8-4061-8803-1b376da5b5e4/meta.json",
+      "sha256": "f1a85aad75c832b7b9daebfb63600518cdf900931c723b71f647119ab502a964"
+    },
+    {
+      "path": ".state/sessions/s_1794333853460_0e0fa2a0-8bb8-4061-8803-1b376da5b5e4/result.json",
+      "sha256": "d46290653b2d0b19ba8efb0dab293b195281044dcb2dc013b3715981a363261e"
+    },
+    {
+      "path": ".state/sessions/s_1794333853460_0e0fa2a0-8bb8-4061-8803-1b376da5b5e4/session.jsonl",
+      "sha256": "c14bc128aca1bc327a6282eb721f1b99863a5168be32bbff9141e0cd94f7c118"
+    },
+    {
+      "path": ".state/sessions/s_1794830403761_80cadaa3-9c4f-4794-b8ba-deff28b5bbce/meta.json",
+      "sha256": "12f3772a833053fe31275e4251330bc6bf5a8d41b536d2b1312ab3aee6927e2b"
+    },
+    {
+      "path": ".state/sessions/s_1794830403761_80cadaa3-9c4f-4794-b8ba-deff28b5bbce/result.json",
+      "sha256": "71634d03f52cfa037690e56cddd895f918b681124497d5ef75a5893b2c672a11"
+    },
+    {
+      "path": ".state/sessions/s_1794830403761_80cadaa3-9c4f-4794-b8ba-deff28b5bbce/session.jsonl",
+      "sha256": "fd83492c8abbc6236e2b00b7704182c593513e895c83b643fd2c3b4bba6748fb"
+    },
+    {
+      "path": ".state/workload-live-review-20261111/alex-input_appdep_c7460233bd58b188e5685d31.json",
+      "sha256": "066a6f04c581bfa6269c05f0e1391607371bec442be80a8c394aca95b3a69cd5"
+    },
+    {
+      "path": ".state/workload-live-review-20261111/review.md",
+      "sha256": "077a245891afa3e38926005a23a535dae637277eb1c8a5a74be21cad26bd465c"
+    },
+    {
+      "path": ".state/workload-live-review-20261111/stranded-repair-task.json",
+      "sha256": "e283e12d03d6ce25d666854e7862936f48094e0a74640d99894a2ec17a1e4127"
+    },
+    {
+      "path": ".state/workload-v560-rollout-20261111/rollout.json",
+      "sha256": "8018127bca72a32b395a07692d058563c6441a46a417eae2989045b10d89f158"
+    }
+  ]
+}

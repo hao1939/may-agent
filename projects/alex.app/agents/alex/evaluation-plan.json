@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "revision": 10,
+  "agent": "alex",
+  "owner": "alex",
+  "outcomes": [
+    "Carry an authorized improvement through verified useful delivery and an explicit owner disposition.",
+    "Reduce operator corrections and wasted review rounds while keeping total cycle time and cost acceptable."
+  ],
+  "benchmarks": [
+    {
+      "id": "outcome-completion",
+      "version": 3,
+      "goal": "Choose when an assignment is fulfilled and when implementation or review remains.",
+      "baseline_run_id": "outcome-completion-test-20261116T154647Z-811047b3"
+    },
+    {
+      "id": "improvement-stage-selection",
+      "version": 1,
+      "goal": "Choose a justified prompt, procedure or workflow intervention before expanding machinery.",
+      "baseline_run_id": null
+    }
+  ],
+  "evaluation": {
+    "target": "alex",
+    "model": "gpt-5.6-sol",
+    "trials": 1,
+    "timeout_minutes": 4,
+    "max_runs_per_cycle": 4
+  },
+  "improvement": {
+    "problem": "The approved outcome-completion v3 judgment baseline is complete (5 pass, 0 fail, 0 invalid), but it does not establish reliable delivery of a useful authorized improvement. The next gap is observing Alex carry real work through its actual acceptance or a supported disposition, with human correction, time and cost evidence. No new improvement incident is selected.",
+    "evidence": [
+      "projects/alex.app/docs/comparison/gym-reporting-delivery-trial-20261116.md",
+      "projects/gym/docs/agent-manual-trials-20261116.md",
+      "projects/gym/docs/agent-reports/agent-manual-trials-20261116.json",
+      "projects/alex.app/docs/comparison/alex-review-rounds-repair-20261116.md",
+      "projects/alex.app/docs/comparison/alex-review-rounds-hosted-20261116.md",
+      "projects/gym/docs/system-manual-review-20261116.md",
+      "projects/alex.app/docs/comparison/alex-incident-handoff-repair-20261116.md",
+      ".state/alex-incident-handoff-activation-20261116-01/activation.md",
+      ".state/alex-reporting-incident-disposition-20261116-01/disposition.md",
+      "projects/gym/docs/outcome-v2-attempt-20261116.md",
+      "projects/gym/docs/outcome-v2-attempt-20261116.json",
+      "projects/gym/benchmarks/outcome-completion/CALIBRATION-REVIEW.md",
+      "projects/gym/docs/outcome-v3-evaluation-20261116.md",
+      "projects/gym/docs/outcome-v3-evaluation-20261116.json",
+      "projects/gym/docs/measurement-identity-repair-20261116.md",
+      "projects/gym/docs/alex-real-delivery-observation-20261116.md"
+    ],
+    "hypothesis": "Using existing task ownership, one bounded problem and explicit acceptance/stop limits can let Alex carry a useful improvement through its supported delivery boundary with acceptable human steering, elapsed time and model cost. One observed delivery tests that task only; improvement claims require comparable prior evidence.",
+    "expected_benefit": "Find the next concrete delivery bottleneck from real-work evidence and reduce unnecessary operator intervention or repeated work where the observations support it.",
+    "unchanged_alternative": "Keep the installed Alex definition unchanged, retain all historical runs and the unapplied reporting proposal, and reuse the current evidence during the existing daily changed-evidence review.",
+    "stop_when": "The next selected authorized task reaches its actual acceptance or a supported disposition, with exact output/check/review receipts, remaining obligations, observed corrections and scoped time/cost. A review finding no worthwhile changed evidence records no-change and rearms the existing daily Task. Do not create work to fill this observation, commission another benchmark without a concrete justified question, or renew the retired reporting incident allowance.",
+    "next_action": "At the existing system-wide review due November 17, 2026 09:00 UTC, read this current plan and live Task; its saved revision-6 calibration gate is historical. Follow projects/gym/docs/alex-real-delivery-observation-20261116.md: use fresh existing evidence to select at most one worthwhile authorized problem, define its acceptance and stopping limit, and retain Task/attempt identity, exact output/check/review receipts, human corrections, operator audit effort and scoped elapsed time/model cost through delivery or a supported disposition. If no worthwhile changed evidence exists, record no-change and rearm the same standing Task. Preserve the selected v3 judgment baseline and its recorded-harness requirement; do not manufacture a Task or reopen the retired reporting incident."
+  },
+  "coverage_gaps": [
+    "The manual improvement-stage-selection v1 run passed its one draft judgment case and calibrated controls. That narrow judgment evidence did not deliver the retired reporting candidate or establish general improvement behavior.",
+    "The standing-review handoff/setup repair is integrated and active at release bca49e7c6a645c384eae22d2efb76d6ddd545a0c-definitions-v6. It has not demonstrated a fresh hosted finite-goal delegation, automatic due-day behavior, restart/workspace recovery, cross-Task incident-budget enforcement or a new repair under the bound.",
+    "Reporting incident alex/report-executed-checks-accurately-20261116 is retired from active selection and accepted only at the demonstrated local source-proposal boundary. Candidate 8644005b33933c15fd02d419b2c7ca1affd3336a remains unapplied and lacks a fresh independent pass; its one development invocation and all three automated review/repair rounds remain consumed.",
+    "The reporting candidate proof is limited to retained source-text and scope assertions. An attempted check:ci invocation failed because that script was absent; no check:ci suite or new functional test passed, and the prior accepted summary overstates this as functional verification.",
+    "Outcome-completion v2 run outcome-completion-test-20261116T150121Z-080f4da5 is incomplete and baseline-ineligible: two native passes, one invalid semantic evaluation and two unrun cases. Both judges accepted the actual Alex answer, but gpt-5.6-sol rejected approved positive control B2, so there is no valid complete baseline and no established Alex failure.",
+    "Outcome-completion v3 run outcome-completion-test-20261116T154647Z-811047b3 retained 5 pass, 0 fail and 0 invalid across 5 cases. Both judges calibrated every control in one complete run; this is a judgment baseline, not operational delivery or an Alex improvement. The historical v2 attempt remains incomplete and calibration-invalid.",
+    "The narrow style-case pass does not prove that check:ci ran or that Task closure was authorized. Those provenance and authority boundaries remain outside that old rubric and must not be generalized into behavior evidence.",
+    "The manual system-wide pass demonstrated bounded selection and same-Task rearming to the unchanged November 17, 2026 09:00 UTC deadline. Automatic due-day wake, cross-day allowance retention and repeated unattended reliability remain unobserved.",
+    "Zero operator correction messages in one delivery does not measure operator audit effort or demonstrate a general improvement. Existing model-cost estimates are scoped historical estimates; billing, operator cost and cost improvement remain unknown.",
+    "The active handoff guard rejects the known standing policy and guides finite incident handoff, but automatic enforcement across direct calls, separate Tasks and the standing Task lifetime remains unverified.",
+    "Measurement identity bookkeeping is repaired: the retained v3 run is selected as an approved complete judgment baseline without rewriting history or rerunning models. Its frozen execution harness differs from today's source (harness_matches_current=false). A future matched candidate comparison must use that recorded harness, or separately commission a fresh matched baseline when an execution-harness change warrants it; the default verifier remains strict. Operational transfer and repeated-run stability are still unmeasured."
+  ],
+  "decisions": []
+}

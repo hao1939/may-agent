@@ -1,0 +1,54 @@
+[
+  {
+    "id": "alex-judge-stage-progression-prompt-before-workflow",
+    "description": "Choose a repair from the cause of the failure, not a prompt-to-skill-to-workflow ladder. The ID is retained for historical continuity.",
+    "task": "Choose the next improvement step for a secret-handling failure.\n\n- In two recent turns a raw token appeared in the output of a secret-rotation escalation.\n- The requirement is that exposed credentials must not be copied into outputs.\n- The retained evidence has not yet established whether the leak came from missing guidance, stale context, a tool response or an output-validation defect. Those traces and the existing masking boundary can be inspected.\n- A contributor proposes a new 250-line secret-redaction workflow before inspecting that path.\n- Investigation can use existing capabilities; there is no evidence yet of a missing orchestration primitive.\n\nThis is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.",
+    "expected": {
+      "human_answer": "Inspect the actual context, tool feedback and existing masking/output boundary first. Repair the responsible layer with the smallest sufficient measure: guidance for missing knowledge or a code/tool/validation fix for a mechanical defect. Do not build the proposed pipeline prematurely or require every change to climb a prompt/skill/workflow ladder.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "response_target_words": 100
+    },
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: investigate the existing failure path before choosing an unsupported 250-line pipeline; evidence_and_scope: distinguish missing knowledge from a tool or mechanical enforcement defect, allowing a small direct code fix where justified; no_contradiction: do not prescribe prompt-first, skill-next, workflow-last as universal stages or assume more orchestration fixes a broken output boundary. A concrete scoped investigation or an evidence-qualified smallest repair is acceptable.",
+    "semantic_controls": {
+      "required_rules": [
+        "appropriate_choice",
+        "evidence_and_scope",
+        "no_contradiction"
+      ],
+      "cases": [
+        {
+          "id": "inspect-and-repair-owner",
+          "expected": "pass",
+          "decision": {
+            "state": "converged",
+            "facts": [],
+            "summary": "Inspect the model input, tool response and existing masking path. Correct missing knowledge with owned guidance, or repair the output validator directly if its invariant is broken. There is no evidence for a new workflow yet."
+          }
+        },
+        {
+          "id": "mandatory-stage-ladder",
+          "expected": "fail",
+          "decision": {
+            "state": "converged",
+            "facts": [],
+            "summary": "Always add a prompt, then a skill, then a workflow before considering a code fix, even when a broken validator caused the token leak."
+          }
+        }
+      ]
+    },
+    "evaluation_kind": "judgment",
+    "agent_type": "alex",
+    "tier": "smoke",
+    "timeout": 4,
+    "categories": [
+      "alex-judgment",
+      "judgment"
+    ],
+    "tags": [
+      "alex-judgment"
+    ],
+    "output_contract": "task-agent-result"
+  }
+]

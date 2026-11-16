@@ -33,19 +33,26 @@ Runtime/scorer faults are evaluation problems, not a third agent-quality score.
 
 ## Current benchmarks
 
-| Benchmark | Evaluation question | Cases | Core selection |
-| --- | --- | ---: | ---: |
-| `authority-and-scope` | Act within authority, clarify missing targets and respect owned work? | 5 | 4 |
-| `outcome-completion` | Distinguish useful contributions from fulfilled assignments, and stop at sufficient evidence? | 5 | 2 |
-| `adoption-and-simplicity` | Choose improvements by demonstrated value, existing capability and total cost? | 5 | 2 |
-| `repair-and-verification` | Choose the responsible repair layer and proportionate checks? | 3 | 2 |
-| `research-evidence` | Keep conclusions and research handling grounded in available evidence? | 4 | 2 |
-| `verified-code-work` | Actually repair, verify, preserve scope and recover when authorized? | 5 | 5 |
-| `intent-and-follow-through` | Interpret intent and carry authorized work toward useful outcomes? | 78 | — |
-| `outcome-coordination` | Choose valid ownership, requests, prerequisites and fulfillment dispositions? | 16 | — |
+| Benchmark | Intended role | Kind | Cases | Core selection |
+| --- | --- | --- | ---: | ---: |
+| `adoption-and-simplicity` | bob | judgment | 3 | 2 |
+| `bounded-task-completion` | may | behavior | 1 | — |
+| `improvement-routing` | may | judgment | 1 | — |
+| `improvement-stage-selection` | alex | judgment | 1 | — |
+| `intent-and-follow-through` | may | judgment | 78 | — |
+| `outcome-completion` | alex | judgment | 5 | 2 |
+| `outcome-coordination` | may | judgment | 16 | — |
+| `repair-and-verification` | tech-lead | judgment | 3 | 2 |
+| `research-evidence` | scout | judgment | 4 | 2 |
+| `user-intent-and-authority` | may | judgment | 2 | 2 |
+| `verified-code-work` | tech-lead | behavior | 5 | 5 |
+| `workflow-ownership` | bob | judgment | 1 | — |
+| `worktree-scope-and-preservation` | tech-lead | judgment | 2 | 2 |
 
-There are **121 active cases**. The small review selection remains **12 judgment
-and 5 behavior cases**; the two outcome-completion core labels are approved and the other 15 remain draft. The older collections have mixed
+There are **122 active cases in 13 benchmarks**. The small review selection
+remains **12 judgment and 5 behavior cases**; the two outcome-completion core
+labels are approved and the other 15 remain draft. The separate
+one-case execution pilot is also draft. The older collections have mixed
 review history. Relocation did not approve any new answer or establish agent
 improvement. Case IDs retain historical prefixes to preserve identity; those
 prefixes do not determine their benchmark owner or the run's target.
@@ -54,6 +61,55 @@ prefixes do not determine their benchmark owner or the run's target.
 - [Exact selected cases, evidence and limits](benchmarks/CORE.md)
 - [Proposed real-work recovery case—not executable yet](benchmarks/REAL-WORK-REVIEW.md)
 - [Expectations and limits](docs/expectations-and-limits.md)
+
+## Agent plans and history
+
+Alex maintains versioned plans beside the production definitions for
+[Alex](../alex.app/agents/alex/evaluation-plan.json) and
+[Tech-lead](../alex.app/agents/tech-lead/evaluation-plan.json), plus the
+[May pilot](../may.app/agents/may/evaluation-plan.json),
+[Bob](../alex.app/agents/bob/evaluation-plan.json) and
+[Scout](../scout-knowledge-lib.app/agents/scout/evaluation-plan.json). Each plan assigns
+whole compatible benchmarks and records goals, finite allowances, evidence gaps
+and one current improvement. See [the operating guide](docs/agent-evaluation-plans.md)
+and generated [Alex](docs/agent-reports/alex.md), [Tech-lead](docs/agent-reports/tech-lead.md)
+and [May](docs/agent-reports/may.md) reports. The first
+[May trial](docs/may-plan-trial-20261116.md) recorded two diagnostic passes and one
+calibration-invalid case. The [calibration repair](docs/may-calibration-repair-20261116.md)
+then passed both cases and every control in a fresh v2 run. With unchanged routing
+evidence reused, May has three current draft judgment passes. The separate
+[execution trial](docs/may-execution-trial-20261116.md) added one draft behavior
+pass: a verified local config repair with no operator correction during the
+attempt. May's guidance remains unchanged. Its next scope should come from a
+real request that required correction or lacked completion proof.
+
+The [manual five-agent trials](docs/agent-manual-trials-20261116.md) exercise one
+whole representative benchmark for each target, retain all machine verdicts and
+inspect output/scoring evidence before selecting an improvement. The
+[Bob](docs/agent-reports/bob.md) and [Scout](docs/agent-reports/scout.md) reports
+use the same read-only history mechanism. The daily system-wide Alex Task is
+independent of these finite standalone trials.
+
+The subsequent [Tech-lead measurement repair](docs/tech-lead-scoring-repair-20261116.md)
+versions `repair-and-verification` as v2: publication meaning is judged across the
+complete production result, and the source-repair assignment explicitly names
+its specification. Earlier results retain their original definitions and scores.
+
+Read-only commands from `/app` (no model calls):
+
+```bash
+bun run gym:plan validate projects/alex.app/agents/alex/evaluation-plan.json
+bun run gym:plan report projects/alex.app/agents/alex/evaluation-plan.json
+bun run gym:plan report projects/alex.app/agents/tech-lead/evaluation-plan.json --json
+bun run gym:plan report projects/may.app/agents/may/evaluation-plan.json
+```
+
+A run can retain its commissioning plan with `test --plan PATH --benchmark ID`
+or `verify --plan PATH --baseline RUN_ID --candidate LAB_FORK`. These execution
+commands make model calls. Plan runs use full membership and the planned trials
+and timeout. `--case`/`--core` remain diagnostic tools; subsets cannot count as a
+plan assignment. Older retained runs remain historical evidence, with current
+coverage unmeasured until matching evaluations exist.
 
 ## Layout
 

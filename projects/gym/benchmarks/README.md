@@ -9,22 +9,32 @@ or candidates in separate runs. Benchmarks do not own production agents.
 
 ## Active collections
 
-| Benchmark | Cases | Core | Kind |
-| --- | ---: | ---: | --- |
-| `authority-and-scope` | 5 | 4 | judgment |
-| `outcome-completion` | 5 | 2 | judgment |
-| `adoption-and-simplicity` | 5 | 2 | judgment |
-| `repair-and-verification` | 3 | 2 | judgment |
-| `research-evidence` | 4 | 2 | judgment |
-| `verified-code-work` | 5 | 5 | behavior |
-| `intent-and-follow-through` | 78 | — | judgment |
-| `outcome-coordination` | 16 | — | judgment |
+| Benchmark | Intended role | Cases | Core | Kind |
+| --- | --- | ---: | ---: | --- |
+| `adoption-and-simplicity` | bob | 3 | 2 | judgment |
+| `bounded-task-completion` | may | 1 | — | behavior |
+| `improvement-routing` | may | 1 | — | judgment |
+| `improvement-stage-selection` | alex | 1 | — | judgment |
+| `intent-and-follow-through` | may | 78 | — | judgment |
+| `outcome-completion` | alex | 5 | 2 | judgment |
+| `outcome-coordination` | may | 16 | — | judgment |
+| `repair-and-verification` | tech-lead | 3 | 2 | judgment |
+| `research-evidence` | scout | 4 | 2 | judgment |
+| `user-intent-and-authority` | may | 2 | 2 | judgment |
+| `verified-code-work` | tech-lead | 5 | 5 | behavior |
+| `workflow-ownership` | bob | 1 | — | judgment |
+| `worktree-scope-and-preservation` | tech-lead | 2 | 2 | judgment |
 
 Of the 17 selected cases, the two outcome-completion core cases now have explicit
 fingerprint-bound approval; the other 15 remain draft. Older approvals retain their original
 review records; moving files neither approves new answers nor establishes agent
 improvement. See [the review list](REVIEW.md), [core details](CORE.md) and
 [proposed real-work recovery case](REAL-WORK-REVIEW.md).
+
+The separate one-case `bounded-task-completion` pilot remains draft and outside
+that 17-case selection. Its [May execution trial](../docs/may-execution-trial-20261116.md)
+records actual local work, independent acceptance and calibrated report checks;
+it is not a production-incident replay or general completion score.
 
 ## One authoritative home
 
@@ -60,6 +70,8 @@ identity, not treated as collection names or execution targets.
   "version": 1,
   "purpose": "The evaluation question this collection answers.",
   "evaluation_kind": "judgment",
+  "subject_role": "tech-lead",
+  "output_contract": "task-agent-result",
   "case_ids": ["example-case"],
   "core_cases": ["example-case"],
   "artifact": "task-result.json",
@@ -70,8 +82,9 @@ identity, not treated as collection names or execution targets.
 `case_ids` selects local directory/inline definitions. `cases.json` is loaded
 automatically; embedded `suite.json#cases` is also supported. `core_cases` is an
 optional reviewable selection within this benchmark, not approval or a new kind
-of evaluation. A case may override the benchmark's `evaluation_kind`; judgment
-and behavior evidence must always be reported separately.
+of evaluation. All cases share the declared subject role, result contract and evaluation kind.
+Split a collection when these contracts differ. Judgment and behavior evidence
+are reported separately.
 
 Targets are supplied through `--target` / `--agent`, not benchmark-owned agent
 defaults. Case-level `agent_type` metadata remains a context/compatibility hint;
@@ -87,6 +100,8 @@ For a small case, add an object to the local `cases.json`:
   "id": "example-case",
   "description": "What the test establishes.",
   "evaluation_kind": "judgment",
+  "subject_role": "tech-lead",
+  "output_contract": "task-agent-result",
   "agent_type": "tech-lead",
   "output_contract": "task-agent-result",
   "task": "The assignment, relevant facts and execution boundaries—not an answer key.",

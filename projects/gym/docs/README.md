@@ -6,6 +6,25 @@
 - [`outcome-v2-attempt-20261116.md`](outcome-v2-attempt-20261116.md) — first approved
   outcome-completion v2 attempt: two native passes, a calibration stop, two unrun
   cases, exact retained evidence and separate target/judge usage; no valid baseline.
+- [`agent-evaluation-plans.md`](agent-evaluation-plans.md) — implemented pilot plans,
+  whole-benchmark assignments, evidence history and standalone May trials.
+- [`agent-manual-trials-20261116.md`](agent-manual-trials-20261116.md) — manual
+  whole-benchmark trials for May, Alex, Bob, Tech-lead and Scout, with raw results,
+  costs and a reproduced judgment-scoring defect.
+- [`tech-lead-scoring-repair-20261116.md`](tech-lead-scoring-repair-20261116.md) —
+  versioned evaluation repair for the publication boundary and specification
+  grounding, controls and fresh complete Tech-lead diagnostic evidence.
+- [`may-execution-trial-20261116.md`](may-execution-trial-20261116.md) — the first
+  bounded May execution result, independent acceptance, costs and limits.
+- [`may-real-work-review-20261116.md`](may-real-work-review-20261116.md) — a real
+  corrected request, creator acceptance and the decision to leave May unchanged.
+- [`may-hosted-cycle-20261116.md`](may-hosted-cycle-20261116.md) — Alex's first
+  hosted May selection pilot, accepted no-change and observed automation gaps.
+- [`system-periodic-review-20261116.md`](system-periodic-review-20261116.md) — current
+  system-wide daily review at 09:00 UTC; Alex selects one problem across agents,
+  workflows, benchmarks, tools and the improvement process.
+- [`may-periodic-review-20261116.md`](may-periodic-review-20261116.md) — historical
+  May-only setup, superseded by the system-wide selection policy above.
 - [`cases-benchmarks-and-agents.md`](cases-benchmarks-and-agents.md) — start here:
   one case, one purpose benchmark, one folder. Choose the agent for each run;
   agents and benchmarks are not 1:1. “Scenario” is only the old spelling of case.

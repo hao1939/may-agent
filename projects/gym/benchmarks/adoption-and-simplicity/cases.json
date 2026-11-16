@@ -1,57 +1,5 @@
 [
   {
-    "id": "alex-judge-stage-progression-prompt-before-workflow",
-    "description": "Choose a repair from the cause of the failure, not a prompt-to-skill-to-workflow ladder. The ID is retained for historical continuity.",
-    "task": "Choose the next improvement step for a secret-handling failure.\n\n- In two recent turns a raw token appeared in the output of a secret-rotation escalation.\n- The requirement is that exposed credentials must not be copied into outputs.\n- The retained evidence has not yet established whether the leak came from missing guidance, stale context, a tool response or an output-validation defect. Those traces and the existing masking boundary can be inspected.\n- A contributor proposes a new 250-line secret-redaction workflow before inspecting that path.\n- Investigation can use existing capabilities; there is no evidence yet of a missing orchestration primitive.\n\nThis is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.",
-    "expected": {
-      "human_answer": "Inspect the actual context, tool feedback and existing masking/output boundary first. Repair the responsible layer with the smallest sufficient measure: guidance for missing knowledge or a code/tool/validation fix for a mechanical defect. Do not build the proposed pipeline prematurely or require every change to climb a prompt/skill/workflow ladder.",
-      "exact": {
-        "needs_clarification": false
-      },
-      "response_target_words": 100
-    },
-    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: investigate the existing failure path before choosing an unsupported 250-line pipeline; evidence_and_scope: distinguish missing knowledge from a tool or mechanical enforcement defect, allowing a small direct code fix where justified; no_contradiction: do not prescribe prompt-first, skill-next, workflow-last as universal stages or assume more orchestration fixes a broken output boundary. A concrete scoped investigation or an evidence-qualified smallest repair is acceptable.",
-    "semantic_controls": {
-      "required_rules": [
-        "appropriate_choice",
-        "evidence_and_scope",
-        "no_contradiction"
-      ],
-      "cases": [
-        {
-          "id": "inspect-and-repair-owner",
-          "expected": "pass",
-          "decision": {
-            "state": "converged",
-            "facts": [],
-            "summary": "Inspect the model input, tool response and existing masking path. Correct missing knowledge with owned guidance, or repair the output validator directly if its invariant is broken. There is no evidence for a new workflow yet."
-          }
-        },
-        {
-          "id": "mandatory-stage-ladder",
-          "expected": "fail",
-          "decision": {
-            "state": "converged",
-            "facts": [],
-            "summary": "Always add a prompt, then a skill, then a workflow before considering a code fix, even when a broken validator caused the token leak."
-          }
-        }
-      ]
-    },
-    "evaluation_kind": "judgment",
-    "agent_type": "alex",
-    "tier": "smoke",
-    "timeout": 4,
-    "categories": [
-      "alex-judgment",
-      "judgment"
-    ],
-    "tags": [
-      "alex-judgment"
-    ],
-    "output_contract": "task-agent-result"
-  },
-  {
     "id": "bob-judge-converge-duplicate-entry-points",
     "description": "When reviewing a runtime surface that exposes both `run(target, task)` and a duplicate `runDirectWorkflow(workflow, task)` wrapper, Bob must recommend deleting/converging the duplicate wrapper onto the unified `run()` entry point.",
     "task": "Review the proposed SDK runtime API surface in `proposals/sdk-surface.md` and return your design judgment.\n\nThis is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.",
@@ -236,58 +184,6 @@
     ],
     "tags": [
       "bob-judgment"
-    ],
-    "output_contract": "task-agent-result"
-  },
-  {
-    "id": "may-judge-route-unconsumed-detector-to-owner",
-    "description": "Restore useful handling of stalled work without making preservation of one detector the goal.",
-    "task": "Assess this cleanup proposal.\n\n- A handler detects stalled Tasks but writes reports nobody reads; some stalled work remains unresolved.\n- The existing Task event/owner path also observes some stalled work. The detector's additional coverage, false-positive rate and operating cost have not been compared with that path.\n- A contributor proposes deleting the handler. No one has established whether the useful signal would be lost or already reaches the owner another way.\n- The desired outcome is that relevant stalled work reaches an accountable owner with actionable evidence, without needless machinery.\n\nThis is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.",
-    "expected": {
-      "human_answer": "Inspect the actual missing owner/consumer path and the detector's added value. Reuse an existing sufficient route and remove a redundant detector, or keep and connect useful additional detection when its benefit justifies the cost. Do not lose needed stalled-work handling or preserve a feature merely because it exists.",
-      "exact": {
-        "needs_clarification": false
-      },
-      "response_target_words": 100
-    },
-    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: investigate and repair useful owner follow-through rather than declare detector survival or deletion the goal; evidence_and_scope: compare incremental coverage, cost and existing routes, accepting either justified removal/reuse or retention of valuable additional detection; no_contradiction: preserve accountable handling of relevant stalled work, without treating unread reports as fulfilled work or requiring a new service. A conditional evidence-seeking recommendation is acceptable because the decisive facts are not supplied.",
-    "semantic_controls": {
-      "required_rules": [
-        "appropriate_choice",
-        "evidence_and_scope",
-        "no_contradiction"
-      ],
-      "cases": [
-        {
-          "id": "simplest-sufficient-route",
-          "expected": "pass",
-          "decision": {
-            "state": "converged",
-            "facts": [],
-            "summary": "Check which stalls fail to reach an owner and whether the existing route covers them. Remove the detector if redundant; connect its useful additional signal if the avoided stalls justify the cost. The goal is resolved owned work, not keeping the handler."
-          }
-        },
-        {
-          "id": "feature-preservation-as-goal",
-          "expected": "fail",
-          "decision": {
-            "state": "converged",
-            "facts": [],
-            "summary": "Keep the detector permanently and build another delivery service regardless of duplicate coverage or cost, because existing detection code must never be removed."
-          }
-        }
-      ]
-    },
-    "evaluation_kind": "judgment",
-    "agent_type": "may",
-    "tier": "smoke",
-    "timeout": 4,
-    "categories": [
-      "may-judgment",
-      "judgment"
-    ],
-    "tags": [
-      "may-judgment"
     ],
     "output_contract": "task-agent-result"
   }

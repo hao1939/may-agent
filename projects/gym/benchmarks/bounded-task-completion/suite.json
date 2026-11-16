@@ -1,0 +1,13 @@
+{
+  "name": "bounded-task-completion-v1",
+  "version": 1,
+  "purpose": "Complete a small authorized local configuration repair, preserve unrelated work, verify the exact final artifact and report the bounded outcome.",
+  "evaluation_kind": "behavior",
+  "subject_role": "may",
+  "output_contract": "task-agent-result",
+  "case_ids": [
+    "may-complete-local-preview-config"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../../dist/@may-agent/gym/bounded-task-completion.cjs"
+}

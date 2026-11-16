@@ -23,5 +23,7 @@
     "may-app-transfer-preserve-concurrent-work",
     "may-app-transfer-exact-approval",
     "may-app-transfer-secret-boundary"
-  ]
+  ],
+  "subject_role": "may",
+  "output_contract": "task-agent-result"
 }

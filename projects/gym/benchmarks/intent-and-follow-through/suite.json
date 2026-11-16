@@ -85,5 +85,7 @@
     "may-learn-admission-review-disposition-before-runtime-repair",
     "may-learn-admission-review-complete-gate-before-debugging",
     "may-learn-admission-review-material-human-authority-deliver"
-  ]
+  ],
+  "subject_role": "may",
+  "output_contract": "task-agent-result"
 }
