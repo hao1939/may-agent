@@ -21,10 +21,10 @@ Rather than spawning a chain of shell setup scripts on startup or intercepting C
 │ Host Bind-Mounted Durable Disk: /app  (WORKDIR /app)                    │
 │   /app/projects, /app/shared, /app/agents       (workspace & Git repos) │
 │   /app/.state/*.db, runtime-logs/               (May Host SQLite & logs)│
-│   /app/.state/cli-state/herdr/state/            (Herdr panes & layout)  │
-│   /app/.state/cli-state/codex/{sessions,memories,history.jsonl}         │
+│   /app/.state/cli-state/herdr/{sessions,state}/ (Herdr panes & resume)  │
+│   /app/.state/cli-state/codex/{sessions,memories,db,history.jsonl}      │
 │   /app/.state/cli-state/pi/sessions/                                    │
-│   /app/.state/cli-state/gemini/{history,tmp}/                           │
+│   /app/.state/cli-state/gemini/{history,tmp,projects.json}              │
 │   /app/.state/cli-state/claude/projects/                                │
 │   /app/.state/ssh/                              (persisted SSH keys)    │
 └─────────────────────────────────────────────────────────────────────────┘

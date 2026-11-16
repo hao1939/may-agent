@@ -80,10 +80,24 @@ describe("container runtime configuration and layout", () => {
       GEMINI_PRO_MODEL: "gemini-custom",
     });
 
-    // SSH preserved from both legacy STATE_DIR/.ssh and existing ~/.ssh, and ~/.ssh is now a symlink
+    // SSH preserved from both legacy STATE_DIR/.ssh and existing ~/.ssh, and both are symlinks
     expect(lstatSync(join(home, ".ssh")).isSymbolicLink()).toBe(true);
+    expect(lstatSync(join(stateDir, ".ssh")).isSymbolicLink()).toBe(true);
     expect(readFileSync(join(home, ".ssh/id_ed25519"), "utf8")).toBe("ssh-ed25519 LEGACY_KEY\n");
     expect(readFileSync(join(home, ".ssh/known_hosts"), "utf8")).toContain("github.com");
+
+    // Appending to known_hosts survives a subsequent restart without false conflict failure
+    writeFileSync(join(home, ".ssh/known_hosts"), "github.com ssh-ed25519 AAAA\ngitlab.com ssh-ed25519 BBBB\n", { mode: 0o600 });
+    await runConfigure({
+      HOME: home,
+      PROJECT_ROOT: "/workspace/app",
+      STATE_DIR: stateDir,
+      MODEL_BASE_URL: "https://models.example.test/",
+      MODEL_API_KEY: "secret-key-must-not-persist",
+      CODEX_MODEL: "gpt-custom",
+      GEMINI_PRO_MODEL: "gemini-custom",
+    });
+    expect(readFileSync(join(home, ".ssh/known_hosts"), "utf8")).toContain("gitlab.com");
 
     // Legacy CLI sessions migrated and symlinked; Herdr config repaired on restart
     expect(readFileSync(join(home, ".codex/sessions/s1.jsonl"), "utf8")).toBe('{"id":"legacy-1"}\n');
@@ -109,7 +123,8 @@ describe("container runtime configuration and layout", () => {
     expect(JSON.parse(geminiRaw).model.name).toBe("gemini-custom");
     expect(JSON.parse(claudeRaw).permissions.defaultMode).toBe("bypassPermissions");
 
-    // Conflicting SSH key material fails closed instead of overwriting keys
+    // Conflicting SSH key material during initial migration fails closed instead of overwriting keys
+    rmSync(join(stateDir, ".ssh"), { force: true });
     mkdirSync(join(stateDir, ".ssh"), { recursive: true });
     writeFileSync(join(stateDir, ".ssh/id_ed25519"), "ssh-ed25519 DIFFERENT_CONFLICTING_KEY\n", { mode: 0o600 });
     await expect(runConfigure({ HOME: home, STATE_DIR: stateDir })).rejects.toThrow();

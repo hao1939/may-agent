@@ -116,6 +116,7 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
   const cliState = path.join(stateDir, "cli-state");
   for (const rel of [
     "ssh",
+    "cli-state/herdr/sessions",
     "cli-state/herdr/state",
     "cli-state/codex/sessions",
     "cli-state/codex/memories",
@@ -129,7 +130,16 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
   fs.chmodSync(path.join(stateDir, "ssh"), 0o700);
 
   // Migrate legacy /app/.state/* paths from older images where HOME=/app/.state
-  copyMissingTree(path.join(stateDir, ".ssh"), path.join(stateDir, "ssh"), true);
+  const legacySshDir = path.join(stateDir, ".ssh");
+  try {
+    const legacySshStat = fs.lstatSync(legacySshDir);
+    if (legacySshStat.isDirectory() && !legacySshStat.isSymbolicLink()) {
+      copyMissingTree(legacySshDir, path.join(stateDir, "ssh"), true);
+      fs.rmSync(legacySshDir, { recursive: true, force: true });
+      ensureSymlink(legacySshDir, path.join(stateDir, "ssh"));
+    }
+  } catch {}
+  copyMissingTree(path.join(stateDir, "herdr", "config", "herdr", "sessions"), path.join(cliState, "herdr", "sessions"));
   copyMissingTree(path.join(stateDir, "herdr", "state"), path.join(cliState, "herdr", "state"));
   copyMissingTree(path.join(stateDir, ".codex", "sessions"), path.join(cliState, "codex", "sessions"));
   copyMissingTree(path.join(stateDir, ".codex", "memories"), path.join(cliState, "codex", "memories"));
@@ -139,6 +149,7 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
   copyMissingTree(path.join(stateDir, ".pi", "agent", "sessions"), path.join(cliState, "pi", "sessions"));
   copyMissingTree(path.join(stateDir, ".gemini", "history"), path.join(cliState, "gemini", "history"));
   copyMissingTree(path.join(stateDir, ".gemini", "tmp"), path.join(cliState, "gemini", "tmp"));
+  copyFileIfMissing(path.join(stateDir, ".gemini", "projects.json"), path.join(cliState, "gemini", "projects.json"));
   copyMissingTree(path.join(stateDir, ".claude", "projects"), path.join(cliState, "claude", "projects"));
 
   // Preserve any existing real ~/.ssh directory before linking ~/.ssh -> STATE_DIR/ssh
@@ -161,14 +172,58 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
     fs.chmodSync(sshConfigPath, 0o600);
   }
 
-  // Symlink durable CLI histories/sessions into ephemeral HOME
+  // Symlink durable Herdr & CLI histories/sessions into HOME
+  fs.mkdirSync(herdrConfigDir, { recursive: true });
+  if (herdrConfigDir !== path.join(cliState, "herdr")) {
+    const herdrSessionsLink = path.join(herdrConfigDir, "sessions");
+    try {
+      const st = fs.lstatSync(herdrSessionsLink);
+      if (st.isDirectory() && !st.isSymbolicLink()) {
+        copyMissingTree(herdrSessionsLink, path.join(cliState, "herdr", "sessions"));
+        fs.rmSync(herdrSessionsLink, { recursive: true, force: true });
+      }
+    } catch {}
+    // Clean any stale .sock files left behind by an ungraceful kill (SIGKILL)
+    const walkSockets = (dir) => {
+      if (!fs.existsSync(dir)) return;
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) walkSockets(p);
+        else if (e.isSocket() || e.name.endsWith(".sock")) fs.rmSync(p, { force: true });
+      }
+    };
+    walkSockets(path.join(cliState, "herdr", "sessions"));
+    ensureSymlink(herdrSessionsLink, path.join(cliState, "herdr", "sessions"));
+  }
   fs.mkdirSync(codexHome, { recursive: true });
   if (codexHome !== path.join(cliState, "codex")) {
     ensureSymlink(path.join(codexHome, "sessions"), path.join(cliState, "codex", "sessions"));
     ensureSymlink(path.join(codexHome, "memories"), path.join(cliState, "codex", "memories"));
-    const historyFile = path.join(cliState, "codex", "history.jsonl");
-    if (!fs.existsSync(historyFile)) fs.writeFileSync(historyFile, "");
-    ensureSymlink(path.join(codexHome, "history.jsonl"), historyFile);
+    for (const f of ["history.jsonl", "session_index.jsonl"]) {
+      const target = path.join(cliState, "codex", f);
+      if (!fs.existsSync(target)) fs.writeFileSync(target, "");
+      ensureSymlink(path.join(codexHome, f), target);
+    }
+    const codexDbDir = path.join(cliState, "codex", "db");
+    fs.mkdirSync(codexDbDir, { recursive: true });
+    for (const f of ["state_5.sqlite", "thread_history_1.sqlite", "memories_1.sqlite"]) {
+      copyFileIfMissing(path.join(stateDir, ".codex", f), path.join(codexDbDir, f));
+      const link = path.join(codexHome, f);
+      const target = path.join(codexDbDir, f);
+      try {
+        const st = fs.lstatSync(link);
+        if (st.isFile() && !st.isSymbolicLink()) {
+          if (!fs.existsSync(target) || fs.statSync(target).size === 0) fs.copyFileSync(link, target);
+          fs.unlinkSync(link);
+        }
+      } catch {}
+      for (const suffix of ["", "-wal", "-shm"]) {
+        if (suffix === "" && !fs.existsSync(target)) continue;
+        if (suffix === "" || fs.existsSync(`${target}${suffix}`)) {
+          ensureSymlink(`${link}${suffix}`, `${target}${suffix}`);
+        }
+      }
+    }
   }
   fs.mkdirSync(piDir, { recursive: true });
   if (piDir !== path.join(cliState, "pi")) {
@@ -178,6 +233,9 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
   if (geminiHome !== path.join(cliState, "gemini")) {
     ensureSymlink(path.join(geminiHome, "history"), path.join(cliState, "gemini", "history"));
     ensureSymlink(path.join(geminiHome, "tmp"), path.join(cliState, "gemini", "tmp"));
+    const geminiProjects = path.join(cliState, "gemini", "projects.json");
+    if (!fs.existsSync(geminiProjects)) fs.writeFileSync(geminiProjects, "{}\n");
+    ensureSymlink(path.join(geminiHome, "projects.json"), geminiProjects);
   }
   fs.mkdirSync(claudeHome, { recursive: true });
   if (claudeHome !== path.join(cliState, "claude")) {

@@ -247,7 +247,6 @@ ENV XDG_CONFIG_HOME=/var/lib/mayagent/.config
 ENV XDG_STATE_HOME=/app/.state/cli-state/herdr/state
 ENV XDG_RUNTIME_DIR=/tmp/may-herdr-runtime
 ENV MODEL_BASE_URL=http://host.docker.internal:4000
-ENV GOOGLE_GEMINI_BASE_URL=http://host.docker.internal:4000
 ENV PATH=/usr/local/bin:$PATH
 
 # noVNC web interface
