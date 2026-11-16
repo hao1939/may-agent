@@ -1,7 +1,7 @@
 # Proposed judgment checks — understand the outcome and use what we have
 
 **Proposal and diagnostic history. The four registered approach cases, plus the
-unchanged style case in outcome-completion v2, now have explicit truth approval.
+unchanged style case in outcome-completion (now v3), have explicit truth approval.
 No model runs were authorized by that approval.**
 
 A [two-question diagnostic pilot](../docs/approach-pilot-20261116.md) now records
@@ -11,15 +11,18 @@ alternative when the procedure is unavailable and evidence for an outdated
 candidate. Neither pilot is an approved score or evidence of actual execution.
 
 The four cases are registered with **approved expectations** in
-[outcome-completion version 2](outcome-completion/README.md): two existing cases
-revised and two contrasts added. Its native `cases.json` is the authoritative
+[outcome-completion](outcome-completion/README.md): version 2 revised two existing
+cases and added two contrasts. Version 3 changes only B's contextual-evidence
+rubric under [explicit approval](outcome-completion/CALIBRATION-REVIEW.md). Its native `cases.json` is the authoritative
 input/rubric/control source; the [exact review draft](outcome-completion/APPROACH-CASES-REVIEW.md)
 is retained as history. Owner-local checks run through normal validation and use
 SDK admission, including the rule that waiting results cannot contain `response`.
 No models ran for this implementation; registration and passing non-model checks
 did not themselves approve labels or establish semantic-grader accuracy. The
 separate user approval is recorded in that benchmark's `labels.json`, bound to
-exact native-case fingerprints.
+exact native-case fingerprints. The [first v2 attempt](../docs/outcome-v2-attempt-20261116.md)
+stopped at calibration and remains incomplete; the v3 clarification has no model
+baseline. Truth approval still does not authorize model calls.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
@@ -192,7 +195,8 @@ unnecessary work. Confirm the exact supplied catalog, authority, acceptable
 alternatives and examples before implementing any new or revised definitions.
 Existing approved answers do not automatically approve a changed rubric; retain
 historical definitions and start a fresh baseline after accepted changes.
-The version-2 expectations now have explicit truth approval; any measurement
-change needs renewed review. A fresh baseline still requires execution permission. No models ran and no agent instructions
+Current expectations, including the version-3 B-only clarification, have explicit
+truth approval; any further measurement change needs renewed review. A fresh
+baseline still requires execution permission. No models ran and no agent instructions
 changed for this implementation. Earlier diagnostic runs retain their separate
 inputs, limitations and reports; they are not a baseline for the changed definitions.

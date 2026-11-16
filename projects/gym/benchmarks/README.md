@@ -21,7 +21,7 @@ or candidates in separate runs. Benchmarks do not own production agents.
 | `outcome-coordination` | 16 | — | judgment |
 
 Of the 17 selected cases, the two outcome-completion core cases now have explicit
-version-2 approval; the other 15 remain draft. Older approvals retain their original
+fingerprint-bound approval; the other 15 remain draft. Older approvals retain their original
 review records; moving files neither approves new answers nor establishes agent
 improvement. See [the review list](REVIEW.md), [core details](CORE.md) and
 [proposed real-work recovery case](REAL-WORK-REVIEW.md).

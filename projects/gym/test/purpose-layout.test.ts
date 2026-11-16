@@ -23,7 +23,7 @@ import {
   materializeScenarioOrInlineCase,
 } from "../src/loop/store";
 import { withTempDir } from "./support/temp-dir";
-import { assertOutcomeCompletionApprovalHistory, outcomeCompletionV2Revisions } from "../benchmarks/outcome-completion/approach-drafts.test";
+import { assertOutcomeCompletionApprovalHistory, outcomeCompletionRevisions } from "../benchmarks/outcome-completion/approach-drafts.test";
 
 const root = resolve(import.meta.dirname, ".."),
   archive = join(root, "archive/pre-purpose-layout");
@@ -246,9 +246,9 @@ test("migration preserves all 119 assignments, fixtures, answers, rubrics and ap
           "semantic_criteria.md",
           "semantic_controls.json",
         ]) {
-          const outcomeRevision = outcomeCompletionV2Revisions[id]?.[file];
+          const outcomeRevision = outcomeCompletionRevisions[id]?.[file];
           if (outcomeRevision) {
-            expect(current.suite.version).toBe(2);
+            expect(current.suite.version).toBe(3);
             expect(fingerprintTree(join(before, file))).toBe(outcomeRevision[0]);
             expect(fingerprintTree(join(after, file))).toBe(outcomeRevision[1]);
             continue;

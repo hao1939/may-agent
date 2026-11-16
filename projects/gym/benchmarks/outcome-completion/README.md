@@ -1,7 +1,8 @@
 # Outcome completion
 
-**Version 2 — five judgment cases with approved expectations. The first attempt
-stopped on grader calibration; no valid complete baseline.**
+**Version 3 — five judgment cases with approved expectations. B's contextual-
+evidence clarification is active; no version-3 model baseline. The version-2
+attempt stopped on grader calibration and remains incomplete.**
 
 Tests whether a compatible subject understands its bounded assignment, chooses an
 available authorized approach and identifies sufficient fulfillment evidence.
@@ -86,8 +87,17 @@ git show 974d0049f4ecdfcf1b2df5b94b3dc87806296b77:projects/gym/benchmarks/outcom
 git show 974d0049f4ecdfcf1b2df5b94b3dc87806296b77:projects/gym/benchmarks/outcome-completion/cases.json
 ```
 
-The owner-local test pins exact old/new materialized input, expectation, rubric
-and control fingerprints for both revised cases. Generic migration checks require
+Version 3 changes only B's `evidence_and_scope`: a clear current-candidate record
+reference with identifying check/review facts is sufficient without repeating
+every unchanged snapshot fact. No target assignment, other rule, control, label,
+state/effect boundary, core selection or other case changed. The exact version-2
+definitions and approvals remain in Git at
+`29bf16eb71d793721641cc05b329e8cd887f4f2d`; the retained run was not rescored.
+
+The owner-local test preserves the version-2 materialized fingerprints and pins
+the exact B-only version-2-to-3 rubric change. It reconstructs the prior B case
+and checks its approved fingerprint, so the clarification cannot hide unrelated
+input or rule changes. Generic migration checks require
 unchanged metadata and archived approvals; only the explicitly approved case IDs
 may have the new current approval records. No archive or retained model result was
 rewritten.
@@ -104,10 +114,17 @@ changing an input, expectation, rubric or control requires renewed review.
 The owner-local tests check those bindings. No new approval is inferred for any
 other benchmark, target instructions, execution behavior or model run.
 
+The same conversation user subsequently approved the exact B-rubric clarification
+recorded in [CALIBRATION-REVIEW.md](CALIBRATION-REVIEW.md). Its version-3 approval
+was recorded on **2026-11-16T15:41:21.864Z**, with the new complete-case fingerprint
+in `labels.json`. Only B's record was renewed; the other four keep their original
+version-2 approval records because their measurements are unchanged. This is not
+model-run permission or evidence that the revised rubric has calibrated.
+
 The [historical review document](APPROACH-CASES-REVIEW.md) is not another definition
 source. The [first pilot](../../docs/approach-pilot-20261116.md) and
 [follow-up](../../docs/approach-contrasts-20261116.md) used different inputs/result
-interpretation and cannot serve as a version-2 baseline. No model or semantic-grader
+interpretation and cannot serve as a current baseline. No model or semantic-grader
 calls were authorized by the implementation or truth approval. A fresh run still
 requires its own execution permission; plans do not establish actual workflow use
 or delivery. The semantic grader now receives the frozen original assignment as
@@ -131,7 +148,9 @@ proof of that command's provenance or closure authority. No Task was actually
 closed. Labels and measurement definitions remain unchanged pending review of
 these observations; none of this is operational execution evidence.
 
-The [B2 calibration review](CALIBRATION-REVIEW.md) proposes an exact contextual-
-reference clarification for a future version 3. It is not active or approved.
-Diagnostics and an owner-local no-model regression now identify the missed B2
-control without changing its label, weakening the gate, or rescoring the old run.
+The [B2 calibration review](CALIBRATION-REVIEW.md) records the exact approved
+contextual-reference clarification now active in version 3. Diagnostics and an
+owner-local no-model regression identify the missed B2 control without changing
+its label, weakening the gate, or rescoring the old run. A fresh version-3 baseline
+still requires separate execution permission; no new model calls were made when
+recording or applying the clarification approval.

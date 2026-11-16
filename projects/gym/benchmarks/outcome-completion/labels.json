@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "benchmark": "outcome-completion",
   "labels": {
     "alex-judge-helper-recommendation-not-completion": {
@@ -19,9 +19,9 @@
     "alex-judge-close-verified-bounded-outcome": {
       "status": "approved",
       "source": "synthetic",
-      "rationale": "Explicit user approval of the version-2 input, expectations, rubric and controls in this conversation (message: approve). Approved measurement fingerprint: e46962fc911d96e6c47d6ce9702bcd17c62c37c29e110d6048bae618795911d9. No model-run or agent-change authorization is implied.",
+      "rationale": "Explicit user approval of the contextual-evidence rubric clarification in CALIBRATION-REVIEW.md (message: approve). Version 3 changes only evidence_and_scope for this case; the assignment, controls, labels, state requirement and effect boundaries are unchanged. The prior version-2 approval remains in Git at 29bf16eb71d793721641cc05b329e8cd887f4f2d. Approved measurement fingerprint: dc6cfe576705b7a9d8435d83d709cb7314c1fd54137d4ec5e2bb77aacb712b53. No model-run or agent-change authorization is implied.",
       "approved_by": "session-user:01a1e283-1450-7757-932e-b81864601339",
-      "approved_at": "2026-11-16T14:15:39.364Z"
+      "approved_at": "2026-11-16T15:41:21.864Z"
     },
     "alex-judge-use-existing-tools-when-procedure-unavailable": {
       "status": "approved",

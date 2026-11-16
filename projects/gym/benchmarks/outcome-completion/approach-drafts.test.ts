@@ -3,7 +3,7 @@ import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
 import { findOwnedCase } from "../../src/cases/catalog";
-import { benchmarkDir, fingerprintValue, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../../src/loop/store";
+import { benchmarkDir, fingerprintTree, fingerprintValue, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../../src/loop/store";
 import type { GroundTruthCatalog, GroundTruthLabel, InlineBenchmarkCase } from "../../src/loop/types";
 import { buildSemanticJudgeInput, evaluateSemanticJudgeRuns, validateSemanticControlSet, type SemanticCaseResult, type SemanticVerdict } from "../../src/scoring/semantic-judge";
 import { withTempDir } from "../../test/support/temp-dir";
@@ -36,7 +36,7 @@ function decision(id: string) {
 
 // Case-specific historical assertions stay with their owner. The generic
 // migration test consumes these exact old/new materialized fingerprints. Old
-// approvals remain archived; current v2 approvals are checked separately below.
+// approvals remain archived; current approvals are checked separately below.
 export const outcomeCompletionV2Revisions: Record<string, Record<string, readonly [string, string]>> = {
   "alex-judge-helper-recommendation-not-completion": {
     "task.md": ["7e653f0c249e079b14ad4cc953a42d51fad6b296f4f46829a278c178839eef98", "442788430f1c5f7d5f0d43ee406fa824145f7573f09fe5ebca95196fcbc6dd4d"],
@@ -49,6 +49,22 @@ export const outcomeCompletionV2Revisions: Record<string, Record<string, readonl
     "expected.json": ["99596950bc80becca74ba645e310c2466fcdb208ef0893ba8d5ccbf0bd803446", "1ae4bb4c6664188fff0810efbc44afff65ed988c828c2d2936003251060f17a0"],
     "semantic_criteria.md": ["4cbe1b8f170596351ab44d5a7bc44631dd03a0e158474eb23e3e75fb82b61730", "bf85c8b399272036bc35d75481c7708ff9a618016a662c4e3c7588d6d0688209"],
     "semantic_controls.json": ["4433736907a19ff383b93573d5a2281560d5f5c522399e04f9d64166422d955f", "d05b34ee8f62164f5c3a8b3b0f9adab794c4d8d597169cd44f4d602944f168f5"],
+  },
+};
+
+// Preserve v2 pins above; v3 changes only B's materialized evidence rubric.
+export const outcomeCompletionV3RubricRevision = [
+  "bf85c8b399272036bc35d75481c7708ff9a618016a662c4e3c7588d6d0688209",
+  "27260e70bb87cbc2a3b6b0d64051eb45943d4031d21794bad76bfa3970bf7d61",
+] as const;
+export const outcomeCompletionRevisions: typeof outcomeCompletionV2Revisions = {
+  ...outcomeCompletionV2Revisions,
+  [ids[1]!]: {
+    ...outcomeCompletionV2Revisions[ids[1]!]!,
+    "semantic_criteria.md": [
+      outcomeCompletionV2Revisions[ids[1]!]!["semantic_criteria.md"]![0],
+      outcomeCompletionV3RubricRevision[1],
+    ],
   },
 };
 
@@ -76,30 +92,50 @@ function materialize(root: string, c: InlineBenchmarkCase) {
   return { input, work };
 }
 
-describe("outcome-completion v2 cases (no models)", () => {
+describe("outcome-completion v3 cases (no models)", () => {
   test("five owned members, unchanged core selection and explicit fingerprint-bound approvals", () => {
     const { suite } = loadSuite("outcome-completion"), labels = loadLabels("outcome-completion", suite).catalog!;
-    expect(suite.name).toBe("outcome-completion-v2");
-    expect(suite.version).toBe(2);
+    expect(suite.name).toBe("outcome-completion-v3");
+    expect(suite.version).toBe(3);
     expect(suite.scenarios).toHaveLength(5);
     expect(suite.scenarios).toEqual(native.map((c) => c.id));
     expect(suite.core_cases).toEqual(ids.slice(0, 2));
-    expect(approvalCatalog.version).toBe(2);
+    expect(approvalCatalog.version).toBe(3);
     expect(approvalCatalog.benchmark).toBe("outcome-completion");
     expect(Object.keys(approvalCatalog.labels).sort()).toEqual([...suite.scenarios].sort());
     expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_by)).size).toBe(1);
-    expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_at)).size).toBe(1);
+    expect(new Set(Object.values(approvalCatalog.labels).map((label) => label.approved_at)).size).toBe(2);
     for (const id of suite.scenarios) {
       expect(findOwnedCase(project, id)?.benchmark).toBe("outcome-completion");
       const label = labels.labels[id]!;
       expect(label.status).toBe("approved");
       expect(label.approved_by).toMatch(/^session-user:[a-f0-9-]{36}$/);
       expect(Number.isFinite(Date.parse(label.approved_at!))).toBe(true);
+      if (id === ids[1]) expect(Date.parse(label.approved_at!)).toBeGreaterThan(Date.parse("2026-11-16T14:15:39.364Z"));
+      else expect(label.approved_at).toBe("2026-11-16T14:15:39.364Z");
       expect(label.rationale).toContain(fingerprintValue(native.find((c) => c.id === id)));
       expect(label.rationale).toContain("No model-run or agent-change authorization");
       expect(native.find((c) => c.id === id)?.label).toBeUndefined();
     }
   });
+
+  test("v3 changes only B's evidence rule, retaining the exact approved v2 case and rubric pins", () => withTempDir((root) => {
+    const c = cases[1]!, marker = "evidence_and_scope: ", end = "; no_contradiction: ";
+    const start = c.semantic_criteria!.indexOf(marker) + marker.length;
+    const finish = c.semantic_criteria!.indexOf(end, start);
+    expect(start).toBeGreaterThan(marker.length);
+    expect(finish).toBeGreaterThan(start);
+    const oldRule = "explain that the repair/regression, passing creator check and accepted independent review identify the exact unchanged candidate, without inventing which workflow produced them";
+    const priorCase = { ...c, semantic_criteria: c.semantic_criteria!.slice(0, start) + oldRule + c.semantic_criteria!.slice(finish) };
+    expect(fingerprintValue(priorCase)).toBe("e46962fc911d96e6c47d6ce9702bcd17c62c37c29e110d6048bae618795911d9");
+    expect(c.semantic_criteria).toContain("do not require repeating every unchanged snapshot fact in the summary");
+    expect(approvalCatalog.labels[c.id]?.rationale).toContain("Version 3 changes only evidence_and_scope");
+    expect(outcomeCompletionV2Revisions[c.id]!["semantic_criteria.md"]![1]).toBe(outcomeCompletionV3RubricRevision[0]);
+    writeFileSync(join(root, "v2-criteria.md"), `${priorCase.semantic_criteria.trim()}\n`);
+    expect(fingerprintTree(join(root, "v2-criteria.md"))).toBe(outcomeCompletionV3RubricRevision[0]);
+    const { input } = materialize(root, c);
+    expect(fingerprintTree(join(input, "semantic_criteria.md"))).toBe(outcomeCompletionV3RubricRevision[1]);
+  }));
 
   test("four ordinary inputs share acceptance and an effect-free operational-summary footer", () => {
     const assignments = cases.map((c) => c.task.split("Assignment:\n")[1]?.split("\n\n")[0]);
@@ -128,7 +164,7 @@ describe("outcome-completion v2 cases (no models)", () => {
     expect(cases[3]!.task).toContain("no check or review for N18");
   });
 
-  test("all 28 native controls have unique IDs and existing-format draft metadata", () => {
+  test("all 28 native controls have unique IDs and existing-format metadata", () => {
     expect(rows).toHaveLength(28);
     expect(new Set(rows.map((item) => item.id)).size).toBe(28);
     expect(rows.filter((item) => item.expected === "pass")).toHaveLength(8);

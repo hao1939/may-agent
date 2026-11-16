@@ -1,6 +1,6 @@
 # Revised Gym tests — review the exact answers
 
-**Outcome-completion version 2 now has explicit expectation/rubric approval;
+**Outcome-completion version 3 now has explicit expectation/rubric approval;
 the other revised case answers and checks remain draft.**
 
 The [owning benchmark](outcome-completion/README.md#approval-provenance) records
@@ -24,8 +24,8 @@ run. Each case has one benchmark-local home. Benchmarks are organized by the
 question being tested; the agent is chosen separately for each run. Historical
 agent-name prefixes in case IDs are retained for identity, not ownership. See [how cases, benchmarks and agents relate](../docs/cases-benchmarks-and-agents.md).
 
-Apart from the explicitly approved outcome-completion v2 cases, the revised
-definitions remain draft. No v2 baseline has run. Agreeing with the overall plan
+Apart from the explicitly approved outcome-completion cases, the revised
+definitions remain draft. No v3 baseline has run. Agreeing with the overall plan
 does not automatically approve every
 expected answer, the way answers are scored, or a later agent change.
 

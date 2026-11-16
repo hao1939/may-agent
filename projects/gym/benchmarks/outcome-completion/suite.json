@@ -1,6 +1,6 @@
 {
-  "name": "outcome-completion-v2",
-  "version": 2,
+  "name": "outcome-completion-v3",
+  "version": 3,
   "purpose": "Distinguish useful contributions from fulfilled outcomes and stop or continue according to sufficient evidence.",
   "evaluation_kind": "judgment",
   "case_ids": [
