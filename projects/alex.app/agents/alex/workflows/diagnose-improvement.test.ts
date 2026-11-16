@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runWorkflowTest } from "@may-agent/sdk/testing";
@@ -10,6 +18,7 @@ interface TrialFixture {
   verdict?: "pass" | "fail" | "invalid";
   agentStatus?: string;
   checks?: Array<{ name: string; passed: boolean; detail?: string }>;
+  rawResult?: string;
   requirement?: string;
   output?: string;
   transcript?: string;
@@ -31,7 +40,7 @@ function makeBaseline(target: string, trials: TrialFixture[]) {
     if (trial.missing !== "result") {
       writeFileSync(
         resultPath,
-        JSON.stringify({
+        trial.rawResult ?? JSON.stringify({
           agent_status: trial.agentStatus ?? "success",
           checks: trial.checks ?? [{ name: "quality", passed: trial.verdict !== "fail" }],
           prompt_hash: `prompt-${index + 1}`,
@@ -224,6 +233,115 @@ describe("diagnose-improvement workflow", () => {
       expect(output(run).disposition).toBe("insufficient_evidence");
       expect(gymCalls).toBe(1);
       expect(readFileSync(join(candidateDir, "sentinel.txt"), "utf8")).toBe("unchanged");
+    } finally { rmSync(baselineDir, { recursive: true, force: true }); }
+  });
+
+  test.each([
+    ["missing result", { missing: "result" as const }, "result evidence file is missing"],
+    ["malformed result", { rawResult: "{not-json" }, "result evidence is malformed"],
+    ["invalid scoring verdict", { verdict: "invalid" as const }, "machine_verdict is invalid"],
+    ["missing scoring verdict", { verdict: undefined }, "machine_verdict is missing"],
+    ["missing artifact", { missing: "artifact" as const }, "artifact evidence file is missing"],
+    ["missing transcript", { missing: "transcript" as const }, "transcript evidence file is missing"],
+  ])("preserves prior %s evidence-boundary behavior", async (_name, fixture, expectedIssue) => {
+    const baselineDir = makeBaseline("alex", [{ scenario: "prior-regression", verdict: "fail", ...fixture }]);
+    addAgent(baselineDir, "alex");
+    const candidateDir = join(baselineDir, "agents", ".lab", "prior-preserve");
+    mkdirSync(candidateDir, { recursive: true });
+    writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "prior-preserve" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: { gym: (step) => {
+          expect(step.task).toContain(expectedIssue);
+          return { status: "done", output: {
+            target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
+            root_cause_summary: "Boundary retained.", proposed_changes: [],
+          } };
+        } },
+      });
+      expect(output(run).disposition).toBe("insufficient_evidence");
+      expect(readFileSync(join(candidateDir, "sentinel.txt"), "utf8")).toBe("unchanged");
+    } finally { rmSync(baselineDir, { recursive: true, force: true }); }
+  });
+
+  test("treats an empty baseline as insufficient evidence without preparing a candidate", async () => {
+    const baselineDir = makeBaseline("alex", []);
+    addAgent(baselineDir, "alex");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "empty" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: { gym: () => ({ status: "done", output: {
+          target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
+          root_cause_summary: "Empty baseline.", proposed_changes: [],
+        } }) },
+      });
+      expect(output(run).disposition).toBe("insufficient_evidence");
+      expect(existsSync(join(baselineDir, "agents", ".lab", "empty"))).toBe(false);
+    } finally { rmSync(baselineDir, { recursive: true, force: true }); }
+  });
+
+  test("rejects retained evidence whose parent symlink escapes the baseline", async () => {
+    const baselineDir = makeBaseline("alex", [{ scenario: "escaped", verdict: "fail" }]);
+    const outsideDir = mkdtempSync(join(tmpdir(), "gym-diag-outside-"));
+    addAgent(baselineDir, "alex");
+    writeFileSync(join(outsideDir, "result.json"), JSON.stringify({
+      agent_status: "success", checks: [{ name: "quality", passed: false }],
+    }));
+    writeFileSync(join(outsideDir, "task.md"), "External requirement must not be trusted.\n");
+    writeFileSync(join(outsideDir, "task-result.json"), "{\"response\":\"external\"}\n");
+    writeFileSync(join(outsideDir, "transcript.jsonl"), "external transcript\n");
+    symlinkSync(outsideDir, join(baselineDir, "escaped-parent"), "dir");
+    const manifestPath = join(baselineDir, "manifest.json");
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest.trials[0].result_path = "escaped-parent/result.json";
+    manifest.trials[0].requirement_path = "escaped-parent/task.md";
+    manifest.trials[0].artifact_path = "escaped-parent/task-result.json";
+    manifest.trials[0].transcript_path = "escaped-parent/transcript.jsonl";
+    writeFileSync(manifestPath, JSON.stringify(manifest));
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "escaped" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: { gym: (step) => {
+          expect(step.task).toContain("real path escapes baseline");
+          return { status: "done", output: {
+            target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
+            root_cause_summary: "Escaped evidence rejected.", proposed_changes: [],
+          } };
+        } },
+      });
+      expect(output(run).disposition).toBe("insufficient_evidence");
+      expect(existsSync(join(baselineDir, "agents", ".lab", "escaped"))).toBe(false);
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+      rmSync(outsideDir, { recursive: true, force: true });
+    }
+  });
+
+  test("parses a valid large result fully while handing off only a bounded excerpt", async () => {
+    const rawResult = JSON.stringify({
+      padding: "x".repeat(7_000),
+      agent_status: "success",
+      checks: [{ name: "quality", passed: false, detail: "retained failure" }],
+    });
+    const baselineDir = makeBaseline("alex", [{ scenario: "large-result", verdict: "fail", rawResult }]);
+    addAgent(baselineDir, "alex");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir }, workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: { gym: (step) => {
+          expect(step.task).toContain('"truncated": true');
+          expect(step.task).toContain("retained failure");
+          return { status: "done", output: proposal(
+            "projects/fixture.app/agents/alex/AGENTS.md",
+            { requirement: ["large-result#1:requirement"], output: ["large-result#1:output"] },
+          ) };
+        } },
+      });
+      expect(output(run).disposition).toBe("actionable");
     } finally { rmSync(baselineDir, { recursive: true, force: true }); }
   });
 

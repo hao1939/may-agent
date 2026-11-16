@@ -139,10 +139,24 @@ function containedPath(root: string, path: string): boolean {
   return resolvedPath === resolvedRoot || resolvedPath.startsWith(`${resolvedRoot}${sep}`);
 }
 
-function resolveRetainedPath(baselineDir: string, supplied: string | undefined): string | null {
-  if (!supplied || isAbsolute(supplied)) return null;
-  const path = resolve(baselineDir, supplied);
-  return containedPath(baselineDir, path) ? path : null;
+function resolveRetainedFile(
+  baselineDir: string,
+  supplied: string | undefined,
+): { path: string } | { issue: string } {
+  if (!supplied) return { issue: "path is missing" };
+  if (isAbsolute(supplied)) return { issue: "path escapes baseline" };
+  const lexicalPath = resolve(baselineDir, supplied);
+  if (!containedPath(baselineDir, lexicalPath)) return { issue: "path escapes baseline" };
+  if (!existsSync(lexicalPath)) return { issue: "file is missing" };
+  try {
+    if (!lstatSync(lexicalPath).isFile()) return { issue: "path is not a file" };
+    const realBaseline = realpathSync(baselineDir);
+    const realFile = realpathSync(lexicalPath);
+    if (!containedPath(realBaseline, realFile)) return { issue: "real path escapes baseline" };
+    return { path: realFile };
+  } catch (error) {
+    return { issue: `file is unreadable: ${error instanceof Error ? error.message : String(error)}` };
+  }
 }
 
 function readBoundedEvidence(
@@ -150,15 +164,11 @@ function readBoundedEvidence(
   id: string,
   suppliedPath: string | undefined,
 ): RetainedEvidence {
-  const safePath = resolveRetainedPath(baselineDir, suppliedPath);
+  const retainedFile = resolveRetainedFile(baselineDir, suppliedPath);
   const displayPath = suppliedPath || "(missing)";
-  if (!safePath) {
-    return { id, path: displayPath, issue: suppliedPath ? "path escapes baseline" : "path is missing" };
-  }
-  if (!existsSync(safePath)) return { id, path: displayPath, issue: "file is missing" };
+  if ("issue" in retainedFile) return { id, path: displayPath, issue: retainedFile.issue };
   try {
-    if (!lstatSync(safePath).isFile()) return { id, path: displayPath, issue: "path is not a file" };
-    const text = readFileSync(safePath, "utf8");
+    const text = readFileSync(retainedFile.path, "utf8");
     return {
       id,
       path: displayPath,
@@ -303,9 +313,9 @@ export function extractBaselineDiagnostics(baselineDir: string): {
 
     if (!retainedEvidence.result.issue && resultRelative) {
       try {
-        const fullResultPath = resolveRetainedPath(baselineDir, resultRelative);
-        if (!fullResultPath) throw new Error("result path escapes baseline");
-        const result = JSON.parse(readFileSync(fullResultPath, "utf8")) as {
+        const resultFile = resolveRetainedFile(baselineDir, resultRelative);
+        if ("issue" in resultFile) throw new Error(resultFile.issue);
+        const result = JSON.parse(readFileSync(resultFile.path, "utf8")) as {
           agent_status?: string;
           checks?: Array<{ name: string; passed: boolean; gate?: boolean; detail?: string }>;
           prompt_hash?: string;
@@ -450,7 +460,7 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
       disposition: "no_change",
       detected_regimes: diag.detectedRegimes,
       root_cause_summary:
-        "No failed scoring signal or retained requirement/output contradiction supports a behavioral edit. Aggregate usage is reported neutrally.",
+        "No failed scoring signal is present, so aggregate usage alone does not support a behavioral edit. This workflow does not audit passing scorer correctness or establish that retained requirement/output contradictions are absent.",
       proposed_changes: [],
     };
   } else {
