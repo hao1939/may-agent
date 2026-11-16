@@ -168,6 +168,12 @@ reuse completed work without spending another round. Host acceptance still owns 
 New Task input keeps previous reports visible while prompting fresh judgment.
 Matching verification receipts may be reused for the same candidate and checks;
 changed requirements reset validity, not access to the evidence.
+An execution's output root can change after a creator revision. The procedure
+reads the explicitly pinned prior archive for the same App and Task, verifies
+its checksums, and copies retained reports into the current output before
+reusing them. It inherits consumed rounds before reserving work. A moved output
+directory does not invalidate sound evidence or provide a fresh allowance;
+missing or corrupt prior usage remains conservatively exhausted.
 
 An explicitly Task-addressed `message` is follow-up input for that Task, even
 though an unaddressed message normally enters May's Conversation. During a

@@ -454,6 +454,45 @@ describe("development workflow using real Git and verification", () => {
     expect(t.current.acceptance).toEqual(["The function returns 1"]);
   });
 
+  test("a new execution output retains pinned evidence and consumed rounds across a creator revision", async () => {
+    const t = trial();
+    expect((await t.run()).state).toBe("converged");
+    const original = t.evidence();
+    const calls = t.calls.length;
+    t.current.generation++;
+    const ctx = t.context();
+    ctx.workspace!.output = join(t.worktree, ".state", "revised-output");
+    expect((await t.run(ctx)).state).toBe("converged");
+    expect(t.calls).toHaveLength(calls);
+    expect(t.evidence().roundsUsed).toBe(original.roundsUsed);
+    expect(t.evidence().review).toEqual(original.review);
+    for (const report of t.evidence().reports) {
+      expect(report.record.path).toStartWith(ctx.workspace!.output);
+      expect(report.report.path).toStartWith(ctx.workspace!.output);
+    }
+    // The copied references must also survive ordinary reentry in this output.
+    expect((await t.run(ctx)).state).toBe("converged");
+    expect(t.calls).toHaveLength(calls);
+    expect(t.evidence().roundsUsed).toBe(original.roundsUsed);
+  });
+
+  test("moving execution output cannot replenish exhausted or corrupt prior evidence", async () => {
+    for (const corrupt of [false, true]) {
+      const t = trial();
+      t.setImplementation(() => {});
+      await t.run();
+      if (corrupt)
+        writeFileSync((t.current.result!.development as any).evidence.path, "{}");
+      const calls = t.calls.length;
+      t.current.generation++;
+      const ctx = t.context();
+      ctx.workspace!.output = join(t.worktree, ".state", "revised-output");
+      expect((await t.run(ctx)).state).toBe("incomplete");
+      expect(t.calls).toHaveLength(calls);
+      expect(t.evidence().roundsUsed).toBe(3);
+    }
+  });
+
   test("a changed verification command does not replenish accepted round usage", async () => {
     const t = trial();
     t.setImplementation(() => {});

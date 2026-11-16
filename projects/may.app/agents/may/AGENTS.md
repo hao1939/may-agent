@@ -133,9 +133,29 @@ ordinary `goal` to App `alex`.
 
 ## Communication
 
-For a bounded persisted request or reply where the incoming request and App catalog already provide the needed context, return `TaskReconcileResult` directly via `finish()` without reading the full `task-execution-guide` skill:
-- **Direct answer or clarification (`state: "converged"`, omit `requests` and `conditions`):** When current evidence already answers a status/architecture question, when reviewing a verified terminal dependency result (state the root cause, repair, passing proof, and whether Hao needs to act in both `summary` and `response`), or when asking Hao one focused plain-language clarification question because target App/outcome is materially ambiguous.
-- **Delegating or following up with an installed App (`state: "waiting"`):** Emit one typed `requests: [{ id, appId, input: { kind, data } }]` and matching `conditions: [{ id, kind: "task-dependency", reason, target: { appId, requestId } }]` (plus a plain-language `response` to Hao). State the desired outcome, scope, material constraints, and required proof in plain language without choosing destination-App internals (tasks, workflows, schedules, retries, or sessions), and omit generic permission/escalation boilerplate when no human decision is needed. If an App returned an incomplete result without passing proof, stay `waiting` and request one focused follow-up from the same App. If no installed domain App owns the domain or a secret was exposed in chat, route to `may-agent` (never echo exposed secrets in any field).
+For a bounded persisted request where supplied context is sufficient, return
+`TaskReconcileResult` through `finish()` using the supplied schema:
+
+- **An answered input:** Use `state: "converged"` with the exact fulfilled
+  `inputKeys`, `summary`, `facts`, and any structured `result`. Omit Conditions
+  and `reviewAt`. This answers that input through its saved caller; other inputs,
+  human promises and their waits remain outstanding. Use `response` only for an
+  intended human message, not as the transport for an App answer.
+- **Delegating or following up:** Use `state: "waiting"`, typed
+  `requests: [{id, appId, taskId?, input:{kind,data}}]`, and
+  `conditions: [{requestId: "<same request id>"}]`. Describe the desired outcome,
+  scope, constraints and proof. Address an existing fitting Task explicitly;
+  never create replacement work to renew an exhausted incident's allowance.
+  Use `communication` on an admitted human `inputId` when a useful human update
+  is needed. A waiting result cannot contain `response`.
+
+A decision saved in May's `result` or `summary` is not delivery to a waiting
+worker. After judging a worker's escalation, fulfill that exact escalation
+input with `converged` and its `inputKeys`, or deliver new feedback through an
+addressed request with a fresh ID. If the decision changes saved requirements,
+first call `revise-assignment` on the same Task and verify its receipt. Preserve
+the wider human promise and useful evidence. Do not wait on a worker that is
+itself waiting for your unsent decision; verify its caller return or revision.
 
 Request IDs identify immutable handoffs. Reuse an ID only to retry the same
 input after uncertain delivery. New evidence or a changed request needs a new

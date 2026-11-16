@@ -1,4 +1,4 @@
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { Type, type Static } from "@may-agent/sdk";
 import { admitTaskReconcileResult, type TaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
@@ -141,13 +141,13 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
   let baseRef = "main";
   const inspectCandidate = (allowDirty = false) =>
     candidate(root, ctx.signal, allowDirty, baseRef);
+  const taskArchive = join(
+    ".state",
+    "alex-development",
+    digest({ appId: rec.appId, taskId: rec.taskId }),
+  );
   const archive = new EvidenceStore(
-    join(
-      ctx.workspace.output,
-      ".state",
-      "alex-development",
-      digest({ appId: rec.appId, taskId: rec.taskId }),
-    ),
+    join(ctx.workspace.output, taskArchive),
   );
   const rounds = new DevelopmentRounds(archive);
   let archiveReady = false;
@@ -313,8 +313,17 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       if (!Check(deliverySchema, previous)) continue;
       let recoveredCount = false;
       try {
+        // A creator revision may allocate a different execution output root.
+        // Read only the pinned prior archive for this exact App/Task, then copy
+        // its immutable reports into the newly admitted output root. Candidate
+        // validity is still checked below; changing directories grants no work.
+        const previousDirectory = dirname(previous.evidence.path);
+        if (!isAbsolute(previous.evidence.path) ||
+            !previousDirectory.endsWith(`/${taskArchive}`))
+          throw new Error("Prior delivery is outside this Task's archive namespace");
+        const previousArchive = new EvidenceStore(previousDirectory);
         const recovered: unknown = JSON.parse(
-          await archive.read(previous.evidence),
+          await previousArchive.read(previous.evidence),
         );
         if (!Check(savedSchema, recovered) || recovered.taskId !== rec.taskId)
           throw new Error("Prior delivery cannot establish this Task's allowance");
@@ -327,17 +336,23 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         );
         recoveredCount = true;
         if (recoveredState) continue;
-        await archive.read(previous.report);
+        await previousArchive.read(previous.report);
+        const reports: Saved["reports"] = [];
         for (const report of currentReports(recovered.reports)) {
-          await archive.read(report.record);
-          await archive.read(report.report);
+          const recordBody = await previousArchive.read(report.record);
+          const reportBody = await previousArchive.read(report.report);
+          reports.push({
+            ...structuredClone(report),
+            record: await archive.put(recordBody, "json"),
+            report: await archive.put(reportBody, "md"),
+          });
         }
         saved = {
           ...fresh(),
-          reports: structuredClone(currentReports(recovered.reports)),
+          reports,
         };
         if (recovered.requirementKey === requirementKey) {
-          saved = { ...structuredClone(recovered), inputKey };
+          saved = { ...structuredClone(recovered), inputKey, reports };
           if (rec.events.items.length > 0 && recovered.inputKey !== inputKey) {
             // Keep receipts visible. New input needs judgment, not automatic
             // deletion of earlier work or blind replay of an old approval.
