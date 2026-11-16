@@ -499,6 +499,122 @@ describe("direct agent tool policy", () => {
     },
   );
 
+  test.each(["false", "reject"] as const)(
+    "joins reentrant cleanup from an async closer that returns %s",
+    async (outcome) => {
+      const root = await mkdtemp(join(tmpdir(), `may-direct-reentrant-async-cleanup-${outcome}-`));
+      const agentDir = join(root, "agents", "example");
+      await mkdir(agentDir, { recursive: true });
+      await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+        name: "example", description: "example", domain: "test", model: "test", tools: ["query_db"],
+      }));
+      let releaseCloser!: () => void;
+      const closerGate = new Promise<void>((resolve) => { releaseCloser = resolve; });
+      let markCloserStarted!: () => void;
+      const closerStarted = new Promise<void>((resolve) => { markCloserStarted = resolve; });
+      let nestedCleanup!: Promise<boolean>;
+      let syncCleaned = 0;
+      let asyncCleaned = 0;
+      let prep: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+      try {
+        prep = await prepareDirectAgentExecution({
+          agentName: "example", task: "test", projectRoot: root, workRoot: root,
+          agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+          models: { test: { id: "test-model" } as any },
+          capabilityProviders: {
+            query_db: () => ({
+              tools: [{ name: "query_db", description: "fixture", parameters: { type: "object", properties: {} } as any,
+                execute: async () => ({ content: [{ type: "text", text: "ok" }] }) }],
+              cleanup: () => { syncCleaned += 1; },
+              cleanupAsync: async () => {
+                asyncCleaned += 1;
+                nestedCleanup = prep!.cleanupAsync();
+                markCloserStarted();
+                await closerGate;
+                if (outcome === "reject") throw new Error("async close failed");
+                return false;
+              },
+            }),
+          },
+        });
+        const outerCleanup = prep.cleanupAsync();
+        await closerStarted;
+        let outerSettled = false;
+        let nestedSettled = false;
+        void outerCleanup.then(() => { outerSettled = true; });
+        void nestedCleanup.then(() => { nestedSettled = true; });
+        await Promise.resolve();
+        await Promise.resolve();
+        expect({ outerSettled, nestedSettled }).toEqual({ outerSettled: false, nestedSettled: false });
+
+        releaseCloser();
+        expect(await Promise.all([outerCleanup, nestedCleanup])).toEqual([false, false]);
+        expect(await prep.cleanupAsync()).toBe(false);
+        expect({ syncCleaned, asyncCleaned }).toEqual({ syncCleaned: 1, asyncCleaned: 1 });
+      } finally {
+        releaseCloser();
+        await prep?.cleanupAsync();
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
+  test("joins reentrant cleanup from a sync closer before async cleanup completes", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-reentrant-sync-cleanup-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db"],
+    }));
+    let releaseCloser!: () => void;
+    const closerGate = new Promise<void>((resolve) => { releaseCloser = resolve; });
+    let nestedCleanup!: Promise<boolean>;
+    let syncCleaned = 0;
+    let asyncCleaned = 0;
+    let prep: Awaited<ReturnType<typeof prepareDirectAgentExecution>> | undefined;
+    try {
+      prep = await prepareDirectAgentExecution({
+        agentName: "example", task: "test", projectRoot: root, workRoot: root,
+        agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        capabilityProviders: {
+          query_db: () => ({
+            tools: [{ name: "query_db", description: "fixture", parameters: { type: "object", properties: {} } as any,
+              execute: async () => ({ content: [{ type: "text", text: "ok" }] }) }],
+            cleanup: () => {
+              syncCleaned += 1;
+              nestedCleanup = prep!.cleanupAsync();
+              throw new Error("sync close failed");
+            },
+            cleanupAsync: async () => {
+              asyncCleaned += 1;
+              await closerGate;
+              return true;
+            },
+          }),
+        },
+      });
+      const outerCleanup = prep.cleanupAsync();
+      let outerSettled = false;
+      let nestedSettled = false;
+      void outerCleanup.then(() => { outerSettled = true; });
+      await Promise.resolve();
+      void nestedCleanup.then(() => { nestedSettled = true; });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect({ outerSettled, nestedSettled }).toEqual({ outerSettled: false, nestedSettled: false });
+
+      releaseCloser();
+      expect(await Promise.all([outerCleanup, nestedCleanup])).toEqual([false, false]);
+      expect(await prep.cleanupAsync()).toBe(false);
+      expect({ syncCleaned, asyncCleaned }).toEqual({ syncCleaned: 1, asyncCleaned: 1 });
+    } finally {
+      releaseCloser();
+      await prep?.cleanupAsync();
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test.each(["callback", "metadata"] as const)("cleans provider resources after %s failure", async (failure) => {
     const root = await mkdtemp(join(tmpdir(), `may-direct-${failure}-cleanup-`));
     const agentDir = join(root, "agents", "example");

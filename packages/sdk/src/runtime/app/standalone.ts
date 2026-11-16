@@ -232,7 +232,7 @@ function cleanupDirectToolResourcesSync(resources: DirectToolResources): void {
 
 function cleanupDirectToolResources(resources: DirectToolResources): Promise<boolean> {
   if (resources.cleanupFinalization) return resources.cleanupFinalization;
-  resources.cleanupFinalization = (async () => {
+  resources.cleanupFinalization = Promise.resolve().then(async () => {
     try {
       cleanupDirectToolResourcesSync(resources);
     } catch {
@@ -250,7 +250,7 @@ function cleanupDirectToolResources(resources: DirectToolResources): Promise<boo
     );
     if (!outcomes.every(Boolean)) resources.cleanupConfirmed = false;
     return resources.cleanupConfirmed;
-  })();
+  });
   return resources.cleanupFinalization;
 }
 
