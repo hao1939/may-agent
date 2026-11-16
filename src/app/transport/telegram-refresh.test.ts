@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeDb, getDb } from "../../lib/db/connection.js";
 import { DbWriter } from "../../lib/db-writer.js";
+import { hasCompletedHumanActionDelivery } from "../../lib/db/notifications.js";
 import { addLogSubscriber } from "@may-agent/sdk/runtime";
 import {
   prepareConversationDelivery,
@@ -13,7 +14,7 @@ import {
 import { createAppInboxItem } from "../core/state/app-inbox-store.js";
 import { EventBus } from "../core/events/bus.js";
 import type { EventInput } from "@may-agent/control/events";
-import type { HumanTaskView } from "../human-task-service.js";
+import { todoActionSignatureForTask, type HumanTaskView } from "../human-task-service.js";
 import { attachTelegramBot } from "./telegram.js";
 
 async function waitFor(predicate: () => boolean): Promise<void> {
@@ -1194,8 +1195,19 @@ describe("Telegram refresh lifecycle", () => {
     try {
       await first.command("/apps may");
       Object.assign(first.tasks.get("first")!, action(1, "Run the verified operator step."));
+      const signature = todoActionSignatureForTask(first.tasks.get("first")!);
+      expect(signature.exact).toBe(true);
+      const delivery = { appId: "may", taskId: "first", signature: signature.value };
+      const sending = first.hold(
+        (send) => send.chat_id === "123" && send.text.includes("Run the verified operator step."),
+      );
       first.wake("first");
-      await waitFor(() => first.sent.some((send) => send.text.includes("Run the verified operator step.")));
+      await waitFor(() => sending.started);
+      expect(hasCompletedHumanActionDelivery(root, "123", undefined, delivery)).toBe(false);
+      sending.release();
+      // A send attempt is not a completed receipt. Persist the exact receipt
+      // before closing the first bot so restart suppression has its prerequisite.
+      await waitFor(() => hasCompletedHumanActionDelivery(root, "123", undefined, delivery));
     } finally {
       await first.close();
     }

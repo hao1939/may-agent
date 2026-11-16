@@ -136,13 +136,17 @@ for (const failure of ["throw", "invalid-input", "ambiguous", "action"] as const
       });
       const eventId = emitted[EVENT_ROW_ID]!;
       expect(emitted[EVENT_DELIVERY_RESULT]?.accepted).toBe(true);
-      // Replay and reload before dispatch must reuse preparation from this turn.
+      // Immediate replay must reuse preparation from this turn.
       expect(calls).toEqual({ broken: 1, healthy: 1 });
       first.bus.redeliverPersisted(emitted, eventId);
+      expect(calls).toEqual({ broken: 1, healthy: 1 });
       version = "replacement";
       await runtime!.reload();
+      // Reload retries the unresolved route after dispatch drains. Observe that
+      // retry explicitly rather than racing it against the healthy admission.
       await until(
         () =>
+          calls.broken === 2 &&
           getAppEventAdmissionPlan(db, eventId)?.commands.find((command) => command.appId === "healthy")?.status ===
           "admitted",
       );
@@ -152,7 +156,7 @@ for (const failure of ["throw", "invalid-input", "ambiguous", "action"] as const
         status: "pending",
         lastError: expect.any(String),
       });
-      expect(calls).toEqual({ broken: 1, healthy: 1 });
+      expect(calls).toEqual({ broken: 2, healthy: 1 });
       expect(getEventView(db, eventId)?.links).toContainEqual({
         kind: "delivery",
         id: `app-event:${eventId}:broken`,
