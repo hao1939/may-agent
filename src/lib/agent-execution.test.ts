@@ -979,12 +979,13 @@ describe("direct structured judgment execution", () => {
     return stream;
   }
 
-  test.each(["done", "blocked"])("returns a valid %s report in one reply without optional diagnostics", async (status) => {
+  test.each(["done", "blocked"] as const)("returns a valid %s report with prompt/code result parity", async (status) => {
     const prepared = prepare();
+    const facts = status === "blocked" ? finishArgs.facts : undefined;
     let calls = 0;
     prepared.runner.streamFn = () => {
       calls++;
-      return finishStream({ status, summary: judgment.summary, output: judgment });
+      return finishStream({ status, summary: judgment.summary, output: judgment, ...(facts ? { facts } : {}) });
     };
 
     const result = await executePreparedAgent(prepared);
@@ -995,10 +996,10 @@ describe("direct structured judgment execution", () => {
     expect(result.finishResult?.status).toBe(status);
     // The invocation returned; its report still says the assignment is incomplete.
     expect(result.structuredResult).toEqual(judgment);
-    expect(agentExecutionResult({ ...result, sessionId: prepared.sessionId, duration: "0s", outputDir: "" })).toMatchObject({
-      output: judgment,
-      status,
-    });
+    const execution = agentExecutionResult({ ...result, sessionId: prepared.sessionId, duration: "0s", outputDir: "" });
+    expect(execution).toMatchObject({ output: judgment, status });
+    if (status === "blocked") expect(execution.facts).toEqual(finishArgs.facts);
+    else expect(execution).not.toHaveProperty("facts");
   });
 
   test.each([

@@ -158,10 +158,16 @@ describe("agents tool", () => {
   it.each(["done", "blocked"] as const)("returns truthful handoff status for a completed session reporting %s", async (finishStatus) => {
     manager.register({ name: "worker", description: "Worker", domain: "fixture", model: mockModel(), tools: [] });
     manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("worker") } as any);
+    const facts = finishStatus === "blocked" ? { review: "pending" } : undefined;
     manager.callAgent = async () => ({
       sessionId: "child", status: "done", duration: "1s", outputDir: "evidence/child", messages: [],
       lastAssistantText: "Session ended",
-      finishResult: { status: finishStatus, summary: "Review needs the missing specification", output: { report: "review.md" } },
+      finishResult: {
+        status: finishStatus,
+        summary: "Review needs the missing specification",
+        output: { report: "review.md" },
+        ...(facts ? { facts } : {}),
+      },
     });
     const returned = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
       action: "call", agent: "worker", task: "Review the candidate",
@@ -169,8 +175,10 @@ describe("agents tool", () => {
     expect(returned).toMatchObject({
       id: "child", kind: "agent", status: finishStatus,
       summary: "Review needs the missing specification", output: { report: "review.md" },
-      facts: { status: finishStatus }, outputDir: "evidence/child",
+      outputDir: "evidence/child",
     });
+    if (finishStatus === "blocked") expect(returned.facts).toEqual(facts);
+    else expect(returned).not.toHaveProperty("facts");
     expect(returned.messages).toBeUndefined();
     expect(returned.finishResult).toBeUndefined();
     expect(returned.structuredResult).toBeUndefined();

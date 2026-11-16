@@ -272,7 +272,7 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
     ...(result.structuredResult !== undefined
       ? { output: result.structuredResult }
       : finish?.output !== undefined ? { output: finish.output } : {}),
-    ...(finish ? { facts: finish } : {}),
+    ...(finish?.facts !== undefined ? { facts: finish.facts } : {}),
     cliCalls: cliCallFacts(result.sessionId, result.messages),
   };
 }

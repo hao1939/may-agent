@@ -803,7 +803,7 @@ test("managed finish corrects invalid input scope in one model execution and pre
       status: "done",
       summary: result.summary,
       verification_facts: ["Synthetic managed execution completed"],
-      result,
+      output: result,
     },
   });
   const manager = new SubagentManager({

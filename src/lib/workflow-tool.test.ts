@@ -1114,7 +1114,6 @@ export async function execute(ctx) {
         summary: "bounded move complete",
         output: { ok: true },
         cliCalls: [cliCall],
-        facts: { status: "done", summary: "bounded move complete", output: { ok: true } },
       },
     });
     expect(agentSessionSource).toBe("heartbeat");
