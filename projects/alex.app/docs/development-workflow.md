@@ -37,6 +37,32 @@ by its local candidate. The [PR follow-through direction](#pr-follow-through-acr
 below explains how a broader Alex assignment can use this procedure without
 turning it into a permanently running workflow.
 
+## From a standing review to a concrete incident
+
+A standing improvement review owns problem selection, cumulative incident
+allowances and the recurring deadline. Its broad outcome is not the selected
+repair's specification. Before development, reuse an existing finite assignment
+for that incident, or submit one ordinary Alex goal using the supported Task
+request path and retain a caller request Condition on the standing Task. The
+finite goal supplies the concrete outcome, acceptance, constraints, incident
+identity, evidence and remaining allowance. See the
+[request and Condition contract](2b-manual/task-execution-guide/SKILL.md#act-now-or-retain-a-dependency).
+Alex judges the returned development evidence against the incident acceptance
+and carries its disposition and cumulative counts back to the standing owner.
+
+Keep one finite assignment per genuine incident across days and recovery, rather
+than one per stage or retry. A started or exhausted incident cannot be moved to
+a fresh Task to regain allowance. Existing owner disposition is required when
+its allowance is exhausted. This repair adds a guard for the known standing
+improvement-review policy before work starts; it does not add cross-Task incident
+accounting or automatically create the finite goal. Alex must preserve those
+constraints through the existing request mechanism.
+
+The procedure continues to accept only `{ verify: [executable, ...arguments] }`.
+Requirements come from its owning finite Task; extra task prose in an agent
+call is not a replacement specification. The standing-review guard returns
+incomplete before specialist calls, verification or round reservations.
+
 ## Responsibilities and graph
 
 ```mermaid
@@ -188,6 +214,17 @@ such results. It requires the accompanying workspace finalization correction.
 Evidence reuse assumes the local toolchain and ignored dependencies remain
 unchanged. It does not fingerprint the environment or certify external systems;
 a new input requests fresh verification when those assumptions change.
+
+For this Apps repository's linked worktrees, the procedure checks its file-based
+SDK dependency and prepares `node_modules` and `projects/may-agent` links to
+existing machine paths in the primary checkout. Both required markers and Git
+ignore rules are checked before either link is created. Existing valid paths
+are reused; broken paths are preserved and reported. There are no package
+installs, downloads, source edits or Host repository changes. Other repositories
+are left to their own setup. Missing prerequisites return incomplete before a
+development round is reserved, and do not justify weakening the verification
+command or making unrelated source changes. The links restore the existing
+local environment; they do not prove compatibility or reproducibility.
 
 ## Reconciliation and updates
 

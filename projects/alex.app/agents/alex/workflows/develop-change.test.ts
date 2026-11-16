@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import {
   mkdtempSync,
+  existsSync,
   mkdirSync,
   readFileSync,
   rmSync,
@@ -193,6 +194,61 @@ function trial() {
 }
 
 describe("development workflow using real Git and verification", () => {
+  test.each(["accepted policy", "initial periodic input", "initial audit input"])(
+    "standing review returns before spending development allowance: %s", async (kind) => {
+      const t = trial();
+      t.current.outcome = "Own the standing daily May improvement review";
+      if (kind === "accepted policy") t.current.result = {
+        periodicReview: { mode: "standing", cumulativeIncidentCounts: { automatedReviewRepairRounds: 3 } },
+      };
+      else (t.current.input as any).data.context = kind === "initial periodic input"
+        ? { periodicReview: { kind: "standing-task-owned-review" } }
+        : { audit: { identity: "may/improvement-review", mode: "standing" } };
+      const previous = structuredClone(t.current.result);
+      const output = (await execute(t.context())).output as TaskReconcileResult;
+      expect(output.state).toBe("incomplete");
+      expect(output.summary).toContain("finite incident Task");
+      expect(output.summary).toContain("exhausted incident requires owner disposition");
+      expect(t.current.result).toEqual(previous);
+      expect(t.calls).toEqual([]);
+      expect(existsSync(join(t.worktree, ".checks"))).toBe(false);
+      expect(existsSync(join(t.worktree, ".state/alex-development"))).toBe(false);
+    },
+  );
+
+  test("finite incident child supplies its exact requirement to every specialist", async () => {
+    const t = trial();
+    t.current.creator = { appId: "alex", taskId: "standing/improvement-review" };
+    (t.current.input as any).data.context = {
+      improvementIncident: { id: "incident/return-one", standingTaskId: "standing/improvement-review" },
+    };
+    expect((await t.run()).state).toBe("converged");
+    expect(t.calls.map(c => c.stage)).toEqual(["design", "implementation", "review"]);
+    for (const prompt of t.prompts) {
+      expect(prompt).toContain("Current requirement: Return 1");
+      expect(prompt).toContain('Acceptance: ["The function returns 1"]');
+      expect(prompt).not.toContain("Current requirement: Own the standing");
+    }
+    expect(t.evidence().roundsUsed).toBe(1);
+  });
+
+  test("missing paired dependencies returns before reservations, specialists or checks", async () => {
+    const t = trial();
+    writeFileSync(join(t.worktree, "package.json"), JSON.stringify({
+      dependencies: { "@may-agent/sdk": "file:projects/may-agent/bundle/sdk-current" },
+    }));
+    writeFileSync(join(t.worktree, ".gitignore"), ".checks\n.state/\nnode_modules\n/projects/may-agent\n");
+    t.git(t.worktree, "add", "package.json", ".gitignore");
+    t.git(t.worktree, "commit", "-m", "Apps dependencies");
+    const output = (await execute(t.context())).output as TaskReconcileResult;
+    expect(output.state).toBe("incomplete");
+    expect(output.summary).toContain("Development prerequisite unavailable");
+    expect(t.calls).toEqual([]);
+    expect(existsSync(join(t.worktree, ".checks"))).toBe(false);
+    expect(existsSync(join(t.worktree, ".state/alex-development"))).toBe(false);
+    expect(existsSync(join(t.worktree, "node_modules"))).toBe(false);
+  });
+
   test("admission selects Alex to judge the method inside an ordinary Task", () => {
     const t = trial();
     const input = {

@@ -19,6 +19,7 @@ import {
   DevelopmentRounds,
   developmentRoundLimit,
 } from "./lib/development-rounds.js";
+import { prepareDevelopmentWorkspace } from "./lib/development-workspace.js";
 
 import {
   artifactSchema,
@@ -29,7 +30,7 @@ import {
 
 export const name = "develop-change";
 export const description =
-  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires an ordinary Task worktree. Input: { verify: [executable, ...arguments] }. Outcome and acceptance come from the owning Task. Returns evidence for Alex to judge; does not merge or deploy.";
+  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires a finite development Task with concrete outcome/acceptance and its worktree; a standing improvement review must delegate one incident assignment first. Input: { verify: [executable, ...arguments] }. Requirements come from that Task, not call-site task prose. Returns evidence for Alex to judge; does not merge or deploy.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
 // Private procedure options; the owning Task supplies requirements.
@@ -233,6 +234,17 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
         "Task changed before this attempt; reconcile the current requirement",
       );
     }
+    const context = (current.input as { data?: { context?: {
+      periodicReview?: { kind?: string };
+      audit?: { mode?: string; identity?: string };
+    } } })?.data?.context;
+    const periodic = current.result?.periodicReview as { mode?: string } | undefined;
+    if (periodic?.mode === "standing" ||
+        context?.periodicReview?.kind === "standing-task-owned-review" ||
+        (context?.audit?.mode === "standing" &&
+          /(?:^|\/)improvement-review$/.test(context.audit.identity ?? ""))) {
+      return finish("Standing improvement review is not a development assignment. Retain its incident and cumulative counts; create or reuse one finite incident Task with concrete outcome, acceptance and constraints only within the existing allowance. Call-site task prose cannot replace Task requirements. An exhausted incident requires owner disposition, not a new Task or allowance.");
+    }
     // The invocation kernel validates the procedure's one input contract.
     const input = ctx.input as Static<typeof inputSchema>;
     const constraints =
@@ -248,6 +260,8 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
     // Task-local output must be excluded from source acceptance when stored inside
     // the worktree. Do not edit ignore rules or quietly hide candidate files.
     await candidate(root, ctx.signal, true);
+    const mounts = await prepareDevelopmentWorkspace(root, ctx.signal);
+    if (mounts.length) ctx.log.info(`Development workspace prerequisites: ${JSON.stringify(mounts)}`);
     const relArchive = relative(resolve(root), resolve(archive.directory));
     const archiveInsideWorktree =
       relArchive === "" ||
