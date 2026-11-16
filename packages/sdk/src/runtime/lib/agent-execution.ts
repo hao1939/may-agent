@@ -1247,10 +1247,14 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
   if (base === undefined) {
     const agentDir = resolveAgentDir(definition, projectRoot);
     const sections: string[] = [];
-    const shared = loadPromptFile(join(definition.sharedRoot ?? join(projectRoot, "shared"), "common-sense.md"));
+    const shared =
+      definition.sharedPromptText !== undefined
+        ? definition.sharedPromptText
+        : loadPromptFile(join(definition.sharedRoot ?? join(projectRoot, "shared"), "common-sense.md"));
     if (shared) sections.push(shared);
     if (agentDir) {
-      const identity = loadPromptFile(join(agentDir, "AGENTS.md"));
+      const identity =
+        definition.identityText !== undefined ? definition.identityText : loadPromptFile(join(agentDir, "AGENTS.md"));
       if (identity) sections.push(identity);
     }
     if (definition.skillCatalog && tools.some((tool) => tool.name === "read")) {

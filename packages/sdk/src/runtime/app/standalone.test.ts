@@ -1883,4 +1883,198 @@ export async function execute(ctx) {
       ),
     ).rejects.toThrow("Conflicting Task IDs");
   });
+
+  test("converges standalone skill activation, ordinary Task assignment context, explicit missing-service errors, definition consistency, and workspace prerequisite checks", async () => {
+    const env = setupDirectLayout();
+    const skillDir = join(env.agentsRoot, "reviewer", "skills", "careful-audit");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      [
+        "---",
+        "name: careful-audit",
+        "description: Audit changes carefully",
+        "---",
+        "# Careful Audit Skill",
+        "Always check boundary conditions first.",
+      ].join("\n"),
+    );
+
+    // 1. Explicit skill activation loads the full skill body via invokeCatalogSkill (and rejects unknown skills),
+    //    pins AGENTS.md and skill content at catalog snapshot time, and supplies ordinary Task outcome/acceptance
+    //    context to prompt agents without Host-specific jargon.
+    let capturedPrompt = "";
+    let capturedSystemPrompt = "";
+    let capturedContextMessages: string[] = [];
+
+    const skillAndContextRun = await runDirectWorkflow({
+      module: {
+        name: "skill-and-context-step",
+        description: "Mutates AGENTS.md and SKILL.md mid-flight then calls reviewer with explicit skill",
+        async execute(ctx) {
+          writeFileSync(join(env.agentsRoot, "reviewer", "AGENTS.md"), "# reviewer\n\nMUTATED MID-FLIGHT\n");
+          writeFileSync(
+            join(skillDir, "SKILL.md"),
+            "---\nname: careful-audit\ndescription: Mutated\n---\nMUTATED SKILL BODY\n",
+          );
+          const step = await ctx.call("reviewer", "Inspect boundary.ts", {
+            skill: "careful-audit",
+          });
+          return ctx.done(step.summary);
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      task: {
+        id: "task-ctx-1",
+        parentId: "root",
+        generation: 1,
+        status: "running",
+        outcome: "Ensure boundary.ts handles empty input",
+        acceptance: ["Empty input returns null", "Existing callers pass"],
+        input: { data: { constraints: ["No public signature changes"] } },
+        conditions: [],
+        acceptedEvidence: { available: false, maxPageSize: 8 },
+      },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        try {
+          capturedPrompt = prep.prepared.prompt;
+          capturedSystemPrompt = prep.prepared.systemPrompt;
+          const transformed = prep.prepared.runner.transformContext
+            ? await prep.prepared.runner.transformContext([])
+            : [];
+          capturedContextMessages = transformed.map((msg: any) =>
+            Array.isArray(msg.content) ? msg.content.map((c: any) => c.text ?? "").join("") : String(msg.content ?? ""),
+          );
+          return {
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            status: "done",
+            lastAssistantText: "Audited",
+            messages: [],
+            durationMs: 1,
+            finishResult: { status: "success", summary: "audited-ok" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } finally {
+          prep.cleanup();
+        }
+      },
+    });
+
+    expect(skillAndContextRun.ok).toBe(true);
+    expect(capturedPrompt).toContain('<skill name="careful-audit"');
+    expect(capturedPrompt).toContain("Always check boundary conditions first.");
+    expect(capturedPrompt).not.toContain("MUTATED SKILL BODY");
+    expect(capturedPrompt).not.toContain('Apply skill "careful-audit" when relevant.');
+    expect(capturedSystemPrompt).toContain("Lab-forked reviewer instructions v2");
+    expect(capturedSystemPrompt).not.toContain("MUTATED MID-FLIGHT");
+    expect(capturedContextMessages.join("\n")).toContain("Goal: Ensure boundary.ts handles empty input");
+    expect(capturedContextMessages.join("\n")).toContain("- Empty input returns null");
+    expect(capturedContextMessages.join("\n")).toContain("- No public signature changes");
+
+    // Unknown skill is rejected explicitly instead of turning into advisory prose:
+    const unknownSkillRun = await runDirectWorkflow({
+      module: {
+        name: "unknown-skill-step",
+        description: "Calls reviewer with nonexistent skill",
+        async execute(ctx) {
+          return ctx.call("reviewer", "Inspect boundary.ts", { skill: "nonexistent-skill" });
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(unknownSkillRun.ok).toBe(false);
+    expect(String(unknownSkillRun.error)).toContain('Skill "nonexistent-skill" is not available');
+
+    // 2. Unconfigured read and partial metric services throw explicit errors instead of returning null or no-op:
+    const unconfiguredServicesRun = await runDirectWorkflow({
+      module: {
+        name: "unconfigured-reads-and-metrics",
+        description: "Probes unconfigured standalone read and partial metric methods",
+        async execute(ctx) {
+          const errors: string[] = [];
+          for (const probe of [
+            () => ctx.read.metric("health"),
+            () => ctx.read.execution("exec-1"),
+            () => ctx.read.appResult("item-1"),
+            () => ctx.read.tasks.list(),
+            () => ctx.read.tasks.get("t-1"),
+            async () => ctx.metrics.define({ id: "m1" }),
+          ]) {
+            try {
+              await probe();
+            } catch (err) {
+              errors.push(err instanceof Error ? err.message : String(err));
+            }
+          }
+          return ctx.done("probed", errors);
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      metrics: {
+        evaluate: () => [],
+      },
+    });
+    expect(unconfiguredServicesRun.ok).toBe(true);
+    expect(unconfiguredServicesRun.result?.output).toEqual([
+      "read.metric read is not configured in standalone mode",
+      "read.execution read is not configured in standalone mode",
+      "read.appResult read is not configured in standalone mode",
+      "read.tasks.list read is not configured in standalone mode",
+      "read.tasks.get read is not configured in standalone mode",
+      "metrics.define is not configured in standalone mode",
+    ]);
+
+    // 3. Declared workspace: "task" prerequisite fails before execution when workRoot === projectRoot without .git:
+    let executedWithoutWorktree = false;
+    const missingWorktreeRun = await runDirectWorkflow({
+      module: {
+        name: "requires-task-worktree",
+        description: "Declares workspace: task",
+        workspace: "task",
+        async execute(ctx) {
+          executedWithoutWorktree = true;
+          return ctx.done("unreachable");
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.projectRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(missingWorktreeRun.ok).toBe(false);
+    expect(missingWorktreeRun.started).toBe(false);
+    expect(executedWithoutWorktree).toBe(false);
+    expect(String(missingWorktreeRun.error)).toContain('requires an isolated Task Git checkout (workspace: "task")');
+  });
 });
