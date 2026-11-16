@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-11-14"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-14, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-11-16"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-15, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -69,6 +69,16 @@ Migration and project-operation artifacts live outside `knowledge/`:
 - [Hermes Agent and OpenClaw comparative investigation (2026-09-02)](../reports/research/hermes-agent-openclaw-comparative-investigation-2026-09-02.md) — UTC-dated pinned-source architecture, memory, skill-learning, authority, recovery, issue, and cost comparison; reconciles all 28 existing matching leads and records bounded reproduction limits.
 
 ## Recent Source-Grounded Findings
+
+### 2026-11-15
+
+- [Agent memory approvals need read-time liveness verdicts](./findings/2026-11-15-agent-memory-approvals-need-read-time-liveness-verdicts.md) — pinned Loom source derives shared-definition approval from the current source head, content equivalence, sensitivity, and deterministic name ownership; the reviewed change adds inspection and tests but explicitly does not yet change search serving.
+- [EnvOpt reports strong author-run efficiency gains from reorganizing persistent agent environments](./findings/2026-11-15-source-assessment-9676afc47cb1.md) — full-paper review found large benchmark-specific cost reductions with held-out evaluation, alongside synthetic tasks, noisy validation trajectories, low baselines, pricing dependence, and no independent replication.
+- [Phone agents move approval into the device gateway](./findings/2026-11-15-phone-agents-move-approval-into-the-device-gateway.md) — pinned Pinky and Poki documentation places risky real-phone actions behind device-side or gateway-side approval surfaces; Scout did not install either project or independently verify real-device enforcement.
+- [Antigravity /teamwork separates context, critics, dependencies, and executable falsifiers](./findings/2026-11-15-source-assessment-bea6f68aca51.md) — Google's complete first-party article describes a strong long-horizon harness design, while its broad science and software outcomes remain producer-reported without inspected raw trajectories, comparative controls, or independent replication.
+- [Agent customizations need ablation and activation evals](./findings/2026-11-15-agent-customizations-need-ablation-and-activation-evals.md) — pinned Caliper documentation separates outcome reliability, component activation, ablation effects, routing interference, and token/time cost; Scout did not execute the harness or reproduce its examples.
+- [Embedded agent graph stores need process and selection boundaries](./findings/2026-11-15-embedded-agent-graph-stores-need-process-and-selection-boundaries.md) — pinned Relate documentation packages a local graph store for agent use while retaining explicit single-process, concurrency, query-policy, tenant-isolation, and trusted-subgraph responsibilities for the host.
+- [Agent sensory verification needs diagnostics plus the artifact](./findings/2026-11-15-agent-sensory-verification-needs-diagnostics-plus-artifact.md) — three pinned producer-authored READMEs converge on pairing machine-readable repair diagnostics with the rendered or audible artifact; Scout did not run the repositories, reproduce benchmarks, or independently validate perceptual quality.
 
 ### 2026-11-14
 
