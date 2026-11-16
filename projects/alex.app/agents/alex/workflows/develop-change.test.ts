@@ -999,6 +999,60 @@ describe("development workflow using real Git and verification", () => {
     expect(t.calls.filter((c) => c.stage === "design")).toHaveLength(1);
     expect(t.calls.filter((c) => c.stage === "review")).toHaveLength(3);
   });
+
+  test("third-round success replays after exhaustion and rejected delivery", async () => {
+    const t = trial();
+    let reviews = 0;
+    t.setJudgment((stage) => {
+      if (stage === "design")
+        return {
+          decision: "review",
+          reason: "Existing candidate",
+          design: "Review the current behavior",
+        };
+      if (++reviews < 3) return { decision: "invalid" };
+      return {
+        decision: "pass",
+        reason: "The exact verified candidate is correct",
+        findings: [],
+        commit: t.git(t.worktree, "rev-parse", "HEAD"),
+      };
+    });
+    t.current.input = t.spec(0);
+    t.current.outcome = t.spec(0).data.outcome;
+    t.current.acceptance = t.spec(0).data.acceptance;
+
+    expect((await t.run()).state).toBe("incomplete");
+    expect((await t.run()).state).toBe("incomplete");
+    const completed = await t.run();
+    expect(completed.state).toBe("converged");
+    expect(t.evidence().roundsUsed).toBe(3);
+    expect(t.calls.filter((c) => c.stage === "review")).toHaveLength(3);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+
+    expect((await t.run(t.context())).state).toBe("converged");
+    expect(t.calls.filter((c) => c.stage === "review")).toHaveLength(3);
+
+    t.current.result = undefined;
+    const rejected = t.context();
+    rejected.reconciliation!.previousAttempt = {
+      attemptId: "rejected-third-round",
+      generation: 1,
+      state: "failed",
+      workspacePath: t.worktree,
+      unacceptedResult: {
+        attemptId: "rejected-third-round",
+        settlementError: "settlement failed",
+        summary: completed.summary,
+        result: completed.result,
+        facts: completed.facts,
+      },
+    };
+    expect((await t.run(rejected)).state).toBe("converged");
+    expect(t.calls.filter((c) => c.stage === "review")).toHaveLength(3);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+  });
+
   test("a fresh design can choose rereview without forcing implementation", async () => {
     const t = trial();
     t.current.input = t.spec(0);

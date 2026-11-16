@@ -396,21 +396,24 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
       return response.output as Static<S>;
     };
 
+    await ensureCurrent();
+    const retained = await candidate(root, ctx.signal, true);
+    if (
+      saved.verified &&
+      saved.review?.judgment.decision === "pass" &&
+      saved.review.judgment.commit === retained.commit &&
+      sameCandidate(saved.verified, retained) &&
+      sameCandidate(saved.review.candidate, retained)
+    ) {
+      return finish(
+        `Verified and reviewed local candidate ${retained.commit}`,
+        true,
+      );
+    }
+
     while ((saved.roundsUsed ?? 0) < 3) {
       await ensureCurrent();
       let value = await candidate(root, ctx.signal, true);
-      if (
-        saved.verified &&
-        saved.review?.judgment.decision === "pass" &&
-        saved.review.judgment.commit === value.commit &&
-        sameCandidate(saved.verified, value) &&
-        sameCandidate(saved.review.candidate, value)
-      ) {
-        return finish(
-          `Verified and reviewed local candidate ${value.commit}`,
-          true,
-        );
-      }
       saved.roundsUsed = (saved.roundsUsed ?? 0) + 1;
       if (!saved.design) {
         saved.design = await ask("bob", "design", designSchema, value);
