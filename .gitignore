@@ -17,6 +17,7 @@ may.db
 # Local tool config/secrets - never track
 .agents/
 .azure/
+.cache/
 .codex/
 .copilot/
 .tools/

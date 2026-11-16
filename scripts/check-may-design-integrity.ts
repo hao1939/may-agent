@@ -104,7 +104,7 @@ for (const path of [...markdownFiles(principlesDir), ...markdownFiles(designDir)
 }
 
 const allowedRootEntries = new Set([
-  ".agents", ".aws", ".azure", ".claude", ".codex", ".copilot", ".git", ".gitignore", ".initialized", ".state", ".tools",
+  ".agents", ".aws", ".azure", ".cache", ".claude", ".codex", ".copilot", ".git", ".gitignore", ".initialized", ".state", ".tools",
   "CONVENTIONS.md", "README.md", "agents", "artifacts", "bun.lock", "bunfig.toml", "contracts", "features",
   "node_modules", "package.json", "packages", "projects", "reports", "scripts", "shared", "sources", "tmp", "tsconfig.json", "ui", "worktrees",
 ]);

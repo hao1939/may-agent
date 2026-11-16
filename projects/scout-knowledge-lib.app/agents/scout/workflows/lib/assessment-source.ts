@@ -34,18 +34,35 @@ export function sourceIdentity(value: string): string {
   return url.href;
 }
 
-// One bounded extractor; PDF support is an explicit installation prerequisite
-// (python3 + pypdf), never an agent-driven package installation during research.
+// One bounded extractor; PDF support uses `pypdf` when installed or falls back
+// to system `pdftotext` (poppler-utils), never an agent-driven package installation.
 const extractScript = `
-import sys, json, io
+import sys, json, io, os, subprocess, tempfile, glob
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
+for sp in glob.glob('/app/.state/.local/lib/python*/site-packages'):
+    if sp not in sys.path: sys.path.insert(0, sp)
 data = sys.stdin.buffer.read()
 if data.startswith(b'%PDF-'):
-    from pypdf import PdfReader
-    reader = PdfReader(io.BytesIO(data))
-    if len(reader.pages) > 1000: raise ValueError('PDF exceeds 1000 pages')
-    pages = [page.extract_text() or '' for page in reader.pages]
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(io.BytesIO(data))
+        if len(reader.pages) > 1000: raise ValueError('PDF exceeds 1000 pages')
+        pages = [page.extract_text() or '' for page in reader.pages]
+    except ImportError:
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as f:
+            f.write(data)
+            pdf_path = f.name
+        try:
+            raw = subprocess.run(['pdftotext', pdf_path, '-'], check=True, capture_output=True).stdout.decode('utf-8', errors='replace')
+            split_pages = raw.split('\\f')
+            if split_pages and split_pages[-1] == '':
+                split_pages.pop()
+            if len(split_pages) > 1000: raise ValueError('PDF exceeds 1000 pages')
+            pages = [p.strip('\\r\\n') for p in split_pages]
+        finally:
+            try: os.unlink(pdf_path)
+            except OSError: pass
 elif sys.argv[1] in ('text/html', 'application/xhtml+xml') or (
     not sys.argv[1] and data.lstrip().lower().startswith((b'<!doctype html', b'<html'))
 ):
