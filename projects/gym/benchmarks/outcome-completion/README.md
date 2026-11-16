@@ -1,8 +1,9 @@
 # Outcome completion
 
 **Version 4 — five judgment cases with approved expectations. The style case now
-checks unsupported verification claims and Task-ending declarations. No v4 model
-baseline has run. The complete v3 runs and incomplete v2 attempt remain historical
+checks unsupported verification claims and Task-ending declarations. The first
+v4 attempt stopped at calibration: two passes, one invalid grading, two unrun;
+there is no eligible v4 baseline. The v3 runs and incomplete v2 attempt remain historical
 evidence; none is rescored or evidence of operational delivery.**
 
 Tests whether a compatible subject understands its bounded assignment, chooses an
@@ -201,3 +202,17 @@ Version 4 changed the style question and rubric, so the v3 passes are not curren
 v4 scores. The plan's selected v3 baseline pointer was cleared, not its retained
 history. Any v4 baseline needs a separate bounded commission with explicit frozen
 subject/setup and model-run permission.
+
+## First version-4 attempt — incomplete
+
+The [installed-profile attempt](../../docs/outcome-v4-attempt-20261116.md) ran A,
+style and B once, then stopped at calibration. **A and the new style case passed**;
+both judges calibrated all ten style controls. **B grading was invalid**, not an
+Alex failure: both judges accepted its actual answer, but Sol rejected approved
+positive control B2. C and D did not execute. B's four materialized measurement
+files are byte-identical to approved v3; this is not a new B definition or relabel.
+
+The native manifest remains incomplete and unchanged. Nine executions and all
+setup failures are retained; there was no automatic retry, agent change or
+operational action. The case/rubric/label approval remains v4. Review the retained
+calibration miss before any separately approved change or new bounded commission.

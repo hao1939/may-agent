@@ -1,5 +1,8 @@
 # Gym Documentation
 
+- [`outcome-v4-attempt-20261116.md`](outcome-v4-attempt-20261116.md) — bounded
+  installed-profile v4 attempt: new style case calibrated and passed; stopped on
+  approved B2 control rejection, with two cases unrun and no eligible baseline.
 - [`outcome-v3-frozen496-20261116.md`](outcome-v3-frozen496-20261116.md) — complete
   five-case v3 judgment baseline for the original frozen Alex; calibrated controls,
   two recovered format errors, exact provenance, costs and delivery limits.

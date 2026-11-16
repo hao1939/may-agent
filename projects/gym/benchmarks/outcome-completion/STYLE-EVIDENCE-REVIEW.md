@@ -1,6 +1,6 @@
 # Style-case evidence and closure boundaries — applied in version 4
 
-**Applied following the user's “continue” after review. No model calls authorized.**
+**Applied following the user's “continue” after review. Activation did not authorize model calls.**
 Native `cases.json`, `suite.json` and `labels.json` are authoritative for v4.
 [`drafts/style-evidence-v4.case.json`](drafts/style-evidence-v4.case.json) retains
 the exact former proposal, including its then-draft metadata, as immutable review

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": 11,
+  "revision": 12,
   "agent": "alex",
   "owner": "alex",
   "outcomes": [
@@ -29,7 +29,7 @@
     "max_runs_per_cycle": 4
   },
   "improvement": {
-    "problem": "Outcome-completion v4's reviewed style-evidence boundaries are active but unrun. The complete v3 judgment runs remain historical evidence, not reliable delivery of a useful authorized improvement. The next gap is observing Alex carry real work through its actual acceptance or a supported disposition, with human correction, time and cost evidence. No new improvement incident is selected.",
+    "problem": "Outcome-completion v4's first bounded attempt is incomplete: two passes, one invalid grading and two unrun cases. The new style case passed with calibrated controls, but Sol rejected approved B2 despite accepting Alex's actual answer. No complete v4 baseline or Alex failure is established. The complete v3 judgment runs remain historical evidence, not reliable delivery of a useful authorized improvement. The next gap is observing Alex carry real work through its actual acceptance or a supported disposition, with human correction, time and cost evidence. No new improvement incident is selected.",
     "evidence": [
       "projects/alex.app/docs/comparison/gym-reporting-delivery-trial-20261116.md",
       "projects/gym/docs/agent-manual-trials-20261116.md",
@@ -46,15 +46,18 @@
       "projects/gym/docs/outcome-v3-evaluation-20261116.md",
       "projects/gym/docs/outcome-v3-evaluation-20261116.json",
       "projects/gym/docs/measurement-identity-repair-20261116.md",
-      "projects/gym/docs/alex-real-delivery-observation-20261116.md"
+      "projects/gym/docs/alex-real-delivery-observation-20261116.md",
+      "projects/gym/docs/outcome-v4-attempt-20261116.md",
+      "projects/gym/docs/outcome-v4-attempt-20261116.json"
     ],
     "hypothesis": "Using existing task ownership, one bounded problem and explicit acceptance/stop limits can let Alex carry a useful improvement through its supported delivery boundary with acceptable human steering, elapsed time and model cost. One observed delivery tests that task only; improvement claims require comparable prior evidence.",
     "expected_benefit": "Find the next concrete delivery bottleneck from real-work evidence and reduce unnecessary operator intervention or repeated work where the observations support it.",
     "unchanged_alternative": "Keep the installed Alex definition unchanged, retain all historical runs and the unapplied reporting proposal, and reuse the current evidence during the existing daily changed-evidence review.",
     "stop_when": "The next selected authorized task reaches its actual acceptance or a supported disposition, with exact output/check/review receipts, remaining obligations, observed corrections and scoped time/cost. A review finding no worthwhile changed evidence records no-change and rearms the existing daily Task. Do not create work to fill this observation, commission another benchmark without a concrete justified question, or renew the retired reporting incident allowance.",
-    "next_action": "At the existing system-wide review due November 17, 2026 09:00 UTC, read this current plan and live Task; its saved revision-6 calibration gate is historical. Follow projects/gym/docs/alex-real-delivery-observation-20261116.md: use fresh existing evidence to select at most one worthwhile authorized problem, define its acceptance and stopping limit, and retain Task/attempt identity, exact output/check/review receipts, human corrections, operator audit effort and scoped elapsed time/model cost through delivery or a supported disposition. If no worthwhile changed evidence exists, record no-change and rearm the same standing Task. Preserve the historical v3 judgment runs and their recorded-harness requirements; the active v4 measurement is unrun and model execution remains uncommissioned; do not manufacture a Task or reopen the retired reporting incident."
+    "next_action": "At the existing system-wide review due November 17, 2026 09:00 UTC, read this current plan and live Task; its saved revision-6 calibration gate is historical. Follow projects/gym/docs/alex-real-delivery-observation-20261116.md: use fresh existing evidence to select at most one worthwhile authorized problem, define its acceptance and stopping limit, and retain Task/attempt identity, exact output/check/review receipts, human corrections, operator audit effort and scoped elapsed time/model cost through delivery or a supported disposition. If no worthwhile changed evidence exists, record no-change and rearm the same standing Task. Preserve the historical v3 judgment runs and their recorded-harness requirements; the first v4 attempt is calibration-invalid and incomplete, and its consumed commission authorizes no further model executions; do not manufacture a Task or reopen the retired reporting incident."
   },
   "coverage_gaps": [
+    "Outcome-completion v4 run outcome-completion-test-20261116T205835Z-d8e76809 stopped after two passes and one invalid grading; two cases did not run. Both judges accepted all three actual Alex answers, but Sol rejected approved B2. The style case calibrated all ten controls with both judges. B's assignment, expectation, rubric and six controls are byte-identical to approved v3. This is recurring evaluator calibration fragility, not an Alex failure or operational improvement. Preserve the incomplete manifest, all nine executions and setup faults; review the retained packet before any separately approved change or new bounded execution.",
     "The manual improvement-stage-selection v1 run passed its one draft judgment case and calibrated controls. That narrow judgment evidence did not deliver the retired reporting candidate or establish general improvement behavior.",
     "The standing-review handoff/setup repair is integrated and active at release bca49e7c6a645c384eae22d2efb76d6ddd545a0c-definitions-v6. It has not demonstrated a fresh hosted finite-goal delegation, automatic due-day behavior, restart/workspace recovery, cross-Task incident-budget enforcement or a new repair under the bound.",
     "Reporting incident alex/report-executed-checks-accurately-20261116 is retired from active selection and accepted only at the demonstrated local source-proposal boundary. Candidate 8644005b33933c15fd02d419b2c7ca1affd3336a remains unapplied and lacks a fresh independent pass; its one development invocation and all three automated review/repair rounds remain consumed.",
@@ -65,7 +68,7 @@
     "The manual system-wide pass demonstrated bounded selection and same-Task rearming to the unchanged November 17, 2026 09:00 UTC deadline. Automatic due-day wake, cross-day allowance retention and repeated unattended reliability remain unobserved.",
     "Zero operator correction messages in one delivery does not measure operator audit effort or demonstrate a general improvement. Existing model-cost estimates are scoped historical estimates; billing, operator cost and cost improvement remain unknown.",
     "The active handoff guard rejects the known standing policy and guides finite incident handoff, but automatic enforcement across direct calls, separate Tasks and the standing Task lifetime remains unverified.",
-    "Measurement identity bookkeeping was repaired: the retained v3 run was selected as an approved complete judgment baseline without rewriting history or rerunning models. Activating the reviewed v4 style-case change cleared that now-historical selection; v4 has no commissioned run or baseline. Its frozen execution harness differs from today's source (harness_matches_current=false). A matched comparison of v3 results must use that recorded harness; current v4 comparisons need a separately commissioned fresh matched baseline; the default verifier remains strict. Operational transfer and repeated-run stability are still unmeasured."
+    "Measurement identity bookkeeping was repaired: the retained v3 run was selected as an approved complete judgment baseline without rewriting history or rerunning models. Activating the reviewed v4 style-case change cleared that now-historical selection; v4 now has one incomplete calibration-invalid attempt and no eligible baseline. Its frozen execution harness differs from today's source (harness_matches_current=false). A matched comparison of v3 results must use that recorded harness; current v4 comparisons need a separately commissioned fresh matched baseline; the default verifier remains strict. Operational transfer and repeated-run stability are still unmeasured."
   ],
   "decisions": []
 }

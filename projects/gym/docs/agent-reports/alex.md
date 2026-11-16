@@ -1,7 +1,7 @@
 # alex: evaluation plan and evidence
 
-Plan revision 11; owner: alex; fingerprint: `0fb3259dcf776556d1910b42b043dbf9eba10e2cbcd8d0e3b1fa58561bc15b30`.
-Generated 2026-11-16T17:57:24.705Z; 15 retained runs for this agent.
+Plan revision 12; owner: alex; fingerprint: `63ac9b60585209f15f34c672378851a76236513f82591e0971893a70711c13d5`.
+Generated 2026-11-16T21:06:30.845Z; 16 retained runs for this agent.
 
 North star: correct useful delivery, fewer operator corrections, acceptable total time/cost.
 
@@ -19,7 +19,7 @@ Current evidence matches the benchmark and planned evaluation setup under its re
 
 ## Current improvement
 
-Outcome-completion v4's reviewed style-evidence boundaries are active but unrun. The complete v3 judgment runs remain historical evidence, not reliable delivery of a useful authorized improvement. The next gap is observing Alex carry real work through its actual acceptance or a supported disposition, with human correction, time and cost evidence. No new improvement incident is selected.
+Outcome-completion v4's first bounded attempt is incomplete: two passes, one invalid grading and two unrun cases. The new style case passed with calibrated controls, but Sol rejected approved B2 despite accepting Alex's actual answer. No complete v4 baseline or Alex failure is established. The complete v3 judgment runs remain historical evidence, not reliable delivery of a useful authorized improvement. The next gap is observing Alex carry real work through its actual acceptance or a supported disposition, with human correction, time and cost evidence. No new improvement incident is selected.
 
 Hypothesis: Using existing task ownership, one bounded problem and explicit acceptance/stop limits can let Alex carry a useful improvement through its supported delivery boundary with acceptable human steering, elapsed time and model cost. One observed delivery tests that task only; improvement claims require comparable prior evidence.
 
@@ -45,11 +45,14 @@ Stop when: The next selected authorized task reaches its actual acceptance or a 
 - Evidence: [projects/gym/docs/outcome-v3-evaluation-20261116.json](</app/projects/gym/docs/outcome-v3-evaluation-20261116.json>)
 - Evidence: [projects/gym/docs/measurement-identity-repair-20261116.md](</app/projects/gym/docs/measurement-identity-repair-20261116.md>)
 - Evidence: [projects/gym/docs/alex-real-delivery-observation-20261116.md](</app/projects/gym/docs/alex-real-delivery-observation-20261116.md>)
+- Evidence: [projects/gym/docs/outcome-v4-attempt-20261116.md](</app/projects/gym/docs/outcome-v4-attempt-20261116.md>)
+- Evidence: [projects/gym/docs/outcome-v4-attempt-20261116.json](</app/projects/gym/docs/outcome-v4-attempt-20261116.json>)
 
-**Next action:** At the existing system-wide review due November 17, 2026 09:00 UTC, read this current plan and live Task; its saved revision-6 calibration gate is historical. Follow projects/gym/docs/alex-real-delivery-observation-20261116.md: use fresh existing evidence to select at most one worthwhile authorized problem, define its acceptance and stopping limit, and retain Task/attempt identity, exact output/check/review receipts, human corrections, operator audit effort and scoped elapsed time/model cost through delivery or a supported disposition. If no worthwhile changed evidence exists, record no-change and rearm the same standing Task. Preserve the historical v3 judgment runs and their recorded-harness requirements; the active v4 measurement is unrun and model execution remains uncommissioned; do not manufacture a Task or reopen the retired reporting incident.
+**Next action:** At the existing system-wide review due November 17, 2026 09:00 UTC, read this current plan and live Task; its saved revision-6 calibration gate is historical. Follow projects/gym/docs/alex-real-delivery-observation-20261116.md: use fresh existing evidence to select at most one worthwhile authorized problem, define its acceptance and stopping limit, and retain Task/attempt identity, exact output/check/review receipts, human corrections, operator audit effort and scoped elapsed time/model cost through delivery or a supported disposition. If no worthwhile changed evidence exists, record no-change and rearm the same standing Task. Preserve the historical v3 judgment runs and their recorded-harness requirements; the first v4 attempt is calibration-invalid and incomplete, and its consumed commission authorizes no further model executions; do not manufacture a Task or reopen the retired reporting incident.
 
 ## Coverage gaps
 
+- Outcome-completion v4 run outcome-completion-test-20261116T205835Z-d8e76809 stopped after two passes and one invalid grading; two cases did not run. Both judges accepted all three actual Alex answers, but Sol rejected approved B2. The style case calibrated all ten controls with both judges. B's assignment, expectation, rubric and six controls are byte-identical to approved v3. This is recurring evaluator calibration fragility, not an Alex failure or operational improvement. Preserve the incomplete manifest, all nine executions and setup faults; review the retained packet before any separately approved change or new bounded execution.
 - The manual improvement-stage-selection v1 run passed its one draft judgment case and calibrated controls. That narrow judgment evidence did not deliver the retired reporting candidate or establish general improvement behavior.
 - The standing-review handoff/setup repair is integrated and active at release bca49e7c6a645c384eae22d2efb76d6ddd545a0c-definitions-v6. It has not demonstrated a fresh hosted finite-goal delegation, automatic due-day behavior, restart/workspace recovery, cross-Task incident-budget enforcement or a new repair under the bound.
 - Reporting incident alex/report-executed-checks-accurately-20261116 is retired from active selection and accepted only at the demonstrated local source-proposal boundary. Candidate 8644005b33933c15fd02d419b2c7ca1affd3336a remains unapplied and lacks a fresh independent pass; its one development invocation and all three automated review/repair rounds remain consumed.
@@ -60,7 +63,7 @@ Stop when: The next selected authorized task reaches its actual acceptance or a 
 - The manual system-wide pass demonstrated bounded selection and same-Task rearming to the unchanged November 17, 2026 09:00 UTC deadline. Automatic due-day wake, cross-day allowance retention and repeated unattended reliability remain unobserved.
 - Zero operator correction messages in one delivery does not measure operator audit effort or demonstrate a general improvement. Existing model-cost estimates are scoped historical estimates; billing, operator cost and cost improvement remain unknown.
 - The active handoff guard rejects the known standing policy and guides finite incident handoff, but automatic enforcement across direct calls, separate Tasks and the standing Task lifetime remains unverified.
-- Measurement identity bookkeeping was repaired: the retained v3 run was selected as an approved complete judgment baseline without rewriting history or rerunning models. Activating the reviewed v4 style-case change cleared that now-historical selection; v4 has no commissioned run or baseline. Its frozen execution harness differs from today's source (harness_matches_current=false). A matched comparison of v3 results must use that recorded harness; current v4 comparisons need a separately commissioned fresh matched baseline; the default verifier remains strict. Operational transfer and repeated-run stability are still unmeasured.
+- Measurement identity bookkeeping was repaired: the retained v3 run was selected as an approved complete judgment baseline without rewriting history or rerunning models. Activating the reviewed v4 style-case change cleared that now-historical selection; v4 now has one incomplete calibration-invalid attempt and no eligible baseline. Its frozen execution harness differs from today's source (harness_matches_current=false). A matched comparison of v3 results must use that recorded harness; current v4 comparisons need a separately commissioned fresh matched baseline; the default verifier remains strict. Operational transfer and repeated-run stability are still unmeasured.
 
 ## Evaluation allowance
 
@@ -89,6 +92,7 @@ Historical counts below are retained machine verdicts, not current benchmark sco
 | [outcome-completion-test-20261116T150121Z-080f4da5](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T150121Z-080f4da5/manifest.json>) / 2026-11-16T15:01:21.858Z | outcome-completion v2 / baseline | judgment | 2 / 0 / 1; approved | unknown / unknown / unknown | historical benchmark/version; fresh baseline required |
 | [outcome-completion-test-20261116T154647Z-811047b3](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T154647Z-811047b3/manifest.json>) / 2026-11-16T15:46:47.530Z | outcome-completion v3 / baseline | judgment | 5 / 0 / 0; approved | 49260 / 46872 / 5 | historical benchmark/version; fresh baseline required |
 | [outcome-completion-test-20261116T160023Z-62955f54](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T160023Z-62955f54/manifest.json>) / 2026-11-16T16:00:23.376Z | outcome-completion v3 / baseline | judgment | 5 / 0 / 0; approved | 53172 / 66013 / 7 | historical benchmark/version; fresh baseline required |
+| [outcome-completion-test-20261116T205835Z-d8e76809](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T205835Z-d8e76809/manifest.json>) / 2026-11-16T20:58:35.860Z | outcome-completion v4 / baseline | judgment | 2 / 0 / 1; approved | unknown / unknown / unknown | incomplete run |
 
 ## Execution identity and failures
 
@@ -126,6 +130,8 @@ Historical counts below are retained machine verdicts, not current benchmark sco
   - [alex-judge-close-verified-bounded-outcome trial 1: invalid](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T150121Z-080f4da5/cases/alex-judge-close-verified-bounded-outcome/trial-1/result.json>): semantic evaluation is invalid because a judge or calibration failed
 - outcome-completion-test-20261116T154647Z-811047b3: model gpt-5.6-sol; framework 29bf16eb71; candidate fingerprint unknown; inputs af34e7d205661dacf65e42c4fdf6bf1b19a71cf117d23147de3a039d694724a9; prompts 07ef231c1ebf, 6655dcf3ef6d, d32dd6234e73, d3e6e8e77660, ef20d39a307d; plan revision 7; comparison series unestablished; gate unavailable.
 - outcome-completion-test-20261116T160023Z-62955f54: model gpt-5.6-sol; framework 22cf5fdb13; candidate fingerprint unknown; inputs ad2df8ad4f16b260b4e447b54089844e2ba26f6463bb058d8b6339442b254e8c; prompts 0dbcd3724fed, 19a905ce9dc8, 598320fef541, 65c01f363cf6, eb4562bb34a1; plan revision unknown; comparison series unestablished; gate unavailable.
+- outcome-completion-test-20261116T205835Z-d8e76809: model gpt-5.6-sol; framework acc0566a21; candidate fingerprint unknown; inputs 1bcc68a40dece52b176bb253ff3c5843c17405419e5f5b9fe132d21473c58112; prompts 58185b829217, bc8095d677f6, d20c072620c5; plan revision 11; comparison series unestablished; gate unavailable.
+  - [alex-judge-close-verified-bounded-outcome trial 1: invalid](</app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T205835Z-d8e76809/cases/alex-judge-close-verified-bounded-outcome/trial-1/result.json>): semantic evaluation is invalid because a judge or calibration failed; semantic-judge-openai: judge missed one or more calibration controls; calibration control "B2": expected pass, got fail
 
 ## Owner decisions and delivery
 
