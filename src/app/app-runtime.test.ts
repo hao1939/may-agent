@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { createAppInputAdmission, createProjectActionAccess } from "./app-runtime.js";
+import { createAppInputAdmission } from "./app-runtime.js";
 
 describe("app runtime startup", () => {
   it.each([
@@ -94,44 +94,5 @@ describe("App input control admission", () => {
       },
     });
     expect(() => admit(command)).toThrow("does not accept this input");
-  });
-});
-
-describe("canonical project actions", () => {
-  it("admits a canonical action as App input and rejects unknown Apps", () => {
-    const admitted: unknown[] = [];
-    const access = createProjectActionAccess({
-      getRuntime: () =>
-        ({
-          host: {
-            hasApp: (id: string) => id.replace(/\.app$/, "") === "evaluation",
-            describeActions: () => [{ id: "review", description: "Review", inputSchema: { type: "object" } }],
-            invokeAction: () => ({ kind: "review", data: { scope: "current" } }),
-          },
-        }) as never,
-      admit: (input) => {
-        admitted.push(input);
-        return { eventId: 1, eventType: "app.input.requested" };
-      },
-    });
-
-    expect(access.describe("evaluation.app")).toEqual([
-      { id: "review", description: "Review", inputSchema: { type: "object" } },
-    ]);
-    expect(
-      access.invoke({ projectId: "evaluation.app", actionId: "review", params: {}, idempotencyKey: "action-1" }),
-    ).toEqual({ eventId: 1, eventType: "app.input.requested" });
-    expect(admitted).toEqual([
-      {
-        appId: "evaluation",
-        input: { kind: "review", data: { scope: "current" } },
-        source: { kind: "human", id: "control-socket:project-action" },
-        idempotencyKey: "action-1",
-      },
-    ]);
-
-    expect(() => access.invoke({ projectId: "legacy", actionId: "run", params: {} })).toThrow(
-      "App legacy is not loaded",
-    );
   });
 });

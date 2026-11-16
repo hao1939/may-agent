@@ -25,14 +25,9 @@ export interface SocketUIOptions {
   /** Daemon instance label. */
   instance: string;
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  listAppTasks?: AttachControlSocketOptions["listAppTasks"];
-  getAppTask?: AttachControlSocketOptions["getAppTask"];
-  getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
-  describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
-  invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
 
 export type SocketUI = ControlSocket;
@@ -80,15 +75,10 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     emitEvent: (event) => opts.publishOperatorEvent(operatorEventInput(event)),
     publishEvent: opts.publishEvent,
     getEvent: events.get,
-    describeProjectActions: opts.describeProjectActions,
     getAppConversation: opts.getAppConversation,
-    listAppTasks: opts.listAppTasks,
-    getAppTask: opts.getAppTask,
-    getAppTaskWorkload: opts.getAppTaskWorkload,
     listApps: opts.listApps,
     listTasks: opts.listTasks,
     getTask: opts.getTask,
-    invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents: (handler) => events.subscribe({}, handler),
     onInfo: opts.reportInfo,
     conversationAppId: opts.conversationAppId,

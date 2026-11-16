@@ -23,7 +23,7 @@ let liveInitialized = false;
 
 // ── Router ────────────────────────────────────────────────────────────
 // Real routes: / /agents /agents/<name> /projects /projects/:id
-//              /projects/:id/tasks /projects/:id/functions
+//              /projects/:id/tasks
 //              /metrics /metrics/<id> /terminal /sessions/:id
 //              /knowledge /knowledge/<sub-path> /events /events/:eventId
 // Legacy hash routes (#/... and #dashboard/#events) still work via aliases.
@@ -68,7 +68,7 @@ function parseRouteString(route) {
     const tail = segs.slice(1);
     let surface = null;
     const last = tail[tail.length - 1];
-    if (last === 'tasks' || last === 'functions') {
+    if (last === 'tasks') {
       surface = last;
       tail.pop();
     }
@@ -108,7 +108,7 @@ function isPlatformClientRoute(pathname) {
   if (!pathname.startsWith('/projects/')) return false;
   const parts = pathname.split('/').filter(Boolean).slice(1);
   const last = parts[parts.length - 1];
-  const hasSurface = last === 'tasks' || last === 'functions';
+  const hasSurface = last === 'tasks';
   const idParts = hasSurface ? parts.slice(0, -1) : parts;
   if (!hasSurface && idParts.length === 2) {
     if (['ui', 'kanban'].includes(idParts[1])) return false;
