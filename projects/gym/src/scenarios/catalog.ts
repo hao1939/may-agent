@@ -4,7 +4,8 @@ import { join } from "node:path";
 import type { ScenarioMeta } from "./types";
 
 export function loadScenarioMeta(scenarioDir: string): ScenarioMeta | null {
-  const metaPath = join(scenarioDir, "scenario.json");
+  const metaPath = existsSync(join(scenarioDir, "case.json"))
+    ? join(scenarioDir, "case.json") : join(scenarioDir, "scenario.json");
   if (!existsSync(metaPath)) return null;
   try {
     return JSON.parse(readFileSync(metaPath, "utf-8")) as ScenarioMeta;

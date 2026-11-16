@@ -289,7 +289,7 @@ export async function execute(ctx) {
     const { spawnSync } = await import("node:child_process");
     const scenarioDir = join(
       import.meta.dirname,
-      "../scenarios/verified-coder-repair-loop",
+      "../archive/pre-purpose-layout/scenarios/verified-coder-repair-loop",
     );
     const meta = JSON.parse(
       readFileSync(join(scenarioDir, "scenario.json"), "utf8"),

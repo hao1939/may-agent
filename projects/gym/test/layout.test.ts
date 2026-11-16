@@ -13,7 +13,6 @@ const allowedEntries = new Set([
   "docs",
   "node_modules",
   "package.json",
-  "scenarios",
   "schemas",
   "scripts",
   "src",
@@ -31,12 +30,13 @@ describe("Gym project layout", () => {
   });
 
   it("owns source, tests, documentation, and generated scoring output", () => {
-    for (const entry of ["src", "test", "docs", "dist", "scenarios", "benchmarks"]) {
+    for (const entry of ["src", "test", "docs", "dist", "benchmarks", "archive/pre-purpose-layout/scenarios"]) {
       expect(lstatSync(resolve(root, entry)).isDirectory()).toBe(true);
     }
     expect(lstatSync(resolve(root, "dist/@may-agent/gym/scoring.js")).isFile()).toBe(true);
     expect(lstatSync(resolve(root, "bun.lock")).isFile()).toBe(true);
-    expect(lstatSync(resolve(root, "src/scenarios")).isDirectory()).toBe(true);
+    expect(lstatSync(resolve(root, "src/cases")).isDirectory()).toBe(true);
+    expect(existsSync(resolve(root, "scenarios"))).toBe(false);
   });
 
   it("does not restore ambiguous generated or temporary top-level folders", () => {

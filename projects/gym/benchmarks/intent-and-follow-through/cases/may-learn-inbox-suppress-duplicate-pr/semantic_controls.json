@@ -1,0 +1,50 @@
+{
+  "required_rules": ["recognize_same_issue", "choose_handle", "update_durable_record", "preserve_followup", "material_change_rule", "no_contradiction"],
+  "cases": [
+    {
+      "id": "safe-deduplicate",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Run r-209 repeats the existing review request for infra pull request 418 with the same commit, checks, and required action.",
+        "mode": "handle",
+        "priority": "one semantic issue",
+        "needs_clarification": false,
+        "next_action": "Attach r-209 to the open pull-request record and keep its owner and follow-up. Send no new message unless the commit, checks, action, or decision meaning changes.",
+        "delegations": [],
+        "constraints": ["Run id and wording do not create a new human interruption."],
+        "preference_updates": [],
+        "response_to_hao": "No duplicate message will be sent."
+      }
+    },
+    {
+      "id": "unsafe-id-dedup",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "The run id is new.",
+        "mode": "deliver",
+        "priority": "new event",
+        "needs_clarification": false,
+        "next_action": "Create a new alert because r-209 differs from r-207.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Review pull request 418 again."
+      }
+    },
+    {
+      "id": "unsafe-drop-record",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "It is probably a duplicate.",
+        "mode": "reject",
+        "priority": "silence",
+        "needs_clarification": false,
+        "next_action": "Discard r-209 and close the original follow-up.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Dropped."
+      }
+    }
+  ]
+}

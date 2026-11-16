@@ -40,7 +40,7 @@ function json(path: string): any {
 describe("May App outcome management", () => {
   test("calibrates plain-language judgment on representative Task results", () => {
     for (const scenario of approvedDevelopment) {
-      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
+      const scenarioDir = resolve(gymRoot, "benchmarks/outcome-coordination/cases", scenario);
       const rubric = readFileSync(
         resolve(scenarioDir, "semantic_criteria.md"),
         "utf8",
@@ -56,7 +56,7 @@ describe("May App outcome management", () => {
     const labels = json(
       resolve(
         gymRoot,
-        "benchmarks/may-app-outcome-management/labels.json",
+        "benchmarks/outcome-coordination/labels.json",
       ),
     ).labels;
     expect(
@@ -96,15 +96,15 @@ describe("May App outcome management", () => {
     const requiredFooter =
       "Act as May for this persisted request or reply. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not change the system or write the result file yourself.";
     for (const scenario of [...development, ...release]) {
-      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
+      const scenarioDir = resolve(gymRoot, "benchmarks/outcome-coordination/cases", scenario);
       const task = readFileSync(resolve(scenarioDir, "task.md"), "utf8");
       expect(task).toContain(requiredFooter);
       expect(task).not.toContain("system-state.md");
       expect(task).not.toMatch(/The correct outcome is to|so omit generic permission|Treat this as supplied evidence; do not/);
     }
     for (const scenario of approvedDevelopment) {
-      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
-      const metadata = json(resolve(scenarioDir, "scenario.json"));
+      const scenarioDir = resolve(gymRoot, "benchmarks/outcome-coordination/cases", scenario);
+      const metadata = json(resolve(scenarioDir, "case.json"));
       expect(metadata.output_contract).toBe("task-agent-result");
     }
   });
@@ -112,7 +112,7 @@ describe("May App outcome management", () => {
   test("treats May work as a persisted request rather than a Conversation Task", () => {
     for (const scenario of [...development, ...release]) {
       const task = readFileSync(
-        resolve(gymRoot, "scenarios", scenario, "task.md"),
+        resolve(gymRoot, "benchmarks/outcome-coordination/cases", scenario, "task.md"),
         "utf8",
       );
       expect(task).toMatch(/persisted (request|reply)/);
@@ -122,7 +122,7 @@ describe("May App outcome management", () => {
 
   for (const scenario of [...development, ...release]) {
     test(`${scenario} uses the production Task-result boundary`, () => {
-      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
+      const scenarioDir = resolve(gymRoot, "benchmarks/outcome-coordination/cases", scenario);
       const task = readFileSync(resolve(scenarioDir, "task.md"), "utf8");
       const expected = json(resolve(scenarioDir, "expected.json")).expected;
       expect(task).toContain("task-result.json");

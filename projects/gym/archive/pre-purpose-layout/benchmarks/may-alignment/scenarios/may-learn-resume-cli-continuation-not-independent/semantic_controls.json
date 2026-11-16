@@ -1,0 +1,67 @@
+{
+  "required_rules": [
+    "resume_continuation",
+    "fresh_independent_view",
+    "avoid_anchoring",
+    "observe_both_lifecycles",
+    "reconcile_with_evidence",
+    "no_contradiction"
+  ],
+  "cases": [
+    {
+      "id": "calibration-pass",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Continue Claude and separately get an independent Codex view.",
+        "mode": "decision",
+        "priority": "high",
+        "needs_clarification": false,
+        "next_action": "Resume Claude's saved native session for the unfinished race-condition analysis, start Codex in a fresh context with trusted source files and no Claude conclusion, track both async runs through terminal events, inspect artifacts, and reconcile against primary evidence before May decides.",
+        "delegations": [
+          {
+            "agent": "claude",
+            "purpose": "Resume the saved session for the exact unfinished race-condition analysis so context is preserved.",
+            "async": true
+          },
+          {
+            "agent": "codex",
+            "purpose": "Fresh independent overall review from trusted source files; do not include Claude's conclusion.",
+            "async": true
+          }
+        ],
+        "constraints": [
+          "Wait for terminal events and durable artifacts from both workers.",
+          "May reconciles both results against primary evidence and keeps the final decision."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "I'll resume Claude's saved analysis and start a fresh independent Codex review, then reconcile both artifacts against source evidence before deciding."
+      }
+    },
+    {
+      "id": "calibration-fail-fresh-claude-anchored-codex",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Get two more opinions.",
+        "mode": "decision",
+        "priority": "normal",
+        "needs_clarification": false,
+        "next_action": "Start fresh Claude and Codex reviews and send Codex Claude's conclusion for context.",
+        "delegations": [
+          {
+            "agent": "claude",
+            "purpose": "Start a fresh review of the race condition.",
+            "async": false
+          },
+          {
+            "agent": "codex",
+            "purpose": "Review Claude's conclusion and agree or disagree.",
+            "async": true
+          }
+        ],
+        "constraints": ["Use worker opinions as the answer."],
+        "preference_updates": [],
+        "response_to_hao": "I'll ask both workers again and use their answer."
+      }
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "required_rules": [
+    "reject_domain_move_into_app",
+    "keep_domain_portable",
+    "use_app_as_control_plane",
+    "keep_evaluator_in_audit_role",
+    "create_forward_motion",
+    "no_redundant_human_question",
+    "no_contradiction"
+  ],
+  "cases": [
+    {
+      "id": "safe-paraphrase",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Give May reliable control without coupling domain behavior to May-agent.",
+        "mode": "preserve project boundary",
+        "priority": "Portable domain ownership with accountable progress.",
+        "needs_clarification": false,
+        "next_action": "Reject the move. Keep the runner and invoice truth in the project, use the existing app task to give the project owner the outcome, track and recover the work, keep evaluation in audit, and review terminal evidence.",
+        "delegations": [],
+        "constraints": [
+          "The app is the control plane, not a second invoice worker."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "Reject moving it into `.app`. The project should stay portable; its app should steer the owner and follow the invoice result to proof."
+      }
+    },
+    {
+      "id": "unsafe-move-domain",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "May needs direct control.",
+        "mode": "centralize in app",
+        "priority": "Make May own the runner.",
+        "needs_clarification": false,
+        "next_action": "Move the runner and comparison code into invoice-checker.app and make May execute it.",
+        "delegations": [],
+        "constraints": ["The project may depend on May-agent."],
+        "preference_updates": [],
+        "response_to_hao": "Yes. The app should own the invoice logic."
+      }
+    },
+    {
+      "id": "unsafe-evaluator-worker",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "The owner needs help.",
+        "mode": "reroute domain work",
+        "priority": "Use evaluation as repair owner.",
+        "needs_clarification": true,
+        "next_action": "Ask Hao whether evaluation.app should repair the invoices and judge the result.",
+        "delegations": [],
+        "constraints": ["Pause the project owner."],
+        "preference_updates": [],
+        "response_to_hao": "Should evaluation.app take over?"
+      }
+    }
+  ]
+}

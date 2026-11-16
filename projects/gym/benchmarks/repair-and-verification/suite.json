@@ -1,0 +1,17 @@
+{
+  "name": "repair-and-verification-v1",
+  "version": 1,
+  "purpose": "Choose the responsible repair layer and proportionate verification and delivery boundaries.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "tech-lead-judge-preserve-creator-test-and-fix-source",
+    "tech-lead-judge-fast-targeted-checks-and-local-commit-boundary",
+    "tech-lead-judge-correct-mistaken-test"
+  ],
+  "core_cases": [
+    "tech-lead-judge-preserve-creator-test-and-fix-source",
+    "tech-lead-judge-correct-mistaken-test"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs"
+}

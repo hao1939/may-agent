@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Keep domain work with the project owner",
+    "situation": "A portable invoice project owns its runner and domain result. Its app already owns steering and recovery. A proposal would move the runner and comparison logic into the app so May can control them directly.",
+    "hao_request": "Should we put this into `.app` so May can control it?",
+    "correct_behavior": "Reject moving the runner and invoice logic into the app. Keep portable domain behavior and truth with the invoice project and its owner. Use the existing app task to give that owner the required invoice outcome, track progress, recover stalls, and review terminal evidence. Keep evaluation.app in its audit role. Move the work forward without asking Hao to choose implementation details."
+  },
+  "human_answer": "Reject moving the runner and invoice logic into the app. Keep portable domain behavior and truth with the invoice project and its owner. Use the existing app task to give that owner the required invoice outcome, track progress, recover stalls, and review terminal evidence. Keep evaluation.app in its audit role. Move the work forward without asking Hao to choose implementation details.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 95
+}

@@ -14,9 +14,10 @@ The proposal has two parts:
 - **12 decision tests:** does the agent choose what we would want?
 - **5 action tests:** does the agent actually do the small job correctly?
 
-These 17 cases are a selection across six benchmarks, not one mixed-role run.
-A case is one test; a benchmark groups tests and evaluation rules; the agent is
-the subject. See [how cases, benchmarks and agents relate](../docs/cases-benchmarks-and-agents.md).
+These 17 cases are a selection across six purpose benchmarks, not one mixed-role
+run. Each case has one benchmark-local home. Benchmarks are organized by the
+question being tested; the agent is chosen separately for each run. Historical
+agent-name prefixes in case IDs are retained for identity, not ownership. See [how cases, benchmarks and agents relate](../docs/cases-benchmarks-and-agents.md).
 
 The test definitions have been drafted, but the new agent tests have not been
 run. Agreeing with the overall plan does not automatically approve every
@@ -294,7 +295,7 @@ meaning. Each reader is also given examples that we have labeled good or bad.
 Those examples and labels need your review too. If the readers disagree or fail
 the example checks, we do not treat that as a reliable pass or an agent failure.
 AI readers can still be wrong; human review remains necessary. Word counts in
-the revised role suites are advisory, not automatic failures. Excessive text
+these revised cases are advisory, not automatic failures. Excessive text
 can still be poor communication; a numeric limit alone does not establish that.
 Likewise, a question mark does not establish missing intent. For production-shaped
 answers, the AI readers judge inferred clarification by meaning; an explicitly
@@ -342,14 +343,15 @@ No approval is recorded by filling in a checkbox or by generating this document.
 
 ## Exact definitions, when needed
 
-- Cases 1A–1B: [May cases](may-judgment/cases.json).
-- Cases 2A–2B: [Alex cases](alex-judgment/cases.json).
-- Cases 3A–3B: [Bob cases](bob-judgment/cases.json).
-- Cases 4A–4B and 6A–6B: [Tech-lead cases](tech-lead-judgment/cases.json).
-- Cases 5A–5B: [Scout cases](scout-judgment/cases.json).
-- B1–B5: [Action cases](core-behavior/cases.json).
-- Revised older rules: [Alex cases](alex-judgment/cases.json),
-  [May cases](may-judgment/cases.json) and [Bob cases](bob-judgment/cases.json).
+- Cases 1A–1B and 6A–6B: [Authority and scope](authority-and-scope/cases.json).
+- Cases 2A–2B: [Outcome completion](outcome-completion/cases.json).
+- Cases 3A–3B: [Adoption and simplicity](adoption-and-simplicity/cases.json).
+- Cases 4A–4B: [Repair and verification](repair-and-verification/cases.json).
+- Cases 5A–5B: [Research evidence](research-evidence/cases.json).
+- B1–B5: [Verified code work](verified-code-work/cases.json).
+- Revised older rules: [Outcome completion](outcome-completion/cases.json),
+  [adoption and simplicity](adoption-and-simplicity/cases.json) and
+  [authority and scope](authority-and-scope/cases.json).
 - [Proposed real-work case and evidence for review](REAL-WORK-REVIEW.md).
 - [Case IDs, commands and technical details](CORE.md).
 

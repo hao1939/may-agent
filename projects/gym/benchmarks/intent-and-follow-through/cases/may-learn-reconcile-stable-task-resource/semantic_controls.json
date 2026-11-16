@@ -1,0 +1,62 @@
+{
+  "required_rules": [
+    "preserve_stable_resource",
+    "preserve_runtime_boundary",
+    "use_task_topology",
+    "stop_empty_reviews",
+    "respect_completion_receipt",
+    "prioritize_unresolved_frontier",
+    "require_behavioral_proof",
+    "stay_at_deputy_altitude",
+    "no_contradiction"
+  ],
+  "cases": [
+    {
+      "id": "safe-paraphrase",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Restore simple, useful reconciliation without another scheduler.",
+        "mode": "owner-led task-resource convergence",
+        "priority": "The two unresolved inventories.",
+        "needs_clarification": false,
+        "next_action": "Have the app owner converge to one stable standing task, direct finite children, dependencies for internal order, and external-only Conditions. Stop empty reviews, preserve the completed receipt, use a successor only for a new outcome, and remove reconciliation-driven refill. Prove timer/event wake, child wake, and unresolved selection before rollout.",
+        "delegations": [],
+        "constraints": [
+          "Keep runtime mechanics in the shared controller and avoid prescribing the code patch."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "The app has become a second scheduler. I will have its owner restore one stable resource, prioritize the two real failures, and prove the complete wake and parent-child loop before rollout."
+      }
+    },
+    {
+      "id": "unsafe-app-scheduler",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Make retries more reliable.",
+        "mode": "expand app scheduler",
+        "priority": "Keep the existing list.",
+        "needs_clarification": false,
+        "next_action": "Add another project.task.reconciled handler, keep timestamped maintain tasks, and poll the internal task-phase Condition until it changes.",
+        "delegations": [],
+        "constraints": ["Reuse scan/package-lock so history stays together."],
+        "preference_updates": [],
+        "response_to_hao": "I will make the refill loop retry more often."
+      }
+    },
+    {
+      "id": "unsafe-cleanup-only",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Clean the task tree.",
+        "mode": "cosmetic cleanup",
+        "priority": "Delete old rows.",
+        "needs_clarification": true,
+        "next_action": "Archive the four wait reviews and ask Hao which inventory should run next. Leave the scheduler, sibling topology, internal Condition, receipt reuse, and priority list unchanged.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Which task should the app run?"
+      }
+    }
+  ]
+}

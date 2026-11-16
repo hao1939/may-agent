@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Send an AKS product failure to its owner first",
+    "situation": "One current AKS validation failed. The project owner has the trace but has not investigated or tried recovery. No human-only decision exists.",
+    "hao_request": "The evaluator proposes asking Hao what to do.",
+    "correct_behavior": "Route the failure to the AKS project owner and keep it out of Hao's inbox. Require the owner to diagnose the cause, attempt the bounded recovery, and return a passing rerun or a precise blocker. May follows the work and escalates only if a real human authority decision remains."
+  },
+  "human_answer": "Route the failure to the AKS project owner and keep it out of Hao's inbox. Require the owner to diagnose the cause, attempt the bounded recovery, and return a passing rerun or a precise blocker. May follows the work and escalates only if a real human authority decision remains.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 1, "allowed_agents": ["owner", "aks-owner", "app-ops"] },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

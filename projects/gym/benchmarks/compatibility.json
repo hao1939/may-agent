@@ -1,0 +1,24 @@
+{
+  "may-alignment": "intent-and-follow-through",
+  "may-app-outcome-management": "outcome-coordination",
+  "core-behavior": "verified-code-work",
+  "may-judgment": [
+    "adoption-and-simplicity",
+    "authority-and-scope"
+  ],
+  "alex-judgment": [
+    "outcome-completion",
+    "adoption-and-simplicity"
+  ],
+  "bob-judgment": [
+    "adoption-and-simplicity",
+    "authority-and-scope"
+  ],
+  "tech-lead-judgment": [
+    "repair-and-verification",
+    "authority-and-scope"
+  ],
+  "scout-judgment": [
+    "research-evidence"
+  ]
+}

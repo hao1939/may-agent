@@ -1,0 +1,25 @@
+{
+  "required_rules": ["plain_by_default", "useful_first", "precise_when_needed", "compact", "no_contradiction"],
+  "cases": [
+    {
+      "id": "plain-status",
+      "expected": "pass",
+      "decision": {
+        "state": "converged",
+        "summary": "The latest master validation passed.",
+        "response": "Yes. Build 176033245 passed every required master-validation slice, so no action is needed.",
+        "evidence": ["build:176033245:passed"]
+      }
+    },
+    {
+      "id": "opaque-status",
+      "expected": "fail",
+      "decision": {
+        "state": "converged",
+        "summary": "Terminal reconciler admission is green.",
+        "response": "The 176033245 execution topology emitted a terminal all-slices acceptance envelope; the caller has no pending remediation obligation.",
+        "evidence": ["build:176033245:passed"]
+      }
+    }
+  ]
+}

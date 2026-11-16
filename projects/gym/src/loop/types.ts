@@ -3,7 +3,11 @@ import type { ComparisonObjective } from "./objective";
 export type MachineVerdict = "pass" | "fail" | "invalid";
 export type HumanVerdict = "pass" | "fail";
 export type ReviewClassification =
-  "may_behavior" | "ground_truth" | "scorer" | "harness" | "unclear";
+  | "may_behavior"
+  | "ground_truth"
+  | "scorer"
+  | "harness"
+  | "unclear";
 export type ReviewReasonCode =
   | "intent_misread"
   | "preference_missed"
@@ -55,6 +59,12 @@ export interface BenchmarkSuite {
   evaluation_kind?: EvaluationKind;
   name: string;
   version: number;
+  /** Evaluation question; new benchmark definitions are organized by purpose. */
+  purpose?: string;
+  /** Canonical membership in benchmark-local directory/inline cases. */
+  case_ids?: string[];
+  core_cases?: string[];
+  /** Normalized compatibility spelling for runner APIs and historical manifests. */
   scenarios: string[];
   /** Reviewable core selection; other cases remain extended regression material. */
   core_scenarios?: string[];
@@ -214,8 +224,16 @@ export interface HumanAdjudication {
 }
 
 export interface DurationComparison {
-  baseline: { measured_trials: number; total_trials: number; total_ms: number | null };
-  candidate: { measured_trials: number; total_trials: number; total_ms: number | null };
+  baseline: {
+    measured_trials: number;
+    total_trials: number;
+    total_ms: number | null;
+  };
+  candidate: {
+    measured_trials: number;
+    total_trials: number;
+    total_ms: number | null;
+  };
   /** Null when coverage is incomplete or baseline duration is zero. */
   reduction_percent: number | null;
 }

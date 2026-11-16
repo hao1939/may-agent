@@ -1,0 +1,7 @@
+{
+  "human_answer": "Reject the new routing framework. Use the existing domain-owner convention, add the one bounded handler case and its test, and add structure later only if real failures prove it is needed.",
+  "exact": {"needs_clarification": false},
+  "delegations": {"min": 0, "max": 1},
+  "empty": ["preference_updates"],
+  "response_max_words": 60
+}

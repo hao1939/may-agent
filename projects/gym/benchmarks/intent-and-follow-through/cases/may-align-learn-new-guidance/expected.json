@@ -1,0 +1,20 @@
+{
+  "human_answer": "Record this as standing guidance: dispatch only when expected value is clear, and retire the utilization-driven 'keep agents busy' heuristic. This does not remove autonomy; discovery still needs a concrete, worthwhile question. No dispatch is needed now.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_groups": {
+    "mode": [["acknowledge", "learn", "preference", "guidance"]],
+    "priority": [["expected value", "dispatch"]],
+    "understood_intent": [["standing", "going forward"], ["guidance", "decision rule", "preference"]],
+    "next_action": [["record", "update", "retire"], ["guidance", "preference", "heuristic"]],
+    "preference_updates": [["expected value"], ["utilization", "keep agents busy", "idle"]],
+    "constraints": [["autonomy", "discovery"], ["expected value"], ["utilization", "keep agents busy"]],
+    "response_to_hao": [["expected value"], ["standing", "going forward", "retired"]]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "response_max_words": 45
+}

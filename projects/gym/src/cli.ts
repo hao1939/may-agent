@@ -1,13 +1,13 @@
 /**
- * Gym CLI — runtime-neutral scenario runner with pluggable adapters.
+ * Gym CLI — runtime-neutral case runner with pluggable adapters.
  *
- * Runs an agent against a gym scenario and scores the result.
+ * Runs an agent against an owned case and scores the result.
  * Uses adapters to invoke different agent runtimes (may-agent, claude-code, generic).
  *
  * Usage:
- *   bun run scenario:run -- <scenario> [options]
- *   bun run scenario:list -- [--tier <t>] [--category <c>] [--tag <t>]
- *   bun run scenario:run -- --run-all [--tier <t>] [--category <c>] [--tag <t>]
+ *   bun run case:run -- <case> [options]
+ *   bun run case:list -- [--tier <t>] [--category <c>] [--tag <t>]
+ *   bun run case:run -- --run-all [--tier <t>] [--category <c>] [--tag <t>]
  *
  * Options:
  *   --adapter <name>      may-agent (default), claude-code, generic
@@ -17,8 +17,8 @@
  *   --tier <tier>         Filter: smoke, standard, full
  *   --category <cat>      Filter: bug-fixing, integrity, judgment, etc.
  *   --tag <tag>           Filter: ability, behavior, workflow
- *   --list                List matching scenarios
- *   --run-all             Run all matching scenarios sequentially
+ *   --list                List matching cases
+ *   --run-all             Run matching cases as separate diagnostic executions
  */
 
 import { execSync, spawnSync } from "node:child_process";
@@ -53,6 +53,13 @@ import {
 import type { ScenarioMeta, WorkflowScenarioEntry } from "./scenarios/types";
 import { formatValidation, validateScenarioCorpus } from "./scenarios/validate";
 import { executeLoopCli } from "./loop/cli";
+import {
+  findOwnedCase,
+  listOwnedCases,
+  legacyCasesDirectory,
+  resolveCaseDirectory,
+} from "./cases/catalog";
+import { validateCaseCatalog } from "./cases/validate";
 import { loadSuite, materializeScenarioOrInlineCase } from "./loop/store";
 import type { BenchmarkSuite, InlineBenchmarkCase } from "./loop/types";
 import {
@@ -159,7 +166,11 @@ interface Adapter {
 }
 
 function terminalExecution(results: AdapterResult[]): AdapterResult {
-  const last = results.at(-1) ?? { sessionId: "", status: "unknown", sessionPath: "" };
+  const last = results.at(-1) ?? {
+    sessionId: "",
+    status: "unknown",
+    sessionPath: "",
+  };
   return results.find((result) => result.status !== "success") ?? last;
 }
 
@@ -194,12 +205,35 @@ const APP_AGENTS_ROOT = resolve(
       ? DEFAULT_APP_AGENTS_ROOT
       : join(LEGACY_APP_ROOT, "agents")),
 );
-const SCENARIOS_DIR = resolve(
-  process.env["GYM_SCENARIOS_DIR"] ||
-    (existsSync(join(REPO_ROOT, "projects/gym/scenarios"))
-      ? join(REPO_ROOT, "projects/gym/scenarios")
-      : join(LEGACY_APP_ROOT, "gym/scenarios")),
+const CONTROLLED_CASES = Boolean(
+  process.env["GYM_CASES_DIR"] || process.env["GYM_SCENARIOS_DIR"],
 );
+const SCENARIOS_DIR = resolve(
+  process.env["GYM_CASES_DIR"] ||
+    process.env["GYM_SCENARIOS_DIR"] ||
+    legacyCasesDirectory(GYM_PROJECT_ROOT),
+);
+function caseDirectory(id: string): string {
+  return CONTROLLED_CASES
+    ? join(SCENARIOS_DIR, id)
+    : (resolveCaseDirectory(GYM_PROJECT_ROOT, id, true) ??
+        join(SCENARIOS_DIR, id));
+}
+function availableCases(includeLegacy = false): string[] {
+  if (CONTROLLED_CASES) return listScenarios(SCENARIOS_DIR);
+  return [
+    ...new Set([
+      ...listOwnedCases(GYM_PROJECT_ROOT).map((item) => item.id),
+      ...(includeLegacy ? listScenarios(SCENARIOS_DIR) : []),
+    ]),
+  ].sort();
+}
+function caseMetadata(id: string): ScenarioMeta | null {
+  const inline = findInlineBenchmarkCase(id);
+  return inline
+    ? inlineCaseToMeta(inline.inlineCase, inline.suite)
+    : loadScenarioMeta(caseDirectory(id));
+}
 const CANDIDATE_SNAPSHOT = process.env["GYM_CANDIDATE_SNAPSHOT"]
   ? resolve(process.env["GYM_CANDIDATE_SNAPSHOT"])
   : null;
@@ -320,7 +354,9 @@ function createMayAgentAdapter(): Adapter {
             sessionId: cliRun.report.executionId,
             status: cliRun.status === "done" ? "success" : cliRun.status,
             sessionPath: cliRun.report.steps[0]?.transcriptPath || traceDir,
-            ...(cliRun.report.error?.message ? { error: cliRun.report.error.message } : {}),
+            ...(cliRun.report.error?.message
+              ? { error: cliRun.report.error.message }
+              : {}),
           };
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
@@ -339,8 +375,11 @@ function createMayAgentAdapter(): Adapter {
       // can read("agents/<name>/heartbeat.md") etc. from its CWD.
       // This is a sandbox copy — writes go to the temp dir, not prod.
       const agentDir =
-        resolveGymAgentDir(agentsRoot, agentName, join(REPO_ROOT, "projects")) ??
-        join(agentsRoot, agentName);
+        resolveGymAgentDir(
+          agentsRoot,
+          agentName,
+          join(REPO_ROOT, "projects"),
+        ) ?? join(agentsRoot, agentName);
       const agentDest = join(workDir, "agents", agentName);
       if (existsSync(agentDir) && !existsSync(agentDest)) {
         mkdirSync(join(workDir, "agents"), { recursive: true });
@@ -657,7 +696,11 @@ function scoreScenario(
   inlineEvaluator?: string,
 ): ScoreResult {
   const criteriaPath = join(scenarioDir, "success_criteria.js");
-  if (!existsSync(criteriaPath)) {
+  if (
+    inlineEvaluator ||
+    existsSync(join(scenarioDir, ".gym-evaluator.json")) ||
+    !existsSync(criteriaPath)
+  ) {
     const expectedPath = join(scenarioDir, "expected.json");
     if (existsSync(expectedPath)) {
       const expectedJson = JSON.parse(readFileSync(expectedPath, "utf8")) as {
@@ -669,35 +712,38 @@ function scoreScenario(
         !Array.isArray(expectedJson.expected);
       const bindingPath = join(scenarioDir, ".gym-evaluator.json");
       const binding = existsSync(bindingPath)
-        ? JSON.parse(readFileSync(bindingPath, "utf8")) as { path: string }
+        ? (JSON.parse(readFileSync(bindingPath, "utf8")) as { path: string })
         : null;
-      const evaluatorRoot = process.env["GYM_SCENARIOS_DIR"]
+      const evaluatorRoot = CONTROLLED_CASES
         ? join(SCENARIOS_DIR, "..", "harness")
         : GYM_PROJECT_ROOT;
-      const evaluatorScript = inlineEvaluator ?? (binding
-        ? resolve(scenarioDir, binding.path)
-        : isTaskResultContract
-        ? join(
-            evaluatorRoot,
-            "benchmarks",
-            "may-app-outcome-management",
-            "score-task-result.cjs",
-          )
-        : join(
-            evaluatorRoot,
-            "benchmarks",
-            "may-alignment",
-            "score-decision.cjs",
-          ));
-      const fnName = isTaskResultContract
-        ? "scoreTaskResult"
-        : "scoreDecision";
+      const evaluatorScript =
+        inlineEvaluator ??
+        (binding
+          ? resolve(scenarioDir, binding.path)
+          : isTaskResultContract
+            ? join(
+                evaluatorRoot,
+                "benchmarks",
+                "outcome-coordination",
+                "score-task-result.cjs",
+              )
+            : join(
+                evaluatorRoot,
+                "benchmarks",
+                "intent-and-follow-through",
+                "score-decision.cjs",
+              ));
+      const fnName = isTaskResultContract ? "scoreTaskResult" : "scoreDecision";
       const loaded = require(evaluatorScript) as Record<
         string,
         (work: string, scen: string) => ScoreResult
       >;
       const evaluate = loaded["scoreScenario"] ?? loaded[fnName];
-      if (typeof evaluate !== "function") throw new Error(`Evaluator has no scoreScenario or ${fnName} export: ${evaluatorScript}`);
+      if (typeof evaluate !== "function")
+        throw new Error(
+          `Evaluator has no scoreScenario or ${fnName} export: ${evaluatorScript}`,
+        );
       return evaluate(workDir, scenarioDir);
     }
   }
@@ -997,9 +1043,10 @@ async function judgeScenarioMeaning(
           session_id: result.sessionId,
           session_path: result.sessionPath,
           execution_manifest: result.executionManifest,
-          provider_error: result.status === "done"
-            ? null
-            : result.error || `judge execution ended with ${result.status}`,
+          provider_error:
+            result.status === "done"
+              ? null
+              : result.error || `judge execution ended with ${result.status}`,
         };
         writeFileSync(
           join(judgeRoot, "execution.json"),
@@ -1013,9 +1060,10 @@ async function judgeScenarioMeaning(
             session_path: result.sessionPath,
             execution_manifest: result.executionManifest,
             provider_error: execution.provider_error ?? undefined,
-            error: result.structuredResult === undefined
-              ? "judge produced no structured report"
-              : `judge execution ended with ${result.status}`,
+            error:
+              result.structuredResult === undefined
+                ? "judge produced no structured report"
+                : `judge execution ended with ${result.status}`,
           };
         }
         writeFileSync(
@@ -1031,7 +1079,8 @@ async function judgeScenarioMeaning(
           report: result.structuredResult,
         };
       } catch (error) {
-        const providerError = error instanceof Error ? error.message : String(error);
+        const providerError =
+          error instanceof Error ? error.message : String(error);
         const execution = {
           agent: agentName,
           model: null,
@@ -1149,7 +1198,7 @@ async function runMultiSessionScenario(
   timeoutOverride?: number,
   commonSensePath?: string,
 ): Promise<RunResult> {
-  const scenarioDir = join(SCENARIOS_DIR, scenarioName);
+  const scenarioDir = caseDirectory(scenarioName);
   const meta = loadScenarioMeta(scenarioDir)!;
   const sessions = meta.sessions!;
   const globalTimeout = timeoutOverride ?? meta.timeout ?? 5;
@@ -1193,7 +1242,7 @@ async function runMultiSessionScenario(
   };
 
   console.error(
-    `Multi-session scenario: ${scenarioName} (${sessions.length} sessions)`,
+    `Multi-session case: ${scenarioName} (${sessions.length} sessions)`,
   );
 
   for (let i = 0; i < sessions.length; i++) {
@@ -1498,8 +1547,11 @@ async function runScenario(
   timeoutOverride?: number,
   commonSensePath?: string,
 ): Promise<RunResult> {
+  const ownedCase = CONTROLLED_CASES
+    ? undefined
+    : findOwnedCase(GYM_PROJECT_ROOT, scenarioName);
   const inlineFound = findInlineBenchmarkCase(scenarioName);
-  const directScenarioDir = join(SCENARIOS_DIR, scenarioName);
+  const directScenarioDir = caseDirectory(scenarioName);
   const meta: ScenarioMeta | null = inlineFound
     ? inlineCaseToMeta(inlineFound.inlineCase, inlineFound.suite)
     : loadScenarioMeta(directScenarioDir);
@@ -1515,17 +1567,26 @@ async function runScenario(
       cliWorkflowOverride = {
         agent: owner,
         workflow: wfName,
-        ...(meta?.workflow_entry?.input !== undefined ? { input: meta.workflow_entry.input } : {}),
+        ...(meta?.workflow_entry?.input !== undefined
+          ? { input: meta.workflow_entry.input }
+          : {}),
       };
     }
   }
 
   const effectiveWorkflowEntry = cliWorkflowOverride ?? meta?.workflow_entry;
   const requestedAgent =
-    agentName || effectiveWorkflowEntry?.agent || meta?.agent_type || "tech-lead";
+    agentName ||
+    effectiveWorkflowEntry?.agent ||
+    meta?.agent_type ||
+    "tech-lead";
   const resolvedAgentName =
     !agentName &&
-    !resolveGymAgentDir(APP_AGENTS_ROOT, requestedAgent, join(REPO_ROOT, "projects"))
+    !resolveGymAgentDir(
+      APP_AGENTS_ROOT,
+      requestedAgent,
+      join(REPO_ROOT, "projects"),
+    )
       ? "tech-lead"
       : requestedAgent;
 
@@ -1542,8 +1603,12 @@ async function runScenario(
   }
 
   if (!inlineFound) {
-    // Validate single-session scenario: requires task.md, environment, and either success_criteria.js or expected.json
-    for (const required of ["task.md", "environment"]) {
+    // Active owned cases may omit an empty environment; materialization creates
+    // it. Keep the retained legacy direct-run validation contract unchanged.
+    for (const required of [
+      "task.md",
+      ...(!ownedCase ? ["environment"] : []),
+    ]) {
       if (!existsSync(join(directScenarioDir, required))) {
         throw new Error(`Missing: ${join(directScenarioDir, required)}`);
       }
@@ -1570,15 +1635,15 @@ async function runScenario(
   mkdirSync(stateDir, { recursive: true });
 
   let scenarioDir = directScenarioDir;
-  if (inlineFound) {
-    scenarioDir = join(gymRoot, "inputs", "scenarios", scenarioName);
-    const sourceBenchmarkDir = join(GYM_PROJECT_ROOT, "benchmarks", inlineFound.benchmark);
+  if (ownedCase) {
+    scenarioDir = join(gymRoot, "inputs", "cases", scenarioName);
     materializeScenarioOrInlineCase({
       scenario: scenarioName,
-      suite: inlineFound.suite,
-      sourceBenchmarkDir,
-      evaluatorOwner: inlineFound.suite.evaluator
-        ? dirname(resolve(sourceBenchmarkDir, inlineFound.suite.evaluator)) : null,
+      suite: ownedCase.suite,
+      sourceBenchmarkDir: ownedCase.benchmarkDir,
+      evaluatorOwner: ownedCase.suite.evaluator
+        ? dirname(resolve(ownedCase.benchmarkDir, ownedCase.suite.evaluator))
+        : null,
       destination: scenarioDir,
     });
   }
@@ -1609,11 +1674,14 @@ async function runScenario(
   const displayTarget = effectiveWorkflowEntry
     ? `${effectiveWorkflowEntry.agent || resolvedAgentName}/${effectiveWorkflowEntry.workflow}`
     : `${resolvedAgentName}${labFork ? ` (lab: ${labFork})` : ""}`;
-  console.error(`── Running Gym Scenario: ${scenarioName} ──`);
+  console.error(
+    `── Running Gym Case: ${scenarioName}${!ownedCase && !CONTROLLED_CASES ? " (archived, diagnostic only)" : ""} ──`,
+  );
   console.error(`  Target:   ${displayTarget}`);
   if (brief.description) console.error(`  Tests:    ${brief.description}`);
   if (brief.taskPreview) console.error(`  Task:     ${brief.taskPreview}`);
-  if (brief.expectedBehavior) console.error(`  Expected: ${brief.expectedBehavior}`);
+  if (brief.expectedBehavior)
+    console.error(`  Expected: ${brief.expectedBehavior}`);
 
   let lastResult: AdapterResult = {
     sessionId: "",
@@ -1624,7 +1692,9 @@ async function runScenario(
 
   if (effectiveWorkflowEntry) {
     if (!adapter.runWorkflow) {
-      throw new Error(`Adapter '${adapter.name}' does not support workflow_entry scenarios`);
+      throw new Error(
+        `Adapter '${adapter.name}' does not support workflow_entry cases`,
+      );
     }
     const taskFile = join(gymRoot, "task.md");
     const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
@@ -1635,7 +1705,12 @@ async function runScenario(
     console.error(
       `  Running workflow ${effectiveWorkflowEntry.agent || resolvedAgentName}/${effectiveWorkflowEntry.workflow} on ${scenarioName}...`,
     );
-    lastResult = await adapter.runWorkflow(effectiveWorkflowEntry, taskFile, workDir, timeout);
+    lastResult = await adapter.runWorkflow(
+      effectiveWorkflowEntry,
+      taskFile,
+      workDir,
+      timeout,
+    );
   } else if (isWorkflow) {
     // Multi-phase: split task.md on "---"
     const fullTask = readFileSync(join(scenarioDir, "task.md"), "utf-8");
@@ -1724,7 +1799,11 @@ async function runScenario(
               .filter(Boolean);
 
             // Write to the sandbox agents dir (where AGENTS_ROOT points)
-            const sandboxAgentDir = join(gymRoot, "agents-sandbox", resolvedAgentName);
+            const sandboxAgentDir = join(
+              gymRoot,
+              "agents-sandbox",
+              resolvedAgentName,
+            );
             // Also write to workDir agents dir (for success_criteria to inspect)
             const workAgentDir = join(workDir, "agents", resolvedAgentName);
 
@@ -1824,10 +1903,14 @@ async function runScenario(
   }
 
   // Mechanical score
-  const score = scoreScenario(scenarioDir, workDir, meta?.output_contract,
-    inlineFound?.suite.evaluator
-      ? resolve(GYM_PROJECT_ROOT, "benchmarks", inlineFound.benchmark, inlineFound.suite.evaluator)
-      : undefined);
+  const score = scoreScenario(
+    scenarioDir,
+    workDir,
+    meta?.output_contract,
+    ownedCase?.suite.evaluator
+      ? resolve(ownedCase.benchmarkDir, ownedCase.suite.evaluator)
+      : undefined,
+  );
 
   // LLM judge (if rubric exists)
   const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
@@ -1869,8 +1952,14 @@ async function runScenario(
       : APP_AGENTS_ROOT;
   const frameworkSha = computeFrameworkSha();
   const model = readAgentModel(effectiveAgentsRoot, resolvedAgentName);
-  const prompt = observedPrompt(lastResult, effectiveAgentsRoot, resolvedAgentName);
-  const execution = terminalExecution(isWorkflow ? allPhaseResults : [lastResult]);
+  const prompt = observedPrompt(
+    lastResult,
+    effectiveAgentsRoot,
+    resolvedAgentName,
+  );
+  const execution = terminalExecution(
+    isWorkflow ? allPhaseResults : [lastResult],
+  );
   const transcript = loadTranscript(join(workDir, "transcript.jsonl"));
 
   return {
@@ -1932,7 +2021,8 @@ function computeFrameworkSha(): string | null {
  * Read the `model` field from an agent's agent.json.
  */
 function readAgentModel(agentsRoot: string, agentName: string): string | null {
-  if (agentName === "codex" || agentName === "claude") return `${agentName}-cli`;
+  if (agentName === "codex" || agentName === "claude")
+    return `${agentName}-cli`;
   try {
     const agentDir =
       resolveGymAgentDir(agentsRoot, agentName, join(REPO_ROOT, "projects")) ??
@@ -2068,7 +2158,8 @@ function inlineCaseToMeta(
     name: inlineCase.id,
     evaluation_kind: inlineCase.evaluation_kind ?? suite.evaluation_kind,
     description: inlineCase.description,
-    categories: inlineCase.categories ?? suite.defaults?.categories ?? ["judgment"],
+    categories: inlineCase.categories ??
+      suite.defaults?.categories ?? ["judgment"],
     tags: inlineCase.tags ?? suite.defaults?.tags ?? ["inline-case"],
     tier,
     timeout: inlineCase.timeout ?? suite.defaults?.timeout ?? 5,
@@ -2087,22 +2178,15 @@ function findInlineBenchmarkCase(scenarioName: string): {
 } | null {
   // Controlled runs must execute only their materialized inputs. Never replace
   // a retained case with a similarly named case from the live catalog.
-  if (process.env["GYM_SCENARIOS_DIR"]) return null;
-  const benchmarksRoot = join(GYM_PROJECT_ROOT, "benchmarks");
-  if (!existsSync(benchmarksRoot)) return null;
-  for (const entry of readdirSync(benchmarksRoot, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    try {
-      const { suite } = loadSuite(entry.name);
-      const found = suite.cases?.find((c) => c.id === scenarioName);
-      if (found) {
-        return { benchmark: entry.name, suite, inlineCase: found };
+  if (CONTROLLED_CASES) return null;
+  const found = findOwnedCase(GYM_PROJECT_ROOT, scenarioName);
+  return found?.inlineCase
+    ? {
+        benchmark: found.benchmark,
+        suite: found.suite,
+        inlineCase: found.inlineCase,
       }
-    } catch {
-      // Ignore benchmarks without suite.json
-    }
-  }
-  return null;
+    : null;
 }
 
 function readScenarioBrief(scenarioName: string): {
@@ -2137,7 +2221,7 @@ function readScenarioBrief(scenarioName: string): {
       return { description, taskPreview, expectedBehavior };
     }
 
-    const scenarioDir = join(SCENARIOS_DIR, scenarioName);
+    const scenarioDir = caseDirectory(scenarioName);
     const meta = loadScenarioMeta(scenarioDir);
     const description = meta?.description?.trim() || undefined;
     let taskPreview: string | undefined;
@@ -2149,7 +2233,8 @@ function readScenarioBrief(scenarioName: string): {
         ?.replace(/\s+/g, " ")
         .trim();
       if (firstPara) {
-        taskPreview = firstPara.length > 140 ? `${firstPara.slice(0, 137)}...` : firstPara;
+        taskPreview =
+          firstPara.length > 140 ? `${firstPara.slice(0, 137)}...` : firstPara;
       }
     }
     let expectedBehavior: string | undefined;
@@ -2180,8 +2265,10 @@ function readObservedArtifactPreview(workDir: string): string | undefined {
         summary?: string;
         response?: string;
       };
-      if (parsed.response) return `[${parsed.state ?? "result"}] response: "${parsed.response}"`;
-      if (parsed.summary) return `[${parsed.state ?? "result"}] summary: "${parsed.summary}"`;
+      if (parsed.response)
+        return `[${parsed.state ?? "result"}] response: "${parsed.response}"`;
+      if (parsed.summary)
+        return `[${parsed.state ?? "result"}] summary: "${parsed.summary}"`;
     }
     const alignPath = join(workDir, "alignment-decision.json");
     if (existsSync(alignPath)) {
@@ -2189,7 +2276,8 @@ function readObservedArtifactPreview(workDir: string): string | undefined {
         next_action?: string;
         response_to_hao?: string;
       };
-      if (parsed.response_to_hao) return `response_to_hao: "${parsed.response_to_hao}"`;
+      if (parsed.response_to_hao)
+        return `response_to_hao: "${parsed.response_to_hao}"`;
       if (parsed.next_action) return `next_action: "${parsed.next_action}"`;
     }
     const wfRunPath = join(workDir, "workflow-run.json");
@@ -2197,7 +2285,8 @@ function readObservedArtifactPreview(workDir: string): string | undefined {
       const parsed = JSON.parse(readFileSync(wfRunPath, "utf-8")) as {
         result?: { summary?: string };
       };
-      if (parsed.result?.summary) return `workflow summary: "${parsed.result.summary}"`;
+      if (parsed.result?.summary)
+        return `workflow summary: "${parsed.result.summary}"`;
     }
   } catch {
     // Ignore preview read errors
@@ -2207,9 +2296,9 @@ function readObservedArtifactPreview(workDir: string): string | undefined {
 
 export function formatScenarioInfo(scenarioName: string): string {
   const inlineFound = findInlineBenchmarkCase(scenarioName);
-  const scenarioDir = join(SCENARIOS_DIR, scenarioName);
+  const scenarioDir = caseDirectory(scenarioName);
   if (!inlineFound && !existsSync(scenarioDir)) {
-    throw new Error(`Scenario not found: ${scenarioName}`);
+    throw new Error(`Case not found: ${scenarioName}`);
   }
   const meta: ScenarioMeta | null = inlineFound
     ? inlineCaseToMeta(inlineFound.inlineCase, inlineFound.suite)
@@ -2219,7 +2308,8 @@ export function formatScenarioInfo(scenarioName: string): string {
     ? `${meta.workflow_entry.agent || meta.agent_type}/${meta.workflow_entry.workflow}`
     : meta?.agent_type || "tech-lead";
   const lines: string[] = [
-    `── Scenario: ${scenarioName} ────────────────────────────────────────────`,
+    `── Case: ${scenarioName} ────────────────────────────────────────────`,
+    `  Benchmark:       ${findOwnedCase(GYM_PROJECT_ROOT, scenarioName)?.benchmark ?? "archived legacy case (diagnostic only)"}`,
     `  What it tests:   ${brief.description ?? "(no description)"}`,
     `  Default target:  ${defaultTarget} (tier: ${meta?.tier ?? "unknown"}, timeout: ${meta?.timeout ?? 5}m)`,
     `  Categories/Tags: ${(meta?.categories ?? []).join(", ")} | tags: ${(meta?.tags ?? []).join(", ")}`,
@@ -2230,7 +2320,10 @@ export function formatScenarioInfo(scenarioName: string): string {
   const stateText =
     inlineFound?.inlineCase.state ??
     (existsSync(join(scenarioDir, "environment", "system-state.md"))
-      ? readFileSync(join(scenarioDir, "environment", "system-state.md"), "utf-8")
+      ? readFileSync(
+          join(scenarioDir, "environment", "system-state.md"),
+          "utf-8",
+        )
       : undefined);
   if (stateText) {
     const statePreview = stateText
@@ -2239,15 +2332,19 @@ export function formatScenarioInfo(scenarioName: string): string {
       .slice(0, 6)
       .map((l) => `    ${l}`)
       .join("\n");
-    lines.push("  Scenario context:");
+    lines.push("  Case context:");
     lines.push(statePreview);
   }
   if (brief.expectedBehavior) {
     lines.push(`  Expected answer: ${brief.expectedBehavior}`);
   }
   lines.push("");
-  lines.push(`  Run command:     bun run gym run ${scenarioName} --target ${defaultTarget}`);
-  lines.push("────────────────────────────────────────────────────────────────────────");
+  lines.push(
+    `  Run command:     bun run gym run ${scenarioName} --target ${defaultTarget}`,
+  );
+  lines.push(
+    "────────────────────────────────────────────────────────────────────────",
+  );
   return lines.join("\n");
 }
 
@@ -2269,8 +2366,8 @@ export function formatScenarioSummary(result: RunResult): string {
 
   const lines: string[] = [
     "",
-    `── Gym Scenario Result: ${statusIcon} ──────────────────────────────────────`,
-    `  Scenario:   ${result.scenario}`,
+    `── Gym Case Result: ${statusIcon} ──────────────────────────────────────`,
+    `  Case:       ${result.scenario}`,
   ];
   if (brief.description) {
     lines.push(`  Tests:      ${brief.description}`);
@@ -2295,9 +2392,14 @@ export function formatScenarioSummary(result: RunResult): string {
   if (result.semantic_evaluation) {
     const sem = result.semantic_evaluation;
     const judgeDetails = sem.judges
-      .map((j) => `${j.agent}=${j.candidate_verdict}${j.controls_passed ? "" : " (controls failed)"}`)
+      .map(
+        (j) =>
+          `${j.agent}=${j.candidate_verdict}${j.controls_passed ? "" : " (controls failed)"}`,
+      )
       .join(", ");
-    lines.push(`  Semantic:   ${sem.status.toUpperCase()} (${judgeDetails || sem.summary})`);
+    lines.push(
+      `  Semantic:   ${sem.status.toUpperCase()} (${judgeDetails || sem.summary})`,
+    );
   }
 
   lines.push("");
@@ -2321,7 +2423,9 @@ export function formatScenarioSummary(result: RunResult): string {
     lines.push("");
     lines.push(`  Artifacts:  ${result.work_dir}`);
   }
-  lines.push("────────────────────────────────────────────────────────────────────────");
+  lines.push(
+    "────────────────────────────────────────────────────────────────────────",
+  );
   return lines.join("\n");
 }
 
@@ -2337,6 +2441,7 @@ function parseArgs(argv: string[]) {
     category: "",
     tag: "",
     list: false,
+    legacy: false,
     runAll: false,
     json: false,
   };
@@ -2377,6 +2482,13 @@ function parseArgs(argv: string[]) {
       case "--tag":
         args.tag = argv[++i]!;
         break;
+      case "--case":
+      case "--scenario":
+        args.scenario = argv[++i]!;
+        break;
+      case "--legacy":
+        args.legacy = true;
+        break;
       case "--list":
         args.list = true;
         break;
@@ -2412,9 +2524,15 @@ async function main() {
     return;
   }
   if (firstSubcommand === "validate") {
-    const result = validateScenarioCorpus(SCENARIOS_DIR);
-    console.log(formatValidation(result, process.argv.includes("--verbose")));
-    if (!result.passed) process.exitCode = 1;
+    if (process.argv.includes("--legacy")) {
+      const result = validateScenarioCorpus(SCENARIOS_DIR);
+      console.log(formatValidation(result, process.argv.includes("--verbose")));
+      if (!result.passed) process.exitCode = 1;
+    } else {
+      const result = validateCaseCatalog(GYM_PROJECT_ROOT);
+      console.log(JSON.stringify(result, null, 2));
+      if (!result.passed) process.exitCode = 1;
+    }
     return;
   }
   if (
@@ -2424,7 +2542,7 @@ async function main() {
   ) {
     const targetScenario = process.argv[3];
     if (!targetScenario) {
-      console.error("Usage: bun run gym show <scenario>");
+      console.error("Usage: bun run gym show <case>");
       process.exit(1);
     }
     console.log(formatScenarioInfo(targetScenario));
@@ -2437,12 +2555,21 @@ async function main() {
       process.exit(1);
     }
     const baselineDir = resolve(baselineArg);
-    console.error(`── Running Alex Improvement Diagnosis on: ${baselineDir} ──`);
+    console.error(
+      `── Running Alex Improvement Diagnosis on: ${baselineDir} ──`,
+    );
     const wfState = mkdtempSync(join(tmpdir(), "gym-diagnose-"));
     try {
       const wfRun = await run({
         agentName: "alex",
-        workflowDir: join(REPO_ROOT, "projects", "alex.app", "agents", "alex", "workflows"),
+        workflowDir: join(
+          REPO_ROOT,
+          "projects",
+          "alex.app",
+          "agents",
+          "alex",
+          "workflows",
+        ),
         workflowName: "diagnose-improvement",
         input: { baselineDir },
         cwd: wfState,
@@ -2464,19 +2591,27 @@ async function main() {
         | { output?: Record<string, any> }
         | Record<string, any>
         | undefined;
-      const proposal = (rawOut?.output ?? rawOut) as Record<string, any> | undefined;
+      const proposal = (rawOut?.output ?? rawOut) as
+        | Record<string, any>
+        | undefined;
       if (!proposal || wfRun.status !== "done") {
-        console.error(`Diagnosis failed: ${wfRun.report.result?.type === "done" ? wfRun.report.result.summary : wfRun.report.result?.reason ?? wfRun.status}`);
+        console.error(
+          `Diagnosis failed: ${wfRun.report.result?.type === "done" ? wfRun.report.result.summary : (wfRun.report.result?.reason ?? wfRun.status)}`,
+        );
         process.exit(1);
       }
       if (process.argv.includes("--json")) {
         console.log(JSON.stringify(proposal, null, 2));
       } else {
         console.log("");
-        console.log("── Alex Improvement Plan (via `alex/diagnose-improvement` -> `gym`) ──────────");
+        console.log(
+          "── Alex Improvement Plan (via `alex/diagnose-improvement` -> `gym`) ──────────",
+        );
         console.log(`  Target:            ${proposal.target}`);
         console.log(`  Recommended Stage: ${proposal.recommended_stage}`);
-        console.log(`  Detected Regimes:  ${(proposal.detected_regimes || []).join(", ")}`);
+        console.log(
+          `  Detected Regimes:  ${(proposal.detected_regimes || []).join(", ")}`,
+        );
         console.log(`  Root Cause:        ${proposal.root_cause_summary}`);
         console.log("");
         console.log("  Proposed Changes:");
@@ -2489,7 +2624,9 @@ async function main() {
             `  Verification Plan: benchmark=${proposal.verification_plan.benchmark}, objective=${proposal.verification_plan.objective}, scenarios=${(proposal.verification_plan.scenarios || []).join(", ")}`,
           );
         }
-        console.log("────────────────────────────────────────────────────────────────────────────");
+        console.log(
+          "────────────────────────────────────────────────────────────────────────────",
+        );
       }
     } finally {
       rmSync(wfState, { recursive: true, force: true });
@@ -2502,9 +2639,9 @@ async function main() {
   // ── List mode ────────────────────────────────────────────────────
   if (args.list) {
     const isDirectSubcommandList = process.argv[2] === "list";
-    const scenarios = listScenarios(SCENARIOS_DIR);
+    const scenarios = availableCases(args.legacy);
     for (const name of scenarios) {
-      const meta = loadScenarioMeta(join(SCENARIOS_DIR, name));
+      const meta = caseMetadata(name);
       if (!matchesFilters(meta, args.tier, args.category, args.tag)) continue;
 
       if (meta) {
@@ -2516,7 +2653,7 @@ async function main() {
         const desc = meta.description ? ` — ${meta.description}` : "";
         if (isDirectSubcommandList) {
           console.log(
-            `${name.padEnd(42)} target=${defaultTarget.padEnd(22)} tier=${tier.padEnd(8)}${desc}`,
+            `${name.padEnd(42)} benchmark=${findOwnedCase(GYM_PROJECT_ROOT, name)?.benchmark ?? "legacy"} target-hint=${defaultTarget.padEnd(22)} tier=${tier.padEnd(8)}${desc}`,
           );
         } else {
           console.log(
@@ -2532,17 +2669,19 @@ async function main() {
 
   // ── Run-all mode ─────────────────────────────────────────────────
   if (args.runAll) {
-    const scenarios = listScenarios(SCENARIOS_DIR).filter((name) => {
-      const meta = loadScenarioMeta(join(SCENARIOS_DIR, name));
+    const scenarios = availableCases(args.legacy).filter((name) => {
+      const meta = caseMetadata(name);
       return matchesFilters(meta, args.tier, args.category, args.tag);
     });
 
     if (scenarios.length === 0) {
-      console.error("No scenarios match filters.");
+      console.error("No cases match filters.");
       process.exit(1);
     }
 
-    console.error(`Running ${scenarios.length} scenarios...`);
+    console.error(
+      `Running ${scenarios.length} separate diagnostic case executions...`,
+    );
     const results: RunResult[] = [];
     let passCount = 0;
 
@@ -2610,19 +2749,27 @@ async function main() {
   // ── Single scenario ──────────────────────────────────────────────
   if (!args.scenario) {
     console.error("Usage:");
-    console.error("  bun run gym list [--tier <t>] [--category <c>] [--tag <t>]");
-    console.error("  bun run gym show <scenario>");
-    console.error("  bun run gym run <scenario> [--target <agent|owner/workflow>] [--lab <candidate>] [--timeout 3m]");
-    console.error("  bun run gym test [--benchmark <suite>] [--core | --scenario <id>] [--target <agent|owner/workflow>] [--trials 3] [--objective quality|duration_ms|total_tokens|ops]");
-    console.error("  bun run gym verify --baseline <run> --candidate <lab-fork> [--trials 3]");
+    console.error(
+      "  bun run gym list [--tier <t>] [--category <c>] [--tag <t>]",
+    );
+    console.error("  bun run gym show <case>");
+    console.error(
+      "  bun run gym run <case> [--target <agent|owner/workflow>] [--lab <candidate>] [--timeout 3m] (diagnostic)",
+    );
+    console.error(
+      "  bun run gym test [--benchmark <purpose>] [--core | --case <id>] --target <agent|owner/workflow> [--trials 3] [--objective quality|duration_ms|total_tokens|ops]",
+    );
+    console.error(
+      "  bun run gym verify --baseline <run> --candidate <lab-fork> [--trials 3]",
+    );
     console.error("  bun run gym report <run>");
     console.error("  bun run gym rescore <run>");
     console.error("  bun run gym validate [--verbose]");
     console.error("");
     console.error("Adapters: may-agent (default), claude-code, generic");
     console.error("");
-    console.error("Available scenarios:");
-    for (const name of listScenarios(SCENARIOS_DIR)) {
+    console.error("Available cases:");
+    for (const name of availableCases()) {
       console.error(`  ${name}`);
     }
     process.exit(1);
@@ -2659,7 +2806,7 @@ async function main() {
       checks: [{ name: "scenario", passed: false, detail: message }],
       judgments: [],
       summary: message.includes("Missing:")
-        ? `scenario not found or incomplete: ${message}`
+        ? `case not found or incomplete: ${message}`
         : message,
       agent_status: "error",
       duration_ms: 0,

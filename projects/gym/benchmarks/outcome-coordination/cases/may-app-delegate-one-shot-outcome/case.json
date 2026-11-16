@@ -1,0 +1,30 @@
+{
+  "name": "may-app-delegate-one-shot-outcome",
+  "description": "Request one durable domain outcome from its accountable App through a typed dependency.",
+  "categories": [
+    "app-outcome-management",
+    "dependency"
+  ],
+  "tags": [
+    "may-agent",
+    "dependency",
+    "development"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "output_contract": "task-agent-result",
+  "learning": {
+    "unit": "app-outcome-management",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "system.manage-through-apps",
+      "communication.plain-language"
+    ],
+    "criticality": "critical",
+    "variant_family": "durable-outcome"
+  },
+  "evaluation_kind": "judgment"
+}

@@ -3,12 +3,13 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { casePath } from "./support/case-path";
 
 const require = createRequire(import.meta.url);
 const { scoreDecision } = require(
   resolve(
     import.meta.dirname,
-    "../benchmarks/may-alignment/score-decision.cjs",
+    "../benchmarks/intent-and-follow-through/score-decision.cjs",
   ),
 ) as {
   scoreDecision: (
@@ -248,7 +249,7 @@ describe("system deputy learning scorer", () => {
         );
         const result = scoreDecision(
           workDir,
-          resolve(import.meta.dirname, "../scenarios", scenario),
+          casePath(scenario),
         );
         expect(result.passed, result.summary).toBe(true);
       } finally {

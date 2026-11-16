@@ -1,0 +1,31 @@
+{
+  "name": "may-app-route-host-operation",
+  "description": "Route a proven Runtime candidate through the general Host Operations contract without pre-executing its work.",
+  "categories": [
+    "app-outcome-management",
+    "dependency"
+  ],
+  "tags": [
+    "may-agent",
+    "owner-selection",
+    "typed-input",
+    "efficiency"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "output_contract": "task-agent-result",
+  "learning": {
+    "unit": "app-outcome-management",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "system.manage-through-apps",
+      "communication.plain-language"
+    ],
+    "criticality": "critical",
+    "variant_family": "host-operation"
+  },
+  "evaluation_kind": "judgment"
+}

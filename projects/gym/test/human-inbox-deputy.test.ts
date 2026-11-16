@@ -33,14 +33,14 @@ function json(path: string): any {
 describe("human inbox deputy cases in consolidated may-alignment benchmark", () => {
   test("keeps every approved truth registered in may-alignment", () => {
     const suite = json(
-      resolve(gymRoot, "benchmarks/may-alignment/suite.json"),
+      resolve(gymRoot, "benchmarks/intent-and-follow-through/suite.json"),
     );
     const labels = json(
-      resolve(gymRoot, "benchmarks/may-alignment/labels.json"),
+      resolve(gymRoot, "benchmarks/intent-and-follow-through/labels.json"),
     ).labels;
 
     for (const s of [...scenarios, ...releaseScenarios]) {
-      expect(suite.scenarios).toContain(s);
+      expect(suite.case_ids).toContain(s);
     }
     expect(
       scenarios.every((scenario) => labels[scenario]?.status === "approved"),
@@ -55,7 +55,7 @@ describe("human inbox deputy cases in consolidated may-alignment benchmark", () 
 
   for (const scenario of scenarios) {
     test(`${scenario} has calibrated semantic controls and a plain review case`, () => {
-      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
+      const scenarioDir = resolve(gymRoot, "benchmarks/intent-and-follow-through/cases", scenario);
       const controls = validateSemanticControlSet(
         json(resolve(scenarioDir, "semantic_controls.json")),
       );
@@ -75,7 +75,7 @@ describe("human inbox deputy cases in consolidated may-alignment benchmark", () 
 
   for (const scenario of releaseScenarios) {
     test(`${scenario} has held-back semantic controls and a plain review case`, () => {
-      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
+      const scenarioDir = resolve(gymRoot, "benchmarks/intent-and-follow-through/cases", scenario);
       const controls = validateSemanticControlSet(
         json(resolve(scenarioDir, "semantic_controls.json")),
       );

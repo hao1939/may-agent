@@ -1,0 +1,26 @@
+{
+  "human_answer": "Fix the reply-delivery regression today. Ask Tech Lead to find and verify the root cause asynchronously; defer the memory graph until the current system is stable and the new idea has evidence.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": ["choose", "today"],
+    "next_action": ["reply", "root"],
+    "constraints": ["memory", "evidence"]
+  },
+  "contains_groups": {
+    "mode": [["stabilize", "incident", "triage"]],
+    "priority": [["reply", "delivery", "regression"]]
+  },
+  "excludes_all": {
+    "next_action": ["build memory", "implement memory", "ship memory"]
+  },
+  "delegations": {
+    "min": 1,
+    "max": 1,
+    "allowed_agents": ["tech-lead"],
+    "async_required": true
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 55
+}

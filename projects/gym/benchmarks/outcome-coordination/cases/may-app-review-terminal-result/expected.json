@@ -1,0 +1,4 @@
+{
+  "approval_case": { "situation": "The exact child App returned root cause, repair, and terminal passing proof.", "hao_request": "Restore AKS master validation.", "correct_behavior": "Complete the May request with the verified root cause, repair, and passing build; say no action is required." },
+  "expected": { "state": "converged", "contains": { "response": ["176034001"] } }
+}

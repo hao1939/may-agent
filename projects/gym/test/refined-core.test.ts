@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { admitTaskReconcileResult } from "@may-agent/sdk";
-import { loadLabels, loadSuite, materializeScenarioOrInlineCase, selectCoreScenarios } from "../src/loop/store";
+import { benchmarkDir, loadLabels, loadSuite, materializeScenarioOrInlineCase, selectCoreScenarios } from "../src/loop/store";
 import { assertFrozenInputs, runLoop, verifyLoop } from "../src/loop/run";
 import { machineVerdict } from "../src/loop/store";
 import { rescoreRun } from "../src/loop/rescore";
@@ -12,14 +12,14 @@ import { validateSemanticControlSet } from "../src/scoring/semantic-judge";
 import { withTempDir, withTempDirAsync } from "./support/temp-dir";
 
 const project = resolve(import.meta.dirname, "..");
-const roles = ["may", "alex", "bob", "tech-lead", "scout"];
-const { scoreDecision } = require("../benchmarks/may-alignment/score-decision.cjs");
+const purposes = ["authority-and-scope", "outcome-completion", "adoption-and-simplicity", "repair-and-verification", "research-evidence"];
+const { scoreDecision } = require("../benchmarks/intent-and-follow-through/score-decision.cjs");
 const command = "node --test test/duration.test.cjs";
 
 function materialize(benchmark: string, id: string, destination: string) {
   const { suite } = loadSuite(benchmark);
   materializeScenarioOrInlineCase({ scenario: id, suite,
-    sourceBenchmarkDir: join(project, "benchmarks", benchmark), evaluatorOwner: null, destination });
+    sourceBenchmarkDir: benchmarkDir(benchmark), evaluatorOwner: null, destination });
   return suite;
 }
 function finish(work: string, state: "converged" | "incomplete") {
@@ -56,15 +56,15 @@ function repair(work: string, id: string) {
 }
 
 describe("refined core judgment selection", () => {
-  test("six expectation pairs span the five current roles and remain draft", () => {
+  test("six expectation pairs have one purpose owner and remain draft", () => {
     let coreCases = 0;
-    for (const role of roles) {
-      const benchmark = `${role}-judgment`, { suite } = loadSuite(benchmark);
+    for (const benchmark of purposes) {
+      const { suite } = loadSuite(benchmark);
       const labels = loadLabels(benchmark, suite).catalog!;
       expect(suite.evaluation_kind).toBe("judgment");
-      expect(suite.version).toBe(["bob", "scout"].includes(role) ? 4 : 3);
+      expect(suite.version).toBe(1);
       const selected = selectCoreScenarios(suite);
-      expect(selected.length).toBe(role === "tech-lead" ? 4 : 2);
+      expect(selected.length).toBe(benchmark === "authority-and-scope" ? 4 : 2);
       coreCases += selected.length;
       for (const id of selected) {
         const c = suite.cases!.find((item) => item.id === id)!;
@@ -82,13 +82,13 @@ describe("refined core judgment selection", () => {
     }
     expect(coreCases).toBe(12);
     // Older cases were not deleted or silently promoted into core.
-    expect(loadSuite("may-judgment").suite.scenarios).toContain("may-judge-route-unconsumed-detector-to-owner");
-    expect(loadSuite("alex-judgment").suite.scenarios).toContain("alex-judge-cap-review-loop-at-three-rounds");
+    expect(loadSuite("adoption-and-simplicity").suite.scenarios).toContain("may-judge-route-unconsumed-detector-to-owner");
+    expect(loadSuite("outcome-completion").suite.scenarios).toContain("alex-judge-cap-review-loop-at-three-rounds");
   });
 
   test("calibration positives satisfy structural checks; wording remains advisory", () => withTempDir((root) => {
-    for (const role of roles) {
-      const benchmark = `${role}-judgment`, { suite } = loadSuite(benchmark);
+    for (const benchmark of purposes) {
+      const { suite } = loadSuite(benchmark);
       for (const id of selectCoreScenarios(suite)) {
         const scenario = join(root, id), work = join(root, `${id}-work`);
         materialize(benchmark, id, scenario);
@@ -106,7 +106,7 @@ describe("refined core judgment selection", () => {
 
   test("a request for missing material is not a hard clarification failure", () => withTempDir((root) => {
     const scenario = join(root, "scenario"), work = join(root, "work");
-    materialize("scout-judgment", "scout-judge-honest-partial-coverage-on-blocked-source", scenario);
+    materialize("research-evidence", "scout-judge-honest-partial-coverage-on-blocked-source", scenario);
     cpSync(join(scenario, "environment"), work, { recursive: true });
     const result = { state: "incomplete", facts: ["The assigned full-body verification remains incomplete."],
       summary: "Only the abstract was read; Section 4 and Appendix B remain unread because full-text retrieval returned HTTP 403.",
@@ -121,9 +121,9 @@ describe("refined core judgment selection", () => {
     expect(scored.checks.find((check: any) => check.name === "exact:needs_clarification")?.gate).toBe(true);
   }));
 
-  test("draft role word targets are advisory, not hidden acceptance limits", () => withTempDir((root) => {
-    for (const role of roles) {
-      const benchmark = `${role}-judgment`, { suite } = loadSuite(benchmark);
+  test("draft case word targets are advisory, not hidden acceptance limits", () => withTempDir((root) => {
+    for (const benchmark of purposes) {
+      const { suite } = loadSuite(benchmark);
       for (const id of selectCoreScenarios(suite)) {
         const scenario = join(root, id), work = join(root, `${id}-work`);
         materialize(benchmark, id, scenario);
@@ -143,11 +143,11 @@ describe("refined core judgment selection", () => {
 
   test("the older ownership case follows the assigned agent, not the App default", () => withTempDir((root) => {
     const id = "bob-judge-app-owner-workflow-ownership", scenario = join(root, "scenario"), work = join(root, "work");
-    const suite = materialize("bob-judgment", id, scenario);
+    const suite = materialize("authority-and-scope", id, scenario);
     cpSync(join(scenario, "environment"), work, { recursive: true });
     const c = suite.cases!.find((item) => item.id === id)!;
     expect(selectCoreScenarios(suite)).not.toContain(id);
-    expect(loadLabels("bob-judgment", suite).catalog!.labels[id]?.status).toBe("draft");
+    expect(loadLabels("authority-and-scope", suite).catalog!.labels[id]?.status).toBe("draft");
     expect(c.expected?.contains_groups).toBeUndefined();
     const controls = validateSemanticControlSet(c.semantic_controls);
     for (const control of controls.cases) expect(admitTaskReconcileResult(control.decision).ok).toBe(true);
@@ -165,8 +165,8 @@ describe("refined core judgment selection", () => {
 
   test("invalid core requests fail before creating or executing a run", () => withTempDir((root) => {
     for (const args of [
-      ["test", "--benchmark", "may-alignment", "--core"],
-      ["test", "--benchmark", "tech-lead-judgment", "--core", "--scenario", "any-case"],
+      ["test", "--benchmark", "intent-and-follow-through", "--core", "--target", "may"],
+      ["test", "--benchmark", "repair-and-verification", "--core", "--case", "any-case", "--target", "tech-lead"],
       ["verify", "--core", "--baseline", "not-a-run", "--candidate", "not-a-candidate"],
     ]) {
       const child = Bun.spawnSync(["bun", join(project, "src/loop/cli.ts"), ...args], {
@@ -185,13 +185,13 @@ describe("refined core judgment selection", () => {
         checks:[{name:'synthetic-contract-fixture',passed:true}],prompt_hash:'fixture',framework_sha:'fixture',model:'fixture'}));
     `);
     chmodSync(mock, 0o755);
-    const child = Bun.spawnSync(["bun", join(project, "src/loop/cli.ts"), "test", "--benchmark", "tech-lead-judgment", "--core", "--trials", "1"], {
+    const child = Bun.spawnSync(["bun", join(project, "src/loop/cli.ts"), "test", "--benchmark", "authority-and-scope", "--core", "--target", "tech-lead", "--trials", "1"], {
       cwd: project, env: { ...process.env, GYM_STATE_DIR: join(root, "state"), BUN_EXEC_PATH: mock }, stdout: "pipe", stderr: "pipe",
     });
     expect(child.exitCode).toBe(0);
     const dir = child.stdout.toString().trim();
     const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8"));
-    expect(manifest.scenarios).toEqual(selectCoreScenarios(loadSuite("tech-lead-judgment").suite));
+    expect(manifest.scenarios).toEqual(selectCoreScenarios(loadSuite("authority-and-scope").suite));
     expect(manifest.agent).toBe("tech-lead");
     expect(manifest.trials).toHaveLength(4);
     expect(manifest.trials.every((trial: any) => trial.label_status === "draft")).toBe(true);
@@ -200,8 +200,8 @@ describe("refined core judgment selection", () => {
 
 describe("core behavior outcome scoring", () => {
   test("all five behavior definitions remain draft without named approval", () => {
-    const { suite } = loadSuite("core-behavior"), labels = loadLabels("core-behavior", suite).catalog!;
-    expect(suite.version).toBe(3);
+    const { suite } = loadSuite("verified-code-work"), labels = loadLabels("verified-code-work", suite).catalog!;
+    expect(suite.version).toBe(1);
     expect(suite.scenarios).toHaveLength(5);
     for (const id of suite.scenarios) {
       expect(labels.labels[id]?.status).toBe("draft");
@@ -210,7 +210,7 @@ describe("core behavior outcome scoring", () => {
     }
   });
 
-  for (const id of loadSuite("core-behavior").suite.scenarios) {
+  for (const id of loadSuite("verified-code-work").suite.scenarios) {
     test(`actual outcome: ${id}`, () => withTempDir((root) => {
       const scenario = join(root, "scenario"), work = join(root, "work");
       materialize("core-behavior", id, scenario);
@@ -433,6 +433,14 @@ describe("core behavior outcome scoring", () => {
       rmSync(join(root, "work"), { recursive: true, force: true });
       expect(() => assertFrozenInputs(created.runDir, created.manifest)).not.toThrow();
       expect(rescoreRun(created.runDir).trials[0]?.rescored_verdict).toBe("pass");
+      // Synthetic historical-name control; never edit a retained real run.
+      const manifestPath = join(created.runDir, "manifest.json");
+      const originalManifest = readFileSync(manifestPath, "utf8");
+      const legacyManifest = JSON.stringify({ ...created.manifest, benchmark: "core-behavior" });
+      writeFileSync(manifestPath, legacyManifest);
+      expect(rescoreRun(created.runDir).trials[0]?.rescored_verdict).toBe("pass");
+      expect(readFileSync(manifestPath, "utf8")).toBe(legacyManifest);
+      writeFileSync(manifestPath, originalManifest);
       await expect(verifyLoop({ baseline: created.runDir, candidate: "must-not-execute" })).rejects.toThrow("Verification requires approved labels");
     } finally {
       if (oldState === undefined) delete process.env.GYM_STATE_DIR; else process.env.GYM_STATE_DIR = oldState;

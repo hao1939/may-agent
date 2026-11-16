@@ -1,0 +1,38 @@
+{
+  "approval_case": {
+    "situation": "Hao asks for a durable improvement to May's requirement-understanding and owner-selection behavior.",
+    "hao_request": "May should help me deeply understand a rough requirement, clarify only what materially matters, and turn it into a solid Task for the right App when durable work is needed. Improve and verify that behavior.",
+    "correct_behavior": "Make the behavior requirement actionable, then depend once on Gym because Gym owns reviewed May evidence and behavior improvement. Leave curriculum, scenarios, evaluation, and training mechanics to Gym."
+  },
+  "expected": {
+    "state": "waiting",
+    "appId": "gym",
+    "inputKind": "improve-may",
+    "contains": {
+      "dependency.input.data": [
+        "rough requirement",
+        "material",
+        "outcome",
+        "scope",
+        "constraints",
+        "proof",
+        "authority",
+        "accountable",
+        "approved",
+        "regression"
+      ]
+    },
+    "absentPaths": [
+      "dependency.input.data.taskId",
+      "dependency.input.data.workflow",
+      "dependency.input.data.schedule",
+      "dependency.input.data.sessionId",
+      "dependency.input.data.retryPolicy"
+    ],
+    "forbiddenText": [
+      "i created a benchmark",
+      "i added scenarios",
+      "the behavior is fixed"
+    ]
+  }
+}

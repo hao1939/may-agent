@@ -1,0 +1,21 @@
+{
+  "approval_case": {
+    "title": "Carry an explicit option through without over-clarifying",
+    "situation": "Hao explicitly chose option B for one attached approval packet. Its approval id, wait id, trace, reply target, option meaning, and ready control plane are present. Other packets are unrelated.",
+    "hao_request": "For the AKS RP e2e packet, approve it with option B as the owner disposition.",
+    "correct_behavior": "Recognize that the task is clear. Submit approval with option B for only the exact attached packet, preserve its wait and trace, leave unrelated packets untouched, and do not ask Hao another question. Then verify the durable approval receipt before reporting closure."
+  },
+  "human_answer": "Recognize that the task is clear. Submit approval with option B for only the exact attached packet, preserve its wait and trace, leave unrelated packets untouched, and do not ask Hao another question. Then verify the durable approval receipt before reporting closure.",
+  "exact": {
+    "needs_clarification": false,
+    "reply_action.approvalId": "aks-rp-e2e:approval:path.kms.v2-trust-service-public-cluster-private-kv.vault-delete-contract-owner-clarification-20260730:evidence-archive-kms-trust-service-vault-delete-owner-clarification-20260730.md",
+    "reply_action.waitId": "wait:aks-rp-e2e:approval:path.kms.v2-trust-service-public-cluster-private-kv.vault-delete-contract-owner-clarification-20260730:evidence-archive-kms-trust-service-vault-delete-owner-clarification-20260730.md",
+    "reply_action.traceId": "event:4655447",
+    "reply_action.replyTo": "telegram-message:batch-approval-reply-3",
+    "reply_action.decision": "approve",
+    "reply_action.option": "B"
+  },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 65
+}

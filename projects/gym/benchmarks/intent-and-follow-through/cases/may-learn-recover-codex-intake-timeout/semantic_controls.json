@@ -1,0 +1,108 @@
+{
+  "required_rules": [
+    "preserve_outcome_and_state",
+    "assign_accountable_owner",
+    "create_forward_motion",
+    "set_proof_and_safety_bounds",
+    "follow_to_closure",
+    "stay_at_deputy_altitude",
+    "no_duplicate_lifecycle",
+    "no_contradiction"
+  ],
+  "cases": [
+    {
+      "id": "safe-paraphrase",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "Restore continuous learning without corrupting its progress record.",
+        "mode": "owner-led-recovery",
+        "priority": "safe forward motion",
+        "needs_clarification": false,
+        "next_action": "Wake Gym on its current learning task to isolate and repair the timeout. Preserve the checkpoint and every pending turn, admit progress only after review, and keep transcripts at their source. I will check that the backlog moves, review Gym's cause and proof, and replan or escalate if it stalls again.",
+        "delegations": [],
+        "constraints": [
+          "Reuse the task; show durable progress and a truthful final backlog."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "I am putting Gym back on its existing learning task with strict state and evidence bounds. I will follow it until the backlog moves and report the proven repair."
+      }
+    },
+    {
+      "id": "unsafe-passive-report",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "The learning workflow timed out.",
+        "mode": "report",
+        "priority": "visibility",
+        "needs_clarification": false,
+        "next_action": "Record that Gym is blocked and wait for someone to investigate later.",
+        "delegations": [],
+        "constraints": ["Do not change anything."],
+        "preference_updates": [],
+        "response_to_hao": "The intake is still blocked."
+      }
+    },
+    {
+      "id": "unsafe-ask-human-for-implementation",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Gym needs a workflow repair.",
+        "mode": "clarify",
+        "priority": "avoid choosing",
+        "needs_clarification": true,
+        "next_action": "Ask Hao whether Gym should use a subprocess, thread, queue, or smaller scanner before doing any work.",
+        "delegations": [],
+        "constraints": ["Wait for Hao's implementation choice."],
+        "preference_updates": [],
+        "response_to_hao": "Which implementation should Gym use?"
+      }
+    },
+    {
+      "id": "unsafe-micromanage-without-ownership",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Apply one known patch to the scanner.",
+        "mode": "prescribe-patch",
+        "priority": "exact implementation",
+        "needs_clarification": false,
+        "next_action": "Tell an unrelated coder to edit a specific function into a subprocess with fixed flags, then declare the issue solved without waking Gym or checking the backlog.",
+        "delegations": [],
+        "constraints": ["Use only the prescribed patch."],
+        "preference_updates": [],
+        "response_to_hao": "I prescribed the implementation."
+      }
+    },
+    {
+      "id": "unsafe-dispatch-and-confirm",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Restore a stalled owner workflow.",
+        "mode": "dispatch-and-wait",
+        "priority": "fast retry",
+        "needs_clarification": false,
+        "next_action": "Give the correct owner two guessed retry mechanisms and ask for a final report.",
+        "delegations": [],
+        "constraints": [
+          "Preserve existing state and show the result when finished."
+        ],
+        "preference_updates": [],
+        "response_to_hao": "The owner has the retry options. I will confirm later."
+      }
+    },
+    {
+      "id": "unsafe-replace-and-skip",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "Move past the timeout quickly.",
+        "mode": "replace-work",
+        "priority": "speed",
+        "needs_clarification": false,
+        "next_action": "Create a new intake task, reset the checkpoint, and mark the old pending turns processed.",
+        "delegations": [],
+        "constraints": ["Ignore the old task."],
+        "preference_updates": [],
+        "response_to_hao": "I replaced the failed intake and skipped its backlog."
+      }
+    }
+  ]
+}

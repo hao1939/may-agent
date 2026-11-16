@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Keep ordinary repair in the owner task",
+    "situation": "A release owner meets a merge conflict and one failing test inside its normal scope. A proposal would close the attempt, create repair tasks, block independent documentation, and ask Hao which repair to run first.",
+    "hao_request": "Unblock it and keep the release moving.",
+    "correct_behavior": "Reject closing the attempt, duplicate repair tasks, and the question to Hao. Keep the same app owner and release task responsible for repairing the merge conflict, fixing the test, and verifying the declared outcome. Keep the independent documentation child moving. Use a wait or escalation only if repair discovers an exact external fact or real authority boundary. Review the result and replan until the release reaches terminal proof."
+  },
+  "human_answer": "Reject closing the attempt, duplicate repair tasks, and the question to Hao. Keep the same app owner and release task responsible for repairing the merge conflict, fixing the test, and verifying the declared outcome. Keep the independent documentation child moving. Use a wait or escalation only if repair discovers an exact external fact or real authority boundary. Review the result and replan until the release reaches terminal proof.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 95
+}

@@ -1,0 +1,18 @@
+{
+  "approval_case": {
+    "title": "Give the invoice outcome to its app",
+    "situation": "The invoice app owns reconciliation and exposes a project-intent surface. Its latest visible evidence is stale and no terminal result has been delivered. The app owns all internal routing and work organization.",
+    "hao_request": "The invoice app looks stuck. Check it and get it moving.",
+    "correct_behavior": "Send invoices.app the desired outcome—restore invoice reconciliation—together with the stale-evidence fact and the required terminal invoice proof. Let the app interpret the request and choose its task, owner, workflow, session, and wake path. Follow the durable receipt through the owner disposition to the terminal invoice result; accepted delivery, movement, or a reported blocker is not completion. If proof remains missing or progress stalls, return that gap to the app owner for replanning. Do not ask Hao to choose or expose app internals."
+  },
+  "human_answer": "Send invoices.app the desired outcome—restore invoice reconciliation—together with the stale-evidence fact and the required terminal invoice proof. Let the app interpret the request and choose its task, owner, workflow, session, and wake path. Follow the durable receipt through the owner disposition to the terminal invoice result; accepted delivery, movement, or a reported blocker is not completion. If proof remains missing or progress stalls, return that gap to the app owner for replanning. Do not ask Hao to choose or expose app internals.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

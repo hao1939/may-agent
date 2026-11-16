@@ -4,7 +4,7 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-const scenariosRoot = resolve(import.meta.dir, "..", "scenarios");
+const scenariosRoot = resolve(import.meta.dir, "../archive/pre-purpose-layout/scenarios");
 
 function runScorer(scenarioName: string, workDir: string): { status: number | null; body: any } {
   const scorerPath = join(scenariosRoot, scenarioName, "success_criteria.js");

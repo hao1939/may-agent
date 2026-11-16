@@ -1,0 +1,74 @@
+{
+  "human_answer": "Use the real submit_proposal mechanism for the actionable proposal review. Do not fake submission with console.log/event-shaped JSON, and remember that a read-only review control must inspect only and emit nothing.",
+  "exact": {
+    "needs_clarification": false
+  },
+  "contains_all": {
+    "understood_intent": [
+      "proposal",
+      "submit"
+    ],
+    "next_action": [
+      "submit_proposal",
+      "durable"
+    ],
+    "constraints": [
+      "read-only",
+      "not emit"
+    ]
+  },
+  "contains_groups": {
+    "mode": [
+      [
+        "submit",
+        "review",
+        "proposal"
+      ]
+    ],
+    "priority": [
+      [
+        "durable",
+        "real"
+      ],
+      [
+        "submission",
+        "submit_proposal"
+      ]
+    ],
+    "response_to_hao": [
+      [
+        "submit_proposal"
+      ],
+      [
+        "console.log",
+        "event-shaped",
+        "fake"
+      ],
+      [
+        "read-only",
+        "no emit",
+        "emit nothing"
+      ]
+    ]
+  },
+  "excludes_all": {
+    "next_action": [
+      "print json",
+      "emit event-shaped",
+      "keep searching"
+    ],
+    "response_to_hao": [
+      "I will console.log",
+      "I'll console.log",
+      "keep searching"
+    ]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 0
+  },
+  "empty": [
+    "preference_updates"
+  ],
+  "response_max_words": 80
+}

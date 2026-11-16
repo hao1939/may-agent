@@ -9,9 +9,14 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+import { listOwnedCases, resolveBenchmarkName } from "../cases/catalog";
 import { join, resolve } from "node:path";
 
-import { parseComparisonObjective, sameComparisonObjective, type ComparisonObjective } from "./objective";
+import {
+  parseComparisonObjective,
+  sameComparisonObjective,
+  type ComparisonObjective,
+} from "./objective";
 import { compareRuns, renderReport } from "./report";
 import {
   applyEvaluatorScenarioOverlay,
@@ -115,7 +120,8 @@ export const executeScenario: ScenarioExecutor = async (input) => {
     cwd: gymRoot,
     env: {
       ...process.env,
-      GYM_SCENARIOS_DIR: input.scenariosDir,
+      GYM_CASES_DIR: input.scenariosDir,
+      GYM_SCENARIOS_DIR: input.scenariosDir, // Older frozen CLI compatibility.
       GYM_SEMANTIC_JUDGES_ROOT: join(
         input.scenariosDir,
         "..",
@@ -163,7 +169,9 @@ function candidateEvidence(
       join(gymRoot, "../../agents"),
   );
   const projectsRoot = join(gymRoot, "..");
-  const baseOwner = agentName?.includes("/") ? agentName.slice(0, agentName.indexOf("/")).trim() : agentName;
+  const baseOwner = agentName?.includes("/")
+    ? agentName.slice(0, agentName.indexOf("/")).trim()
+    : agentName;
   const candidatePath =
     resolveGymLabDir(agentsRoot, candidate, baseOwner, projectsRoot) ??
     join(agentsRoot, ".lab", candidate);
@@ -197,7 +205,9 @@ function retainedCandidateSnapshot(
   const snapshot = manifest.source.candidate_snapshot;
   const expected = manifest.proof.candidate_fingerprint;
   if (!snapshot || !expected) {
-    throw new Error("Candidate snapshot proof is missing; refusing live fallback");
+    throw new Error(
+      "Candidate snapshot proof is missing; refusing live fallback",
+    );
   }
   const snapshotPath = resolve(runDir, snapshot);
   if (!existsSync(snapshotPath)) {
@@ -230,7 +240,9 @@ function refreshObservedProvenance(manifest: LoopRunManifest): void {
 }
 
 function currentHarnessFingerprint(): string {
-  const temporaryHarnessRoot = mkdtempSync(join(tmpdir(), "gym-harness-check-"));
+  const temporaryHarnessRoot = mkdtempSync(
+    join(tmpdir(), "gym-harness-check-"),
+  );
   try {
     snapshotHarness(temporaryHarnessRoot);
     return fingerprintTree(temporaryHarnessRoot);
@@ -243,22 +255,38 @@ export function assertFrozenInputs(
   baselineDir: string,
   baseline: LoopRunManifest,
 ): void {
-  const objectiveFile = join(baselineDir, "inputs", "comparison-objective.json");
+  const objectiveFile = join(
+    baselineDir,
+    "inputs",
+    "comparison-objective.json",
+  );
   const frozenObjective = existsSync(objectiveFile)
     ? JSON.parse(readFileSync(objectiveFile, "utf8"))
     : undefined;
-  if (!sameComparisonObjective(baseline.comparison_objective, frozenObjective)) {
-    throw new Error("Frozen comparison objective changed; create a new baseline");
+  if (
+    !sameComparisonObjective(baseline.comparison_objective, frozenObjective)
+  ) {
+    throw new Error(
+      "Frozen comparison objective changed; create a new baseline",
+    );
   }
-  if (fingerprintTree(join(baselineDir, "inputs")) !== baseline.proof.input_fingerprint) {
+  if (
+    fingerprintTree(join(baselineDir, "inputs")) !==
+    baseline.proof.input_fingerprint
+  ) {
     throw new Error("Frozen input fingerprint changed; create a new baseline");
   }
   const { suite, path: suitePath } = loadSuite(
     baseline.benchmark,
     baseline.scenarios,
   );
-  if (!baseline.source.harness_snapshot || !baseline.proof.harness_fingerprint) {
-    throw new Error("Historical baseline has no frozen Gym harness; create a new baseline");
+  if (
+    !baseline.source.harness_snapshot ||
+    !baseline.proof.harness_fingerprint
+  ) {
+    throw new Error(
+      "Historical baseline has no frozen Gym harness; create a new baseline",
+    );
   }
   const frozenHarness = join(baselineDir, baseline.source.harness_snapshot);
   if (
@@ -301,15 +329,20 @@ export function assertFrozenInputs(
     );
   }
   const frozenUsesSemanticJudges = baseline.scenarios.some((scenario) =>
-    existsSync(join(
-      baselineDir,
-      baseline.source.scenarios_snapshot,
-      safeName(scenario),
-      "semantic_criteria.md",
-    )),
+    existsSync(
+      join(
+        baselineDir,
+        baseline.source.scenarios_snapshot,
+        safeName(scenario),
+        "semantic_criteria.md",
+      ),
+    ),
   );
   if (frozenUsesSemanticJudges) {
-    if (!baseline.source.semantic_judges_snapshot || !baseline.proof.semantic_judge_fingerprint) {
+    if (
+      !baseline.source.semantic_judges_snapshot ||
+      !baseline.proof.semantic_judge_fingerprint
+    ) {
       throw new Error(
         "Historical semantic baseline has no frozen judge definitions; create a new baseline",
       );
@@ -324,9 +357,18 @@ export function assertFrozenInputs(
       baselineDir,
       baseline.source.semantic_judges_snapshot,
     );
-    assertSameFile(currentSemanticJudges, frozenSemanticJudges, "semantic judge definitions");
-    if (fingerprintTree(frozenSemanticJudges) !== baseline.proof.semantic_judge_fingerprint) {
-      throw new Error("Frozen semantic judge proof is inconsistent; create a new baseline");
+    assertSameFile(
+      currentSemanticJudges,
+      frozenSemanticJudges,
+      "semantic judge definitions",
+    );
+    if (
+      fingerprintTree(frozenSemanticJudges) !==
+      baseline.proof.semantic_judge_fingerprint
+    ) {
+      throw new Error(
+        "Frozen semantic judge proof is inconsistent; create a new baseline",
+      );
     }
   }
   const evaluatorSource = suite.evaluator
@@ -359,8 +401,12 @@ export function assertFrozenInputs(
 }
 
 function assertRetainedInputs(runDir: string, manifest: LoopRunManifest): void {
-  if (fingerprintTree(join(runDir, "inputs")) !== manifest.proof.input_fingerprint) {
-    throw new Error("Retained benchmark inputs changed during execution; run remains incomplete");
+  if (
+    fingerprintTree(join(runDir, "inputs")) !== manifest.proof.input_fingerprint
+  ) {
+    throw new Error(
+      "Retained benchmark inputs changed during execution; run remains incomplete",
+    );
   }
 }
 
@@ -371,10 +417,31 @@ export async function runLoop(
   runDir: string;
   manifest: LoopRunManifest;
 }> {
+  options = {
+    ...options,
+    benchmark: resolveBenchmarkName(gymRoot, options.benchmark),
+  };
+  if (
+    options.benchmark === "adhoc" &&
+    existsSync(join(gymRoot, "benchmarks", "compatibility.json"))
+  ) {
+    throw new Error(
+      "An active case must belong to one purpose benchmark; unowned ad hoc collections are retired. Legacy inputs remain available for diagnostic gym run.",
+    );
+  }
   const { suite, path: suitePath } = loadSuite(
     options.benchmark,
     options.scenarios,
   );
+  if (
+    suite.purpose ||
+    existsSync(join(gymRoot, "benchmarks", "compatibility.json"))
+  )
+    listOwnedCases(gymRoot);
+  if (suite.purpose && !options.agent?.trim())
+    throw new Error(
+      "A purpose benchmark requires an explicit agent/target for the run",
+    );
   const { catalog: labels, path: labelsPath } = loadLabels(
     options.benchmark,
     suite,
@@ -382,15 +449,21 @@ export async function runLoop(
   const scenarios = options.scenarios?.length
     ? options.scenarios
     : suite.scenarios;
+  if (new Set(scenarios).size !== scenarios.length)
+    throw new Error("Duplicate case selection");
   const unknown = scenarios.filter(
     (scenario) => !suite.scenarios.includes(scenario),
   );
   if (unknown.length)
     throw new Error(
-      `Scenarios are not in ${options.benchmark}: ${unknown.join(", ")}`,
+      `Cases are not in ${options.benchmark}: ${unknown.join(", ")}`,
     );
 
-  const candidate = candidateEvidence(options.candidate, options.agentsRoot, options.agent);
+  const candidate = candidateEvidence(
+    options.candidate,
+    options.agentsRoot,
+    options.agent,
+  );
   const created = createRunManifest({
     phase: options.phase,
     benchmark: options.benchmark,
@@ -460,9 +533,13 @@ export async function runLoop(
   }
   assertRetainedInputs(created.runDir, created.manifest);
   retainedCandidateSnapshot(created.runDir, created.manifest);
-  if (currentHarnessFingerprint() !== created.manifest.proof.harness_fingerprint) {
+  if (
+    currentHarnessFingerprint() !== created.manifest.proof.harness_fingerprint
+  ) {
     writeManifest(created.runDir, created.manifest);
-    throw new Error("Gym harness changed during execution; run remains incomplete");
+    throw new Error(
+      "Gym harness changed during execution; run remains incomplete",
+    );
   }
   created.manifest.completed_at = new Date().toISOString();
   writeManifest(created.runDir, created.manifest);

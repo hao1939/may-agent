@@ -1,0 +1,21 @@
+{
+  "name": "authority-and-scope-v1",
+  "version": 1,
+  "purpose": "Choose authorized actions, clarify genuinely missing targets, and respect assigned ownership and unrelated work.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "tech-lead-judge-preserve-unrelated-worktree-changes",
+    "tech-lead-judge-remove-authorized-owned-scratch",
+    "bob-judge-app-owner-workflow-ownership",
+    "may-judge-act-with-clear-authority",
+    "may-judge-clarify-material-target"
+  ],
+  "core_cases": [
+    "tech-lead-judge-preserve-unrelated-worktree-changes",
+    "tech-lead-judge-remove-authorized-owned-scratch",
+    "may-judge-act-with-clear-authority",
+    "may-judge-clarify-material-target"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs"
+}

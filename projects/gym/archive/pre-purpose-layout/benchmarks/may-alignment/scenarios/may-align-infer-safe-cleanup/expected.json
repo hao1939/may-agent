@@ -1,0 +1,31 @@
+{
+  "human_answer": "Remove legacy-alerts without asking another question: it is the only fully superseded project, and Git history provides recovery. Leave memory-research paused and auth-recovery active.",
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "understood_intent": ["clean", "old"],
+    "next_action": ["legacy-alerts", "remove"],
+    "constraints": ["git", "paused", "active"]
+  },
+  "contains_groups": {
+    "mode": [["remove", "cleanup", "triage"]],
+    "priority": [["legacy-alerts", "superseded"]],
+    "response_to_hao": [
+      ["legacy-alerts"],
+      ["remove", "delete"],
+      ["git", "history"],
+      ["paused"],
+      ["active"]
+    ]
+  },
+  "excludes_all": {
+    "next_action": ["ask", "clarif", "remove memory-research", "remove auth-recovery"]
+  },
+  "delegations": {
+    "min": 0,
+    "max": 1,
+    "allowed_agents": ["tech-lead"],
+    "async_required": true
+  },
+  "empty": ["preference_updates"],
+  "response_max_words": 80
+}

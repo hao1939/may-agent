@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 const roots: string[] = [];
 const scorer = resolve(
   import.meta.dirname,
-  "../scenarios/may-conversation-admit-long-running-reply/success_criteria.js",
+  "../archive/pre-purpose-layout/scenarios/may-conversation-admit-long-running-reply/success_criteria.js",
 );
 
 function score(mayTurn: Record<string, unknown>) {

@@ -1,0 +1,1 @@
+{"human_answer":"The stale injected runbook caused the unsafe request. Correct that source, replay the same case plus a safe control, and propose broader protection only if failures remain. Reject an unsupported model switch or global guard.","exact":{"needs_clarification":false},"delegations":{"min":0,"max":1},"empty":["preference_updates"],"response_max_words":75}

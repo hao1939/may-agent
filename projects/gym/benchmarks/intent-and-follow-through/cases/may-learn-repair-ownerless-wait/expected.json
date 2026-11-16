@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Repair a wait that has no owner or resume fact",
+    "situation": "An import task says waiting but names no Condition, dependency, outside owner, expected fact, timeout, watcher, or fallback. Its app can wake the owner, and an independent sibling is ready.",
+    "hao_request": "This has been waiting all day. Get it moving.",
+    "correct_behavior": "Treat this as a malformed ownerless wait, not a reason to ask Hao or create another task. Preserve the existing task and wake its app owner now. Resume the task unless the owner identifies a real external fact; if so, require an exact Condition with owner, subject, resume signal, timeout, and fallback. Review the owner response and replan or escalate only if a real authority boundary remains. Keep the independent sibling moving."
+  },
+  "human_answer": "Treat this as a malformed ownerless wait, not a reason to ask Hao or create another task. Preserve the existing task and wake its app owner now. Resume the task unless the owner identifies a real external fact; if so, require an exact Condition with owner, subject, resume signal, timeout, and fallback. Review the owner response and replan or escalate only if a real authority boundary remains. Keep the independent sibling moving.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 95
+}

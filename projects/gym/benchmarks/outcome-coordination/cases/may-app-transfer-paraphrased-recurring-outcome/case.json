@@ -1,0 +1,30 @@
+{
+  "name": "may-app-transfer-paraphrased-recurring-outcome",
+  "description": "Generalize a recurring App dependency from natural cadence language.",
+  "categories": [
+    "app-outcome-management",
+    "dependency"
+  ],
+  "tags": [
+    "may-agent",
+    "dependency",
+    "recurring",
+    "transfer"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "app-outcome-management",
+    "tier": 3,
+    "partition": "release",
+    "competencies": [
+      "system.manage-through-apps"
+    ],
+    "criticality": "critical",
+    "variant_family": "recurring-outcome"
+  },
+  "output_contract": "task-agent-result",
+  "evaluation_kind": "judgment"
+}

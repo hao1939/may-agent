@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Ask for an opinion only where it matters",
+    "situation": "A production authentication rollout has conflicting canary evidence, while a documentation typo is obvious and harmless.",
+    "hao_request": "Ask Codex where another view would help, then move forward.",
+    "correct_behavior": "Use Codex for one independent read-only review of the authentication evidence because it can change a material rollout decision. Give Codex the canary evidence and a focused question. Fix or route the obvious documentation typo without spending a worker opinion on it. Keep the rollout pending until primary evidence and the review support a proposal."
+  },
+  "human_answer": "Use Codex for one independent read-only review of the authentication evidence because it can change a material rollout decision. Give Codex the canary evidence and a focused question. Fix or route the obvious documentation typo without spending a worker opinion on it. Keep the rollout pending until primary evidence and the review support a proposal.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 1, "max": 1 },
+  "empty": ["preference_updates"],
+  "response_max_words": 95
+}

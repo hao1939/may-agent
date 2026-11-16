@@ -1,0 +1,22 @@
+{
+  "name": "verified-code-work-v1",
+  "version": 1,
+  "purpose": "Execute and verify bounded code/test repairs, honest blocked checks and authorized local recovery.",
+  "evaluation_kind": "behavior",
+  "case_ids": [
+    "behavior-repair-source-preserve-tests",
+    "behavior-repair-test-preserve-source",
+    "behavior-verify-already-correct",
+    "behavior-report-blocked-verification",
+    "behavior-recover-local-verification"
+  ],
+  "core_cases": [
+    "behavior-repair-source-preserve-tests",
+    "behavior-repair-test-preserve-source",
+    "behavior-verify-already-correct",
+    "behavior-report-blocked-verification",
+    "behavior-recover-local-verification"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../../dist/@may-agent/gym/core-behavior.cjs"
+}

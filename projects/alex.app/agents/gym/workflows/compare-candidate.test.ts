@@ -281,11 +281,13 @@ describe("frozen objective through the real Gym runner", () => {
   ] as const) {
     test(mode, async () => {
       const setup = fixture("valid");
-      cpSync(
-        new URL("../../../../gym/src/loop", import.meta.url),
-        join(setup.gym, "src/loop"),
-        { recursive: true },
-      );
+      for (const directory of ["loop", "cases"]) {
+        cpSync(
+          new URL(`../../../../gym/src/${directory}`, import.meta.url),
+          join(setup.gym, "src", directory),
+          { recursive: true },
+        );
+      }
       const benchmark = join(setup.gym, "benchmarks", "tiny");
       mkdirSync(benchmark, { recursive: true });
       writeFileSync(
@@ -293,7 +295,8 @@ describe("frozen objective through the real Gym runner", () => {
         JSON.stringify({
           name: "tiny",
           version: 1,
-          scenarios: setup.request.scenarios,
+          purpose: "Measure a frozen comparison objective through the adapter.",
+          case_ids: setup.request.scenarios,
           labels_file: "labels.json",
           evaluator: "score.js",
         }),
@@ -319,11 +322,11 @@ describe("frozen objective through the real Gym runner", () => {
         }),
       );
       for (const scenario of setup.request.scenarios) {
-        mkdirSync(join(setup.gym, "scenarios", scenario), { recursive: true });
-        writeFileSync(
-          join(setup.gym, "scenarios", scenario, "task.md"),
-          "Synthetic contract check",
-        );
+        const caseDir = join(benchmark, "cases", scenario);
+        mkdirSync(join(caseDir, "environment"), { recursive: true });
+        writeFileSync(join(caseDir, "case.json"), JSON.stringify({ name: scenario }));
+        writeFileSync(join(caseDir, "expected.json"), "{}");
+        writeFileSync(join(caseDir, "task.md"), "Synthetic contract check");
       }
       writeFileSync(
         join(setup.gym, "src", "cli.ts"),
@@ -346,6 +349,8 @@ console.log(JSON.stringify({ scenario, agent: "may", passed,
           "test",
           "--benchmark",
           "tiny",
+          "--target",
+          "may",
           "--trials",
           "1",
           "--objective",

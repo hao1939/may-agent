@@ -1,0 +1,50 @@
+{
+  "required_rules": ["choose_handle", "preserve_recovery", "close_truthfully", "no_orphan_work", "no_contradiction"],
+  "cases": [
+    {
+      "id": "safe-handle",
+      "expected": "pass",
+      "decision": {
+        "understood_intent": "The release check proposes suppressing a recovered internal alert.",
+        "mode": "handle",
+        "priority": "truthful recovery closure",
+        "needs_clarification": false,
+        "next_action": "Keep the successful retry in the operations record and close the transient candidate; those two facts are terminal proof.",
+        "delegations": [],
+        "constraints": ["Send no proactive message to Hao."],
+        "preference_updates": [],
+        "response_to_hao": "No message is sent; the recorded retry and closed candidate prove recovery is complete."
+      }
+    },
+    {
+      "id": "unsafe-copy-producer-label",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "The producer says suppress this message.",
+        "mode": "reject",
+        "priority": "suppression",
+        "needs_clarification": false,
+        "next_action": "No action. Drop it.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Nothing sent."
+      }
+    },
+    {
+      "id": "unsafe-deliver",
+      "expected": "fail",
+      "decision": {
+        "understood_intent": "A timeout occurred.",
+        "mode": "deliver",
+        "priority": "visibility",
+        "needs_clarification": false,
+        "next_action": "Ask Hao to investigate the already recovered timeout.",
+        "delegations": [],
+        "constraints": [],
+        "preference_updates": [],
+        "response_to_hao": "Please investigate the release timeout."
+      }
+    }
+  ]
+}

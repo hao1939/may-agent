@@ -42,12 +42,7 @@ export type CanaryReview = {
   }>;
 };
 
-const scenarioFiles = [
-  "task.md",
-  "expected.json",
-  "scenario.json",
-  "success_criteria.js",
-] as const;
+const scenarioFiles = ["task.md", "expected.json", "case.json"] as const;
 
 function json<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T;
@@ -56,13 +51,13 @@ function json<T>(path: string): T {
 export function buildCanaryReview(
   root = resolve(import.meta.dirname, "../.."),
 ): CanaryReview {
-  const benchmarkDir = join(root, "benchmarks", "may-alignment");
+  const benchmarkDir = join(root, "benchmarks", "intent-and-follow-through");
   const configPath = join(benchmarkDir, "canary.json");
   const config = json<CanaryConfig>(configPath);
-  const suite = json<{ scenarios: string[] }>(join(benchmarkDir, "suite.json"));
+  const suite = json<{ case_ids: string[] }>(join(benchmarkDir, "suite.json"));
   const labels = json<LabelCatalog>(join(benchmarkDir, "labels.json"));
   if (
-    config.benchmark !== "may-alignment" ||
+    config.benchmark !== "intent-and-follow-through" ||
     labels.benchmark !== config.benchmark
   ) {
     throw new Error("Canary, benchmark directory, and label catalog disagree");
@@ -91,15 +86,15 @@ export function buildCanaryReview(
     Pick<Label, "source" | "rationale">
   > = {};
   const scenarios = config.scenarios.map((id) => {
-    if (!suite.scenarios.includes(id))
+    if (!suite.case_ids.includes(id))
       throw new Error(`Canary scenario is not in suite: ${id}`);
     const label = labels.labels[id];
     if (!label) throw new Error(`Canary scenario has no label: ${id}`);
     selectedLabels[id] = { source: label.source, rationale: label.rationale };
-    const scenarioDir = join(root, "scenarios", id);
+    const scenarioDir = join(benchmarkDir, "cases", id);
     for (const relativePath of scenarioFiles) {
       add(
-        `scenarios/${id}/${relativePath}`,
+        `cases/${id}/${relativePath}`,
         readFileSync(join(scenarioDir, relativePath)),
       );
     }

@@ -11,7 +11,7 @@ import { withTempDir } from "./support/temp-dir";
 import { fingerprintValue } from "../src/loop/store";
 
 const project = resolve(import.meta.dirname, "..");
-const { scoreDecision } = require("../benchmarks/may-alignment/score-decision.cjs");
+const { scoreDecision } = require("../benchmarks/intent-and-follow-through/score-decision.cjs");
 
 function save(root: string, file: string, content: unknown): void {
   const dest = join(root, file);
@@ -32,11 +32,11 @@ function judgment(root: string) {
 
 describe("judgment is not a prose-only pass", () => {
   test("the assignment's actual result state must match the draft expectation", () => withTempDir((root) => {
-    const { suite } = loadSuite("alex-judgment");
+    const { suite } = loadSuite("outcome-completion");
     const scenario = join(root, "scenario"), work = join(root, "work");
     materializeScenarioOrInlineCase({
       scenario: "alex-judge-helper-recommendation-not-completion", suite,
-      sourceBenchmarkDir: join(project, "benchmarks/alex-judgment"),
+      sourceBenchmarkDir: join(project, "benchmarks/outcome-completion"),
       evaluatorOwner: null, destination: scenario,
     });
     const result = {
@@ -81,16 +81,16 @@ describe("judgment is not a prose-only pass", () => {
 
 describe("real runner frozen input boundary", () => {
   test("inline execution uses the retained task, fixture, truth, and selected evaluator", () => withTempDir((root) => {
-    const { suite } = loadSuite("bob-judgment");
-    const id = suite.scenarios[0]!;
+    const { suite } = loadSuite("adoption-and-simplicity");
+    const id = "bob-judge-converge-duplicate-entry-points"; // Deliberately deterministic: no model calls.
     const inputs = join(root, "inputs"), scenario = join(inputs, "scenarios", id);
     materializeScenarioOrInlineCase({ scenario: id, suite,
-      sourceBenchmarkDir: join(project, "benchmarks/bob-judgment"),
+      sourceBenchmarkDir: join(project, "benchmarks/adoption-and-simplicity"),
       evaluatorOwner: null, destination: scenario });
     save(scenario, "task.md", "FROZEN_ONLY_SENTINEL: review this retained fixture.\n");
     save(scenario, "expected.json", { marker: "retained-truth" });
     save(scenario, "environment/retained.txt", "retained-fixture");
-    save(inputs, "benchmarks/may-alignment/score-decision.cjs", `
+    save(inputs, "benchmarks/intent-and-follow-through/score-decision.cjs", `
       const fs=require('node:fs'),path=require('node:path');
       exports.scoreDecision=(work,scenario)=>({passed:true,checks:[{
         name:'retained-evaluator',passed:
@@ -188,7 +188,7 @@ describe("rescoring does not recreate missing behavior evidence", () => {
       // cannot rerun the semantic judges used by the revised core/owner cases.
       const id = "tech-lead-judge-fast-targeted-checks-and-local-commit-boundary";
       const manifest = run(false);
-      manifest.benchmark = "tech-lead-judgment";
+      manifest.benchmark = "repair-and-verification";
       manifest.scenarios = [id];
       const trial = manifest.trials[0]!;
       trial.scenario = id;
@@ -238,7 +238,7 @@ describe("evidence and claim scope", () => {
     }] };
     const destination = join(root, "case");
     materializeScenarioOrInlineCase({ scenario: "case", suite, sourceBenchmarkDir: join(root, "benchmarks/fixture"), evaluatorOwner: null, destination });
-    expect(JSON.parse(readFileSync(join(destination, "scenario.json"), "utf8")).evaluation_kind).toBe("behavior");
+    expect(JSON.parse(readFileSync(join(destination, "case.json"), "utf8")).evaluation_kind).toBe("behavior");
     const current = run(false);
     const report = renderReport(root, current);
     expect(report).toContain("1 judgment, 0 behavior, 0 unclassified");

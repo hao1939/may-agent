@@ -1,0 +1,26 @@
+{
+  "human_answer": "Classify the worker result as blocked or partial because the persisted artifacts completed with exit 0 but produced no findings. Do not call it a timeout, and stop retrying because repeated completed-empty artifacts show retries will not satisfy the task.",
+  "exact": { "needs_clarification": false },
+  "contains_all": {
+    "understood_intent": ["classify", "worker"],
+    "next_action": ["blocked", "partial", "stop retrying"],
+    "constraints": ["completed", "exit 0", "empty"]
+  },
+  "contains_groups": {
+    "mode": [["classify", "review", "triage"]],
+    "priority": [["artifact", "evidence"], ["blocked", "partial"]],
+    "response_to_hao": [
+      ["completed", "exit 0"],
+      ["empty", "no findings"],
+      ["blocked", "partial"],
+      ["stop retrying", "no more retries", "not retry"]
+    ]
+  },
+  "excludes_all": {
+    "next_action": ["timeout", "timed out", "retry again", "keep retrying", "launch another"],
+    "response_to_hao": ["timeout", "timed out", "retry again", "keep retrying"]
+  },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 85
+}

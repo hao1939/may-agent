@@ -31,6 +31,7 @@ import type {
   StoredTrial,
 } from "../src/loop/types";
 import { withTempDirAsync } from "./support/temp-dir";
+import { casePath } from "./support/case-path";
 
 function trial(
   scenario: string,
@@ -456,10 +457,7 @@ describe("loop evaluation", () => {
             ).toBe(
               readFileSync(
                 join(
-                  import.meta.dirname,
-                  "..",
-                  "scenarios",
-                  input.scenario,
+                  casePath(input.scenario),
                   "task.md",
                 ),
                 "utf8",
@@ -471,7 +469,7 @@ describe("loop evaluation", () => {
                   input.scenariosDir,
                   "..",
                   "benchmarks",
-                  "may-alignment",
+                  "intent-and-follow-through",
                   "score-decision.cjs",
                 ),
               ),
@@ -606,7 +604,7 @@ describe("loop evaluation", () => {
                   input.scenariosDir,
                   "..",
                   "benchmarks",
-                  "may-app-outcome-management",
+                  "outcome-coordination",
                   "score-task-result.cjs",
                 ),
               ),
@@ -634,7 +632,7 @@ describe("loop evaluation", () => {
       }
     }));
 
-  it("freezes evaluator-owned scenario overlays", async () =>
+  it("freezes case-owned semantic files after merging the historical overlay", async () =>
     withTempDirAsync(async (root) => {
       const previousState = process.env["GYM_STATE_DIR"];
       process.env["GYM_STATE_DIR"] = join(root, "state");
@@ -657,12 +655,7 @@ describe("loop evaluation", () => {
             );
             const ownerCriteria = readFileSync(
               join(
-                import.meta.dirname,
-                "..",
-                "benchmarks",
-                "may-alignment",
-                "scenarios",
-                scenario,
+                casePath(scenario),
                 "semantic_criteria.md",
               ),
               "utf8",
@@ -715,10 +708,7 @@ describe("loop evaluation", () => {
             expect(readFileSync(join(frozenScenario, "task.md"), "utf8")).toBe(
               readFileSync(
                 join(
-                  import.meta.dirname,
-                  "..",
-                  "scenarios",
-                  scenario,
+                  casePath(scenario),
                   "task.md",
                 ),
                 "utf8",
@@ -1024,7 +1014,7 @@ describe("loop evaluation", () => {
             name: "test-inline-bench-v1",
             version: 1,
             artifact: "alignment-decision.json",
-            evaluator: "../may-alignment/score-decision.cjs",
+            evaluator: "../intent-and-follow-through/score-decision.cjs",
             defaults: {
               agent_type: "may",
               tier: "smoke",

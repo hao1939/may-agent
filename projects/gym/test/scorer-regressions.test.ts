@@ -12,7 +12,7 @@ interface ScorerCheck {
 function scoreLogStats(workDir: string): ScorerCheck[] {
   const scorer = resolve(
     import.meta.dirname,
-    "../scenarios/scout-coder-logstats/success_criteria.js",
+    "../archive/pre-purpose-layout/scenarios/scout-coder-logstats/success_criteria.js",
   );
   const result = Bun.spawnSync(["node", scorer, workDir], {
     stdout: "pipe",
@@ -34,7 +34,7 @@ function scoreLogStats(workDir: string): ScorerCheck[] {
 function scoreCoveredSource(workDir: string): ScorerCheck[] {
   const scorer = resolve(
     import.meta.dirname,
-    "../scenarios/scout-source-already-covered/success_criteria.js",
+    "../archive/pre-purpose-layout/scenarios/scout-source-already-covered/success_criteria.js",
   );
   const result = Bun.spawnSync(["node", scorer, workDir], {
     stdout: "pipe",
@@ -56,7 +56,7 @@ function scoreCoveredSource(workDir: string): ScorerCheck[] {
 function scoreArtifactCollision(workDir: string): ScorerCheck[] {
   const scorer = resolve(
     import.meta.dirname,
-    "../scenarios/scout-artifact-path-collision/success_criteria.js",
+    "../archive/pre-purpose-layout/scenarios/scout-artifact-path-collision/success_criteria.js",
   );
   const result = Bun.spawnSync(["node", scorer, workDir], {
     stdout: "pipe",
@@ -80,7 +80,7 @@ describe("legacy scorer regressions", () => {
     withTempDir((root) => {
       const fixture = resolve(
         import.meta.dirname,
-        "../scenarios/scout-coder-logstats/environment",
+        "../archive/pre-purpose-layout/scenarios/scout-coder-logstats/environment",
       );
       cpSync(fixture, root, { recursive: true });
 
@@ -103,7 +103,7 @@ describe("legacy scorer regressions", () => {
     withTempDir((root) => {
       const scenario = resolve(
         import.meta.dirname,
-        "../scenarios/scout-source-already-covered",
+        "../archive/pre-purpose-layout/scenarios/scout-source-already-covered",
       );
       cpSync(join(scenario, "environment"), root, { recursive: true });
       writeFileSync(
@@ -159,7 +159,7 @@ describe("legacy scorer regressions", () => {
     withTempDir((root) => {
       const scenario = resolve(
         import.meta.dirname,
-        "../scenarios/scout-artifact-path-collision",
+        "../archive/pre-purpose-layout/scenarios/scout-artifact-path-collision",
       );
       cpSync(join(scenario, "environment"), root, { recursive: true });
       writeFileSync(

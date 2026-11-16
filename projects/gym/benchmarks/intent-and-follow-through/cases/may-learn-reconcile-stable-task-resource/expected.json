@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Restore one stable task-resource loop",
+    "situation": "An app creates timestamped maintain tasks, schedules itself from reconciliation observations, reconstructs sibling ownership, uses an internal Condition, repeats empty reviews, reuses a completed task ID, and prioritizes already-passing work even though the shared runtime owns task mechanics.",
+    "hao_request": "Make this follow our Kubernetes-style design and get useful work moving again. Keep it simple.",
+    "correct_behavior": "Have the app owner converge the existing design to one stable standing resource for the inventory responsibility. Timers and semantic events wake that resource; the shared runtime remains the only queue, retry, concurrency, parent-wakeup, Condition, and recovery authority. Make finite leaves direct children and use dependencies for internal ordering; reserve Conditions for external facts. Stop the repeated empty review and leave a true external wait event-driven or change the owner approach. Respect the old completion receipt and use a deterministic successor only for a genuinely new outcome. Recompute priority from the two unresolved inventories. Prove one timer or event wake, one child-to-parent wake, useful unresolved work selection, and no app-local refill path before rollout. Do not ask Hao to choose implementation details."
+  },
+  "human_answer": "Have the app owner converge the existing design to one stable standing resource for the inventory responsibility. Timers and semantic events wake that resource; the shared runtime remains the only queue, retry, concurrency, parent-wakeup, Condition, and recovery authority. Make finite leaves direct children and use dependencies for internal ordering; reserve Conditions for external facts. Stop the repeated empty review and leave a true external wait event-driven or change the owner approach. Respect the old completion receipt and use a deterministic successor only for a genuinely new outcome. Recompute priority from the two unresolved inventories. Prove one timer or event wake, one child-to-parent wake, useful unresolved work selection, and no app-local refill path before rollout. Do not ask Hao to choose implementation details.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 115
+}

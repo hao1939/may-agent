@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Unblock the real Codex learning task",
+    "situation": "Gym's existing Codex learning task timed out before review or checkpoint writes. Its last checkpoint is valid, hundreds of turns remain, and Gym owns the workflow repair.",
+    "hao_request": "The Codex learning intake timed out. Fix it and continue without losing anything.",
+    "correct_behavior": "Keep the existing learning task and valid checkpoint. Give Gym ownership of diagnosing and repairing the timeout, with clear constraints: preserve every unreviewed turn, advance the checkpoint only after successful review, keep raw transcripts out of Gym, and avoid a second task. Start the bounded recovery without asking Hao for implementation choices. Follow the task until the backlog moves and reaches a truthful result, then report the cause, repair, and proof. Escalate only if Gym discovers a real authority decision or cannot make progress."
+  },
+  "human_answer": "Keep the existing learning task and valid checkpoint. Give Gym ownership of diagnosing and repairing the timeout, with clear constraints: preserve every unreviewed turn, advance the checkpoint only after successful review, keep raw transcripts out of Gym, and avoid a second task. Start the bounded recovery without asking Hao for implementation choices. Follow the task until the backlog moves and reaches a truthful result, then report the cause, repair, and proof. Escalate only if Gym discovers a real authority decision or cannot make progress.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 1, "allowed_agents": ["gym"] },
+  "empty": ["preference_updates"],
+  "response_max_words": 90
+}

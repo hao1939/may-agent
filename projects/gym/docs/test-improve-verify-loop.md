@@ -1,7 +1,10 @@
 # Test → Improve → Verify
 
 Gym treats agent improvement as an evidence-preserving comparison, not as a
-sequence of reruns until a test turns green.
+sequence of reruns until a test turns green. Each case has one purpose benchmark
+and one local home; select a compatible agent for each run. See
+[organization](cases-benchmarks-and-agents.md). Execution examples below make
+model calls and require permission.
 
 ```text
 approve expected behavior
@@ -40,12 +43,12 @@ Gym has two purposes. Passing one kind of test does not imply the other passes:
    when they are the behavior under test.
 
 Runtime health is otherwise an evaluation-validity condition, not a third agent
-quality goal. Declare the kind per suite/case and read the report's coverage;
+quality goal. Declare the kind per benchmark/case and read the report's coverage;
 missing or historical classifications remain unknown. See
 [`expectations-and-limits.md`](expectations-and-limits.md).
 
-Behavior scenarios score the full trajectory. Their ground truth
-includes accepted action receipts and final durable state, not only
+Behavior cases need relevant trajectory evidence. Their ground truth
+includes required action receipts and final state, not only
 `task-result.json`. A final answer cannot repair an action that was
 never applied, was attached to the wrong request, or produced a duplicate
 human message.
@@ -55,11 +58,14 @@ human message.
 The right answer does not come from the agent or from the run report. It has
 three versioned parts:
 
-- each scenario's `expected.json` is the executable expected behavior;
-- `success_criteria.js` and the benchmark evaluator compare the agent artifact
+- each owned case's `expected.json` or inline `expected` defines the expected behavior;
+- the case-specific checks and benchmark evaluator compare actual evidence
   with that expectation;
-- the benchmark's `labels.json` records whether a human has approved that
-  expectation, its provenance, and why it is correct.
+- `labels.json` or an inline label records approval, provenance and rationale.
+
+All case-specific definitions and checks stay under the owning benchmark. Generic
+evaluator utilities may be shared; cases and answer keys are not imported from
+other benchmarks.
 
 The label catalog is approval metadata, not a second answer key. A label records:
 
@@ -69,7 +75,7 @@ The label catalog is approval metadata, not a second answer key. A label records
 - reviewer and approval timestamp.
 
 Verification cannot pass its release gate while any selected label remains
-draft. Missing labels, including inline and ad hoc cases, remain draft; approval
+draft. Missing labels, including inline cases, remain draft; approval
 requires an explicit reviewer and valid timestamp. Draft baseline tests are
 diagnostic, and verification rejects unapproved truth before executing the
 candidate. After approval, create a fresh baseline. Editing `expected.json`, its
@@ -77,13 +83,10 @@ scorer, the evaluator, or a label after a
 baseline invalidates the comparison; start a new baseline so both versions use
 the same frozen inputs.
 
-When several benchmarks reuse one evaluator, that evaluator's benchmark may
-carry narrow scenario overlays under `scenarios/<scenario>/`. Gym copies the
-canonical scenario first, then copies this overlay into the frozen run input.
-This keeps scorer-specific expectations and semantic calibration controls with
-their responsible evaluator while preserving one immutable input fingerprint.
-Overlay truth still requires the scenario's normal human-approved label, and
-changing an overlay requires a fresh baseline.
+Active cases do not use foreign evaluator-owned expectation overlays. Historical
+overlays were merged into the new owning case folders. Their original bytes remain
+in the archive, and old frozen runs remain untouched. Reconstructing historical
+inputs is compatibility work, not permission to reintroduce shared case ownership.
 
 ## 1. Test the baseline
 
@@ -91,14 +94,14 @@ From `/app` (or `projects/gym`):
 
 ```bash
 bun run gym test \
-  --benchmark may-alignment \
-  --scenario may-align-proof-before-adopt \
-  --agent may \
+  --benchmark intent-and-follow-through \
+  --case may-align-proof-before-adopt \
+  --target may \
   --trials 3
 ```
 
 Declare the intended benefit before the baseline. The default is quality:
-more passing trials without a per-scenario regression. To measure execution
+more passing trials without a per-case regression. To measure execution
 time, token usage, or tool operations instead, add:
 
 ```bash
@@ -108,29 +111,30 @@ time, token usage, or tool operations instead, add:
 ```
 
 This objective requires at least 20% lower total observed execution duration
-across the complete matched trial grid, with no per-scenario quality regression.
+across the complete matched trial grid, with no per-case quality regression.
 It is saved in the manifest and `inputs/comparison-objective.json` before trial 1
 and included in the frozen input fingerprint. Verification inherits it; changing
 it requires a fresh baseline. The App's comparison request must name the same
 objective. An omitted objective on a historical manifest means quality; all
 other provenance requirements still apply.
 
-Omit `--scenario` to run the whole suite, or use `--core` on a suite that declares
-`core_scenarios` to select its small core. Do not combine the two selectors.
-The suite's default role is selected unless `--agent`/`--target` overrides it;
-otherwise the historical `may` fallback remains. Verification inherits the
-baseline's exact selected cases, not a new core selection. See
+Omit `--case` to run the whole benchmark, or use `--core` on a benchmark that
+declares `core_cases` to select its small core. Do not combine the selectors.
+Purpose benchmark runs require `--target` / `--agent`; a benchmark folder does
+not choose an agent. `--case` without a benchmark resolves its unique owner;
+cases from different owners require separate runs. `--scenario` is an old alias.
+Verification inherits the baseline's exact selection, not a new core selection. See
 [`../benchmarks/CORE.md`](../benchmarks/CORE.md) for the draft expectations.
 
 Before trial 1, Gym snapshots the
-selected scenario directories and benchmark evaluator. The runner executes
+resolved case inputs and benchmark evaluator. The runner executes
 those snapshots, not the live definitions. The command prints the durable run
 directory; the baseline is never mutated after creation.
 
 The run directory is also the recovery boundary. If an owning workflow times
 out while the runner is finishing, a later reconcile may reuse the completed
 run only when the full manifest and comparison exactly match the pending
-baseline, candidate fingerprint, scenarios, and trials.
+baseline, candidate fingerprint, cases, and trials.
 
 ## 2. Diagnose before improving
 
@@ -193,34 +197,34 @@ The verification gate requires:
 
 - approved labels;
 - no invalid trials;
-- no scenario regression;
+- no case regression;
 - the benefit declared by the frozen objective: more passing trials for quality,
   or a measured duration reduction meeting the specified threshold.
 
 An unchanged perfect baseline with unchanged timing is not an improvement.
 Equal quality can support a timing benefit when duration was the declared
 objective. `comparison.json` retains `improved` as quality improvement, and adds
-`objective`, `objective_met` (true, false or null), and per-scenario/overall
+`objective`, `objective_met` (true, false or null), and per-case/overall
 `duration` observations. Missing, negative or nonfinite timings produce unknown
 coverage and totals; a zero baseline leaves percentage reduction unknown.
 Unknown timing cannot pass a timing objective and does not erase quality
 findings. A known quality regression still fails the gate. A quality objective
 can pass without timing evidence.
 
-Read the report's objective and overall observations first, then per-scenario
+Read the report's objective and overall observations first, then per-case
 quality and duration, then linked trial evidence. All selected trials contribute
-to total execution time, including valid behavioral failures. Fewer passes in
-one scenario cannot be offset by gains elsewhere. A faster total may include
-slower individual scenarios; review those tradeoffs and absolute failure counts.
+to total execution time, including valid agent failures. Fewer passes in
+one case cannot be offset by gains elsewhere. A faster total may include
+slower individual cases; review those tradeoffs and absolute failure counts.
 The machine gate is evidence for May's judgment, not automatic approval.
 
-Duration covers the scenario's agent execution phases and their orchestration,
+Duration covers the case's agent execution phases and their orchestration,
 before final scoring. It is not billing or complete benchmark wall clock. Keep
 one-time optimization spend separate. Repeat matched comparisons when timing
 noise could change the decision; the reduction threshold alone is not proof of
 statistical significance. Compare the simplest useful alternative and report
 maintenance cost alongside the measured benefit.
-For release decisions, baseline and candidate should cover the full suite and
+For release decisions, baseline and candidate should cover the full benchmark and
 use at least five trials.
 
 ### Verification-only adjustments
@@ -228,7 +232,7 @@ use at least five trials.
 Sometimes a human rejects a benchmark or scorer proposal but keeps the exact
 candidate. If the requested change is only a better comparison, do not edit the
 benchmark and do not rebuild the candidate. Record the exact candidate
-fingerprint and benchmark, select every active scenario from `suite.json`, and
+fingerprint and benchmark, select every active case from `suite.json`, and
 require every selected label to be approved. Run a fresh five-trial baseline
 and candidate comparison. The candidate may proceed only when it matches the
 requested fingerprint, uses the same framework as the baseline, passes every
@@ -242,7 +246,7 @@ Record a human verdict without rewriting machine evidence:
 ```bash
 bun run loop -- review \
   --run <run-id> \
-  --scenario may-align-proof-before-adopt \
+  --case may-align-proof-before-adopt \
   --trial 1 \
   --verdict pass \
   --reviewer hao \
@@ -272,18 +276,18 @@ bun run loop -- report --run <run-id>
 │   │   ├── suite.json
 │   │   ├── labels.json
 │   │   └── <evaluator>
-│   └── scenarios/<scenario>/
+│   └── cases/<case-id>/
+│       ├── case.json
 │       ├── task.md
 │       ├── expected.json
-│       ├── success_criteria.js
 │       └── environment/
 ├── report.md
 ├── reviews.jsonl
 ├── comparison.json
-└── cases/<scenario>/trial-<n>/
+└── cases/<case-id>/trial-<n>/
     ├── task.md
     ├── expected.json
-    ├── scenario.json
+    ├── case.json
     ├── result.json
     ├── evaluation.json
     ├── checks.json
@@ -294,6 +298,9 @@ bun run loop -- report --run <run-id>
     ├── runner.stderr.log
     └── session/
 ```
+
+Historical snapshots and metadata may still use `scenarios` / `scenario.json`;
+loaders retain that compatibility without creating a second active catalog.
 
 The final workspace is retained before temporary execution files are cleaned up.
 Use it to inspect actual outputs rather than reconstructing them from a success

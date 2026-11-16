@@ -2,11 +2,11 @@ import { describe, expect, test } from "bun:test";
 
 import { buildCanaryReview } from "../src/loop/canary-review";
 
-describe("May alignment canary approval", () => {
+describe("Intent-and-follow-through canary provenance", () => {
   test("fingerprints exactly four bounded approved expectations", () => {
     const review = buildCanaryReview();
     expect(review.approval_fingerprint).toMatch(/^sha256:[a-f0-9]{64}$/);
-    expect(review.automatic_schedule_enabled).toBe(true);
+    expect(review.automatic_schedule_enabled).toBe(false); // Relocation needs a fresh baseline/review before scheduling.
     expect(review.development_trials).toBe(3);
     expect(review.release_trials).toBe(5);
     expect(review.scenarios).toHaveLength(4);

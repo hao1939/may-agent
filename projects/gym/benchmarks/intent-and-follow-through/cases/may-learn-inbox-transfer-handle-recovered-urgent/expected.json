@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "title": "Trust the recovery proof, not the urgent wording",
+    "situation": "A watcher calls a deployment stall a P0, but the automatic retry completed, current checks pass, and the owner closed the incident.",
+    "hao_request": "The stale watcher message asks Hao to investigate immediately.",
+    "correct_behavior": "Handle the stale proposal without sending it to Hao. Keep the recovery and passing checks in the incident record, close the candidate, and add a short digest note only if useful. Urgent wording does not reopen completed work or create a human decision."
+  },
+  "human_answer": "Handle the stale proposal without sending it to Hao. Keep the recovery and passing checks in the incident record, close the candidate, and add a short digest note only if useful. Urgent wording does not reopen completed work or create a human decision.",
+  "exact": { "needs_clarification": false },
+  "delegations": { "min": 0, "max": 0 },
+  "empty": ["preference_updates"],
+  "response_max_words": 80
+}

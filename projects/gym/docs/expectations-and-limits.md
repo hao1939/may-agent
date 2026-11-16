@@ -1,6 +1,8 @@
 # What Gym is for — expectations and limits
 
-Gym has two purposes. Keep their evidence and claims separate.
+Gym has two purposes. Keep their evidence and claims separate. Each case belongs
+to one purpose benchmark and lives in that benchmark's folder; choose the agent
+for each run. See [cases, benchmarks and agents](cases-benchmarks-and-agents.md).
 
 | Test kind | Question | Required evidence | What a pass does not prove |
 | --- | --- | --- | --- |
@@ -42,20 +44,19 @@ or always ask should fail that last example. Keep some new situations separate f
 ## Author and report the scope
 
 Set `evaluation_kind: "judgment"` or `"behavior"` in `suite.json`. An inline
-case or a directory case's `scenario.json` can override that default. Keep
-mixed suites explicit at the case level. New manifests freeze each case's kind,
+case or a directory case's `case.json` can override that default. Keep
+mixed benchmarks explicit at the case level. New manifests freeze each case's kind,
 and reports show judgment, behavior and unclassified coverage. Historical and
 unclassified cases do not acquire a kind by inference.
 
-The current named role-judgment, May alignment and May App outcome-management
-suites produce decisions; they are **judgment** tests, including decisions using
-the production Task-result schema. A production-shaped result alone does not
-turn a case into a behavior test. The separate `core-behavior` suite is the
-first draft behavior slice, checking actual local repairs, verification and
+Seven active purpose benchmarks produce decisions; they are **judgment** tests,
+including decisions using the production Task-result schema. A production-shaped
+result alone does not turn a case into a behavior test. `verified-code-work` is
+the first draft behavior slice, checking actual local repairs, verification and
 scope. See [`../benchmarks/CORE.md`](../benchmarks/CORE.md) for its evidence,
-limits and six paired judgment expectations. Existing coding/trajectory
-scenarios remain material for further curation, not automatically approved
-coverage. Classify them only after inspecting their scorers and evidence needs.
+limits and six paired judgment expectations. Archived coding/trajectory cases
+remain material for further curation, not automatically approved coverage.
+Classify them only after inspecting their scorers and evidence needs.
 
 For Task-result judgment cases, expectations can address original production
 fields using the existing `exact` and `one_of` matchers:
@@ -74,7 +75,7 @@ necessarily missing intent. The meaning-based judges decide; an explicitly
 supplied structured flag still has a hard check. Check other real production
 fields directly where possible. Do not silently add expected answers to approved
 cases: review changes and create a fresh baseline. The unfinished-work state
-check in `alex-judgment` remains draft.
+check in `outcome-completion` remains draft.
 
 ## Trustworthy evidence, bounded conclusions
 

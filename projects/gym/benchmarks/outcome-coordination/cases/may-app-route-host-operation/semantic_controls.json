@@ -1,0 +1,66 @@
+{
+  "required_rules": ["plain_by_default", "technical_term_explained", "precise_when_needed", "actionable", "no_contradiction"],
+  "cases": [
+    {
+      "id": "plain-host-failure",
+      "expected": "pass",
+      "decision": {
+        "state": "waiting",
+        "summary": "The code is ready for the Host Operations App to deploy and check live.",
+        "evidence": ["commit:b359244d2de10c45fb96c154bf519bdc21aab185", "typescript:maxCallDepth:2434"],
+        "dependencies": [{
+          "id": "deploy-and-check",
+          "appId": "may-agent",
+          "input": {
+            "kind": "runtime-capability-request",
+            "data": {
+              "outcome": "Deploy commit b359244d2de10c45fb96c154bf519bdc21aab185 and validate it live.",
+              "evidence": "Focused Runtime and TypeScript checks passed, and the full suite passed 2,434 tests. Its known maxCallDepth failure is unrelated to this change.",
+              "acceptance": "Return the deployment receipt, prove the commit is loaded, the service is healthy, and retained state still works."
+            }
+          }
+        }]
+      }
+    },
+    {
+      "id": "bare-host-jargon",
+      "expected": "fail",
+      "decision": {
+        "state": "waiting",
+        "summary": "TS instantiation-depth exhaustion blocks the generation-fenced host effect.",
+        "evidence": ["commit:b359244d2de10c45fb96c154bf519bdc21aab185", "typescript:maxCallDepth:2434"],
+        "dependencies": [{
+          "id": "host-effect",
+          "appId": "may-agent",
+          "input": {
+            "kind": "runtime-capability-request",
+            "data": {
+              "outcome": "Materialize the deployment effect and converge its liveness projection.",
+              "evidence": "maxCallDepth=2434",
+              "acceptance": "Receipt plus observed-generation convergence."
+            }
+          }
+        }]
+      }
+    },
+    {
+      "id": "plain-but-unverifiable-host-operation",
+      "expected": "fail",
+      "decision": {
+        "state": "waiting",
+        "summary": "The Host Operations App will deploy the requested commit.",
+        "evidence": ["commit:b359244d2de10c45fb96c154bf519bdc21aab185"],
+        "dependencies": [{
+          "id": "deploy",
+          "appId": "may-agent",
+          "input": {
+            "kind": "runtime-capability-request",
+            "data": {
+              "outcome": "Deploy commit b359244d2de10c45fb96c154bf519bdc21aab185."
+            }
+          }
+        }]
+      }
+    }
+  ]
+}

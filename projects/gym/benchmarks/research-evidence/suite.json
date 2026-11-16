@@ -1,0 +1,18 @@
+{
+  "name": "research-evidence-v1",
+  "version": 1,
+  "purpose": "Keep research conclusions, knowledge updates and proposed evaluations grounded in available evidence.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "scout-judge-honest-partial-coverage-on-blocked-source",
+    "scout-judge-update-in-place-and-forwarding-link",
+    "scout-judge-distinguish-adoption-candidate-from-reference-digest",
+    "scout-judge-complete-supported-evidence-check"
+  ],
+  "core_cases": [
+    "scout-judge-honest-partial-coverage-on-blocked-source",
+    "scout-judge-complete-supported-evidence-check"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "adoption-and-simplicity-v1",
+  "version": 1,
+  "purpose": "Choose improvements and mechanisms by demonstrated benefit, existing capabilities and total cost.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "alex-judge-stage-progression-prompt-before-workflow",
+    "bob-judge-converge-duplicate-entry-points",
+    "bob-judge-reject-unproven-research-adoption",
+    "bob-judge-evaluate-tool-for-verified-gap",
+    "may-judge-route-unconsumed-detector-to-owner"
+  ],
+  "core_cases": [
+    "bob-judge-reject-unproven-research-adoption",
+    "bob-judge-evaluate-tool-for-verified-gap"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs"
+}

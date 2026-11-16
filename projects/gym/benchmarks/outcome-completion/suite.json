@@ -1,0 +1,17 @@
+{
+  "name": "outcome-completion-v1",
+  "version": 1,
+  "purpose": "Distinguish useful contributions from fulfilled outcomes and stop or continue according to sufficient evidence.",
+  "evaluation_kind": "judgment",
+  "case_ids": [
+    "alex-judge-helper-recommendation-not-completion",
+    "alex-judge-cap-review-loop-at-three-rounds",
+    "alex-judge-close-verified-bounded-outcome"
+  ],
+  "core_cases": [
+    "alex-judge-helper-recommendation-not-completion",
+    "alex-judge-close-verified-bounded-outcome"
+  ],
+  "artifact": "task-result.json",
+  "evaluator": "../intent-and-follow-through/score-decision.cjs"
+}

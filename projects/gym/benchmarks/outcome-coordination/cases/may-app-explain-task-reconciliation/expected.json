@@ -1,0 +1,13 @@
+{
+  "approval_case": {
+    "situation": "The accepted design already answers a technical architecture question.",
+    "hao_request": "In simple terms, how do Task, Event, App, and Runtime fit together? Is an Event another kind of Task?",
+    "correct_behavior": "Answer directly in plain language, retain the exact four design terms, and explain each term's role without creating work."
+  },
+  "expected": {
+    "state": "converged",
+    "contains": {
+      "response": ["task", "event", "app", "runtime"]
+    }
+  }
+}
