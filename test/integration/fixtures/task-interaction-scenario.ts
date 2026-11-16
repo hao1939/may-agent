@@ -91,7 +91,7 @@ async function withProvider(
                 arguments: JSON.stringify({
                   status: "done",
                   summary: answer.summary,
-                  verification_facts: ["Compared the supplied fixture input"],
+                  facts: ["Compared the supplied fixture input"],
                   output: answer,
                 }),
               },

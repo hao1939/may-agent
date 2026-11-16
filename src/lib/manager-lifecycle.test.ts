@@ -14,6 +14,8 @@ import { fakeModel } from "../../test/fixtures/model.js";
 import { markStaleSession } from "../../test/fixtures/stale-session.js";
 import { EventBus } from "../app/core/events/bus.js";
 import { createAgentRun } from "@may-agent/sdk/runtime";
+import historicalTranscripts from "../../test/fixtures/pre-migration-finish-transcripts.json";
+import { agentExecutionResult } from "./agent-execution.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
 import { appendSessionMessage, loadAllSessionMetas } from "./persistence.js";
@@ -357,6 +359,60 @@ describe("manager session lifecycle", () => {
     expect(results[0]).toMatchObject({ sessionId, status: "done", lastAssistantText: "Reply from old" });
     expect(results[1]).toEqual(results[0]);
     expect(manager.result(sessionId)).toEqual(results[0]);
+  });
+
+  it("restores pre-migration finish output, evidence, and noncompletion dispositions", () => {
+    const restore = (
+      sessionId: string,
+      messages: unknown[],
+      status: "done" | "error" | "interrupted" = "done",
+    ) => {
+      manager.registryStore.saveSession(sessionId, {
+        agent: "worker",
+        task: "Historical fixture",
+        status,
+        startedAt: 1,
+        endedAt: 2,
+        ...(status === "error" ? { error: "Historical runtime error" } : {}),
+      });
+      for (const message of messages) appendSessionMessage(persistDir, sessionId, message as never);
+      return agentExecutionResult(manager.result(sessionId));
+    };
+
+    expect(restore("legacy-success", historicalTranscripts.successWithFalseOutput)).toMatchObject({
+      status: "done",
+      summary: "Historical success",
+      output: false,
+      facts: {
+        deliverables: [{ path: "report.md", description: "Historical report" }],
+        verification_facts: ["Historical check passed"],
+      },
+    });
+    expect(restore("legacy-partial", historicalTranscripts.partialWithNullOutput)).toMatchObject({
+      status: "blocked",
+      summary: "Historical work remains",
+      output: null,
+      facts: {
+        blockers: [{ reason: "External review pending", context: "The saved work is not complete" }],
+        verification_evidence: ["Historical draft retained"],
+      },
+    });
+    expect(restore("legacy-failure", historicalTranscripts.failure)).toMatchObject({
+      status: "error",
+      summary: "Historical verification failed",
+      output: { passed: false },
+      facts: { verification_facts: ["Historical test exited 1"] },
+    });
+    expect(restore("legacy-runtime-error", historicalTranscripts.partialWithNullOutput, "error")).toMatchObject({
+      status: "error",
+      summary: "Historical runtime error",
+      output: null,
+    });
+    expect(restore("legacy-interrupted", historicalTranscripts.successWithFalseOutput, "interrupted")).toMatchObject({
+      status: "interrupted",
+      summary: "Historical success",
+      output: false,
+    });
   });
 
   it("retains usage when a persistent chat fails", async () => {

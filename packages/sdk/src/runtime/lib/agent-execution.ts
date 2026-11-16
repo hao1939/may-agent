@@ -600,11 +600,41 @@ function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined
 }
 
 export type FinishParams = {
-  status: "done" | "blocked";
+  status: "done" | "blocked" | "error";
   summary: string;
   output?: unknown;
   facts?: unknown;
 };
+
+const hasOwn = (value: object, key: PropertyKey): boolean => Object.prototype.hasOwnProperty.call(value, key);
+
+function normalizedFinishStatus(status: unknown): FinishParams["status"] {
+  if (status === "done" || status === "success") return "done";
+  if (status === "blocked" || status === "partial") return "blocked";
+  return "error";
+}
+
+function isHistoricalFinish(args: Record<string, unknown>): boolean {
+  return (
+    args.status === "success" ||
+    args.status === "failure" ||
+    args.status === "partial" ||
+    hasOwn(args, "result") ||
+    hasOwn(args, "blockers") ||
+    hasOwn(args, "deliverables")
+  );
+}
+
+function normalizedFinishFacts(args: Record<string, unknown>, historical: boolean): unknown {
+  if (hasOwn(args, "facts")) return args.facts;
+  if (!historical) return undefined;
+  const facts = Object.fromEntries(
+    ["blockers", "deliverables", "verification_facts", "verification_evidence", "next_steps"]
+      .filter((key) => hasOwn(args, key))
+      .map((key) => [key, args[key]]),
+  );
+  return Object.keys(facts).length > 0 ? facts : undefined;
+}
 
 export function extractFinishParams(messages: any[]): FinishParams | null {
   for (let i = messages.length - 1; i >= 0; i--) {
@@ -615,12 +645,14 @@ export function extractFinishParams(messages: any[]): FinishParams | null {
       if (block?.type !== "toolCall" || block.name !== "finish" || !rawArgs) continue;
       if (!finishToolCallSucceeded(messages, block.id ?? block.toolCallId)) continue;
       try {
-        const args = typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs;
+        const args = (typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs) as Record<string, unknown>;
+        const historical = isHistoricalFinish(args);
+        const output = hasOwn(args, "output") ? args.output : historical ? args.result : undefined;
         return {
-          status: args.status,
-          summary: args.summary,
-          output: args.output,
-          facts: args.facts,
+          status: normalizedFinishStatus(args.status),
+          summary: args.summary as string,
+          output,
+          facts: normalizedFinishFacts(args, historical),
         };
       } catch {
         return null;

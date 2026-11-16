@@ -143,7 +143,8 @@ export interface InstabilityMetrics {
 
 /** Structured finish() data from the agent's explicit completion signal. */
 export interface FinishResult {
-  status: "done" | "blocked";
+  /** Canonical authoring emits done/blocked; error is a normalized historical failure. */
+  status: "done" | "blocked" | "error";
   summary: string;
   /** Caller-defined payload for a schema-backed execution. */
   output?: unknown;
@@ -259,7 +260,7 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
   const finish = result.finishResult;
   const status = result.status === "interrupted"
     ? "interrupted"
-    : result.status === "error"
+    : result.status === "error" || finish?.status === "error"
       ? "error"
       : finish?.status === "blocked"
         ? "blocked"

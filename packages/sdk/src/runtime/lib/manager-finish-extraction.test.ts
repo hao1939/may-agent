@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { extractFinishParams } from "@may-agent/sdk/runtime";
+import historicalTranscripts from "../../../../../test/fixtures/pre-migration-finish-transcripts.json";
 
 function finishCall(id: string, args: Record<string, unknown>) {
   return {
@@ -41,6 +42,14 @@ describe("finish result extraction", () => {
       facts: { evidence: "App-owned field" },
     });
     expect(JSON.stringify(restored)).toBe(saved);
+    expect(extractFinishParams([
+      finishCall("finish-current", {
+        status: "done",
+        summary: "Current",
+        verification_facts: ["Not part of the current contract"],
+      }),
+      finishResult("finish-current", "✅ SUCCESS: Current"),
+    ])).toEqual({ status: "done", summary: "Current", output: undefined, facts: undefined });
   });
 
   it("extracts a successfully executed schema-backed finish payload", () => {
@@ -54,6 +63,36 @@ describe("finish result extraction", () => {
       summary: "Done",
       output: { verdict: "pass" },
     });
+  });
+
+  it("normalizes unchanged pre-migration transcripts without mutating their historical vocabulary", () => {
+    const saved = JSON.stringify(historicalTranscripts);
+
+    expect(extractFinishParams(historicalTranscripts.successWithFalseOutput)).toEqual({
+      status: "done",
+      summary: "Historical success",
+      output: false,
+      facts: {
+        deliverables: [{ path: "report.md", description: "Historical report" }],
+        verification_facts: ["Historical check passed"],
+      },
+    });
+    expect(extractFinishParams(historicalTranscripts.partialWithNullOutput)).toEqual({
+      status: "blocked",
+      summary: "Historical work remains",
+      output: null,
+      facts: {
+        blockers: [{ reason: "External review pending", context: "The saved work is not complete" }],
+        verification_evidence: ["Historical draft retained"],
+      },
+    });
+    expect(extractFinishParams(historicalTranscripts.failure)).toEqual({
+      status: "error",
+      summary: "Historical verification failed",
+      output: { passed: false },
+      facts: { verification_facts: ["Historical test exited 1"] },
+    });
+    expect(JSON.stringify(historicalTranscripts)).toBe(saved);
   });
 
   it("does not accept a finish call rejected by semantic validation", () => {

@@ -1,0 +1,112 @@
+{
+  "successWithFalseOutput": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-success",
+          "name": "finish",
+          "arguments": {
+            "status": "success",
+            "summary": "Historical success",
+            "deliverables": [
+              {
+                "path": "report.md",
+                "description": "Historical report"
+              }
+            ],
+            "verification_facts": [
+              "Historical check passed"
+            ],
+            "result": false
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-success",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "✅ SUCCESS: Historical success"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "partialWithNullOutput": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-partial",
+          "name": "finish",
+          "arguments": {
+            "status": "partial",
+            "summary": "Historical work remains",
+            "blockers": [
+              {
+                "reason": "External review pending",
+                "context": "The saved work is not complete"
+              }
+            ],
+            "verification_evidence": [
+              "Historical draft retained"
+            ],
+            "result": null
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-partial",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "⚠️ PARTIAL: Historical work remains"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "failure": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-failure",
+          "name": "finish",
+          "arguments": {
+            "status": "failure",
+            "summary": "Historical verification failed",
+            "verification_facts": [
+              "Historical test exited 1"
+            ],
+            "result": {
+              "passed": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-failure",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "❌ FAILURE: Historical verification failed"
+        }
+      ],
+      "isError": false
+    }
+  ]
+}
