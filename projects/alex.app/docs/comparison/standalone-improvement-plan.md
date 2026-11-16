@@ -14,6 +14,9 @@ The [activation and hosted diagnosis trial](host-diagnosis-trial-20261116.md)
 synchronizes those definitions and completes one real retained-run diagnosis:
 Alex rejected unsupported specialist advice and returned an accepted no-change.
 Further tuning on representative work and Host handover remain incremental work.
+The [diagnosis grounding trial](diagnosis-grounding-trial-20261116.md) completes
+one such experiment: Alex adopted a reviewed diagnosis-source repair after paired
+retained/synthetic trials, with mixed costs and no runtime activation claim.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -154,13 +157,19 @@ own later evidence.
 ## Current next milestone
 
 Manual execution, snapshot integrity, interruption/reuse, definition synchronization
-and one hosted diagnosis with accepted owner disposition are recorded. The active
-bundle is pinned in the hosted trial; source integration alone remains distinct
-from activation. For the retained Scout case, Alex selected no-change pending a
-specific truth judgment, so do not prepare a candidate from the historical score.
-The recurring specialist path/token assumptions are another observed process
-weakness Alex can scope separately. Choose the next experiment from adjudicated
-evidence or a different confirmed user friction point. Separate disposable Host
-restart checks passed; automatic development-checkpoint restoration and fresh
-natural-work benefit remain unverified. Keep human correction and total cost
-as outcome observations before expanding intake.
+and one hosted diagnosis with accepted owner disposition are recorded. Alex then
+scoped a diagnosis-grounding repair and adopted its reviewed source after paired
+trials: unsupported Scout/tech-lead recommendations were declined, and a synthetic
+explicit defect remained actionable. Inspection cost increased on the failed-score
+cases; the healthy usage-only case avoided a model call. No general cost saving,
+human-correction reduction or fresh natural-work benefit is established.
+
+The new source is distinct from the active definitions pinned in the hosted trial.
+The next bounded step is controlled activation and hosted comparison or shadow
+evaluation on frozen evidence from fresh natural work, including an evidence-rich
+failed-score case and a healthy case. Record unsupported proposals, owner
+corrections, semantic overreach, time and cost before broader handover. For the
+retained Scout case, no-change and the specific human truth judgment remain;
+do not prepare a candidate from its historical score. Separate disposable Host
+restart checks passed; automatic development-checkpoint restoration remains
+unverified. Do not expand intake to substitute for this evidence.

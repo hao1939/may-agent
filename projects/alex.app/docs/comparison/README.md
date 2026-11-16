@@ -38,3 +38,6 @@ The [Host handover readiness rehearsal](host-handover-rehearsal-20261116.md) rec
 an accepted read-only Alex Task, separate restart checks and the remaining activation gap.
 The [definition activation and hosted diagnosis trial](host-diagnosis-trial-20261116.md)
 closes that activation gap and records an accepted owner no-change decision on real retained evidence.
+The [diagnosis grounding trial](diagnosis-grounding-trial-20261116.md) repairs
+unsupported specialist recommendations, compares retained and synthetic inputs,
+and records Alex's source-adoption decision with mixed cost and explicit limits.
