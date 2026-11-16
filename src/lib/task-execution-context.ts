@@ -1,7 +1,19 @@
 import type { AppEvent, AppEventTarget, AppRead, TaskAttempt, TaskReconciliationContext } from "@may-agent/sdk/app";
+import { createHash } from "node:crypto";
+import { join } from "node:path";
 import type { EventTrace, SubagentDefinition } from "@may-agent/sdk/runtime";
 import type { TaskBinding } from "./persistence.js";
-import type { TaskWorkspaceBrief } from "./task-workspace-context.js";
+
+const key = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+
+export function taskDetailRoot(persistDir: string, binding: TaskBinding): string {
+  return join(
+    persistDir,
+    "task-context",
+    key([binding.appId, binding.taskId]),
+    key([binding.generation, binding.attemptId]),
+  );
+}
 
 export type TaskAttemptEmission = {
   type: string;
@@ -35,7 +47,8 @@ export interface TaskExecutionContext {
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
   /** Navigation facts only; never contain live capabilities or provider credentials. */
   details?: { task: TaskAttempt["task"]; declaredOutputs: string[]; dependencies?: unknown[] };
-  workspaceBrief?: TaskWorkspaceBrief;
+  /** Optional directory for content-addressed decision detail snapshots. */
+  detailRoot?: string;
 }
 
 const EVENT_ROW_ID_SYMBOL = Symbol.for("may-agent.eventRowId");

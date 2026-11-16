@@ -395,23 +395,23 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   const recoverInputs = (): Promise<void> => {
     if (inputRecovery) return inputRecovery;
     nextInputRecoveryAt = now() + inputRecoveryIntervalMs;
+    // Freeze each indexed keyset cycle at its current high-water mark before yielding.
+    // New markers created during this turn wait for the next cycle instead of being
+    // immediately redelivered by a startup/timer recovery slice.
+    if (inputRecoveryCycleMaxId === 0) {
+      inputRecoveryCycleMaxId = Number(
+        options.db
+          .prepare(
+            `SELECT COALESCE(MAX(id), 0) AS id
+        FROM events INDEXED BY idx_events_app_admission_pending
+        WHERE app_admission_pending = 1`,
+          )
+          .get()?.id ?? 0,
+      );
+    }
     const current = new Promise<void>((resolve) => setTimeout(resolve, 0))
       .then(async () => {
         if (closed) return;
-        // Freeze each indexed keyset cycle at its current high-water mark. New
-        // markers wait for the next cycle instead of indefinitely postponing an
-        // older failing row behind the cursor.
-        if (inputRecoveryCycleMaxId === 0) {
-          inputRecoveryCycleMaxId = Number(
-            options.db
-              .prepare(
-                `SELECT COALESCE(MAX(id), 0) AS id
-            FROM events INDEXED BY idx_events_app_admission_pending
-            WHERE app_admission_pending = 1`,
-              )
-              .get()?.id ?? 0,
-          );
-        }
         const rows = options.db
           .prepare(
             `SELECT id
