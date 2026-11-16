@@ -474,7 +474,12 @@ permission. A May-owned delivery uses its genuine May Task and published
 Do not fabricate a May Task or relabel Alex work to borrow another App's scope.
 Both configurations use [`shared/tools/github-pull-request.ts`](../../../shared/tools/github-pull-request.ts).
 
-Discover `github-pull-request` through `tasks.contract` / `read.contract("alex")`.
+Alex's `pull-request-wait` procedure reads `read.contract("alex")` and builds the
+Condition from that installed capability. The retired implicit Task tool is not
+a prerequisite. Call it with `{id, repository, number, fingerprint}` (`null` for
+an initial snapshot, the actual observed fingerprint for rearming), then retain
+its returned `condition` in the owning Task result. Never guess a sibling App's
+event type or use a bare `github:` subject as an event Condition.
 On an installation with the new Alex definitions, build an observation for the
 exact PR and save its returned Condition in the normal Task result:
 

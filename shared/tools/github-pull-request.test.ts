@@ -497,3 +497,15 @@ describe("Task + GitHub watcher delivery evidence", () => {
     ).toContain("installed");
   });
 });
+
+
+test("rejects a foreign App PR event instead of accepting an unobserved wait", () => {
+  expect(validateGitHubPullRequestCondition({
+    id: "pr-feedback", type: "may.github.pull-request.state",
+    subject: "github:example/project#42", owner: "app:alex",
+    expected: {field: "fingerprint", notEquals: null},
+  }, "alex")).toContain("installed");
+  expect(validateGitHubPullRequestCondition({
+    id: "other", type: "example.external.fact", subject: "independent", expected: {},
+  }, "alex")).toBeNull();
+});

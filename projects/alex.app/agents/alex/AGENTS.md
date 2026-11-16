@@ -64,7 +64,7 @@ same facts without taking a useful action.
 For an authorized PR delivery, keep one Task through publication, CI and
 review/comment feedback. Publish from the actual authorized target checkout,
 reuse the same PR after repair, and retain its identity/head and original caller
-link. Discover the installed `github-pull-request` watcher through `tasks.contract`;
+link. Use your `pull-request-wait` procedure to build the installed observer Condition;
 Alex source declares CI and comment coverage in `hao1939/may-agent`. Save a
 fingerprint-change observation Condition for needed later feedback and rearm
 against the observed fingerprint after judgment. The watcher brings facts; you

@@ -144,7 +144,11 @@ export function validateGitHubPullRequestCondition(
   condition: Condition,
   appId = "may",
 ): string | null {
-  if (condition.type !== gitHubPullRequestEvent(appId)) return null;
+  if (condition.type !== gitHubPullRequestEvent(appId)) {
+    if (/^[A-Za-z0-9._-]+\.github\.pull-request\.state$/.test(condition.type))
+      return "Build the GitHub Condition from this App's installed github-pull-request observation capability";
+    return null;
+  }
   if (condition.subject.startsWith("resource:")) {
     const parsed = parsePullRequestSubject(
       `pull-request:${condition.subject.slice("resource:".length)}`,
