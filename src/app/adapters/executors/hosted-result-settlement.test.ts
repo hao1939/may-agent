@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { AppDefinition } from "@may-agent/sdk/app";
+import type { AppDefinition, AppTaskBlockedSettlement } from "@may-agent/sdk/app";
 import { run, type RunResult } from "@may-agent/sdk/standalone";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -115,7 +115,10 @@ test("blocked uses the App translator and controlled clock for continuation, Con
       tasks: {
         translateBlockedResult: ({ facts }) => ({
           retryAfterMs: (facts as { phase: string }).phase === "review" ? 250 : 500,
-          conditions: [{ id: "approval", type: "review.approved", subject: "change:1", owner: "agent:reviewer", expected: true }],
+          conditions: [
+            { id: "approval", type: "review.approved", subject: "change:1", owner: "agent:reviewer", expected: true },
+            { requestId: "review" },
+          ],
           requests: [{ id: "review", appId: "evaluation", input: { kind: "review", data: {} } }],
         }),
       },
@@ -128,9 +131,51 @@ test("blocked uses the App translator and controlled clock for continuation, Con
       state: "waiting",
       reviewAt: 1_250,
       result: { value: false },
-      conditions: [{ id: "approval" }],
+      conditions: [{ id: "approval" }, { requestId: "review" }],
       requests: [{ id: "review", appId: "evaluation" }],
     },
+  });
+});
+
+test("blocked translator null intentionally retains an unqualified wait", () => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Wait without a fabricated prerequisite", output: { checkpoint: 1 } }),
+    input({ tasks: { translateBlockedResult: () => null } }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "waiting",
+      summary: "Wait without a fabricated prerequisite",
+      result: { checkpoint: 1 },
+    },
+  });
+  expect(translated.handlerResult.reviewAt).toBeUndefined();
+  expect(translated.handlerResult.conditions).toBeUndefined();
+  expect(translated.handlerResult.requests).toBeUndefined();
+});
+
+class NonPlainWaitDescriptor {
+  retryAfterMs = 25;
+}
+
+test.each([
+  ["undefined", undefined],
+  ["Promise", Promise.resolve({ retryAfterMs: 25 })],
+  ["unsupported key", { retryAfterMss: 25 }],
+  ["nonplain object", new NonPlainWaitDescriptor()],
+] as const)("blocked translator rejects %s instead of silently admitting an empty wait", (_label, malformed) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Malformed translated wait" }),
+    input({
+      tasks: {
+        translateBlockedResult: () => malformed as unknown as AppTaskBlockedSettlement | null,
+      },
+    }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: { state: "error", resultRejected: true },
   });
 });
 

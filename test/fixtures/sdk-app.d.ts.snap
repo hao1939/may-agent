@@ -17,7 +17,7 @@ import type { Static, TSchema } from "typebox";
 import type { AppConversationRequest } from "./app-conversation.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { ObservationContract, ResourceObserver } from "./observer.js";
-import type { Condition, ResourceCreator, TaskAction, TaskAppRequest, TaskIntent, TaskStatus } from "./task.js";
+import type { Condition, ResourceCreator, TaskAction, TaskAppRequest, TaskCondition, TaskIntent, TaskStatus } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 export { Type } from "typebox";
 export type { Static, TSchema } from "typebox";
@@ -273,7 +273,7 @@ export type AppWorkspace = {
 export type AppTaskBlockedSettlement = {
     /** Relative continuation delay translated by the Host to its absolute reviewAt clock. */
     retryAfterMs?: number;
-    conditions?: Condition[];
+    conditions?: TaskCondition[];
     requests?: TaskAppRequest[];
 };
 export type AppTaskBlockedResultContext = {

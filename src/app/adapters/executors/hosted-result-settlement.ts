@@ -53,13 +53,18 @@ function outputResult(output: unknown): Pick<NormalizedTaskHandlerResult, "resul
 
 const WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
 
+function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlement {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 function fallbackWaitHint(facts: unknown): AppTaskBlockedSettlement | null | undefined {
-  if (facts === null || typeof facts !== "object" || Array.isArray(facts)) return undefined;
-  const record = facts as Record<string, unknown>;
-  const keys = Object.keys(record);
+  if (!isPlainWaitDescriptor(facts)) return undefined;
+  const keys = Object.keys(facts);
   if (!keys.some((key) => WAIT_HINT_KEYS.has(key))) return undefined;
   if (keys.some((key) => !WAIT_HINT_KEYS.has(key))) return null;
-  return record as AppTaskBlockedSettlement;
+  return facts;
 }
 
 function rejectedBlockedResult(summary: string, runId: string | null): TaskCapabilityRun {
@@ -86,9 +91,9 @@ function blockedSettlement(
 ): TaskCapabilityRun {
   const runId = resultRunId(result);
   const translator = input.descriptor.app.tasks?.translateBlockedResult;
-  let hint: AppTaskBlockedSettlement | null | undefined;
+  let translatedHint: unknown;
   try {
-    hint = translator
+    translatedHint = translator
       ? translator({ task: input.attempt.task, summary, output, facts })
       : fallbackWaitHint(facts);
   } catch (error) {
@@ -97,12 +102,21 @@ function blockedSettlement(
       runId,
     );
   }
-  if (hint === null && !translator) {
+  if (!translator && translatedHint === null) {
     return rejectedBlockedResult("Blocked result wait hint contains unsupported fields", runId);
   }
-  if (hint !== undefined && hint !== null && (typeof hint !== "object" || Array.isArray(hint))) {
+  if (translator && translatedHint === undefined) {
     return rejectedBlockedResult("Blocked result translator must return null or a wait descriptor", runId);
   }
+  if (translatedHint !== undefined && translatedHint !== null) {
+    if (!isPlainWaitDescriptor(translatedHint)) {
+      return rejectedBlockedResult("Blocked result translator must return null or a plain wait descriptor", runId);
+    }
+    if (Object.keys(translatedHint).some((key) => !WAIT_HINT_KEYS.has(key))) {
+      return rejectedBlockedResult("Blocked result translator wait descriptor contains unsupported fields", runId);
+    }
+  }
+  const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
 
   let reviewAt: number | undefined;
   if (hint?.retryAfterMs !== undefined) {
