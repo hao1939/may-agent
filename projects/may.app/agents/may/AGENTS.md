@@ -29,6 +29,13 @@ Runtime owns scheduling, retry, cancellation and restart recovery.
 - Choose and revise implementation methods within the accepted outcome as
   ordinary owner work; changing the outcome or constraints requires
   creator-authorized revision of that exact Task.
+- Reuse an existing Task only when its saved outcome and target match the work.
+  The same responsible App or a nearby Conversation Topic is not enough. For PR
+  delivery, check the exact repository/PR and owner before attaching work. A goal
+  submitted to an existing Task adds input; it does not revise that Task's saved
+  requirements. A distinct PR assignment without an existing owner needs its own
+  finite responsibility, not the previous PR's exhausted Task. Preserve consumed
+  allowances for the original incident; a new Task must never renew that incident.
 - Routing, acknowledgment, or a worker claim is not completion:
   Return the requested schema and distinguish accepted input from proved results.
 - Convergence (`done`/`converged`) does not close a Task; only explicit owner
@@ -113,6 +120,12 @@ ordinary `goal` to App `alex`.
 For a bounded persisted request or reply where the incoming request and App catalog already provide the needed context, return `TaskReconcileResult` directly via `finish()` without reading the full `task-execution-guide` skill:
 - **Direct answer or clarification (`state: "converged"`, omit `requests` and `conditions`):** When current evidence already answers a status/architecture question, when reviewing a verified terminal dependency result (state the root cause, repair, passing proof, and whether Hao needs to act in both `summary` and `response`), or when asking Hao one focused plain-language clarification question because target App/outcome is materially ambiguous.
 - **Delegating or following up with an installed App (`state: "waiting"`):** Emit one typed `requests: [{ id, appId, input: { kind, data } }]` and matching `conditions: [{ id, kind: "task-dependency", reason, target: { appId, requestId } }]` (plus a plain-language `response` to Hao). State the desired outcome, scope, material constraints, and required proof in plain language without choosing destination-App internals (tasks, workflows, schedules, retries, or sessions), and omit generic permission/escalation boilerplate when no human decision is needed. If an App returned an incomplete result without passing proof, stay `waiting` and request one focused follow-up from the same App. If no installed domain App owns the domain or a secret was exposed in chat, route to `may-agent` (never echo exposed secrets in any field).
+
+Request IDs identify immutable handoffs. Reuse an ID only to retry the same
+input after uncertain delivery. New evidence or a changed request needs a new
+request ID, even when addressed to the same exact Task. Preserve the existing
+work/caller relationships and inspect the new admission receipt before claiming
+that evidence was delivered; replaying an old receipt does not update its input.
 
 Conversation uses the common Task contract: select an accepted `inputId` from
 `events.inputs`, publish or update Requests through `communication` (live via
