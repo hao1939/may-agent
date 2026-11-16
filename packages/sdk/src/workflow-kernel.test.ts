@@ -56,7 +56,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
   test("executes readable module, preserves schema-valid partial output, and checks fixture consumption", async () => {
     const run = await runWorkflowTest(reviewWorkflow, {
       input: { subjectRef: "HEAD~1..HEAD" },
-      agents: {
+      mocks: {
         reviewer: [
           {
             status: "blocked",
@@ -128,7 +128,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         },
         {
           input: {},
-          agents: { reviewer: { summary: "unused" } },
+          mocks: { reviewer: { kind: "agent", summary: "unused" } },
         },
       );
 
@@ -251,7 +251,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
 
     const badInput = await runWorkflowTest(mod, {
       input: { subjectRef: "" } as any,
-      agents: { reviewer: { output: { subjectRef: "x", summary: "ok" } } },
+      mocks: { reviewer: { output: { subjectRef: "x", summary: "ok" } } },
     });
     expect(badInput.ok).toBe(false);
     expect(badInput.started).toBe(false);
@@ -262,7 +262,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
   test("catches step-schema mismatch, unexpected calls, unconsumed fixtures, and outputSchema mismatch", async () => {
     const stepSchemaFail = await runWorkflowTest(reviewWorkflow, {
       input: { subjectRef: "HEAD" },
-      agents: {
+      mocks: {
         reviewer: {
           status: "done",
           summary: "Invalid output shape",
@@ -277,10 +277,10 @@ describe("portable workflow kernel & runWorkflowTest", () => {
 
     const unconsumed = await runWorkflowTest(reviewWorkflow, {
       input: { subjectRef: "HEAD" },
-      agents: {
+      mocks: {
         reviewer: [
-          { output: { subjectRef: "HEAD", summary: "first" } },
-          { output: { subjectRef: "HEAD", summary: "unused second" } },
+          { kind: "agent", output: { subjectRef: "HEAD", summary: "first" } },
+          { kind: "agent", output: { subjectRef: "HEAD", summary: "unused second" } },
         ],
       },
     });
@@ -338,7 +338,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     const run = await runWorkflowTest(parallelMod, {
       input: {},
       events: { emit: async () => undefined },
-      agents: {
+      mocks: {
         slow: async ({ signal }) => {
           await new Promise<void>((resolve) => {
             signal.addEventListener(
@@ -392,8 +392,10 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     const saturated = await runWorkflowTest(parentDeadlockMod, {
       input: {},
       maxConcurrentCalls: 1,
-      workflows: { "child-wf": nestedChild },
-      agents: { worker: { summary: "ok" } },
+      mocks: {
+        "child-wf": nestedChild,
+        worker: { summary: "ok" },
+      },
     });
     expect(saturated.ok).toBe(false);
     expect(saturated.error).toBeInstanceOf(WorkflowAllowanceExhaustedError);
@@ -411,7 +413,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
 
     const observerRun = await runWorkflowTest(simpleMod, {
       input: {},
-      agents: { worker: { summary: "ok" } },
+      mocks: { worker: { summary: "ok" } },
       onStep: () => {
         throw new Error("sync step observer exploded");
       },
@@ -424,7 +426,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
 
     const dirtyCleanup = await runWorkflowTest(simpleMod, {
       input: {},
-      agents: { worker: { summary: "ok", cleanupConfirmed: false, sessionId: "s_leaked" } },
+      mocks: { worker: { summary: "ok", cleanupConfirmed: false, sessionId: "s_leaked" } },
     });
     expect(dirtyCleanup.ok).toBe(false);
     expect(dirtyCleanup.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
@@ -460,8 +462,10 @@ describe("portable workflow kernel & runWorkflowTest", () => {
 
     const run = await runWorkflowTest(catchingParent, {
       input: {},
-      workflows: { "leaky-child": leakyChild },
-      agents: { worker: { summary: "ok", cleanupConfirmed: false, sessionId: "s_nested_leak" } },
+      mocks: {
+        "leaky-child": leakyChild,
+        worker: { summary: "ok", cleanupConfirmed: false, sessionId: "s_nested_leak" },
+      },
     });
 
     expect(run.ok).toBe(false);
@@ -493,7 +497,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     const coopRun = await runWorkflowTest(cooperativeTimeoutMod, {
       input: {},
       timeoutMs: 5_000,
-      agents: {
+      mocks: {
         slow: async ({ signal }) => {
           await new Promise<void>((_, reject) => {
             signal.addEventListener(
@@ -521,7 +525,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     const lateFixtureRun = await runWorkflowTest(cooperativeTimeoutMod, {
       input: {},
       timeoutMs: 5_000,
-      agents: {
+      mocks: {
         slow: async () => {
           await new Promise((r) => setTimeout(r, 45));
           return { id: "s_late", status: "done", summary: "too late" };
@@ -566,8 +570,10 @@ describe("portable workflow kernel & runWorkflowTest", () => {
 
     const caughtRun = await runWorkflowTest(caughtMod, {
       input: {},
-      workflows: { "failing-child": failingChild },
-      agents: { worker: { summary: "fallback succeeded" } },
+      mocks: {
+        "failing-child": failingChild,
+        worker: { summary: "fallback succeeded" },
+      },
       onStep: (step) => observedSteps.push({ target: step.target, status: step.status, id: step.id }),
     });
     expect(caughtRun.ok).toBe(true);
@@ -607,7 +613,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
       {
         input: {},
-        agents: {
+        mocks: {
           boom: async () => {
             throw new Error("provider socket reset");
           },
@@ -910,7 +916,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     const overlappingRun = await runWorkflowTest(
       {
         name: "overlapping-mock-and-workflow",
-        description: "Calls reviewer with prompt options when both mocks and workflows define reviewer",
+        description: "Calls reviewer with prompt options via mocks",
         async execute(ctx) {
           const step = await ctx.call("reviewer", "Check diff", {
             skill: "review",
@@ -927,12 +933,6 @@ describe("portable workflow kernel & runWorkflowTest", () => {
             status: "done",
             summary: `mock:${call.options?.skill}:${call.options?.operationAllowance}`,
           }),
-        },
-        workflows: {
-          reviewer: {
-            status: "done",
-            summary: "workflow-fallback",
-          },
         },
       },
     );
@@ -984,7 +984,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
       {
         input: {},
-        agents: {
+        mocks: {
           reviewer: [
             {
               status: "done",
