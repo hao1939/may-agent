@@ -24,8 +24,9 @@
 - [`may-hosted-cycle-20261116.md`](may-hosted-cycle-20261116.md) — Alex's first
   hosted May selection pilot, accepted no-change and observed automation gaps.
 - [`system-periodic-review-20261116.md`](system-periodic-review-20261116.md) — current
-  system-wide daily review at 09:00 UTC; Alex selects one problem across agents,
-  workflows, benchmarks, tools and the improvement process.
+  system-wide daily review at 09:00 UTC; a small coordinator delegates finite work,
+  collects its result and rearms. The first B2 review/proposal is delivered;
+  implementation/evaluation remain separate approval-gated work.
 - [`may-periodic-review-20261116.md`](may-periodic-review-20261116.md) — historical
   May-only setup, superseded by the system-wide selection policy above.
 - [`cases-benchmarks-and-agents.md`](cases-benchmarks-and-agents.md) — start here:

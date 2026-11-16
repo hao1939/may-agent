@@ -72,3 +72,54 @@ reporting-rule candidate with an exhausted review allowance and no final
 independent pass, exposing development-handoff and verification-environment
 gaps. It preserved the November 17 deadline; automatic due-day behavior remains
 unobserved. This later state supersedes the zero-incident setup snapshot above.
+
+## Later update: small coordinator, finite work Tasks
+
+The user approved splitting periodic coordination from actual work. The earlier
+oversized draft was **not submitted**. Event **`6730297`** addressed the existing
+standing Task; it did not create another recurring job or a Gym-only scheduler.
+The accepted policy now selects or reuses at most one useful finite Task,
+collects its disposition, retains links/cumulative budgets and rearms. It does
+not implement the whole roadmap or automatically start the next work phase.
+System-wide scope, retired-incident history and consumed allowances are unchanged.
+
+The first finite assignment was **B2 calibration review/proposal only**:
+`alex/input/appdep_171a4b38571d39cf68730bd2`, linked through stable caller request
+`gym-b2-calibration-review-v4-20261116`. It reused the four-run comparison and
+[v4 attempt report](outcome-v4-attempt-20261116.md), delivered a concise diagnosis
+and exact proposed judge wording, and returned without implementation or model
+evaluation. Its artifact is
+`/app/.state/gym-periodic-split-20261116-01/b2-evidence/review.md`, SHA-256
+`202962981af236d65b87b4d517389955ef05dd6150ffb4629dbec63b97387a94`.
+The proposal remains **unapproved**. Its suggested two-judge calibration-only
+experiment needs a separate bounded commission; no target or judge run occurred.
+
+The normal child return woke the same coordinator, which collected the artifact
+and recorded the approval blocker rather than creating speculative implementation
+or evaluation Tasks. The coordinator is **waiting, generation 1, resourceVersion
+51**. Its current accepted attempt
+`r_1_d535b143-81c7-4dc0-a3ab-217bc142f222` retains **top-level
+`reviewAt: 1794906000000`**, November 17 at 09:00 UTC. That deadline was verified
+through the public accepted-attempt evidence, not merely checkpoint prose.
+Automatic due-day wake and repeated unattended reliability remain unobserved.
+
+The finite review is fulfilled and its Task is **idle, not terminally closed**.
+The coordinator recorded a closure recommendation but lacked the supported
+creator-side close operation in that attempt; it did not invent a successful
+closure. Fulfillment, caller return and Task closure remain separate facts.
+
+Three normal owner attempts—setup, finite review, coordinator return—used **23
+replies** with a full scoped SDK model-cost estimate of **$1.9991664**. This
+excludes the operator session; billing/operator cost remain unknown. Both
+coordinator attempts initially submitted waiting results containing `response`;
+SDK admission rejected them and they corrected within the same attempts. These
+corrections and their usage are retained, not counted as first-try success.
+There were no development workflows, benchmark/judge evaluations, source/truth
+edits, plan edits or deployment actions. The `agents` call was a capability-list
+read, not a specialist execution.
+
+Evidence: `.state/gym-periodic-split-20261116-01/verification.json` links the
+public Task/attempt/session/usage reads, admission, accepted checkpoint chain,
+artifact hashes and unchanged incident accounting. The same directory retains
+the actual submitted input and proposed wording. No new schema, work registry or
+scheduler was introduced.
