@@ -122,7 +122,6 @@ function parseTaskAttempt(value: unknown): AppTaskAttempt {
     storedResultFacts(result);
     if (result.acceptanceBasis) storedResultFacts(result.acceptanceBasis);
   }
-  if (attempt.retiredCancellation) storedResultFacts(attempt.retiredCancellation);
   return attempt;
 }
 

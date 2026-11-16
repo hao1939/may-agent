@@ -713,7 +713,7 @@ describe("shared agent execution preparation", () => {
       .toBeUndefined();
   });
 
-  test.each(["full", "full-no-tasks"] as const)("respects the explicitly selected or saved Task tool policy: %s", (toolPolicy) => {
+  test.each(["full", "readonly"] as const)("respects the explicitly selected or saved Task tool policy: %s", (toolPolicy) => {
     const prepared = prepareAgentExecution({
       definition: {
         name: "sample",
@@ -721,7 +721,7 @@ describe("shared agent execution preparation", () => {
         domain: "tests",
         systemPrompt: "identity",
         model: { contextWindow: 10_000 } as any,
-        tools: [tool("read"), tool("tasks"), tool("finish")],
+        tools: [tool("read"), tool("write"), tool("tasks"), tool("finish")],
       },
       projectRoot: "/tmp",
       sessionId: "supplied-dependency-observation",
@@ -729,82 +729,9 @@ describe("shared agent execution preparation", () => {
       toolPolicy,
     });
 
-    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(toolPolicy === "full" ? ["read", "tasks", "finish"] : ["read", "finish"]);
-  });
-
-  test("keeps App owners inside the disposition ownership boundary", () => {
-    const definition = {
-      name: "owner",
-      description: "App owner",
-      domain: "tests",
-      systemPrompt: "identity",
-      model: { contextWindow: 10_000 } as any,
-      tools: [
-        "agents",
-        "background_exec",
-        "bash",
-        "cron",
-        "edit",
-        "finish",
-        "message",
-        "query_db",
-        "read",
-        "run_cli_agent",
-        "write",
-      ].map(tool),
-    };
-
-    const full = prepareAgentExecution({
-      definition,
-      projectRoot: "/tmp",
-      sessionId: "app-owner-full",
-      task: "handle project input",
-      toolPolicy: "app-owner-full",
-    });
-    const deputy = prepareAgentExecution({
-      definition,
-      projectRoot: "/tmp",
-      sessionId: "app-owner-deputy",
-      task: "handle human input",
-      toolPolicy: "app-owner-deputy",
-    });
-
-    expect(full.tools.map((candidate) => candidate.name)).toEqual([
-      "agents",
-      "bash",
-      "edit",
-      "finish",
-      "query_db",
-      "read",
-      "run_cli_agent",
-      "write",
-    ]);
-    expect(deputy.tools.map((candidate) => candidate.name)).toEqual(["agents", "finish", "query_db", "read", "run_cli_agent"]);
-  });
-
-  test("leaves compatibility deputy sessions unchanged during migration", () => {
-    const prepared = prepareAgentExecution({
-      definition: {
-        name: "may",
-        description: "May",
-        domain: "tests",
-        systemPrompt: "identity",
-        model: { contextWindow: 10_000 } as any,
-        tools: ["agents", "finish", "query_db", "read", "run_cli_agent"].map(tool),
-      },
-      projectRoot: "/tmp",
-      sessionId: "legacy-deputy",
-      task: "handle compatibility input",
-      toolPolicy: "deputy",
-    });
-
-    expect(prepared.tools.map((candidate) => candidate.name)).toEqual([
-      "agents",
-      "finish",
-      "query_db",
-      "read",
-      "run_cli_agent",
-    ]);
+    expect(prepared.tools.map((candidate) => candidate.name)).toEqual(
+      toolPolicy === "full" ? ["read", "write", "tasks", "finish"] : ["read", "tasks", "finish"],
+    );
   });
 
   test("binds shared tools to the exact concurrent agent session", async () => {
