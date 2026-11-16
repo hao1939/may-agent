@@ -1,168 +1,320 @@
 import { describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runWorkflowTest } from "@may-agent/sdk/testing";
 import * as diagnoseImprovementWorkflow from "./diagnose-improvement.js";
 
+interface TrialFixture {
+  scenario: string;
+  verdict?: "pass" | "fail" | "invalid";
+  result?: unknown;
+  rawResult?: string;
+  transcript?: string;
+  usage?: { turns: number; ops: number; total_tokens: number };
+}
+
+function makeBaseline(target: string, trials: TrialFixture[]) {
+  const root = mkdtempSync(join(tmpdir(), "gym-diag-baseline-"));
+  const manifestTrials = trials.map((trial, index) => {
+    const trialDir = join(root, "cases", trial.scenario, `trial-${index + 1}`);
+    mkdirSync(trialDir, { recursive: true });
+    const resultPath = join(trialDir, "result.json");
+    if (trial.rawResult !== undefined) writeFileSync(resultPath, trial.rawResult);
+    else if (trial.result !== undefined) writeFileSync(resultPath, JSON.stringify(trial.result));
+    if (trial.transcript !== undefined) {
+      writeFileSync(join(trialDir, "transcript.jsonl"), `${trial.transcript}\n`);
+    }
+    return {
+      scenario: trial.scenario,
+      machine_verdict: trial.verdict,
+      usage: trial.usage ?? { turns: 1, ops: 1, total_tokens: 1000 },
+      result_path: `cases/${trial.scenario}/trial-${index + 1}/result.json`,
+      transcript_path: trial.transcript === undefined
+        ? undefined
+        : `cases/${trial.scenario}/trial-${index + 1}/transcript.jsonl`,
+    };
+  });
+  writeFileSync(
+    join(root, "manifest.json"),
+    JSON.stringify({
+      agent: target,
+      benchmark: "bounded-diagnosis",
+      scenarios: trials.map((trial) => trial.scenario),
+      trials: manifestTrials,
+    }),
+  );
+  return root;
+}
+
+function noActionProposal(disposition: "no_change" | "insufficient_evidence") {
+  return {
+    target: "ignored",
+    disposition,
+    detected_regimes: ["ignored"],
+    root_cause_summary: disposition === "no_change" ? "No supported change." : "Evidence is incomplete.",
+    proposed_changes: [],
+  };
+}
+
 describe("diagnose-improvement workflow", () => {
-  test("detects readonly_write_conflict and missing_regime_or_heuristic from a baseline run and normalizes the Stage 3 workflow improvement plan", async () => {
-    const baselineDir = mkdtempSync(join(tmpdir(), "gym-diag-baseline-"));
+  test("uses result.json execution status and abstains when execution is blocked", async () => {
+    const baselineDir = makeBaseline("may/bounded-cleanup", [
+      {
+        scenario: "blocked-run",
+        verdict: "invalid",
+        result: { agent_status: "blocked", checks: [] },
+        transcript: "BLOCKED: no file-writing tool was available with readonly tools.",
+      },
+    ]);
+    let techLeadCalls = 0;
     try {
-      mkdirSync(join(baselineDir, "cases", "may-align-block-cleanup-on-diff", "trial-1"), {
-        recursive: true,
-      });
-      mkdirSync(join(baselineDir, "cases", "may-align-closure-before-cleanup", "trial-1"), {
-        recursive: true,
-      });
-
-      writeFileSync(
-        join(
-          baselineDir,
-          "cases",
-          "may-align-block-cleanup-on-diff",
-          "trial-1",
-          "result.json",
-        ),
-        JSON.stringify({
-          checks: [
-            {
-              name: "decision-produced",
-              passed: false,
-              gate: true,
-              detail: "alignment-decision.json was not produced",
-            },
-          ],
-        }),
-      );
-      writeFileSync(
-        join(
-          baselineDir,
-          "cases",
-          "may-align-block-cleanup-on-diff",
-          "trial-1",
-          "transcript.jsonl",
-        ),
-        JSON.stringify({
-          role: "toolResult",
-          toolName: "finish",
-          content: [
-            {
-              type: "text",
-              text: "BLOCKED: no file-writing tool was available to create alignment-decision.json with readonly tools.",
-            },
-          ],
-        }) + "\n",
-      );
-
-      writeFileSync(
-        join(
-          baselineDir,
-          "cases",
-          "may-align-closure-before-cleanup",
-          "trial-1",
-          "result.json",
-        ),
-        JSON.stringify({
-          checks: [
-            {
-              name: "exact:needs_clarification",
-              passed: false,
-              gate: true,
-              detail: "Expected needs_clarification=true; got false",
-            },
-          ],
-        }),
-      );
-      writeFileSync(
-        join(
-          baselineDir,
-          "cases",
-          "may-align-closure-before-cleanup",
-          "trial-1",
-          "transcript.jsonl",
-        ),
-        "{}\n",
-      );
-
-      writeFileSync(
-        join(baselineDir, "manifest.json"),
-        JSON.stringify({
-          agent: "may/bounded-cleanup",
-          benchmark: "may-alignment",
-          scenarios: [
-            "may-align-block-cleanup-on-diff",
-            "may-align-closure-before-cleanup",
-          ],
-          trials: [
-            {
-              scenario: "may-align-block-cleanup-on-diff",
-              machine_verdict: "invalid",
-              agent_status: "blocked",
-              usage: { turns: 1, ops: 1, total_tokens: 9059 },
-              result_path: "cases/may-align-block-cleanup-on-diff/trial-1/result.json",
-              transcript_path: "cases/may-align-block-cleanup-on-diff/trial-1/transcript.jsonl",
-            },
-            {
-              scenario: "may-align-closure-before-cleanup",
-              machine_verdict: "fail",
-              agent_status: "success",
-              usage: { turns: 1, ops: 1, total_tokens: 9070 },
-              result_path: "cases/may-align-closure-before-cleanup/trial-1/result.json",
-              transcript_path: "cases/may-align-closure-before-cleanup/trial-1/transcript.jsonl",
-            },
-          ],
-        }),
-      );
-
-      const outputFile = join(baselineDir, "improvement-proposal.json");
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, outputFile },
+        input: { baselineDir, candidateName: "must-not-be-prepared" },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
         mocks: {
           gym: (step) => {
+            expect(step.task).toContain('"agentStatus": "blocked"');
+            expect(step.task).toContain("execution_failure");
             expect(step.task).toContain("readonly_write_conflict");
-            expect(step.task).toContain("missing_regime_or_heuristic");
-            return {
-              status: "done",
-              summary: "Evolve bounded-cleanup workflow with regime classifier and write-instruction stripping",
-              output: {
-                target: "may/bounded-cleanup",
-                recommended_stage: "stage2_skill", // Normalizer upgrades workflow target to stage3_workflow
-                detected_regimes: ["readonly_write_conflict"],
-                root_cause_summary:
-                  "v1 bounded-cleanup passed raw Write instructions into a readonly child call and lacked a regime branch for missing durable closure paths.",
-                proposed_changes: [
-                  {
-                    file: "projects/may.app/agents/may/workflows/bounded-cleanup.ts",
-                    change_summary:
-                      "Strip conflicting Write instructions and add classifyCleanupRegime() for non-empty diff and missing durable closure path.",
-                  },
-                ],
-                verification_plan: {
-                  benchmark: "may-alignment",
-                  scenarios: ["may-align-block-cleanup-on-diff"],
-                  objective: "duration_ms", // Normalizer upgrades quality failure to "quality"
-                },
-              },
-            };
+            return { status: "done", output: noActionProposal("insufficient_evidence") };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
           },
         },
       });
-
       expect(run.status).toBe("done");
-      expect(run.unconsumedFixtures).toHaveLength(0);
-      const written = JSON.parse(readFileSync(outputFile, "utf8")).proposal;
-      expect(written.recommended_stage).toBe("stage3_workflow");
-      expect(written.detected_regimes).toEqual([
-        "readonly_write_conflict",
-        "missing_regime_or_heuristic",
-      ]);
-      expect(written.verification_plan.objective).toBe("quality");
-      expect(written.verification_plan.scenarios).toEqual([
-        "may-align-block-cleanup-on-diff",
-        "may-align-closure-before-cleanup",
-      ]);
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe("insufficient_evidence");
+      expect(existsSync(join(baselineDir, "agents", ".lab", "must-not-be-prepared"))).toBe(false);
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ["missing", undefined, undefined, "result.json not found"],
+    ["malformed", undefined, "{not-json", "result.json is malformed"],
+  ])("reports %s result evidence explicitly and does not prepare a candidate", async (_name, result, rawResult, expectedDiagnostic) => {
+    const baselineDir = makeBaseline("alex", [
+      { scenario: "evidence-gap", verdict: "invalid", result, rawResult },
+    ]);
+    const candidateDir = join(baselineDir, "agents", ".lab", "preserve-me");
+    mkdirSync(candidateDir, { recursive: true });
+    writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "preserve-me" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain(expectedDiagnostic);
+            return { status: "done", output: noActionProposal("insufficient_evidence") };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect(readFileSync(join(candidateDir, "sentinel.txt"), "utf8")).toBe("unchanged");
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns no-change for healthy trials without preparing a candidate", async () => {
+    const baselineDir = makeBaseline("alex", [
+      { scenario: "healthy", verdict: "pass", result: { agent_status: "success", checks: [{ name: "ok", passed: true }] } },
+    ]);
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "unneeded" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("healthy_baseline");
+            expect(step.task).toContain("Deterministic evidence disposition: `no_change`");
+            return { status: "done", output: noActionProposal("no_change") };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.proposed_changes).toEqual([]);
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ["invalid", "invalid" as const],
+    ["missing", undefined],
+  ])("treats %s scoring verdict as insufficient evidence even at high usage", async (_name, verdict) => {
+    const baselineDir = makeBaseline("alex", [
+      {
+        scenario: "unscored-high-usage",
+        verdict,
+        result: { agent_status: "success", checks: [{ name: "ok", passed: true }] },
+        usage: { turns: 4, ops: 5, total_tokens: 40_000 },
+      },
+    ]);
+    const candidateDir = join(baselineDir, "agents", ".lab", "preserve-invalid");
+    mkdirSync(candidateDir, { recursive: true });
+    writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "preserve-invalid" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("insufficient_evidence");
+            expect(step.task).not.toContain('"token_or_op_bloat"');
+            return { status: "done", output: noActionProposal("insufficient_evidence") };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe("insufficient_evidence");
+      expect(readFileSync(join(candidateDir, "sentinel.txt"), "utf8")).toBe("unchanged");
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("treats an empty baseline as insufficient evidence", async () => {
+    const baselineDir = makeBaseline("alex", []);
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "empty-must-not-prepare" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("Deterministic evidence disposition: `insufficient_evidence`");
+            return { status: "done", output: noActionProposal("insufficient_evidence") };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe("insufficient_evidence");
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ["quality failure", "fail" as const, { turns: 1, ops: 1, total_tokens: 1000 }, "no_change" as const],
+    ["high usage", "pass" as const, { turns: 4, ops: 5, total_tokens: 40_000 }, "insufficient_evidence" as const],
+  ])("accepts specialist abstention for an otherwise actionable %s", async (_name, verdict, usage, specialistDisposition) => {
+    const baselineDir = makeBaseline("alex", [
+      {
+        scenario: "actionable-but-declined",
+        verdict,
+        result: {
+          agent_status: "success",
+          checks: [{ name: "quality", passed: verdict === "pass", detail: "candidate not worthwhile" }],
+        },
+        usage,
+      },
+    ]);
+    const candidateDir = join(baselineDir, "agents", ".lab", "declined");
+    mkdirSync(candidateDir, { recursive: true });
+    writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "declined" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("Deterministic evidence disposition: `actionable`");
+            return { status: "done", output: noActionProposal(specialistDisposition) };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe(specialistDisposition);
+      expect(readFileSync(join(candidateDir, "sentinel.txt"), "utf8")).toBe("unchanged");
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("prepares a candidate only for a genuine quality failure", async () => {
+    const baselineDir = makeBaseline("alex", [
+      {
+        scenario: "quality-failure",
+        verdict: "fail",
+        result: {
+          agent_status: "success",
+          checks: [{ name: "answer-correct", passed: false, detail: "wrong answer" }],
+        },
+      },
+    ]);
+    const canonicalDir = join(baselineDir, "agents", "alex");
+    mkdirSync(canonicalDir, { recursive: true });
+    writeFileSync(join(canonicalDir, "agent.json"), "{}\n");
+    writeFileSync(join(canonicalDir, "AGENTS.md"), "# Alex\n");
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "quality-fix" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("quality_failure");
+            return {
+              status: "done",
+              output: {
+                target: "ignored",
+                disposition: "actionable",
+                recommended_stage: "stage2_skill",
+                detected_regimes: ["ignored"],
+                root_cause_summary: "A successful execution failed a required quality check.",
+                proposed_changes: [{ file: "agents/alex/AGENTS.md", change_summary: "Add the missing rule." }],
+                verification_plan: { benchmark: "ignored", scenarios: ["ignored"], objective: "duration_ms" },
+              },
+            };
+          },
+          "tech-lead": (step) => {
+            techLeadCalls += 1;
+            expect(step.task).toContain("quality_failure");
+            return { status: "done", output: { modified_files: ["AGENTS.md"], summary: "Prepared minimal rule." } };
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(1);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe("actionable");
+      expect((run.report.result?.output as any)?.output?.verification_plan?.objective).toBe("quality");
+      expect(existsSync(join(baselineDir, "agents", ".lab", "quality-fix", "agent.json"))).toBe(true);
     } finally {
       rmSync(baselineDir, { recursive: true, force: true });
     }
