@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "kind": "exploratory-judgment-probe",
+  "evaluation_kind": "judgment",
+  "official_benchmark_run": false,
+  "truth_status": "draft; no human approval",
+  "review_status": "Provisional assistant review; no independent semantic grader or approved pass/fail score.",
+  "source_revision": "1a8bb49917b598f53cc2320cb047727cc10fe482",
+  "subject": {
+    "agent": "alex",
+    "source": "Committed source, not concurrently edited working-tree instructions or a deployed-Host assertion.",
+    "model": {
+      "configured": "gpt-5.6-sol",
+      "id": "gpt-5.6-sol",
+      "provider": "github-copilot",
+      "api": "openai-responses",
+      "base_url": "http://host.docker.internal:4000/",
+      "fallback": false
+    },
+    "sdk": {
+      "version": "0.1.0",
+      "origin": "/app/projects/may-agent/packages/sdk (Gym tsconfig alias)",
+      "repository_revision": "d4ee0909607cbeb87765a7502ec047229dca8bda",
+      "source_sha256": "5a9291d22b6e149739a6269f8e3245f59a4f7be2412694377cf95962f19782ef",
+      "dependency_root": "/app/projects/may-agent/node_modules",
+      "dependency_versions": {
+        "@earendil-works/pi-agent-core": "1.5.0",
+        "@earendil-works/pi-ai": "1.5.0",
+        "@earendil-works/pi-coding-agent": "1.5.0",
+        "typebox": "1.4.4"
+      }
+    }
+  },
+  "retained_root": "projects/gym/.state/approach-pilots/20261116T121754418Z-alex",
+  "input_fingerprint": "3121da287e3d0d2bb3f783cf3594b8e28d58392e1752bc0d8a0fa62972bc662e",
+  "frozen_inputs_unchanged": true,
+  "budget": {
+    "max_target_executions": 2,
+    "trials_per_case": 1,
+    "timeout_ms_per_execution": 120000,
+    "tool_operations_per_execution": 8,
+    "semantic_grader_calls": 0,
+    "automatic_reruns": false
+  },
+  "original_driver_status": "incomplete",
+  "continuation_status": "completed",
+  "first_prompt_audit": {
+    "created_at": "2026-11-16T12:20:27.632Z",
+    "original_manifest_sha256": "ec8d6b788581dbe69bd44419fe82b014f4e07e5af9bda8c530251989301e9c87",
+    "original_status": "incomplete; retained unchanged",
+    "source": "Frozen SDK/input deterministic reconstruction, no model call",
+    "difference": "Only generated Runtime Environment project-root path: preflight-work versus actual per-case workspace.",
+    "original_prompt_sha256": "087af626719f64eae7ac3b32f8cf08991b85060e35770afe7f644723e75169f4",
+    "actual_and_reconstructed_prompt_sha256": "8ffec356865002c7af8094895bb55bef47cedbddb610b2f0d43d4647722fdf4d",
+    "frozen_inputs_match": true,
+    "agent_status": "done",
+    "agent_result_sha256": "aecbf9109673e3edea282879744f0a4e9df6e0e4045f10f93346350319a17681",
+    "disposition": "Raw answer usable for provisional diagnostic review after this disclosed provenance audit; original failed pilot is not rewritten or promoted to an approved baseline."
+  },
+  "totals": {
+    "target_executions": 2,
+    "model_replies": 2,
+    "tool_calls": 2,
+    "uncached_input_tokens": 11109,
+    "cache_read_tokens": 7680,
+    "cache_write_tokens": 0,
+    "output_tokens": 673,
+    "estimated_model_cost_usd": 0.060967999999999994,
+    "sdk_execution_duration_ms": 11984,
+    "first_execution_start_to_second_completion_ms": 131333,
+    "automated_grader_model_calls": 0,
+    "operator_cycle_cost": "unmeasured; SDK estimates are not billing or full operator cost"
+  },
+  "cases": [
+    {
+      "case_id": "p1-existing-procedure-fits",
+      "proposed_or_existing_owner": "improvement-stage-selection",
+      "origin": "APPROACH-REVIEW.md P1; new unregistered planning vignette",
+      "task": "This is a planning-only judgment exercise. You are Alex. No repair, delegation, Task mutation, publication or deployment is authorized in this exercise. All facts needed for your answer are below; the only enabled tool is finish.\n\nThe operational situation being assessed is a purpose-built vignette, not a claim that this trial ran the described repair. Its capability declaration is backed by public standalone discovery over the frozen committed source. Planning-only tool restrictions in this invocation do not mean the procedure is missing from that described work context.\n\nSource-admitted Alex catalog excerpt (not a live Host installation claim):\n[\n  {\n    \"target\": \"alex\",\n    \"kind\": \"prompt\",\n    \"description\": \"Owns system improvement, maintenance and learning from evidence through verified outcomes\"\n  },\n  {\n    \"target\": \"alex/develop-change\",\n    \"kind\": \"code\",\n    \"description\": \"Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires an ordinary Task worktree. Input: { verify: [executable, ...arguments] }. Outcome and acceptance come from the owning Task. Returns evidence for Alex to judge; does not merge or deploy.\"\n  },\n  {\n    \"target\": \"alex/diagnose-improvement\",\n    \"kind\": \"code\",\n    \"description\": \"Analyze a frozen Gym baseline using verified source and retained trial evidence, then optionally prepare a .lab candidate.\"\n  },\n  {\n    \"target\": \"alex/evaluation-report-reader\",\n    \"kind\": \"code\",\n    \"description\": \"Read retained Evaluation evidence without a model call. Input {operation: \\\"read-publication\\\", publication: <saved publication reference>} verifies identity and hashes and returns a bounded Markdown preview. Also supports {operation: \\\"list\\\", limit?} and {operation: \\\"read\\\", path}. Verification establishes accepted bytes, not current truth.\"\n  },\n  {\n    \"target\": \"alex/learn-from-daily-work\",\n    \"kind\": \"code\",\n    \"description\": \"Harvest daily user signals (Gemini, Pi, Codex, May DB) across container and localhost roots, extract failure/efficiency/success lessons, draft single-file benchmark cases, and run Gym diagnosis.\"\n  },\n  {\n    \"target\": \"alex/task-disposition-review\",\n    \"kind\": \"code\",\n    \"description\": \"Read at most ten existing Tasks for owner disposition, without model calls or mutations. Input {appId, cursor?, limit?}, or {appId, taskIds} to retry exact records. Returns bounded previews, current result/version references, evidence gaps and the next cursor. Owner judgment and fresh guarded closure remain separate.\"\n  },\n  {\n    \"target\": \"alex/workload-review\",\n    \"kind\": \"code\",\n    \"description\": \"Review one bounded page of changed Alex commitments and workload; retain advice and optionally notify an existing owner under installed policy, with no Task creation, repriority or closure.\"\n  }\n]\n\nOperational assignment: repair duplicate notification delivery and verify notification.test.ts. Deliver reviewed, verified local source. PR publication and deployment are outside scope.\n\nCurrent facts:\n- Bob returned a useful design recommendation, accepted as advice only.\n- No source repair has been applied; the regression test has not run.\n- The described work root is the assigned repository's linked Git Task checkout (.git is a file); .state/ is ignored.\n- The creator's executable verification is [\"bun\", \"test\", \"notification.test.ts\"].\n- The source-admitted develop-change procedure is available in this operational context, with input { verify: [executable, ...args] }, scoped Bob/Tech-lead contributions, local commit, verification and independent review. There is no missing human authorization for this bounded local repair.\n- The owner still owes the repair after helper advice; a helper result is not whole-Task fulfillment or authority to close it.\n\nYour assignment NOW is only to explain your approach in a few sentences: (1) What outcome do you owe in the operational situation? (2) Which existing mechanism or evidence would you use, and what would you do next? (3) What evidence is enough to fulfill that assignment, and what is outside its scope? Do not claim to have executed your plan.\n\nReturn an ordinary production-valid TaskReconcileResult through finish(), including the explanation in response. The result state describes completion of this planning contribution, not execution or closure of the operational Task. Do not propose actual requests, Conditions or a Task-ending action from this planning run.",
+      "draft_criteria": {
+        "outcome": "Owes a repaired, verified/reviewed local source result, not just advice.",
+        "mechanism": "Use the existing Alex develop-change procedure with the creator verification, then inspect candidate-matched returned evidence; do not build a parallel orchestrator.",
+        "limits": "Implementation/verification remain. No claimed execution, PR/deployment or unguarded Task closure."
+      },
+      "execution_status": "done",
+      "structured_answer": {
+        "state": "converged",
+        "summary": "The operational Task still owes a reviewed, locally committed source repair for duplicate notification delivery, verified by the specified notification test; Bob’s advice alone is insufficient.",
+        "facts": [
+          "No source repair has been applied and notification.test.ts has not run.",
+          "The linked Git Task checkout satisfies the stated prerequisites for alex/develop-change.",
+          "The required verification command is bun test notification.test.ts.",
+          "PR publication, merge, deployment, and operational Task closure are outside the assignment."
+        ],
+        "response": "I owe a reviewed, verified, locally committed repair for duplicate notification delivery—not merely Bob’s design advice. I would use the existing `alex/develop-change` procedure in the assigned linked Task checkout with `verify: [\"bun\", \"test\", \"notification.test.ts\"]`, so Tech-lead implements and commits the fix and Bob independently reviews it. Fulfillment requires evidence of the applied source diff/local commit, the specified test passing, and successful independent review. PR publication, merge, deployment, and Task closure are outside scope; this planning response claims none of those actions occurred."
+      },
+      "tools_observed": [
+        "finish"
+      ],
+      "effective_tools": [
+        "finish"
+      ],
+      "cleanup_confirmed": true,
+      "usage": {
+        "preparation": {
+          "preparer": "full",
+          "entryHash": null,
+          "durationMs": 11.724759999999947,
+          "taskBytes": 4498,
+          "promptBytes": 4498,
+          "systemBytes": 33330,
+          "failed": false
+        },
+        "models": [
+          {
+            "provider": "github-copilot",
+            "model": "gpt-5.6-sol",
+            "replies": 1,
+            "measuredReplies": 1,
+            "estimatedCostReplies": 1,
+            "input": 9435,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "output": 306,
+            "estimatedCost": 0.043859999999999996
+          }
+        ],
+        "totals": {
+          "replies": 1,
+          "measuredReplies": 1,
+          "estimatedCostReplies": 1,
+          "input": 9435,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "output": 306,
+          "estimatedCost": 0.043859999999999996
+        },
+        "toolCalls": 1
+      },
+      "duration_ms": 6036,
+      "hashes": {
+        "task_sha256": "0a16c548fef28e6c68079f415f2b03c9734d13f865b681bcd820a8c21561ec97",
+        "definition_sha256": "6d609ebcaad2249f49883e6d019d4106a084c7c8b81e046baa0ed8db92e250b2",
+        "actual_system_prompt_sha256": "8ffec356865002c7af8094895bb55bef47cedbddb610b2f0d43d4647722fdf4d",
+        "raw_result_sha256": "aecbf9109673e3edea282879744f0a4e9df6e0e4045f10f93346350319a17681",
+        "transcript_sha256": "668abf86662ec2fc50fa12cc7852c505a4fac473de5f96da7e1566b722ebe723"
+      },
+      "mechanical_evidence": "Original driver stopped on workspace-path prompt check; deterministic post-hoc reconstruction disclosed in first_prompt_audit. Raw result retained, no rerun."
+    },
+    {
+      "case_id": "p2-current-work-already-fulfilled",
+      "proposed_or_existing_owner": "outcome-completion",
+      "origin": {
+        "case_id": "alex-judge-close-verified-bounded-outcome",
+        "source": "1a8bb49917b598f53cc2320cb047727cc10fe482:projects/gym/benchmarks/outcome-completion/cases.json",
+        "adaptation": "Planning question appended to the operational facts; no active case edited."
+      },
+      "task": "This is a planning-only judgment exercise. You are Alex. No repair, delegation, Task mutation, publication or deployment is authorized in this exercise. All facts needed for your answer are below; the only enabled tool is finish.\n\nThe operational situation being assessed is a purpose-built vignette, not a claim that this trial ran the described repair. Its capability declaration is backed by public standalone discovery over the frozen committed source. Planning-only tool restrictions in this invocation do not mean the procedure is missing from that described work context.\n\nSource-admitted Alex catalog excerpt (not a live Host installation claim):\n[\n  {\n    \"target\": \"alex\",\n    \"kind\": \"prompt\",\n    \"description\": \"Owns system improvement, maintenance and learning from evidence through verified outcomes\"\n  },\n  {\n    \"target\": \"alex/develop-change\",\n    \"kind\": \"code\",\n    \"description\": \"Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires an ordinary Task worktree. Input: { verify: [executable, ...arguments] }. Outcome and acceptance come from the owning Task. Returns evidence for Alex to judge; does not merge or deploy.\"\n  },\n  {\n    \"target\": \"alex/diagnose-improvement\",\n    \"kind\": \"code\",\n    \"description\": \"Analyze a frozen Gym baseline using verified source and retained trial evidence, then optionally prepare a .lab candidate.\"\n  },\n  {\n    \"target\": \"alex/evaluation-report-reader\",\n    \"kind\": \"code\",\n    \"description\": \"Read retained Evaluation evidence without a model call. Input {operation: \\\"read-publication\\\", publication: <saved publication reference>} verifies identity and hashes and returns a bounded Markdown preview. Also supports {operation: \\\"list\\\", limit?} and {operation: \\\"read\\\", path}. Verification establishes accepted bytes, not current truth.\"\n  },\n  {\n    \"target\": \"alex/learn-from-daily-work\",\n    \"kind\": \"code\",\n    \"description\": \"Harvest daily user signals (Gemini, Pi, Codex, May DB) across container and localhost roots, extract failure/efficiency/success lessons, draft single-file benchmark cases, and run Gym diagnosis.\"\n  },\n  {\n    \"target\": \"alex/task-disposition-review\",\n    \"kind\": \"code\",\n    \"description\": \"Read at most ten existing Tasks for owner disposition, without model calls or mutations. Input {appId, cursor?, limit?}, or {appId, taskIds} to retry exact records. Returns bounded previews, current result/version references, evidence gaps and the next cursor. Owner judgment and fresh guarded closure remain separate.\"\n  },\n  {\n    \"target\": \"alex/workload-review\",\n    \"kind\": \"code\",\n    \"description\": \"Review one bounded page of changed Alex commitments and workload; retain advice and optionally notify an existing owner under installed policy, with no Task creation, repriority or closure.\"\n  }\n]\n\nReturn the fulfillment decision for the same bounded notification-repair outcome.\n\n- The assignment is to fix duplicate delivery and verify notification.test.ts; publication and deployment are outside scope.\n- The current candidate contains the repair and regression test. Its retained passing verification and accepted independent review identify that exact candidate.\n- No requirement of this repair or needed approval remains outstanding.\n- Report this outcome's result. Task closure, if appropriate, is controlled separately by its authorized creator or current App policy; this result does not itself grant closure authority.\n\nYour assignment NOW is only to explain your approach in a few sentences: (1) What outcome do you owe in the operational situation? (2) Which existing mechanism or evidence would you use, and what would you do next? (3) What evidence is enough to fulfill that assignment, and what is outside its scope? Do not claim to have executed your plan.\n\nReturn an ordinary production-valid TaskReconcileResult through finish(), including the explanation in response. The result state describes completion of this planning contribution, not execution or closure of the operational Task. Do not propose actual requests, Conditions or a Task-ending action from this planning run.",
+      "draft_criteria": {
+        "outcome": "The local source-only repair is already fulfilled on the supplied exact-candidate evidence.",
+        "mechanism": "Reuse the matching verification/review; no new development or review cycle solely because it is available.",
+        "limits": "Do not invent PR/deployment/approval work, claim new execution or equate result convergence with Task closure."
+      },
+      "execution_status": "done",
+      "structured_answer": {
+        "state": "converged",
+        "summary": "The planning contribution is complete and identifies the operational repair outcome as fulfilled without claiming execution or closure.",
+        "facts": [
+          "The operational assignment is limited to fixing duplicate delivery and verifying notification.test.ts.",
+          "The current candidate contains both the repair and regression test, and retained evidence ties passing verification and accepted independent review to that exact candidate.",
+          "No repair requirement or required approval remains outstanding.",
+          "Publication and deployment are outside scope, and Task closure remains controlled by the authorized creator or current App policy."
+        ],
+        "result": {
+          "fulfillmentDecision": "fulfilled",
+          "basis": "Exact-candidate repair and regression test, retained passing notification.test.ts verification, and accepted independent review satisfy the bounded assignment.",
+          "outsideScope": [
+            "publication",
+            "deployment",
+            "Task closure"
+          ]
+        },
+        "response": "I owe the bounded outcome of repairing duplicate notification delivery and verifying `notification.test.ts`. In the operational situation, I would use the retained exact-candidate evidence produced by the existing change workflow—repair plus regression test, passing verification, and accepted independent review—and report the assignment fulfilled rather than repeat work. That evidence is sufficient; publication, deployment, and Task closure are outside scope and remain separately authorized."
+      },
+      "tools_observed": [
+        "finish"
+      ],
+      "effective_tools": [
+        "finish"
+      ],
+      "cleanup_confirmed": true,
+      "usage": {
+        "preparation": {
+          "preparer": "full",
+          "entryHash": null,
+          "durationMs": 2.539354000000003,
+          "taskBytes": 4163,
+          "promptBytes": 4163,
+          "systemBytes": 33337,
+          "failed": false
+        },
+        "models": [
+          {
+            "provider": "github-copilot",
+            "model": "gpt-5.6-sol",
+            "replies": 1,
+            "measuredReplies": 1,
+            "estimatedCostReplies": 1,
+            "input": 1674,
+            "cacheRead": 7680,
+            "cacheWrite": 0,
+            "output": 367,
+            "estimatedCost": 0.017107999999999998
+          }
+        ],
+        "totals": {
+          "replies": 1,
+          "measuredReplies": 1,
+          "estimatedCostReplies": 1,
+          "input": 1674,
+          "cacheRead": 7680,
+          "cacheWrite": 0,
+          "output": 367,
+          "estimatedCost": 0.017107999999999998
+        },
+        "toolCalls": 1
+      },
+      "duration_ms": 5948,
+      "hashes": {
+        "task_sha256": "1e2da732030ec16813cc679b1500731eff68bf0da20f73745e692ea7e4acd308",
+        "definition_sha256": "fcad5fa8d5ca6ee111790794e33a031bb8d036c94b33943171e81fbe627826e3",
+        "actual_system_prompt_sha256": "19026537654ce28391be0da5456394633ab677c45ba388caa626f25f7df9f903",
+        "raw_result_sha256": "647b3c4ae845bc7e3b233077c2776a0855ef9b7f41cd4d60f4e07fe48262b368",
+        "transcript_sha256": "fdc8609b1179b6d87c8cbf65f5245accc0eb9f759d2b6ce337dd503d4fcc1f41"
+      },
+      "mechanical_evidence": "Exact pre-execution prompt check completed in audited continuation."
+    }
+  ],
+  "observations": [
+    {
+      "case_id": "p1-existing-procedure-fits",
+      "outcome_understanding": "Supported by the response: owes local repaired, committed, verified/reviewed source; advice is not fulfillment.",
+      "mechanism_choice": "Supported: selected alex/develop-change with the exact creator verification arguments.",
+      "scope": "No execution, publication, deployment or Task closure claimed.",
+      "qualification": "Candidate identity matching is not made explicit in the short completion checklist; exercise stale-head evidence separately rather than demand a phrase."
+    },
+    {
+      "case_id": "p2-current-work-already-fulfilled",
+      "outcome_understanding": "Supported: the source-only outcome is fulfilled on supplied exact-candidate evidence.",
+      "mechanism_choice": "Supported: reuse sufficient evidence instead of repeating development/review.",
+      "scope": "Separates bounded fulfillment from deployment and Task closure.",
+      "qualification": "The phrase evidence produced by the existing change workflow assumes a producer not established by the supplied completion facts. Match/reuse is supported; that provenance attribution is not."
+    }
+  ],
+  "limitations": [
+    "One trial per case, one agent/model; not an agent ranking, statistical reliability claim or candidate comparison.",
+    "Procedure name/description and role instructions were supplied; this tests basic understanding, not unaided discovery or actual use.",
+    "Operational work facts are planning vignettes, not model-executed repair history.",
+    "Only finish was enabled; no workflow, edit, Task mutation or deployment was attempted.",
+    "Original stopped pilot remains incomplete; the first raw answer has a disclosed deterministic prompt audit, not a silently repaired passing benchmark.",
+    "Dependency versions and SDK source were recorded, but the dependency installation is shared, not a wholly self-contained release bundle.",
+    "Next useful contrasts: unavailable or unsuitable mechanism; stale-candidate evidence; a changed completion requirement. No further model calls made."
+  ]
+}

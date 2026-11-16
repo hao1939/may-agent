@@ -1,6 +1,10 @@
 # Proposed judgment checks — understand the outcome and use what we have
 
-**Draft for review. No executable cases, approvals or model results added.**
+**Draft for review. No executable cases or approvals added.**
+
+A [two-question diagnostic pilot](../docs/approach-pilot-20261116.md) now records
+actual Alex answers, costs and a disclosed harness-path fault. It is not an
+approved score or evidence that the planned mechanisms were executed.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
