@@ -45,9 +45,10 @@ python3 projects/aks-rp-e2e.app/mlvm/stage-release.py BASE_RELEASE NEW_RELEASE
 ```
 
 The staging helper checks the reviewed operational App's exact hash and changes
-only its restricted observer list and imports. It copies a complete definition
+only its restricted observer list, imports and corresponding profile assertion.
+It copies a complete definition
 release for isolated validation; it does not activate it. To activate, copy the
-two reviewed source files into the operational installation and use the Host's
+three reviewed source files into the operational installation and use the Host's
 normal `/reload` route, which captures and atomically publishes its immutable
 source release. Verify that no other source changes are present first. Preserve
 the previous files/release for rollback; never restore a database over newer
