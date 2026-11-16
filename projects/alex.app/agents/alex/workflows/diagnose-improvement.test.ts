@@ -7,7 +7,7 @@ import * as diagnoseImprovementWorkflow from "./diagnose-improvement.js";
 
 interface TrialFixture {
   scenario: string;
-  verdict: "pass" | "fail" | "invalid";
+  verdict?: "pass" | "fail" | "invalid";
   result?: unknown;
   rawResult?: string;
   transcript?: string;
@@ -140,7 +140,7 @@ describe("diagnose-improvement workflow", () => {
         mocks: {
           gym: (step) => {
             expect(step.task).toContain("healthy_baseline");
-            expect(step.task).toContain("Deterministic disposition: `no_change`");
+            expect(step.task).toContain("Deterministic evidence disposition: `no_change`");
             return { status: "done", output: noActionProposal("no_change") };
           },
           "tech-lead": () => {
@@ -152,6 +152,116 @@ describe("diagnose-improvement workflow", () => {
       expect(run.status).toBe("done");
       expect(techLeadCalls).toBe(0);
       expect((run.report.result?.output as any)?.output?.proposed_changes).toEqual([]);
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ["invalid", "invalid" as const],
+    ["missing", undefined],
+  ])("treats %s scoring verdict as insufficient evidence even at high usage", async (_name, verdict) => {
+    const baselineDir = makeBaseline("alex", [
+      {
+        scenario: "unscored-high-usage",
+        verdict,
+        result: { agent_status: "success", checks: [{ name: "ok", passed: true }] },
+        usage: { turns: 4, ops: 5, total_tokens: 40_000 },
+      },
+    ]);
+    const candidateDir = join(baselineDir, "agents", ".lab", "preserve-invalid");
+    mkdirSync(candidateDir, { recursive: true });
+    writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "preserve-invalid" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("insufficient_evidence");
+            expect(step.task).not.toContain('"token_or_op_bloat"');
+            return { status: "done", output: noActionProposal("insufficient_evidence") };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe("insufficient_evidence");
+      expect(readFileSync(join(candidateDir, "sentinel.txt"), "utf8")).toBe("unchanged");
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("treats an empty baseline as insufficient evidence", async () => {
+    const baselineDir = makeBaseline("alex", []);
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "empty-must-not-prepare" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("Deterministic evidence disposition: `insufficient_evidence`");
+            return { status: "done", output: noActionProposal("insufficient_evidence") };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe("insufficient_evidence");
+    } finally {
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    ["quality failure", "fail" as const, { turns: 1, ops: 1, total_tokens: 1000 }, "no_change" as const],
+    ["high usage", "pass" as const, { turns: 4, ops: 5, total_tokens: 40_000 }, "insufficient_evidence" as const],
+  ])("accepts specialist abstention for an otherwise actionable %s", async (_name, verdict, usage, specialistDisposition) => {
+    const baselineDir = makeBaseline("alex", [
+      {
+        scenario: "actionable-but-declined",
+        verdict,
+        result: {
+          agent_status: "success",
+          checks: [{ name: "quality", passed: verdict === "pass", detail: "candidate not worthwhile" }],
+        },
+        usage,
+      },
+    ]);
+    const candidateDir = join(baselineDir, "agents", ".lab", "declined");
+    mkdirSync(candidateDir, { recursive: true });
+    writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
+    let techLeadCalls = 0;
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "declined" },
+        workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain("Deterministic evidence disposition: `actionable`");
+            return { status: "done", output: noActionProposal(specialistDisposition) };
+          },
+          "tech-lead": () => {
+            techLeadCalls += 1;
+            throw new Error("tech-lead must not be called");
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(techLeadCalls).toBe(0);
+      expect((run.report.result?.output as any)?.output?.disposition).toBe(specialistDisposition);
+      expect(readFileSync(join(candidateDir, "sentinel.txt"), "utf8")).toBe("unchanged");
     } finally {
       rmSync(baselineDir, { recursive: true, force: true });
     }

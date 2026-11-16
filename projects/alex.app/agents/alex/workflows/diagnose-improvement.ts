@@ -133,7 +133,7 @@ export function extractBaselineDiagnostics(baselineDir: string): {
     scenarios: string[];
     trials: Array<{
       scenario: string;
-      machine_verdict: string;
+      machine_verdict?: string;
       agent_status?: string;
       usage?: { turns?: number; ops?: number; total_tokens?: number };
       result_path?: string;
@@ -150,6 +150,15 @@ export function extractBaselineDiagnostics(baselineDir: string): {
     const evidenceIssues: string[] = [];
     let failedChecks: string[] = [];
     let agentStatus = "unknown";
+    const verdict = trial.machine_verdict;
+
+    if (verdict !== "pass" && verdict !== "fail") {
+      evidenceIssues.push(
+        verdict
+          ? `machine_verdict is invalid: ${verdict}`
+          : "machine_verdict is missing from the manifest trial",
+      );
+    }
 
     if (!resPath) {
       evidenceIssues.push("result_path is missing from the manifest trial");
@@ -198,9 +207,10 @@ export function extractBaselineDiagnostics(baselineDir: string): {
 
     if (evidenceIssues.length > 0) {
       regimes.add("insufficient_evidence");
-    } else if (agentStatus !== "success") {
+    }
+    if (agentStatus !== "unknown" && agentStatus !== "success") {
       regimes.add("execution_failure");
-    } else if (trial.machine_verdict === "fail") {
+    } else if (evidenceIssues.length === 0 && verdict === "fail") {
       regimes.add("quality_failure");
     }
     if (
@@ -213,7 +223,7 @@ export function extractBaselineDiagnostics(baselineDir: string): {
 
     trialDiagnostics.push({
       scenario: trial.scenario,
-      verdict: trial.machine_verdict,
+      verdict: verdict ?? "missing",
       agentStatus,
       turns,
       ops,
@@ -224,7 +234,9 @@ export function extractBaselineDiagnostics(baselineDir: string): {
     });
   }
 
-  if (regimes.size === 0) {
+  if (trialDiagnostics.length === 0) {
+    regimes.add("insufficient_evidence");
+  } else if (regimes.size === 0) {
     regimes.add("healthy_baseline");
   }
 
@@ -244,7 +256,8 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
   const diag = extractBaselineDiagnostics(baselineDir);
 
   const isWorkflowTarget = diag.target.includes("/");
-  const hasEvidenceGap = diag.trials.some((t) => t.evidenceIssues.length > 0);
+  const hasEvidenceGap =
+    diag.trials.length === 0 || diag.trials.some((t) => t.evidenceIssues.length > 0);
   const hasExecutionFailure = diag.trials.some(
     (t) => t.evidenceIssues.length === 0 && t.agentStatus !== "success",
   );
@@ -253,7 +266,7 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
       t.evidenceIssues.length === 0 && t.agentStatus === "success" && t.verdict === "fail",
   );
   const hasEfficiencyProblem = diag.detectedRegimes.includes("token_or_op_bloat");
-  const disposition: ImprovementProposal["disposition"] =
+  const evidenceDisposition: ImprovementProposal["disposition"] =
     hasEvidenceGap || hasExecutionFailure
       ? "insufficient_evidence"
       : hasQualityFailure || hasEfficiencyProblem
@@ -272,9 +285,11 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
     JSON.stringify(diag.trials, null, 2),
     "",
     "## Evidence Boundary",
-    `Deterministic disposition: \`${disposition}\``,
-    "- Treat result.json `agent_status` as authoritative for execution status; the manifest verdict remains scoring evidence.",
-    "- Report evidence gaps and execution failures explicitly. Do not prescribe a behavioral remediation for them.",
+    `Deterministic evidence disposition: \`${evidenceDisposition}\``,
+    "- Treat result.json `agent_status` as authoritative for execution status; only `pass` or `fail` manifest verdicts are valid scoring evidence.",
+    "- Evidence gaps and execution failures require `insufficient_evidence`; do not prescribe a behavioral remediation for them.",
+    "- A `no_change` evidence disposition requires `no_change`.",
+    "- An `actionable` evidence disposition permits a supported proposal, but you may still return `no_change` or `insufficient_evidence` when no worthwhile remediation is justified.",
     "- For `no_change` or `insufficient_evidence`, return no proposed changes, recommended stage, or verification plan.",
     "- For `actionable`, recommend only the smallest mechanism supported by the diagnostics and include a verification plan.",
     "- Do NOT call any tools. Call `finish(status: \"done\", result: ...)` immediately with the structured proposal.",
@@ -290,6 +305,8 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
   }
 
   const rawProposal = step.output as ImprovementProposal;
+  const disposition: ImprovementProposal["disposition"] =
+    evidenceDisposition === "actionable" ? rawProposal.disposition : evidenceDisposition;
   const proposal: ImprovementProposal =
     disposition === "actionable"
       ? {
@@ -319,7 +336,7 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
         };
 
   if (
-    disposition === "actionable" &&
+    proposal.disposition === "actionable" &&
     (!proposal.recommended_stage ||
       proposal.proposed_changes.length === 0 ||
       !proposal.verification_plan)
