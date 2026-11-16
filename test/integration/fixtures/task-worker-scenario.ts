@@ -335,7 +335,7 @@ async function retryWhenDue(f: ReturnType<typeof fixture>, agent: string) {
   let calls = 0;
   const server = serveFinish(
     {
-      status: "success",
+      status: "done",
       summary,
       verification_facts: ["Fixture recovery verified"],
       result: { state: "converged", summary, facts: ["Fixture recovery verified"] },
@@ -484,7 +484,7 @@ const scenarios: Record<string, () => Promise<void>> = {
     const prompts: string[] = [];
     const server = serveFinish(
       {
-        status: "success",
+        status: "done",
         summary: "Reviewed by the pinned helper",
         verification_facts: ["Fixture reviewed"],
       },

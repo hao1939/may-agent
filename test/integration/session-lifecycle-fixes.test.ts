@@ -522,8 +522,8 @@ describe("workflow call empty final turn recovery", () => {
         content: [{ type: "text", text: "Current source inspected" }], isError: false,
       } as any);
       transcript.push(finishCall("finish-after-empty", {
-        status: "success", summary: "Completed after inspecting current source",
-        result: { state: "converged", summary: "Inspection complete", facts: ["Current source inspected"] },
+        status: "done", summary: "Completed after inspecting current source",
+        output: { state: "converged", summary: "Inspection complete", facts: ["Current source inspected"] },
       }));
       transcript.push(finishResult("finish-after-empty", "SUCCESS: Inspection complete"));
     });
@@ -562,9 +562,9 @@ describe("workflow call empty final turn recovery", () => {
       }));
       transcript.push(
         finishCall("finish-1", {
-          status: "success",
+          status: "done",
           summary: "Recovered the verified workflow result.",
-          result: {
+          output: {
             state: "converged",
             summary: "Recovered from transient final synthesis failure.",
             facts: [facts],
@@ -577,7 +577,7 @@ describe("workflow call empty final turn recovery", () => {
     const result = await (manager as any).executeSession(session);
 
     expect(result.status).toBe("done");
-    expect(result.finishResult).toMatchObject({ status: "success", summary: "Recovered the verified workflow result." });
+    expect(result.finishResult).toMatchObject({ status: "done", summary: "Recovered the verified workflow result." });
     expect(result.structuredResult).toEqual({
       state: "converged",
       summary: "Recovered from transient final synthesis failure.",
@@ -585,7 +585,7 @@ describe("workflow call empty final turn recovery", () => {
     });
     expect(prompts).toHaveLength(2);
     expect(prompts[1]).toContain("transient runtime/provider failure or no visible answer");
-    expect(prompts[1]).toContain("schema-validated result payload");
+    expect(prompts[1]).toContain("schema-validated output payload");
     expect(messages).toContainEqual(expect.objectContaining({
       role: "toolResult",
       content: [{ type: "text", text: facts }],
@@ -600,8 +600,8 @@ describe("workflow call empty final turn recovery", () => {
         status: "done",
         summary: "Recovered the verified workflow result.",
         finishParams: {
-          status: "success",
-          result: {
+          status: "done",
+          output: {
             state: "converged",
             facts: [facts],
           },
@@ -615,9 +615,9 @@ describe("workflow call empty final turn recovery", () => {
       messages.push({ role: "user", content: [{ type: "text", text: promptText }] } as any);
       messages.push({
         ...finishCall("finish-aborted", {
-          status: "success",
+          status: "done",
           summary: "Recovered captured receipt.",
-          result: {
+          output: {
             state: "converged",
             summary: "Validated exact Responses aborted finish.",
             facts: ["captured complete finish"],
@@ -634,9 +634,9 @@ describe("workflow call empty final turn recovery", () => {
       label: "finish",
       description: "finish",
       parameters: Type.Object({
-        status: Type.Literal("success"),
+        status: Type.Literal("done"),
         summary: Type.String(),
-        result: Type.Object({
+        output: Type.Object({
           state: Type.Literal("converged"),
           summary: Type.String(),
           facts: Type.Array(Type.String()),
@@ -663,9 +663,9 @@ describe("workflow call empty final turn recovery", () => {
     const { session, messages } = makeCallSession(async () => {
       messages.push(
         finishCall("finish-committed", {
-          status: "success",
+          status: "done",
           summary: "Accepted exact pass proof.",
-          result: {
+          output: {
             state: "converged",
             summary: "Accepted exact pass proof.",
             facts: ["pipeline-run:175634889"],
@@ -697,8 +697,8 @@ describe("workflow call empty final turn recovery", () => {
       data: {
         status: "done",
         finishParams: {
-          status: "success",
-          result: { state: "converged" },
+          status: "done",
+          output: { state: "converged" },
         },
       },
     });
@@ -709,9 +709,9 @@ describe("workflow call empty final turn recovery", () => {
     const { session, messages } = makeCallSession(async () => {
       messages.push(
         finishCall("finish-failed", {
-          status: "failure",
+          status: "blocked",
           summary: "Verified terminal failure.",
-          result: {
+          output: {
             state: "incomplete",
             summary: "Verified terminal failure.",
             facts: ["runtime-check:failed"],
@@ -726,7 +726,7 @@ describe("workflow call empty final turn recovery", () => {
 
     const result = await (manager as any).executeSession(session);
 
-    const expectedStatus = structured ? "done" : "error";
+    const expectedStatus = "done";
     expect(result.status).toBe(expectedStatus);
     expect(result.error).toBeUndefined();
     expect(result.structuredResult).toEqual({
@@ -742,14 +742,14 @@ describe("workflow call empty final turn recovery", () => {
       type: "session.end",
       data: {
         status: expectedStatus,
-        finishParams: { status: "failure", result: { state: "incomplete" } },
+        finishParams: { status: "blocked", output: { state: "incomplete" } },
       },
     });
   });
 
   it.each([false, true])("rejects a committed finish missing the caller's required structured result (cancelled=%s)", async (cancelled) => {
     const { session, messages } = makeCallSession(async () => {
-      messages.push(finishCall("finish-missing-result", { status: "failure", summary: "No structured judgment." }));
+      messages.push(finishCall("finish-missing-result", { status: "blocked", summary: "No structured judgment." }));
       messages.push(finishResult("finish-missing-result", "FAILURE: No structured judgment."));
       if (cancelled) {
         session.status = "interrupted";
@@ -803,9 +803,9 @@ describe("workflow call empty final turn recovery", () => {
     const { session, messages } = makeCallSession(async () => {
       messages.push(
         finishCall("finish-pending", {
-          status: "success",
+          status: "done",
           summary: "This unexecuted result must not commit.",
-          result: {
+          output: {
             state: "converged",
             summary: "This unexecuted result must not commit.",
             facts: ["tool-call-only"],
@@ -843,9 +843,9 @@ describe("workflow call empty final turn recovery", () => {
     const { session, messages } = makeCallSession(async () => {
       messages.push(
         finishCall("finish-rejected", {
-          status: "success",
+          status: "done",
           summary: "This rejected result must not commit.",
-          result: {
+          output: {
             state: "converged",
             summary: "This rejected result must not commit.",
             facts: ["rejected-tool-result"],

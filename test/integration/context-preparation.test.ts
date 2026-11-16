@@ -98,7 +98,7 @@ export async function execute(ctx) {
                           name: "finish",
                           id: "finish-corrective",
                           arguments: {
-                            status: "success",
+                            status: "done",
                             summary: `${packet.revision}: ${packet.findings.join(", ") || "clear"}`,
                             verification_facts: ["Read the supplied fixture."],
                           },

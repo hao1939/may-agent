@@ -36,14 +36,14 @@ describe("workflow finish contract", () => {
       { summary: "Draft", verification: null },
       { summary: "Draft", extra: true },
     ]) {
-      const args = { status: "partial", summary: "Review report", result: report };
+      const args = { status: "blocked", summary: "Review report", output: report };
       const original = structuredClone(args);
       const before = executions;
       // This is Pi's supported order, also used by captured-finish recovery.
       const prepare = () => validateToolArguments(tool, toolCall(tool.prepareArguments!(args)));
       if (Value.Check(schema, report)) {
         const params = prepare();
-        expect(params.result).toEqual(report);
+        expect(params.output).toEqual(report);
         expect((await tool.execute("report", params)).terminate).toBe(true);
         expect(executions).toBe(before + 1);
       } else {
@@ -56,7 +56,7 @@ describe("workflow finish contract", () => {
     }
   });
 
-  it.each(["success", "partial", "blocked", "failure"])("admits an incomplete report as ordinary %s output", async (status) => {
+  it.each(["done", "blocked"])("admits an incomplete report as ordinary %s output", async (status) => {
     const projectRoot = mkdtempSync(join(tmpdir(), "workflow-report-"));
     try {
       const schema = Type.Object({
@@ -73,7 +73,7 @@ describe("workflow finish contract", () => {
       // Code and the model tool admit the same report. An omitted optional
       // field is not a correction request or a fabricated successful test.
       expect(Value.Check(schema, report)).toBe(true);
-      const params = validateToolArguments(tool, toolCall({ status, summary: report.summary, result: report }));
+      const params = validateToolArguments(tool, toolCall({ status, summary: report.summary, output: report }));
       const result = await tool.execute("report", params);
       expect(result.terminate).toBe(true);
       expect(admitted).toEqual(report);
@@ -83,7 +83,7 @@ describe("workflow finish contract", () => {
       // Present values and deliberately required fields retain their contract.
       for (const invalid of [{ changes: ["parser.ts"] }, { ...report, testResults: { passed: true } }]) {
         expect(Value.Check(schema, invalid)).toBe(false);
-        expect(() => validateToolArguments(tool, toolCall({ status, summary: report.summary, result: invalid }))).toThrow();
+        expect(() => validateToolArguments(tool, toolCall({ status, summary: report.summary, output: invalid }))).toThrow();
       }
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });
@@ -100,22 +100,22 @@ describe("workflow finish contract", () => {
       );
       expect((tool.parameters as any).type).toBe("object");
       const call = toolCall({
-        status: "success",
+        status: "done",
         summary: "Review complete",
-        result: { verdict: "pass" },
+        output: { verdict: "pass" },
       });
       const params = validateToolArguments(tool, call);
 
       const result = await tool.execute(call.id, params);
 
       expect(result.terminate).toBe(true);
-      expect((params as any).result).toEqual({ verdict: "pass" });
+      expect((params as any).output).toEqual({ verdict: "pass" });
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });
     }
   });
 
-  it("rejects a missing caller-defined result before finish executes", () => {
+  it("rejects a missing caller-defined output before finish executes", () => {
     const projectRoot = mkdtempSync(join(tmpdir(), "workflow-finish-"));
     try {
       const base = createFinishTool({ projectRoot });
@@ -124,28 +124,19 @@ describe("workflow finish contract", () => {
       expect(() =>
         validateToolArguments(
           tool,
-          toolCall({ status: "success", summary: "Review complete" }),
+          toolCall({ status: "done", summary: "Review complete" }),
         ),
-      ).toThrow("result");
+      ).toThrow("output");
     } finally {
       rmSync(projectRoot, { recursive: true, force: true });
     }
   });
 
-  it("does not terminate when a supplied deliverable fails its check", async () => {
-    const projectRoot = mkdtempSync(join(tmpdir(), "workflow-finish-"));
-    try {
-      const base = createFinishTool({ projectRoot });
-      const tool = createWorkflowFinishTool(base);
-
-      const result = await tool.execute("call-1", {
-        status: "success", summary: "Done", deliverables: [{ path: "missing.txt", description: "Report" }],
-      });
-
-      expect(result.terminate).toBeUndefined();
-      expect(result.content[0]).toMatchObject({ type: "text", text: expect.stringContaining("finish() error") });
-    } finally {
-      rmSync(projectRoot, { recursive: true, force: true });
-    }
+  it("accepts facts without interpreting domain evidence", async () => {
+    const tool = createWorkflowFinishTool(createFinishTool({ projectRoot: tmpdir() }));
+    const result = await tool.execute("call-1", {
+      status: "blocked", summary: "External review pending", facts: { review: "pending" },
+    });
+    expect(result.terminate).toBe(true);
   });
 });

@@ -783,7 +783,7 @@ describe("workflow runner: structured agent results", () => {
         messages: [],
         duration: "0.0s",
         outputDir: "",
-        finishResult: { status: "success", summary: "Review complete", result: { verdict: "pass" } },
+        finishResult: { status: "done", summary: "Review complete", output: { verdict: "pass" } },
         structuredResult: { verdict: "pass" },
       };
     };

@@ -126,7 +126,7 @@ export interface TaskResult {
   instability?: InstabilityMetrics;
   /** Structured data from the agent's finish() tool call, if one was made. */
   finishResult?: FinishResult;
-  /** Caller-defined, schema-validated payload from finish().result. */
+  /** Caller-defined, schema-validated payload from finish().output. */
   structuredResult?: unknown;
 }
 
@@ -140,12 +140,12 @@ export interface InstabilityMetrics {
 
 /** Structured finish() data from the agent's explicit completion signal. */
 export interface FinishResult {
-  status: "success" | "failure" | "blocked" | "partial";
+  status: "done" | "blocked";
   summary: string;
-  deliverables?: { path: string; description: string }[];
-  blockers?: { reason: string; context: string }[];
-  /** Caller-defined payload for a schema-backed workflow step. */
-  result?: unknown;
+  /** Caller-defined payload for a schema-backed execution. */
+  output?: unknown;
+  /** Supporting evidence or blocker context. */
+  facts?: unknown;
 }
 
 /** Context passed to local tool factories in agents/<name>/tools/. */
@@ -240,11 +240,11 @@ export function enforceStructuredWorkflowResult(result: TaskResult, expectsPaylo
       error: "Workflow agent step completed without the required finish() result",
     };
   }
-  if (expectsPayload && result.structuredResult === undefined && result.finishResult.result === undefined) {
+  if (expectsPayload && result.structuredResult === undefined && result.finishResult.output === undefined) {
     return {
       ...result,
       status: "error",
-      error: "Workflow agent step completed without the required schema-backed finish().result payload",
+      error: "Workflow agent step completed without the required schema-backed finish().output payload",
     };
   }
   return result;
@@ -256,9 +256,9 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
   const finish = result.finishResult;
   const status = result.status === "interrupted"
     ? "interrupted"
-    : result.status === "error" || finish?.status === "failure"
+    : result.status === "error"
       ? "error"
-      : finish?.status === "blocked" || finish?.status === "partial"
+      : finish?.status === "blocked"
         ? "blocked"
         : "done";
   return {
@@ -271,7 +271,7 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
       `Agent execution ${status}`,
     ...(result.structuredResult !== undefined
       ? { output: result.structuredResult }
-      : finish?.result !== undefined ? { output: finish.result } : {}),
+      : finish?.output !== undefined ? { output: finish.output } : {}),
     ...(finish ? { facts: finish } : {}),
     cliCalls: cliCallFacts(result.sessionId, result.messages),
   };

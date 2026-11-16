@@ -142,7 +142,7 @@ describe("terminal completion recovery", () => {
         JSON.stringify({
           status: "done",
           finishParams: {
-            status: "success",
+            status: "done",
             result: {
               ...terminalResult,
               // Stored provider output follows the SDK contract, not Host normalization.

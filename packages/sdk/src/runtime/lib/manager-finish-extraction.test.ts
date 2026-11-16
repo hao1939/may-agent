@@ -22,14 +22,12 @@ describe("finish result extraction", () => {
   it("extracts only canonical finish fields and ignores retired legacy properties", () => {
     const messages = [
       finishCall("finish-saved", {
-        status: "success",
+        status: "done",
         summary: "Done",
-        deliverables: [{ path: "src/index.ts", description: "Entrypoint" }],
-        blockers: [{ reason: "None", context: "N/A" }],
+        facts: { evidence: "App-owned field" },
         verification_facts: ["Legacy field ignored"],
         verification_evidence: ["Superseded check"],
         next_steps: "Legacy next steps ignored",
-        result: { evidence: "App-owned field" },
       }),
       finishResult("finish-saved", "✅ SUCCESS: Done"),
     ];
@@ -37,25 +35,24 @@ describe("finish result extraction", () => {
     const restored = JSON.parse(saved);
     const result = extractFinishParams(restored);
     expect(result).toEqual({
-      status: "success",
+      status: "done",
       summary: "Done",
-      deliverables: [{ path: "src/index.ts", description: "Entrypoint" }],
-      blockers: [{ reason: "None", context: "N/A" }],
-      result: { evidence: "App-owned field" },
+      output: undefined,
+      facts: { evidence: "App-owned field" },
     });
     expect(JSON.stringify(restored)).toBe(saved);
   });
 
   it("extracts a successfully executed schema-backed finish payload", () => {
     const messages = [
-      finishCall("finish-1", { status: "success", summary: "Done", result: { verdict: "pass" } }),
+      finishCall("finish-1", { status: "done", summary: "Done", output: { verdict: "pass" } }),
       finishResult("finish-1", "✅ SUCCESS: Done"),
     ];
 
     expect(extractFinishParams(messages)).toMatchObject({
-      status: "success",
+      status: "done",
       summary: "Done",
-      result: { verdict: "pass" },
+      output: { verdict: "pass" },
     });
   });
 
@@ -70,7 +67,7 @@ describe("finish result extraction", () => {
 
   it("does not accept a finish call rejected by Pi schema validation", () => {
     const messages = [
-      finishCall("finish-1", { status: "success", summary: "Missing result" }),
+      finishCall("finish-1", { status: "done", summary: "Missing result" }),
       finishResult("finish-1", "Validation failed for tool finish", true),
     ];
 

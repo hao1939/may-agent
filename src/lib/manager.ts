@@ -129,7 +129,7 @@ export interface RunOptions {
   requireFinish?: boolean;
   /** Finite positive integer tool-operation allowance before bounded completion is requested. */
   operationAllowance?: number;
-  /** Caller-defined schema for the required finish().result payload. */
+  /** Caller-defined schema for the required finish().output payload. */
   outputSchema?: TSchema;
   /** Pure current-invocation validation; never serialized as session state. */
   validateOutput?: (result: unknown) => string | null;
@@ -1101,7 +1101,7 @@ export class SubagentManager {
       outputDir: sessionOutputDir(this._persistDir, sessionId),
       error: persisted.error,
       finishResult: finishResult as any,
-      structuredResult: finishResult?.result,
+      structuredResult: finishResult?.output,
     };
   }
 
@@ -1360,8 +1360,8 @@ export class SubagentManager {
             await agent.waitForIdle();
           } else if (missingFinish && !terminalError) {
             await agent.prompt(
-              "This invocation has not returned its structured result. Call finish() now with all required fields" +
-                (session.outputSchema ? ", including the schema-validated result payload." : "."),
+              "This invocation has not returned its structured output. Call finish() now with all required fields" +
+                (session.outputSchema ? ", including the schema-validated output payload." : "."),
             );
             await agent.waitForIdle();
           }
@@ -1405,16 +1405,14 @@ export class SubagentManager {
     if (!errorText && session.requireFinish && !finishParams) {
       errorText = "Workflow agent step ended without calling finish() after one corrective prompt";
     }
-    if (!errorText && session.outputSchema && finishParams && finishParams.result === undefined) {
-      errorText = "Workflow agent step completed without the required schema-backed finish().result payload";
+    if (!errorText && session.outputSchema && finishParams && finishParams.output === undefined) {
+      errorText = "Workflow agent step completed without the required schema-backed finish().output payload";
     }
     if (!errorText && !finishParams && !assistantText) {
       errorText = "Agent ended without producing a response";
     }
-    // Structured non-success is a caller judgment, not a failed execution.
-    const legacyFailure = !session.outputSchema && finishParams?.status === "failure";
     const status: "done" | "error" | "interrupted" =
-      legacyFailure || (finishParams && errorText)
+      finishParams && errorText
         ? "error"
         : finishParams
           ? "done"
@@ -1422,9 +1420,7 @@ export class SubagentManager {
             ? "interrupted"
             : errorText
               ? "error"
-              : // finish(blocked) and finish(partial) are deliberate terminal reports,
-                // not runtime interruptions. The structured finish status carries the
-                // blocked/partial meaning for workflows and evaluators.
+              : // finish(blocked) is a deliberate terminal report, not a runtime interruption.
                 "done";
     const lastText = finishParams?.summary ?? assistantText ?? "";
     const durationMs = Date.now() - startedAt;
@@ -1485,7 +1481,7 @@ export class SubagentManager {
       error: errorText,
       errorMessage: assistantError,
       finishResult: finishParams as any,
-      structuredResult: finishParams?.result,
+      structuredResult: finishParams?.output,
     };
   }
 
@@ -1649,7 +1645,7 @@ export class SubagentManager {
         error: errorText,
         errorMessage: assistantError,
         finishResult: finishParams as any,
-        structuredResult: finishParams?.result,
+        structuredResult: finishParams?.output,
       };
       this.rememberCompletedResult(result);
 

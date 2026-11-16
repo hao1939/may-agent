@@ -161,7 +161,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
             messages: [],
             durationMs: 12,
             finishResult: {
-              status: "success",
+              status: "done",
               summary: "Reviewed cleanly",
               result: {
                 subjectRef: "HEAD~1..HEAD",
@@ -230,7 +230,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
         messages: [],
         durationMs: 5,
         finishResult: {
-          status: "success",
+          status: "done",
           summary: "Done",
           result: { subjectRef: "HEAD", summary: "ok" },
         },
@@ -340,7 +340,7 @@ export default function createCustomTool() {
             lastAssistantText: "Inspected",
             messages: [],
             durationMs: 5,
-            finishResult: { status: "success", summary: "Inspected safely" },
+            finishResult: { status: "done", summary: "Inspected safely" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -460,7 +460,7 @@ export async function execute(ctx) {
             lastAssistantText: "pinned",
             messages: [],
             durationMs: 1,
-            finishResult: { status: "success", summary: "pinned-ok" },
+            finishResult: { status: "done", summary: "pinned-ok" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -582,7 +582,7 @@ export async function execute(ctx) {
                     type: "toolCall",
                     id: "tc_finish_1",
                     name: "finish",
-                    arguments: { status: "success", summary: "Bounded after 1 operation" },
+                    arguments: { status: "done", summary: "Bounded after 1 operation" },
                   },
                 ],
               }),
@@ -777,7 +777,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
             sessionId: prep.sessionId, sessionPath: prep.sessionPath,
             systemPrompt: prep.prepared.systemPrompt, model: prep.model, executionManifest: prep.executionManifest,
             status: "done", lastAssistantText: "ok", messages: [], durationMs: 1,
-            finishResult: { status: "success", summary: "local executed" },
+            finishResult: { status: "done", summary: "local executed" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -1465,7 +1465,7 @@ export async function execute(ctx) { return ctx.done("b"); }
             messages: [],
             durationMs: 5,
             finishResult: {
-              status: "success",
+              status: "done",
               summary: `ran:${agentOpts.agentName}:${agentOpts.task}`,
             },
           };
@@ -1495,7 +1495,7 @@ export async function execute(ctx) { return ctx.done("b"); }
           messages: [],
           durationMs: 5,
           finishResult: {
-            status: "success",
+            status: "done",
             summary: `global-${agentOpts.agentName}`,
           },
         }),

@@ -502,10 +502,8 @@ export type DirectWorkflowRunResult = {
 };
 
 function normalizeFinishStatus(status: string): NonNullable<TaskResult["finishResult"]>["status"] {
-  if (status === "failure" || status === "blocked" || status === "partial" || status === "success") {
-    return status;
-  }
-  return "success";
+  if (status === "done" || status === "blocked") return status;
+  return "done";
 }
 
 function directResultToTaskResult(run: DirectAgentRunResult): TaskResult {
@@ -513,9 +511,8 @@ function directResultToTaskResult(run: DirectAgentRunResult): TaskResult {
     ? {
         status: normalizeFinishStatus(run.finishResult.status),
         summary: run.finishResult.summary,
-        ...(run.finishResult.deliverables ? { deliverables: run.finishResult.deliverables } : {}),
-        ...(run.finishResult.blockers ? { blockers: run.finishResult.blockers } : {}),
-        ...(run.finishResult.result !== undefined ? { result: run.finishResult.result } : {}),
+        ...(run.finishResult.output !== undefined ? { output: run.finishResult.output } : {}),
+        ...(run.finishResult.facts !== undefined ? { facts: run.finishResult.facts } : {}),
       }
     : undefined;
   return {

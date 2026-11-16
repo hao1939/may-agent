@@ -109,10 +109,10 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
                         id: "finish",
                         name: "finish",
                         arguments: {
-                          status: "success",
+                          status: "done",
                           summary: marker,
-                          verification_facts: ["Observed fixture"],
-                          result: { marker },
+                          facts: ["Observed fixture"],
+                          output: { marker },
                         },
                       },
                     ]
@@ -303,7 +303,8 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
         expect(worker.taskContext).toBe(owner.taskContext);
         const meta = JSON.parse(readFileSync(join(persistDir, "sessions", worker.sessionId, "meta.json"), "utf8"));
         expect(helperPrompts.get(marker)).toContain(join(persistDir, "sessions", worker.sessionId, "meta.json"));
-        expect(helperPrompts.get(marker)).toContain("a helper still owes only its assigned contribution");
+        expect(helperPrompts.get(marker)).toContain("Work within the caller's assignment and authority");
+        expect(helperPrompts.get(marker)).not.toContain("Task ownership");
         expect(meta.parentSessionId).toBe(owner.sessionId);
         expect(meta.task).toContain(taskFiles.get(marker)!);
         expect(meta.task).not.toContain("Delegation Memo");

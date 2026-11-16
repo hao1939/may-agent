@@ -709,7 +709,7 @@ describe("shared agent execution preparation", () => {
     const bash = prepared.tools.find(candidate => candidate.name === "bash")!;
     expect((await bash.execute("path-argument", command)).content[0])
       .toEqual({ type: "text", text: "(no output)" });
-    expect(await check("finish", { status: "success", deliverables: [{ path: transcript, description: "evidence" }] }))
+    expect(await check("finish", { status: "done", deliverables: [{ path: transcript, description: "evidence" }] }))
       .toBeUndefined();
   });
 
@@ -839,9 +839,9 @@ describe("shared agent execution preparation", () => {
 
       expect(prepared.requireFinish).toBe(true);
       expect(prepared.systemPrompt).toContain("Complete this invocation by calling finish()");
-      expect((prepared.tools[0]!.parameters as any).required).toContain("result");
+      expect((prepared.tools[0]!.parameters as any).required).toContain("output");
       if (outputSchema === taskAgentResultSchema) {
-        const result = prepared.tools[0]!.parameters.properties.result as typeof taskAgentResultSchema;
+        const result = prepared.tools[0]!.parameters.properties.output as typeof taskAgentResultSchema;
         expect(result.properties.communication.description).toContain("saved reply context");
         expect(result.properties.communication.items.properties.inputId.description).toContain("events.inputs");
         expect(result.properties.response.description).toContain("ordinary App");
@@ -924,22 +924,22 @@ describe("shared agent execution preparation", () => {
 
     const finish = prepared.tools.find((candidate) => candidate.name === "finish");
     const result = await finish!.execute("call-1", {
-      status: "success",
+      status: "done",
       summary: "verified worktree facts",
-      deliverables: [{ path: "proof.txt", description: "worktree proof" }],
+      facts: { path: "proof.txt", description: "worktree proof" },
     } as never);
     expect(JSON.stringify(result)).not.toContain("Deliverables not found on disk");
-    expect(JSON.stringify(result)).toContain("SUCCESS");
+    expect(JSON.stringify(result)).toContain("DONE");
   });
 });
 
 describe("direct structured judgment execution", () => {
   const judgment = { state: "incomplete", summary: "Further recovery exceeds the authorized budget." };
   const finishArgs = {
-    status: "failure",
+    status: "blocked",
     summary: judgment.summary,
-    blockers: [{ reason: "Recovery costs too much", context: "Four hours for a five-minute task" }],
-    result: judgment,
+    facts: { reason: "Recovery costs too much", context: "Four hours for a five-minute task" },
+    output: judgment,
   };
 
   function prepare(
@@ -979,12 +979,12 @@ describe("direct structured judgment execution", () => {
     return stream;
   }
 
-  test.each(["success", "partial", "blocked", "failure"])("returns a valid %s report in one reply without optional diagnostics", async (status) => {
+  test.each(["done", "blocked"])("returns a valid %s report in one reply without optional diagnostics", async (status) => {
     const prepared = prepare();
     let calls = 0;
     prepared.runner.streamFn = () => {
       calls++;
-      return finishStream({ status, summary: judgment.summary, result: judgment });
+      return finishStream({ status, summary: judgment.summary, output: judgment });
     };
 
     const result = await executePreparedAgent(prepared);
@@ -997,18 +997,16 @@ describe("direct structured judgment execution", () => {
     expect(result.structuredResult).toEqual(judgment);
     expect(agentExecutionResult({ ...result, sessionId: prepared.sessionId, duration: "0s", outputDir: "" })).toMatchObject({
       output: judgment,
-      status: status === "success" ? "done" : status === "failure" ? "error" : "blocked",
+      status,
     });
   });
 
   test.each([
-    { ...finishArgs, result: { ...judgment, summary: 42 } },
-    { ...finishArgs, result: { ...judgment, summary: false } },
-    { ...finishArgs, result: { ...judgment, summary: null } },
-    { ...finishArgs, result: { state: "incomplete" } },
+    { ...finishArgs, output: { ...judgment, summary: 42 } },
+    { ...finishArgs, output: { ...judgment, summary: false } },
+    { ...finishArgs, output: { ...judgment, summary: null } },
+    { ...finishArgs, output: { state: "incomplete" } },
     { ...finishArgs, summary: 42 },
-    { ...finishArgs, deliverables: [false] },
-    { ...finishArgs, deliverables: null },
   ])("corrects original report types before acceptance without losing the rejected report %#", async (invalid) => {
     const prepared = prepare();
     let calls = 0;
@@ -1054,12 +1052,12 @@ describe("direct structured judgment execution", () => {
     let calls = 0;
     prepared.runner.streamFn = () => {
       calls++;
-      return finishStream({ status: "partial", summary: "Draft report", result: raw });
+      return finishStream({ status: "blocked", summary: "Draft report", output: raw });
     };
 
     const execution = await executePreparedAgent(prepared);
     expect(execution.status).toBe("done");
-    expect(execution.finishResult?.status).toBe("partial");
+    expect(execution.finishResult?.status).toBe("blocked");
     expect(calls).toBe(1);
     expect(execution.structuredResult).toEqual(raw);
     expect(admit(execution.structuredResult)).toEqual(fromCode);
@@ -1071,7 +1069,7 @@ describe("direct structured judgment execution", () => {
     const invalid = {
       ...finishArgs,
       summary: "retained-large-report:" + "x".repeat(100_000),
-      deliverables: Array.from({ length: 1000 }, () => "not-an-object"),
+      output: { state: "wrong", summary: Array.from({ length: 1000 }, () => false) },
     };
     let calls = 0;
     prepared.runner.streamFn = () => ++calls === 1
@@ -1083,8 +1081,8 @@ describe("direct structured judgment execution", () => {
     const rejection = result.messages.find((message) => message.role === "toolResult" && message.toolCallId === "large-report");
     const feedback = JSON.stringify(rejection);
     expect(feedback.length).toBeLessThan(4000);
-    expect(feedback).toContain("/deliverables/0");
-    expect(feedback).toContain("must be object");
+    expect(feedback).toContain("/output/state");
+    expect(feedback).toContain("must be equal to constant");
     expect(feedback).toContain("up to 8 errors shown");
     expect(feedback).not.toContain("retained-large-report");
     expect(result.messages).toContainEqual(expect.objectContaining({
@@ -1125,9 +1123,9 @@ describe("direct structured judgment execution", () => {
 
     const result = await executePreparedAgent(prepared);
 
-    expect(result.status).toBe(structured ? "done" : "error");
+    expect(result.status).toBe("done");
     expect(result.error).toBeUndefined();
-    expect(result.finishResult?.status).toBe("failure");
+    expect(result.finishResult?.status).toBe("blocked");
     expect(result.structuredResult).toEqual(judgment);
     expect(calls).toBe(1);
   });
@@ -1141,7 +1139,7 @@ describe("direct structured judgment execution", () => {
       if (++calls === 2) {
         message.stopReason = "toolUse";
         message.content = [{ type: "toolCall", id: "usage-finish", name: "finish", arguments: {
-          status: "success", summary: "Finished",
+          status: "done", summary: "Finished",
         } }];
       }
       stream.push({ type: "done", reason: message.stopReason === "toolUse" ? "toolUse" : "stop", message });
@@ -1156,8 +1154,8 @@ describe("direct structured judgment execution", () => {
   });
 
   test.each([
-    { ...finishArgs, result: { state: "unsupported" } },
-    { ...finishArgs, result: undefined },
+    { ...finishArgs, output: { state: "unsupported" } },
+    { ...finishArgs, output: undefined },
   ])("rejects an invalid or uncommitted judgment %#", async (args) => {
     const prepared = prepare();
     let calls = 0;
@@ -1242,9 +1240,9 @@ describe("direct structured judgment execution", () => {
     expect(timedOutAfterReceipt).toBe(true);
     expect(receipts).toBe(1);
     expect(calls).toBe(1);
-    expect(result.status).toBe(structured ? "done" : "error");
+    expect(result.status).toBe("done");
     expect(result.error).toBeUndefined();
-    expect(result.finishResult?.status).toBe("failure");
+    expect(result.finishResult?.status).toBe("blocked");
     expect(result.structuredResult).toEqual(judgment);
   });
 });

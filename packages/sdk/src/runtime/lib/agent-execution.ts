@@ -419,7 +419,7 @@ export function shouldRequestBoundedWorkflowFinish(
 export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
   return (
     "Bounded completion guardrail: stop expanding the investigation. Use only facts already gathered and call finish() now with the smallest facts-honest payload" +
-    (outputSchema ? ", including every required schema-validated result field." : ".") +
+    (outputSchema ? ", including every required schema-validated output field." : ".") +
     " Report confirmed progress, unfinished work and uncertain effects honestly through that contract. " +
     "Interrupted helpers or tools do not establish completion. Do not start further work; the remaining allowance is for submitting and correcting your result."
   );
@@ -436,7 +436,7 @@ export function workflowFinishRecoveryPrompt(outputSchema?: TSchema, reason?: st
     "Use the App's instructions and current facts to choose the next step; inspect current state before repeating an uncertain effect. " +
     "When the facts support an outcome, call finish() with all required fields" +
     (outputSchema
-      ? ", including the schema-validated result payload. If you are blocked, use finish() with a blocked/partial status and include the required result payload."
+      ? ", including the schema-validated output payload. If an external prerequisite prevents completion, use status blocked and include the required output."
       : ".")
   );
 }
@@ -600,11 +600,10 @@ function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined
 }
 
 export type FinishParams = {
-  status: string;
+  status: "done" | "blocked";
   summary: string;
-  blockers?: { reason: string; context: string }[];
-  deliverables?: { path: string; description: string }[];
-  result?: unknown;
+  output?: unknown;
+  facts?: unknown;
 };
 
 export function extractFinishParams(messages: any[]): FinishParams | null {
@@ -620,9 +619,8 @@ export function extractFinishParams(messages: any[]): FinishParams | null {
         return {
           status: args.status,
           summary: args.summary,
-          blockers: args.blockers,
-          deliverables: args.deliverables,
-          result: args.result,
+          output: args.output,
+          facts: args.facts,
         };
       } catch {
         return null;
@@ -1273,8 +1271,8 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
   if (options.executionContext) base += `\n\n<execution_context>\n${options.executionContext}\n</execution_context>`;
   if (requireFinish) {
     const resultInstruction = options.outputSchema
-      ? "The finish() call must include the required schema-validated result payload."
-      : "Use the standard finish() fields; no caller-defined result payload is required.";
+      ? "The finish() call must include the required schema-validated output payload."
+      : "Use the standard finish() fields; no caller-defined output payload is required.";
     base += `\n\n<completion>\nComplete this invocation by calling finish() as your final action. ${resultInstruction} Correct any rejected result before finishing.\n</completion>`;
   }
   return base;
@@ -1527,8 +1525,8 @@ export async function executePreparedAgent(
           await agent.waitForIdle();
         } else if (!terminalError) {
           await agent.prompt(
-            "This invocation has not returned its structured result. Call finish() now with all required fields" +
-              (prepared.outputSchema ? ", including the schema-validated result payload." : "."),
+            "This invocation has not returned its structured output. Call finish() now with all required fields" +
+              (prepared.outputSchema ? ", including the schema-validated output payload." : "."),
           );
           await agent.waitForIdle();
         }
@@ -1559,17 +1557,15 @@ export async function executePreparedAgent(
   if (!error && prepared.requireFinish && !finishResult) {
     error = "Workflow agent step ended without calling finish() after one corrective prompt";
   }
-  if (!error && prepared.outputSchema && finishResult && finishResult.result === undefined) {
-    error = "Workflow agent step completed without the required schema-backed finish().result payload";
+  if (!error && prepared.outputSchema && finishResult && finishResult.output === undefined) {
+    error = "Workflow agent step completed without the required schema-backed finish().output payload";
   }
   const assistantText = finishResult?.summary ?? extractLastAssistantText(messages);
   if (!error && !finishResult && !assistantText) {
     error = "Agent ended without producing a response";
   }
-  // A validated caller-defined result can report an unsuccessful domain outcome.
-  // Its caller judges that outcome; it is not an execution failure to retry.
-  const legacyFailure = !prepared.outputSchema && finishResult?.status === "failure";
-  const status = interrupted && !finishResult ? "interrupted" : error || legacyFailure ? "error" : "done";
+  // A committed finish is an execution result; caller-defined output may still describe incomplete domain work.
+  const status = interrupted && !finishResult ? "interrupted" : error ? "error" : "done";
 
   return {
     status,
@@ -1577,7 +1573,7 @@ export async function executePreparedAgent(
     messages: messages.filter((message) => message.role !== "system"),
     lastAssistantText: assistantText,
     ...(error ? { error } : {}),
-    ...(finishResult ? { finishResult, structuredResult: finishResult.result } : {}),
+    ...(finishResult ? { finishResult, structuredResult: finishResult.output } : {}),
     durationMs: Date.now() - startedAt,
   };
 }

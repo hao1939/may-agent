@@ -29,9 +29,9 @@ function finishTool(execute: AgentTool["execute"]): AgentTool {
     label: "finish",
     description: "finish",
     parameters: Type.Object({
-      status: Type.Literal("success"),
+      status: Type.Literal("done"),
       summary: Type.String(),
-      result: Type.Object({ state: Type.Literal("converged") }),
+      output: Type.Object({ state: Type.Literal("converged") }),
     }),
     execute,
   } as AgentTool;
@@ -49,15 +49,16 @@ describe("workflow finish recovery", () => {
     expect(prompt).toContain("transient runtime/provider failure");
     expect(prompt).toContain("Continue the original bounded assignment");
     expect(prompt).toContain("App's instructions");
-    expect(prompt).toContain("schema-validated result payload");
+    expect(prompt).toContain("schema-validated output payload");
+    expect(prompt).not.toContain("blocked/partial");
   });
 
   it("recovers the captured aborted finish through schema and semantic execution", async () => {
     const messages = [
       abortedFinish({
-        status: "success",
+        status: "done",
         summary: "Facts complete",
-        result: { state: "converged" },
+        output: { state: "converged" },
       }),
     ];
     let executions = 0;
@@ -82,7 +83,7 @@ describe("workflow finish recovery", () => {
     });
   });
 
-  it("reuses Task semantic admission for captured finish recovery after schema persistence", async () => {
+  it("uses only the persisted TypeBox shape during captured finish recovery", async () => {
     let executions = 0;
     const base = finishTool(async () => {
       executions++;
@@ -91,9 +92,9 @@ describe("workflow finish recovery", () => {
     const finish = createWorkflowFinishTool(base, structuredClone(taskAgentResultSchema));
     const invalidMessages = [
       abortedFinish({
-        status: "success",
+        status: "done",
         summary: "Invalid Task result",
-        result: {
+        output: {
           state: "converged",
           summary: "Review is pending",
           reviewAt: Date.now() + 60_000,
@@ -108,15 +109,14 @@ describe("workflow finish recovery", () => {
       tools: [finish],
       reason: RESPONSES_STREAM_TERMINAL_ERROR,
     });
-    expect(rejected.disposition).toBe("rejected");
-    expect(rejected.error).toContain("reviewAt is valid only for waiting");
-    expect(executions).toBe(0);
+    expect(rejected.disposition).toBe("recovered");
+    expect(executions).toBe(1);
 
     const correctedMessages = [
       abortedFinish({
-        status: "success",
+        status: "done",
         summary: "Corrected Task result",
-        result: {
+        output: {
           state: "waiting",
           summary: "Review is pending",
           reviewAt: Date.now() + 60_000,
@@ -131,11 +131,11 @@ describe("workflow finish recovery", () => {
       reason: RESPONSES_STREAM_TERMINAL_ERROR,
     });
     expect(recovered.disposition).toBe("recovered");
-    expect(executions).toBe(1);
+    expect(executions).toBe(2);
   });
 
   it("rejects schema-invalid captured arguments and preserves an explicit error", async () => {
-    const messages = [abortedFinish({ status: "success", summary: "Missing result" })];
+    const messages = [abortedFinish({ status: "done", summary: "Missing result" })];
     let executions = 0;
     const recovery = await recoverCapturedWorkflowFinish({
       sessionId: "s-invalid",
@@ -166,8 +166,8 @@ describe("workflow finish recovery", () => {
       return { content: [{ type: "text", text: "Accepted" }] };
     }), schema);
     const invalid = {
-      status: "success", summary: "retained-report:" + "x".repeat(100_000),
-      result: { summary: 42, evidence: Array.from({ length: 100 }, () => false) },
+      status: "done", summary: "retained-report:" + "x".repeat(100_000),
+      output: { summary: 42, evidence: Array.from({ length: 100 }, () => false) },
     };
     const messages = [abortedFinish(serialized ? JSON.stringify(invalid) : invalid)];
     const original = structuredClone(messages[0]);
@@ -175,7 +175,7 @@ describe("workflow finish recovery", () => {
     const rejected = await recoverCapturedWorkflowFinish(options);
     expect(rejected.disposition).toBe("rejected");
     expect(executions).toBe(0);
-    expect(rejected.error).toContain("/result/summary: must be string");
+    expect(rejected.error).toContain("/output/summary: must be string");
     expect(rejected.error!.length).toBeLessThan(4000);
     expect(rejected.error).not.toContain("retained-report");
     expect(messages[0]).toEqual(original);
@@ -183,7 +183,7 @@ describe("workflow finish recovery", () => {
     expect((await recoverCapturedWorkflowFinish(options)).disposition).toBe("already-committed");
 
     messages.push(abortedFinish({
-      status: "success", summary: "Corrected report", result: { summary: "Evidence unavailable" },
+      status: "done", summary: "Corrected report", output: { summary: "Evidence unavailable" },
     }, "finish-corrected"));
     expect((await recoverCapturedWorkflowFinish(options)).disposition).toBe("recovered");
     expect(executions).toBe(1);
@@ -192,9 +192,9 @@ describe("workflow finish recovery", () => {
   it("preserves semantic rejection from the normal finish execute path", async () => {
     const messages = [
       abortedFinish({
-        status: "success",
+        status: "done",
         summary: "Looks valid",
-        result: { state: "converged" },
+        output: { state: "converged" },
       }),
     ];
     const recovery = await recoverCapturedWorkflowFinish({
@@ -216,9 +216,9 @@ describe("workflow finish recovery", () => {
     const messages = [
       abortedFinish(
         {
-          status: "success",
+          status: "done",
           summary: "Once",
-          result: { state: "converged" },
+          output: { state: "converged" },
         },
         "finish-stable",
       ),
@@ -242,8 +242,8 @@ describe("workflow finish recovery", () => {
   it("does not recover incomplete or unsafe captured calls", async () => {
     for (const message of [
       abortedFinish("{not complete"),
-      { ...abortedFinish({ status: "success" }), stopReason: "toolUse" },
-      { ...abortedFinish({ status: "success" }), errorMessage: "different failure" },
+      { ...abortedFinish({ status: "done" }), stopReason: "toolUse" },
+      { ...abortedFinish({ status: "done" }), errorMessage: "different failure" },
     ]) {
       const messages = [message];
       const recovery = await recoverCapturedWorkflowFinish({
@@ -274,7 +274,7 @@ describe("workflow finish recovery", () => {
       ).toBe(false);
     }
     expect(boundedWorkflowFinishPrompt(Type.Object({ state: Type.String() }))).toContain(
-      "schema-validated result field",
+      "schema-validated output field",
     );
   });
 

@@ -96,7 +96,7 @@ describe("direct agent tool policy", () => {
       expect(direct.prepared.requireFinish).toBe(true);
       expect(direct.prepared.tools.map((tool) => tool.name)).toEqual(["read", "finish"]);
       expect(direct.executionManifest.effectiveTools).toEqual(["read", "finish"]);
-      expect(direct.prepared.systemPrompt).toContain("schema-validated result payload");
+      expect(direct.prepared.systemPrompt).toContain("schema-validated output payload");
     } finally {
       direct?.cleanup();
       await rm(root, { recursive: true, force: true });

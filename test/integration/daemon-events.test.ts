@@ -139,7 +139,7 @@ describe("daemon event subscribers", () => {
         type: "session.end", source: "runtime", owner: "agent:worker",
         data: {
           sessionId: "reported-session", agent: "worker", status: "done",
-          finishParams: { status: "success", summary: "Review complete", context_updates: suggestions },
+          finishParams: { status: "done", summary: "Review complete", context_updates: suggestions },
         },
       });
       const row = getDb(root).prepare("SELECT data FROM events WHERE event_type = 'session.end'").get() as { data: string };
