@@ -59,7 +59,6 @@ describe("E2: project comment roundtrip", () => {
       expect(attempt).toMatchObject({ taskId: "work/comment", taskGeneration: 1, state: "completed" });
       expect(store.readTask("work/comment")?.spec.outcome).toBe(comment);
       expect(store.isCancelled("work/comment")).toBe(false);
-      expect(store.readReceipt("work/comment")).toBeNull();
       const events = queryEvents(db, { types: ["project.comment.created"] });
       expect(events).toHaveLength(1);
       expect(JSON.parse(events[0].data!)).toEqual({ ...data, idempotencyKey: "comment-1" });

@@ -1110,7 +1110,6 @@ describe("terminal completion recovery", () => {
       const emitted: AgentEvent[] = [];
       f.base.bus.subscribe((event) => emitted.push(event));
       await f.run(taskId);
-      expect(f.config.resourceStore.readReceipt(taskId)).toBeNull();
       expect(f.config.resourceStore.isCancelled(taskId)).toBe(false);
       expect(f.config.resourceStore.readTask(taskId)?.status.phase).toBe(
         disposition === "waiting" ? "waiting" : "pending",
@@ -1205,7 +1204,6 @@ describe("terminal completion recovery", () => {
         expect(f.config.resourceStore.readTrigger(claim.taskId)?.events).toHaveLength(1);
       }
       expect(f.config.resourceStore.readTrigger(claim.taskId)?.event.eventId).toBe(fact[EVENT_ROW_ID]);
-      expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
       expect(f.agentCalls()).toBe(1);
       f.terminalResult.state = "converged";
       delete f.terminalResult.conditions;
@@ -1377,14 +1375,12 @@ describe("terminal completion recovery", () => {
         } else {
           // A fresh lease may still belong to a live workflow caller.
           await f.run(claim.taskId);
-          expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
           expect(f.config.resourceStore.readTask(claim.taskId)?.status.currentAttemptId).toBe(claim.attemptId);
           mutateRuntimeAttemptFixture(f.config, claim.taskId, claim.attemptId, (attempt) => {
             attempt.lease!.expiresAt = new Date(Date.now() - 1_000).toISOString();
           });
           expect(await f.run(claim.taskId)).toContain(claim.taskId);
         }
-        expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
         expect(f.config.resourceStore.readTask(claim.taskId)?.status.phase).toBe("pending");
         expect(f.config.resourceStore.readAttempt(claim.attemptId)?.state).toBe("interrupted");
         // Retry the declared workflow; its stable operation key prevents duplicate effects.
@@ -1405,7 +1401,6 @@ describe("terminal completion recovery", () => {
             },
           });
         } else {
-          expect(f.config.resourceStore.readReceipt(claim.taskId)).toBeNull();
           expect(f.config.resourceStore.readTask(claim.taskId)?.metadata.generation).toBe(claim.generation);
           expect(f.config.resourceStore.readTask(claim.taskId)?.status).toMatchObject({
             phase: "pending",

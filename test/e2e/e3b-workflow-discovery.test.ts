@@ -80,7 +80,6 @@ describe("E3b: workflow discovery and scheduled execution", () => {
       });
       expect(store.readTask("work/main")?.metadata).toMatchObject({ id: "work/main", generation: 1 });
       expect(store.isCancelled("work/main")).toBe(false);
-      expect(store.readReceipt("work/main")).toBeNull();
     } catch (error) {
       console.error(sb.getLogs().slice(-8000));
       console.error(db.prepare("SELECT task_id, phase, resource_json FROM app_tasks").all());

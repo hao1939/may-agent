@@ -17,9 +17,6 @@ revision checks. Schema upgrades and foundational transaction helpers remain in
 | `task-emissions.ts` | Exact published-fact reads scoped to App, Task, generation, type and local effect key, using the event journal index and shared verified body loader |
 | `task-reference-index.ts` | Lookup/display of exact Task references |
 
-Offline completion-receipt import (`task-receipt-cutover.ts`) lives under
-`src/app/migrations/` outside the runtime `core/state` store modules.
-
 The Task runtime decides transitions; these operations enforce their storage
 boundaries. Events announce meaningful changes and accelerate discovery, while
 durable state remains authoritative. There is no extra server or storage queue.
@@ -50,19 +47,12 @@ before filling the remaining history slots. Timestamp order alone cannot select
 execution authority or accepted facts: clocks can move backwards, and two
 attempts can share a timestamp. The history limit remains 16 attempts per Task.
 
-Offline completion-receipt conversion (`src/app/migrations/task-receipt-cutover.ts`)
-requires the Host and every worker to be stopped, after the normal database
-schema upgrade. Receipt import preserves original historical receipts and links
-their exact generation/specification to accepted outcomes on closed Tasks;
-newer Task generations and existing human closure remain unchanged. The older
-pre-#449 open-state cutover (`task-state-cutover.ts`) and runtime cutover
-harnesses were retired in PR #477 after all installations completed cutover.
-
-App runtime preparation rejects unconverted completion receipts before admitting
-or executing work. Run the offline conversion first. Admission, claims, recovery
-and dependency readiness use retained Tasks; an archived receipt cannot delete
-a Task or satisfy a newer assignment. Read-only history views still support old
-receipts, and the original archive remains available to conversion and inspection.
+Legacy completion-receipt tables (`app_task_receipts`) and offline conversion
+(`task-receipt-cutover.ts`) have been retired. During schema initialization,
+already-converted `app_task_receipts` rows (matching a `retired:task-receipt`
+attempt) are automatically pruned and the table is dropped once empty; any
+unconverted `app_task_receipts` rows are rejected before opening the store or
+serving reads.
 
 Colocated store tests cover claims, revisions, transactions and reopen behavior.
 `inbox.test.ts` covers cross-resource attachment; `conversation-requests.test.ts`

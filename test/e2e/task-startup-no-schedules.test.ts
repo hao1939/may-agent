@@ -196,7 +196,6 @@ test.each(["waiting", "running"] as const)(
         });
         expect(retained.status.currentAttemptId).toBeUndefined();
         expect(store.isCancelled("work/main")).toBe(false);
-        expect(store.readReceipt("work/main")).toBeNull();
         // A retry reads back the same durable decision even after its wait has
         // retired and the Task has converged; it does not start another attempt.
         expect(await socketEmit(sb.socketPath, "publish", approval)).toEqual(approved);

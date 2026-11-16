@@ -23,7 +23,6 @@ import {
   normalizeTaskStateInPlace,
   normalizeTaskGroup,
   type AppTaskAdmission,
-  type TaskCompletionReceipt,
   type TaskGroup,
   type TaskTree,
 } from "../tasks/app-task-store.js";
@@ -40,6 +39,31 @@ function assertSupportedTaskResourceSchemaVersion(db: SqliteDb, appId: string, r
     throw new Error(
       `Task resource store for ${appId} has unsupported schema_version ${version ?? "missing"} (expected ${TASK_RESOURCE_SCHEMA_VERSION})`,
     );
+  }
+  const hasReceiptsTable = Boolean(
+    db
+      .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1")
+      .get(),
+  );
+  if (hasReceiptsTable) {
+    const unconvertedReceipt = db
+      .prepare(
+        `SELECT r.receipt_id FROM app_task_receipts r
+         WHERE r.app_id = ? AND NOT EXISTS (
+           SELECT 1 FROM app_task_attempts a
+           WHERE a.app_id = r.app_id AND a.task_id = r.receipt_id
+             AND a.task_generation = json_extract(r.receipt_json, '$.metadata.generation')
+             AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
+             AND json_extract(a.attempt_json, '$.specHash') = json_extract(r.receipt_json, '$.specHash')
+         ) LIMIT 1`,
+      )
+      .get(appId) as { receipt_id?: string } | null;
+    if (unconvertedReceipt?.receipt_id) {
+      throw new Error(
+        `App ${appId} still contains unconverted legacy app_task_receipts rows (Task ${unconvertedReceipt.receipt_id}); ` +
+          "convert and remove legacy completion receipts before opening the store",
+      );
+    }
   }
 }
 
@@ -100,12 +124,6 @@ function parseTaskAttempt(value: unknown): AppTaskAttempt {
   }
   if (attempt.retiredCancellation) storedResultFacts(attempt.retiredCancellation);
   return attempt;
-}
-
-function parseTaskReceipt(value: unknown): TaskCompletionReceipt {
-  const receipt = storedResultFacts(parseJson<TaskCompletionReceipt>(value));
-  if (receipt.acceptanceBasis) storedResultFacts(receipt.acceptanceBasis);
-  return receipt;
 }
 
 function parseTaskCancellation(value: unknown): AppTaskCancellation {
@@ -196,8 +214,6 @@ export type AppTaskResourceMutation = {
   conditions?: AppTaskCondition[];
   deleteConditionIds?: string[];
   pruneConditionIds?: string[];
-  receipts?: TaskCompletionReceipt[];
-  deleteReceiptIds?: string[];
   admissions?: Array<{ taskId: string; value: AppTaskAdmission }>;
   deleteAdmissionIds?: string[];
   cancellations?: AppTaskCancellation[];
@@ -385,6 +401,7 @@ export class AppTaskResourceStore {
         cancellation.reason,
         json(cancellation),
       );
+    indexTaskReference(this.db, cancellation.appId, cancellation.taskId);
   }
 
   /** Establish resource authority atomically. Production declares new authored
@@ -395,6 +412,24 @@ export class AppTaskResourceStore {
     readyTaskIds: Iterable<string> = [],
     origin: "retained-facts" | "new-app-seed" = "retained-facts",
   ): void {
+    const rawReceipts = (treeInput as Record<string, unknown>).receipts;
+    if (rawReceipts && typeof rawReceipts === "object") {
+      const attemptsByTaskGen = new Set(
+        Object.values(treeInput.attempts ?? {})
+          .filter((a) => a.runtimeId === "retired:task-receipt")
+          .map((a) => `${a.taskId}\0${a.taskGeneration}\0${a.specHash}`),
+      );
+      for (const [receiptId, raw] of Object.entries(rawReceipts as Record<string, Record<string, unknown>>)) {
+        const meta = raw?.metadata as { id?: unknown; generation?: unknown } | undefined;
+        const key = `${meta?.id ?? receiptId}\0${meta?.generation}\0${raw?.specHash}`;
+        if (!attemptsByTaskGen.has(key)) {
+          throw new Error(
+            `App ${this.appId} snapshot still contains unconverted legacy completion receipts (${receiptId}); ` +
+              "convert and remove legacy completion receipts before bootstrapping",
+          );
+        }
+      }
+    }
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
     if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
       throw new Error(`Task snapshot project ${tree.project} does not match App ${this.appId}`);
@@ -411,7 +446,6 @@ export class AppTaskResourceStore {
         "app_task_attempts",
         "app_task_condition_routes",
         "app_task_conditions",
-        "app_task_receipts",
         "app_task_cancellations",
         "app_task_groups",
         "app_task_admissions",
@@ -482,15 +516,6 @@ export class AppTaskResourceStore {
           .run(this.appId, condition.metadata.id, condition.status.state, json(condition));
       }
       for (const resource of Object.values(tree.resources ?? {})) this.putTaskConditionRoutes(resource);
-      for (const receipt of Object.values(tree.receipts ?? {})) {
-        this.db
-          .prepare(
-            `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
-           VALUES (?, ?, ?, ?, ?)`,
-          )
-          .run(this.appId, receipt.metadata.id, receipt.parentId, epoch(receipt.completedAt) ?? 0, json(receipt));
-        indexTaskReference(this.db, this.appId, receipt.metadata.id);
-      }
       for (const [id, group] of Object.entries(tree.groups ?? {})) {
         this.db
           .prepare("INSERT INTO app_task_groups(app_id, group_id, group_json) VALUES (?, ?, ?)")
@@ -627,12 +652,7 @@ export class AppTaskResourceStore {
     const row = this.db
       .prepare(`SELECT resource_json, ${TASK_VIEW_PHASE_SQL} AS phase,
         (SELECT COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') FROM app_task_cancellations c WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id) AS closure
-        FROM app_tasks WHERE app_id = ? AND task_id = ?
-          AND (EXISTS (SELECT 1 FROM app_task_cancellations c
-                WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id)
-            OR NOT EXISTS (SELECT 1 FROM app_task_receipts r
-                WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
-                  AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation))`)
+        FROM app_tasks WHERE app_id = ? AND task_id = ?`)
       .get(this.appId, taskId) as { resource_json: string; phase: AppTaskResource["status"]["phase"]; closure: "closed" | "cancelled" | null } | null;
     return row ? { resource: parseTaskResource(row.resource_json), phase: row.phase, closed: Boolean(row.closure), ...(row.closure ? { closure: row.closure } : {}) } : null;
   }
@@ -758,13 +778,6 @@ export class AppTaskResourceStore {
       )
       .get(this.appId, taskId, generation, localId) as { request_id: string } | null;
     return row?.request_id ?? null;
-  }
-
-  readReceipt(taskId: string): TaskCompletionReceipt | null {
-    const row = this.db
-      .prepare("SELECT receipt_json FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?")
-      .get(this.appId, taskId) as { receipt_json?: string } | null;
-    return row?.receipt_json ? parseTaskReceipt(row.receipt_json) : null;
   }
 
   readControlReceipt(controlKey: string): AppTaskControlReceipt | null {
@@ -964,10 +977,7 @@ export class AppTaskResourceStore {
          WHERE app_id = ? AND task_id > ? AND phase IN (${storedPhases.map(() => "?").join(", ")})
            AND (${TASK_VIEW_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
-             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id)
-           AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
-             WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
-               AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation)`,
+             WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id)`,
       );
       values.push(this.appId, after, ...storedPhases, ...livePhases);
     }
@@ -1029,7 +1039,6 @@ export class AppTaskResourceStore {
         "condition_json",
         parseTaskCondition,
       ),
-      receipts: this.jsonMap<TaskCompletionReceipt>("app_task_receipts", "receipt_id", "receipt_json", parseTaskReceipt),
       cancellations: this.jsonMap<AppTaskCancellation>("app_task_cancellations", "task_id", "cancellation_json", parseTaskCancellation),
       groups: Object.fromEntries(
         Object.entries(this.jsonMap<TaskGroup>("app_task_groups", "group_id", "group_json")).map(([id, group]) => [
@@ -1133,9 +1142,6 @@ export class AppTaskResourceStore {
                  WHERE relation.app_id = ? AND relation.relation_kind = 'parent'
                    AND NOT EXISTS (SELECT 1 FROM app_task_cancellations c
                      WHERE c.app_id = task.app_id AND c.task_id = task.task_id)
-                   AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
-                     WHERE r.app_id = task.app_id AND r.receipt_id = task.task_id
-                       AND json_extract(r.receipt_json, '$.metadata.generation') >= task.generation)
                    AND relation.target_task_id IN (${relatedTo.map(() => "?").join(", ")})
                ) WHERE position <= ?`,
         )
@@ -1248,24 +1254,6 @@ export class AppTaskResourceStore {
           ),
         )
       : {};
-    const dependencyIds = new Set(Object.values(resources).flatMap((resource) => resource.spec.dependsOn ?? []));
-    const receiptIds = new Set([...requested, ...taskIds, ...dependencyIds]);
-    track("receipt", receiptIds);
-    const receiptRows = receiptIds.size
-      ? (this.db
-          .prepare(
-            `SELECT receipt_id, receipt_json FROM app_task_receipts
-             WHERE app_id = ? AND receipt_id IN (${[...receiptIds].map(() => "?").join(", ")})`,
-          )
-          .all(this.appId, ...receiptIds) as Array<{ receipt_id?: string; receipt_json?: string }>)
-      : [];
-    const receipts = Object.fromEntries(
-      receiptRows.flatMap((row) =>
-        row.receipt_id && row.receipt_json
-          ? [[row.receipt_id, parseTaskReceipt(row.receipt_json)] as const]
-          : [],
-      ),
-    );
     const admissions = [...(input.admissionIds ?? [])];
     const appTaskAdmissions = admissions.length
       ? Object.fromEntries(
@@ -1322,7 +1310,6 @@ export class AppTaskResourceStore {
       taskTriggers,
       attempts,
       conditions,
-      receipts,
       cancellations,
       groups,
       appTaskAdmissions,
@@ -1462,9 +1449,6 @@ export class AppTaskResourceStore {
                SELECT 1 FROM app_task_cancellations c
                WHERE c.app_id = app_tasks.app_id AND c.task_id = app_tasks.task_id
              )
-             AND NOT EXISTS (SELECT 1 FROM app_task_receipts r
-               WHERE r.app_id = app_tasks.app_id AND r.receipt_id = app_tasks.task_id
-                 AND json_extract(r.receipt_json, '$.metadata.generation') >= app_tasks.generation)
            ORDER BY updated_at DESC, task_id LIMIT ?`,
         )
         .all(this.appId, excludeTaskId, boundedLimit) as Array<{ task_id?: string }>
@@ -1530,28 +1514,14 @@ export class AppTaskResourceStore {
           LIMIT 1`).get(this.appId, cancellation.taskId);
         if (child) return false;
       }
-      const restoredTaskIds = new Set<string>();
       for (const { resource } of mutation.tasks ?? []) {
         const previous = this.readTask(resource.metadata.id);
         if (previous && !isDeepStrictEqual(previous.metadata.creator, resource.metadata.creator)) {
           throw new Error("Task creator is immutable");
         }
-        // Offline receipt import may restore an already closed child beneath a
-        // closed parent. It adds history, never new executable responsibility.
-        const restoredClosure =
-          !previous &&
-          mutation.cancellations?.some(
-            (closure) =>
-              closure.taskId === resource.metadata.id &&
-              closure.kind === "closed" &&
-              closure.generation === resource.metadata.generation &&
-              this.readReceipt(resource.metadata.id)?.metadata.generation === closure.generation,
-          );
-        if (restoredClosure) restoredTaskIds.add(resource.metadata.id);
         if (
           previous?.spec.parentId !== resource.spec.parentId &&
-          this.isCancelled(resource.spec.parentId) &&
-          !restoredClosure
+          this.isCancelled(resource.spec.parentId)
         ) {
           return false;
         }
@@ -1659,20 +1629,6 @@ export class AppTaskResourceStore {
                )`,
           )
           .run(this.appId, conditionId);
-      }
-      for (const receiptId of new Set(mutation.deleteReceiptIds ?? [])) {
-        this.db.prepare("DELETE FROM app_task_receipts WHERE app_id = ? AND receipt_id = ?").run(this.appId, receiptId);
-      }
-      for (const receipt of mutation.receipts ?? []) {
-        this.db
-          .prepare(
-            `INSERT INTO app_task_receipts(app_id, receipt_id, parent_id, completed_at, receipt_json)
-           VALUES (?, ?, ?, ?, ?)
-           ON CONFLICT(app_id, receipt_id) DO UPDATE SET
-             parent_id=excluded.parent_id, completed_at=excluded.completed_at, receipt_json=excluded.receipt_json`,
-          )
-          .run(this.appId, receipt.metadata.id, receipt.parentId, epoch(receipt.completedAt) ?? 0, json(receipt));
-        indexTaskReference(this.db, this.appId, receipt.metadata.id);
       }
       for (const admissionId of new Set(mutation.deleteAdmissionIds ?? [])) {
         this.db

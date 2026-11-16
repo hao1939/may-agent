@@ -1,13 +1,11 @@
-import type { AppTaskPolicy, TaskExecutorName } from "@may-agent/sdk";
+import type { AppTaskPolicy } from "@may-agent/sdk";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import type {
-  AppTaskAcceptanceBasis,
   AppTaskAttempt,
   AppTaskCancellation,
   AppTaskCondition,
   AppTaskResource,
   AppTaskTrigger,
-  AppTaskWorkspace,
 } from "./app-task-state.js";
 import {
   pendingTaskWorkspaceConstraint,
@@ -38,36 +36,6 @@ export type AppTaskReadiness = {
   related_ids: string[];
 };
 
-export type TaskCompletionReceipt = {
-  metadata: {
-    id: string;
-    generation: number;
-    resourceVersion: number;
-  };
-  specHash: string;
-  parentId: string;
-  outcome: string;
-  acceptance: string[];
-  owner: string;
-  workflow?: string;
-  executor?: TaskExecutorName;
-  input?: Record<string, unknown>;
-  priority?: "P0" | "P1" | "P2" | "P3";
-  handler: string;
-  summary: string;
-  response?: string;
-  result?: Record<string, unknown>;
-  facts: string[];
-  acceptanceBasis: AppTaskAcceptanceBasis;
-  failureFingerprints: string[];
-  completedAt: string;
-  workspace?: AppTaskWorkspace;
-  /** Digest of acceptance/facts/workspace detail removed from old bounded history. */
-  compactedDetailSha256?: string;
-  /** Digest of unbounded outcome/summary/response/input detail removed from old bounded history. */
-  compactedPayloadSha256?: string;
-};
-
 export type AppTaskAdmission = {
   taskId: string;
   taskGeneration: number;
@@ -95,7 +63,6 @@ export type TaskTree = {
   taskTriggers?: Record<string, AppTaskTrigger>;
   /** Retry fence for canonical App inbox attachments. Host-private state. */
   appTaskAdmissions?: Record<string, AppTaskAdmission>;
-  receipts?: Record<string, TaskCompletionReceipt>;
   /** Read projection of the existing terminal cancellation records. */
   cancellations?: Record<string, AppTaskCancellation>;
   /** Structural labels/containers only. Executable task nodes are projected from resources. */

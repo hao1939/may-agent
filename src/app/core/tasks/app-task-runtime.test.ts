@@ -1108,7 +1108,6 @@ it.each(["needs-agent", "needs-owner"])("rejects obsolete executor %s output vis
   expect(task.status.summary).toContain("state must be converged, waiting, or incomplete");
   expect(task.status.executionRetryAt).toBeGreaterThan(Date.now());
   expect(reconciled.at(-1)?.data).toMatchObject({ disposition: "retrying", handler: "executor:worker" });
-  expect(config.resourceStore.readReceipt(taskId)).toBeNull();
   expect(config.resourceStore.readTaskContext({ taskIds: [taskId] }).taskTriggers?.[taskId]?.events)
     .toEqual(expect.arrayContaining([expect.objectContaining({ event: { type: "measure.requested", eventId: 123 } })]));
   await run();
@@ -5195,26 +5194,28 @@ describe("canonical App task runtime", () => {
     const f = fixture();
     const bus = eventBus();
     const retainedFacts = "x".repeat(4 * 1024 * 1024);
-    const historicalReceipt = {
-      metadata: { id: "historical", generation: 1, resourceVersion: 1 },
-      specHash: "historical",
-      parentId: "operations",
-      outcome: "Preserve retained facts",
-      acceptance: ["Facts remains immutable"],
-      owner: "sample-owner",
-      handler: "agent:sample-owner",
-      summary: "Historical receipt",
-      facts: [retainedFacts],
-      acceptanceBasis: { method: "agent-judgment" as const, facts: ["historical"] },
-      failureFingerprints: [],
-      completedAt: "2026-08-19T00:00:00.000Z",
-    };
     const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
     const sourceConfig = appTaskTestContext({
       appDir: f.appDir,
       agent: "sample-owner",
       maxConcurrent: 1,
-      tree: { ...seed, receipts: { historical: historicalReceipt } },
+      tree: {
+        ...seed,
+        cancellations: {
+          historical: {
+            kind: "closed",
+            appId: "sample",
+            taskId: "historical",
+            generation: 1,
+            resourceVersion: 1,
+            outcome: "Preserve retained facts",
+            reason: "Already completed",
+            summary: "Historical receipt",
+            facts: [retainedFacts],
+            cancelledAt: "2026-08-19T00:00:00.000Z",
+          },
+        },
+      },
     });
     const config = activateTaskResources(sourceConfig, join(f.root, "state"));
 
@@ -5292,7 +5293,7 @@ describe("canonical App task runtime", () => {
     while (ownerCalls === 0 && performance.now() < deadline) await Bun.sleep(5);
     expect(ownerCalls).toBe(1);
     expect(ownerObservedReadinessTurn).toBe(true);
-    expect(readTaskSnapshot(config).receipts?.historical?.facts).toEqual([retainedFacts]);
+    expect(readTaskSnapshot(config).cancellations?.historical?.facts).toEqual([retainedFacts]);
   });
 
   it.each([
@@ -5552,7 +5553,6 @@ describe("canonical App task runtime", () => {
     await reconciliation;
     const tree = readTaskSnapshot(config);
     if (scenario.preparationFails) {
-      expect(tree.receipts?.[taskId]).toBeUndefined();
       expect(tree.resources?.[taskId]?.status).toMatchObject({
         phase: "pending",
         executionFailures: 1,
@@ -5626,7 +5626,6 @@ describe("canonical App task runtime", () => {
       summary: scenario.workspace ? "Fixture workflow ran" : "Fixture executor ran",
     });
     expect(tree.resources?.[taskId]?.status.phase).toBe("converged");
-    expect(tree.receipts?.[taskId]).toBeUndefined();
     expect(config.resourceStore.isCancelled(taskId)).toBe(false);
     expect(config.resourceStore.listRecoveryCandidates().items).toEqual([]);
     if (scenario.expectedBase) {
@@ -5705,7 +5704,6 @@ describe("canonical App task runtime", () => {
       const tree = readTaskSnapshot(config);
       expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42, head: "abc" });
       expect(tree.resources?.[taskId]?.status.facts).toEqual(["run:42/head:abc"]);
-      expect(tree.receipts?.[taskId]).toBeUndefined();
       expect(tree.taskTriggers?.[taskId]?.events?.map((entry) => entry.event.eventId)).toEqual([101]);
       expect(Object.values(tree.attempts ?? {})[0]?.state).toBe("completed");
       expect(existsSync(retainedPath)).toBeTrue();
@@ -5789,7 +5787,6 @@ describe("canonical App task runtime", () => {
     expect(injected).toBeTrue();
     expect(calls).toBe(1);
     const tree = readTaskSnapshot(config);
-    expect(tree.receipts?.[taskId]).toBeUndefined();
     if (change === "fact" || change === "action") {
       expect(tree.resources?.[taskId]?.status.result).toEqual({ runId: 42 });
       expect(tree.conditions?.["run:42"]?.spec.subject).toBe("run:42");
@@ -6201,7 +6198,6 @@ describe("canonical App task runtime", () => {
     const afterRecovery = readTaskSnapshot(config);
     expect(afterRecovery.resources?.[intent.id]?.status.phase).toBe("running");
     expect(afterRecovery.resources?.[intent.id]?.status.currentAttemptId).toBe(claim.attemptId);
-    expect(afterRecovery.receipts?.[intent.id]).toBeUndefined();
   });
 
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
@@ -9176,7 +9172,6 @@ describe("canonical App task runtime", () => {
     await run();
     expect(calls).toBe(1);
     const tree = readTaskSnapshot(config);
-    expect(tree.receipts?.[taskId]).toBeUndefined();
     expect(tree.resources?.[taskId]?.status.result).toBeUndefined();
     expect(tree.resources?.["work/existing-target"]?.spec.outcome).toBe("Original assignment");
     expect(tree.resources?.["work/existing-target"]?.metadata.generation).toBe(1);
@@ -9543,7 +9538,6 @@ describe("canonical App task runtime", () => {
       expect(reopened.resourceStore.isCancelled(taskId)).toBe(false);
       expect(tasks.getTask({ appId: "sample", taskId })?.result).toEqual({ feature: "working" });
       expect(reopened.resourceStore.readAttempt(reported.metadata.id)).toEqual(reported);
-      expect(reopened.resourceStore.readReceipt(taskId)).toBeNull();
     },
   );
 

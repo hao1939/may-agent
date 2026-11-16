@@ -768,7 +768,6 @@ describe("common Task lifecycle", () => {
       }),
     ).toThrow("update-task is retired");
     expect(f.config.resourceStore.readTask("child")).toEqual(before);
-    expect(f.config.resourceStore.readReceipt("child")).toBeNull();
     expect(f.config.resourceStore.readAttempt(claim.attemptId)?.acceptedResult).toBeUndefined();
     expect(f.config.resourceStore.readTask("conversation")?.status.currentAttemptId).toBe(claim.attemptId);
   });
@@ -1489,7 +1488,6 @@ describe("common Task lifecycle", () => {
         facts: ["measurement:17"],
       });
       expect(f.config.resourceStore.readTask("conversation")?.status.phase).toBe("converged");
-      expect(f.config.resourceStore.readReceipt("conversation")).toBeNull();
       expect(f.config.resourceStore.listRecoveryCandidates().items).toEqual([]);
       f.reopen();
       const input: TaskInputAdmission = {

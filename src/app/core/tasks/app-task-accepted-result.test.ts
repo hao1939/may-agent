@@ -93,7 +93,6 @@ describe("accepted Task outcome facts", () => {
       events: [{ event: { eventId: 1 } }],
       acceptedResult: { state: "converged", ...measured },
     });
-    expect(restored.resourceStore.readReceipt("work")).toBeNull();
     expect(restored.resourceStore.listRecoveryCandidates().items).toEqual([]);
   });
 
@@ -156,7 +155,6 @@ describe("accepted Task outcome facts", () => {
       acceptedResult: { state: "waiting", result: { missing: "sample" }, facts: ["fixture:sample:pending"] },
     });
     expect(restored.resourceStore.readTask("work")?.status.phase).toBe("waiting");
-    expect(restored.resourceStore.readReceipt("work")).toBeNull();
   });
 
   it("keeps an accepted parent outcome separate from its child's continuing responsibility", () => {
@@ -223,7 +221,6 @@ describe("accepted Task outcome facts", () => {
       result: measured.result,
       facts: measured.facts,
     });
-    expect(restored.resourceStore.readReceipt("work")).toBeNull();
     expect(restored.resourceStore.isCancelled("work")).toBe(false);
     expect(restored.resourceStore.listRecoveryCandidates().items).toEqual([]);
     const accepted = restored.resourceStore.readAttempt(current.attemptId)?.acceptedResult;

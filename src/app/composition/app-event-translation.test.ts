@@ -650,3 +650,114 @@ test("isolated forced reload regressions: reload before startup timer fires, and
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("regular recovery skips an event with an active dispatch and retries it on a later pass after the dispatch fails", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-recovery-overlap-dispatch-"));
+  const db = getDb(root);
+  let runtime: AppInboxRuntime | undefined;
+  let clock = Date.now();
+  let holdHealthyWorker = true;
+  let failHeldDispatch = true;
+  let workerDispatches = 0;
+  let redeliveries = 0;
+  const healthyWorkerEntered = Promise.withResolvers<void>();
+  const releaseHealthyWorker = Promise.withResolvers<void>();
+  try {
+    const appDir = join(root, "healthy");
+    mkdirSync(appDir, { recursive: true });
+    const definition = defineApp({
+      id: "healthy",
+      version: 1,
+      agent: "healthy",
+      inputSchema: Type.Object({ kind: Type.Literal("message"), data: Type.Object({ value: Type.String() }) }),
+      tasks: {},
+    });
+    const store = AppTaskResourceStore.fromDb(db, "healthy");
+    store.bootstrapSnapshot(
+      {
+        project: "healthy",
+        root_task_id: "root",
+        project_lifecycle: "active",
+        groups: { root: { id: "root", parent_id: null } },
+      },
+      "fixture",
+    );
+    const registry = new AppRegistry(async () => [{ appDir, definition }]);
+    await registry.reload();
+    const bus = new EventBus();
+    const writer = new DbWriter(root);
+    bus.setPersistenceSubscriber(writer.handler);
+    bus.setDeliveryRecorder(writer.recordDelivery);
+    const origRedeliver = bus.redeliverPersisted.bind(bus);
+    bus.redeliverPersisted = ((event, eventId, routeId) => {
+      redeliveries++;
+      return origRedeliver(event, eventId, routeId);
+    }) as typeof bus.redeliverPersisted;
+
+    runtime = await startAppInboxRuntime({
+      db,
+      bus,
+      registry,
+      persistDir: root,
+      schedulesEnabled: false,
+      now: () => clock,
+      attachTask: (input) =>
+        admitTaskInput(
+          appTaskContext({ appDir, projectDir: appDir, agent: "healthy", resourceStore: store }),
+          input,
+        ),
+      createTaskAdmissionWorker: () => ({
+        dispatch: async (command) => {
+          if (command.appId === "healthy") {
+            workerDispatches++;
+            if (holdHealthyWorker) {
+              healthyWorkerEntered.resolve();
+              await releaseHealthyWorker.promise;
+            }
+            if (failHeldDispatch) throw new Error("transient worker dispatch failure");
+          }
+          return { taskIds: [] };
+        },
+        close: () => {},
+      }),
+      previewTaskEventRoutes: ({ event }) =>
+        event.type === "probe.changed" ? [{ appId: "healthy", taskIds: ["root"] }] : [],
+      admitTaskEvent: () => ({ accepted: true, by: "fixture", route: "direct" }),
+    });
+
+    const overlapEvent = bus.emit({ type: "probe.changed", source: "fixture", owner: "fixture", data: { value: "overlap" } });
+    const overlapId = overlapEvent[EVENT_ROW_ID]!;
+    await healthyWorkerEntered.promise;
+    expect(workerDispatches).toBe(1);
+    expect(redeliveries).toBe(0);
+
+    // Advance the recovery clock and run regular recovery while dispatch is held open.
+    clock += 120_000;
+    runtime.scanNow();
+    await Bun.sleep(20);
+    expect(redeliveries).toBe(0);
+    expect(workerDispatches).toBe(1);
+
+    // Fail the held dispatch and verify that a later recovery pass retries its pending command.
+    holdHealthyWorker = false;
+    releaseHealthyWorker.resolve();
+    await until(
+      () =>
+        getAppEventAdmissionPlan(db, overlapId)?.commands
+          .find((c) => c.appId === "healthy")
+          ?.lastError?.includes("transient worker dispatch failure") === true,
+    );
+    failHeldDispatch = false;
+    clock += 120_000;
+    runtime.scanNow();
+    await until(() => getAppEventAdmissionPlan(db, overlapId)?.status === "completed");
+    expect(redeliveries).toBe(1);
+    expect(workerDispatches).toBe(2);
+  } finally {
+    holdHealthyWorker = false;
+    releaseHealthyWorker.resolve();
+    runtime?.close();
+    closeDb(root);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
