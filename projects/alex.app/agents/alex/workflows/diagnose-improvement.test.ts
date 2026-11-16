@@ -335,6 +335,9 @@ describe("diagnose-improvement workflow", () => {
         mocks: { gym: (step) => {
           expect(step.task).toContain('"truncated": true');
           expect(step.task).toContain("retained failure");
+          expect(step.task).toContain(`Retained baseline directory: ${baselineDir}`);
+          expect(step.task).toContain(`Current canonical source directory: ${join(baselineDir, "projects/fixture.app/agents/alex")}`);
+          expect(step.task).not.toContain("Do NOT call tools");
           return { status: "done", output: proposal(
             "projects/fixture.app/agents/alex/AGENTS.md",
             { requirement: ["large-result#1:requirement"], output: ["large-result#1:output"] },
