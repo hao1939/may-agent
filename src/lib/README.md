@@ -87,7 +87,7 @@ sequence of unnecessary calls from consuming the execution budget.
 | Session start, active steering, stop and hosted result access | `manager.ts`; `manager-agents-tool.ts` exposes its agent tool |
 | Execution exit and descendant cleanup before recovery | `session-cleanup.ts`, shared by startup and Task recovery; `tools/bash.ts` owns process-group draining |
 | Model execution and tool binding | `agent-execution.ts`, then `agent-runner.ts` |
-| Task context supplied to the model | `task-decision-context.ts`; `task-workspace-context.ts` writes the discovery entry |
+| Task context supplied to the model | `task-decision-context.ts` |
 | Context compaction | `compaction.ts`; preparation connects the transform in `agent-execution.ts` |
 | Workflow loading, steps and agent calls | `workflow-tool.ts`; `workflow.ts` holds internal types; `workflow-payload.ts` prepares inputs |
 | Execution results and retained evidence | `execution-result.ts`, `workflow-facts.ts`, `artifacts.ts` |
