@@ -1,4 +1,4 @@
-import { Type, defineApp, defineObserver, observationCondition, type AppRead } from "../../../may-agent/packages/sdk/src/index.js";
+import { Type, defineApp, defineObserver, observationCondition, type AppRead } from "../../../may-agent/packages/sdk/src/app.js";
 
 // The App knows provider scope, credentials and response semantics.
 export function buildsApp(readBuild: (resource: string, signal: AbortSignal) => Promise<{ state: string; revision: number }>) {

@@ -1,4 +1,4 @@
-import type { TaskReconcileResult } from "@may-agent/sdk";
+import type { TaskReconcileResult } from "@may-agent/sdk/app";
 
 // The runnable App is canonical; these exports demonstrate additional results.
 export { default } from "../../../sample.app/app.js";

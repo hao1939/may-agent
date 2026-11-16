@@ -1,8 +1,8 @@
+import type { ExecutionResult } from "../../../may-agent/packages/sdk/src/index.js";
 import type {
-  ExecutionResult,
   TaskReconcileResult,
-  WorkflowContext,
-} from "../../../may-agent/packages/sdk/src/index.js";
+  AppWorkflowContext,
+} from "../../../may-agent/packages/sdk/src/app.js";
 import { buildResultWait } from "./observers.js";
 
 type Input = { resource: string };
@@ -13,7 +13,7 @@ export const description =
 // Install this in the owning agent's workflows and assign an ordinary Task
 // with workflow: "observation-smoke", input: { resource: <known finished build> }.
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   const attempt = ctx.reconciliation;
   if (!attempt || typeof ctx.input?.resource !== "string" || !ctx.input.resource.trim()) {
