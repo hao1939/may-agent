@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { ExecutionResult } from "@may-agent/sdk";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
@@ -50,6 +50,16 @@ export type RuntimePatternAuditPacket = {
 };
 
 const DEFAULT_WINDOW_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * App workflows run with an App-scoped projectRoot, while the static inventory
+ * spans sibling Apps under the installation's projects directory. appRoot is
+ * the runtime contract for the owning App declaration, so its projects parent
+ * identifies the captured definition inventory without assuming an install path.
+ */
+export function workflowInventoryRootFromAppRoot(appRoot: string): string {
+  return dirname(dirname(resolve(appRoot)));
+}
 
 export function buildRuntimePatternAuditPacket(
   input: RuntimePatternAuditInput = {},
@@ -152,7 +162,9 @@ export async function execute(
   ctx: AppWorkflowContext<RuntimePatternAuditInput>,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
-  const rootDir = ctx.workspace?.projectRoot || process.cwd();
+  const rootDir = ctx.workspace?.appRoot
+    ? workflowInventoryRootFromAppRoot(ctx.workspace.appRoot)
+    : process.cwd();
   const packet = buildRuntimePatternAuditPacket({
     ...ctx.input,
     rootDir: ctx.input?.rootDir ?? rootDir,

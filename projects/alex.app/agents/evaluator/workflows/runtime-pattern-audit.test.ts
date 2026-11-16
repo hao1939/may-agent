@@ -4,9 +4,11 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { discoverStaticWorkflows } from "../../../scripts/audit-workflows.js";
 import {
   buildRuntimePatternAuditPacket,
   execute,
+  workflowInventoryRootFromAppRoot,
 } from "./runtime-pattern-audit.js";
 
 test("runtime-pattern-audit bundles with dependencies inside the Alex release closure", async () => {
@@ -21,6 +23,61 @@ test("runtime-pattern-audit bundles with dependencies inside the Alex release cl
   const bundledSource = await result.outputs[0]?.text();
   expect(bundledSource).toContain("projects/alex.app/scripts/audit-workflows.ts");
   expect(bundledSource).not.toContain("// scripts/audit-workflows.ts");
+});
+
+test("runtime-pattern-audit resolves the installed sibling-App inventory from an App-scoped workspace", async () => {
+  const root = mkdtempSync(join(tmpdir(), "runtime-pattern-audit-installed-"));
+  try {
+    const projectsRoot = join(root, "definitions", "projects");
+    const appRoots = [
+      { app: "alex.app", agent: "evaluator", workflow: "runtime-pattern-audit" },
+      { app: "may.app", agent: "may", workflow: "task-delivery" },
+    ];
+    for (const fixture of appRoots) {
+      const appDir = join(projectsRoot, fixture.app);
+      const workflowDir = join(appDir, "agents", fixture.agent, "workflows");
+      mkdirSync(workflowDir, { recursive: true });
+      writeFileSync(
+        join(appDir, "app.ts"),
+        `export default { task: () => ({ intent: { workflow: "${fixture.workflow}" } }) };\n`,
+      );
+      writeFileSync(
+        join(workflowDir, `${fixture.workflow}.ts`),
+        `export const name = "${fixture.workflow}";\nexport const description = "Fixture workflow";\nexport async function execute() {}\n`,
+      );
+      writeFileSync(join(workflowDir, `${fixture.workflow}.test.ts`), "// paired test\n");
+    }
+
+    const appRoot = join(projectsRoot, "alex.app");
+    const inventoryRoot = workflowInventoryRootFromAppRoot(appRoot);
+    expect(inventoryRoot).toBe(join(root, "definitions"));
+    expect(
+      discoverStaticWorkflows(inventoryRoot).map(({ appId, name }) => `${appId}:${name}`),
+    ).toEqual(["alex:runtime-pattern-audit", "may:task-delivery"]);
+
+    const projectRoot = join(root, "workspaces", "alex");
+    mkdirSync(projectRoot, { recursive: true });
+    const ctx = createTestAppWorkflowContext({
+      workflow: "runtime-pattern-audit",
+      input: { persistSnapshot: false },
+      workspace: {
+        appRoot,
+        projectRoot,
+        root: projectRoot,
+        output: join(projectRoot, ".state", "output"),
+      },
+    });
+    const res = await execute(ctx);
+    expect(res.status).toBe("done");
+    expect(res.summary).toContain("across 2 workflows");
+    expect(res.output).toMatchObject({
+      state: "converged",
+      result: { latestTotals: { workflows: 2, canonicalWorkflows: 2 } },
+      facts: expect.arrayContaining(["workflows:2"]),
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("runtime-pattern-audit compares latest and preceding windows deterministically", async () => {
