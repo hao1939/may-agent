@@ -110,11 +110,21 @@ bun projects/alex.app/scripts/cycle-evidence.ts validate \
 ```
 
 The input contains the substantive cycle fields plus `artifacts` with paths and
-explicit `jsonPointers`; the helper samples the clock, hashes linked artifacts,
-rejects unresolved pointers, and exclusively creates the retained output directory.
-For historical records, set `generation.attemptInterval` so `createdAt` is checked
+explicit `jsonPointers`; the helper samples the clock, hash-binds every direct
+evidence path, rejects unresolved pointers, and exclusively creates the retained
+output directory. Relative artifact and direct-evidence paths resolve from the
+input file. A supplied `artifacts[].sha256` is preserved and verified; omit it only
+when generation should bind the current invocation bytes.
+
+For hosted work, set `generation.disposableRoots` to the Task worktree or other
+roots removed at settlement. Generation rejects both its output directory and every
+linked artifact under those roots. This is an explicit generation-time durability
+boundary; historical validate-only records remain readable without it. For
+historical records, set `generation.attemptInterval` so `createdAt` is checked
 against that attempt rather than today's clock. Keep failed and revised records in
-separate directories.
+separate directories. The helper validates mechanical evidence integrity, not the
+semantic completeness of the cycle's objective, decision, ownership or cost scope;
+those substantive fields remain part of the caller's record contract and review.
 
 Before finishing, read back the record and validation receipt. Return their
 absolute paths and hashes in the accepted Task result. The caller then checks the

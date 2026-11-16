@@ -61,14 +61,71 @@ test("rejects missing, changed, and invalid linked evidence", () => {
   expect(validateCycleRecord(invalidPath).errors.join(" ")).toContain("does not resolve");
 });
 
-test("retained session-10 v1 is rejected for bad pointer and timestamp while v2 passes", () => {
-  const base = "/root/workspace-worktrees/alex-standalone-20261116/.state/standalone-improvement/20261116-session-10";
-  const v1 = validateCycleRecord(join(base, "alex-output/cycle-record.json"), { attemptInterval: { startedAt: "2026-11-16T09:31:45.600Z", finishedAt: "2026-11-16T09:33:53.905Z" } });
+test("generation rejects output and evidence under declared disposable roots", () => {
+  const t = fixture();
+  const disposable = join(t.root, "task-worktree");
+  mkdirSync(disposable);
+  const disposableArtifact = join(disposable, "artifact.json");
+  writeFileSync(disposableArtifact, JSON.stringify({ result: "temporary" }));
+
+  const outputInput = JSON.parse(readFileSync(t.input, "utf8"));
+  outputInput.generation = { disposableRoots: [disposable] };
+  writeFileSync(t.input, JSON.stringify(outputInput));
+  expect(() => generateCycleRecord(t.input, join(disposable, "output"))).toThrow("outputRoot is within disposable root");
+
+  outputInput.artifacts[0].path = disposableArtifact;
+  writeFileSync(t.input, JSON.stringify(outputInput));
+  expect(() => generateCycleRecord(t.input, join(t.retained, "artifact-output"))).toThrow("artifact is within disposable root");
+
+  outputInput.artifacts[0].path = t.artifact;
+  outputInput.executions[0].directEvidence[0].artifactPath = disposableArtifact;
+  writeFileSync(t.input, JSON.stringify(outputInput));
+  expect(() => generateCycleRecord(t.input, join(t.retained, "evidence-output"))).toThrow("direct evidence is within disposable root");
+});
+
+test("direct evidence is hash-bound even without JSON pointers", () => {
+  const t = fixture();
+  const record = {
+    createdAt: new Date().toISOString(),
+    executions: [{ directEvidence: [{ artifactPath: join(t.root, "unlisted.json") }] }],
+    artifacts: [{ path: t.artifact, sha256: sha(t.artifact) }],
+  };
+  const recordPath = join(t.root, "unbound-record.json");
+  writeFileSync(recordPath, JSON.stringify(record));
+  expect(validateCycleRecord(recordPath).errors.join(" ")).toContain("direct evidence is not hash-bound");
+});
+
+test("generation preserves pinned hashes and normalizes relative evidence paths", () => {
+  const t = fixture();
+  const relativeInput = JSON.parse(readFileSync(t.input, "utf8"));
+  relativeInput.artifacts[0].path = "retained/artifact.json";
+  relativeInput.artifacts[0].sha256 = sha(t.artifact);
+  relativeInput.executions[0].directEvidence[0].artifactPath = "retained/artifact.json";
+  writeFileSync(t.input, JSON.stringify(relativeInput));
+  const generated = generateCycleRecord(t.input, join(t.retained, "relative"));
+  expect(validateCycleRecord(generated.recordPath).passed).toBe(true);
+
+  writeFileSync(t.artifact, JSON.stringify({ result: "changed" }));
+  expect(() => generateCycleRecord(t.input, join(t.retained, "changed"))).toThrow("changed artifact");
+});
+
+test("retained-format v1 is rejected for bad pointer and timestamp while v2 passes", () => {
+  const t = fixture();
+  const interval = { startedAt: "2026-11-16T09:34:56.483Z", finishedAt: "2026-11-16T09:37:02.042Z" };
+  const base = {
+    executions: [{ directEvidence: [{ artifactPath: t.artifact, jsonPointers: ["/result/status"] }] }],
+    artifacts: [{ path: t.artifact, sha256: sha(t.artifact), jsonPointers: ["/values/1"] }],
+  };
+  const v1Path = join(t.root, "retained-v1.json");
+  writeFileSync(v1Path, JSON.stringify({ ...base, createdAt: "2026-11-16T09:31:45.600Z", executions: [{ directEvidence: [{ artifactPath: t.artifact, jsonPointers: ["/environment/paths/workspaceDir"] }] }] }));
+  const v1 = validateCycleRecord(v1Path, { attemptInterval: interval });
   expect(v1.passed).toBe(false);
   expect(v1.errors.join(" ")).toContain("/environment/paths/workspaceDir");
   expect(v1.errors.join(" ")).toContain("outside recorded attempt interval");
 
-  const v2 = validateCycleRecord(join(base, "alex-output-v2/cycle-record.json"), { attemptInterval: { startedAt: "2026-11-16T09:34:56.483Z", finishedAt: "2026-11-16T09:37:02.042Z" } });
+  const v2Path = join(t.root, "retained-v2.json");
+  writeFileSync(v2Path, JSON.stringify({ ...base, createdAt: "2026-11-16T09:35:30.000Z" }));
+  const v2 = validateCycleRecord(v2Path, { attemptInterval: interval });
   expect(v2.passed).toBe(true);
-  expect(v2.pointerChecks.some((check) => check.pointer === "/paths/workspaceDir" && check.resolved)).toBe(true);
+  expect(v2.pointerChecks.some((check) => check.pointer === "/result/status" && check.resolved)).toBe(true);
 });

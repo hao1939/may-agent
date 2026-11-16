@@ -2,7 +2,7 @@
 /** Deterministic generation and validation for retained improvement-cycle evidence. */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
 const sha256File = (path: string) => createHash("sha256").update(readFileSync(path)).digest("hex");
@@ -24,17 +24,30 @@ function pointerValue(document: unknown, pointer: string): unknown {
   }, document);
 }
 
-function declarations(record: Record<string, any>) {
-  const found: Array<{ path: string; pointer: string; declaredBy: string }> = [];
+function evidenceDeclarations(record: Record<string, any>) {
+  const found: Array<{ path: unknown; pointers: unknown[]; declaredBy: string }> = [];
   for (const [executionIndex, execution] of (record.executions ?? []).entries()) {
     for (const [evidenceIndex, evidence] of (execution.directEvidence ?? []).entries()) {
-      for (const pointer of evidence.jsonPointers ?? []) found.push({ path: evidence.artifactPath, pointer, declaredBy: `executions/${executionIndex}/directEvidence/${evidenceIndex}` });
+      found.push({ path: evidence.artifactPath, pointers: evidence.jsonPointers ?? [], declaredBy: `executions/${executionIndex}/directEvidence/${evidenceIndex}` });
     }
+  }
+  return found;
+}
+
+function pointerDeclarations(record: Record<string, any>) {
+  const found: Array<{ path: unknown; pointer: unknown; declaredBy: string }> = [];
+  for (const declaration of evidenceDeclarations(record)) {
+    for (const pointer of declaration.pointers) found.push({ path: declaration.path, declaredBy: declaration.declaredBy, pointer });
   }
   for (const [artifactIndex, artifact] of (record.artifacts ?? []).entries()) {
     for (const pointer of artifact.jsonPointers ?? []) found.push({ path: artifact.path, pointer, declaredBy: `artifacts/${artifactIndex}` });
   }
   return found;
+}
+
+function isWithin(root: string, candidate: string) {
+  const path = relative(root, candidate);
+  return path === "" || (!path.startsWith(`..${sep}`) && path !== ".." && !isAbsolute(path));
 }
 
 export function validateCycleRecord(recordFile: string, options: ValidationOptions = {}) {
@@ -59,10 +72,20 @@ export function validateCycleRecord(recordFile: string, options: ValidationOptio
     artifactByPath.set(artifactPath, artifact);
     artifactChecks.push({ path: artifactPath, expectedSha256: artifact.sha256, actualSha256, exists, matched });
   }
-  for (const declaration of declarations(record)) {
+  for (const declaration of evidenceDeclarations(record)) {
+    if (typeof declaration.path !== "string") {
+      errors.push(`${declaration.declaredBy} requires artifactPath`);
+      continue;
+    }
     const artifactPath = resolve(declaration.path);
-    if (!artifactByPath.has(artifactPath)) {
-      errors.push(`direct evidence is not hash-bound: ${artifactPath}`);
+    if (!artifactByPath.has(artifactPath)) errors.push(`direct evidence is not hash-bound: ${artifactPath}`);
+  }
+  for (const declaration of pointerDeclarations(record)) {
+    if (typeof declaration.path !== "string") continue;
+    const artifactPath = resolve(declaration.path);
+    if (!artifactByPath.has(artifactPath)) continue;
+    if (typeof declaration.pointer !== "string") {
+      errors.push(`${declaration.declaredBy} contains a non-string JSON pointer`);
       continue;
     }
     try {
@@ -96,16 +119,41 @@ export function validateCycleRecord(recordFile: string, options: ValidationOptio
 }
 
 export function generateCycleRecord(inputFile: string, outputRoot: string, now = new Date()) {
-  const input = object(JSON.parse(readFileSync(resolve(inputFile), "utf8")));
+  const inputPath = resolve(inputFile);
+  const input = object(JSON.parse(readFileSync(inputPath, "utf8")));
+  const inputRoot = dirname(inputPath);
   const root = resolve(outputRoot);
-  mkdirSync(root);
+  const disposableRoots = (input.generation?.disposableRoots ?? []).map((path: unknown) => {
+    if (typeof path !== "string") throw new Error("generation.disposableRoots must contain paths");
+    return resolve(inputRoot, path);
+  });
+  const rejectDisposable = (path: string, label: string) => {
+    const disposableRoot = disposableRoots.find((candidate: string) => isWithin(candidate, path));
+    if (disposableRoot) throw new Error(`${label} is within disposable root ${disposableRoot}: ${path}`);
+  };
+  rejectDisposable(root, "outputRoot");
   const artifacts = (input.artifacts ?? []).map((artifact: any) => {
     if (!artifact || typeof artifact.path !== "string") throw new Error("each artifact requires path");
-    const path = resolve(dirname(resolve(inputFile)), artifact.path);
+    const path = resolve(inputRoot, artifact.path);
+    rejectDisposable(path, "artifact");
     if (!existsSync(path)) throw new Error(`missing artifact: ${path}`);
-    return { ...artifact, path, sha256: sha256File(path) };
+    const actualSha256 = sha256File(path);
+    if (artifact.sha256 !== undefined && (!/^[a-f0-9]{64}$/.test(artifact.sha256) || artifact.sha256 !== actualSha256)) {
+      throw new Error(`changed artifact: ${path}`);
+    }
+    return { ...artifact, path, sha256: artifact.sha256 ?? actualSha256 };
   });
-  const record = { ...input, schema: "alex.improvement-cycle-record/v1", createdAt: now.toISOString(), artifacts };
+  const executions = (input.executions ?? []).map((execution: any) => ({
+    ...execution,
+    directEvidence: (execution.directEvidence ?? []).map((evidence: any) => {
+      if (!evidence || typeof evidence.artifactPath !== "string") return evidence;
+      const artifactPath = resolve(inputRoot, evidence.artifactPath);
+      rejectDisposable(artifactPath, "direct evidence");
+      return { ...evidence, artifactPath };
+    }),
+  }));
+  mkdirSync(root);
+  const record = { ...input, schema: "alex.improvement-cycle-record/v1", createdAt: now.toISOString(), executions, artifacts };
   const recordPath = join(root, "cycle-record.json");
   writeFileSync(recordPath, json(record));
   const validation = validateCycleRecord(recordPath, { now });
