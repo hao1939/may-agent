@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last verified at `2a2a583d3a`; binary activation is distinct from App reload and current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
+**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last verified at `238f476d3d`; binary activation is distinct from App reload and current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -297,6 +297,21 @@ checks, with provider backoff retained. Current-head green CI, fresh repaired-co
 evidence if required, the caller return and the final addressed Telegram provider
 receipt are still required. Historical evidence and operator interventions must
 remain explicit; this is not yet a completed autonomous delivery claim.
+
+Bounded reproduction narrowed the stall to a single live-input test. A repair
+workflow reached its caller deadline before implementation; Host automatically
+continued the same Task, and the exhausted workflow escalated to May. May chose
+one bounded direct fixture repair without renewing the workflow allowance.
+Her first waiting result stored that decision but left Alex's escalation open,
+creating a mutual wait. Corrected App guidance at `238f476d3d` made the distinction
+explicit; May then converged only the answered escalation input, and its actual
+caller return woke the same Alex Task. This owner disposition is an exception to
+workflow execution, not evidence that the repair ran through `develop-change`.
+The same source also fixes pinned workflow evidence recovery when a creator
+revision changes the execution output directory. Sixty-four workflow/evidence
+tests pass, including the failing-before regression and conservative exhausted
+or corrupt usage; successful activation is 6731019. The original delivery promise
+and final readiness/notification gates remain open.
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |

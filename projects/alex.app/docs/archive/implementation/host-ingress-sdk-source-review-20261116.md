@@ -433,6 +433,46 @@ facts and hash-verified original receipt to May. May's native revision run
 still owed and retired the unnecessary manual-rerun wait. No completed CI repair,
 ready caller result or addressed final Telegram receipt is claimed here.
 
+### Output-directory recovery and the unsent owner decision
+
+Generation 4 reproduced the Quality stall in shard 1, the complete
+`task-communication.test.ts` file, then the single managed-finish input-scope
+test. The repair workflow `wr_1794868291287_kkt5` started with only about 37
+seconds left on its caller and timed Bob out before implementation. An immediate
+second invocation reached the expired caller deadline. Host continued the same
+Task automatically in attempt `r_4_f401081c-c949-4ba8-92d6-3c6bcd0f7c82`.
+Workflow `wr_1794868489108_x0du` then reported its allowance exhausted, without
+editing. No timeout or round receipt was refunded.
+
+The operator also found the earlier 420-second diagnostic still orphaned and
+using CPU under PID 1 after more than 19 minutes. Only that verified process group
+was killed, retaining its receipt. This was operator cleanup, not proof that
+native cancellation drains arbitrary descendants.
+
+Creator revision had changed the execution output root. `develop-change`
+incorrectly read explicitly pinned old artifacts through the new directory's
+scoped store, rejecting sound same-Task evidence and conservatively exhausting
+usage. Apps `238f476d3d` reads only the pinned prior App/Task archive, verifies its
+hashes, and copies reports into current admitted output. Candidate/requirement
+checks remain; missing or corrupt usage still fails closed, and moving directories
+grants no allowance. A real Git/verification regression failed before this repair;
+all 64 workflow/evidence tests pass afterward.
+
+May judged one bounded direct fixture repair appropriate without renewing the
+exhausted workflow. Initially she saved authorization only in a waiting result:
+Alex waited on May request `appdep_1e216d9436d046ee1d51bb61`, while May waited on
+Alex. The same Apps source corrects stale waiting-response/dependency examples
+and requires an actual caller return or assignment revision. Nine-agent
+model-surface and design-integrity checks pass; exact successful reload is
+6731019. After operator diagnostic feedback, May converged just the answered
+escalation input; its inbox item became `done` and woke Alex session
+`s_1794868828339_45f3f7c1-bc09-44e3-9cdf-a48b2738342e` on the same Task.
+
+This verifies native escalation, owner disposition, exact caller return and
+resumption after the handoff fix. The direct repair exception does not prove a
+workflow implementation step. CI repair, current-head green checks and the final
+addressed Telegram readiness receipt are still owed.
+
 ## Historical performance observations
 
 The original proposal reported these local measurements before the boundary
