@@ -370,7 +370,7 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./manager-utils.js";
 import { createWorkflowFinishTool } from "./tools/lifecycle.js";
-import { createReadTool } from "./tools/read.js";
+import { createReadTool, withPinnedReadFiles } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
 import { createEditTool } from "./tools/edit.js";
 import { createWriteTool } from "./tools/write.js";
@@ -1066,10 +1066,13 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   const pinnedFiles =
     options.definition.skillCatalog && options.definition.skillCatalog.skills.size > 0
       ? new Map(
-          [...options.definition.skillCatalog.skills.values()].flatMap((skill) => [
-            [resolve(skill.canonicalPath), skill.content],
-            [resolve(skill.filePath), skill.content],
-          ]),
+          [...options.definition.skillCatalog.skills.values()].flatMap((skill) => {
+            const snapshotText = skill.rawContent ?? skill.content;
+            return [
+              [resolve(skill.canonicalPath), snapshotText],
+              [resolve(skill.filePath), snapshotText],
+            ];
+          }),
         )
       : undefined;
   if (!root && !options.bashProcessGroupOwner && !pinnedFiles) return options.definition;
@@ -1089,8 +1092,10 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   }
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
-      case "read":
-        return root || pinnedFiles ? createReadTool(executionRoot, { pinnedFiles }) : tool;
+      case "read": {
+        const baseRead = root ? createReadTool(executionRoot) : tool;
+        return pinnedFiles ? withPinnedReadFiles(baseRead, executionRoot, pinnedFiles) : baseRead;
+      }
       case "bash":
         return options.bashProcessGroupOwner
           ? createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner })

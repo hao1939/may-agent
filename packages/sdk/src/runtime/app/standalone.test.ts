@@ -1907,6 +1907,7 @@ export async function execute(ctx) {
     let capturedSystemPrompt = "";
     let capturedContextMessages: string[] = [];
     let rereadSkillContent = "";
+    let rereadSkillOffsetContent = "";
 
     const skillAndContextRun = await runDirectWorkflow({
       module: {
@@ -1952,6 +1953,12 @@ export async function execute(ctx) {
           const readTool = prep.prepared.tools.find((t) => t.name === "read");
           const readRes = await readTool!.execute("call-read-skill", { path: join(skillDir, "SKILL.md") });
           rereadSkillContent = readRes.content.map((c: any) => c.text ?? "").join("");
+          const offsetRes = await readTool!.execute("call-read-skill-offset", {
+            path: join(skillDir, "SKILL.md"),
+            offset: 5,
+            limit: 2,
+          });
+          rereadSkillOffsetContent = offsetRes.content.map((c: any) => c.text ?? "").join("");
           const transformed = prep.prepared.runner.transformContext
             ? await prep.prepared.runner.transformContext([])
             : [];
@@ -1983,14 +1990,79 @@ export async function execute(ctx) {
     expect(capturedPrompt).toContain("Always check boundary conditions first.");
     expect(capturedPrompt).not.toContain("MUTATED SKILL BODY");
     expect(capturedPrompt).not.toContain('Apply skill "careful-audit" when relevant.');
+    expect(rereadSkillContent).toContain("---\nname: careful-audit");
     expect(rereadSkillContent).toContain("Always check boundary conditions first.");
     expect(rereadSkillContent).not.toContain("MUTATED SKILL BODY");
+    expect(rereadSkillOffsetContent).toBe("# Careful Audit Skill\nAlways check boundary conditions first.");
     expect(capturedSystemPrompt).toContain("Lab-forked reviewer instructions v2");
     expect(capturedSystemPrompt).not.toContain("MUTATED MID-FLIGHT");
     expect(capturedSystemPrompt).not.toContain("CREATED COMMON-SENSE AFTER CAPTURE");
     expect(capturedContextMessages.join("\n")).toContain("Goal: Ensure boundary.ts handles empty input");
     expect(capturedContextMessages.join("\n")).toContain("- Empty input returns null");
     expect(capturedContextMessages.join("\n")).toContain("- No public signature changes");
+
+    // Custom read tool is preserved for non-pinned files when skillCatalog is non-empty:
+    const customReaderDir = join(env.agentsRoot, "custom-reader");
+    const customReaderToolsDir = join(customReaderDir, "tools");
+    const customReaderSkillsDir = join(customReaderDir, "skills", "custom-skill");
+    mkdirSync(customReaderToolsDir, { recursive: true });
+    mkdirSync(customReaderSkillsDir, { recursive: true });
+    writeFileSync(
+      join(customReaderDir, "agent.json"),
+      JSON.stringify({
+        name: "custom-reader",
+        description: "Agent with custom local read tool",
+        domain: "test",
+        model: "test",
+        tools: ["finish"],
+      }),
+    );
+    writeFileSync(join(customReaderDir, "AGENTS.md"), "# custom-reader\n");
+    writeFileSync(
+      join(customReaderSkillsDir, "SKILL.md"),
+      "---\nname: custom-skill\ndescription: Custom skill\n---\nPinned skill body\n",
+    );
+    writeFileSync(
+      join(customReaderToolsDir, "custom-read.ts"),
+      `
+export default function createCustomRead() {
+  return {
+    name: "read",
+    label: "custom-read",
+    description: "Custom restricted reader",
+    parameters: { type: "object", properties: { path: { type: "string" }, customFlag: { type: "boolean" } } },
+    async execute(_id, params) {
+      return { content: [{ type: "text", text: "custom-reader:" + params.path }] };
+    },
+  };
+}
+`,
+    );
+    const customPrep = await prepareDirectAgentExecution({
+      agentName: "custom-reader",
+      task: "Read files",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    try {
+      const readTool = customPrep.prepared.tools.find((t) => t.name === "read")!;
+      expect(readTool.description).toBe("Custom restricted reader");
+      expect((readTool.parameters as any).properties.customFlag).toEqual({ type: "boolean" });
+      const unrelatedRes = await readTool.execute("c1", { path: "unrelated.txt" });
+      expect(unrelatedRes.content.map((c: any) => c.text).join("")).toBe("custom-reader:unrelated.txt");
+      writeFileSync(
+        join(customReaderSkillsDir, "SKILL.md"),
+        "---\nname: custom-skill\ndescription: Mutated\n---\nMutated body\n",
+      );
+      const pinnedRes = await readTool.execute("c2", { path: join(customReaderSkillsDir, "SKILL.md") });
+      expect(pinnedRes.content.map((c: any) => c.text).join("")).toContain("Pinned skill body");
+    } finally {
+      customPrep.cleanup();
+    }
 
     // Simple task envelope with both top-level constraints and explicit input preserves constraints:
     let simpleTaskContext = "";

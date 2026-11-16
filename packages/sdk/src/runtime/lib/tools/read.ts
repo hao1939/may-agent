@@ -185,3 +185,24 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
     },
   };
 }
+
+export function withPinnedReadFiles(
+  tool: AgentTool,
+  cwd: string,
+  pinnedFiles: ReadonlyMap<string, string>,
+): AgentTool {
+  if (pinnedFiles.size === 0) return tool;
+  const pinnedReadTool = createReadTool(cwd, { pinnedFiles });
+  return {
+    ...tool,
+    execute: (toolCallId, params, signal, onUpdate) => {
+      if (params && typeof params === "object" && typeof (params as { path?: unknown }).path === "string") {
+        const absolutePath = resolveReadPath((params as { path: string }).path, cwd);
+        if (lookupPinnedFile(pinnedFiles, absolutePath) !== undefined) {
+          return pinnedReadTool.execute(toolCallId, params, signal, onUpdate);
+        }
+      }
+      return tool.execute(toolCallId, params, signal, onUpdate);
+    },
+  };
+}

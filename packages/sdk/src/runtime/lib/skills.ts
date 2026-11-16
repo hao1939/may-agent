@@ -37,6 +37,8 @@ export interface MaySkill {
   description: string;
   filePath: string;
   content: string;
+  /** Complete original SKILL.md file text including YAML frontmatter, captured for read-back consistency. */
+  rawContent?: string;
   disableModelInvocation?: boolean;
   scope: MaySkillScope;
   contentHash: string;
@@ -132,13 +134,15 @@ export async function discoverAgentSkills(opts: {
       );
       continue;
     }
+    const rawContent = readFileSync(canonicalPath, "utf8");
     const skill: MaySkill = {
       ...item.skill,
-      content: stripFrontmatter(readFileSync(canonicalPath, "utf8")),
+      content: stripFrontmatter(rawContent),
+      rawContent,
       filePath: canonicalPath,
       scope: item.source.scope,
       canonicalPath,
-      contentHash: createHash("sha256").update(readFileSync(canonicalPath)).digest("hex"),
+      contentHash: createHash("sha256").update(rawContent).digest("hex"),
     };
     const matches = grouped.get(skill.name) ?? [];
     if (matches.some((match) => match.scope === skill.scope && match.canonicalPath === canonicalPath)) continue;
