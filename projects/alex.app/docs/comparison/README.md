@@ -51,3 +51,7 @@ The [deterministic evidence implementation trial](deterministic-cycle-evidence-t
 delivers a reusable generator/validator through Alex-owned review, integration,
 hosted execution and automatic post-dependency continuation, with operator
 corrections and full model estimates disclosed.
+The [normal development path trial](normal-development-path-trial-20261116.md)
+verifies a bounded repair through integration, activation and a fresh normal
+workflow, with zero operator correction messages and explicit status/retention
+limits. Alex also hands off available Task estimates with its live tail marked.

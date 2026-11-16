@@ -41,6 +41,11 @@ The [deterministic evidence implementation trial](deterministic-cycle-evidence-t
 then implements and integrates a reusable mechanical helper. Alex owns its
 three-round review, guarded integration, fresh hosted demonstration and automatic
 post-dependency read-back. Two operator corrections were still required.
+The [normal development path trial](normal-development-path-trial-20261116.md)
+then completes a bounded repair through the normal workflow, local integration,
+definition activation, fresh hosted verification and automatic owner continuation
+with zero operator correction messages. Alex delivers available model estimates
+with an explicit live-tail cutoff; blocked-result recovery remains unchanged.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -182,103 +187,50 @@ own later evidence.
 
 ## Current next milestone
 
-Manual execution, snapshot integrity, interruption/reuse, definition synchronization
-and one hosted diagnosis with accepted owner disposition are recorded. Alex then
-scoped a diagnosis-grounding repair and adopted its reviewed source after paired
-trials: unsupported Scout/tech-lead recommendations were declined, and a synthetic
-explicit defect remained actionable. Inspection cost increased on the failed-score
-cases; the healthy usage-only case avoided a model call. No general cost saving,
-human-correction reduction or fresh natural-work benefit is established.
+The north star remains **correct useful delivery, fewer operator corrections,
+and acceptable total time/cost**. Alex owns scope and disposition. Use a single
+observed bottleneck and a finite hypothesis; improve the process when actual
+work exposes a problem. The linked trial reports preserve the earlier failed,
+rejected, no-change and adopted outcomes.
 
-The grounding repair is active. The subsequent fresh-work diagnosis exposed a
-separate hosted source-root bug: App/domain projectRoot differs from the Task
-repository root. Alex's reviewed source correction is integrated, with 30 focused
-tests and 11 independent mechanics probes passing. The original insufficient
-result remains intact. Independent review rejected the first candidate; two
-operator updates were needed. This is progress in inspectability and repair, with
-no demonstrated reduction in human correction or cost.
+The [normal development path trial](normal-development-path-trial-20261116.md)
+completes one controlled cycle through existing `develop-change`, independent
+Bob review, guarded main integration, one definition reload, a fresh ordinary
+helper and automatic dependency continuation. Both Tasks closed with accepted
+results. The source now retains the three-round allowance across invocations for
+the same requirements and reuses an unchanged approved candidate before enforcing
+exhaustion. The exact focused suite passed 45 tests and 272 assertions.
 
-The source-root correction is now active and verified by a fresh ordinary hosted
-diagnosis on the unchanged two-case projection. The activation Task independently
-identified its stale callable snapshot; the operator admitted the successor. Both
-closed with accepted results, without in-attempt correction. This is a manually
-observed handoff, not unattended ownership of the complete improvement cycle.
+There were zero operator correction messages after the detailed initial
+assignment. This does not mean zero operator work: independent verification,
+observation and reporting remained manual. The cycle took 15m 00s and reports
+$11.4357934 in full Task model estimates, excluding operator and unknown external
+costs. Alex itself supplied $11.1528334 at its earlier query cutoff and correctly
+marked the still-live owner tail partial. General savings are not established.
 
-The current target is the Alex/Gym improvement cycle itself. The user clarified that
-Scout is a retained test case, not an established source of recurring user
-trouble. Preserve Alex's Scout guidance hypothesis as a deferred suggestion;
-an actionable diagnosis alone does not establish its priority or commission a
-Scout experiment.
+The integrated evidence CLI validated the final handoff; independent post-closure
+inspection confirmed all 10 declared artifacts and 24 pointer declarations.
+The owner worktree is gone. The helper's reviewed documentation commit remains
+local and its worktree remains available. Durable access uses Alex's retained
+cycle record and copies; some original and nested helper locators still point
+into its worktree. Complete automatic archive export remains unimplemented.
 
-Start with the observed evidence/handoff failure: ignored Task files disappeared
-at clean closure, forcing manual reconstruction from public raw session lines.
-Alex owns the smallest change to the existing recording practice. Exercise it on
-the completed activation/replay evidence and retain one compact cycle record at
-an explicit location outside the disposable Task worktree. No fresh Scout
-diagnosis, research or behavioral change is needed for this mechanics experiment.
+The retained baseline's schema-valid blocked continuation still fails closed.
+The initial proposal to accept that status was not implemented. Correct caller
+SDK configuration and clarified specialist guidance supported one fresh normal
+success; this does not prove partial finishes will cease or recovery is repaired.
+Keep those facts separate when judging the improvement.
 
-The record must make these facts inspectable:
+The next milestone is **representative useful work through this procedure**,
+with an inspectable outcome and the same correction, time and cost accounting.
+Select the next bounded Gym/Alex assignment from observed user value rather than
+starting another process change merely because another limit is visible. Carry
+known status/retention limits into its acceptance if relevant, and repair one only
+when it blocks the intended outcome. Expand intake after repeatable evidence
+supports it; add no scheduler or recursive improvement gate.
 
-- Agreed objective, scope and hypothesis, including the deferred Scout lead.
-- Exact input, source and executed workflow identities, with old and repaired
-  invocations kept distinct.
-- Task/attempt/session/workflow references and the evidence actually supporting
-  each result; retained artifact paths must resolve and match their hashes.
-- Alex's supported decision, limits and next owner/action.
-- Available elapsed time, full Task cost estimates and manual interventions,
-  with partial cost scopes and unknown values explicit.
-
-Accept this experiment only after the new Task closes and an independent reader
-can recover those facts from the record and its direct evidence links without
-searching transcripts or relying on the removed Task directory. Use existing
-public accepted results, workflow/session reads and exact raw-line access where
-needed. This tests one evidence-retention and handoff improvement; it does not
-prove unattended execution, better target behavior or lower model cost. Do not
-add a scheduler, dashboard or generic receipt framework for this single case.
-
-The [handoff trial](cycle-evidence-handoff-trial-20261116.md) has now exercised
-this boundary. Its first record survived Task removal but independent review
-rejected an invalid JSON pointer and hardcoded future timestamps. Alex's retained
-revision passed post-closure hash, pointer, identity, cost-scope and frozen-input
-checks. The two finite attempts report a combined $1.7027728 model estimate,
-separate from the historical cycle costs they record. One operator rejection and
-correction admission were required; reduced effort or cost is not established.
-
-The user's subsequent delivery request commissioned the
-[deterministic evidence implementation trial](deterministic-cycle-evidence-trial-20261116.md).
-Alex implemented the helper, repaired two independently observed defect sets,
-obtained Bob's final approval within three review rounds, integrated the reviewed
-bytes and admitted one fresh hosted verification Task. A saved dependency wait
-resumed Alex automatically. Alex read and revalidated the helper's accepted result
-after closure, then closed its own Task; independent inspection confirmed survival
-after worktree removal. The existing
-[handoff guide](standalone-stage.md#hand-off-evidence-from-a-hosted-trial) now uses
-the CLI. It verifies declared evidence mechanics; substantive completeness and
-declaring disposable roots remain caller responsibilities.
-
-The implementation and helper report a combined $11.7062803 model estimate over
-15m 43s wall time, excluding operator and unknown external costs. Alex returned
-operation counts and unknown billing; the operator collected available monetary
-estimates after closure. Two operator audit inputs were needed during development,
-while the helper and dependency continuation needed no correction. Reduced human
-effort, lower cost and a fully unattended cycle remain unproved.
-
-Reuse this helper in the next authorized bounded cycle. The next milestone is
-completion without operator-authored integrity repairs, with available full Task
-cost estimates delivered by Alex. Keep measuring outcome, corrections, elapsed
-time and full cost. The earlier workflow result-persistence limitation remains
-unrepaired; this App-local path does not require transcript reconstruction for
-the hosted handoff. No new Scout experiment is commissioned by this result.
-
-The projection's executable checks are newly derived from real evidence; original
-finishes remain success, human labels remain unreviewed and unavailable usage
-stays unknown. The two Tasks' combined reported model estimate is $3.0511248,
-excluding operator costs and unknown billing. Workflow result persistence and
-manual successor admission remain gaps. Do not modify semantic truth or broaden
-intake to bypass those limits.
-
-For the earlier retained Scout semantic-score case, no-change and the specific
-human truth judgment remain separate. Disposable Host restart checks passed;
-automatic development-checkpoint restoration and a full unattended development/
-recovery cycle remain unverified. Keep integration, activation and subsequent
-behavior as separate milestones.
+The target remains the improvement cycle. Scout's earlier guidance proposal is
+deferred retained evidence, not an authorized experiment or established priority.
+Do not change benchmark truth, scorer or historical evidence to manufacture a
+better outcome. Full unattended recovery, general reliability gains and lower
+operating cost remain unproved.
