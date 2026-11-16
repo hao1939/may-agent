@@ -36,7 +36,12 @@ describe("HTTP human Task reads and board", () => {
   let base: string;
   let service: HumanTaskService;
   let registry: AppRegistry;
-  let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
+  let conversation: {
+    messages: any[];
+    topics?: any[];
+    requests?: any[];
+    activeTurn?: { id: string; revision: number };
+  };
   let published: any[];
   let onPublish: ((event: any) => void) | undefined;
   let rejectPublish: boolean;
@@ -1663,6 +1668,44 @@ describe("HTTP human Task reads and board", () => {
       for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
+
+      // Topics, open Requests, and Task chips render in Conversation and pass focus metadata on send.
+      conversation.topics = [
+        { id: "topic_8f12ac90", title: "Release verification", taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }] },
+      ];
+      conversation.requests = [
+        { id: "req_1", status: "open", scope: "Verify the release candidate", taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }] },
+      ];
+      conversation.messages.push({
+        id: "agent-msg-1",
+        author: { kind: "agent", id: "helper" },
+        text: "Started verification on alpha/work/0.",
+        metadata: {
+          topicId: "topic_8f12ac90",
+          taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }],
+        },
+      });
+      await page.evaluate("void refreshMayConversation()");
+      await page.waitForSelector('#conversation-context-bar [data-request-id="req_1"]');
+      expect(await page.$eval("#conversation-context-bar", el => el.textContent)).toContain("Verify the release candidate");
+      expect(await page.$eval('#chat-messages [data-task-ref="alpha:work/0"]', el => el.textContent)).toContain("Task alpha · 8f12ac90");
+      await page.click('#chat-messages [data-focus-task="alpha:work/0"]');
+      await page.waitForSelector('#conversation-focus-bar [data-focused-task="alpha:work/0"]');
+      await page.select("#conversation-topic-select", "topic_8f12ac90");
+      await page.waitForSelector('#conversation-focus-bar [data-focused-topic="topic_8f12ac90"]');
+      await page.type("#chat-input", "Check the edge case on this Task");
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
+      expect(published.at(-1)).toMatchObject({
+        type: "conversation.message.created",
+        target: { appId: "support" },
+        data: {
+          conversationId: "retained-room",
+          text: "Check the edge case on this Task",
+          context: { focusedTask: { appId: "alpha", taskId: "work/0" } },
+          metadata: { channel: "web-ui", topicId: "topic_8f12ac90" },
+        },
+      });
     } finally { await browser.close(); }
   });
 
