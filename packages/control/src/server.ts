@@ -38,18 +38,10 @@ export interface AttachControlSocketOptions {
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: (event: EventInput, approvalAuthorization?: ApprovalIngressAuthorization) => EventReceipt;
   getEvent?: (eventId: number) => EventView | undefined;
-  describeProjectActions?: (projectId: string) => unknown[];
   getAppConversation?: (
     appId: string,
     conversationId: string,
     options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
-  ) => unknown;
-  getAppTaskWorkload?: (appId: string, options?: { agent?: string; limit?: number; cursor?: string; inputCursor?: string }) => unknown;
-  listAppTasks?: (appId: string, options?: { status?: string[]; limit?: number; cursor?: string }) => unknown;
-  getAppTask?: (
-    appId: string,
-    taskId: string,
-    options?: { acceptedEvidence?: { limit?: number; cursor?: string }; inputKeys?: string[] },
   ) => unknown;
   listApps?: (appId?: string) => unknown;
   listTasks?: (options?: {
@@ -66,10 +58,6 @@ export interface AttachControlSocketOptions {
     taskId?: string;
     acceptedEvidence?: { limit?: number; cursor?: string };
   }) => unknown;
-  invokeProjectAction?: (input: { projectId: string; actionId: string; params: unknown; idempotencyKey?: string }) => {
-    eventId: number;
-    eventType: string;
-  };
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onInfo?: (message: string) => void;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
@@ -207,15 +195,10 @@ export interface ControlSocketCoreOptions {
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: AttachControlSocketOptions["publishEvent"];
   getEvent?: AttachControlSocketOptions["getEvent"];
-  describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  listAppTasks?: AttachControlSocketOptions["listAppTasks"];
-  getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
-  getAppTask?: AttachControlSocketOptions["getAppTask"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
-  invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   agentName: string;
   instance: string;
@@ -232,14 +215,9 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     publishEvent,
     getEvent,
     getAppConversation,
-    listAppTasks,
-    getAppTaskWorkload,
-    getAppTask,
     listApps,
     listTasks,
     getTask,
-    describeProjectActions,
-    invokeProjectAction,
     subscribeEvents,
     agentName,
     instance,
@@ -410,64 +388,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         }),
       };
     },
-    "app.tasks.workload": (frame) => {
-      const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-      if (!appId) throw new Error("appId is required");
-      if (!getAppTaskWorkload) throw new Error("App workload reads are unavailable");
-      if (frame.agent !== undefined && (typeof frame.agent !== "string" || !frame.agent.trim()))
-        throw new Error("agent must be a non-empty string");
-      if (frame.limit !== undefined && (!Number.isSafeInteger(frame.limit) || Number(frame.limit) < 1 || Number(frame.limit) > 100))
-        throw new Error("limit must be an integer between 1 and 100");
-      if (frame.cursor !== undefined && (typeof frame.cursor !== "string" || !frame.cursor.trim()))
-        throw new Error("cursor must be a non-empty string");
-      if (frame.inputCursor !== undefined && (typeof frame.inputCursor !== "string" || !frame.inputCursor.trim()))
-        throw new Error("inputCursor must be a non-empty string");
-      return {
-        appId,
-        workload: getAppTaskWorkload(appId, {
-          ...(typeof frame.agent === "string" ? { agent: frame.agent } : {}),
-          ...(typeof frame.limit === "number" ? { limit: frame.limit } : {}),
-          ...(typeof frame.cursor === "string" ? { cursor: frame.cursor } : {}),
-          ...(typeof frame.inputCursor === "string" ? { inputCursor: frame.inputCursor } : {}),
-        }),
-      };
-    },
-    "app.tasks.list": (frame) => {
-      const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-      if (!appId) throw new Error("appId is required");
-      if (!listAppTasks) throw new Error("App Task reads are unavailable");
-      if (
-        frame.status !== undefined &&
-        (!Array.isArray(frame.status) ||
-          !frame.status.every((value) => typeof value === "string" && Boolean(value.trim())))
-      ) {
-        throw new Error("status must be an array of non-empty strings");
-      }
-      const status = frame.status as string[] | undefined;
-      return {
-        appId,
-        tasks: listAppTasks(appId, {
-          ...(status ? { status } : {}),
-          ...(frame.limit === undefined ? {} : { limit: Number(frame.limit) }),
-          ...(typeof frame.cursor === "string" && frame.cursor.trim() ? { cursor: frame.cursor.trim() } : {}),
-        }),
-      };
-    },
-    "app.task.get": (frame) => {
-      const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-      const taskId = typeof frame.taskId === "string" ? frame.taskId.trim() : "";
-      if (!appId) throw new Error("appId is required");
-      if (!taskId) throw new Error("taskId is required");
-      if (!getAppTask) throw new Error("App Task reads are unavailable");
-      return {
-        appId,
-        taskId,
-        task: getAppTask(appId, taskId, {
-          ...acceptedEvidenceOptions(frame),
-          ...(frame.inputKeys === undefined ? {} : { inputKeys: frame.inputKeys as string[] }),
-        }),
-      };
-    },
     "apps.list": (frame) => {
       if (!listApps) throw new Error("App reads are unavailable");
       const appId = typeof frame.appId === "string" && frame.appId.trim() ? frame.appId.trim() : undefined;
@@ -532,28 +452,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
         );
       }
       return { receipt, task: getTask({ appId, taskId }) };
-    },
-    "project.actions.describe": (frame) => {
-      const projectId = typeof frame.projectId === "string" ? frame.projectId.trim() : "";
-      if (!projectId) throw new Error("projectId is required");
-      if (!describeProjectActions) throw new Error("project action discovery is unavailable");
-      return { projectId, actions: describeProjectActions(projectId) };
-    },
-    "project.action.invoke": (frame) => {
-      const projectId = typeof frame.projectId === "string" ? frame.projectId.trim() : "";
-      const actionId = typeof frame.actionId === "string" ? frame.actionId.trim() : "";
-      if (!projectId) throw new Error("projectId is required");
-      if (!actionId) throw new Error("actionId is required");
-      if (!invokeProjectAction) throw new Error("project action invocation is unavailable");
-      const result = invokeProjectAction({
-        projectId,
-        actionId,
-        params: frame.params ?? {},
-        ...(typeof frame.idempotencyKey === "string" && frame.idempotencyKey.trim()
-          ? { idempotencyKey: frame.idempotencyKey.trim() }
-          : {}),
-      });
-      return { projectId, actionId, ...result };
     },
   };
 
@@ -799,14 +697,9 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     publishEvent,
     getEvent,
     getAppConversation: opts.getAppConversation,
-    listAppTasks: opts.listAppTasks,
-    getAppTaskWorkload: opts.getAppTaskWorkload,
-    getAppTask: opts.getAppTask,
     listApps: opts.listApps,
     listTasks: opts.listTasks,
     getTask: opts.getTask,
-    describeProjectActions: opts.describeProjectActions,
-    invokeProjectAction: opts.invokeProjectAction,
     subscribeEvents,
     conversationAppId: opts.conversationAppId,
     agentName,

@@ -92,49 +92,5 @@ export function createTaskReadHandlers(options: {
     }
   }
 
-  async function handleAppTasks(url: URL, appId: string): Promise<Response> {
-    if (!appId) return json({ error: "appId required" }, 400);
-    const status = url.searchParams.getAll("status").filter(Boolean);
-    const limitText = url.searchParams.get("limit");
-    const cursor = url.searchParams.get("cursor")?.trim();
-    try {
-      const response = await daemonRead({
-        type: "app.tasks.list",
-        appId,
-        ...(status.length > 0 ? { status } : {}),
-        ...(limitText === null ? {} : { limit: Number(limitText) }),
-        ...(cursor ? { cursor } : {}),
-      });
-      if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
-      return json(response.tasks ?? { items: [] });
-    } catch (error) {
-      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
-    }
-  }
-
-  async function handleAppTask(url: URL, appId: string, taskId: string): Promise<Response> {
-    if (!appId) return json({ error: "appId required" }, 400);
-    if (!taskId) return json({ error: "taskId required" }, 400);
-    let evidenceOptions: Record<string, unknown>;
-    try {
-      evidenceOptions = taskEvidenceQuery(url);
-    } catch (error) {
-      return json({ error: error instanceof Error ? error.message : String(error) }, 400);
-    }
-    try {
-      const response = await daemonRead({
-        type: "app.task.get",
-        appId,
-        taskId,
-        ...evidenceOptions,
-        ...(url.searchParams.has("inputKey") ? { inputKeys: url.searchParams.getAll("inputKey") } : {}),
-      });
-      if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
-      return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
-    } catch (error) {
-      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
-    }
-  }
-
-  return { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask };
+  return { handleApps, handleConversationRead, handleHumanTaskRead };
 }

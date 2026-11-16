@@ -69,7 +69,6 @@ describe("F8 regression: top-level platform UI assets (chromeless)", () => {
       "/projects",
       "/projects/alpha-project.app",
       "/projects/alpha-project.app/tasks",
-      "/projects/alpha-project.app/functions",
     ]) {
       const res = get(path);
       expect(res.status).toBe(200);

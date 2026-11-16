@@ -6,15 +6,10 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "publish",
   "event.get",
   "app.conversation.get",
-  "app.tasks.list",
-  "app.tasks.workload",
-  "app.task.get",
   "apps.list",
   "tasks.list",
   "task.get",
   "task.cancel",
-  "project.actions.describe",
-  "project.action.invoke",
 ]);
 
 export type SocketFrame =
@@ -26,15 +21,10 @@ export type SocketFrame =
         | "publish"
         | "event.get"
         | "app.conversation.get"
-        | "app.tasks.list"
-        | "app.tasks.workload"
-        | "app.task.get"
         | "apps.list"
         | "tasks.list"
         | "task.get"
-        | "task.cancel"
-        | "project.actions.describe"
-        | "project.action.invoke";
+        | "task.cancel";
       frame: Record<string, unknown>;
     }
   | { kind: "event"; command: string; event: Record<string, unknown> }
@@ -80,15 +70,10 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
         | "publish"
         | "event.get"
         | "app.conversation.get"
-        | "app.tasks.list"
-        | "app.tasks.workload"
-        | "app.task.get"
         | "apps.list"
         | "tasks.list"
         | "task.get"
-        | "task.cancel"
-        | "project.actions.describe"
-        | "project.action.invoke",
+        | "task.cancel",
       frame,
     };
   }

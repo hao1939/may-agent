@@ -18,7 +18,6 @@ import { stateTransaction } from "../../../lib/db/transaction.js";
 import {
   assertValidAppDefinition,
   assertValidAppInput,
-  assertValidSchemaInput,
 } from "../apps/definition-validation.js";
 import { appInputRoute, assertAppTaskInputRoute } from "../apps/input-routing.js";
 import { appEventInboxSubmission } from "../state/app-event-admission-store.js";
@@ -68,12 +67,6 @@ export type AppTaskAttacher = (input: {
   topicId?: string;
   requestLink?: { appId: string; conversationId: string; id: string; revision: number };
 }) => { taskId: string };
-
-export type AppActionDescription = {
-  id: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-};
 
 export type AdmitAppInput = {
   id?: string;
@@ -229,29 +222,6 @@ export class AppInboxHost {
 
   hasApp(appId: string): boolean {
     return this.#apps.has(appId.trim().replace(/\.app$/, ""));
-  }
-
-  describeActions(appId: string): AppActionDescription[] {
-    const normalized = appId.trim().replace(/\.app$/, "");
-    const app = this.#apps.get(normalized);
-    if (!app) throw new Error(`App ${appId} is not loaded`);
-    return Object.entries(app.actions ?? {}).map(([id, action]) => ({
-      id,
-      description: action.description,
-      inputSchema: structuredClone(action.inputSchema) as Record<string, unknown>,
-    }));
-  }
-
-  invokeAction(appId: string, actionId: string, params: unknown): AppInput {
-    const normalized = appId.trim().replace(/\.app$/, "");
-    const app = this.#apps.get(normalized);
-    if (!app) throw new Error(`App ${appId} is not loaded`);
-    const action = app.actions?.[actionId];
-    if (!action) throw new Error(`App ${normalized} has no action ${actionId}`);
-    assertValidSchemaInput(action.inputSchema, params, `${normalized}.${actionId}`);
-    const input = action.toInput(params as never);
-    assertValidAppInput(app, input);
-    return input;
   }
 
   /** Atomically replace the live App definitions after a validated reload. */

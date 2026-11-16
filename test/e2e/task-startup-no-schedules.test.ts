@@ -165,11 +165,11 @@ test.each(["waiting", "running"] as const)(
         expect(approved).toMatchObject({ type: "ok", eventType: "project.approval.submitted" });
         const completed = await pollUntil(
           async () => {
-            const result = (await socketEmit(sb.socketPath, "app.task.get", {
+            const result = (await socketEmit(sb.socketPath, "task.get", {
               appId: "sample",
               taskId: "work/main",
             })) as {
-              task?: { id: string; status: string; summary: string };
+              task?: { taskId: string; status: string; summary: string };
             };
             return result.task?.status === "idle" ? result.task : null;
           },
@@ -178,7 +178,7 @@ test.each(["waiting", "running"] as const)(
             description: "same Task accepts an outcome after restart",
           },
         );
-        expect(completed).toMatchObject({ id: "work/main", summary: "Exact fact observed" });
+        expect(completed).toMatchObject({ taskId: "work/main", summary: "Exact fact observed" });
         const retained = store.readTask("work/main")!;
         expect(retained.metadata).toMatchObject({
           id: "work/main",

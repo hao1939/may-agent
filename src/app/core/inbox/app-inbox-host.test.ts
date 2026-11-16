@@ -81,21 +81,10 @@ describe("App inbox host", () => {
     );
   });
 
-  it("validates input and exposes typed actions without lifecycle machinery", () => {
+  it("validates input against the declared App schema", () => {
     const host = new AppInboxHost({
       db,
-      apps: [
-        defineApp({
-          ...app(),
-          actions: {
-            probe: {
-              description: "Submit a typed probe",
-              inputSchema: Type.Object({ value: Type.String({ minLength: 1 }) }),
-              toInput: ({ value }) => ({ kind: "probe", data: { value } }),
-            },
-          },
-        }),
-      ],
+      apps: [app()],
     });
 
     expect(() => admit(host, "unknown", "unknown")).toThrow("Unknown App");
@@ -107,16 +96,6 @@ describe("App inbox host", () => {
         input: { kind: "probe", data: { value: 42 } },
       }),
     ).toThrow("Invalid input for App evaluation");
-    expect(host.describeActions("evaluation.app")).toEqual([
-      expect.objectContaining({ id: "probe", description: "Submit a typed probe" }),
-    ]);
-    expect(host.invokeAction("evaluation", "probe", { value: "ready" })).toEqual({
-      kind: "probe",
-      data: { value: "ready" },
-    });
-    expect(() => host.invokeAction("evaluation", "probe", { value: "" })).toThrow(
-      "Invalid input for evaluation.probe at /value: must not have fewer than 1 characters",
-    );
   });
 
   it("atomically replaces exact inbox subscription routes", () => {

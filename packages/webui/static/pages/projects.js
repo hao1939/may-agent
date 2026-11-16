@@ -239,11 +239,10 @@ async function showProjectDetail(path, initialTab, explicitAppId) {
   html += `<div id="project-comment-status" style="font-size:12px;margin:-8px 0 8px;display:none"></div>`;
 
   // ── Sub-tabs ──
-  const defaultProjectTab = initialTab === 'tasks' ? 'kanban' : initialTab === 'functions' ? 'functions' : 'project';
+  const defaultProjectTab = initialTab === 'tasks' ? 'kanban' : 'project';
   html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
   html += projectTabButton('project', 'Project', defaultProjectTab);
   html += projectTabButton('kanban', 'Tasks', defaultProjectTab);
-  html += projectTabButton('functions', 'Functions', defaultProjectTab);
   const totalSessionLink = detail.sessionCount || 0;
   html += projectTabButton('sessions', `Sessions${totalSessionLink ? ` <span style="font-size:10px;background:var(--bg);padding:1px 6px;border-radius:8px;margin-left:4px">${totalSessionLink}</span>` : ''}`, defaultProjectTab);
   html += `</div>`;
@@ -287,8 +286,7 @@ function switchProjectTab(btn, tab) {
   btn.style.borderBottomColor = 'var(--accent)'; btn.style.color = 'var(--accent)';
   const explicitAppId = _currentProjectDetail?.explicitAppId || null;
   if (tab === 'kanban') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'tasks', explicitAppId));
-  else if (tab === 'functions') history.replaceState({}, '', projectRouteFor(_projectDetailPath, 'functions', explicitAppId));
-  else if (location.pathname.endsWith('/tasks') || location.pathname.endsWith('/functions')) history.replaceState({}, '', projectRouteFor(_projectDetailPath, null, explicitAppId));
+  else if (location.pathname.endsWith('/tasks')) history.replaceState({}, '', projectRouteFor(_projectDetailPath, null, explicitAppId));
   loadProjectTab(tab);
 }
 
@@ -307,9 +305,6 @@ async function loadProjectTab(tab) {
     } else if (tab === 'kanban') {
       el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
       await renderProjectKanban(el);
-    } else if (tab === 'functions') {
-      el.style.whiteSpace = 'normal'; el.style.fontFamily = 'inherit'; el.style.fontSize = '13px';
-      await renderProjectFunctions(el);
     } else if (tab === 'sessions') {
       const res = await fetch(`/api/projects/sessions?path=${encodeURIComponent(_projectDetailPath)}`);
       const rows = await res.json();
@@ -339,131 +334,6 @@ async function loadProjectTab(tab) {
     el.innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
   }
 }
-
-async function renderProjectFunctions(el) {
-  const detail = _currentProjectDetail || {};
-  const projectId = projectIdFromPath(_projectDetailPath);
-  const domainUiHref = `/projects/${projectId.split('/').map(encodeURIComponent).join('/')}/ui/`;
-  const hasDomainUi = detail.app?.hasUi !== false;
-  let actions = [];
-  try {
-    const response = await fetch(`/api/projects/${encodeURIComponent(projectId.replace(/\.app$/, ''))}/actions`);
-    const body = await response.json();
-    if (!response.ok) throw new Error(body.error || response.statusText);
-    actions = Array.isArray(body.actions) ? body.actions : [];
-  } catch (error) {
-    el.innerHTML = `<div style="color:var(--red)">Failed to discover project actions: ${esc(error.message)}</div>`;
-    return;
-  }
-  let html = `<div class="project-functions">
-    <div class="function-surface-grid">
-      <a class="function-card" href="${attrEsc(domainUiHref)}">
-        <b>Domain UI</b>
-        <span>${hasDomainUi ? 'Open the project-owned UI surface.' : 'Conventional project UI path. The project may not expose one yet.'}</span>
-        <code>${esc(domainUiHref)}</code>
-      </a>
-      <button class="function-card" onclick="emitProjectPlanningRequest()">
-        <b>Request Planning</b>
-        <span>Emit a project planning event for the project owner agent.</span>
-        <code>project.owner.requested</code>
-      </button>
-    </div>`;
-
-  html += `<div class="function-panel">
-    <h3>Automation shortcuts</h3>
-    <p>These optional shortcuts are declared by the project app. Each validates its input and emits the named domain event directly.</p>`;
-  if (actions.length) {
-    html += `<div class="action-list">`;
-    for (const action of actions) {
-      html += `<button class="action-row" onclick="selectProjectAction(${jsStringAttr(action.id)})">
-        <b>${esc(action.id)}</b>
-        <span>${esc(action.description || action.type || 'Project app action')}</span>
-      </button>`;
-    }
-    html += `</div>`;
-  } else {
-    html += `<div class="empty-state">This project app declares no automation shortcuts. Send normal intent through the project comment box.</div>`;
-  }
-  html += `<div class="action-form" ${actions.length ? '' : 'style="display:none"'}>
-    <label>Shortcut<select id="project-action-id" onchange="selectProjectAction(this.value)">${actions.map(action => `<option value="${attrEsc(action.id)}">${esc(action.id)}</option>`).join('')}</select></label>
-    <label>Input JSON <span style="color:var(--fg2)">(advanced)</span><textarea id="project-action-params" placeholder='{"reason":"manual review"}'>{}</textarea></label>
-    <div id="project-action-schema" style="font-size:11px;color:var(--fg2)"></div>
-    <button onclick="emitProjectAction()">Run shortcut</button>
-    <span id="project-action-status"></span>
-  </div></div></div>`;
-  el.innerHTML = html;
-  window._projectActions = actions;
-  selectProjectAction(actions[0]?.id || '');
-}
-
-function selectProjectAction(actionId) {
-  const input = document.getElementById('project-action-id');
-  if (input) input.value = actionId || '';
-  window._projectActionRequestKey = '';
-  const action = (window._projectActions || []).find(candidate => candidate.id === actionId);
-  const schema = document.getElementById('project-action-schema');
-  if (schema) schema.innerHTML = action
-    ? `${esc(action.description || '')}<br><code>${esc(JSON.stringify(action.inputSchema || {}))}</code>`
-    : '';
-}
-
-async function emitProjectPlanningRequest() {
-  const project = projectIdFromPath(_projectDetailPath).replace(/\.app$/, '');
-  try {
-    const res = await fetch('/api/events', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'project.owner.requested',
-        target: { appId: project },
-        data: { project, projectId: project, reason: 'manual-functions-page' },
-      }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || res.statusText);
-    toast(`Planning requested${body.eventId ? ` · event ${body.eventId}` : ''}`, 'ok');
-  } catch (error) {
-    toast(`Planning request failed: ${error.message}`, 'error');
-  }
-}
-
-async function emitProjectAction() {
-  const action = document.getElementById('project-action-id')?.value?.trim();
-  const paramsText = document.getElementById('project-action-params')?.value || '{}';
-  const status = document.getElementById('project-action-status');
-  if (!action) {
-    if (status) status.textContent = 'Action id required.';
-    return;
-  }
-  let params = {};
-  try {
-    params = JSON.parse(paramsText || '{}');
-  } catch (e) {
-    if (status) status.textContent = `Invalid JSON: ${e.message}`;
-    return;
-  }
-  if (status) status.textContent = 'Sending...';
-  try {
-    const project = projectIdFromPath(_projectDetailPath).replace(/\.app$/, '');
-    const idempotencyKey = window._projectActionRequestKey ||
-      (globalThis.crypto?.randomUUID?.() || `action-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    window._projectActionRequestKey = idempotencyKey;
-    const res = await fetch(`/api/projects/${encodeURIComponent(project)}/actions/${encodeURIComponent(action)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: params, idempotencyKey }),
-    });
-    const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || res.statusText);
-    window._projectActionRequestKey = '';
-    if (status) status.innerHTML = `Emitted <code>${esc(body.eventType || '')}</code>${body.eventId ? ` · <a href="/events/${encodeURIComponent(body.eventId)}">event ${esc(body.eventId)}</a>` : ''}`;
-    toast('Project shortcut emitted', 'ok');
-  } catch (e) {
-    if (status) status.textContent = `Failed: ${e.message}`;
-    toast(`Project shortcut failed: ${e.message}`, 'error');
-  }
-}
-
 
 async function addProjectComment() {
   const input = document.getElementById('project-comment');

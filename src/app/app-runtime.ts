@@ -1,6 +1,4 @@
-import type { AttachControlSocketOptions } from "@may-agent/control/server";
-import type { AppInput, TaskListOptions } from "@may-agent/sdk";
-import { randomUUID } from "node:crypto";
+import type { AppInput } from "@may-agent/sdk";
 import { basename, dirname, resolve } from "node:path";
 import { closeAllDbs, getDb } from "../lib/db/connection.js";
 import { SubagentManager } from "../lib/manager.js";
@@ -97,35 +95,6 @@ export function createAppInputAdmission(options: {
         inputSource: { kind: sourceKind, id: sourceId.trim() },
       },
     );
-  };
-}
-
-export function createProjectActionAccess(options: {
-  getRuntime: () => AppInboxRuntime | null;
-  admit: AppInputAdmission;
-}): {
-  describe: NonNullable<AttachControlSocketOptions["describeProjectActions"]>;
-  invoke: NonNullable<AttachControlSocketOptions["invokeProjectAction"]>;
-} {
-  return {
-    describe(projectId) {
-      const runtime = options.getRuntime();
-      if (!runtime?.host.hasApp(projectId)) throw new Error(`App ${projectId} is not loaded`);
-      return runtime.host.describeActions(projectId);
-    },
-    invoke(input) {
-      const runtime = options.getRuntime();
-      if (!runtime?.host.hasApp(input.projectId)) throw new Error(`App ${input.projectId} is not loaded`);
-      const appId = input.projectId.trim().replace(/\.app$/, "");
-      const actionInput = runtime.host.invokeAction(appId, input.actionId, input.params);
-      const idempotencyKey = input.idempotencyKey?.trim() || `action:${appId}:${input.actionId}:${randomUUID()}`;
-      return options.admit({
-        appId,
-        input: actionInput as Record<string, unknown>,
-        source: { kind: "human", id: "control-socket:project-action" },
-        idempotencyKey,
-      });
-    },
   };
 }
 
@@ -523,11 +492,6 @@ export async function runAppRuntime(opts: {
           }),
       })
     : { close: () => {} };
-  const admitAppInput = createAppInputAdmission({ events });
-  const projectActions = createProjectActionAccess({
-    getRuntime: () => appInboxRuntime,
-    admit: admitAppInput,
-  });
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
     conversationAppId,
     socketEnabled: SOCKET_ENABLED,
@@ -539,23 +503,9 @@ export async function runAppRuntime(opts: {
     reportInfo: (message) => bus.emit({ type: "info", message }),
     getAppConversation: (appId, conversationId, options) =>
       readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
-    listAppTasks: (appId, options) => {
-      return appTasks.list({
-        appId,
-        options: {
-          ...(options?.status ? { status: options.status as TaskListOptions["status"] } : {}),
-          ...(options?.limit === undefined ? {} : { limit: options.limit }),
-          ...(options?.cursor ? { cursor: options.cursor } : {}),
-        },
-      });
-    },
-    getAppTaskWorkload: (appId, options) => appTasks.workload({ appId, options }),
-    getAppTask: (appId, taskId, options) => appTasks.get({ appId, taskId, options }),
     listApps: (appId) => humanTasks.listApps(appId),
     listTasks: (options) => humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]),
     getTask: (input) => humanTasks.getTask(input),
-    describeProjectActions: projectActions.describe,
-    invokeProjectAction: projectActions.invoke,
   });
   markStartupPhase("interfaces");
   bus.emit({

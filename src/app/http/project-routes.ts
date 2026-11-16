@@ -126,18 +126,6 @@ export function createProjectRouteHandlers(options: {
     send?: typeof sendSocketCommand,
     confirm?: ConfirmDurableControl,
   ) => Promise<SocketResponse>;
-  sendProjectActionWithRetry: (
-    endpoint: SocketEndpoint,
-    command: {
-      type: "project.action.invoke";
-      projectId: string;
-      actionId: string;
-      params: unknown;
-      idempotencyKey: string;
-    },
-    send?: typeof sendSocketCommand,
-    confirm?: ConfirmDurableControl,
-  ) => Promise<SocketResponse>;
   confirmAcceptedAppInput: (
     appId: string,
     idempotencyKey: string,
@@ -154,7 +142,6 @@ export function createProjectRouteHandlers(options: {
     conventionSocketPath,
     platformUiContentTypeFor,
     sendAppInputWithRetry,
-    sendProjectActionWithRetry,
     confirmAcceptedAppInput,
   } = options;
 
@@ -608,81 +595,6 @@ export function createProjectRouteHandlers(options: {
     }
   }
 
-  async function handleProjectActions(projectIdText: string): Promise<Response> {
-    const projectId = decodeURIComponent(projectIdText)
-      .trim()
-      .replace(/\.app$/, "");
-    if (!projectId) return json({ error: "projectId required" }, 400);
-    try {
-      const response = await sendSocketCommand(
-        conventionSocketPath(),
-        { type: "project.actions.describe", projectId },
-        { timeoutMs: 2000 },
-      );
-      return json({ projectId, actions: Array.isArray(response.actions) ? response.actions : [] });
-    } catch (error) {
-      return json({ error: error instanceof Error ? error.message : String(error) }, 503);
-    }
-  }
-
-  async function handleProjectActionInvoke(
-    req: Request,
-    projectIdText: string,
-    actionIdText: string,
-  ): Promise<Response> {
-    const projectId = decodeURIComponent(projectIdText)
-      .trim()
-      .replace(/\.app$/, "");
-    const actionId = decodeURIComponent(actionIdText).trim();
-    if (!projectId || !actionId) return json({ error: "projectId and actionId required" }, 400);
-    try {
-      const body = (await req.json().catch(() => ({}))) as {
-        input?: unknown;
-        params?: unknown;
-        idempotencyKey?: string;
-      };
-      const idempotencyKey = body.idempotencyKey?.trim() || `web-action-${randomUUID()}`;
-      const response = await sendProjectActionWithRetry(
-        conventionSocketPath(),
-        {
-          type: "project.action.invoke",
-          projectId,
-          actionId,
-          params: body.input ?? body.params ?? {},
-          idempotencyKey,
-        },
-        sendSocketCommand,
-        (key) => {
-          const row = _db()
-            .prepare(
-              `SELECT id, event_type
-               FROM events
-               WHERE idempotency_key = ? AND project_id = ?
-               ORDER BY id
-               LIMIT 1`,
-            )
-            .get(key, projectId) as { id?: unknown; event_type?: unknown } | undefined;
-          const eventId = Number(row?.id);
-          const eventType = typeof row?.event_type === "string" ? row.event_type : "";
-          return Number.isInteger(eventId) && eventId > 0 && eventType ? { eventId, eventType } : undefined;
-        },
-      );
-      return json(
-        {
-          projectId,
-          actionId,
-          eventId: response.eventId,
-          eventType: response.eventType,
-        },
-        202,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const status = message.startsWith("Invalid input") ? 400 : 503;
-      return json({ error: message }, status);
-    }
-  }
-
   return {
     isAllowedProjectPath,
     resolveProjectFile,
@@ -693,7 +605,5 @@ export function createProjectRouteHandlers(options: {
     handleProjectDetail,
     handleProjectSessions,
     handleProjectComment,
-    handleProjectActions,
-    handleProjectActionInvoke,
   };
 }
