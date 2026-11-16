@@ -239,6 +239,13 @@ obligations and pending input coexist. A fresh read supplements the assigned
 batch and never expands its authority. Native transports still determine which
 live capabilities reach their worker; a serialized reader is not a tool bridge.
 
+Host attempts also supply optional `validateResult` preflight. It reuses final
+change/settlement admission in a transaction that rolls back, returning a finding
+without publishing effects, recording waits or consuming input. Native adapters
+can correct a proposed result within their existing execution allowance. Managed
+agents use the same underlying admission. Final settlement still rechecks the
+current claim and state; a successful preflight is not an acceptance receipt.
+
 `createRuntimeTaskRead()` in `reads/app-read.ts` assembles the shared Task reader.
 `createRuntimeAppRead()` adapts those operations to the SDK's Promise interface.
 Loaded-App access and model tools use the same implementation.

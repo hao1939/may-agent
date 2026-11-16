@@ -404,7 +404,7 @@ export function createCodexGoalExecutor(options: CodexGoalExecutorOptions): Task
           throw new Error(`Codex goal turn ended ${completion.turn.status}`);
         }
         const answer = await finalAnswer(client, threadId, completedTurnId);
-        const admitted = admitCodexGoalTaskResult(answer);
+        const admitted = admitCodexGoalTaskResult(answer, attempt.validateResult);
         if (admitted.kind === "retry") {
           if (correctionsUsed >= MAX_CODEX_RESULT_CORRECTIONS) {
             throw new Error(
