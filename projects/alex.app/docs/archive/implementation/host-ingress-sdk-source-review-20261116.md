@@ -206,6 +206,49 @@ connected-worker requirements. Domain progress judgments and human escalation
 remain with their declared owners; Host routes evidence and enforces the
 existing controls and limits.
 
+## Local paired activation and native delivery trial
+
+The user subsequently authorized testing in the local May instance, replacing its
+binary and preparing fix PRs. That changes the authority for this trial; the
+source-only results above remain historical observations.
+
+The integrated Host revision is `f822e8a6c6eacbf7dfb40d7e6bb9ed0f5e64d7b0`,
+including latest-main `56c52db022` and the local boundary repair. Draft
+[PR #577](https://github.com/hao1939/may-agent/pull/577) has successful Quality and
+Container checks on that head. Fresh local full CI reports **3,423 pass, zero
+failures and two optional installed-definition skips**, including real browser
+coverage. Test totals differ from the earlier baseline and are not additive.
+
+Companion Apps commits `ba611667f3` and `cb07caf34061` include scoped SDK adoption,
+an explicit saved `developmentCheckout` selector for the retained development
+workflow, and the GitHub-review/Telegram-notification boundary. Full default App
+tests report **1,110 pass, zero failures**; root typecheck, design examples and the
+paired final-runtime check pass with **25 workflows**. The selector has real-Git
+coverage; native specialist use is still an experiment obligation.
+
+Paired local activation succeeded. The deployed Host artifact and loaded binary
+SHA-256 match `d67d19121563d8436a29d638c1cd0e4cdc8d79d8df1549e9875cc475d8205ea7`;
+startup identifies Apps `cb07caf3406157483ada6919ba6e6c1c7c5b0bc4`. Installed
+capability discovery advertises Alex's GitHub PR watcher with CI/comment coverage.
+The preceding old-binary App reload failed safely with a bare “Bundle failed”
+diagnostic; its failure did not certify activation. Improving that diagnostic is
+the bounded useful coding assignment for the native trial.
+
+May admitted the assignment, created a Topic/Request, delegated to one Alex Task
+and accepted a waiting result retaining its exact request Condition. The first
+publication returned a database-lock error and an exact retry lost its reply;
+readback confirmed one durable input and one target Task. No duplicate assignment
+or direct state mutation was used. This is live admission/delegation evidence,
+not workflow, watcher continuation or Telegram-delivery proof. Existing recovery
+work currently precedes the queued pilot.
+
+The named completion-Hook API and Conversation-wrapper cutover remain absent.
+This trial uses the existing retained caller-result path. Parent supervision now
+has conservative production ceilings (attempt: two hours plus one minute;
+recovery: ten minutes); per-execution policy resolution and all non-cooperative
+cleanup/recovery cases remain separate gaps. No PR was merged and the diagnostic
+change has no deployment authority.
+
 ## Historical performance observations
 
 The original proposal reported these local measurements before the boundary

@@ -4,8 +4,11 @@
 
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first) and [bounded procedures versus durable coordination](../2a-design/workflows.md#bounded-procedure-versus-durable-coordination). The operator coordinates early trials; agents execute bounded passes. Host later replaces that coordination, not the agent implementation or judgment.
 
-**Status:** Agreed plan; pilot assignment and execution are pending. This page
-plans the experiment, not a new API or a deployment receipt. The
+**Status:** Native hosted trial admitted after authorized paired local activation.
+May delegated one Alex Task and retained its caller request Condition. Workflow
+publication, watcher-driven follow-up and Telegram delivery are still pending; see
+the [dated activation record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-paired-activation-and-native-delivery-trial).
+This page owns the experiment method. The
 [shared runtime contract](../2a-design/agent-runtime.md) and
 [current delivery recipe](../development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
 remain the behavior owners.

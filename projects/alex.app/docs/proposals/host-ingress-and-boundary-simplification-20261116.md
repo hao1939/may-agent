@@ -112,23 +112,26 @@ messages always use the fence. Historical rows without a fence stay readable.
 The companion App patch moves App/Task symbols and legacy Host-aware procedures
 to `/app` and `AppWorkflowContext`; bounded procedures use root `AgentContext`.
 It also updates Gym and retires the obsolete event-pair metric collector.
-The paired source check passes all 24 workflows. The earlier 127 diagnostics
+The latest paired source check passes all 25 workflows. The earlier 127 diagnostics
 remain historical evidence, not the current patch's result. The retained
 `develop-change` procedure still needs Host capabilities and intentionally blocks
 standalone before effects; compatibility does not complete its domain-input
 migration or automatic continuation.
 
-Review and integrate these local patches against their recorded bases before
-claiming merged-source completion. The [verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-correctness-and-compatibility-repair)
+The paired patches are committed and running in the authorized local trial;
+Host draft PR [#577](https://github.com/hao1939/may-agent/pull/577) has passing
+current-head Quality and Container checks. They are not merged.
+The [verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-correctness-and-compatibility-repair)
 records their tests and limits. Continue with the connected worker below.
 
 ### Bind production supervision to execution policy
 
 The [worker supervision contract](../2a-design/runtime.md#worker-supervision)
 requires the parent to bound execution independently of worker cooperation.
-At the recorded #572 source, `app-runtime.ts` constructs both attempt and recovery
-process executors without their supported timeout. A responsive Host can therefore
-retain a stuck worker's capacity, or wait indefinitely for startup recovery.
+At the recorded #572 source, production construction omitted the supported
+parent timeout. The local integration now wires conservative ceilings of two
+hours plus one minute for attempts and ten minutes for recovery. Resolving them
+from each execution policy, including supported ongoing execution, remains open.
 
 Resolve the applicable finite bound in the supervising parent and include
 bounded preparation, execution and cleanup/recovery time. Preserve supported
@@ -259,26 +262,31 @@ owns that boundary; the [pilot plan](../2b-manual/standalone-to-host-pr-pilot.md
 tracks the connected proof. Existing Task-aware procedures may establish this
 milestone without waiting for the full shared-execution or Conversation cutover.
 Host schedules and delivers; Alex judges readiness from current-head evidence;
-Telegram delivery does not stand in for GitHub approval. Installed watcher,
-native publication/follow-up and notification receipts remain proof obligations.
+Telegram delivery does not stand in for GitHub approval. The paired local
+activation and advertised watcher are verified, and May has
+delegated one native assignment with a retained request Condition. Native workflow
+publication/follow-up and Telegram delivery remain proof obligations. Exact
+revisions and observed limits are in the [activation record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-paired-activation-and-native-delivery-trial).
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |
 | Judgment and admission | A well-formed agent conclusion within the declared contract is recorded without an added semantic reviewer; malformed, stale or unauthorized changes return specific feedback. Domain `output.state` stays data. | Keep this distinction through production shared settlement; existing contract/component checks alone do not prove caller wiring. |
 | SDK semantics | Root worker types and runtime preparation require no Host Task/Conversation identity; explicit coordinator domain tools remain opt-in. | A symbol-name snapshot alone misses Task-bearing nested deferral/CLI types. |
 | Hosted parity | Same pinned worker/input/capabilities through standalone and Host; compare prepared messages, tool/finish schemas and first-turn bytes. No Task brief, unrequested tools or `TASK.md` turn. | Real Host caller migration remains; the historical target is less than 5% payload overhead under equivalent inputs. |
-| Execution supervision | Use production attempt/recovery factories with a non-cooperative worker; independently enforce declared bounds, confirm cleanup and retain responsive controls. Stop is not automatically retried; timeout follows its policy. | Optional parent timeout exists but production wiring leaves it unset. |
+| Execution supervision | Use production attempt/recovery factories with a non-cooperative worker; independently enforce declared bounds, confirm cleanup and retain responsive controls. Stop is not automatically retried; timeout follows its policy. | Conservative attempt/recovery ceilings are wired in the local pair; policy-derived bounds and connected non-cooperative cleanup/recovery evidence remain. |
 | Parent-owned storage | Instrument the attempt process and exercise restart/settlement; zero Host SQLite connections in execution children. | Journal cleanup is not this proof, nor a guarantee that every unrelated SQLite test can never contend. |
 | Crash and effect recovery | Lose the acknowledgment after commit and interrupt after an external effect; replay the same receipt, preserve accepted work, inspect uncertain effects, and block unsafe replacement until cleanup is known. | Reuse existing receipts and operation-safety contracts; prove the complete connected worker path, without claiming exactly-once arbitrary effects. |
 | Failure ownership | Return correctable feedback to the active invocation; deliver exhausted/unstartable work to the declared owner, preserving the original obligation. Missing route/recipient stays visible. | Connected recipient-startup/pre-attempt evidence remains separate; saving or admitting a notice does not prove it was handled. |
 | Finite closure | Accepted complete finite assignment closes atomically; oversized/rejected/stale/partial/helper results and standing duties do not. Replay preserves that decision. | Component checks exist; production caller/App eligibility and end-to-end replay remain. |
-| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Local Host repair covers these cases; integration remains. |
-| Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 24-workflow compatibility passes; connected blocked/resumed/finished worker evidence remains. |
+| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Local repair is running; live Conversation delegation and request Condition are verified. Full result return, restart and delivery remain to prove. |
+| Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility and paired activation pass; connected blocked/resumed/finished worker evidence remains. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The next implementation milestone is to integrate the prepared correctness and
-compatibility patches, wire independent production supervision, then connect
-one hosted domain worker through real waits, restart recovery, result admission
-and authorized finite completion. Removal of mechanical housekeeping and
-Conversation ownership cutover follow that evidence. Source checks remain separate from any
-installation rollout or behavior-improvement claim.
+The next milestone is to finish the admitted native coding trial through the
+existing workflow, PR watcher, same-Task continuation and Telegram delivery. The
+local pair already includes correctness/compatibility repairs and conservative
+parent supervision. Shared-worker policy-derived bounds, restart recovery and
+authorized finite completion retain their separate acceptance obligations.
+Removal of mechanical housekeeping and Conversation ownership cutover follow
+that evidence. Source checks remain separate from any installation rollout or
+behavior-improvement claim.
