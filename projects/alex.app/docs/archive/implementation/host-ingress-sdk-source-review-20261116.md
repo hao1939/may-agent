@@ -372,6 +372,35 @@ readiness and final addressed Telegram remain open. These are operator-assisted
 integration repairs, not proof that the outcome-only assignment is autonomous.
 The local evidence directory is `/app/.state/pr574-delivery-e2e-20261116/`.
 
+### Explicit watcher wait and native creator revisions
+
+The saved Alex `pr-feedback` Condition used `may.github.pull-request.state`, a
+bare `github:` subject and no observer source binding. No producer could service
+it. App source `aaa9c73cad` adds Alex's `pull-request-wait` procedure, which reads
+the installed observer contract and uses SDK `observationCondition`; validation
+now rejects foreign-App PR event types. Thirty-one focused watcher/procedure
+cases and the production Task+watcher composition fixture pass. Exact activation
+is reload-finished event 6730718. Guidance also stops recursive May capability
+discovery; an old pinned attempt had spent several nested helpers searching for
+the retired Task tool before returning its precise blocker.
+
+May's fresh attempt successfully invoked `revise-assignment` run
+`wr_1794866193610_6t22`, preserving the same Alex owner and caller while correcting
+its saved checkout selector (generation 1 to 2). The resulting Alex attempt
+posted three review replies/resolutions on the retained candidate, but again
+skipped the workflow and invoked a blocking 900-second `gh run watch`.
+App source `e71831a43d` closes the default-root instruction loophole and explicitly
+requires workflow assessment of retained cross-repository candidates and Condition
+waits instead of blocking CI polls. Nine-agent model-surface validation passes;
+exact successful activation is event 6730749.
+
+May then used native revision run `wr_1794866430700_zdvb` to preserve the same Task
+at generation 3 with explicit workflow/watcher acceptance. The old generation-2
+attempt was still running; creator revision fences its eventual result rather
+than inventing replacement execution. Quality was still running near its existing
+15-minute job bound; Container remained successful on d66f695407. No complete
+workflow/watcher/readiness/final addressed notification is claimed at this checkpoint.
+
 ## Historical performance observations
 
 The original proposal reported these local measurements before the boundary
