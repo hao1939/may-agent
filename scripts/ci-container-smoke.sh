@@ -8,6 +8,7 @@ source_commit="${2:?Supply the full source commit embedded in the image}"
 [[ "$source_commit" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected a full source commit.' >&2; exit 1; }
 container_id=''
 nonroot_container_id=''
+root_container_id=''
 runtime_container_id=''
 runtime_root=''
 mkdir -p test-results
@@ -17,6 +18,10 @@ cleanup() {
   trap - EXIT
   if [[ -n "$nonroot_container_id" ]]; then
     docker rm -f "$nonroot_container_id" >/dev/null || result=1
+  fi
+  if [[ -n "$root_container_id" ]]; then
+    docker logs "$root_container_id" > test-results/root-container.log 2>&1 || true
+    docker rm -f "$root_container_id" >/dev/null || result=1
   fi
   if [[ -n "$runtime_container_id" ]]; then
     docker rm -f "$runtime_container_id" >/dev/null || result=1
@@ -109,6 +114,56 @@ fi
 docker rm -f "$nonroot_container_id" >/dev/null
 nonroot_container_id=''
 
+# Root mode uses Docker's default exec identity, keeps mount ownership intact,
+# and gives nginx permission to connect to ttyd's root-owned socket. Nonzero
+# mount-owner UID/GID settings must never cause the root account to be remapped.
+root_container_id=$(docker run --detach --network none \
+  --tmpfs /app:rw,uid=1234,gid=1235,mode=0775 \
+  --tmpfs /tmp:rw,mode=1777 \
+  --env MAY_RUNTIME_USER=root \
+  --env MAY_RUNTIME_UID=1234 --env MAY_RUNTIME_GID=1235 \
+  --env MODEL_BASE_URL=http://127.0.0.1:9 --env MODEL_API_KEY=ci-unused \
+  --env MAY_ARGS=--socket \
+  "$image_ref")
+root_ready=false
+for ((attempt = 0; attempt < 30; attempt++)); do
+  status=$(docker exec "$root_container_id" supervisorctl status 2>/dev/null || true)
+  if grep -q '^may-agent .*RUNNING' <<<"$status" \
+    && grep -q '^terminal-herdr .*RUNNING' <<<"$status" \
+    && grep -q '^terminal-ttyd .*RUNNING' <<<"$status" \
+    && docker exec "$root_container_id" curl -fsS --max-time 3 \
+      http://127.0.0.1:8080/terminal/ >/dev/null 2>&1; then
+    root_ready=true
+    break
+  fi
+  [[ $(docker inspect --format '{{.State.Running}}' "$root_container_id") == true ]] || break
+  sleep 1
+done
+[[ "$root_ready" == true ]] || { docker logs "$root_container_id" >&2; exit 1; }
+docker exec "$root_container_id" /bin/sh -ec '
+  test "$(id -u):$(id -g)" = 0:0
+  test "$(getent passwd root | cut -d: -f3)" = 0
+  test "$(stat -c %u:%g /app)" = 1234:1235
+  test "$(stat -c %u:%g /tmp/may-agent-ttyd.sock)" = 0:0
+  test "$MAY_RUNTIME_USER" = root
+  herdr --session may-terminal2 status | grep -q "status: running"
+'
+docker exec "$root_container_id" python3 -c '
+import pathlib
+import subprocess
+
+status = subprocess.run(["supervisorctl", "status"], capture_output=True, text=True).stdout
+for line in status.splitlines():
+    if "RUNNING" not in line:
+        continue
+    pid = int(line.split("pid ", 1)[1].split(",", 1)[0])
+    uid = next(row for row in pathlib.Path(f"/proc/{pid}/status").read_text().splitlines()
+               if row.startswith("Uid:")).split()[1:]
+    assert all(value == "0" for value in uid), line
+'
+docker rm -f "$root_container_id" >/dev/null
+root_container_id=''
+
 # Start the real entrypoint with a custom UID/GID, custom endpoint, and
 # pre-populated legacy state + SSH + root-owned Chrome profile, then run real CLI commands.
 runtime_root="$(mktemp -d)"
@@ -154,6 +209,7 @@ runtime_container_id=$(docker create --network none --user root \
   --env MODEL_BASE_URL=https://models.example.test \
   --env MODEL_API_KEY=ci-fixture-key \
   --env GEMINI_MODEL=gemini-fixture \
+  --env MAY_RUNTIME_USER=mayagent \
   --env MAY_RUNTIME_UID=1234 \
   --env MAY_RUNTIME_GID=1235 \
   --entrypoint /bin/bash \

@@ -40,8 +40,10 @@ services:
       - PI_OPENAI_MODEL=${PI_OPENAI_MODEL:-gpt-6.1-sol}
       - GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-4-argon}
       - GEMINI_FAST_MODEL=${GEMINI_FAST_MODEL:-gemini-3.8-flash}
-      # Empty values auto-detect the mounted projects (or installation) owner.
-      # Remote installations can pin these when their mount has mixed owners.
+      # Set root explicitly to align services with Docker's default exec user.
+      - MAY_RUNTIME_USER=${MAY_RUNTIME_USER:-mayagent}
+      # Empty values auto-detect the mounted projects (or installation) owner
+      # only for mayagent. Root mode does not remap accounts or mount ownership.
       - MAY_RUNTIME_UID=${MAY_RUNTIME_UID:-}
       - MAY_RUNTIME_GID=${MAY_RUNTIME_GID:-}
       - MAY_RUNTIME_OWNERSHIP_PATH=${MAY_RUNTIME_OWNERSHIP_PATH:-}

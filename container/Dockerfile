@@ -250,6 +250,9 @@ ENV HOME=/var/lib/mayagent
 ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
 
+# Root is the bootstrap/exec identity; services default to mayagent unless
+# the operator explicitly selects MAY_RUNTIME_USER=root.
+ENV MAY_RUNTIME_USER=mayagent
 ENV NODE_ENV=production
 ENV PROJECT_ROOT=/app
 ENV AGENTS_ROOT=/app/agents
@@ -269,4 +272,5 @@ EXPOSE 6080
 # Web UI dashboard & Herdr web terminal (/terminal/)
 EXPOSE 8080
 
+USER root
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]

@@ -122,7 +122,9 @@ Every PR and push to `main` reports two independent Linux checks:
   and browser tests. JUnit results are kept even when tests fail.
 - **Container** builds the actual image with its source revision embedded and
   probes the shipped binary's readiness and UI as its unprivileged user with
-  fixture agents. This is not a desktop/VNC or production-App acceptance test.
+  fixture agents. It also starts the complete stack in explicit root mode and
+  checks root/mount identities, socket ownership, and terminal HTTP access.
+  This is not a production-App acceptance test.
   It does not mount `/app`, consume deployment credentials, publish an image,
   or deploy. Logs are retained on failure. Documentation/portable-test-only
   PRs report the image build as unnecessary, not as an executed smoke test.

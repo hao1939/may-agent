@@ -21,42 +21,57 @@ export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
 export XDG_STATE_HOME="${XDG_STATE_HOME:-${STATE_DIR}/cli-state/herdr/state}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/may-herdr-runtime}"
 
-# 1. Align `mayagent` UID/GID to the mounted /app/projects owner before writing state.
+# 1. Select one identity for services and their terminal/agent children.
 runtime_user="${MAY_RUNTIME_USER:-mayagent}"
-ownership_path="${MAY_RUNTIME_OWNERSHIP_PATH:-${PROJECTS_ROOT}}"
-[ -e "${ownership_path}" ] || ownership_path="${PROJECT_ROOT}"
-configured_uid="${MAY_RUNTIME_UID:-}"
-configured_gid="${MAY_RUNTIME_GID:-}"
-[ -z "${configured_uid}" ] && [ -e "${ownership_path}" ] && configured_uid="$(stat -c '%u' "${ownership_path}")"
-[ -z "${configured_gid}" ] && [ -e "${ownership_path}" ] && configured_gid="$(stat -c '%g' "${ownership_path}")"
-[ -n "${configured_uid}" ] && [ "${configured_uid}" != "0" ] || configured_uid="$(id -u "${runtime_user}")"
-[ -n "${configured_gid}" ] && [ "${configured_gid}" != "0" ] || configured_gid="$(id -g "${runtime_user}")"
+case "${runtime_user}" in
+  root|mayagent) ;;
+  *) echo "MAY_RUNTIME_USER must be root or mayagent." >&2; exit 1 ;;
+esac
+export MAY_RUNTIME_USER="${runtime_user}"
 
-case "${configured_uid}" in *[!0-9]*|'') echo "Invalid May runtime uid: ${configured_uid}" >&2; exit 1 ;; esac
-case "${configured_gid}" in *[!0-9]*|'') echo "Invalid May runtime gid: ${configured_gid}" >&2; exit 1 ;; esac
+if [ "${runtime_user}" = "root" ]; then
+  [ "$(id -u)" = "0" ] || { echo "Root runtime requires starting the container as root." >&2; exit 1; }
+  # Never remap the root account or chown the installation to root. Existing
+  # mount-owner UID/GID settings apply only to the unprivileged runtime.
+  export MAY_RUNTIME_UID=0
+  export MAY_RUNTIME_GID=0
+else
+  # Align the unprivileged identity to the mounted projects before writing state.
+  ownership_path="${MAY_RUNTIME_OWNERSHIP_PATH:-${PROJECTS_ROOT}}"
+  [ -e "${ownership_path}" ] || ownership_path="${PROJECT_ROOT}"
+  configured_uid="${MAY_RUNTIME_UID:-}"
+  configured_gid="${MAY_RUNTIME_GID:-}"
+  [ -z "${configured_uid}" ] && [ -e "${ownership_path}" ] && configured_uid="$(stat -c '%u' "${ownership_path}")"
+  [ -z "${configured_gid}" ] && [ -e "${ownership_path}" ] && configured_gid="$(stat -c '%g' "${ownership_path}")"
+  [ -n "${configured_uid}" ] && [ "${configured_uid}" != "0" ] || configured_uid="$(id -u "${runtime_user}")"
+  [ -n "${configured_gid}" ] && [ "${configured_gid}" != "0" ] || configured_gid="$(id -g "${runtime_user}")"
 
-if [ "$(id -u)" = "0" ]; then
-  current_uid="$(id -u "${runtime_user}")"
-  current_gid="$(id -g "${runtime_user}")"
-  if [ "${current_gid}" != "${configured_gid}" ]; then
-    /usr/sbin/groupmod --non-unique --gid "${configured_gid}" "${runtime_user}"
+  case "${configured_uid}" in *[!0-9]*|'') echo "Invalid May runtime uid: ${configured_uid}" >&2; exit 1 ;; esac
+  case "${configured_gid}" in *[!0-9]*|'') echo "Invalid May runtime gid: ${configured_gid}" >&2; exit 1 ;; esac
+
+  if [ "$(id -u)" = "0" ]; then
+    current_uid="$(id -u "${runtime_user}")"
+    current_gid="$(id -g "${runtime_user}")"
+    if [ "${current_gid}" != "${configured_gid}" ]; then
+      /usr/sbin/groupmod --non-unique --gid "${configured_gid}" "${runtime_user}"
+    fi
+    if [ "${current_uid}" != "${configured_uid}" ] || [ "${current_gid}" != "${configured_gid}" ]; then
+      /usr/sbin/usermod --non-unique --uid "${configured_uid}" --gid "${configured_gid}" "${runtime_user}"
+    fi
+  elif [ "$(id -u)" != "${configured_uid}" ] || [ "$(id -g)" != "${configured_gid}" ]; then
+    echo "May runtime is already non-root as $(id -u):$(id -g), but mounted ownership requires ${configured_uid}:${configured_gid}." >&2
+    exit 1
   fi
-  if [ "${current_uid}" != "${configured_uid}" ] || [ "${current_gid}" != "${configured_gid}" ]; then
-    /usr/sbin/usermod --non-unique --uid "${configured_uid}" --gid "${configured_gid}" "${runtime_user}"
-  fi
-elif [ "$(id -u)" != "${configured_uid}" ] || [ "$(id -g)" != "${configured_gid}" ]; then
-  echo "May runtime is already non-root as $(id -u):$(id -g), but mounted ownership requires ${configured_uid}:${configured_gid}." >&2
-  exit 1
+  export MAY_RUNTIME_UID="${configured_uid}"
+  export MAY_RUNTIME_GID="${configured_gid}"
 fi
-export MAY_RUNTIME_UID="${configured_uid}"
-export MAY_RUNTIME_GID="${configured_gid}"
 
 mkdir -p \
   "${PROJECT_ROOT}" "${STATE_DIR}" "${AGENTS_ROOT}" "${PROJECTS_ROOT}" "${SHARED_ROOT}" \
   "${STATE_DIR}/runtime-logs" "${STATE_DIR}/chrome-profile" "${HOME}" "${XDG_RUNTIME_DIR}"
 chmod 700 "${XDG_RUNTIME_DIR}" 2>/dev/null || true
 
-if [ "$(id -u)" = "0" ]; then
+if [ "$(id -u)" = "0" ] && [ "${runtime_user}" != "root" ]; then
   chown "${runtime_user}:${runtime_user}" \
     "${PROJECT_ROOT}" "${STATE_DIR}" "${AGENTS_ROOT}" "${PROJECTS_ROOT}" "${SHARED_ROOT}" \
     "${STATE_DIR}/runtime-logs" "${STATE_DIR}/chrome-profile" "${XDG_RUNTIME_DIR}" 2>/dev/null || true
@@ -79,7 +94,7 @@ for path in "${PROJECT_ROOT}" "${STATE_DIR}" "${AGENTS_ROOT}" "${PROJECTS_ROOT}"
 done
 
 # 2. Refresh CLI endpoint/model configs (if overridden via env) & link durable /app/.state histories.
-if [ "$(id -u)" = "0" ] && id "${runtime_user}" >/dev/null 2>&1; then
+if [ "$(id -u)" = "0" ] && [ "${runtime_user}" != "root" ]; then
   # Ensure any legacy state dirs under /app/.state are readable before running as mayagent.
   for legacy in .ssh ssh herdr .codex .pi .gemini .claude; do
     [ -e "${STATE_DIR}/${legacy}" ] && chown -R "${runtime_user}:${runtime_user}" "${STATE_DIR}/${legacy}" 2>/dev/null || true
@@ -115,7 +130,7 @@ export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes
 [ -L "${SHARED_ROOT}/projects" ] && rm -f "${SHARED_ROOT}/projects"
 
 if [ "$#" -gt 0 ]; then
-  if [ "$(id -u)" = "0" ] && id "${runtime_user}" >/dev/null 2>&1; then
+  if [ "$(id -u)" = "0" ] && [ "${runtime_user}" != "root" ]; then
     exec /usr/sbin/runuser -u "${runtime_user}" -- "$@"
   fi
   exec "$@"
