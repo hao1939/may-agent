@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions `cb07caf34061`; that activation is distinct from current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
+**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last verified at `54837f1487`; binary activation is distinct from App reload and current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -267,21 +267,32 @@ owns that boundary; the [pilot plan](../2b-manual/standalone-to-host-pr-pilot.md
 tracks the connected proof. Existing Task-aware procedures may establish this
 milestone without waiting for the full shared-execution or Conversation cutover.
 Host schedules and delivers; Alex judges readiness from current-head evidence;
-Telegram delivery does not stand in for GitHub approval. One native trial now
-proves this path: Alex's workflow produced [PR #579](https://github.com/hao1939/may-agent/pull/579),
-real watcher facts woke the same Task through CI-running and CI-success results,
-and its retained return reached May and a delivered Telegram review notification.
-It used one operator continuation after a recovery queue delay. The Alex result
-is converged/idle, while the caller Request is fulfilled; terminal Task closure
-was not demonstrated. Exact revisions, timing and delivery limits are in the
-[trial record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-paired-activation-and-native-delivery-trial).
+Telegram delivery does not stand in for GitHub approval. The historical
+[PR #579 trial](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-paired-activation-and-native-delivery-trial)
+proved workflow execution, real watcher-driven same-Task CI continuation and a
+Telegram mirror send, with an operator queue continuation. It did not prove an
+addressed durable final notification or a substantive repair cycle.
+
+The active acceptance target is existing [PR #574](https://github.com/hao1939/may-agent/pull/574).
+May owns the human promise; Alex Task `input/appdep_1ee136a45d4c842a8ae0f507`
+owns the PR. The run exposed three App handoff gaps: a new PR was routed into
+unrelated exhausted work; the superseded writer was not drained before handoff;
+and the corrected assignment omitted the saved cross-repository checkout
+selector, allowing direct specialist calls to bypass the workflow. App guidance
+repairs are activated through `54837f1487`; fresh behavior must verify them.
+The retired implicit Task tool also left May without a callable revision route;
+her explicit `revise-assignment` procedure now uses the existing fenced SDK
+creator capability. Existing
+edits and all consumed allowances remain retained. Do not mark the delivery goal
+complete before workflow, current-head CI/comment follow-up, caller return and
+an addressed Telegram provider receipt are connected in this trial.
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |
 | Judgment and admission | A well-formed agent conclusion within the declared contract is recorded without an added semantic reviewer; malformed, stale or unauthorized changes return specific feedback. Domain `output.state` stays data. | Keep this distinction through production shared settlement; existing contract/component checks alone do not prove caller wiring. |
 | SDK semantics | Root worker types and runtime preparation require no Host Task/Conversation identity; explicit coordinator domain tools remain opt-in. | A symbol-name snapshot alone misses Task-bearing nested deferral/CLI types. |
 | Hosted parity | Same pinned worker/input/capabilities through standalone and Host; compare prepared messages, tool/finish schemas and first-turn bytes. No Task brief, unrequested tools or `TASK.md` turn. | Real Host caller migration remains; the historical target is less than 5% payload overhead under equivalent inputs. |
-| Execution supervision | Use production attempt/recovery factories with a non-cooperative worker; independently enforce declared bounds, confirm cleanup and retain responsive controls. Stop is not automatically retried; timeout follows its policy. | Conservative attempt/recovery ceilings are wired in the local pair; policy-derived bounds and connected non-cooperative cleanup/recovery evidence remain. |
+| Execution supervision | Use production attempt/recovery factories with a non-cooperative worker; independently enforce declared bounds, confirm cleanup and retain responsive controls. Stop is not automatically retried; timeout follows its policy. | Heartbeat liveness replaces the fixed attempt lifetime; recovery retains ten minutes. Native numeric/unlimited policy coverage passes focused tests, but its full suite failed and complete connected cleanup/recovery proof remains. |
 | Parent-owned storage | Instrument the attempt process and exercise restart/settlement; zero Host SQLite connections in execution children. | Journal cleanup is not this proof, nor a guarantee that every unrelated SQLite test can never contend. |
 | Crash and effect recovery | Lose the acknowledgment after commit and interrupt after an external effect; replay the same receipt, preserve accepted work, inspect uncertain effects, and block unsafe replacement until cleanup is known. | Reuse existing receipts and operation-safety contracts; prove the complete connected worker path, without claiming exactly-once arbitrary effects. |
 | Failure ownership | Return correctable feedback to the active invocation; deliver exhausted/unstartable work to the declared owner, preserving the original obligation. Missing route/recipient stays visible. | Connected recipient-startup/pre-attempt evidence remains separate; saving or admitting a notice does not prove it was handled. |
@@ -290,17 +301,14 @@ was not demonstrated. Exact revisions, timing and delivery limits are in the
 | Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility, activation and the native PR-delivery loop pass. Shared-worker blocked/resumed/finished and restart evidence remain. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The immediate delivery milestone is achieved with the intervention and limits
-above. The next practical trial should remove the operator queue continuation,
-retain an addressed notification receipt through restart and exercise creator
-closure of the finite assignment. Treat the observed queue delay as evidence to
-inspect scheduling and delegated human intent, not proof of starvation or a
-reason to add another scheduler. A real failure/comment repair cycle remains
-separate evidence; do not manufacture one.
+The immediate next movement is to complete the #574 trial through the owning
+May/Alex path, repair demonstrated gaps at their App or generic Host boundary,
+and retain explicit interventions. No operator relay of each coding, publication
+or CI stage should be needed. Observe a real repair/comment cycle; do not
+manufacture feedback or count a historical mirror send as the requested final
+notification. Creator closure, restart delivery and shared-worker parity remain
+separate acceptance obligations after this trial.
 
-The local pair already includes correctness/compatibility repairs and conservative
-parent supervision. Shared-worker policy-derived bounds, restart recovery and
-authorized finite completion retain their separate acceptance obligations.
 Removal of mechanical housekeeping and Conversation ownership cutover follow
 that evidence. Source checks remain separate from wider rollout or an unmeasured
 behavior-improvement claim.

@@ -313,8 +313,9 @@ publication. Independent PR #580 preserves the intended forced-retry contract;
 the unpublished candidate must not compete with it. An operator prepared separate
 native worker-policy coverage at `1ed0a0ef41`: 30 worker tests and `check:ci` passed,
 and deliberate parent-cap, ignored-numeric-policy and ignored-unlimited-policy
-mutations were all rejected. A full local run and native review were still in
-progress when the user selected #574 instead. This is assisted investigation,
+mutations were all rejected. Native Bob review passed. The full local run reported 3,434 passed, two failed
+(cooperative workflow cancellation timing and real-worker restored-agent timeout),
+and two skipped; it is not green. The user selected #574 instead. This is assisted investigation,
 not a completed autonomous delivery claim; the consumed workflow allowance stays
 consumed.
 
@@ -333,6 +334,43 @@ the same event, without a duplicate assignment. Coding, pushes, watcher-driven
 follow-up, substantive comment handling and the addressed Telegram provider
 receipt remain evidence obligations. No approval on Telegram, merge or deployment
 is part of this assignment.
+
+### PR #574 handoff correction
+
+May first reused the exhausted #577 Task for the distinct #574 goal; adding a
+new goal input did not revise its saved requirements. After App guidance repair
+`e6e42d4b2d` and feedback, May created the correct Alex owner
+`input/appdep_1ee136a45d4c842a8ae0f507`. The stale #577 writer continued editing
+the checkout until operator cancellation event 6730610 drained it; no edits were
+reset. May's writer-drain guidance is retained in `52cf87406b`.
+
+The new owner then used direct Bob/tech-lead calls without a workflow run. Its
+saved goal omitted `context.developmentCheckout`, required by the existing
+cross-repository procedure. App guidance at `3023741c57` makes May preserve or
+revise that selector on the same Task and makes Alex treat its absence as a
+setup gap rather than a workflow bypass. Nine-agent model-surface validation
+passed. Reload finished successfully at event 6730647 with that exact source;
+the earlier reload pinned to `52cf87406b` was safely rejected because unrelated
+App work had advanced main. Diagnostic feedback to May was admitted at 6730648.
+
+The implicit Host Task tool was removed by #573, leaving May's correction
+instructions without a callable API. App commit `54837f1487` adds the explicit
+May-local `revise-assignment` procedure using `ctx.reviseTask`; Host creator and
+generation fences remain authoritative. Three focused tests pass (exact input
+preservation, surfaced revision denial, and schema rejection). Nine-agent
+model-surface validation passes. Reload finished successfully at event 6730669
+with that exact source. No generic Host tool was restored. New capability
+feedback was admitted to May; in-flight attempts keep their pinned definitions.
+
+At this checkpoint Alex pushed the six-file repair candidate
+`d66f695407e8aed3f176a017f52bb8360b72d337` to the same PR. Its 87 focused tests,
+`check:ci` and diff check passed; Container passed and Quality was running for
+Actions run 43963536319. Alex saved the `pr-feedback` Condition. The correct
+owner still had no `develop-change` run and the substantive review threads had
+not yet received replies. Workflow proof, watcher continuation, full exact-head
+readiness and final addressed Telegram remain open. These are operator-assisted
+integration repairs, not proof that the outcome-only assignment is autonomous.
+The local evidence directory is `/app/.state/pr574-delivery-e2e-20261116/`.
 
 ## Historical performance observations
 
