@@ -1,0 +1,57 @@
+{
+  "kind": "goal",
+  "data": {
+    "outcome": "Establish and demonstrate one trustworthy system-improvement cycle under Alex's ownership, improving reliable delivery of user-valued outcomes with less human correction and acceptable total cost.",
+    "acceptance": [
+      "Read the approved improvement mandate and current linked work. Select one observed bottleneck and explain its user impact, evidence, recurrence or cost, and why this is the smallest worthwhile scope. Reuse fitting existing investigations, candidates and caller relationships.",
+      "Declare a bounded hypothesis, candidate mechanism, intended benefit, verification method and stopping or rejection condition before implementing the experiment. Alex chooses the scope; preliminary diagnosis and snapshot findings are evidence to assess, not mandatory fixes.",
+      "Carry the selected experiment through candidate preparation, appropriate executable checks and independent review using existing procedures. When behavioral comparison is needed, use a fresh baseline, explicit approved truth, the same frozen objective and exact candidate identity, and retain per-trial evidence and regressions.",
+      "Return an inspectable evidence chain from the observed problem through implementation or experiment to a supported adoption, revision, rejection or no-change disposition. Keep the original Task responsible after a specialist returns. A recommendation, passing helper or roadmap does not by itself satisfy this milestone.",
+      "Apply useful changes only within existing authority and repository delivery rules. Distinguish local verified source, integration, activation and fresh behavior. Verify the claimed effect at the achieved boundary; if an external dependency prevents a required boundary, retain its exact owner, wait and next action rather than claiming the full cycle completed.",
+      "Record what the experiment established, its cost and remaining uncertainty, and the next bottleneck justified by the results. Keep evidence and progress on ordinary Tasks, and complete this finite assignment only when its milestone is demonstrated or explicitly dispositioned under its accepted scope."
+    ],
+    "constraints": [
+      "Keep the north star stable: reliable user outcomes, less human correction and acceptable total time and operating cost. Process improvements must trace to that value and have a stopping condition.",
+      "Use existing Alex, Gym, Bob and tech-lead capabilities and Task/evidence contracts. Build further orchestration from repeated successful work when justified by evidence.",
+      "Preserve unrelated work and frozen benchmark evidence. Missing or draft labels do not authorize verification, and generated cases remain draft until human truth approval.",
+      "Continue authorized implementation and verification autonomously; escalate only concrete missing authority, consequential priority tradeoffs or unresolved blockers through the existing May route."
+    ],
+    "assignment": {
+      "agent": "alex"
+    },
+    "context": {
+      "mandate": "/app/projects/alex.app/docs/2a-design/practice-learning-loop.md#improvement-direction-and-alexs-mandate",
+      "initialEvidence": [
+        {
+          "path": "/app/projects/alex.app/agents/alex/workflows/diagnose-improvement.ts",
+          "finding": "Diagnosis reads agent_status from manifest trials although current Gym stores execution status in each result.json; five recent captured runs consequently appeared as unknown. The diagnosis schema requires changes and its rules prescribe mechanisms before distinguishing behavior, scorer/truth, execution and insufficient-evidence causes."
+        },
+        {
+          "path": "/app/projects/gym/src/loop/run.ts",
+          "finding": "A temporary deterministic experiment observed different live candidate versions across two trials while the retained snapshot and recorded candidate fingerprint still named the original version and the run was marked complete."
+        },
+        {
+          "path": "/app/projects/gym/src/loop/store.ts",
+          "finding": "Apps commit 1c59eec13c requires explicit truth approval; missing labels remain draft, including all 13 current role-judgment cases. Fresh approved truth and new baselines are required for release comparisons."
+        }
+      ],
+      "existingWork": [
+        {
+          "appId": "alex",
+          "taskId": "input/appdep_c91f4d40a4773e98a1b9fd38",
+          "relationship": "Existing Gym comparison/reporting contribution assigned to Bob reports implementation ready for Alex, with integration unperformed and broader checks not green. Inspect current evidence and reuse if it fits the selected experiment."
+        },
+        {
+          "appId": "alex",
+          "taskId": "learning/daily-work",
+          "relationship": "Existing recurring signal intake produces benchmark drafts. Reuse its findings when useful."
+        },
+        {
+          "appId": "alex",
+          "taskId": "runtime/pattern-audit",
+          "relationship": "Existing periodic investigation supplies runtime-failure and wasted-effort evidence. Reuse its findings when useful."
+        }
+      ]
+    }
+  }
+}

@@ -4,6 +4,13 @@ Alex owns system improvement. May keeps human priorities and escalation; Scout
 keeps research and shared knowledge. See the
 [migration design](docs/proposals/alex-improvement-app.md).
 
+Alex owns improvement scope within agreed priorities and authority. Its
+[improvement mandate](docs/2a-design/practice-learning-loop.md#improvement-direction-and-alexs-mandate)
+keeps reliable user outcomes, fewer human corrections and acceptable total cost
+as the direction. Alex selects bounded experiments and carries them through a
+supported disposition and subsequent verification. The first milestone is one
+trustworthy cycle using existing procedures.
+
 Alex admits ordinary goals and messages into durable Tasks and exposes migrated
 review, metric, comparison and Scout-adoption routes. Automatic selection remains
 no-op unless the existing explicit rollout flag is enabled; metric samples alone

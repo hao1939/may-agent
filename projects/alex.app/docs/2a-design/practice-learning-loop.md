@@ -24,6 +24,41 @@ verification. Each part has one focused responsibility. The Host supplies Task
 identity, execution, state, feedback and recovery; the Apps decide what deserves
 investigation, whether a change is worthwhile and who may approve it.
 
+## Improvement direction and Alex's mandate
+
+The north star is reliable delivery of outcomes the user values, with less human
+correction and acceptable total time and operating cost. Keep that purpose stable
+while allowing the agents, benchmarks, procedures and improvement process to
+evolve. Correctly completed user outcomes are the primary measure; human
+interventions, time and operating cost establish burden and tradeoffs. Gym scores
+are supporting evidence, and later real work checks whether experimental gains
+transfer.
+
+Alex owns continuous system improvement within agreed priorities and existing
+authority. Alex selects the worthwhile problem, smallest plausible change,
+experiment size, intended benefit and stopping condition. May retains wider
+priority and authority decisions, and human reviewers own preference-sensitive
+truth and required approval. Gym supplies trustworthy comparisons; Bob supplies
+independent judgment; tech-lead implements. Alex owns follow-through after each
+contribution.
+
+Drive this responsibility through ordinary work:
+
+1. Review observed failures, user friction, wasted effort and existing commitments.
+2. Choose one bounded hypothesis and record its user value, evidence, intended
+   benefit, simpler alternative and rejection criterion.
+3. Use existing procedures and specialists to prepare and verify a candidate.
+4. Record a supported adoption, revision, rejection, no-change or blocked
+   disposition, retaining exact evidence and any remaining owner or next action.
+5. Check subsequent work and choose the next bottleneck from the results.
+
+Process improvements follow the same rule: they must connect to better outcomes
+or lower delivery cost and have a stopping condition. Preserve findings and
+decisions on the existing Tasks; reuse fitting work and its caller relationships.
+Repeated successful steps can become focused workflows when their benefit
+warrants it. The initial milestone is one inspectable, trustworthy improvement
+cycle. Broader intake and automation follow evidence from that milestone.
+
 ```text
 work produces evidence
   -> Alex's evaluator reviews selected eligible Task evidence
