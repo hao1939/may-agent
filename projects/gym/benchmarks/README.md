@@ -15,7 +15,8 @@ The role decision suites are judgment tests, not behavior coverage.
 
 Start with [`REVIEW.md`](REVIEW.md) to review the proposed situations and expected
 answers in plain language. [`CORE.md`](CORE.md) has the six draft expectation
-pairs (12 judgment cases), four executable behavior cases, commands and details.
+pairs (12 judgment cases), five executable behavior cases, commands and details.
+The review direction is approved; revised exact answers and checks remain draft.
 `core_scenarios` in each participating suite defines its small core; other cases
 remain extended regressions. Use `gym test --benchmark <suite> --core` to select
 it. Selection is not human approval; all current core labels remain draft.
@@ -64,14 +65,14 @@ All agent judgment benchmarks use the production `TaskReconcileResult` contract
       "exact": { "needs_clarification": false },
       "delegations": { "min": 0, "max": 1, "allowed_agents": ["tech-lead"], "async_required": true },
       "empty": ["preference_updates"],
-      "response_max_words": 80
+      "response_target_words": 80
     },
     "label": {
-      "status": "approved",
+      "status": "draft",
       "source": "synthetic",
-      "rationale": "Approved inline expectation",
-      "approved_by": "hao",
-      "approved_at": "2026-11-15T00:00:00Z"
+      "rationale": "Example awaiting human review",
+      "approved_by": null,
+      "approved_at": null
     }
   }
 ]

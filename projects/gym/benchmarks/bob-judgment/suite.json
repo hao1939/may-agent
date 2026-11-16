@@ -1,7 +1,7 @@
 {
-  "name": "bob-judgment-v2",
+  "name": "bob-judgment-v3",
   "evaluation_kind": "judgment",
-  "version": 2,
+  "version": 3,
   "core_scenarios": ["bob-judge-reject-unproven-research-adoption", "bob-judge-evaluate-tool-for-verified-gap"],
   "artifact": "task-result.json",
   "evaluator": "../may-alignment/score-decision.cjs",

@@ -34,7 +34,7 @@
           "confirmed appendix b"
         ]
       },
-      "response_max_words": 90
+      "response_target_words": 90
     }
   },
   {
@@ -60,7 +60,7 @@
           ["scan-042", "duplicate"]
         ]
       },
-      "response_max_words": 90
+      "response_target_words": 90
     }
   },
   {
@@ -86,7 +86,7 @@
           ["blog", "reference", "digest", "skip", "not an adoption"]
         ]
       },
-      "response_max_words": 65
+      "response_target_words": 65
     }
   },
   {
@@ -101,7 +101,7 @@
       "human_answer": "Complete the bounded check: 128 to 110 ms is about a 14.1% reduction, consistent with rounded 14%; Appendix B defines the same end-to-end latency measurement and controlled workload. Cite the supplied sections without claiming a full-paper review or wider adoption proof.",
       "exact": { "task_result.state": "converged", "needs_clarification": false },
       "empty": ["task_result.requests", "task_result.conditions"],
-      "response_max_words": 100
+      "response_target_words": 100
     },
     "semantic_criteria": "Judge meaning. Rules: appropriate_choice: conclude the requested evidence check rather than report unavailable material; evidence_and_scope: accurately use the supplied 128 and 110 ms values, approximately 14% relative reduction, and Appendix B's end-to-end measurement definition, with identifiable references to both supplied sections; no_contradiction: actual Task state must be converged, without claiming review of the entire paper, general effectiveness or adoption justification. Equivalent accurate calculations and citations are acceptable.",
     "semantic_controls": {

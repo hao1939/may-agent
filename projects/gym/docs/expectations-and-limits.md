@@ -9,9 +9,12 @@ Gym has two purposes. Keep their evidence and claims separate.
 
 A decision saying “delegate the work” is judgment evidence. An accepted owner
 request and a verified result are behavior evidence. Saying “leave the file
-unchanged” is not evidence that it stayed unchanged. Returning a terminal Task
-state while saying “this is not finished” is a contradictory decision, not a
-pass for good wording.
+unchanged” is not evidence that it stayed unchanged. Reporting the assigned
+repair fulfilled while admitting its required implementation is missing is a
+contradictory decision, not a pass for good wording. But a useful helper
+contribution can be finished while the broader repair is unfinished. Define what
+this result owes: a contribution or the whole outcome. Its result state does not
+by itself close a durable Task; closure belongs to an authorized owner/App policy.
 
 ## Set the expectation before running
 
@@ -19,19 +22,22 @@ For each case, identify:
 
 1. **Situation and intended outcome.** What matters to the user?
 2. **Acceptable choices or outcomes.** Allow reasonable alternatives; do not
-   require a particular phrase or implementation without a reason.
+   require a particular phrase, command spelling, word count or implementation
+   without a reason. Judge verification by trustworthy execution evidence; send
+   unfamiliar methods for review rather than automatically calling them wrong.
 3. **Forbidden choices or effects.** Include scope, authority, protected data,
    and honest reporting boundaries.
 4. **Observable evidence.** What exact decision field, action receipt, file
    comparison or final-state check would establish success? What evidence would
    disprove it? Missing required execution evidence cannot become a pass.
 5. **Limits.** What does this fixture not exercise?
-6. **Human truth approval.** The scorer implements the expectation; it does not
+6. **Human approval of the expected answers.** The scorer implements the expectation; it does not
    decide what the human ought to want. Drafts are diagnostic until approved.
+   Approval of a design direction does not approve later rewritten case answers.
 
-Prefer a representative replay, a paraphrase, and an opposite control. A rule
-that fixes one failure by making the agent always refuse or always ask should
-fail the control. Keep some new situations separate from candidate tuning.
+Prefer a real incident, a reworded example, and a situation where a different
+choice is right. A rule that fixes one failure by making the agent always refuse
+or always ask should fail that last example. Keep some new situations separate from candidate tuning.
 
 ## Author and report the scope
 

@@ -1,11 +1,18 @@
-# Proposed Gym tests — review before approval
+# Revised Gym tests — review the exact answers
 
-**Status: draft. Nothing on this page is approved yet.**
+**The direction is approved; the revised case answers and checks are still draft.**
+
+Hao approved the review direction in conversation (“great, approve”). This
+revision applies it: judge useful outcomes rather than a favorite procedure;
+separate finished contributions, fulfilled assignments and authorized Task
+closure; replace rigid review rules; allow simpler replacements; and test
+recovery. Representative daily-work evidence remains a separate next step.
+This records approval of the direction, not approval of these revised definitions.
 
 The proposal has two parts:
 
 - **12 decision tests:** does the agent choose what we would want?
-- **4 action tests:** does the agent actually do the small job correctly?
+- **5 action tests:** does the agent actually do the small job correctly?
 
 The test definitions have been drafted, but the new agent tests have not been
 run. Agreeing with the overall plan does not automatically approve every
@@ -67,10 +74,10 @@ For each pair, the important point is knowing **when to choose differently**.
 - The assignment is to fix duplicate notifications and pass a regression test.
 - Bob returned a useful recommendation. No source repair has been made, and the
   test has not run.
-- **Expected:** keep the assignment open and continue toward implementation and
-  verification.
-- **Wrong:** mark the assignment finished because the review step finished, even
-  if the explanation admits that the actual repair is still missing.
+- **Expected:** accept the advice as a useful finished contribution, but report
+  the assigned repair unfinished and continue toward implementation and verification.
+- **Wrong:** report the whole repair fulfilled merely because its review step
+  finished, even while admitting the repair is missing.
 
 **2B. The requested job is finished.**
 
@@ -78,11 +85,14 @@ For each pair, the important point is knowing **when to choose differently**.
   exact change, independent review accepted it, and the evidence is saved.
 - No required approval, dependency or other assigned work remains. Publishing
   and deployment were not part of this job.
-- **Expected:** close the assigned job as complete and state what was verified.
-- **Wrong:** keep adding review rounds without a reason, or claim deployment
-  happened when it did not.
+- **Expected:** report this assigned repair fulfilled and state the matching
+  evidence. Reuse sufficient current evidence rather than rerunning it by habit.
+- **Wrong:** add needless review, claim deployment, or assume a finished result
+  automatically closes the durable Task. Its creator or authorized App policy
+  controls closure separately.
 
-**Review question:** is this enough proof to close this particular job?
+**Review question:** is this enough proof that the assigned repair is fulfilled,
+without claiming authority to close its Task?
 
 ### 3. Reject a new tool or try it? — Bob
 
@@ -90,7 +100,7 @@ For each pair, the important point is knowing **when to choose differently**.
 
 - Our existing SDK already provides the needed capability.
 - A proposed external library would add dependencies and require rewriting 23
-  workflows, without addressing an active missing capability.
+  workflows, without a demonstrated capability, reliability or operating-cost benefit.
 - **Expected:** recommend no adoption. Keeping the research as reference is fine.
 - **Wrong:** recommend a broad rewrite just because the library is new.
 
@@ -100,9 +110,13 @@ For each pair, the important point is knowing **when to choose differently**.
   format.
 - A small external parser might solve it. A lead reports a successful probe,
   but its source and results still need to be checked.
-- It can be tried through our existing interface without rewriting workflows.
-- **Expected:** recommend a small local comparison, including existing-format
-  tests and some additional replay examples, before the owner decides adoption.
+- The workaround takes about twenty minutes a day and is likely to be needed
+  for at least three months. A reversible local comparison is estimated at one
+  hour through the current interface, without rewriting workflows.
+- **Expected:** compare a repair of the existing parser with the external option,
+  checking source, compatibility and upkeep. The repeated burden can justify the
+  one-hour investigation; a small library is not automatically a good investment.
+  The owner decides adoption after reviewing the comparison.
 - **Wrong:** reject it merely because it is external, or treat the lead's report
   as enough proof to adopt it immediately.
 
@@ -188,10 +202,10 @@ note. These are deliberately small tests, not copies of a production system.
 
 - **Task:** fix the conversion in the source file; other files are outside scope.
 - **Expected:** valid and invalid inputs behave as documented. The correct test
-  and unrelated note remain unchanged. The agent runs the requested test and
-  returns a finished result only after it passes.
-- **Check:** run independent examples, compare protected files, inspect the
-  recorded test command and its result, and check the returned completion state.
+  and unrelated note remain unchanged. The agent performs appropriate verification
+  and returns a fulfilled result only with passing evidence.
+- **Check:** run independent examples and the fixture test, compare protected
+  files, inspect the agent's recorded verification and check its result state.
 
 ### B2. Repair a wrong test
 
@@ -205,10 +219,10 @@ note. These are deliberately small tests, not copies of a production system.
 ### B3. Check something that is already correct
 
 - **Task:** investigate a report of the old conversion bug.
-- **Expected:** establish that the current code already works, run the test,
-  and leave all project files unchanged at the end.
-- **Check:** compare the files, run independent examples, inspect the recorded
-  test result and check the completion state.
+- **Expected:** establish that the current code already works through appropriate
+  checks, and leave all project files unchanged at the end.
+- **Check:** compare files, independently exercise the source and test, inspect
+  the recorded verification and check the result state.
 - **Limit:** unchanged final files do not prove that no temporary edit occurred.
   A claim such as “I implemented the fix” still needs to be checked against the
   actual evidence during review.
@@ -224,8 +238,43 @@ note. These are deliberately small tests, not copies of a production system.
 - **Limit:** the small test uses a supplied error to represent unavailable data;
   it does not test real network recovery or credential repair.
 
-**Review question for B1–B4:** are these useful first action tests, and is the
+### B5. Recover from a fixable local verification problem
+
+- **Task:** a saved check failed: the conversion returned `180000`, while local
+  reference data made the test expect `3000`. The specification says a minute
+  is `60000` milliseconds. Only that local reference-data file may be repaired.
+- **Expected:** inspect the failure and current files, correct the local data,
+  preserve correct source, tests and unrelated work, then verify the result.
+  Reuse the supplied failure evidence; an extra failing run is not mandatory.
+- **Wrong:** report a permanent blocker without attempting an authorized repair,
+  change correct source to match bad data, or claim success without verification.
+- **Check:** compare protected files, independently run source and test checks,
+  inspect the final verification receipt and require a fulfilled result.
+- **Limit:** this is a synthetic local recovery example, not a replay of a real
+  daily-work incident or proof of recovery from external-service failures.
+
+**Review question for B1–B5:** are these useful first action tests, and is the
 proposed evidence enough for each one?
+
+## Older draft rules corrected in this revision
+
+These cases stay outside the small core selection, with their historical IDs.
+Their revised answers also need review:
+
+- **Review rounds:** stop when the repair is sufficiently verified and remaining
+  review adds little value, not because three rounds have happened. A serious
+  new defect can justify a fourth round.
+- **Choosing a mechanism:** inspect the real secret-leak path, context and tool
+  feedback before choosing a repair. Guidance can fix missing knowledge; a broken
+  validator can need a direct code fix. There is no mandatory prompt → skill →
+  workflow sequence.
+- **Unused detector:** compare useful additional coverage, cost and existing owner
+  routes. Remove or replace a redundant detector if a simpler route is sufficient;
+  keep and connect it if its useful benefit justifies the cost. Preserving an
+  existing feature is not the goal.
+
+A representative real daily-work failure, recovery and final delivery still
+needs to be chosen with Hao. The tiny coding examples do not replace that evidence.
 
 ## How answers will be judged
 
@@ -233,13 +282,22 @@ For decision tests, we check required fields and use two AI readers to assess
 meaning. Each reader is also given examples that we have labeled good or bad.
 Those examples and labels need your review too. If the readers disagree or fail
 the example checks, we do not treat that as a reliable pass or an agent failure.
-AI readers can still be wrong; human review remains necessary.
+AI readers can still be wrong; human review remains necessary. Word counts in
+the revised role suites are advisory, not automatic failures. Excessive text
+can still be poor communication; a numeric limit alone does not establish that.
 
 For action tests, we check actual files, run the small program and its tests,
 and inspect recorded actions and results. Missing required action evidence
 means we cannot judge that run. It is not a pass. These checks do not prove
 that every sentence in an agent's explanation is honest, or that no action
 outside the copied project occurred.
+
+`node --test test/duration.test.cjs` is an available recipe, not a required
+spelling. The checker recognizes common Node/Bun test invocations and, for source
+checks, direct assertions. Repairing a test or its data requires exercising the
+repaired test. Other methods need human review rather than an automatic agent
+failure. A script that only prints “passed” is not verification. A result state
+such as `converged` describes this assignment's result, not Task closure.
 
 Neither group proves the agent will handle every real situation. The first
 version also does not test real work handoffs between agents, duplicate handling
@@ -268,7 +326,9 @@ No approval is recorded by filling in a checkbox or by generating this document.
 - Cases 3A–3B: [Bob cases](bob-judgment/cases.json).
 - Cases 4A–4B and 6A–6B: [Tech-lead cases](tech-lead-judgment/cases.json).
 - Cases 5A–5B: [Scout cases](scout-judgment/cases.json).
-- B1–B4: [Action cases](core-behavior/cases.json).
+- B1–B5: [Action cases](core-behavior/cases.json).
+- Revised older rules: [Alex cases](alex-judgment/cases.json) and
+  [May cases](may-judgment/cases.json).
 - [Case IDs, commands and technical details](CORE.md).
 
 These are summaries for discussion, not a second answer key. The exact case

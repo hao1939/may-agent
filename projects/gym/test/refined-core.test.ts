@@ -44,6 +44,9 @@ function repair(work: string, id: string) {
     const path = join(work, "test/duration.test.cjs");
     writeFileSync(path, readFileSync(path, "utf8").replace("3000", "180000"));
   }
+  if (id === "behavior-recover-local-verification") {
+    writeFileSync(join(work, "config/test-reference.json"), '{"millisecondsPerMinute":60000}\n');
+  }
 }
 
 describe("refined core judgment selection", () => {
@@ -53,13 +56,15 @@ describe("refined core judgment selection", () => {
       const benchmark = `${role}-judgment`, { suite } = loadSuite(benchmark);
       const labels = loadLabels(benchmark, suite).catalog!;
       expect(suite.evaluation_kind).toBe("judgment");
-      expect(suite.version).toBe(2);
+      expect(suite.version).toBe(3);
       const selected = selectCoreScenarios(suite);
       expect(selected.length).toBe(role === "tech-lead" ? 4 : 2);
       coreCases += selected.length;
       for (const id of selected) {
         const c = suite.cases!.find((item) => item.id === id)!;
         expect(c.expected?.human_answer).toBeTruthy();
+        expect(c.expected?.response_max_words).toBeUndefined();
+        expect(c.expected?.response_hard_max_words).toBeUndefined();
         expect(labels.labels[id]?.status).toBe("draft");
         expect(labels.labels[id]?.approved_by).toBeNull();
         expect(c.semantic_criteria).toContain("meaning");
@@ -89,6 +94,26 @@ describe("refined core judgment selection", () => {
         expect(result.checks.filter((check: any) => check.gate !== false && !check.passed)).toEqual([]);
         expect(existsSync(join(work, "expected.json"))).toBe(false);
         expect(existsSync(join(work, "semantic_criteria.md"))).toBe(false);
+      }
+    }
+  }));
+
+  test("draft role word targets are advisory, not hidden acceptance limits", () => withTempDir((root) => {
+    for (const role of roles) {
+      const benchmark = `${role}-judgment`, { suite } = loadSuite(benchmark);
+      for (const id of selectCoreScenarios(suite)) {
+        const scenario = join(root, id), work = join(root, `${id}-work`);
+        materialize(benchmark, id, scenario);
+        cpSync(join(scenario, "environment"), work, { recursive: true });
+        const c = suite.cases!.find((item) => item.id === id)!;
+        const positive = structuredClone(validateSemanticControlSet(c.semantic_controls).cases.find((item) => item.expected === "pass")!.decision) as Record<string, unknown>;
+        const field = typeof positive.response === "string" ? "response" : "summary";
+        positive[field] = `${positive[field]} ${Array(110).fill("context").join(" ")}`;
+        writeFileSync(join(work, "task-result.json"), JSON.stringify(positive));
+        const checks = scoreDecision(work, scenario).checks;
+        expect(checks.find((check: any) => check.name === "response-target")?.gate).toBe(false);
+        expect(checks.find((check: any) => check.name === "response-target")?.passed).toBe(false);
+        expect(checks.some((check: any) => check.name === "response-brevity")).toBe(false);
       }
     }
   }));
@@ -137,6 +162,17 @@ describe("refined core judgment selection", () => {
 });
 
 describe("core behavior outcome scoring", () => {
+  test("all five behavior definitions remain draft without named approval", () => {
+    const { suite } = loadSuite("core-behavior"), labels = loadLabels("core-behavior", suite).catalog!;
+    expect(suite.version).toBe(2);
+    expect(suite.scenarios).toHaveLength(5);
+    for (const id of suite.scenarios) {
+      expect(labels.labels[id]?.status).toBe("draft");
+      expect(labels.labels[id]?.approved_by).toBeNull();
+      expect(labels.labels[id]?.approved_at).toBeNull();
+    }
+  });
+
   for (const id of loadSuite("core-behavior").suite.scenarios) {
     test(`actual outcome: ${id}`, () => withTempDir((root) => {
       const scenario = join(root, "scenario"), work = join(root, "work");
@@ -200,6 +236,68 @@ describe("core behavior outcome scoring", () => {
     const result = scoreScenario(work, scenario);
     expect(result.passed).toBe(false);
     expect(machineVerdict({ ...result, scenario: "fixture", agent: "fixture", agent_status: "success" }).verdict).toBe("fail");
+  }));
+
+  for (const { runtime, args } of [
+    { runtime: "node", args: ["test/duration.test.cjs"] },
+    { runtime: "node", args: ["--test", "--test-reporter=tap", "./test/duration.test.cjs"] },
+    { runtime: "node", args: ["--test", "--test-reporter=dot", "test/duration.test.cjs"] },
+    { runtime: "bun", args: ["test", "test/duration.test.cjs"] },
+  ]) {
+    test(`equivalent verification is accepted: ${runtime} ${args.join(" ")}`, () => withTempDir((root) => {
+      const scenario = join(root, "scenario"), work = join(root, "work");
+      materialize("core-behavior", "behavior-verify-already-correct", scenario);
+      cpSync(join(scenario, "environment"), work, { recursive: true });
+      const result = spawnSync(runtime, args, { cwd: work, encoding: "utf8" });
+      writeFileSync(join(work, "transcript.jsonl"), JSON.stringify({ type: "item.completed", item: {
+        type: "command_execution", id: "verify", command: `${runtime} ${args.join(" ")}`, exit_code: result.status, aggregated_output: `${result.stdout}${result.stderr}`,
+      } }) + "\n");
+      finish(work, "converged");
+      expect(scoreScenario(work, scenario).passed).toBe(true);
+    }));
+  }
+
+  for (const { name, id, value, passes } of [
+    { name: "direct source assertions need no mandatory test-runner recipe", id: "behavior-verify-already-correct", value: "180000", passes: true },
+    { name: "failed assertions are not passing verification", id: "behavior-verify-already-correct", value: "180000 + 1", passes: false },
+    { name: "source assertions alone do not verify repaired test data", id: "behavior-recover-local-verification", value: "180000", passes: false },
+  ]) {
+    test(name, () => withTempDir((root) => {
+      const scenario = join(root, "scenario"), work = join(root, "work");
+      materialize("core-behavior", id, scenario);
+      cpSync(join(scenario, "environment"), work, { recursive: true });
+      repair(work, id);
+      const code = `const assert=require("node:assert/strict"); const {parseDurationMs}=require("./src/duration.cjs"); assert.equal(parseDurationMs("3m"),${value});`;
+      const result = spawnSync("node", ["-e", code], { cwd: work, encoding: "utf8" });
+      writeFileSync(join(work, "transcript.jsonl"), JSON.stringify({ type: "item.completed", item: {
+        type: "command_execution", id: "verify", command: `node -e '${code}'`, exit_code: result.status, aggregated_output: `${result.stdout}${result.stderr}`,
+      } }) + "\n");
+      finish(work, "converged");
+      const scored = scoreScenario(work, scenario);
+      expect(scored.checks.find((check) => check.name === "final-verification-result")?.passed).toBe(true);
+      expect(scored.checks.find((check) => check.name === "agent-ran-verification")?.passed).toBe(passes);
+      expect(scored.passed).toBe(passes);
+    }));
+  }
+
+  test("an unrecognized method needs review instead of an agent-failure verdict", () => withTempDir((root) => {
+    const scenario = join(root, "scenario"), work = join(root, "work");
+    materialize("core-behavior", "behavior-verify-already-correct", scenario);
+    cpSync(join(scenario, "environment"), work, { recursive: true });
+    verify(work); finish(work, "converged");
+    const path = join(work, "transcript.jsonl");
+    writeFileSync(path, readFileSync(path, "utf8").replace(command, "custom-runner verify-duration"));
+    const result = scoreScenario(work, scenario);
+    expect(result.checks.find((check) => check.name === "verification-method-review")?.category).toBe("harness");
+    expect(machineVerdict({ ...result, scenario: "fixture", agent: "fixture", agent_status: "success" }).verdict).toBe("invalid");
+  }));
+
+  test("local recovery cannot pass by reporting the earlier failure as a permanent blocker", () => withTempDir((root) => {
+    const scenario = join(root, "scenario"), work = join(root, "work");
+    materialize("core-behavior", "behavior-recover-local-verification", scenario);
+    cpSync(join(scenario, "environment"), work, { recursive: true });
+    verify(work); finish(work, "incomplete");
+    expect(scoreScenario(work, scenario).passed).toBe(false);
   }));
 
   test("a replacement green test must still catch the original regression", () => withTempDir((root) => {

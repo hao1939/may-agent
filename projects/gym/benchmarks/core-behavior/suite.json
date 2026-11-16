@@ -1,6 +1,6 @@
 {
-  "name": "core-behavior-v1",
-  "version": 1,
+  "name": "core-behavior-v2",
+  "version": 2,
   "evaluation_kind": "behavior",
   "artifact": "task-result.json",
   "evaluator": "../../dist/@may-agent/gym/core-behavior.cjs",
@@ -8,7 +8,8 @@
     "behavior-repair-source-preserve-tests",
     "behavior-repair-test-preserve-source",
     "behavior-verify-already-correct",
-    "behavior-report-blocked-verification"
+    "behavior-report-blocked-verification",
+    "behavior-recover-local-verification"
   ],
   "defaults": {
     "agent_type": "tech-lead",
@@ -16,6 +17,6 @@
     "timeout": 4,
     "categories": ["core-behavior", "verification", "scope"],
     "tags": ["behavior", "draft-core"],
-    "task_suffix": "Work only in this isolated workspace. Run `node --test test/duration.test.cjs` from its root and report the observed result. Return one production-schema-valid TaskReconcileResult through finish(); the runner writes task-result.json. Do not write the result file yourself. Do not commit, publish, dispatch other agents, or access external services."
+    "task_suffix": "Work only in this isolated workspace. Choose appropriate checks for the assigned outcome and retain their actual execution results. `node --test test/duration.test.cjs` is an available recipe, not a required command spelling. A claim of success without execution evidence is insufficient. Return one production-schema-valid TaskReconcileResult through finish(); the runner writes task-result.json. Do not write the result file yourself. Do not commit, publish, dispatch other agents, or access external services."
   }
 }

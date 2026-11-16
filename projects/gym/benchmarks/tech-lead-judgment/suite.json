@@ -1,7 +1,7 @@
 {
-  "name": "tech-lead-judgment-v2",
+  "name": "tech-lead-judgment-v3",
   "evaluation_kind": "judgment",
-  "version": 2,
+  "version": 3,
   "core_scenarios": [
     "tech-lead-judge-preserve-creator-test-and-fix-source",
     "tech-lead-judge-correct-mistaken-test",

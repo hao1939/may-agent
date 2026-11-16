@@ -1,7 +1,7 @@
 {
-  "name": "may-judgment-v2",
+  "name": "may-judgment-v3",
   "evaluation_kind": "judgment",
-  "version": 2,
+  "version": 3,
   "core_scenarios": ["may-judge-act-with-clear-authority", "may-judge-clarify-material-target"],
   "artifact": "task-result.json",
   "evaluator": "../may-alignment/score-decision.cjs",

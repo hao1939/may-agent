@@ -31,7 +31,7 @@ function judgment(root: string) {
 }
 
 describe("judgment is not a prose-only pass", () => {
-  test("the actual Task state must match the draft expectation", () => withTempDir((root) => {
+  test("the assignment's actual result state must match the draft expectation", () => withTempDir((root) => {
     const { suite } = loadSuite("alex-judgment");
     const scenario = join(root, "scenario"), work = join(root, "work");
     materializeScenarioOrInlineCase({
@@ -41,7 +41,7 @@ describe("judgment is not a prose-only pass", () => {
     });
     const result = {
       state: "waiting", continue: true,
-      summary: "Bob's recommendation is not complete. Implement the code via tech-lead and verify notification.test.ts before closing.",
+      summary: "Accept Bob's advice as progress, then implement the repair and verify notification.test.ts. This assignment remains unfinished; Task closure is separate.",
       facts: ["Bob's design review returned; implementation and the regression test are outstanding."],
     };
     save(work, "task-result.json", result);
@@ -184,18 +184,18 @@ describe("efficiency evidence is measured, not invented", () => {
 describe("rescoring does not recreate missing behavior evidence", () => {
   for (const evidence of ["legacy", "clean-workspace", "edited-workspace"] as const) {
     test(evidence, () => withTempDir((root) => {
-      // Use an extended deterministic case: the refined core uses calibrated
-      // semantic judging, which diagnostic rescoring deliberately cannot rerun.
-      const id = "may-judge-route-unconsumed-detector-to-owner";
+      // Use an extended deterministic case: diagnostic rescoring deliberately
+      // cannot rerun the semantic judges used by the revised core/owner cases.
+      const id = "tech-lead-judge-fast-targeted-checks-and-local-commit-boundary";
       const manifest = run(false);
-      manifest.benchmark = "may-judgment";
+      manifest.benchmark = "tech-lead-judgment";
       manifest.scenarios = [id];
       const trial = manifest.trials[0]!;
       trial.scenario = id;
       trial.artifact_path = `cases/${id}/trial-1/task-result.json`;
       trial.result_path = `cases/${id}/trial-1/result.json`;
       const artifact = { state: "converged",
-        summary: "Keep the detector; route actionable findings as owner requests instead of unread files. Repair the missing delivery loop.",
+        summary: "Use check:ci targeted verification, then a local commit on this branch. No PR, push, merge, or deploy is authorized.",
         facts: [] };
       save(root, trial.artifact_path, artifact);
       save(root, trial.result_path, { agent_status: "success" });
