@@ -253,7 +253,16 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
 fs.mkdirSync(herdrConfigDir, { recursive: true });
 fs.writeFileSync(
   path.join(herdrConfigDir, "config.toml"),
-  ["onboarding = false", "resume_agents_on_restore = true", "", "[ui.sound]", "enabled = false", ""].join("\n"),
+  [
+    "onboarding = false",
+    "",
+    "[session]",
+    "resume_agents_on_restore = true",
+    "",
+    "[ui.sound]",
+    "enabled = false",
+    "",
+  ].join("\n"),
   { mode: 0o600 }
 );
 if (process.env.XDG_RUNTIME_DIR) {

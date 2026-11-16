@@ -150,7 +150,7 @@ describe("container runtime configuration and layout", () => {
     expect(readFileSync(join(home, ".pi/agent/sessions/p1.jsonl"), "utf8")).toBe('{"id":"legacy-pi"}\n');
     expect(Bun.TOML.parse(readFileSync(join(home, ".config/herdr/config.toml"), "utf8"))).toEqual({
       onboarding: false,
-      resume_agents_on_restore: true,
+      session: { resume_agents_on_restore: true },
       ui: { sound: { enabled: false } },
     });
 
