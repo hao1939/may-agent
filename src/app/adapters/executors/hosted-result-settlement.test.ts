@@ -374,6 +374,10 @@ test.each([
   ["report null", { report: null }],
   ["report string", { report: "true" }],
   ["report number", { report: 1 }],
+  ["continue false", { continue: false }],
+  ["continue null", { continue: null }],
+  ["continue string", { continue: "true" }],
+  ["continue number", { continue: 1 }],
 ] as const)("blocked translator rejects supplied invalid descriptor value: %s", (_label, descriptor) => {
   const translated = translateHostedExecutionResult(
     runResult({ type: "blocked", reason: "Malformed descriptor", facts: ["checkpoint:saved"] }),
@@ -386,6 +390,26 @@ test.each([
   expect(translated.handlerResult.reviewAt).toBeUndefined();
   expect(translated.handlerResult.conditions).toBeUndefined();
   expect(translated.handlerResult.requests).toBeUndefined();
+});
+
+test.each([
+  ["absent", {}],
+  ["actions undefined", { actions: undefined }],
+  ["report undefined", { report: undefined }],
+  ["continue undefined", { continue: undefined }],
+  ["all optional controls undefined", { actions: undefined, report: undefined, continue: undefined }],
+] as const)("blocked translator treats optional undefined controls as omitted: %s", (_label, descriptor) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Checkpoint retained", facts: ["checkpoint:saved"] }),
+    input({ tasks: { translateBlockedResult: () => descriptor } }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: { state: "waiting", facts: ["checkpoint:saved"], actions: [] },
+  });
+  expect(translated.handlerResult.report).toBeUndefined();
+  expect(translated.handlerResult.continue).toBeUndefined();
+  expect(translated.handlerResult.resultRejected).toBeUndefined();
 });
 
 test("blocked translator actions and reports use ordinary Task admission", () => {

@@ -77,6 +77,12 @@ const partial = {
   output: progress,
   facts: progress.facts,
 };
+const managedCheckpoint = {
+  status: "blocked",
+  summary: progress.summary,
+  output: { checkpoint: "retained-draft", reviewed: false },
+  facts: progress.facts,
+};
 
 function stalledTool(onStopped: () => void = () => {}): AgentTool {
   return {
@@ -336,7 +342,7 @@ test("a managed Task accepts progress after helper cancellation and continues fr
           const text = JSON.stringify(context);
           expect(text).toContain("interrupted");
           expect(text).toContain("sessionId");
-          return call("finish", partial);
+          return call("finish", managedCheckpoint);
         },
       });
     },
@@ -435,9 +441,12 @@ test("a managed Task accepts progress after helper cancellation and continues fr
     expect(task.status.inputWaits).toMatchObject({ "task:review": { pending: true } });
     const attempt = store.readAttempt(task.status.observedAttemptId!);
     expect(attempt?.acceptedResult, task.status.summary).toMatchObject({
-      ...progress,
+      state: "waiting",
+      continue: true,
       report: true,
-      result: progress,
+      summary: progress.summary,
+      facts: progress.facts,
+      result: managedCheckpoint.output,
     });
     expect(task.status.executionFailures ?? 0).toBe(0);
     expect(manager.status()).toEqual([]);
@@ -445,6 +454,7 @@ test("a managed Task accepts progress after helper cancellation and continues fr
     expect(ownerRuns).toBe(2);
     expect(helperRuns).toBe(1);
     expect(continuationContext).toContain("Draft retained; review remains");
+    expect(continuationContext).toContain("retained-draft");
     expect(continuationContext).toContain("draft:retained");
     expect(store.readTask("work/review")?.status.phase).toBe("converged");
     expect(store.readTask("work/review")?.status.inputWaits ?? {}).toEqual({});

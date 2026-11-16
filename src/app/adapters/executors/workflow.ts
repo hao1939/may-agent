@@ -180,6 +180,18 @@ async function executeTaskWorkflow(
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
+    let diagnosticFacts: string[] = [];
+    // A deliberate blocker is not a transport retry, but its diagnostic
+    // context must remain visible to the same Task and its caller. The shared
+    // settlement boundary admits this evidence with the contribution facts.
+    if (result.type === "blocked" && result.context !== undefined) {
+      const context = JSON.stringify(result.context);
+      diagnosticFacts = [
+        Buffer.byteLength(context, "utf8") <= 8192
+          ? `workflow-blocker-context:${context}`
+          : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`,
+      ];
+    }
     const handlerResult = done
       ? normalizeTaskHandlerResult(
           result.output,
@@ -189,23 +201,11 @@ async function executeTaskWorkflow(
             validateCondition: input.descriptor.app.tasks?.validateCondition,
           },
         )
-      : translateHostedBlockedContribution(input, {
-          summary,
-          output: result.output,
-          facts: result.facts,
-          runId,
-        }).handlerResult;
-    // A deliberate blocker is not a transport retry, but its diagnostic
-    // context must remain visible to the same Task and its caller. Keep one
-    // bounded facts entry; the full context remains on the workflow run.
-    if (result.type === "blocked" && result.context !== undefined) {
-      const context = JSON.stringify(result.context);
-      handlerResult.facts.push(
-        Buffer.byteLength(context, "utf8") <= 8192
-          ? `workflow-blocker-context:${context}`
-          : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`,
-      );
-    }
+      : translateHostedBlockedContribution(
+          input,
+          { summary, output: result.output, facts: result.facts, runId },
+          { diagnosticFacts },
+        ).handlerResult;
     bus.emit({
       [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",

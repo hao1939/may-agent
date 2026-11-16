@@ -7,20 +7,27 @@ type HostedTaskInput = TaskAgentInput | TaskWorkflowInput;
 
 type TranslationOptions = {
   now?: () => number;
+  diagnosticFacts?: readonly string[];
 };
 
-function factStrings(facts: unknown): string[] {
-  if (facts === undefined) return [];
-  if (
-    Array.isArray(facts)
-    && facts.length <= 32
-    && facts.every((fact) => typeof fact === "string" && fact.trim().length > 0)
-  ) return facts;
+function serializedFact(facts: unknown): string {
   try {
-    return [`execution-facts:${JSON.stringify(facts)}`];
+    return `execution-facts:${JSON.stringify(facts)}`;
   } catch {
-    return ["execution-facts:[unserializable]"];
+    return "execution-facts:[unserializable]";
   }
+}
+
+function factStrings(facts: unknown, diagnosticFacts: readonly string[] = []): string[] {
+  const directFacts = facts === undefined
+    ? []
+    : Array.isArray(facts)
+      && facts.length <= 32
+      && facts.every((fact) => typeof fact === "string" && fact.trim().length > 0)
+      ? facts
+      : [serializedFact(facts)];
+  if (directFacts.length + diagnosticFacts.length <= 32) return [...directFacts, ...diagnosticFacts];
+  return [serializedFact(facts), ...diagnosticFacts];
 }
 
 function resultRunId(result: RunResult): string | null {
@@ -120,13 +127,13 @@ export function translateHostedBlockedContribution(
     }
   }
   const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
-  if (hint && Object.hasOwn(hint, "actions") && !Array.isArray(hint.actions)) {
+  if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
     return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
   }
-  if (hint && Object.hasOwn(hint, "report") && hint.report !== true) {
+  if (hint && hint.report !== undefined && hint.report !== true) {
     return rejectedBlockedResult("Blocked result report must be true when supplied", runId);
   }
-  if (hint && Object.hasOwn(hint, "continue") && hint.continue !== true) {
+  if (hint && hint.continue !== undefined && hint.continue !== true) {
     return rejectedBlockedResult("Blocked result continue must be true when supplied", runId);
   }
 
@@ -146,7 +153,7 @@ export function translateHostedBlockedContribution(
     {
       state: "waiting",
       summary,
-      facts: factStrings(facts),
+      facts: factStrings(facts, options.diagnosticFacts),
       actions: hint?.actions === undefined ? [] : hint.actions,
       ...(hint?.report === true ? { report: true as const } : {}),
       ...(hint?.continue === true ? { continue: true as const } : {}),

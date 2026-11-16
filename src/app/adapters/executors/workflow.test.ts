@@ -90,7 +90,8 @@ it("retains blocked workflow output, facts, and context through Host settlement"
 export const name = "review";
 export const description = "Blocked contribution with checkpoint";
 export async function execute(ctx) {
-  return { ...ctx.blocked("Await reviewer", { evidence: "partial" }), output: false };
+  const evidence = Array.from({ length: 32 }, (_, index) => "fact-" + (index + 1));
+  return { ...ctx.blocked("Await reviewer", evidence), output: false };
 }`);
   AppTaskResourceStore.fromDb(getDb(root), "fixture").bootstrapSnapshot(
     {
@@ -128,6 +129,7 @@ export async function execute(ctx) {
       signal: new AbortController().signal, onEvent: () => () => {},
     },
   } as unknown as TaskWorkflowInput);
+  const evidence = Array.from({ length: 32 }, (_, index) => `fact-${index + 1}`);
   expect(result).toMatchObject({
     handlerBlocked: true,
     handlerResult: {
@@ -135,11 +137,12 @@ export async function execute(ctx) {
       summary: "Await reviewer",
       result: { value: false },
       facts: [
-        'execution-facts:{"evidence":"partial"}',
-        'workflow-blocker-context:{"evidence":"partial"}',
+        `execution-facts:${JSON.stringify(evidence)}`,
+        `workflow-blocker-context:${JSON.stringify(evidence)}`,
       ],
     },
   });
+  expect(result.handlerResult.facts).toHaveLength(2);
 });
 
 it("inspects the current workflow definition without executing it", async () => {
