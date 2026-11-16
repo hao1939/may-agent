@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { execFile } from "node:child_process";
-import { lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
@@ -37,12 +37,22 @@ describe("container runtime configuration and layout", () => {
     expect(dockerfile).toContain("ln -s /opt/may-agent-cli/node_modules/.bin/gemini /usr/local/bin/gemini");
     expect(dockerfile).not.toContain("-wrapper.sh");
 
-    expect(entrypoint).toContain("/usr/sbin/groupmod --non-unique --gid");
-    expect(entrypoint).toContain("/usr/sbin/usermod --non-unique --uid");
-    expect(entrypoint).not.toContain("chown -R \"${runtime_user}:${runtime_user}\" \"${PROJECT_ROOT}\"");
-
-    expect(supervisor).toContain("chown=mayagent:mayagent");
-    expect(supervisor).toContain("[program:chrome]\nuser=mayagent");
+    expect(entrypoint).not.toMatch(/^\s*(?:\/usr\/sbin\/)?(?:groupmod|usermod|runuser|chown)\b/m);
+    expect(entrypoint).not.toContain("MAY_RUNTIME_USER");
+    expect(dockerfile).not.toContain("useradd");
+    expect(dockerfile).toContain('USER root\nENTRYPOINT');
+    expect(dockerfile).toContain("ENV HOME=/root");
+    expect(dockerfile).toContain("ENV PI_CODING_AGENT_DIR=/root/.pi/agent");
+    expect(dockerfile).toContain("ENV XDG_CONFIG_HOME=/root/.config");
+    expect(supervisor).toContain("[supervisord]\nuser=root");
+    expect(supervisor).toContain("chown=root:root");
+    expect(supervisor).toContain("[program:chrome]\nuser=root");
+    expect(supervisor).not.toContain("user=mayagent");
+    expect(supervisor).toContain("--socket-owner root:root");
+    expect(nginx).toMatch(/^user root;/m);
+    expect(read("container/may-agent-supervisor-restart.sh")).toContain(
+      'runtime_user="${MAY_AGENT_RUNTIME_USER:-root}"',
+    );
     expect(nginx).toContain("error_log /tmp/may-agent-nginx-error.log warn;");
     expect(nginx).not.toContain("/dev/stderr");
     for (const program of ["terminal-herdr", "terminal-ttyd"]) {
@@ -50,6 +60,40 @@ describe("container runtime configuration and layout", () => {
       expect(start).toBeGreaterThan(-1);
       expect(supervisor.slice(start, start + 300)).toContain("directory=/app");
     }
+  });
+
+  test("fails before filesystem setup when Docker starts the container as non-root", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-root-guard-"));
+    tempDirs.push(root);
+    const bin = join(root, "bin");
+    mkdirSync(bin);
+    writeFileSync(join(bin, "id"), "#!/bin/sh\nprintf '1000\\n'\n");
+    chmodSync(join(bin, "id"), 0o755);
+    const stateDir = join(root, "state");
+    const result = await execute("/bin/bash", [resolve(repoRoot, "container/entrypoint.sh")], {
+      env: { PATH: `${bin}:/usr/bin:/bin`, STATE_DIR: stateDir },
+      timeout: 5_000,
+    }).then(() => ({ stderr: "" }), (error: { stderr: string }) => error);
+    expect(result.stderr).toContain("May container must run as root.");
+    expect(existsSync(stateDir)).toBe(false);
+  });
+
+  test("Compose uses root without runtime-user configuration knobs", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-root-compose-"));
+    tempDirs.push(root);
+    mkdirSync(join(root, "container"));
+    writeFileSync(join(root, "container/compose.yml"), read("container/compose.yml"));
+    writeFileSync(join(root, ".env"), "");
+    const { stdout } = await execute("docker", [
+      "compose", "--env-file", join(root, ".env"),
+      "-f", join(root, "container/compose.yml"), "config", "--format", "json",
+    ], { env: { PATH: process.env.PATH || "/usr/bin:/bin", HOME: root }, timeout: 10_000 });
+    const service = JSON.parse(stdout).services.may;
+    expect(service.user).toBe("root");
+    expect(service.environment.MAY_RUNTIME_USER).toBeUndefined();
+    expect(service.environment.MAY_RUNTIME_UID).toBeUndefined();
+    expect(service.environment.MAY_RUNTIME_GID).toBeUndefined();
+    expect(service.environment.MAY_RUNTIME_OWNERSHIP_PATH).toBeUndefined();
   });
 
   test("configures native CLI endpoints without persisting API keys and migrates legacy state + SSH safely", async () => {
@@ -66,6 +110,7 @@ describe("container runtime configuration and layout", () => {
     mkdirSync(join(home, ".config/herdr"), { recursive: true });
     writeFileSync(join(stateDir, ".ssh/id_ed25519"), "ssh-ed25519 LEGACY_KEY\n", { mode: 0o600 });
     writeFileSync(join(home, ".ssh/known_hosts"), "github.com ssh-ed25519 AAAA\n", { mode: 0o600 });
+    writeFileSync(join(home, ".ssh/id_rsa"), "EXISTING_HOME_KEY\n", { mode: 0o600 });
     writeFileSync(join(stateDir, ".codex/sessions/s1.jsonl"), '{"id":"legacy-1"}\n');
     writeFileSync(join(stateDir, ".pi/agent/sessions/p1.jsonl"), '{"id":"legacy-pi"}\n');
     writeFileSync(join(home, ".config/herdr/config.toml"), "resume_agents_on_restore = false\n");
@@ -84,6 +129,7 @@ describe("container runtime configuration and layout", () => {
     expect(lstatSync(join(home, ".ssh")).isSymbolicLink()).toBe(true);
     expect(lstatSync(join(stateDir, ".ssh")).isSymbolicLink()).toBe(true);
     expect(readFileSync(join(home, ".ssh/id_ed25519"), "utf8")).toBe("ssh-ed25519 LEGACY_KEY\n");
+    expect(readFileSync(join(home, ".ssh/id_rsa"), "utf8")).toBe("EXISTING_HOME_KEY\n");
     expect(readFileSync(join(home, ".ssh/known_hosts"), "utf8")).toContain("github.com");
 
     // Appending to known_hosts survives a subsequent restart without false conflict failure
@@ -102,7 +148,11 @@ describe("container runtime configuration and layout", () => {
     // Legacy CLI sessions migrated and symlinked; Herdr config repaired on restart
     expect(readFileSync(join(home, ".codex/sessions/s1.jsonl"), "utf8")).toBe('{"id":"legacy-1"}\n');
     expect(readFileSync(join(home, ".pi/agent/sessions/p1.jsonl"), "utf8")).toBe('{"id":"legacy-pi"}\n');
-    expect(readFileSync(join(home, ".config/herdr/config.toml"), "utf8")).toBe("resume_agents_on_restore = true\n");
+    expect(Bun.TOML.parse(readFileSync(join(home, ".config/herdr/config.toml"), "utf8"))).toEqual({
+      onboarding: false,
+      session: { resume_agents_on_restore: true },
+      ui: { sound: { enabled: false } },
+    });
 
     // Native CLI configs contain normalized URLs, full permissions, and never persist MODEL_API_KEY
     const codexRaw = readFileSync(join(home, ".codex/config.toml"), "utf8");
@@ -123,6 +173,7 @@ describe("container runtime configuration and layout", () => {
     expect(JSON.parse(piRaw).providers["may-google"].baseUrl).toBe("https://models.example.test/v1beta");
     const geminiParsed = JSON.parse(geminiRaw);
     expect(geminiParsed.model.name).toBe("gemini-custom");
+    expect(geminiParsed.experimental.useOSC52Copy).toBe(true);
     expect(geminiParsed.context).toMatchObject({
       includeDirectoryTree: false,
       loadMemoryFromIncludeDirectories: false,
@@ -140,5 +191,7 @@ describe("container runtime configuration and layout", () => {
     mkdirSync(join(stateDir, ".ssh"), { recursive: true });
     writeFileSync(join(stateDir, ".ssh/id_ed25519"), "ssh-ed25519 DIFFERENT_CONFLICTING_KEY\n", { mode: 0o600 });
     await expect(runConfigure({ HOME: home, STATE_DIR: stateDir })).rejects.toThrow();
+    expect(readFileSync(join(stateDir, "ssh/id_ed25519"), "utf8")).toBe("ssh-ed25519 LEGACY_KEY\n");
+    expect(readFileSync(join(home, ".ssh/id_rsa"), "utf8")).toBe("EXISTING_HOME_KEY\n");
   });
 });

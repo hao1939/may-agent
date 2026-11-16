@@ -370,7 +370,7 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./manager-utils.js";
 import { createWorkflowFinishTool } from "./tools/lifecycle.js";
-import { createReadTool } from "./tools/read.js";
+import { createReadTool, withPinnedReadFiles } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
 import { createEditTool } from "./tools/edit.js";
 import { createWriteTool } from "./tools/write.js";
@@ -1061,7 +1061,19 @@ export type AgentPreparationOptions = {
 
 function definitionForExecution(options: AgentPreparationOptions): SubagentDefinition {
   const root = options.executionRoot;
-  if (!root && !options.bashProcessGroupOwner) return options.definition;
+  const pinnedFiles =
+    options.definition.skillCatalog && options.definition.skillCatalog.skills.size > 0
+      ? new Map(
+          [...options.definition.skillCatalog.skills.values()].flatMap((skill) => {
+            const snapshotText = skill.rawContent ?? skill.content;
+            return [
+              [resolve(skill.canonicalPath), snapshotText],
+              [resolve(skill.filePath), snapshotText],
+            ];
+          }),
+        )
+      : undefined;
+  if (!root && !options.bashProcessGroupOwner && !pinnedFiles) return options.definition;
   const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
   const agentName = options.definition.name;
   let fileWritePolicy = options.definition.fileWritePolicy;
@@ -1078,10 +1090,16 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   }
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
-      case "read":
-        return root ? createReadTool(executionRoot) : tool;
+      case "read": {
+        const baseRead = root ? createReadTool(executionRoot) : tool;
+        return pinnedFiles ? withPinnedReadFiles(baseRead, executionRoot, pinnedFiles) : baseRead;
+      }
       case "bash":
-        return createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner });
+        return options.bashProcessGroupOwner
+          ? createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner })
+          : root
+            ? createBashTool(executionRoot)
+            : tool;
       case "edit":
         return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy }) : tool;
       case "write":
@@ -1245,10 +1263,14 @@ function resolveSystemPrompt(options: AgentPreparationOptions, tools: AgentTool[
   if (base === undefined) {
     const agentDir = resolveAgentDir(definition, projectRoot);
     const sections: string[] = [];
-    const shared = loadPromptFile(join(definition.sharedRoot ?? join(projectRoot, "shared"), "common-sense.md"));
+    const shared =
+      definition.sharedPromptText !== undefined
+        ? definition.sharedPromptText
+        : loadPromptFile(join(definition.sharedRoot ?? join(projectRoot, "shared"), "common-sense.md"));
     if (shared) sections.push(shared);
     if (agentDir) {
-      const identity = loadPromptFile(join(agentDir, "AGENTS.md"));
+      const identity =
+        definition.identityText !== undefined ? definition.identityText : loadPromptFile(join(agentDir, "AGENTS.md"));
       if (identity) sections.push(identity);
     }
     if (definition.skillCatalog && tools.some((tool) => tool.name === "read")) {

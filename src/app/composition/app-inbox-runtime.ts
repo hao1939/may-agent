@@ -730,7 +730,8 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         });
       }
     }
-    const appIds = plan.commands.filter((command) => command.status === "pending").map((command) => command.appId);
+    const updatedPlan = getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan;
+    const appIds = updatedPlan.commands.filter((command) => command.status === "pending").map((command) => command.appId);
     if (appIds.length === 0) {
       completeAppEventAdmissionPlan(options.db, plan.eventId, now());
       return;

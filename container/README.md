@@ -4,11 +4,11 @@ This directory defines the shipped Linux container image (`Dockerfile`), Docker 
 
 ## 1. Static Pre-Baked Image + Durable `/app` State (Zero Shell Wrappers)
 
-Rather than spawning a chain of shell setup scripts on startup or intercepting CLI invocations with wrapper scripts, the image **pre-bakes** default CLI configs, Herdr plugins/hooks, and Codex hook trust into `/var/lib/mayagent` at `docker build` time, and symlinks the **real native CLI binaries** directly into `/usr/local/bin/{pi,codex,gemini,claude}`:
+Rather than spawning a chain of shell setup scripts on startup or intercepting CLI invocations with wrapper scripts, the image **pre-bakes** default CLI configs, Herdr plugins/hooks, and Codex hook trust into `/root` at `docker build` time, and symlinks the **real native CLI binaries** directly into `/usr/local/bin/{pi,codex,gemini,claude}`:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Container-Managed Layer: HOME=/var/lib/mayagent (pre-baked in image)    │
+│ Container-Managed Layer: HOME=/root (pre-baked in image)               │
 │   ~/.codex/{config.toml,hooks.json,herdr-agent-state.sh}                │
 │   ~/.pi/agent/{models.json,settings.json,extensions/herdr-*.ts}         │
 │   ~/.gemini/{settings.json,trustedFolders.json,policies/full-access.toml}│
@@ -30,12 +30,39 @@ Rather than spawning a chain of shell setup scripts on startup or intercepting C
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Fast startup & self-healing restart:** On container start (`docker run` or `docker restart`), `entrypoint.sh` aligns `mayagent`'s UID/GID to the mounted `/app/projects` owner and runs a single fast Node pass (`configure-runtime.cjs`) that idempotently migrates any legacy `/app/.state` files, preserves `~/.ssh` keys safely, links durable session directories, and refreshes managed CLI/Herdr config files if `MODEL_BASE_URL` or model env vars were overridden.
-- **Native environment & config only:** `herdr`, `pi`, `codex`, `gemini`, and `claude` run directly without wrapper scripts; Herdr's `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_RUNTIME_DIR` and Gemini's `GEMINI_API_KEY` / `GOOGLE_GEMINI_BASE_URL` are exported as native container `ENV` defaults.
+- **Fast startup & self-healing restart:** On container start (`docker run` or `docker restart`), `entrypoint.sh` runs a single fast Node pass (`configure-runtime.cjs`) as root that idempotently migrates legacy `/app/.state` files, preserves `~/.ssh` keys safely, links durable session directories, and refreshes managed CLI/Herdr config files if `MODEL_BASE_URL` or model env vars were overridden. Startup does not remap accounts or recursively chown mounted state.
+- **Native environment & config only:** `herdr`, `pi`, `codex`, `gemini`, and `claude` run directly without wrapper scripts; Herdr's `HERDR_SESSION=may-terminal2`, `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_RUNTIME_DIR` and Gemini's `GEMINI_API_KEY` / `GOOGLE_GEMINI_BASE_URL` are exported as native container `ENV` defaults.
+
+## Runtime identity and `docker exec`
+
+The container runs as root. Docker exec, May Host, Herdr, ttyd, Chrome, nginx,
+and deployment helpers use the same identity; sockets are owned by root as well.
+There is no runtime-user switch, UID/GID remapping, or privilege-drop wrapper.
+Starting the entrypoint as non-root fails explicitly.
+
+`HOME=/root`, `PATH`, and Herdr's `XDG_*` directories are image-level environment
+settings shared by services and exec commands. HOME matches root's passwd entry,
+so OpenSSH finds persisted aliases and default keys through `/root/.ssh` without
+an `ssh -F` wrapper. Existing root SSH files and legacy state are migrated by the
+same conflict-checking helper. Only the persisted SSH directory/config ownership
+and modes are normalized for OpenSSH trust checks; key material is preserved.
+
+Attach with native commands (`HERDR_SESSION=may-terminal2` is pre-set so plain `herdr` attaches to the shared web-terminal server instead of spawning a second `default` server):
+
+```bash
+docker exec -it may-agent bash
+herdr
+```
+
+The named session and durable CLI state paths do not change. The image-owned
+CLI config home moves to `/root`; its history links still target `.state`.
+Rebuild/recreate the container to apply this runtime policy. Root can modify writable host mounts
+and create root-owned files, so this image is intended for trusted installations.
+Other mounted file ownership is preserved; read-only mounts stay read-only.
 
 ## 2. Herdr Web Terminal & Native Agent Integrations
 
-- **Pinned binaries:** Checksum-verified `herdr` (`v0.9.5`) and `ttyd` (`1.7.7`, patched with an OSC-52 clipboard bridge) serve `/terminal/` behind nginx on port `8080`.
+- **Pinned binaries & clipboard support:** Checksum-verified `herdr` (`v0.9.5`) and `ttyd` (`1.7.7`, patched with an OSC-52 clipboard bridge) serve `/terminal/` behind nginx on port `8080`. The image ships `xclip` and `xsel` (for X11 `:99` clipboard read/write across Herdr, Pi, Codex, Gemini, and Claude) alongside `PI_CLIPBOARD_OSC52=1` and Gemini `experimental.useOSC52Copy = true` so agent copy commands also emit OSC-52 through Herdr to the browser clipboard.
 - **Pre-installed native hooks:** `herdr integration install {codex,claude,pi}` runs during `docker build`. Codex's Herdr `SessionStart` hook hash (`[hooks.state]`) is pre-approved during image build so Codex runs hooks natively without interactive prompts or CLI flag wrappers; Gemini runs natively under Herdr's built-in manifest with `process.title = "gemini"` set at build time.
 
 ## 3. Locked CLI Toolchain & Default Models

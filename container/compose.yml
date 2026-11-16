@@ -8,6 +8,7 @@ services:
     image: localhost/may-agent:latest
     container_name: may-agent
     hostname: may-agent
+    user: root
     init: true
     restart: unless-stopped
     stop_grace_period: 20s
@@ -40,11 +41,6 @@ services:
       - PI_OPENAI_MODEL=${PI_OPENAI_MODEL:-gpt-6.1-sol}
       - GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-4-argon}
       - GEMINI_FAST_MODEL=${GEMINI_FAST_MODEL:-gemini-3.8-flash}
-      # Empty values auto-detect the mounted projects (or installation) owner.
-      # Remote installations can pin these when their mount has mixed owners.
-      - MAY_RUNTIME_UID=${MAY_RUNTIME_UID:-}
-      - MAY_RUNTIME_GID=${MAY_RUNTIME_GID:-}
-      - MAY_RUNTIME_OWNERSHIP_PATH=${MAY_RUNTIME_OWNERSHIP_PATH:-}
       - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       # Leave capacity for interactive work while allowing Apps to

@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const home = process.env.HOME || "/var/lib/mayagent";
+const home = process.env.HOME || "/root";
 const projectRoot = process.env.PROJECT_ROOT || "/app";
 const stateDir = process.env.STATE_DIR || path.join(projectRoot, ".state");
 const baseUrlRaw = (process.env.MODEL_BASE_URL || "http://host.docker.internal:4000").replace(/\/+$/, "");
@@ -169,7 +169,13 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
   const sshConfig = fs.existsSync(sshConfigPath) ? fs.readFileSync(sshConfigPath, "utf8") : "";
   if (!sshConfig.includes("StrictHostKeyChecking accept-new")) {
     fs.appendFileSync(sshConfigPath, "Host *\n  StrictHostKeyChecking accept-new\n", { mode: 0o600 });
-    fs.chmodSync(sshConfigPath, 0o600);
+  }
+  // OpenSSH rejects a user config owned by the former runtime UID, even when
+  // root can read it. Preserve key bytes and normalize only this trust boundary.
+  fs.chmodSync(sshConfigPath, 0o600);
+  if (process.getuid?.() === 0) {
+    fs.chownSync(sshPersistDir, 0, 0);
+    fs.chownSync(sshConfigPath, 0, 0);
   }
 
   // Symlink durable Herdr & CLI histories/sessions into HOME
@@ -245,7 +251,20 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
 
 // 2. Herdr config (repaired on every startup)
 fs.mkdirSync(herdrConfigDir, { recursive: true });
-fs.writeFileSync(path.join(herdrConfigDir, "config.toml"), "resume_agents_on_restore = true\n", { mode: 0o600 });
+fs.writeFileSync(
+  path.join(herdrConfigDir, "config.toml"),
+  [
+    "onboarding = false",
+    "",
+    "[session]",
+    "resume_agents_on_restore = true",
+    "",
+    "[ui.sound]",
+    "enabled = false",
+    "",
+  ].join("\n"),
+  { mode: 0o600 }
+);
 if (process.env.XDG_RUNTIME_DIR) {
   fs.mkdirSync(process.env.XDG_RUNTIME_DIR, { recursive: true, mode: 0o700 });
 }
@@ -428,7 +447,11 @@ geminiSettings.model = {
   name: geminiModel,
   compressionThreshold: geminiSettings.model?.compressionThreshold ?? 0.3,
 };
-geminiSettings.experimental = { ...geminiSettings.experimental, dynamicModelConfiguration: true };
+geminiSettings.experimental = {
+  ...geminiSettings.experimental,
+  dynamicModelConfiguration: true,
+  useOSC52Copy: geminiSettings.experimental?.useOSC52Copy ?? true,
+};
 geminiSettings.agents = {
   ...geminiSettings.agents,
   overrides: {
@@ -584,7 +607,7 @@ for (const root of trustedRoots) {
 writeJson(path.join(home, ".claude.json"), claudeState);
 
 // 7. Ensure native Herdr integrations are present & configured in settings/hooks
-// (baked into /var/lib/mayagent at image build time; re-applied if settings were regenerated).
+// (baked into /root at image build time; re-applied if settings were regenerated).
 const herdrBin = process.env.HERDR_BIN || "/usr/local/bin/herdr";
 if (fs.existsSync(herdrBin)) {
   const integrations = [

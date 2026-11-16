@@ -8,7 +8,7 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import type { TSchema } from "typebox";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
@@ -41,6 +41,7 @@ import { runCliAgent, type CliAgentInput, type CliAgentOptions, type CliAgentRes
 import { agentExecutionResult, enforceStructuredWorkflowResult, generateId } from "../lib/manager-utils.js";
 import type { ModelWithApiKey, TaskResult } from "../lib/manager-utils.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/runtime-import.js";
+import { discoverAgentSkills, type SkillCatalog } from "../lib/skills.js";
 import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -76,6 +77,16 @@ export type DirectAgentRunOptions = {
   agentSource?: AgentDirectory;
   /** Pre-read agent.json configuration captured at catalog snapshot time. */
   agentConfig?: AgentConfig;
+  /** Pre-read AGENTS.md identity text captured at catalog snapshot time. */
+  identityText?: string;
+  /** Pre-read shared/common-sense.md text captured at catalog snapshot time. */
+  sharedPromptText?: string;
+  /** Pre-discovered skill catalog captured at catalog snapshot time. */
+  skillCatalog?: SkillCatalog;
+  /** Explicit skill name to activate via the shared skill catalog. */
+  skill?: string;
+  /** Optional ordinary assignment/context facts appended for model requests. */
+  contextMessages?: () => AgentMessage[] | Promise<AgentMessage[]>;
   task: string;
   projectRoot: string;
   /** Explicit installation-layout workspace, possibly separate from projectRoot. */
@@ -271,6 +282,9 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     projectRoot: options.workRoot,
     sharedRoot: options.sharedRoot,
     globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
+    ...(options.identityText !== undefined ? { identityText: options.identityText } : {}),
+    ...(options.sharedPromptText !== undefined ? { sharedPromptText: options.sharedPromptText } : {}),
+    ...(options.skillCatalog !== undefined ? { skillCatalog: options.skillCatalog } : {}),
   });
   definition.fileWritePolicy = fileWritePolicy;
   for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
@@ -280,6 +294,8 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     projectRoot: options.projectRoot,
     sessionId,
     task: options.task,
+    ...(options.skill !== undefined ? { skill: options.skill } : {}),
+    ...(options.contextMessages !== undefined ? { contextMessages: options.contextMessages } : {}),
     outputSchema: options.outputSchema,
     requireFinish: options.requireFinish === true || options.outputSchema !== undefined,
     toolPolicy: options.toolPolicy,
@@ -627,7 +643,15 @@ function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | un
 type DirectPromptDefinition = {
   source: AgentDirectory;
   config?: AgentConfig;
+  identityText?: string;
+  sharedPromptText?: string;
+  skillCatalog?: SkillCatalog;
 };
+
+function readOptionalPromptFile(path: string): string {
+  if (!existsSync(path)) return "";
+  return readFileSync(path, "utf-8").trim();
+}
 
 type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
   prompts: Map<string, { owner: string; definition: DirectPromptDefinition }>;
@@ -671,6 +695,8 @@ async function buildDirectPromptCatalog(
   const prompts = new Map<string, { owner: string; definition: DirectPromptDefinition }>();
   const proceduresByOwner = new Map<string, ReadonlyMap<string, WorkflowExecutableModule>>();
   const diagnostics: string[] = [];
+  const sharedPromptText = readOptionalPromptFile(join(options.sharedRoot, "common-sense.md"));
+  const globalAgentsRoot = options.globalAgentsRoot ?? join(options.projectRoot, "agents");
 
   for (const agentDir of dirs) {
     signal?.throwIfAborted();
@@ -694,7 +720,23 @@ async function buildDirectPromptCatalog(
     if (existing && existing.definition.source.projectId === agentDir.projectId) {
       throw new Error(`Ambiguous callable owner "${config.name}": ${existing.definition.source.dir}, ${agentDir.dir}`);
     }
-    prompts.set(config.name, { owner: config.name, definition: { source: agentDir, config } });
+    const appLocal = Boolean(agentDir.projectId || resolve(agentDir.agentsRoot) !== resolve(globalAgentsRoot));
+    const skillCatalog = await discoverAgentSkills({
+      agentDir: agentDir.dir,
+      appLocal,
+      globalAgentDir: resolve(globalAgentsRoot, config.name),
+      sharedRoot: options.sharedRoot,
+    });
+    prompts.set(config.name, {
+      owner: config.name,
+      definition: {
+        source: agentDir,
+        config,
+        identityText: readOptionalPromptFile(join(agentDir.dir, "AGENTS.md")),
+        sharedPromptText,
+        skillCatalog,
+      },
+    });
   }
 
   for (const fixtureAgent of Object.keys(options.agentFixtures ?? {})) {
@@ -1098,8 +1140,8 @@ export async function runDirectWorkflow<TInput = unknown>(
   }
 
   const readOverrides = env?.read ?? options.read;
-  const unavailableRead = (capability: string) => async () => {
-    throw new Error(`${capability} is not configured in runDirectWorkflow`);
+  const unavailableRead = (name: string) => async () => {
+    throw new Error(`${name} read is not configured in standalone mode`);
   };
   const read: AppRead = {
     contract: readOverrides?.contract ?? unavailableRead("read.contract"),
@@ -1225,13 +1267,16 @@ export async function runDirectWorkflow<TInput = unknown>(
     const denials = options.resolveToolDenials
       ? options.resolveToolDenials(agent, config.tools)
       : defaultDirectToolDenials(config.tools);
-    const effectivePrompt = callOpts?.skill ? `Apply skill "${callOpts.skill}" when relevant.\n\n${prompt}` : prompt;
 
     const directRun = await executeAgent({
       agentName: agent,
       agentSource: promptDef.source,
       agentConfig: config,
-      task: effectivePrompt,
+      identityText: promptDef.identityText,
+      sharedPromptText: promptDef.sharedPromptText,
+      skillCatalog: promptDef.skillCatalog,
+      ...(callOpts?.skill !== undefined ? { skill: callOpts.skill } : {}),
+      task: prompt,
       projectRoot: options.projectRoot,
       workRoot: options.workRoot,
       agentsRoot: options.agentsRoot,
@@ -1324,6 +1369,41 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
+  const effectiveWorkspace = env?.workspace ?? options.workspace ?? {
+    appRoot: resolve(options.projectRoot),
+    projectRoot: resolve(options.workRoot),
+    root: resolve(options.workRoot),
+    output: resolve(options.workRoot),
+  };
+  const resolvedWorkRoot = resolve(options.workRoot);
+  const requiresTaskWorktree =
+    targetModule.workspace === "task" ||
+    (typeof targetModule.workspace === "object" && targetModule.workspace?.kind === "task");
+  if (
+    requiresTaskWorktree &&
+    resolvedWorkRoot === resolve(options.projectRoot) &&
+    !existsSync(join(resolvedWorkRoot, ".git"))
+  ) {
+    const wsError = new Error(
+      `Workflow "${targetModule.name}" requires an isolated Task Git checkout (workspace: "task"), ` +
+        `but workRoot "${resolvedWorkRoot}" is not a Git checkout`,
+    );
+    const executionId =
+      internal === undefined && options.executionId
+        ? options.executionId
+        : `wr_${rootStartedAt}_${Math.random().toString(36).slice(2, 6)}`;
+    return buildPreStartFailureResult({
+      workflowName: targetModule.name,
+      input: options.input,
+      startedAt: rootStartedAt,
+      error: wsError,
+      status: "error",
+      executionId,
+      traceDir: options.traceDir,
+      timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
+      allowance: rootAllowance,
+    });
+  }
   const authoredModule = targetModule;
   let activeScopeSignal: AbortSignal | undefined;
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
@@ -1386,18 +1466,29 @@ export async function runDirectWorkflow<TInput = unknown>(
         : undefined,
       metrics: (env?.metrics ?? options.metrics)
         ? {
-            define: (env?.metrics ?? options.metrics)!.define ?? (() => undefined),
-            defineMany: (env?.metrics ?? options.metrics)!.defineMany ?? (() => undefined),
-            record: (env?.metrics ?? options.metrics)!.record ?? (async () => undefined),
-            evaluate: (env?.metrics ?? options.metrics)!.evaluate ?? (() => []),
+            define:
+              (env?.metrics ?? options.metrics)!.define ??
+              (() => {
+                throw new Error("metrics.define is not configured in standalone mode");
+              }),
+            defineMany:
+              (env?.metrics ?? options.metrics)!.defineMany ??
+              (() => {
+                throw new Error("metrics.defineMany is not configured in standalone mode");
+              }),
+            record:
+              (env?.metrics ?? options.metrics)!.record ??
+              (async () => {
+                throw new Error("metrics.record is not configured in standalone mode");
+              }),
+            evaluate:
+              (env?.metrics ?? options.metrics)!.evaluate ??
+              (() => {
+                throw new Error("metrics.evaluate is not configured in standalone mode");
+              }),
           }
         : undefined,
-      workspace: env?.workspace ?? options.workspace ?? {
-        appRoot: resolve(options.projectRoot),
-        projectRoot: resolve(options.workRoot),
-        root: resolve(options.workRoot),
-        output: resolve(options.workRoot),
-      },
+      workspace: effectiveWorkspace,
       reconciliation,
       reviseTask: env?.reviseTask ?? options.reviseTask,
       closeTask: env?.closeTask ?? options.closeTask,

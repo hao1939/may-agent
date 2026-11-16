@@ -1735,4 +1735,384 @@ export async function execute(ctx) {
       output: { input: domainInput, reconciliation: null },
     });
   });
+
+  test("converges standalone skill activation, explicit domain context, missing-service errors, definition consistency, and workspace prerequisite checks", async () => {
+    const env = setupDirectLayout();
+    const skillDir = join(env.agentsRoot, "reviewer", "skills", "careful-audit");
+    mkdirSync(skillDir, { recursive: true });
+    writeFileSync(
+      join(skillDir, "SKILL.md"),
+      [
+        "---",
+        "name: careful-audit",
+        "description: Audit changes carefully",
+        "---",
+        "# Careful Audit Skill",
+        "Always check boundary conditions first.",
+      ].join("\n"),
+    );
+
+    // 1. Explicit skill activation loads the full skill body via invokeCatalogSkill (and rejects unknown skills),
+    //    pins AGENTS.md, shared/common-sense.md (including absence), and skill content (including read tool rereads)
+    //    at catalog snapshot time, while the procedure passes explicit domain assignment context to the prompt agent.
+    let capturedPrompt = "";
+    let capturedSystemPrompt = "";
+    let rereadSkillContent = "";
+    let rereadSkillOffsetContent = "";
+
+    const skillAndContextRun = await runDirectWorkflow({
+      module: {
+        name: "skill-and-context-step",
+        description: "Mutates AGENTS.md, creates common-sense.md, and mutates SKILL.md mid-flight then calls reviewer",
+        async execute(ctx) {
+          writeFileSync(join(env.agentsRoot, "reviewer", "AGENTS.md"), "# reviewer\n\nMUTATED MID-FLIGHT\n");
+          writeFileSync(join(env.sharedRoot, "common-sense.md"), "CREATED COMMON-SENSE AFTER CAPTURE\n");
+          writeFileSync(
+            join(skillDir, "SKILL.md"),
+            "---\nname: careful-audit\ndescription: Mutated\n---\nMUTATED SKILL BODY\n",
+          );
+          const assignment = ctx.input as {
+            goal: string;
+            acceptance: string[];
+            constraints: string[];
+          };
+          const prompt = [
+            `Goal: ${assignment.goal}`,
+            "Acceptance:",
+            ...assignment.acceptance.map((item) => `- ${item}`),
+            "Constraints:",
+            ...assignment.constraints.map((item) => `- ${item}`),
+          ].join("\n");
+          const step = await ctx.call("reviewer", prompt, {
+            skill: "careful-audit",
+          });
+          return ctx.done(step.summary);
+        },
+      },
+      agentName: "owner",
+      input: {
+        goal: "Ensure boundary.ts handles empty input",
+        acceptance: ["Empty input returns null", "Existing callers pass"],
+        constraints: ["No public signature changes"],
+      },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        try {
+          capturedPrompt = prep.prepared.prompt;
+          capturedSystemPrompt = prep.prepared.systemPrompt;
+          const readTool = prep.prepared.tools.find((t) => t.name === "read");
+          const readRes = await readTool!.execute("call-read-skill", { path: join(skillDir, "SKILL.md") });
+          rereadSkillContent = readRes.content.map((c: any) => c.text ?? "").join("");
+          const offsetRes = await readTool!.execute("call-read-skill-offset", {
+            path: join(skillDir, "SKILL.md"),
+            offset: 5,
+            limit: 2,
+          });
+          rereadSkillOffsetContent = offsetRes.content.map((c: any) => c.text ?? "").join("");
+          return {
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            status: "done",
+            lastAssistantText: "Audited",
+            messages: [],
+            durationMs: 1,
+            finishResult: { status: "done", summary: "audited-ok" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } finally {
+          prep.cleanup();
+        }
+      },
+    });
+
+    expect(skillAndContextRun.ok).toBe(true);
+    expect(capturedPrompt).toContain('<skill name="careful-audit"');
+    expect(capturedPrompt).toContain("Always check boundary conditions first.");
+    expect(capturedPrompt).not.toContain("MUTATED SKILL BODY");
+    expect(capturedPrompt).not.toContain('Apply skill "careful-audit" when relevant.');
+    expect(rereadSkillContent).toContain("---\nname: careful-audit");
+    expect(rereadSkillContent).toContain("Always check boundary conditions first.");
+    expect(rereadSkillContent).not.toContain("MUTATED SKILL BODY");
+    expect(rereadSkillOffsetContent).toBe("# Careful Audit Skill\nAlways check boundary conditions first.");
+    expect(capturedSystemPrompt).toContain("Lab-forked reviewer instructions v2");
+    expect(capturedSystemPrompt).not.toContain("MUTATED MID-FLIGHT");
+    expect(capturedSystemPrompt).not.toContain("CREATED COMMON-SENSE AFTER CAPTURE");
+    expect(capturedPrompt).toContain("Goal: Ensure boundary.ts handles empty input");
+    expect(capturedPrompt).toContain("- Empty input returns null");
+    expect(capturedPrompt).toContain("- No public signature changes");
+
+    // Custom read tool is preserved for non-pinned files when skillCatalog is non-empty:
+    const customReaderDir = join(env.agentsRoot, "custom-reader");
+    const customReaderToolsDir = join(customReaderDir, "tools");
+    const customReaderSkillsDir = join(customReaderDir, "skills", "custom-skill");
+    mkdirSync(customReaderToolsDir, { recursive: true });
+    mkdirSync(customReaderSkillsDir, { recursive: true });
+    writeFileSync(
+      join(customReaderDir, "agent.json"),
+      JSON.stringify({
+        name: "custom-reader",
+        description: "Agent with custom local read tool",
+        domain: "test",
+        model: "test",
+        tools: ["finish"],
+      }),
+    );
+    writeFileSync(join(customReaderDir, "AGENTS.md"), "# custom-reader\n");
+    writeFileSync(
+      join(customReaderSkillsDir, "SKILL.md"),
+      "---\nname: custom-skill\ndescription: Custom skill\n---\nPinned skill body\n",
+    );
+    writeFileSync(
+      join(customReaderToolsDir, "custom-read.ts"),
+      `
+export default function createCustomRead() {
+  return {
+    name: "read",
+    label: "custom-read",
+    description: "Custom restricted reader",
+    parameters: { type: "object", properties: { path: { type: "string" }, customFlag: { type: "boolean" } } },
+    async execute(_id, params) {
+      if (params.customFlag === false) {
+        throw new Error("Custom reader denied access to " + params.path);
+      }
+      return { content: [{ type: "text", text: "custom-reader:" + params.path }] };
+    },
+  };
+}
+`,
+    );
+    const customPrep = await prepareDirectAgentExecution({
+      agentName: "custom-reader",
+      task: "Read files",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    try {
+      const readTool = customPrep.prepared.tools.find((t) => t.name === "read")!;
+      expect(readTool.description).toBe("Custom restricted reader");
+      expect((readTool.parameters as any).properties.customFlag).toEqual({ type: "boolean" });
+      const unrelatedRes = await readTool.execute("c1", { path: "unrelated.txt" });
+      expect(unrelatedRes.content.map((c: any) => c.text).join("")).toBe("custom-reader:unrelated.txt");
+      writeFileSync(
+        join(customReaderSkillsDir, "SKILL.md"),
+        "---\nname: custom-skill\ndescription: Mutated\n---\nMutated body\n",
+      );
+      await expect(
+        readTool.execute("c-denied", { path: join(customReaderSkillsDir, "SKILL.md"), customFlag: false }),
+      ).rejects.toThrow("Custom reader denied access");
+      const pinnedRes = await readTool.execute("c2", {
+        path: join(customReaderSkillsDir, "SKILL.md"),
+        customFlag: true,
+      });
+      expect(pinnedRes.content.map((c: any) => c.text).join("")).toContain("Pinned skill body");
+    } finally {
+      customPrep.cleanup();
+    }
+
+    // Direct prompt input remains the canonical place for explicit assignment context.
+    let explicitPrompt = "";
+    const directWithExplicitInput = await run(
+      "reviewer",
+      "Goal: Audit file\nInput: a.ts\nConstraints:\n- Do not modify files",
+      {
+        projectRoot: env.projectRoot,
+        workRoot: env.workRoot,
+        models: { test: fakeModel() as any },
+        runAgent: async (opts): Promise<DirectAgentRunResult> => {
+          explicitPrompt = opts.task;
+          return {
+            sessionId: "explicit-input",
+            sessionPath: join(env.outputRoot, "explicit-input"),
+            systemPrompt: "",
+            model: "test",
+            executionManifest: { agent: opts.agentName, configuredTools: [], deniedTools: [], effectiveTools: [] },
+            status: "done",
+            lastAssistantText: "Done",
+            messages: [],
+            durationMs: 1,
+            finishResult: { status: "done", summary: "ok" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: true,
+          };
+        },
+      },
+    );
+    expect(directWithExplicitInput.ok).toBe(true);
+    expect(explicitPrompt).toContain("Goal: Audit file");
+    expect(explicitPrompt).toContain("Input: a.ts");
+    expect(explicitPrompt).toContain("- Do not modify files");
+
+    // Unknown skill is rejected explicitly instead of turning into advisory prose:
+    const unknownSkillRun = await runDirectWorkflow({
+      module: {
+        name: "unknown-skill-step",
+        description: "Calls reviewer with nonexistent skill",
+        async execute(ctx) {
+          return ctx.call("reviewer", "Inspect boundary.ts", { skill: "nonexistent-skill" });
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(unknownSkillRun.ok).toBe(false);
+    expect(String(unknownSkillRun.error)).toContain('Skill "nonexistent-skill" is not available');
+
+    // 2. Unconfigured read and partial metric services throw explicit errors instead of returning null or no-op:
+    const unconfiguredServicesRun = await runDirectWorkflow({
+      module: {
+        name: "unconfigured-reads-and-metrics",
+        description: "Probes unconfigured standalone read and partial metric methods",
+        async execute(ctx) {
+          const errors: string[] = [];
+          for (const probe of [
+            () => ctx.read.metric("health"),
+            () => ctx.read.execution("exec-1"),
+            () => ctx.read.appResult("item-1"),
+            () => ctx.read.tasks.list(),
+            () => ctx.read.tasks.get("t-1"),
+            async () => ctx.metrics.define({ id: "m1" }),
+          ]) {
+            try {
+              await probe();
+            } catch (err) {
+              errors.push(err instanceof Error ? err.message : String(err));
+            }
+          }
+          return ctx.done("probed", errors);
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      metrics: {
+        evaluate: () => [],
+      },
+    });
+    expect(unconfiguredServicesRun.ok).toBe(true);
+    expect(unconfiguredServicesRun.result?.output).toEqual([
+      "read.metric read is not configured in standalone mode",
+      "read.execution read is not configured in standalone mode",
+      "read.appResult read is not configured in standalone mode",
+      "read.tasks.list read is not configured in standalone mode",
+      "read.tasks.get read is not configured in standalone mode",
+      "metrics.define is not configured in standalone mode",
+    ]);
+
+    // 3. Declared workspace: "task" prerequisite checks options.workRoot (including when workspace.root differs or in nested calls):
+    let executedWithoutWorktree = false;
+    const missingWorktreeRun = await runDirectWorkflow({
+      module: {
+        name: "requires-task-worktree",
+        description: "Declares workspace: task",
+        workspace: "task",
+        async execute(ctx) {
+          executedWithoutWorktree = true;
+          return ctx.done("unreachable");
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.projectRoot,
+      workspace: {
+        appRoot: env.projectRoot,
+        projectRoot: env.workRoot,
+        root: env.workRoot,
+        output: env.workRoot,
+      },
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(missingWorktreeRun.ok).toBe(false);
+    expect(missingWorktreeRun.started).toBe(false);
+    expect(executedWithoutWorktree).toBe(false);
+    expect(String(missingWorktreeRun.error)).toContain('requires an isolated Task Git checkout (workspace: "task")');
+    expect(String(missingWorktreeRun.error)).toContain(env.projectRoot);
+
+    // Conversely, a separate workRoot succeeds even if workspace.root is overridden to projectRoot, and nested workspace: "task" checks workRoot:
+    const validSeparateWorkRoot = await runDirectWorkflow({
+      module: {
+        name: "valid-separate-work-root",
+        description: "Declares workspace: task with separate workRoot",
+        workspace: "task",
+        async execute(ctx) {
+          return ctx.done("separate-workroot-ok");
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      workspace: {
+        appRoot: env.projectRoot,
+        projectRoot: env.projectRoot,
+        root: env.projectRoot,
+        output: env.workRoot,
+      },
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(validSeparateWorkRoot.ok).toBe(true);
+    expect(validSeparateWorkRoot.result).toMatchObject({ type: "done", summary: "separate-workroot-ok" });
+
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "nested-task-ws.ts"),
+      `
+export const name = "nested-task-ws";
+export const description = "Nested procedure requiring task workspace";
+export const workspace = "task";
+export async function execute(ctx) {
+  return ctx.done("unreachable");
+}
+`,
+    );
+    const nestedMissingWorktree = await runDirectWorkflow({
+      module: {
+        name: "outer-calls-nested-task-ws",
+        description: "Calls nested-task-ws when workRoot === projectRoot without .git",
+        async execute(ctx) {
+          return ctx.call("nested-task-ws", {});
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.projectRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(nestedMissingWorktree.ok).toBe(false);
+    expect(String(nestedMissingWorktree.error)).toContain('Workflow "nested-task-ws" requires an isolated Task Git checkout');
+  });
 });

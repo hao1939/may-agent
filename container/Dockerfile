@@ -77,6 +77,8 @@ RUN set -eux; \
       unzip \
       websockify \
       x11vnc \
+      xclip \
+      xsel \
       xvfb; \
     if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
       curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
@@ -134,14 +136,13 @@ RUN set -eux; \
 
 WORKDIR /app
 
-# Separate ephemeral container-managed HOME (/var/lib/mayagent) from mounted
+# Separate ephemeral container-managed HOME (/root) from mounted
 # durable /app/.state so container restarts heal config drift while preserving
 # symlinked session histories and SQLite databases on /app/.state.
-RUN useradd -u 1000 -m -d /var/lib/mayagent -s /bin/bash mayagent 2>/dev/null || true && \
-    mkdir -p /var/lib/mayagent /etc/profile.d && \
+RUN mkdir -p /root /etc/profile.d && \
     printf '%s\n' \
       'export PATH="/usr/local/bin:${PATH}"' \
-      'export HOME="${HOME:-/var/lib/mayagent}"' \
+      'export HOME="${HOME:-/root}"' \
       'export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-${HOME}/.pi/agent}"' \
       'export MODEL_BASE_URL="${MODEL_BASE_URL:-http://host.docker.internal:4000}"' \
       'export MODEL_API_KEY="${MODEL_API_KEY:-not-needed}"' \
@@ -150,10 +151,11 @@ RUN useradd -u 1000 -m -d /var/lib/mayagent -s /bin/bash mayagent 2>/dev/null ||
       'export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"' \
       'export XDG_STATE_HOME="${XDG_STATE_HOME:-/app/.state/cli-state/herdr/state}"' \
       'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/may-herdr-runtime}"' \
+      'export HERDR_SESSION="${HERDR_SESSION:-may-terminal2}"' \
+      'export PI_CLIPBOARD_OSC52="${PI_CLIPBOARD_OSC52:-1}"' \
       > /etc/profile.d/may-agent-env.sh && \
     chmod 644 /etc/profile.d/may-agent-env.sh && \
     printf '\n[ -f /etc/profile.d/may-agent-env.sh ] && . /etc/profile.d/may-agent-env.sh\n' >> /etc/bash.bashrc && \
-    chown -R mayagent:mayagent /var/lib/mayagent && \
     git config --system --replace-all safe.directory '*'
 
 # Runtime Node/npm comes from the pinned builder image. This avoids the extra
@@ -214,27 +216,26 @@ RUN set -eu; \
     rm -rf /root/.npm /root/.cache /tmp/*
 
 # Pre-bake default CLI configs, Herdr integrations, and Codex hook trust into
-# /var/lib/mayagent at image build time so the container is ready out of the box.
+# /root at image build time so the container is ready out of the box.
 COPY container/configure-runtime.cjs /usr/local/bin/configure-runtime.cjs
 RUN set -eu; \
     chmod 755 /usr/local/bin/configure-runtime.cjs; \
-    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs --bake-image; \
-    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs; \
-    chown -R mayagent:mayagent /var/lib/mayagent
+    HOME=/root MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs --bake-image; \
+    HOME=/root MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs; \
+    HOME=/root XDG_CONFIG_HOME=/root/.config herdr config check | grep -q '^config: ok$'
 
 # Copy supervisord & nginx configs and container runtime helper scripts before
 # the fast-changing compiled may-agent binary.
 COPY container/supervisord.conf /etc/supervisord.conf
 COPY container/may-agent-nginx.conf /etc/may-agent-nginx.conf
 RUN nginx -t -c /etc/may-agent-nginx.conf && \
-    mkdir -p /app/.state/runtime-logs && \
-    chown -R mayagent:mayagent /app/.state/runtime-logs
+    mkdir -p /app/.state/runtime-logs
 
 COPY container/entrypoint.sh container/start-chrome.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
 
 # Copy compiled runtime tools from builder last for optimal Docker layer caching.
-COPY --from=builder --chown=mayagent:mayagent /build/may-agent /usr/local/bin/may-agent
+COPY --from=builder --chown=root:root /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 COPY packages/webui/static/ /app/projects/platform/ui/
 
@@ -244,9 +245,9 @@ RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/b
 # Virtual display
 ENV DISPLAY=:99
 
-# Container-managed HOME (/var/lib/mayagent) holds static baked CLI configs,
+# Container-managed HOME (/root) matches OpenSSH's passwd-based root lookup,
 # while durable sessions and Herdr state live under /app/.state.
-ENV HOME=/var/lib/mayagent
+ENV HOME=/root
 ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
 
@@ -256,10 +257,12 @@ ENV AGENTS_ROOT=/app/agents
 ENV SHARED_ROOT=/app/shared
 ENV PROJECTS_ROOT=/app/projects
 ENV STATE_DIR=/app/.state
-ENV PI_CODING_AGENT_DIR=/var/lib/mayagent/.pi/agent
-ENV XDG_CONFIG_HOME=/var/lib/mayagent/.config
+ENV PI_CODING_AGENT_DIR=/root/.pi/agent
+ENV XDG_CONFIG_HOME=/root/.config
 ENV XDG_STATE_HOME=/app/.state/cli-state/herdr/state
 ENV XDG_RUNTIME_DIR=/tmp/may-herdr-runtime
+ENV HERDR_SESSION=may-terminal2
+ENV PI_CLIPBOARD_OSC52=1
 ENV MODEL_BASE_URL=http://host.docker.internal:4000
 ENV PATH=/usr/local/bin:$PATH
 
@@ -269,4 +272,5 @@ EXPOSE 6080
 # Web UI dashboard & Herdr web terminal (/terminal/)
 EXPOSE 8080
 
+USER root
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
