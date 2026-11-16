@@ -26,7 +26,12 @@ export interface AppTaskRuntimeOptions {
    * an isolated process; tests and explicit single-process tools may omit it.
    * The canonical Task resource remains the scheduling and fencing authority.
    */
-  executeAttempt?: (input: { appId: string; taskId: string; dispatch: AppTaskDispatch }) => Promise<string[]>;
+  executeAttempt?: (input: {
+    appId: string;
+    taskId: string;
+    dispatch: AppTaskDispatch;
+    timeoutMs?: number;
+  }) => Promise<string[]>;
   /** Optional process boundary for the startup repair pass. */
   executeRecovery?: () => Promise<void>;
   /** Install descriptors and routing without starting local controllers. */

@@ -4,6 +4,7 @@ import {
   type TaskAttempt,
   type TaskExecutor,
   type TaskExecutorName,
+  type TaskIntent,
 } from "@may-agent/sdk";
 import { getDb } from "../../../lib/db/connection.js";
 import type { TaskBinding } from "../../../lib/persistence.js";
@@ -54,21 +55,26 @@ import {
 
 import { applyTaskChanges, preflightTaskChanges } from "./task-changes.js";
 
-const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
+export const APP_TASK_AGENT_TIMEOUT_MS = 15 * 60_000;
 
-const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
+export const APP_TASK_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
+
+export const APP_TASK_WORKER_GRACE_MS = 30_000;
+
+export const APP_TASK_RECOVERY_WORKER_TIMEOUT_MS = 5 * 60_000;
 
 const MAX_TASK_ATTEMPT_MS = 2 ** 31 - 1;
 
-function resolveTaskMaxAttemptMs(
+export function resolveTaskIntentMaxAttemptMs(
   descriptor: AppTaskRuntimeDescriptor,
-  claim: AppTaskClaim,
+  intent: TaskIntent,
+  fallbackAgent: string = descriptor.agent,
 ): number | "unlimited" | undefined {
   const policy = descriptor.app.tasks?.maxAttemptMs;
   if (policy === undefined) return undefined;
   const resolved =
     typeof policy === "function"
-      ? policy(structuredClone({ ...claim.intent, agent: claim.intent.agent ?? claim.agent }))
+      ? policy(structuredClone({ ...intent, agent: intent.agent ?? fallbackAgent }))
       : policy;
   if (resolved === undefined || resolved === "unlimited") return resolved;
   if (!Number.isSafeInteger(resolved) || resolved <= 0 || resolved > MAX_TASK_ATTEMPT_MS) {
@@ -77,6 +83,54 @@ function resolveTaskMaxAttemptMs(
     );
   }
   return resolved;
+}
+
+/**
+ * Compute the parent-side supervision ceiling for an isolated attempt worker.
+ * Returns `undefined` only when a native/custom executor explicitly opts into
+ * `maxAttemptMs: "unlimited"` outside a bounded coordination lane.
+ */
+export function resolveTaskWorkerSupervisionTimeoutMs(
+  descriptor: AppTaskRuntimeDescriptor,
+  intent: TaskIntent | undefined,
+  dispatch: import("./controller.js").AppTaskDispatch,
+  fallbackAgent: string = descriptor.agent,
+): number | undefined {
+  const coordinationMaxAttemptMs = dispatch.coordination
+    ? descriptor.app.tasks?.coordination?.maxAttemptMs
+    : undefined;
+  if (!intent) {
+    const baseMs = coordinationMaxAttemptMs ?? APP_TASK_WORKFLOW_TIMEOUT_MS;
+    return Math.min(MAX_TASK_ATTEMPT_MS, baseMs + APP_TASK_WORKER_GRACE_MS);
+  }
+  let policyMs: number | "unlimited" | undefined;
+  try {
+    policyMs = resolveTaskIntentMaxAttemptMs(descriptor, intent, fallbackAgent);
+  } catch {
+    return APP_TASK_WORKER_GRACE_MS;
+  }
+  const hasWorkflow = Boolean(intent.workflow?.trim());
+  const hasExecutor = Boolean(intent.executor?.trim());
+  if (policyMs === "unlimited") {
+    if (coordinationMaxAttemptMs !== undefined) {
+      return Math.min(MAX_TASK_ATTEMPT_MS, coordinationMaxAttemptMs + APP_TASK_WORKER_GRACE_MS);
+    }
+    if (hasExecutor && !hasWorkflow) return undefined;
+    const defaultMs = hasWorkflow ? APP_TASK_WORKFLOW_TIMEOUT_MS : APP_TASK_AGENT_TIMEOUT_MS;
+    return Math.min(MAX_TASK_ATTEMPT_MS, defaultMs + APP_TASK_WORKER_GRACE_MS);
+  }
+  const defaultMs = hasWorkflow || hasExecutor ? APP_TASK_WORKFLOW_TIMEOUT_MS : APP_TASK_AGENT_TIMEOUT_MS;
+  const requestedMs = policyMs ?? defaultMs;
+  const effectiveMs =
+    coordinationMaxAttemptMs !== undefined ? Math.min(requestedMs, coordinationMaxAttemptMs) : requestedMs;
+  return Math.min(MAX_TASK_ATTEMPT_MS, effectiveMs + APP_TASK_WORKER_GRACE_MS);
+}
+
+function resolveTaskMaxAttemptMs(
+  descriptor: AppTaskRuntimeDescriptor,
+  claim: AppTaskClaim,
+): number | "unlimited" | undefined {
+  return resolveTaskIntentMaxAttemptMs(descriptor, claim.intent, claim.agent);
 }
 
 /** Core-owned input for one claimed execution, before choosing its adapter. */

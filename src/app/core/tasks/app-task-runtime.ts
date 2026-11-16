@@ -54,6 +54,7 @@ import {
   closeAppTask,
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
+  readAppTaskAgent,
   recordAppTaskTrigger,
   recoverableAppTaskAttempts,
   releaseInterruptedAppTaskAttempt,
@@ -66,7 +67,11 @@ import {
 import { AppTaskRecoveryScheduler } from "./app-task-recovery.js";
 import { taskEventPredatesReopening } from "./app-task-state.js";
 import { type AppTaskContext } from "./app-task-store.js";
-import { hasLiveAppTaskSession, interruptSupersededAgentSession } from "./attempt-execution.js";
+import {
+  hasLiveAppTaskSession,
+  interruptSupersededAgentSession,
+  resolveTaskWorkerSupervisionTimeoutMs,
+} from "./attempt-execution.js";
 import { publishTaskCancellation, runTaskAttempt, type AppTaskTiming } from "./attempt-runner.js";
 import { AppTaskController, type AppTaskDispatch } from "./controller.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
@@ -611,8 +616,22 @@ function installConventionTaskControllers(
         const activeOpts = binding.opts;
         const config = appTaskConfig(activeDescriptor);
         try {
+          const spec = config.resourceStore.readTask(taskId)?.spec;
+          const timeoutMs = activeOpts.executeAttempt
+            ? resolveTaskWorkerSupervisionTimeoutMs(
+                activeDescriptor,
+                spec ? { id: taskId, ...spec } : undefined,
+                dispatch,
+                readAppTaskAgent(config, taskId) ?? activeDescriptor.agent,
+              )
+            : undefined;
           const dependentTaskIds = activeOpts.executeAttempt
-            ? await activeOpts.executeAttempt({ appId: activeDescriptor.id, taskId, dispatch })
+            ? await activeOpts.executeAttempt({
+                appId: activeDescriptor.id,
+                taskId,
+                dispatch,
+                ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+              })
             : await reconcileTask({
                 opts: activeOpts,
                 descriptor: activeDescriptor,

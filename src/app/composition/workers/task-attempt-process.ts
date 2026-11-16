@@ -18,6 +18,7 @@ import {
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
 } from "../../core/tasks/app-task-runtime.js";
+import { APP_TASK_RECOVERY_WORKER_TIMEOUT_MS } from "../../core/tasks/attempt-execution.js";
 import type { AppTaskDispatch } from "../../core/tasks/controller.js";
 import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
 import { mergeTaskChecks, readTaskChecks } from "../../core/tasks/task-check-observations.js";
@@ -174,7 +175,7 @@ export function createTaskAttemptProcessExecutor(input: {
   /** Test seam; production always uses the private current-binary worker. */
   spawnWorker?: (request: TaskAttemptProcessRequest) => ChildProcess;
 }): NonNullable<AppTaskRuntimeOptions["executeAttempt"]> {
-  return (request) => {
+  return ({ timeoutMs: requestTimeoutMs, ...request }) => {
     const source = input.definitionSource?.();
     if (input.definitionSource && !source) throw new Error("No published Task worker definition source");
     const workerRequest: TaskAttemptProcessRequest = source
@@ -191,7 +192,7 @@ export function createTaskAttemptProcessExecutor(input: {
     return runWorkerProcess(
       input.bus,
       input.spawnWorker?.(workerRequest) ?? spawnPrivateWorker(workerArguments(workerRequest)),
-      input.timeoutMs,
+      input.timeoutMs ?? requestTimeoutMs,
       workerRequest,
     );
   };
@@ -215,7 +216,7 @@ export function createTaskRecoveryProcessExecutor(input: {
           "--task-recovery-once",
           ...(source ? ["--task-worker-source", JSON.stringify(source)] : []),
         ]),
-      input.timeoutMs,
+      input.timeoutMs ?? APP_TASK_RECOVERY_WORKER_TIMEOUT_MS,
     );
   };
 }

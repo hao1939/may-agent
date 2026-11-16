@@ -55,6 +55,12 @@ import {
   reopenLoadedAppTask,
 } from "./app-task-runtime.js";
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
+import {
+  APP_TASK_AGENT_TIMEOUT_MS,
+  APP_TASK_WORKER_GRACE_MS,
+  APP_TASK_WORKFLOW_TIMEOUT_MS,
+  resolveTaskWorkerSupervisionTimeoutMs,
+} from "./attempt-execution.js";
 import { recoverTaskConditions } from "./dependency-admission.js";
 import { createGitTaskWorkspaces, gitTaskWorkspaces } from "../../adapters/workspaces/git.js";
 import { readTaskWorkload } from "../reads/task-workload.js";
@@ -10728,5 +10734,173 @@ describe("dependency Condition specification updates", () => {
         } catch { /* already dead */ }
       }
     }
+  });
+
+  it("supplies parent-owned worker supervision bounds for bounded attempts and honors explicit ongoing executor exceptions", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    const seenTimeouts = new Map<string, number | undefined>();
+    const appWithMaxAttempt = defineApp({
+      ...definition(),
+      tasks: {
+        ...definition().tasks,
+        coordination: {
+          taskId: "work/coord",
+          workflow: "coord-wf",
+          maxAttemptMs: 45_000,
+        },
+        maxAttemptMs(task) {
+          if (task.id === "work/ongoing-native") return "unlimited";
+          if (task.id === "work/custom-bounded") return 120_000;
+          return undefined;
+        },
+      },
+    });
+    const descriptor = {
+      id: "sample",
+      appDir: f.appDir,
+      projectDir: f.appDir,
+      agent: "sample-owner",
+      app: appWithMaxAttempt,
+      reconciliationPaused: false,
+      resourceStore: loadedTaskConfig(f).resourceStore,
+    };
+    const normalDispatch = { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" as const };
+    const coordDispatch = { ...normalDispatch, coordination: true as const };
+
+    // 1. Default agent attempt -> APP_TASK_AGENT_TIMEOUT_MS + APP_TASK_WORKER_GRACE_MS
+    expect(
+      resolveTaskWorkerSupervisionTimeoutMs(
+        descriptor,
+        { id: "work/agent", parentId: "operations", outcome: "Run agent", acceptance: ["Done"] },
+        normalDispatch,
+      ),
+    ).toBe(APP_TASK_AGENT_TIMEOUT_MS + APP_TASK_WORKER_GRACE_MS);
+
+    // 2. Default workflow attempt -> APP_TASK_WORKFLOW_TIMEOUT_MS + APP_TASK_WORKER_GRACE_MS
+    expect(
+      resolveTaskWorkerSupervisionTimeoutMs(
+        descriptor,
+        { id: "work/wf", parentId: "operations", outcome: "Run wf", acceptance: ["Done"], workflow: "check" },
+        normalDispatch,
+      ),
+    ).toBe(APP_TASK_WORKFLOW_TIMEOUT_MS + APP_TASK_WORKER_GRACE_MS);
+
+    // 3. Explicit custom maxAttemptMs -> 120_000 + APP_TASK_WORKER_GRACE_MS
+    expect(
+      resolveTaskWorkerSupervisionTimeoutMs(
+        descriptor,
+        { id: "work/custom-bounded", parentId: "operations", outcome: "Bounded", acceptance: ["Done"] },
+        normalDispatch,
+      ),
+    ).toBe(120_000 + APP_TASK_WORKER_GRACE_MS);
+
+    // 4. Ongoing native executor with maxAttemptMs: "unlimited" -> undefined (no parent timeout)
+    expect(
+      resolveTaskWorkerSupervisionTimeoutMs(
+        descriptor,
+        {
+          id: "work/ongoing-native",
+          parentId: "operations",
+          outcome: "Ongoing native executor",
+          acceptance: ["Done"],
+          executor: "codex-goal",
+        },
+        normalDispatch,
+      ),
+    ).toBeUndefined();
+
+    // 5. Coordination lane clamps even when maxAttemptMs is larger or "unlimited":
+    expect(
+      resolveTaskWorkerSupervisionTimeoutMs(
+        descriptor,
+        {
+          id: "work/ongoing-native",
+          parentId: "operations",
+          outcome: "Coordination bounded",
+          acceptance: ["Done"],
+          executor: "codex-goal",
+        },
+        coordDispatch,
+      ),
+    ).toBe(45_000 + APP_TASK_WORKER_GRACE_MS);
+
+    // 6. Controller passes computed timeoutMs to executeAttempt and createTaskAttemptProcessExecutor terminates a hung worker:
+    await installCoreTaskRuntimes({
+      ...options(f, bus),
+      workflows: {
+        inspect: async () => ({ available: true, workspace: "shared" }),
+        execute: async () => ({ handlerResult: { state: "converged", summary: "ok", facts: [], actions: [] }, runId: null }),
+        snapshot: function () { return this; },
+      },
+      appRegistrySnapshot: {
+        id: "worker-supervision-bounds",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: appWithMaxAttempt }],
+      },
+      executeAttempt: async (input) => {
+        seenTimeouts.set(input.taskId, input.timeoutMs);
+        return [];
+      },
+    });
+    try {
+      await attachLoadedAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample",
+        idempotencyKey: "sup-custom",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: "work/custom-bounded",
+            parentId: "operations",
+            outcome: "Bounded",
+            acceptance: ["Done"],
+          },
+        },
+        inputContext: { id: "in-sup-1", source: { kind: "human", id: "op" }, input: { kind: "ask", data: {} } },
+      });
+      await attachLoadedAppTask({
+        bus,
+        appDir: f.appDir,
+        appId: "sample",
+        idempotencyKey: "sup-ongoing",
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: "work/ongoing-native",
+            parentId: "operations",
+            outcome: "Ongoing",
+            acceptance: ["Done"],
+            executor: "codex-goal",
+          },
+        },
+        inputContext: { id: "in-sup-2", source: { kind: "human", id: "op" }, input: { kind: "ask", data: {} } },
+      });
+      const deadline = performance.now() + 2_000;
+      while (seenTimeouts.size < 2 && performance.now() < deadline) await Bun.sleep(10);
+      expect(seenTimeouts.get("work/custom-bounded")).toBe(120_000 + APP_TASK_WORKER_GRACE_MS);
+      expect(seenTimeouts.get("work/ongoing-native")).toBeUndefined();
+    } finally {
+      await closeInstalledAppTaskRuntimes(bus);
+    }
+
+    // Hung worker is terminated by request-scoped timeoutMs passed to createTaskAttemptProcessExecutor:
+    const hungExec = createTaskAttemptProcessExecutor({
+      bus,
+      spawnWorker: () =>
+        spawn(process.execPath, ["-e", "setInterval(() => {}, 1000);"], {
+          stdio: ["ignore", "ignore", "inherit", "ipc"],
+          serialization: "json",
+        }),
+    });
+    await expect(
+      hungExec({
+        appId: "sample",
+        taskId: "work/custom-bounded",
+        dispatch: normalDispatch,
+        timeoutMs: 80,
+      }),
+    ).rejects.toThrow("Task worker exceeded 80ms");
   });
 });
