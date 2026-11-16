@@ -47,3 +47,7 @@ binding, evidence-retention, cost-scope and publication follow-through gaps.
 The [cycle evidence handoff trial](cycle-evidence-handoff-trial-20261116.md)
 keeps the cycle itself as the target and verifies a durable record after closure,
 including an independently rejected first version and Alex's corrected revision.
+The [deterministic evidence implementation trial](deterministic-cycle-evidence-trial-20261116.md)
+delivers a reusable generator/validator through Alex-owned review, integration,
+hosted execution and automatic post-dependency continuation, with operator
+corrections and full model estimates disclosed.

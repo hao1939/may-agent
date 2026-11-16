@@ -37,6 +37,10 @@ and does not establish a priority to change Scout.
 The [cycle evidence handoff trial](cycle-evidence-handoff-trial-20261116.md)
 now verifies an externally retained record after Task closure, with one
 independent rejection and correction of its field locator/timestamps.
+The [deterministic evidence implementation trial](deterministic-cycle-evidence-trial-20261116.md)
+then implements and integrates a reusable mechanical helper. Alex owns its
+three-round review, guarded integration, fresh hosted demonstration and automatic
+post-dependency read-back. Two operator corrections were still required.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -240,13 +244,31 @@ checks. The two finite attempts report a combined $1.7027728 model estimate,
 separate from the historical cycle costs they record. One operator rejection and
 correction admission were required; reduced effort or cost is not established.
 
-Use the verified recording practice in the next authorized bounded cycle,
-following the [manual handoff guide](standalone-stage.md#hand-off-evidence-from-a-hosted-trial).
-Keep its post-closure inspection and output retention with the operator until
-ordinary hosted execution proves those responsibilities. Workflow structured
-result persistence remains a concrete gap, with public raw-line recovery as the
-existing fallback. No further source repair or target experiment is commissioned
-by completing this handoff trial.
+The user's subsequent delivery request commissioned the
+[deterministic evidence implementation trial](deterministic-cycle-evidence-trial-20261116.md).
+Alex implemented the helper, repaired two independently observed defect sets,
+obtained Bob's final approval within three review rounds, integrated the reviewed
+bytes and admitted one fresh hosted verification Task. A saved dependency wait
+resumed Alex automatically. Alex read and revalidated the helper's accepted result
+after closure, then closed its own Task; independent inspection confirmed survival
+after worktree removal. The existing
+[handoff guide](standalone-stage.md#hand-off-evidence-from-a-hosted-trial) now uses
+the CLI. It verifies declared evidence mechanics; substantive completeness and
+declaring disposable roots remain caller responsibilities.
+
+The implementation and helper report a combined $11.7062803 model estimate over
+15m 43s wall time, excluding operator and unknown external costs. Alex returned
+operation counts and unknown billing; the operator collected available monetary
+estimates after closure. Two operator audit inputs were needed during development,
+while the helper and dependency continuation needed no correction. Reduced human
+effort, lower cost and a fully unattended cycle remain unproved.
+
+Reuse this helper in the next authorized bounded cycle. The next milestone is
+completion without operator-authored integrity repairs, with available full Task
+cost estimates delivered by Alex. Keep measuring outcome, corrections, elapsed
+time and full cost. The earlier workflow result-persistence limitation remains
+unrepaired; this App-local path does not require transcript reconstruction for
+the hosted handoff. No new Scout experiment is commissioned by this result.
 
 The projection's executable checks are newly derived from real evidence; original
 finishes remain success, human labels remain unreviewed and unavailable usage
