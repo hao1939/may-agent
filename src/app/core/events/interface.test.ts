@@ -99,6 +99,21 @@ describe("simple event interface", () => {
     });
   }
 
+  it("validates the Host generation fence independently of App input", () => {
+    const { db, bus, events } = fixture();
+    const unsubscribe = bus.subscribeDurableRoute(() => ({ accepted: true, by: "fixture", route: "direct" }));
+    try {
+      for (const [targetTaskId, targetTaskGeneration] of [[undefined, 1], ["work", 0], ["work", 1.5], ["work", "1"]]) {
+        expect(() => events.publish({ type: "app.input.requested", target: { appId: "sample" },
+          data: { targetTaskId, targetTaskGeneration, input: { kind: "message", data: {} } } }, { source: "test" })).toThrow("targetTaskGeneration");
+      }
+      expect(db.prepare("SELECT count(*) n FROM events").get()).toEqual({ n: 0 });
+      const receipt = events.publish({ type: "app.input.requested", target: { appId: "sample", taskId: "work" },
+        data: { targetTaskGeneration: 2, input: { kind: "message", data: {} } } }, { source: "test" });
+      expect(events.get(receipt.eventId)?.event.data.targetTaskGeneration).toBe(2);
+    } finally { unsubscribe(); }
+  });
+
   it("validates continuation input before publication and forwards it only through trusted Task control", () => {
     const { bus, db, events } = fixture();
     const received: unknown[] = [];
