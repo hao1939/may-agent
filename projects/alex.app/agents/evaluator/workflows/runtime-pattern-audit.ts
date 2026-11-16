@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import type { ExecutionResult } from "@may-agent/sdk";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
@@ -51,8 +51,23 @@ export type RuntimePatternAuditPacket = {
 
 const DEFAULT_WINDOW_MS = 3 * 60 * 60 * 1000;
 
+/**
+ * App workflows run with an App-scoped projectRoot, while the static inventory
+ * spans sibling Apps under the installation's projects directory. appRoot is
+ * the runtime contract for the owning App declaration, so its projects parent
+ * identifies the captured definition inventory without assuming an install path.
+ */
+export function workflowInventoryRootFromAppRoot(appRoot: string): string {
+  return dirname(dirname(resolve(appRoot)));
+}
+
+type RuntimePatternAuditBuildOptions = {
+  snapshotDir?: string;
+};
+
 export function buildRuntimePatternAuditPacket(
   input: RuntimePatternAuditInput = {},
+  options: RuntimePatternAuditBuildOptions = {},
 ): RuntimePatternAuditPacket {
   const now =
     typeof input.now === "number" && Number.isFinite(input.now)
@@ -126,10 +141,12 @@ export function buildRuntimePatternAuditPacket(
 
   let snapshotPaths: { jsonPath: string; markdownPath: string } | undefined;
   if (input.persistSnapshot === true) {
-    const outDir = join(rootDir, ".state", "workflow-audits");
-    mkdirSync(outDir, { recursive: true });
-    const jsonPath = join(outDir, "latest.json");
-    const markdownPath = join(outDir, "latest.md");
+    const snapshotDir = resolve(
+      options.snapshotDir ?? join(rootDir, ".state", "workflow-audits"),
+    );
+    mkdirSync(snapshotDir, { recursive: true });
+    const jsonPath = join(snapshotDir, "latest.json");
+    const markdownPath = join(snapshotDir, "latest.md");
     writeFileSync(jsonPath, `${JSON.stringify(latest, null, 2)}\n`, "utf8");
     writeFileSync(markdownPath, formatWorkflowAuditMarkdown(latest), "utf8");
     snapshotPaths = { jsonPath, markdownPath };
@@ -152,12 +169,21 @@ export async function execute(
   ctx: AppWorkflowContext<RuntimePatternAuditInput>,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
-  const rootDir = ctx.workspace?.projectRoot || process.cwd();
-  const packet = buildRuntimePatternAuditPacket({
-    ...ctx.input,
-    rootDir: ctx.input?.rootDir ?? rootDir,
-    persistSnapshot: ctx.input?.persistSnapshot ?? true,
-  });
+  const rootDir = ctx.workspace?.appRoot
+    ? workflowInventoryRootFromAppRoot(ctx.workspace.appRoot)
+    : process.cwd();
+  const packet = buildRuntimePatternAuditPacket(
+    {
+      ...ctx.input,
+      rootDir: ctx.input?.rootDir ?? rootDir,
+      persistSnapshot: ctx.input?.persistSnapshot ?? true,
+    },
+    {
+      snapshotDir: ctx.workspace?.output
+        ? join(ctx.workspace.output, "workflow-audits")
+        : undefined,
+    },
+  );
   ctx.signal.throwIfAborted();
 
   const summary =
