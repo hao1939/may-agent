@@ -863,10 +863,7 @@ export type AppWorkflowContext<TInput = unknown> = AgentContext<TInput> & {
     onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
   };
   metrics: WorkflowMetricCapability;
-  workspace?: AgentContext<TInput>["workspace"] & {
-    /** Generated Task entry shared with agents; snapshot and discovery, not live state. */
-    taskFile?: string;
-  };
+  workspace?: AgentContext<TInput>["workspace"];
 };
 
 export type AgentExecutableModule<TInput = unknown, TOutput = unknown> = {

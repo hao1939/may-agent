@@ -1,6 +1,6 @@
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { TaskAttempt, TaskDetail, TaskReconciliationEvents } from "@may-agent/sdk/app";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { writeContentAddressedJson } from "./artifacts.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import { taskWorkContext, taskWorkGuidance, taskWorkloadGuidance } from "./task-work-context.js";
@@ -227,14 +227,13 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
       previousAttempt: rec.previousAttempt,
       waitsAtAttemptStart: rec.waits,
     };
-    const workspace = context.workspaceBrief;
+    const detailRoot = context.detailRoot;
     const saveDetail = (directory: string, value: Record<string, unknown>) => {
-      if (!workspace || !("taskFile" in workspace))
+      if (!detailRoot)
         return { error: "Detail snapshot unavailable; use the scoped Task read and supplied attempt context." };
       try {
-        const root = dirname(workspace.taskFile);
-        const artifact = writeContentAddressedJson(root, directory, value, { pretty: true });
-        return { path: join(root, artifact.ref) };
+        const artifact = writeContentAddressedJson(detailRoot, directory, value, { pretty: true });
+        return { path: join(detailRoot, artifact.ref) };
       } catch {
         return { error: "Detail snapshot could not be saved; use the scoped Task read and attempt-start context." };
       }
@@ -262,9 +261,6 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
         detailError: detail.error,
         createdAssignmentsDetail: createdDetail.path,
         createdAssignmentsDetailError: createdDetail.error,
-        ...(workspace && "taskFile" in workspace
-          ? { attemptContext: join(dirname(workspace.taskFile), "context.json") }
-          : {}),
         note: "Omitted /createdAssignments previews link by JSON pointer into createdAssignmentsDetail; all other omitted previews link into detail. An unavailable detail requires scoped reads. attemptInput is assigned to this attempt; pendingInput is not yet claimed. Either may be bounded, and this is not complete history.",
       },
     };

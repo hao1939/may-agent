@@ -5,7 +5,7 @@ import type { AppEvent, TaskDetail } from "@may-agent/sdk/app";
 import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { Type } from "typebox";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { buildTools } from "../../src/app/loader/toolset-loader.js";
@@ -36,7 +36,7 @@ export async function execute(ctx) {
   const result = await ctx.call("worker", ctx.input.marker);
   await ctx.reviseTask({ appId: "worker", taskId: "child-" + ctx.input.marker, expectedGeneration: 1,
     input: { kind: "message", data: { marker: ctx.input.marker } } });
-  return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, taskFile: ctx.workspace.taskFile, result });
+  return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, result });
 }`,
     );
     if (route === "nested-workflow") {
@@ -63,7 +63,6 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
     const seen = new Map<string, string>();
     const helperPrompts = new Map<string, string>();
     const helperModelContexts = new Map<string, string>();
-    const taskFiles = new Map<string, string>();
     const revisions = new Map<string, unknown[]>();
     let accepted = 0;
     for (const marker of ["alpha", "beta"]) {
@@ -286,9 +285,6 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
         signal: controller.signal,
         timeout: 10_000,
       });
-      const brief = context.workspaceBrief;
-      if (!brief || !("taskFile" in brief)) throw new Error("Missing Task entry");
-      taskFiles.set(marker, brief.taskFile);
       return running;
     });
     try {
@@ -306,15 +302,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
         expect(helperPrompts.get(marker)).toContain("Work within the caller's assignment and authority");
         expect(helperPrompts.get(marker)).not.toContain("Task ownership");
         expect(meta.parentSessionId).toBe(owner.sessionId);
-        expect(meta.task).toContain(taskFiles.get(marker)!);
         expect(meta.task).not.toContain("Delegation Memo");
-        const snapshot = JSON.parse(readFileSync(join(dirname(taskFiles.get(marker)!), "context.json"), "utf8"));
-        expect(snapshot.reconciliation.task).toMatchObject({
-          input: { correction: `assigned-correction-only-${marker}` },
-          result: { revision: `accepted-${marker}` },
-          facts: [`accepted-result-only-${marker}`],
-          conditions: [{ id: `independent-wait-only-${marker}` }],
-        });
         if (route !== "agent") {
           const modelContext = helperModelContexts.get(marker)!;
           expect(modelContext).toContain(`assigned-correction-only-${marker}`);
@@ -327,7 +315,6 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           expect(modelContext).not.toContain(`independent-wait-only-${other}`);
         }
       }
-      expect(taskFiles.get("alpha")).not.toBe(taskFiles.get("beta"));
       expect(listeners.get("alpha")!.size).toBe(2);
       expect(listeners.get("beta")!.size).toBe(2);
       if (mode === "cancel") controller.abort(new Error("Owner cancelled"));
@@ -359,7 +346,6 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           expect(returned.output.marker).toBe(["alpha", "beta"][i]);
           if (route !== "agent") {
             expect(returned.output.task).toBe(["alpha", "beta"][i]);
-            expect(returned.output.taskFile).toBe(taskFiles.get(["alpha", "beta"][i])!);
             expect(returned.output.result).toMatchObject({ kind: "agent", status: "done" });
           }
         }

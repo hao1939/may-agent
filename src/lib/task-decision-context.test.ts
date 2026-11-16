@@ -1,12 +1,11 @@
 import { Type } from "typebox";
 import { expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { TaskDetail } from "@may-agent/sdk/app";
 import { createTaskDecisionContext } from "./task-decision-context.js";
-import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 import { createAssistantMessageEventStream, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@earendil-works/pi-ai";
 import { createFinishTool } from "@may-agent/sdk/runtime";
 import { createAgentRun, restoreAgentMessages } from "@may-agent/sdk/runtime";
@@ -65,6 +64,7 @@ function fixture(root: string) {
     taskBinding: { appId: "sample", taskId: task.id, generation: 1, attemptId: "attempt-1" },
     recoveryOwner: "app-task",
     executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+    detailRoot: join(root, "task-context"),
     reconciliation: {
       task: structuredClone(task),
       appId: "sample",
@@ -87,7 +87,6 @@ function fixture(root: string) {
       },
     },
   } as unknown as TaskExecutionContext;
-  prepareTaskWorkspaceContext(context, root, []);
   return {
     context,
     task,
@@ -193,20 +192,13 @@ test("workload retains its attempt-start time and coverage across Task refresh; 
     expect(updated.workloadAtAttemptStart).toEqual(workloadObservation());
     f.context.reconciliation.workload = { available: false };
     expect(packet(await read()).workloadAtAttemptStart).toEqual({ available: false });
-    // The workspace brief references the same retained observation for helpers.
-    delete f.context.workspaceBrief;
-    const brief = prepareTaskWorkspaceContext(f.context, root, []);
-    if (!("taskFile" in brief)) throw new Error(brief.error);
-    for (const text of [readFileSync(brief.taskFile, "utf8"), JSON.stringify(first.content)]) {
-      expect(text).toContain("Workload at attempt start");
-      expect(text).toContain("neither reserves an execution slot");
-      expect(text).toContain("Fields marked unavailable establish neither an allowance nor a denial");
-      expect(text).toContain("Required work remains owed under pressure");
-      expect(text).toContain("the creator retains that decision");
-      expect(text).not.toMatch(/Work-start credits|sponsor and current-root balances|protected coordination funds|funding hold/i);
-    }
-    const full = JSON.parse(readFileSync(join(brief.taskFile, "..", "context.json"), "utf8"));
-    expect(full.reconciliation.workload).toEqual({ available: false });
+    const text = JSON.stringify(first.content);
+    expect(text).toContain("Workload at attempt start");
+    expect(text).toContain("neither reserves an execution slot");
+    expect(text).toContain("Fields marked unavailable establish neither an allowance nor a denial");
+    expect(text).toContain("Required work remains owed under pressure");
+    expect(text).toContain("the creator retains that decision");
+    expect(text).not.toMatch(/Work-start credits|sponsor and current-root balances|protected coordination funds|funding hold/i);
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
@@ -341,7 +333,7 @@ test("large Unicode data stays discoverable without displacing current conclusio
     expect(detail.binding).toEqual(f.context.taskBinding);
     const path = join(root, "unwritable");
     writeFileSync(path, "file");
-    f.context.workspaceBrief = { taskFile: join(path, "TASK.md") };
+    f.context.detailRoot = path;
     const withoutFile = packet(await createTaskDecisionContext(f.context)());
     expect(withoutFile.coverage.detailError).toBeTruthy();
     expect(withoutFile.observed.refresh.available).toBe(true);
@@ -464,7 +456,7 @@ test("the production transform restores current facts after compaction without a
   }
 });
 
-test("TASK.md and decision brief keep assigned review input and non-request event previews distinct from empty pendingEvents", async () => {
+test("decision brief keeps assigned review input and non-request event previews distinct from empty pendingEvents", async () => {
   const root = mkdtempSync(join(tmpdir(), "decision-missed-review-"));
   try {
     const f = fixture(root);
@@ -487,14 +479,6 @@ test("TASK.md and decision brief keep assigned review input and non-request even
     f.context.reconciliation.events.continuedInputs = [
       inputEvent("earlier-unanswered", "Keep backwards compatibility", 55),
     ];
-    delete f.context.workspaceBrief;
-    const brief = prepareTaskWorkspaceContext(f.context, root, []);
-    if (!("taskFile" in brief)) throw new Error(brief.error);
-    const taskMd = readFileSync(brief.taskFile, "utf8");
-    expect(taskMd).toContain("## Assigned vs. pending input");
-    expect(taskMd).toContain("`/reconciliation/events/items/0` — evaluation.report.published `app_8fc834e0`");
-    expect(taskMd).toContain("`/reconciliation/events/continuedInputs/0` — app.task.requested `earlier-unanswered`");
-    expect(taskMd).toContain("Unclaimed pending input at attempt start (`/reconciliation/task/pendingEvents/items`): 0");
 
     const message = await createTaskDecisionContext(f.context)();
     const text = (message.content as Array<{ type: string; text: string }>)[0]!.text;
@@ -707,9 +691,10 @@ test.each(["decisions", "created-assignments"])(
         items,
         nextCursor: "more-creator-work",
       });
-      const workspace = f.context.workspaceBrief;
-      if (!workspace || !("taskFile" in workspace)) throw new Error("Expected fixture workspace");
-      writeFileSync(join(dirname(workspace.taskFile), failedDirectory), "not a directory");
+      const detailRoot = f.context.detailRoot;
+      if (!detailRoot) throw new Error("Expected fixture detailRoot");
+      mkdirSync(detailRoot, { recursive: true });
+      writeFileSync(join(detailRoot, failedDirectory), "not a directory");
       const current = packet(await createTaskDecisionContext(f.context)());
       expect(current.createdAssignments.omitted).toBe(true);
       expect(current.createdAssignments.pointer).toBe("/createdAssignments");

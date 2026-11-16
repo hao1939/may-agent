@@ -16,7 +16,6 @@ import { join } from "node:path";
 import { type TSchema } from "typebox";
 import { getDb } from "./db/connection.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
-import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 
 import type {
   AgentCallOptions,
@@ -609,14 +608,14 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
               }),
             readMetric: async (id) => readMetricView(metricService(), id),
           });
-        const taskBrief =
-          opts.taskContext && persistDir
-            ? prepareTaskWorkspaceContext(
-                opts.taskContext,
-                persistDir,
-                opts.taskContext.agentDefinitions?.values() ?? [],
-              )
-            : undefined;
+        if (opts.taskContext && persistDir) {
+          opts.taskContext.detailRoot ??= join(
+            persistDir,
+            "task-context",
+            `${opts.taskContext.taskBinding.appId}-${opts.taskContext.taskBinding.taskId}`,
+            `${opts.taskContext.taskBinding.generation}-${opts.taskContext.taskBinding.attemptId}`,
+          );
+        }
         return {
           read: appRead,
           metrics: {
@@ -633,7 +632,6 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
                   projectRoot: opts.executionPaths.projectDir,
                   root: opts.executionPaths.workspaceDir,
                   output: opts.executionPaths.workspaceDir,
-                  ...(taskBrief && "taskFile" in taskBrief ? { taskFile: taskBrief.taskFile } : {}),
                 },
               }
             : {}),
