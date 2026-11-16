@@ -92,7 +92,7 @@ async function withProvider(
                   status: "done",
                   summary: answer.summary,
                   verification_facts: ["Compared the supplied fixture input"],
-                  result: answer,
+                  output: answer,
                 }),
               },
             },

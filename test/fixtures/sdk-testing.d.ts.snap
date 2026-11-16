@@ -1,5 +1,5 @@
 /** Test doubles for the canonical App authoring surface. */
-import type { AppRead, CallOptions, ExecutionResult, Logger, ObserverContext, TSchema, TaskDetail, WorkflowContext } from "./app.js";
+import type { AppRead, CallOptions, ExecutionResult, Logger, ObserverContext, TSchema, WorkflowContext } from "./app.js";
 import { type NormalizedWorkflowContribution, type WorkflowExecutableModule, type WorkflowLogEntry, type WorkflowRunReport, type WorkflowStepTrace } from "./workflow-kernel.js";
 export { WorkflowAllowanceExhaustedError, WorkflowUnconfirmedCleanupError, WorkflowValidationError, createWorkflowAllowance, normalizeWorkflowContribution, resolveCallable, resolveCallableTarget, runWorkflowInvocation, type NormalizedWorkflowContribution, type PreparedCatalog, type PreparedDefinition, type PreparedTarget, type PreparedTargetCatalog, type WorkflowCleanupStatus, type WorkflowExecutableModule, type WorkflowExecutionAllowance, type WorkflowKernelBindings, type WorkflowKernelOutcome, type WorkflowKernelStepControl, type WorkflowLogEntry, type WorkflowRunReport, type WorkflowStepInvocationResult, type WorkflowStepTrace, } from "./workflow-kernel.js";
 export type MockFn<T extends (...args: any[]) => any> = T & {
@@ -63,24 +63,18 @@ export type ScriptedCallContext = {
     stepIndex: number;
 };
 export type ScriptedTargetFixture = ScriptedStepResponse | WorkflowExecutableModule | readonly ScriptedStepResponse[] | ((call: ScriptedCallContext) => ScriptedStepResponse | Promise<ScriptedStepResponse>);
-export type WorkflowTestOptions<TInput> = {
+export type TargetTestOptions<TInput> = {
     input: TInput;
     executionId?: string;
-    taskOwned?: boolean;
     tools?: "full" | "readonly";
     skill?: string;
     outputSchema?: TSchema;
-    task?: TaskDetail;
-    reconciliation?: WorkflowContext<TInput>["reconciliation"];
     workspace?: WorkflowContext["workspace"];
-    /** Unified target fixtures keyed by target name (supports both prompt and code targets). */
+    /** Explicit target fixtures keyed by target name (supports prompt and code targets). */
     mocks?: Record<string, ScriptedTargetFixture>;
     read?: Partial<AppRead>;
     events?: Partial<WorkflowContext["events"]>;
     metrics?: Partial<WorkflowContext["metrics"]>;
-    reviseTask?: WorkflowContext["reviseTask"];
-    closeTask?: WorkflowContext["closeTask"];
-    applyTaskChanges?: WorkflowContext["applyTaskChanges"];
     signal?: AbortSignal;
     timeoutMs?: number;
     deadlineAt?: number;
@@ -91,6 +85,8 @@ export type WorkflowTestOptions<TInput> = {
     /** Fail when scripted array responses remain unused after completion (default: true). */
     assertAllFixturesConsumed?: boolean;
 };
+/** @deprecated Use `TargetTestOptions`. */
+export type WorkflowTestOptions<TInput> = TargetTestOptions<TInput>;
 export type WorkflowTestRunResult = {
     ok: boolean;
     started: boolean;
@@ -111,6 +107,6 @@ export type WorkflowTestRunResult = {
  * kernel with strict schema validation, scripted step consumption checks, and
  * zero Host setup.
  */
-export declare function runWorkflowTest<TInput = unknown>(moduleOrTarget: WorkflowExecutableModule<TInput> | string, options: WorkflowTestOptions<TInput>): Promise<WorkflowTestRunResult>;
-/** Execute a named root target with the same test harness used for authored workflows. */
-export declare function runTargetTest<TInput = unknown>(target: string, options: WorkflowTestOptions<TInput>): Promise<WorkflowTestRunResult>;
+export declare function runTargetTest<TInput = unknown>(moduleOrTarget: WorkflowExecutableModule<TInput> | string, options: TargetTestOptions<TInput>): Promise<WorkflowTestRunResult>;
+/** @deprecated Use `runTargetTest(moduleOrTarget, { input, mocks })`. */
+export declare function runWorkflowTest<TInput = unknown>(moduleOrTarget: WorkflowExecutableModule<TInput> | string, options: TargetTestOptions<TInput>): Promise<WorkflowTestRunResult>;
