@@ -682,17 +682,30 @@ export async function execute(ctx) {
 
   test("caps a long-declared code helper at the model tool deadline and still lets the parent finish", async () => {
     const env = setupDirectLayout();
+    const enteredMarker = join(env.root, "long-helper-entered");
+    const cancelledMarker = join(env.root, "long-helper-cancelled");
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "a-warm-helper.ts"),
+      `
+export const name = "warm-helper";
+export const description = "Warms the owner's code-helper catalog";
+export async function execute(ctx) { return ctx.done("catalog ready"); }
+`,
+    );
     writeFileSync(
       join(env.agentsRoot, "owner", "workflows", "long-helper.ts"),
       `
+import { writeFileSync } from "node:fs";
 export const name = "long-helper";
 export const description = "Long declared helper";
 export const executionTimeoutMs = 1000;
 export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(enteredMarker)}, "entered");
   await new Promise((resolve, reject) => {
     const timer = setTimeout(resolve, 500);
     ctx.signal.addEventListener("abort", () => {
       clearTimeout(timer);
+      writeFileSync(${JSON.stringify(cancelledMarker)}, String(ctx.signal.reason));
       reject(ctx.signal.reason);
     }, { once: true });
   });
@@ -701,7 +714,9 @@ export async function execute(ctx) {
 `,
     );
     let turn = 0;
-    const startedAt = Date.now();
+    let measuredStartedAt: number | undefined;
+    const visibleResults: unknown[] = [];
+    const helperErrors: string[] = [];
     const run = await runDirectWorkflow({
       target: "owner",
       input: "Bound the helper",
@@ -713,16 +728,37 @@ export async function execute(ctx) {
       models: { test: fakeModel() as any },
       runAgent: async (opts): Promise<DirectAgentRunResult> => {
         const prep = await prepareDirectAgentExecution(opts);
+        const agentsTool = prep.prepared.tools.find((tool) => tool.name === "agents");
+        if (agentsTool) {
+          const execute = agentsTool.execute.bind(agentsTool);
+          agentsTool.execute = async (...args) => {
+            const call = args[1] as { agent?: string } | undefined;
+            try {
+              const toolResult = await execute(...args);
+              const text = toolResult.content.find((item) => item.type === "text")?.text;
+              if (text) visibleResults.push(JSON.parse(text));
+              if (call?.agent === "warm-helper") measuredStartedAt = Date.now();
+              return toolResult;
+            } catch (error) {
+              if (call?.agent === "long-helper") helperErrors.push(String(error));
+              throw error;
+            }
+          };
+        }
         prep.prepared.runner.streamFn = () => {
           const stream = createAssistantMessageEventStream();
           turn += 1;
           const content = turn === 1
-            ? [{ type: "toolCall" as const, id: "bounded_helper", name: "agents", arguments: {
-                action: "call", agent: "long-helper", input: {}, timeoutMs: 20,
+            ? [{ type: "toolCall" as const, id: "warm_helper", name: "agents", arguments: {
+                action: "call", agent: "warm-helper", input: {},
               } }]
-            : [{ type: "toolCall" as const, id: "finish_after_timeout", name: "finish", arguments: {
-                status: "done", summary: "parent handled helper timeout",
-              } }];
+            : turn === 2
+              ? [{ type: "toolCall" as const, id: "bounded_helper", name: "agents", arguments: {
+                  action: "call", agent: "long-helper", input: {}, timeoutMs: 20,
+                } }]
+              : [{ type: "toolCall" as const, id: "finish_after_timeout", name: "finish", arguments: {
+                  status: "done", summary: "parent handled helper timeout",
+                } }];
           stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
           return stream;
         };
@@ -751,8 +787,18 @@ export async function execute(ctx) {
 
     expect(run.ok).toBeTrue();
     expect(run.result).toMatchObject({ type: "done", summary: "parent handled helper timeout" });
-    expect(Date.now() - startedAt).toBeLessThan(400);
+    expect(measuredStartedAt).toBeNumber();
+    expect(Date.now() - measuredStartedAt!).toBeLessThan(400);
+    expect(readFileSync(enteredMarker, "utf8")).toBe("entered");
+    expect(readFileSync(cancelledMarker, "utf8")).toContain('Workflow step "long-helper" timed out after 20ms');
+    expect(visibleResults).toEqual([
+      expect.objectContaining({ kind: "workflow", status: "done", summary: "catalog ready" }),
+    ]);
+    expect(helperErrors).toEqual([
+      expect.stringContaining('Workflow step "long-helper" timed out after 20ms'),
+    ]);
     expect(run.report.steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "workflow", target: "warm-helper", status: "done", cleanupConfirmed: true }),
       expect.objectContaining({ kind: "workflow", target: "long-helper", status: "error", cleanupConfirmed: true }),
     ]));
   });

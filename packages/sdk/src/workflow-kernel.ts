@@ -1256,21 +1256,20 @@ export async function runWorkflowInvocation<TInput = unknown>(
     }
     await Promise.allSettled([...activeOperations]);
     if (!authoredExecutionSettled && settleAuthoredExecution) {
-      const remainingMs = Math.max(0, allowance.deadlineAt - Date.now());
-      const waitMs = Math.min(AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS, remainingMs);
-      if (waitMs > 0) {
-        let settleTimer: ReturnType<typeof setTimeout> | undefined;
-        try {
-          await Promise.race([
-            settleAuthoredExecution,
-            new Promise<void>((resolve) => {
-              settleTimer = setTimeout(resolve, waitMs);
-              settleTimer.unref?.();
-            }),
-          ]);
-        } finally {
-          clearTimeout(settleTimer);
-        }
+      // The execution deadline fences authored work. This separate, finite grace
+      // only observes whether cancellation-driven cleanup has actually settled;
+      // it does not reopen the context or grant more business execution time.
+      let settleTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          settleAuthoredExecution,
+          new Promise<void>((resolve) => {
+            settleTimer = setTimeout(resolve, AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS);
+            settleTimer.unref?.();
+          }),
+        ]);
+      } finally {
+        clearTimeout(settleTimer);
       }
     }
     if (!authoredExecutionSettled) {

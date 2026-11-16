@@ -399,26 +399,49 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect(cooperativeSettled).toBe(true);
     expect(cooperativeOutcome.report.cleanup).toEqual({ confirmed: true });
 
-    const stuckController = new AbortController();
-    const stuckStartedAt = Date.now();
-    const stuck = runWorkflowInvocation(
+    let deadlineBodyEntered = false;
+    let deadlineCancellationObserved = false;
+    const deadlineOutcome = await runWorkflowInvocation(
       {
-        name: "stuck-authored-cancel",
-        description: "Ignores cancellation forever",
+        name: "cooperative-authored-deadline",
+        description: "Settles shortly after its own deadline",
+        async execute(ctx) {
+          deadlineBodyEntered = true;
+          await new Promise<void>((_, reject) => {
+            ctx.signal.addEventListener("abort", () => {
+              deadlineCancellationObserved = true;
+              setTimeout(() => reject(ctx.signal.reason), 5);
+            }, { once: true });
+          });
+          return ctx.done("unreachable");
+        },
+      },
+      { input: {}, timeoutMs: 20 },
+    );
+    expect(deadlineBodyEntered).toBe(true);
+    expect(deadlineCancellationObserved).toBe(true);
+    expect(deadlineOutcome.ok).toBe(false);
+    expect(deadlineOutcome.message).toBe('Workflow "cooperative-authored-deadline" timed out after 20ms');
+    expect(deadlineOutcome.report.cleanup).toEqual({ confirmed: true });
+
+    const stuckStartedAt = Date.now();
+    const stuckOutcome = await runWorkflowInvocation(
+      {
+        name: "stuck-authored-deadline",
+        description: "Ignores its deadline forever",
         async execute(_ctx): Promise<never> {
           return new Promise<never>(() => {});
         },
       },
-      { input: {}, signal: stuckController.signal, timeoutMs: 500 },
+      { input: {}, timeoutMs: 20 },
     );
-    setTimeout(() => stuckController.abort(new Error("stop stuck body")), 5);
-    const stuckOutcome = await stuck;
     expect(stuckOutcome.ok).toBe(false);
     expect(stuckOutcome.status).toBe("error");
     expect(stuckOutcome.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(stuckOutcome.message).toContain('originating failure: Workflow "stuck-authored-deadline" timed out after 20ms');
     expect(stuckOutcome.report.cleanup.confirmed).toBe(false);
     expect(stuckOutcome.report.cleanup.unconfirmed).toEqual([
-      expect.stringMatching(/^workflow:stuck-authored-cancel \(wr_/),
+      expect.stringMatching(/^workflow:stuck-authored-deadline \(wr_/),
     ]);
     expect(Date.now() - stuckStartedAt).toBeLessThan(200);
   });
