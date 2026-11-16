@@ -25,7 +25,9 @@ import {
 
 
 import { constants } from "fs";
+import { existsSync, realpathSync } from "node:fs";
 import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
+import { resolve } from "node:path";
 import { resolveReadPath } from "./path-utils.js";
 import { withAbortSignal } from "./path-utils.js";
 
@@ -70,10 +72,42 @@ const defaultReadOperations: ReadOperations = {
 
 export interface ReadToolOptions {
   operations?: ReadOperations;
+  /** Optional captured file contents keyed by resolved/canonical path. */
+  pinnedFiles?: ReadonlyMap<string, string>;
+}
+
+function lookupPinnedFile(pinnedFiles: ReadonlyMap<string, string> | undefined, absolutePath: string): string | undefined {
+  if (!pinnedFiles || pinnedFiles.size === 0) return undefined;
+  const resolved = resolve(absolutePath);
+  const direct = pinnedFiles.get(resolved);
+  if (direct !== undefined) return direct;
+  if (existsSync(resolved)) {
+    try {
+      const canonical = realpathSync(resolved);
+      return pinnedFiles.get(canonical);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
 }
 
 export function createReadTool(cwd: string, options?: ReadToolOptions): AgentTool<TSchema> {
-  const ops = options?.operations ?? defaultReadOperations;
+  const baseOps = options?.operations ?? defaultReadOperations;
+  const pinnedFiles = options?.pinnedFiles;
+  const ops: ReadOperations = pinnedFiles
+    ? {
+        access: async (absolutePath) => {
+          if (lookupPinnedFile(pinnedFiles, absolutePath) !== undefined) return;
+          return baseOps.access(absolutePath);
+        },
+        readFile: async (absolutePath) => {
+          const pinned = lookupPinnedFile(pinnedFiles, absolutePath);
+          if (pinned !== undefined) return Buffer.from(pinned, "utf-8");
+          return baseOps.readFile(absolutePath);
+        },
+      }
+    : baseOps;
 
   return {
     name: "read",

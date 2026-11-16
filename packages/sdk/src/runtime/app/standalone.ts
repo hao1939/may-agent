@@ -651,8 +651,8 @@ type DirectPromptDefinition = {
   skillCatalog?: SkillCatalog;
 };
 
-function readOptionalPromptFile(path: string): string | undefined {
-  if (!existsSync(path)) return undefined;
+function readOptionalPromptFile(path: string): string {
+  if (!existsSync(path)) return "";
   return readFileSync(path, "utf-8").trim();
 }
 
@@ -663,10 +663,18 @@ function formatStandaloneAssignmentContext(task: TaskDetail): AgentMessage[] {
     lines.push("Acceptance:");
     for (const item of task.acceptance) lines.push(`- ${item}`);
   }
-  const constraints = (task.input as { data?: { constraints?: unknown } } | undefined)?.data?.constraints;
-  if (Array.isArray(constraints) && constraints.length > 0) {
+  const inputRecord = task.input as {
+    constraints?: unknown;
+    data?: { constraints?: unknown };
+  } | undefined;
+  const rawConstraints = Array.isArray(inputRecord?.data?.constraints)
+    ? inputRecord.data.constraints
+    : Array.isArray(inputRecord?.constraints)
+      ? inputRecord.constraints
+      : undefined;
+  if (rawConstraints && rawConstraints.length > 0) {
     lines.push("Constraints:");
-    for (const item of constraints) {
+    for (const item of rawConstraints) {
       if (typeof item === "string" && item.trim()) lines.push(`- ${item.trim()}`);
     }
   }
@@ -1447,17 +1455,18 @@ export async function runDirectWorkflow<TInput = unknown>(
     root: resolve(options.workRoot),
     output: resolve(options.workRoot),
   };
+  const resolvedWorkRoot = resolve(options.workRoot);
   const requiresTaskWorktree =
     targetModule.workspace === "task" ||
     (typeof targetModule.workspace === "object" && targetModule.workspace?.kind === "task");
   if (
     requiresTaskWorktree &&
-    resolve(effectiveWorkspace.root) === resolve(options.projectRoot) &&
-    !existsSync(join(effectiveWorkspace.root, ".git"))
+    resolvedWorkRoot === resolve(options.projectRoot) &&
+    !existsSync(join(resolvedWorkRoot, ".git"))
   ) {
     const wsError = new Error(
       `Workflow "${targetModule.name}" requires an isolated Task Git checkout (workspace: "task"), ` +
-        `but workRoot "${effectiveWorkspace.root}" is not a Git checkout`,
+        `but workRoot "${resolvedWorkRoot}" is not a Git checkout`,
     );
     const executionId =
       internal === undefined && options.executionId
@@ -1747,10 +1756,22 @@ function normalizeStandaloneTaskDetail(
           },
         }
       : fallbackInput);
-  const taskInput: Record<string, unknown> =
+  const baseTaskInput: Record<string, unknown> =
     rawInput && typeof rawInput === "object" && !Array.isArray(rawInput)
-      ? (rawInput as Record<string, unknown>)
+      ? { ...(rawInput as Record<string, unknown>) }
       : { value: rawInput };
+  if (simple.constraints && simple.constraints.length > 0) {
+    const existingData =
+      baseTaskInput.data && typeof baseTaskInput.data === "object" && !Array.isArray(baseTaskInput.data)
+        ? (baseTaskInput.data as Record<string, unknown>)
+        : undefined;
+    if (existingData && existingData.constraints === undefined) {
+      baseTaskInput.data = { ...existingData, constraints: simple.constraints };
+    } else if (!existingData && baseTaskInput.constraints === undefined) {
+      baseTaskInput.constraints = simple.constraints;
+    }
+  }
+  const taskInput = baseTaskInput;
   return {
     id: simple.id?.trim() || "standalone-task",
     parentId: "root",

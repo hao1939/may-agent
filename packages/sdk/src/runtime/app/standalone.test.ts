@@ -1901,18 +1901,20 @@ export async function execute(ctx) {
     );
 
     // 1. Explicit skill activation loads the full skill body via invokeCatalogSkill (and rejects unknown skills),
-    //    pins AGENTS.md and skill content at catalog snapshot time, and supplies ordinary Task outcome/acceptance
-    //    context to prompt agents without Host-specific jargon.
+    //    pins AGENTS.md, shared/common-sense.md (including absence), and skill content (including read tool rereads)
+    //    at catalog snapshot time, and supplies ordinary Task outcome/acceptance/constraints context to prompt agents.
     let capturedPrompt = "";
     let capturedSystemPrompt = "";
     let capturedContextMessages: string[] = [];
+    let rereadSkillContent = "";
 
     const skillAndContextRun = await runDirectWorkflow({
       module: {
         name: "skill-and-context-step",
-        description: "Mutates AGENTS.md and SKILL.md mid-flight then calls reviewer with explicit skill",
+        description: "Mutates AGENTS.md, creates common-sense.md, and mutates SKILL.md mid-flight then calls reviewer",
         async execute(ctx) {
           writeFileSync(join(env.agentsRoot, "reviewer", "AGENTS.md"), "# reviewer\n\nMUTATED MID-FLIGHT\n");
+          writeFileSync(join(env.sharedRoot, "common-sense.md"), "CREATED COMMON-SENSE AFTER CAPTURE\n");
           writeFileSync(
             join(skillDir, "SKILL.md"),
             "---\nname: careful-audit\ndescription: Mutated\n---\nMUTATED SKILL BODY\n",
@@ -1947,6 +1949,9 @@ export async function execute(ctx) {
         try {
           capturedPrompt = prep.prepared.prompt;
           capturedSystemPrompt = prep.prepared.systemPrompt;
+          const readTool = prep.prepared.tools.find((t) => t.name === "read");
+          const readRes = await readTool!.execute("call-read-skill", { path: join(skillDir, "SKILL.md") });
+          rereadSkillContent = readRes.content.map((c: any) => c.text ?? "").join("");
           const transformed = prep.prepared.runner.transformContext
             ? await prep.prepared.runner.transformContext([])
             : [];
@@ -1978,11 +1983,59 @@ export async function execute(ctx) {
     expect(capturedPrompt).toContain("Always check boundary conditions first.");
     expect(capturedPrompt).not.toContain("MUTATED SKILL BODY");
     expect(capturedPrompt).not.toContain('Apply skill "careful-audit" when relevant.');
+    expect(rereadSkillContent).toContain("Always check boundary conditions first.");
+    expect(rereadSkillContent).not.toContain("MUTATED SKILL BODY");
     expect(capturedSystemPrompt).toContain("Lab-forked reviewer instructions v2");
     expect(capturedSystemPrompt).not.toContain("MUTATED MID-FLIGHT");
+    expect(capturedSystemPrompt).not.toContain("CREATED COMMON-SENSE AFTER CAPTURE");
     expect(capturedContextMessages.join("\n")).toContain("Goal: Ensure boundary.ts handles empty input");
     expect(capturedContextMessages.join("\n")).toContain("- Empty input returns null");
     expect(capturedContextMessages.join("\n")).toContain("- No public signature changes");
+
+    // Simple task envelope with both top-level constraints and explicit input preserves constraints:
+    let simpleTaskContext = "";
+    const simpleWithExplicitInput = await run("reviewer", "Inspect file", {
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      models: { test: fakeModel() as any },
+      task: {
+        outcome: "Audit file",
+        constraints: ["Do not modify files"],
+        input: { file: "a.ts" },
+      },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        try {
+          const transformed = prep.prepared.runner.transformContext
+            ? await prep.prepared.runner.transformContext([])
+            : [];
+          simpleTaskContext = transformed
+            .map((msg: any) =>
+              Array.isArray(msg.content) ? msg.content.map((c: any) => c.text ?? "").join("") : String(msg.content ?? ""),
+            )
+            .join("\n");
+          return {
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            status: "done",
+            lastAssistantText: "Done",
+            messages: [],
+            durationMs: 1,
+            finishResult: { status: "success", summary: "ok" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } finally {
+          prep.cleanup();
+        }
+      },
+    });
+    expect(simpleWithExplicitInput.ok).toBe(true);
+    expect(simpleTaskContext).toContain("Goal: Audit file");
+    expect(simpleTaskContext).toContain("- Do not modify files");
 
     // Unknown skill is rejected explicitly instead of turning into advisory prose:
     const unknownSkillRun = await runDirectWorkflow({
@@ -2051,7 +2104,7 @@ export async function execute(ctx) {
       "metrics.define is not configured in standalone mode",
     ]);
 
-    // 3. Declared workspace: "task" prerequisite fails before execution when workRoot === projectRoot without .git:
+    // 3. Declared workspace: "task" prerequisite checks options.workRoot (including when workspace.root differs or in nested calls):
     let executedWithoutWorktree = false;
     const missingWorktreeRun = await runDirectWorkflow({
       module: {
@@ -2067,6 +2120,12 @@ export async function execute(ctx) {
       input: {},
       projectRoot: env.projectRoot,
       workRoot: env.projectRoot,
+      workspace: {
+        appRoot: env.projectRoot,
+        projectRoot: env.workRoot,
+        root: env.workRoot,
+        output: env.workRoot,
+      },
       agentsRoot: env.agentsRoot,
       sharedRoot: env.sharedRoot,
       outputRoot: env.outputRoot,
@@ -2076,5 +2135,65 @@ export async function execute(ctx) {
     expect(missingWorktreeRun.started).toBe(false);
     expect(executedWithoutWorktree).toBe(false);
     expect(String(missingWorktreeRun.error)).toContain('requires an isolated Task Git checkout (workspace: "task")');
+    expect(String(missingWorktreeRun.error)).toContain(env.projectRoot);
+
+    // Conversely, a separate workRoot succeeds even if workspace.root is overridden to projectRoot, and nested workspace: "task" checks workRoot:
+    const validSeparateWorkRoot = await runDirectWorkflow({
+      module: {
+        name: "valid-separate-work-root",
+        description: "Declares workspace: task with separate workRoot",
+        workspace: "task",
+        async execute(ctx) {
+          return ctx.done("separate-workroot-ok");
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      workspace: {
+        appRoot: env.projectRoot,
+        projectRoot: env.projectRoot,
+        root: env.projectRoot,
+        output: env.workRoot,
+      },
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(validSeparateWorkRoot.ok).toBe(true);
+    expect(validSeparateWorkRoot.result).toMatchObject({ type: "done", summary: "separate-workroot-ok" });
+
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "nested-task-ws.ts"),
+      `
+export const name = "nested-task-ws";
+export const description = "Nested procedure requiring task workspace";
+export const workspace = "task";
+export async function execute(ctx) {
+  return ctx.done("unreachable");
+}
+`,
+    );
+    const nestedMissingWorktree = await runDirectWorkflow({
+      module: {
+        name: "outer-calls-nested-task-ws",
+        description: "Calls nested-task-ws when workRoot === projectRoot without .git",
+        async execute(ctx) {
+          return ctx.call("nested-task-ws", {});
+        },
+      },
+      agentName: "owner",
+      input: {},
+      projectRoot: env.projectRoot,
+      workRoot: env.projectRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+    expect(nestedMissingWorktree.ok).toBe(false);
+    expect(String(nestedMissingWorktree.error)).toContain('Workflow "nested-task-ws" requires an isolated Task Git checkout');
   });
 });

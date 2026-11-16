@@ -1063,7 +1063,16 @@ export type AgentPreparationOptions = {
 
 function definitionForExecution(options: AgentPreparationOptions): SubagentDefinition {
   const root = options.executionRoot;
-  if (!root && !options.bashProcessGroupOwner) return options.definition;
+  const pinnedFiles =
+    options.definition.skillCatalog && options.definition.skillCatalog.skills.size > 0
+      ? new Map(
+          [...options.definition.skillCatalog.skills.values()].flatMap((skill) => [
+            [resolve(skill.canonicalPath), skill.content],
+            [resolve(skill.filePath), skill.content],
+          ]),
+        )
+      : undefined;
+  if (!root && !options.bashProcessGroupOwner && !pinnedFiles) return options.definition;
   const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
   const agentName = options.definition.name;
   let fileWritePolicy = options.definition.fileWritePolicy;
@@ -1081,9 +1090,13 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
       case "read":
-        return root ? createReadTool(executionRoot) : tool;
+        return root || pinnedFiles ? createReadTool(executionRoot, { pinnedFiles }) : tool;
       case "bash":
-        return createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner });
+        return options.bashProcessGroupOwner
+          ? createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner })
+          : root
+            ? createBashTool(executionRoot)
+            : tool;
       case "edit":
         return root ? createEditTool(executionRoot, { agentName, projectRoot: executionRoot, fileWritePolicy }) : tool;
       case "write":
