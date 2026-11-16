@@ -267,10 +267,11 @@ async function sendProjectSteering() {
   const status = document.getElementById("kanban-steer-status");
   const message = String(textarea?.value || "").trim();
   const task = selectedTaskForSteering();
-  if (!message || !task) {
-    if (status) status.textContent = "Select a Task and enter a message first.";
+  if (!message || !task || textarea?.disabled) {
+    if (status && !textarea?.disabled) status.textContent = "Select a Task and enter a message first.";
     return;
   }
+  textarea.disabled = true;
   if (status) status.textContent = "Submitting…";
   const idempotencyKey =
     textarea.dataset.idempotencyKey ||
@@ -291,15 +292,15 @@ async function sendProjectSteering() {
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok || body.accepted !== true) throw new Error(body.error || `HTTP ${res.status}`);
-    if (textarea) {
-      textarea.value = "";
-      delete textarea.dataset.idempotencyKey;
-    }
+    textarea.value = "";
+    delete textarea.dataset.idempotencyKey;
     if (status)
       status.textContent = body.eventId
         ? `Accepted as event ${body.eventId} for generation ${body.generation ?? task.generation}.`
         : "Accepted by Task inbox.";
   } catch (error) {
     if (status) status.textContent = `Failed: ${error.message}`;
+  } finally {
+    textarea.disabled = false;
   }
 }
