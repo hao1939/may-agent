@@ -650,11 +650,12 @@ export function extractFinishParams(messages: any[]): FinishParams | null {
       if (!finishToolCallSucceeded(messages, block.id ?? block.toolCallId)) continue;
       try {
         const args = (typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs) as Record<string, unknown>;
+        if (typeof args.summary !== "string" || !args.summary.trim()) return null;
         const historical = isHistoricalFinish(args);
         const output = hasOwn(args, "output") ? args.output : historical ? args.result : undefined;
         return {
           status: normalizedFinishStatus(args.status),
-          summary: args.summary as string,
+          summary: args.summary,
           output,
           facts: normalizedFinishFacts(args, historical),
         };

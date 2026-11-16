@@ -67,6 +67,12 @@ describe("createFinishTool", () => {
     expect(text).toContain("finish() error");
   });
 
+  it("creates finish without a meaningless project root", async () => {
+    const tool = createFinishTool();
+    const text = await callFinish(tool, { status: "done", summary: "No filesystem contract" });
+    expect(text).toContain("No filesystem contract");
+  });
+
   it("has only the ExecutionResult result vocabulary", () => {
     const tool = createTool();
     expect(tool.name).toBe("finish");

@@ -116,6 +116,20 @@ describe("finish result extraction", () => {
     expect(JSON.stringify(historicalTranscripts)).toBe(saved);
   });
 
+  it("rejects a committed historical finish whose persisted summary is not a string", () => {
+    const messages = [
+      finishCall("finish-corrupt-summary", {
+        status: "success",
+        summary: { text: "corrupted persisted value" },
+        result: false,
+        verification_facts: ["Committed historical evidence"],
+      }),
+      finishResult("finish-corrupt-summary", "✅ SUCCESS: persisted result"),
+    ];
+
+    expect(extractFinishParams(messages)).toBeNull();
+  });
+
   it("does not accept a finish call rejected by semantic validation", () => {
     const messages = [
       finishCall("finish-1", { status: "blocked", summary: "Need input" }),

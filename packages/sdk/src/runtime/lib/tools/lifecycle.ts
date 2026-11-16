@@ -15,8 +15,8 @@ import type { AgentTool } from "@earendil-works/pi-agent-core";
 // ── Types ────────────────────────────────────────────────────────────────
 
 export interface FinishToolOptions {
-  /** Retained for caller compatibility; finish no longer interprets workspace files. */
-  projectRoot: string;
+  /** Compatibility-only caller context; finish does not inspect files, paths, or deliverables. */
+  projectRoot?: string;
 }
 
 // ── Schema ───────────────────────────────────────────────────────────────
@@ -47,8 +47,8 @@ interface FinishParams {
 
 // ── Tool factory ─────────────────────────────────────────────────────────
 
-/** Create the terminal tool used by prompt-based agent executions. */
-export function createFinishTool(_options: FinishToolOptions): AgentTool<TSchema> {
+/** Create the terminal tool used by prompt-based agent executions; it performs no filesystem inspection. */
+export function createFinishTool(_options: FinishToolOptions = {}): AgentTool<TSchema> {
   return {
     name: "finish",
     label: "Finish",

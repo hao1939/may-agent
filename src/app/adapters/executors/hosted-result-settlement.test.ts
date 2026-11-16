@@ -108,6 +108,82 @@ test.each([
   ).toEqual(expected);
 });
 
+test("done output is admitted before Host finite-completion provenance is granted", () => {
+  const maxTaskResultBytes = 16 * 1024;
+  const wrapperBytes = new TextEncoder().encode(JSON.stringify({ value: "" })).byteLength;
+  const boundaryOutput = "x".repeat(maxTaskResultBytes - wrapperBytes);
+  const admitted = translateHostedExecutionResult(
+    runResult({ type: "done", summary: "Boundary output", output: boundaryOutput }),
+    input(),
+  );
+  expect(admitted).toMatchObject({
+    hostCompletion: "finite-done",
+    runId: "run-1",
+    handlerResult: { state: "converged", result: { value: boundaryOutput } },
+  });
+
+  const rejected = translateHostedExecutionResult(
+    runResult({
+      type: "done",
+      summary: "Oversized output",
+      output: `${boundaryOutput}x`,
+      facts: Array.from({ length: 33 }, (_, index) => `fact-${index + 1}`),
+    }),
+    input(),
+  );
+  expect(rejected).toMatchObject({
+    runId: "run-1",
+    handlerResult: {
+      state: "error",
+      resultRejected: true,
+      summary: expect.stringContaining("16384-byte limit"),
+    },
+  });
+  expect(rejected.hostCompletion).toBeUndefined();
+});
+
+test("done without output remains an admitted finite completion", () => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "done", summary: "No output required" }),
+    input(),
+  );
+  expect(translated).toMatchObject({
+    hostCompletion: "finite-done",
+    handlerResult: { state: "converged", summary: "No output required" },
+  });
+  expect(translated.handlerResult.result).toBeUndefined();
+});
+
+test("large public fact arrays retain exact evidence through the Task-compatible fallback", () => {
+  const facts = Array.from({ length: 33 }, (_, index) => `fact-${index + 1}`);
+  const serialized = `execution-facts:${JSON.stringify(facts)}`;
+
+  const blocked = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Await external review", facts }),
+    input(),
+  );
+  expect(blocked).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: { state: "waiting", facts: [serialized] },
+  });
+  expect(blocked.handlerResult.resultRejected).toBeUndefined();
+
+  const done = translateHostedExecutionResult(
+    runResult({ type: "done", summary: "Evidence complete", facts }),
+    input(),
+  );
+  expect(done).toMatchObject({
+    hostCompletion: "finite-done",
+    handlerResult: { state: "converged", facts: [serialized] },
+  });
+
+  const direct = facts.slice(0, 32);
+  expect(
+    translateHostedExecutionResult(runResult({ type: "done", summary: "Direct evidence", facts: direct }), input())
+      .handlerResult.facts,
+  ).toEqual(direct);
+});
+
 test("blocked uses the App translator and controlled clock for continuation, Conditions and requests", () => {
   const translated = translateHostedExecutionResult(
     runResult({ type: "blocked", reason: "Await review", facts: { phase: "review" }, output: false }),

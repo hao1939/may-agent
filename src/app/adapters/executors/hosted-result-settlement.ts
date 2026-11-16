@@ -11,7 +11,7 @@ type TranslationOptions = {
 
 function factStrings(facts: unknown): string[] {
   if (facts === undefined) return [];
-  if (Array.isArray(facts) && facts.every((fact) => typeof fact === "string")) return facts;
+  if (Array.isArray(facts) && facts.length <= 32 && facts.every((fact) => typeof fact === "string")) return facts;
   try {
     return [`execution-facts:${JSON.stringify(facts)}`];
   } catch {
@@ -176,15 +176,24 @@ export function translateHostedExecutionResult(
     return blockedSettlement(result, input, summary, contribution.output, contribution.facts, options);
   }
 
-  return {
-    handlerResult: {
+  const runId = resultRunId(result);
+  const handlerResult = normalizeTaskHandlerResult(
+    {
       state: "converged",
       summary,
       facts: factStrings(contribution.facts),
       actions: [],
       ...outputResult(contribution.output),
     },
-    runId: resultRunId(result),
-    hostCompletion: "finite-done",
+    { type: "done", summary, runId },
+    {
+      validateAction: input.descriptor.app.tasks?.validateAction,
+      validateCondition: input.descriptor.app.tasks?.validateCondition,
+    },
+  );
+  return {
+    handlerResult,
+    runId,
+    ...(handlerResult.state === "converged" ? { hostCompletion: "finite-done" as const } : {}),
   };
 }
