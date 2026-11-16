@@ -11,7 +11,11 @@ type TranslationOptions = {
 
 function factStrings(facts: unknown): string[] {
   if (facts === undefined) return [];
-  if (Array.isArray(facts) && facts.length <= 32 && facts.every((fact) => typeof fact === "string")) return facts;
+  if (
+    Array.isArray(facts)
+    && facts.length <= 32
+    && facts.every((fact) => typeof fact === "string" && fact.trim().length > 0)
+  ) return facts;
   try {
     return [`execution-facts:${JSON.stringify(facts)}`];
   } catch {
