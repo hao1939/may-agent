@@ -302,7 +302,7 @@ describe("development workflow using real Git and verification", () => {
     expect(readFileSync(join(t.repo, "answer.cjs"), "utf8")).toContain("=> 0");
   });
 
-  test("a completion claim cannot bypass a failing command or obtain a review", async () => {
+  test("a completion claim cannot bypass a failing command or reset exhausted rounds", async () => {
     const t = trial();
     t.setImplementation(() => {});
     expect((await t.run()).state).toBe("incomplete");
@@ -311,17 +311,16 @@ describe("development workflow using real Git and verification", () => {
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe(
       "check\ncheck\ncheck\n",
     );
-    // The next ordinary invocation continues the same work after exhaustion.
+    expect(t.evidence().roundsUsed).toBe(3);
+
     t.setImplementation(() => {
-      writeFileSync(
-        join(t.worktree, "answer.cjs"),
-        "module.exports = () => 1;\n",
-      );
-      t.git(t.worktree, "add", "answer.cjs");
-      t.git(t.worktree, "commit", "-m", "repair on continuation");
+      throw Error("exhausted work must not restart in another invocation");
     });
-    expect((await t.run()).state).toBe("converged");
-    expect(t.calls.filter((x) => x.stage === "design")).toHaveLength(1);
+    expect((await t.run()).state).toBe("incomplete");
+    expect(t.calls.filter((x) => x.stage === "implementation")).toHaveLength(3);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe(
+      "check\ncheck\ncheck\n",
+    );
   });
 
   test("failed checks are repaired within the same attempt", async () => {
@@ -755,11 +754,16 @@ describe("development workflow using real Git and verification", () => {
     expect(t.calls).toHaveLength(1);
   });
 
-  test("invalid structured judgment does not advance the process", async () => {
+  test("invalid structured judgments fail closed and exhaust across invocations", async () => {
     const t = trial();
     t.setJudgment(() => ({ decision: "finished" }));
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      expect((await t.run()).state).toBe("incomplete");
+      expect(t.calls).toHaveLength(attempt);
+      expect(t.evidence().roundsUsed).toBe(attempt);
+    }
     expect((await t.run()).state).toBe("incomplete");
-    expect(t.calls).toHaveLength(1);
+    expect(t.calls).toHaveLength(3);
   });
 
   test("shared checkout is rejected before calling an agent", async () => {
@@ -969,7 +973,7 @@ describe("development workflow using real Git and verification", () => {
     expect(result.result).toBeUndefined();
     expect(t.calls.some((c) => c.stage === "review")).toBe(false);
   });
-  test("current verification stays visible after many later review failures", async () => {
+  test("current verification stays visible until the cumulative review limit", async () => {
     const t = trial();
     t.setJudgment((stage) =>
       stage === "design"
@@ -983,21 +987,17 @@ describe("development workflow using real Git and verification", () => {
     t.current.input = t.spec(0);
     t.current.outcome = t.spec(0).data.outcome;
     t.current.acceptance = t.spec(0).data.acceptance;
-    for (let attempt = 0; attempt < 10; attempt++)
+    for (let attempt = 0; attempt < 3; attempt++)
       expect((await t.run()).state).toBe("incomplete");
-    const verification = t
-      .evidence()
-      .reports.find((r: any) => r.stage === "verification");
-    t.setJudgment(() => ({
-      decision: "pass",
-      reason: "Reviewed with retained proof",
-      findings: [],
-      commit: t.git(t.worktree, "rev-parse", "HEAD"),
-    }));
-    expect((await t.run()).state).toBe("converged");
+    const evidence = t.evidence();
+    const verification = evidence.reports.find(
+      (r: any) => r.stage === "verification",
+    );
+    expect(evidence.roundsUsed).toBe(3);
     expect(t.prompts.at(-1)).toContain(verification.report.path);
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
     expect(t.calls.filter((c) => c.stage === "design")).toHaveLength(1);
+    expect(t.calls.filter((c) => c.stage === "review")).toHaveLength(3);
   });
   test("a fresh design can choose rereview without forcing implementation", async () => {
     const t = trial();

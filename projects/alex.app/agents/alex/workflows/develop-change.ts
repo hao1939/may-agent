@@ -94,6 +94,7 @@ const savedSchema = Type.Object(
     taskId: text,
     requirementKey: text,
     inputKey: text,
+    roundsUsed: Type.Optional(Type.Integer({ minimum: 0, maximum: 3 })),
     design: Type.Optional(designSchema),
     implementation: Type.Optional(candidateSchema),
     verified: Type.Optional(candidateSchema),
@@ -254,6 +255,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
       taskId: rec.taskId,
       requirementKey,
       inputKey,
+      roundsUsed: 0,
       reports: [],
     });
     saved = fresh();
@@ -394,7 +396,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
       return response.output as Static<S>;
     };
 
-    for (let round = 0; round < 3; round += 1) {
+    while ((saved.roundsUsed ?? 0) < 3) {
       await ensureCurrent();
       let value = await candidate(root, ctx.signal, true);
       if (
@@ -409,6 +411,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
           true,
         );
       }
+      saved.roundsUsed = (saved.roundsUsed ?? 0) + 1;
       if (!saved.design) {
         saved.design = await ask("bob", "design", designSchema, value);
         // The new judgment supersedes the old request for repair. Honor review

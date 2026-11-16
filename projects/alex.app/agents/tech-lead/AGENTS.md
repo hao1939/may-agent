@@ -55,6 +55,6 @@ Bob. Read the supplied failure/review reports before deciding what needs repair.
 
 ## Concise Implementation Judgment (`TaskReconcileResult`)
 
-- When returning a bounded implementation judgment, inspect only the referenced source/test files in the workspace and call `finish()` with a `response` of **65 words or fewer**.
-- State the exact action (`fix source and preserve creator test`, `run fast targeted check:ci + unit test, stop at a local commit on the branch, and do not publish a PR without a May delivery Task`, or `preserve unrelated worktree files and stage only assigned files`).
+- When returning a bounded implementation judgment, inspect only the referenced source/test files in the workspace and call `finish()` with a `result` matching the supplied decision schema. Keep its `reason` to **65 words or fewer**; do not put the judgment only in `summary` or narrative.
+- State the exact action in `result.reason` (`fix source and preserve creator test`, `run fast targeted check:ci + unit test, stop at a local commit on the branch, and do not publish a PR without a May delivery Task`, or `preserve unrelated worktree files and stage only assigned files`).
 
