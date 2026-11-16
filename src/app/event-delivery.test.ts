@@ -113,13 +113,6 @@ describe("retry-safe event ingress", () => {
         delivery_status: "pending",
         delivery_route: null,
       });
-      expect(
-        getDb(root)
-          .prepare(
-            "SELECT COUNT(*) AS count FROM event_pair_runs WHERE open_event_id = ? AND pair_name = 'owner_inbox'",
-          )
-          .get(originalId),
-      ).toMatchObject({ count: 0 });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -160,12 +153,10 @@ describe("event delivery metadata", () => {
       const db = getDb(root);
       const traceCols = db.prepare("PRAGMA table_info(event_traces)").all();
       const traceIndexes = db.prepare("PRAGMA index_list(event_traces)").all();
-      const pairIndexes = db.prepare("PRAGMA index_list(event_pair_runs)").all();
 
       expect(traceCols.map((row) => row.name)).toEqual(["event_id", "trace_id", "parent_event_id", "visibility"]);
       expect(traceIndexes.map((row) => row.name)).toContain("idx_event_traces_trace");
       expect(traceIndexes.map((row) => row.name)).toContain("idx_event_traces_parent");
-      expect(pairIndexes.map((row) => row.name)).toContain("idx_event_pair_close_event");
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -349,54 +340,6 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("infers escalation closure traces from legacy escalationId", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "escalation.created",
-        source: "test",
-        owner: "agent:may",
-        data: {
-          escalationId: "esc_trace_test",
-          reason: "needs human input",
-        },
-      } as any);
-
-      const db = getDb(root);
-      const created = db.prepare("SELECT id FROM events WHERE event_type = 'escalation.created'").get() as {
-        id: number;
-      };
-
-      bus.emit({
-        type: "escalation.resolved",
-        source: "test",
-        owner: "agent:may",
-        data: {
-          escalationId: "esc_trace_test",
-          outcome: "resolved",
-          summary: "human answered",
-        },
-      } as any);
-
-      const resolved = db.prepare("SELECT id FROM events WHERE event_type = 'escalation.resolved'").get() as {
-        id: number;
-      };
-      const trace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(resolved.id);
-      expect(trace).toMatchObject({
-        event_id: resolved.id,
-        trace_id: `event:${created.id}`,
-        parent_event_id: created.id,
-      });
-
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("ignores explicit parentEventId references to missing events", () => {
     const root = tempRoot();
     try {
@@ -431,63 +374,20 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("persists live event-pair lifecycle closures without backfill", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "handler.started",
-        source: "test",
-        owner: "project:sample",
-        data: { handler: "task-controller", handlerRunId: "a1", sessionId: "s1" },
-      } as any);
-      bus.emit({
-        type: "handler.completed",
-        source: "test",
-        owner: "project:sample",
-        data: { handler: "task-controller", handlerRunId: "a1", result: "done" },
-      } as any);
-
-      const db = getDb(root);
-      const pair = db
-        .prepare(
-          `SELECT open_event_id, close_event_id
-         FROM event_pair_runs
-         WHERE pair_name = 'handler'`,
-        )
-        .get() as { open_event_id: number; close_event_id: number };
-
-
-      const closeTrace = db.prepare("SELECT * FROM event_traces WHERE event_id = ?").get(pair.close_event_id);
-
-      expect(closeTrace).toMatchObject({
-        event_id: pair.close_event_id,
-        trace_id: `event:${pair.open_event_id}`,
-        parent_event_id: pair.open_event_id,
-      });
-
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
   it("protects retained trace and open-work facts from age deletion", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
       attachPersistence(bus, root);
       bus.emit({
-        type: "handler.started",
-        source: "test",
+        type: "handler.failed",
+        source: "cron",
         owner: "project:sample",
-        data: { handler: "task-controller", handlerRunId: "retained-run" },
+        data: { handler: "task-controller", handlerRunId: "retained-run", error: "transient", durationMs: 1 },
       } as any);
 
       const db = getDb(root);
-      const opened = db.prepare("SELECT id FROM events WHERE event_type = 'handler.started'").get() as {
+      const opened = db.prepare("SELECT id FROM events WHERE event_type = 'handler.failed'").get() as {
         id: number;
       };
       const detail = Number(
@@ -503,20 +403,6 @@ describe("event delivery metadata", () => {
       db.run("DELETE FROM events WHERE id IN (?, ?)", [opened.id, detail]);
       expect(db.prepare("SELECT id FROM events WHERE id = ?").get(opened.id)).toEqual({ id: opened.id });
       expect(db.prepare("SELECT id FROM events WHERE id = ?").get(detail)).toBeNull();
-
-      bus.emit({
-        type: "handler.completed",
-        source: "test",
-        owner: "project:sample",
-        data: { handler: "task-controller", handlerRunId: "retained-run", result: "done" },
-      } as any);
-      const closed = db.prepare("SELECT id FROM events WHERE event_type = 'handler.completed'").get() as {
-        id: number;
-      };
-      db.run("DELETE FROM events WHERE id IN (?, ?)", [opened.id, closed.id]);
-      expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE id IN (?, ?)").get(opened.id, closed.id)).toEqual({
-        count: 2,
-      });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -549,15 +435,6 @@ describe("event delivery metadata", () => {
         accepted_by: null,
         delivery_route: null,
       });
-
-      const pair = db
-        .prepare(
-          `SELECT pair_name, open_event_id, status
-         FROM event_pair_runs
-         WHERE open_event_id = ?`,
-        )
-        .get(event.id) as Record<string, unknown>;
-      expect(pair).toBeNull();
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -571,10 +448,10 @@ describe("event delivery metadata", () => {
       attachPersistence(bus, root);
 
       bus.emit({
-        type: "handler.started",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "sample", agent: "may" },
+        data: { handler: "sample", agent: "may", error: "failed", durationMs: 1 },
       } as any);
 
       const db = getDb(root);
@@ -582,24 +459,13 @@ describe("event delivery metadata", () => {
         .prepare(
           `SELECT id, delivery_status, accepted_by, delivery_route
          FROM events
-         WHERE event_type = 'handler.started'`,
+         WHERE event_type = 'handler.failed'`,
         )
         .get() as Record<string, unknown>;
       expect(event).toMatchObject({
         delivery_status: "accepted",
-        accepted_by: "event-pair-tracker",
-        delivery_route: "direct",
-      });
-      const pair = db
-        .prepare(
-          `SELECT pair_name, status
-         FROM event_pair_runs
-         WHERE open_event_id = ?`,
-        )
-        .get(event.id) as Record<string, unknown>;
-      expect(pair).toMatchObject({
-        pair_name: "handler",
-        status: "open",
+        accepted_by: "event-interface:record",
+        delivery_route: "noop",
       });
     } finally {
       closeDb(root);
@@ -664,15 +530,6 @@ describe("event delivery metadata", () => {
           delivery_route: null,
         }),
       ]);
-      expect(
-        db
-          .prepare(
-            `SELECT COUNT(*) AS count
-           FROM event_pair_runs
-           WHERE pair_name = 'owner_inbox'`,
-          )
-          .get(),
-      ).toMatchObject({ count: 0 });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -734,15 +591,6 @@ describe("event delivery metadata", () => {
           delivery_route: null,
         });
       }
-      expect(
-        db
-          .prepare(
-            `SELECT COUNT(*) AS count
-               FROM event_pair_runs
-              WHERE pair_name = 'owner_inbox'`,
-          )
-          .get(),
-      ).toMatchObject({ count: 0 });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -776,159 +624,6 @@ describe("event delivery metadata", () => {
         accepted_by: null,
         delivery_route: null,
       });
-      expect(
-        db
-          .prepare(
-            `SELECT pair_name, status
-               FROM event_pair_runs
-              WHERE pair_name = 'owner_inbox'`,
-          )
-          .get(),
-      ).toBeNull();
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("closes convention-tracked lifecycle pairs by correlation key", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "handler.started",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "sample", agent: "may" },
-      } as any);
-      bus.emit({
-        type: "handler.completed",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
-      } as any);
-
-      const db = getDb(root);
-      const pair = db
-        .prepare(
-          `SELECT status, close_event_id
-         FROM event_pair_runs
-         WHERE pair_name = 'handler'
-           AND correlation_key = 'sample'`,
-        )
-        .get() as Record<string, unknown>;
-      expect(pair.status).toBe("closed");
-      expect(typeof pair.close_event_id).toBe("number");
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("closes only the matching concurrent handler run", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      for (const handlerRunId of ["handler:sample:1", "handler:sample:2"]) {
-        bus.emit({
-          type: "handler.started",
-          source: "cron",
-          owner: "agent:may",
-          data: { handler: "sample", handlerRunId, agent: "may" },
-        } as any);
-      }
-      bus.emit({
-        type: "handler.completed",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "sample", handlerRunId: "handler:sample:1", agent: "may", durationMs: 5 },
-      } as any);
-
-      const pairs = getDb(root)
-        .prepare(
-          `SELECT correlation_key, status
-           FROM event_pair_runs
-           WHERE pair_name = 'handler'
-           ORDER BY correlation_key`,
-        )
-        .all() as Array<{ correlation_key: string; status: string }>;
-      expect(pairs).toEqual([
-        { correlation_key: "handler:sample:1", status: "closed" },
-        { correlation_key: "handler:sample:2", status: "open" },
-      ]);
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("does not infer lifecycle pairs from unknown event-name suffixes", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      bus.emit({
-        type: "example.created",
-        source: "test",
-        owner: "agent:dev",
-        data: { requestId: "legacy-request-shape" },
-      } as any);
-
-      const db = getDb(root);
-      const inferred = db.prepare("SELECT id FROM event_pair_runs WHERE pair_name = 'example'").get();
-      expect(inferred).toBeNull();
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get()).toBeNull();
-      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'example.created'").get()).toEqual({
-        delivery_status: "pending",
-      });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("closes workflow event pairs when a workflow is interrupted", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "workflow.started",
-        source: "workflow:test-workflow",
-        owner: "agent:tech-lead",
-        data: {
-          workflowRunId: "wr_interrupted_pair",
-          workflow: "test-workflow",
-          task: "Test interrupted workflow pair closure",
-        },
-      } as any);
-
-      bus.emit({
-        type: "workflow.interrupted",
-        source: "workflow:test-workflow",
-        owner: "agent:tech-lead",
-        data: {
-          workflowRunId: "wr_interrupted_pair",
-          workflow: "test-workflow",
-          reason: "simulated interruption",
-        },
-      } as any);
-
-      const db = getDb(root);
-      expect(
-        db
-          .prepare(
-            `SELECT status, close_event_id
-             FROM event_pair_runs
-             WHERE pair_name = 'workflow' AND correlation_key = 'wr_interrupted_pair'`,
-          )
-          .get(),
-      ).toMatchObject({ status: "closed" });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
@@ -950,10 +645,10 @@ describe("event delivery metadata", () => {
       } as any);
       await new Promise((resolve) => setTimeout(resolve, 5));
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
+        data: { handler: "sample", agent: "may", error: "failed", durationMs: 5 },
       } as any);
 
       const db = getDb(root);
@@ -991,24 +686,24 @@ describe("event delivery metadata", () => {
       bus.emit({ type: "test.unhandled", source: "test", owner: "agent:may", data: {}, ttl_ms: 1 } as any);
       await new Promise((resolve) => setTimeout(resolve, 5));
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "first", agent: "may", durationMs: 5 },
+        data: { handler: "first", agent: "may", error: "failed", durationMs: 5 },
       } as any);
 
       const db = getDb(root);
       expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'test.unhandled'").get()).toEqual({
         delivery_status: "pending",
       });
-      expect(db.prepare("SELECT id FROM events WHERE event_type = 'handler.completed'").get()).toBeTruthy();
+      expect(db.prepare("SELECT id FROM events WHERE event_type = 'handler.failed'").get()).toBeTruthy();
 
       await new Promise((resolve) => setTimeout(resolve, 550));
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "second", agent: "may", durationMs: 5 },
+        data: { handler: "second", agent: "may", error: "failed", durationMs: 5 },
       } as any);
       expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'test.unhandled'").get()).toEqual({
         delivery_status: "pending",
@@ -1049,10 +744,10 @@ describe("event delivery metadata", () => {
       ).run(eventId, Date.now());
 
       bus.emit({
-        type: "handler.completed",
+        type: "handler.failed",
         source: "cron",
         owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
+        data: { handler: "sample", agent: "may", error: "failed", durationMs: 5 },
       } as any);
 
       expect(db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(eventId)).toEqual({
@@ -1101,13 +796,13 @@ describe("event delivery metadata", () => {
         for (const row of rows()) {
           expect(row).toMatchObject(scenario === "failed-consumer"
             ? { delivery_status: "pending", accepted_by: null }
-            : { delivery_status: "accepted", accepted_by: "event-pair-tracker", delivery_route: "direct" });
+            : { delivery_status: "accepted", accepted_by: "event-interface:record", delivery_route: "noop" });
         }
         writer.runHousekeeping(Date.now() + 10);
         for (const row of rows()) {
           expect(row).toMatchObject(scenario === "failed-consumer"
             ? { delivery_status: "unhandled", accepted_by: null }
-            : { delivery_status: "accepted", accepted_by: "event-pair-tracker", delivery_route: "direct" });
+            : { delivery_status: "accepted", accepted_by: "event-interface:record", delivery_route: "noop" });
         }
         const retained = rows();
         closeDb(root);
@@ -1120,141 +815,6 @@ describe("event delivery metadata", () => {
       }
     },
   );
-
-  it("does not create a semantic lifecycle pair for an unaccepted message", async () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "message.created",
-        source: "test",
-        owner: "agent:dev",
-        ttl_ms: 1,
-        data: { from: "test", to: "dev", content: "please review quickly" },
-      } as any);
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      bus.emit({
-        type: "handler.completed",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "sample", agent: "may", durationMs: 5 },
-      } as any);
-
-      const db = getDb(root);
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE pair_name = 'owner_inbox'").get()).toBeNull();
-      expect(db.prepare("SELECT delivery_status FROM events WHERE event_type = 'message.created'").get()).toEqual({
-        delivery_status: "unhandled",
-      });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("closes handler lifecycle pairs when completion was recorded first", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-
-      bus.emit({
-        type: "handler.completed",
-        source: "watchdog",
-        owner: "project:sample",
-        data: {
-          handler: "sample-handler",
-          handlerRunId: "sample-run-1",
-          result: "done",
-        },
-      } as any);
-
-      bus.emit({
-        type: "handler.started",
-        source: "planner",
-        owner: "project:sample",
-        data: {
-          handler: "sample-handler",
-          handlerRunId: "sample-run-1",
-          sessionId: "s_task_sample-task",
-        },
-      } as any);
-
-      const db = getDb(root);
-      const pair = db
-        .prepare(
-          `SELECT status, close_event_id, note
-           FROM event_pair_runs
-           WHERE pair_name = 'handler'
-             AND correlation_key = ?`,
-        )
-        .get("sample-run-1") as Record<string, unknown>;
-
-      expect(pair).toMatchObject({
-        status: "closed",
-        note: "closed by earlier handler.completed",
-      });
-      expect(typeof pair.close_event_id).toBe("number");
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("finds an exact completion-first session through its indexed identity", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      const db = getDb(root);
-      const insert = db.prepare(
-        `INSERT INTO events (event_type, source, owner, data, session_id, timestamp)
-         VALUES ('session.end', 'fixture', 'agent:may', ?, ?, ?)`,
-      );
-      const completedSessionId = "s_completion_before_start";
-      db.exec("BEGIN");
-      insert.run(
-        JSON.stringify({ sessionId: completedSessionId, agent: "may", status: "done" }),
-        completedSessionId,
-        Date.now(),
-      );
-      for (let index = 0; index < 201; index++) {
-        const sessionId = `s_decoy_${index}`;
-        insert.run(JSON.stringify({ sessionId, agent: "may", status: "done" }), sessionId, Date.now() + index + 1);
-      }
-      db.exec("COMMIT");
-
-      bus.emit({
-        type: "session.start",
-        source: "fixture",
-        owner: "agent:may",
-        data: {
-          sessionId: completedSessionId,
-          agent: "may",
-          task: "completion-first session",
-          trigger: "fixture",
-          firedAt: Date.now(),
-        },
-      } as any);
-
-      expect(
-        db
-          .prepare(
-            `SELECT status, note
-             FROM event_pair_runs
-             WHERE pair_name = 'session' AND correlation_key = ?`,
-          )
-          .get(completedSessionId),
-      ).toEqual({
-        status: "closed",
-        note: "closed by earlier session.end",
-      });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
 
   it("persists reconciliation observations without inventing a task lifecycle pair", () => {
     const root = tempRoot();
@@ -1300,46 +860,6 @@ describe("event delivery metadata", () => {
         data: string;
       }>;
       expect(observations).toHaveLength(2);
-      expect(
-        db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE pair_name = 'project.task'").get(),
-      ).toEqual({ count: 0 });
-    } finally {
-      closeDb(root);
-      rmSync(root, { recursive: true, force: true });
-    }
-  });
-
-  it("retains orphan lifecycle facts across later event sweeps", () => {
-    const root = tempRoot();
-    try {
-      const bus = new EventBus();
-      attachPersistence(bus, root);
-      bus.emit({
-        type: "handler.started",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "lost-handler", agent: "may" },
-      } as any);
-
-      const db = getDb(root);
-      db.prepare("UPDATE event_pair_runs SET status = 'orphan', expected_close_at = ? WHERE pair_name = 'handler'").run(
-        Date.now() - 24 * 60 * 60_000,
-      );
-
-      bus.emit({
-        type: "handler.completed",
-        source: "cron",
-        owner: "agent:may",
-        data: { handler: "another-handler", agent: "may", durationMs: 1 },
-      } as any);
-
-      expect(
-        db
-          .prepare(
-            "SELECT status FROM event_pair_runs WHERE pair_name = 'handler' AND correlation_key = 'lost-handler'",
-          )
-          .get(),
-      ).toMatchObject({ status: "orphan" });
     } finally {
       closeDb(root);
       rmSync(root, { recursive: true, force: true });

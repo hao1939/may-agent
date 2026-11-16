@@ -22,11 +22,7 @@ export function describeMaintenanceError(error: unknown): MaintenanceErrorDetail
 }
 
 const DAY_MS = 86_400_000;
-const ORPHAN_ACTIONABLE_MS = 4 * 60 * 60 * 1000;
 const DEFAULT_BATCH_SIZE = 5000;
-// Deletion of already-resolved (closed/orphan) pair runs can safely use a
-// larger batch than the general cap because it only removes historical rows.
-const PAIR_DELETION_BATCH_SIZE = 25_000;
 
 function changes(result: unknown): number {
   return Number((result as { changes?: number } | null)?.changes ?? 0);
@@ -35,7 +31,7 @@ function changes(result: unknown): number {
 /** Search without a write transaction; recheck only selected rows while deleting. */
 function removeEligibleRows(
   db: SqliteDb,
-  table: "event_traces" | "events" | "event_pair_runs",
+  table: "event_traces" | "events",
   key: "event_id" | "id" | "rowid",
   eligible: string,
   params: unknown[],
@@ -120,44 +116,6 @@ export function runDbMaintenancePass(
     deleted[name] = changes(db.run(sql, params));
   };
 
-  db.run(
-    `UPDATE event_pair_runs
-     SET status = 'orphan',
-         note = COALESCE(note, 'expected closing event did not arrive before timeout')
-     WHERE rowid IN (
-       SELECT rowid FROM event_pair_runs
-       WHERE status = 'open'
-         AND expected_close_at < ?
-       ORDER BY expected_close_at LIMIT ?
-     )`,
-    [now, batchSize],
-  );
-
-  deleted.retiredOrphans = changes(
-    db.run(
-      `UPDATE event_pair_runs
-       SET status = 'closed',
-           closed_at = ?,
-           note = COALESCE(note || '; ', '') || 'retired stale orphan'
-       WHERE rowid IN (
-         SELECT rowid FROM event_pair_runs
-         WHERE status = 'orphan'
-           AND closed_at IS NULL
-           AND expected_close_at < ?
-         ORDER BY expected_close_at LIMIT ?
-       )`,
-      [now, now - ORPHAN_ACTIONABLE_MS, batchSize],
-    ),
-  );
-
-  // Remove expired closed/orphan commitments first. Open commitments keep their
-  // opening event protected by the retention trigger.
-  deleted.event_pair_runs = removeEligibleRows(
-    db, "event_pair_runs", "rowid",
-    "status IN ('closed', 'orphan') AND opened_at < ?",
-    [now - 3 * DAY_MS], PAIR_DELETION_BATCH_SIZE, "opened_at",
-  );
-
   // Mirror every reference protection in trg_events_referential_retention.
   // Protected rows must not fill the batch and starve later eligible Events.
   deleted.events = removeEligibleRows(
@@ -166,10 +124,6 @@ export function runDbMaintenancePass(
          -- Human approval outcomes are durable business facts. Keep them past
          -- the generic diagnostic-event window regardless of adapter history.
          AND events.event_type NOT IN ('project.approval.submitted', 'project.approval.resolved')
-         AND NOT EXISTS (
-           SELECT 1 FROM event_pair_runs p
-           WHERE p.open_event_id = events.id AND p.status IN ('open', 'orphan')
-         )
          AND NOT EXISTS (
            SELECT 1 FROM event_traces t
            WHERE t.parent_event_id = events.id AND t.event_id != events.id

@@ -172,46 +172,13 @@ export function createQueryService(opts: QueryServiceOptions): QueryAPI {
         )
         .all(since, EVENT_DELIVERY_DEFAULT_PENDING_TTL_MS, now, limit) as Record<string, unknown>[];
 
-      const pairColumns = `p.id, p.pair_name as pairName, p.correlation_key as correlationKey,
-         p.open_event_id as openEventId, p.close_event_id as closeEventId,
-         p.owner, p.status, p.opened_at as openedAt,
-         p.expected_close_at as expectedCloseAt, p.closed_at as closedAt,
-         p.note, e.event_type as openEventType, e.source as openEventSource,
-         e.data as openEventData`;
-
-      const orphanPairs = db
-        .prepare(
-          `SELECT ${pairColumns}
-         FROM event_pair_runs p
-         LEFT JOIN events e ON e.id = p.open_event_id
-         WHERE p.status = 'orphan'
-           AND p.closed_at IS NULL
-           AND p.opened_at >= ?
-         ORDER BY p.expected_close_at ASC, p.id ASC
-         LIMIT ?`,
-        )
-        .all(since, limit) as Record<string, unknown>[];
-
-      const overdueOpenPairs = db
-        .prepare(
-          `SELECT ${pairColumns}
-         FROM event_pair_runs p
-         LEFT JOIN events e ON e.id = p.open_event_id
-         WHERE p.status = 'open'
-           AND p.opened_at >= ?
-           AND p.expected_close_at < ?
-         ORDER BY p.expected_close_at ASC, p.id ASC
-         LIMIT ?`,
-        )
-        .all(since, now, limit) as Record<string, unknown>[];
-
       return {
         now,
         since,
         unhandledEvents: normalizeRows(unhandledEvents),
         overduePendingEvents: normalizeRows(overduePendingEvents),
-        orphanPairs: normalizeRows(orphanPairs),
-        overdueOpenPairs: normalizeRows(overdueOpenPairs),
+        orphanPairs: [],
+        overdueOpenPairs: [],
       };
     },
   };
