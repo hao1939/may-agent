@@ -56,6 +56,27 @@ Replaceable interfaces / producers
           committed change -> Events -> exact wakes / observers / interfaces
 ```
 
+### Shared execution, not a Host-specific agent
+
+Standalone callers and Host orchestration supply definitions, context, tools and
+controls to the [same agent runtime](agent-runtime.md). Host adds durable Tasks,
+scheduling, persistence and worker supervision around the invocation. The agent
+receives ordinary work context; it does not assemble claims, leases or Task
+settlement. Explicit work-management tools/results remain caller contracts.
+
+```text
+Standalone caller ─┐
+                   ├─ shared agent invocation ─ model/tools ─ contribution
+Host orchestration ┘
+       └─ retain work, prepare environment, admit result, schedule/recover
+```
+
+**Source status:** SDK preparation, skills and the model/workflow kernels are
+portable. Manager invocation and mode-specific composition are not fully
+converged. The graph below maps current Host code; it does not certify parity.
+[Source convergence](agent-runtime.md#source-convergence) owns those gaps, and
+[worker supervision](runtime.md#worker-supervision) owns long-running containment.
+
 ### Top-down component graph
 
 ```mermaid
@@ -127,7 +148,7 @@ flowchart TB
 4. **Bounded attempt execution (`attempt-execution.ts`):**
    `runClaimedTask()` opens `runTaskExecutorAttempt()` (managing lease renewal, live event observation, and confirmed descendant cleanup via `session-cleanup.ts`) and dispatches to the selected executor:
    - **Managed agent (`agent:<name>`):** assembles system instructions (`shared/` + `agents/<name>/AGENTS.md` + skills + Host `execution-instructions.md`), injects a fresh `TaskDecisionContext` brief, and runs the `@earendil-works/pi-agent-core` model/tool loop.
-   - **Workflow (`workflow:<name>`):** runs a bounded TypeScript procedure built on the portable invocation kernel (`packages/sdk/src/workflow-kernel.ts` and `src/lib/workflow-tool.ts`, also runnable Host-free via `src/app/standalone.ts`).
+   - **Workflow (`workflow:<name>`):** runs a bounded TypeScript procedure built on the portable invocation kernel (`packages/sdk/src/workflow-kernel.ts` and `src/lib/workflow-tool.ts`, also runnable Host-free via `@may-agent/sdk/standalone`).
    - **Registered executor (`codex-goal`, etc.):** invokes a native CLI coding adapter in the prepared worktree.
 5. **Fenced settlement and loop closure (`app-task-reconciler.ts`, `task-communication.ts`):**
    `runClaimedTask()` validates the returned `TaskReconcileResult` (`converged` | `waiting` | `incomplete`) against the claim fence. `task-communication.ts` applies human-facing replies, updates or closes `conversation_requests` (rejecting convergence if covered `inputKeys` leave an associated human Request open without a wait), submits delegated `requests` to target Apps, and commits atomically in SQLite before calling `refreshTaskResults()` (`app.dependency.updated`) to wake waiting callers or Conversations.

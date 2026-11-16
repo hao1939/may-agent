@@ -21,6 +21,9 @@ Agent registration has two scopes:
 
 App-local registration groups agents with their team's policy and knowledge.
 The packages, not a duplicated design-time roster, are the current inventory.
+Registration scope does not select a different agent lifecycle or implicit tool
+grants. [Shared Agent Runtime](agent-runtime.md) owns standalone/Host parity:
+the same agent receives ordinary context, supplied tools and execution controls.
 
 ## Task ownership and App scope
 
@@ -122,7 +125,13 @@ admission can support that work without waiting for standalone Task addressing.
 
 ## Definition sources
 
-Runtime snapshots agent and App definitions with `shared/common-sense.md`,
+A snapshot means one consistent selected definition, not another work record.
+The [shared rule](agent-runtime.md#working-directory-and-definition-consistency)
+requires resolved instructions/tools/skills to remain stable for an invocation
+while work context may refresh. Current Host release capture implements this;
+standalone still rereads some mutable source after catalog selection.
+
+Host captures agent and App definitions with `shared/common-sense.md`,
 `shared/skills/`, and optional `shared/tools/` helpers. An agent-local tool can
 import a helper from that shared source directory; the helper stays pinned to
 the same release as the importing agent. Commit helper changes before reload.
@@ -251,6 +260,12 @@ Do not use a generic notification as a durable owner inbox.
 
 ## Context passing
 
+Context supplies the assignment, relevant facts and discoverable evidence. The
+agent does not construct or interpret Host claims, leases or queue state. The
+[generic preparation/refresh contract](agent-runtime.md#context-is-information-not-host-machinery)
+applies in either environment; the following describes current Host delivery,
+not information every standalone caller must represent as a Task.
+
 Task-bound managed execution prepares a shared decision brief from the existing
 Task reader before each model request, including helper calls and requests after
 compaction. The caller's request still defines the contribution. The brief shows
@@ -280,8 +295,11 @@ steering to native executors or change workflow result/Task settlement rules.
 
 The model receives system instructions, tool definitions and messages. An
 agent's `AGENTS.md` and the initial request are only parts of that input.
-The managed preparation boundary is `prepareAgentExecution`; the model/tool
-loop then transforms messages before each provider request.
+The portable preparation boundary is `prepareAgentExecution`; Host currently
+wraps it with Task/conversation context. The shared model/tool loop transforms
+messages before each provider request. Host-specific preparation and completion
+remain [convergence work](agent-runtime.md#source-convergence), not a required
+second agent interface.
 
 Keep responsibility and lifetime explicit:
 
@@ -325,8 +343,9 @@ preserving the meaning of the assignment and required evidence. Keep it optional
 context problem justifies it; ordinary role files, skills and references suffice
 for most extensions.
 
-The Task and Conversation adapters supply data, while runtime orientation is
-bundled in `src/lib/execution-instructions.md`. Contract details live with SDK
+The Task and Conversation adapters supply data, while shared runtime orientation
+is bundled in `packages/sdk/src/runtime/lib/execution-instructions.md`. Contract
+details live with SDK
 result schemas and tool descriptions. May's interpretation, intent echo and
 human communication policy live in `may.app/agents/may/AGENTS.md`. These roles
 cooperate through existing preparation and validation, without a prompt registry

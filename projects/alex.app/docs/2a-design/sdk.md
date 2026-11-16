@@ -146,6 +146,9 @@ fields.
 | Unit-test target runner and context stubs | [testing.ts](../../../may-agent/packages/sdk/src/testing.ts) |
 
 The types are defined in source; sketches below show usage, not duplicate schemas.
+The [shared agent runtime](agent-runtime.md) owns standalone/Host execution
+semantics. Current Task-shaped contexts are App/executor interfaces, not a
+requirement for every agent to understand Host's bookkeeping.
 
 ## Stable root surface
 
@@ -478,9 +481,11 @@ metric event remains a fact/wake, never desired state.
 
 ## Workspace and paths
 
-Workflows receive only the workspace allocated to their execution and an
-output path. Portable domain code resolves from that workspace. App code must
-not derive daemon, repository, agent, or persistent-state roots from the process
+`workspace` supplies working, source and output paths; it is not another
+agent-facing lifecycle. Host or the standalone caller prepares the directory
+and validates any required isolation before execution. Portable domain code uses
+those supplied paths. See [directory semantics](agent-runtime.md#working-directory-and-definition-consistency).
+App code must not derive daemon, repository, agent, or persistent-state roots from the process
 working directory.
 
 Offline repair or migration that genuinely needs storage access belongs in an
@@ -501,9 +506,11 @@ serve different boundaries:
 | Read this App's Tasks                          | `tasks` list/get             | `ctx.read.tasks.list/get`  |
 | Finish this bounded execution                  | finish/result                | `ctx.done` / `ctx.blocked` |
 
-Background forks, session steering, cancellation, process control, and human
-delivery are host/agent-tool capabilities only when explicitly granted. They
-are not generic workflow SDK methods.
+Background forks, session steering, cancellation, process control and human
+delivery require explicitly supplied tools/backends; they are not generic
+workflow SDK methods. The same provided tool must honor the same contract in
+either environment. A Host-backed implementation does not justify a hidden
+standalone denial or an implicit hosted grant.
 
 ## Standalone execution and testing
 
@@ -525,10 +532,19 @@ used by Hosted Task attempts:
   workflow module or named target in memory against plugged or scripted `mocks`
   with zero disk or LLM setup.
 
-Standalone execution owns one ephemeral invocation; it does not create durable
-Tasks, claim SQLite leases, or grant implicit Host mutation authority. Unbound
-Host capabilities (`events.emit`, Task mutations, unconfigured reads) fail
-explicitly unless local read snapshots or fixtures are supplied by the caller.
+The default standalone runner owns one ephemeral invocation; it does not start
+Host Task scheduling, claim SQLite leases or grant live Host mutation authority.
+An explicit local backend can provide a capability without becoming the Host.
+Provided tools/services must honor their actual contract; test fixtures belong
+only to explicitly selected test execution.
+
+**Current limits:** the runner denies several Host-backed tool bundles, does not
+carry workflow Task context into prompt-agent preparation, uses advisory text for
+explicit skills, and defaults some unbound reads to test-style `null`/empty data.
+Shared kernel tests do not establish complete prompt-agent parity. See
+[source convergence](agent-runtime.md#source-convergence) for the accepted target.
+A missing item after a successful read can be `null`; a missing backend or failed
+operation must be an error, as defined by [service absence](agent-runtime.md#missing-data-and-unavailable-services).
 
 ## Extension rule
 

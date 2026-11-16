@@ -27,7 +27,7 @@ agents/<name>/
   tools/<capability>.ts   # Optional default-exported local tool factory.
   workflows/              # Executable TypeScript orchestration.
     <name>.ts              # Canonical flat workflow entrypoint.
-  last-session.md         # Generated runtime memory, not system prompt.
+  last-session.md         # Historical generated evidence; writer retired, not system prompt.
 
 projects/<id>.app/agents/<name>/
   agent.json              # Same shape; agent is scoped to the App.
@@ -47,8 +47,11 @@ projects/alex.app/docs/
 
 ## Prompt Files
 
-Two App/installation guidance files are loaded by convention. The Host also
-bundles its short `src/lib/execution-instructions.md` with the binary:
+Two App/installation guidance files are loaded by convention. Shared runtime
+preparation also includes its short
+`packages/sdk/src/runtime/lib/execution-instructions.md` in either environment.
+[Shared Agent Runtime](../2a-design/agent-runtime.md) owns the target execution
+contract; the preparation details below describe current source and its limits:
 
 | File                      | Purpose                                                         | Loaded                |
 | ------------------------- | --------------------------------------------------------------- | --------------------- |
@@ -64,8 +67,10 @@ judgment, the owning workflow supplies them in the task brief or uses the
 existing `contextPreparation` hook. A configured path is not evidence that its
 contents reached the model.
 
-For managed executions, use the Host-prepared tool definitions to inspect
-available capabilities, scoped controls and any required completion schema.
+For any execution, inspect the actual supplied tool definitions for available
+capabilities, scoped controls and any required completion schema. Host presets
+and standalone composition currently differ; provided tools must converge on
+the same [capability contract](../2a-design/agent-runtime.md#capabilities-are-supplied-tools).
 `agent.json` configures selection; preparation resolves the actual tools.
 An optional `TOOLS.md` can explain usage. The obsolete `scripts/sync-tools-md.ts`
 generator and its separate preset expansion table are retired; archived
@@ -179,7 +184,8 @@ This section describes the current managed execution path. See
 ownership and known gaps. The final provider input has three parts:
 `systemPrompt`, `tools`, and `messages`; inspecting one prompt file is insufficient.
 
-`resolveSystemPrompt()` in `projects/may-agent/src/lib/agent-execution.ts` builds:
+`resolveSystemPrompt()` in
+`projects/may-agent/packages/sdk/src/runtime/lib/agent-execution.ts` builds:
 
 1. `shared/common-sense.md`
 2. the registered agent's `AGENTS.md` (global or app-local)
@@ -220,7 +226,8 @@ decision brief is a refreshed view; the transcript is execution history. A
 generated file or a path in the prompt does not prove the model read its content.
 Inspect omission/freshness markers and follow the exact references.
 
-Compatibility persistent chat bypasses App request preparation. It adds a
+**Current compatibility behavior, not the target shared lifecycle:** persistent
+chat bypasses App request preparation. It adds a
 generic conversation instruction and refreshes its state packet as message data
 on every request; human text and source observations are not system instructions.
 Native CLI workers and the Codex Task executor construct their own packets; they do not automatically inherit
@@ -260,15 +267,17 @@ Start with the smallest existing extension point:
    preserves requirements and references, and returns unsupported formats intact.
    Keep it pure and cheap; it is neither retrieval nor transcript management.
 
-For the tool convention, follow Host `src/app/loader/agent-local-tools.ts` and
-`toolset-loader.ts`. Factories receive `projectRoot`, `agentRoot` and `persistDir`;
+For the tool convention, follow SDK
+`packages/sdk/src/runtime/app/loader/agent-config.ts` (`loadAgentLocalTools`) and
+Host `src/app/loader/toolset-loader.ts`. Factories receive `projectRoot`,
+`agentRoot` and `persistDir`;
 these are execution services/locations, not a separate App state lifecycle.
 The loader imports only immediate `.ts`/`.js` modules, skipping test and type
 files. Keep support code in a subdirectory. Inspect activation notices: malformed
 or failed factories are currently reported and skipped. Successful activation
 and the actual prepared toolset, not file presence alone, establish availability.
 
-The Host adds its execution instructions after resolving App system guidance.
+Shared preparation adds execution instructions after resolving App system guidance.
 It binds actual tools and the caller's output schema, then prepares the provider
 message view. An App preparer cannot replace those surfaces through its return
 value. Purity is an authoring contract, not isolation from trusted module code.
@@ -280,9 +289,11 @@ App projects a shorter brief. Treat it as original scope, then apply current
 accepted Task input and authorized steering. An explicitly selected skill's
 canonical reference remains in the system context. Keep this reference beside
 the particular invocation; a helper uses its own assignment, not its caller's.
-Direct execution has no manager-owned session file; supply any needed exact
-references in its execution context. Persistent chat does not pin the first
-turn's assignment or skill as the purpose of all later turns.
+Standalone writes local session evidence, but its current metadata does not
+provide the manager's original-assignment discovery link. Supply needed exact
+references explicitly; [shared context convergence](../2a-design/agent-runtime.md#context-is-information-not-host-machinery)
+keeps that delivery independent of Host Task bookkeeping. Persistent chat does
+not pin the first turn's assignment or skill as the purpose of all later turns.
 
 A bounded execution's timestamp is labeled **Environment captured at**. It is
 stable during that prepared execution (manager-created executions share the

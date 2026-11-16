@@ -9,9 +9,13 @@ description: Start, continue, recover or escalate a blocked May Task using its a
 
 **Choice basis:** [Apps own meaning; the Host owns mechanics](../../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics) and [context discovery](../../1-principles/core-principles.md#context-is-discovered-not-dumped).
 
-Use this skill when receiving a Task assignment; it is also the canonical human
-manual. Keep it updated with the owning execution contracts. Linked references
-resolve from this directory and require the May documentation tree. It explains
+Use this skill for work with the currently supplied Task tools/result contract;
+it is also the canonical human manual. It is optional domain guidance, not
+knowledge required by the generic agent runtime. An ordinary standalone agent
+uses its assignment, context and provided tools without constructing a Host
+Task envelope. [Shared Agent Runtime](../../2a-design/agent-runtime.md) owns that
+boundary; Host Task transparency remains implementation work. Keep it updated
+with the owning execution contracts. Linked references resolve from this directory and require the May documentation tree. It explains
 the current source contract, including Host #285. Use the tools and result schema
 actually supplied to the attempt: App adoption and installed versions can differ.
 The proposed unified capability catalog and `decision` spelling

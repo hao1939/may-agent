@@ -17,6 +17,12 @@ executors and helpers perform contributions without taking over ownership.
 See [agent ownership and App scope](agents.md#task-ownership-and-app-scope),
 including the remaining gap for durable Tasks without an App.
 
+An agent works through the [same runtime](agent-runtime.md) standalone or in Host:
+context supplies information and tools supply capabilities. Host retains Tasks
+and supervises invocations around that runtime; the agent does not need to learn
+its claims, leases or scheduling. A bounded invocation can finish while durable
+work remains. Source parity is partial, as marked in the owning contract.
+
 Use **Task** for owned work and **Conversation Request** for an accepted promise
 to the human. Asking another agent submits App input and can establish a
 caller/result link; a human-owned Condition records help needed from the human.
@@ -110,7 +116,8 @@ contracts support judgment; scoped execution and human controls keep the work
 steerable. Agents decide, infra executes, and Apps supply domain guidance.
 Known procedures can use workflows, asking an agent where judgment is needed.
 
-Owning designs: [agents](agents.md), [SDK](sdk.md), [workflows](workflows.md),
+Owning designs: [agents](agents.md), [shared agent runtime](agent-runtime.md),
+[SDK](sdk.md), [workflows](workflows.md),
 [skills](skills.md), [native workers](native-coding-workers.md), and
 [Host/App boundary](system-boundary.md). The
 [capability guidance proposal](../proposals/task-execution-capabilities-20261002.md)

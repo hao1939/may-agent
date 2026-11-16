@@ -34,6 +34,14 @@ contracts; Tier-2 design governs when wording conflicts.
 
 ## Reviews
 
+- [Agent/workflow invocation migration and reviews](unified-agent-instance-runtime.md)
+  — November 14–15 historical proposal, intermediate APIs and completion claims.
+  [Shared Agent Runtime](../2a-design/agent-runtime.md) owns the accepted boundary;
+  current parity gaps remain in its focused implementation follow-up.
+- [Workflow business/Host extraction](workflow-business-host-boundary.md)
+  — retained plain-TypeScript rationale, framework comparison and earlier
+  fixture/Gym migration plan; retired examples are not current authoring APIs.
+
 - [Connected recovery to the original human promise — 2026-11-12](reviews/connected-recovery-trial-20261112.md)
   — disposable HTTP/control ingress, real tool repair, normal retry and exact
   caller return fulfill the original promise; an unresolved contrast preserves

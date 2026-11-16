@@ -20,7 +20,11 @@ for its source and verification record. Installed adoption remains unverified.
 
 ## The Model
 
-Every agent interaction is a **session** — a single LLM conversation with tools.
+A **session** records model/tool interaction and execution evidence. The agent
+need not manage that record to work. [Shared Agent Runtime](agent-runtime.md)
+owns the one standalone/Host invocation lifecycle; this page owns retained
+history, lineage, controls and current direct-chat continuity. Host Task
+orchestration remains outside the agent invocation.
 
 The following is a schematic Host storage view. Migrations may add columns;
 Host maintenance must inspect the effective schema. App code uses bounded
@@ -64,7 +68,10 @@ bounded attempt. Liveness observation and optional time production are owned by
 [Heartbeat](heartbeat.md) and [Cron](cron.md), not by a special heartbeat session
 or workflow lifecycle.
 
-Chat sessions are persistent conversations. A successful chat turn moves the
+**Current direct-chat compatibility policy:** chat sessions retain conversation
+history. This is not a separate target agent runtime; mode-selected preparation
+and duplicated chat/job execution remain subject to the shared lifecycle
+contract. A successful chat turn moves the
 session from `running` back to `idle`; the next human message wakes the same
 session. A retryable empty assistant turn does not terminal-close the
 conversation: the runtime removes the empty assistant message, retries the same
@@ -180,8 +187,10 @@ Provider requests may have a shorter fixed limit than their invocation. The
 current Pi model-request adapter uses a five-minute abort limit; that is a
 provider-call boundary, not a universal five-minute coding limit. Tool progress
 does not renew the invocation allowance. Silence and repeated tool errors are
-evidence for the owner, not independent permission to stop or steer work. The
-[execution boundary](system-boundary.md#execution) owns these shared rules.
+evidence for the owner, not independent permission to stop or steer work.
+[Shared Agent Runtime](agent-runtime.md#one-invocation-lifecycle) owns invocation
+semantics; [Host Runtime](runtime.md#worker-supervision) owns supervision beyond
+cooperative cancellation.
 
 The [execution consolidation record](../archive/reviews/execution-consolidation-poc-20260914.md)
 documents removal of manager silence cancellation and error-count stopping. The common scope
@@ -195,7 +204,9 @@ Cancellation signals the work first. While it or required helpers are draining,
 live status remains running, with the interruption reason available. Repeated
 cancellation is harmless. Terminal results follow cleanup; disappearing from
 the live map is not evidence of success. In-process cancellation is cooperative;
-existing worker/process isolation handles supported unresponsive execution.
+worker/process isolation contains supported execution failures, but isolation
+alone does not bound a hung worker. The
+[parent-supervision gap](runtime.md#worker-supervision) remains explicit.
 
 An interrupted `call` returns to its caller; generic session auto-resume must
 not start it again independently. The owning workflow or Task decides the next
@@ -269,9 +280,10 @@ location and is not a user-facing concept:
 - Chat sessions use `autoClose: "never"` → successful turns become `idle`
 - Job/call sessions use `autoClose: "immediate"` → completion becomes terminal
 
-Callers don't set it directly — it's derived from `kind`. `autoClose` remains a
-lifecycle policy; every kind retains the same permanent session directory and
-the design does not move full sessions into SQLite.
+Callers don't set it directly — it's derived from `kind`. `autoClose` remains
+current Host session policy, not permission to duplicate agent invocation
+mechanics. Every kind retains the same permanent session
+directory; the design does not move full sessions into SQLite.
 
 ### Permanent path invariant
 

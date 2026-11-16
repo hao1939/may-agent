@@ -5,11 +5,12 @@
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#context-is-discovered-not-dumped).
 
 **Design status:** Accepted.
-**Implementation status:** Implemented for scoped discovery, bounded catalogs,
-explicit/model activation, delegation, new-session reload snapshots, and trace
-evidence. Existing execution sessions retain their selected definition; reload
-does not refresh them in place. Effectiveness evaluation by content hash remains
-follow-up work.
+**Implementation status:** Scoped discovery, bounded catalogs, hosted explicit
+activation, model-selected reads and trace evidence are implemented. Prepared
+Host executions retain their selected definition across reload. Standalone's
+explicit `skill` option does not yet use full-body activation, and its definition
+consistency is incomplete; see [shared runtime convergence](agent-runtime.md#source-convergence).
+Effectiveness evaluation by content hash remains follow-up work.
 
 ## Purpose
 
@@ -45,8 +46,8 @@ people and agents read the same body. The [Task execution guide](../2b-manual/ta
 and [design authoring guide](../2b-manual/design-authoring/SKILL.md) follow this convention.
 Their canonical bodies stay with the manuals at
 `docs/2b-manual/design-authoring/SKILL.md` and
-`docs/2b-manual/task-execution-guide/SKILL.md` in the May App tree. The documentation
-index links to those same files; agents can read them directly or receive them
+`docs/2b-manual/task-execution-guide/SKILL.md` in Alex's shared documentation tree.
+The documentation index links to those same files; agents can read them directly or receive them
 as context references. `shared/skills/paths.json` selects the manual directory
 for shared catalog discovery through the optional-path support described below.
 Maintain the instructions here alongside design changes.
@@ -86,25 +87,22 @@ skill executable orchestration. A workflow may call an agent with a skill for
 one judgment-heavy step, while the workflow continues to own sequencing and
 the terminal result.
 
-## Design Decision
+## Shared implementation
 
-Reuse the installed `@earendil-works/pi-agent-core` skill utilities:
+Use one skill discovery and activation implementation in the portable agent
+runtime. Host supplies selected source roots and retains activation evidence;
+standalone supplies its selected roots. Neither implements a second selector,
+semantic classifier or skill lifecycle. Availability lets the agent choose a
+method; deliberate caller selection supplies the requested guidance, not a
+runtime compliance gate. See [shared skill semantics](agent-runtime.md#skills-are-optional-guidance).
 
-- `loadSourcedSkills()` for discovery, parsing, source attribution, and
-  diagnostics;
-- `formatSkillsForSystemPrompt()` for the model-visible metadata catalog;
-- `formatSkillInvocation()` for explicit per-turn invocation;
-- `NodeExecutionEnv` for filesystem access.
-
-Do not migrate the Host's session manager from the low-level `Agent` to
-`AgentHarness` merely to gain skills. The Host already owns session
-persistence, event bridging, compaction policy, queued turns, delegation, and
-trace closure. Reuse the small skill primitives inside the existing manager.
-
-Import these helpers from the package's public `@earendil-works/pi-agent-core`
-and `/node` exports, not from `dist/`. Pin and compatibility-test the Earendil
-package version because this harness surface is not assumed to exist in every
-pi-agent distribution.
+Current [SDK skill utilities](../../../may-agent/packages/sdk/src/runtime/lib/skills.ts)
+use the public `loadSkillsFromDir`, `formatSkillsForPrompt` and `stripFrontmatter`
+helpers from `@earendil-works/pi-coding-agent`. May's `discoverAgentSkills`,
+`formatBoundedSkillCatalog` and `invokeCatalogSkill` add scope, budgets and named
+activation. These replace the earlier helper names in this design; no session
+manager migration or additional harness is required. Pin and compatibility-test
+the dependency used by that implementation.
 
 ## Package Contract
 
@@ -168,8 +166,8 @@ Distinct packages with duplicate names within one scope are invalid. Discovery
 returns a diagnostic and omits the ambiguous name rather than selecting by
 filesystem order. Multiple paths to the same canonical package count once per
 scope.
-`loadSourcedSkills()` preserves source metadata; the Host defines and applies
-the precedence policy.
+The shared discovery implementation preserves source metadata and applies this
+precedence in either environment.
 
 Symlinks may expose one canonical package to another client, but discovery
 must validate the canonical target against trusted skill roots. Do not maintain
@@ -230,7 +228,7 @@ configuration:
 
 ```text
 agent directory + shared root
-  -> loadSourcedSkills()
+  -> discoverAgentSkills()
   -> validate and resolve precedence
   -> agent skill catalog
   -> compact metadata in new-session system prompts
@@ -250,8 +248,9 @@ also remains pinned rather than silently following the registry.
 Starting a fresh execution can adopt the activated definition without replacing
 the enclosing Conversation or Task. Do not confuse a human-facing conversation
 with one model execution session; persistent-session callers must prepare a new
-execution to adopt a new catalog. This is a snapshot boundary, not a promise of
-live prompt refresh.
+execution to adopt a new catalog. This keeps a consistent selected definition;
+it is not a promise of live prompt refresh or a separate snapshot service. Current standalone preparation does not
+yet fully honor this boundary.
 
 ## Progressive Disclosure
 
@@ -268,8 +267,8 @@ The catalog contains only `name`, `description`, and canonical location. Full
 skill bodies do not enter every prompt. Skills remain subordinate to system
 safety, shared principles, and the owning agent's `AGENTS.md`.
 
-Use `formatSkillsForSystemPrompt()` as the base representation, with a May
-budget wrapper:
+Use the shared `formatSkillsForPrompt()` representation with May's
+`formatBoundedSkillCatalog` wrapper:
 
 - cap the catalog at 8,000 characters by default (the formatter accepts an
   explicit character budget; current prompt assembly uses the default);
@@ -299,8 +298,9 @@ method use and useful outcome are separate evidence.
 
 ### Model-selected
 
-The catalog tells the model to read the complete `SKILL.md` when the task
-matches its description. The model performs the judgment; v1 does not add a
+The catalog exposes descriptions and readable `SKILL.md` locations. The agent
+chooses whether a method is useful and reads its full instructions when needed.
+Availability does not require activation or enforce method use; there is no
 second semantic classifier.
 
 A successful read of a cataloged `SKILL.md` loads the skill for that turn.
@@ -346,13 +346,18 @@ manager.send(sessionId, task, { skill: "verify-change", trace });
 The typed workflow SDK also retains explicit skill activation for authored
 procedures that intentionally select a method. These execution options use the
 receiving agent's catalog; a caller's catalog does not establish availability.
-The manager validates the name and uses `formatSkillInvocation()` to combine
-the full skill body with the task. A turn has at most one explicit primary
-skill in v1. Other cataloged skills can still be read on demand.
+Shared preparation validates the name and uses `invokeCatalogSkill()` to combine
+the full skill body with the prepared request. A turn has at most one explicit
+primary skill in v1. Other cataloged skills can still be read on demand.
 
-An unavailable explicit name is rejected before model execution. The Host does
-not silently substitute another method. This validation belongs to deliberate
+An unavailable explicit name is rejected before model execution. Neither mode
+may silently substitute another method. This validation belongs to deliberate
 activation; ordinary delegation passes references without resolving a skill name.
+
+**Standalone limit:** `may run --skill` / `run(..., { skill })` currently prepends
+an advisory sentence instead of passing selection to shared activation. It can
+therefore run without the selected body or unavailable-name rejection. This is
+an adapter defect to correct, not a distinct standalone skill policy.
 
 The `agents` tool's `context_files` argument appends file references to the
 recipient's assignment; it does not inject their contents. A full `SKILL.md`
@@ -469,8 +474,10 @@ prompts, supports explicit and model-selected activation, and emits
 trace-aligned `skill.loaded` evidence. Invalid packages and untrusted symlinks
 are omitted with diagnostics.
 
-Two boundaries matter:
+The following boundaries matter:
 
+- Standalone explicit selection and mutable-source consistency remain the gaps
+  identified above; hosted activation tests do not establish standalone parity.
 - Persistent chats retain their prepared catalog. This is the intentional
   definition-snapshot rule, not failed reload. A fresh execution adopts the
   activated catalog without replacing the human Conversation or Task.
@@ -486,7 +493,8 @@ agent runtime and must not create another work lifecycle.
 - Valid canonical skills are discovered at their expected scope.
 - Invalid or ambiguous skills are omitted with actionable diagnostics.
 - The normal prompt contains metadata but not full skill bodies.
-- Explicit invocation inserts exactly one selected body plus the task.
+- Explicit invocation inserts exactly one selected body plus the prepared request
+  in both standalone and Host; default availability does not enforce skill use.
 - Model-selected loading requires a successful full-file read.
 - Agent and shared name collisions resolve deterministically.
 - Reload never mutates a running turn; new sessions receive the new catalog.

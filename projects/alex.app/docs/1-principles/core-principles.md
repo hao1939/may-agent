@@ -253,6 +253,14 @@ and authorized capabilities. A worker boundary must not silently remove an App
 setting or service access. Keep execution-specific identity and explicit policy
 separate; see the [shared execution environment](../2a-design/system-boundary.md#shared-execution-environment).
 
+Standalone and Host use one agent execution lifecycle. Supplied tools provide
+capabilities; prepared context provides work information. Host manages durable
+Tasks and supervision around the invocation, without requiring a Host-specific
+agent or hidden mode-derived permissions. Equivalent inputs and controls must
+obey equivalent execution semantics. The
+[shared agent runtime contract](../2a-design/agent-runtime.md) owns the boundary
+and its remaining implementation gaps.
+
 ## Event-driven integration
 
 Use meaningful events to connect independent producers and consumers. React

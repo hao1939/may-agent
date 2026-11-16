@@ -26,11 +26,11 @@ Agent = own Task outcomes, judge progress, use capabilities and request help
 App = extend its owner agent with a scoped address, policy, context and capabilities
 ```
 
-Infrastructure and runtime are both part of the Host. Infrastructure is what
-the Host uses—storage, timers, model providers, processes, and transports.
-Runtime is the code that connects and operates those things. Neither is a
-third work owner or something an App composes. The creator controls the requested
-scope. [Agent ownership and App scope](agents.md#task-ownership-and-app-scope)
+Host orchestration connects storage, timers, processes and transports to durable
+work. The [shared agent runtime](agent-runtime.md) executes the same agent
+standalone or in Host with supplied context, tools and controls. Neither is a
+third work owner or another service an App must assemble. The creator controls
+the requested scope. [Agent ownership and App scope](agents.md#task-ownership-and-app-scope)
 distinguishes that authority from carrying the Task's outcome. Current durable
 admission remains App-scoped; standalone Tasks are an explicit follow-up.
 
@@ -509,10 +509,13 @@ This optional discovery tick is separate from required Host recovery.
 
 ## Execution
 
-All supported Host executions share rules for limits, cancellation, cleanup and
-results. Entry points and provider adapters may differ; they do not select a
-second work lifecycle. Core owns durable Task admission and result fences;
-execution helpers/adapters run the work, and composition supplies trusted scope.
+Standalone and Host must use one agent invocation lifecycle, as defined in
+[Shared Agent Runtime](agent-runtime.md). Context is ordinary work information;
+capabilities come from supplied tools, not execution mode. Host Task records
+manage durable work transparently around that invocation. Core owns admission
+and result fences; execution adapters run the work and composition supplies
+trusted scope. Current lifecycle and preparation differences remain explicit
+[source convergence gaps](agent-runtime.md#source-convergence).
 For a claimed Task, core opens one attempt scope around handler selection and
 execution, then closes its event subscriptions and lease renewal before settling
 the report. Each selected handler uses that scope; adding a backend does not
@@ -520,20 +523,12 @@ add another Task execution lifetime.
 The [implementation and evidence](../archive/reviews/execution-consolidation-poc-20260914.md)
 record consolidation of these entry points; this is not a deployment claim.
 
-Direct execution reports its actual model-visible tool surface. In its execution
-manifest, `configuredTools` retains the capability-bundle names declared by the
-agent while `effectiveTools` is replaced after preparation with the concrete
-prepared tool names, including agent-local tools and any `finish` tool added for
-a caller-owned result schema. Existing denials retain their narrower contract:
-they name configured capability bundles and are applied before tool construction.
-
-This change makes execution evidence agree with tool visibility; it does not
-expand tool policy or provide an OS sandbox. Agent-local factories remain trusted
-installation code, and denying individual concrete or local tools is deferred
-until that policy has a clearer requirement and contract. Host
-[PR #223](https://github.com/hao1939/may-agent/pull/223) at `6ace65ad` carries
-the reporting correction; review, merge, deployment and live adoption remain
-separate.
+Execution evidence reports the actual model-visible tool set, including local
+tools and caller-supplied completion validation. Configuration presets are not
+proof of availability. Tool selection and explicit restriction follow the
+[capability contract](agent-runtime.md#capabilities-are-supplied-tools); current
+standalone bundle denials are an implementation limit, not a permanent mode
+boundary. Trusted local factories and shell/native tools are not an OS sandbox.
 
 | Invocation | Ownership and result |
 | --- | --- |
@@ -568,10 +563,12 @@ second retry controller. These ordering guarantees describe reviewed Host
 source only until its exact runtime revision and configured native adapter are
 separately deployed and read back.
 
-When no limit is configured, hosted execution uses a 30-minute invocation default,
-matching the existing Task workflow default. One-shot CLI keeps its five-minute
-default and explicit positive configured limits remain supported. Each active
-direct chat turn gets a fresh allowance; idle time consumes none. These are
+Current defaults depend on the caller: ordinary managed/direct invocations and
+Task workflows use 30 minutes, Task prompt execution uses 15 minutes, and the
+one-shot CLI uses five minutes. These are supplied caller policies, not different
+agent lifecycles. Explicit positive limits remain supported; equivalent parity
+tests supply equivalent limits. Each active direct chat turn gets a fresh
+allowance; idle time consumes none. These are
 execution limits, not instructions for an agent to track time or judge progress.
 
 Keep bounded agent calls as ordinary capabilities; `ctx.call` and the

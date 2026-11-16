@@ -15,6 +15,8 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | How does work flow from an ask to an outcome? | [System Model](2a-design/system-model.md) |
 | How do Task, Conversation Request, App input and human action differ? | [Term clarification](2a-design/message-lifecycle.md#task-request-input-and-human-action) |
 | What does the agent decide and infra execute? | [Host/App boundary](2a-design/system-boundary.md) |
+| What stays identical standalone and in Host? | [Shared Agent Runtime](2a-design/agent-runtime.md) |
+| How does Host supervise long-running execution? | [Worker supervision](2a-design/runtime.md#worker-supervision) |
 | How should an agent work with current capabilities? | [Task execution guide](2b-manual/task-execution-guide/SKILL.md) |
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |
 | What remains to prove when a Task owner cannot start? | [Connected recovery adoption proposal](proposals/unified-agent-recovery-20261017.md) |
@@ -58,7 +60,8 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | Document                                                       | Purpose                                                       |
 | -------------------------------------------------------------- | ------------------------------------------------------------- |
 | [agents.md](2a-design/agents.md)                               | Agent Task ownership, App scope, cooperation and registration. |
-| [runtime.md](2a-design/runtime.md)                             | Host process modes, startup, capacity, reload and recovery.   |
+| [agent-runtime.md](2a-design/agent-runtime.md)                 | Identical agent lifecycle, tools/context, skills and standalone/Host convergence gaps. |
+| [runtime.md](2a-design/runtime.md)                             | Host process modes, startup, capacity, supervision, reload and recovery. |
 | [sessions.md](2a-design/sessions.md)                           | Bounded execution, continuity and retained evidence.           |
 | [execution-contributions.md](2a-design/execution-contributions.md) | Agent/workflow helper scope, results, repair and retained evidence. |
 | [workflows.md](2a-design/workflows.md)                         | App-local execution contract, enforcement owners and support limits. |

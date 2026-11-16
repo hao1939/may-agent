@@ -20,7 +20,11 @@ Conversation-specific input, successor, and presentation rules. Dated proposal
 inventories remain historical migration evidence, not current implementation
 status or deployment proof.
 
-The runtime is the Host code. It is not a third layer between Host and App.
+This page owns Host process orchestration, not a second agent implementation.
+[Shared Agent Runtime](agent-runtime.md) owns the identical standalone/Host
+invocation contract. Host prepares context, services and controls, invokes that
+runtime, then retains and admits results and schedules remaining work. Its Task
+coordinates stay outside generic agent reasoning. Source parity remains partial.
 
 The [System Model](system-model.md) defines ownership and replaceability;
 [Architecture](architecture.md) maps them to current source.
@@ -39,7 +43,7 @@ recovery.
 | ------------------------------ | ---------- | ----------------------------------- |
 | Daemon with `--cron`            | Yes | Yes, including background Tasks          |
 | Daemon without `--cron`         | Yes | Yes, including background Tasks; optional schedules disabled |
-| Standalone (`may run` / `may list`) | No     | Yes (`src/app/standalone.ts` — prompt, code & CLI targets) |
+| Standalone (`may run` / `may list`) | No     | Yes (`@may-agent/sdk/standalone` — prompt, code & CLI targets) |
 | Gym                            | No         | Yes                                 |
 | Web/read-only process          | No         | Only through explicit control calls |
 | Status CLI                     | No         | No                                  |
@@ -198,17 +202,16 @@ pause. Exact Turn Stop and explicit Task closure remain separate controls.
 
 ## Bounded execution
 
-All agent calls use the same execution path:
+All agent calls must use the [shared invocation lifecycle](agent-runtime.md#one-invocation-lifecycle).
+Host supplies the selected definition, assignment/context, effective tools,
+execution controls and evidence services. The agent works and returns a
+contribution; Host validates and admits it under the App/caller contract. Task claim,
+lease, scheduling and recovery do not become a second model/tool lifecycle.
 
-```text
-agent definition + typed input + allowed tools
-  -> model/tool loop
-  -> ExecutionResult
-```
-
-The execution path owns prompt preparation, tool policy, cancellation,
-transcript evidence, and provider interaction. It does not own an App request
-or task outcome.
+**Source limit:** preparation and the model runner are shared, but the manager
+still duplicates SDK invocation completion/recovery decisions. See
+[source convergence](agent-runtime.md#source-convergence); the shared-path design
+is not proof that this duplication is removed.
 
 Sessions record execution. Live sessions may be steered; ended sessions cannot
 resume or reuse their execution identity. After confirmed cleanup, the owning
@@ -425,6 +428,31 @@ the worker process. The startup repair pass uses the same process boundary;
 after it finishes, the parent performs only one bounded indexed readiness scan.
 Read-only interface queries remain independent and must meet their
 responsiveness budget while workers are active.
+
+## Worker supervision
+
+Host must supervise execution independently of the worker it supervises. A
+responsive daemon does not prove a child worker is responsive or making useful
+progress. For bounded attempts, the parent enforces the selected execution
+limit, requests cancellation and applies bounded process termination when
+cooperative shutdown fails. Keep ownership/capacity until exit and required
+descendant cleanup are confirmed; a sent signal is not completed cleanup.
+An intentionally ongoing native executor needs an explicit responsiveness and
+stop policy, not an accidental unlimited wait or a universal short timeout.
+
+The process supervisor restarts exited Host services. Independent maintenance
+probes the control socket and durable daemon heartbeat, with failure pacing,
+active-work grace and restart cooldown. Those are process-liveness checks, not
+proof of work completion. App policy judges useful progress, exhausted retries
+and needed intervention through existing observations and routes.
+
+**Source gap:** `task-attempt-process.ts` supports a parent-side worker timeout,
+but `app-runtime.ts` creates attempt and recovery executors without supplying
+it. Worker-local deadlines cannot contain synchronous/non-cooperative hangs.
+A stuck worker can retain a capacity slot while daemon health probes succeed;
+a stuck startup recovery can delay controller readiness. Parent-owned bounded
+supervision and the explicit ongoing-executor exception remain implementation
+work. This design change neither restarts production nor claims that gap fixed.
 
 ## Recovery
 

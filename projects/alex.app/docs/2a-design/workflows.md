@@ -42,11 +42,12 @@ owns only one bounded execution attempt.
 A workflow may ask an agent to apply a skill. The workflow controls sequence;
 the skill guides judgment inside one step. Neither owns the enclosing App/task.
 
-The [unified invocation runtime](../proposals/unified-agent-instance-runtime.md)
-routes Unit (`runTargetTest` / `runWorkflowTest` / `runStandalone`), Host-free
-Standalone/Gym (`run` / `runDirect` in `src/app/standalone.ts`), and
-Hosted execution (`TaskRunner`) through one shared portable invocation kernel while keeping
-`@may-agent/sdk` as the single authoring contract.
+The SDK workflow kernel supports fixture tests, standalone/Gym
+(`@may-agent/sdk/standalone`) and hosted procedure execution.
+[Shared Agent Runtime](agent-runtime.md) owns the same-execution contract across
+these environments, with explicit remaining prompt-agent parity gaps. A common
+workflow kernel is not proof that tool composition or agent lifecycle is already
+identical. The SDK remains the public authoring contract.
 
 ### Procedural evidence and agent judgment
 
@@ -161,7 +162,7 @@ replay did not remove local repair within an executing workflow.
 For task-owned execution, `ctx.reconciliation` supplies:
 
 - App/task identity and current generation/resource version;
-- selected agent, mode, outcome, and acceptance;
+- selected agent, outcome, and acceptance;
 - typed workflow input;
 - bounded live and completed child views; and
 - a capped snapshot of other live App tasks when App-wide frontier health must
@@ -341,8 +342,11 @@ must not become workflow-local retry schedulers.
 
 ## Workspace convention
 
-The host allocates the workflow workspace according to the App/task policy and
-provides working/output roots and, when available, the Task entry:
+The execution environment supplies the working/output roots. Host may allocate
+a checkout according to App policy; a standalone caller may provide an existing
+directory. Required setup is checked before execution. The agent needs paths,
+not a special workspace lifecycle. [Shared directory semantics](agent-runtime.md#working-directory-and-definition-consistency)
+own this boundary. Current workflow fields also expose a Task entry when present:
 
 ```ts
 ctx.workspace?.root;
@@ -381,12 +385,14 @@ task worktrees. Genuine offline repair belongs in an explicit maintenance CLI.
 
 ### Task entry and discovery
 
-**Design direction:** Agreed for the next workspace iteration. The
-[implementation proposal and local trials](../archive/reviews/task-context-discovery-20260917.md)
-track generation of `TASK.md`, its discovery references and remaining limits.
+**Source status:** Host generates `TASK.md` and linked detail/catalog artifacts
+for attempt discovery. The [earlier trials](../archive/reviews/task-context-discovery-20260917.md)
+retain their recorded scope; current context and standalone gaps are marked in
+[shared runtime convergence](agent-runtime.md#source-convergence).
 
-Every Task should have a Host-supplied entry path to `TASK.md`, shared by its
-agents and workflows. The brief summarizes the outcome, acceptance, pending
+A hosted Task has a supplied entry path to `TASK.md`, shared by its agents and
+workflows. This is ordinary context discovery, not a mandatory file or envelope
+for every standalone agent. The brief summarizes the outcome, acceptance, pending
 inputs, effective working paths, prior results and current execution problems.
 Agent-owned notes and outputs remain separate from this generated brief. The
 entry path does not require moving existing source workspaces or artifacts.
@@ -422,9 +428,9 @@ references expose new outputs without a second workspace registry or copied
 event ledger. Historical evidence and unaccepted proposals remain distinguishable
 from accepted results.
 
-The first implementation should generate the small brief and working discovery
-routes from existing context and read capabilities. Agents choose what to
-inspect, including for self-diagnosis; the Host need not predict every useful
+Generate the small brief and working discovery routes from existing context and
+read capabilities, using the shared preparation/refresh mechanism. Agents choose
+what to inspect, including for self-diagnosis; the Host need not predict every useful
 document, preload full histories or introduce another search service.
 
 ## Discovery, reload, and provenance

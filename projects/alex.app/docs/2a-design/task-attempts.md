@@ -17,6 +17,13 @@ Read the [agent guide](../2b-manual/task-execution-guide/SKILL.md) for ordinary 
 [agent and workflow contributions](execution-contributions.md) own bounded helper calls.
 The sections below are the reference for executor and App implementers.
 
+A Task attempt is Host's durable-work boundary around an invocation, not a
+second agent runtime. [Shared Agent Runtime](agent-runtime.md) owns preparation,
+context, tools and the identical execution lifecycle. Adapters carry claim and
+settlement coordinates privately; the agent receives the assignment, relevant
+facts and explicitly supplied tools/result expectations. Current Task-shaped
+schemas remain usable adapter contracts while that simplification is pending.
+
 ## Agent judgment and infra admission
 
 The worker judges actions, sufficiency and completion within its assignment and

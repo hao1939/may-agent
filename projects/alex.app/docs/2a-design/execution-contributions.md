@@ -5,7 +5,12 @@
 **Choice basis:** [Match the mechanism to the responsibility](../1-principles/core-principles.md#match-the-mechanism-to-the-responsibility).
 
 **Design status:** Accepted.
-**Implementation status:** Scoped helper calls, common terminal results, evidence retention and Task-backed waiting are implemented. Cancellation requires cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible. The sections below state specific coverage limits.
+**Implementation status:** Scoped helper calls, common terminal results,
+evidence retention and Task-backed waiting are implemented. Cancellation requires
+cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
+The sections below state specific coverage limits. Full standalone/Host agent
+parity is not established; [Shared Agent Runtime](agent-runtime.md) owns its
+accepted semantics and current convergence gaps.
 
 An agent or workflow can ask another agent or workflow for a bounded contribution.
 The caller retains its assignment and judges the contribution. Task-level
@@ -138,9 +143,11 @@ Each call has two distinct inputs:
 - **Inherited context:** exact caller identity and, when Task-bound, its
   App/Task/generation/attempt, Task entry, scoped reads, feedback source, working
   paths, effective capabilities, cancellation and remaining execution allowance.
-  The Host supplies these from the live execution. An input path or agent name
-  cannot establish them or broaden access. Resolve the exact current caller
-  session, never the latest session sharing an agent name.
+  The environment supplies these from the live execution. Host adapters retain
+  claim/lease coordinates privately; the agent receives useful context and tool
+  contracts, not a requirement to construct a Task envelope. An input path or
+  agent name cannot establish authority or broaden access. Resolve the exact
+  current caller session, never the latest session sharing an agent name.
 - **Assigned contribution:** the requested outcome, constraints, relevant
   references and expected evidence. The caller supplies ordinary task text or
   private workflow parameters. There is no public schema per scenario and no

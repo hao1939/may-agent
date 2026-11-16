@@ -166,7 +166,11 @@ bun src/app/may.ts run alex/develop-change '{"task":"Fix parser","verify":["bun"
 git diff | bun src/app/may.ts run alex/review-change --readonly --json
 ```
 
-`alex/develop-change` is one Task-backed workflow in Host, standalone, and Gym.
+`alex/develop-change` is one procedure runnable in Host, standalone and Gym.
+Its current input convention uses Task-shaped assignment data; that does not
+create a durable Task standalone or require the generic agent to learn Host
+bookkeeping. Complete agent-runtime parity remains
+[implementation work](../2a-design/agent-runtime.md#source-convergence).
 The standalone command accepts `task` (plus optional `acceptance` and
 `constraints`) as a convenience, builds a local Task envelope, and passes only
 `verify` to the procedure. The procedure then reads the requirement through the
@@ -181,7 +185,7 @@ deploy it.
 | `--chat`                         | Compatibility alias that enables the quiet built-in console view                            |
 | `--console`                      | Enable the built-in development readline console                                            |
 | `--socket`                       | Enable Unix socket for external control                                                     |
-| `--cron`                         | Enable cron jobs (heartbeats, JS handlers, scheduled tasks)                                 |
+| `--cron`                         | Enable optional App schedules and producers; ordinary Task execution does not require it |
 | `--telegram`                     | Enable the Telegram Conversation and Task adapter                                           |
 | `--web`                          | Enable web UI                                                                               |
 | `--status`                       | Print system dashboard and exit (agent quality, process health, trends)                     |
@@ -217,7 +221,7 @@ These are executor/maintenance controls, not a separate durable App work path.
 
 ### Configured agents
 
-The runtime discovers standalone agents from `agents/<name>/agent.json` and
+The runtime discovers global agents from `agents/<name>/agent.json` and
 app-local agents from `projects/<id>.app/agents/<name>/agent.json`. Use the
 `agents` tool `list` action, the WebUI Agents page, or runtime status to inspect
 the current fleet. Documentation does not maintain a hard-coded agent/model

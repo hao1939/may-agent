@@ -35,7 +35,8 @@ contract. Specific implementation gaps remain marked beside affected behavior.
 | I want to… | Read |
 | --- | --- |
 | Understand the system | [System Model](2a-design/system-model.md), then [Architecture](2a-design/architecture.md) |
-| Work as an agent | [Task execution guide](2b-manual/task-execution-guide/SKILL.md); load exact capability references as needed |
+| Understand standalone versus Host execution | [Shared Agent Runtime](2a-design/agent-runtime.md); Host adds [orchestration and supervision](2a-design/runtime.md) |
+| Work as an agent | Use the supplied assignment/context and tools; [Task execution guide](2b-manual/task-execution-guide/SKILL.md) covers current Task-backed work |
 | Build an App or workflow | [SDK Quickstart](2b-manual/sdk-quickstart.md), [Task authoring](2b-manual/handler-authoring.md), [Workflow authoring](2b-manual/workflow-authoring.md) |
 | Change infra | [Host/App boundary](2a-design/system-boundary.md), then the owning contract in [INDEX](INDEX.md) |
 | Read implementation | [Source reading guide](2b-manual/source-reading-guide.md) |

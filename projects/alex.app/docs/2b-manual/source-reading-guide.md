@@ -4,12 +4,12 @@
 
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
 
-Start with one Task, follow its agent execution, then choose the part you want
-to review. The broader source map was checked against Host `7f349322`
-(2026-09-27, through #256). The execution section follows the candidate in the
-[September 28 review](../archive/reviews/task-execution-readability-20260928.md).
-It describes source; the running binary and activated App definitions
-have separate release identities.
+Start with one invocation or Task, then follow the part you want to review.
+The portable execution paths below were refreshed against Host `4c2ddaa3e4`.
+[Shared Agent Runtime](../2a-design/agent-runtime.md) owns the accepted boundary
+and remaining parity gaps. The [earlier source review](../archive/reviews/task-execution-readability-20260928.md)
+retains its dated findings. Source and the running binary/activated App release
+have separate identities.
 
 Read the [System Model](../2a-design/system-model.md) for the concepts. Keep the
 [Host source map](../../../may-agent/src/app/README.md) beside this guide for
@@ -54,6 +54,7 @@ The source layout follows those responsibilities:
 | Location | Read it as |
 | --- | --- |
 | `packages/sdk/src/` | Public App, Task and workflow contracts |
+| `packages/sdk/src/runtime/` | Portable agent preparation, model execution, skills, tools and standalone composition |
 | `src/app/core/` | Admission, events, state, scheduling and Task transitions |
 | `src/app/adapters/` | Executor, workspace, producer and reporting implementations |
 | `src/app/composition/` | Selection, wiring, activation and cleanup of implementations |
@@ -190,7 +191,7 @@ The surrounding time code has distinct purposes:
 | --- | --- |
 | Controller and `host-capacity.ts` | Queue work and release capacity in `finally` |
 | `runTaskExecutorAttempt()` | Renew the current execution lease; remove its timer/listeners on exit |
-| `ExecutionScope` in `src/lib/execution-scope.ts` | Bound an invocation and propagate cancellation/deadlines |
+| `ExecutionScope` in SDK `runtime/lib/agent-execution.ts` | Bound an invocation and propagate cancellation/deadlines |
 | `reportTiming` and session usage records | Observe queue wait, elapsed time and usage |
 | The zero-delay yield in `runClaimedTask()` | Let other event-loop work run after synchronous state writes |
 
@@ -234,9 +235,10 @@ attempt-execution.ts: runTaskAgent()
   adapters/executors/managed-agent.ts: executeTaskAgent()
     manager.ts: callAgentDefinition() / callAgent()
       runDefinition()
-        agent-execution.ts: prepareAgentExecution()
-        agent-runner.ts: createAgentRun()
-      startManagedExecution() -> executeSession()
+        src/lib/agent-execution.ts: Host preparation adapter
+          SDK runtime/lib/agent-execution.ts: prepareAgentExecution()
+        SDK runtime/lib/agent-execution.ts: createAgentRun()
+      startManagedExecution() -> executeSession()  [current duplicated lifecycle]
         agent.prompt() -> model/tool loop
 ```
 
@@ -244,22 +246,26 @@ The [managed-agent adapter](../../../may-agent/src/app/adapters/executors/manage
 supplies assignment data and the Task result schema. The
 [manager](../../../may-agent/src/lib/manager.ts) owns session identity,
 persistence and execution lifetime. [Preparation](../../../may-agent/src/lib/agent-execution.ts)
-binds the model's inputs. The thin [runner](../../../may-agent/src/lib/agent-runner.ts)
-wraps `Agent` from `@earendil-works/pi-agent-core`; that dependency implements
-the actual model/tool loop.
+binds Host context around [portable preparation and execution](../../../may-agent/packages/sdk/src/runtime/lib/agent-execution.ts).
+That SDK file also owns `createAgentRun()` and `executePreparedAgent()` over
+`@earendil-works/pi-agent-core`. Standalone uses
+[SDK composition](../../../may-agent/packages/sdk/src/runtime/app/standalone.ts).
+The manager's separate `executeSession()` remains convergence work; sharing the
+underlying model loop does not establish an identical invocation lifecycle.
 
 ### Inspect all three model inputs
 
-| Model input | Follow in `agent-execution.ts` | What contributes |
+| Model input | Follow in SDK `runtime/lib/agent-execution.ts` | What contributes |
 | --- | --- | --- |
 | System instructions | `resolveSystemPrompt()` | Shared guidance, agent `AGENTS.md`, skill catalog and environment; then bundled Host instructions, execution references and completion requirements |
 | Tools and their schemas | `resolveTools()` | Loaded capabilities, execution binding and the caller's output schema on `finish` |
 | Messages | `prepareExecution()` and `transformContext` | Prepared request, selected skill, model/tool history, steering; compaction followed by current observations and Task brief |
 
-Read the short [execution-instructions.md](../../../may-agent/src/lib/execution-instructions.md)
-for Host-wide guidance, then [SDK task-contract.ts](../../../may-agent/packages/sdk/src/task-contract.ts)
-for result semantics. The old `appTaskAgentProtocol` and `assignment-guidance.ts`
-were removed. Role and domain methods belong in App guidance; schema meanings
+Read the short [execution-instructions.md](../../../may-agent/packages/sdk/src/runtime/lib/execution-instructions.md)
+for shared invocation guidance. Caller/tool schemas define result expectations;
+[SDK task-contract.ts](../../../may-agent/packages/sdk/src/task-contract.ts) is the
+current Host Task adapter's result contract, not a requirement for every agent.
+The old `appTaskAgentProtocol` and `assignment-guidance.ts` were removed. Role and domain methods belong in App guidance; schema meanings
 and tool behavior belong beside their contracts.
 
 Request preparation has an explicit order: an App's optional
@@ -326,10 +332,10 @@ tests use a fixture provider at that boundary without operating live Apps.
 
 | Intended change | App entry point | Host code to read |
 | --- | --- | --- |
-| Role, judgment or communication style | `agents/<name>/AGENTS.md`; situational methods in skills | `resolveSystemPrompt()` and `src/lib/skills.ts` |
-| New action | `agents/<name>/tools/<capability>.ts`, default-exporting a named tool factory | [agent-local-tools.ts](../../../may-agent/src/app/loader/agent-local-tools.ts), [toolset-loader.ts](../../../may-agent/src/app/loader/toolset-loader.ts) |
+| Role, judgment or communication style | `agents/<name>/AGENTS.md`; situational methods in skills | SDK `runtime/lib/agent-execution.ts` and `runtime/lib/skills.ts` |
+| New action | `agents/<name>/tools/<capability>.ts`, default-exporting a named tool factory | SDK [agent-config.ts](../../../may-agent/packages/sdk/src/runtime/app/loader/agent-config.ts) (`loadAgentLocalTools`), Host [toolset-loader.ts](../../../may-agent/src/app/loader/toolset-loader.ts) |
 | Procedure combining actions/agents | App workflow with explicit inputs and result contract | `adapters/executors/workflow.ts`, `src/lib/workflow-tool.ts` |
-| Smaller request presentation | Optional `agent.json.contextPreparation` module | [agent-definition.ts](../../../may-agent/src/app/loader/agent-definition.ts), `prepareExecution()` |
+| Smaller request presentation | Optional `agent.json.contextPreparation` module | SDK [agent-config.ts](../../../may-agent/packages/sdk/src/runtime/app/loader/agent-config.ts) (`buildAgentDefinition`), `prepareExecution()` |
 | New input, schedule or observed change | App declaration and its mapping to owned work | SDK `app.ts`, admission and producer adapters |
 | Persistence, fencing, execution or delivery guarantee | Common Host mechanism and matching SDK contract | Core contract, adapter implementation and composition wiring |
 
@@ -348,7 +354,7 @@ A change to a shared guarantee belongs in infrastructure and its common design.
 
 | Area | Reading path and central question |
 | --- | --- |
-| Conversation | [Source guide](../../../may-agent/src/app/conversations/README.md) → `core/tasks/attempt-execution.ts` → common managed-agent execution and `task-communication.ts`; `conversations/context.ts` projects reads, and `core/state/conversation-task-turns.ts` owns admission/Stop. Does the accepting Task preserve and fulfill the saved ask? |
+| Conversation | [Host source guide](../../../may-agent/src/app/README.md) → `core/tasks/attempt-execution.ts` → common managed-agent execution and `task-communication.ts`; `core/reads/conversation-context.ts` projects reads, and `core/state/conversation-task-turns.ts` owns admission/Stop. Does the accepting Task preserve and fulfill the saved ask? |
 | Workflow and cooperation | SDK `TaskAttempt`/`WorkflowContext` → [workflow adapter](../../../may-agent/src/app/adapters/executors/workflow.ts) → `runWorkflowDirect()`/`createWorkflowRunner()` in [workflow-tool.ts](../../../may-agent/src/lib/workflow-tool.ts). Which operations are bounded helpers, and which require durable delegated work? |
 | Delegation and return | [dependency-admission.ts](../../../may-agent/src/app/core/tasks/dependency-admission.ts) → [input-result.ts](../../../may-agent/src/app/core/inbox/input-result.ts). Follow the exact input answer; a parent link alone creates no wait or feedback subscription. |
 | Event admission | [events/interface.ts](../../../may-agent/src/app/core/events/interface.ts) → [events/bus.ts](../../../may-agent/src/app/core/events/bus.ts) → [app-inbox-runtime.ts](../../../may-agent/src/app/composition/app-inbox-runtime.ts). What is saved before translation, and what remains if translation fails? |

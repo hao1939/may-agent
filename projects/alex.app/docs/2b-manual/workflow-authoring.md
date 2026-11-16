@@ -8,8 +8,10 @@ This manual describes the canonical App workflow surface. See
 [Workflows](../2a-design/workflows.md), [SDK](../2a-design/sdk.md), and
 [App](../2a-design/agent-app.md) for the governing contracts.
 
-For the shared Unit/Gym/Host invocation kernel and offline step-fixture workflow,
-see [Workflow as an executable skill](../proposals/workflow-business-host-boundary.md#2-three-execution-modes-over-one-host-free-kernel-unblocking-gym).
+For standalone/Host execution semantics, use
+[Shared Agent Runtime](../2a-design/agent-runtime.md). For currently callable
+fixture and standalone runners, use [SDK execution and testing](../2a-design/sdk.md#standalone-execution-and-testing).
+Historical extraction examples are not current API instructions.
 
 The [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and-guidance)
 identifies what shared code enforces, what it only supports, and known gaps.
@@ -60,11 +62,12 @@ Adding a recipe does not require a new public App input variant.
 For example, Alex's `develop-change` procedure has one input schema:
 `{ verify: [executable, ...arguments] }`. Outcome, acceptance and constraints
 always come from `ctx.reconciliation` and `ctx.read.tasks.get(rec.taskId)`, so
-Host, standalone `run()` / `may run`, and Gym execute the same design,
-implementation, command-verification and review procedure. Host supplies its
-durable Task envelope; standalone and Gym create a local Task envelope at their
-invocation boundary. The public standalone convenience input may therefore
-include `task`, `acceptance`, and `constraints`, but `run()` extracts those
+Host, standalone `run()` / `may run`, and Gym can execute that same procedure.
+Host supplies its durable Task context; standalone and Gym can supply local
+assignment data in the current compatibility shape. This is specific to this
+procedure, not a requirement for every agent to understand Host Tasks, and it
+does not prove complete prompt-agent parity. The public standalone convenience
+input may therefore include `task`, `acceptance`, and `constraints`, but `run()` extracts those
 fields before validating the procedure's strict verify-only input schema.
 
 Verification uses the App-local command runner with literal arguments, bounded
@@ -516,8 +519,10 @@ workflow or expose it as a live service.
 Required checks and bounded repair belong explicitly in workflow TypeScript,
 exported TypeBox `inputSchema` / `outputSchema` contracts, optional final
 `verify` hooks, and Task acceptance admission—the legacy shared/agent
-`WorkflowGuard` callback directory (`guards/*.ts`) is retired so Direct, Gym,
-SDK test, and Hosted runs enforce identical contracts.
+`WorkflowGuard` callback directory (`guards/*.ts`) is retired. The shared kernel
+checks declared workflow contracts in fixture, standalone/Gym and Host runs;
+[remaining agent-runtime gaps](../2a-design/agent-runtime.md#source-convergence)
+must not be described as completed parity.
 
 ## Testing
 
