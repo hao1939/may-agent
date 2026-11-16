@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS app_inbox_items (
   app_id              TEXT NOT NULL,
   parent_id           TEXT,
   target_task_id      TEXT,
+  target_task_generation INTEGER,
   topic_id            TEXT,
   continues_request_id TEXT,
   conversation_id     TEXT,
@@ -93,7 +94,10 @@ CREATE INDEX IF NOT EXISTS idx_app_inbox_task_admission
 CREATE INDEX IF NOT EXISTS idx_app_inbox_pending_human_task
   ON app_inbox_items(app_id, execution_task_id)
   WHERE execution_task_id IS NOT NULL AND source_kind = 'human' AND status != 'done';
-DROP INDEX IF EXISTS idx_app_inbox_conversation_change;
+CREATE INDEX IF NOT EXISTS idx_app_inbox_conversation_change
+  ON app_inbox_items(app_id, conversation_id, source_kind, input_kind,
+    CAST(json_extract(input_data, '$.appId') AS TEXT), CAST(json_extract(input_data, '$.taskId') AS TEXT),
+    CAST(COALESCE(json_extract(input_data, '$.attemptId'), json_extract(input_data, '$.generation')) AS TEXT));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_app_inbox_idempotency
   ON app_inbox_items(app_id, idempotency_key)
   WHERE idempotency_key IS NOT NULL AND idempotency_key != '';

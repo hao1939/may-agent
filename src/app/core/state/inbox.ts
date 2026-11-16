@@ -55,6 +55,8 @@ export function admitTaskInput(config: AppTaskContext, input: TaskInputAdmission
         throw new Error("Task admission does not match its saved input");
       if (input.idempotencyKey !== `task:${item.id}`)
         throw new Error("Task admission identity must belong to its input");
+      if (item.targetTaskGeneration !== undefined && input.attachment.kind !== "existing")
+        throw new AppTaskAdmissionError("Generation-fenced input must attach to its exact existing Task");
       if (item.waitingOn?.kind === "task") {
         const task = config.resourceStore.readTask(item.waitingOn.id);
         if (!task) throw new Error(`Attached Task ${item.waitingOn.id} is missing`);
@@ -116,6 +118,17 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
         throw new Error(`Admitted Task ${taskId} is missing`);
       }
       return { kind: "observed", taskId, generation: admission.taskGeneration, changed: false };
+    }
+    // Read the trusted envelope inside the attachment transaction. Domain
+    // context is informational and cannot supply or override this fence.
+    const expectedGeneration = input.inboxInputId
+      ? getAppInboxItem(config.resourceStore.db, input.inboxInputId)?.targetTaskGeneration
+      : undefined;
+    const current = config.resourceStore.readTask(taskId);
+    if (expectedGeneration !== undefined && current && current.metadata.generation !== expectedGeneration) {
+      throw new AppTaskAdmissionError(
+        `Task requirements changed; expected generation ${expectedGeneration}, current generation ${current.metadata.generation}. Read the current Task before sending new input`,
+      );
     }
     intent = readAppTaskIntent(config, taskId);
     if (!intent) throw new AppTaskAdmissionError(`Task ${taskId} does not exist in App ${input.appId}`);

@@ -1126,27 +1126,6 @@ export class SubagentManager {
 
     try {
       const db = getDb(this._persistDir);
-      const projects = db
-        .prepare(
-          `SELECT id, owner, status, priority, updated_at
-           FROM projects
-           WHERE status IS NULL OR status NOT IN ('done', 'closed', 'archived')
-           ORDER BY COALESCE(updated_at, 0) DESC
-           LIMIT 6`,
-        )
-        .all() as Array<{ id?: string; owner?: string; status?: string; priority?: string; updated_at?: number }>;
-      if (projects.length > 0) {
-        lines.push(
-          `- Active projects: ${projects
-            .map(
-              (project) =>
-                `${project.id ?? "unknown"}(${project.status ?? "active"}${project.priority ? ` ${project.priority}` : ""}${project.owner ? ` owner=${project.owner}` : ""})`,
-            )
-            .join("; ")}`,
-        );
-      } else {
-        lines.push("- Active projects: none recorded");
-      }
 
       const alerts = db
         .prepare(

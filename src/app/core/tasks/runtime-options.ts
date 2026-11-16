@@ -33,8 +33,6 @@ export interface AppTaskRuntimeOptions {
   installControllers?: boolean;
   /** Limit descriptor preparation to exact Apps in a one-attempt worker. */
   taskAppIds?: readonly string[];
-  /** The parent publishes read models; execution workers reuse them. */
-  syncReadModels?: boolean;
   /** Optional host adapters selected by Task intent. Built-ins remain replaceable. */
   executors?: Readonly<Record<string, TaskExecutor>>;
   /** Optional workflow implementation, selected by composition. */

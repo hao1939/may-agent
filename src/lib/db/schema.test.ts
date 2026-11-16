@@ -64,6 +64,20 @@ describe("canonical database schema", () => {
       db.close();
     }
   });
+  it("adds the exact-input generation fence without guessing a fence for retained input", () => {
+    const db = openDatabase(":memory:");
+    try {
+      applyDbSchema(db);
+      db.exec("ALTER TABLE app_inbox_items DROP COLUMN target_task_generation");
+      db.exec(`INSERT INTO app_inbox_items (id, app_id, target_task_id, source_kind, source_id, input_kind, input_data, created_at, updated_at)
+        VALUES ('retained', 'sample', 'work', 'human', 'operator', 'message', '{}', 100, 100)`);
+      applyDbSchema(db);
+      applyDbSchema(db);
+      expect(db.prepare("SELECT target_task_id, target_task_generation, input_data FROM app_inbox_items WHERE id = 'retained'").get())
+        .toEqual({ target_task_id: "work", target_task_generation: null, input_data: "{}" });
+    } finally { db.close(); }
+  });
+
   it("creates the complete schema idempotently without migration state", () => {
     const db = openDatabase(":memory:");
     try {

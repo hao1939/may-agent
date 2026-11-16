@@ -455,16 +455,8 @@ describe("MetricService", () => {
     },
   );
 
-  it("defaults project metric ownership to the project owner and emits routing context", () => {
-    const { db, service, emitted } = harness();
-    db.prepare("INSERT INTO projects (id, path, name, owner, status, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(
-      "sample-project",
-      "/app/projects/sample-project.app",
-      "sample-project",
-      "sample-owner",
-      "active",
-      10_000,
-    );
+  it("defaults project metric ownership to project:<id> and emits routing context", () => {
+    const { service, emitted } = harness();
 
     service.define({
       id: "sample-project.task.no-work",
