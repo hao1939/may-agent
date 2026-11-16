@@ -143,6 +143,8 @@ pi --list-models | grep -q 'gpt-6.1-sol'
 pi --list-models | grep -q 'gemini-4-argon'
 test "$GOOGLE_GEMINI_BASE_URL" = "https://models.example.test"
 grep -q '"baseUrl": "https://models.example.test/v1beta"' "$HOME/.pi/agent/models.json"
+grep -q '"includeDirectoryTree": false' "$HOME/.gemini/settings.json"
+grep -q '"enableRecursiveFileSearch": false' "$HOME/.gemini/settings.json"
 grep -q 'decision = "allow"' "$HOME/.gemini/policies/full-access.toml"
 RUNTIME_CHECK
 chmod 755 "$runtime_root/runtime-check.sh"

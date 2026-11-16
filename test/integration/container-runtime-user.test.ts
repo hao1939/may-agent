@@ -121,7 +121,18 @@ describe("container runtime configuration and layout", () => {
       model_providers: { model_endpoint: { base_url: "https://models.example.test/v1", env_key: "MODEL_API_KEY" } },
     });
     expect(JSON.parse(piRaw).providers["may-google"].baseUrl).toBe("https://models.example.test/v1beta");
-    expect(JSON.parse(geminiRaw).model.name).toBe("gemini-custom");
+    const geminiParsed = JSON.parse(geminiRaw);
+    expect(geminiParsed.model.name).toBe("gemini-custom");
+    expect(geminiParsed.context).toMatchObject({
+      includeDirectoryTree: false,
+      loadMemoryFromIncludeDirectories: false,
+      fileFiltering: {
+        respectGitIgnore: true,
+        respectGeminiIgnore: true,
+        enableRecursiveFileSearch: false,
+        enableFileWatcher: false,
+      },
+    });
     expect(JSON.parse(claudeRaw).permissions.defaultMode).toBe("bypassPermissions");
 
     // Conflicting SSH key material during initial migration fails closed instead of overwriting keys

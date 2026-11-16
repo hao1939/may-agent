@@ -381,39 +381,116 @@ writeJson(path.join(piDir, "settings.json"), piSettings);
 const geminiPoliciesDir = path.join(geminiHome, "policies");
 fs.mkdirSync(geminiPoliciesDir, { recursive: true, mode: 0o700 });
 const geminiSettings = readJson(path.join(geminiHome, "settings.json"));
-geminiSettings.general = { ...geminiSettings.general, defaultApprovalMode: "auto_edit" };
+geminiSettings.general = {
+  ...geminiSettings.general,
+  defaultApprovalMode: "auto_edit",
+  maxAttempts: geminiSettings.general?.maxAttempts ?? 3,
+  sessionRetention: {
+    enabled: true,
+    maxAge: "30d",
+    warningAcknowledged: true,
+    ...geminiSettings.general?.sessionRetention,
+  },
+};
 geminiSettings.security = {
   ...geminiSettings.security,
   folderTrust: { ...geminiSettings.security?.folderTrust, enabled: false },
   auth: { ...geminiSettings.security?.auth, selectedType: "gemini-api-key" },
 };
+// Prevent Gemini CLI from recursively indexing the entire /app or container filesystem
+// (mirrored from local ~/.gemini/settings.json).
 geminiSettings.context = {
   ...geminiSettings.context,
   includeDirectories: [projectRoot],
   loadMemoryFromIncludeDirectories: false,
+  includeDirectoryTree: false,
   fileFiltering: {
     ...geminiSettings.context?.fileFiltering,
-    respectGitIgnore: false,
-    respectGeminiIgnore: false,
+    respectGitIgnore: true,
+    respectGeminiIgnore: true,
+    enableRecursiveFileSearch: false,
+    enableFileWatcher: false,
   },
 };
-geminiSettings.tools = { ...geminiSettings.tools, sandbox: false, sandboxNetworkAccess: true };
-geminiSettings.model = { ...geminiSettings.model, name: geminiModel };
+geminiSettings.tools = {
+  ...geminiSettings.tools,
+  sandbox: false,
+  sandboxNetworkAccess: true,
+  shell: {
+    enableInteractiveShell: false,
+    inactivityTimeout: 120,
+    ...geminiSettings.tools?.shell,
+  },
+};
+geminiSettings.ui = { ...geminiSettings.ui, errorVerbosity: geminiSettings.ui?.errorVerbosity ?? "full" };
+geminiSettings.model = {
+  ...geminiSettings.model,
+  name: geminiModel,
+  compressionThreshold: geminiSettings.model?.compressionThreshold ?? 0.3,
+};
 geminiSettings.experimental = { ...geminiSettings.experimental, dynamicModelConfiguration: true };
+geminiSettings.agents = {
+  ...geminiSettings.agents,
+  overrides: {
+    ...geminiSettings.agents?.overrides,
+    cli_help: { enabled: false, ...geminiSettings.agents?.overrides?.cli_help },
+    codebase_investigator: {
+      modelConfig: { model: geminiFastModel },
+      ...geminiSettings.agents?.overrides?.codebase_investigator,
+    },
+  },
+};
 geminiSettings.modelConfigs ??= {};
 geminiSettings.modelConfigs.customAliases ??= {};
 geminiSettings.modelConfigs.modelDefinitions ??= {};
 geminiSettings.modelConfigs.modelIdResolutions ??= {};
 geminiSettings.modelConfigs.classifierIdResolutions ??= {};
 
-for (const alias of [geminiProModel, "gemini4", "gemini-4-carbon", "gemini-4-hydrogen", "gemini-3.1-pro-preview"]) {
-  const resolved = alias === "gemini4" || alias === "gemini-3.1-pro-preview" ? geminiProModel : alias;
+for (const alias of [
+  geminiProModel,
+  "gemini4",
+  "gemini-4-carbon",
+  "gemini-4-hydrogen",
+  "gemini-3-pro-preview",
+  "gemini-3.1-pro-preview",
+  "gemini-3.1-pro-preview-customtools",
+  "gemini-2.5-pro",
+]) {
+  const resolved = alias === "gemini-4-carbon" || alias === "gemini-4-hydrogen" ? alias : geminiProModel;
   geminiSettings.modelConfigs.customAliases[alias] = { extends: "chat-base-3", modelConfig: { model: resolved } };
 }
-geminiSettings.modelConfigs.customAliases[geminiFastModel] = {
-  extends: "chat-base-3",
-  modelConfig: { model: geminiFastModel },
+for (const alias of [
+  geminiFastModel,
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+]) {
+  geminiSettings.modelConfigs.customAliases[alias] = { extends: "chat-base-3", modelConfig: { model: geminiFastModel } };
+}
+for (const baseAlias of ["gemini-2.5-flash-base", "gemini-3-flash-base", "gemini-3.5-flash-base"]) {
+  geminiSettings.modelConfigs.customAliases[baseAlias] = { extends: "base", modelConfig: { model: geminiFastModel } };
+}
+geminiSettings.modelConfigs.customAliases["loop-detection-double-check"] = {
+  extends: "base",
+  modelConfig: { model: geminiProModel },
 };
+for (const compPro of ["chat-compression-3-pro", "chat-compression-2.5-pro", "chat-compression-default"]) {
+  geminiSettings.modelConfigs.customAliases[compPro] = { modelConfig: { model: geminiProModel } };
+}
+for (const compFast of [
+  "chat-compression-3-flash",
+  "chat-compression-3.1-flash-lite",
+  "chat-compression-2.5-flash",
+  "chat-compression-2.5-flash-lite",
+  "agent-history-provider-summarizer",
+]) {
+  geminiSettings.modelConfigs.customAliases[compFast] = { modelConfig: { model: geminiFastModel } };
+}
+
 geminiSettings.modelConfigs.modelDefinitions[geminiProModel] = {
   displayName: "Gemini 4",
   tier: "pro",
@@ -430,10 +507,34 @@ geminiSettings.modelConfigs.modelDefinitions[geminiFastModel] = {
   isVisible: true,
   features: { thinking: true, multimodalToolUse: true },
 };
-for (const alias of [geminiProModel, "gemini-4", "gemini4", "pro", "auto", "auto-gemini-3", "gemini-3.1-pro-preview", "gemini-2.5-pro"]) {
+for (const alias of [
+  geminiProModel,
+  "gemini-4",
+  "gemini4",
+  "pro",
+  "auto",
+  "auto-gemini-3",
+  "auto-gemini-2.5",
+  "gemini-3-pro-preview",
+  "gemini-3.1-pro-preview",
+  "gemini-3.1-pro-preview-customtools",
+  "gemini-2.5-pro",
+]) {
   geminiSettings.modelConfigs.modelIdResolutions[alias] = { default: geminiProModel };
 }
-for (const alias of [geminiFastModel, "flash", "flash-lite", "gemini-3.5-flash", "gemini-3.6-flash", "gemini-2.5-flash"]) {
+for (const alias of [
+  geminiFastModel,
+  "flash",
+  "flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
+  "gemini-3.6-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3.1-flash-lite-preview",
+  "gemini-3.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+]) {
   geminiSettings.modelConfigs.modelIdResolutions[alias] = { default: geminiFastModel };
 }
 geminiSettings.modelConfigs.classifierIdResolutions.pro = { default: geminiProModel };
