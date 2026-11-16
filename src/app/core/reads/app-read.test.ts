@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
@@ -7,7 +7,6 @@ import { applyDbSchema } from "../../../lib/db/schema.js";
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import { createRuntimeAppRead, createRuntimeTaskRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
-import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   observeAppTaskIntent,
@@ -163,20 +162,12 @@ describe("App read projections", () => {
     await expect(read.tasks.get("current")).rejects.toThrow("Task reads require an App scope");
     await expect(read.tasks.list()).rejects.toThrow("Task reads require an App scope");
     await expect(read.metric("missing")).rejects.toThrow("Metric reporting is unavailable");
-    await expect(read.tasks.outcomes()).rejects.toThrow("Task outcome reporting is unavailable");
   });
 
   it("uses the loaded Task reader without consulting a JSON execution path", async () => {
     const taskRead = {
       list: async () => ({
         items: [{ id: "current", status: "pending" as const, generation: 1, outcome: "Use resource authority" }],
-      }),
-      outcomes: async () => ({
-        projection: "outcomes" as const,
-        manifestVersion: null,
-        sourceCount: 0,
-        outcomeCount: 0,
-        outcomes: [],
       }),
       get: async (taskId: string) =>
         taskId === "current"
@@ -443,12 +434,8 @@ describe("App read projections", () => {
       readMetric: async () => {
         throw new Error("report failed");
       },
-      readOutcomes: () => {
-        throw new Error("report failed");
-      },
     });
     await expect(failedReporting.metric("health")).rejects.toThrow("report failed");
-    await expect(failedReporting.tasks.outcomes()).rejects.toThrow("report failed");
     await expect(failedReporting.tasks.get("second")).resolves.toMatchObject({ status: "pending" });
     expect((await failedReporting.tasks.list()).items).toHaveLength(2);
   });
@@ -638,18 +625,9 @@ describe("App read projections", () => {
     expect(readAppTaskChildContext(config, "review").cancelled).toEqual([
       expect.objectContaining({ taskId: "result", kind: "closed", facts: ["measurement:17"] }),
     ]);
-    const reporting = {
-      appDir: config.appDir,
-      tasks: {
-        get: (id: string) => readRuntimeTaskView({ taskStateConfig: config }, id),
-        list: (options: Parameters<typeof listRuntimeTaskViews>[1]) => listRuntimeTaskViews({ taskStateConfig: config }, options),
-      },
-    };
-    expect(readTaskOutcomes(reporting).sourceCount).toBe(0);
-    expect(readTaskOutcomes({ ...reporting, projection: { includeDone: true } }).sourceCount).toBe(1);
   });
 
-  it("reads only the outcome containing an exact Task", async () => {
+  it("agrees between RuntimeAppRead and RuntimeTaskRead for exact get and bounded list", async () => {
     const config = resourceConfig();
     for (const id of ["review/a", "review/b", "review/unrelated"]) {
       observeAppTaskIntent(config, {
@@ -657,45 +635,18 @@ describe("App read projections", () => {
         intent: { id, parentId: "review", outcome: `Complete ${id}`, acceptance: ["Done"] },
       });
     }
-    mkdirSync(join(config.appDir, "tasks"), { recursive: true });
-    writeFileSync(
-      join(config.appDir, "tasks", "outcome-projection.json"),
-      JSON.stringify({
-        version: 1,
-        groups: [{ id: "review-pair", outcome: "Complete the pair", taskIds: ["review/a", "review/b"] }],
-      }),
-    );
-    const options = { getDb: () => db, taskStateConfig: config, readOutcomes: readTaskOutcomes };
+    const options = { getDb: () => db, taskStateConfig: config };
     const read = createRuntimeAppRead(options);
     const host = createRuntimeTaskRead(options);
 
-    await expect(read.tasks.outcomes({ taskId: "review/a" })).resolves.toMatchObject({
-      sourceCount: 2,
-      outcomeCount: 1,
-      outcomes: [{ id: "review-pair", memberTaskIds: ["review/a", "review/b"] }],
-    });
-    await expect(read.tasks.outcomes({ taskId: "missing" })).resolves.toMatchObject({
-      sourceCount: 0,
-      outcomeCount: 0,
-      outcomes: [],
-    });
     const claim = claimObservedAppTask(config, { taskId: "review/a", appAgent: "evaluation", handler: "auto" });
     if (claim.kind !== "claimed") throw new Error("Expected claim");
     completeAppTask(config, claim, { summary: "Reviewed a", result: { checked: true } });
 
-    // Idle assignments remain open in outcome reads. Explicit closure excludes history.
-    expect(host.outcomes({ taskId: "review/a" })).toMatchObject({ sourceCount: 2, outcomeCount: 1 });
     const current = config.resourceStore.readTask("review/a")!;
     closeAppTask(config, { appId: "evaluation", taskId: "review/a",
       expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
       afterResult: claim.attemptId, reason: "Owner consumed the finite review" });
-    // An exact request for an excluded member must not silently return its active sibling.
-    expect(host.outcomes({ taskId: "review/a" })).toMatchObject({ sourceCount: 0, outcomeCount: 0, outcomes: [] });
-    for (const includeDone of [false, true]) {
-      const projection = { taskId: "review/a", includeDone };
-      expect(await read.tasks.outcomes(projection)).toEqual(host.outcomes(projection));
-    }
-    expect(host.outcomes({ taskId: "review/a", includeDone: true })).toMatchObject({ sourceCount: 2, outcomeCount: 1 });
     const detailOptions = { acceptedEvidence: { limit: 1 } };
     expect(await read.tasks.get("review/a", detailOptions)).toEqual(host.get("review/a", detailOptions));
     expect(host.get("review/a", detailOptions)?.acceptedEvidence.page?.items).toHaveLength(1);

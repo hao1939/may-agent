@@ -227,14 +227,12 @@ obligations and pending input coexist. A fresh read supplements the assigned
 batch and never expands its authority. Native transports still determine which
 live capabilities reach their worker; a serialized reader is not a tool bridge.
 
-`createRuntimeTaskRead()` in `reads/app-read.ts` assembles the shared Task reader
-and supplies its reads to optional outcome reporting. `createRuntimeAppRead()`
-adapts those operations to the SDK's Promise interface. Loaded-App access and
-model tools use the same implementation. Adapters preserve options and format
-results; the reporting implementation owns outcome membership and counts.
+`createRuntimeTaskRead()` in `reads/app-read.ts` assembles the shared Task reader.
+`createRuntimeAppRead()` adapts those operations to the SDK's Promise interface.
+Loaded-App access and model tools use the same implementation.
 
-A managed `readonly` execution receives a narrowed Task tool: list, workload,
-outcomes, exact get, contract and communication reads. Its advertised schema and
+A managed `readonly` execution receives a narrowed Task tool: list, created,
+workload, exact get, contract and communication reads. Its advertised schema and
 invocation guard both exclude publication, apply, revision and closure. The
 restriction belongs to the prepared execution, so it cannot narrow a shared
 agent definition's separately authorized full tools. A review recommendation

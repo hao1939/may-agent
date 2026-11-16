@@ -249,7 +249,6 @@ export async function runAppRuntime(opts: {
     bus,
     taskRuntimeMode: backgroundEnabled ? "controllers" : "none",
     appRegistry,
-    readOutcomes: opts.reporting?.readOutcomes,
     hostCapacity,
     executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
     executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
@@ -362,7 +361,6 @@ export async function runAppRuntime(opts: {
           taskRead: {
             workload: async (options) => appTasks.workload({ appId, options }),
             list: async (options) => appTasks.list({ appId, ...(options ? { options } : {}) }),
-            outcomes: async (projection) => appTasks.outcomes({ appId, ...(projection ? { projection } : {}) }),
             get: async (taskId, options) => appTasks.get({ appId, taskId, options }),
           },
         }),

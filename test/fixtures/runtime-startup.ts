@@ -304,9 +304,6 @@ export async function execute(ctx) {
             readMetric: async () => {
               throw new Error("fixture report unavailable");
             },
-            readOutcomes: () => {
-              throw new Error("fixture report unavailable");
-            },
             syncDefinitions() {
               reportingCalls++;
               throw new Error("fixture report unavailable");

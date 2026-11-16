@@ -7,8 +7,6 @@ import type {
   TaskChanges,
   TaskAttempt,
   TaskCommunicationQuery,
-  TaskOutcomePage,
-  TaskOutcomeProjection,
   TaskPage,
   TaskReadOptions,
   TaskView,
@@ -24,7 +22,6 @@ const parameters = Type.Object(
       Type.Literal("list"),
       Type.Literal("created"),
       Type.Literal("workload"),
-      Type.Literal("outcomes"),
       Type.Literal("get"),
       Type.Literal("contract"),
       Type.Literal("publish"),
@@ -34,7 +31,7 @@ const parameters = Type.Object(
       Type.Literal("communication"),
     ]),
     taskId: Type.Optional(
-      Type.String({ minLength: 1, description: "Exact Task id; required for get, outcomes, update and close" }),
+      Type.String({ minLength: 1, description: "Exact Task id; required for get, update and close" }),
     ),
     localKey: Type.Optional(Type.String({ minLength: 1, maxLength: 256 })),
     eventType: Type.Optional(Type.String({ minLength: 3 })),
@@ -73,9 +70,6 @@ const parameters = Type.Object(
     cursor: Type.Optional(Type.String({ minLength: 1 })),
     inputCursor: Type.Optional(Type.String({ minLength: 1, description: "For workload: independent continuation of unadmitted Inbox input." })),
     agent: Type.Optional(Type.String({ minLength: 1, description: "For workload: optional responsible agent within this App page." })),
-    includeDone: Type.Optional(
-      Type.Boolean({ description: "For outcomes only. For list, use status; omitted status includes every phase." }),
-    ),
     inputKeys: Type.Optional(
       Type.Array(Type.String({ minLength: 1 }), {
         maxItems: 8,
@@ -137,7 +131,7 @@ const parameters = Type.Object(
 
 type Params = {
   observation?: ObservationInterest;
-  action: "list" | "created" | "workload" | "outcomes" | "get" | "contract" | "publish" | "update" | "close" | "apply" | "communication";
+  action: "list" | "created" | "workload" | "get" | "contract" | "publish" | "update" | "close" | "apply" | "communication";
   agent?: string;
   inputId?: string;
   communicationQuery?: TaskCommunicationQuery;
@@ -156,7 +150,6 @@ type Params = {
   limit?: number;
   cursor?: string;
   inputCursor?: string;
-  includeDone?: boolean;
   acceptedEvidence?: TaskReadOptions["acceptedEvidence"];
   inputKeys?: string[];
 };
@@ -199,11 +192,6 @@ export function createAppTaskReadTool(options: {
   reader?: {
     workload?(input: { bus: EventBus; appId: string; options?: TaskWorkloadOptions }): TaskWorkload | Promise<TaskWorkload>;
     list(input: { bus: EventBus; appId: string; options?: TaskListOptions }): TaskPage | Promise<TaskPage>;
-    outcomes?(input: {
-      bus: EventBus;
-      appId: string;
-      projection?: TaskOutcomeProjection;
-    }): TaskOutcomePage | Promise<TaskOutcomePage>;
     get(input: {
       bus: EventBus;
       appId: string;
@@ -233,7 +221,7 @@ export function createAppTaskReadTool(options: {
     name: "tasks",
     label: "Tasks",
     description:
-      "Inspect or mutate scoped App Tasks. Actions: created (open Tasks created by this Task across Apps and grouping parents; limit/cursor; previews require exact get before acting), list/workload/outcomes (current App discovery), get (exact Task requirements/results, optional target.appId, acceptedEvidence, inputKeys), contract (App agent, inputSchema, observations; pass observation {observerId,id,resource,expected} to build a Condition), communication (requires inputId; optional communicationQuery), apply (live changes {requests,conditions,actions,communication,inputKeys,facts} while keeping this attempt running), publish (localKey + dot-separated eventType), update (creator-only: taskId, expectedGeneration, complete input), and close (creator-only: taskId, expectedGeneration, expectedResourceVersion, afterResult, reason).",
+      "Inspect or mutate scoped App Tasks. Actions: created (open Tasks created by this Task across Apps and grouping parents; limit/cursor; previews require exact get before acting), list/workload (current App discovery), get (exact Task requirements/results, optional target.appId, acceptedEvidence, inputKeys), contract (App agent, inputSchema, observations; pass observation {observerId,id,resource,expected} to build a Condition), communication (requires inputId; optional communicationQuery), apply (live changes {requests,conditions,actions,communication,inputKeys,facts} while keeping this attempt running), publish (localKey + dot-separated eventType), update (creator-only: taskId, expectedGeneration, complete input), and close (creator-only: taskId, expectedGeneration, expectedResourceVersion, afterResult, reason).",
     parameters,
     execute: async (_toolCallId: string, raw: unknown): Promise<AgentToolResult<undefined>> => {
       const params = raw as Params;
@@ -342,7 +330,7 @@ export function createAppTaskReadTool(options: {
         if (params.action !== "get" && requestedAppId && requestedAppId !== appId.replace(/\.app$/, "")) {
           return result({
             error:
-              "list, workload and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
+              "list and workload are scoped to the current App; use get with target.appId for an exact cross-App Task",
           });
         }
         if (params.action === "workload") {
@@ -359,24 +347,6 @@ export function createAppTaskReadTool(options: {
           return result(options.reader?.workload
             ? await options.reader.workload({ bus: options.bus, appId, options: query })
             : (await import("./core/tasks/app-task-runtime.js")).readLoadedAppTaskWorkload({ bus: options.bus, appId, options: query }));
-        }
-        if (params.action === "outcomes") {
-          const taskId = params.taskId?.trim();
-          if (!taskId) return result({ error: "taskId is required for outcomes; use list for bounded discovery" });
-          const projection: TaskOutcomeProjection = {
-            taskId,
-            ...(params.includeDone === undefined ? {} : { includeDone: params.includeDone }),
-          };
-          const value = options.reader?.outcomes
-            ? await options.reader.outcomes({ bus: options.bus, appId, projection })
-            : await (
-                await import("./core/tasks/app-task-runtime.js")
-              ).listLoadedAppTaskOutcomeViews({
-                bus: options.bus,
-                appId,
-                projection,
-              });
-          return result(value);
         }
         if (params.action === "get") {
           const taskId = params.taskId?.trim();

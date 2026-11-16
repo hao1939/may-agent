@@ -5,7 +5,6 @@ import { closeAllDbs, getDb } from "../../../lib/db/connection.js";
 import { SubagentManager } from "../../../lib/manager.js";
 import { enterTaskWorkerProcess } from "../../../lib/task-worker-context.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
-import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "../../app-source-release.js";
 import { isBundled } from "../../bundle-mode.js";
 import { AppRegistry } from "../../core/apps/registry.js";
@@ -569,7 +568,6 @@ async function runTaskWorker(input: {
   const hostCapacity = new HostCapacity(1);
   try {
     await prepareDaemonAgents({
-      readOutcomes: readTaskOutcomes,
       agentsRoot: activeSource.agentsRoot,
       sharedRoot: input.roots.sharedRoot,
       definitionSharedRoot: activeSource.sharedRoot,

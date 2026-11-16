@@ -6,8 +6,6 @@ import type {
   TaskDetail,
   TaskIntent,
   TaskListOptions,
-  TaskOutcomePage,
-  TaskOutcomeProjection,
   TaskPage,
   TaskReadOptions,
 } from "@may-agent/sdk";
@@ -29,7 +27,6 @@ import {
   installAppTaskRuntimes,
   getLoadedAppTaskView,
   hasLoadedAppTask,
-  listLoadedAppTaskOutcomeViews,
   listLoadedAppTaskViews,
   readLoadedAppTaskWorkload,
   previewLoadedCanonicalAppTaskEvent,
@@ -78,7 +75,6 @@ export type AppTaskCapability = {
   }): Promise<TaskInputObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
   workload(input: { appId: string; options?: import("@may-agent/sdk").TaskWorkloadOptions }): import("@may-agent/sdk").TaskWorkload;
-  outcomes(input: { appId: string; projection?: TaskOutcomeProjection }): TaskOutcomePage;
   get(input: { appId: string; taskId: string; options?: TaskReadOptions }): TaskDetail | null;
   has(input: { appId: string; taskId: string }): boolean;
   wake(input: { appId: string; taskIds: string[] }): void;
@@ -218,12 +214,6 @@ export function createAppTaskCapability(options: {
         bus: options.bus,
         appId,
         ...(taskOptions ? { options: taskOptions } : {}),
-      }),
-    outcomes: ({ appId, projection }) =>
-      listLoadedAppTaskOutcomeViews({
-        bus: options.bus,
-        appId,
-        ...(projection ? { projection } : {}),
       }),
     get: ({ appId, taskId, options: readOptions }) =>
       getLoadedAppTaskView({ bus: options.bus, appId, taskId, options: readOptions }),

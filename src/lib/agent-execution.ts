@@ -14,7 +14,7 @@ export * from "@may-agent/sdk/runtime";
 /** Host capability profile persisted with a session so recovery cannot broaden its tools. */
 export type ToolPolicy = "full" | "readonly";
 
-const READ_ACTIONS = ["list", "created", "workload", "outcomes", "get", "contract", "communication"] as const;
+const READ_ACTIONS = ["list", "created", "workload", "get", "contract", "communication"] as const;
 const READ_ACTION_SET = new Set<string>(READ_ACTIONS);
 const CHAT_TOOL_DENYLIST = new Set(["bash", "background_exec", "cron", "edit", "finish", "write"]);
 const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "tasks"]);
@@ -27,7 +27,7 @@ export function readOnlyTaskTool(tool: AgentTool): AgentTool {
   return {
     ...tool,
     description:
-      "Read scoped Task lists, workloads, accepted outcomes, exact assignments, App contracts and current communication. This read-only execution can return recommendations; publishing facts, applying changes, revision and closure require an authorized writing execution.",
+      "Read scoped Task lists, workloads, exact assignments, App contracts and current communication. This read-only execution can return recommendations; publishing facts, applying changes, revision and closure require an authorized writing execution.",
     parameters: {
       ...parameters,
       properties: {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { TaskAttempt, TaskOutcomeProjection } from "@may-agent/sdk";
+import type { TaskAttempt } from "@may-agent/sdk";
 import { createAppTaskReadTool } from "./app-task-read-tool.js";
 import { EventBus } from "./core/events/bus.js";
 
@@ -136,54 +136,6 @@ describe("App Task read tool", () => {
     );
   });
 
-  it("requires an exact task for outcome reads and preserves the reader's report", async () => {
-    let requestedProjection: TaskOutcomeProjection | undefined;
-    const tool = createAppTaskReadTool({
-      bus: new EventBus(),
-      appId: () => "evaluation",
-      reader: {
-        list: () => ({ items: [] }),
-        get: () => null,
-        outcomes: ({ projection }) => {
-          requestedProjection = projection;
-          return {
-            projection: "outcomes",
-            manifestVersion: 1,
-            sourceCount: 1,
-            outcomeCount: 1,
-            outcomes: [
-              {
-                id: "target-outcome",
-                outcome: "Resolve the accepted dependency",
-                status: "waiting",
-                memberCount: 1,
-                memberTaskIds: ["target-task"],
-                members: [
-                  {
-                    id: "target-task",
-                    status: "waiting",
-                    generation: 2,
-                    outcome: "Wait for the exact dependency",
-                  },
-                ],
-              },
-            ],
-          };
-        },
-      },
-    });
-
-    expect(text(await tool.execute("call-unbounded", { action: "outcomes" }))).toEqual({
-      error: "taskId is required for outcomes; use list for bounded discovery",
-    });
-    expect(text(await tool.execute("call-exact", { action: "outcomes", taskId: "target-task" }))).toMatchObject({
-      sourceCount: 1,
-      outcomeCount: 1,
-      outcomes: [{ id: "target-outcome", memberTaskIds: ["target-task"] }],
-    });
-    expect(requestedProjection).toEqual({ taskId: "target-task" });
-  });
-
   it("rejects cross-App collections instead of silently returning the current App", async () => {
     const tool = createAppTaskReadTool({
       bus: new EventBus(),
@@ -192,13 +144,10 @@ describe("App Task read tool", () => {
         list: () => {
           throw new Error("wrong App read");
         },
-        outcomes: () => {
-          throw new Error("wrong App read");
-        },
         get: () => null,
       },
     });
-    for (const action of ["list", "workload", "outcomes"]) {
+    for (const action of ["list", "workload"]) {
       expect(
         text(
           await tool.execute("wrong-scope", {
@@ -208,7 +157,7 @@ describe("App Task read tool", () => {
           }),
         ),
       ).toEqual({
-        error: "list, workload and outcomes are scoped to the current App; use get with target.appId for an exact cross-App Task",
+        error: "list and workload are scoped to the current App; use get with target.appId for an exact cross-App Task",
       });
     }
   });

@@ -6,9 +6,7 @@ import type {
   TaskListOptions,
   TaskPage,
   TaskView,
-  TaskOutcomeProjection,
 } from "@may-agent/sdk/app";
-import type { TaskOutcomeReader } from "./reporting.js";
 import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskCancellation } from "../tasks/app-task-state.js";
 import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
@@ -31,7 +29,6 @@ export type RuntimeAppReadOptions = {
   getDb(): SqliteDb;
   /** Optional reporting; absence is explicit, not an empty or zero-valued report. */
   readMetric?: AppRead["metric"];
-  readOutcomes?: TaskOutcomeReader;
   /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
   taskRead?: AppRead["tasks"];
   taskStateConfig?: AppTaskContext;
@@ -376,7 +373,7 @@ export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getD
 }
 
 /** One scoped implementation for Host callers, SDK reads and model tool adapters. */
-export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskStateConfig" | "readOutcomes" | "workloadSource">) {
+export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskStateConfig" | "workloadSource">) {
   const tasks = {
     list: (options?: TaskListOptions) => listRuntimeTaskViews(opts, options),
     get: (taskId: string, options?: TaskReadOptions) => readRuntimeTaskView(opts, taskId, options),
@@ -384,11 +381,6 @@ export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskSta
   return {
     ...tasks,
     workload: (options?: import("@may-agent/sdk").TaskWorkloadOptions) => readTaskWorkload(opts, options),
-    outcomes(projection?: TaskOutcomeProjection) {
-      if (!opts.readOutcomes) throw new Error("Task outcome reporting is unavailable");
-      if (!opts.taskStateConfig) throw new Error("Task outcome reporting requires an App scope");
-      return opts.readOutcomes({ appDir: opts.taskStateConfig.appDir, tasks, projection });
-    },
   };
 }
 
@@ -407,9 +399,6 @@ export function createRuntimeAppRead(opts: RuntimeAppReadOptions): AppRead {
       async workload(options) { return tasks.workload(options); },
       async list(options) {
         return tasks.list(options);
-      },
-      async outcomes(options) {
-        return tasks.outcomes(options);
       },
       async get(taskId, options) {
         return tasks.get(taskId, options);

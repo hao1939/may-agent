@@ -8,8 +8,6 @@ import {
 import type {
   TaskDetail,
   TaskListOptions,
-  TaskOutcomePage,
-  TaskOutcomeProjection,
   TaskPage,
   TaskReadOptions,
 } from "@may-agent/sdk/app";
@@ -1043,19 +1041,6 @@ export function readLoadedAppTaskWorkload(input: {
     taskStateConfig: appTaskConfig(descriptor),
     ...(opts ? { workloadSource: runtimeWorkloadSource(opts, descriptor) } : {}),
   }).workload(input.options);
-}
-
-export function listLoadedAppTaskOutcomeViews(input: {
-  bus: EventBus;
-  appId: string;
-  projection?: TaskOutcomeProjection;
-}): TaskOutcomePage {
-  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
-  if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);
-  return createRuntimeTaskRead({
-    taskStateConfig: appTaskConfig(descriptor),
-    readOutcomes: appRouterOptionsByBus.get(input.bus)?.readOutcomes,
-  }).outcomes(input.projection);
 }
 
 export function getLoadedAppTaskView(input: {

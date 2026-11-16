@@ -1140,15 +1140,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     ...readOverrides,
     tasks: {
       list: readOverrides?.tasks?.list ?? (async () => ({ items: taskDetail ? [taskDetail] : [] })),
-      outcomes:
-        readOverrides?.tasks?.outcomes ??
-        (async () => ({
-          projection: "outcomes" as const,
-          manifestVersion: null,
-          sourceCount: 0,
-          outcomeCount: 0,
-          outcomes: [],
-        })),
       get:
         readOverrides?.tasks?.get ??
         (async (id: string) => {
