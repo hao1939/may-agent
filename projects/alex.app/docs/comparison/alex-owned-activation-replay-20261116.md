@@ -125,19 +125,21 @@ claim. Alex correctly bounded both decisions, including the stale-code result.
 
 ## Next bounded step
 
-Keep Alex responsible for the next hypothesis: one focused capability-aware
-Scout guidance candidate, independently reviewed and exercised with unavailable
-workflow tools, callable workflow tools, and an existing-publication control.
-Give that trial a durable evidence destination from the outset. Preserve the
-frozen historical input and semantic labels; do not make a passing score depend
-on rewriting the original failure. A fresh natural delivery then tests whether
-the change helps users and whether publication still requires intervention.
+Alex proposed a Scout guidance candidate after this replay. The operator initially
+recommended carrying it forward, then the user clarified the priority: improve
+the Gym/Alex cycle itself. Scout is retained example evidence. The tool/guidance
+mismatch is not proof of poor research or a recurring user problem, and an
+actionable hypothesis does not commission a Scout change. That proposal is
+deferred; the accepted historical diagnosis remains intact.
 
-Do not treat this proposal as a complete publication repair. If a durable handoff
-cannot complete the assigned publication outcome, Alex should retain that
-specific blocker or choose a separate capability/publication repair. Broader
-unattended intake, automatic development recovery and generalized cost/correction
-reduction remain future evidence claims.
+The next bounded experiment addresses the directly observed evidence/handoff
+gap. Alex should exercise the smallest durable cycle-record practice on these
+completed results. After Task closure, an independent reader must be able to
+recover objective, executed identities, evidence, decision, full Task cost scope
+and next ownership without transcript searching or deleted-worktree references.
+The [current plan](standalone-improvement-plan.md#current-next-milestone) gives the
+acceptance boundary. Broader unattended intake, automatic development recovery
+and generalized cost/correction reduction remain future evidence claims.
 
 ## Retained evidence
 

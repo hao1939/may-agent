@@ -31,6 +31,9 @@ procedure binding after activation, and the operator admitted the fresh replay.
 The replay returned a qualified Scout guidance proposal; Scout publication and
 behavioral transfer remain unverified. Temporary evidence retention, structured
 workflow output persistence and manual successor admission remain concrete gaps.
+The user's subsequent scope clarification keeps the improvement cycle as the
+target. Scout remains retained test evidence; its guidance proposal is deferred
+and does not establish a priority to change Scout.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -64,7 +67,9 @@ saved work evidence
 - Put linked Git worktrees outside `/app`, following the root layout convention.
   Pin the Apps commit, SDK revision/artifact and relevant external repository
   revisions. Execute tools in the isolated worktree, using its ignored `.state/`
-  for development evidence.
+  for development evidence. Before a disposable hosted Task worktree closes,
+  retain promised evidence outside that worktree or reference the durable public
+  records. Ignored local files alone do not survive clean Task-workspace removal.
 - Copy or reference immutable Host evidence as input. Preserve its Task, attempt
   and candidate identity; a standalone result is not a Host-accepted result.
 - Keep trial candidates and outputs separate from shared `.lab`, benchmark truth
@@ -192,15 +197,37 @@ identified its stale callable snapshot; the operator admitted the successor. Bot
 closed with accepted results, without in-attempt correction. This is a manually
 observed handoff, not unattended ownership of the complete improvement cycle.
 
-Alex's next bounded proposal is one capability-aware Scout guidance candidate:
-use `scout-explore` when callable; otherwise return permitted bounded research and
-an explicitly uncommitted handoff. Give the trial a durable evidence destination
-before it runs; ignored Task state disappeared when the clean worktree closed.
-Use independent review and separately retained behavior checks for unavailable
-tools, callable tools and an existing-publication control, then test fresh natural
-delivery. Relaxing a prerequisite or re-diagnosing unchanged evidence cannot prove
-publication improvement. A direct uncommitted handoff may still leave the user
-outcome incomplete; Alex must retain or separately repair that publication gap.
+The next target is the Alex/Gym improvement cycle itself. The user clarified that
+Scout is a retained test case, not an established source of recurring user
+trouble. Preserve Alex's Scout guidance hypothesis as a deferred suggestion;
+an actionable diagnosis alone does not establish its priority or commission a
+Scout experiment.
+
+Start with the observed evidence/handoff failure: ignored Task files disappeared
+at clean closure, forcing manual reconstruction from public raw session lines.
+Alex owns the smallest change to the existing recording practice. Exercise it on
+the completed activation/replay evidence and retain one compact cycle record at
+an explicit location outside the disposable Task worktree. No fresh Scout
+diagnosis, research or behavioral change is needed for this mechanics experiment.
+
+The record must make these facts inspectable:
+
+- Agreed objective, scope and hypothesis, including the deferred Scout lead.
+- Exact input, source and executed workflow identities, with old and repaired
+  invocations kept distinct.
+- Task/attempt/session/workflow references and the evidence actually supporting
+  each result; retained artifact paths must resolve and match their hashes.
+- Alex's supported decision, limits and next owner/action.
+- Available elapsed time, full Task cost estimates and manual interventions,
+  with partial cost scopes and unknown values explicit.
+
+Accept this experiment only after the new Task closes and an independent reader
+can recover those facts from the record and its direct evidence links without
+searching transcripts or relying on the removed Task directory. Use existing
+public accepted results, workflow/session reads and exact raw-line access where
+needed. This tests one evidence-retention and handoff improvement; it does not
+prove unattended execution, better target behavior or lower model cost. Do not
+add a scheduler, dashboard or generic receipt framework for this single case.
 
 The projection's executable checks are newly derived from real evidence; original
 finishes remain success, human labels remain unreviewed and unavailable usage
