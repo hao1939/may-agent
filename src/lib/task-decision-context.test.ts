@@ -11,7 +11,7 @@ import { createFinishTool } from "@may-agent/sdk/runtime";
 import { createAgentRun, restoreAgentMessages } from "@may-agent/sdk/runtime";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import { prepareAgentExecution } from "./agent-execution.js";
-import { liveTaskEventMessage, observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
+import { liveTaskEventMessage, observeTaskFeedback, taskDetailRoot, type TaskExecutionContext } from "./task-execution-context.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { workloadObservation } from "../../test/fixtures/task-workload.js";
 
@@ -815,3 +815,16 @@ test("liveTaskEventMessage and observeTaskFeedback preserve both flat and envelo
   expect(seenFeedback[0]?.msg).toContain('"instruction":"flat callback payload"');
   expect(seenFeedback[0]?.trace).toEqual({ traceId: "event:44", parentEventId: 44 });
 });
+
+test("taskDetailRoot hashes identity tuples so traversal characters cannot escape persistDir", () => {
+  const persistDir = "/tmp/persist-root";
+  const resolved = taskDetailRoot(persistDir, {
+    appId: "sample/../escape",
+    taskId: "x/../../../escaped",
+    generation: 1,
+    attemptId: "../../attempt-1",
+  });
+  expect(resolved.startsWith(`${persistDir}/task-context/`)).toBe(true);
+  expect(resolved).not.toContain("..");
+});
+

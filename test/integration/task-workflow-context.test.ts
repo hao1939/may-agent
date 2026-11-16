@@ -297,6 +297,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           (s) => s.agentName === "worker" && s.taskBinding?.taskId === marker,
         )!;
         expect(worker.taskContext).toBe(owner.taskContext);
+        expect(worker.taskContext?.detailRoot?.startsWith(join(persistDir, "task-context"))).toBe(true);
         const meta = JSON.parse(readFileSync(join(persistDir, "sessions", worker.sessionId, "meta.json"), "utf8"));
         expect(helperPrompts.get(marker)).toContain(join(persistDir, "sessions", worker.sessionId, "meta.json"));
         expect(helperPrompts.get(marker)).toContain("Work within the caller's assignment and authority");

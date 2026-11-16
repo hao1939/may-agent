@@ -3,7 +3,7 @@ import { type TSchema } from "typebox";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { resolvedExecutionRecipient } from "./execution-recipient.js";
-import { observeTaskFeedback, type TaskExecutionContext } from "./task-execution-context.js";
+import { observeTaskFeedback, taskDetailRoot, type TaskExecutionContext } from "./task-execution-context.js";
 import { drainSessionBashProcessGroups } from "@may-agent/sdk/runtime";
 /**
  * Durable agent session runtime.
@@ -352,12 +352,7 @@ export class SubagentManager {
       if (!opts.taskBinding) opts = { ...opts, taskBinding: opts.taskContext.taskBinding };
     }
     if (opts?.taskContext) {
-      opts.taskContext.detailRoot ??= join(
-        this._persistDir,
-        "task-context",
-        `${opts.taskContext.taskBinding.appId}-${opts.taskContext.taskBinding.taskId}`,
-        `${opts.taskContext.taskBinding.generation}-${opts.taskContext.taskBinding.attemptId}`,
-      );
+      opts.taskContext.detailRoot ??= taskDetailRoot(this._persistDir, opts.taskContext.taskBinding);
     }
     const timeoutMs = executionTimeout(opts?.timeoutMs ?? def.timeoutMs, opts?.deadlineAt);
     const sessionId = opts?.sessionId ?? generateId(def.sessionIdPrefix);

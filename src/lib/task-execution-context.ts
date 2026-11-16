@@ -1,6 +1,19 @@
 import type { AppEvent, AppEventTarget, AppRead, TaskAttempt, TaskReconciliationContext } from "@may-agent/sdk/app";
+import { createHash } from "node:crypto";
+import { join } from "node:path";
 import type { EventTrace, SubagentDefinition } from "@may-agent/sdk/runtime";
 import type { TaskBinding } from "./persistence.js";
+
+const key = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+
+export function taskDetailRoot(persistDir: string, binding: TaskBinding): string {
+  return join(
+    persistDir,
+    "task-context",
+    key([binding.appId, binding.taskId]),
+    key([binding.generation, binding.attemptId]),
+  );
+}
 
 export type TaskAttemptEmission = {
   type: string;
