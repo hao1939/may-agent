@@ -104,11 +104,7 @@ export function readTaskInputs(
         !isDeepStrictEqual(input.data.request, original))
         throw new Error("Task input does not belong to this Task admission");
     }
-    // Legacy handoffs used the caller's inbox id with a separate, durable admission.
-    // That is contribution context, not authority over the caller's communication.
-    const item = key.startsWith("conversation-follow-up:")
-      ? null
-      : getAppInboxItem(config.resourceStore.db, original.id);
+    const item = getAppInboxItem(config.resourceStore.db, original.id);
     if (
       item &&
       (item.appId !== config.resourceStore.appId ||
