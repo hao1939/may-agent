@@ -1094,6 +1094,7 @@ export async function runDirectWorkflow<TInput = unknown>(
   };
 
   let targetModule = options.module;
+  let rootPromptTarget: string | undefined;
   let catalogCapturedAtRoot = false;
   const rootStartedAt = Date.now();
   let preparedAllowance: WorkflowExecutionAllowance | undefined = internal?.allowance;
@@ -1212,6 +1213,7 @@ export async function runDirectWorkflow<TInput = unknown>(
             callerOwner = resolved.owner;
             targetModule = resolved.module as WorkflowExecutableModule<TInput>;
           } else {
+            rootPromptTarget = resolved.name;
             targetModule = {
               name: resolved.name,
               description: `Direct prompt invocation for ${resolved.name}`,
@@ -1569,7 +1571,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     const normalized = typeof target === "string" ? target.trim() : "";
     const slash = normalized.indexOf("/");
     const procedureOwner = slash === -1 ? owner : normalized.slice(0, slash).trim();
-    if (procedureOwner && (slash !== -1 || !preparedCatalog.prompts.has(normalized))) {
+    if (procedureOwner) {
       await ensureOwnerProcedures(procedureOwner, signal);
     }
     if (
@@ -1731,6 +1733,20 @@ export async function runDirectWorkflow<TInput = unknown>(
       // preparation outlives this invocation, and fence its late continuation.
       confirmCleanup: () => preparedCatalog.pendingImports === 0,
       resolveTarget: async (target, input) => {
+        // The synthetic root prompt wrapper was already resolved during preparation;
+        // do not import its procedure catalog merely to start that prompt.
+        if (rootPromptTarget && target === rootPromptTarget) {
+          rootPromptTarget = undefined;
+          return {
+            kind: "agent" as const,
+            invoke: async (callOpts, stepControl) => {
+              if (typeof input !== "string") {
+                throw new Error(`Prompt target "${target}" requires a string prompt input`);
+              }
+              return executePromptStep(target, input, callOpts, stepControl);
+            },
+          };
+        }
         if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
         if (typeof target === "string" && isNativeCliFallback(target)) {
           return {

@@ -770,6 +770,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       effectiveOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     ) => Promise<WorkflowStepInvocationResult>,
     scope?: { signal?: AbortSignal; deadlineAt?: number },
+    resolvedKind?: { current: "agent" | "workflow" },
   ): Promise<ExecutionResult> => {
     assertActive();
     if (
@@ -781,6 +782,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       throw new Error(`ctx.call invoked with invalid target name: ${JSON.stringify(target)}`);
     }
     scope?.signal?.throwIfAborted();
+    const currentKind = () => resolvedKind?.current ?? kind;
     const effectiveOptions = normalizeEffectiveCallOptions(kind, target, callOptions);
     const effectiveDeadlineAt = Math.min(allowance.deadlineAt, scope?.deadlineAt ?? allowance.deadlineAt);
     const remainingMs = effectiveDeadlineAt - Date.now();
@@ -806,14 +808,16 @@ export async function runWorkflowInvocation<TInput = unknown>(
     latestActiveStepIndex = stepIndex;
     const stepController = new AbortController();
     let stepTimedOut = false;
-    const stepTimeoutError =
+    const createStepTimeoutError = () =>
       effectiveOptions?.timeoutMs !== undefined && requestedStepMs < remainingMs
         ? new Error(
-            `${kind === "agent" ? "Agent" : "Workflow"} step "${target}" timed out after ${stepTimeoutMs}ms`,
+            `${currentKind() === "agent" ? "Agent" : "Workflow"} step "${target}" timed out after ${stepTimeoutMs}ms`,
           )
         : new Error(timeoutMessage);
+    let stepTimeoutError = createStepTimeoutError();
     const stepTimer = setTimeout(() => {
       stepTimedOut = true;
+      stepTimeoutError = createStepTimeoutError();
       if (stepDeadlineAt >= allowance.deadlineAt && !controller.signal.aborted) {
         timedOut = true;
         controller.abort(new Error(timeoutMessage));
@@ -849,6 +853,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
                   : typeof nestedInput === "string"
                     ? "agent"
                     : "workflow";
+              const resolvedKind = { current: fallbackKind };
               return trackOperation(runBoundStep(
                 fallbackKind,
                 nestedTarget,
@@ -856,6 +861,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
                 nestedOptions,
                 async (nestedControl, nestedEffectiveOptions) => {
                   const resolved = await resolveNestedTarget(nestedControl);
+                  resolvedKind.current = resolved.kind;
                   const effective = normalizeEffectiveCallOptions(
                     resolved.kind,
                     nestedTarget,
@@ -864,6 +870,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
                   return resolved.invoke(effective, nestedControl);
                 },
                 { signal: nestedSignal, deadlineAt: stepDeadlineAt },
+                resolvedKind,
               ));
             },
           },
@@ -878,6 +885,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
         if (stepTimedOut || Date.now() > stepDeadlineAt) {
           lateRaw = raw;
           lateCleanupConfirmed = rawCleanupConfirmed;
+          stepTimeoutError = createStepTimeoutError();
           throw stepTimeoutError;
         }
         if (stepController.signal.aborted) {
@@ -903,7 +911,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
           abortedExternally && !timedOut && !stepTimedOut ? "interrupted" : "error";
         recordStep({
           index: stepIndex,
-          kind,
+          kind: currentKind(),
           target,
           prompt: promptTruncated ? `${promptText.slice(0, MAX_PROMPT_CHARS)}...` : promptText,
           ...(promptTruncated ? { promptTruncated: true } : {}),

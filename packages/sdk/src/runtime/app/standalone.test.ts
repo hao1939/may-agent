@@ -444,6 +444,173 @@ export async function execute(ctx) {
     ]);
   });
 
+  test("keeps bare model-visible helper resolution local before and after another owner catalog load", async () => {
+    const env = setupDirectLayout();
+    const utilityDir = join(env.agentsRoot, "utility");
+    mkdirSync(join(utilityDir, "workflows"), { recursive: true });
+    writeFileSync(join(utilityDir, "agent.json"), JSON.stringify({
+      name: "utility", description: "Global prompt namesake", domain: "test", model: "test", tools: ["finish"],
+    }));
+    writeFileSync(join(utilityDir, "AGENTS.md"), "GLOBAL UTILITY PROMPT");
+    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "utility.ts"), `
+export const name = "utility";
+export const description = "Reviewer-local utility";
+export async function execute(ctx) {
+  return ctx.done("local utility", { received: ctx.input });
+}
+`);
+    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "prime.ts"), `
+export const name = "prime";
+export const description = "Explicit owner catalog load";
+export async function execute(ctx) { return ctx.done("primed"); }
+`);
+
+    const visibleResults: unknown[] = [];
+    let reviewerTurn = 0;
+    let globalUtilityExecutions = 0;
+    const result = await runDirectWorkflow({
+      target: "reviewer",
+      input: "Use the local utility twice",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        if (opts.agentName === "utility") globalUtilityExecutions += 1;
+        const prep = await prepareDirectAgentExecution(opts);
+        const agentsTool = prep.prepared.tools.find((tool) => tool.name === "agents");
+        if (agentsTool) {
+          const execute = agentsTool.execute.bind(agentsTool);
+          agentsTool.execute = async (...args) => {
+            const toolResult = await execute(...args);
+            const text = toolResult.content.find((item) => item.type === "text")?.text;
+            if (text) visibleResults.push(JSON.parse(text));
+            return toolResult;
+          };
+        }
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          reviewerTurn += 1;
+          const content = reviewerTurn === 1
+            ? [{ type: "toolCall" as const, id: "local_before", name: "agents", arguments: {
+                action: "call", agent: "utility", input: "before",
+              } }]
+            : reviewerTurn === 2
+              ? [{ type: "toolCall" as const, id: "explicit_load", name: "agents", arguments: {
+                  action: "call", agent: "reviewer/prime", input: {},
+                } }]
+              : reviewerTurn === 3
+                ? [{ type: "toolCall" as const, id: "local_after", name: "agents", arguments: {
+                    action: "call", agent: "utility", input: "after",
+                  } }]
+                : [{ type: "toolCall" as const, id: "finish_local_precedence", name: "finish", arguments: {
+                    status: "done", summary: "local precedence stable",
+                  } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(result.ok).toBeTrue();
+    expect(globalUtilityExecutions).toBe(0);
+    expect(visibleResults).toEqual([
+      expect.objectContaining({ kind: "workflow", summary: "local utility", output: { received: "before" } }),
+      expect.objectContaining({ kind: "workflow", summary: "primed" }),
+      expect.objectContaining({ kind: "workflow", summary: "local utility", output: { received: "after" } }),
+    ]);
+  });
+
+  test("records the resolved workflow kind and child identity when a string-input model-visible code helper fails", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(join(env.agentsRoot, "owner", "workflows", "string-failure.ts"), `
+export const name = "string-failure";
+export const description = "Fails after code execution starts";
+export async function execute(ctx) { throw new Error("string helper exploded: " + ctx.input); }
+`);
+    let turn = 0;
+    const result = await runDirectWorkflow({
+      target: "owner",
+      input: "Call the failing string helper",
+      executionId: "wr_parent_failure_trace",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "string_failure", name: "agents", arguments: {
+                action: "call", agent: "string-failure", input: "payload",
+              } }]
+            : [{ type: "toolCall" as const, id: "finish_after_string_failure", name: "finish", arguments: {
+                status: "done", summary: "handled string helper failure",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(result.ok).toBeTrue();
+    const failedHelper = result.report.steps.find((step) => step.target === "string-failure");
+    expect(failedHelper).toMatchObject({
+      kind: "workflow",
+      status: "error",
+      error: { message: "string helper exploded: payload" },
+      id: expect.stringMatching(/^wr_/),
+    });
+    expect(failedHelper?.id).not.toBe(result.report.executionId);
+    expect(result.report.executionId).toBe("wr_parent_failure_trace");
+  });
+
   test("rejects a saturated model-visible helper before its code body starts", async () => {
     const env = setupDirectLayout();
     const marker = join(env.workRoot, "helper-started.txt");
