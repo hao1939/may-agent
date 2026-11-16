@@ -8,6 +8,11 @@ actual Alex answers, costs and a disclosed harness-path fault. Two
 alternative when the procedure is unavailable and evidence for an outdated
 candidate. Neither pilot is an approved score or evidence of actual execution.
 
+The [four exact draft case inputs, rubrics and calibration excerpts](outcome-completion/APPROACH-CASES-REVIEW.md)
+are now ready for review in their proposed single owning benchmark. They extend
+the existing unfinished/fulfilled repair cases and add two contrasts. Active
+definitions remain unchanged; no models were run for this input/rubric revision.
+
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
 judgment evidence. Saying “I would use the workflow” does not prove invocation.
@@ -54,7 +59,10 @@ not in a new mixed-role “mechanism” collection. Membership is not changed he
 ### Alex: use a procedure when it fits; reuse its result when work is already done
 
 **P1 — Existing development procedure fits.** Proposed home:
-`improvement-stage-selection`. A linked Git Task checkout has an authorized
+`outcome-completion`; extend `alex-judge-helper-recommendation-not-completion`
+rather than duplicate its unfinished repair in `improvement-stage-selection`.
+The exact draft review above supersedes the earlier proposed home, not historical
+pilot metadata. A linked Git Task checkout has an authorized
 source change, an executable creator check, ignored `.state/`, and an installed
 `develop-change` entry in Alex's catalog. The assignment requires reviewed,
 verified local source, not a PR or deployment.
@@ -175,4 +183,6 @@ unnecessary work. Confirm the exact supplied catalog, authority, acceptable
 alternatives and examples before implementing any new or revised definitions.
 Existing approved answers do not automatically approve a changed rubric; retain
 historical definitions and start a fresh baseline after accepted changes.
-No models were run for this proposal, and no agent instructions were changed.
+No models were run for the newly linked case-input/rubric revision, and no agent
+instructions were changed. Earlier diagnostic model runs retain their separate
+inputs, limitations and reports; they do not establish a baseline for this revision.
