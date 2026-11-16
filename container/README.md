@@ -62,7 +62,7 @@ Other mounted file ownership is preserved; read-only mounts stay read-only.
 
 ## 2. Herdr Web Terminal & Native Agent Integrations
 
-- **Pinned binaries:** Checksum-verified `herdr` (`v0.9.5`) and `ttyd` (`1.7.7`, patched with an OSC-52 clipboard bridge) serve `/terminal/` behind nginx on port `8080`.
+- **Pinned binaries & clipboard support:** Checksum-verified `herdr` (`v0.9.5`) and `ttyd` (`1.7.7`, patched with an OSC-52 clipboard bridge) serve `/terminal/` behind nginx on port `8080`. The image ships `xclip` and `xsel` (for X11 `:99` clipboard read/write across Herdr, Pi, Codex, Gemini, and Claude) alongside `PI_CLIPBOARD_OSC52=1` and Gemini `experimental.useOSC52Copy = true` so agent copy commands also emit OSC-52 through Herdr to the browser clipboard.
 - **Pre-installed native hooks:** `herdr integration install {codex,claude,pi}` runs during `docker build`. Codex's Herdr `SessionStart` hook hash (`[hooks.state]`) is pre-approved during image build so Codex runs hooks natively without interactive prompts or CLI flag wrappers; Gemini runs natively under Herdr's built-in manifest with `process.title = "gemini"` set at build time.
 
 ## 3. Locked CLI Toolchain & Default Models

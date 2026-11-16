@@ -251,7 +251,11 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
 
 // 2. Herdr config (repaired on every startup)
 fs.mkdirSync(herdrConfigDir, { recursive: true });
-fs.writeFileSync(path.join(herdrConfigDir, "config.toml"), "resume_agents_on_restore = true\n", { mode: 0o600 });
+fs.writeFileSync(
+  path.join(herdrConfigDir, "config.toml"),
+  ["onboarding = false", "resume_agents_on_restore = true", "", "[ui.sound]", "enabled = false", ""].join("\n"),
+  { mode: 0o600 }
+);
 if (process.env.XDG_RUNTIME_DIR) {
   fs.mkdirSync(process.env.XDG_RUNTIME_DIR, { recursive: true, mode: 0o700 });
 }
@@ -434,7 +438,11 @@ geminiSettings.model = {
   name: geminiModel,
   compressionThreshold: geminiSettings.model?.compressionThreshold ?? 0.3,
 };
-geminiSettings.experimental = { ...geminiSettings.experimental, dynamicModelConfiguration: true };
+geminiSettings.experimental = {
+  ...geminiSettings.experimental,
+  dynamicModelConfiguration: true,
+  useOSC52Copy: geminiSettings.experimental?.useOSC52Copy ?? true,
+};
 geminiSettings.agents = {
   ...geminiSettings.agents,
   overrides: {

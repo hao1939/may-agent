@@ -111,6 +111,11 @@ docker exec "$root_container_id" /bin/sh -ec '
   test "$(stat -c %u:%g /app)" = 1234:1235
   test "$(stat -c %u:%g /tmp/may-agent-ttyd.sock)" = 0:0
   test "$HERDR_SESSION" = may-terminal2
+  test "$PI_CLIPBOARD_OSC52" = 1
+  command -v xclip >/dev/null
+  command -v xsel >/dev/null
+  printf "smoke-clipboard" | xclip -selection clipboard
+  test "$(xclip -selection clipboard -o)" = "smoke-clipboard"
   herdr status | grep -q "status: running"
   herdr status | grep -q "sessions/may-terminal2/herdr.sock"
   test "$(herdr session list | grep -c "running")" -eq 1

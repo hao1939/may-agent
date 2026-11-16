@@ -148,7 +148,11 @@ describe("container runtime configuration and layout", () => {
     // Legacy CLI sessions migrated and symlinked; Herdr config repaired on restart
     expect(readFileSync(join(home, ".codex/sessions/s1.jsonl"), "utf8")).toBe('{"id":"legacy-1"}\n');
     expect(readFileSync(join(home, ".pi/agent/sessions/p1.jsonl"), "utf8")).toBe('{"id":"legacy-pi"}\n');
-    expect(readFileSync(join(home, ".config/herdr/config.toml"), "utf8")).toBe("resume_agents_on_restore = true\n");
+    expect(Bun.TOML.parse(readFileSync(join(home, ".config/herdr/config.toml"), "utf8"))).toEqual({
+      onboarding: false,
+      resume_agents_on_restore: true,
+      ui: { sound: { enabled: false } },
+    });
 
     // Native CLI configs contain normalized URLs, full permissions, and never persist MODEL_API_KEY
     const codexRaw = readFileSync(join(home, ".codex/config.toml"), "utf8");
@@ -169,6 +173,7 @@ describe("container runtime configuration and layout", () => {
     expect(JSON.parse(piRaw).providers["may-google"].baseUrl).toBe("https://models.example.test/v1beta");
     const geminiParsed = JSON.parse(geminiRaw);
     expect(geminiParsed.model.name).toBe("gemini-custom");
+    expect(geminiParsed.experimental.useOSC52Copy).toBe(true);
     expect(geminiParsed.context).toMatchObject({
       includeDirectoryTree: false,
       loadMemoryFromIncludeDirectories: false,

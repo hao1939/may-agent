@@ -77,6 +77,8 @@ RUN set -eux; \
       unzip \
       websockify \
       x11vnc \
+      xclip \
+      xsel \
       xvfb; \
     if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
       curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
@@ -150,6 +152,7 @@ RUN mkdir -p /root /etc/profile.d && \
       'export XDG_STATE_HOME="${XDG_STATE_HOME:-/app/.state/cli-state/herdr/state}"' \
       'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/may-herdr-runtime}"' \
       'export HERDR_SESSION="${HERDR_SESSION:-may-terminal2}"' \
+      'export PI_CLIPBOARD_OSC52="${PI_CLIPBOARD_OSC52:-1}"' \
       > /etc/profile.d/may-agent-env.sh && \
     chmod 644 /etc/profile.d/may-agent-env.sh && \
     printf '\n[ -f /etc/profile.d/may-agent-env.sh ] && . /etc/profile.d/may-agent-env.sh\n' >> /etc/bash.bashrc && \
@@ -258,6 +261,7 @@ ENV XDG_CONFIG_HOME=/root/.config
 ENV XDG_STATE_HOME=/app/.state/cli-state/herdr/state
 ENV XDG_RUNTIME_DIR=/tmp/may-herdr-runtime
 ENV HERDR_SESSION=may-terminal2
+ENV PI_CLIPBOARD_OSC52=1
 ENV MODEL_BASE_URL=http://host.docker.internal:4000
 ENV PATH=/usr/local/bin:$PATH
 

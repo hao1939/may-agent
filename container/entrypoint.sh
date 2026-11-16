@@ -24,6 +24,7 @@ export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
 export XDG_STATE_HOME="${XDG_STATE_HOME:-${STATE_DIR}/cli-state/herdr/state}"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/may-herdr-runtime}"
 export HERDR_SESSION="${HERDR_SESSION:-may-terminal2}"
+export PI_CLIPBOARD_OSC52="${PI_CLIPBOARD_OSC52:-1}"
 
 # Preserve mounted ownership; root needs no UID/GID remapping or chown pass.
 mkdir -p \
