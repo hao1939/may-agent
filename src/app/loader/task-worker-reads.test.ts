@@ -8,13 +8,15 @@ import { EventBus } from "../core/events/bus.js";
 import { HostCapacity } from "../core/scheduling/host-capacity.js";
 import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { observeAppTaskIntent } from "../core/tasks/app-task-reconciler.js";
-import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../core/tasks/app-task-runtime.js";
+import {
+  closeInstalledAppTaskRuntimes,
+  getLoadedAppTaskView,
+  installAppTaskRuntimes,
+} from "../core/tasks/app-task-runtime.js";
 import { appTaskTestContext } from "../core/tasks/app-task-test-support.js";
 import type { TaskAgentRunner } from "../core/tasks/execution.js";
-import type { AgentConfig } from "@may-agent/sdk/runtime";
-import { buildTools, type ToolsetLoaderOptions } from "./toolset-loader.js";
 
-test("one-App worker tools read exact registered peer Tasks without installing their execution runtimes", async () => {
+test("one-App worker reads exact registered peer Tasks without installing their execution runtimes", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-worker-reads-"));
   const bus = new EventBus();
   const db = getDb(root);
@@ -82,38 +84,12 @@ test("one-App worker tools read exact registered peer Tasks without installing t
     );
     expect(installed.map((app) => app.id)).toEqual(["current"]);
     expect(prepared).toEqual(["current"]);
-    const tools = await buildTools(
-      { name: "current", tools: [] } as unknown as AgentConfig,
-      {
-        agentsRoot: root,
-        sharedRoot: root,
-        projectsRoot: root,
-        projectRoot: root,
-        persistDir: root,
-        bus,
-          getAgentSessionId: () => "session",
-        manager: {
-          activeSessions: new Map([
-            [
-              "session",
-              {
-                taskBinding: { appId: "current", taskId: "same-id", generation: 1, attemptId: "attempt" },
-              },
-            ],
-          ]),
-        },
-      } as unknown as ToolsetLoaderOptions,
-    );
-    const tool = tools.find((tool) => tool.name === "tasks")!;
-    const get = async (appId: string, taskId = "same-id") => {
-      const result = await tool.execute("read", { action: "get", taskId, target: { appId } });
-      return JSON.parse((result.content[0] as { text: string }).text);
-    };
-    expect(await get("current")).toMatchObject({ outcome: "current outcome" });
-    expect(await get("peer.app")).toMatchObject({ outcome: "peer outcome" });
-    expect(await get("peer", "missing")).toBeNull();
+    const get = (appId: string, taskId = "same-id") => getLoadedAppTaskView({ bus, appId, taskId });
+    expect(get("current")).toMatchObject({ outcome: "current outcome" });
+    expect(get("peer.app")).toMatchObject({ outcome: "peer outcome" });
+    expect(get("peer", "missing")).toBeNull();
     for (const appId of ["disabled", "unknown", "unstarted"]) {
-      expect(await get(appId)).toEqual({ error: `App ${appId} has no loaded Task runtime` });
+      expect(() => get(appId)).toThrow(`App ${appId} has no loaded Task runtime`);
     }
     expect(AppTaskResourceStore.activeFromDb(db, "unstarted")).toBeNull();
     expect(contexts.peer!.resourceStore.readTaskContext({ taskIds: ["same-id"] })).toEqual(peerBefore);
@@ -132,7 +108,7 @@ test("one-App worker tools read exact registered peer Tasks without installing t
         input: {},
       },
     });
-    expect(await get("peer")).toMatchObject({ outcome: "Updated peer outcome", generation: 2 });
+    expect(get("peer")).toMatchObject({ outcome: "Updated peer outcome", generation: 2 });
   } finally {
     await closeInstalledAppTaskRuntimes(bus);
     closeDb(root);

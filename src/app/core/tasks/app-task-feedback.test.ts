@@ -10,6 +10,7 @@ import { createAppTaskCapability } from "./app-task-capability.js";
 import { trackAppTaskConditionEventForTasks } from "./app-task-condition-tracker.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
+  closeCreatedLoadedAppTask,
   closeInstalledAppTaskRuntimes,
   installAppTaskRuntimes as installCoreTaskRuntimes,
   getLoadedAppInputContract,
@@ -17,8 +18,8 @@ import {
   readLoadedAppTaskInputResult,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
+  reviseLoadedAppTask,
 } from "./app-task-runtime.js";
-import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import type { TaskAgentRunner } from "./execution.js";
 import {
   claimObservedAppTask,
@@ -240,11 +241,13 @@ describe("caller feedback", () => {
         },
       });
     await install();
-    const tool = createAppTaskReadTool({ bus, appId: () => "sample" });
-    const result = await tool.execute("contract", { action: "contract", target: { appId: "reviewer.app" } });
-    const content = result.content[0];
-    if (content?.type !== "text") throw new Error("Expected contract text");
-    expect(JSON.parse(content.text)).toEqual({ appId: "reviewer", agent: "reviewer", inputSchema, observations: [], taskReads: { workload: 1 } });
+    expect(getLoadedAppInputContract({ bus, appId: "reviewer" })).toEqual({
+      appId: "reviewer",
+      agent: "reviewer",
+      inputSchema,
+      observations: [],
+      taskReads: { workload: 1 },
+    });
     const clone = getLoadedAppInputContract({ bus, appId: "reviewer" });
     clone.inputSchema.properties = {};
     expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).inputSchema).toEqual(inputSchema);
@@ -265,26 +268,16 @@ describe("caller feedback", () => {
         },
       ],
     });
-    const conditionReply = await tool.execute("condition", {
-      action: "contract",
-      target: { appId: "reviewer" },
-      observation: { observerId: "build", id: "result", resource: "repo/42", expected: { state: "passed" } },
-    });
-    const conditionText = conditionReply.content[0];
-    if (conditionText?.type !== "text") throw new Error("Expected condition text");
-    expect(JSON.parse(conditionText.text).condition).toEqual({
-      id: "result",
-      type: "build.state",
-      subject: "resource:repo/42",
-      expected: { state: "passed", source: "app:reviewer:observer:build", timestamp: { gte: expect.any(Number) } },
-      owner: "app:reviewer",
-    });
-    const missing = await tool.execute("condition-missing", {
-      action: "contract",
-      target: { appId: "reviewer" },
-      observation: { observerId: "missing", id: "result", resource: "repo/42", expected: { state: "passed" } },
-    });
-    expect(missing.content[0]).toMatchObject({ type: "text", text: expect.stringContaining("no installed observer") });
+    expect(getLoadedAppInputContract({ bus, appId: "reviewer" }).observations).toEqual([
+      {
+        appId: "reviewer",
+        id: "build",
+        type: "build.state",
+        description: "Read build state",
+        intervalMs: 60_000,
+        timeoutMs: 1000,
+      },
+    ]);
   });
 
   it("reads an exact accepted admission from a caller-only registry without starting target execution", async () => {
@@ -483,23 +476,22 @@ describe("caller feedback", () => {
         appId: "sample",
         taskId: "parent",
       });
-      const tool = createAppTaskReadTool({
+      const saved = reviseLoadedAppTask({
         bus,
-        scope: () => ({
+        binding: {
           appId: "sample",
           taskId: claim.taskId,
           generation: claim.generation,
           attemptId: claim.attemptId,
-        }),
+        },
+        change: {
+          appId: "worker",
+          taskId: "measurement",
+          expectedGeneration: 1,
+          input: { kind: "measure", data: { source: "beta" } },
+        },
       });
-      const saved = await tool.execute("cross-app-correction", {
-        action: "update",
-        target: { appId: "worker" },
-        taskId: "measurement",
-        expectedGeneration: 1,
-        input: { kind: "measure", data: { source: "beta" } },
-      });
-      expect(JSON.parse((saved.content[0] as { text: string }).text)).toMatchObject({
+      expect(saved).toMatchObject({
         id: "measurement",
         generation: 2,
         outcome: "Measure beta",
@@ -536,17 +528,29 @@ describe("caller feedback", () => {
         result: { result: { source: "beta" } },
         input: { data: { source: "alpha" } },
       });
-      // Creator disposition goes through the shipped tool, retaining the exact input answer.
-      const closer = createAppTaskReadTool({ bus, scope: () => ({ appId: "sample", taskId: "parent",
-        generation: claim.generation, attemptId: claim.attemptId }) });
       const resource = target.resourceStore.readTask("measurement")!;
-      const request = { action: "close", target: { appId: "worker" }, taskId: "measurement",
-        expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion,
-        afterResult: next.attemptId, reason: "Owner consumed the verified measurement" };
       for (let replay = 0; replay < 2; replay++) {
-        const closed = await closer.execute("close-measurement", request);
-        expect(JSON.parse((closed.content[0] as { text: string }).text)).toMatchObject({
-          status: "closed", closed: true, result: { source: "beta" },
+        const closed = closeCreatedLoadedAppTask({
+          bus,
+          binding: {
+            appId: "sample",
+            taskId: "parent",
+            generation: claim.generation,
+            attemptId: claim.attemptId,
+          },
+          change: {
+            appId: "worker",
+            taskId: "measurement",
+            expectedGeneration: resource.metadata.generation,
+            expectedResourceVersion: resource.metadata.resourceVersion,
+            afterResult: next.attemptId,
+            reason: "Owner consumed the verified measurement",
+          },
+        });
+        expect(closed).toMatchObject({
+          status: "closed",
+          closed: true,
+          result: { source: "beta" },
         });
       }
       expect(host.get(originalInput.id)).toMatchObject({ status: "done", result: { result: { source: "beta" } } });
@@ -719,22 +723,22 @@ describe("caller feedback", () => {
         ...(onePlace ? { execution: { recipient, lane: "background" as const } } : {}),
       });
       if (reviewer.kind !== "claimed") throw new Error("Expected caller review");
-      const tool = createAppTaskReadTool({
+      const saved = reviseLoadedAppTask({
         bus,
-        scope: () => ({
+        binding: {
           appId: "sample",
           taskId: reviewer.taskId,
           generation: reviewer.generation,
           attemptId: reviewer.attemptId,
-        }),
+        },
+        change: {
+          appId: "sample",
+          taskId: "work/1",
+          expectedGeneration: 1,
+          input: { kind: "measure", data: { level: 1, revision: "Verify the additional measurement" } },
+        },
       });
-      const saved = await tool.execute("revise-child", {
-        action: "update",
-        taskId: "work/1",
-        expectedGeneration: 1,
-        input: { kind: "measure", data: { level: 1, revision: "Verify the additional measurement" } },
-      });
-      expect(JSON.parse((saved.content[0] as { text: string }).text)).toMatchObject({
+      expect(saved).toMatchObject({
         id: "work/1",
         generation: 2,
         outcome: "Verify the additional measurement",

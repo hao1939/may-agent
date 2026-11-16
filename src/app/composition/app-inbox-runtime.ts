@@ -584,11 +584,14 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       }
     }
     const updatedPlan = getAppEventAdmissionPlan(options.db, plan.eventId) ?? plan;
-    const appIds = updatedPlan.commands.filter((command) => command.status === "pending").map((command) => command.appId);
-    if (appIds.length === 0) {
+    if (updatedPlan.commands.every((command) => command.status !== "pending")) {
       completeAppEventAdmissionPlan(options.db, plan.eventId, now());
       return;
     }
+    const appIds = updatedPlan.commands
+      .filter((command) => command.status === "pending" && (command.kind !== "unresolved" || command.conditionTaskIds.length > 0))
+      .map((command) => command.appId);
+    if (appIds.length === 0) return;
     pendingAdmissionEvents.set(plan.eventId, {
       event,
       appIds,
