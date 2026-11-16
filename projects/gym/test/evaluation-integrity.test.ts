@@ -166,6 +166,20 @@ describe("comparison evidence integrity", () => {
       },
     ],
     [
+      "approval without a reviewer",
+      (baseline, candidate, labels) => {
+        labels.labels["case-a"]!.approved_by = null;
+        baseline.proof.label_catalog_fingerprint = candidate.proof.label_catalog_fingerprint = fingerprintValue(labels);
+      },
+    ],
+    [
+      "approval with an invalid timestamp",
+      (baseline, candidate, labels) => {
+        labels.labels["case-a"]!.approved_at = "not-a-date";
+        baseline.proof.label_catalog_fingerprint = candidate.proof.label_catalog_fingerprint = fingerprintValue(labels);
+      },
+    ],
+    [
       "truth was draft at execution",
       (baseline) => {
         baseline.trials[0]!.label_status = "draft";

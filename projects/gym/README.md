@@ -89,9 +89,12 @@ calls. `benchmark:may-alignment` makes model calls and must be invoked
 explicitly.
 
 A label has one simple review meaning: `draft` is pending a human truth
-decision; `approved` is executable benchmark truth. Only approved labels
-belong in executable suites and learning units. `review:pending` derives the
-review queue from versioned `benchmarks/*/labels.json` files. Rejected or
+decision; `approved` is executable benchmark truth. Missing labels default to
+`draft`; Gym never invents a reviewer or approval timestamp. Diagnostic tests
+can run drafts, but verification requires explicit approval with a named
+reviewer and valid timestamp. Only approved labels belong in release comparisons
+and learning units. The pending-review queue derives labels from versioned
+benchmark catalogs and inline cases in `cases.json` or `suite.json`. Rejected or
 absorbed drafts leave the runnable suites while their source review and useful
 evidence remain in Git; Gym does not maintain a second proposal-status store.
 

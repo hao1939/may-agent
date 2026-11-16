@@ -72,6 +72,7 @@ export interface GroundTruthLabel {
   rationale: string;
   approved_by: string | null;
   approved_at: string | null;
+  review_status?: "ready" | "withheld";
 }
 
 export interface GroundTruthCatalog {

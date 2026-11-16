@@ -82,8 +82,8 @@ export function safeName(value: string): string {
   return value.replace(/[^A-Za-z0-9._-]+/g, "__");
 }
 
-export function benchmarkDir(benchmark: string): string {
-  return join(gymRoot, "benchmarks", benchmark);
+export function benchmarkDir(benchmark: string, root = gymRoot): string {
+  return join(root, "benchmarks", benchmark);
 }
 
 /**
@@ -208,11 +208,12 @@ export function applyEvaluatorScenarioOverlay(input: {
 export function loadSuite(
   benchmark: string,
   adhocScenarios?: string[],
+  root = gymRoot,
 ): {
   suite: BenchmarkSuite;
   path: string;
 } {
-  const dir = benchmarkDir(benchmark);
+  const dir = benchmarkDir(benchmark, root);
   const path = join(dir, "suite.json");
   const casesPath = join(dir, "cases.json");
 
@@ -259,12 +260,19 @@ export function loadSuite(
   return { suite, path };
 }
 
+export function isApprovedLabel(label: GroundTruthLabel | undefined): boolean {
+  return label?.status === "approved" &&
+    typeof label.approved_by === "string" && label.approved_by.trim().length > 0 &&
+    typeof label.approved_at === "string" && Number.isFinite(Date.parse(label.approved_at));
+}
+
 export function loadLabels(
   benchmark: string,
   suite: BenchmarkSuite,
+  root = gymRoot,
 ): { catalog: GroundTruthCatalog | null; path: string | null } {
   const path = join(
-    benchmarkDir(benchmark),
+    benchmarkDir(benchmark, root),
     suite.labels_file ?? "labels.json",
   );
   let catalog: GroundTruthCatalog | null = null;
@@ -277,10 +285,7 @@ export function loadLabels(
       );
     }
     resolvedPath = path;
-  } else if (
-    (Array.isArray(suite.cases) && suite.cases.length > 0) ||
-    !existsSync(join(benchmarkDir(benchmark), "suite.json"))
-  ) {
+  } else {
     catalog = {
       version: suite.version || 1,
       benchmark,
@@ -291,7 +296,7 @@ export function loadLabels(
   if (catalog && Array.isArray(suite.cases)) {
     for (const c of suite.cases) {
       if (!c.id || catalog.labels[c.id]) continue;
-      const status = c.label?.status ?? "approved";
+      const status = c.label?.status ?? "draft";
       catalog.labels[c.id] = {
         status,
         source: c.label?.source ?? "synthetic",
@@ -301,32 +306,31 @@ export function loadLabels(
           (typeof c.expected?.human_answer === "string"
             ? c.expected.human_answer
             : `Inline case ${c.id}`),
-        approved_by:
-          c.label?.approved_by !== undefined
-            ? c.label.approved_by
-            : status === "approved"
-              ? "hao"
-              : null,
-        approved_at:
-          c.label?.approved_at !== undefined
-            ? c.label.approved_at
-            : status === "approved"
-              ? "2026-11-15T00:00:00Z"
-              : null,
+        approved_by: c.label?.approved_by ?? null,
+        approved_at: c.label?.approved_at ?? null,
+        ...(c.label?.review_status ? { review_status: c.label.review_status } : {}),
       };
     }
   }
 
-  // For zero-config ad-hoc runs, treat validated corpus scenarios as approved
-  if (catalog && !resolvedPath && !suite.cases?.length) {
+  // Runnable cases are diagnostic inputs until their truth is explicitly approved.
+  if (catalog) {
     for (const s of suite.scenarios) {
+      if (catalog.labels[s]) continue;
       catalog.labels[s] = {
-        status: "approved",
+        status: "draft",
         source: "synthetic",
-        rationale: `Ad-hoc corpus scenario ${s}`,
-        approved_by: "hao",
-        approved_at: "2026-11-15T00:00:00Z",
+        rationale: `Unreviewed scenario ${s}`,
+        approved_by: null,
+        approved_at: null,
       };
+    }
+    for (const [scenario, label] of Object.entries(catalog.labels)) {
+      if (label.status === "approved" && !isApprovedLabel(label)) {
+        throw new Error(
+          `Invalid approval metadata for ${benchmark}/${scenario}: approved labels require a reviewer and valid timestamp`,
+        );
+      }
     }
   }
 

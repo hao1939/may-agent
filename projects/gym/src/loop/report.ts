@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { describeComparisonObjective, parseComparisonObjective, sameComparisonObjective } from "./objective";
-import { fingerprintValue, readAdjudications } from "./store";
+import { fingerprintValue, isApprovedLabel, readAdjudications } from "./store";
 import type {
   DurationComparison,
   GroundTruthCatalog,
@@ -203,7 +203,7 @@ export function compareRuns(
   }
   const suppliedTruthFingerprint = fingerprintValue(labels);
   const currentTruthApproved = baseline.scenarios.every(
-    (scenario) => labels.labels[scenario]?.status === "approved",
+    (scenario) => isApprovedLabel(labels.labels[scenario]),
   );
   if (currentTruthApproved && (
     !baseline.proof.label_catalog_fingerprint ||
@@ -241,7 +241,7 @@ export function compareRuns(
       usage: compareUsage(baselineTrials, candidateTrials),
     };
   });
-  const labelsApproved = baseline.scenarios.every((scenario) => labels?.labels[scenario]?.status === "approved");
+  const labelsApproved = currentTruthApproved;
   const sameFrameworkRevision =
     baseline.proof.framework_revisions.length === 1 &&
     candidate.proof.framework_revisions.length === 1 &&

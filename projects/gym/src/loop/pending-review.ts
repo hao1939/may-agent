@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
+import { loadLabels, loadSuite } from "./store";
+
 interface Label {
   status?: string;
   source?: string;
@@ -25,9 +27,15 @@ export function collectPendingReviews(gymRoot: string): PendingReviewGroup[] {
 
   for (const directory of readdirSync(benchmarksRoot).sort()) {
     const labelsPath = join(benchmarksRoot, directory, "labels.json");
-    if (!existsSync(labelsPath)) continue;
-
-    const file = JSON.parse(readFileSync(labelsPath, "utf8")) as LabelFile;
+    let file: LabelFile;
+    if (existsSync(join(benchmarksRoot, directory, "suite.json"))) {
+      const { suite } = loadSuite(directory, undefined, gymRoot);
+      file = loadLabels(directory, suite, gymRoot).catalog ?? {};
+    } else if (existsSync(labelsPath)) {
+      file = JSON.parse(readFileSync(labelsPath, "utf8")) as LabelFile;
+    } else {
+      continue;
+    }
     const benchmark = file.benchmark ?? directory;
     for (const [scenario, label] of Object.entries(file.labels ?? {}).sort(
       ([left], [right]) => left.localeCompare(right),

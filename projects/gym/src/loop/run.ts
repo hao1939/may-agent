@@ -16,6 +16,7 @@ import {
   createRunManifest,
   fingerprintTree,
   gymRoot,
+  isApprovedLabel,
   loadLabels,
   loadSuite,
   materializeScenarioOrInlineCase,
@@ -28,6 +29,7 @@ import {
   writeManifest,
 } from "./store";
 import type {
+  GroundTruthCatalog,
   LoopRunManifest,
   RunComparison,
   ScenarioRunResult,
@@ -418,6 +420,22 @@ export async function verifyLoop(input: {
   const baselineDir = resolveRunDir(input.baseline);
   const baseline = readManifest(baselineDir);
   assertFrozenInputs(baselineDir, baseline);
+  const labels: GroundTruthCatalog | null = baseline.source.labels_snapshot
+    ? JSON.parse(
+        readFileSync(
+          join(baselineDir, baseline.source.labels_snapshot),
+          "utf-8",
+        ),
+      )
+    : null;
+  const unapproved = baseline.scenarios.filter(
+    (scenario) => !isApprovedLabel(labels?.labels[scenario]),
+  );
+  if (unapproved.length) {
+    throw new Error(
+      `Verification requires approved labels: ${unapproved.join(", ")}; approve the truth and create a new baseline`,
+    );
+  }
   const trials = input.trials ?? baseline.trials_per_scenario;
   if (trials !== baseline.trials_per_scenario) {
     throw new Error(
@@ -436,14 +454,6 @@ export async function verifyLoop(input: {
     timeout: input.timeout,
     agentsRoot: input.agentsRoot,
   });
-  const labels = baseline.source.labels_snapshot
-    ? JSON.parse(
-        readFileSync(
-          join(baselineDir, baseline.source.labels_snapshot),
-          "utf-8",
-        ),
-      )
-    : null;
   const comparison = compareRuns(baseline, created.manifest, labels);
   writeFileSync(
     join(created.runDir, "comparison.json"),

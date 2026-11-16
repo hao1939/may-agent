@@ -17,6 +17,14 @@ Instead of scattering multiple files across `scenarios/<id>/` (`scenario.json`,
 you can add a new benchmark case by editing **one file**:
 `benchmarks/<benchmark>/cases.json` (or the `cases` array inside `suite.json`).
 
+Cases without a label default to `draft`, with no reviewer or approval date.
+Explicit `approved` labels require a non-empty `approved_by` and valid
+`approved_at`; Gym rejects incomplete approval metadata. A separate label
+catalog takes precedence over an inline label. The pending-review queue includes
+drafts from both formats, including inline `review_status: "withheld"` controls.
+Drafts can run for diagnosis, but cannot authorize verification. After truth
+approval, create a fresh baseline before comparing a candidate.
+
 All agent judgment benchmarks use the production `TaskReconcileResult` contract
 (`output_contract: "task-agent-result"`, `artifact: "task-result.json"` via
 `finish()`) and provide only situational facts and optional real workspace
@@ -63,14 +71,17 @@ manifest.
 
 ## Zero-Config Ad-Hoc Scenario Benchmarks (`--scenario` without `--benchmark`)
 
-To run `gym test` → `gym verify` on any existing scenario(s) in `scenarios/`
+To run diagnostic `gym test` on any existing scenario(s) in `scenarios/`
 (for example `coder`, `tech-lead`, `scout`, or `alex/develop-change` scenarios)
 without creating a `benchmarks/<name>/` folder first:
 
 ```bash
 bun run gym test --scenario phantom-fix --target tech-lead --trials 1
-bun run gym verify --baseline <RUN_ID> --candidate <LAB_FORK> --trials 1
 ```
 When `--scenario` is passed without `--benchmark` (and the scenario is not in
 the default `may-alignment` suite), Gym automatically synthesizes a frozen
 `adhoc` benchmark snapshot from the scenario definitions.
+These scenarios receive draft labels, rather than inferred human approval.
+To verify a candidate, register the scenarios in a named benchmark with approved
+labels and create a fresh baseline. Verification checks approval before starting
+candidate execution.

@@ -62,7 +62,11 @@ The label catalog is approval metadata, not a second answer key. A label records
 - reviewer and approval timestamp.
 
 Verification cannot pass its release gate while any selected label remains
-draft. Editing `expected.json`, its scorer, the evaluator, or a label after a
+draft. Missing labels, including inline and ad hoc cases, remain draft; approval
+requires an explicit reviewer and valid timestamp. Draft baseline tests are
+diagnostic, and verification rejects unapproved truth before executing the
+candidate. After approval, create a fresh baseline. Editing `expected.json`, its
+scorer, the evaluator, or a label after a
 baseline invalidates the comparison; start a new baseline so both versions use
 the same frozen inputs.
 
