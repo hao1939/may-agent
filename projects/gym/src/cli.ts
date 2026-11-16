@@ -53,7 +53,7 @@ import {
 import type { ScenarioMeta, WorkflowScenarioEntry } from "./scenarios/types";
 import { formatValidation, validateScenarioCorpus } from "./scenarios/validate";
 import { executeLoopCli } from "./loop/cli";
-import { loadSuite } from "./loop/store";
+import { loadSuite, materializeScenarioOrInlineCase } from "./loop/store";
 import type { BenchmarkSuite, InlineBenchmarkCase } from "./loop/types";
 import {
   buildSemanticJudgeInput,
@@ -654,6 +654,7 @@ function scoreScenario(
   scenarioDir: string,
   workDir: string,
   outputContract?: ScenarioMeta["output_contract"],
+  inlineEvaluator?: string,
 ): ScoreResult {
   const criteriaPath = join(scenarioDir, "success_criteria.js");
   if (!existsSync(criteriaPath)) {
@@ -666,19 +667,28 @@ function scoreScenario(
         Boolean(expectedJson.expected) &&
         typeof expectedJson.expected === "object" &&
         !Array.isArray(expectedJson.expected);
-      const evaluatorScript = isTaskResultContract
+      const bindingPath = join(scenarioDir, ".gym-evaluator.json");
+      const binding = existsSync(bindingPath)
+        ? JSON.parse(readFileSync(bindingPath, "utf8")) as { path: string }
+        : null;
+      const evaluatorRoot = process.env["GYM_SCENARIOS_DIR"]
+        ? join(SCENARIOS_DIR, "..", "harness")
+        : GYM_PROJECT_ROOT;
+      const evaluatorScript = inlineEvaluator ?? (binding
+        ? resolve(scenarioDir, binding.path)
+        : isTaskResultContract
         ? join(
-            GYM_PROJECT_ROOT,
+            evaluatorRoot,
             "benchmarks",
             "may-app-outcome-management",
             "score-task-result.cjs",
           )
         : join(
-            GYM_PROJECT_ROOT,
+            evaluatorRoot,
             "benchmarks",
             "may-alignment",
             "score-decision.cjs",
-          );
+          ));
       const fnName = isTaskResultContract
         ? "scoreTaskResult"
         : "scoreDecision";
@@ -1559,47 +1569,18 @@ async function runScenario(
 
   let scenarioDir = directScenarioDir;
   if (inlineFound) {
-    const { inlineCase, suite } = inlineFound;
-    if (inlineCase.files) {
-      for (const [relPath, content] of Object.entries(inlineCase.files)) {
-        const dest = join(workDir, relPath);
-        mkdirSync(dirname(dest), { recursive: true });
-        writeFileSync(dest, content);
-      }
-    }
-    const stateSection = inlineCase.state?.trim()
-      ? `\n\n${inlineCase.state.trim()}`
-      : "";
-    const suffix = suite.defaults?.task_suffix
-      ? `\n\n${suite.defaults.task_suffix.trim()}`
-      : "";
-    writeFileSync(
-      join(gymRoot, "task.md"),
-      `${inlineCase.task.trim()}${stateSection}${suffix}\n`,
-    );
-    if (inlineCase.expected) {
-      writeFileSync(
-        join(gymRoot, "expected.json"),
-        `${JSON.stringify(inlineCase.expected, null, 2)}\n`,
-      );
-    }
-    if (inlineCase.semantic_criteria) {
-      writeFileSync(
-        join(gymRoot, "semantic_criteria.md"),
-        `${inlineCase.semantic_criteria.trim()}\n`,
-      );
-    }
-    if (inlineCase.semantic_controls) {
-      writeFileSync(
-        join(gymRoot, "semantic_controls.json"),
-        `${JSON.stringify(inlineCase.semantic_controls, null, 2)}\n`,
-      );
-    }
-    scenarioDir = gymRoot;
-  } else {
-    // Copy environment
-    cpSync(join(directScenarioDir, "environment"), workDir, { recursive: true });
+    scenarioDir = join(gymRoot, "inputs", "scenarios", scenarioName);
+    const sourceBenchmarkDir = join(GYM_PROJECT_ROOT, "benchmarks", inlineFound.benchmark);
+    materializeScenarioOrInlineCase({
+      scenario: scenarioName,
+      suite: inlineFound.suite,
+      sourceBenchmarkDir,
+      evaluatorOwner: inlineFound.suite.evaluator
+        ? dirname(resolve(sourceBenchmarkDir, inlineFound.suite.evaluator)) : null,
+      destination: scenarioDir,
+    });
   }
+  cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
 
   // Setup adapter
   adapter.setup(PROJECT_ROOT, {
@@ -1841,7 +1822,10 @@ async function runScenario(
   }
 
   // Mechanical score
-  const score = scoreScenario(scenarioDir, workDir, meta?.output_contract);
+  const score = scoreScenario(scenarioDir, workDir, meta?.output_contract,
+    inlineFound?.suite.evaluator
+      ? resolve(GYM_PROJECT_ROOT, "benchmarks", inlineFound.benchmark, inlineFound.suite.evaluator)
+      : undefined);
 
   // LLM judge (if rubric exists)
   const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
@@ -2080,6 +2064,7 @@ function inlineCaseToMeta(
     rawTier === "full" || rawTier === "standard" ? rawTier : "smoke";
   return {
     name: inlineCase.id,
+    evaluation_kind: inlineCase.evaluation_kind ?? suite.evaluation_kind,
     description: inlineCase.description,
     categories: inlineCase.categories ?? suite.defaults?.categories ?? ["judgment"],
     tags: inlineCase.tags ?? suite.defaults?.tags ?? ["inline-case"],
@@ -2098,6 +2083,9 @@ function findInlineBenchmarkCase(scenarioName: string): {
   suite: BenchmarkSuite;
   inlineCase: InlineBenchmarkCase;
 } | null {
+  // Controlled runs must execute only their materialized inputs. Never replace
+  // a retained case with a similarly named case from the live catalog.
+  if (process.env["GYM_SCENARIOS_DIR"]) return null;
   const benchmarksRoot = join(GYM_PROJECT_ROOT, "benchmarks");
   if (!existsSync(benchmarksRoot)) return null;
   for (const entry of readdirSync(benchmarksRoot, { withFileTypes: true })) {

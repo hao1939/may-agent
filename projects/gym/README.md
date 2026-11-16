@@ -1,7 +1,25 @@
 # Agent Gym — Scenario-Based Agent Testing
 
-Tests agents against realistic coding scenarios with automated scoring.
-Decoupled from any specific agent runtime via adapters.
+Tests agent judgment and behavior in bounded scenarios, using adapters rather
+than depending on one agent runtime.
+
+## Purpose and limits
+
+Gym answers two separate questions:
+
+1. **Judgment:** does the agent choose an approach that matches our expectations?
+2. **Behavior:** does the agent actually take the expected actions and produce
+   the right outcome while respecting the boundaries?
+
+A good decision is not proof of good execution. A passing scenario is evidence
+about that situation, not a certificate of general alignment or production
+reliability. Define acceptable outcomes, forbidden choices/effects, required
+observable evidence and human-approved truth before using a benchmark as a gate.
+Reports distinguish `judgment`, `behavior` and unclassified cases; historical
+runs are not retroactively classified.
+
+See [`docs/expectations-and-limits.md`](docs/expectations-and-limits.md) for the
+benchmark contract, examples and limitations.
 
 ## Project boundary
 

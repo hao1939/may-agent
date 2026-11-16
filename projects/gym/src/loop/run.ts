@@ -358,6 +358,12 @@ export function assertFrozenInputs(
   }
 }
 
+function assertRetainedInputs(runDir: string, manifest: LoopRunManifest): void {
+  if (fingerprintTree(join(runDir, "inputs")) !== manifest.proof.input_fingerprint) {
+    throw new Error("Retained benchmark inputs changed during execution; run remains incomplete");
+  }
+}
+
 export async function runLoop(
   options: RunOptions,
   executor: ScenarioExecutor = executeScenario,
@@ -407,6 +413,7 @@ export async function runLoop(
       process.stderr.write(
         `${scenario} trial ${trial}/${options.trials} (${options.candidate})... `,
       );
+      assertRetainedInputs(created.runDir, created.manifest);
       const candidateSnapshot = retainedCandidateSnapshot(
         created.runDir,
         created.manifest,
@@ -426,6 +433,7 @@ export async function runLoop(
       });
       let stored: StoredTrial;
       try {
+        assertRetainedInputs(created.runDir, created.manifest);
         retainedCandidateSnapshot(created.runDir, created.manifest);
         stored = storeTrial({
           runDir: created.runDir,
@@ -450,6 +458,7 @@ export async function runLoop(
       process.stderr.write(`${stored.machine_verdict}\n`);
     }
   }
+  assertRetainedInputs(created.runDir, created.manifest);
   retainedCandidateSnapshot(created.runDir, created.manifest);
   if (currentHarnessFingerprint() !== created.manifest.proof.harness_fingerprint) {
     writeManifest(created.runDir, created.manifest);

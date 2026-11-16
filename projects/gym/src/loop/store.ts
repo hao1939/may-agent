@@ -168,6 +168,8 @@ const CONTROLLED_HARNESS_PATHS = [
   "src/scoring",
   "src/scenarios",
   "dist/@may-agent/gym/scoring.js",
+  "benchmarks/may-alignment/score-decision.cjs",
+  "benchmarks/may-app-outcome-management/score-task-result.cjs",
 ] as const;
 
 /** Copies the Gym-owned runner/scoring implementation used by a bounded run. */
@@ -364,6 +366,9 @@ export function materializeScenarioOrInlineCase(input: {
       timeout: inlineCase.timeout ?? defaults.timeout ?? 5,
       agent_type: inlineCase.agent_type ?? defaults.agent_type ?? "may",
       workflow: false,
+      ...(inlineCase.evaluation_kind ?? input.suite.evaluation_kind
+        ? { evaluation_kind: inlineCase.evaluation_kind ?? input.suite.evaluation_kind }
+        : {}),
       ...(inlineCase.output_contract ?? defaults.output_contract
         ? { output_contract: inlineCase.output_contract ?? defaults.output_contract }
         : {}),
@@ -418,6 +423,23 @@ export function materializeScenarioOrInlineCase(input: {
     scenario: input.scenario,
     destination: input.destination,
   });
+
+  // Bind expected-only cases to their selected evaluator, not a live default.
+  // The relative layout is inputs/scenarios/<id> -> inputs/benchmarks/<suite>.
+  if (input.suite.evaluator && !existsSync(join(input.destination, "success_criteria.js"))) {
+    writeFileSync(join(input.destination, ".gym-evaluator.json"), `${JSON.stringify({
+      path: join("../../benchmarks", basename(input.sourceBenchmarkDir), input.suite.evaluator),
+    }, null, 2)}\n`);
+  }
+  if (input.suite.evaluation_kind) {
+    const metaPath = join(input.destination, "scenario.json");
+    if (existsSync(metaPath)) {
+      const meta = JSON.parse(readFileSync(metaPath, "utf8"));
+      if (!meta.evaluation_kind) {
+        writeFileSync(metaPath, `${JSON.stringify({ ...meta, evaluation_kind: input.suite.evaluation_kind }, null, 2)}\n`);
+      }
+    }
+  }
 }
 
 export function stateRoot(): string {
@@ -550,6 +572,16 @@ export function createRunManifest(input: {
     agent: input.agent,
     trials_per_scenario: input.trials,
     scenarios: input.scenarios,
+    evaluation_kinds: Object.fromEntries(input.scenarios.map((scenario) => {
+      const metaPath = join(scenariosSnapshot, safeName(scenario), "scenario.json");
+      const kind = existsSync(metaPath)
+        ? JSON.parse(readFileSync(metaPath, "utf8")).evaluation_kind
+        : null;
+      if (kind != null && kind !== "judgment" && kind !== "behavior") {
+        throw new Error(`Unknown evaluation kind for ${scenario}: ${kind}`);
+      }
+      return [scenario, kind ?? null];
+    })),
     started_at: new Date().toISOString(),
     completed_at: null,
     proof: {
@@ -702,6 +734,14 @@ export function storeTrial(input: {
     );
   }
 
+  // Preserve actual outputs before the temporary sandbox is removed. Do not
+  // confuse this with environment/, which is the original fixture input.
+  const workspacePath = input.result.work_dir && existsSync(input.result.work_dir)
+    ? join(caseDir, "workspace") : null;
+  if (workspacePath && input.result.work_dir) {
+    cpSync(input.result.work_dir, workspacePath, { recursive: true });
+  }
+
   const artifactName = input.suite.artifact ?? "alignment-decision.json";
   const artifactPath = copyIfPresent(
     input.result.work_dir
@@ -747,6 +787,7 @@ export function storeTrial(input: {
     transcript_path: transcriptPath
       ? relative(input.runDir, transcriptPath)
       : null,
+    workspace_path: workspacePath ? relative(input.runDir, workspacePath) : null,
     duration_ms: input.result.duration_ms ?? null,
     ...(input.result.usage !== undefined ? { usage: input.result.usage } : {}),
     provenance: {

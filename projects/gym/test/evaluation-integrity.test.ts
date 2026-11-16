@@ -626,7 +626,7 @@ describe("diagnostic rescore evidence", () => {
 });
 
 describe("frozen evaluator implementation", () => {
-  for (const drift of ["judge", "harness", "harness-during-run"] as const) {
+  for (const drift of ["judge", "harness", "harness-during-run", "inputs-during-run"] as const) {
     test(`rejects ${drift} drift`, async () => {
       const root = mkdtempSync(join(tmpdir(), "gym-frozen-integrity-"));
       const previousRoot = gymRoot;
@@ -669,9 +669,11 @@ describe("frozen evaluator implementation", () => {
               candidate: "baseline",
               trials: 1,
             },
-            async () => {
+            async (input) => {
               if (drift === "harness-during-run")
                 save(root, "src/cli.ts", "// changed during execution");
+              if (drift === "inputs-during-run")
+                save(input.scenariosDir, "case-a/task.md", "Changed retained task");
               return {
                 result: {
                   scenario: "case-a",
@@ -684,7 +686,7 @@ describe("frozen evaluator implementation", () => {
               };
             },
           );
-        if (drift === "harness-during-run") {
+        if (drift === "harness-during-run" || drift === "inputs-during-run") {
           await expect(start()).rejects.toThrow();
         } else {
           const baseline = await start();

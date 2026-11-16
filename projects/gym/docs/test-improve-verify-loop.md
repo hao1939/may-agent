@@ -29,15 +29,22 @@ Every trial has three distinct states:
 Runtime or scorer failures are `invalid`; they are never counted as agent
 failures or passes. Machine results are evidence, not human-approved truth.
 
-Gym tests three different layers. Passing one does not imply the others pass:
+Gym has two purposes. Passing one kind of test does not imply the other passes:
 
-1. **Preference** — what the agent says it understands in a decision artifact.
-2. **Agent behavior** — what the agent actually applies across one or more
-   turns, including clarification, routing, follow-up, and human communication.
-3. **Runtime behavior** — whether request traces, owner tasks, completion
-   evidence, reply targets, and deduplication survive execution-session loss.
+1. **Judgment** — whether the actual decision matches human expectations for
+   intent, approach, authority, constraints and response. Check operational
+   decision fields as well as wording; this does not prove execution.
+2. **Behavior** — whether observed actions and outcomes match expectations
+   across one or more turns, including clarification, routing, follow-up,
+   communication and completion. Recovery and runtime continuity belong here
+   when they are the behavior under test.
 
-Behavior and runtime scenarios score the full trajectory. Their ground truth
+Runtime health is otherwise an evaluation-validity condition, not a third agent
+quality goal. Declare the kind per suite/case and read the report's coverage;
+missing or historical classifications remain unknown. See
+[`expectations-and-limits.md`](expectations-and-limits.md).
+
+Behavior scenarios score the full trajectory. Their ground truth
 includes accepted action receipts and final durable state, not only
 `task-result.json`. A final answer cannot repair an action that was
 never applied, was attached to the wrong request, or produced a duplicate
@@ -275,9 +282,17 @@ bun run loop -- report --run <run-id>
     ├── checks.json
     ├── task-result.json
     ├── transcript.jsonl
+    ├── workspace/           # actual final files, including changes/deletions
+    ├── environment/         # original fixture, not the final state
     ├── runner.stderr.log
     └── session/
 ```
+
+The final workspace is retained before temporary execution files are cleaned up.
+Use it to inspect actual outputs rather than reconstructing them from a success
+message. Historical runs without final workspace evidence cannot supply that
+proof through rescoring. Token/tool-op comparisons likewise require complete,
+nonnegative measurements; missing transcript usage is unknown, not zero.
 
 The state directory is ignored by Git. Commit only benchmark definitions,
 approved labels, implementation changes, and intentionally redacted evidence.

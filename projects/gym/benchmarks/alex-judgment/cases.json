@@ -5,6 +5,9 @@
     "task": "Reconcile this Alex improvement Task after the specialist helper returned.\n\n# Alex improvement assignment and specialist return\n\n- Assigned outcome: Fix the duplicate notification delivery in `projects/may-agent/src/host/notification.ts` and verify that the regression test passes.\n- Bob completed a bounded design review and returned a recommendation: remove the redundant retry emit on line 142 and add a unit test in `notification.test.ts`.\n- No code edit has been applied yet, and `notification.test.ts` has not been run.\n- Loaded App contract reports `taskPolicy.closeOnResult: true`.",
     "expected": {
       "human_answer": "Do not close or claim the improvement is complete: Bob's returned recommendation is only a helper step, not the implemented and verified outcome. Proceed with implementation (via tech-lead) and run the regression test before closing.",
+      "one_of": {
+        "task_result.state": ["waiting", "incomplete"]
+      },
       "exact": {
         "needs_clarification": false
       },
