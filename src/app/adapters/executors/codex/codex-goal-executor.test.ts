@@ -105,6 +105,9 @@ describe("Codex goal Task context", () => {
     expect(value.workloadAtAttemptStart).toEqual(workloadObservation());
     const rendered = renderCodexGoalTaskAttempt(value, root);
     expect(rendered.developerInstructions).toContain("Required work remains owed under pressure");
+    expect(rendered.goalObjective).toStartWith("Reconcile assigned input for May Task ");
+    expect(rendered.developerInstructions).toContain("not the durable Task lifecycle");
+    expect(rendered.developerInstructions).toContain("Do not re-audit unchanged blockers after fulfilling a finite assigned request");
     const packet = JSON.parse(rendered.developerInstructions.split("## Canonical May Task Attempt\n")[1]!);
     expect(packet.workloadAtAttemptStart).toEqual(workloadObservation());
     const unavailable = codexGoalExecutorInternals.packetFor({ ...base, workload: { available: false } });
@@ -725,6 +728,41 @@ describe("codex-goal Task executor", () => {
     expect(corrections).toHaveLength(1);
     expect(corrections[0]).toContain("not exact JSON");
     expect(client.calls.filter((call) => call === "goal:thread-invalid")).toHaveLength(2);
+    expect(client.calls.at(-1)).toBe("stop");
+  });
+
+  it.each([false, true])("corrects contextual result rejection within the existing allowance (persistent=%s)", async (persistent) => {
+    const root = fixtureRoot();
+    const stateFile = join(root, "bindings.json");
+    const client = new FakeClient("thread-contextual-correction");
+    const corrections: string[] = [];
+    let checks = 0;
+    client.steer = async ({ message, turnId }) => { corrections.push(message); return turnId; };
+    const executor = createCodexGoalExecutor({ stateFile, createClient: () => client });
+    const running = executor(attempt({
+      cwd: root,
+      maxAttemptMs: "unlimited",
+      validateResult(result) {
+        checks++;
+        expect(result).toMatchObject({ state: "converged", summary: "The model matches the cited runtime boundary." });
+        return persistent || checks === 1 ? "A referenced Condition changed; use its current generation" : null;
+      },
+    }));
+    if (persistent) {
+      await expect(running).rejects.toThrow(`after ${MAX_CODEX_RESULT_CORRECTIONS} correction turns`);
+      expect(checks).toBe(MAX_CODEX_RESULT_CORRECTIONS + 1);
+      expect(corrections).toHaveLength(MAX_CODEX_RESULT_CORRECTIONS);
+    } else {
+      await expect(running).resolves.toMatchObject({ state: "converged" });
+      expect(checks).toBe(2);
+      expect(corrections).toHaveLength(1);
+    }
+    expect(corrections[0]).toContain("A referenced Condition changed");
+    expect(corrections[0]).toContain("do not repeat already completed external effects");
+    const binding = JSON.parse(readFileSync(stateFile, "utf8")).bindings;
+    expect(Object.values(binding)).toHaveLength(1);
+    expect(Object.values(binding)[0]).toMatchObject({ threadId: client.threadId, attempts: 1 });
+    expect(client.calls.filter((call) => call.startsWith("start:"))).toHaveLength(1);
     expect(client.calls.at(-1)).toBe("stop");
   });
 

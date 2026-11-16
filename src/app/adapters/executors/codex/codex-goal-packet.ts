@@ -38,7 +38,7 @@ export function renderCodexGoalTaskAttempt(
   goalObjective: string;
   developerInstructions: string;
 } {
-  const prefix = `Achieve May Task ${packet.identity.appId}/${packet.identity.taskId} generation ${packet.identity.generation}: `;
+  const prefix = `Reconcile assigned input for May Task ${packet.identity.appId}/${packet.identity.taskId} generation ${packet.identity.generation}: `;
   const outcomeChars = Math.max(0, MAX_CODEX_GOAL_OBJECTIVE_CHARS - prefix.length);
   const goalObjective = `${prefix}${packet.assignment.outcome.slice(0, outcomeChars)}`;
   const { identity, observed, role, work, contract, ...full } = packet;
@@ -66,8 +66,9 @@ export function renderCodexGoalTaskAttempt(
     developerInstructions: [
       "You are the replaceable executor pursuing one fenced May Task goal.",
       "Use the supplied Task context alongside your role. The assigned agent owns the Task's outcome; the creator controls requirements. The Host admits your result under the supplied policy.",
-      "Keep the goal active across automatic continuation turns. Do not mark it complete or return merely because one useful step or turn ended.",
-      "Return only after acceptance is supported or an exact external wait is identified.",
+      "Keep the native goal active while useful work remains within this invocation's assigned input. One useful step alone does not establish fulfillment.",
+      "The native goal belongs to this invocation, not the durable Task lifecycle. When the addressed input is fulfilled, mark the native goal complete and return converged with exact inputKeys when needed; other Task input and Conditions retain their own state.",
+      "For a genuine unavailable prerequisite, end this invocation with the native goal blocked and a truthful waiting result. Do not re-audit unchanged blockers after fulfilling a finite assigned request, or claim the whole Task complete from that request alone.",
       "Return only a result accepted by the supplied resultSchema.",
       "Follow the Task's authorized scope and the installation's execution permissions; available tools do not grant additional authority.",
       taskWorkGuidance(packet.work),
