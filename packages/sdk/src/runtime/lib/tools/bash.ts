@@ -180,6 +180,44 @@ function processGroupAlive(pgid: number): boolean {
 	}
 }
 
+/** GNU timeout and job-control shells may create new groups in our setsid
+ * session. The original leader can exit while those groups still own work. */
+function bashSessionProcessGroups(sessionId: number): number[] {
+	const groups = new Set<number>();
+	for (const entry of readdirSync("/proc")) {
+		if (!/^\d+$/.test(entry)) continue;
+		try {
+			const stat = readFileSync(`/proc/${entry}/stat`, "utf8");
+			const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+			if (Number(fields[3]) === sessionId && fields[0] !== "Z")
+				groups.add(Number(fields[2]));
+		} catch (error) {
+			const code = (error as NodeJS.ErrnoException).code;
+			if (code !== "ENOENT" && code !== "ESRCH") throw error;
+		}
+	}
+	return [...groups];
+}
+
+function bashScopeAlive(pgid: number): boolean {
+	if (processGroupAlive(pgid)) return true;
+	try {
+		return bashSessionProcessGroups(pgid).length > 0;
+	} catch {
+		// Unconfirmed ownership must survive recovery.
+		return true;
+	}
+}
+
+function signalBashScope(pgid: number, signal: "SIGTERM" | "SIGKILL"): void {
+	signalProcessGroup(pgid, signal);
+	try {
+		for (const group of bashSessionProcessGroups(pgid)) signalProcessGroup(group, signal);
+	} catch {
+		// The subsequent liveness check fails closed and retains the sidecar.
+	}
+}
+
 async function waitForProcessGroupFormation(pgid: number, timeoutMs: number): Promise<boolean> {
 	const deadline = Date.now() + timeoutMs;
 	while (!processGroupExists(pgid) && processExists(pgid) && Date.now() < deadline) {
@@ -209,8 +247,7 @@ async function waitForProcessGroupExit(pgid: number, timeoutMs: number): Promise
 	return !processGroupExists(pgid) || !processGroupContainsLiveMember(pgid, readdirSync("/proc"));
 }
 
-/** Drain one exact setsid group before allowing its bash tool call to settle. */
-export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
+async function drainSingleProcessGroup(pgid: number): Promise<boolean> {
 	// spawn() exposes the future setsid leader PID before /usr/bin/setsid has
 	// necessarily created the process group. An immediate abort must wait for
 	// that tiny fork/exec window; otherwise a negative-PID probe can report
@@ -239,6 +276,20 @@ export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
 	return waitForProcessGroupExit(pgid, BASH_PROCESS_GROUP_KILL_GRACE_MS);
 }
 
+/** Drain the owned setsid session, including nested groups, before settlement.
+ * A descendant that creates a separate session remains outside this scope. */
+export async function drainBashProcessGroup(pgid: number): Promise<boolean> {
+	const leaderDrained = await drainSingleProcessGroup(pgid);
+	try {
+		// Scan at phase boundaries, never on every 20ms process-group poll.
+		const groups = bashSessionProcessGroups(pgid);
+		const drained = await Promise.all(groups.map(drainSingleProcessGroup));
+		return leaderDrained && drained.every(Boolean) && bashSessionProcessGroups(pgid).length === 0;
+	} catch {
+		return false;
+	}
+}
+
 /** Live scope cleanup stays asynchronous and retains every unconfirmed group. */
 export async function drainSessionBashProcessGroups(persistDir: string, sessionId: string): Promise<boolean> {
   const results = await Promise.all(readSessionBashProcessGroups(persistDir, sessionId).map(async pgid => {
@@ -260,8 +311,8 @@ export interface PersistedBashProcessGroupDrainOperations {
 }
 
 const persistedBashProcessGroupDrainOperations: PersistedBashProcessGroupDrainOperations = {
-	isAlive: processGroupAlive,
-	signal: signalProcessGroup,
+	isAlive: bashScopeAlive,
+	signal: signalBashScope,
 	wait: (milliseconds) => {
 		const sleeper = new Int32Array(new SharedArrayBuffer(4));
 		Atomics.wait(sleeper, 0, 0, milliseconds);

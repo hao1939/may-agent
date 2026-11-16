@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawn } from "node:child_process";
 import {
   BASH_PROCESS_GROUP_TERM_GRACE_MS,
   addSessionBashProcessGroup,
@@ -38,6 +39,95 @@ afterEach(() => {
 });
 
 describe("exact-session bash process-group lifecycle", () => {
+  it.each(["normal", "abort"] as const)(
+    "drains nested GNU timeout groups before %s settlement without stopping another session",
+    async (mode) => {
+      const f = fixture();
+      const ready = join(f.root, "nested-ready");
+      const release = join(f.root, "nested-release");
+      const mutation = join(f.root, "nested-mutation");
+      const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+      const nested = `trap '' TERM; printf '%s %s\\n' "$$" "$PPID" > ${quote(ready)}; while [ ! -e ${quote(release)} ]; do sleep 0.02; done; printf mutated > ${quote(mutation)}`;
+      const controller = new AbortController();
+      const tool = createBashTool(f.root, {
+        defaultTimeout: 10,
+        processGroupOwner: { persistDir: f.persistDir, sessionId: "nested-session" },
+      });
+      const neighbor = spawn("/usr/bin/setsid", ["/bin/sleep", "30"]);
+      const neighborExit = new Promise((resolve) => neighbor.once("exit", resolve));
+      let nestedGroup: number | undefined;
+      try {
+        const command = `timeout 30s /bin/bash -c ${quote(nested)} & ${mode === "normal"
+          ? `while [ ! -s ${quote(ready)} ]; do sleep 0.01; done`
+          : "wait"}`;
+        const execution = tool.execute("nested", { command }, controller.signal);
+        const deadline = Date.now() + 5_000;
+        while (!existsSync(ready) && Date.now() < deadline) await Bun.sleep(10);
+        expect(existsSync(ready)).toBe(true);
+        nestedGroup = Number(readFileSync(ready, "utf8").trim().split(" ")[1]);
+        expect(nestedGroup).toBeGreaterThan(0);
+        if (mode === "abort") {
+          controller.abort();
+          await expect(execution).rejects.toThrow("Command aborted");
+        } else await execution;
+        expect(processGroupContainsLiveMember(nestedGroup, readdirSync("/proc"))).toBe(false);
+        expect(readSessionBashProcessGroups(f.persistDir, "nested-session")).toEqual([]);
+        expect(() => process.kill(neighbor.pid!, 0)).not.toThrow();
+        writeFileSync(release, "release\n");
+        expect(existsSync(mutation)).toBe(false);
+      } finally {
+        // Contain the demonstrated leak even when this test runs on old code.
+        if (existsSync(ready)) {
+          nestedGroup ??= Number(readFileSync(ready, "utf8").trim().split(" ")[1]);
+          try { process.kill(-nestedGroup, "SIGKILL"); } catch { /* Already drained. */ }
+        }
+        neighbor.kill("SIGKILL");
+        await neighborExit;
+      }
+    },
+    10_000,
+  );
+
+  it.each(["live", "persisted"] as const)(
+    "recovers nested groups after their leader exits through %s cleanup",
+    async (mode) => {
+      const f = fixture();
+      const ready = join(f.root, "recovery-ready");
+      const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
+      const nested = `trap '' TERM; printf '%s\\n' "$PPID" > ${quote(ready)}; sleep 30`;
+      const tool = createBashTool(f.root, {
+        defaultTimeout: 5,
+        operations: createLocalBashOperations(async () => false),
+        processGroupOwner: { persistDir: f.persistDir, sessionId: "nested-recovery" },
+      });
+      let nestedGroup: number | undefined;
+      try {
+        // Retain a real production sidecar as if the owning process had failed
+        // to confirm cleanup. Only the nested GNU timeout group remains alive.
+        await expect(tool.execute("recovery", {
+          command: `timeout 30s /bin/bash -c ${quote(nested)} & while [ ! -s ${quote(ready)} ]; do sleep 0.01; done`,
+        })).rejects.toThrow("did not exit after bounded SIGTERM/SIGKILL drain");
+        nestedGroup = Number(readFileSync(ready, "utf8").trim());
+        expect(processGroupContainsLiveMember(nestedGroup, readdirSync("/proc"))).toBe(true);
+        const [leader] = readSessionBashProcessGroups(f.persistDir, "nested-recovery");
+        expect(leader).toBeGreaterThan(0);
+        expect(processGroupContainsLiveMember(leader!, readdirSync("/proc"))).toBe(false);
+        const drained = mode === "live"
+          ? await drainSessionBashProcessGroups(f.persistDir, "nested-recovery")
+          : drainPersistedSessionBashProcessGroups(f.persistDir, "nested-recovery");
+        expect(drained).toBe(true);
+        expect(processGroupContainsLiveMember(nestedGroup, readdirSync("/proc"))).toBe(false);
+        expect(readSessionBashProcessGroups(f.persistDir, "nested-recovery")).toEqual([]);
+      } finally {
+        if (existsSync(ready)) {
+          nestedGroup ??= Number(readFileSync(ready, "utf8").trim());
+          try { process.kill(-nestedGroup, "SIGKILL"); } catch { /* Already drained. */ }
+        }
+      }
+    },
+    10_000,
+  );
+
   it.each(["invalid-json", "unreadable"] as const)(
     "rejects %s evidence before invoking local Bash execution",
     async (kind) => {
