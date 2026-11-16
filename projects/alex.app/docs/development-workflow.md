@@ -72,6 +72,11 @@ authority and allocates no checkout: supply an isolated, authorized checkout
 first and preserve its branch. The base reference controls the reviewed diff.
 Task-local evidence and cumulative allowance stay with the owning Task. New
 feedback or procedure-call prose cannot override the saved target assignment.
+May preserves this selector when delegating an authorized cross-repository
+goal. If it is missing, Alex returns the exact setup gap to the recorded creator,
+who revises that same Task through `tasks update`; a direct specialist call is
+not a substitute. Retain the checkout, prior work, caller and consumed allowance
+across that correction.
 
 ## Responsibilities and graph
 

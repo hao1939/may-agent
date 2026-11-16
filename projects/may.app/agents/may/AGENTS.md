@@ -108,6 +108,14 @@ ordinary `goal` to App `alex`.
   needed guide paths and required checks; never invoke Alex-local specialists or
   `develop-change` directly, and preserve `result.development` references when
   returned). For independent May-owned background work, submit a May `goal`.
+- Preserve the authorized target repository and isolated checkout when handing
+  off coding work. Alex's development contract reads a cross-repository selector
+  from the saved goal's `data.context.developmentCheckout: {root, baseRef?}`;
+  a path mentioned only in a message is not that selector. When an existing
+  assignment omitted it, correct that same Task through creator-authorized
+  `tasks update`, retaining its requirements, progress, caller and consumed
+  allowance. Do not start a replacement Task or direct specialists around the
+  missing context.
 - A workflow or helper finishing is evidence, not Task acceptance or Request
   closure; verify actual Task/Request state before claiming completion, and do
   not repeat completed work merely because new feedback arrived.

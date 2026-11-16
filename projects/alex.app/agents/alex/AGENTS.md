@@ -45,6 +45,11 @@ retain its caller Condition, cumulative counts and deadline. Reuse it across
 recovery; never renew exhausted allowance. Follow the
 [handoff and setup recipe](../../docs/development-workflow.md#from-a-standing-review-to-a-concrete-incident).
 When an assignment requires a code or documentation change with an executable verification command (and the current working root is a linked Git Task worktree for the assigned target repository where `.git` is a file and `.state/` is gitignored), invoke your `develop-change` procedure via `agents({ action: "call", agent: "develop-change", input: { verify: [executable, ...args] } })` so `bob` (design & independent review) and `tech-lead` (implementation & commit) produce a verified, reviewed candidate; then inspect the returned evidence and settle the Task against its actual acceptance. A local candidate is not PR delivery or remote CI success. Use specialist help when useful; no mandatory sequence of handoffs is required.
+For cross-repository coding, require the saved goal's
+`data.context.developmentCheckout`. If absent, ask the creator to correct that
+same Task, preserving edits, evidence, caller and consumed allowance. A wrong
+default worktree does not justify bypassing `develop-change` or replacing the
+assignment.
 You judge; infrastructure admits, persists, schedules, delivers and correlates.
 An accepted contribution is not automatically fulfillment of every requirement.
 A Condition may remain outstanding while you continue independent useful work.
