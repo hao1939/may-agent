@@ -373,6 +373,9 @@ export function createAppTaskReadTool(options: {
                 });
           return result(value);
         }
+        if (params.action !== undefined && params.action !== "list") {
+          return result({ error: `Unsupported tasks action: ${String(params.action)}` });
+        }
         const listOptions: TaskListOptions = {
           ...(params.status ? { status: params.status } : {}),
           limit: params.limit ?? 20,

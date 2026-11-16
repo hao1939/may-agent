@@ -64,9 +64,9 @@ docker run --rm --network none --read-only --user mayagent \
     test "$(codex --version | awk "{print \$2}")" = "$(node -p "require(\"$manifest\").dependencies[\"@openai/codex\"]")"
     test "$(pi --version)" = "$(node -p "require(\"$manifest\").dependencies[\"@earendil-works/pi-coding-agent\"]")"
     test "$(gemini --version)" = "$(node -p "require(\"$manifest\").dependencies[\"@google/gemini-cli\"]")"
-    claude --help | grep -q -- --output-format
-    codex exec --help | grep -q -- --output-last-message
-    pi --help | grep -q -- --provider
+    claude --help | grep -F -- --output-format >/dev/null
+    codex exec --help | grep -F -- --output-last-message >/dev/null
+    pi --help | grep -F -- --provider >/dev/null
     /bin/bash -lec '\''
       test "$(command -v claude)" = /usr/local/bin/claude
       test "$(command -v codex)" = /usr/local/bin/codex

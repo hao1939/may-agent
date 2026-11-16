@@ -162,6 +162,25 @@ describe("App Task read tool", () => {
     }
   });
 
+  it("rejects retired or unknown actions without falling back to list reads", async () => {
+    let listCalled = false;
+    const tool = createAppTaskReadTool({
+      bus: new EventBus(),
+      appId: () => "current",
+      reader: {
+        list: () => {
+          listCalled = true;
+          return { items: [] };
+        },
+        get: () => null,
+      },
+    });
+    expect(text(await tool.execute("retired-outcomes", { action: "outcomes", taskId: "target-task" }))).toEqual({
+      error: "Unsupported tasks action: outcomes",
+    });
+    expect(listCalled).toBe(false);
+  });
+
   it("refuses reads outside an App Task scope", async () => {
     const tool = createAppTaskReadTool({
       bus: new EventBus(),
