@@ -24,3 +24,7 @@ a new Task or resumes legacy automation.
 
 Source and deployment evidence:
 `/app/artifacts/k8s-version-support-local-20261110/ACCESS.md`.
+
+The separate MLVM operational App uses the narrowly scoped
+[compiler merge observer](mlvm/README.md). Its source lives here for review and
+testing; this UI-only declaration does not install it.
