@@ -27,6 +27,13 @@ requirements, task generation, native binding or stored rows to migrate a wait.
 Other Conditions and unfinished inputs stay intact. If source changes, do not
 silently re-pin: reconsider the publication contract through the owning Task.
 
+With `codex-goal`, the Host admits only the terminal native turn's result. An
+intermediate JSON answer does not install a Condition or return a change receipt.
+Keep the complete proposed Conditions/actions in the terminal result, including
+after native continuations, and verify the saved wait through the canonical
+Task read. Registering a future merge observation does not require the separate
+CI prerequisite to finish and must not repeat engineering or validation work.
+
 The current work assignment belongs in an ordinary fenced input and the existing
 concise progress file. Name one deliverable, source/adopted premises, allowed
 effects, evidence, next action and exact stop/wake criteria. Preserve the full
