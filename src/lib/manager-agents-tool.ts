@@ -1,4 +1,4 @@
-import { ExecutionDeferredError, type AppRead } from "@may-agent/sdk";
+import { ExecutionDeferredError, type AppRead } from "@may-agent/sdk/app";
 import { Type, type Static } from "typebox";
 /**
  * Agents tool — bounded calls, helper follow-up, inspection and cancellation.

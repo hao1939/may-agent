@@ -1,7 +1,7 @@
 import { applyTaskCommunication } from "./task-communication.js";
 import { createAppTaskEvents } from "./app-task-emitter.js";
 import { createHash } from "node:crypto";
-import { admitTaskChanges, type TaskChanges, type TaskChangeReceipt, type Condition } from "@may-agent/sdk";
+import { admitTaskChanges, type TaskChanges, type TaskChangeReceipt, type Condition } from "@may-agent/sdk/app";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import { appTaskConfig, type AppTaskRuntimeDescriptor } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";

@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Type, defineApp } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk/app";
 import { AppRegistry } from "../core/apps/registry.js";
 import { EventBus, type AgentEvent } from "../core/events/bus.js";
 import { AppInboxHost } from "../core/inbox/app-inbox-host.js";

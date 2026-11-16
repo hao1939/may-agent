@@ -2,7 +2,7 @@ import type { LoadedAppDefinition } from "../../core/apps/registry.js";
 import { EVENT_RECORD_ONLY, type AgentEvent, type EventBus } from "../../core/events/bus.js";
 import { OwnedTimer } from "../../core/scheduling/timer.js";
 import type { SqliteDb } from "../../../lib/db.js";
-import type { AppInput } from "@may-agent/sdk";
+import type { AppInput } from "@may-agent/sdk/app";
 
 /** Schedule slots publish normal events. They do not own requests or Tasks. */
 export function createAppScheduleProducer(options: { db: SqliteDb; bus: EventBus; now?: () => number; enabled?: boolean }) {

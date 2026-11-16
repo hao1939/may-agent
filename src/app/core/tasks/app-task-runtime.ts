@@ -4,7 +4,7 @@ import {
   type TaskIntent as AppTaskIntent,
   type TaskClosure,
   type TaskRevision,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type {
   TaskDetail,
   TaskListOptions,
@@ -1032,7 +1032,7 @@ export function listLoadedAppTaskViews(input: { bus: EventBus; appId: string; op
 }
 
 export function readLoadedAppTaskWorkload(input: {
-  bus: EventBus; appId: string; options?: import("@may-agent/sdk").TaskWorkloadOptions;
+  bus: EventBus; appId: string; options?: import("@may-agent/sdk/app").TaskWorkloadOptions;
 }) {
   const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
   if (!descriptor) throw new Error(`App ${input.appId} has no loaded Task runtime`);

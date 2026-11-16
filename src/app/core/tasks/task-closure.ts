@@ -1,4 +1,4 @@
-import type { TaskClosure } from "@may-agent/sdk";
+import type { TaskClosure } from "@may-agent/sdk/app";
 import { inStateTransaction, stateTransaction } from "../../../lib/db/transaction.js";
 import type { AppTaskContext } from "./app-task-store.js";
 import { closeAppTask } from "./app-task-reconciler.js";

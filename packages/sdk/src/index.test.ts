@@ -31,6 +31,7 @@ test("public SDK entrypoints preserve the reviewed value and type exports", asyn
     );
     for (const [declaration, snapshot] of [
       ["src/index.d.ts", "test/fixtures/sdk-root.d.ts.snap"],
+      ["src/app.d.ts", "test/fixtures/sdk-app.d.ts.snap"],
       ["src/testing.d.ts", "test/fixtures/sdk-testing.d.ts.snap"],
       ["src/standalone.d.ts", "test/fixtures/sdk-standalone.d.ts.snap"],
     ] as const) {

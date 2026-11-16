@@ -1,4 +1,4 @@
-import type { ResourceCreator } from "@may-agent/sdk";
+import type { ResourceCreator } from "@may-agent/sdk/app";
 
 /** Compare trusted contexts, never agent names, input source text, or parent links. */
 export function assertResourceCreator(creator: ResourceCreator | undefined, actor: ResourceCreator): void {

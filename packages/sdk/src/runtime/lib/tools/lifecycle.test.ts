@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { createFinishTool, createWorkflowFinishTool } from "@may-agent/sdk/runtime";
-import { taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
+import { taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk/app";
 import { existsSync, mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";

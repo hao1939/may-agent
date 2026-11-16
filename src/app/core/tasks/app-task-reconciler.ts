@@ -18,7 +18,7 @@ import {
   type ResourceCreator,
   type AppInput,
   type TaskChangeReceipt,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import {
   appTaskReadinessById,
   commitTaskMutation,

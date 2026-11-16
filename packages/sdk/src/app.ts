@@ -1,11 +1,38 @@
-export { MAX_CONVERSATION_REQUESTS_PER_TURN, conversationRequestUpdatesSchema } from "./conversation-contract.js";
-export type { AppConversationRequest, AppConversationRequestUpdate } from "./conversation-contract.js";
+export { MAX_CONVERSATION_REQUESTS_PER_TURN, conversationRequestUpdatesSchema } from "./app-conversation.js";
+export type { AppConversationRequest, AppConversationRequestUpdate } from "./app-conversation.js";
+export { readVerifiedApprovalDecision } from "./app-approval.js";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "./app-approval.js";
+export type { TaskCommunicationQuery } from "./app-conversation.js";
+export {
+  admitTaskReconcileResult,
+  admitTaskChanges,
+  taskChangesSchema,
+  admitTaskResultForSchema,
+  admitTaskVerificationResult,
+  conditionSchema,
+  isTypedConditionSubject,
+  taskActionSchema,
+  taskAgentResultSchema,
+  taskReconcileResultSchema,
+  taskVerificationResultSchema,
+} from "./task.js";
+export type {
+  Condition, ResourceCreator, TaskRevision, TaskAcceptanceBasis, TaskAction,
+  TaskAppRequest, TaskCondition, TaskRequestCondition, TaskExecutorName, TaskIntent,
+  TaskPriority, TaskStatus, TaskClosure, TaskReconcileResult, TaskChanges,
+  TaskCommunication, TaskInput, TaskChangeReceipt, TaskReconcileState,
+  TaskVerificationContext, TaskVerificationResult, TaskVerifier, TaskReconcileAdmission,
+} from "./task.js";
 export { defineObserver, observationCondition } from "./observer.js";
 export type { ObservationContract, ObservationInterest, ObserverHealth, ResourceObserver } from "./observer.js";
 export { ExecutionDeferredError } from "./workflow.js";
 export type { ExecutionDeferral } from "./workflow.js";
+export { workflowResult, workflowResultVersion } from "./workflow-result.js";
+export type { StructuredWorkflowResult, WorkflowCheckResult, WorkflowIoContract, WorkflowProblem, WorkflowResultStatus, WorkflowSubject } from "./workflow-result.js";
+export type { AgentContextPreparer } from "./agent-context.js";
+export type { WorkflowExecutableModule } from "./workflow-kernel.js";
 import type { Static, TSchema } from "typebox";
-import type { AppConversationRequest } from "./conversation-contract.js";
+import type { AppConversationRequest } from "./app-conversation.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { ObservationContract, ResourceObserver } from "./observer.js";
 import type { Condition, ResourceCreator, TaskAction, TaskIntent, TaskStatus } from "./task.js";
@@ -18,6 +45,7 @@ export type { AppEvent, AppEventTarget, EventSelector } from "./event.js";
 export type {
   AgentCallOptions,
   AgentContext,
+  AgentExecutableModule,
   AppRead,
   CallOptions,
   CliCallFacts,

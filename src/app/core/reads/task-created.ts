@@ -1,4 +1,4 @@
-import type { TaskCreatedOptions, TaskCreatedPage } from "@may-agent/sdk";
+import type { TaskCreatedOptions, TaskCreatedPage } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import { taskViewPhaseSql } from "../state/task-view-phase.js";
 import { taskStatusFromPhase } from "./task-status.js";

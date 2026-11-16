@@ -1,4 +1,4 @@
-import type { AppDefinition } from "@may-agent/sdk";
+import type { AppDefinition } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";

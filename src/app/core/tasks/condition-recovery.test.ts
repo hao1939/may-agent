@@ -1,7 +1,7 @@
 import { expect, setSystemTime, test } from "bun:test";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Condition } from "@may-agent/sdk";
+import type { Condition } from "@may-agent/sdk/app";
 import { appTaskRuntimeTestSuite } from "../../../../test/fixtures/app-task-runtime.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { closeDb, getDb } from "../../../lib/db/connection.js";

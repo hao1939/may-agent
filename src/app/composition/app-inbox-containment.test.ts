@@ -2,7 +2,7 @@ import { expect, spyOn, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Type, defineApp } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk/app";
 import { DbWriter } from "../../lib/db-writer.js";
 import { getDb, closeDb } from "../../lib/db/connection.js";
 import { AppRegistry } from "../core/apps/registry.js";

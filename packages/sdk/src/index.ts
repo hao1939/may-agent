@@ -1,133 +1,19 @@
-/** Stable authoring contract for App declarations and bounded App-owned work. */
+/** Task-transparent authoring contract for Agents and code procedures. */
 
+export { Type } from "typebox";
+export type { Static, TSchema } from "typebox";
 export { ExecutionDeferredError } from "./workflow.js";
-export type { ExecutionDeferral } from "./workflow.js";
-export { Type, defineApp, matchesEventSelector, conversationRequestUpdatesSchema } from "./app.js";
-export { MAX_OBSERVER_SNAPSHOT_BYTES, MAX_CONVERSATION_REQUESTS_PER_TURN } from "./app.js";
-export { defineObserver, observationCondition } from "./observer.js";
-export type { ResourceObserver, ObservationContract, ObservationInterest, ObserverHealth } from "./observer.js";
-export {
-  admitTaskReconcileResult,
-  admitTaskChanges,
-  taskChangesSchema,
-  admitTaskResultForSchema,
-  admitTaskVerificationResult,
-  conditionSchema,
-  isTypedConditionSubject,
-  taskActionSchema,
-  taskAgentResultSchema,
-  taskReconcileResultSchema,
-  taskVerificationResultSchema,
-} from "./task.js";
 export type {
-  AppAction,
-  AppContract,
-  AppDefinition,
-  AppConversationPolicy,
-  TaskObservation,
-  ConversationTopicDecision,
-  AppConversationTopic,
-  AppConversationTopicPage,
-  AppDependencyObservation,
-  AppConversationResource,
-  AppConversationRequest,
-  AppConversationRequestUpdate,
-  AppConversationMessage,
-  AppEvent,
-  AppEventSubscription,
-  AppEventTarget,
-  AppInput,
-  AppInputSource,
-  AppObserver,
-  AppObserverResult,
-  AppRead,
-  AppInputContext,
-  AppResult,
-  AppSchedule,
-  AppTaskAttachment,
-  AppTaskInput,
-  AppTaskPolicy,
-  AppTaskResultContext,
-  AppWorkspace,
-  EventSelector,
-  ExecutionResult,
-  CliCallFacts,
-  ExecutionView,
-  Logger,
-  MetricDefinition,
-  MetricCalculationOptions,
-  MetricCalculation,
-  MetricRecordOptions,
-  MetricView,
-  ObserverContext,
-  ObserverSnapshot,
-  Static,
-  TaskAttempt,
-  TaskAcceptedEvidence,
-  TaskAcceptedEvidenceOptions,
-  TaskAcceptedEvidencePage,
-  TaskAcceptedEvidenceNavigation,
-  TaskReadOptions,
-  TaskInputObligation,
-  TaskCurrentObligations,
-  TaskCreatedOptions,
-  TaskCreatedPage,
-  TaskDetail,
-  TaskEventReceipt,
-  TaskExecutor,
-  TaskView,
-  TaskListOptions,
-  TaskWorkload,
-  TaskWorkloadOptions,
-  TaskPage,
-  TaskReconciliationChild,
-  TaskReconciliationContext,
-  TaskReconciliationSnapshotTask,
-  TSchema,
-  WorkflowContext,
-  WorkflowInput,
-  WorkflowMetricCapability,
   AgentCallOptions,
   AgentContext,
+  AgentExecutableModule,
   CallOptions,
-} from "./app.js";
+  ExecutionDeferral,
+  ExecutionResult,
+  Logger,
+  WorkflowInput,
+  WorkflowContext,
+} from "./workflow.js";
 export type {
-  Condition,
-  ResourceCreator,
-  TaskRevision,
-  TaskAcceptanceBasis,
-  TaskAction,
-  TaskAppRequest,
-  TaskCondition,
-  TaskRequestCondition,
-  TaskExecutorName,
-  TaskIntent,
-  TaskPriority,
-  TaskStatus,
-  TaskClosure,
-  TaskReconcileResult,
-  TaskChanges,
-  TaskCommunication,
-  TaskInput,
-  TaskChangeReceipt,
-  TaskReconcileState,
-  TaskVerificationContext,
-  TaskVerificationResult,
-  TaskVerifier,
-  TaskReconcileAdmission,
-} from "./task.js";
-export { workflowResult, workflowResultVersion } from "./workflow-result.js";
-export type {
-  StructuredWorkflowResult,
-  WorkflowCheckResult,
-  WorkflowIoContract,
-  WorkflowProblem,
-  WorkflowResultStatus,
-  WorkflowSubject,
-} from "./workflow-result.js";
-export type { AgentContextPreparer } from "./agent-context.js";
-
-export { readVerifiedApprovalDecision } from "./approval.js";
-export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "./approval.js";
-
-export type { TaskCommunicationQuery } from "./conversation-contract.js";
+  WorkflowExecutableModule,
+} from "./workflow-kernel.js";

@@ -1,4 +1,4 @@
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { WorkflowContext } from "@may-agent/sdk/app";
 export const name = "e2e-metric-canary";
 export const description = "Record a synthetic metric sample through an ordinary App Task";
 export async function execute(ctx: WorkflowContext<{ phase: string; value: number }>) {

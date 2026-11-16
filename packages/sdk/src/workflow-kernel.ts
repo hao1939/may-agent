@@ -10,7 +10,7 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import type { Logger, WorkflowContext } from "./workflow.js";
+import type { AgentExecutableModule, Logger, WorkflowContext } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 const MAX_TIMER_MS = 2_147_483_647;
@@ -19,20 +19,8 @@ const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
 
-export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = {
-  name: string;
-  description: string;
-  readonly?: boolean;
-  inputSchema?: TSchema;
-  outputSchema?: TSchema;
-  executionTimeoutMs?: number;
-  workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
-  execute: (ctx: WorkflowContext<TInput>) => Promise<ExecutionResult<TOutput>>;
-  verify?: (context: unknown, result: unknown) => Promise<unknown>;
-  sourcePath?: string;
-  sourceScope?: "agent" | "project";
-  entryContentHash?: string;
-};
+/** @deprecated Use `AgentExecutableModule`. */
+export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = AgentExecutableModule<TInput, TOutput>;
 
 export type PreparedDefinition<TPromptDef = unknown> =
   | {

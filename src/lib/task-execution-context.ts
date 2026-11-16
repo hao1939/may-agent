@@ -1,4 +1,4 @@
-import type { AppEvent, AppEventTarget, AppRead, TaskAttempt, TaskReconciliationContext } from "@may-agent/sdk";
+import type { AppEvent, AppEventTarget, AppRead, TaskAttempt, TaskReconciliationContext } from "@may-agent/sdk/app";
 import type { EventTrace, SubagentDefinition } from "@may-agent/sdk/runtime";
 import type { TaskBinding } from "./persistence.js";
 import type { TaskWorkspaceBrief } from "./task-workspace-context.js";

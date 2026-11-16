@@ -4,7 +4,7 @@ import {
   type TaskAttempt,
   type TaskExecutor,
   type TaskExecutorName,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { getDb } from "../../../lib/db/connection.js";
 import type { TaskBinding } from "../../../lib/persistence.js";
 import { appDependencyCatalog } from "../../app-dependency-catalog.js";
@@ -232,7 +232,7 @@ function runtimeTaskAttempt(
   const creator = { appId: descriptor.id, taskId: claim.taskId };
   const taskReads = {
     ...createRuntimeAppRead(taskReadOptions).tasks,
-    created: async (options?: import("@may-agent/sdk").TaskCreatedOptions) =>
+    created: async (options?: import("@may-agent/sdk/app").TaskCreatedOptions) =>
       readCreatedTasks(descriptor.resourceStore.db, creator, options),
   };
   let workload: TaskAttempt["workload"];

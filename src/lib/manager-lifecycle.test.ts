@@ -5,7 +5,7 @@ import {
   getCurrentSystemPrompt,
   type AssistantMessage,
 } from "@earendil-works/pi-ai";
-import type { TaskDetail } from "@may-agent/sdk";
+import type { TaskDetail } from "@may-agent/sdk/app";
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

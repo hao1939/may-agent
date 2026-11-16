@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { defineApp, Type } from "@may-agent/sdk";
+import { defineApp, Type } from "@may-agent/sdk/app";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";

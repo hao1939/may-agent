@@ -1,4 +1,4 @@
-import type { TaskWorkload } from "@may-agent/sdk";
+import type { TaskWorkload } from "@may-agent/sdk/app";
 
 export function workloadObservation(): TaskWorkload {
   return {

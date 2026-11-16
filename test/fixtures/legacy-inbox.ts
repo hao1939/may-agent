@@ -1,6 +1,6 @@
 /** Test-only snapshots from the retired inbox worker, for read and offline-cutover fixtures. */
 import type { SqliteDb } from "../../src/lib/db.js";
-import type { AppResult } from "@may-agent/sdk";
+import type { AppResult } from "@may-agent/sdk/app";
 import {
   getAppInboxItem,
   type AppInboxItem,

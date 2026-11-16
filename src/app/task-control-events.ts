@@ -1,4 +1,4 @@
-import type { AppInput } from "@may-agent/sdk";
+import type { AppInput } from "@may-agent/sdk/app";
 import type { ExactTask } from "@may-agent/control/events";
 export { taskRetryRequestedEvent, taskCloseRequestedEvent, taskCancelRequestedEvent, taskReopenRequestedEvent } from "@may-agent/control/events";
 import { taskControlAction } from "./core/events/interface.js";

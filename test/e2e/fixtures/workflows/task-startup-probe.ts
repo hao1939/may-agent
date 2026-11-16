@@ -1,4 +1,4 @@
-import type { ExecutionResult, TaskReconcileResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult, TaskReconcileResult, WorkflowContext } from "@may-agent/sdk/app";
 
 export const name = "task-startup-probe";
 export const description = "Wait for a fixture approval, then return an accepted Task result.";

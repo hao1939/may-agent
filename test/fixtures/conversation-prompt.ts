@@ -1,4 +1,4 @@
-import type { AppInputContext, AppTaskInput } from "@may-agent/sdk";
+import type { AppInputContext, AppTaskInput } from "@may-agent/sdk/app";
 
 /** Scripted reply fixtures select the reply input; the full batch stays available. */
 export function readConversationReplyContext(prompt: string): AppInputContext {

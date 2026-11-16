@@ -5,7 +5,7 @@ import { markStaleSession } from "../../../../test/fixtures/stale-session.js";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineApp, type AppInputContext } from "@may-agent/sdk";
+import { defineApp, type AppInputContext } from "@may-agent/sdk/app";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { listTerminalTaskSessionBindings, upsertSession } from "../../../lib/db/sessions.js";
 import { EVENT_ROW_ID, type AgentEvent } from "../events/bus.js";
@@ -73,7 +73,7 @@ describe("terminal completion recovery", () => {
       actions: [],
     };
     let agentCalls = 0;
-    let previousAttemptSeen: import("@may-agent/sdk").TaskAttempt["previousAttempt"] | undefined;
+    let previousAttemptSeen: import("@may-agent/sdk/app").TaskAttempt["previousAttempt"] | undefined;
     const agents: TaskAgentRunner = {
       available: () => true,
       prepare: async () => true,

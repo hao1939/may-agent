@@ -5,7 +5,7 @@ import { createAssistantMessageEventStream, type Context } from "@earendil-works
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineApp, taskAgentResultSchema } from "@may-agent/sdk";
+import { defineApp, taskAgentResultSchema } from "@may-agent/sdk/app";
 import { prepareAgentExecution, executePreparedAgent } from "./agent-execution.js";
 import { createAgentRun } from "@may-agent/sdk/runtime";
 import { ExecutionWorkEnded, currentAgentSessionId } from "@may-agent/sdk/runtime";

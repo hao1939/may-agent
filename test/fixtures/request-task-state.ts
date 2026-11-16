@@ -1,4 +1,4 @@
-import type { AppTaskAttachment } from "@may-agent/sdk";
+import type { AppTaskAttachment } from "@may-agent/sdk/app";
 import { openDatabase } from "../../src/lib/db.js";
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import {

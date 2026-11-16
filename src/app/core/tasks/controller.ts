@@ -1,6 +1,6 @@
 import { AppTaskQueue, type AppTaskLane, type AppTaskQueueOptions } from "./queue.js";
 import type { HostCapacity } from "../scheduling/host-capacity.js";
-import type { TaskWorkload } from "@may-agent/sdk";
+import type { TaskWorkload } from "@may-agent/sdk/app";
 
 const hostPumpQueue: Array<{ owner: object; pump: () => void }> = [];
 let hostPumpScheduled = false;

@@ -7,7 +7,7 @@ import type {
   AppInputSource,
   AppResult,
   ResourceCreator,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import { taskAdmissionRetryDelay, type AppTaskAttempt } from "../tasks/app-task-state.js";
 import { taskInputAdmissionKeys } from "../tasks/app-task-inputs.js";

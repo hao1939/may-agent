@@ -6,7 +6,7 @@ import { join } from "node:path";
 import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 import { validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
-import { admitTaskReconcileResult, taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
+import { admitTaskReconcileResult, taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk/app";
 import type { TSchema } from "typebox";
 import { createFinishTool, prepareAgentExecution } from "@may-agent/sdk/runtime";
 

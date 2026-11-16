@@ -1,4 +1,4 @@
-import { readVerifiedApprovalDecision } from "@may-agent/sdk";
+import { readVerifiedApprovalDecision } from "@may-agent/sdk/app";
 import { isDeepStrictEqual } from "node:util";
 import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 import { taskEventPredatesReopening, type AppTaskCondition } from "./app-task-state.js";

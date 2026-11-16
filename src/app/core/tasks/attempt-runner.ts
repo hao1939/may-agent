@@ -6,7 +6,7 @@ import {
   type TaskIntent as AppTaskIntent,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
   type TaskAttempt,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { join } from "node:path";
 import { log } from "@may-agent/sdk/runtime";
 import { canonicalAppEvent } from "../../canonical-app-event.js";

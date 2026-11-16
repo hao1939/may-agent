@@ -1,4 +1,4 @@
-import type { AppDefinition, AppTaskAttachment, TSchema, TaskIntent } from "@may-agent/sdk";
+import type { AppDefinition, AppTaskAttachment, TSchema, TaskIntent } from "@may-agent/sdk/app";
 
 export type HostAppDefinition<TInputSchema extends TSchema = TSchema> = AppDefinition<TInputSchema>;
 

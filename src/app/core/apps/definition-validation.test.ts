@@ -1,4 +1,4 @@
-import { Type, defineApp } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk/app";
 import { describe, expect, it } from "bun:test";
 import { assertValidAppInput, validateAppDefinition } from "./definition-validation.js";
 

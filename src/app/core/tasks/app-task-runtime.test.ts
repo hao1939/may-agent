@@ -13,7 +13,7 @@ import {
   type AppDefinition,
   type AppInputContext,
   type TaskExecutor,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { addLogSubscriber } from "@may-agent/sdk/runtime";
 import { readTaskChecks } from "./task-check-observations.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";

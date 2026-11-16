@@ -1,4 +1,4 @@
-import { defineApp, Type } from "@may-agent/sdk";
+import { defineApp, Type } from "@may-agent/sdk/app";
 import { join } from "node:path";
 import { DbWriter } from "../../../src/lib/db-writer.js";
 import { closeAllDbs } from "../../../src/lib/db/connection.js";

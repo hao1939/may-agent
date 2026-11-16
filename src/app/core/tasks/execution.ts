@@ -1,4 +1,4 @@
-import type { AppDefinition, TaskAttempt, TaskVerifier } from "@may-agent/sdk";
+import type { AppDefinition, TaskAttempt, TaskVerifier } from "@may-agent/sdk/app";
 import type { ExecutionRecipient } from "../../../lib/execution-recipient.js";
 import type { TaskBinding } from "../../../lib/persistence.js";
 import type { appDependencyCatalog } from "../../app-dependency-catalog.js";
@@ -22,7 +22,7 @@ type TaskExecutionInput = {
 };
 
 export type TaskAgentInput = TaskExecutionInput & {
-  validateResult?: (result: import("@may-agent/sdk").TaskReconcileResult) => string | null;
+  validateResult?: (result: import("@may-agent/sdk/app").TaskReconcileResult) => string | null;
   taskEvents: AppTaskEvents;
   taskSnapshot: AppTaskLiveSnapshot;
   dependencies: ReturnType<typeof appDependencyCatalog>;

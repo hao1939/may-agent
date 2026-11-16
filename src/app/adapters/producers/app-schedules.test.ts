@@ -2,7 +2,7 @@ import { afterEach, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineApp, Type, type AppSchedule } from "@may-agent/sdk";
+import { defineApp, Type, type AppSchedule } from "@may-agent/sdk/app";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { EVENT_RECORD_ONLY, EventBus, type AgentEvent } from "../../core/events/bus.js";

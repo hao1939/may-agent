@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { fixture, until } from "../fixtures/resource-observer.js";
-import { defineObserver } from "@may-agent/sdk";
+import { defineObserver } from "@may-agent/sdk/app";
 import { claimObservedAppTask, recordAppTaskTrigger } from "../../src/app/core/tasks/app-task-reconciler.js";
 
 function buildDetector(read: (resource: string, signal: AbortSignal) => Promise<{ state: string; revision: number }>) {

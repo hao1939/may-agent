@@ -20,7 +20,7 @@ import {
 import { createFinishTool } from "@may-agent/sdk/runtime";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
-import { taskAgentResultSchema } from "@may-agent/sdk";
+import { taskAgentResultSchema } from "@may-agent/sdk/app";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../app/core/tasks/app-task-output-paths.js";
 import { createAppTaskReadTool } from "../app/app-task-read-tool.js";
 import { EventBus } from "../app/core/events/bus.js";

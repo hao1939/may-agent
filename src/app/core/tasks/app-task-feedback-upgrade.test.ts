@@ -2,7 +2,7 @@ import { expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineApp, Type } from "@may-agent/sdk";
+import { defineApp, Type } from "@may-agent/sdk/app";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { EventBus } from "../events/bus.js";

@@ -1,4 +1,4 @@
-import { MAX_OBSERVER_SNAPSHOT_BYTES, type ObserverSnapshot } from "@may-agent/sdk";
+import { MAX_OBSERVER_SNAPSHOT_BYTES, type ObserverSnapshot } from "@may-agent/sdk/app";
 
 export function copyObserverSnapshot(value: unknown): ObserverSnapshot {
   let remaining = MAX_OBSERVER_SNAPSHOT_BYTES;

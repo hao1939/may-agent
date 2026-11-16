@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AppDefinition, AppObserver, TaskAttempt, TaskReconcileResult } from "@may-agent/sdk";
+import type { AppDefinition, AppObserver, TaskAttempt, TaskReconcileResult } from "@may-agent/sdk/app";
 import { createTestAppRead, createTestAppLogger } from "@may-agent/sdk/testing";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";

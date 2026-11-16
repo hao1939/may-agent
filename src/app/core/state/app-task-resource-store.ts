@@ -1,4 +1,4 @@
-import type { TaskChangeReceipt, TaskStatus } from "@may-agent/sdk";
+import type { TaskChangeReceipt, TaskStatus } from "@may-agent/sdk/app";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
 import { taskViewPhaseSql } from "./task-view-phase.js";

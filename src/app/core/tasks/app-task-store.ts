@@ -1,4 +1,4 @@
-import type { AppTaskPolicy } from "@may-agent/sdk";
+import type { AppTaskPolicy } from "@may-agent/sdk/app";
 import type { AppTaskResourceMutation, AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import type {
   AppTaskAttempt,

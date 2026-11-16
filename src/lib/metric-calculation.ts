@@ -1,4 +1,4 @@
-import type { MetricCalculation, MetricCalculationOptions } from "@may-agent/sdk";
+import type { MetricCalculation, MetricCalculationOptions } from "@may-agent/sdk/app";
 import type { SqliteDb } from "./db.js";
 
 /** Shared by App admission, direct definitions and reads of retained definitions. */

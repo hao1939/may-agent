@@ -10,7 +10,7 @@ import {
   type AppTaskAttachment,
   type EventSelector,
   type ResourceCreator,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";

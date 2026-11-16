@@ -7,7 +7,7 @@ import {
   type TaskAttempt,
   type TaskCommunication,
   type TaskExecutor,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { expect, setSystemTime, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

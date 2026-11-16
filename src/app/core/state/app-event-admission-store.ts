@@ -1,4 +1,4 @@
-import type { AppInput, TaskIntent } from "@may-agent/sdk";
+import type { AppInput, TaskIntent } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import type { CreateAppInboxItem } from "./app-inbox-store.js";
 

@@ -3,7 +3,7 @@
 // thing the dev-mode process does. The same plugin is registered in
 // binary-entry.ts for compiled builds. Putting it before any other import
 // guarantees dynamically-loaded handler and workflow files — which use
-// `import { ... } from "@may-agent/sdk"` — resolve identically in dev and
+// `import { ... } from "@may-agent/sdk/app"` — resolve identically in dev and
 // production binary.
 import "./sdk-resolver-plugin.js";
 

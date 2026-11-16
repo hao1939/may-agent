@@ -1,4 +1,4 @@
-import type { TaskStatus } from "@may-agent/sdk";
+import type { TaskStatus } from "@may-agent/sdk/app";
 
 /** One read projection over existing phase and terminal decision authority. */
 export function taskStatusFromPhase(phase: string | undefined, closure?: "closed" | "cancelled"): TaskStatus {

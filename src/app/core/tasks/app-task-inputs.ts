@@ -84,12 +84,12 @@ export function readTaskInputs(
     import("./app-task-reconciler.js").AppTaskClaim,
     "taskId" | "generation" | "events" | "continuedInputKeys"
   >,
-): import("@may-agent/sdk").TaskInput[] {
+): import("@may-agent/sdk/app").TaskInput[] {
   const keys = taskInputAdmissionKeys(claim.events, claim.continuedInputKeys);
   const admissions = config.resourceStore.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
   return keys.map((key) => {
     const admission = admissions?.[key];
-    const request = admission?.inputEvent?.data as { request?: import("@may-agent/sdk").AppTaskInput } | undefined;
+    const request = admission?.inputEvent?.data as { request?: import("@may-agent/sdk/app").AppTaskInput } | undefined;
     if (
       !admission ||
       admission.taskId !== claim.taskId ||

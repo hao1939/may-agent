@@ -2,7 +2,7 @@
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp, type Condition, type ResourceObserver, observationCondition } from "@may-agent/sdk";
+import { Type, defineApp, type Condition, type ResourceObserver, observationCondition } from "@may-agent/sdk/app";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { getDb, closeDb } from "../../src/lib/db/connection.js";
 import { EventBus, EVENT_ROW_ID } from "../../src/app/core/events/bus.js";

@@ -3,7 +3,7 @@ import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./tools/bash.js";
 import type { SkillCatalog } from "./skills.js";
-import type { AgentContextPreparer } from "@may-agent/sdk";
+import type { AgentContextPreparer } from "@may-agent/sdk/app";
 
 /**
  * Model with an optional apiKey attached at runtime.
@@ -202,8 +202,8 @@ export function log(level: LogLevel, message: string): void {
   }
 }
 
-import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk";
-import type { CliCallFacts } from "@may-agent/sdk";
+import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk/app";
+import type { CliCallFacts } from "@may-agent/sdk/app";
 
 export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCallFacts[] {
   const calls = new Map<string, CliCallFacts>();

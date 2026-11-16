@@ -2,7 +2,7 @@ import { afterEach, expect, test, setSystemTime } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { observationCondition } from "@may-agent/sdk";
+import { observationCondition } from "@may-agent/sdk/app";
 import { matchesAppTaskCondition } from "./app-task-condition-tracker.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { getDb, closeDb } from "../../../lib/db/connection.js";

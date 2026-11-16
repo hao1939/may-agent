@@ -1,7 +1,7 @@
 import { describe, expect, it, setSystemTime } from "bun:test";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { Type, defineApp, type TaskExecutor } from "@may-agent/sdk";
+import { Type, defineApp, type TaskExecutor } from "@may-agent/sdk/app";
 import { appInputFeedbackEvent } from "../inbox/input-result.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { admitTaskInput } from "../state/inbox.js";

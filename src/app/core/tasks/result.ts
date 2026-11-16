@@ -1,4 +1,4 @@
-import type { TaskAcceptanceBasis } from "@may-agent/sdk";
+import type { TaskAcceptanceBasis } from "@may-agent/sdk/app";
 import {
   admitTaskReconcileResult as admitAppTaskHandlerResult,
   type TaskAction as AppTaskAction,
@@ -7,7 +7,7 @@ import {
   type TaskAppRequest,
   type TaskCommunication,
   type TaskCondition,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
 import type { PreparedTaskWorkspace } from "./workspace.js";
 

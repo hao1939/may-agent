@@ -1,4 +1,4 @@
-import type { TaskWorkload } from "@may-agent/sdk";
+import type { TaskWorkload } from "@may-agent/sdk/app";
 import assert from "node:assert/strict";
 import { spawn, type ChildProcess } from "node:child_process";
 import {

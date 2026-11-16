@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import type { AppInputContext, AppResult, AppTaskAttachment, ResourceCreator } from "@may-agent/sdk";
+import type { AppInputContext, AppResult, AppTaskAttachment, ResourceCreator } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";
 import {

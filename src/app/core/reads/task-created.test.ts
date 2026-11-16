@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import type { ResourceCreator } from "@may-agent/sdk";
+import type { ResourceCreator } from "@may-agent/sdk/app";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   appTaskContext,

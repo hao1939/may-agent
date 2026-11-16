@@ -1,5 +1,5 @@
 import type { AttachControlSocketOptions } from "@may-agent/control/server";
-import type { AppInput, TaskListOptions } from "@may-agent/sdk";
+import type { AppInput, TaskListOptions } from "@may-agent/sdk/app";
 import { randomUUID } from "node:crypto";
 import { basename, dirname, resolve } from "node:path";
 import { closeAllDbs, getDb } from "../lib/db/connection.js";

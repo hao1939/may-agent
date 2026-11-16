@@ -2,7 +2,7 @@ import { Type } from "typebox";
 import { describe, expect, it } from "bun:test";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 
-import { taskAgentResultSchema } from "@may-agent/sdk";
+import { taskAgentResultSchema } from "@may-agent/sdk/app";
 import {
   RESPONSES_STREAM_TERMINAL_ERROR,
   boundedWorkflowFinishPrompt,

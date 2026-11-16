@@ -1,4 +1,4 @@
-import { type Condition as AppTaskConditionSpec, type TaskAppRequest } from "@may-agent/sdk";
+import { type Condition as AppTaskConditionSpec, type TaskAppRequest } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { assertValidAppInput } from "../apps/definition-validation.js";

@@ -1,5 +1,5 @@
 import { readVerifiedApprovalDecision } from "@may-agent/control/events";
-import type { AppInput, AppInputSource } from "@may-agent/sdk";
+import type { AppInput, AppInputSource } from "@may-agent/sdk/app";
 import type {
   EventInput,
   EventLink,

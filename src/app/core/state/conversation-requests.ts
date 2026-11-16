@@ -3,7 +3,7 @@ import {
   type AppConversationRequest,
   type AppConversationRequestUpdate,
   type ResourceCreator,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";

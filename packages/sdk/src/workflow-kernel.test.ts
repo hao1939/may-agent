@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { Type, taskReconcileResultSchema, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { taskReconcileResultSchema } from "./app.js";
 import { listTargets, run as sdkRun } from "./standalone.js";
 import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
 import {

@@ -1,4 +1,4 @@
-import type { AppConversationMessage } from "@may-agent/sdk";
+import type { AppConversationMessage } from "@may-agent/sdk/app";
 import { EVENT_RECORD_ONLY, type EventBus } from "../core/events/bus.js";
 import type { HumanConditionAnchor } from "../human-task-service.js";
 import {

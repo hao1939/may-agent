@@ -1,4 +1,4 @@
-import { Type, defineApp } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk/app";
 import { describe, expect, it } from "bun:test";
 import { appDependencyCatalog } from "./app-dependency-catalog.js";
 

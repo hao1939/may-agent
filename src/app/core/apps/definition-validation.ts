@@ -1,4 +1,4 @@
-import type { AppDefinition, AppInput, EventSelector, TSchema } from "@may-agent/sdk";
+import type { AppDefinition, AppInput, EventSelector, TSchema } from "@may-agent/sdk/app";
 import { Check, Errors } from "typebox/value";
 import { metricCalculationOptions } from "../../../lib/metric-calculation.js";
 

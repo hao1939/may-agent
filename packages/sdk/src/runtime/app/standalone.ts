@@ -11,7 +11,7 @@ import type { TSchema } from "typebox";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { AgentCallOptions, AppRead, CallOptions, TaskDetail, WorkflowContext } from "@may-agent/sdk";
+import type { AgentCallOptions, AppRead, CallOptions, TaskDetail, WorkflowContext } from "@may-agent/sdk/app";
 import { createTestAppRead } from "@may-agent/sdk/testing";
 import {
   WorkflowUnconfirmedCleanupError,

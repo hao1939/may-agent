@@ -665,7 +665,7 @@ export type TaskAttempt = {
   read: Pick<AppRead, "tasks" | "contract"> & {
     communication?: (
       inputId: string,
-      query?: import("./conversation-contract.js").TaskCommunicationQuery,
+      query?: import("./app-conversation.js").TaskCommunicationQuery,
     ) => Promise<unknown>;
   };
   /** Latest earlier attempt of this Task. Facts to inspect, not authority to repeat its effects. */
@@ -802,7 +802,7 @@ export type TaskReconciliationContext<TInput = unknown> = {
   events: TaskReconciliationEvents;
 };
 
-export type WorkflowContext<TInput = unknown> = {
+export type AgentContext<TInput = unknown> = {
   input: WorkflowInput<TInput>;
   /**
    * Aborted on caller cancellation, the run/parent deadline, or run completion.
@@ -862,5 +862,20 @@ export type WorkflowContext<TInput = unknown> = {
   blocked(reason: string, facts?: unknown): ExecutionResult;
 };
 
-/** Alias for callers adopting unified naming without duplicating context shapes. */
-export type AgentContext<TInput = unknown> = WorkflowContext<TInput>;
+export type AgentExecutableModule<TInput = unknown, TOutput = unknown> = {
+  name: string;
+  description: string;
+  readonly?: boolean;
+  inputSchema?: TSchema;
+  outputSchema?: TSchema;
+  executionTimeoutMs?: number;
+  workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
+  execute(ctx: AgentContext<TInput>): Promise<ExecutionResult<TOutput>>;
+  verify?: (context: unknown, result: unknown) => Promise<unknown>;
+  sourcePath?: string;
+  sourceScope?: "agent" | "project";
+  entryContentHash?: string;
+};
+
+/** @deprecated Use `AgentContext`. */
+export type WorkflowContext<TInput = unknown> = AgentContext<TInput>;

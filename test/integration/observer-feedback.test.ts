@@ -1,5 +1,5 @@
 import { expect, it } from "bun:test";
-import type { AppDefinition, AppObserver, TaskReconcileResult } from "@may-agent/sdk";
+import type { AppDefinition, AppObserver, TaskReconcileResult } from "@may-agent/sdk/app";
 import { observerFeedbackFixture } from "../fixtures/observer-feedback.js";
 
 const app: AppDefinition = { id: "sample", version: 1, agent: "worker", inputSchema: { type: "object" }, tasks: {} };

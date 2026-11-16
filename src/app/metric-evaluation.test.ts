@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { defineApp, Type } from "@may-agent/sdk";
+import { defineApp, Type } from "@may-agent/sdk/app";
 import { createAppScheduleProducer } from "./adapters/producers/app-schedules.js";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

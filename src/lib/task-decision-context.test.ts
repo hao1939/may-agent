@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { TaskDetail } from "@may-agent/sdk";
+import type { TaskDetail } from "@may-agent/sdk/app";
 import { createTaskDecisionContext } from "./task-decision-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 import { createAssistantMessageEventStream, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@earendil-works/pi-ai";

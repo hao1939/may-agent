@@ -1,7 +1,7 @@
 import { Type, type Static } from "typebox";
 
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
-import type { CliCallFacts } from "@may-agent/sdk";
+import type { CliCallFacts } from "@may-agent/sdk/app";
 import {
   cliCallFacts,
   runCliAgent,

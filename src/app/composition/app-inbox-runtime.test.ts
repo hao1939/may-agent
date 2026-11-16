@@ -1,4 +1,4 @@
-import type { AppDependencyObservation } from "@may-agent/sdk";
+import type { AppDependencyObservation } from "@may-agent/sdk/app";
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

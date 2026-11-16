@@ -1,4 +1,4 @@
-import type { AppSchedule } from "@may-agent/sdk";
+import type { AppSchedule } from "@may-agent/sdk/app";
 import { afterEach, describe, expect, setSystemTime, test } from "bun:test";
 import { claimNextAppInboxItem, waitAppInboxClaim } from "../../test/fixtures/legacy-inbox.js";
 import { openDatabase, type SqliteDb } from "../lib/db.js";

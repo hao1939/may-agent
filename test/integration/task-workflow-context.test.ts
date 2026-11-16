@@ -1,7 +1,7 @@
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { getDb } from "../../src/lib/db/connection.js";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
-import type { AppEvent, TaskDetail } from "@may-agent/sdk";
+import type { AppEvent, TaskDetail } from "@may-agent/sdk/app";
 import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
