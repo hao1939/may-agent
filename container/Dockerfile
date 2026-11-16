@@ -162,35 +162,33 @@ RUN node /usr/local/share/ttyd/patch-ttyd-index.cjs \
     rm /usr/local/share/ttyd/patch-ttyd-index.cjs /usr/local/share/ttyd/ttyd-clipboard-bridge.js
 
 # Install the locked CLI agent tools outside /app so an installation bind mount
-# cannot hide them. Place BEFORE copying compiled may-agent binary so source-only
-# edits reuse this cached CLI layer.
+# cannot hide them. Symlink the native CLI binaries directly into /usr/local/bin
+# (no shell wrappers).
 COPY container/package.json container/package-lock.json /opt/may-agent-cli/
 RUN set -eu; \
     npm ci --prefix /opt/may-agent-cli --omit=dev --no-audit --no-fund; \
-    printf '%s\n' 'process.title = "gemini";' > /opt/may-agent-cli/gemini-process-title.cjs; \
+    sed -i '1a process.title = "gemini";' /opt/may-agent-cli/node_modules/@google/gemini-cli/bundle/gemini.js; \
     ln -s /opt/may-agent-cli/node_modules/.bin/claude /usr/local/bin/claude; \
-    ln -s /opt/may-agent-cli/node_modules/.bin/codex /usr/local/bin/codex-cli; \
+    ln -s /opt/may-agent-cli/node_modules/.bin/codex /usr/local/bin/codex; \
     ln -s /opt/may-agent-cli/node_modules/.bin/pi /usr/local/bin/pi; \
-    ln -s /opt/may-agent-cli/node_modules/.bin/gemini /usr/local/bin/gemini-cli; \
+    ln -s /opt/may-agent-cli/node_modules/.bin/gemini /usr/local/bin/gemini; \
     claude_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@anthropic-ai/claude-code']")"; \
     codex_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@openai/codex']")"; \
     pi_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@earendil-works/pi-coding-agent']")"; \
     gemini_version="$(node -p "require('/opt/may-agent-cli/package.json').dependencies['@google/gemini-cli']")"; \
     test -x "$(command -v claude)"; \
     test "$(claude --version | awk '{print $1}')" = "$claude_version"; \
-    test "$(codex-cli --version | awk '{print $2}')" = "$codex_version"; \
+    test "$(codex --version | awk '{print $2}')" = "$codex_version"; \
     test "$(pi --version)" = "$pi_version"; \
-    test "$(gemini-cli --version)" = "$gemini_version"; \
+    test "$(gemini --version)" = "$gemini_version"; \
     claude --help > /tmp/claude.help; \
-    codex-cli --help > /tmp/codex.help; \
-    codex-cli exec --help > /tmp/codex-exec.help; \
-    codex-cli exec resume --help > /tmp/codex-resume.help; \
+    codex exec --help > /tmp/codex-exec.help; \
+    codex exec resume --help > /tmp/codex-resume.help; \
     pi --help > /tmp/pi.help; \
-    gemini-cli --help > /tmp/gemini.help; \
+    gemini --help > /tmp/gemini.help; \
     grep -q -- '--output-format' /tmp/claude.help; \
     grep -q -- '--model' /tmp/claude.help; \
     grep -q -- '--resume' /tmp/claude.help; \
-    grep -q -- '--dangerously-bypass-hook-trust' /tmp/codex.help; \
     grep -q -- '--output-last-message' /tmp/codex-exec.help; \
     grep -q -- '--last' /tmp/codex-resume.help; \
     grep -q -- '--provider' /tmp/pi.help; \
@@ -198,9 +196,17 @@ RUN set -eu; \
     grep -q -- '--continue' /tmp/pi.help; \
     grep -q -- '--list-models' /tmp/pi.help; \
     grep -q -- '--approval-mode' /tmp/gemini.help; \
-    grep -q -- '--yolo' /tmp/gemini.help; \
     npm cache clean --force; \
     rm -rf /root/.npm /root/.cache /tmp/*
+
+# Pre-bake default CLI configs, Herdr integrations, and Codex hook trust into
+# /var/lib/mayagent at image build time so the container is ready out of the box.
+COPY container/configure-runtime.cjs /usr/local/bin/configure-runtime.cjs
+RUN set -eu; \
+    chmod 755 /usr/local/bin/configure-runtime.cjs; \
+    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs --bake-image; \
+    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs; \
+    chown -R mayagent:mayagent /var/lib/mayagent
 
 # Copy supervisord & nginx configs and container runtime helper scripts before
 # the fast-changing compiled may-agent binary.
@@ -210,10 +216,7 @@ RUN nginx -t -c /etc/may-agent-nginx.conf && \
     mkdir -p /app/.state/runtime-logs && \
     chown -R mayagent:mayagent /app/.state/runtime-logs
 
-COPY container/entrypoint.sh container/start-chrome.sh container/setup-runtime-user.sh container/setup-claude-config.sh container/setup-codex-config.sh container/setup-pi-config.sh container/setup-gemini-config.sh container/setup-herdr-integrations.sh container/codex-wrapper.sh container/gemini-wrapper.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
-RUN mv /usr/local/bin/codex-wrapper.sh /usr/local/bin/codex && \
-    mv /usr/local/bin/gemini-wrapper.sh /usr/local/bin/gemini
-COPY container/may-herdr.sh /usr/local/bin/may-herdr
+COPY container/entrypoint.sh container/start-chrome.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
 
 # Copy compiled runtime tools from builder last for optimal Docker layer caching.
@@ -221,14 +224,14 @@ COPY --from=builder --chown=mayagent:mayagent /build/may-agent /usr/local/bin/ma
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 COPY packages/webui/static/ /app/projects/platform/ui/
 
-RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/setup-runtime-user.sh /usr/local/bin/setup-claude-config.sh /usr/local/bin/setup-codex-config.sh /usr/local/bin/setup-pi-config.sh /usr/local/bin/setup-gemini-config.sh /usr/local/bin/setup-herdr-integrations.sh /usr/local/bin/codex /usr/local/bin/gemini /usr/local/bin/may-herdr /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
+RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/bin/start-chrome.sh /usr/local/bin/configure-runtime.cjs /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-console && \
     ln -sf /usr/local/bin/may-agent-supervisor-restart.sh /usr/local/bin/may-agent-supervisor-restart
 
 # Virtual display
 ENV DISPLAY=:99
 
-# Ephemeral writable HOME (/var/lib/mayagent) satisfies Chrome 146+ crashpad
-# while keeping managed CLI configs isolated from mounted /app/.state.
+# Container-managed HOME (/var/lib/mayagent) holds static baked CLI configs,
+# while durable sessions and Herdr state live under /app/.state.
 ENV HOME=/var/lib/mayagent
 ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
@@ -240,6 +243,13 @@ ENV SHARED_ROOT=/app/shared
 ENV PROJECTS_ROOT=/app/projects
 ENV STATE_DIR=/app/.state
 ENV PI_CODING_AGENT_DIR=/var/lib/mayagent/.pi/agent
+ENV XDG_CONFIG_HOME=/var/lib/mayagent/.config
+ENV XDG_STATE_HOME=/app/.state/cli-state/herdr/state
+ENV XDG_RUNTIME_DIR=/tmp/may-herdr-runtime
+ENV MODEL_BASE_URL=http://host.docker.internal:4000
+ENV MODEL_API_KEY=not-needed
+ENV GEMINI_API_KEY=not-needed
+ENV GOOGLE_GEMINI_BASE_URL=http://host.docker.internal:4000
 ENV PATH=/usr/local/bin:$PATH
 
 # noVNC web interface

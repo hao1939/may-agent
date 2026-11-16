@@ -54,6 +54,10 @@ docker run --rm --network none --read-only --user mayagent \
     test "$(command -v codex)" = /usr/local/bin/codex
     test "$(command -v pi)" = /usr/local/bin/pi
     test "$(command -v gemini)" = /usr/local/bin/gemini
+    test -L /usr/local/bin/claude
+    test -L /usr/local/bin/codex
+    test -L /usr/local/bin/pi
+    test -L /usr/local/bin/gemini
     node --version
     npm --version
     test "$(claude --version | awk "{print \$1}")" = "$(node -p "require(\"$manifest\").dependencies[\"@anthropic-ai/claude-code\"]")"
@@ -105,47 +109,44 @@ fi
 docker rm -f "$nonroot_container_id" >/dev/null
 nonroot_container_id=''
 
-# Match the image user to an arbitrary installation owner, configure every
-# managed CLI against one endpoint, and prove the resulting user can work from
-# /app without recursively rewriting the installation.
+# Start the real entrypoint with a custom UID/GID, custom endpoint, and
+# pre-populated legacy state + SSH + root-owned Chrome profile, then run real CLI commands.
 runtime_root="$(mktemp -d)"
-mkdir -p "$runtime_root"/{.state,agents,projects,shared}
+mkdir -p "$runtime_root"/{.state/.ssh,.state/.codex/sessions,agents,projects,shared}
+printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFixtureKey\n' > "$runtime_root/.state/.ssh/id_ed25519"
+chmod 600 "$runtime_root/.state/.ssh/id_ed25519"
+printf '{"id":"legacy-codex-1"}\n' > "$runtime_root/.state/.codex/sessions/legacy.jsonl"
+
 cat > "$runtime_root/runtime-check.sh" <<'RUNTIME_CHECK'
 #!/bin/bash
 set -euo pipefail
 test "$PWD" = /app
+test "$(id -u):$(id -g)" = "1234:1235"
 printf writable > /app/.runtime-write-probe
 rm /app/.runtime-write-probe
-test "$(stat -c %u /app)" = "$(id -u)"
+test "$(stat -c '%u:%g' /app/.state/chrome-profile/Preferences)" = "1234:1235"
+test -L "$HOME/.ssh"
+grep -q 'IFixtureKey' "$HOME/.ssh/id_ed25519"
+test -f "$HOME/.codex/sessions/legacy.jsonl"
+test -L "$HOME/.pi/agent/sessions"
+test -L "$HOME/.gemini/history"
+test -L "$HOME/.claude/projects"
+grep -q 'resume_agents_on_restore = true' "$XDG_CONFIG_HOME/herdr/config.toml"
 grep -q 'base_url = "https://models.example.test/v1"' "$HOME/.codex/config.toml"
 grep -q 'approval_policy = "never"' "$HOME/.codex/config.toml"
 grep -q 'sandbox_mode = "danger-full-access"' "$HOME/.codex/config.toml"
-grep -q 'hooks = true' "$HOME/.codex/config.toml"
-test -L "$HOME/.codex/sessions"
-test -L "$HOME/.pi/agent/sessions"
-test -L "$HOME/.gemini/history"
-test -x "$HOME/.gemini/hooks/herdr-agent-state.sh"
-may-herdr integration status | grep -q 'pi: current'
-may-herdr integration status | grep -q 'codex: current'
-may-herdr integration status | grep -q 'claude: current'
-node -e '
-  const fs = require("fs");
-  const pi = JSON.parse(fs.readFileSync(process.env.HOME + "/.pi/agent/models.json"));
-  const settings = JSON.parse(fs.readFileSync(process.env.HOME + "/.pi/agent/settings.json"));
-  const gemini = JSON.parse(fs.readFileSync(process.env.HOME + "/.gemini/settings.json"));
-  if (pi.providers["may-openai"].baseUrl !== "https://models.example.test/v1") process.exit(1);
-  if (pi.providers["may-google"].baseUrl !== "https://models.example.test/v1beta") process.exit(1);
-  if (settings.defaultProvider !== "may-openai") process.exit(1);
-  if (gemini.model.name !== "gemini-fixture" || gemini.tools.sandbox !== false) process.exit(1);
-  if (gemini.modelConfigs.modelIdResolutions.gemini4.default !== "gemini-4-argon") process.exit(1);
-  if (!Array.isArray(gemini.hooks?.SessionStart) || gemini.hooks.SessionStart.length === 0) process.exit(1);
-'
+grep -q 'trusted_hash = "sha256:' "$HOME/.codex/config.toml"
+herdr integration status | grep -q 'pi: current'
+herdr integration status | grep -q 'codex: current'
+herdr integration status | grep -q 'claude: current'
+pi --list-models | grep -q 'gpt-6.1-sol'
+pi --list-models | grep -q 'gemini-4-argon'
 grep -q 'decision = "allow"' "$HOME/.gemini/policies/full-access.toml"
 RUNTIME_CHECK
 chmod 755 "$runtime_root/runtime-check.sh"
+
 runtime_container_id=$(docker create --network none --user root \
   --tmpfs /tmp:mode=1777 \
-  --env PATH=/usr/local/bin:/usr/bin:/bin \
   --env MODEL_BASE_URL=https://models.example.test \
   --env MODEL_API_KEY=ci-fixture-key \
   --env GEMINI_MODEL=gemini-fixture \
@@ -153,14 +154,12 @@ runtime_container_id=$(docker create --network none --user root \
   --env MAY_RUNTIME_GID=1235 \
   --entrypoint /bin/bash \
   "$image_ref" -ec '
-    source /usr/local/bin/setup-runtime-user.sh
-    source /usr/local/bin/setup-claude-config.sh
-    source /usr/local/bin/setup-codex-config.sh
-    source /usr/local/bin/setup-pi-config.sh
-    source /usr/local/bin/setup-gemini-config.sh
-    /usr/sbin/runuser -u mayagent -- /usr/local/bin/setup-herdr-integrations.sh
-    /usr/sbin/runuser -u mayagent -- /runtime-check.sh
+    mkdir -p /app/.state/chrome-profile
+    printf "root-chrome-cache\n" > /app/.state/chrome-profile/Preferences
+    chown -R 0:0 /app/.state/chrome-profile /app/.state/.ssh /app/.state/.codex
+    exec /usr/local/bin/entrypoint.sh /runtime-check.sh
   ')
+docker cp "$runtime_root/." "$runtime_container_id:/app"
 docker cp "$runtime_root/runtime-check.sh" "$runtime_container_id:/runtime-check.sh"
 docker start --attach "$runtime_container_id" | tee test-results/runtime-user.txt
 docker rm "$runtime_container_id" >/dev/null

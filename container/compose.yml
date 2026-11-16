@@ -34,6 +34,8 @@ services:
       - INSTANCE=${INSTANCE:-background}
       - MODEL_BASE_URL=${MODEL_BASE_URL:-http://host.docker.internal:4000}
       - MODEL_API_KEY=${MODEL_API_KEY:-not-needed}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-${MODEL_API_KEY:-not-needed}}
+      - GOOGLE_GEMINI_BASE_URL=${GOOGLE_GEMINI_BASE_URL:-${MODEL_BASE_URL:-http://host.docker.internal:4000}}
       - CODEX_MODEL=${CODEX_MODEL:-gpt-6.1-sol}
       - PI_OPENAI_MODEL=${PI_OPENAI_MODEL:-gpt-6.1-sol}
       - GEMINI_PRO_MODEL=${GEMINI_PRO_MODEL:-gemini-4-argon}

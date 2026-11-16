@@ -66,7 +66,7 @@ session/result is evidence, not a second Task or closure authority.
 | Live caller, inherited allowance, cancellation and joined cleanup | `execution-scope.test.ts`, `cascading-cancel.test.ts`, and `manager-task-budget.test.ts`; these retain real lifecycle and resource ownership checks |
 | Native protocol progress vs reasoning/token noise | `cli-agent.test.ts` invokes the production collector with each provider's own envelopes and a throwing observer |
 | Native process → tool update → model loop → stored activity | `cli-progress.test.ts` retains Codex, Claude and timeout processes, throttling, one terminal return and process-group cleanup |
-| Managed Codex startup config | `test/integration/codex-startup-config.test.ts` executes setup in isolated homes, parses generated TOML and checks defaults, overrides, endpoint normalization and trusted-hook replay |
+| Managed container CLI & runtime config | `test/integration/container-runtime-user.test.ts` checks native CLI symlinks, legacy state/SSH migration, and endpoint configuration; `scripts/ci-container-smoke.sh` boots the real container image and runs the CLIs |
 
 The contract cleanup removes duplicate list, argument, deprecation and unknown
 session/action checks from `agents-tool.test.ts`; their detailed owner is
