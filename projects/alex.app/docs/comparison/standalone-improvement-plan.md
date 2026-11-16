@@ -20,8 +20,12 @@ retained/synthetic trials, with mixed costs and no runtime activation claim.
 The [activation and natural intake follow-up](diagnosis-activation-natural-intake-20261116.md)
 activates the reviewed repair, verifies stable Host identity and completes one
 finite Alex suitability evaluation of fresh Scout work. Alex selected the arXiv
-publication gap as an intake lead; a compatible fresh diagnosis baseline and
-behavioral transfer remain unverified.
+publication gap as an intake lead. The
+[source-root repair trial](diagnosis-source-root-repair-20261116.md) freezes a
+transparent two-case natural projection, retains the first hosted insufficient
+result, and carries its discovered diagnosis mechanics bug through Alex's bounded
+implementation/review cycle and source integration. The source-root repair is not
+yet active; the Scout publication lead and behavioral transfer remain unverified.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -169,12 +173,25 @@ explicit defect remained actionable. Inspection cost increased on the failed-sco
 cases; the healthy usage-only case avoided a model call. No general cost saving,
 human-correction reduction or fresh natural-work benefit is established.
 
-The new source is distinct from the active definitions pinned in the hosted trial.
-The next bounded step is controlled activation and hosted comparison or shadow
-evaluation on frozen evidence from fresh natural work, including an evidence-rich
-failed-score case and a healthy case. Record unsupported proposals, owner
-corrections, semantic overreach, time and cost before broader handover. For the
-retained Scout case, no-change and the specific human truth judgment remain;
-do not prepare a candidate from its historical score. Separate disposable Host
-restart checks passed; automatic development-checkpoint restoration remains
-unverified. Do not expand intake to substitute for this evidence.
+The grounding repair is active. The subsequent fresh-work diagnosis exposed a
+separate hosted source-root bug: App/domain projectRoot differs from the Task
+repository root. Alex's reviewed source correction is integrated, with 30 focused
+tests and 11 independent mechanics probes passing. The original insufficient
+result remains intact. Independent review rejected the first candidate; two
+operator updates were needed. This is progress in inspectability and repair, with
+no demonstrated reduction in human correction or cost.
+
+The next bounded step is controlled activation of the source-root correction and
+one ordinary hosted diagnosis on the unchanged two-case natural projection,
+without candidate preparation. Check loaded source identity and Task-worktree
+resolution before Alex judges the Scout lead. The projection's executable checks
+are newly derived from real evidence; original finishes remain success, human
+labels remain unreviewed and unavailable usage stays unknown. Scout access and
+publication are still unresolved. Do not prescribe routing, modify semantic truth,
+or broaden intake to bypass those limits.
+
+For the earlier retained Scout semantic-score case, no-change and the specific
+human truth judgment remain separate. Disposable Host restart checks passed;
+automatic development-checkpoint restoration and a full unattended development/
+recovery cycle remain unverified. Keep integration, activation and subsequent
+behavior as separate milestones.

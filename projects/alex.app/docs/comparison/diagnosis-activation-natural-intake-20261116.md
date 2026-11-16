@@ -133,3 +133,12 @@ The [session index](/root/workspace-worktrees/alex-standalone-20261116/.state/st
 links staging and validation, correlated reload receipts, active hashes, frozen
 natural input identities and hosted owner evidence. Operations followed the
 [control-plane operation skill](/app/shared/skills/control-plane-operation/SKILL.md).
+
+
+## Follow-up
+
+The [source-root repair trial](diagnosis-source-root-repair-20261116.md) verifies
+the exact historical procedure-access mismatch and freezes a transparent natural
+evidence projection. Its first hosted diagnosis exposes a separate source-root
+bug; Alex delivers a reviewed repair integrated into source. That repair is not
+yet active, and Scout's publication improvement remains unresolved.
