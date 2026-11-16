@@ -10,6 +10,9 @@ The [Host readiness rehearsal](host-handover-rehearsal-20261116.md) returned an
 accepted Alex disposition: synchronize the older active diagnosis and instructions
 before broad handover. Ordinary Task admission/closure and separate disposable
 Host restart checks passed.
+The [activation and hosted diagnosis trial](host-diagnosis-trial-20261116.md)
+synchronizes those definitions and completes one real retained-run diagnosis:
+Alex rejected unsupported specialist advice and returned an accepted no-change.
 Further tuning on representative work and Host handover remain incremental work.
 The independent Host assignment completed
 without being stopped by the standalone trial.
@@ -150,12 +153,14 @@ own later evidence.
 
 ## Current next milestone
 
-Manual execution, snapshot integrity, interruption/reuse and a read-only Host
-readiness assessment are recorded. Prepare and synchronize a reviewed Alex
-definition bundle containing the corrected diagnosis and current instructions;
-verify both active hashes and its bundle/source identity before the broader
-rehearsal. Preserve unrelated edits and existing obligations. Then observe one
-representative assignment with the same requirements, candidate identities and
-evidence contracts. Separate disposable Host restart checks passed, while
-automatic development-checkpoint restoration and behavioral transfer remain
-unverified. Keep human correction and total cost as outcome observations.
+Manual execution, snapshot integrity, interruption/reuse, definition synchronization
+and one hosted diagnosis with accepted owner disposition are recorded. The active
+bundle is pinned in the hosted trial; source integration alone remains distinct
+from activation. For the retained Scout case, Alex selected no-change pending a
+specific truth judgment, so do not prepare a candidate from the historical score.
+The recurring specialist path/token assumptions are another observed process
+weakness Alex can scope separately. Choose the next experiment from adjudicated
+evidence or a different confirmed user friction point. Separate disposable Host
+restart checks passed; automatic development-checkpoint restoration and fresh
+natural-work benefit remain unverified. Keep human correction and total cost
+as outcome observations before expanding intake.
