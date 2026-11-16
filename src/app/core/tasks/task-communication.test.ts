@@ -1333,9 +1333,9 @@ test("managed finish refreshes accepted live events when a rejected waiting prop
               id: `finish-${request}`,
               name: "finish",
               arguments: {
-                status: request === 1 ? "success" : "partial",
+                status: "done",
                 summary: result.summary,
-                result,
+                output: result,
               },
             }],
           }) });
