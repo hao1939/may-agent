@@ -18,7 +18,7 @@ behavior. [Working on a Task](../2b-manual/task-execution-guide/SKILL.md) explai
 | Preserve independent work across executions | An agent-owned Task (currently admitted through an App) | Retains requirements, accepted outcomes and continuation |
 | Make an uncertain decision or perform novel work | An agent within the current execution | Applies judgment without prescribing a procedure prematurely |
 | Reuse situational judgment guidance | A skill | Makes a method discoverable when relevant |
-| Preserve a useful ordered procedure | A workflow | Executes explicit steps and checks while asking an agent where needed |
+| Preserve an understood bounded procedure | A workflow | Executes sequences, branches, bounded loops and helper joins while asking an agent where needed |
 | Receive a needed external fact | A Condition and a supported observation/return path | Retains the interest without model polling |
 | Reconsider work at a useful time | A schedule or declared review checkpoint | Supplies time as input; it does not own work |
 | Record or translate a mechanical fact | A handler, observer, metric or projection | Keeps predictable bookkeeping in code |
@@ -28,6 +28,23 @@ Frequency alone does not justify a workflow, and a cross-App call alone is not
 an escalation. Choose an App boundary when responsibility, expertise or authority
 differs. Direct bounded helpers need no independent durable Task unless their
 promised work must outlive the call. See [contributions](../2a-design/execution-contributions.md).
+
+## Choose lifetime, not task complexity
+
+A workflow is a good fit for straightforward sequential work, but can also
+iterate, run bounded helpers in parallel and join their results. What matters
+is an understood method that returns within one invocation, not a small task
+or a strictly linear sequence.
+
+When work needs continuation across executions, independent ownership, later
+feedback or restart recovery, Host retains it and schedules bounded attempts.
+Agents and App policy still choose strategy and judge progress; Host's event
+system supplies coordination, not the reasoning for a complex task. A complex
+outcome can use several agent invocations and focused workflows rather than one
+permanent workflow. Use local calls inside an invocation and meaningful events
+between retained work and later attempts. The
+[workflow boundary](../2a-design/workflows.md#bounded-procedure-versus-durable-coordination)
+owns the ordinary and cross-invocation examples.
 
 ## Keep judgment and execution together at the right scope
 

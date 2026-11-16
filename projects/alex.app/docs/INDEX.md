@@ -24,6 +24,8 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | Does an idle Task need more work, observation or closure? | [State and continuing responsibility](2a-design/task-resource-engine.md#state-and-continuing-responsibility) |
 | What existing tasks informed the unified lifecycle? | [Task lifecycle review](archive/reviews/task-lifecycle-responsibilities-20261107.md) |
 | What does an attempt receive and return? | [Task attempts](2a-design/task-attempts.md) |
+| When should a workflow give way to Host coordination? | [Bounded procedure versus durable coordination](2a-design/workflows.md#bounded-procedure-versus-durable-coordination) |
+| How can Alex carry a change through PR, CI and review feedback? | [Development follow-through](development-workflow.md#pr-follow-through-across-bounded-attempts) |
 | How do agents and workflows call each other? | [Contributions](2a-design/execution-contributions.md) |
 | What must code and agents both honor? | [Common contribution contract](2a-design/execution-contributions.md#common-contract-for-code-and-agents) |
 | When is a human ask fulfilled? | [Message lifecycle](2a-design/message-lifecycle.md) |

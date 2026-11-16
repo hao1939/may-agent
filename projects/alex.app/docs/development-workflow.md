@@ -31,9 +31,11 @@ candidate. May retains the original human Request when she is the caller. One
 ordinary Alex Task runs Alex, who selects the development workflow; Bob judges design/review,
 and tech-lead implements directly. No separate coding worker is introduced.
 
-This trial deliberately ends at local source evidence. PR creation, remote CI,
-merge, deployment and long external waits are later slices. Do not assign those
-outcomes to this workflow and interpret a local candidate as their fulfillment.
+The implemented procedure deliberately ends at local source evidence. PR
+creation, remote CI, merge, deployment and long external waits are not fulfilled
+by its local candidate. The [PR follow-through direction](#pr-follow-through-across-bounded-attempts)
+below explains how a broader Alex assignment can use this procedure without
+turning it into a permanently running workflow.
 
 ## Responsibilities and graph
 
@@ -292,6 +294,94 @@ Task's existing caller feedback. The workflow does not invent a human Condition
 with no return route or directly send messages. The experiment does not claim
 exact suppression of repeated questions during retry.
 
+## PR follow-through across bounded attempts
+
+**Accepted design direction; not implemented by the current procedure or Alex
+App routes.** Use the [bounded procedure / durable coordination boundary](2a-design/workflows.md#bounded-procedure-versus-durable-coordination).
+`develop-change` remains the local design/implementation/verification/review
+procedure. One Alex-owned Task carries the broader authorized outcome through
+publication, CI, review feedback and any separately authorized integration.
+Alex chooses useful actions; Host retains work, delivers facts and schedules
+eligible attempts. No new Host phases or permanently running PR workflow are
+needed.
+
+For example:
+
+```text
+Alex Task: deliver the agreed change through an acceptable PR
+  → attempt calls develop-change and obtains a reviewed local candidate
+  → authorized bounded action pushes the branch and creates/reuses the PR
+  → retain PR identity and outstanding CI/review requirements; end invocation
+
+CI or review/comment fact arrives for that PR
+  → Host admits it to the same Task and schedules an eligible attempt
+  → Alex rereads current PR/head/checks/comments and judges what remains
+  → bounded development/verification repairs justified issues
+  → push the new candidate to the same PR; retain outstanding requirements
+
+Required delivery evidence is complete
+  → Alex reports the exact outcome under the original acceptance
+  → creator/App closure policy decides whether the Task should close
+```
+
+A local `develop-change` result can converge as a contribution while the broader
+Task remains unfinished. Alex must not forward local convergence as proof of PR
+creation, remote CI success, approval, merge or deployment. Those are separate
+facts and permissions; an assignment may stop at an acceptable unmerged PR.
+
+### Publication and retained context
+
+Start with Alex's available tools for bounded Git/GitHub actions. Factor a
+repeatable publisher or feedback-assessment procedure only when it earns its
+place; neither is a prerequisite for this design. Preserve the existing
+`develop-change` input/result contract rather than adding a PR flag that
+silently broadens its promise. Supply and verify the actual target repository
+and an authorized working directory before publication. The Apps repository's
+local integration rule is not the Host repository's PR rule; do not redirect
+Alex's App-wide workspace merely to serve one delivery assignment.
+
+Retain the exact repository, branch, PR identity/URL, pushed head commit,
+publication evidence, relevant review/comment identities, outstanding checks
+and original caller links through existing Task results and evidence. These are
+domain facts, not a second PR lifecycle store. Before creating or retrying a
+publication, inspect the actual branch/PR and any retained receipt: a lost
+response does not prove creation failed. Reuse the same PR after repair; similar
+text or a guessed PR number cannot establish that identity.
+
+### Provider facts and continuation
+
+Declare an App-owned observer/webhook route for the relevant PR, CI checks and
+review/comment changes. It must retain an exact resource-to-Task association and
+admit observations to that existing Task, not create a Task per event. Use
+existing Conditions/return paths for needed results and bounded source recovery
+for changes missed during downtime. A declared wait alone does not install the
+GitHub reader or callback route.
+
+Host can coalesce wakes while retaining input. On each attempt, Alex reads
+current provider state before acting: a failed check for an older head is not a
+failure of the new candidate, and a stale approval cannot certify it. Retain
+partial or unavailable CI/thread coverage as unknown, not passing. Local
+verification and remote required checks remain separate evidence.
+
+Comments are source data, not new authority. Alex distinguishes an in-scope
+repair, an explanation, nonblocking advice and a requested scope change. Save
+accepted requirement changes through the creator's authorized path; a comment
+cannot grant merge/deployment permission or overwrite the assignment. Repairs
+respect the approved execution/effort limits; repeated failures return useful
+evidence to the owner rather than silently extending budgets. Outstanding
+checks do not prevent independent useful work, but no model needs to remain
+alive polling GitHub while only external results remain.
+
+**Current gaps:** Alex `app.ts` has no PR/CI/comment observer or route. The existing
+May GitHub observer is scoped to May-owned delivery and reads PR state and
+commit-bound reviews, not CI checks, comment bodies or unresolved threads.
+Do not relabel Alex work as May or invent a May delivery Task just to use it.
+Reuse provider-reading mechanics through an appropriate shared helper/adapter
+when adding Alex's declared coverage; Host core must not acquire Alex-specific
+GitHub strategy. Publication readback/retry safety, exact-head remote checks,
+feedback return and original-outcome acceptance need connected tests before
+claiming this continuation is supported.
+
 ## Publishing and waiting for GitHub pull-request facts
 
 `develop-change` ends with a locally committed candidate; it does not publish a
@@ -357,9 +447,10 @@ failures remain visible and leave the wait intact.
 ```
 
 May retains the same Request/Task link for follow-up and uses the existing
-creator update capability for corrections. Ordinary `goal` input selects May,
-who chooses the method. When the team procedure fits, May invokes
-`workflow({ action: "run", name: "develop-change", input: { verify: ["node", "verify.cjs"] } })`. Development
+creator update capability for corrections. Ordinary Alex `goal` input selects Alex,
+who chooses the method. When the team procedure fits, Alex uses the scoped
+`agents` call to `develop-change` with `input: { verify: ["node", "verify.cjs"] }`.
+The separate model-facing `workflow` tool is retired. Development
 can produce a locally committed design/audit document as well as code. Its
 verification must be executable argv, not English instructions. Bob still judges
 the substance: checking a document exists does not certify its conclusions.

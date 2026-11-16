@@ -23,12 +23,19 @@ handoff contract and evidence recorded in the [Task context proposal](../archive
 
 - Use a skill when an agent should interpret reusable judgment for one turn.
 - Use a normal TypeScript module for pure calculations and shared mechanics.
-- Use a workflow for bounded, repeatable sequencing that must return one typed
-  terminal result to its caller.
+- Use a workflow for an understood bounded procedure that returns one typed
+  contribution. Sequential steps, branches, bounded iteration, parallel helpers
+  and result joins are all valid.
 - Use an App request or task when work must survive beyond the current run.
 
 A workflow is not a queue, daemon, owner inbox, or durable wait. Its TypeScript
 module controls the bounded run; its description is discovery metadata.
+Choose the boundary by lifetime, not complexity. For example, an implement/test/
+repair loop with parallel bounded reviewers can be one procedure. Waiting for a
+later PR review ends the run with retained work; Host delivers the review and
+schedules another eligible attempt, whose agent decides what to do. Use the
+[governing examples](../2a-design/workflows.md#bounded-procedure-versus-durable-coordination).
+Host coordinates those attempts, not their domain strategy.
 
 Prefer focused parts whose inputs and retained results can be evaluated
 independently. Compose them through ordinary calls and the existing Task handoff
@@ -77,9 +84,12 @@ reconciliation envelopes, or the `verifyCommand` shell string must move the
 requirement into the Task envelope and the command into `verify`; put compound
 checks in a script or explicitly select a shell executable when required.
 
-Workflows are bounded and ordered. They may use `await`, but every awaited
-agent, nested workflow, read, metric write, or fact publication must finish in
-the current run.
+Workflows have bounded, explicit control flow; they need not be strictly
+sequential. Use `await` and joins for in-run dependencies. Every started required
+agent, nested procedure or effect must settle, or return a visible cleanup
+failure, within the current execution boundary. Iteration does not renew the
+allowance. A result that must arrive after this run needs durable coordination,
+not an indefinitely awaited promise.
 
 ## Workflow Context
 
@@ -207,8 +217,13 @@ later evidence from the responsible App's accepted Task result or output.
 
 ## Durable Wait Boundary
 
-Never keep a workflow alive while waiting for a human, approval, timer,
-provider callback, another App, process restart, or long-running external fact.
+Do not keep a workflow alive to preserve a result or obligation beyond its
+invocation. Human decisions, later reviews, independently owned App outcomes,
+restart continuation and long-running external operations use durable work and
+a supported return/observation path. A short provider request or bounded helper
+can still be awaited inside the run; async syntax alone does not make it durable.
+Continue useful independent work while a Condition is outstanding, then yield
+when no useful work remains or the execution bound is reached.
 
 Use the owning durable authority:
 

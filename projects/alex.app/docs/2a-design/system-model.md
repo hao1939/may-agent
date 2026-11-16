@@ -215,6 +215,13 @@ never needs to judge whether a responsibility should last forever. A Task stays
 available until an authorized owner closes it. A quiet Task needs no running
 agent or model polling. Timers are optional inputs, not a separate Task mode.
 
+Workflows organize understood procedures within an invocation, including bounded
+iteration and cooperating helpers. Host coordinates continuity between
+invocations; agents and App policy choose strategy and interpret new facts.
+Complexity alone is not the boundary. The
+[workflow contract](workflows.md#bounded-procedure-versus-durable-coordination)
+shows local repair/review versus a later event-driven attempt.
+
 Producing a result and closing its Task are distinct. A parent can consume a
 child's accepted result while the child stays open for follow-up. Ordinary Apps
 usually close work after its result is accepted; Conversation and maintenance

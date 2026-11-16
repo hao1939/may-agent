@@ -243,9 +243,15 @@ policy at that new boundary rather than toggling this process-global role.
 
 ## Workflows
 
-A workflow is one bounded App-owned procedure. It receives typed input, task
-reconciliation context, scoped reads, agent calls, fact/metric ports, and an
-allocated workspace.
+A workflow executes an understood bounded procedure, including iteration,
+parallel helper calls and joins. Host retains durable work and coordinates
+later attempts; it does not choose a strategy merely because a task is complex.
+The agent and App policy own that judgment. The
+[workflow boundary](workflows.md#bounded-procedure-versus-durable-coordination)
+distinguishes local sequencing/synchronization from event-driven continuity.
+
+For a hosted Task, the procedure receives typed input, supplied work context,
+scoped reads, agent calls, fact/metric ports and working paths.
 
 Automatic reconciliation context stays small: the current Task and direct
 children carry decision-ready facts, while the App-wide snapshot carries only

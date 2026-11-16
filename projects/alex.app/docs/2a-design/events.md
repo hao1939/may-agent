@@ -42,6 +42,13 @@ The event ID is the root causal identity. An event does not replace mutable work
 state: an App task owns the work, a request correlates a caller and result, and
 exact controls link to their owning session or operation.
 
+Events carry meaningful input and changes between retained work and later
+attempts; ordinary calls and `await` organize actions inside a bounded workflow.
+Iteration, cooperation or synchronization alone does not require an event for
+every step. Host records and delivers relevant facts; the agent/App interprets
+them and chooses the next useful action. See the
+[workflow/Host boundary](workflows.md#bounded-procedure-versus-durable-coordination).
+
 ## Resource responsibility and reconciliation
 
 Record responsibility before doing owed work. An event brings information to

@@ -181,6 +181,14 @@ name or a successful session. Recovery confirms old execution cleanup and starts
 an ordinary fresh invocation with retained evidence. [Sessions](sessions.md) own
 retained history and direct-chat continuity, not another model/tool lifecycle.
 
+A workflow can organize an understood bounded procedure inside an invocation,
+including iteration, parallel cooperation and synchronization. Host coordinates
+continuation between invocations through retained work and relevant events;
+the agent/App still chooses strategy and judges progress. Complexity alone does
+not select Host orchestration or a different agent runtime. See
+[bounded procedure versus durable coordination](workflows.md#bounded-procedure-versus-durable-coordination)
+for the dividing line and contrasting examples.
+
 ## Source convergence
 
 The source review at Host `4c2ddaa3e4` found these remaining differences. They are

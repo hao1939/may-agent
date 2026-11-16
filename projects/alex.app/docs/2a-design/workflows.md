@@ -16,17 +16,89 @@ Read [Agent and workflow contributions](execution-contributions.md) for invocati
 
 ## Purpose
 
-A workflow is reusable bounded orchestration owned by one agent. It moves a
-learned sequence, branching, bounded retry, and verification out of model
-memory and into tested TypeScript.
+A workflow is a reusable bounded procedure owned by one agent. It expresses an
+understood method in tested TypeScript: sequence, branching, bounded iteration,
+parallel helper calls and verification. Straightforward sequential work is a
+natural starting point, not a restriction to simple tasks or a linear graph.
 
 ```text
 typed input -> bounded workflow -> agent/helper steps -> ExecutionResult
 ```
 
 A workflow is not durable work ownership, a scheduler, an event handler, or a
-suspended business process. The enclosing task owns the outcome. A workflow run
-owns only one bounded execution attempt.
+suspended business process. The caller owns its outcome; a Host Task retains
+that responsibility when it must survive executions. A workflow run owns only
+its current bounded invocation.
+
+## Bounded procedure versus durable coordination
+
+**Choose by execution lifetime, not task complexity.** A workflow organizes
+understood actions inside one invocation. Host maintains continuity between
+invocations. The agent and App policy decide which work is useful and whether
+the evidence meets the assignment.
+
+| Responsibility | Owner |
+| --- | --- |
+| Choose an approach, interpret feedback, judge progress and continuation | Agent / App policy |
+| Execute a known bounded procedure, including loops, parallelism and helper joins | Workflow |
+| Retain work, coordinate later attempts, deliver relevant events, supervise and recover | Host |
+
+A complex outcome can use many ordinary agent invocations, with workflows for
+repeatable parts. It does not require one giant workflow encoding every future
+decision. Host executes admitted decisions and declared policy; its event
+system does not choose strategy or infer domain success.
+
+### Inside the current invocation
+
+Use ordinary calls, `await`, branches and bounded loops. Cooperating agents and
+procedures may run in parallel, then synchronize by joining their results.
+They share the enclosing cancellation and remaining allowance; required child
+execution and cleanup must settle before returning. Iteration or cooperation
+alone does not require durable dispatch or an event for every step.
+
+For example:
+
+```text
+implement → test → inspect failure → repair → test
+  → parallel bounded reviews → join findings → return contribution
+```
+
+This can remain one workflow while the method is understood and the work fits
+its execution limit. If the method no longer fits, return useful evidence and
+control to the caller instead of extending the allowance or becoming a controller.
+
+### Between invocations
+
+When work or its awaited result must survive the invocation, use Host's existing
+Task, dependency, Condition and event mechanisms. End the run after useful
+independent work is exhausted or its bound is reached; retain progress and the
+needed return without keeping a model or JavaScript stack alive.
+
+```text
+Attempt: prepare a change and open a PR
+  → retain the expected review through the supplied work/result contract
+  → end invocation and release execution capacity after cleanup
+
+Event: review arrives
+  → Host records it against retained work and schedules an eligible attempt
+  → agent interprets feedback; a bounded procedure may revise and verify
+```
+
+An outstanding Condition does not stop useful independent work. A short provider
+request can be awaited within the run; a later callback, human decision or
+independently owned result uses a durable return when it must outlive that run.
+Host recovers missed notifications from retained state through the same owner;
+it cannot observe an external change without a configured producer. Events
+carry meaningful inputs and changes, not every internal workflow transition.
+A later attempt starts an ordinary fresh invocation using current facts and
+retained evidence, not a restored TypeScript continuation.
+
+[Host Runtime](runtime.md#workflows), [Events](events.md#resource-responsibility-and-reconciliation)
+and [Task attempts](task-attempts.md) own those mechanics. This refinement
+clarifies the existing boundary; it adds no new scheduler, API or replay engine.
+[Alex's PR follow-through direction](../development-workflow.md#pr-follow-through-across-bounded-attempts)
+applies it to `develop-change`, remote CI and review comments, with current
+publication/observation gaps marked separately.
 
 ## Skill and workflow boundary
 
@@ -481,7 +553,10 @@ explains when to promote a practice to a workflow or retain agent judgment.
 - Every invocation has typed input and one bounded terminal result.
 - The enclosing App request/task, never the workflow run, owns durable work.
 - Schedules, observers, facts, and metrics cannot launch workflows directly.
-- Durable waits end the run and resume through persisted App/task state.
+- Bounded iteration, parallel helpers and synchronization stay inside one run;
+  complexity alone does not require durable dispatch.
+- Durable waits end the run; retained App/Task state drives a fresh later
+  invocation, not resumption of the JavaScript stack.
 - Agent outputs and workflow outputs are validated before domain admission.
 - Workflows use scoped reads and workspace paths only.
 - No workflow imports raw SQL, task storage, global paths, scheduler, queue,
