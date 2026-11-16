@@ -371,6 +371,58 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect(String(lateEventRejection)).toContain("context is closed");
   });
 
+  test("boundedly joins cooperative authored cancellation without confirming a never-settling body", async () => {
+    const cooperativeController = new AbortController();
+    let cooperativeSettled = false;
+    const cooperative = runWorkflowInvocation(
+      {
+        name: "cooperative-authored-cancel",
+        description: "Settles shortly after cancellation",
+        async execute(ctx) {
+          await new Promise<void>((_, reject) => {
+            ctx.signal.addEventListener("abort", () => {
+              setTimeout(() => {
+                cooperativeSettled = true;
+                reject(ctx.signal.reason);
+              }, 5);
+            }, { once: true });
+          });
+          return ctx.done("unreachable");
+        },
+      },
+      { input: {}, signal: cooperativeController.signal, timeoutMs: 500 },
+    );
+    setTimeout(() => cooperativeController.abort(new Error("stop cooperative body")), 5);
+    const cooperativeOutcome = await cooperative;
+    expect(cooperativeOutcome.ok).toBe(false);
+    expect(cooperativeOutcome.status).toBe("interrupted");
+    expect(cooperativeSettled).toBe(true);
+    expect(cooperativeOutcome.report.cleanup).toEqual({ confirmed: true });
+
+    const stuckController = new AbortController();
+    const stuckStartedAt = Date.now();
+    const stuck = runWorkflowInvocation(
+      {
+        name: "stuck-authored-cancel",
+        description: "Ignores cancellation forever",
+        async execute(_ctx): Promise<never> {
+          return new Promise<never>(() => {});
+        },
+      },
+      { input: {}, signal: stuckController.signal, timeoutMs: 500 },
+    );
+    setTimeout(() => stuckController.abort(new Error("stop stuck body")), 5);
+    const stuckOutcome = await stuck;
+    expect(stuckOutcome.ok).toBe(false);
+    expect(stuckOutcome.status).toBe("error");
+    expect(stuckOutcome.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(stuckOutcome.report.cleanup.confirmed).toBe(false);
+    expect(stuckOutcome.report.cleanup.unconfirmed).toEqual([
+      expect.stringMatching(/^workflow:stuck-authored-cancel \(wr_/),
+    ]);
+    expect(Date.now() - stuckStartedAt).toBeLessThan(200);
+  });
+
   test("enforces inherited deadline, shared concurrency allowance, isolated observers, and cleanup confirmation", async () => {
     const nestedChild = {
       name: "child-wf",

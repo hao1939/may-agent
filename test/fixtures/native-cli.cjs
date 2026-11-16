@@ -1,8 +1,10 @@
 // Portable native-protocol fixture. Never contacts a model or reads credentials.
 const { spawn } = require("node:child_process");
-const { writeFileSync } = require("node:fs");
+const { writeFileSync, writeSync } = require("node:fs");
 const config = JSON.parse(process.argv[2]);
-const emit = (event) => process.stdout.write(JSON.stringify(event) + "\n");
+// Protocol records emitted from signal handlers must reach the owning reader
+// before the fixture exits; asynchronous stdout writes can be truncated by exit().
+const emit = (event) => writeSync(1, JSON.stringify(event) + "\n");
 const commandDone = config.commandProbe
   ? new Promise((resolve, reject) => {
       const command = spawn(

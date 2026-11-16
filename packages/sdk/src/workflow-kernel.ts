@@ -18,6 +18,7 @@ const MAX_REPORT_STEPS = 64;
 const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
+const AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS = 50;
 
 /** @deprecated Use `AgentExecutableModule` for Task-transparent authoring. */
 export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = Omit<
@@ -1193,6 +1194,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
   let contribution: NormalizedWorkflowContribution | undefined;
   let caughtError: unknown;
   let authoredExecutionSettled = false;
+  let settleAuthoredExecution: Promise<void> | undefined;
 
   try {
     const execution = (async () => {
@@ -1218,7 +1220,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
       return normalized;
     })();
-    void execution.then(
+    settleAuthoredExecution = execution.then(
       () => { authoredExecutionSettled = true; },
       () => { authoredExecutionSettled = true; },
     );
@@ -1253,8 +1255,23 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
     }
     await Promise.allSettled([...activeOperations]);
-    for (let settleTurn = 0; settleTurn < 4 && !authoredExecutionSettled; settleTurn++) {
-      await Promise.resolve();
+    if (!authoredExecutionSettled && settleAuthoredExecution) {
+      const remainingMs = Math.max(0, allowance.deadlineAt - Date.now());
+      const waitMs = Math.min(AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS, remainingMs);
+      if (waitMs > 0) {
+        let settleTimer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            settleAuthoredExecution,
+            new Promise<void>((resolve) => {
+              settleTimer = setTimeout(resolve, waitMs);
+              settleTimer.unref?.();
+            }),
+          ]);
+        } finally {
+          clearTimeout(settleTimer);
+        }
+      }
     }
     if (!authoredExecutionSettled) {
       const label = `workflow:${module.name} (${executionId})`;
