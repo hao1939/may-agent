@@ -440,11 +440,11 @@ exact admission rules.
 | Scheduling | Derive eligibility from durable state; apply capacity, declared priority, pause, retry and timing policy; recover lost queue hints. | Decide useful priorities and continuation within the assignment; installation supplies resource limits. |
 | Invocation | Supply the selected definition, current scoped input, permitted capabilities and environment; retain execution identity and bounded evidence. | Choose methods, domain iterations and helper calls; capabilities execute the requested operations. |
 | Supervision | Enforce declared execution limits and Stop; fence late effects, confirm cleanup and retain capacity ownership until required cleanup completes. | Choose execution budgets and supported ongoing-executor policy; judge whether progress is useful. |
-| Result admission | Validate shape/limits, live attempt and generation, authority, affected revisions and explicitly declared checks; commit accepted decisions and required effects consistently. Return specific rejection feedback. | Judge completion and evidence sufficiency; declare any domain validation or normalization in the App/caller contract. |
+| Result admission | Validate shape/limits, live attempt and generation, authority, affected revisions and explicitly declared checks; commit required record changes atomically and retain external-effect receipts. Return specific rejection feedback. | Judge completion and evidence sufficiency; declare any domain validation or normalization in the App/caller contract. |
 | Wait and continuation | Retain exact Conditions, dependencies and deadlines; deliver matching facts and schedule an eligible fresh attempt with current context and retained evidence. | Choose what fact is needed, its producer, and the decision it enables. |
 | Retry and recovery | Reuse operation identity, inspect known effects, pace eligible retries and restore the same obligation after interruption. Preserve uncertainty and exhausted allowances. | Diagnose unresolved failures and choose repair, another method, waiting or escalation within authority. |
 | Feedback and delivery | Retain accepted results and undelivered feedback; retry declared delivery paths, deduplicate receipts and expose missing routing or failed delivery. | Choose the meaning and recipient of a domain request or human escalation through declared routes. |
-| Ending | Execute authorized closure or cancellation and retain its disposition/evidence; prevent stale execution or later facts from reopening ended work. | Decide whether the assignment can end under creator authority and App policy. |
+| Ending | Execute authorized closure or cancellation and retain its disposition/evidence; prevent stale execution or later facts from implicitly reopening ended work. | Decide whether the assignment can end under creator authority and App policy. |
 
 These are responsibilities of existing records and controls, not additional
 Task states, services or queues. Registration and atomic definition replacement
@@ -487,6 +487,8 @@ without requiring perfect execution history or exactly-once arbitrary effects.
 boundary. It does not establish complete production coverage. Parent watchdog
 wiring, shared invocation/settlement, blocked-result continuation and retained
 caller delivery have distinct [source gaps and local repairs](../proposals/host-ingress-and-boundary-simplification-20261116.md#host-responsibility-model).
+
+### Operational scope
 
 Failure containment stays with admission and execution. The Host preserves
 evidence, releases resources and applies known bounded responses. Apps or LLMs
@@ -847,48 +849,15 @@ bounded workflows. The SDK does not expose SQL, files and locks, queues,
 leases, scheduler handles, event-bus handles, process recovery, delivery
 internals, or global paths.
 
-External interfaces submitting work or controls to an installed Host have one
-state-changing operation:
+External interfaces submitting work or controls to an installed Host have one state-changing operation (`publish(event)`).
 
-```text
-publish(event)
-```
+Operator-initiated Task closure publishes `app.task.close.requested` through that same `publish(event)` boundary (`taskCloseRequestedEvent`). It requires the Task's current generation and resource version plus the exact accepted attempt ID (`afterResult`); omission or an empty result identity is invalid even when an earlier receipt could otherwise replay. The shared Task runtime checks that identity and both fences, the stored converged phase, absence of a current attempt, and absence of a pending trigger. Rejection leaves every Task fact and link unchanged. These mechanics do not decide whether the owner should end the responsibility; independent structural children can continue. The internal completion callable has the same required result identity; it is not a generic terminal operation whose optional argument selects intent. This trusted operator boundary is not a Task-bound creator capability. `task.cancel` and the internal cancellation callable remain the distinct intentional-withdrawal control, sharing only the fenced terminal writer. They must not be substituted for failed completion cleanup or attributed to a human when their trusted ingress does not establish a human decision.
 
-Operator-initiated Task closure publishes `app.task.close.requested` through
-that same `publish(event)` boundary (`taskCloseRequestedEvent`). It requires
-the Task's current generation and resource version plus the exact accepted
-attempt ID (`afterResult`); omission or an empty result identity is invalid even
-when an earlier receipt could otherwise replay. The shared Task runtime checks
-that identity and both fences, the stored converged phase, absence of a current
-attempt, and absence of a pending trigger. Rejection leaves every Task fact and
-link unchanged. These mechanics do not decide whether the owner should end the
-responsibility; independent structural children can continue. The internal
-completion callable has the same required result identity;
-it is not a generic terminal operation whose optional argument selects intent.
-This trusted operator boundary is not a Task-bound creator capability.
-`task.cancel` and the internal cancellation callable remain the distinct
-intentional-withdrawal control, sharing only the fenced terminal writer. They
-must not be substituted for failed completion cleanup or attributed to a human
-when their trusted ingress does not establish a human decision.
-
-The event type selects one of four existing Host meanings: App input, reported
-fact, exact task/session control, or Host lifecycle control. `get(eventId)`
-reads admission and linked outcomes; `subscribe(filter)` observes Events.
-Those interfaces do not bypass App admission by launching its agent or model
-runner directly, and Apps do not receive this Host interface. A standalone local
-execution wrapper uses the execution capability described above; it neither
-claims an App Task nor becomes an alternate control route for installed work.
+The event type selects one of four existing Host meanings: App input, reported fact, exact task/session control, or Host lifecycle control. `get(eventId)` reads admission and linked outcomes; `subscribe(filter)` observes Events. Those interfaces do not bypass App admission by launching its agent or model runner directly, and Apps do not receive this Host interface. A standalone local execution wrapper uses the execution capability described above; it neither claims an App Task nor becomes an alternate control route for installed work.
 
 ## Extension rule
 
-When adding a feature, ask two questions:
-
-1. Is this stable mechanics? Put it in the Host.
-2. Is this meaning, policy, desired outcome, or acceptance? Put it in the App.
-
-Add an SDK capability only when an App responsibility cannot be expressed with
-the current typed boundary. Add the narrowest operation needed; do not expose a
-generic query, command, service locator, database, path bag, or runtime context.
+When adding a feature, ask two questions: (1) Is this stable mechanics? Put it in the Host. (2) Is this meaning, policy, desired outcome, or acceptance? Put it in the App. Add an SDK capability only when an App responsibility cannot be expressed with the current typed boundary. Add the narrowest operation needed; do not expose a generic query, command, service locator, database, path bag, or runtime context.
 
 ## Review checklist
 

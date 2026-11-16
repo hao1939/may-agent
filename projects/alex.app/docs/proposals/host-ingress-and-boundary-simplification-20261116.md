@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Merged Host baseline `f70f55ab5e3c881838b13419554a4cd3e4276f68` includes #566 and #568–#572. Local follow-up branches repair transactional Task-input fencing and retained Conversation returns, and migrate App SDK imports/contexts. These patches are unmerged. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. Source checks and deployment are separate facts.
+**Implementation status:** Merged Host baseline `f70f55ab5e3c881838b13419554a4cd3e4276f68` includes #566 and #568–#572. Local follow-up branches repair transactional Task-input fencing and retained Conversation returns, and migrate App SDK imports/contexts. These patches are unmerged. Production parent watchdog wiring, shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. Source checks and deployment are separate facts.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -27,6 +27,53 @@ execution engine; keep one domain Task per owned outcome; and treat explicit
 coordinator Task knowledge as domain data/tools. The last two execution/ownership
 outcomes are still integration work, not consequences of the import migration.
 
+## Host responsibility model
+
+**Host owns reliable execution and faithful records; the agent owns domain
+judgment and conclusions.** The accepted
+[Host responsibility matrix](../2a-design/system-boundary.md#responsibilities-through-a-task)
+owns the stage-by-stage contract. This proposal tracks its incomplete execution
+and recovery wiring. “Admit the result” means validate and commit the agent's
+decision under declared contracts, not independently certify its correctness.
+App domain checks remain App policy. Caller review is needed when its own
+assignment requires a decision about the contribution; admission adds no
+mandatory evaluator or second approval.
+
+For the first finite development assignment, the intended connected path is:
+
+```text
+App input -> durable admission and Task mapping -> eligible bounded attempt
+  -> agent/procedure works and judges its contribution
+  -> Host admits the current, authorized result
+       progress: retain evidence and continue eligible work
+       wait: retain exact producer/Condition -> fact -> fresh bounded attempt
+       complete finite assignment: apply authorized settlement/closure policy
+  -> retain and deliver the exact caller result
+  -> caller handles the contribution under its own assignment/Request contract
+```
+
+The progress/wait branches reuse the same Task. Closure and caller delivery have
+their existing independent records; a delayed notification cannot undo committed
+work. An automatic finite closure needs the agent's full-assignment completion
+decision and explicit eligibility; helper completion, idle state or a passing
+test alone supplies none. Standing work, Conversation and Task-created/delegated
+assignments retain their applicable owner/creator controls.
+
+Three facts must remain distinguishable in implementation and reads: execution
+ended, result was admitted, and the caller received it. A process can exit with
+no admissible result; an admitted result can await delivery; a delivered
+contribution can leave the caller's wider ask unfinished. None establishes that
+the agent's conclusion is true. Preserve useful accepted work while correcting
+or continuing what remains.
+
+Liveness means eligible work can progress under capacity and policy, or has a
+readable execution/recovery blocker. A genuine external wait and administrative
+pause need no running model. “Agent failed to handle it” must become observable
+failure evidence or an App-owned progress judgment before it triggers a declared
+recovery route. Host does not diagnose an ineffective strategy from silence or prose.
+Existing retry budgets and explicit controls
+still apply; recovery/escalation does not invent a new assignment or authority.
+
 ## Completed source and partial slices
 
 | Original slice | Source position | Remaining scope |
@@ -36,6 +83,7 @@ outcomes are still integration work, not consequences of the import migration.
 | 3 — reads and App identity | #569 merged reads/action removal; local attachment fence | App/Project identity remains; publish and integrate the verified fence. |
 | 4 — reconciler modules | Deferred | Optional mechanical extraction after settlement stabilizes. |
 | 5a — SDK/shared execution | #566 merged authoring, helpers and settlement component | No production shared-`run()` settlement callers; Host still wraps execution and opens SQLite in the attempt child. |
+| Cross-cutting — execution supervision | Parent worker executor has optional `timeoutMs`; production attempt/recovery factories leave it unset | Wire parent-side finite bounds and confirmed cleanup; worker-local deadlines do not contain a synchronous child hang. |
 | 5b — App/Gym adoption | Local SDK context/import migration passes the 24-workflow paired check | Domain-only development and automatic blocked/resume are not established by compatibility checks. |
 | 6 — Conversation ownership | #570 removed discovery; local retained-return repair | Integrate the repair before retiring the stable execution Task or adding completion Hooks. |
 
@@ -71,6 +119,27 @@ Review and integrate these local patches against their recorded bases before
 claiming merged-source completion. The [verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-correctness-and-compatibility-repair)
 records their tests and limits. Continue with the connected worker below.
 
+### Bind production supervision to execution policy
+
+The [worker supervision contract](../2a-design/runtime.md#worker-supervision)
+requires the parent to bound execution independently of worker cooperation.
+At the recorded #572 source, `app-runtime.ts` constructs both attempt and recovery
+process executors without their supported timeout. A responsive Host can therefore
+retain a stuck worker's capacity, or wait indefinitely for startup recovery.
+
+Resolve the applicable finite bound in the supervising parent and include
+bounded preparation, execution and cleanup/recovery time. Preserve supported
+ongoing-executor exceptions through explicit responsiveness and stop policy.
+Distinguish user Stop, timeout, lost ownership and provider failure; they have
+different continuation and retry consequences. Confirm exit and required
+descendant cleanup before releasing ownership or admitting replacement work.
+
+Exercise the actual production factories with a non-cooperative worker, parent
+loss and interrupted recovery. Verify human control remains responsive, stale
+results cannot commit, pending input survives, and replacement execution waits
+for safe cleanup. Do not equate killing a process with reversing its external
+effects or successfully recovering the Task.
+
 ### Connect shared execution and settlement
 
 Have Host agent/procedure adapters invoke `run(target, input, options)` with the
@@ -84,6 +153,12 @@ The settlement translator already exists. Wire it through the real attempt
 runner and checkpoint replay, rather than adding a second execution/result
 normalizer. Domain `output.state` remains data. Admit size/shape/facts before
 finite-done provenance; retain cleanup uncertainty and stale-attempt fences.
+Keep the [agent judgment/admission boundary](../2a-design/task-attempts.md#agent-judgment-and-infra-admission)
+through this wiring: validate and persist the declared conclusion, deliver
+actionable rejection feedback, and recover the original receipt after a lost
+acknowledgment. No generic semantic-success predicate or automatic review agent
+belongs in this adapter. Preserve accepted contributions and independent waits
+when other inputs remain.
 The current root also exposes Task-bearing deferral and nested CLI evidence;
 remove that implicit coupling without weakening explicit coordinator tools.
 
@@ -112,6 +187,27 @@ not close standing duties or Task-created/delegated work merely because one
 bounded contribution finished. Retire only mechanical disposition/closure
 housekeeping after this path works. Domain workload prioritization, acceptance,
 opportunity judgment and scope decisions stay with the owner agent.
+
+### Carry unresolved failure to its declared owner
+
+An active invocation gets actionable contract/tool feedback within its current
+allowance. If it cannot start, finish or safely resume, retain the original
+Task/operation, last accepted work, failure stage, retry/exhaustion evidence and
+known or uncertain effects. Deliver that packet through the saved caller or
+App-declared operational route. Its owner chooses correction, repair, another
+method, a real wait or a request for help; Host executes the authorized decision.
+
+Use existing failure episodes, admissions and delivery receipts to avoid a new
+investigation per retry. A saved diagnostic, destination admission and recipient
+execution are different observations. Missing routing or an unavailable recovery
+recipient remains a readable delivery/startup blocker. Retries of the original
+operation can continue under policy while independent investigation proceeds;
+neither route resets the other's allowance or authorizes duplicate effects.
+
+The [recovery adoption proposal](unified-agent-recovery-20261017.md) owns the
+remaining recipient-startup and pre-attempt routing evidence. Reuse that route
+and ordinary Task controls in this integration; add no recursive supervisor
+lifecycle, guessed fallback owner or automatic human-approval requirement.
 
 ### Single-Task Conversation ownership
 
@@ -154,16 +250,21 @@ concrete defect requires a change.
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |
+| Judgment and admission | A well-formed agent conclusion within the declared contract is recorded without an added semantic reviewer; malformed, stale or unauthorized changes return specific feedback. Domain `output.state` stays data. | Keep this distinction through production shared settlement; existing contract/component checks alone do not prove caller wiring. |
 | SDK semantics | Root worker types and runtime preparation require no Host Task/Conversation identity; explicit coordinator domain tools remain opt-in. | A symbol-name snapshot alone misses Task-bearing nested deferral/CLI types. |
 | Hosted parity | Same pinned worker/input/capabilities through standalone and Host; compare prepared messages, tool/finish schemas and first-turn bytes. No Task brief, unrequested tools or `TASK.md` turn. | Real Host caller migration remains; the historical target is less than 5% payload overhead under equivalent inputs. |
+| Execution supervision | Use production attempt/recovery factories with a non-cooperative worker; independently enforce declared bounds, confirm cleanup and retain responsive controls. Stop is not automatically retried; timeout follows its policy. | Optional parent timeout exists but production wiring leaves it unset. |
 | Parent-owned storage | Instrument the attempt process and exercise restart/settlement; zero Host SQLite connections in execution children. | Journal cleanup is not this proof, nor a guarantee that every unrelated SQLite test can never contend. |
+| Crash and effect recovery | Lose the acknowledgment after commit and interrupt after an external effect; replay the same receipt, preserve accepted work, inspect uncertain effects, and block unsafe replacement until cleanup is known. | Reuse existing receipts and operation-safety contracts; prove the complete connected worker path, without claiming exactly-once arbitrary effects. |
+| Failure ownership | Return correctable feedback to the active invocation; deliver exhausted/unstartable work to the declared owner, preserving the original obligation. Missing route/recipient stays visible. | Connected recipient-startup/pre-attempt evidence remains separate; saving or admitting a notice does not prove it was handled. |
 | Finite closure | Accepted complete finite assignment closes atomically; oversized/rejected/stale/partial/helper results and standing duties do not. Replay preserves that decision. | Component checks exist; production caller/App eligibility and end-to-end replay remain. |
 | Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Local Host repair covers these cases; integration remains. |
-| Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → wake → fresh-input → done scenario. | Local 24-workflow compatibility passes; connected blocked/resumed/finished worker evidence remains. |
+| Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 24-workflow compatibility passes; connected blocked/resumed/finished worker evidence remains. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
 The next implementation milestone is to integrate the prepared correctness and
-compatibility patches, then connect one hosted domain worker through wait,
-recovery and accepted completion. Removal of mechanical housekeeping and
+compatibility patches, wire independent production supervision, then connect
+one hosted domain worker through real waits, restart recovery, result admission
+and authorized finite completion. Removal of mechanical housekeeping and
 Conversation ownership cutover follow that evidence. Source checks remain separate from any
 installation rollout or behavior-improvement claim.
