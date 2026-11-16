@@ -74,7 +74,8 @@ Task-local evidence and cumulative allowance stay with the owning Task. New
 feedback or procedure-call prose cannot override the saved target assignment.
 May preserves this selector when delegating an authorized cross-repository
 goal. If it is missing, Alex returns the exact setup gap to the recorded creator,
-who revises that same Task through `tasks update`; a direct specialist call is
+who revises that same Task through the SDK creator capability (May uses her
+`revise-assignment` procedure); a direct specialist call is
 not a substitute. Retain the checkout, prior work, caller and consumed allowance
 across that correction.
 
