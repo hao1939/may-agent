@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import type { ChildProcess } from "node:child_process";
 import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer, { type HTTPRequest, type Page } from "puppeteer-core";
+import puppeteer, { type Browser, type HTTPRequest, type Page } from "puppeteer-core";
 import { attachControlSocket, type ControlSocket, type ControlEvent } from "../../packages/control/src/server.js";
 import { daemonSocketPath } from "../../packages/control/src/client.js";
 import { HumanTaskService, type HumanTaskStatus } from "../../src/app/human-task-service.js";
@@ -43,6 +43,27 @@ describe("HTTP human Task reads and board", () => {
   let rejectAppRead: boolean;
   let listeners: Set<(event: ControlEvent) => void>;
   let activeStatus: any[];
+  let browser: Browser | undefined;
+
+  beforeAll(async () => {
+    if (!skipBrowser) {
+      browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+    }
+  });
+
+  afterAll(async () => {
+    await browser?.close();
+  });
+
+  async function newBrowserPage() {
+    const context = await browser!.createBrowserContext();
+    const page = await context.newPage();
+    return { page, closeBrowserPage: () => context.close() };
+  }
 
   beforeEach(async () => {
     conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
@@ -218,9 +239,8 @@ describe("HTTP human Task reads and board", () => {
       const allowed = surface === "overview" || surface === "conversation" || surface === "generic"
       ? ["fixture", "worker-old-session", "selected-old-session"]
       : surface === "session" ? ["selected-old-session"] : [];
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       let held: HTTPRequest | undefined;
       if (surface === "loading") {
@@ -266,13 +286,12 @@ describe("HTTP human Task reads and board", () => {
         await page.evaluate("document.getElementById('chat-input').value = 'Inactive composer'; sendChat()");
         expect(published).toEqual([]);
       }
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser)("Overview refreshes its retained panels on lifecycle changes and after missed events during reconnect", async () => {
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       const paths: string[] = [];
       page.on("request", request => paths.push(new URL(request.url()).pathname));
@@ -290,7 +309,7 @@ describe("HTTP human Task reads and board", () => {
       task("work-while-disconnected", 11, "running");
       await reconnect(page);
       await page.waitForFunction(() => document.querySelector("#overview-tasks")?.textContent?.includes("work-while-disconnected"));
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser)("direct chat renders saved turns once and reconciles a turn ending during its history read", async () => {
@@ -298,9 +317,8 @@ describe("HTTP human Task reads and board", () => {
     ensureSessionDir(root, sessionId);
     appendSessionMessage(root, sessionId, { role: "user", content: "Initial saved turn", timestamp: Date.now() });
     const snapshot = await read(`/api/sessions/${sessionId}/transcript`);
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Initial saved turn"));
@@ -341,16 +359,15 @@ describe("HTTP human Task reads and board", () => {
       await reconnect(page);
       await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Next saved turn"));
       expect(await page.$$eval("#chat-messages .assistant-text", els => els.map(el => el.textContent))).toEqual(["Saved response", "Next saved turn"]);
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser)("direct chat keeps saved history and rejected drafts, and publishes without its notification socket", async () => {
     const sessionId = seedChat("worker");
     ensureSessionDir(root, sessionId);
     appendSessionMessage(root, sessionId, { role: "user", content: "Keep this saved history", timestamp: Date.now() });
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => document.querySelector("#chat-messages")?.textContent?.includes("Keep this saved history"));
@@ -417,7 +434,7 @@ describe("HTTP human Task reads and board", () => {
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Pending before leaving Chat");
       expect(published).toHaveLength(5);
       expect(published[4]).toMatchObject({ type: "session.steer.requested", target: { sessionId } });
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser).each(["abort", "500"])(
@@ -426,13 +443,8 @@ describe("HTTP human Task reads and board", () => {
       const sessionId = seedChat("worker");
       ensureSessionDir(root, sessionId);
       appendSessionMessage(root, sessionId, { role: "user", content: "Retained thread", timestamp: Date.now() });
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction(() =>
@@ -466,7 +478,7 @@ describe("HTTP human Task reads and board", () => {
         );
         expect(await page.evaluate("currentSessionId")).toBe(sessionId);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -482,13 +494,8 @@ describe("HTTP human Task reads and board", () => {
         content: "Initial inspector transcript",
         timestamp: Date.now(),
       });
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(7000);
         await page.goto(`${base}/sessions/${sessionId}`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction(() =>
@@ -513,7 +520,7 @@ describe("HTTP human Task reads and board", () => {
         });
         expect(await page.evaluate("currentSessionId")).toBe(sessionId);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -522,13 +529,8 @@ describe("HTTP human Task reads and board", () => {
   test.skipIf(skipBrowser)(
     "a session-start notification refreshes the picker from authoritative status immediately",
     async () => {
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/sessions`, { waitUntil: "domcontentloaded" });
         await notificationBarrier(page);
@@ -552,7 +554,7 @@ describe("HTTP human Task reads and board", () => {
         );
         expect(await page.evaluate("activeSessions[0].status")).toBe("running");
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -562,13 +564,8 @@ describe("HTTP human Task reads and board", () => {
     "fresh chat discovers its admitted request after the first lookup, excluding older and concurrent threads",
     async () => {
       seedChat("worker");
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction("currentSessionId === 'worker-old-session'");
@@ -637,7 +634,7 @@ describe("HTTP human Task reads and board", () => {
         expect(typeof requestId).toBe("string");
         expect(published[0].idempotencyKey).toBe(requestId);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -646,13 +643,8 @@ describe("HTTP human Task reads and board", () => {
   test.skipIf(skipBrowser)(
     "an unbound submission keeps one admission while the next draft changes",
     async () => {
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction(() =>
@@ -686,7 +678,7 @@ describe("HTTP human Task reads and board", () => {
         expect(await page.$eval("#chat-input", (el) => (el as HTMLInputElement).value)).toBe("The next draft");
         expect(await page.evaluate("agentChatRequestId")).toBe(published[0].idempotencyKey);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -696,13 +688,8 @@ describe("HTTP human Task reads and board", () => {
     "an admitted fresh chat survives About with a changed next draft=%s",
     async (changed) => {
       seedChat("worker");
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction("currentSessionId === 'worker-old-session'");
@@ -744,7 +731,7 @@ describe("HTTP human Task reads and board", () => {
         );
         expect(published).toHaveLength(1);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -755,13 +742,8 @@ describe("HTTP human Task reads and board", () => {
     async () => {
       const sessionId = seedChat("worker");
       ensureSessionDir(root, sessionId);
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction("currentSessionId === 'worker-old-session'");
@@ -790,7 +772,7 @@ describe("HTTP human Task reads and board", () => {
         expect(await page.evaluate("chatTranscript.sessionId")).toBe(sessionId);
         expect(published).toMatchObject([{ type: "session.steer.requested", target: { sessionId } }]);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -799,13 +781,8 @@ describe("HTTP human Task reads and board", () => {
   test.skipIf(skipBrowser)(
     "Reset replaces an unknown fresh admission's identity even with an unchanged draft",
     async () => {
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction(() =>
@@ -840,7 +817,7 @@ describe("HTTP human Task reads and board", () => {
         expect(published[1].idempotencyKey).not.toBe(originalId);
         expect(published[1].data.forceNew).toBe(true);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -905,9 +882,8 @@ describe("HTTP human Task reads and board", () => {
 
   test.skipIf(skipBrowser)("rejected fresh chat keeps its draft and Reset intent", async () => {
     seedChat("worker");
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction("currentSessionId === 'worker-old-session'");
@@ -920,7 +896,7 @@ describe("HTTP human Task reads and board", () => {
       expect(await page.evaluate("forceNewAgentChat")).toBe(true);
       expect(await page.evaluate("currentSessionId")).toBeNull();
       expect(published).toMatchObject([{ type: "chat.start.requested", data: { agent: "worker", forceNew: true } }]);
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.each([false, true])(
@@ -1090,9 +1066,8 @@ describe("HTTP human Task reads and board", () => {
     seedChat("worker");
     db.prepare("INSERT INTO sessions (sessionId, agent, task, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?)")
       .run("selected-session", "worker", "Selected report", "done", Date.now() - 2000, Date.now() - 1000);
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       const errors: string[] = [];
       page.on("pageerror", error => errors.push(String(error)));
@@ -1133,14 +1108,13 @@ describe("HTTP human Task reads and board", () => {
       expect(await page.evaluate("currentSessionId")).toBe("selected-session");
       expect(await page.$eval("#chat-messages", el => el.textContent)).not.toContain("Failed:");
       expect(errors).toEqual([]);
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser)("agent Chat discards older loads after a subtab change, newer load or Reset", async () => {
     seedChat("worker");
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction("currentSessionId === 'worker-old-session' && ws?.readyState === WebSocket.OPEN");
@@ -1173,14 +1147,13 @@ describe("HTTP human Task reads and board", () => {
       await page.click("#chat-send");
       await submitted;
       expect(published).toMatchObject([{ type: "chat.start.requested", data: { agent: "worker", forceNew: true } }]);
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser).each(["newer-session", "worker-old-session"])("a late agent transcript cannot replace the latest selection of %s", async (selectedSession) => {
     seedChat("worker");
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/worker`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction("currentSessionId === 'worker-old-session' && ws?.readyState === WebSocket.OPEN");
@@ -1216,15 +1189,14 @@ describe("HTTP human Task reads and board", () => {
       expect(text).toContain("New selected transcript");
       expect(text).not.toContain("Obsolete transcript");
       expect(await page.evaluate("window.sentSubscriptions.at(-1)")).toEqual([selectedSession]);
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser)("input during agent header loading addresses that agent and preserves its heading", async () => {
     seedChat("worker");
     seedChat("selected");
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/sessions/selected-old-session`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
@@ -1247,7 +1219,7 @@ describe("HTTP human Task reads and board", () => {
       await page.evaluate("window.pendingAgentInit");
       expect(await page.$eval("#agents-content h2", el => el.textContent)).toBe("worker");
       expect(await page.evaluate("currentSessionId")).toBe("worker-old-session");
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   }, 30000);
 
   test.skipIf(skipBrowser).each([false, true])(
@@ -1255,13 +1227,8 @@ describe("HTTP human Task reads and board", () => {
     async (existing) => {
       if (existing) seedChat("worker");
       seedChat("selected");
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5000);
         await page.goto(`${base}/sessions/selected-old-session`, { waitUntil: "domcontentloaded" });
         await page.waitForFunction("ws?.readyState === WebSocket.OPEN");
@@ -1330,7 +1297,7 @@ describe("HTTP human Task reads and board", () => {
           target: { sessionId: "selected-old-session" },
         });
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30000,
@@ -1349,9 +1316,8 @@ describe("HTTP human Task reads and board", () => {
       expect(response.status).toBe(503);
       expect(await response.json()).toEqual({ error: "No Conversation App is configured" });
     }
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction("currentAgentChat === 'helper' && ws?.readyState === WebSocket.OPEN");
@@ -1360,7 +1326,7 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.body.textContent!.includes("No Conversation App is configured"));
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Keep this request");
       expect(published).toEqual([]);
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   });
 
   async function installApps(...ids: string[]) {
@@ -1408,9 +1374,8 @@ describe("HTTP human Task reads and board", () => {
   test.skipIf(skipBrowser)("browser separates loaded Apps from saved projects and distinguishes empty from unavailable", async () => {
     await installApps("bare", "idle");
     task("running", 10, "running", "bare");
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/projects`, { waitUntil: "domcontentloaded" });
       await page.waitForSelector('#installed-apps [data-app-id="bare"]');
@@ -1489,7 +1454,7 @@ describe("HTTP human Task reads and board", () => {
       commentBody = await page.evaluate("window.lastCommentBody");
       expect(commentBody).toMatchObject({ path: "projects/billing.app.app", comment: "Comment for billing.app" });
     } finally {
-      await browser.close();
+      await closeBrowserPage();
     }
   });
 
@@ -1551,9 +1516,8 @@ describe("HTTP human Task reads and board", () => {
 
   test.skipIf(skipBrowser)("May browser Stop retains its observed target and draft, then admits a correction to Conversation", async () => {
     seedChat();
-    const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    const { page, closeBrowserPage } = await newBrowserPage();
     try {
-      const page = await browser.newPage();
       page.setDefaultTimeout(5000);
       await page.goto(`${base}/agents/helper`, { waitUntil: "domcontentloaded" });
       await page.waitForFunction(() => !document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
@@ -1630,20 +1594,15 @@ describe("HTTP human Task reads and board", () => {
       for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
-    } finally { await browser.close(); }
+    } finally { await closeBrowserPage(); }
   });
 
   test.skipIf(skipBrowser)(
     "served browser pages, opens exact off-page Tasks, steers exact identity, and rejects stale responses",
     async () => {
       for (let n = 0; n < 35; n++) task(`work/${n}`, n, n === 0 ? "converged" : "pending");
-      const browser = await puppeteer.launch({
-        executablePath: chrome!,
-        headless: true,
-        args: ["--no-sandbox", "--disable-dev-shm-usage"],
-      });
+      const { page, closeBrowserPage } = await newBrowserPage();
       try {
-        const page = await browser.newPage();
         page.setDefaultTimeout(5_000);
         const errors: string[] = [];
         page.on("pageerror", (error) => errors.push(error.message));
@@ -1756,7 +1715,7 @@ describe("HTTP human Task reads and board", () => {
         expect(await page.$(".kanban-shell")).toBeNull();
         expect(errors).toEqual([]);
       } finally {
-        await browser.close();
+        await closeBrowserPage();
       }
     },
     30_000,
