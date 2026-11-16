@@ -1,4 +1,4 @@
-import type { TaskAttempt, TaskReconcileResult } from "@may-agent/sdk";
+import type { TaskAttempt, TaskReconcileResult } from "@may-agent/sdk/app";
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
@@ -89,10 +89,10 @@ async function withProvider(
               function: {
                 name: "finish",
                 arguments: JSON.stringify({
-                  status: "success",
+                  status: "done",
                   summary: answer.summary,
-                  verification_facts: ["Compared the supplied fixture input"],
-                  result: answer,
+                  facts: ["Compared the supplied fixture input"],
+                  output: answer,
                 }),
               },
             },

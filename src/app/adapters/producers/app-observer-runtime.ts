@@ -8,7 +8,7 @@ import {
   type ObserverSnapshot,
   type ObserverHealth,
   type ResourceObserver,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { LoadedAppDefinition } from "../../core/apps/registry.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus } from "../../core/events/bus.js";
 import { OwnedTimer } from "../../core/scheduling/timer.js";

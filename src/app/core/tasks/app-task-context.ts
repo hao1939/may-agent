@@ -2,7 +2,7 @@
  * Task execution context: explicit scoped reads followed by pure projections.
  * No runtime registry, database-path lookup, lifecycle writes, or scheduling.
  */
-import type { TaskAttempt } from "@may-agent/sdk";
+import type { TaskAttempt } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem, type AppInboxItem } from "../state/app-inbox-store.js";
 import type { AppTaskChildContext, AppTaskClaim } from "./app-task-reconciler.js";

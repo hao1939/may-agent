@@ -8,7 +8,7 @@ import type {
   TaskListOptions,
   TaskPage,
   TaskReadOptions,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { AppTaskAttacher } from "../inbox/app-inbox-host.js";
 import type { TaskInputObservation } from "../inbox/input-context.js";
 import type { EventBus } from "../events/bus.js";
@@ -74,7 +74,7 @@ export type AppTaskCapability = {
     admissionKey?: string;
   }): Promise<TaskInputObservation | null>;
   list(input: { appId: string; options?: TaskListOptions }): TaskPage;
-  workload(input: { appId: string; options?: import("@may-agent/sdk").TaskWorkloadOptions }): import("@may-agent/sdk").TaskWorkload;
+  workload(input: { appId: string; options?: import("@may-agent/sdk/app").TaskWorkloadOptions }): import("@may-agent/sdk/app").TaskWorkload;
   get(input: { appId: string; taskId: string; options?: TaskReadOptions }): TaskDetail | null;
   has(input: { appId: string; taskId: string }): boolean;
   wake(input: { appId: string; taskIds: string[] }): void;

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { taskAgentResultSchema, type AppEvent, type TaskAttempt } from "@may-agent/sdk";
+import { taskAgentResultSchema, type AppEvent, type TaskAttempt } from "@may-agent/sdk/app";
 import {
   codexGoalExecutorInternals,
   createCodexGoalExecutor,

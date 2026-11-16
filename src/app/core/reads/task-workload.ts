@@ -1,4 +1,4 @@
-import type { TaskWorkload, TaskWorkloadOptions } from "@may-agent/sdk";
+import type { TaskWorkload, TaskWorkloadOptions } from "@may-agent/sdk/app";
 import { appTaskReadinessById, type AppTaskContext } from "../tasks/app-task-store.js";
 import { pendingTaskExecutionRetryAt, taskExecutionRetryExhausted } from "../tasks/app-task-state.js";
 import { readAppTaskAgent } from "../tasks/app-task-reconciler.js";

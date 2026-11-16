@@ -124,7 +124,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(inferWorkspaceRoot(externalTmpDir, otherExternalDir)).toBe(resolve(externalTmpDir));
   });
 
-  test("runs workflow with lab-overlaid agentsRoot, denies hosted tools, and writes run.json without SQLite/EventBus", async () => {
+  test("runs workflow with lab-overlaid agentsRoot, binds declared common-kernel agents, and writes run.json without SQLite/EventBus", async () => {
     const env = setupDirectLayout();
     const seenCalls: Array<{ agent: string; systemPrompt: string; effectiveTools: string[] }> = [];
 
@@ -161,7 +161,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
             messages: [],
             durationMs: 12,
             finishResult: {
-              status: "success",
+              status: "done",
               summary: "Reviewed cleanly",
               result: {
                 subjectRef: "HEAD~1..HEAD",
@@ -187,7 +187,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(run.status).toBe("done");
     expect(seenCalls).toHaveLength(1);
     expect(seenCalls[0]?.systemPrompt).toContain("Lab-forked reviewer instructions v2");
-    expect(seenCalls[0]?.effectiveTools).not.toContain("agents");
+    expect(seenCalls[0]?.effectiveTools).toContain("agents");
     expect(run.result).toMatchObject({
       type: "done",
       summary: "Reviewed HEAD~1..HEAD",
@@ -202,6 +202,757 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(persistedReport.steps).toHaveLength(1);
     expect(persistedReport.steps[0].transcriptPath).toEndWith("session.jsonl");
     expect(persistedReport.cleanup).toEqual({ confirmed: true });
+  });
+
+  test("executes the supplied agents capability binding without substituting intrinsic delegation", async () => {
+    const env = setupDirectLayout();
+    const providerCalls: string[] = [];
+    const toolCalls: unknown[] = [];
+    let cleaned = 0;
+    const result = await runDirectWorkflow({
+      target: "owner",
+      input: "Use the explicitly bound agents service",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      capabilityProviders: {
+        agents: ({ agentName }) => {
+          providerCalls.push(agentName);
+          return {
+            tools: [{
+              name: "agents",
+              label: "Bound agents fixture",
+              description: "Uses the caller-supplied service binding",
+              parameters: { type: "object", properties: {} } as any,
+              execute: async (_id, params) => {
+                toolCalls.push(params);
+                return { content: [{ type: "text", text: JSON.stringify({ denied: "fixture policy" }) }] };
+              },
+            }],
+            cleanup: () => { cleaned += 1; },
+          };
+        },
+      },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        let turn = 0;
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "tc_agents", name: "agents", arguments: {
+                action: "call", agent: "reviewer", task: "must be denied by the supplied binding",
+              } }]
+            : [{ type: "toolCall" as const, id: "tc_finish", name: "finish", arguments: {
+                status: "done", summary: "bound provider executed",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(result.ok).toBeTrue();
+    expect(result.result).toMatchObject({ type: "done", summary: "bound provider executed" });
+    expect(providerCalls).toEqual(["owner"]);
+    expect(toolCalls).toEqual([{ action: "call", agent: "reviewer", task: "must be denied by the supplied binding" }]);
+    expect(result.childSessions.map((session) => session.agent)).toEqual(["owner"]);
+    expect(cleaned).toBe(1);
+  });
+
+  test("adds no implicit agents tool when undeclared and preserves explicit denial", async () => {
+    const runCase = async (declared: boolean, deny: boolean) => {
+      const env = setupDirectLayout();
+      writeFileSync(
+        join(env.agentsRoot, "reviewer", "agent.json"),
+        JSON.stringify({
+          name: "reviewer",
+          description: "reviewer agent",
+          domain: "test",
+          model: "test",
+          tools: declared ? ["coding", "agents", "finish"] : ["coding", "finish"],
+        }),
+      );
+      let effectiveTools: string[] = [];
+      const result = await runDirectWorkflow({
+        agentName: "owner",
+        workflowName: "review-change",
+        input: { subjectRef: "HEAD" },
+        projectRoot: env.projectRoot,
+        workRoot: env.workRoot,
+        agentsRoot: env.agentsRoot,
+        sharedRoot: env.sharedRoot,
+        outputRoot: env.outputRoot,
+        models: { test: fakeModel() as any },
+        ...(deny ? {
+          resolveToolDenials: (_agent: string, tools: readonly string[]) =>
+            tools.includes("agents") ? [{ name: "agents", reason: "explicit test denial" }] : [],
+        } : {}),
+        runAgent: async (opts): Promise<DirectAgentRunResult> => {
+          const prep = await prepareDirectAgentExecution(opts);
+          effectiveTools = prep.executionManifest.effectiveTools;
+          try {
+            return {
+              sessionId: prep.sessionId,
+              sessionPath: prep.sessionPath,
+              systemPrompt: prep.prepared.systemPrompt,
+              model: prep.model,
+              executionManifest: prep.executionManifest,
+              status: "done",
+              lastAssistantText: "reviewed",
+              messages: [],
+              durationMs: 1,
+              finishResult: {
+                status: "done",
+                summary: "reviewed",
+                output: { subjectRef: "HEAD", summary: "ok" },
+              },
+              structuredResult: { subjectRef: "HEAD", summary: "ok" },
+              usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+              cleanupConfirmed: await prep.cleanupAsync(),
+            };
+          } finally {
+            prep.cleanup();
+          }
+        },
+      });
+      expect(result.ok).toBeTrue();
+      return effectiveTools;
+    };
+
+    expect(await runCase(false, false)).not.toContain("agents");
+    expect(await runCase(true, true)).not.toContain("agents");
+  });
+
+  test("delegates prompt-to-prompt and prompt-to-code through the model-visible common-kernel agents binding", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "summarize.ts"),
+      `
+export const name = "summarize";
+export const description = "Summarize structured input";
+export async function execute(ctx) {
+  return ctx.done("code helper done", { echoed: ctx.input.value });
+}
+`,
+    );
+    const visibleResults: unknown[] = [];
+    const ownerTurns = new Map<string, number>();
+
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Delegate both helper kinds",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        const agentsTool = prep.prepared.tools.find((tool) => tool.name === "agents");
+        if (agentsTool) {
+          const execute = agentsTool.execute.bind(agentsTool);
+          agentsTool.execute = async (...args) => {
+            const result = await execute(...args);
+            const text = result.content.find((item) => item.type === "text")?.text;
+            if (text) visibleResults.push(JSON.parse(text));
+            return result;
+          };
+        }
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          const turn = (ownerTurns.get(opts.agentName) ?? 0) + 1;
+          ownerTurns.set(opts.agentName, turn);
+          const content = opts.agentName === "reviewer"
+            ? [{ type: "toolCall" as const, id: "reviewer_finish", name: "finish", arguments: {
+                status: "done", summary: "prompt helper done", output: { reviewed: true },
+              } }]
+            : turn === 1
+              ? [{ type: "toolCall" as const, id: "owner_prompt", name: "agents", arguments: {
+                  action: "call", agent: "reviewer", input: "Review this",
+                } }]
+              : turn === 2
+                ? [{ type: "toolCall" as const, id: "owner_code", name: "agents", arguments: {
+                    action: "call", agent: "summarize", input: { value: 7 },
+                  } }]
+                : [{ type: "toolCall" as const, id: "owner_finish", name: "finish", arguments: {
+                    status: "done", summary: "parent handled both helpers",
+                  } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "parent handled both helpers" });
+    expect(visibleResults).toEqual([
+      expect.objectContaining({ kind: "agent", status: "done", summary: "prompt helper done", output: { reviewed: true } }),
+      expect.objectContaining({ kind: "workflow", status: "done", summary: "code helper done", output: { echoed: 7 } }),
+    ]);
+    expect((visibleResults[0] as { id?: string }).id).toBeString();
+    expect((visibleResults[1] as { id?: string }).id).toBeString();
+    expect(run.childSessions.map((session) => session.agent)).toEqual(["reviewer", "owner"]);
+    expect(run.report.steps.map((step) => [step.kind, step.target, step.status])).toEqual([
+      ["agent", "reviewer", "done"],
+      ["workflow", "summarize", "done"],
+      ["agent", "owner", "done"],
+    ]);
+  });
+
+  test("keeps bare model-visible helper resolution local before and after another owner catalog load", async () => {
+    const env = setupDirectLayout();
+    const utilityDir = join(env.agentsRoot, "utility");
+    mkdirSync(join(utilityDir, "workflows"), { recursive: true });
+    writeFileSync(join(utilityDir, "agent.json"), JSON.stringify({
+      name: "utility", description: "Global prompt namesake", domain: "test", model: "test", tools: ["finish"],
+    }));
+    writeFileSync(join(utilityDir, "AGENTS.md"), "GLOBAL UTILITY PROMPT");
+    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "utility.ts"), `
+export const name = "utility";
+export const description = "Reviewer-local utility";
+export async function execute(ctx) {
+  return ctx.done("local utility", { received: ctx.input });
+}
+`);
+    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "prime.ts"), `
+export const name = "prime";
+export const description = "Explicit owner catalog load";
+export async function execute(ctx) { return ctx.done("primed"); }
+`);
+
+    const visibleResults: unknown[] = [];
+    let reviewerTurn = 0;
+    let globalUtilityExecutions = 0;
+    const result = await runDirectWorkflow({
+      target: "reviewer",
+      input: "Use the local utility twice",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        if (opts.agentName === "utility") globalUtilityExecutions += 1;
+        const prep = await prepareDirectAgentExecution(opts);
+        const agentsTool = prep.prepared.tools.find((tool) => tool.name === "agents");
+        if (agentsTool) {
+          const execute = agentsTool.execute.bind(agentsTool);
+          agentsTool.execute = async (...args) => {
+            const toolResult = await execute(...args);
+            const text = toolResult.content.find((item) => item.type === "text")?.text;
+            if (text) visibleResults.push(JSON.parse(text));
+            return toolResult;
+          };
+        }
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          reviewerTurn += 1;
+          const content = reviewerTurn === 1
+            ? [{ type: "toolCall" as const, id: "local_before", name: "agents", arguments: {
+                action: "call", agent: "utility", input: "before",
+              } }]
+            : reviewerTurn === 2
+              ? [{ type: "toolCall" as const, id: "explicit_load", name: "agents", arguments: {
+                  action: "call", agent: "reviewer/prime", input: {},
+                } }]
+              : reviewerTurn === 3
+                ? [{ type: "toolCall" as const, id: "local_after", name: "agents", arguments: {
+                    action: "call", agent: "utility", input: "after",
+                  } }]
+                : [{ type: "toolCall" as const, id: "finish_local_precedence", name: "finish", arguments: {
+                    status: "done", summary: "local precedence stable",
+                  } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(result.ok).toBeTrue();
+    expect(globalUtilityExecutions).toBe(0);
+    expect(visibleResults).toEqual([
+      expect.objectContaining({ kind: "workflow", summary: "local utility", output: { received: "before" } }),
+      expect.objectContaining({ kind: "workflow", summary: "primed" }),
+      expect.objectContaining({ kind: "workflow", summary: "local utility", output: { received: "after" } }),
+    ]);
+  });
+
+  test("records the resolved workflow kind and child identity when a string-input model-visible code helper fails", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(join(env.agentsRoot, "owner", "workflows", "string-failure.ts"), `
+export const name = "string-failure";
+export const description = "Fails after code execution starts";
+export async function execute(ctx) { throw new Error("string helper exploded: " + ctx.input); }
+`);
+    let turn = 0;
+    const result = await runDirectWorkflow({
+      target: "owner",
+      input: "Call the failing string helper",
+      executionId: "wr_parent_failure_trace",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "string_failure", name: "agents", arguments: {
+                action: "call", agent: "string-failure", input: "payload",
+              } }]
+            : [{ type: "toolCall" as const, id: "finish_after_string_failure", name: "finish", arguments: {
+                status: "done", summary: "handled string helper failure",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(result.ok).toBeTrue();
+    const failedHelper = result.report.steps.find((step) => step.target === "string-failure");
+    expect(failedHelper).toMatchObject({
+      kind: "workflow",
+      status: "error",
+      error: { message: "string helper exploded: payload" },
+      id: expect.stringMatching(/^wr_/),
+    });
+    expect(failedHelper?.id).not.toBe(result.report.executionId);
+    expect(result.report.executionId).toBe("wr_parent_failure_trace");
+  });
+
+  test("rejects a saturated model-visible helper before its code body starts", async () => {
+    const env = setupDirectLayout();
+    const marker = join(env.workRoot, "helper-started.txt");
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "side-effect.ts"),
+      `
+import { writeFileSync } from "node:fs";
+export const name = "side-effect";
+export const description = "Marks body start";
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(marker)}, "started");
+  return ctx.done("started");
+}
+`,
+    );
+    let turn = 0;
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Try one saturated helper",
+      maxConcurrentCalls: 1,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "saturated_call", name: "agents", arguments: {
+                action: "call", agent: "side-effect", input: {},
+              } }]
+            : [{ type: "toolCall" as const, id: "finish_after_denial", name: "finish", arguments: {
+                status: "done", summary: "handled saturation",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "handled saturation" });
+    expect(existsSync(marker)).toBeFalse();
+  });
+
+  test("caps a long-declared code helper at the model tool deadline and still lets the parent finish", async () => {
+    const env = setupDirectLayout();
+    const enteredMarker = join(env.root, "long-helper-entered");
+    const cancelledMarker = join(env.root, "long-helper-cancelled");
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "a-warm-helper.ts"),
+      `
+export const name = "warm-helper";
+export const description = "Warms the owner's code-helper catalog";
+export async function execute(ctx) { return ctx.done("catalog ready"); }
+`,
+    );
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "long-helper.ts"),
+      `
+import { writeFileSync } from "node:fs";
+export const name = "long-helper";
+export const description = "Long declared helper";
+export const executionTimeoutMs = 1000;
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(enteredMarker)}, "entered");
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, 500);
+    ctx.signal.addEventListener("abort", () => {
+      clearTimeout(timer);
+      writeFileSync(${JSON.stringify(cancelledMarker)}, String(ctx.signal.reason));
+      reject(ctx.signal.reason);
+    }, { once: true });
+  });
+  return ctx.done("too late");
+}
+`,
+    );
+    let turn = 0;
+    let measuredStartedAt: number | undefined;
+    const visibleResults: unknown[] = [];
+    const helperErrors: string[] = [];
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Bound the helper",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        const agentsTool = prep.prepared.tools.find((tool) => tool.name === "agents");
+        if (agentsTool) {
+          const execute = agentsTool.execute.bind(agentsTool);
+          agentsTool.execute = async (...args) => {
+            const call = args[1] as { agent?: string } | undefined;
+            try {
+              const toolResult = await execute(...args);
+              const text = toolResult.content.find((item) => item.type === "text")?.text;
+              if (text) visibleResults.push(JSON.parse(text));
+              if (call?.agent === "warm-helper") measuredStartedAt = Date.now();
+              return toolResult;
+            } catch (error) {
+              if (call?.agent === "long-helper") helperErrors.push(String(error));
+              throw error;
+            }
+          };
+        }
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "warm_helper", name: "agents", arguments: {
+                action: "call", agent: "warm-helper", input: {},
+              } }]
+            : turn === 2
+              ? [{ type: "toolCall" as const, id: "bounded_helper", name: "agents", arguments: {
+                  action: "call", agent: "long-helper", input: {}, timeoutMs: 20,
+                } }]
+              : [{ type: "toolCall" as const, id: "finish_after_timeout", name: "finish", arguments: {
+                  status: "done", summary: "parent handled helper timeout",
+                } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "parent handled helper timeout" });
+    expect(measuredStartedAt).toBeNumber();
+    expect(Date.now() - measuredStartedAt!).toBeLessThan(400);
+    expect(readFileSync(enteredMarker, "utf8")).toBe("entered");
+    expect(readFileSync(cancelledMarker, "utf8")).toContain('Workflow step "long-helper" timed out after 20ms');
+    expect(visibleResults).toEqual([
+      expect.objectContaining({ kind: "workflow", status: "done", summary: "catalog ready" }),
+    ]);
+    expect(helperErrors).toEqual([
+      expect.stringContaining('Workflow step "long-helper" timed out after 20ms'),
+    ]);
+    expect(run.report.steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "workflow", target: "warm-helper", status: "done", cleanupConfirmed: true }),
+      expect.objectContaining({ kind: "workflow", target: "long-helper", status: "error", cleanupConfirmed: true }),
+    ]));
+  });
+
+  test("forwards the actual model tool work-stop signal to a running helper", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "work-stop-helper.ts"),
+      `
+export const name = "work-stop-helper";
+export const description = "Waits for model work stop";
+export const executionTimeoutMs = 2000;
+export async function execute(ctx) {
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, 1000);
+    ctx.signal.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(ctx.signal.reason);
+    }, { once: true });
+  });
+  return ctx.done("too late");
+}
+`,
+    );
+    let turn = 0;
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Stop helper work but reserve finish time",
+      timeoutMs: 300,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
+                action: "call", agent: "work-stop-helper", input: {},
+              } }]
+            : [{ type: "toolCall" as const, id: "finish_in_reserve", name: "finish", arguments: {
+                status: "done", summary: "finished in reserved interval",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "finished in reserved interval" });
+    expect(run.report.durationMs).toBeLessThan(300);
+    expect(run.report.steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "workflow", target: "work-stop-helper", status: "error", cleanupConfirmed: true }),
+    ]));
+  });
+
+  test("keeps model-visible helper cleanup uncertainty after the parent handles the tool result and finishes", async () => {
+    const env = setupDirectLayout();
+    let ownerTurn = 0;
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Handle helper cleanup uncertainty",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        if (opts.agentName === "reviewer") {
+          return {
+            sessionId: "reviewer_unconfirmed",
+            sessionPath: join(env.outputRoot, "sessions", "reviewer_unconfirmed"),
+            systemPrompt: "",
+            model: "test",
+            executionManifest: { agent: "reviewer", configuredTools: [], deniedTools: [], effectiveTools: [] },
+            status: "done",
+            lastAssistantText: "done",
+            messages: [],
+            durationMs: 1,
+            finishResult: { status: "done", summary: "helper business result" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: false,
+          };
+        }
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          ownerTurn += 1;
+          const content = ownerTurn === 1
+            ? [{ type: "toolCall" as const, id: "uncertain_helper", name: "agents", arguments: {
+                action: "call", agent: "reviewer", input: "Return a result",
+              } }]
+            : [{ type: "toolCall" as const, id: "parent_finish", name: "finish", arguments: {
+                status: "done", summary: "parent handled helper result",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeFalse();
+    expect(run.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(run.report.result).toMatchObject({ type: "done", summary: "parent handled helper result" });
+    expect(run.report.cleanup).toEqual({
+      confirmed: false,
+      unconfirmed: ["agent:reviewer (reviewer_unconfirmed)"],
+    });
   });
 
   test("surfaces unconfirmed descendant cleanup as an explicit error while retaining workspace and report evidence", async () => {
@@ -230,7 +981,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
         messages: [],
         durationMs: 5,
         finishResult: {
-          status: "success",
+          status: "done",
           summary: "Done",
           result: { subjectRef: "HEAD", summary: "ok" },
         },
@@ -340,7 +1091,7 @@ export default function createCustomTool() {
             lastAssistantText: "Inspected",
             messages: [],
             durationMs: 5,
-            finishResult: { status: "success", summary: "Inspected safely" },
+            finishResult: { status: "done", summary: "Inspected safely" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -460,7 +1211,7 @@ export async function execute(ctx) {
             lastAssistantText: "pinned",
             messages: [],
             durationMs: 1,
-            finishResult: { status: "success", summary: "pinned-ok" },
+            finishResult: { status: "done", summary: "pinned-ok" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -582,7 +1333,7 @@ export async function execute(ctx) {
                     type: "toolCall",
                     id: "tc_finish_1",
                     name: "finish",
-                    arguments: { status: "success", summary: "Bounded after 1 operation" },
+                    arguments: { status: "done", summary: "Bounded after 1 operation" },
                   },
                 ],
               }),
@@ -777,7 +1528,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
             sessionId: prep.sessionId, sessionPath: prep.sessionPath,
             systemPrompt: prep.prepared.systemPrompt, model: prep.model, executionManifest: prep.executionManifest,
             status: "done", lastAssistantText: "ok", messages: [], durationMs: 1,
-            finishResult: { status: "success", summary: "local executed" },
+            finishResult: { status: "done", summary: "local executed" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -788,7 +1539,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
     expect(run.result).toMatchObject({ type: "done", summary: "local executed" });
   });
 
-  test("resolves local and cross-owner <owner>/<name> procedures via ctx.call while preserving Task reconciliation owner", async () => {
+  test("resolves local and cross-owner <owner>/<name> procedures without inventing orchestration context", async () => {
     const env = setupDirectLayout();
     const reviewerWorkflowsDir = join(env.agentsRoot, "reviewer", "workflows");
     writeFileSync(
@@ -798,8 +1549,8 @@ export const name = "local-helper";
 export const description = "Reviewer local helper";
 export const readonly = true;
 export async function execute(ctx) {
-  return ctx.done("helper:" + ctx.reconciliation?.agent, {
-    taskOwner: ctx.reconciliation?.agent,
+  return ctx.done("helper", {
+    reconciliationExposed: Boolean(ctx.reconciliation),
     reviseExposed: Boolean(ctx.reviseTask),
   });
 }
@@ -843,18 +1594,6 @@ export async function execute(ctx) {
       sharedRoot: env.sharedRoot,
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
-      task: {
-        id: "task-1",
-        status: "running",
-        generation: 1,
-        outcome: "Verify cross-owner lexical vs Task authority owner",
-        parentId: "root",
-        acceptance: ["Owner stays owner"],
-        input: {},
-        agent: "owner",
-        conditions: [],
-        acceptedEvidence: { available: true, maxPageSize: 8 },
-      },
       agentFixtures: {
         reviewer: async () => ({
           id: "s_rev_1",
@@ -868,10 +1607,10 @@ export async function execute(ctx) {
     expect(run.ok).toBe(true);
     expect(run.result).toEqual({
       type: "done",
-      summary: "helper:owner:prompt-ok",
+      summary: "helper:prompt-ok",
       output: {
         helper: {
-          taskOwner: "owner",
+          reconciliationExposed: false,
           reviseExposed: false,
         },
         agentSummary: "prompt-ok",
@@ -1465,7 +2204,7 @@ export async function execute(ctx) { return ctx.done("b"); }
             messages: [],
             durationMs: 5,
             finishResult: {
-              status: "success",
+              status: "done",
               summary: `ran:${agentOpts.agentName}:${agentOpts.task}`,
             },
           };
@@ -1495,7 +2234,7 @@ export async function execute(ctx) { return ctx.done("b"); }
           messages: [],
           durationMs: 5,
           finishResult: {
-            status: "success",
+            status: "done",
             summary: `global-${agentOpts.agentName}`,
           },
         }),
@@ -1703,188 +2442,52 @@ export async function execute(ctx) {
       await observeBoundedResult(gate.completed);
     }
 
-    // 11. run() normalizes StandaloneTaskInput ({ outcome, acceptance, constraints }) into ctx.reconciliation and ctx.read.tasks.get, and preserves root Task ownership across cross-owner calls:
-    const reviewerWfDir = join(env.agentsRoot, "reviewer", "workflows");
-    mkdirSync(reviewerWfDir, { recursive: true });
+    // 11. run() passes ordinary domain input unchanged and does not synthesize a Task snapshot.
     writeFileSync(
-      join(reviewerWfDir, "inspect-task-owner.ts"),
+      join(alphaLeadDir, "workflows", "domain-input-probe.ts"),
       `
-export const name = "inspect-task-owner";
-export const description = "Reports ctx.reconciliation.owner and ctx.read.tasks.get";
+export const name = "domain-input-probe";
+export const description = "Reports ordinary domain input without Task synthesis";
+export const inputSchema = {
+  type: "object",
+  properties: {
+    task: { type: "string" },
+    outcome: { type: "string" },
+    acceptance: { type: "array", items: { type: "string" } },
+    constraints: { type: "array", items: { type: "string" } },
+    verify: { type: "array", items: { type: "string" } },
+  },
+  required: ["task", "outcome", "acceptance", "constraints", "verify"],
+  additionalProperties: false,
+};
 export async function execute(ctx) {
-  const rec = ctx.reconciliation;
-  const detail = await ctx.read.tasks.get(rec.taskId);
-  return ctx.done(\`\${rec.owner}:\${rec.agent}:\${detail.outcome}\`);
+  return ctx.done("domain input retained", {
+    input: ctx.input,
+    reconciliation: ctx.reconciliation ?? null,
+  });
 }
 `,
     );
-    writeFileSync(
-      join(alphaLeadDir, "workflows", "task-reconcile-probe.ts"),
-      `
-export const name = "task-reconcile-probe";
-export const description = "Reads ctx.reconciliation, ctx.read.tasks.get, and calls cross-owner reviewer/inspect-task-owner";
-export async function execute(ctx) {
-  const rec = ctx.reconciliation;
-  if (!rec) return ctx.blocked("No reconciliation");
-  const detail = await ctx.read.tasks.get(rec.taskId);
-  const child = await ctx.call("reviewer/inspect-task-owner", {});
-  return {
-    state: "converged",
-    summary: \`\${detail.outcome} | \${detail.acceptance.join(",")} | \${JSON.stringify(detail.input.data.constraints)} | \${child.summary}\`,
-  };
-}
-`,
-    );
-    const taskEnvRun = await run(
-      "alpha-lead/task-reconcile-probe",
-      { verify: ["bun", "test"] },
-      {
-        projectRoot: env.projectRoot,
-        task: {
-          outcome: "Converge workflow context",
-          acceptance: ["Runs standalone and on Host"],
-          constraints: ["Preserve Task contract"],
-        },
-        models: { test: fakeModel() as any },
-      },
-    );
-    expect(taskEnvRun.ok).toBe(true);
-    expect(taskEnvRun.result).toEqual({
-      type: "done",
-      summary:
-        'Converge workflow context | Runs standalone and on Host | ["Preserve Task contract"] | alpha-lead:alpha-lead:Converge workflow context',
-      output: {
-        state: "converged",
-        summary:
-          'Converge workflow context | Runs standalone and on Host | ["Preserve Task contract"] | alpha-lead:alpha-lead:Converge workflow context',
-      },
+    const domainInput = {
+      task: "Domain field, not orchestration",
+      outcome: "Return unchanged input",
+      acceptance: ["No fake TaskDetail"],
+      constraints: ["No reconciliation envelope"],
+      verify: ["bun", "test"],
+    };
+    const domainRun = await run("alpha-lead/domain-input-probe", domainInput, {
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
     });
-
-    // 11b. run(target, { task, acceptance, constraints, verify }) auto-extracts the Task envelope from input:
-    const implicitTaskRun = await run(
-      "alpha-lead/task-reconcile-probe",
-      {
-        task: "Implicit task outcome",
-        acceptance: ["Single JSON payload"],
-        constraints: ["No --task flag needed"],
-        verify: ["bun", "test"],
-      },
-      {
-        projectRoot: env.projectRoot,
-        models: { test: fakeModel() as any },
-      },
-    );
-    expect(implicitTaskRun.ok).toBe(true);
-    expect(implicitTaskRun.result?.summary).toBe(
-      'Implicit task outcome | Single JSON payload | ["No --task flag needed"] | alpha-lead:alpha-lead:Implicit task outcome',
-    );
-
-    // 12. Default read.tasks.get uses the selected reconciliation snapshot, and conflicting task/reconciliation IDs are rejected:
-    const taskA = {
-      id: "task-a",
-      parentId: "root",
-      generation: 1,
-      status: "running" as const,
-      outcome: "Outcome A",
-      acceptance: ["Acceptance A"],
-      input: {},
-      conditions: [],
-      acceptedEvidence: { available: false, maxPageSize: 8 },
-    };
-    const taskB = { ...taskA, id: "task-b", outcome: "Outcome B" };
-    const reconciliationA = {
-      task: taskA,
-      appId: "alpha",
-      taskId: taskA.id,
-      generation: 1,
-      resourceVersion: 1,
-      agent: "alpha-lead",
-      owner: "alpha-lead",
-      outcome: taskA.outcome,
-      acceptance: taskA.acceptance,
-      input: {},
-      children: { live: [], completed: [] },
-      waits: { open: [], note: "" },
-      taskSnapshot: { live: [], truncated: false },
-      events: { items: [], truncated: false },
-    };
-    const recOnlyRun = await run(
-      "reviewer/inspect-task-owner",
-      {},
-      {
-        projectRoot: env.projectRoot,
-        context: { reconciliation: reconciliationA },
-        models: { test: fakeModel() as any },
-      },
-    );
-    expect(recOnlyRun.ok).toBe(true);
-    expect(recOnlyRun.result?.summary).toBe("alpha-lead:alpha-lead:Outcome A");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          context: { task: taskB, reconciliation: reconciliationA },
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          task: taskB,
-          reconciliation: reconciliationA,
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          task: taskB,
-          context: { reconciliation: reconciliationA },
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          context: { task: taskB },
-          reconciliation: reconciliationA,
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
-
-    await expect(
-      run(
-        "reviewer/inspect-task-owner",
-        {},
-        {
-          projectRoot: env.projectRoot,
-          reconciliation: { ...reconciliationA, taskId: "task-a", task: taskB },
-          models: { test: fakeModel() as any },
-        },
-      ),
-    ).rejects.toThrow("Conflicting Task IDs");
+    expect(domainRun.ok).toBe(true);
+    expect(domainRun.result).toEqual({
+      type: "done",
+      summary: "domain input retained",
+      output: { input: domainInput, reconciliation: null },
+    });
   });
 
-  test("converges standalone skill activation, ordinary Task assignment context, explicit missing-service errors, definition consistency, and workspace prerequisite checks", async () => {
+  test("converges standalone skill activation, explicit domain context, missing-service errors, definition consistency, and workspace prerequisite checks", async () => {
     const env = setupDirectLayout();
     const skillDir = join(env.agentsRoot, "reviewer", "skills", "careful-audit");
     mkdirSync(skillDir, { recursive: true });
@@ -1902,10 +2505,9 @@ export async function execute(ctx) {
 
     // 1. Explicit skill activation loads the full skill body via invokeCatalogSkill (and rejects unknown skills),
     //    pins AGENTS.md, shared/common-sense.md (including absence), and skill content (including read tool rereads)
-    //    at catalog snapshot time, and supplies ordinary Task outcome/acceptance/constraints context to prompt agents.
+    //    at catalog snapshot time, while the procedure passes explicit domain assignment context to the prompt agent.
     let capturedPrompt = "";
     let capturedSystemPrompt = "";
-    let capturedContextMessages: string[] = [];
     let rereadSkillContent = "";
     let rereadSkillOffsetContent = "";
 
@@ -1920,31 +2522,36 @@ export async function execute(ctx) {
             join(skillDir, "SKILL.md"),
             "---\nname: careful-audit\ndescription: Mutated\n---\nMUTATED SKILL BODY\n",
           );
-          const step = await ctx.call("reviewer", "Inspect boundary.ts", {
+          const assignment = ctx.input as {
+            goal: string;
+            acceptance: string[];
+            constraints: string[];
+          };
+          const prompt = [
+            `Goal: ${assignment.goal}`,
+            "Acceptance:",
+            ...assignment.acceptance.map((item) => `- ${item}`),
+            "Constraints:",
+            ...assignment.constraints.map((item) => `- ${item}`),
+          ].join("\n");
+          const step = await ctx.call("reviewer", prompt, {
             skill: "careful-audit",
           });
           return ctx.done(step.summary);
         },
       },
       agentName: "owner",
-      input: {},
+      input: {
+        goal: "Ensure boundary.ts handles empty input",
+        acceptance: ["Empty input returns null", "Existing callers pass"],
+        constraints: ["No public signature changes"],
+      },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
       sharedRoot: env.sharedRoot,
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
-      task: {
-        id: "task-ctx-1",
-        parentId: "root",
-        generation: 1,
-        status: "running",
-        outcome: "Ensure boundary.ts handles empty input",
-        acceptance: ["Empty input returns null", "Existing callers pass"],
-        input: { data: { constraints: ["No public signature changes"] } },
-        conditions: [],
-        acceptedEvidence: { available: false, maxPageSize: 8 },
-      },
       runAgent: async (opts): Promise<DirectAgentRunResult> => {
         const prep = await prepareDirectAgentExecution(opts);
         try {
@@ -1959,12 +2566,6 @@ export async function execute(ctx) {
             limit: 2,
           });
           rereadSkillOffsetContent = offsetRes.content.map((c: any) => c.text ?? "").join("");
-          const transformed = prep.prepared.runner.transformContext
-            ? await prep.prepared.runner.transformContext([])
-            : [];
-          capturedContextMessages = transformed.map((msg: any) =>
-            Array.isArray(msg.content) ? msg.content.map((c: any) => c.text ?? "").join("") : String(msg.content ?? ""),
-          );
           return {
             sessionId: prep.sessionId,
             sessionPath: prep.sessionPath,
@@ -1975,7 +2576,7 @@ export async function execute(ctx) {
             lastAssistantText: "Audited",
             messages: [],
             durationMs: 1,
-            finishResult: { status: "success", summary: "audited-ok" },
+            finishResult: { status: "done", summary: "audited-ok" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -1997,9 +2598,9 @@ export async function execute(ctx) {
     expect(capturedSystemPrompt).toContain("Lab-forked reviewer instructions v2");
     expect(capturedSystemPrompt).not.toContain("MUTATED MID-FLIGHT");
     expect(capturedSystemPrompt).not.toContain("CREATED COMMON-SENSE AFTER CAPTURE");
-    expect(capturedContextMessages.join("\n")).toContain("Goal: Ensure boundary.ts handles empty input");
-    expect(capturedContextMessages.join("\n")).toContain("- Empty input returns null");
-    expect(capturedContextMessages.join("\n")).toContain("- No public signature changes");
+    expect(capturedPrompt).toContain("Goal: Ensure boundary.ts handles empty input");
+    expect(capturedPrompt).toContain("- Empty input returns null");
+    expect(capturedPrompt).toContain("- No public signature changes");
 
     // Custom read tool is preserved for non-pinned files when skillCatalog is non-empty:
     const customReaderDir = join(env.agentsRoot, "custom-reader");
@@ -2073,50 +2674,38 @@ export default function createCustomRead() {
       customPrep.cleanup();
     }
 
-    // Simple task envelope with both top-level constraints and explicit input preserves constraints:
-    let simpleTaskContext = "";
-    const simpleWithExplicitInput = await run("reviewer", "Inspect file", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      models: { test: fakeModel() as any },
-      task: {
-        outcome: "Audit file",
-        constraints: ["Do not modify files"],
-        input: { file: "a.ts" },
-      },
-      runAgent: async (opts): Promise<DirectAgentRunResult> => {
-        const prep = await prepareDirectAgentExecution(opts);
-        try {
-          const transformed = prep.prepared.runner.transformContext
-            ? await prep.prepared.runner.transformContext([])
-            : [];
-          simpleTaskContext = transformed
-            .map((msg: any) =>
-              Array.isArray(msg.content) ? msg.content.map((c: any) => c.text ?? "").join("") : String(msg.content ?? ""),
-            )
-            .join("\n");
+    // Direct prompt input remains the canonical place for explicit assignment context.
+    let explicitPrompt = "";
+    const directWithExplicitInput = await run(
+      "reviewer",
+      "Goal: Audit file\nInput: a.ts\nConstraints:\n- Do not modify files",
+      {
+        projectRoot: env.projectRoot,
+        workRoot: env.workRoot,
+        models: { test: fakeModel() as any },
+        runAgent: async (opts): Promise<DirectAgentRunResult> => {
+          explicitPrompt = opts.task;
           return {
-            sessionId: prep.sessionId,
-            sessionPath: prep.sessionPath,
-            systemPrompt: prep.prepared.systemPrompt,
-            model: prep.model,
-            executionManifest: prep.executionManifest,
+            sessionId: "explicit-input",
+            sessionPath: join(env.outputRoot, "explicit-input"),
+            systemPrompt: "",
+            model: "test",
+            executionManifest: { agent: opts.agentName, configuredTools: [], deniedTools: [], effectiveTools: [] },
             status: "done",
             lastAssistantText: "Done",
             messages: [],
             durationMs: 1,
-            finishResult: { status: "success", summary: "ok" },
+            finishResult: { status: "done", summary: "ok" },
             usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
-            cleanupConfirmed: await prep.cleanupAsync(),
+            cleanupConfirmed: true,
           };
-        } finally {
-          prep.cleanup();
-        }
+        },
       },
-    });
-    expect(simpleWithExplicitInput.ok).toBe(true);
-    expect(simpleTaskContext).toContain("Goal: Audit file");
-    expect(simpleTaskContext).toContain("- Do not modify files");
+    );
+    expect(directWithExplicitInput.ok).toBe(true);
+    expect(explicitPrompt).toContain("Goal: Audit file");
+    expect(explicitPrompt).toContain("Input: a.ts");
+    expect(explicitPrompt).toContain("- Do not modify files");
 
     // Unknown skill is rejected explicitly instead of turning into advisory prose:
     const unknownSkillRun = await runDirectWorkflow({

@@ -1,4 +1,4 @@
-import type { AgentContextPreparer } from "@may-agent/sdk";
+import type { AgentContextPreparer } from "@may-agent/sdk/app";
 
 /** Synthetic App policy, deliberately outside generic execution code. */
 const prepare: AgentContextPreparer = ({ task }) => {

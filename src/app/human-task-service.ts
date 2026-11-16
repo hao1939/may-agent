@@ -1,5 +1,5 @@
 import type { ApprovalProposal } from "@may-agent/control/events";
-import type { TaskStatus } from "@may-agent/sdk";
+import type { TaskStatus } from "@may-agent/sdk/app";
 import type {
   ObservationContract,
   ObserverHealth,
@@ -35,7 +35,7 @@ import type {
 } from "./core/tasks/app-task-state.js";
 import { isHumanActionOwner } from "./core/tasks/human-condition.js";
 import { getDb } from "../lib/db/connection.js";
-import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk";
+import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk/app";
 
 export type HumanTaskStatus = TaskStatus;
 

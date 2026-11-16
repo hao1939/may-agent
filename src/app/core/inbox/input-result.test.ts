@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk/app";
 import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { closeDb, getDb } from "../../../lib/db/connection.js";

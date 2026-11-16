@@ -1,0 +1,149 @@
+{
+  "successWithFalseOutput": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-success",
+          "name": "finish",
+          "arguments": {
+            "status": "success",
+            "summary": "Historical success",
+            "deliverables": [
+              {
+                "path": "report.md",
+                "description": "Historical report"
+              }
+            ],
+            "verification_facts": [
+              "Historical check passed"
+            ],
+            "result": false
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-success",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "✅ SUCCESS: Historical success"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "partialWithNullOutput": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-partial",
+          "name": "finish",
+          "arguments": {
+            "status": "partial",
+            "summary": "Historical work remains",
+            "blockers": [
+              {
+                "reason": "External review pending",
+                "context": "The saved work is not complete"
+              }
+            ],
+            "verification_evidence": [
+              "Historical draft retained"
+            ],
+            "result": null
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-partial",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "⚠️ PARTIAL: Historical work remains"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "blockedWithEvidenceOnly": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-blocked-evidence",
+          "name": "finish",
+          "arguments": {
+            "status": "blocked",
+            "summary": "Historical review remains",
+            "verification_facts": [
+              "Historical source checks passed"
+            ],
+            "verification_evidence": [
+              "Historical candidate retained"
+            ],
+            "next_steps": [
+              "Obtain external review"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-blocked-evidence",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "⚠️ BLOCKED: Historical review remains"
+        }
+      ],
+      "isError": false
+    }
+  ],
+  "failure": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-failure",
+          "name": "finish",
+          "arguments": {
+            "status": "failure",
+            "summary": "Historical verification failed",
+            "verification_facts": [
+              "Historical test exited 1"
+            ],
+            "result": {
+              "passed": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-failure",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "❌ FAILURE: Historical verification failed"
+        }
+      ],
+      "isError": false
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import type { AppResult } from "@may-agent/sdk";
+import type { AppResult } from "@may-agent/sdk/app";
 import type { AgentEvent } from "../events/bus.js";
 import type { AppInboxItem } from "../state/app-inbox-store.js";
 

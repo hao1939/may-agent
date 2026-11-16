@@ -1,4 +1,4 @@
-import type { AppInputContext, AppDependencyObservation, AppResult } from "@may-agent/sdk";
+import type { AppInputContext, AppDependencyObservation, AppResult } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem, type AppInboxItem } from "../state/app-inbox-store.js";
 

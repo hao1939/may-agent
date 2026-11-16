@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { TaskDetail } from "@may-agent/sdk";
+import type { TaskDetail } from "@may-agent/sdk/app";
 import { createTaskDecisionContext } from "./task-decision-context.js";
 import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 import { createAssistantMessageEventStream, getCurrentSystemPrompt, getCurrentTools, type TranscriptContext } from "@earendil-works/pi-ai";
@@ -419,7 +419,7 @@ test("the production transform restores current facts after compaction without a
                     type: "toolCall",
                     id: "wrong-result",
                     name: "finish",
-                    arguments: { summary: "wrong", result: { state: "converged" } },
+                    arguments: { status: "done", summary: "wrong", output: { state: "converged" } },
                   },
                 ],
               }
@@ -444,11 +444,11 @@ test("the production transform restores current facts after compaction without a
       expect(current.work.assignedAtStart.continuingInputs).toBe(1);
       expect(current.work.previousResult.coveredInputs).toBe(0);
       expect(getCurrentSystemPrompt(request.messages)).toContain("App reviewer: assess evidence quality.");
-      expect(getCurrentSystemPrompt(request.messages)).toContain("a helper still owes only its assigned contribution");
+      expect(getCurrentSystemPrompt(request.messages)).toContain("Work within the caller's assignment and authority");
       expect(getCurrentSystemPrompt(request.messages)).toContain(skill.canonicalPath);
       expect(getCurrentSystemPrompt(request.messages)).not.toContain("workflow step");
       const finish = getCurrentTools(request.messages).find((tool) => tool.name === "finish")!;
-      expect(finish.parameters.properties.result).toEqual(helperSchema);
+      expect(finish.parameters.properties.output).toEqual(helperSchema);
       expect(JSON.stringify(request.messages).split("Task decision brief")).toHaveLength(2);
     }
     expect(JSON.stringify(agent.state.messages)).not.toContain("Task decision brief");

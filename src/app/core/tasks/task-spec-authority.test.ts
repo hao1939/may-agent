@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ResourceCreator } from "@may-agent/sdk";
+import type { ResourceCreator } from "@may-agent/sdk/app";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {

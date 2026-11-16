@@ -1,5 +1,5 @@
 import { assertValidAppInput } from "../apps/definition-validation.js";
-import type { AppDefinition, TaskIntent, TaskRevision } from "@may-agent/sdk";
+import type { AppDefinition, TaskIntent, TaskRevision } from "@may-agent/sdk/app";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction, inStateTransaction } from "../../../lib/db/transaction.js";
 import { assertResourceCreator } from "../state/resource-creator.js";

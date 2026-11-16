@@ -20,7 +20,7 @@ function success(sessionId = "repair-session"): TaskResult {
     messages: [],
     duration: "0s",
     outputDir: "",
-    finishResult: { status: "success", summary: "Verified" },
+    finishResult: { status: "done", summary: "Verified" },
   };
 }
 
@@ -156,7 +156,7 @@ export async function execute(ctx) {
 
   for (const [label, result] of [
     ["missing finish result", { ...success(), finishResult: undefined }],
-    ["failure", { ...success(), finishResult: { status: "failure", summary: "Check failed" } }],
+    ["failure", { ...success(), finishResult: { status: "blocked", summary: "Check failed" } }],
     ["blocked", { ...success(), finishResult: { status: "blocked", summary: "Cannot verify" } }],
     ["interrupted", { ...success(), status: "interrupted" }],
   ] as const) {

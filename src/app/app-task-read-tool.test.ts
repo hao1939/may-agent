@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import type { TaskAttempt } from "@may-agent/sdk";
+import type { TaskAttempt } from "@may-agent/sdk/app";
 import { createAppTaskReadTool } from "./app-task-read-tool.js";
 import { EventBus } from "./core/events/bus.js";
 

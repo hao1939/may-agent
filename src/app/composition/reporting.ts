@@ -1,4 +1,4 @@
-import type { AppDefinition, AppRead } from "@may-agent/sdk";
+import type { AppDefinition, AppRead } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../lib/db.js";
 import { createMetricService, type MetricService } from "../../lib/metrics.js";
 import { syncAppMetricDefinitions } from "../adapters/reporting/metric-definitions.js";

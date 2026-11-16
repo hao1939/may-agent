@@ -1,4 +1,4 @@
-import type { AppInput } from "@may-agent/sdk";
+import type { AppInput } from "@may-agent/sdk/app";
 import { basename, dirname, resolve } from "node:path";
 import { closeAllDbs, getDb } from "../lib/db/connection.js";
 import { SubagentManager } from "../lib/manager.js";

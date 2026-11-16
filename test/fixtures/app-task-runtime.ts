@@ -2,7 +2,7 @@ import { afterEach, expect, setSystemTime } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp, type AppDefinition, type TaskIntent } from "@may-agent/sdk";
+import { Type, defineApp, type AppDefinition, type TaskIntent } from "@may-agent/sdk/app";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import {
   closeInstalledAppTaskRuntimes,

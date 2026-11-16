@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { AppEvent, AppObserver, ObserverHealth, ResourceObserver } from "@may-agent/sdk";
+import type { AppEvent, AppObserver, ObserverHealth, ResourceObserver } from "@may-agent/sdk/app";
 import type { ReadObservationDemand } from "../../core/state/observation-demand.js";
 import { copyObserverSnapshot } from "./observer-snapshot.js";
 

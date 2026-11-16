@@ -61,7 +61,7 @@ describe("canonical session terminal event", () => {
 
   it("keeps the structured result on session.end without derivative completion events", () => {
     const sessionId = emitSessionEnd({
-      status: "success",
+      status: "done",
       summary: "Implemented the feature",
       verification_facts: ["bun test: exit 0"],
       deliverables: [{ path: "src/app.ts", description: "New feature" }],
@@ -76,7 +76,7 @@ describe("canonical session terminal event", () => {
 
     expect(data.summary).toBe("Implemented the feature");
     expect(data.finishParams).toMatchObject({
-      status: "success",
+      status: "done",
       verification_facts: ["bun test: exit 0"],
       deliverables: [{ path: "src/app.ts", description: "New feature" }],
       completed_items: ["Implement feature X"],
@@ -93,7 +93,7 @@ describe("canonical session terminal event", () => {
   });
 
   it("keeps one terminal trace row instead of tracing derivative copies", () => {
-    const sessionId = emitSessionEnd({ status: "success", summary: "Done" }, "trace-agent");
+    const sessionId = emitSessionEnd({ status: "done", summary: "Done" }, "trace-agent");
     const db = getDb(persistDir);
     const terminal = db.prepare(
       "SELECT id FROM events WHERE event_type = 'session.end' AND json_extract(data, '$.sessionId') = ?",
@@ -124,7 +124,7 @@ describe("canonical session terminal event", () => {
         durationMs: 10,
         task: "x".repeat(210_000),
         finishParams: {
-          status: "success",
+          status: "done",
           verification_facts: ["bun test: exit 0"],
         },
       },
@@ -142,7 +142,7 @@ describe("canonical session terminal event", () => {
       status: "done",
       summary: "Large task completed",
       finishParams: {
-        status: "success",
+        status: "done",
         verification_facts: ["bun test: exit 0"],
       },
     });

@@ -1,4 +1,4 @@
-import type { AppEvent, AppEventTarget } from "@may-agent/sdk";
+import type { AppEvent, AppEventTarget } from "@may-agent/sdk/app";
 import { eventData, type AgentEvent } from "./core/events/bus.js";
 
 function record(value: unknown): Record<string, unknown> {

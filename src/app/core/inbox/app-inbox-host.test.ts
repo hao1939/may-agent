@@ -1,4 +1,4 @@
-import { Type, defineApp, type AppDefinition, type AppInputContext, type AppTaskAttachment } from "@may-agent/sdk";
+import { Type, defineApp, type AppDefinition, type AppInputContext, type AppTaskAttachment } from "@may-agent/sdk/app";
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { fakeTaskAttacher } from "../../../../test/fixtures/task-attachment.js";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";

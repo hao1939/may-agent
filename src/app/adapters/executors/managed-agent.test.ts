@@ -14,7 +14,7 @@ import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { createWriteTool } from "@may-agent/sdk/runtime";
 import { createFinishTool } from "@may-agent/sdk/runtime";
 
-test.each(["success", "partial", "blocked", "failure"])("a valid %s report retains useful work and the Task's continuation decision", async (status) => {
+test.each(["done", "blocked"])("a valid %s report retains useful work and the Task's continuation decision", async (status) => {
   const root = mkdtempSync(join(tmpdir(), "may-task-report-"));
   try {
     const report = {
@@ -35,7 +35,7 @@ test.each(["success", "partial", "blocked", "failure"])("a valid %s report retai
           const stream = createAssistantMessageEventStream();
           stream.push({ type: "done", reason: "toolUse", message: usageReply({
             stopReason: "toolUse", content: [{ type: "toolCall", id: "report", name: "finish",
-              arguments: { status, summary: report.summary, result: report } }],
+              arguments: { status, summary: report.summary, output: report } }],
           }) });
           return stream;
         };

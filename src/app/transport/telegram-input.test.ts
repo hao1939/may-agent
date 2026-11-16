@@ -1,5 +1,5 @@
 import type { EventInput } from "@may-agent/control/events";
-import type { AppInputContext } from "@may-agent/sdk";
+import type { AppInputContext } from "@may-agent/sdk/app";
 import { describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

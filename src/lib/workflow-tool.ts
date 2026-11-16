@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from "node:util";
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
-import { ExecutionDeferredError } from "@may-agent/sdk";
+import { ExecutionDeferredError } from "@may-agent/sdk/app";
 import {
   resolveCallable,
   runWorkflowInvocation,

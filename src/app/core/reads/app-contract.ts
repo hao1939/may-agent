@@ -1,4 +1,4 @@
-import type { AppContract, AppDefinition, EventSelector } from "@may-agent/sdk";
+import type { AppContract, AppDefinition, EventSelector } from "@may-agent/sdk/app";
 
 /** Resource observations need no App-authored record-only routing declaration. */
 export function appObservationSelectors(app: Readonly<AppDefinition>): EventSelector[] {

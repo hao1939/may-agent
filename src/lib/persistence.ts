@@ -88,7 +88,7 @@ export interface PersistedSession {
   requireFinish?: boolean;
   /** Per-invocation operation allowance retained across runtime recovery. */
   operationAllowance?: number;
-  /** Serializable TypeBox/JSON schema for finish().result. */
+  /** Serializable TypeBox/JSON schema for finish().output. */
   outputSchema?: TSchema;
   /** Per-session capability restriction applied by the runtime. */
   toolPolicy?: ToolPolicy;

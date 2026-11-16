@@ -1,7 +1,7 @@
 import type { ProcessInstance } from "../../../lib/process-identity.js";
 import type { PendingTaskSettlement } from "./result.js";
-import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk";
-import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk";
+import type { TaskChangeReceipt, TaskView } from "@may-agent/sdk/app";
+import type { Condition, ResourceCreator, TaskAcceptanceBasis, TaskAttempt, TaskIntent } from "@may-agent/sdk/app";
 
 export const CONDITION_RECOVERY_INTERVAL_MS = 300_000;
 
@@ -232,6 +232,7 @@ export type AppTaskCancellation = {
     | { kind: "human" }
     | { kind: "app"; agent: string; attemptId: string }
     | { kind: "app-policy" }
+    | { kind: "host-execution" }
     | { kind: "creator"; creator: ResourceCreator };
   response?: string;
   result?: Record<string, unknown>;

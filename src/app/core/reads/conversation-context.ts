@@ -1,4 +1,4 @@
-import type { AppConversationResource } from "@may-agent/sdk";
+import type { AppConversationResource } from "@may-agent/sdk/app";
 
 export const APP_REQUEST_CONVERSATION_MAX_BYTES = 12 * 1_024;
 const APP_REQUEST_MESSAGE_BYTES = 7_500;

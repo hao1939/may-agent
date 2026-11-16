@@ -1,11 +1,6 @@
-import type {
-  ExecutionResult,
-  TSchema,
-  TaskReconcileResult,
-  WorkflowContext,
-} from "@may-agent/sdk";
+import type { AgentContext, ExecutionResult, TSchema } from "@may-agent/sdk/app";
 import type { TaskResult } from "@may-agent/sdk/runtime";
-export type { WorkflowContext } from "@may-agent/sdk";
+export type { WorkflowContext } from "@may-agent/sdk/app";
 
 // ── Workflow Lifecycle Callback Events ────────────────────────────────
 // These are local workflow-tool callbacks for logs. They are not
@@ -39,7 +34,7 @@ export interface WorkflowModule {
   executionTimeoutMs?: number;
   /** Filesystem isolation convention interpreted by the embedding app runtime. */
   workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
-  execute: (ctx: WorkflowContext) => Promise<ExecutionResult | TaskReconcileResult>;
+  execute: (ctx: AgentContext) => Promise<ExecutionResult>;
   /** Optional app-level deterministic verifier; interpreted by the embedding infrastructure. */
   verify?: (context: unknown, result: unknown) => Promise<unknown>;
   /** Immutable provenance captured when the catalog snapshot was built. */

@@ -54,7 +54,7 @@ export async function execute(ctx) {
     const executeForeign = async () => {
       calls++;
       return { sessionId: "s_foreign", status: "done", messages: [],
-        finishResult: { status: "success", summary: "must not run" } };
+        finishResult: { status: "done", summary: "must not run" } };
     };
     const result = await createWorkflowRunner({
       manager: {
@@ -180,7 +180,7 @@ export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); 
           expect(options).toMatchObject({ toolPolicy: "readonly", skill: "review" });
           promptCalls++;
           return { sessionId: "s_captured", status: "done", messages: [],
-            finishResult: { status: "success", summary: "captured prompt" } };
+            finishResult: { status: "done", summary: "captured prompt" } };
         },
       } as any,
       workflowDir, agentName: "owner", projectId: "sample", maxDepth: 3,
@@ -959,7 +959,7 @@ export async function execute(ctx) {
       messages: [],
       duration: "0s",
       outputDir: "",
-      finishResult: { status: "success", summary: "done" },
+      finishResult: { status: "done", summary: "done" },
     });
     expect(await execution).toMatchObject({ type: "done", summary: "parent complete" });
   });
@@ -1018,7 +1018,7 @@ export async function execute(ctx) {
       messages: [],
       duration: "0s",
       outputDir: "",
-      finishResult: { status: "success", summary: "done" },
+      finishResult: { status: "done", summary: "done" },
     });
 
     expect(await execution).toMatchObject({ type: "done", summary: "continue with review" });
@@ -1075,7 +1075,7 @@ export async function execute(ctx) {
         ],
         duration: "0s",
         outputDir: "",
-        finishResult: { status: "success", summary: "bounded move complete", result: { ok: true } },
+        finishResult: { status: "done", summary: "bounded move complete", output: { ok: true } },
       };
     };
     const runner = createWorkflowRunner({
@@ -1114,7 +1114,6 @@ export async function execute(ctx) {
         summary: "bounded move complete",
         output: { ok: true },
         cliCalls: [cliCall],
-        facts: { status: "success", summary: "bounded move complete", result: { ok: true } },
       },
     });
     expect(agentSessionSource).toBe("heartbeat");
@@ -1249,7 +1248,7 @@ export async function execute(ctx) {
         messages: [],
         duration: "0s",
         outputDir: "",
-        finishResult: { status: "success", summary: "Context considered" },
+        finishResult: { status: "done", summary: "Context considered" },
       };
     };
     const runner = createWorkflowRunner({
@@ -1798,7 +1797,7 @@ export async function execute(ctx) {
           duration: "12s",
           messages: [],
           lastAssistantText: `${def.name} done`,
-          finishResult: { status: "success", summary: `${def.name} done` },
+          finishResult: { status: "done", summary: `${def.name} done` },
         };
       },
     } as any;

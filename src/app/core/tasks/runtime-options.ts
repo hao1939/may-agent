@@ -1,4 +1,4 @@
-import { type TaskExecutor } from "@may-agent/sdk";
+import { type TaskExecutor } from "@may-agent/sdk/app";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { type EventBus } from "../events/bus.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";

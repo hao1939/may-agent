@@ -1,7 +1,7 @@
 import type { SqliteDb } from "./db.js";
 import { stateTransaction } from "./db/transaction.js";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import type { MetricCalculation, MetricCalculationOptions, MetricDefinition as SdkMetricDefinition } from "@may-agent/sdk";
+import type { MetricCalculation, MetricCalculationOptions, MetricDefinition as SdkMetricDefinition } from "@may-agent/sdk/app";
 import { calculateMetric, metricCalculationOptions, metricMaxAgeMs } from "./metric-calculation.js";
 
 export type MetricType = "gauge" | "counter" | "health" | "derived";

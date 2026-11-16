@@ -13,7 +13,7 @@ import {
   type AppDefinition,
   type AppInputContext,
   type TaskExecutor,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { addLogSubscriber } from "@may-agent/sdk/runtime";
 import { readTaskChecks } from "./task-check-observations.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
@@ -10421,11 +10421,78 @@ describe("dependency Condition specification updates", () => {
     expect(readTaskSnapshot(config).conditions?.[original.id]?.spec.requestedAction).toBeUndefined();
   });
 
-  it("reopening a retained pendingSettlement checkpoint settles the saved report without re-executing the executor", async () => {
-    const f = fixture();
-    let bus = eventBus();
-    let executions = 0;
-    const install = async () => {
+  it.each([
+    ["legacy report remains nonclosing", undefined, "idle"],
+    ["finite-done report closes", "finite-done", "closed"],
+  ] as const)(
+    "reopening a retained pendingSettlement checkpoint settles the saved report without re-executing the executor: %s",
+    async (_case, hostCompletion, expectedStatus) => {
+      const f = fixture();
+      let bus = eventBus();
+      let executions = 0;
+      const install = async () => {
+        await installCoreTaskRuntimes({
+          ...options(f, bus),
+          installControllers: false,
+          appRegistrySnapshot: { id: "checkpoint-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
+          executors: {
+            verify: async () => {
+              executions++;
+              return { state: "converged", summary: "Completed once", facts: ["test:once"], result: { answer: 42 } };
+            },
+          },
+        });
+      };
+      await install();
+      const config = loadedTaskConfig(f);
+      const admissionKey = `checkpoint-${hostCompletion ?? "legacy"}`;
+      const { taskId } = admitTaskInput(config, {
+        appId: "sample",
+        creator: { appId: "sample" },
+        attachment: {
+          kind: "desired",
+          intent: {
+            id: `work/checkpoint-${hostCompletion ?? "legacy"}`,
+            parentId: "operations",
+            outcome: "Verify once",
+            acceptance: ["Produce answer 42"],
+            executor: "verify",
+          },
+        },
+        idempotencyKey: admissionKey,
+        inputContext: { id: "in-1", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
+      });
+      const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
+      if (claim.kind !== "claimed") throw new Error("expected claimed attempt");
+      const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
+      const resource = config.resourceStore.readTask(taskId)!;
+      attempt.pendingSettlement = {
+        claim,
+        report: {
+          handlerResult: {
+            state: "converged",
+            summary: "Saved before upgrade",
+            facts: ["test:saved"],
+            actions: [],
+            inputKeys: [admissionKey],
+            result: { answer: 42 },
+          },
+          runId: "saved-run",
+          ...(hostCompletion ? { hostCompletion } : {}),
+        },
+        acceptanceBasis: { method: "executor", evidence: ["test:saved"] },
+      };
+      delete attempt.lease;
+      resource.status.phase = "waiting";
+      config.resourceStore.db
+        .prepare("UPDATE app_task_attempts SET attempt_json = ?, lease_until = NULL WHERE app_id = ? AND attempt_id = ?")
+        .run(JSON.stringify(attempt), "sample", claim.attemptId);
+      config.resourceStore.db
+        .prepare("UPDATE app_tasks SET phase = 'waiting', ready = 1, changed = 0, next_check_at = 1, resource_json = ? WHERE app_id = ? AND task_id = ?")
+        .run(JSON.stringify(resource), "sample", taskId);
+
+      closeDb(join(f.root, "state"));
+      bus = eventBus();
       await installCoreTaskRuntimes({
         ...options(f, bus),
         installControllers: false,
@@ -10433,80 +10500,48 @@ describe("dependency Condition specification updates", () => {
         executors: {
           verify: async () => {
             executions++;
-            return { state: "converged", summary: "Completed once", facts: ["test:once"], result: { answer: 42 } };
+            throw new Error("Completed checkpoint must not re-execute");
           },
         },
       });
-    };
-    await install();
-    const config = loadedTaskConfig(f);
-    const { taskId } = admitTaskInput(config, {
-      appId: "sample",
-      attachment: {
-        kind: "desired",
-        intent: {
-          id: "work/checkpoint",
-          parentId: "operations",
-          outcome: "Verify once",
-          acceptance: ["Produce answer 42"],
-          executor: "verify",
-        },
-      },
-      idempotencyKey: "checkpoint-1",
-      inputContext: { id: "in-1", source: { kind: "human", id: "user" }, input: { kind: "ask", data: {} } },
-    });
-    const claim = claimObservedAppTask(config, { taskId, appAgent: "sample-owner", handler: "executor:verify" });
-    if (claim.kind !== "claimed") throw new Error("expected claimed attempt");
-    const attempt = config.resourceStore.readAttempt(claim.attemptId)!;
-    const resource = config.resourceStore.readTask(taskId)!;
-    attempt.pendingSettlement = {
-      claim,
-      report: {
-        handlerResult: {
-          state: "converged",
-          summary: "Saved before upgrade",
-          facts: ["test:saved"],
-          actions: [],
-          result: { answer: 42 },
-        },
-        runId: "saved-run",
-      },
-      acceptanceBasis: { method: "executor", evidence: ["test:saved"] },
-    };
-    delete attempt.lease;
-    resource.status.phase = "waiting";
-    config.resourceStore.db
-      .prepare("UPDATE app_task_attempts SET attempt_json = ?, lease_until = NULL WHERE app_id = ? AND attempt_id = ?")
-      .run(JSON.stringify(attempt), "sample", claim.attemptId);
-    config.resourceStore.db
-      .prepare("UPDATE app_tasks SET phase = 'waiting', ready = 1, changed = 0, next_check_at = 1, resource_json = ? WHERE app_id = ? AND task_id = ?")
-      .run(JSON.stringify(resource), "sample", taskId);
+      const reconcile = () => reconcileLoadedAppTaskOnce({
+        bus,
+        appId: "sample",
+        taskId,
+        dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+      });
+      await reconcile();
+      expect(executions).toBe(0);
+      const reopened = loadedTaskConfig(f);
+      const settled = reopened.resourceStore.readTask(taskId)!;
+      expect(settled.status.phase).toBe("converged");
+      expect(settled.status.result).toEqual({ answer: 42 });
+      expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
+        status: expectedStatus,
+        result: { answer: 42 },
+        acceptedAttempt: { id: claim.attemptId },
+      });
+      expect(reopened.resourceStore.readAttempt(claim.attemptId)?.pendingSettlement).toBeUndefined();
+      if (hostCompletion) {
+        expect(reopened.resourceStore.readCancellation(taskId)).toMatchObject({
+          kind: "closed",
+          acceptedResultAttemptId: claim.attemptId,
+          decidedBy: { kind: "host-execution" },
+        });
+      } else {
+        expect(reopened.resourceStore.readCancellation(taskId)).toBeNull();
+      }
 
-    closeDb(join(f.root, "state"));
-    bus = eventBus();
-    await installCoreTaskRuntimes({
-      ...options(f, bus),
-      installControllers: false,
-      appRegistrySnapshot: { id: "checkpoint-test", generation: 1, entries: [{ appDir: f.appDir, definition: definition() }] },
-      executors: {
-        verify: async () => {
-          executions++;
-          throw new Error("Completed checkpoint must not re-execute");
-        },
-      },
-    });
-    await reconcileLoadedAppTaskOnce({
-      bus,
-      appId: "sample",
-      taskId,
-      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
-    });
-    expect(executions).toBe(0);
-    const settled = loadedTaskConfig(f).resourceStore.readTask(taskId)!;
-    expect(settled.status.phase).toBe("converged");
-    expect(settled.status.result).toEqual({ answer: 42 });
-    expect(loadedTaskConfig(f).resourceStore.readAttempt(claim.attemptId)?.pendingSettlement).toBeUndefined();
-  });
+      await reconcile();
+      expect(executions).toBe(0);
+      expect(reopened.resourceStore.readTask(taskId)?.status).toMatchObject({
+        phase: "converged",
+        result: { answer: 42 },
+        observedAttemptId: claim.attemptId,
+      });
+      expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status).toBe(expectedStatus);
+    },
+  );
 
   it("refuses cross-process recovery and claim replacement while a sessionless executor process is still alive", async () => {
     const f = fixture();

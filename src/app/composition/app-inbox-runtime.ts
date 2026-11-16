@@ -7,7 +7,7 @@ import {
   type EventSelector,
   type ObserverContext,
   type TaskIntent,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../lib/db.js";
 import { withSqliteBusyRetry } from "../../lib/db/busy-retry.js";
 import { log } from "@may-agent/sdk/runtime";

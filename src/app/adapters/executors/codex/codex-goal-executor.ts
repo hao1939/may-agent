@@ -1,6 +1,6 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileResult } from "@may-agent/sdk";
+import { type AppEvent, type TaskAttempt, type TaskExecutor, type TaskReconcileResult } from "@may-agent/sdk/app";
 import {
   CodexGoalAppServerClient,
   type AppServerNotification,

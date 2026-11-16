@@ -6,7 +6,7 @@ import {
   type TaskIntent as AppTaskIntent,
   type TaskAcceptanceBasis as AppTaskAcceptanceBasis,
   type TaskAttempt,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { join } from "node:path";
 import { log } from "@may-agent/sdk/runtime";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
@@ -479,6 +479,8 @@ async function runClaimedTask(
                 acceptanceBasis,
                 workspace: inspected,
                 acceptedLiveEventIds: report.acceptedLiveEventIds,
+                hostCompletion: report.hostCompletion,
+                conversation: isConversationTask(config, claim.taskId),
               });
               if (apply.status === "applied") settleTaskCommunicationInputs(config, claim);
             },

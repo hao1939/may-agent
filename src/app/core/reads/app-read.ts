@@ -380,7 +380,7 @@ export function createRuntimeTaskRead(opts: Pick<RuntimeAppReadOptions, "taskSta
   };
   return {
     ...tasks,
-    workload: (options?: import("@may-agent/sdk").TaskWorkloadOptions) => readTaskWorkload(opts, options),
+    workload: (options?: import("@may-agent/sdk/app").TaskWorkloadOptions) => readTaskWorkload(opts, options),
   };
 }
 

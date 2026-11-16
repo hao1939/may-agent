@@ -1,4 +1,4 @@
-import type { MetricView } from "@may-agent/sdk";
+import type { MetricView } from "@may-agent/sdk/app";
 import type { MetricService } from "../../../lib/metrics.js";
 
 export function readMetricView(metrics: Pick<MetricService, "get">, id: string): MetricView | null {

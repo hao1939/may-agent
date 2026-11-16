@@ -91,10 +91,10 @@ test.each(["complete", "cancel"] as const)(
                           id: "finish",
                           name: "finish",
                           arguments: {
-                            status: "success",
+                            status: "done",
                             summary: "Fixture verified",
-                            verification_facts: ["Native fixture returned its result"],
-                            result: { verified: true },
+                            facts: ["Native fixture returned its output"],
+                            output: { verified: true },
                           },
                         },
                       ]

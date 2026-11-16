@@ -1,5 +1,5 @@
-import type { TaskAttempt } from "@may-agent/sdk";
-import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk";
+import type { TaskAttempt } from "@may-agent/sdk/app";
+import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk/app";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
@@ -146,7 +146,7 @@ async function executeTaskAgent(
       const admitted = normalizeTaskHandlerResult(output, { type: "done", summary: "", runId: null }, admissionOptions);
       return admitted.resultRejected
         ? admitted.summary
-        : (input.validateResult?.(admitted as import("@may-agent/sdk").TaskReconcileResult) ?? null);
+        : (input.validateResult?.(admitted as import("@may-agent/sdk/app").TaskReconcileResult) ?? null);
     },
     toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,

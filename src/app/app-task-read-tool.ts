@@ -12,9 +12,9 @@ import type {
   TaskView,
   TaskWorkload,
   TaskWorkloadOptions,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { EventBus } from "./core/events/bus.js";
-import { taskChangesSchema, observationCondition, type ObservationInterest } from "@may-agent/sdk";
+import { taskChangesSchema, observationCondition, type ObservationInterest } from "@may-agent/sdk/app";
 
 const parameters = Type.Object(
   {

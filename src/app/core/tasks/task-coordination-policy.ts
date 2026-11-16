@@ -1,4 +1,4 @@
-import type { AppDefinition } from "@may-agent/sdk";
+import type { AppDefinition } from "@may-agent/sdk/app";
 import type { AppTaskResource } from "./app-task-state.js";
 
 export type TaskCoordinationPolicy = NonNullable<NonNullable<AppDefinition["tasks"]>["coordination"]>;

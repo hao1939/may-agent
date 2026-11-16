@@ -1,4 +1,4 @@
-import type { TaskChangeReceipt, TaskCommunication, TaskReconcileResult } from "@may-agent/sdk";
+import type { TaskChangeReceipt, TaskCommunication, TaskReconcileResult } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { getAppInboxItem } from "../state/app-inbox-store.js";

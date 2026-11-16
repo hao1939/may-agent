@@ -1,4 +1,4 @@
-import type { TaskAcceptanceBasis } from "@may-agent/sdk";
+import type { TaskAcceptanceBasis } from "@may-agent/sdk/app";
 import {
   admitTaskReconcileResult as admitAppTaskHandlerResult,
   type TaskAction as AppTaskAction,
@@ -7,7 +7,7 @@ import {
   type TaskAppRequest,
   type TaskCommunication,
   type TaskCondition,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { AppTaskClaim } from "./app-task-reconciler.js";
 import type { PreparedTaskWorkspace } from "./workspace.js";
 
@@ -21,13 +21,15 @@ export type TaskCapabilityRun = {
   executionFailed?: boolean;
   /** The workflow reported a blocker; retain its diagnosis for the next reconciliation. */
   handlerBlocked?: true;
+  /** Host provenance: a Task-blind public run explicitly returned done. */
+  hostCompletion?: "finite-done";
   workspacePreparationFailed?: boolean;
 };
 
 /** Execution is over; retry only the fenced effects, never the executor. */
 export type PendingTaskSettlement = {
   claim: Omit<AppTaskClaim, "settlement">;
-  report: Pick<TaskCapabilityRun, "handlerResult" | "runId" | "acceptedLiveEventIds">;
+  report: Pick<TaskCapabilityRun, "handlerResult" | "runId" | "acceptedLiveEventIds" | "hostCompletion">;
   acceptanceBasis: TaskAcceptanceBasis;
   workspace?: PreparedTaskWorkspace;
 };

@@ -1,4 +1,4 @@
-import type { TaskIntent } from "@may-agent/sdk";
+import type { TaskIntent } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
 import type { SqliteDb } from "../../../lib/db.js";
 import { stateTransaction } from "../../../lib/db/transaction.js";

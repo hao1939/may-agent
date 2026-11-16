@@ -1,6 +1,6 @@
 import { Type, type TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
-import { conversationRequestUpdatesSchema } from "./conversation-contract.js";
+import { conversationRequestUpdatesSchema } from "./app-conversation.js";
 import { appInputSchema } from "./app-input.js";
 import type {
   Condition,

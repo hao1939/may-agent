@@ -1,4 +1,4 @@
-import { admitTaskReconcileResult, type TaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type TaskReconcileResult } from "@may-agent/sdk/app";
 
 const MAX_ADMISSION_ERROR_CHARS = 1_024;
 

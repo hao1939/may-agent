@@ -1,7 +1,7 @@
-import { ExecutionDeferredError } from "@may-agent/sdk";
+import { ExecutionDeferredError } from "@may-agent/sdk/app";
 import { taskExecutionContext } from "./task-context.js";
 import { basename, join } from "node:path";
-import type { TaskVerifier as AppTaskVerifier } from "@may-agent/sdk";
+import type { TaskVerifier as AppTaskVerifier } from "@may-agent/sdk/app";
 import type { SubagentManager } from "../../../lib/manager.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { captureAgentDefinitions } from "./agent-definitions.js";

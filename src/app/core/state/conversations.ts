@@ -4,7 +4,7 @@ import type {
   AppConversationTopic,
   AppConversationTopicPage,
   AppInput,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import { listAppInboxConversationItems, readActiveAppTurn, type AppInboxItem } from "./app-inbox-store.js";
 import { conversationTaskLinksSql } from "./conversation-task-links.js";
@@ -741,7 +741,7 @@ export function linkConversationTopicTask(
 }
 
 /** Queries are bound to an admitted Conversation by the Host, not by prompt fields. */
-export type ConversationContextQuery = import("@may-agent/sdk").TaskCommunicationQuery;
+export type ConversationContextQuery = import("@may-agent/sdk/app").TaskCommunicationQuery;
 
 export function readConversationContext(db: SqliteDb, appId: string, conversationId: string, query: ConversationContextQuery) {
   if (query.action === "request") return readConversationRequest(db, appId, conversationId, query.id);

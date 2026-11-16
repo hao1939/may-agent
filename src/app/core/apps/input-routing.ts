@@ -1,4 +1,4 @@
-import type { AppDefinition } from "@may-agent/sdk";
+import type { AppDefinition } from "@may-agent/sdk/app";
 import { AppTaskAdmissionError } from "../state/task-admission-error.js";
 
 /** App declarations select the handler; an exact Task target bypasses mapping. */

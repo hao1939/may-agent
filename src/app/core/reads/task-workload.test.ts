@@ -12,7 +12,7 @@ import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import { EventBus } from "../events/bus.js";
 import { runTaskExecutorAttempt } from "../tasks/attempt-execution.js";
 import { taskExecutionContext } from "../../adapters/executors/task-context.js";
-import { defineApp, Type } from "@may-agent/sdk";
+import { defineApp, Type } from "@may-agent/sdk/app";
 import type { TaskAgentInput } from "../tasks/execution.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { readAppContract } from "./app-contract.js";

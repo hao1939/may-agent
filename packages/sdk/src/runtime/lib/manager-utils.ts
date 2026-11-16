@@ -3,7 +3,7 @@ import type { AgentTool, AgentMessage } from "@earendil-works/pi-agent-core";
 import type { Model, Api } from "@earendil-works/pi-ai";
 import type { SessionKind } from "./tools/bash.js";
 import type { SkillCatalog } from "./skills.js";
-import type { AgentContextPreparer } from "@may-agent/sdk";
+import type { AgentContextPreparer } from "@may-agent/sdk/app";
 
 /**
  * Model with an optional apiKey attached at runtime.
@@ -129,7 +129,7 @@ export interface TaskResult {
   instability?: InstabilityMetrics;
   /** Structured data from the agent's finish() tool call, if one was made. */
   finishResult?: FinishResult;
-  /** Caller-defined, schema-validated payload from finish().result. */
+  /** Caller-defined, schema-validated payload from finish().output. */
   structuredResult?: unknown;
 }
 
@@ -143,12 +143,13 @@ export interface InstabilityMetrics {
 
 /** Structured finish() data from the agent's explicit completion signal. */
 export interface FinishResult {
-  status: "success" | "failure" | "blocked" | "partial";
+  /** Canonical authoring emits done/blocked; error is a normalized historical failure. */
+  status: "done" | "blocked" | "error";
   summary: string;
-  deliverables?: { path: string; description: string }[];
-  blockers?: { reason: string; context: string }[];
-  /** Caller-defined payload for a schema-backed workflow step. */
-  result?: unknown;
+  /** Caller-defined payload for a schema-backed execution. */
+  output?: unknown;
+  /** Supporting evidence or blocker context. */
+  facts?: unknown;
 }
 
 /** Context passed to local tool factories in agents/<name>/tools/. */
@@ -205,8 +206,8 @@ export function log(level: LogLevel, message: string): void {
   }
 }
 
-import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk";
-import type { CliCallFacts } from "@may-agent/sdk";
+import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk/app";
+import type { CliCallFacts } from "@may-agent/sdk/app";
 
 export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCallFacts[] {
   const calls = new Map<string, CliCallFacts>();
@@ -243,11 +244,11 @@ export function enforceStructuredWorkflowResult(result: TaskResult, expectsPaylo
       error: "Workflow agent step completed without the required finish() result",
     };
   }
-  if (expectsPayload && result.structuredResult === undefined && result.finishResult.result === undefined) {
+  if (expectsPayload && result.structuredResult === undefined && result.finishResult.output === undefined) {
     return {
       ...result,
       status: "error",
-      error: "Workflow agent step completed without the required schema-backed finish().result payload",
+      error: "Workflow agent step completed without the required schema-backed finish().output payload",
     };
   }
   return result;
@@ -259,9 +260,9 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
   const finish = result.finishResult;
   const status = result.status === "interrupted"
     ? "interrupted"
-    : result.status === "error" || finish?.status === "failure"
+    : result.status === "error" || finish?.status === "error"
       ? "error"
-      : finish?.status === "blocked" || finish?.status === "partial"
+      : finish?.status === "blocked"
         ? "blocked"
         : "done";
   return {
@@ -274,8 +275,8 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
       `Agent execution ${status}`,
     ...(result.structuredResult !== undefined
       ? { output: result.structuredResult }
-      : finish?.result !== undefined ? { output: finish.result } : {}),
-    ...(finish ? { facts: finish } : {}),
+      : finish?.output !== undefined ? { output: finish.output } : {}),
+    ...(finish?.facts !== undefined ? { facts: finish.facts } : {}),
     cliCalls: cliCallFacts(result.sessionId, result.messages),
   };
 }

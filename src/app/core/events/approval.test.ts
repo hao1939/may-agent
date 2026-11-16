@@ -7,7 +7,7 @@ import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { applyAppTaskConditionEvent } from "../tasks/app-task-condition-tracker.js";
 import { appTaskContext, cancelAppTask } from "../tasks/app-task-reconciler.js";
-import { readVerifiedApprovalDecision, defineApp, Type } from "@may-agent/sdk";
+import { readVerifiedApprovalDecision, defineApp, Type } from "@may-agent/sdk/app";
 import { AppRegistry } from "../apps/registry.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../../composition/app-inbox-runtime.js";
 import { admitTaskInput } from "../state/inbox.js";

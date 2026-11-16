@@ -10,8 +10,7 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import { admitTaskResultForSchema, type TaskReconcileResult } from "./task.js";
-import type { Logger, WorkflowContext } from "./workflow.js";
+import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
 const MAX_TIMER_MS = 2_147_483_647;
@@ -19,20 +18,14 @@ const MAX_REPORT_STEPS = 64;
 const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
+const AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS = 50;
 
-export type WorkflowExecutableModule<TInput = any> = {
-  name: string;
-  description: string;
-  readonly?: boolean;
-  inputSchema?: TSchema;
-  outputSchema?: TSchema;
-  executionTimeoutMs?: number;
-  workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
-  execute: (ctx: WorkflowContext<TInput>) => Promise<ExecutionResult | TaskReconcileResult>;
-  verify?: (context: unknown, result: unknown) => Promise<unknown>;
-  sourcePath?: string;
-  sourceScope?: "agent" | "project";
-  entryContentHash?: string;
+/** @deprecated Use `AgentExecutableModule` for Task-transparent authoring. */
+export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = Omit<
+  AgentExecutableModule<TInput, TOutput>,
+  "execute"
+> & {
+  execute(ctx: WorkflowContext<TInput>): Promise<ExecutionResult<TOutput>>;
 };
 
 export type PreparedDefinition<TPromptDef = unknown> =
@@ -220,7 +213,11 @@ export class WorkflowUnconfirmedCleanupError extends Error {
     public readonly unconfirmed: readonly string[],
     public readonly causeError?: unknown,
   ) {
-    super(`Workflow "${workflow}" finished with unconfirmed descendant cleanup: ${unconfirmed.join(", ")}`);
+    const causeMessage = causeError instanceof Error ? causeError.message : causeError !== undefined ? String(causeError) : "";
+    super(
+      `Workflow "${workflow}" finished with unconfirmed descendant cleanup: ${unconfirmed.join(", ")}` +
+        (causeMessage ? `; originating failure: ${causeMessage}` : ""),
+    );
     this.name = "WorkflowUnconfirmedCleanupError";
   }
 }
@@ -284,6 +281,16 @@ export type WorkflowKernelStepControl = {
   deadlineAt: number;
   stepIndex: number;
   allowance: WorkflowExecutionAllowance;
+  /** Internal bridge for model-visible tools that delegate through this same kernel lifecycle. */
+  callTarget(
+    target: string,
+    input: unknown,
+    options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    signal: AbortSignal | undefined,
+    resolveTarget: (
+      stepControl: WorkflowKernelStepControl,
+    ) => WorkflowKernelResolvedTarget | Promise<WorkflowKernelResolvedTarget>,
+  ): Promise<ExecutionResult>;
 };
 
 export type WorkflowKernelResolvedTarget = {
@@ -371,16 +378,7 @@ function schemaDiagnostic(schema: TSchema, value: unknown): string {
     details.push(`${err.instancePath || "/"} ${err.message}`.trim());
     if (details.length >= 5) break;
   }
-  if (details.length > 0) return details.join("; ");
-  const taskAdmission = admitTaskResultForSchema(schema, value);
-  if (taskAdmission && !taskAdmission.ok) return taskAdmission.error;
-  return "value failed schema check";
-}
-
-function checkKernelSchema(schema: TSchema, value: unknown): boolean {
-  if (!Check(schema, value)) return false;
-  const taskAdmission = admitTaskResultForSchema(schema, value);
-  return taskAdmission ? taskAdmission.ok : true;
+  return details.length > 0 ? details.join("; ") : "value failed schema check";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -772,6 +770,8 @@ export async function runWorkflowInvocation<TInput = unknown>(
       stepControl: WorkflowKernelStepControl,
       effectiveOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     ) => Promise<WorkflowStepInvocationResult>,
+    scope?: { signal?: AbortSignal; deadlineAt?: number },
+    resolvedKind?: { current: "agent" | "workflow" },
   ): Promise<ExecutionResult> => {
     assertActive();
     if (
@@ -782,12 +782,19 @@ export async function runWorkflowInvocation<TInput = unknown>(
     ) {
       throw new Error(`ctx.call invoked with invalid target name: ${JSON.stringify(target)}`);
     }
+    scope?.signal?.throwIfAborted();
+    const currentKind = () => resolvedKind?.current ?? kind;
     const effectiveOptions = normalizeEffectiveCallOptions(kind, target, callOptions);
-    const remainingMs = allowance.deadlineAt - Date.now();
+    const effectiveDeadlineAt = Math.min(allowance.deadlineAt, scope?.deadlineAt ?? allowance.deadlineAt);
+    const remainingMs = effectiveDeadlineAt - Date.now();
     if (remainingMs <= 0) {
-      timedOut = true;
-      const err = new Error(timeoutMessage);
-      controller.abort(err);
+      const err = new Error(scope?.deadlineAt !== undefined && effectiveDeadlineAt < allowance.deadlineAt
+        ? `${kind === "agent" ? "Agent" : "Workflow"} step "${target}" timed out before start`
+        : timeoutMessage);
+      if (effectiveDeadlineAt >= allowance.deadlineAt) {
+        timedOut = true;
+        controller.abort(err);
+      }
       throw err;
     }
     const requestedStepMs = effectiveOptions?.timeoutMs ?? remainingMs;
@@ -802,14 +809,16 @@ export async function runWorkflowInvocation<TInput = unknown>(
     latestActiveStepIndex = stepIndex;
     const stepController = new AbortController();
     let stepTimedOut = false;
-    const stepTimeoutError =
+    const createStepTimeoutError = () =>
       effectiveOptions?.timeoutMs !== undefined && requestedStepMs < remainingMs
         ? new Error(
-            `${kind === "agent" ? "Agent" : "Workflow"} step "${target}" timed out after ${stepTimeoutMs}ms`,
+            `${currentKind() === "agent" ? "Agent" : "Workflow"} step "${target}" timed out after ${stepTimeoutMs}ms`,
           )
         : new Error(timeoutMessage);
+    let stepTimeoutError = createStepTimeoutError();
     const stepTimer = setTimeout(() => {
       stepTimedOut = true;
+      stepTimeoutError = createStepTimeoutError();
       if (stepDeadlineAt >= allowance.deadlineAt && !controller.signal.aborted) {
         timedOut = true;
         controller.abort(new Error(timeoutMessage));
@@ -820,7 +829,10 @@ export async function runWorkflowInvocation<TInput = unknown>(
     }, Math.max(0, stepDeadlineAt - Date.now()));
     stepTimer.unref?.();
     const onParentAbort = () => stepController.abort(controller.signal.reason);
+    const onScopeAbort = () => stepController.abort(scope?.signal?.reason);
     controller.signal.addEventListener("abort", onParentAbort, { once: true });
+    scope?.signal?.addEventListener("abort", onScopeAbort, { once: true });
+    if (scope?.signal?.aborted) onScopeAbort();
     childControllers.add(stepController);
 
     try {
@@ -835,6 +847,33 @@ export async function runWorkflowInvocation<TInput = unknown>(
             deadlineAt: stepDeadlineAt,
             stepIndex,
             allowance,
+            callTarget: (nestedTarget, nestedInput, nestedOptions, nestedSignal, resolveNestedTarget) => {
+              const fallbackKind: "agent" | "workflow" =
+                typeof nestedTarget === "string" && nestedTarget.includes("/")
+                  ? "workflow"
+                  : typeof nestedInput === "string"
+                    ? "agent"
+                    : "workflow";
+              const resolvedKind = { current: fallbackKind };
+              return trackOperation(runBoundStep(
+                fallbackKind,
+                nestedTarget,
+                safePromptPreview(nestedInput),
+                nestedOptions,
+                async (nestedControl, nestedEffectiveOptions) => {
+                  const resolved = await resolveNestedTarget(nestedControl);
+                  resolvedKind.current = resolved.kind;
+                  const effective = normalizeEffectiveCallOptions(
+                    resolved.kind,
+                    nestedTarget,
+                    nestedEffectiveOptions,
+                  );
+                  return resolved.invoke(effective, nestedControl);
+                },
+                { signal: nestedSignal, deadlineAt: stepDeadlineAt },
+                resolvedKind,
+              ));
+            },
           },
           effectiveOptions,
         );
@@ -847,6 +886,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
         if (stepTimedOut || Date.now() > stepDeadlineAt) {
           lateRaw = raw;
           lateCleanupConfirmed = rawCleanupConfirmed;
+          stepTimeoutError = createStepTimeoutError();
           throw stepTimeoutError;
         }
         if (stepController.signal.aborted) {
@@ -872,7 +912,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
           abortedExternally && !timedOut && !stepTimedOut ? "interrupted" : "error";
         recordStep({
           index: stepIndex,
-          kind,
+          kind: currentKind(),
           target,
           prompt: promptTruncated ? `${promptText.slice(0, MAX_PROMPT_CHARS)}...` : promptText,
           ...(promptTruncated ? { promptTruncated: true } : {}),
@@ -896,7 +936,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       if (raw.status === "done" && effectiveOptions?.schema) {
         const kindLabel = actualKind === "agent" ? "Agent" : "Workflow";
         if (raw.output !== undefined) {
-          if (!checkKernelSchema(effectiveOptions.schema, raw.output)) {
+          if (!Check(effectiveOptions.schema, raw.output)) {
             const detail = schemaDiagnostic(effectiveOptions.schema, raw.output);
             raw = {
               ...raw,
@@ -950,6 +990,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
     } finally {
       clearTimeout(stepTimer);
       controller.signal.removeEventListener("abort", onParentAbort);
+      scope?.signal?.removeEventListener("abort", onScopeAbort);
       childControllers.delete(stepController);
       releaseAllowance();
     }
@@ -1109,7 +1150,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       summary,
       ...(output !== undefined ? { output } : {}),
     }),
-    blocked: (reason: string, facts?: unknown): ExecutionResult => ({
+    blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       id: executionId,
       kind: "workflow",
       status: "blocked",
@@ -1152,6 +1193,8 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
   let contribution: NormalizedWorkflowContribution | undefined;
   let caughtError: unknown;
+  let authoredExecutionSettled = false;
+  let settleAuthoredExecution: Promise<void> | undefined;
 
   try {
     const execution = (async () => {
@@ -1160,14 +1203,14 @@ export async function runWorkflowInvocation<TInput = unknown>(
       assertActive();
       const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
       if (normalized.type === "done") {
-        if (module.outputSchema && !checkKernelSchema(module.outputSchema, normalized.output)) {
+        if (module.outputSchema && !Check(module.outputSchema, normalized.output)) {
           throw new WorkflowValidationError(
             "output",
             `Invalid workflow output for "${module.name}": ${schemaDiagnostic(module.outputSchema, normalized.output)}`,
             normalized.output,
           );
         }
-        if (bindings.outputSchema && !checkKernelSchema(bindings.outputSchema, normalized.output)) {
+        if (bindings.outputSchema && !Check(bindings.outputSchema, normalized.output)) {
           throw new WorkflowValidationError(
             "output",
             `Invalid caller output schema for "${module.name}": ${schemaDiagnostic(bindings.outputSchema, normalized.output)}`,
@@ -1177,6 +1220,10 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
       return normalized;
     })();
+    settleAuthoredExecution = execution.then(
+      () => { authoredExecutionSettled = true; },
+      () => { authoredExecutionSettled = true; },
+    );
 
     contribution = await Promise.race([execution, stopped]);
   } catch (err) {
@@ -1208,6 +1255,27 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
     }
     await Promise.allSettled([...activeOperations]);
+    if (!authoredExecutionSettled && settleAuthoredExecution) {
+      // The execution deadline fences authored work. This separate, finite grace
+      // only observes whether cancellation-driven cleanup has actually settled;
+      // it does not reopen the context or grant more business execution time.
+      let settleTimer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          settleAuthoredExecution,
+          new Promise<void>((resolve) => {
+            settleTimer = setTimeout(resolve, AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS);
+            settleTimer.unref?.();
+          }),
+        ]);
+      } finally {
+        clearTimeout(settleTimer);
+      }
+    }
+    if (!authoredExecutionSettled) {
+      const label = `workflow:${module.name} (${executionId})`;
+      if (!unconfirmedCleanups.includes(label)) unconfirmedCleanups.push(label);
+    }
     if (bindings.confirmCleanup) {
       try {
         const ok = await bindings.confirmCleanup();

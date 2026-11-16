@@ -1,12 +1,12 @@
 import { Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { BeforeToolCallContext } from "@earendil-works/pi-agent-core";
 import { validateToolArguments, type ToolCall } from "@earendil-works/pi-ai";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
-import { admitTaskReconcileResult, taskAgentResultSchema, taskReconcileResultSchema } from "@may-agent/sdk";
+import { taskAgentResultSchema } from "@may-agent/sdk/app";
 import type { TSchema } from "typebox";
 import { createFinishTool, prepareAgentExecution } from "@may-agent/sdk/runtime";
 
@@ -70,9 +70,9 @@ describe("prepared completion contract", () => {
   }
 
   const review = {
-    status: "success",
+    status: "done",
     summary: "Reviewed the supplied result",
-    result: { verdict: "pass" },
+    output: { verdict: "pass" },
   };
 
   for (const name of ["optimizer", "reviewer"]) {
@@ -86,210 +86,39 @@ describe("prepared completion contract", () => {
     });
   }
 
-  it("reports an existing deliverable without requiring write activity or committing a dirty repository", async () => {
-    const init = Bun.spawn(["git", "init", "--quiet", projectRoot], { stdout: "pipe", stderr: "pipe", timeout: 5000 });
-    expect(await init.exited).toBe(0);
-    const path = "agents/optimizer/proof.txt";
-    mkdirSync(join(projectRoot, "agents", "optimizer"), { recursive: true });
-    writeFileSync(join(projectRoot, path), "Existing evidence");
-    const { prepared, finish, context } = prepare();
-    const ctx = context({ ...review, deliverables: [{ path, description: "reported output" }] });
-    expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
-    expect((await finish.execute(ctx.toolCall.id, validateToolArguments(finish, ctx.toolCall))).terminate).toBe(true);
-    expect(readFileSync(join(projectRoot, path), "utf8")).toBe("Existing evidence");
-    const status = Bun.spawn(["git", "status", "--porcelain", "--untracked-files=all"], {
-      cwd: projectRoot, stdout: "pipe", stderr: "pipe", timeout: 5000,
-    });
-    const output = await new Response(status.stdout).text();
-    expect(await status.exited).toBe(0);
-    expect(output.trim()).toBe(`?? ${path}`);
-  });
-
-  it("still rejects missing or invalid caller-defined results before execution", () => {
+  it("requires caller-defined output and rejects invalid TypeBox shapes before execution", () => {
     const { finish, context } = prepare();
-    const { result: _result, ...missing } = review;
-    for (const args of [missing, { ...review, result: { verdict: 123 } }]) {
+    const missing = { status: "done", summary: "Reviewed the supplied result" };
+    for (const args of [missing, { ...missing, output: { verdict: 123 } }]) {
       expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
     }
   });
 
-  it("rejects a prose Condition owner before finish and accepts its correction in the same execution", async () => {
+  it("uses generic TypeBox validation without Task-specific semantic admission", async () => {
     const { finish, context } = prepare("worker", taskAgentResultSchema);
-    const args = {
-      ...review,
-      status: "partial",
-      result: {
-        state: "waiting",
-        summary: "The requester must restore access",
-        facts: ["source:sample"],
-        conditions: [
-          {
-            id: "access",
-            type: "source.access",
-            subject: "source:sample",
-            expected: true,
-            owner: "human requester",
-          },
-        ],
-      },
+    const output = {
+      state: "converged",
+      summary: "Shape-valid domain output",
+      reviewAt: Date.now() + 60_000,
+      facts: [],
     };
-    expect(() => validateToolArguments(finish, context(args).toolCall)).toThrow();
-    args.result.conditions[0].owner = "human:requester";
+    const args = { status: "done", summary: "Bounded execution complete", output };
     const ctx = context(args);
-    const result = await finish.execute(ctx.toolCall.id, validateToolArguments(finish, ctx.toolCall));
-    expect(result.terminate).toBe(true);
-  });
-
-  it.each(["waiting", "incomplete"])(
-    "rejects an empty %s report at finish validation and accepts its correction",
-    async (state) => {
-      const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
-      const args = {
-        ...review,
-        status: "partial",
-        result: {
-          state,
-          report: true,
-          summary: "Access is missing",
-          facts: [] as string[],
-        },
-      };
-      const invalidCtx = context(args);
-      const invalidResult = await finish.execute(
-        invalidCtx.toolCall.id,
-        validateToolArguments(finish, invalidCtx.toolCall),
-      );
-      expect(invalidResult.terminate).toBeUndefined();
-      expect(invalidResult.content).toContainEqual({
-        type: "text",
-        text: expect.stringContaining("report requires waiting or incomplete, true, and non-empty facts"),
-      });
-
-      args.result.facts.push("source:access-denied");
-      const ctx = context(args);
-      const params = validateToolArguments(finish, ctx.toolCall);
-      expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
-      expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
-    },
-  );
-
-  it("rejects a waiting response at finish validation and admits the corrected wait", async () => {
-    const { prepared, finish, context } = prepare("worker", taskAgentResultSchema);
-    const args = {
-      ...review,
-      status: "partial",
-      result: {
-        state: "waiting",
-        summary: "Waiting for review",
-        response: "I will report later.",
-        reviewAt: Date.now() + 60_000,
-        facts: ["review:scheduled"],
-      },
-    };
-    const invalidCtx = context(args);
-    const invalidResult = await finish.execute(
-      invalidCtx.toolCall.id,
-      validateToolArguments(finish, invalidCtx.toolCall),
-    );
-    expect(invalidResult.terminate).toBeUndefined();
-    expect(invalidResult.content).toContainEqual({
-      type: "text",
-      text: expect.stringContaining("waiting cannot include response"),
-    });
-
-    const { response: _response, ...correctedResult } = args.result;
-    const corrected = { ...args, result: correctedResult };
-    const ctx = context(corrected);
     const params = validateToolArguments(finish, ctx.toolCall);
-    expect(admitTaskReconcileResult(params.result).ok).toBe(true);
-    expect(await prepared.runner.beforeToolCall!(ctx)).toBeUndefined();
+    expect(params.output).toEqual(output);
     expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
   });
 
-  it.each([
-    [
-      "converged reviewAt",
-      {
-        state: "converged",
-        summary: "Review is still pending",
-        reviewAt: Date.now() + 60_000,
-        facts: [],
-      },
-      {
-        state: "waiting",
-        summary: "Review is still pending",
-        reviewAt: Date.now() + 60_000,
-        facts: [],
-      },
-      "reviewAt is valid only for waiting",
-    ],
-    [
-      "no-progress continuation",
-      {
-        state: "waiting",
-        continue: true,
-        summary: "Continue without any completed work",
-        facts: [],
-      },
-      {
-        state: "waiting",
-        continue: true,
-        report: true,
-        summary: "Report the blocker and continue useful work",
-        reviewAt: Date.now() + 60_000,
-        facts: ["progress:recorded"],
-      },
-      "continue requires waiting and progress facts",
-    ],
-  ])("returns correctable finish feedback for %s before terminating", async (_name, invalid, corrected, error) => {
-    const { finish, context } = prepare("worker", taskAgentResultSchema);
-    const invalidCall = context({ ...review, status: "partial", result: invalid });
-    const invalidResult = await finish.execute(
-      invalidCall.toolCall.id,
-      validateToolArguments(finish, invalidCall.toolCall),
-    );
-    expect(invalidResult.terminate).toBeUndefined();
-    expect(invalidResult.content).toContainEqual({ type: "text", text: expect.stringContaining(error) });
-
-    const correctedCall = context({ ...review, status: "partial", result: corrected });
-    const correctedResult = await finish.execute(
-      correctedCall.toolCall.id,
-      validateToolArguments(finish, correctedCall.toolCall),
-    );
-    expect(correctedResult.terminate).toBe(true);
-  });
-
-  it("uses the same semantic finish boundary for agent and workflow report-plus-continuation", async () => {
-    const taskResult = {
-      state: "waiting",
-      report: true,
-      continue: true,
-      summary: "Review is blocked while independent checks continue",
-      facts: ["checks:started"],
-      conditions: [
-        {
-          id: "review",
-          type: "review.completed",
-          subject: "review:candidate",
-          expected: true,
-          owner: "human",
-        },
-      ],
-    } as const;
-
-    for (const schema of [taskAgentResultSchema, taskReconcileResultSchema]) {
-      const { finish, context } = prepare("worker", schema);
-      const call = context({ ...review, status: "partial", result: taskResult });
-      const result = await finish.execute(call.toolCall.id, validateToolArguments(finish, call.toolCall));
-      expect(result.terminate).toBe(true);
-    }
-  });
-
-  it("does not terminate successful attempts that claim nonexistent files", async () => {
-    const { finish, context } = prepare();
-    const ctx = context({ ...review, deliverables: [{ path: "missing.txt", description: "missing proof" }] });
-    const result = await finish.execute(ctx.toolCall.id, validateToolArguments(finish, ctx.toolCall));
-    expect(result.terminate).toBeUndefined();
-    expect(result.content).toContainEqual({ type: "text", text: expect.stringContaining("Deliverables not found") });
+  it("preserves optional output fields without inventing missing evidence", async () => {
+    const schema = Type.Object({
+      summary: Type.String(),
+      verification: Type.Optional(Type.Array(Type.String())),
+    });
+    const { finish, context } = prepare("worker", schema);
+    const args = { status: "blocked", summary: "Verification unavailable", output: { summary: "Draft retained" } };
+    const ctx = context(args);
+    const params = validateToolArguments(finish, ctx.toolCall);
+    expect(params.output).not.toHaveProperty("verification");
+    expect((await finish.execute(ctx.toolCall.id, params)).terminate).toBe(true);
   });
 });

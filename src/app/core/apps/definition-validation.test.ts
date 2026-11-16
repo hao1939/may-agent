@@ -1,4 +1,4 @@
-import { Type, defineApp } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk/app";
 import { describe, expect, it } from "bun:test";
 import { assertValidAppInput, validateAppDefinition } from "./definition-validation.js";
 
@@ -293,11 +293,15 @@ describe("canonical App definition validation", () => {
     ).toContain("App missing-task-policy task requires a tasks policy");
   });
 
-  it("requires an executable opt-in policy for accepted-result closure", () => {
+  it("requires executable Task result boundary policies", () => {
     const app = { id: "sample", version: 1, agent: "worker", inputSchema };
     expect(validateAppDefinition({ ...app, tasks: { closeOnResult: () => null } })).toEqual([]);
     expect(validateAppDefinition({ ...app, tasks: { closeOnResult: true } })).toContain(
       "App sample task closeOnResult must be a function",
+    );
+    expect(validateAppDefinition({ ...app, tasks: { translateBlockedResult: () => null } })).toEqual([]);
+    expect(validateAppDefinition({ ...app, tasks: { translateBlockedResult: true } })).toContain(
+      "App sample task translateBlockedResult must be a function",
     );
   });
 

@@ -11,7 +11,7 @@
 
 import { randomUUID } from "node:crypto";
 import { setDefaultAutoSelectFamily } from "node:net";
-import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk";
+import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk/app";
 import type { ApprovalProposal, EventInput, EventReceipt } from "@may-agent/control/events";
 import type { EventBus } from "../core/events/bus.js";
 import { readPersistedTelegramReloadCompletion, resumeRecordedTelegramInput } from "../core/events/persisted.js";

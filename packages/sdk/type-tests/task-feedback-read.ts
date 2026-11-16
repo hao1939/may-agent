@@ -1,4 +1,4 @@
-import type { WorkflowContext } from "../src/index.js";
+import type { WorkflowContext } from "../src/app.js";
 
 // Compiled by SDK checks and the public declaration regression, never executed.
 declare const ctx: WorkflowContext;

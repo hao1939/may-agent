@@ -271,13 +271,11 @@ function resolveSdkExport(specifier: string, importer: string): string {
   const exportFile =
     specifier === "@may-agent/sdk/app"
       ? "app.ts"
-      : specifier === "@may-agent/sdk/task"
-        ? "task.ts"
-        : specifier === "@may-agent/sdk/standalone"
-          ? "standalone.ts"
-          : specifier === "@may-agent/sdk/testing"
-            ? "testing.ts"
-            : "index.ts";
+      : specifier === "@may-agent/sdk/standalone"
+        ? "standalone.ts"
+        : specifier === "@may-agent/sdk/testing"
+          ? "testing.ts"
+          : "index.ts";
   const candidates = sdkRootCandidates(importer).map((root) => join(root, "src", exportFile));
   const resolved = candidates.find((candidate) => existsSync(candidate));
   if (resolved) return resolved;
@@ -350,7 +348,7 @@ function findNodeModulesSdk(startDir: string): string | undefined {
 import { createHash } from "node:crypto";
 import { isAbsolute, relative } from "node:path";
 import type { TSchema } from "typebox";
-import type { ExecutionResult, TaskReconcileResult, WorkflowContext } from "../../index.js";
+import type { ExecutionResult, AgentContext } from "../../index.js";
 
 export interface WorkflowModule {
   name: string;
@@ -360,7 +358,7 @@ export interface WorkflowModule {
   outputSchema?: TSchema;
   executionTimeoutMs?: number;
   workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
-  execute: (ctx: WorkflowContext) => Promise<ExecutionResult | TaskReconcileResult>;
+  execute: (ctx: AgentContext) => Promise<ExecutionResult>;
   verify?: (context: unknown, result: unknown) => Promise<unknown>;
   sourcePath: string;
   sourceScope: "agent" | "project";

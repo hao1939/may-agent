@@ -5,7 +5,7 @@
  * and surface session state.
  */
 
-import type { AppConversationMessage, AppConversationTopic } from "@may-agent/sdk";
+import type { AppConversationMessage, AppConversationTopic } from "@may-agent/sdk/app";
 import type { ApprovalProposal, EventInput } from "@may-agent/control/events";
 import {
   approvalProposalForTask,

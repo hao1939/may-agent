@@ -45,7 +45,7 @@ test("compiled preparation includes Host instructions without installation promp
     const result = JSON.parse(await command([binary], root));
     expect(result.system).toContain("App-owned identity");
     expect(result.system).toContain("<execution_instructions>");
-    expect(result.system).toContain("a helper still owes only its assigned contribution");
+    expect(result.system).toContain("Work within the caller's assignment and authority");
     expect(result.task).toBe("Original assignment");
     expect(result.prompt).toBe("App-owned brief");
   } finally {

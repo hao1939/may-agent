@@ -1,4 +1,4 @@
-import { Type, defineApp } from "@may-agent/sdk";
+import { Type, defineApp } from "@may-agent/sdk/app";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import { readAppConversationResource } from "./conversations.js";
 import { afterEach, describe, expect, it, setSystemTime } from "bun:test";

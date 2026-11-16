@@ -19,9 +19,6 @@
       "@may-agent/sdk/app": [
         "./packages/sdk/src/app.ts"
       ],
-      "@may-agent/sdk/task": [
-        "./packages/sdk/src/task.ts"
-      ],
       "@may-agent/sdk/standalone": [
         "./packages/sdk/src/standalone.ts"
       ],
@@ -30,6 +27,12 @@
       ],
       "@may-agent/sdk/runtime": [
         "./packages/sdk/src/runtime/index.ts"
+      ],
+      "@may-agent/control": [
+        "./packages/control/src/index.ts"
+      ],
+      "@may-agent/control/*": [
+        "./packages/control/src/*.ts"
       ]
     }
   },

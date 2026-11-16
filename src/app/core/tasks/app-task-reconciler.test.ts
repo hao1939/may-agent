@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk";
+import type { TaskIntent as AppTaskIntent } from "@may-agent/sdk/app";
 import {
   readTaskSnapshot,
   type AppTaskContext,

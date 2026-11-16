@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import type { AgentContextPreparer } from "@may-agent/sdk";
+import type { AgentContextPreparer } from "@may-agent/sdk/app";
 import { importRuntimeModule } from "../../lib/runtime-import.js";
 import { discoverAgentSkills, type SkillCatalog } from "../../lib/skills.js";
 import type { ModelWithApiKey, SubagentDefinition, ToolFactory } from "../../lib/manager-utils.js";

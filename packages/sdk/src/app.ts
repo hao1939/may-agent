@@ -1,14 +1,41 @@
-export { MAX_CONVERSATION_REQUESTS_PER_TURN, conversationRequestUpdatesSchema } from "./conversation-contract.js";
-export type { AppConversationRequest, AppConversationRequestUpdate } from "./conversation-contract.js";
+export { MAX_CONVERSATION_REQUESTS_PER_TURN, conversationRequestUpdatesSchema } from "./app-conversation.js";
+export type { AppConversationRequest, AppConversationRequestUpdate } from "./app-conversation.js";
+export { readVerifiedApprovalDecision } from "./app-approval.js";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "./app-approval.js";
+export type { TaskCommunicationQuery } from "./app-conversation.js";
+export {
+  admitTaskReconcileResult,
+  admitTaskChanges,
+  taskChangesSchema,
+  admitTaskResultForSchema,
+  admitTaskVerificationResult,
+  conditionSchema,
+  isTypedConditionSubject,
+  taskActionSchema,
+  taskAgentResultSchema,
+  taskReconcileResultSchema,
+  taskVerificationResultSchema,
+} from "./task.js";
+export type {
+  Condition, ResourceCreator, TaskRevision, TaskAcceptanceBasis, TaskAction,
+  TaskAppRequest, TaskCondition, TaskRequestCondition, TaskExecutorName, TaskIntent,
+  TaskPriority, TaskStatus, TaskClosure, TaskReconcileResult, TaskChanges,
+  TaskCommunication, TaskInput, TaskChangeReceipt, TaskReconcileState,
+  TaskVerificationContext, TaskVerificationResult, TaskVerifier, TaskReconcileAdmission,
+} from "./task.js";
 export { defineObserver, observationCondition } from "./observer.js";
 export type { ObservationContract, ObservationInterest, ObserverHealth, ResourceObserver } from "./observer.js";
 export { ExecutionDeferredError } from "./workflow.js";
 export type { ExecutionDeferral } from "./workflow.js";
+export { workflowResult, workflowResultVersion } from "./workflow-result.js";
+export type { StructuredWorkflowResult, WorkflowCheckResult, WorkflowIoContract, WorkflowProblem, WorkflowResultStatus, WorkflowSubject } from "./workflow-result.js";
+export type { AgentContextPreparer } from "./agent-context.js";
+export type { WorkflowExecutableModule } from "./workflow-kernel.js";
 import type { Static, TSchema } from "typebox";
-import type { AppConversationRequest } from "./conversation-contract.js";
+import type { AppConversationRequest } from "./app-conversation.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { ObservationContract, ResourceObserver } from "./observer.js";
-import type { Condition, ResourceCreator, TaskAction, TaskIntent, TaskStatus } from "./task.js";
+import type { Condition, ResourceCreator, TaskAction, TaskAppRequest, TaskCondition, TaskIntent, TaskStatus } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
@@ -18,7 +45,10 @@ export type { AppEvent, AppEventTarget, EventSelector } from "./event.js";
 export type {
   AgentCallOptions,
   AgentContext,
+  AgentExecutableModule,
   AppRead,
+  AppWorkflowContext,
+  AppWorkflowContext as WorkflowContext,
   CallOptions,
   CliCallFacts,
   ExecutionResult,
@@ -54,7 +84,6 @@ export type {
   TaskView,
   TaskWorkload,
   TaskWorkloadOptions,
-  WorkflowContext,
   WorkflowInput,
   WorkflowMetricCapability,
 } from "./workflow.js";
@@ -298,11 +327,30 @@ export type AppWorkspace = {
   branch?: string;
 };
 
+export type AppTaskBlockedSettlement = {
+  /** Relative continuation delay translated by the Host to its absolute reviewAt clock. */
+  retryAfterMs?: number;
+  conditions?: TaskCondition[];
+  requests?: TaskAppRequest[];
+};
+
+export type AppTaskBlockedResultContext = {
+  task: Readonly<TaskDetail>;
+  summary: string;
+  output?: unknown;
+  facts?: unknown;
+};
+
 /** Optional durable-task policy. Mechanics and storage remain host-private. */
 export type AppTaskPolicy = {
   validateAction?: (action: TaskAction) => string | null;
   /** Optional App-specific semantic admission for externally observable waits. */
   validateCondition?: (condition: Condition) => string | null;
+  /** Pure App boundary from domain blocked data to Host wait mechanics. Returning
+   * null retains a genuine wait without inventing a timer, Condition or request. */
+  translateBlockedResult?: (
+    context: AppTaskBlockedResultContext,
+  ) => AppTaskBlockedSettlement | null;
   /** Pure, opt-in App decision after a converged result is accepted. Only applies
    * to this App's own App-created assignments, never Task-created/delegated work.
    * Return a nonblank reason to end responsibility, or null to retain it. Inspect

@@ -7,11 +7,11 @@
  */
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import type { TSchema } from "typebox";
+import { Type, type TSchema } from "typebox";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { AgentCallOptions, AppRead, CallOptions, TaskDetail, WorkflowContext } from "@may-agent/sdk";
+import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
 import {
   WorkflowUnconfirmedCleanupError,
   createWorkflowAllowance,
@@ -22,6 +22,7 @@ import {
   type WorkflowExecutableModule,
   type WorkflowExecutionAllowance,
   type WorkflowKernelOutcome,
+  type WorkflowKernelResolvedTarget,
   type WorkflowKernelStepControl,
   type WorkflowLogEntry,
   type WorkflowRunReport,
@@ -71,6 +72,29 @@ export type AgentExecutionManifest = {
   effectiveTools: string[];
 };
 
+export type DirectCapabilityProviderContext = {
+  agentName: string;
+  capability: string;
+  projectRoot: string;
+  workRoot: string;
+  outputRoot: string;
+  sessionId: string;
+};
+
+export type DirectCapabilityBinding = {
+  tools: AgentTool[];
+  cleanup?: () => void;
+  cleanupAsync?: () => Promise<boolean>;
+};
+
+/** Generic caller binding for explicitly declared capabilities not built into the SDK. */
+export type DirectCapabilityProvider = (
+  context: DirectCapabilityProviderContext,
+) =>
+  | AgentTool[]
+  | DirectCapabilityBinding
+  | Promise<AgentTool[] | DirectCapabilityBinding>;
+
 export type DirectAgentRunOptions = {
   agentName: string;
   /** Trusted source already selected by the invocation's captured catalog. */
@@ -112,6 +136,10 @@ export type DirectAgentRunOptions = {
   /** Finite positive integer tool-operation allowance before bounded completion is requested. */
   operationAllowance?: number;
   toolDenials?: ToolDenial[];
+  /** Bind services for explicitly declared capabilities that the portable SDK does not implement. */
+  capabilityProviders?: Readonly<Record<string, DirectCapabilityProvider>>;
+  /** Reports the concrete prompt-session identity before model execution starts. */
+  onSessionStarted?: (sessionId: string) => void;
   timeoutMs?: number;
   signal?: AbortSignal;
   deadlineAt?: number;
@@ -181,6 +209,52 @@ export function resolveDirectToolPolicy(
   };
 }
 
+type DirectToolResources = {
+  cleanupSync: Array<() => void>;
+  cleanupAsync: Array<() => Promise<boolean>>;
+  cleanupConfirmed: boolean;
+  cleanupFinalization?: Promise<boolean>;
+};
+
+function cleanupDirectToolResourcesSync(resources: DirectToolResources): void {
+  const failures: unknown[] = [];
+  for (const close of resources.cleanupSync.splice(0).reverse()) {
+    try {
+      close();
+    } catch (error) {
+      resources.cleanupConfirmed = false;
+      failures.push(error);
+    }
+  }
+  if (failures.length > 0) {
+    throw new AggregateError(failures, "One or more direct capability cleanup handlers failed");
+  }
+}
+
+function cleanupDirectToolResources(resources: DirectToolResources): Promise<boolean> {
+  if (resources.cleanupFinalization) return resources.cleanupFinalization;
+  resources.cleanupFinalization = Promise.resolve().then(async () => {
+    try {
+      cleanupDirectToolResourcesSync(resources);
+    } catch {
+      // The retained flag keeps uncertainty visible after cleanup() followed by cleanupAsync().
+    }
+    const asyncClosers = resources.cleanupAsync.splice(0).reverse();
+    const outcomes = await Promise.all(
+      asyncClosers.map(async (close) => {
+        try {
+          return await close();
+        } catch {
+          return false;
+        }
+      }),
+    );
+    if (!outcomes.every(Boolean)) resources.cleanupConfirmed = false;
+    return resources.cleanupConfirmed;
+  });
+  return resources.cleanupFinalization;
+}
+
 async function buildDirectTools(
   config: AgentConfig,
   source: AgentDirectory,
@@ -188,15 +262,11 @@ async function buildDirectTools(
   sessionId: string,
   effectiveTools: string[],
   fileWritePolicy: FileWritePolicy,
-): Promise<{
-  tools: AgentTool[];
-  cleanupSync: Array<() => void>;
-  cleanupAsync: Array<() => Promise<boolean>>;
-}> {
+  resources: DirectToolResources,
+): Promise<AgentTool[]> {
   const tools: AgentTool[] = [];
   const sources: string[] = [];
-  const cleanupSync: Array<() => void> = [];
-  const cleanupAsync: Array<() => Promise<boolean>> = [];
+  const { cleanupSync, cleanupAsync } = resources;
   for (const capability of effectiveTools) {
     switch (capability) {
       case "coding":
@@ -219,11 +289,33 @@ async function buildDirectTools(
           }),
         );
         break;
-      default:
-        throw new Error(
-          `Direct run cannot construct effective tool "${capability}" for agent ${config.name}; ` +
-            `the caller must provide an explicit denial or a direct tool implementation`,
-        );
+      default: {
+        const provider = options.capabilityProviders?.[capability];
+        if (!provider) {
+          throw new Error(
+            `Direct run cannot construct effective tool "${capability}" for agent ${config.name}; ` +
+              `the caller must provide an explicit denial or capability provider`,
+          );
+        }
+        const provided = await provider({
+          agentName: config.name,
+          capability,
+          projectRoot: options.projectRoot,
+          workRoot: options.workRoot,
+          outputRoot: options.outputRoot,
+          sessionId,
+        });
+        const binding: DirectCapabilityBinding = Array.isArray(provided) ? { tools: provided } : provided;
+        if (binding?.cleanup) cleanupSync.push(binding.cleanup);
+        if (binding?.cleanupAsync) cleanupAsync.push(binding.cleanupAsync);
+        if (!binding || !Array.isArray(binding.tools) || binding.tools.length === 0) {
+          throw new Error(
+            `Capability provider "${capability}" returned no tools for agent ${config.name}`,
+          );
+        }
+        tools.push(...binding.tools);
+        break;
+      }
     }
     while (sources.length < tools.length) sources.push(`configured capability "${capability}"`);
   }
@@ -238,7 +330,7 @@ async function buildDirectTools(
     tools.map((tool, index) => ({ tool, source: sources[index]! })),
     config.name,
   );
-  return { tools, cleanupSync, cleanupAsync };
+  return tools;
 }
 
 /** Prepare one direct run without constructing autonomous infrastructure. */
@@ -265,76 +357,73 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     ...readFileWritePolicy(options.sharedRoot, options.projectRoot),
     execution: { root: resolve(options.workRoot), sourceRoot: resolve(options.projectRoot) },
   };
-  const { tools, cleanupSync, cleanupAsync } = await buildDirectTools(
-    config,
-    source,
-    options,
-    sessionId,
-    executionManifest.effectiveTools,
-    fileWritePolicy,
-  );
-  const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
-  const definition = await buildAgentDefinition({
-    config,
-    source: definitionSource,
-    model,
-    tools,
-    projectRoot: options.workRoot,
-    sharedRoot: options.sharedRoot,
-    globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
-    ...(options.identityText !== undefined ? { identityText: options.identityText } : {}),
-    ...(options.sharedPromptText !== undefined ? { sharedPromptText: options.sharedPromptText } : {}),
-    ...(options.skillCatalog !== undefined ? { skillCatalog: options.skillCatalog } : {}),
-  });
-  definition.fileWritePolicy = fileWritePolicy;
-  for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
+  const resources: DirectToolResources = { cleanupSync: [], cleanupAsync: [], cleanupConfirmed: true };
+  try {
+    const tools = await buildDirectTools(
+      config,
+      source,
+      options,
+      sessionId,
+      executionManifest.effectiveTools,
+      fileWritePolicy,
+      resources,
+    );
+    const definitionSource = options.visibleAgentDir ? { ...source, dir: resolve(options.visibleAgentDir) } : source;
+    const definition = await buildAgentDefinition({
+      config,
+      source: definitionSource,
+      model,
+      tools,
+      projectRoot: options.workRoot,
+      sharedRoot: options.sharedRoot,
+      globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
+      ...(options.identityText !== undefined ? { identityText: options.identityText } : {}),
+      ...(options.sharedPromptText !== undefined ? { sharedPromptText: options.sharedPromptText } : {}),
+      ...(options.skillCatalog !== undefined ? { skillCatalog: options.skillCatalog } : {}),
+    });
+    definition.fileWritePolicy = fileWritePolicy;
+    for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
 
-  const prepared = prepareAgentExecution({
-    definition,
-    projectRoot: options.projectRoot,
-    sessionId,
-    task: options.task,
-    ...(options.skill !== undefined ? { skill: options.skill } : {}),
-    ...(options.contextMessages !== undefined ? { contextMessages: options.contextMessages } : {}),
-    outputSchema: options.outputSchema,
-    requireFinish: options.requireFinish === true || options.outputSchema !== undefined,
-    toolPolicy: options.toolPolicy,
-    promptTimestamp: options.promptTimestamp,
-    createFinish: () =>
-      createFinishTool({
-        projectRoot: options.workRoot,
-      }),
-    onNotice: options.onNotice,
-  });
-  // Keep configured capability policy unchanged, but report the concrete tools
-  // that the model can actually see after local and schema-driven preparation.
-  executionManifest = {
-    ...executionManifest,
-    effectiveTools: prepared.tools.map((tool) => tool.name),
-  };
-
-  return {
-    prepared,
-    sessionId,
-    sessionPath,
-    model: config.model,
-    executionManifest,
-    cleanup: () => {
-      for (const close of cleanupSync) close();
-    },
-    cleanupAsync: async () => {
-      const outcomes = await Promise.all(
-        cleanupAsync.map(async (fn) => {
-          try {
-            return await fn();
-          } catch {
-            return false;
-          }
+    const prepared = prepareAgentExecution({
+      definition,
+      projectRoot: options.projectRoot,
+      sessionId,
+      task: options.task,
+      ...(options.skill !== undefined ? { skill: options.skill } : {}),
+      ...(options.contextMessages !== undefined ? { contextMessages: options.contextMessages } : {}),
+      outputSchema: options.outputSchema,
+      requireFinish: options.requireFinish === true || options.outputSchema !== undefined,
+      toolPolicy: options.toolPolicy,
+      promptTimestamp: options.promptTimestamp,
+      createFinish: () =>
+        createFinishTool({
+          projectRoot: options.workRoot,
         }),
-      );
-      return outcomes.every(Boolean);
-    },
-  };
+      onNotice: options.onNotice,
+    });
+    // Keep configured capability policy unchanged, but report the concrete tools
+    // that the model can actually see after local and schema-driven preparation.
+    executionManifest = {
+      ...executionManifest,
+      effectiveTools: prepared.tools.map((tool) => tool.name),
+    };
+
+    return {
+      prepared,
+      sessionId,
+      sessionPath,
+      model: config.model,
+      executionManifest,
+      cleanup: () => cleanupDirectToolResourcesSync(resources),
+      cleanupAsync: () => cleanupDirectToolResources(resources),
+    };
+  } catch (error) {
+    const cleanupConfirmed = await cleanupDirectToolResources(resources);
+    if (!cleanupConfirmed) {
+      throw new WorkflowUnconfirmedCleanupError(options.agentName, [`agent:${options.agentName} (${sessionId})`], error);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -344,27 +433,27 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
 export async function runDirectAgent(options: DirectAgentRunOptions): Promise<DirectAgentRunResult> {
   const direct = await prepareDirectAgentExecution(options);
   const { prepared, sessionId, sessionPath, executionManifest } = direct;
-  mkdirSync(sessionPath, { recursive: true });
-  const transcriptPath = join(sessionPath, "session.jsonl");
-  writeFileSync(
-    join(sessionPath, "meta.json"),
-    `${JSON.stringify(
-      {
-        sessionId,
-        agent: prepared.definition.name,
-        model: direct.model,
-        kind: "direct",
-        executionManifest,
-      },
-      null,
-      2,
-    )}\n`,
-  );
-
   let result: Awaited<ReturnType<typeof executePreparedAgent>> | undefined;
   let caught: unknown;
   let cleanupConfirmed = true;
   try {
+    mkdirSync(sessionPath, { recursive: true });
+    const transcriptPath = join(sessionPath, "session.jsonl");
+    writeFileSync(
+      join(sessionPath, "meta.json"),
+      `${JSON.stringify(
+        {
+          sessionId,
+          agent: prepared.definition.name,
+          model: direct.model,
+          kind: "direct",
+          executionManifest,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    options.onSessionStarted?.(sessionId);
     result = await executePreparedAgent(prepared, {
       timeoutMs: options.timeoutMs,
       signal: options.signal,
@@ -392,7 +481,12 @@ export async function runDirectAgent(options: DirectAgentRunOptions): Promise<Di
   } catch (err) {
     caught = err;
   } finally {
-    cleanupConfirmed = await direct.cleanupAsync();
+    try {
+      direct.cleanup();
+    } catch {
+      cleanupConfirmed = false;
+    }
+    cleanupConfirmed = (await direct.cleanupAsync()) && cleanupConfirmed;
   }
   if (!cleanupConfirmed && caught !== undefined) {
     throw new WorkflowUnconfirmedCleanupError(options.agentName, [`agent:${options.agentName} (${sessionId})`], caught);
@@ -429,6 +523,77 @@ export function defaultDirectToolDenials(configuredTools: readonly string[]): To
   });
 }
 
+const CommonKernelAgentsParams = Type.Object({
+  action: Type.String({ description: 'Only "call" is supported by the bounded common-kernel agents binding.' }),
+  agent: Type.String({ description: "Declared prompt agent or code procedure target." }),
+  input: Type.Optional(Type.Unknown({ description: "Structured procedure input or prompt text." })),
+  task: Type.Optional(Type.String({ description: "Prompt text alias used when input is omitted." })),
+  timeoutMs: Type.Optional(Type.Number({ minimum: 1 })),
+  tools: Type.Optional(Type.Union([Type.Literal("full"), Type.Literal("readonly")])),
+  skill: Type.Optional(Type.String()),
+  operationAllowance: Type.Optional(Type.Integer({ minimum: 1 })),
+}, { additionalProperties: false });
+
+type CommonKernelAgentsCall = {
+  action: string;
+  agent: string;
+  input?: unknown;
+  task?: string;
+  timeoutMs?: number;
+  tools?: "full" | "readonly";
+  skill?: string;
+  operationAllowance?: number;
+};
+
+/**
+ * Built-in agents binding available only inside an admitted common-kernel prompt step.
+ * A caller-supplied provider always takes precedence and is executed unchanged.
+ */
+function createCommonKernelAgentsTool(
+  stepControl: WorkflowKernelStepControl,
+  resolveTarget: (
+    target: string,
+    input: unknown,
+    signal: AbortSignal,
+  ) => WorkflowKernelResolvedTarget | Promise<WorkflowKernelResolvedTarget>,
+): AgentTool {
+  return {
+    name: "agents",
+    label: "Call declared agent",
+    description:
+      'Synchronously call one declared prompt agent or code procedure through the current execution kernel. Only action: "call" is supported; helper lifecycle actions and native CLI fallback are unavailable.',
+    parameters: CommonKernelAgentsParams,
+    execute: async (_toolCallId, rawParams, signal) => {
+      const params = rawParams as CommonKernelAgentsCall;
+      if (params.action !== "call") {
+        throw new Error(`agents action "${String(params.action)}" is unsupported in the bounded common-kernel binding; only "call" is available`);
+      }
+      if (typeof params.agent !== "string" || !params.agent.trim()) {
+        throw new Error('agents action "call" requires a non-empty agent target');
+      }
+      if (params.input === undefined && params.task === undefined) {
+        throw new Error('agents action "call" requires input (or the prompt task alias)');
+      }
+      const input = params.input !== undefined ? params.input : params.task!;
+      const options: CallOptions<TSchema> = {
+        ...(params.timeoutMs !== undefined ? { timeoutMs: params.timeoutMs } : {}),
+        ...(params.tools !== undefined ? { tools: params.tools } : {}),
+        ...(params.skill !== undefined ? { skill: params.skill } : {}),
+        ...(params.operationAllowance !== undefined ? { operationAllowance: params.operationAllowance } : {}),
+      };
+      const result = await stepControl.callTarget(
+        params.agent.trim(),
+        input,
+        options,
+        signal,
+        (nestedControl) => resolveTarget(params.agent.trim(), input, nestedControl.signal),
+      );
+      const text = JSON.stringify(result);
+      return { content: [{ type: "text", text }], details: result };
+    },
+  };
+}
+
 export type DirectAgentFixtureHandler = (call: {
   agent: string;
   task: string;
@@ -444,7 +609,7 @@ export type WorkflowExecutionEnvironment<TInput = unknown> = {
   read?: Partial<AppRead>;
   events?: Partial<WorkflowContext["events"]>;
   metrics?: Partial<WorkflowContext["metrics"]>;
-  task?: TaskDetail;
+  /** Host/App adapters may pass an already-admitted orchestration context; standalone never creates one. */
   reconciliation?: WorkflowContext<TInput>["reconciliation"];
   reviseTask?: WorkflowContext["reviseTask"];
   closeTask?: WorkflowContext["closeTask"];
@@ -483,6 +648,10 @@ export type DirectWorkflowRunOptions<TInput = unknown> = WorkflowExecutionEnviro
   runCli?: (input: CliAgentInput, opts: CliAgentOptions) => Promise<CliAgentResult>;
   /** Custom tool denial policy for real child agent runs. */
   resolveToolDenials?: (agentName: string, configuredTools: readonly string[]) => ToolDenial[];
+  /** Generic service bindings for explicitly declared prompt-agent capabilities. */
+  capabilityProviders?: Readonly<Record<string, DirectCapabilityProvider>>;
+  /** Reports each concrete prompt-session identity before model execution starts. */
+  onSessionStarted?: (sessionId: string) => void;
   /** Optional tool restriction ("readonly") for this execution scope. */
   tools?: "full" | "readonly";
   /** Optional caller-side output schema enforced in addition to any module outputSchema. */
@@ -517,10 +686,8 @@ export type DirectWorkflowRunResult = {
 };
 
 function normalizeFinishStatus(status: string): NonNullable<TaskResult["finishResult"]>["status"] {
-  if (status === "failure" || status === "blocked" || status === "partial" || status === "success") {
-    return status;
-  }
-  return "success";
+  if (status === "done" || status === "blocked" || status === "error") return status;
+  return "error";
 }
 
 function directResultToTaskResult(run: DirectAgentRunResult): TaskResult {
@@ -528,9 +695,8 @@ function directResultToTaskResult(run: DirectAgentRunResult): TaskResult {
     ? {
         status: normalizeFinishStatus(run.finishResult.status),
         summary: run.finishResult.summary,
-        ...(run.finishResult.deliverables ? { deliverables: run.finishResult.deliverables } : {}),
-        ...(run.finishResult.blockers ? { blockers: run.finishResult.blockers } : {}),
-        ...(run.finishResult.result !== undefined ? { result: run.finishResult.result } : {}),
+        ...(run.finishResult.output !== undefined ? { output: run.finishResult.output } : {}),
+        ...(run.finishResult.facts !== undefined ? { facts: run.finishResult.facts } : {}),
       }
     : undefined;
   return {
@@ -654,38 +820,6 @@ type DirectPromptDefinition = {
 function readOptionalPromptFile(path: string): string {
   if (!existsSync(path)) return "";
   return readFileSync(path, "utf-8").trim();
-}
-
-function formatStandaloneAssignmentContext(task: TaskDetail): AgentMessage[] {
-  const lines: string[] = [];
-  if (task.outcome.trim()) lines.push(`Goal: ${task.outcome.trim()}`);
-  if (task.acceptance.length > 0) {
-    lines.push("Acceptance:");
-    for (const item of task.acceptance) lines.push(`- ${item}`);
-  }
-  const inputRecord = task.input as {
-    constraints?: unknown;
-    data?: { constraints?: unknown };
-  } | undefined;
-  const rawConstraints = Array.isArray(inputRecord?.data?.constraints)
-    ? inputRecord.data.constraints
-    : Array.isArray(inputRecord?.constraints)
-      ? inputRecord.constraints
-      : undefined;
-  if (rawConstraints && rawConstraints.length > 0) {
-    lines.push("Constraints:");
-    for (const item of rawConstraints) {
-      if (typeof item === "string" && item.trim()) lines.push(`- ${item.trim()}`);
-    }
-  }
-  if (lines.length === 0) return [];
-  return [
-    {
-      role: "user",
-      content: [{ type: "text", text: `Current assignment context:\n${lines.join("\n")}` }],
-      timestamp: Date.now(),
-    } as AgentMessage,
-  ];
 }
 
 type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
@@ -960,6 +1094,7 @@ export async function runDirectWorkflow<TInput = unknown>(
   };
 
   let targetModule = options.module;
+  let rootPromptTarget: string | undefined;
   let catalogCapturedAtRoot = false;
   const rootStartedAt = Date.now();
   let preparedAllowance: WorkflowExecutionAllowance | undefined = internal?.allowance;
@@ -1078,6 +1213,7 @@ export async function runDirectWorkflow<TInput = unknown>(
             callerOwner = resolved.owner;
             targetModule = resolved.module as WorkflowExecutableModule<TInput>;
           } else {
+            rootPromptTarget = resolved.name;
             targetModule = {
               name: resolved.name,
               description: `Direct prompt invocation for ${resolved.name}`,
@@ -1158,55 +1294,21 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   const childSessions: DirectWorkflowRunResult["childSessions"] = [];
   const env = options.context;
-  const checkReconciliationIds = (
-    rec: WorkflowContext<TInput>["reconciliation"] | undefined,
-    label: string,
-  ) => {
-    if (rec?.task && rec.task.id !== rec.taskId) {
-      throw new Error(
-        `Conflicting Task IDs in ${label}.taskId ("${rec.taskId}") and ${label}.task.id ("${rec.task.id}")`,
-      );
-    }
-  };
-  checkReconciliationIds(env?.reconciliation, "context.reconciliation");
-  checkReconciliationIds(options.reconciliation, "reconciliation");
-  const suppliedTaskIds = [
-    env?.task?.id,
-    options.task?.id,
-    env?.reconciliation?.taskId,
-    env?.reconciliation?.task?.id,
-    options.reconciliation?.taskId,
-    options.reconciliation?.task?.id,
-  ].filter((id): id is string => typeof id === "string" && id.length > 0);
-  const distinctTaskIds = [...new Set(suppliedTaskIds)];
-  if (distinctTaskIds.length > 1) {
+  const reconciliation = env?.reconciliation ?? options.reconciliation;
+  if (
+    env?.reconciliation &&
+    options.reconciliation &&
+    env.reconciliation.taskId !== options.reconciliation.taskId
+  ) {
     throw new Error(
-      `Conflicting Task IDs across task and reconciliation inputs: ${distinctTaskIds.map((id) => `"${id}"`).join(", ")}`,
+      `Conflicting explicit reconciliation Task IDs: "${env.reconciliation.taskId}" and "${options.reconciliation.taskId}"`,
     );
   }
-  const candidateTask = env?.task ?? options.task;
-  const candidateReconciliation = env?.reconciliation ?? options.reconciliation;
-  const reconciliation: WorkflowContext<TInput>["reconciliation"] | undefined =
-    candidateReconciliation ??
-    (candidateTask
-      ? {
-          task: candidateTask,
-          appId: "direct-app",
-          taskId: candidateTask.id,
-          generation: candidateTask.generation,
-          resourceVersion: candidateTask.resourceVersion ?? 1,
-          agent: candidateTask.agent ?? options.agentName ?? callerOwner,
-          owner: candidateTask.agent ?? options.agentName ?? callerOwner,
-          outcome: candidateTask.outcome,
-          acceptance: candidateTask.acceptance,
-          input: candidateTask.input as TInput,
-          children: { live: [], completed: [] },
-          waits: { open: [], note: "direct snapshot" },
-          taskSnapshot: { live: [], truncated: false },
-          events: { items: [], truncated: false },
-        }
-      : undefined);
-  const taskDetail = reconciliation?.task ?? candidateTask;
+  if (reconciliation?.task && reconciliation.task.id !== reconciliation.taskId) {
+    throw new Error(
+      `Conflicting explicit reconciliation Task IDs: taskId "${reconciliation.taskId}" and task.id "${reconciliation.task.id}"`,
+    );
+  }
 
   const readOverrides = env?.read ?? options.read;
   const unavailableRead = (name: string) => async () => {
@@ -1216,17 +1318,8 @@ export async function runDirectWorkflow<TInput = unknown>(
     contract: readOverrides?.contract ?? unavailableRead("read.contract"),
     appResult: readOverrides?.appResult ?? unavailableRead("read.appResult"),
     tasks: {
-      list:
-        readOverrides?.tasks?.list ??
-        (taskDetail ? async () => ({ items: [structuredClone(taskDetail)] }) : unavailableRead("read.tasks.list")),
-      get:
-        readOverrides?.tasks?.get ??
-        (taskDetail
-          ? async (id: string) => {
-              if (id === taskDetail.id) return structuredClone(taskDetail);
-              throw new Error(`Direct workflow run has no configured Task snapshot for "${id}"`);
-            }
-          : unavailableRead("read.tasks.get")),
+      list: readOverrides?.tasks?.list ?? unavailableRead("read.tasks.list"),
+      get: readOverrides?.tasks?.get ?? unavailableRead("read.tasks.get"),
       ...(readOverrides?.tasks?.created ? { created: readOverrides.tasks.created } : {}),
       ...(readOverrides?.tasks?.workload ? { workload: readOverrides.tasks.workload } : {}),
     },
@@ -1323,11 +1416,18 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
+  let resolveDirectTarget: (
+    owner: string,
+    target: string,
+    input: unknown,
+    signal?: AbortSignal,
+  ) => Promise<WorkflowKernelResolvedTarget>;
+
   const executePromptStep = async (
     agent: string,
     prompt: string,
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
-    stepControl: { signal: AbortSignal; timeoutMs: number; deadlineAt: number; stepIndex: number },
+    stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult> => {
     const operationAllowance = validateOperationAllowance(callOpts?.operationAllowance);
     const fixture = options.agentFixtures?.[agent];
@@ -1342,9 +1442,26 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (!config) {
       throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
     }
-    const denials = options.resolveToolDenials
-      ? options.resolveToolDenials(agent, config.tools)
-      : defaultDirectToolDenials(config.tools);
+    const explicitAgentsProvider = options.capabilityProviders?.agents;
+    const configuredDenials = options.resolveToolDenials?.(agent, config.tools);
+    const denials = configuredDenials ?? defaultDirectToolDenials(config.tools).filter(
+      (denial) =>
+        options.capabilityProviders?.[denial.name] === undefined &&
+        denial.name !== "agents",
+    );
+    const agentsDenied = denials.some((denial) => denial.name === "agents");
+    const capabilityProviders =
+      config.tools.includes("agents") && !explicitAgentsProvider && !agentsDenied
+        ? {
+            ...options.capabilityProviders,
+            agents: () => ({
+              tools: [createCommonKernelAgentsTool(
+                stepControl,
+                (target, input, signal) => resolveDirectTarget(agent, target, input, signal),
+              )],
+            }),
+          }
+        : options.capabilityProviders;
 
     const directRun = await executeAgent({
       agentName: agent,
@@ -1354,7 +1471,6 @@ export async function runDirectWorkflow<TInput = unknown>(
       sharedPromptText: promptDef.sharedPromptText,
       skillCatalog: promptDef.skillCatalog,
       ...(callOpts?.skill !== undefined ? { skill: callOpts.skill } : {}),
-      ...(taskDetail ? { contextMessages: () => formatStandaloneAssignmentContext(taskDetail) } : {}),
       task: prompt,
       projectRoot: options.projectRoot,
       workRoot: options.workRoot,
@@ -1369,6 +1485,8 @@ export async function runDirectWorkflow<TInput = unknown>(
       toolPolicy: callOpts?.tools,
       operationAllowance,
       toolDenials: denials,
+      capabilityProviders,
+      onSessionStarted: options.onSessionStarted,
       drainProcessGroup: options.drainProcessGroup,
       timeoutMs: stepControl.timeoutMs,
       deadlineAt: stepControl.deadlineAt,
@@ -1407,7 +1525,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     const sub = await runDirectWorkflow(
       {
         ...options,
-        task: taskDetail,
         reconciliation,
         executionId: undefined,
         module: targetMod,
@@ -1449,6 +1566,42 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
+  let activeScopeSignal: AbortSignal | undefined;
+  resolveDirectTarget = async (owner, target, input, signal = activeScopeSignal) => {
+    const normalized = typeof target === "string" ? target.trim() : "";
+    const slash = normalized.indexOf("/");
+    const procedureOwner = slash === -1 ? owner : normalized.slice(0, slash).trim();
+    if (procedureOwner) {
+      await ensureOwnerProcedures(procedureOwner, signal);
+    }
+    if (
+      (normalized === "codex" || normalized === "claude") &&
+      !preparedCatalog.prompts.has(normalized) &&
+      !preparedCatalog.proceduresByOwner.get(owner)?.has(normalized)
+    ) {
+      throw new Error(
+        `agents action "call" does not expose native CLI target "${normalized}"; CLI delegation is a separate capability`,
+      );
+    }
+    const resolved = resolveCallable(owner, normalized, preparedCatalog);
+    if (resolved.kind === "prompt") {
+      return {
+        kind: "agent" as const,
+        invoke: async (callOpts, nestedControl) => {
+          if (typeof input !== "string") {
+            throw new Error(`Prompt target "${normalized}" requires a string prompt input`);
+          }
+          return executePromptStep(resolved.name, input, callOpts, nestedControl);
+        },
+      };
+    }
+    return {
+      kind: "workflow" as const,
+      invoke: (callOpts, nestedControl) =>
+        executeCodeStep(resolved.name, resolved.module, resolved.owner, input, nestedControl, callOpts),
+    };
+  };
+
   const effectiveWorkspace = env?.workspace ?? options.workspace ?? {
     appRoot: resolve(options.projectRoot),
     projectRoot: resolve(options.workRoot),
@@ -1485,7 +1638,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     });
   }
   const authoredModule = targetModule;
-  let activeScopeSignal: AbortSignal | undefined;
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
     {
       ...authoredModule,
@@ -1516,7 +1668,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       executionId: internal ? undefined : options.executionId,
       startedAt: internal ? undefined : rootStartedAt,
       input: options.input,
-      taskOwned: Boolean(taskDetail || reconciliation),
+      taskOwned: Boolean(reconciliation),
       tools: internal?.tools ?? options.tools,
       outputSchema: internal ? undefined : options.outputSchema,
       signal: options.signal,
@@ -1581,6 +1733,20 @@ export async function runDirectWorkflow<TInput = unknown>(
       // preparation outlives this invocation, and fence its late continuation.
       confirmCleanup: () => preparedCatalog.pendingImports === 0,
       resolveTarget: async (target, input) => {
+        // The synthetic root prompt wrapper was already resolved during preparation;
+        // do not import its procedure catalog merely to start that prompt.
+        if (rootPromptTarget && target === rootPromptTarget) {
+          rootPromptTarget = undefined;
+          return {
+            kind: "agent" as const,
+            invoke: async (callOpts, stepControl) => {
+              if (typeof input !== "string") {
+                throw new Error(`Prompt target "${target}" requires a string prompt input`);
+              }
+              return executePromptStep(target, input, callOpts, stepControl);
+            },
+          };
+        }
         if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
         if (typeof target === "string" && isNativeCliFallback(target)) {
           return {
@@ -1593,23 +1759,7 @@ export async function runDirectWorkflow<TInput = unknown>(
             },
           };
         }
-        const resolved = resolveCallable(callerOwner, target, preparedCatalog);
-        if (resolved.kind === "prompt") {
-          return {
-            kind: "agent" as const,
-            invoke: async (callOpts, stepControl) => {
-              if (typeof input !== "string") {
-                throw new Error(`Prompt target "${target}" requires a string prompt input`);
-              }
-              return executePromptStep(resolved.name, input, callOpts, stepControl);
-            },
-          };
-        }
-        return {
-          kind: "workflow" as const,
-          invoke: (callOpts, stepControl) =>
-            executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts),
-        };
+        return resolveDirectTarget(callerOwner, target, input);
       },
     },
   );
@@ -1656,145 +1806,14 @@ function inferCwdAppName(cwd: string, projectsRoot: string): string | undefined 
   return firstSegment && firstSegment.endsWith(".app") ? firstSegment : undefined;
 }
 
-export type StandaloneTaskInput = {
-  id?: string;
-  generation?: number;
-  outcome: string;
-  acceptance?: string[];
-  constraints?: string[];
-  input?: unknown;
-};
-
-function extractImplicitStandaloneTaskFromInput<TInput>(input: TInput): {
-  extractedTask?: StandaloneTaskInput;
-  cleanedInput: TInput;
-} {
-  if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return { cleanedInput: input };
-  }
-  const record = input as Record<string, unknown>;
-  if (!("verify" in record)) {
-    return { cleanedInput: input };
-  }
-  const rawOutcome =
-    typeof record.outcome === "string" && record.outcome.trim()
-      ? record.outcome
-      : typeof record.task === "string" && record.task.trim()
-        ? record.task
-        : undefined;
-  if (!rawOutcome) {
-    return { cleanedInput: input };
-  }
-  const {
-    task: _task,
-    outcome: _outcome,
-    acceptance: rawAcceptance,
-    constraints: rawConstraints,
-    ...rest
-  } = record;
-  return {
-    extractedTask: {
-      outcome: rawOutcome,
-      ...(rawAcceptance !== undefined ? { acceptance: rawAcceptance as string[] } : {}),
-      ...(rawConstraints !== undefined ? { constraints: rawConstraints as string[] } : {}),
-    },
-    cleanedInput: rest as TInput,
-  };
-}
-
-function normalizeStandaloneTaskDetail(
-  task: TaskDetail | StandaloneTaskInput | undefined,
-  fallbackInput: unknown,
-): TaskDetail | undefined {
-  if (!task) return undefined;
-  if (typeof task !== "object" || Array.isArray(task)) {
-    throw new Error("Invalid task envelope: expected a Task object with a non-empty string outcome");
-  }
-  if (typeof task.outcome !== "string" || !task.outcome.trim()) {
-    throw new Error("Invalid task envelope: outcome must be a non-empty string");
-  }
-  if ("status" in task && "conditions" in task && "acceptedEvidence" in task && Array.isArray(task.acceptance)) {
-    return task as TaskDetail;
-  }
-  const simple = task as StandaloneTaskInput;
-  if (simple.id !== undefined && (typeof simple.id !== "string" || !simple.id.trim())) {
-    throw new Error("Invalid task envelope: id must be a non-empty string when provided");
-  }
-  if (
-    simple.generation !== undefined &&
-    (typeof simple.generation !== "number" || !Number.isSafeInteger(simple.generation) || simple.generation < 1)
-  ) {
-    throw new Error("Invalid task envelope: generation must be a positive integer when provided");
-  }
-  if (
-    simple.acceptance !== undefined &&
-    (!Array.isArray(simple.acceptance) ||
-      simple.acceptance.some((item) => typeof item !== "string" || !item.trim()))
-  ) {
-    throw new Error("Invalid task envelope: acceptance must be an array of non-empty strings when provided");
-  }
-  if (
-    simple.constraints !== undefined &&
-    (!Array.isArray(simple.constraints) ||
-      simple.constraints.some((item) => typeof item !== "string" || !item.trim()))
-  ) {
-    throw new Error("Invalid task envelope: constraints must be an array of non-empty strings when provided");
-  }
-  const acceptance =
-    Array.isArray(simple.acceptance) && simple.acceptance.length > 0
-      ? simple.acceptance
-      : [simple.outcome];
-  const rawInput =
-    simple.input ??
-    (simple.constraints
-      ? {
-          kind: "goal",
-          data: {
-            outcome: simple.outcome,
-            acceptance,
-            constraints: simple.constraints,
-          },
-        }
-      : fallbackInput);
-  const baseTaskInput: Record<string, unknown> =
-    rawInput && typeof rawInput === "object" && !Array.isArray(rawInput)
-      ? { ...(rawInput as Record<string, unknown>) }
-      : { value: rawInput };
-  if (simple.constraints && simple.constraints.length > 0) {
-    const existingData =
-      baseTaskInput.data && typeof baseTaskInput.data === "object" && !Array.isArray(baseTaskInput.data)
-        ? (baseTaskInput.data as Record<string, unknown>)
-        : undefined;
-    if (existingData && existingData.constraints === undefined) {
-      baseTaskInput.data = { ...existingData, constraints: simple.constraints };
-    } else if (!existingData && baseTaskInput.constraints === undefined) {
-      baseTaskInput.constraints = simple.constraints;
-    }
-  }
-  const taskInput = baseTaskInput;
-  return {
-    id: simple.id?.trim() || "standalone-task",
-    parentId: "root",
-    generation: simple.generation ?? 1,
-    status: "running",
-    outcome: simple.outcome,
-    acceptance,
-    input: taskInput,
-    conditions: [],
-    acceptedEvidence: { available: false, maxPageSize: 8 },
-  };
-}
-
 export type RunOptions<TInput = unknown> = Omit<
   DirectWorkflowRunOptions<TInput>,
-  "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models" | "task"
+  "input" | "projectRoot" | "workRoot" | "agentsRoot" | "sharedRoot" | "outputRoot" | "models"
 > & {
   /** Optional App disambiguator when two Apps define the same agent name (e.g. `"alex.app"`). */
   app?: string;
   /** Working directory for tools and execution (defaults to `process.cwd()`). */
   cwd?: string;
-  /** Optional Task envelope (either full `TaskDetail` or `{ outcome, acceptance?, constraints? }`) for Task-reconciling procedures. */
-  task?: TaskDetail | StandaloneTaskInput;
   input?: TInput;
   projectRoot?: string;
   workRoot?: string;
@@ -2066,20 +2085,6 @@ export async function run<TInput = unknown>(
   });
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
-  const hasExplicitTaskEnvelope = Boolean(
-    options.task || options.context?.task || options.reconciliation || options.context?.reconciliation,
-  );
-  const { extractedTask, cleanedInput } = hasExplicitTaskEnvelope
-    ? { extractedTask: undefined, cleanedInput: input }
-    : extractImplicitStandaloneTaskFromInput(input);
-  const normalizedContextTask = normalizeStandaloneTaskDetail(options.context?.task, cleanedInput);
-  const normalizedTopTask = normalizeStandaloneTaskDetail(options.task ?? extractedTask, cleanedInput);
-  if (normalizedContextTask && normalizedTopTask && normalizedContextTask.id !== normalizedTopTask.id) {
-    throw new Error(
-      `Conflicting Task IDs in context.task ("${normalizedContextTask.id}") and task ("${normalizedTopTask.id}")`,
-    );
-  }
-  const normalizedTask = normalizedContextTask ?? normalizedTopTask;
   const ownsTempOutputRoot = !options.outputRoot;
   const outputRoot = options.outputRoot ? resolve(options.outputRoot) : mkdtempSync(join(tmpdir(), "may-run-"));
   const models = options.models ?? createModelRegistry();
@@ -2088,10 +2093,8 @@ export async function run<TInput = unknown>(
   try {
     const res = await runDirectWorkflow({
       ...options,
-      ...(options.context ? { context: { ...options.context, ...(normalizedContextTask ? { task: normalizedContextTask } : {}) } } : {}),
-      task: normalizedTask,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
-      input: cleanedInput,
+      input,
       projectRoot,
       workRoot,
       agentsRoot,

@@ -129,7 +129,8 @@ test("current Task context reaches a late helper and survives settlement into a 
               if (helper) {
                 helperReads++;
                 expect(JSON.stringify(p.events)).toContain("Thursday");
-                expect(input.systemPrompt).toContain("a helper still owes only its assigned contribution");
+                expect(input.systemPrompt).toContain("Work within the caller's assignment and authority");
+                expect(input.systemPrompt).not.toContain("Task ownership");
                 content = [{ type: "text", text: "Review only: Thursday is required; approval remains open for v3." }];
               } else if (round === 1 && step++ === 0) {
                 expect(p.current.result.version).toBe("v3");
@@ -155,10 +156,10 @@ test("current Task context reaches a late helper and survives settlement into a 
                     id: `finish-${round}`,
                     name: "finish",
                     arguments: {
-                      status: "success",
+                      status: "done",
                       summary: "Draft reviewed",
-                      verification_facts: ["Fixture checked"],
-                      result: {
+                      facts: ["Fixture checked"],
+                      output: {
                         state: "waiting",
                         summary: "Draft v4 reviewed; publication awaits matching human approval",
                         facts: ["Thursday; Cedar", ...(round === 2 ? ["Evidence link retained"] : [])],

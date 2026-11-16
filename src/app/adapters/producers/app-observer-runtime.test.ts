@@ -4,7 +4,7 @@ import {
   type AppObserver,
   type AppObserverResult,
   type ObserverSnapshot,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { describe, expect, it, spyOn } from "bun:test";
 import { EVENT_ROW_ID, EventBus } from "../../core/events/bus.js";
 import { createAppObserverRuntime } from "./app-observer-runtime.js";

@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { Type, taskReconcileResultSchema, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
+import { taskReconcileResultSchema } from "./app.js";
 import { listTargets, run as sdkRun } from "./standalone.js";
-import { createTestAppWorkflowContext, resolveCallable, runTargetTest, runWorkflowTest } from "./testing.js";
+import { createTestAppWorkflowContext, resolveCallable, runTargetTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -52,9 +53,9 @@ const reviewWorkflow = {
   },
 };
 
-describe("portable workflow kernel & runWorkflowTest", () => {
+describe("portable workflow kernel & runTargetTest", () => {
   test("executes readable module, preserves schema-valid partial output, and checks fixture consumption", async () => {
-    const run = await runWorkflowTest(reviewWorkflow, {
+    const run = await runTargetTest(reviewWorkflow, {
       input: { subjectRef: "HEAD~1..HEAD" },
       mocks: {
         reviewer: [
@@ -109,7 +110,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     ]) {
       let threwSynchronously = false;
       let returnedPromise = false;
-      const run = await runWorkflowTest(
+      const run = await runTargetTest(
         {
           name: "async-call-errors",
           description: "Checks ctx.call promise behavior",
@@ -142,7 +143,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
   });
 
   test("ctx.call uses the current invalid-target diagnostic", async () => {
-    const run = await runWorkflowTest(
+    const run = await runTargetTest(
       {
         name: "invalid-target",
         description: "Calls an invalid target",
@@ -249,7 +250,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
     };
 
-    const badInput = await runWorkflowTest(mod, {
+    const badInput = await runTargetTest(mod, {
       input: { subjectRef: "" } as any,
       mocks: { reviewer: { output: { subjectRef: "x", summary: "ok" } } },
     });
@@ -260,7 +261,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
   });
 
   test("catches step-schema mismatch, unexpected calls, unconsumed fixtures, and outputSchema mismatch", async () => {
-    const stepSchemaFail = await runWorkflowTest(reviewWorkflow, {
+    const stepSchemaFail = await runTargetTest(reviewWorkflow, {
       input: { subjectRef: "HEAD" },
       mocks: {
         reviewer: {
@@ -275,7 +276,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(stepSchemaFail.steps[0]?.status).toBe("error");
     expect((stepSchemaFail.steps[0]?.facts as any)?.invalidOutput).toEqual({ subjectRef: "HEAD" });
 
-    const unconsumed = await runWorkflowTest(reviewWorkflow, {
+    const unconsumed = await runTargetTest(reviewWorkflow, {
       input: { subjectRef: "HEAD" },
       mocks: {
         reviewer: [
@@ -295,7 +296,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         return ctx.done("bad", { count: "not-a-number" } as any);
       },
     };
-    const outFail = await runWorkflowTest(badOutputMod, { input: {} });
+    const outFail = await runTargetTest(badOutputMod, { input: {} });
     expect(outFail.ok).toBe(false);
     expect(outFail.error).toBeInstanceOf(WorkflowValidationError);
     expect((outFail.report.result?.facts as any)?.invalidOutput).toEqual({ count: "not-a-number" });
@@ -335,7 +336,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
     };
 
-    const run = await runWorkflowTest(parallelMod, {
+    const run = await runTargetTest(parallelMod, {
       input: {},
       events: { emit: async () => undefined },
       mocks: {
@@ -370,6 +371,81 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(String(lateEventRejection)).toContain("context is closed");
   });
 
+  test("boundedly joins cooperative authored cancellation without confirming a never-settling body", async () => {
+    const cooperativeController = new AbortController();
+    let cooperativeSettled = false;
+    const cooperative = runWorkflowInvocation(
+      {
+        name: "cooperative-authored-cancel",
+        description: "Settles shortly after cancellation",
+        async execute(ctx) {
+          await new Promise<void>((_, reject) => {
+            ctx.signal.addEventListener("abort", () => {
+              setTimeout(() => {
+                cooperativeSettled = true;
+                reject(ctx.signal.reason);
+              }, 5);
+            }, { once: true });
+          });
+          return ctx.done("unreachable");
+        },
+      },
+      { input: {}, signal: cooperativeController.signal, timeoutMs: 500 },
+    );
+    setTimeout(() => cooperativeController.abort(new Error("stop cooperative body")), 5);
+    const cooperativeOutcome = await cooperative;
+    expect(cooperativeOutcome.ok).toBe(false);
+    expect(cooperativeOutcome.status).toBe("interrupted");
+    expect(cooperativeSettled).toBe(true);
+    expect(cooperativeOutcome.report.cleanup).toEqual({ confirmed: true });
+
+    let deadlineBodyEntered = false;
+    let deadlineCancellationObserved = false;
+    const deadlineOutcome = await runWorkflowInvocation(
+      {
+        name: "cooperative-authored-deadline",
+        description: "Settles shortly after its own deadline",
+        async execute(ctx) {
+          deadlineBodyEntered = true;
+          await new Promise<void>((_, reject) => {
+            ctx.signal.addEventListener("abort", () => {
+              deadlineCancellationObserved = true;
+              setTimeout(() => reject(ctx.signal.reason), 5);
+            }, { once: true });
+          });
+          return ctx.done("unreachable");
+        },
+      },
+      { input: {}, timeoutMs: 20 },
+    );
+    expect(deadlineBodyEntered).toBe(true);
+    expect(deadlineCancellationObserved).toBe(true);
+    expect(deadlineOutcome.ok).toBe(false);
+    expect(deadlineOutcome.message).toBe('Workflow "cooperative-authored-deadline" timed out after 20ms');
+    expect(deadlineOutcome.report.cleanup).toEqual({ confirmed: true });
+
+    const stuckStartedAt = Date.now();
+    const stuckOutcome = await runWorkflowInvocation(
+      {
+        name: "stuck-authored-deadline",
+        description: "Ignores its deadline forever",
+        async execute(_ctx): Promise<never> {
+          return new Promise<never>(() => {});
+        },
+      },
+      { input: {}, timeoutMs: 20 },
+    );
+    expect(stuckOutcome.ok).toBe(false);
+    expect(stuckOutcome.status).toBe("error");
+    expect(stuckOutcome.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(stuckOutcome.message).toContain('originating failure: Workflow "stuck-authored-deadline" timed out after 20ms');
+    expect(stuckOutcome.report.cleanup.confirmed).toBe(false);
+    expect(stuckOutcome.report.cleanup.unconfirmed).toEqual([
+      expect.stringMatching(/^workflow:stuck-authored-deadline \(wr_/),
+    ]);
+    expect(Date.now() - stuckStartedAt).toBeLessThan(200);
+  });
+
   test("enforces inherited deadline, shared concurrency allowance, isolated observers, and cleanup confirmation", async () => {
     const nestedChild = {
       name: "child-wf",
@@ -389,7 +465,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
     };
 
-    const saturated = await runWorkflowTest(parentDeadlockMod, {
+    const saturated = await runTargetTest(parentDeadlockMod, {
       input: {},
       maxConcurrentCalls: 1,
       mocks: {
@@ -411,7 +487,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
     };
 
-    const observerRun = await runWorkflowTest(simpleMod, {
+    const observerRun = await runTargetTest(simpleMod, {
       input: {},
       mocks: { worker: { summary: "ok" } },
       onStep: () => {
@@ -424,7 +500,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(observerRun.ok).toBe(true);
     expect(observerRun.report.observerErrors).toHaveLength(2);
 
-    const dirtyCleanup = await runWorkflowTest(simpleMod, {
+    const dirtyCleanup = await runTargetTest(simpleMod, {
       input: {},
       mocks: { worker: { summary: "ok", cleanupConfirmed: false, sessionId: "s_leaked" } },
     });
@@ -460,7 +536,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
     };
 
-    const run = await runWorkflowTest(catchingParent, {
+    const run = await runTargetTest(catchingParent, {
       input: {},
       mocks: {
         "leaky-child": leakyChild,
@@ -494,7 +570,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     };
 
     const started = Date.now();
-    const coopRun = await runWorkflowTest(cooperativeTimeoutMod, {
+    const coopRun = await runTargetTest(cooperativeTimeoutMod, {
       input: {},
       timeoutMs: 5_000,
       mocks: {
@@ -522,7 +598,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(coopRun.steps[0]?.id).toBeNull();
 
     // Non-cooperative fixture ignoring signal and returning after stepDeadlineAt is still rejected.
-    const lateFixtureRun = await runWorkflowTest(cooperativeTimeoutMod, {
+    const lateFixtureRun = await runTargetTest(cooperativeTimeoutMod, {
       input: {},
       timeoutMs: 5_000,
       mocks: {
@@ -568,7 +644,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
     };
 
-    const caughtRun = await runWorkflowTest(caughtMod, {
+    const caughtRun = await runTargetTest(caughtMod, {
       input: {},
       mocks: {
         "failing-child": failingChild,
@@ -602,7 +678,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(observedSteps).toHaveLength(3);
 
     // 2. Uncaught failure: rejected call is still recorded in report.steps before bubbling out.
-    const uncaughtRun = await runWorkflowTest(
+    const uncaughtRun = await runTargetTest(
       {
         name: "uncaught-failure",
         description: "Propagates rejected agent call",
@@ -632,8 +708,8 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
   });
 
-  test("preserves optional read.tasks.workload override in createTestAppRead and runWorkflowTest", async () => {
-    const workloadRun = await runWorkflowTest(
+  test("preserves optional read.tasks.workload override in createTestAppRead and runTargetTest", async () => {
+    const workloadRun = await runTargetTest(
       {
         name: "workload-reader",
         description: "Reads tasks.workload",
@@ -673,7 +749,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
   });
 
   test("uses a queued mock's explicit kind before validating call options", async () => {
-    const run = await runWorkflowTest({
+    const run = await runTargetTest({
       name: "caller", description: "Calls code with string input",
       async execute(ctx: WorkflowContext) {
         return ctx.call("code", "input", { skill: "prompt-only" });
@@ -687,7 +763,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
   test.each(["blocked", "error", "interrupted"] as const)(
     "preserves %s code contribution evidence even when it does not satisfy the completion schema",
     async (status) => {
-      const run = await runWorkflowTest({
+      const run = await runTargetTest({
         name: "caller",
         description: "Preserves partial child evidence",
         async execute(ctx: WorkflowContext) {
@@ -711,7 +787,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
   test.each([{ skill: "review" }, { operationAllowance: 2 }])(
     "classifies a string-input prompt mock before validating prompt-only options: %j",
     async (options) => {
-      const run = await runWorkflowTest({
+      const run = await runTargetTest({
         name: "caller",
         description: "Calls an ordinary prompt mock",
         async execute(ctx: WorkflowContext) {
@@ -781,9 +857,8 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       },
     };
 
-    const run = await runWorkflowTest(parentMod, {
+    const run = await runTargetTest(parentMod, {
       input: { item: "alpha" },
-      reviseTask: async () => ({} as any),
       mocks: {
         "owner/child-proc": childCodeMod,
         reviewer: { status: "done", summary: "reviewed alpha" },
@@ -811,7 +886,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         return ctx.done("mutated");
       },
     };
-    const readonlyRejected = await runWorkflowTest(
+    const readonlyRejected = await runTargetTest(
       {
         name: "caller",
         description: "Calls mutating procedure with readonly",
@@ -829,7 +904,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(String(readonlyRejected.error)).toContain('cannot run with tools: "readonly"');
 
     // Rejects prompt-only options (skill / operationAllowance) on code targets
-    const skillOnCode = await runWorkflowTest(
+    const skillOnCode = await runTargetTest(
       {
         name: "caller-skill",
         description: "Passes skill to code target",
@@ -846,9 +921,9 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(skillOnCode.ok).toBe(false);
     expect(String(skillOnCode.error)).toContain('Call option "skill" is only supported for prompt targets');
 
-    // SDK-only string target execution via runWorkflowTest
+    // SDK-only string target execution via runTargetTest
     expect(typeof listTargets).toBe("function");
-    const sdkDirectPrompt = await runWorkflowTest("reviewer", {
+    const sdkDirectPrompt = await runTargetTest("reviewer", {
       input: "Check HEAD",
       tools: "readonly",
       mocks: {
@@ -867,7 +942,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
 
     for (const nonSuccessStatus of ["blocked", "error", "interrupted"] as const) {
-      const nonSuccessRun = await runWorkflowTest("reviewer", {
+      const nonSuccessRun = await runTargetTest("reviewer", {
         input: "Check HEAD",
         mocks: {
           reviewer: {
@@ -888,7 +963,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
       });
     }
 
-    const sdkDirectCode = await runWorkflowTest("owner/review-change", {
+    const sdkDirectCode = await runTargetTest("owner/review-change", {
       input: { subjectRef: "HEAD~1..HEAD" },
       mocks: {
         "owner/review-change": reviewWorkflow,
@@ -906,7 +981,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     expect(sdkDirectCode.ok).toBe(true);
     expect(sdkDirectCode.result?.type).toBe("done");
 
-    const overlappingRun = await runWorkflowTest(
+    const overlappingRun = await runTargetTest(
       {
         name: "overlapping-mock-and-workflow",
         description: "Calls reviewer with prompt options via mocks",
@@ -955,18 +1030,16 @@ describe("portable workflow kernel & runWorkflowTest", () => {
     });
 
     let observedStepStatus: string | undefined;
-    let observedStepSummary: string | undefined;
-    const invalidTaskWorkflow = await runWorkflowTest(
+    const schemaOnlyWorkflow = await runTargetTest(
       {
-        name: "invalid-task-output",
-        description: "Returns a converged Task result with continue: true",
+        name: "schema-only-output",
+        description: "Validates output solely against the declared TypeBox schema",
         outputSchema: taskReconcileResultSchema,
         async execute(ctx) {
           const step = await ctx.call("reviewer", "Check task", {
             schema: taskReconcileResultSchema,
           });
           observedStepStatus = step.status;
-          observedStepSummary = step.summary;
           return ctx.done("Done", {
             state: "converged",
             summary: "Done",
@@ -981,7 +1054,7 @@ describe("portable workflow kernel & runWorkflowTest", () => {
           reviewer: [
             {
               status: "done",
-              summary: "Malformed step result",
+              summary: "Schema-valid step result",
               output: {
                 state: "converged",
                 summary: "Done",
@@ -993,12 +1066,17 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         },
       },
     );
-    expect(observedStepStatus).toBe("error");
-    expect(observedStepSummary).toContain("continue requires waiting and progress facts");
-    expect(invalidTaskWorkflow.ok).toBe(false);
-    expect(invalidTaskWorkflow.status).toBe("error");
-    expect(invalidTaskWorkflow.error).toBeInstanceOf(WorkflowValidationError);
-    expect((invalidTaskWorkflow.error as WorkflowValidationError).phase).toBe("output");
-    expect(String(invalidTaskWorkflow.error)).toContain("continue requires waiting and progress facts");
+    expect(observedStepStatus).toBe("done");
+    expect(schemaOnlyWorkflow.ok).toBe(true);
+    expect(schemaOnlyWorkflow.result).toEqual({
+      type: "done",
+      summary: "Done",
+      output: {
+        state: "converged",
+        summary: "Done",
+        facts: [],
+        continue: true,
+      },
+    });
   });
 });

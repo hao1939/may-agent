@@ -7,7 +7,7 @@ import {
   type TaskAttempt,
   type TaskCommunication,
   type TaskExecutor,
-} from "@may-agent/sdk";
+} from "@may-agent/sdk/app";
 import { expect, setSystemTime, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -800,10 +800,10 @@ test("managed finish corrects invalid input scope in one model execution and pre
     id,
     name: "finish",
     arguments: {
-      status: "success",
+      status: "done",
       summary: result.summary,
       verification_facts: ["Synthetic managed execution completed"],
-      result,
+      output: result,
     },
   });
   const manager = new SubagentManager({
@@ -1024,7 +1024,7 @@ test.each([
             type: "toolCall",
             id: `finish-${modelRequests}`,
             name: "finish",
-            arguments: { status: "success", summary: result.summary, result },
+            arguments: { status: "done", summary: result.summary, output: result },
           }],
         }) });
         return stream;
@@ -1135,7 +1135,7 @@ test("managed finish preflight rolls back an App request and publishes it exactl
               type: "toolCall",
               id: `finish-${modelRequests}`,
               name: "finish",
-              arguments: { status: "success", summary: result.summary, result },
+              arguments: { status: "done", summary: result.summary, output: result },
             }],
           }) });
           return stream;
@@ -1220,7 +1220,7 @@ test("managed finish rejects a consumed live-event-only wait before closing the 
               type: "toolCall",
               id: `finish-${modelRequests}`,
               name: "finish",
-              arguments: { status: "success", summary: result.summary, result },
+              arguments: { status: "done", summary: result.summary, output: result },
             }],
           }) });
           return stream;
@@ -1333,9 +1333,9 @@ test("managed finish refreshes accepted live events when a rejected waiting prop
               id: `finish-${request}`,
               name: "finish",
               arguments: {
-                status: request === 1 ? "success" : "partial",
+                status: "done",
                 summary: result.summary,
-                result,
+                output: result,
               },
             }],
           }) });
@@ -1449,7 +1449,7 @@ test("managed finish pins an empty accepted-live-event snapshot across executor 
             type: "toolCall",
             id: "finish",
             name: "finish",
-            arguments: { status: "success", summary: result.summary, result },
+            arguments: { status: "done", summary: result.summary, output: result },
           }],
         }) });
         return stream;
@@ -1553,7 +1553,7 @@ test("managed finish pins retained reviewAt across executor closure", async () =
               type: "toolCall",
               id: `finish-${modelRequests}`,
               name: "finish",
-              arguments: { status: "success", summary: result.summary, result },
+              arguments: { status: "done", summary: result.summary, output: result },
             }],
           }) });
           return stream;
@@ -1679,7 +1679,7 @@ test.each(["retire action", "condition and communication batch"] as const)("mana
             type: "toolCall",
             id: `finish-${modelRequests}`,
             name: "finish",
-            arguments: { status: "success", summary: result.summary, result },
+            arguments: { status: "done", summary: result.summary, output: result },
           }],
         }) });
         return stream;
@@ -1765,7 +1765,7 @@ test("managed finish rejects an undeclared request Condition and accepts a corre
             type: "toolCall",
             id: `finish-${modelRequests}`,
             name: "finish",
-            arguments: { status: "success", summary: result.summary, result },
+            arguments: { status: "done", summary: result.summary, output: result },
           }],
         }) });
         return stream;

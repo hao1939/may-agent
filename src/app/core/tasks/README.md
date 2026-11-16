@@ -184,10 +184,22 @@ Conversation input routes in their policy. Omission retains today's idle behavio
 No additional model call, lifecycle state, polling loop or terminal-result rewrite
 is involved. Conversation settlement uses the same completion result and appends
 authorized Task-control effects to it; the attempt runner publishes closure
-notifications from that result after the transaction commits. There is one App
-ending policy for ordinary and Conversation Tasks. `task-result-closure.test.ts`
-and the full runtime/caller regressions in `task-communication.test.ts` own this
-boundary.
+notifications from that result after the transaction commits.
+
+The Task-blind public `run()` boundary adds one narrower Host provenance marker:
+an explicit `done` may close an ordinary same-App, App-created finite assignment
+after the existing input, Condition, revision, workspace and communication fences.
+It never closes Conversation responsibility, delegated work, legacy executor
+results, or a merely converged `TaskReconcileResult`. Public `blocked` remains a
+wait and may be translated by `tasks.translateBlockedResult`; without that App
+callback only the explicit lightweight facts hint (`retryAfterMs`, `conditions`,
+`requests`) is interpreted. Domain `state` and `status` fields are always data.
+
+Paired installation is required before enabling automatic finite closure for an
+App procedure: existing procedures that return outer `done` for bounded partial
+or exhausted iterations must first return `blocked` with continuation facts.
+This Host slice does not certify or rewrite those Apps. `task-result-closure.test.ts`
+and `hosted-result-settlement.test.ts` own the generic boundary.
 
 | Stage | Follow in source | Durable authority |
 | --- | --- | --- |

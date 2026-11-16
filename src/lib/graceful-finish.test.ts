@@ -5,7 +5,7 @@ import { createAssistantMessageEventStream, type Context } from "@earendil-works
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineApp, taskAgentResultSchema } from "@may-agent/sdk";
+import { defineApp, taskAgentResultSchema } from "@may-agent/sdk/app";
 import { prepareAgentExecution, executePreparedAgent } from "./agent-execution.js";
 import { createAgentRun } from "@may-agent/sdk/runtime";
 import { ExecutionWorkEnded, currentAgentSessionId } from "@may-agent/sdk/runtime";
@@ -72,9 +72,9 @@ const progress = {
   facts: ["draft:retained"],
 };
 const partial = {
-  status: "partial",
+  status: "blocked",
   summary: progress.summary,
-  result: progress,
+  output: progress,
 };
 
 function stalledTool(onStopped: () => void = () => {}): AgentTool {
@@ -134,9 +134,6 @@ test("direct execution interrupts work, rejects further effects, and admits a co
     if (contexts.length === 1) return call("hold", {});
     expect(stopped).toBe(true);
     if (contexts.length === 2) return call("effect", {});
-    // The ordinary result validator must still reject a missing continuation route.
-    if (contexts.length === 3)
-      return call("finish", { ...partial, result: { ...progress, continue: false } }, "invalid");
     return call("finish", partial, "valid");
   };
   const result = await executePreparedAgent(prepared, { timeoutMs: 2_000 });
@@ -144,7 +141,7 @@ test("direct execution interrupts work, rejects further effects, and admits a co
   expect(result.status).toBe("done");
   expect(result.structuredResult).toMatchObject(progress);
   expect(effects).toBe(0);
-  expect(contexts).toHaveLength(4);
+  expect(contexts).toHaveLength(3);
   expect(JSON.stringify(contexts[1])).toContain("Review interrupted; completion unknown");
   const messages = result.messages as Array<{ role: string; content?: unknown; isError?: boolean }>;
   expect(
@@ -153,9 +150,6 @@ test("direct execution interrupts work, rejects further effects, and admits a co
     ),
   ).toHaveLength(1);
   expect(JSON.stringify(contexts[2])).toContain("Execution work allowance ended");
-  const rejection = contexts[3].messages.find((message) => message.role === "toolResult" && message.toolCallId === "invalid");
-  expect(rejection).toMatchObject({ isError: true });
-  expect(JSON.stringify(rejection)).toContain("/result/continue");
 });
 
 test("a stalled finalization still reaches the original hard stop without an invented result", async () => {
@@ -321,9 +315,9 @@ test("a managed Task accepts progress after helper cancellation and continues fr
           if (attempt === 2) {
             continuationContext = JSON.stringify(context);
             return call("finish", {
-              status: "success",
+              status: "done",
               summary: "Reviewed retained draft",
-              result: { state: "converged", summary: "Reviewed retained draft", facts: ["draft:reviewed"] },
+              output: { state: "converged", summary: "Reviewed retained draft", facts: ["draft:reviewed"] },
             });
           }
           if (!helperStopped) return call("agents", { action: "call", agent: "helper", task: "Review the draft" });

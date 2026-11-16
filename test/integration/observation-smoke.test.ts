@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, defineApp, defineObserver, observationCondition } from "@may-agent/sdk";
+import { Type, defineApp, defineObserver, observationCondition } from "@may-agent/sdk/app";
 import { AppRegistry } from "../../src/app/core/apps/registry.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { HostCapacity } from "../../src/app/core/scheduling/host-capacity.js";

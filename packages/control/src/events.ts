@@ -5,8 +5,8 @@ export type EventTarget = {
   sessionId?: string;
 };
 
-export { readVerifiedApprovalDecision } from "@may-agent/sdk";
-export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "@may-agent/sdk";
+export { readVerifiedApprovalDecision } from "@may-agent/sdk/app";
+export type { ApprovalProposal, HostApprovalStamp, VerifiedApprovalDecision } from "@may-agent/sdk/app";
 
 /** Caller input. The Host supplies event identity, time, and trusted provenance. */
 export type EventInput = {

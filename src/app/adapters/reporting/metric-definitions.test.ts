@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { Type, defineApp, type MetricDefinition } from "@may-agent/sdk";
+import { Type, defineApp, type MetricDefinition } from "@may-agent/sdk/app";
 import { syncAppMetricDefinitions } from "./metric-definitions.js";
 
 describe("App metric definitions", () => {

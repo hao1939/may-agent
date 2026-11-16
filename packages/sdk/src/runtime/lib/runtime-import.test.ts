@@ -81,10 +81,10 @@ describe("importRuntimeModule", () => {
     writeFileSync(
       modulePath,
       `
-        import { workflowResultVersion } from "@may-agent/sdk";
+        import { Type } from "@may-agent/sdk";
 
         export function sdkVersion(): string {
-          return workflowResultVersion;
+          return Type.Object({}).type;
         }
       `,
     );
@@ -94,7 +94,7 @@ describe("importRuntimeModule", () => {
       cacheDir: join(root, ".cache"),
     });
 
-    expect(mod.sdkVersion()).toBe("workflow-result-v1");
+    expect(mod.sdkVersion()).toBe("object");
   });
 
   it("bundles standalone App declarations through the public App entry point", async () => {
@@ -105,7 +105,7 @@ describe("importRuntimeModule", () => {
     writeFileSync(
       modulePath,
       `
-        import { Type, defineApp } from "@may-agent/sdk";
+        import { Type, defineApp } from "@may-agent/sdk/app";
 
         export default defineApp({
           id: "standalone-canary",

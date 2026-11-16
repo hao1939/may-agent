@@ -1,4 +1,4 @@
-import { Type } from "@may-agent/sdk";
+import { Type } from "@may-agent/sdk/app";
 import { describe, expect, it } from "bun:test";
 import { normalizeAppAgent, normalizeTaskAgent } from "./app-agent-selection.js";
 

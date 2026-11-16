@@ -1,4 +1,4 @@
-import type { TaskCommunication } from "@may-agent/sdk";
+import type { TaskCommunication } from "@may-agent/sdk/app";
 import { dirname } from "node:path";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { createAppTaskEvents } from "../../src/app/core/tasks/app-task-emitter.js";
