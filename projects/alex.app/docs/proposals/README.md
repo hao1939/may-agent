@@ -30,7 +30,8 @@ installed adoption remains unverified.
 
 1. **Ingress/SDK integration:** preserve retained Conversation return and exact
    Task-input fences, then establish one compatible Host/App worker through
-   shared execution, blocked continuation and accepted finite completion. The
+   independent production supervision, shared execution, blocked continuation and
+   admitted finite completion. The
    [remaining gaps](host-ingress-and-boundary-simplification-20261116.md) distinguish
    merged foundations from pending adoption and ownership changes.
 2. **Task entry clarity:** distinguish assigned input from pending unclaimed
@@ -48,7 +49,7 @@ Prompt/checker cleanup is already assigned elsewhere.
 
 | Record | Current status and remaining scope |
 | --- | --- |
-| [Host ingress and SDK convergence: remaining work](host-ingress-and-boundary-simplification-20261116.md) | #568/#569/#566/#570 are merged; established rules are promoted to owning contracts. Repair retained Conversation delivery and exact-input generation fencing, establish a compatible App pair, connect Host to shared `run()` with parent-only SQLite, then complete wait/resume and Conversation ownership. App identity cleanup and reconciler extraction remain separate. |
+| [Host ingress and SDK convergence: remaining work](host-ingress-and-boundary-simplification-20261116.md) | Host through #572 supplies merged foundations; local unmerged patches repair retained returns, transactional input fencing and App/Gym adoption. The accepted Host responsibility matrix separates agent judgment from admission, supervision, recovery and delivery. Wire production parent watchdogs and shared `run()` with parent-only SQLite, prove real wait/resume and owner feedback, then complete Conversation ownership. Identity cleanup and reconciler extraction remain separate. |
 | [Shared agent runtime convergence](unified-agent-instance-runtime.md) | Standalone skills/services/snapshots/workspace rules and root/App SDK foundations are implemented. Hosted invocation, explicit capability wiring, parent worker supervision and paired adoption remain; uses the ingress/SDK follow-up for the common integration sequence. |
 | [Teaching agents](agent-behavior-and-capability-extension.md) | Use existing instructions/skills/workflows; the remaining question is one discover-author-activate-fresh-use path with useful outcomes, not a new trainer. |
 | [App author usability](app-environment-review-20260928.md) | Choose one concrete author/worker discovery failure and compare the smallest correction. Avoid another capability inventory. |

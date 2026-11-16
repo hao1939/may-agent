@@ -179,6 +179,33 @@ runtime rollout was performed. Neither model-backed experiments nor current
 installation behavior were measured. Neither branch changes a running
 installation.
 
+## Host responsibility clarification
+
+The follow-up design clarification assigns domain judgment and conclusions to
+the agent/App contract. Host owns reliable execution, admission, faithful
+records, supported effect safety, recovery and delivery. Result admission
+commits the declared judgment; process exit, committed result, caller delivery
+and fulfillment of a wider Request remain separate facts. The
+[owning matrix](../../2a-design/system-boundary.md#responsibilities-through-a-task)
+and [attempt contract](../../2a-design/task-attempts.md#agent-judgment-and-infra-admission)
+retain these accepted rules. The active proposal owns incomplete wiring and its
+acceptance scenarios, without adding a review agent or another lifecycle.
+
+At Host `f70f55ab5e3c881838b13419554a4cd3e4276f68`,
+`src/app/composition/workers/task-attempt-process.ts` exposes optional parent
+`timeoutMs` in the attempt/recovery factories and applies the timeout in
+`waitForChild`. `src/app/app-runtime.ts` constructs both executors with only
+`bus` and `definitionSource`. Worker-local bounds therefore do not establish
+parent containment of a synchronous/non-cooperative child. The local correctness
+repair leaves that production wiring unchanged. The proposal now carries it as
+an explicit integration gap alongside shared invocation and caller settlement.
+
+This clarification changes documentation only. Earlier test totals describe the
+local source repairs above; they do not prove the unimplemented supervision or
+connected-worker requirements. Domain progress judgments and human escalation
+remain with their declared owners; Host routes evidence and enforces the
+existing controls and limits.
+
 ## Historical performance observations
 
 The original proposal reported these local measurements before the boundary
