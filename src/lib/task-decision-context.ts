@@ -265,12 +265,6 @@ export function createTaskDecisionContext(context: TaskExecutionContext): () => 
         ...(workspace && "taskFile" in workspace
           ? { attemptContext: join(dirname(workspace.taskFile), "context.json") }
           : {}),
-        currentRead: {
-          tool: "tasks",
-          action: "get",
-          taskId: context.taskBinding.taskId,
-          target: { appId: context.taskBinding.appId },
-        },
         note: "Omitted /createdAssignments previews link by JSON pointer into createdAssignmentsDetail; all other omitted previews link into detail. An unavailable detail requires scoped reads. attemptInput is assigned to this attempt; pendingInput is not yet claimed. Either may be bounded, and this is not complete history.",
       },
     };
