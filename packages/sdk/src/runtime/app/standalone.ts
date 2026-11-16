@@ -212,6 +212,7 @@ type DirectToolResources = {
   cleanupSync: Array<() => void>;
   cleanupAsync: Array<() => Promise<boolean>>;
   cleanupConfirmed: boolean;
+  cleanupFinalization?: Promise<boolean>;
 };
 
 function cleanupDirectToolResourcesSync(resources: DirectToolResources): void {
@@ -229,24 +230,28 @@ function cleanupDirectToolResourcesSync(resources: DirectToolResources): void {
   }
 }
 
-async function cleanupDirectToolResources(resources: DirectToolResources): Promise<boolean> {
-  try {
-    cleanupDirectToolResourcesSync(resources);
-  } catch {
-    // The retained flag keeps uncertainty visible after cleanup() followed by cleanupAsync().
-  }
-  const asyncClosers = resources.cleanupAsync.splice(0).reverse();
-  const outcomes = await Promise.all(
-    asyncClosers.map(async (close) => {
-      try {
-        return await close();
-      } catch {
-        return false;
-      }
-    }),
-  );
-  if (!outcomes.every(Boolean)) resources.cleanupConfirmed = false;
-  return resources.cleanupConfirmed;
+function cleanupDirectToolResources(resources: DirectToolResources): Promise<boolean> {
+  if (resources.cleanupFinalization) return resources.cleanupFinalization;
+  resources.cleanupFinalization = (async () => {
+    try {
+      cleanupDirectToolResourcesSync(resources);
+    } catch {
+      // The retained flag keeps uncertainty visible after cleanup() followed by cleanupAsync().
+    }
+    const asyncClosers = resources.cleanupAsync.splice(0).reverse();
+    const outcomes = await Promise.all(
+      asyncClosers.map(async (close) => {
+        try {
+          return await close();
+        } catch {
+          return false;
+        }
+      }),
+    );
+    if (!outcomes.every(Boolean)) resources.cleanupConfirmed = false;
+    return resources.cleanupConfirmed;
+  })();
+  return resources.cleanupFinalization;
 }
 
 async function buildDirectTools(

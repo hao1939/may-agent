@@ -442,6 +442,63 @@ describe("direct agent tool policy", () => {
     }
   });
 
+  test.each(["false", "reject"] as const)(
+    "joins overlapping cleanup when an async closer returns %s",
+    async (outcome) => {
+      const root = await mkdtemp(join(tmpdir(), `may-direct-overlap-cleanup-${outcome}-`));
+      const agentDir = join(root, "agents", "example");
+      await mkdir(agentDir, { recursive: true });
+      await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+        name: "example", description: "example", domain: "test", model: "test", tools: ["query_db"],
+      }));
+      let releaseCloser!: () => void;
+      const closerGate = new Promise<void>((resolve) => { releaseCloser = resolve; });
+      let markCloserStarted!: () => void;
+      const closerStarted = new Promise<void>((resolve) => { markCloserStarted = resolve; });
+      let syncCleaned = 0;
+      let asyncCleaned = 0;
+      try {
+        const prep = await prepareDirectAgentExecution({
+          agentName: "example", task: "test", projectRoot: root, workRoot: root,
+          agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+          models: { test: { id: "test-model" } as any },
+          capabilityProviders: {
+            query_db: () => ({
+              tools: [{ name: "query_db", description: "fixture", parameters: { type: "object", properties: {} } as any,
+                execute: async () => ({ content: [{ type: "text", text: "ok" }] }) }],
+              cleanup: () => { syncCleaned += 1; },
+              cleanupAsync: async () => {
+                asyncCleaned += 1;
+                markCloserStarted();
+                await closerGate;
+                if (outcome === "reject") throw new Error("async close failed");
+                return false;
+              },
+            }),
+          },
+        });
+        const firstCleanup = prep.cleanupAsync();
+        await closerStarted;
+        const secondCleanup = prep.cleanupAsync();
+        let firstSettled = false;
+        let secondSettled = false;
+        void firstCleanup.then(() => { firstSettled = true; });
+        void secondCleanup.then(() => { secondSettled = true; });
+        await Promise.resolve();
+        await Promise.resolve();
+        expect({ firstSettled, secondSettled }).toEqual({ firstSettled: false, secondSettled: false });
+
+        releaseCloser();
+        expect(await Promise.all([firstCleanup, secondCleanup])).toEqual([false, false]);
+        expect(await prep.cleanupAsync()).toBe(false);
+        expect({ syncCleaned, asyncCleaned }).toEqual({ syncCleaned: 1, asyncCleaned: 1 });
+      } finally {
+        releaseCloser();
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  );
+
   test.each(["callback", "metadata"] as const)("cleans provider resources after %s failure", async (failure) => {
     const root = await mkdtemp(join(tmpdir(), `may-direct-${failure}-cleanup-`));
     const agentDir = join(root, "agents", "example");
