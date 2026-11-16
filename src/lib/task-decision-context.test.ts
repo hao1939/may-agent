@@ -170,7 +170,7 @@ test("refresh keeps current evidence, independent approval and a scoped last-kno
     expect(fallback.current).toEqual(updated.current);
     expect(fallback.conditions).toEqual(updated.conditions);
     expect(fallback.assignment).toEqual(updated.assignment);
-    expect(fallback.coverage.currentRead.taskId).toBe("review");
+    expect(fallback.binding.taskId).toBe("review");
     expect(f.context.details?.task.result).toEqual({ understanding: "Wednesday", version: "v3" });
   } finally {
     rmSync(root, { recursive: true, force: true });

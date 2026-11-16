@@ -98,7 +98,6 @@ export function prepareTaskWorkspaceContext(
       ...context.details,
     });
     writeJsonArtifact(root, "catalog.json", catalog);
-    const currentRead = JSON.stringify({ action: "get", taskId: binding.taskId, target: { appId: binding.appId } });
     const previousSession = rec.previousAttempt?.sessionId;
     const selected = catalog.find((definition) => definition.name === rec.agent);
     const work = taskWorkContext(rec.task, rec.events, rec.previousAttempt);
@@ -123,8 +122,8 @@ export function prepareTaskWorkspaceContext(
       "## Full context and discovery",
       "- Read context.json beside this file for full supplied input, references/attachments, pending events, waits, children, prior attempt and accepted result references. Fields omitted here remain there; inspect input/context references even when they are not named in this brief.",
       "- This preserves the supplied snapshot, including any upstream truncation flags. It is not a complete historical event archive.",
-      `- Current authoritative Task: use the tasks tool with ${currentRead}; workflows use ctx.read.tasks.get(${JSON.stringify(binding.taskId)}).`,
-      '- Related Task discovery: tasks {"action":"list","limit":50}; continue with each returned nextCursor. Read exact linked Tasks with get. Workflows use ctx.read.tasks.list({limit:50}).',
+      `- Current authoritative Task: workflows use ctx.read.tasks.get(${JSON.stringify(binding.taskId)}).`,
+      "- Related Task discovery: workflows use ctx.read.tasks.list({limit:50}); continue with each returned nextCursor.",
       "- Read catalog.json beside this file for installed agent profiles, tools, full skill references and workflow source roots, including skills omitted from prompts. List/search those roots for entries not individually mentioned. Invocation remains subject to the available tools and existing scope.",
       ...(selected?.instructions ? [`- Responsible agent instructions: ${pathRef(selected.instructions)}. Loaded definition root: ${pathRef(selected.sourceRoot!)}.`] : []),
       "- Loaded definitions can be newer than the working checkout. Use catalog source paths for agent instructions, skills and workflows; do not assume they exist at the corresponding worktree-relative path.",

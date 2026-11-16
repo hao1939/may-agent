@@ -41,7 +41,7 @@ test("Task entry preserves discovery, scopes attempts and excludes provider/live
     const catalog = readFileSync(join(dirname(brief.taskFile), "catalog.json"), "utf8");
     expect(entry).toContain("context.json");
     expect(entry).toContain("nextCursor");
-    expect(entry).toContain('"action":"get"');
+    expect(entry).toContain("ctx.read.tasks.get");
     expect(entry).toContain(join(root, "agents", "reviewer", "AGENTS.md"));
     expect(entry).toContain("Loaded definitions can be newer than the working checkout");
     expect(snapshot).toContain("retained-full-input");
