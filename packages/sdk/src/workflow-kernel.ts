@@ -19,8 +19,13 @@ const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
 
-/** @deprecated Use `AgentExecutableModule`. */
-export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = AgentExecutableModule<TInput, TOutput>;
+/** @deprecated Use `AgentExecutableModule` for Task-transparent authoring. */
+export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = Omit<
+  AgentExecutableModule<TInput, TOutput>,
+  "execute"
+> & {
+  execute(ctx: WorkflowContext<TInput>): Promise<ExecutionResult<TOutput>>;
+};
 
 export type PreparedDefinition<TPromptDef = unknown> =
   | {

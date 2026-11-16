@@ -4,6 +4,7 @@ import type {
   ExecutionResult,
   WorkflowContext,
 } from "../src/index.js";
+import type { WorkflowExecutableModule as AppWorkflowExecutableModule } from "../src/app.js";
 
 type Input = { value: string };
 declare const call: AgentContext<Input>["call"];
@@ -33,7 +34,17 @@ const module: AgentExecutableModule<Input, { length: number }> = {
 
 // The deprecated root name remains an alias of the Task-transparent context.
 const legacyContext: WorkflowContext<Input> = minimalContext;
-void [module, legacyContext];
+
+// The App compatibility module keeps Host capabilities during caller migration.
+const appModule: AppWorkflowExecutableModule = {
+  name: "inspect-task",
+  description: "Read App-owned Task state",
+  async execute(ctx) {
+    await ctx.read.tasks.get("work");
+    return ctx.done("Inspected");
+  },
+};
+void [module, legacyContext, appModule];
 
 declare const canonical: AgentContext<Input>;
 // @ts-expect-error Task reconciliation belongs to @may-agent/sdk/app compatibility APIs.
