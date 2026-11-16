@@ -83,6 +83,81 @@ Review child-session trails for model usage/cost where exposed. Missing usage
 remains unknown. Fixtures establish mechanics, not live model quality, and a
 standalone result does not settle any existing Host Task.
 
+## Recover a development invocation manually
+
+The runner creates a fresh invocation and does not restore a previous Task
+result automatically. A stable Task id alone does not restore development
+evidence. The SDK accepts a full `TaskDetail` through the JSON `task` field;
+use that envelope from the first invocation when testing recovery:
+
+```json
+{
+  "id": "standalone/manual-development",
+  "parentId": "root",
+  "generation": 1,
+  "status": "running",
+  "outcome": "Review and verify the existing candidate",
+  "acceptance": ["The candidate satisfies the assigned executable check"],
+  "input": {
+    "kind": "goal",
+    "data": {
+      "outcome": "Review and verify the existing candidate",
+      "acceptance": ["The candidate satisfies the assigned executable check"],
+      "constraints": ["Preserve existing work; return local evidence"]
+    }
+  },
+  "conditions": [],
+  "acceptedEvidence": { "available": false, "maxPageSize": 8 }
+}
+```
+
+After a development invocation returns retained evidence, select that invocation
+as the checkpoint. Its `result.json` contains the Task result at
+`result.output`; the reusable development delivery is under
+`result.output.result.development`. Put the prior `result.output.result` in the
+full Task's `result` field. Preserve its id, requirements, generation, working
+directory, source root and verification arguments. Allocate a new output directory.
+
+This recipe reads the runner's resolved configuration and full Task envelope:
+
+```bash
+python3 - /absolute/path/to/checkpoint /absolute/path/to/new-output /absolute/path/to/resume-stage.json <<'PY'
+import json
+import pathlib
+import sys
+
+checkpoint = pathlib.Path(sys.argv[1])
+config = json.loads((checkpoint / "config.json").read_text())
+task = json.loads((checkpoint / "task.json").read_text())
+receipt = json.loads((checkpoint / "receipt.json").read_text())
+assert receipt["status"] == "done" and receipt["cleanupConfirmed"]
+assert receipt["exitCode"] == 0 and not receipt["sdkChanged"]
+assert all(key in task for key in ("status", "conditions", "acceptedEvidence")), "Use the full TaskDetail envelope"
+delivery = json.loads((checkpoint / "result.json").read_text())["result"]["output"]["result"]
+assert "development" in delivery, "Checkpoint must contain retained development evidence"
+task["result"] = delivery
+config["task"] = task
+config["outputRoot"] = str(pathlib.Path(sys.argv[2]).resolve())
+pathlib.Path(sys.argv[3]).write_text(json.dumps(config, indent=2) + "\n")
+PY
+bun projects/alex.app/scripts/standalone-stage.ts /absolute/path/to/resume-stage.json
+```
+
+The workflow validates the archived artifacts, Task requirements and current
+candidate before reuse. An unchanged verified candidate can reuse its check
+receipt; a changed commit needs fresh verification and review. The short Task
+envelope is normalized into a fresh Task and does not carry a prior result.
+
+Cancellation preserves files and invocation traces but does not deliver the
+workflow's in-memory checkpoint. Retry from a result actually retained before
+interruption. If none exists, start a fresh invocation with the same Task and
+working directory so the workflow can inspect unfinished edits. Do not reset
+the candidate or treat the interrupted receipt as successful development.
+
+The [recovery trial](standalone-recovery-trial-20261116.md) demonstrates these
+boundaries with actual Git and executable checks. Manual checkpoint selection
+does not establish automatic Host persistence or recovery.
+
 ## Focused verification
 
 ```bash
