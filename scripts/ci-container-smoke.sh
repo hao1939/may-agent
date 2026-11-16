@@ -116,6 +116,7 @@ docker exec "$root_container_id" /bin/sh -ec '
   command -v xsel >/dev/null
   printf "smoke-clipboard" | xclip -selection clipboard
   test "$(xclip -selection clipboard -o)" = "smoke-clipboard"
+  herdr config check | grep -q "^config: ok$"
   herdr status | grep -q "status: running"
   herdr status | grep -q "sessions/may-terminal2/herdr.sock"
   test "$(herdr session list | grep -c "running")" -eq 1

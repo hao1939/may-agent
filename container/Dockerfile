@@ -221,7 +221,8 @@ COPY container/configure-runtime.cjs /usr/local/bin/configure-runtime.cjs
 RUN set -eu; \
     chmod 755 /usr/local/bin/configure-runtime.cjs; \
     HOME=/root MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs --bake-image; \
-    HOME=/root MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs
+    HOME=/root MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs; \
+    HOME=/root XDG_CONFIG_HOME=/root/.config herdr config check | grep -q '^config: ok$'
 
 # Copy supervisord & nginx configs and container runtime helper scripts before
 # the fast-changing compiled may-agent binary.
