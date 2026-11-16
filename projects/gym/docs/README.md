@@ -1,5 +1,8 @@
 # Gym Documentation
 
+- [`outcome-v2-attempt-20261116.md`](outcome-v2-attempt-20261116.md) — first approved
+  outcome-completion v2 attempt: two native passes, a calibration stop, two unrun
+  cases, exact retained evidence and separate target/judge usage; no valid baseline.
 - [`cases-benchmarks-and-agents.md`](cases-benchmarks-and-agents.md) — start here:
   one case, one purpose benchmark, one folder. Choose the agent for each run;
   agents and benchmarks are not 1:1. “Scenario” is only the old spelling of case.

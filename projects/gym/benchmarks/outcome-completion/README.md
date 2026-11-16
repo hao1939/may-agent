@@ -1,7 +1,7 @@
 # Outcome completion
 
-**Version 2 — five judgment cases with approved expectations. No model baseline
-for this version; execution permission is separate.**
+**Version 2 — five judgment cases with approved expectations. The first attempt
+stopped on grader calibration; no valid complete baseline.**
 
 Tests whether a compatible subject understands its bounded assignment, chooses an
 available authorized approach and identifies sufficient fulfillment evidence.
@@ -57,7 +57,7 @@ bun --cwd=projects/gym run case:validate
 bun run gym:check
 ```
 
-Implementation validation passed without model calls:
+Original implementation validation, before approval, passed without model calls:
 
 - Shared checkout: `gym:check` passed 378 Bun tests, six Node/scorer tests,
   structural validation and 1,488 review checks; `gym:app:check` passed 12 tests.
@@ -114,3 +114,19 @@ or delivery. The semantic grader now receives the frozen original assignment as
 reference data in addition to the rubric and unlabeled answers, so it can check
 methods against the actual supplied facts and authority. That evaluator change
 also requires a fresh matched baseline.
+
+## First version-2 attempt
+
+A separately requested [first attempt](../../docs/outcome-v2-attempt-20261116.md)
+stopped at calibration: unfinished repair passed, the unchanged style-only case
+passed its narrow rubric, and already-fulfilled work had an invalid evaluation.
+Both judges accepted Alex's already-fulfilled answer, but Sol rejected approved
+concise control B2. The unavailable-procedure and stale-candidate cases were not
+run. The original incomplete manifest and all nine executions are retained; no
+trial was automatically rerun or relabeled.
+
+The style answer also named `check:ci` and proposed a Task-closing declaration,
+which its unchanged rubric does not test. Its narrow stopping-choice pass is not
+proof of that command's provenance or closure authority. No Task was actually
+closed. Labels and measurement definitions remain unchanged pending review of
+these observations; none of this is operational execution evidence.
