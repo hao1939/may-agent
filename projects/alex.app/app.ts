@@ -13,6 +13,11 @@ import {
   type AppTaskInput,
 } from "@may-agent/sdk";
 
+import {
+  createAlexGitHubPullRequestWatchers,
+  validateAlexGitHubPullRequestCondition,
+} from "./watchers/github-pull-request.js";
+
 const installedWorkloadReview = workloadReviewPolicy();
 
 const details = Type.Record(Type.String(), Type.Unknown());
@@ -543,7 +548,7 @@ export default defineApp({
   metrics: retiredEvaluationMetrics,
   version: 1,
   agent: "alex",
-  description: "Own system improvement from diagnosis through verified outcome, with design, implementation, independent review and comparison specialists; escalate unresolved blockers to May.",
+  description: "Own system improvement from diagnosis through verified outcome, with design, implementation, independent review and comparison specialists; escalate unresolved blockers to May. For authorized PR delivery in hao1939/may-agent, the github-pull-request watcher returns PR state, head-bound CI and comment facts to the same Task. Retain an exact fingerprint-change Condition across attempts; workflows remain bounded helpers, not the delivery lifecycle.",
   workspace: { kind: "git", localPath: ".", branch: "main" },
   inputSchema,
   task: taskForInput,
@@ -653,7 +658,9 @@ export default defineApp({
       },
     },
   ],
+  observers: createAlexGitHubPullRequestWatchers(),
   tasks: { maxConcurrent: 3, closeOnResult: closeAcceptedAssignment,
+    validateCondition: validateAlexGitHubPullRequestCondition,
     ...(installedWorkloadReview.enabled ? { coordination: installedWorkloadReview.coordination } : {}),
   },
 });

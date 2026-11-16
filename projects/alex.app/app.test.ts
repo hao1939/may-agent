@@ -8,6 +8,8 @@ import app, {
   taskInputForEvent,
 } from "./app.ts";
 import { assertValidAppDefinition } from "../may-agent/src/app/core/apps/definition-validation.ts";
+import { readAppContract } from "../may-agent/src/app/core/reads/app-contract.js";
+import { observationCondition } from "@may-agent/sdk";
 
 test("Alex bootstrap uses ordinary durable Task admission", () => {
   expect(() => assertValidAppDefinition(app)).not.toThrow();
@@ -24,6 +26,21 @@ test("Alex bootstrap uses ordinary durable Task admission", () => {
   expect(first.intent.agent).toBe("alex");
   expect(first.intent.input).toEqual(admitted.input);
   expect(first.intent.acceptance).toEqual(admitted.input.data.acceptance);
+});
+
+test("Alex declares Task-driven PR/CI/comment watching without a new work route", () => {
+  const capability = readAppContract(app).observations.find(({ id }) => id === "github-pull-request")!;
+  expect(capability).toMatchObject({ appId: "alex", type: "alex.github.pull-request.state", timeoutMs: 210_000 });
+  expect(capability.description).toContain("head-pinned check runs");
+  expect(capability.description).toContain("inline review comments");
+  const condition = observationCondition(capability, { observerId: capability.id, id: "pr-feedback",
+    resource: "github:hao1939/may-agent#215", expected: { field: "fingerprint", notEquals: null } });
+  expect(condition.expected).toMatchObject({ source: "app:alex:observer:github-pull-request" });
+  expect(app.tasks!.validateCondition!(condition)).toBeNull();
+  expect(app.tasks!.validateCondition!({ ...condition, expected: { ...condition.expected,
+    source: "app:may:observer:github-pull-request" } })).toContain("installed");
+  expect(taskInputForEvent({ type: capability.type, data: { resource: "github:hao1939/may-agent#215" } })).toBeNull();
+  expect(app.subscriptions?.some(({ id }) => id.includes("github"))).toBe(false);
 });
 
 test("An operational message reaches executable Alex work", () => {

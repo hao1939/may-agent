@@ -296,14 +296,15 @@ exact suppression of repeated questions during retry.
 
 ## PR follow-through across bounded attempts
 
-**Accepted design direction; not implemented by the current procedure or Alex
-App routes.** Use the [bounded procedure / durable coordination boundary](2a-design/workflows.md#bounded-procedure-versus-durable-coordination).
-`develop-change` remains the local design/implementation/verification/review
-procedure. One Alex-owned Task carries the broader authorized outcome through
-publication, CI, review feedback and any separately authorized integration.
-Alex chooses useful actions; Host retains work, delivers facts and schedules
+**Accepted Task use case; watcher source implemented, not activated by this
+change.** This is the ordinary [Task + Watcher model](2a-design/task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review),
+not an Alex-specific delivery lifecycle. `develop-change` remains the bounded
+local design/implementation/verification/review procedure. One Alex-owned Task
+carries the broader authorized outcome through publication, CI, review feedback
+and any separately authorized integration. Alex judges and acts; the GitHub
+watcher supplies facts; Host retains work, delivers events and schedules
 eligible attempts. No new Host phases or permanently running PR workflow are
-needed.
+needed. Publication still uses separately authorized tools.
 
 For example:
 
@@ -313,8 +314,8 @@ Alex Task: deliver the agreed change through an acceptable PR
   → authorized bounded action pushes the branch and creates/reuses the PR
   → retain PR identity and outstanding CI/review requirements; end invocation
 
-CI or review/comment fact arrives for that PR
-  → Host admits it to the same Task and schedules an eligible attempt
+Watcher observes a CI or review/comment change for that PR
+  → Host admits the fact to the same Task and schedules an eligible attempt
   → Alex rereads current PR/head/checks/comments and judges what remains
   → bounded development/verification repairs justified issues
   → push the new candidate to the same PR; retain outstanding requirements
@@ -338,7 +339,11 @@ place; neither is a prerequisite for this design. Preserve the existing
 silently broadens its promise. Supply and verify the actual target repository
 and an authorized working directory before publication. The Apps repository's
 local integration rule is not the Host repository's PR rule; do not redirect
-Alex's App-wide workspace merely to serve one delivery assignment.
+Alex's App-wide workspace merely to serve one delivery assignment. The declared
+Alex workspace is the Apps repository; the watcher's GitHub repository scope
+selects read-only observation, not where `develop-change` develops. A Host
+repository delivery needs its actual authorized checkout/procedure; Apps-local
+candidate receipts cannot certify Host code.
 
 Retain the exact repository, branch, PR identity/URL, pushed head commit,
 publication evidence, relevant review/comment identities, outstanding checks
@@ -350,12 +355,12 @@ text or a guessed PR number cannot establish that identity.
 
 ### Provider facts and continuation
 
-Declare an App-owned observer/webhook route for the relevant PR, CI checks and
-review/comment changes. It must retain an exact resource-to-Task association and
-admit observations to that existing Task, not create a Task per event. Use
-existing Conditions/return paths for needed results and bounded source recovery
-for changes missed during downtime. A declared wait alone does not install the
-GitHub reader or callback route.
+Use the App's installed GitHub watcher (declared through SDK `observers`) for
+PR, CI and review/comment changes. Exact saved Conditions and optional resource
+owner metadata return its facts to the existing Task, not a Task per event.
+Use bounded provider reads to recover changes missed during downtime. A declared
+wait alone does not install the reader; discover its actual installed coverage
+before relying on it.
 
 Host can coalesce wakes while retaining input. On each attempt, Alex reads
 current provider state before acting: a failed check for an older head is not a
@@ -372,63 +377,107 @@ evidence to the owner rather than silently extending budgets. Outstanding
 checks do not prevent independent useful work, but no model needs to remain
 alive polling GitHub while only external results remain.
 
-**Current gaps:** Alex `app.ts` has no PR/CI/comment observer or route. The existing
-May GitHub observer is scoped to May-owned delivery and reads PR state and
-commit-bound reviews, not CI checks, comment bodies or unresolved threads.
-Do not relabel Alex work as May or invent a May delivery Task just to use it.
-Reuse provider-reading mechanics through an appropriate shared helper/adapter
-when adding Alex's declared coverage; Host core must not acquire Alex-specific
-GitHub strategy. Publication readback/retry safety, exact-head remote checks,
-feedback return and original-outcome acceptance need connected tests before
-claiming this continuation is supported.
+**Source and remaining limits:** Alex `app.ts` now composes the shared GitHub
+adapter with CI/comment coverage and Alex source/ownership. May retains its
+existing state/review coverage. Neither configuration reads unresolved thread
+state or branch-protection requirements. Connected fixtures verify exact-head
+facts, same-Task feedback/rearming, bounded development reassessment, downtime
+and failed event publication. They simulate GitHub and agent judgment; they do
+not prove publication retry/readback against GitHub or native-agent delivery.
+Verify those effects and the installed path before claiming the full use case
+works in deployment. Host core acquires no GitHub or Alex strategy.
 
 ## Publishing and waiting for GitHub pull-request facts
 
-`develop-change` ends with a locally committed candidate; it does not publish a
-PR or make the Alex Task directly observable by the May GitHub observer. PR
-publication is a separately authorized delivery outcome. For Alex-origin work,
-a publisher may use the observer only when a genuine May delivery Task owns that
-outcome. The PR body then contains that exact owner's single visible
-`## May Task` block (`App ID: may`), while the originating Alex Task remains
-preserved through the Tasks' actual saved caller/request relationship. An
-`## Task` block with `App ID: alex` is unsupported and is rejected. If there is
-no May delivery Task, do not fabricate one or relabel the Alex Task as May.
+`develop-change` ends with a locally committed candidate. Publication is a
+separately authorized action in the actual target checkout, not an implicit
+workflow effect. Preserve PR identity and read back publication before yielding.
+For Alex-owned delivery, preserve one visible owner block in the PR body:
 
-When a May-owned delivery is waiting on a GitHub PR, use the registered
-`github-pull-request` observer contract documented in
-[`../../may.app/design/github-pull-request-observation.md`](../../may.app/design/github-pull-request-observation.md).
-Use `tasks.contract` / `read.contract("may")` to discover `github-pull-request`.
-Build and save its observation Condition for resource
-`github:hao1939/may-agent#<number>` and the required fact, such as
-`{ "field": "fingerprint", "notEquals": null }` for the initial snapshot.
-After judgment, rearm with the observed fingerprint if later changes matter.
-The public PR owner block supplies live routing; the saved Condition supplies
-missed-change recovery, including a PR already merged before observation began.
-No second tracking file or model polling loop is required.
-
-Live discovery checks open PRs every fifteen minutes. Exact Condition checks use
-the existing Host resource observer, with an hourly fallback and a prompt check
-after admitted Task results. Both paths share provider rate-limit deferral.
-Read failures leave the wait intact. PR/review facts do not include CI checks,
-unresolved review threads or branch-protection decisions; obtain those separately
-when delivery acceptance needs them. See the owning contract for read bounds and
-legacy Condition migration.
-
-From the Apps repository root, run the maintained production-composition probe
-against an explicit Host checkout (never a guessed checkout):
-
-```sh
-HOST_CANDIDATE=/app/projects/may-agent APP_CANDIDATE="$PWD" \
-  bun projects/may.app/scripts/github-pull-request-composition.ts \
-  /tmp/github-pull-request-composition.json
+```text
+## Task
+- App ID: alex
+- Task ID: <exact existing Task ID>
 ```
 
-The fact wakes the same Task for judgment; it does not approve, merge, deploy,
-close work, or retire independent Conditions. A targeted `read-failed` fact also
-wakes that owner once even though it cannot match or satisfy the PR Condition; a
-separate partial state fact can match and still requires judgment. Preserve a
-periodic review fallback and any independently useful human route. Provider
-failures remain visible and leave the wait intact.
+This supplies live routing in the configured repository `hao1939/may-agent`,
+author `hao1939`, owner App `alex`. It grants no publication/merge/deployment
+permission. A May-owned delivery uses its genuine May Task and published
+`## May Task` block; Alex callers retain the actual caller relationship.
+Do not fabricate a May Task or relabel Alex work to borrow another App's scope.
+Both configurations use [`shared/tools/github-pull-request.ts`](../../../shared/tools/github-pull-request.ts).
+
+Discover `github-pull-request` through `tasks.contract` / `read.contract("alex")`.
+On an installation with the new Alex definitions, build an observation for the
+exact PR and save its returned Condition in the normal Task result:
+
+```json
+{
+  "observerId": "github-pull-request",
+  "id": "pr-feedback",
+  "resource": "github:hao1939/may-agent#215",
+  "expected": { "field": "fingerprint", "notEquals": null }
+}
+```
+
+`null` requests an initial snapshot. After judgment, rearm against the observed
+fingerprint while further feedback matters; preserve unrelated Conditions.
+A wait for only `state: closed` will not wake on CI failure or a comment.
+Construction saves nothing. While delivery remains incomplete and only external
+results remain, return `waiting` with the saved Condition and a scoped progress
+report—not the local workflow's `converged` result as whole-Task completion.
+Exact checks serve active interests; idle work with an old Condition alone does
+not request them. The installed helper binds the resource and exact
+source `app:alex:observer:github-pull-request`. Saved interests also recover
+missed changes; they need no owner block for shared/read-only PRs in this
+repository. Without an interest, live discovery remains best effort.
+
+Alex facts include PR state, head and merge fields; commit-bound reviews with
+body digests/previews; and `feedback` containing head-bound check runs, combined
+commit statuses, issue comments and inline review comments. Each feedback set
+has its own `*Complete` and `errors` evidence. Empty checks are not proof that
+required CI passed. Truncated previews carry a body digest and item identity;
+read full provider content when material. Unresolved thread state and required
+branch-protection checks remain separate reads/judgment, not implied coverage.
+
+The reader pins CI URLs and returned SHAs to the PR head, then confirms head
+and live ownership again. A changing head fails explicitly for a later retry;
+old approvals/comments remain commit-labelled source data. Provider reads are
+not atomic; recheck current state before a consequential effect. Fingerprints
+include CI and comment bodies/revisions but exclude fetch time, so these changes
+wake even when PR `updated_at` does not change, while unchanged polls stay quiet.
+
+Live scans run every fifteen minutes. They share at most sixteen HTTP requests,
+reserve one worst-case complete feedback read per pass, and retain the existing
+bounded discovery/fair traversal. Exact interests use Host's four-resource
+batches, hourly fallback and prompt checks after accepted Task results. A full
+exact read makes at most fourteen requests: PR, up to four review pages, up to
+two 25-item pages per feedback set, and PR confirmation. Requests have 15-second
+deadlines; the overall exact deadline is 210 seconds and supports cancellation.
+Partial pagination/failures are explicit gaps, not complete empty success.
+Shared credentials, rate-limit deferral and fixed-origin/endpoint validation
+remain those of the [GitHub adapter contract](../../may.app/design/github-pull-request-observation.md#provider-facts-and-bounded-execution).
+May's state-only bounds and legacy wait migration remain in that contract.
+
+Read failures keep the interest intact and are visible in observer health/events.
+An agent-selected `reviewAt` can request diagnosis when it could change a decision;
+it is not a CI polling timer. No fact automatically approves, merges, deploys,
+closes work or retires independent waits.
+
+Run the maintained provider/Host composition against an explicit Host checkout:
+
+```sh
+HOST_CANDIDATE=/app/projects/may-agent \
+  bun projects/alex.app/scripts/task-pr-watcher-composition.ts \
+  /tmp/task-pr-watcher-composition.json
+```
+
+This uses the production Alex detector and Host Task/event path with fixture
+provider/publication/judgment. It verifies same-Task feedback, restart, failed
+publication, new-head rearming and independent requirements—not installed
+activation, live GitHub publication retries or native-agent understanding.
+The [November 16 source trial](archive/reviews/task-pr-watcher-use-case-20261116.md)
+records the connected checks and remaining proof obligations.
 
 ## Input and installation boundary
 

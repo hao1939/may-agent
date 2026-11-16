@@ -4,6 +4,11 @@
 
 **Choice basis:** [Simple first](../../alex.app/docs/1-principles/core-principles.md#simple-first) and [Task-driven observation](../../alex.app/docs/2a-design/agent-app.md#task-driven-resource-observation): reuse saved Conditions, the existing provider reader and Host scheduling. No second watch registry or GitHub-specific Host logic.
 
+The provider mechanics now live in [`shared/tools/github-pull-request.ts`](../../../shared/tools/github-pull-request.ts).
+May's compatibility entrypoint and state/review configuration preserve this
+contract. [Alex composes the same watcher with explicit CI/comment coverage](../../alex.app/docs/development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
+and Alex source/ownership; no Host or second work lifecycle is added.
+
 Status: source implements live observation plus exact Condition checks. Installing
 these definitions and upgrading retained waits are separate rollout steps; source
 checks are not deployment evidence.
@@ -81,8 +86,9 @@ For ordinary May delivery, the PR body contains exactly one visible block:
 
 Use the exact May delivery Task identity from current context and read back the
 remote body after publishing. Preserve the block during description edits.
-Code-fenced examples, duplicates, unsafe identifiers, unsupported App IDs, and
-unknown or closed Tasks are not guessed. Branch names and prose are not ownership.
+The shared parser also accepts the App-neutral `## Task` heading; keep exactly
+one owner block across both spellings. Code-fenced examples, duplicates, unsafe
+identifiers, out-of-scope App IDs, and unknown or closed Tasks are not guessed. Branch names and prose are not ownership.
 Ordinary `gh pr create` and `gh pr edit` remain supported. The block supplies live
 routing; it does not replace a saved interest when later delivery matters.
 

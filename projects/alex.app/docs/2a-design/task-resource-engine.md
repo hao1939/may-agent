@@ -119,6 +119,22 @@ silently release a promise to verify its eventual result. The
 records a traversal of all 544 existing Alex records and eight guarded closures
 in an isolated copy, preserving unrelated work and accepted evidence.
 
+## Solid use case: a PR through CI and review
+
+One delivery Task carries the agreed outcome through bounded development,
+publication and external feedback. A **watcher** (SDK `observer`) supplies
+PR/head/CI/review/comment facts; Host schedules the same eligible Task; its agent
+assesses feedback, repairs or responds, and updates the same PR.
+
+Retain PR identity/head, evidence, needed Conditions and caller links in existing
+Task state. Rearm one-shot interests while feedback matters; stop them when that
+requirement ends, preserving independent work and waits. Local convergence,
+stale CI/approvals, silence and partial reads do not prove delivery success or
+grant merge, deployment or closure authority.
+
+See the [Alex delivery recipe and source/installation limits](../development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
+and [Task-driven watcher contract](agent-app.md#task-driven-resource-observation).
+
 ## One lifecycle baseline
 
 One Task lifecycle serves ordinary work, maintenance and Conversation.
@@ -226,40 +242,22 @@ owns this distinction between reference metadata and work admission.
 
 ## Mental model
 
-```text
-App input declares, revises, attaches to, or wakes TaskIntent
-  -> Host persists canonical task state
-  -> queue receives (appId, taskId)
-  -> worker rereads and claims the current generation
-  -> one selected handler works until it returns a proposed result or exact wait
-  -> Host validates and atomically applies one result
-  -> task records an outcome, waits on exact evidence, or retains failure and retries
-```
+The [one App work path](#one-app-work-path) persists intent and triggers before
+queueing IDs, claims the current generation and atomically admits a bounded
+result. Watcher facts update exact current Conditions. Indexed startup, due,
+expired-lease and safety queries recover lost queue hints without tree scans.
 
-Observers publish facts. The Condition tracker updates only exact Conditions
-still owned by waiting/running tasks and wakes those task IDs. Events are the
-normal trigger. Indexed startup, due, expired-lease, and safety queries repair
-a lost in-memory wake without scanning an App tree.
+Reload selects one runtime generation. Active attempts retain their definitions;
+later session events use published adapters/descriptors together, checked against
+exact ownership. Process subscriptions cannot retain an obsolete selection.
+Rejected replacement restores accepted options/descriptors without invoking the
+old publication callback; with no prior runtime it leaves none selected.
+Events/recovery cannot use rejected adapters. The [lifecycle review](../archive/reviews/task-runtime-organization.md#task-lifecycle-review)
+retains the listener gap and source evidence.
 
-The queue is an in-memory hint. The persisted task, trigger, Condition, and
-attempt state are sufficient to recover it.
-
-App reload publishes one selected runtime generation. A running attempt retains
-its execution definitions; a later session event uses the currently published
-adapters and descriptors together, subject to exact Task ownership checks. A
-process-scoped subscription must not retain a second, obsolete runtime selection.
-If replacement publication is rejected, rollback reinstalls the accepted runtime
-options with its descriptors and does not invoke the previous publication callback.
-If no runtime was previously installed, rollback leaves no selected options;
-later session events and recovery calls cannot use the rejected adapters.
-The [lifecycle review](../archive/reviews/task-runtime-organization.md#task-lifecycle-review)
-records the reproduced listener gap and its source fix separately from this contract.
-
-An explicitly blocked workflow retains its bounded diagnostic context in Task
-evidence so the worker or an authorized caller can investigate the actual failure, not only
-a generic attention summary. Context larger than the Task evidence budget
-remains on the cited workflow run. This does not turn a prior failure into
-policy or make an unchanged automatic retry useful.
+Blocked workflow diagnostics remain in bounded Task evidence, with excess context
+on the cited run, so an authorized owner can investigate—not merely repeat an
+unchanged failure or treat it as policy.
 
 ## Execution and outstanding results
 

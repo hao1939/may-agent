@@ -662,6 +662,39 @@ describe("development workflow using real Git and verification", () => {
     ]);
   });
 
+  test("GitHub CI/comment feedback reassesses and repairs the same Task instead of quietly reusing a local pass", async () => {
+    const t = trial();
+    await t.run();
+    const before = t.git(t.worktree, "rev-parse", "HEAD");
+    const ctx = t.context();
+    ctx.reconciliation!.events.items.push({
+      eventId: 215,
+      observedAt: "2026-11-16T10:00:00Z",
+      event: { type: "alex.github.pull-request.state", data: {
+        resource: "github:hao1939/may-agent#215", headSha: before,
+        feedback: { headSha: before, checks: [{ name: "remote-verify", conclusion: "failure" }],
+          comments: [{ id: 1, bodyPreview: "Cover the missing remote environment case" }] },
+      } },
+    });
+    t.setImplementation(() => {
+      writeFileSync(join(t.worktree, "answer.cjs"), "'use strict';\nmodule.exports = () => 1;\n");
+      t.git(t.worktree, "add", "answer.cjs");
+      t.git(t.worktree, "commit", "-m", "repair assessed CI feedback");
+    });
+    const result = await t.run(ctx);
+    expect(t.calls.map(({ stage }) => stage)).toEqual([
+      "design", "implementation", "review", "design", "implementation", "review",
+    ]);
+    expect(t.prompts[3]).toContain("remote-verify");
+    expect(t.prompts[3]).toContain("Cover the missing remote environment case");
+    expect(t.git(t.worktree, "rev-parse", "HEAD")).not.toBe(before);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\ncheck\n");
+    expect(t.current.id).toBe("goal/trial");
+    expect(t.current.outcome).toBe("Return 1");
+    expect(result.state).toBe("converged"); // Local contribution, not remote acceptance.
+    expect(result.result).not.toHaveProperty("taskDisposition");
+  });
+
   test("informational input retains reports and permits judgment to reuse exact verification", async () => {
     const t = trial();
     await t.run();

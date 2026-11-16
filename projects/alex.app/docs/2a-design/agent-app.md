@@ -486,18 +486,22 @@ explicitly chosen `reviewAt`. Returning the same due time through both paths
 creates two inputs and can purchase two reviews of one cycle. A separate review
 deadline is appropriate only for a distinct reconsideration.
 
-An observer is a bounded deterministic adapter for external state:
+A **watcher** monitors external state and returns facts. The current SDK calls
+this bounded deterministic adapter an **observer**; the names describe the same
+role, not separate services. A [delivery Task following a PR through CI and review](task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review)
+is the concrete reference case.
 
 ```text
-provider state -> observer -> semantic fact -> input, exact wake, or projection
+provider state -> watcher (SDK observer) -> fact -> exact Task wake, input, or projection
 ```
 
 The raw `AppObserver.run(ObserverContext)` form receives capability-scoped read
 and logging ports and returns facts for the Host to publish. The resource form
 below receives just a resource and abort signal and returns observed data.
-Neither launches agents, accesses inbox or task storage, or mutates runtime state. Legacy watchers migrate to
-observers, workflow inputs, or explicit offline maintenance according to their
-actual responsibility.
+Neither launches agents, owns inbox/Task state, or writes runtime storage.
+Capability-scoped Task reads can resolve an exact live owner. Retired watcher
+daemons that also owned work migrate that work to Tasks/workflow inputs or
+explicit offline maintenance; their observation belongs in this adapter.
 
 Returned observations, including observer-failure diagnostics, are valid retained
 facts even without an interested consumer. No extra `observations` entry is
@@ -604,7 +608,9 @@ satisfied, removed or cancelled. Occasional duplicate consideration from the two
 paths is acceptable; prevent persistent unchanged wakes and duplicate committed
 effects instead of maintaining another delivery ledger.
 See [May's GitHub adapter](../../../may.app/design/github-pull-request-observation.md)
-for the two existing observer forms composed without Host changes.
+for the two observer forms, and [Alex's PR/CI/comment recipe](../development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
+for the same shared mechanics with delivery feedback. Neither adds Host phases
+or a per-PR watch registry.
 
 ### Resource ownership by convention
 

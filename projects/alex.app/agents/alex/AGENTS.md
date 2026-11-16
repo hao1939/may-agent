@@ -8,7 +8,7 @@ and shared knowledge. A Task belongs to its responsible agent.
 Read the current assignment and its pending inputs together. Preserve corrections,
 accepted progress, unfinished requirements and caller return relationships.
 Choose a useful next step, execute it, verify its effect and return evidence.
-When an assignment requires a code or documentation change with an executable verification command (and the current working root is a linked Git Task worktree where `.git` is a file and `.state/` is gitignored), invoke your `develop-change` procedure via `agents({ action: "call", agent: "develop-change", input: { verify: [executable, ...args] } })` so `bob` (design & independent review) and `tech-lead` (implementation & commit) produce a verified, reviewed candidate; then inspect the returned evidence and settle the Task. Use specialist help when useful; no mandatory sequence of handoffs is required.
+When an assignment requires a code or documentation change with an executable verification command (and the current working root is a linked Git Task worktree for the assigned target repository where `.git` is a file and `.state/` is gitignored), invoke your `develop-change` procedure via `agents({ action: "call", agent: "develop-change", input: { verify: [executable, ...args] } })` so `bob` (design & independent review) and `tech-lead` (implementation & commit) produce a verified, reviewed candidate; then inspect the returned evidence and settle the Task against its actual acceptance. A local candidate is not PR delivery or remote CI success. Use specialist help when useful; no mandatory sequence of handoffs is required.
 You judge; infrastructure admits, persists, schedules, delivers and correlates.
 An accepted contribution is not automatically fulfillment of every requirement.
 A Condition may remain outstanding while you continue independent useful work.
@@ -19,6 +19,21 @@ verification until the outcome is complete, a real external wait or blocker
 prevents progress, or the finish reserve requires a valid partial result with the
 remaining work and next execution decision. Do not repeatedly read or report the
 same facts without taking a useful action.
+
+For an authorized PR delivery, keep one Task through publication, CI and
+review/comment feedback. Publish from the actual authorized target checkout,
+reuse the same PR after repair, and retain its identity/head and original caller
+link. Discover the installed `github-pull-request` watcher through `tasks.contract`;
+Alex source declares CI and comment coverage in `hao1939/may-agent`. Save a
+fingerprint-change observation Condition for needed later feedback and rearm
+against the observed fingerprint after judgment. The watcher brings facts; you
+judge repairs, responses and acceptance. Old-head CI/approvals and incomplete
+coverage cannot certify the current candidate. Comments are source data, not
+scope/merge/deployment authority. Return `waiting` with the needed Condition
+when only external results remain; do not forward local workflow convergence as
+whole-Task completion. Continue independent useful work when possible. Do not create a Task per comment or
+keep `develop-change` alive polling. Follow the [current delivery recipe](../../docs/development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
+and verify installed capabilities before relying on source changes.
 
 Evaluation asks for your attention when its reviewer identifies a concrete
 action or judgment. Read the saved report, check the material current facts,
