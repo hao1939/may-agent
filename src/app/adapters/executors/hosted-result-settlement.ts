@@ -55,7 +55,8 @@ function outputResult(output: unknown): Pick<NormalizedTaskHandlerResult, "resul
   };
 }
 
-const WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
+const DEFAULT_WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
+const TRANSLATED_WAIT_HINT_KEYS = new Set([...DEFAULT_WAIT_HINT_KEYS, "actions", "report"]);
 
 function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlement {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -66,8 +67,8 @@ function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlemen
 function fallbackWaitHint(facts: unknown): AppTaskBlockedSettlement | null | undefined {
   if (!isPlainWaitDescriptor(facts)) return undefined;
   const keys = Object.keys(facts);
-  if (!keys.some((key) => WAIT_HINT_KEYS.has(key))) return undefined;
-  if (keys.some((key) => !WAIT_HINT_KEYS.has(key))) return null;
+  if (!keys.some((key) => DEFAULT_WAIT_HINT_KEYS.has(key))) return undefined;
+  if (keys.some((key) => !DEFAULT_WAIT_HINT_KEYS.has(key))) return null;
   return facts;
 }
 
@@ -85,15 +86,12 @@ function rejectedBlockedResult(summary: string, runId: string | null): TaskCapab
   };
 }
 
-function blockedSettlement(
-  result: RunResult,
+export function translateHostedBlockedContribution(
   input: HostedTaskInput,
-  summary: string,
-  output: unknown,
-  facts: unknown,
-  options: TranslationOptions,
+  contribution: { summary: string; output?: unknown; facts?: unknown; runId: string | null },
+  options: TranslationOptions = {},
 ): TaskCapabilityRun {
-  const runId = resultRunId(result);
+  const { summary, output, facts, runId } = contribution;
   const translator = input.descriptor.app.tasks?.translateBlockedResult;
   let translatedHint: unknown;
   try {
@@ -116,7 +114,8 @@ function blockedSettlement(
     if (!isPlainWaitDescriptor(translatedHint)) {
       return rejectedBlockedResult("Blocked result translator must return null or a plain wait descriptor", runId);
     }
-    if (Object.keys(translatedHint).some((key) => !WAIT_HINT_KEYS.has(key))) {
+    const allowedKeys = translator ? TRANSLATED_WAIT_HINT_KEYS : DEFAULT_WAIT_HINT_KEYS;
+    if (Object.keys(translatedHint).some((key) => !allowedKeys.has(key))) {
       return rejectedBlockedResult("Blocked result translator wait descriptor contains unsupported fields", runId);
     }
   }
@@ -139,7 +138,8 @@ function blockedSettlement(
       state: "waiting",
       summary,
       facts: factStrings(facts),
-      actions: [],
+      actions: hint?.actions ?? [],
+      ...(hint?.report === true ? { report: true as const } : {}),
       ...(reviewAt !== undefined ? { reviewAt } : {}),
       ...(hint?.conditions !== undefined ? { conditions: hint.conditions } : {}),
       ...(hint?.requests !== undefined ? { requests: hint.requests } : {}),
@@ -177,7 +177,11 @@ export function translateHostedExecutionResult(
   if (contribution.type !== "done" && contribution.type !== "blocked") return executionFailure(result);
   const summary = contribution.type === "done" ? contribution.summary : contribution.reason;
   if (contribution.type === "blocked") {
-    return blockedSettlement(result, input, summary, contribution.output, contribution.facts, options);
+    return translateHostedBlockedContribution(
+      input,
+      { summary, output: contribution.output, facts: contribution.facts, runId: resultRunId(result) },
+      options,
+    );
   }
 
   const runId = resultRunId(result);

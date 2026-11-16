@@ -53,8 +53,20 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
     } as unknown as TaskAgentInput);
     expect(calls).toBe(1);
     expect(result.executionFailed).toBeUndefined();
-    expect(result.handlerResult).toMatchObject(report);
-    expect(result.handlerResult.result).not.toHaveProperty("testResults");
+    if (status === "done") {
+      expect(result.handlerResult).toMatchObject(report);
+      expect(result.handlerResult.result).not.toHaveProperty("testResults");
+    } else {
+      expect(result).toMatchObject({
+        handlerBlocked: true,
+        handlerResult: {
+          state: "waiting",
+          summary: report.summary,
+          result: report,
+          facts: [],
+        },
+      });
+    }
     expect(result.handlerResult.actions).toEqual([]);
   } finally {
     rmSync(root, { recursive: true, force: true });

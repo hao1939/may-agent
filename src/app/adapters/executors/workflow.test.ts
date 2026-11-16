@@ -81,6 +81,67 @@ export async function execute(ctx) {
   });
 });
 
+it("retains blocked workflow output, facts, and context through Host settlement", async () => {
+  const root = mkdtempSync(join(tmpdir(), "task-workflow-blocked-"));
+  roots.push(root);
+  const workflowDir = join(root, "owner", "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  writeFileSync(join(workflowDir, "review.ts"), `
+export const name = "review";
+export const description = "Blocked contribution with checkpoint";
+export async function execute(ctx) {
+  return { ...ctx.blocked("Await reviewer", { evidence: "partial" }), output: false };
+}`);
+  AppTaskResourceStore.fromDb(getDb(root), "fixture").bootstrapSnapshot(
+    {
+      project: "fixture",
+      resources: {
+        review: {
+          metadata: { id: "review", generation: 1, resourceVersion: 1 },
+          spec: { parentId: "root", outcome: "Review", acceptance: ["Done"] },
+          status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-blocked" },
+        },
+      },
+      attempts: {
+        "attempt-blocked": {
+          metadata: { id: "attempt-blocked", resourceVersion: 1 },
+          taskId: "review", taskGeneration: 1, specHash: "hash", owner: "owner",
+          handler: "workflow:review", runtimeId: "rt", state: "running", reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+      },
+    },
+    "fixture",
+  );
+  const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
+  const result = await runner.execute({
+    source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
+    descriptor: { id: "fixture", appDir: join(root, "sample.app"), projectDir: root, app: {} },
+    capability: { workflow: "review", task: "Review the candidate" }, handler: "workflow:review",
+    executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+    childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false },
+    taskEvents: {}, executionTimeoutMs: 1000,
+    attempt: {
+      read: { tasks: {} }, task: { id: "review", generation: 1, outcome: "Review", acceptance: [], input: {} },
+      attemptId: "attempt-blocked", role: { agent: "owner" }, resourceVersion: 1,
+      events: { items: [], truncated: false }, waits: [], children: [], declaredOutputPaths: [],
+      signal: new AbortController().signal, onEvent: () => () => {},
+    },
+  } as unknown as TaskWorkflowInput);
+  expect(result).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "waiting",
+      summary: "Await reviewer",
+      result: { value: false },
+      facts: [
+        'execution-facts:{"evidence":"partial"}',
+        'workflow-blocker-context:{"evidence":"partial"}',
+      ],
+    },
+  });
+});
+
 it("inspects the current workflow definition without executing it", async () => {
   const root = mkdtempSync(join(tmpdir(), "task-workflow-inspection-"));
   roots.push(root);

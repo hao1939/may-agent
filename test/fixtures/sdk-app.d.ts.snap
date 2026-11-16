@@ -275,6 +275,10 @@ export type AppTaskBlockedSettlement = {
     retryAfterMs?: number;
     conditions?: TaskCondition[];
     requests?: TaskAppRequest[];
+    /** Trusted App actions admitted through the ordinary Task action and policy boundary. */
+    actions?: TaskAction[];
+    /** Publish partial progress while the Task retains its remaining wait. Requires non-empty domain facts. */
+    report?: true;
 };
 export type AppTaskBlockedResultContext = {
     task: Readonly<TaskDetail>;

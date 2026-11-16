@@ -20,6 +20,7 @@ import { EVENT_RECORD_ONLY, childEventTrace, type AgentEvent, type EventBus } fr
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
 import type { TaskDefinitionSource, TaskWorkflowInput, TaskWorkflowRunner } from "../../core/tasks/execution.js";
 import { localAgentDir } from "../discovery/local-agents.js";
+import { translateHostedBlockedContribution } from "./hosted-result-settlement.js";
 
 /** Composition selects the built-in runner. Core does not load workflows. */
 export function createTaskWorkflowRunner(
@@ -179,18 +180,21 @@ async function executeTaskWorkflow(
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
-    const handlerResult = normalizeTaskHandlerResult(
-      done ? result.output : undefined,
-      {
-        type: done ? "done" : "blocked",
-        summary,
-        runId,
-      },
-      {
-        validateAction: input.descriptor.app.tasks?.validateAction,
-        validateCondition: input.descriptor.app.tasks?.validateCondition,
-      },
-    );
+    const handlerResult = done
+      ? normalizeTaskHandlerResult(
+          result.output,
+          { type: "done", summary, runId },
+          {
+            validateAction: input.descriptor.app.tasks?.validateAction,
+            validateCondition: input.descriptor.app.tasks?.validateCondition,
+          },
+        )
+      : translateHostedBlockedContribution(input, {
+          summary,
+          output: result.output,
+          facts: result.facts,
+          runId,
+        }).handlerResult;
     // A deliberate blocker is not a transport retry, but its diagnostic
     // context must remain visible to the same Task and its caller. Keep one
     // bounded facts entry; the full context remains on the workflow run.

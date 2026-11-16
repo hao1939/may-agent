@@ -229,6 +229,13 @@ test("blocked uses the App translator and controlled clock for continuation, Con
             { requestId: "review" },
           ],
           requests: [{ id: "review", appId: "evaluation", input: { kind: "review", data: {} } }],
+          actions: [{
+            kind: "retire-condition",
+            conditionId: "obsolete-review",
+            expectedConditionGeneration: 1,
+            reason: "The new review supersedes the old wait",
+          }],
+          report: true,
         }),
       },
     }),
@@ -240,8 +247,10 @@ test("blocked uses the App translator and controlled clock for continuation, Con
       state: "waiting",
       reviewAt: 1_250,
       result: { value: false },
+      report: true,
       conditions: [{ id: "approval" }, { requestId: "review" }],
       requests: [{ id: "review", appId: "evaluation" }],
+      actions: [{ kind: "retire-condition", conditionId: "obsolete-review" }],
     },
   });
 });
@@ -334,6 +343,47 @@ test("bad hints and rejected App validation are contract failures, not empty suc
     state: "error",
     resultRejected: true,
     summary: expect.stringContaining("observer is unavailable"),
+  });
+});
+
+test("blocked translator actions and reports use ordinary Task admission", () => {
+  const action = {
+    kind: "retire-condition" as const,
+    conditionId: "resolved",
+    expectedConditionGeneration: 1,
+    reason: "Resolution was verified",
+  };
+  const denied = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Another wait remains", facts: ["review:resolved"] }),
+    input({ tasks: {
+      translateBlockedResult: () => ({ actions: [action], report: true }),
+      validateAction: () => "retirement denied by App policy",
+    } }),
+  );
+  expect(denied.handlerResult).toMatchObject({
+    state: "error",
+    resultRejected: true,
+    summary: expect.stringContaining("retirement denied by App policy"),
+  });
+
+  const malformedReport = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "No evidence supplied" }),
+    input({ tasks: { translateBlockedResult: () => ({ report: true }) } }),
+  );
+  expect(malformedReport.handlerResult).toMatchObject({
+    state: "error",
+    resultRejected: true,
+    summary: expect.stringContaining("report requires waiting or incomplete, true, and non-empty facts"),
+  });
+
+  const malformedAction = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Malformed retirement", facts: ["review:resolved"] }),
+    input({ tasks: { translateBlockedResult: () => ({ actions: [{ kind: "retire-condition" }] }) as AppTaskBlockedSettlement } }),
+  );
+  expect(malformedAction.handlerResult).toMatchObject({
+    state: "error",
+    resultRejected: true,
+    summary: expect.stringContaining("actions[0].conditionId must be a non-empty string"),
   });
 });
 

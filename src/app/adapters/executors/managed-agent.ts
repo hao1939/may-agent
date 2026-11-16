@@ -12,6 +12,7 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/t
 import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 import { localAgentDir } from "../discovery/local-agents.js";
 import { captureAgentDefinitions } from "./agent-definitions.js";
+import { translateHostedBlockedContribution } from "./hosted-result-settlement.js";
 import {
   applyCanonicalAgentResidueCleanup,
   beginCanonicalAgentResidueGuard,
@@ -166,6 +167,16 @@ async function executeTaskAgent(
     restoredAgentResidue = await applyCanonicalAgentResidueCleanup(cleanupPlan);
   }
   const done = result.status === "done";
+  if (done && result.finishResult?.status === "blocked") {
+    return translateHostedBlockedContribution(input, {
+      summary:
+        firstNonEmptyString(result.finishResult.summary, result.lastAssistantText, result.error) ??
+        `Agent session ${result.sessionId || "unknown"} returned no blocker summary`,
+      output: result.finishResult.output,
+      facts: result.finishResult.facts,
+      runId: result.sessionId || null,
+    });
+  }
   const handlerResult = rejectConvergedDirectAgentResidue(
     normalizeTaskHandlerResult(
       done ? result.structuredResult : undefined,
