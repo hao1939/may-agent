@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Merged Host baseline `f70f55ab5e3c881838b13419554a4cd3e4276f68` includes #566 and #568–#572. Local follow-up branches repair transactional Task-input fencing and retained Conversation returns, and migrate App SDK imports/contexts. These patches are unmerged. Production parent watchdog wiring, shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. Source checks and deployment are separate facts.
+**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions `cb07caf34061`; that activation is distinct from current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -92,9 +92,9 @@ still apply; recovery/escalation does not invent a new assignment or authority.
 
 ## Remaining gaps and implementation order
 
-### Integrate the prepared correctness and compatibility patches
+### Preserve merged correctness and complete paired adoption
 
-The local Host repair restores delivery for retained Topic subscriptions and
+The merged Host repair restores delivery for retained Topic subscriptions and
 `conversation-follow-up:` admissions through live notifications and bounded
 periodic recovery. It reuses existing admission/result receipts, preserves late
 links and historical Topic references, and does not restore the retired
@@ -118,33 +118,38 @@ remain historical evidence, not the current patch's result. The retained
 standalone before effects; compatibility does not complete its domain-input
 migration or automatic continuation.
 
-The paired patches are committed and running in the authorized local trial;
-Host draft PR [#577](https://github.com/hao1939/may-agent/pull/577) has passing
-current-head Quality and Container checks. They are not merged.
-The [verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-correctness-and-compatibility-repair)
-records their tests and limits. Continue with the connected worker below.
+Host [#577](https://github.com/hao1939/may-agent/pull/577) was externally merged
+at `d8b91905f8` on 16 November. Its final head had Container success and a Quality
+failure in the reload/translation regression; an earlier green head does not
+certify that revision. Independent follow-up #580 owns the reload-test timing
+repair. The [verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
+retains source, activation and trial facts separately. Continue with the
+connected worker below; merge alone establishes no new installed behavior.
 
-### Bind production supervision to execution policy
+### Complete supervision and execution-policy coverage
 
-The [worker supervision contract](../2a-design/runtime.md#worker-supervision)
-requires the parent to bound execution independently of worker cooperation.
-At the recorded #572 source, production construction omitted the supported
-parent timeout. The local integration now wires conservative ceilings of two
-hours plus one minute for attempts and ten minutes for recovery. Resolving them
-from each execution policy, including supported ongoing execution, remains open.
+The merged production attempt parent supervises heartbeat liveness with a
+five-minute silence bound; it no longer imposes a fixed 121-minute lifetime.
+The worker sends private IPC heartbeats during preparation and execution.
+The execution adapter owns numeric deadlines and supported `unlimited` policy;
+recovery retains its separate ten-minute bound. Parent timeout handling requests
+termination, escalates after five seconds, and retains capacity until child
+closure. Preserve these distinct limits rather than deriving another process
+lifetime from an App deadline.
 
-Resolve the applicable finite bound in the supervising parent and include
-bounded preparation, execution and cleanup/recovery time. Preserve supported
-ongoing-executor exceptions through explicit responsiveness and stop policy.
-Distinguish user Stop, timeout, lost ownership and provider failure; they have
-different continuation and retry consequences. Confirm exit and required
-descendant cleanup before releasing ownership or admitting replacement work.
+The remaining high-value verification is the real factory/worker/native-adapter
+boundary for long numeric and unlimited policies, plus interrupted cleanup and
+recovery. Portable coverage under review should observe actual timer selection
+without waiting hours, and fail if either a fixed parent cap or an ignored App
+policy returns. Passing independent policy and scripted-child tests alone does
+not cover that composition.
 
-Exercise the actual production factories with a non-cooperative worker, parent
-loss and interrupted recovery. Verify human control remains responsive, stale
-results cannot commit, pending input survives, and replacement execution waits
-for safe cleanup. Do not equate killing a process with reversing its external
-effects or successfully recovering the Task.
+Continue checking non-cooperative workers, parent loss and interrupted recovery.
+Human control must stay responsive, stale results must remain fenced, pending
+input must survive, and replacement execution must wait for safe cleanup.
+Stopping the process neither reverses external effects nor proves successful
+Task recovery. A heartbeat establishes process responsiveness, not domain
+progress; ineffective work and escalation remain App-owned judgments.
 
 ### Connect shared execution and settlement
 

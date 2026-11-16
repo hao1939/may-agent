@@ -276,11 +276,63 @@ Limits observed in this run remain explicit:
   delivery ledger and uncertain-send/restart behavior were not exercised.
 
 The named completion-Hook API and Conversation-wrapper cutover remain absent.
-This trial uses the existing retained caller-result path. Parent supervision now
-has conservative production ceilings (attempt: two hours plus one minute;
-recovery: ten minutes); per-execution policy resolution and all non-cooperative
-cleanup/recovery cases remain separate gaps. No PR was merged and the diagnostic
-change has no deployment authority.
+This trial used the existing retained caller-result path. At that earlier
+revision, parent supervision used fixed attempt/recovery ceilings. The later
+review repair below replaces the attempt lifetime with heartbeat supervision.
+No merge was performed by this trial, and the diagnostic change had no
+deployment authority.
+
+## Review follow-up and redirected delivery trial
+
+Host source `81c3720dd37022574671a3593c6e2c7084440602` repairs retained-return
+recovery fairness and caller routing across creator revisions. It replaces the
+fixed attempt lifetime with five-minute private-heartbeat liveness supervision;
+recovery retains ten minutes. Timeout handling waits for child closure before
+releasing capacity. Eighty focused tests and `check:ci` passed. Three routing
+and recovery discussions received concrete replies and were resolved.
+
+The authorized local binary activation succeeded with matching built/loaded
+artifact SHA-256 `f77b3af5c60eb3257a9b4ad2740c51e8e157ff054e02d4d8201b2256578171d0`.
+The initial receipt-path validation failed before service stop, then the normal
+receipt-directory deployment succeeded. That activation is an operator action,
+not execution of the subsequent coding assignment. Other authorized App work
+has since reloaded definitions, so the activation's App revision is historical.
+
+Current `main` at `0b164bec75` includes #577 and #576. #577 was externally merged
+at 21:05 UTC, before the next Alex assignment began. Its final head had Container
+success and a real Quality failure in `app-event-translation.test.ts`; its earlier
+green checks do not certify that head. A local full run with proper prerequisites
+reported 3,434 passed, one browser detached-node failure and two skips. The isolated
+browser case passed. The preceding run lacked Docker/Compose and failed seven
+prerequisite-dependent tests. None of those results is a complete green run.
+
+The next native `develop-change` run exhausted three cumulative rounds, committed
+an unpublished reload candidate `acc1efcfa1`, and returned incomplete before final
+verification and Bob review. It detected the merged target and withheld
+publication. Independent PR #580 preserves the intended forced-retry contract;
+the unpublished candidate must not compete with it. An operator prepared separate
+native worker-policy coverage at `1ed0a0ef41`: 30 worker tests and `check:ci` passed,
+and deliberate parent-cap, ignored-numeric-policy and ignored-unlimited-policy
+mutations were all rejected. A full local run and native review were still in
+progress when the user selected #574 instead. This is assisted investigation,
+not a completed autonomous delivery claim; the consumed workflow allowance stays
+consumed.
+
+The investigation also exposed an App handoff mistake: May reused an accepted
+request ID with changed evidence and reported it relayed, while durable readback
+showed only the original admission. A new exact-Task input delivered the new
+receipt and woke the same Alex Task. Same-Task continuation requires stable work
+identity; new evidence needs its own input identity, while exact transport retry
+reuses the original identity. This correction required operator intervention.
+
+The active trial is now existing PR #574, assigned to May as an outcome with
+review/CI and GitHub-approval-notification acceptance. The operator is observing
+the normal May-to-Alex path rather than relaying each execution step. Its first
+client response timed out after durable admission; an identical retry recovered
+the same event, without a duplicate assignment. Coding, pushes, watcher-driven
+follow-up, substantive comment handling and the addressed Telegram provider
+receipt remain evidence obligations. No approval on Telegram, merge or deployment
+is part of this assignment.
 
 ## Historical performance observations
 
