@@ -87,4 +87,11 @@ test("no activity has no rate and invalid windows cannot silently return a healt
   expect(readTaskAttempts(db, query())).toMatchObject({ current: { totals: { terminal: 0, failurePercent: null } } });
   for (const extra of ["&end=0", `&end=${end + 1}`, "&windowMs=999999999999", "&windowMs=NaN"])
     expect(() => query(extra)).toThrow();
+  const plan = db
+    .prepare(
+      `EXPLAIN QUERY PLAN SELECT app_id, task_id, attempt_id FROM app_task_attempts
+       WHERE app_id != 'alex' AND started_at >= ? AND started_at < ?`,
+    )
+    .all(end - windowMs, end);
+  expect(JSON.stringify(plan)).toContain("idx_app_task_attempts_started");
 });

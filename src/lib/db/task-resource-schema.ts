@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS app_task_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_task
   ON app_task_attempts(app_id, task_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_started
+  ON app_task_attempts(started_at DESC, app_id, attempt_id);
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_failover
   ON app_task_attempts(started_at)
   WHERE json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL;
