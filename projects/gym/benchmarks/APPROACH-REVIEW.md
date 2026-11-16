@@ -12,6 +12,9 @@ The [four exact draft case inputs, rubrics and calibration excerpts](outcome-com
 are now ready for review in their proposed single owning benchmark. They extend
 the existing unfinished/fulfilled repair cases and add two contrasts. Active
 definitions remain unchanged; no models were run for this input/rubric revision.
+A no-model review now checks complete calibration envelopes against SDK admission,
+including the rule that `waiting` results cannot contain `response`. These checks
+do not validate the proposed semantic labels.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
@@ -28,7 +31,8 @@ Give an ordinary assignment, current facts, role/authority and a frozen current
 capability catalog or discoverable references. Permit read-only lookup where
 needed; do not execute the proposed actions. Keep expected answers outside the
 agent input. Keep the existing result contract when extending a case; put the
-explanation in its normal response/result, not a new universal planning API.
+explanation in its normal `summary` or state-permitted `response`, not a new
+universal planning API.
 We need not simulate a whole process: a retained incident snapshot is reading
 material, not a claim that the benchmark executed those events.
 

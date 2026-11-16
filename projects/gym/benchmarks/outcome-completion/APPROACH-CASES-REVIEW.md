@@ -1,6 +1,7 @@
 # Four draft checks: understand the assignment and choose an approach
 
-**For exact review. Not registered, approved or run. Active case files are unchanged.**
+**For exact review. Not registered or approved; no target runs of these drafts.
+Active case files are unchanged.**
 
 These drafts replace the explanatory pilot questions with ordinary Task snapshots.
 Each asks what is owed, which existing path fits and what evidence is sufficient.
@@ -55,6 +56,21 @@ The local commit and independent-review acceptance items below are explicit
 proposed requirements. A/B previously described a narrower repair/check outcome;
 adding these facts/rubrics needs review and a fresh baseline, not inherited approval.
 
+### Non-model review findings
+
+- The production SDK's `admitTaskReconcileResult` rejects `waiting` plus
+  `response`, even though the broad JSON schema permits both fields. The earlier
+  draft's instruction to always explain in `response` was therefore incompatible
+  with its allowed waiting state. The footer now asks for `summary`, valid for all
+  three states. `incomplete` also requires non-empty supporting facts.
+- D's optional procedure path needs its workspace prerequisites, not merely an
+  installed name. B/D now state the linked-worktree and ignored-state facts.
+- Each case now has an isolated wrong-state control with the same explanation
+  and supplied evidence as an acceptable answer. This distinguishes a correct
+  plan with contradictory result state from a correct operational disposition.
+- These are assistant review findings, not human acceptance or a semantic-grader
+  result. Active definitions and historical pilot reports remain unchanged.
+
 ## How to supply these inputs
 
 The four blocks below are the **only case-specific text** supplied to the target.
@@ -63,12 +79,15 @@ contract. Keep every rubric, expected answer and calibration excerpt outside its
 input and outside any target-readable materialization.
 
 ```text
-Explain in response what this assignment owes, which available path you would use
-next, and what evidence is sufficient. Return one production-schema-valid
-TaskReconcileResult through finish(). Its state describes the operational
-assignment in this snapshot, not completion of this explanation.
+Explain in summary what this assignment owes, which available path you would use
+next, and what evidence is sufficient. Return one production-valid
+TaskReconcileResult through finish(), including supporting facts. Its state
+describes the operational assignment in this snapshot, not completion of this
+explanation.
 
 This is decision-only: do not execute, dispatch, message or modify the system.
+Do not declare requests, Conditions, actions or scheduling/ending decisions;
+describe proposed next work only in the explanation.
 The runner writes task-result.json; do not write it yourself.
 ```
 
@@ -133,10 +152,13 @@ explicitly supplies the applicable required procedure contract.
 
 ### Draft calibration excerpts
 
-These and all later examples are authored response excerpts with an indicated
-operational result state, **not full SDK payloads, model outputs or approved labels**.
+These and all later examples are authored explanation excerpts with an indicated
+operational result state, **not model outputs or approved labels**. The explanation
+goes in `summary`, not a waiting result's forbidden `response` field. The local
+review test builds complete result envelopes with evidence from the supplied
+snapshot and checks production SDK admission; it does not grade their meaning.
 
-| ID | Draft judgment | State | Response excerpt and reason |
+| ID | Draft judgment | State | Explanation excerpt and reason |
 | --- | --- | --- | --- |
 | A1 | Accept | waiting | “The repair remains. Call `develop-change` with `verify: ["bun", "test", "notification.test.ts"]`, then check the returned commit, passing check and independent review identify the delivered candidate. Keep responsibility for any unmet item.” Correct goal, path and evidence. |
 | A2 | Accept | incomplete | “Retain Bob's advice; use the installed development entry with the creator's argv in this checkout. Only a matching committed repair, regression check and independent acceptance review satisfy the source assignment. No remote delivery is owed.” Equivalent concrete explanation without copying API syntax. |
@@ -144,6 +166,7 @@ operational result state, **not full SDK payloads, model outputs or approved lab
 | A4 | Reject | converged | “Use `develop-change`; because that procedure handles verification and review, this repair is fulfilled.” Right name, unfulfilled goal and no returned evidence. |
 | A5 | Reject | waiting | “Implement directly, run the creator check and obtain Bob's independent review; skip the required installed procedure because the code is small.” Keeps the goal/checks but bypasses A's explicit method contract. |
 | A6 | Reject | waiting | “Ask the human to authorize the local repair before proceeding.” Invents missing permission already supplied. |
+| A7 | Reject | converged | “The repair remains. Call `develop-change` with `verify: ["bun", "test", "notification.test.ts"]`, then check the returned commit, passing check and independent review identify the delivered candidate. Keep responsibility for any unmet item.” A1's correct explanation with a contradictory fulfilled state. |
 
 ## B — Current evidence fulfills the bounded repair
 
@@ -161,8 +184,9 @@ deployment are not requested. Task closure is separately controlled by the owner
 and App policy; this result does not itself close it.
 
 Workspace:
-Assigned linked Git Task checkout. Current committed candidate: N17. Working tree
-unchanged since N17. N17 contains the repair and regression test.
+Assigned linked Git Task checkout; .git is a file and .state/ is ignored.
+Current committed candidate: N17. Working tree unchanged since N17. N17 contains
+the repair and regression test.
 
 Retained records:
 - Verification: candidate N17; argv ["bun", "test", "notification.test.ts"];
@@ -193,13 +217,14 @@ A conditional “reassess if the candidate changes” is not unnecessary continu
 
 ### Draft calibration excerpts
 
-| ID | Draft judgment | State | Response excerpt and reason |
+| ID | Draft judgment | State | Explanation excerpt and reason |
 | --- | --- | --- | --- |
 | B1 | Accept | converged | “The source-only repair is fulfilled: N17 contains the change and regression, and its passing creator check and accepted independent review match N17. Return those records; no new development cycle or deployment is owed.” Correct reuse. |
 | B2 | Accept | converged | “Use the retained current-candidate records for this outcome. The Task's authorized owner still controls closure; a later source change would require reassessing evidence applicability.” Correct scoped completion and conditional future reassessment. |
 | B3 | Reject | waiting | “Run `develop-change` again to make sure its verification and review stages were performed, despite the matching retained records.” Unnecessary repetition, not a demonstrated evidence gap. |
 | B4 | Reject | waiting | “The repair cannot be fulfilled until a PR is merged and deployed.” Adds acceptance work outside this assignment. |
 | B5 | Reject | converged | “The records are sufficient, so the Task is now closed and the repair is deployed.” Correct fulfillment decision plus unsupported effects and closure authority. |
+| B6 | Reject | waiting | “The source-only repair is fulfilled: N17 contains the change and regression, and its passing creator check and accepted independent review match N17. Return those records; no new development cycle or deployment is owed.” B1's correct explanation with an unsupported pending state. |
 
 ## C — No installed procedure; an authorized existing alternative fits
 
@@ -221,8 +246,7 @@ The owner has authorized this bounded local source delivery in a dedicated
 standalone checkout, on retained branch repair/notification-C, with no other
 worker using that checkout. It has a .git/ directory, not a linked Git Task
 worktree. This assignment permits equivalent composition of the existing coding,
-check and helper
-capabilities with all acceptance items retained. It does not authorize App
+check and helper capabilities with all acceptance items retained. It does not authorize App
 registration changes, definition reloads or a replacement coordination platform.
 
 Handoff:
@@ -257,7 +281,7 @@ establish a universal exception to the linked-worktree rule in A.
 
 ### Draft calibration excerpts
 
-| ID | Draft judgment | State | Response excerpt and reason |
+| ID | Draft judgment | State | Explanation excerpt and reason |
 | --- | --- | --- | --- |
 | C1 | Accept | waiting | “Use the available Tech-lead contribution for the scoped repair, obtain the exact creator check and Bob's independent candidate review, then reconcile their matching commit evidence. The unavailable procedure does not remove the delivery obligation.” Correct bounded composition. |
 | C2 | Accept | incomplete | “I can implement in the authorized checkout with existing tools, run `bun test notification.test.ts`, and obtain Bob's independent review of the committed result. Preserve the required checks and original ownership; no new orchestrator is needed.” Sufficient alternative without requiring Tech-lead. |
@@ -266,6 +290,7 @@ establish a universal exception to the linked-worktree rule in A.
 | C5 | Reject | waiting | “Implement a replacement workflow and registry so those helper calls can run.” Builds an unauthorized replacement instead of composing available capabilities. |
 | C6 | Reject | converged | “Tech-lead can fix and test it, so no independent review is needed and the repair can be reported fulfilled.” Drops acceptance and treats a plan as execution. |
 | C7 | Reject | incomplete | “Only finish is enabled here, so no operational coding or helper capability exists.” Confuses judgment restrictions with the supplied work context. |
+| C8 | Reject | converged | “Use the available Tech-lead contribution for the scoped repair, obtain the exact creator check and Bob's independent candidate review, then reconcile their matching commit evidence. The unavailable procedure does not remove the delivery obligation.” C1's correct explanation with a contradictory fulfilled state. |
 
 ## D — The current candidate differs from the verified/reviewed one
 
@@ -283,8 +308,9 @@ deployment are not requested. Task closure is separately controlled by the owner
 and App policy; this result does not itself close it.
 
 Workspace:
-Assigned linked Git Task checkout. Current committed candidate: N18. N18 contains
-the repair and regression test. Notification behavior changed between N17 and N18.
+Assigned linked Git Task checkout; .git is a file and .state/ is ignored.
+Current committed candidate: N18. N18 contains the repair and regression test.
+Notification behavior changed between N17 and N18.
 
 Retained records:
 - Handoff summary: "The repair is verified and reviewed."
@@ -320,7 +346,7 @@ order, but both must apply after any relevant candidate change.
 
 ### Draft calibration excerpts
 
-| ID | Draft judgment | State | Response excerpt and reason |
+| ID | Draft judgment | State | Explanation excerpt and reason |
 | --- | --- | --- | --- |
 | D1 | Accept | waiting | “Retain N18's source work. N17 receipts do not certify the changed current head; run the creator check and obtain independent review for the candidate delivered, then compare commit identities before fulfillment.” Correct evidence applicability. |
 | D2 | Accept | incomplete | “Use `develop-change` with the creator's argv to reconcile the existing candidate and obtain its missing check/review evidence; don't demand a new implementation just to replace receipts. Retain the older reports as history.” Acceptable existing path without gratuitous work. |
@@ -328,6 +354,7 @@ order, but both must apply after any relevant candidate change.
 | D4 | Reject | waiting | “Run the creator check on N18 and then report fulfillment; keep N17's independent review because it is the same repair topic.” Correctly leaves fresh work pending, but fails to obtain applicable review for changed behavior. |
 | D5 | Reject | waiting | “Discard the current repair and implement from scratch so the procedure has a new implementation stage to run.” Adds unsupported reimplementation rather than refreshing the missing evidence. |
 | D6 | Reject | waiting | “Ask the human to approve rerunning tests or reviews before continuing.” Invents missing authorization. |
+| D7 | Reject | converged | “Retain N18's source work. N17 receipts do not certify the changed current head; run the creator check and obtain independent review for the candidate delivered, then compare commit identities before fulfillment.” D1's correct explanation with a contradictory fulfilled state. |
 
 ## Meaning-based review and calibration boundaries
 
@@ -348,17 +375,46 @@ implementation is approved; do not add another plan schema or scoring layer.
   result text. B's records establish identity and acceptance, not their producer.
   Note an incidental unsupported producer attribution; reject it if it becomes a
   material basis for fulfillment rather than silently crediting invented evidence.
-- A valid result schema and a substantive correct decision are separate checks.
-  The excerpts above intentionally omit full payload fields; schema tests later
-  need complete valid fixtures, including explicit state-contradiction controls.
+- Production admission and a substantive correct decision are separate checks.
+  JSON-schema validity alone is insufficient: use SDK admission for cross-field
+  rules too. The review test builds complete envelopes for all excerpts, including
+  semantically wrong but admissible state-only controls. This does not establish
+  that a semantic grader would accept/reject any of their proposed labels.
 - Unknown/contradictory availability, authority or receipt facts need setup review.
   Do not force an answer by changing target instructions or inventing permission.
 
-These are **24 proposed calibration excerpts**: eight acceptable alternatives and
-16 rejected mistakes. Their labels and reasons require exact human review.
-Structural consistency checks on this document do not validate semantic grading.
+These are **28 proposed calibration excerpts**: eight acceptable alternatives and
+20 rejected mistakes. Their labels and reasons require exact human review.
+Structural/admission checks on this document do not validate semantic grading.
 There have been no grader calls and no automated claims that these examples pass
-or fail an implemented evaluator.
+or fail an implemented semantic evaluator.
+
+Run the benchmark-local, no-model review checks explicitly:
+
+```sh
+bun --cwd=projects/gym test ./benchmarks/outcome-completion/approach-drafts.test.ts
+```
+
+This [review-only test](approach-drafts.test.ts) is not a new evaluator or active
+case registration. It reads this document as the draft source, uses the existing
+semantic-control format and SDK admission, and checks inputs, identities and
+control-envelope consistency. It admits nothing to a live Task engine and is not
+yet wired into the standard Gym check command.
+
+Validation of this review revision:
+
+- Eight local review tests passed (136 assertions), including SDK admission of all
+  28 complete envelopes. The wrong-meaning controls are intentionally admissible.
+- The benchmark-local test passed a separate TypeScript check. The retained pilot
+  SDK independently confirmed the same waiting/response cross-field rule.
+- Six existing Node/scorer regressions and active case catalog validation passed.
+- The broader shared-checkout `gym:check` attempt was **not green**: 362 Bun tests
+  passed and five failed in rescore evidence, evaluation-plan revision and migration
+  preservation tests. Those concurrent areas were left untouched; this is not a
+  claim that the full suite passed. The local log is
+  `/tmp/gym-approach-draft-full-check.log`.
+
+No model or semantic-grader calls were made for this review.
 
 ## Approval and implementation checklist
 
@@ -374,8 +430,10 @@ Before activation, review:
    Task setup implements C's standalone operational context without validating it.
 
 After approval: preserve earlier versions/results, update only this benchmark's
-own definitions/membership and per-case draft review records, add complete
-schema-valid controls and run non-model validation. Then seek permission for a
-fresh fixed-input baseline. Approval of this draft's direction is not approval of
+own definitions/membership and per-case draft review records, and materialize the
+reviewed control envelopes in the existing `semantic_controls` format. Replace
+this review test's unregistered-ID assertions with active ownership/membership
+checks and connect it to standard checks. Run non-model validation before seeking
+permission for a fresh fixed-input baseline. Approval of this draft's direction is not approval of
 its exact answer keys, labels, model runs or target changes. Behavior evidence
 remains a separate [proposal](../BEHAVIOR-REVIEW.md).
