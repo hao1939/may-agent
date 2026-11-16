@@ -111,13 +111,21 @@ async function bundleRuntimeModule(
 
   runtimeImportSeq += 1;
   const outFile = join(outDir, `.may-runtime-module-${process.pid}-${Date.now()}-${runtimeImportSeq}.mjs`);
-  const result = await Bun.build({
-    entrypoints: [modulePath],
-    target: "bun",
-    format: "esm",
-    write: false,
-    plugins: [mayAgentSdkRuntimeResolver(modulePath)],
-  });
+  let result: Awaited<ReturnType<typeof Bun.build>>;
+  try {
+    result = await Bun.build({
+      entrypoints: [modulePath],
+      target: "bun",
+      format: "esm",
+      write: false,
+      plugins: [mayAgentSdkRuntimeResolver(modulePath)],
+    });
+  } catch (error) {
+    const messages = buildErrorMessages(error).join("\n");
+    throw new Error(`Failed to bundle runtime module ${modulePath}${messages ? `:\n${messages}` : ""}`, {
+      cause: error,
+    });
+  }
 
   if (!result.success) {
     const messages = result.logs.map((log: { message: string }) => log.message).join("\n");
@@ -153,6 +161,20 @@ async function bundleRuntimeModule(
       }
     },
   };
+}
+
+function buildErrorMessages(error: unknown): string[] {
+  const messages: string[] = [];
+  const add = (value: unknown) => {
+    const message = value instanceof Error ? value.message : String(value);
+    if (message && !messages.includes(message)) messages.push(message);
+  };
+
+  add(error);
+  if (error instanceof AggregateError) {
+    for (const nested of error.errors) add(nested);
+  }
+  return messages;
 }
 
 function defaultRuntimeCacheDir(modulePath: string): string {
