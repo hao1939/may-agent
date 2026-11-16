@@ -12,38 +12,12 @@ import type { TaskExecutionContext } from "./task-execution-context.js";
 export * from "@may-agent/sdk/runtime";
 
 /** Host capability profile persisted with a session so recovery cannot broaden its tools. */
-export type ToolPolicy =
-  | "full"
-  /** Retained-session restriction; feedback no longer selects this policy. */
-  | "full-no-tasks"
-  | "readonly"
-  /** @deprecated Retained-session restriction; do not select for new Conversation work. */
-  | "deputy"
-  | "app-agent-full"
-  /** @deprecated Retained-session restriction; do not select for new Conversation work. */
-  | "app-agent-deputy"
-  /** @deprecated Compatibility with retained session metadata. */
-  | "app-owner-full"
-  /** @deprecated Compatibility with retained session metadata. */
-  | "app-owner-deputy";
+export type ToolPolicy = "full" | "readonly";
 
 const READ_ACTIONS = ["list", "created", "workload", "outcomes", "get", "contract", "communication"] as const;
 const READ_ACTION_SET = new Set<string>(READ_ACTIONS);
 const CHAT_TOOL_DENYLIST = new Set(["bash", "background_exec", "cron", "edit", "finish", "write"]);
 const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "tasks"]);
-const DEPUTY_TOOL_ALLOWLIST = new Set([
-  "agents",
-  "conversation_context",
-  "finish",
-  "query_db",
-  "read",
-  "run_cli_agent",
-  "tasks",
-]);
-// An App owner must return durable ownership changes through its fenced
-// disposition. These tools create asynchronous work or lifecycle state
-// outside that admission boundary and belong only to compatibility sessions.
-const APP_OWNER_TOOL_DENYLIST = new Set(["background_exec", "cron", "message"]);
 const PERSISTENT_CHAT_SUFFIX =
   "This is a persistent conversation. Answer the current input and leave the conversation open for later messages.";
 
@@ -95,26 +69,10 @@ function hostTools(
   let selected = persistentChat
     ? tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name))
     : [...tools];
-  if (toolPolicy === "full-no-tasks") {
-    selected = selected.filter((tool) => tool.name !== "tasks");
-  } else if (toolPolicy === "readonly") {
+  if (toolPolicy === "readonly") {
     selected = selected
       .filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name))
       .map((tool) => (tool.name === "tasks" ? readOnlyTaskTool(tool) : tool));
-  } else if (
-    toolPolicy === "deputy" ||
-    toolPolicy === "app-agent-deputy" ||
-    toolPolicy === "app-owner-deputy"
-  ) {
-    selected = selected.filter((tool) => DEPUTY_TOOL_ALLOWLIST.has(tool.name));
-  }
-  if (
-    toolPolicy === "app-agent-full" ||
-    toolPolicy === "app-agent-deputy" ||
-    toolPolicy === "app-owner-full" ||
-    toolPolicy === "app-owner-deputy"
-  ) {
-    selected = selected.filter((tool) => !APP_OWNER_TOOL_DENYLIST.has(tool.name));
   }
   return selected;
 }

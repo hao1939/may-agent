@@ -213,8 +213,6 @@ export type AppTaskAttempt = {
   sessionIds?: string[];
   lease?: AppTaskAttemptLease;
   workspace?: AppTaskWorkspace;
-  /** Offline import preserves an old worker self-stop as facts, not closure. */
-  retiredCancellation?: AppTaskCancellation;
 };
 
 /** Immutable closure facts; historical records represent cancellation. */
