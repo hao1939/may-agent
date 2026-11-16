@@ -482,6 +482,18 @@ test.each([
   });
 });
 
+test.each(["", "   ", "\t\n"])("blank scalar facts remain lossless for an ordinary wait: %p", (facts) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Wait without progress claim", facts }),
+    input({ tasks: { translateBlockedResult: () => null } }),
+  );
+  expect(translated.handlerResult).toMatchObject({
+    state: "waiting",
+    facts: [`execution-facts:${JSON.stringify(facts)}`],
+  });
+  expect(translated.handlerResult.resultRejected).toBeUndefined();
+});
+
 test.each([
   ["report", { report: true }],
   ["continue", { continue: true }],
