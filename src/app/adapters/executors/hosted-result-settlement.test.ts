@@ -184,6 +184,39 @@ test("large public fact arrays retain exact evidence through the Task-compatible
   ).toEqual(direct);
 });
 
+test.each([
+  ["done", "empty", ["", "observed"]],
+  ["done", "spaces", ["  "]],
+  ["done", "tabs and newlines", ["\t", "observed\nvalue"]],
+  ["blocked", "empty", ["", "observed"]],
+  ["blocked", "spaces", ["  "]],
+  ["blocked", "tabs and newlines", ["\t", "observed\nvalue"]],
+] as const)("%s public fact arrays with blank entries use exact JSON fallback: %s", (type, _label, facts) => {
+  const serialized = `execution-facts:${JSON.stringify(facts)}`;
+  const translated = translateHostedExecutionResult(
+    runResult(
+      type === "done"
+        ? { type, summary: "Evidence complete", facts }
+        : { type, reason: "Await external review", facts },
+    ),
+    input(),
+  );
+
+  if (type === "done") {
+    expect(translated).toMatchObject({
+      hostCompletion: "finite-done",
+      handlerResult: { state: "converged", facts: [serialized] },
+    });
+  } else {
+    expect(translated).toMatchObject({
+      handlerBlocked: true,
+      handlerResult: { state: "waiting", facts: [serialized] },
+    });
+    expect(translated.hostCompletion).toBeUndefined();
+  }
+  expect(translated.handlerResult.resultRejected).toBeUndefined();
+});
+
 test("blocked uses the App translator and controlled clock for continuation, Conditions and requests", () => {
   const translated = translateHostedExecutionResult(
     runResult({ type: "blocked", reason: "Await review", facts: { phase: "review" }, output: false }),
