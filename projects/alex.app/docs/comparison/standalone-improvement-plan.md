@@ -17,6 +17,11 @@ Further tuning on representative work and Host handover remain incremental work.
 The [diagnosis grounding trial](diagnosis-grounding-trial-20261116.md) completes
 one such experiment: Alex adopted a reviewed diagnosis-source repair after paired
 retained/synthetic trials, with mixed costs and no runtime activation claim.
+The [activation and natural intake follow-up](diagnosis-activation-natural-intake-20261116.md)
+activates the reviewed repair, verifies stable Host identity and completes one
+finite Alex suitability evaluation of fresh Scout work. Alex selected the arXiv
+publication gap as an intake lead; a compatible fresh diagnosis baseline and
+behavioral transfer remain unverified.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 

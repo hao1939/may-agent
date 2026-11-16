@@ -148,7 +148,10 @@ a bounded hosted comparison or shadow evaluation on frozen evidence from fresh
 natural work. Include an evidence-rich failed-score case and a healthy case,
 with no case-specific steering. Observe unsupported recommendations, owner
 corrections, semantic overreach, elapsed time and total available cost. This
-source trial does not close that milestone.
+source trial does not close that milestone. The subsequent
+[activation and natural intake follow-up](diagnosis-activation-natural-intake-20261116.md)
+records controlled activation and an accepted fresh-work suitability decision;
+it preserves the remaining diagnosis/behavioral evidence gap.
 
 ## Evidence
 
