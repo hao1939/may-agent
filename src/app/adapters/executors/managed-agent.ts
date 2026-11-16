@@ -1,5 +1,8 @@
 import type { TaskAttempt } from "@may-agent/sdk/app";
-import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk/app";
+import {
+  admitTaskResultForSchema,
+  taskAgentResultSchema as appTaskAgentResultSchema,
+} from "@may-agent/sdk/app";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "typebox";
 import { createFinishTool } from "@may-agent/sdk/runtime";
@@ -78,20 +81,15 @@ function taskAttemptRole(
 
 function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
   const base = createFinishTool({ projectRoot: input.executionPaths.workspaceDir });
-  const parameters = Type.Union([
-    Type.Object({
-      status: Type.Literal("done"),
-      summary: Type.String({ pattern: "\\S" }),
-      output: appTaskAgentResultSchema,
-      facts: Type.Optional(Type.Unknown()),
-    }),
-    Type.Object({
-      status: Type.Literal("blocked"),
+  const parameters = Type.Object(
+    {
+      status: Type.Union([Type.Literal("done"), Type.Literal("blocked")]),
       summary: Type.String({ pattern: "\\S" }),
       output: Type.Optional(Type.Unknown()),
       facts: Type.Optional(Type.Unknown()),
-    }),
-  ]);
+    },
+    { additionalProperties: false },
+  );
   return {
     ...base,
     description:
@@ -100,8 +98,18 @@ function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
     execute: async (toolCallId, params, signal, onUpdate) => {
       const report = params as { status?: unknown; output?: unknown };
       if (report.status === "done") {
+        const schemaAdmission = admitTaskResultForSchema(appTaskAgentResultSchema, report.output);
+        if (!schemaAdmission?.ok) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `finish() error: ${schemaAdmission?.error ?? "Done output must satisfy the Task result contract"}`,
+            }],
+            details: undefined,
+          };
+        }
         const admitted = normalizeTaskHandlerResult(
-          report.output,
+          schemaAdmission.result,
           { type: "done", summary: "", runId: null },
           {
             validateAction: input.descriptor.app.tasks?.validateAction,

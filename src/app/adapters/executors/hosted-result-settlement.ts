@@ -8,6 +8,7 @@ type HostedTaskInput = TaskAgentInput | TaskWorkflowInput;
 type TranslationOptions = {
   now?: () => number;
   diagnosticFacts?: readonly string[];
+  storageFacts?: unknown;
 };
 
 function serializedFact(facts: unknown): string {
@@ -127,6 +128,15 @@ export function translateHostedBlockedContribution(
     }
   }
   const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
+  if (
+    (hint?.report === true || hint?.continue === true)
+    && (facts === undefined || (Array.isArray(facts) && facts.length === 0))
+  ) {
+    return rejectedBlockedResult(
+      "Blocked result report or continuation requires contribution facts; Host diagnostics are not agent evidence",
+      runId,
+    );
+  }
   if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
     return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
   }
@@ -153,7 +163,7 @@ export function translateHostedBlockedContribution(
     {
       state: "waiting",
       summary,
-      facts: factStrings(facts, options.diagnosticFacts),
+      facts: factStrings(options.storageFacts === undefined ? facts : options.storageFacts, options.diagnosticFacts),
       actions: hint?.actions === undefined ? [] : hint.actions,
       ...(hint?.report === true ? { report: true as const } : {}),
       ...(hint?.continue === true ? { continue: true as const } : {}),

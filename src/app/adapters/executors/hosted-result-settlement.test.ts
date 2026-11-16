@@ -412,6 +412,57 @@ test.each([
   expect(translated.handlerResult.resultRejected).toBeUndefined();
 });
 
+test.each([
+  ["report", { report: true }],
+  ["continue", { continue: true }],
+  ["report and continue", { report: true, continue: true }],
+] as const)("Host diagnostics cannot provide contribution evidence for %s", (_label, settlement) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "No agent evidence", facts: [] }),
+    input({ tasks: { translateBlockedResult: () => settlement } }),
+    { diagnosticFacts: ["workflow-blocker-context:[]"] },
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "error",
+      resultRejected: true,
+      summary: expect.stringContaining("Host diagnostics are not agent evidence"),
+      facts: ["execution-run:run-1"],
+      actions: [],
+    },
+  });
+});
+
+test("domain facts remain eligible while a real Condition can wait without facts", () => {
+  const progress = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Domain progress", facts: { inspected: false } }),
+    input({ tasks: { translateBlockedResult: () => ({ report: true, continue: true }) } }),
+  );
+  expect(progress.handlerResult).toMatchObject({
+    state: "waiting",
+    report: true,
+    continue: true,
+    facts: ['execution-facts:{"inspected":false}'],
+  });
+
+  const wait = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Await review" }),
+    input({ tasks: { translateBlockedResult: () => ({
+      retryAfterMs: 25,
+      conditions: [{ requestId: "review" }],
+    }) } }),
+    { now: () => 100 },
+  );
+  expect(wait.handlerResult).toMatchObject({
+    state: "waiting",
+    reviewAt: 125,
+    conditions: [{ requestId: "review" }],
+    facts: [],
+  });
+  expect(wait.handlerResult.resultRejected).toBeUndefined();
+});
+
 test("blocked translator actions and reports use ordinary Task admission", () => {
   const action = {
     kind: "retire-condition" as const,
@@ -439,7 +490,7 @@ test("blocked translator actions and reports use ordinary Task admission", () =>
   expect(malformedReport.handlerResult).toMatchObject({
     state: "error",
     resultRejected: true,
-    summary: expect.stringContaining("report requires waiting or incomplete, true, and non-empty facts"),
+    summary: expect.stringContaining("requires contribution facts"),
   });
 
   const malformedAction = translateHostedExecutionResult(
