@@ -300,7 +300,6 @@ export async function runAppRuntime(opts: {
     schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
     admitConversation: appTasks.admitConversation,
-    admitConversationChange: appTasks.admitConversationChange,
     stopConversationTurn: appTasks.stopTurn,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
