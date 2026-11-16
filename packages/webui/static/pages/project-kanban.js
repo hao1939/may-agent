@@ -252,8 +252,8 @@ function filterProjectTasks(value) {
 }
 
 function projectTaskSteeringHtml() {
-  return `<h4>Steer the App</h4><textarea id="kanban-steer-text" class="kanban-steer-text" placeholder="Prepare an audit, challenge, split, unblock, or escalation request."></textarea>
-    <div class="kanban-steer-actions"><button onclick="sendProjectSteering()">Send request</button>${["audit", "split", "challenge", "unblock", "escalate"].map((a) => `<button onclick="prefillTaskSteering('${a}')">${a}</button>`).join("")}</div>
+  return `<h4>Send feedback to this Task</h4><textarea id="kanban-steer-text" class="kanban-steer-text" placeholder="Send a message or guidance for this Task..." oninput="delete this.dataset.idempotencyKey"></textarea>
+    <div class="kanban-steer-actions"><button onclick="sendProjectSteering()">Send message</button></div>
     <div id="kanban-steer-status" class="kanban-steer-status"></div>`;
 }
 
@@ -262,50 +262,45 @@ function selectedTaskForSteering() {
   return board && projectTaskBoardIsCurrent(board) && !board.task?.terminal ? board.task : null;
 }
 
-function prefillTaskSteering(action) {
-  const task = selectedTaskForSteering();
-  const textarea = document.getElementById("kanban-steer-text");
-  if (!task || !textarea) return;
-  textarea.value = `[task-app-request]\nproject: ${task.appId}\ntask: ${task.taskId}\naction: ${action}\noutcome: ${task.outcome}\nstate: ${task.status}\ngeneration: ${task.generation}\nsummary: ${task.summary || "none"}\n\nExpected response: inspect current facts, then record concrete progress, an exact wait, an escalation, a task split, or an accepted no-op.`;
-  textarea.focus();
-}
-
 async function sendProjectSteering() {
   const textarea = document.getElementById("kanban-steer-text");
   const status = document.getElementById("kanban-steer-status");
   const message = String(textarea?.value || "").trim();
   const task = selectedTaskForSteering();
-  if (!message || !task) {
-    if (status) status.textContent = "Select a Task and prepare a request first.";
+  if (!message || !task || textarea?.disabled) {
+    if (status && !textarea?.disabled) status.textContent = "Select a Task and enter a message first.";
     return;
   }
+  textarea.disabled = true;
   if (status) status.textContent = "Submitting…";
+  const idempotencyKey =
+    textarea.dataset.idempotencyKey ||
+    globalThis.crypto?.randomUUID?.() ||
+    `steer-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  textarea.dataset.idempotencyKey = idempotencyKey;
   try {
-    const res = await fetch("/api/events", {
+    const res = await fetch("/api/task/input", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        type: "project.owner.requested",
-        target: { appId: task.appId, taskId: task.taskId },
-        data: {
-          project: task.appId,
-          projectId: task.appId,
-          projectPath: projectTaskBoard.path,
-          taskId: task.taskId,
-          action: "task-review",
-          reason: message,
-          params: { comment: message },
-        },
+        appId: task.appId,
+        taskId: task.taskId,
+        expectedGeneration: task.generation,
+        message,
+        idempotencyKey,
       }),
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok || body.ok === false) throw new Error(body.error || `HTTP ${res.status}`);
-    if (textarea) textarea.value = "";
+    if (!res.ok || body.accepted !== true) throw new Error(body.error || `HTTP ${res.status}`);
+    textarea.value = "";
+    delete textarea.dataset.idempotencyKey;
     if (status)
       status.textContent = body.eventId
-        ? `Recorded as event ${body.eventId}. Await later delivery and reconciliation facts.`
-        : "Request sent, but no durable event receipt was returned.";
+        ? `Accepted as event ${body.eventId} for generation ${body.generation ?? task.generation}.`
+        : "Accepted by Task inbox.";
   } catch (error) {
     if (status) status.textContent = `Failed: ${error.message}`;
+  } finally {
+    textarea.disabled = false;
   }
 }

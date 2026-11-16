@@ -5,7 +5,6 @@ import {
   buildAppAdmissionCommand,
   sendAppInputWithRetry,
   sendDaemonFrameWithRetry,
-  sendProjectActionWithRetry,
 } from "./server.js";
 
 describe("HTTP event ingress acknowledgement recovery", () => {
@@ -202,65 +201,5 @@ describe("HTTP project comment App ingress", () => {
       eventId: 102,
       eventType: "app.input.requested",
     });
-  });
-});
-
-describe("HTTP project action acknowledgement recovery", () => {
-  const command = {
-    type: "project.action.invoke" as const,
-    projectId: "evaluation",
-    actionId: "app-inbox-canary",
-    params: { prompt: "probe" },
-    idempotencyKey: "canary-1",
-  };
-
-  it("retries an unknown outcome with the same command identity", async () => {
-    const calls: Array<{ command: Record<string, unknown>; timeoutMs?: number }> = [];
-    const send = async (_endpoint: unknown, sent: Record<string, unknown>, options?: { timeoutMs?: number }) => {
-      calls.push({ command: structuredClone(sent), timeoutMs: options?.timeoutMs });
-      if (calls.length === 1) throw new Error("Socket timeout");
-      return {
-        type: "ok" as const,
-        command: "project.action.invoke",
-        eventId: 73,
-        eventType: "app.input.requested",
-      };
-    };
-
-    const result = await sendProjectActionWithRetry("/tmp/may.sock", command, send);
-
-    expect(result).toMatchObject({ eventId: 73, eventType: "app.input.requested" });
-    expect(calls.map((call) => call.timeoutMs)).toEqual([2_000, 10_000]);
-    expect(calls[0].command).toEqual(calls[1].command);
-    expect(calls[1].command.idempotencyKey).toBe("canary-1");
-  });
-
-  it("recovers a durable event after both acknowledgements time out", async () => {
-    const keys: string[] = [];
-    const result = await sendProjectActionWithRetry(
-      "/tmp/may.sock",
-      command,
-      async () => {
-        throw new Error("Socket timeout");
-      },
-      (key) => {
-        keys.push(key);
-        return { eventId: 81, eventType: "app.input.requested" };
-      },
-    );
-
-    expect(result).toMatchObject({ eventId: 81, eventType: "app.input.requested" });
-    expect(keys).toEqual(["canary-1"]);
-  });
-
-  it("does not retry a definitive command error", async () => {
-    let calls = 0;
-    await expect(
-      sendProjectActionWithRetry("/tmp/may.sock", command, async () => {
-        calls += 1;
-        throw new Error("Invalid input for evaluation.app-inbox-canary");
-      }),
-    ).rejects.toThrow("Invalid input");
-    expect(calls).toBe(1);
   });
 });

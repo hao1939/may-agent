@@ -116,31 +116,22 @@ describe("bounded DB maintenance", () => {
     const now = 10 * 86_400_000;
     for (const id of [1, 2, 3, 4]) {
       db.prepare("INSERT INTO events(id, event_type, timestamp) VALUES (?, 'fixture', 1)").run(id);
-      db.prepare(`INSERT INTO event_pair_runs(id, pair_name, correlation_key, open_event_id, status, opened_at, expected_close_at)
-        VALUES (?, 'fixture', ?, ?, 'closed', 1, ?)`)
-        .run(id, String(id), id, now + 60_000);
     }
     const prepare = db.prepare.bind(db);
     const reads: string[] = [];
     const spy = spyOn(db, "prepare").mockImplementation((sql) => {
       const statement = prepare(sql);
-      const table = sql.startsWith("SELECT rowid AS id FROM event_pair_runs") ? "event_pair_runs"
-        : sql.startsWith("SELECT id AS id FROM events") ? "events" : null;
+      const table = sql.startsWith("SELECT id AS id FROM events") ? "events" : null;
       if (!table) return statement;
       return { ...statement, all(...params) {
         writer.exec("BEGIN IMMEDIATE");
         try {
           const rows = statement.all(...params);
           reads.push(table);
-          if (table === "event_pair_runs") {
-            writer.run("UPDATE event_pair_runs SET status = 'open' WHERE id = 1");
-            writer.run("UPDATE event_pair_runs SET opened_at = ? WHERE id = 2", [now]);
-          } else {
-            // These rows were eligible at selection; the new references must win.
-            writer.run(`INSERT OR REPLACE INTO event_traces(event_id, trace_id, parent_event_id)
-              VALUES (1, 'fixture', 2), (2, 'fixture', 1)`);
-            writer.run("UPDATE events SET timestamp = ? WHERE id = 3", [now]);
-          }
+          // These rows were eligible at selection; the new references must win.
+          writer.run(`INSERT OR REPLACE INTO event_traces(event_id, trace_id, parent_event_id)
+            VALUES (1, 'fixture', 2)`);
+          writer.run("UPDATE events SET timestamp = ? WHERE id = 1", [now]);
           writer.exec("COMMIT");
           return rows;
         } catch (error) {
@@ -151,11 +142,9 @@ describe("bounded DB maintenance", () => {
     });
     try {
       const result = runDbMaintenancePass(root, { now, batchSize: 3 });
-      expect(reads).toEqual(["event_pair_runs", "events"]);
-      expect(result.deleted.event_pair_runs).toBe(2);
+      expect(reads).toEqual(["events"]);
       expect(result.deleted.events).toBe(1);
-      expect(prepare("SELECT id FROM event_pair_runs ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }]);
-      expect(prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      expect(prepare("SELECT id FROM events ORDER BY id").all()).toEqual([{ id: 1 }, { id: 2 }, { id: 4 }]);
     } finally {
       spy.mockRestore();
       writer.close();
@@ -305,57 +294,6 @@ describe("bounded DB maintenance", () => {
       expect(result.deleted.sessionDirectories).toBe(0);
       expect(db.prepare("SELECT sessionId FROM sessions WHERE sessionId = 'stale-marker'").get()).toBeTruthy();
       expect(existsSync(dir)).toBe(true);
-    } finally {
-      closeDb(persistDir);
-    }
-  });
-
-  it("retires stale orphans in bounded batches", () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-orphans-"));
-    const now = 10 * 86_400_000;
-    try {
-      const db = getDb(persistDir);
-      for (let index = 0; index < 5; index++) {
-        db.run(
-          `INSERT INTO event_pair_runs
-             (pair_name, correlation_key, open_event_id, status, opened_at, expected_close_at)
-           VALUES ('handler', ?, ?, 'orphan', ?, ?)`,
-          [`orphan_${index}`, index + 1, now - 10_000, now - 5 * 60 * 60 * 1000],
-        );
-      }
-
-      const result = runDbMaintenancePass(persistDir, { now, batchSize: 2 });
-      expect(result.deleted.retiredOrphans).toBe(2);
-      expect(
-        (db.prepare("SELECT COUNT(*) AS count FROM event_pair_runs WHERE closed_at IS NOT NULL").get() as any).count,
-      ).toBe(2);
-    } finally {
-      closeDb(persistDir);
-    }
-  });
-
-  it("retires old message pairs as generic stale infrastructure", () => {
-    const persistDir = mkdtempSync(join(tmpdir(), "may-maintenance-messages-"));
-    const now = 10 * 86_400_000;
-    try {
-      const db = getDb(persistDir);
-      const event = db
-        .prepare(
-          `INSERT INTO events (event_type, source, owner, data, timestamp)
-           VALUES ('message.created', 'agent:scout', 'agent:scout', ?, ?)`,
-        )
-        .run(JSON.stringify({ from: "scout", to: "human", content: "Unfinished request" }), now - 5 * 86_400_000);
-      const openEventId = Number(event.lastInsertRowid);
-      db.prepare(
-        `INSERT INTO event_pair_runs
-         (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at)
-         VALUES ('owner_inbox', ?, ?, 'agent:scout', 'orphan', ?, ?)`,
-      ).run(`event:${openEventId}`, openEventId, now - 5 * 86_400_000, now - 5 * 60 * 60_000);
-
-      const result = runDbMaintenancePass(persistDir, { now, batchSize: 100 });
-
-      expect(result.deleted.retiredOrphans).toBe(1);
-      expect(db.prepare("SELECT status FROM event_pair_runs WHERE open_event_id = ?").get(openEventId)).toBeNull();
     } finally {
       closeDb(persistDir);
     }

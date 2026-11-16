@@ -469,21 +469,33 @@ geminiSettings.modelConfigs.modelDefinitions ??= {};
 geminiSettings.modelConfigs.modelIdResolutions ??= {};
 geminiSettings.modelConfigs.classifierIdResolutions ??= {};
 
+// The picker reads visible definitions, not customAliases. Register each
+// concrete model independently, even when GEMINI_PRO_MODEL selects a sibling.
+const geminiProModels = uniqueIds([geminiProModel, "gemini-4-argon", "gemini-4-carbon", "gemini-4-hydrogen"]);
+for (const model of geminiProModels) {
+  geminiSettings.modelConfigs.customAliases[model] = { extends: "chat-base-3", modelConfig: { model } };
+  geminiSettings.modelConfigs.modelDefinitions[model] = {
+    displayName: model,
+    tier: "pro",
+    family: "gemini-3",
+    isPreview: false,
+    isVisible: true,
+    features: { thinking: true, multimodalToolUse: true },
+  };
+  geminiSettings.modelConfigs.modelIdResolutions[model] = { default: model, contexts: [] };
+}
 for (const alias of [
-  geminiProModel,
   "gemini4",
-  "gemini-4-carbon",
-  "gemini-4-hydrogen",
   "gemini-3-pro-preview",
   "gemini-3.1-pro-preview",
   "gemini-3.1-pro-preview-customtools",
   "gemini-2.5-pro",
 ]) {
-  const resolved = alias === "gemini-4-carbon" || alias === "gemini-4-hydrogen" ? alias : geminiProModel;
-  geminiSettings.modelConfigs.customAliases[alias] = { extends: "chat-base-3", modelConfig: { model: resolved } };
+  geminiSettings.modelConfigs.customAliases[alias] = { extends: "chat-base-3", modelConfig: { model: geminiProModel } };
 }
 for (const alias of [
   geminiFastModel,
+  "gemini-3.8-flash",
   "gemini-3-flash-preview",
   "gemini-3.5-flash",
   "gemini-3.1-flash-lite",
@@ -514,14 +526,6 @@ for (const compFast of [
   geminiSettings.modelConfigs.customAliases[compFast] = { modelConfig: { model: geminiFastModel } };
 }
 
-geminiSettings.modelConfigs.modelDefinitions[geminiProModel] = {
-  displayName: "Gemini 4",
-  tier: "pro",
-  family: "gemini-3",
-  isPreview: false,
-  isVisible: true,
-  features: { thinking: true, multimodalToolUse: true },
-};
 geminiSettings.modelConfigs.modelDefinitions[geminiFastModel] = {
   displayName: "Gemini 3.8 Flash",
   tier: "flash",
@@ -530,8 +534,10 @@ geminiSettings.modelConfigs.modelDefinitions[geminiFastModel] = {
   isVisible: true,
   features: { thinking: true, multimodalToolUse: true },
 };
+// Gemini deep-merges these entries with its built-in routing rules. Explicitly
+// clear contexts so inherited feature flags cannot override our pinned defaults
+// and produce different model IDs with identical names in the model picker.
 for (const alias of [
-  geminiProModel,
   "gemini-4",
   "gemini4",
   "pro",
@@ -543,10 +549,11 @@ for (const alias of [
   "gemini-3.1-pro-preview-customtools",
   "gemini-2.5-pro",
 ]) {
-  geminiSettings.modelConfigs.modelIdResolutions[alias] = { default: geminiProModel };
+  geminiSettings.modelConfigs.modelIdResolutions[alias] = { default: geminiProModel, contexts: [] };
 }
 for (const alias of [
   geminiFastModel,
+  "gemini-3.8-flash",
   "flash",
   "flash-lite",
   "gemini-3-flash-preview",
@@ -558,10 +565,10 @@ for (const alias of [
   "gemini-2.5-flash",
   "gemini-2.5-flash-lite",
 ]) {
-  geminiSettings.modelConfigs.modelIdResolutions[alias] = { default: geminiFastModel };
+  geminiSettings.modelConfigs.modelIdResolutions[alias] = { default: geminiFastModel, contexts: [] };
 }
-geminiSettings.modelConfigs.classifierIdResolutions.pro = { default: geminiProModel };
-geminiSettings.modelConfigs.classifierIdResolutions.flash = { default: geminiFastModel };
+geminiSettings.modelConfigs.classifierIdResolutions.pro = { default: geminiProModel, contexts: [] };
+geminiSettings.modelConfigs.classifierIdResolutions.flash = { default: geminiFastModel, contexts: [] };
 writeJson(path.join(geminiHome, "settings.json"), geminiSettings);
 
 const trustedFolders = readJson(path.join(geminiHome, "trustedFolders.json"));

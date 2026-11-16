@@ -209,6 +209,32 @@ describe("App inbox runtime", () => {
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
   });
 
+  it("does not implicitly route message.created into App inbox admission", async () => {
+    const bus = persistentBus();
+    const task = capabilities(bus);
+    runtime = await startAppInboxRuntime({
+      registry: await loadedRegistry(root),
+      db,
+      bus,
+      ...task.options,
+      scanIntervalMs: 10_000,
+    });
+
+    bus.emit({
+      type: "message.created",
+      source: "agent:sender",
+      owner: "agent:evaluation",
+      data: {
+        from: "agent:sender",
+        to: "agent:evaluation",
+        content: "must not implicitly create App inbox work",
+      },
+    });
+    await Bun.sleep(20);
+    expect(task.attached).toEqual([]);
+    expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 0 });
+  });
+
   it("routes typed follow-up input to one exact existing Task", async () => {
     const bus = persistentBus();
     const task = capabilities(bus);

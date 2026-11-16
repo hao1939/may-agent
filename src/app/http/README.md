@@ -18,8 +18,7 @@ and event reads/ingress (`/api/events*`).
 
 - `/api/conversation`: bounded Conversation reads.
 - `/api/apps`: loaded Apps and Task counts from the existing `apps.list` read.
-- `/api/tasks` and `/api/task`: the human-facing Task projection.
-- `/api/apps/:appId/tasks` and its Task detail route: the App/SDK projection.
+- `/api/tasks` and `/api/task`: the shared Task projection (`tasks.list` / `task.get`).
 
 These handlers validate HTTP parameters, forward the exact identity and options
 to the daemon, and translate its reply into the existing HTTP response. The

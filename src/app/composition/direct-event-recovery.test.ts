@@ -166,14 +166,14 @@ test("recovers a report saved before its first App plan, independent of global d
     // admission obligation.
     new DbWriter(root).recordDelivery(event, {
       accepted: true,
-      by: "event-pair-tracker",
+      by: "unrelated-durable-route",
       route: "direct",
-      note: "worker lifecycle pair accepted before parent relay",
+      note: "worker route accepted before parent relay",
     });
     expect(db.prepare(`SELECT delivery_status, accepted_by, app_admission_pending
       FROM events WHERE id = ?`).get(eventId)).toEqual({
       delivery_status: "accepted",
-      accepted_by: "event-pair-tracker",
+      accepted_by: "unrelated-durable-route",
       app_admission_pending: 1,
     });
     closeDb(root);
@@ -624,88 +624,6 @@ test("observation-only marker recovery acknowledges inspected no-work without Ta
       delivery_route: "noop",
       accepted_by: "app-runtime:observations:observer",
     });
-  } finally {
-    runtime?.close();
-    closeDb(root);
-    rmSync(root, { recursive: true, force: true });
-  }
-});
-
-test("lost acknowledgement retains an addressed message recipient across owner remapping", async () => {
-  const root = mkdtempSync(join(tmpdir(), "may-event-addressed-recovery-"));
-  let runtime: AppInboxRuntime | undefined;
-  try {
-    const appDir = (id: string) => join(root, `${id}.app`);
-    mkdirSync(appDir("alpha"), { recursive: true });
-    mkdirSync(appDir("beta"), { recursive: true });
-    const definition = (id: string, agent: string) => defineApp({
-      id,
-      version: 1,
-      agent,
-      inputSchema: Type.Object({
-        kind: Type.Literal("message"),
-        data: Type.Object({ message: Type.String() }),
-      }),
-      task: ({ id: inputId }) => ({
-        kind: "desired",
-        intent: { id: `work/${inputId}`, parentId: "root", outcome: "Answer", acceptance: ["Answered"] },
-      }),
-      tasks: {},
-    });
-    let remapped = false;
-    const registry = new AppRegistry(async () => [
-      { appDir: appDir("alpha"), definition: definition("alpha", remapped ? "other" : "recipient") },
-      { appDir: appDir("beta"), definition: definition("beta", remapped ? "recipient" : "other") },
-    ]);
-    await registry.reload();
-    const db = getDb(root);
-    const bus = producer(root);
-    const writer = new DbWriter(root);
-    bus.setDeliveryRecorder(writer.recordDelivery);
-    const start = () => startAppInboxRuntime({
-      db,
-      bus,
-      registry,
-      persistDir: root,
-      schedulesEnabled: false,
-      scanIntervalMs: 10_000,
-    });
-    runtime = await start();
-    const event = bus.emit({
-      type: "message.created",
-      source: "agent:sender",
-      owner: "agent:recipient",
-      data: { from: "agent:sender", to: "agent:recipient", content: "retain me" },
-    });
-    const eventId = event[EVENT_ROW_ID]!;
-    await until(() => db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()?.count === 1);
-    expect(db.prepare(`SELECT app_id, origin_event_id, idempotency_key, input_data
-      FROM app_inbox_items`).get()).toEqual({
-      app_id: "alpha",
-      origin_event_id: eventId,
-      idempotency_key: `event:${eventId}`,
-      input_data: JSON.stringify({ message: "retain me", context: { from: "agent:sender", sourceEventId: eventId } }),
-    });
-
-    // Model an accepted direct inbox write whose marker acknowledgement was
-    // lost, then publish a registry where fresh owner selection chooses beta.
-    db.prepare("UPDATE events SET app_admission_pending = 1 WHERE id = ?").run(eventId);
-    runtime.close();
-    remapped = true;
-    await registry.reload();
-    runtime = await start();
-    expect(runtime.host.matchingAppIds("recipient", {
-      kind: "message",
-      data: { message: "retain me", context: { from: "agent:sender", sourceEventId: eventId } },
-    })).toEqual(["beta"]);
-    await until(() => db.prepare("SELECT app_admission_pending FROM events WHERE id = ?").get(eventId)?.app_admission_pending === 0);
-    expect(db.prepare("SELECT app_id, origin_event_id FROM app_inbox_items").all()).toEqual([
-      { app_id: "alpha", origin_event_id: eventId },
-    ]);
-    const lookupPlan = db.prepare(
-      "EXPLAIN QUERY PLAN SELECT app_id FROM app_inbox_items WHERE origin_event_id = ? LIMIT 1",
-    ).all(eventId) as Array<{ detail?: string }>;
-    expect(lookupPlan.some(({ detail }) => detail?.includes("idx_app_inbox_origin_event"))).toBe(true);
   } finally {
     runtime?.close();
     closeDb(root);

@@ -96,12 +96,6 @@ describe("HTTP human Task reads and board", () => {
       listTasks: (options) =>
         service.listTasks({ ...options, status: options?.status as HumanTaskStatus[] | undefined }),
       getTask: (input) => service.getTask(input),
-      // SDK routes remain separate and keep their existing response shape.
-      listAppTasks: () => ({ items: [{ id: "sdk-task", status: "done" }] }),
-      getAppTask: (_appId, _taskId, options) => ({
-        id: "sdk-task", status: "done",
-        ...(options?.inputKeys ? { inputEvents: options.inputKeys.map((key) => ({ key })) } : {}),
-      }),
     });
     await startWeb();
   });
@@ -1520,11 +1514,6 @@ describe("HTTP human Task reads and board", () => {
     expect((await read("/api/tasks?appId=alpha&status=waiting")).items).toEqual([]);
     expect(await read("/api/tasks?allApps=true&status=running&status=waiting&limit=8"))
       .toEqual(service.listTasks({ status: ["running", "waiting"], limit: 8 }));
-    expect(await read("/api/apps/alpha/tasks")).toEqual({ items: [{ id: "sdk-task", status: "done" }] });
-    expect(await read("/api/apps/alpha/tasks/sdk-task")).toEqual({ id: "sdk-task", status: "done" });
-    expect(await read("/api/apps/alpha/tasks/sdk-task?inputKey=request%3Aearlier&inputKey=request%3Asecond")).toEqual({
-      id: "sdk-task", status: "done", inputEvents: [{ key: "request:earlier" }, { key: "request:second" }],
-    });
   });
 
   test("reports invalid, missing, and unavailable reads without fabricating empty or completed Tasks", async () => {
@@ -1686,24 +1675,23 @@ describe("HTTP human Task reads and board", () => {
         );
         expect(detailLabels).toContain("Mechanism");
         expect(detailLabels).not.toContain("Mode");
-        await page.evaluate("prefillTaskSteering('audit')");
-        const prompt = await page.$eval("#kanban-steer-text", (el) => (el as HTMLTextAreaElement).value);
-        expect(prompt).toContain("project: alpha\ntask: work/34");
-        expect(prompt).toContain("detail ".repeat(30));
+        await page.type("#kanban-steer-text", "Focus on the edge case");
 
         // Capture ingress without admitting model-backed work in the fixture.
         await page.setRequestInterception(true);
         let ingress: Record<string, unknown> | undefined;
         page.on("request", (request) => {
-          if (request.method() === "POST" && request.url().endsWith("/api/events")) {
+          if (request.method() === "POST" && request.url().endsWith("/api/task/input")) {
             ingress = JSON.parse(request.postData()!);
-            void request.respond({ status: 200, contentType: "application/json", body: '{"ok":true,"eventId":123}' });
+            void request.respond({ status: 202, contentType: "application/json", body: '{"accepted":true,"eventId":123,"generation":2}' });
           } else void request.continue();
         });
         await page.evaluate("sendProjectSteering()");
         expect(ingress).toMatchObject({
-          type: "project.owner.requested",
-          target: { appId: "alpha", taskId: "work/34" },
+          appId: "alpha",
+          taskId: "work/34",
+          expectedGeneration: 2,
+          message: "Focus on the edge case",
         });
 
         // Delay only the browser response; the genuine HTTP/socket reads above

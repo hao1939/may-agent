@@ -230,21 +230,6 @@ async function sendRetrySafeControlCommand(
   throw new Error(exhaustedMessage);
 }
 
-export async function sendProjectActionWithRetry(
-  endpoint: SocketEndpoint,
-  command: {
-    type: "project.action.invoke";
-    projectId: string;
-    actionId: string;
-    params: unknown;
-    idempotencyKey: string;
-  },
-  send: typeof sendSocketCommand = sendSocketCommand,
-  confirm?: ConfirmDurableControl,
-): Promise<SocketResponse> {
-  return sendRetrySafeControlCommand(endpoint, command, send, confirm, "Project action retry exhausted");
-}
-
 export async function sendAppInputWithRetry(
   endpoint: SocketEndpoint,
   command: RetrySafeControlCommand,
@@ -347,7 +332,7 @@ function isPlatformUiAppRoute(pathname: string): boolean {
   if (!pathname.startsWith("/projects/")) return false;
   const parts = pathname.split("/").filter(Boolean).slice(1);
   const last = parts[parts.length - 1];
-  const hasSurface = last === "tasks" || last === "functions";
+  const hasSurface = last === "tasks";
   const idParts = hasSurface ? parts.slice(0, -1) : parts;
   if (!hasSurface && idParts.length === 2) {
     if (["ui", "kanban"].includes(idParts[1])) return false;
@@ -457,7 +442,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!eventId || getEventView(db, eventId)?.delivery.state !== "accepted") return undefined;
     return { eventId, eventType: "app.input.requested", delivery: "accepted" };
   }
-  const { handleApps, handleConversationRead, handleHumanTaskRead, handleAppTasks, handleAppTask } =
+  const { handleApps, handleConversationRead, handleHumanTaskRead } =
     createTaskReadHandlers({ daemonRead, json });
   const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
   const confirmTaskInput = (command: TaskInputCommand) =>
@@ -503,8 +488,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     handleProjectDetail,
     handleProjectSessions,
     handleProjectComment,
-    handleProjectActions,
-    handleProjectActionInvoke,
   } = createProjectRouteHandlers({
     projectRoot: PROJECT_ROOT,
     agentsRoot: AGENTS_ROOT,
@@ -514,7 +497,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     conventionSocketPath,
     platformUiContentTypeFor,
     sendAppInputWithRetry,
-    sendProjectActionWithRetry,
     confirmAcceptedAppInput,
   });
   const {
@@ -668,12 +650,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/apps")
         return req.method === "GET" ? handleApps() : json({ error: "GET required" }, 405);
-      const appTaskMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks\/(.+)$/);
-      if (appTaskMatch && req.method === "GET") {
-        return handleAppTask(url, decodeURIComponent(appTaskMatch[1]), decodeURIComponent(appTaskMatch[2]));
-      }
-      const appTasksMatch = url.pathname.match(/^\/api\/apps\/([^/]+)\/tasks$/);
-      if (appTasksMatch && req.method === "GET") return handleAppTasks(url, decodeURIComponent(appTasksMatch[1]));
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/conversation" && req.method === "GET") return handleConversationRead(url);
       if (url.pathname === "/api/task/transcript")
@@ -686,12 +662,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
       if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
-      const projectActionInvokeMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions\/([^/]+)$/);
-      if (projectActionInvokeMatch && req.method === "POST") {
-        return handleProjectActionInvoke(req, projectActionInvokeMatch[1], projectActionInvokeMatch[2]);
-      }
-      const projectActionsMatch = url.pathname.match(/^\/api\/projects\/([^/]+)\/actions$/);
-      if (projectActionsMatch && req.method === "GET") return handleProjectActions(projectActionsMatch[1]);
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
       const eventViewMatch = url.pathname.match(/^\/api\/events\/(\d+)$/);
       if (eventViewMatch && req.method === "GET") return handleEventView(eventViewMatch[1]);

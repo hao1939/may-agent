@@ -60,25 +60,6 @@ function dataEventId(data: Record<string, unknown>, keys: string[]): number | un
   return undefined;
 }
 
-function isEscalationClosureEvent(type: string | undefined): boolean {
-  return type === "escalation.resolved" || type === "escalation.dismissed";
-}
-
-function findPriorEscalationCreated(db: SqliteDb, escalationId: string, eventId: number): number | undefined {
-  const row = db
-    .prepare(
-      `SELECT id
-     FROM events
-     WHERE event_type = 'escalation.created'
-       AND id != ?
-       AND escalation_id = ?
-     ORDER BY id DESC
-     LIMIT 1`,
-    )
-    .get(eventId, escalationId) as { id?: unknown } | null;
-  return positiveInteger(row?.id);
-}
-
 export function parseEventTrace(value: unknown): EventTraceInput | undefined {
   if (!isRecord(value)) return undefined;
   const traceId = nonEmptyString(value.traceId);
@@ -96,19 +77,9 @@ export function persistEventTrace(db: SqliteDb, event: unknown, eventId: number)
   if (!Number.isInteger(eventId) || eventId <= 0) return;
   const record = isRecord(event) ? event : {};
   const data = eventDataRecord(record);
-  const eventType = nonEmptyString(record.type);
   const trace = parseEventTrace(record.trace);
   const openEventId = dataEventId(data, ["openEventId", "open_event_id"]);
-  const escalationId = nonEmptyString(data.escalationId);
-  const escalationCreatedId =
-    escalationId && isEscalationClosureEvent(eventType)
-      ? findPriorEscalationCreated(db, escalationId, eventId)
-      : undefined;
-  const inferredParentEventId = eventExists(db, openEventId)
-    ? openEventId
-    : eventExists(db, escalationCreatedId)
-      ? escalationCreatedId
-      : undefined;
+  const inferredParentEventId = eventExists(db, openEventId) ? openEventId : undefined;
   const traceId =
     trace?.traceId ?? (inferredParentEventId ? eventTraceId(db, inferredParentEventId) : `event:${eventId}`);
   const parentEventId = eventExists(db, trace?.parentEventId) ? trace!.parentEventId! : (inferredParentEventId ?? null);
@@ -119,24 +90,5 @@ export function persistEventTrace(db: SqliteDb, event: unknown, eventId: number)
      (event_id, trace_id, parent_event_id, visibility)
      VALUES (?, ?, ?, ?)`,
     [eventId, traceId, parentEventId, visibility],
-  );
-}
-
-/**
- * Make a live lifecycle close authoritative in the trace lineage.
- */
-export function persistEventClosure(
-  db: SqliteDb,
-  closeEventId: number,
-  openEventId: number,
-): void {
-  if (!eventExists(db, closeEventId) || !eventExists(db, openEventId)) return;
-  const traceId = eventTraceId(db, openEventId);
-  db.run(
-    `UPDATE event_traces
-     SET trace_id = ?,
-         parent_event_id = COALESCE(parent_event_id, ?)
-     WHERE event_id = ?`,
-    [traceId, openEventId, closeEventId],
   );
 }

@@ -14,14 +14,9 @@ export interface InterfaceStartupOptions {
   getStatus: AttachControlSocketOptions["getStatus"];
   reportInfo: (message: string) => void;
   getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  listAppTasks?: AttachControlSocketOptions["listAppTasks"];
-  getAppTask?: AttachControlSocketOptions["getAppTask"];
-  getAppTaskWorkload?: AttachControlSocketOptions["getAppTaskWorkload"];
   listApps?: AttachControlSocketOptions["listApps"];
   listTasks?: AttachControlSocketOptions["listTasks"];
   getTask?: AttachControlSocketOptions["getTask"];
-  describeProjectActions?: AttachControlSocketOptions["describeProjectActions"];
-  invokeProjectAction?: AttachControlSocketOptions["invokeProjectAction"];
 }
 
 export interface InterfaceRuntime {
@@ -65,14 +60,9 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
         getStatus: options.getStatus,
         reportInfo: options.reportInfo,
         getAppConversation: options.getAppConversation,
-        listAppTasks: options.listAppTasks,
-        getAppTask: options.getAppTask,
-        getAppTaskWorkload: options.getAppTaskWorkload,
         listApps: options.listApps,
         listTasks: options.listTasks,
         getTask: options.getTask,
-        describeProjectActions: options.describeProjectActions,
-        invokeProjectAction: options.invokeProjectAction,
         conversationAppId: options.conversationAppId,
         agentName: options.interfaceAgent,
         instance: options.instanceLabel,
