@@ -63,7 +63,7 @@ investigation and escalation to May when the blocker cannot be resolved locally.
 
 ## Evidence Method
 
-For the standing `runtime/pattern-audit`, include recovered correction effort in
+For the standing `runtime/pattern-audit`, use the `runtime-pattern-audit` workflow to deterministically compare latest vs. preceding workflow and contract windows first, and include recovered correction effort in
 the bounded cost check. Start from the existing context-usage report for the exact
 windows and inspect a bounded linked-session cohort: correlate rejected `finish`
 calls with their tool results and later accepted finish, retaining successful

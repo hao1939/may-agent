@@ -62,10 +62,10 @@ test("canonical App check enforces workflow export contracts, paired tests, and 
     expect(passCode).toBe(0);
     expect(passOut).toContain("0 error(s)");
 
-    // Introduce contract errors: mismatched name, missing test, orphan workflow, and broken app.ts workflow binding
+    // Introduce contract errors: mismatched name, missing test, orphan workflow, AST violations, and broken app.ts workflow binding
     writeFileSync(
       join(workflowDir, "orphan-flow.ts"),
-      'export const name = "wrong-name";\nexport const description = "";\n',
+      'export const name = "wrong-name";\nexport const description = "";\nexport async function helper(ctx: any) { spawnSync("ls"); ctx.callAgent("x"); process.exit(1); }\n',
     );
     writeFileSync(
       join(appDir, "app.ts"),
@@ -87,6 +87,9 @@ test("canonical App check enforces workflow export contracts, paired tests, and 
     expect(failErr).toContain('exported workflow name "wrong-name" must match file slug "orphan-flow"');
     expect(failErr).toContain("workflow must export a non-empty description");
     expect(failErr).toContain("workflow must export execute(ctx)");
+    expect(failErr).toContain("forbidden blocking spawnSync() call in workflow module");
+    expect(failErr).toContain("retired ctx.callAgent API used (use unified ctx.call instead)");
+    expect(failErr).toContain("forbidden process.exit() call in workflow module");
     expect(failErr).toContain("missing paired unit test");
     expect(failErr).toContain('orphan workflow "orphan-flow"');
     expect(failErr).toContain('binds missing workflow "non-existent-flow"');

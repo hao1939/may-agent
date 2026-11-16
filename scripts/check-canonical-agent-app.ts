@@ -245,6 +245,42 @@ function checkWorkflowContracts(): void {
             errors.push(`${display}: workflow must export execute(ctx)`);
           }
 
+          const forbiddenSyncCalls = new Set(["spawnSync", "execSync", "execFileSync"]);
+          const retiredCtxApis = new Set(["callAgent", "callWorkflow", "agents", "workflows"]);
+          const astViolations = new Set<string>();
+          const visitSafety = (node: ts.Node): void => {
+            if (ts.isCallExpression(node)) {
+              const expr = node.expression;
+              if (
+                ts.isPropertyAccessExpression(expr) &&
+                ts.isIdentifier(expr.expression) &&
+                expr.expression.text === "process" &&
+                expr.name.text === "exit"
+              ) {
+                astViolations.add("forbidden process.exit() call in workflow module");
+              } else if (ts.isIdentifier(expr) && forbiddenSyncCalls.has(expr.text)) {
+                astViolations.add(`forbidden blocking ${expr.text}() call in workflow module`);
+              } else if (
+                ts.isPropertyAccessExpression(expr) &&
+                forbiddenSyncCalls.has(expr.name.text)
+              ) {
+                astViolations.add(`forbidden blocking ${expr.name.text}() call in workflow module`);
+              }
+            } else if (
+              ts.isPropertyAccessExpression(node) &&
+              ts.isIdentifier(node.expression) &&
+              node.expression.text === "ctx" &&
+              retiredCtxApis.has(node.name.text)
+            ) {
+              astViolations.add(`retired ctx.${node.name.text} API used (use unified ctx.call instead)`);
+            }
+            ts.forEachChild(node, visitSafety);
+          };
+          visitSafety(source);
+          for (const violation of astViolations) {
+            errors.push(`${display}: ${violation}`);
+          }
+
           const pairedTestPath = join(workflowDir, `${slug}.test.ts`);
           if (!isPureReexport && !existsSync(pairedTestPath)) {
             errors.push(`${display}: missing paired unit test ${relative(root, pairedTestPath)}`);

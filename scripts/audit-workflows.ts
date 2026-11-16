@@ -105,6 +105,43 @@ const IGNORED_DIRS = new Set([
   "worktrees",
 ]);
 
+const FORBIDDEN_SYNC_CALLS = new Set(["spawnSync", "execSync", "execFileSync"]);
+const RETIRED_CTX_APIS = new Set(["callAgent", "callWorkflow", "agents", "workflows"]);
+
+export function checkWorkflowAstSafety(source: ts.SourceFile): string[] {
+  const violations: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const expr = node.expression;
+      if (
+        ts.isPropertyAccessExpression(expr) &&
+        ts.isIdentifier(expr.expression) &&
+        expr.expression.text === "process" &&
+        expr.name.text === "exit"
+      ) {
+        violations.push("forbidden process.exit() call in workflow module");
+      } else if (ts.isIdentifier(expr) && FORBIDDEN_SYNC_CALLS.has(expr.text)) {
+        violations.push(`forbidden blocking ${expr.text}() call in workflow module`);
+      } else if (
+        ts.isPropertyAccessExpression(expr) &&
+        FORBIDDEN_SYNC_CALLS.has(expr.name.text)
+      ) {
+        violations.push(`forbidden blocking ${expr.name.text}() call in workflow module`);
+      }
+    } else if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "ctx" &&
+      RETIRED_CTX_APIS.has(node.name.text)
+    ) {
+      violations.push(`retired ctx.${node.name.text} API used (use unified ctx.call instead)`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return [...new Set(violations)];
+}
+
 function isDisabledRetiredApp(appDir: string): boolean {
   return existsSync(join(appDir, ".disabled")) && !existsSync(join(appDir, "app.ts"));
 }
@@ -265,6 +302,7 @@ export function discoverStaticWorkflows(rootDir = process.cwd()): WorkflowStatic
         if (!hasExecuteExport) {
           contractErrors.push("missing exported execute(ctx)");
         }
+        contractErrors.push(...checkWorkflowAstSafety(source));
 
         const pairedTestFull = join(workflowDir, `${slug}.test.ts`);
         const hasPairedTest = existsSync(pairedTestFull);

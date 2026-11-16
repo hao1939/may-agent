@@ -5,16 +5,18 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   auditWorkflows,
+  checkWorkflowAstSafety,
   discoverStaticWorkflows,
   formatWorkflowAuditMarkdown,
 } from "../../scripts/audit-workflows.ts";
+import * as ts from "typescript";
 
-test("discoverStaticWorkflows finds all 24 canonical and re-exported workflows with zero contract errors", () => {
+test("discoverStaticWorkflows finds all 25 canonical and re-exported workflows with zero contract errors", () => {
   const workflows = discoverStaticWorkflows(process.cwd());
-  expect(workflows.length).toBe(24);
+  expect(workflows.length).toBe(25);
   const canonical = workflows.filter((w) => !w.isReexport);
   const reexports = workflows.filter((w) => w.isReexport);
-  expect(canonical.length).toBe(21);
+  expect(canonical.length).toBe(22);
   expect(reexports.length).toBe(3);
 
   for (const wf of workflows) {
@@ -23,6 +25,28 @@ test("discoverStaticWorkflows finds all 24 canonical and re-exported workflows w
       expect(wf.pairedTestPath).toBeTruthy();
     }
   }
+});
+
+test("checkWorkflowAstSafety flags process.exit, blocking sync child_process calls, and retired ctx APIs", () => {
+  const badSource = ts.createSourceFile(
+    "unsafe.ts",
+    `
+      import { spawnSync } from "node:child_process";
+      export async function execute(ctx: any) {
+        spawnSync("git", ["status"]);
+        await ctx.callAgent("bob", "do work");
+        process.exit(1);
+      }
+    `,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const violations = checkWorkflowAstSafety(badSource);
+  expect(violations).toEqual([
+    "forbidden blocking spawnSync() call in workflow module",
+    "retired ctx.callAgent API used (use unified ctx.call instead)",
+    "forbidden process.exit() call in workflow module",
+  ]);
 });
 
 test("auditWorkflows aggregates SQLite workflow_runs telemetry and emits anomaly signals", () => {
