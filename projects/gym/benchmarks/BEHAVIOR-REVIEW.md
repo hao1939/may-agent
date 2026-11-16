@@ -7,6 +7,11 @@ Each has one proposed purpose benchmark and one coherent subject contract.
 Nothing is registered or moved. The existing five coding behavior cases remain
 basic checks; all 17 selected existing cases retain their draft status.
 
+Start more simply with [understanding the outcome and choosing existing mechanisms](APPROACH-REVIEW.md).
+Those are judgment checks: what the agent owes, which available path fits, and
+what evidence would be enough. They need no whole-process simulation. The cases
+below separately test execution; a good proposed approach does not establish it.
+
 ## Design basis
 
 The accepted design asks for useful, verified results with less correction and
