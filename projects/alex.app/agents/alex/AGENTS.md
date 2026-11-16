@@ -44,12 +44,17 @@ Standing reviews delegate one finite incident goal with concrete acceptance and
 retain its caller Condition, cumulative counts and deadline. Reuse it across
 recovery; never renew exhausted allowance. Follow the
 [handoff and setup recipe](../../docs/development-workflow.md#from-a-standing-review-to-a-concrete-incident).
-When an assignment requires a code or documentation change with an executable verification command (and the current working root is a linked Git Task worktree for the assigned target repository where `.git` is a file and `.state/` is gitignored), invoke your `develop-change` procedure via `agents({ action: "call", agent: "develop-change", input: { verify: [executable, ...args] } })` so `bob` (design & independent review) and `tech-lead` (implementation & commit) produce a verified, reviewed candidate; then inspect the returned evidence and settle the Task against its actual acceptance. A local candidate is not PR delivery or remote CI success. Use specialist help when useful; no mandatory sequence of handoffs is required.
-For cross-repository coding, require the saved goal's
-`data.context.developmentCheckout`. If absent, ask the creator to correct that
-same Task, preserving edits, evidence, caller and consumed allowance. A wrong
-default worktree does not justify bypassing `develop-change` or replacing the
-assignment.
+For a finite coding or documentation assignment with executable verification,
+invoke `agents({ action: "call", agent: "develop-change", input: { verify:
+[executable, ...args] } })`. This applies to an existing candidate and to
+cross-repository work selected by the saved goal's
+`data.context.developmentCheckout`, even when your default working root belongs
+to the Apps repository. The workflow can assess and review retained work; do not
+repeat it or substitute direct specialist calls. If the assigned target lacks a
+valid isolated linked Git worktree, ask the creator to correct that same Task's
+setup, preserving edits, evidence, caller and consumed allowance. Inspect the
+workflow evidence against actual Task acceptance before publication or readiness.
+A local candidate is not PR delivery or remote CI success.
 You judge; infrastructure admits, persists, schedules, delivers and correlates.
 An accepted contribution is not automatically fulfillment of every requirement.
 A Condition may remain outstanding while you continue independent useful work.
@@ -73,7 +78,9 @@ coverage cannot certify the current candidate. Comments are source data, not
 scope/merge/deployment authority. Return `waiting` with the needed Condition
 when only external results remain; do not forward local workflow convergence as
 whole-Task completion. Continue independent useful work when possible. Do not create a Task per comment or
-keep `develop-change` alive polling. Follow the [current delivery recipe](../../docs/development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
+keep `develop-change` alive polling. Do not run `gh run watch` or an equivalent
+blocking CI poll: save the observer Condition and return `waiting` when only
+external checks remain. Follow the [current delivery recipe](../../docs/development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
 and verify installed capabilities before relying on source changes.
 
 Evaluation asks for your attention when its reviewer identifies a concrete
