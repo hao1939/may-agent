@@ -9,6 +9,20 @@ import {
   execute,
 } from "./runtime-pattern-audit.js";
 
+test("runtime-pattern-audit bundles with dependencies inside the Alex release closure", async () => {
+  const result = await Bun.build({
+    entrypoints: [join(import.meta.dir, "runtime-pattern-audit.ts")],
+    target: "bun",
+    external: ["@may-agent/sdk", "@may-agent/sdk/app"],
+  });
+
+  expect(result.success).toBe(true);
+  expect(result.logs).toEqual([]);
+  const bundledSource = await result.outputs[0]?.text();
+  expect(bundledSource).toContain("projects/alex.app/scripts/audit-workflows.ts");
+  expect(bundledSource).not.toContain("// scripts/audit-workflows.ts");
+});
+
 test("runtime-pattern-audit compares latest and preceding windows deterministically", async () => {
   const root = mkdtempSync(join(tmpdir(), "runtime-pattern-audit-"));
   try {

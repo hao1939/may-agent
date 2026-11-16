@@ -7,7 +7,7 @@ import {
   auditWorkflows,
   formatWorkflowAuditMarkdown,
   type WorkflowAuditReport,
-} from "../../../../../scripts/audit-workflows.js";
+} from "../../../scripts/audit-workflows.js";
 
 export const name = "runtime-pattern-audit";
 export const description =
