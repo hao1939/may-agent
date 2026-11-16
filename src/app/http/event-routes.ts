@@ -60,10 +60,7 @@ export function createEventRouteHandlers(options: {
     try {
       const eventSchema = db.prepare("PRAGMA table_info(events)").all() as Array<{ name?: string }>;
       const eventColumnsSet = new Set(eventSchema.map((row) => row.name).filter(Boolean));
-      const pairTable = db
-        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'event_pair_runs'")
-        .get();
-      if (!eventColumnsSet.has("delivery_status") || !eventColumnsSet.has("delivery_route") || !pairTable) {
+      if (!eventColumnsSet.has("delivery_status") || !eventColumnsSet.has("delivery_route")) {
         return json({
           now,
           since,

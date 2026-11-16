@@ -30,11 +30,10 @@ import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { afterStateCommit, inStateTransaction, stateTransaction } from "./db/transaction.js";
-import { persistEventClosure, persistEventTrace, readEventTraceMetadata } from "./db/event-traces.js";
+import { persistEventTrace, readEventTraceMetadata } from "./db/event-traces.js";
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
 import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "@may-agent/sdk/runtime";
-import { escalationFeedbackTarget } from "./escalation-feedback.js";
 import { applyMetricMutation } from "./db/metric-mutation.js";
 import type { TaskBinding } from "./persistence.js";
 
@@ -43,12 +42,7 @@ const INLINE_EVENT_DATA_BYTES = 4_096;
 const MAX_EVENT_PROJECTION_LENGTH = 12_000;
 
 const DEFAULT_UNACCEPTED_TTL_MS = 2 * 60 * 1000;
-const DEFAULT_PAIR_TTL_MS = 45 * 60 * 1000;
 export const EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS = 30_000;
-// Task assignment pairs use a longer TTL because project tasks legitimately
-// take 2-4 hours to complete. The default 45min TTL caused bulk-assignment
-// batches (e.g. 150 alpha-project tasks) to orphan simultaneously and breach
-// the event.pair-orphan-count threshold.
 
 function eventPayload(event: Record<string, unknown>): Record<string, unknown> {
   if (isCanonicalEventEnvelope(event)) return event.data as Record<string, unknown>;
@@ -293,174 +287,6 @@ function prepareEventBody(
   };
 }
 
-function parseStoredEventData(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  if (typeof value !== "string" || !value.trim()) return null;
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
-  } catch {
-    return null;
-  }
-}
-
-function objectValue(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
-function arrayValue(value: unknown): unknown[] | null {
-  return Array.isArray(value) ? value : null;
-}
-
-function textValue(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function firstEscalationResumeCondition(payload: Record<string, unknown>): string | null {
-  const resume = objectValue(payload.resume);
-  const facts = objectValue(payload.facts ?? payload.evidence);
-  const finishParams = objectValue(facts?.finishParams);
-  const blockers = arrayValue(finishParams?.blockers);
-  const firstBlocker = objectValue(blockers?.[0]);
-
-  return (
-    textValue(payload.resumeCondition) ??
-    textValue(payload.resume_condition) ??
-    textValue(resume?.condition) ??
-    textValue(resume?.resumeCondition) ??
-    textValue(finishParams?.resumeCondition) ??
-    textValue(finishParams?.resume_condition) ??
-    textValue(finishParams?.next_steps) ??
-    textValue(finishParams?.nextSteps) ??
-    textValue(firstBlocker?.context) ??
-    textValue(firstBlocker?.reason) ??
-    textValue(payload.blockedOn) ??
-    textValue(payload.requestedAction)
-  );
-}
-
-function normalizePersistedEscalationPayload(
-  eventType: string,
-  payload: Record<string, unknown>,
-): Record<string, unknown> {
-  if (eventType !== "escalation.created") return payload;
-  const resumeCondition = firstEscalationResumeCondition(payload);
-  if (!resumeCondition) return payload;
-
-  const resume = objectValue(payload.resume);
-  const sourceSessionId = textValue(payload.sourceSessionId);
-  return {
-    ...payload,
-    resumeCondition,
-    ...(resume
-      ? {
-          resume:
-            textValue(resume.condition) || textValue(resume.resumeCondition)
-              ? resume
-              : { ...resume, condition: resumeCondition },
-        }
-      : sourceSessionId
-        ? {
-            resume: {
-              kind: "session",
-              sessionId: sourceSessionId,
-              condition: resumeCondition,
-            },
-          }
-        : {}),
-  };
-}
-
-function keyPart(value: unknown): string | undefined {
-  if (typeof value === "string" && value.trim()) return value.trim();
-  if (typeof value === "number" && Number.isFinite(value)) return String(value);
-  return undefined;
-}
-
-type PairContract = {
-  name: string;
-  open: string;
-  closes: readonly string[];
-  timeoutMs: number;
-  key: (payload: Record<string, unknown>) => string | undefined;
-  allowEarlierClose?: boolean;
-  preferExplicitOpenEventId?: boolean;
-};
-
-const sessionKey = (payload: Record<string, unknown>) => keyPart(payload.sessionId);
-const workflowKey = (payload: Record<string, unknown>) => keyPart(payload.workflowRunId);
-const handlerKey = (payload: Record<string, unknown>) =>
-  keyPart(payload.handlerRunId) ?? keyPart(payload.workflowRunId) ?? keyPart(payload.handler);
-const escalationKey = (payload: Record<string, unknown>) => keyPart(payload.escalationId);
-const cliTaskKey = (payload: Record<string, unknown>) => keyPart(payload.taskId);
-
-// Lifecycle tracking is deliberately explicit. Adding an event suffix must not
-// silently create work or a request-shaped correlation contract.
-const PAIR_CONTRACTS: readonly PairContract[] = [
-  {
-    name: "session",
-    open: "session.start",
-    closes: ["session.idle", "session.end"],
-    timeoutMs: 60 * 60 * 1000,
-    key: sessionKey,
-  },
-  {
-    name: "handler",
-    open: "handler.started",
-    closes: ["handler.completed", "handler.failed"],
-    timeoutMs: DEFAULT_PAIR_TTL_MS,
-    key: handlerKey,
-  },
-  {
-    name: "workflow",
-    open: "workflow.started",
-    closes: ["workflow.completed", "workflow.failed", "workflow.blocked", "workflow.interrupted"],
-    timeoutMs: DEFAULT_PAIR_TTL_MS,
-    key: workflowKey,
-  },
-  {
-    name: "escalation",
-    open: "escalation.created",
-    closes: ["escalation.resolved", "escalation.dismissed"],
-    timeoutMs: 24 * 60 * 60 * 1000,
-    key: escalationKey,
-  },
-  {
-    name: "cli.task.request",
-    open: "cli.task.requested",
-    closes: ["cli.task.started", "cli.task.failed"],
-    timeoutMs: 60 * 60 * 1000,
-    key: cliTaskKey,
-  },
-  {
-    name: "cli.task",
-    open: "cli.task.started",
-    closes: ["cli.task.completed", "cli.task.failed"],
-    timeoutMs: DEFAULT_PAIR_TTL_MS,
-    key: cliTaskKey,
-  },
-];
-
-function openingPair(eventType: string): PairContract | undefined {
-  return PAIR_CONTRACTS.find((contract) => contract.open === eventType);
-}
-
-function closingPairs(eventType: string): PairContract[] {
-  return PAIR_CONTRACTS.filter((contract) => contract.closes.includes(eventType));
-}
-
-function pairCorrelationColumn(
-  pair: PairContract,
-): "session_id" | "workflow_run_id" | "escalation_id" | "task_id" | undefined {
-  if (pair.name === "session") return "session_id";
-  if (pair.name === "workflow") return "workflow_run_id";
-  if (pair.name === "escalation") return "escalation_id";
-  if (pair.name === "cli.task" || pair.name === "cli.task.request") return "task_id";
-  return undefined;
-}
-
 export class DbWriter {
   private db: SqliteDb;
   private persistDir: string;
@@ -580,19 +406,6 @@ export class DbWriter {
         break;
       }
 
-      case "escalation.resolved":
-      case "escalation.dismissed": {
-        const payload = eventPayload(event as unknown as Record<string, unknown>);
-        const addressed = readTaskEventTarget((event as AgentEvent & { target?: unknown }).target);
-        const target = addressed?.appId ? addressed : escalationFeedbackTarget(this.db, payload);
-        // Unknown ownership remains explicit evidence for an operator. Never
-        // guess another agent or resurrect an execution from an owner label.
-        Object.assign(event, { ...(target ? { target } : {}),
-          data: { ...payload, feedbackRoute: target ? "task" : "unresolved" } });
-        this.insertEventRow(event, eventPayload(event), eventSource(event), eventOwner(event));
-        break;
-      }
-
       case "conversation.updated":
         // Replaceable view wake hint; skip SQLite event journal insertion,
         // while still deferring live fanout until outer transaction commit.
@@ -692,10 +505,7 @@ export class DbWriter {
     const timestamp = Date.now();
     // Prepare identity before taking our writer slot. An outer caller transaction
     // still owns its lock; unkeyed Events need no identity hash in either case.
-    const persistedPayload = normalizePersistedEscalationPayload(event.type, payload);
-    if (persistedPayload !== payload && isCanonicalEventEnvelope(event)) {
-      (event as AgentEvent & { data: Record<string, unknown> }).data = persistedPayload;
-    }
+    const persistedPayload = payload;
     const envelope = event as AgentEvent & { target?: unknown };
     const target =
       envelope.target && typeof envelope.target === "object" && !Array.isArray(envelope.target)
@@ -926,11 +736,7 @@ export class DbWriter {
         throw new Error(`Persisted event ${rowId} cannot expose its durable receipt`, { cause: error });
       }
       persistEventTrace(this.db, event, rowId);
-      if (emissionFence || event.type === "escalation.resolved" || event.type === "escalation.dismissed")
-        this.persistExactTaskWake(event, target, rowId, timestamp);
-      this.closePairForFollowup(payload, rowId, timestamp);
-      this.closeConventionPairs(event.type, payload, rowId, timestamp);
-      this.openConventionPair(event.type, payload, rowId, eventOwner(event as Record<string, unknown>), timestamp);
+      if (emissionFence) this.persistExactTaskWake(event, target, rowId, timestamp);
       project?.();
       commit();
       return rowId;
@@ -1006,182 +812,11 @@ export class DbWriter {
     advanceTaskResourceRevision(this.db, appId);
   }
 
-  private closePairForFollowup(payload: Record<string, unknown>, closeEventId: number, closedAt: number): void {
-    const rawOpenEventId = payload.openEventId ?? payload.open_event_id;
-    const openEventId = typeof rawOpenEventId === "number" ? rawOpenEventId : Number(rawOpenEventId);
-    if (!Number.isFinite(openEventId) || openEventId <= 0) return;
-    const rows = this.db
-      .prepare(
-        `SELECT open_event_id, pair_name
-       FROM event_pair_runs
-       WHERE open_event_id = ?
-         AND status IN ('open', 'orphan')`,
-      )
-      .all(openEventId) as Array<{ open_event_id?: unknown; pair_name?: unknown }>;
-    this.db.run(
-      `UPDATE event_pair_runs
-       SET status = 'closed',
-           close_event_id = ?,
-           closed_at = ?,
-           note = COALESCE(note, 'closed by follow-up event')
-       WHERE open_event_id = ?
-         AND status IN ('open', 'orphan')`,
-      [closeEventId, closedAt, openEventId],
-    );
-    for (const row of rows) {
-      persistEventClosure(this.db, closeEventId, Number(row.open_event_id));
-    }
-  }
-
-  private openConventionPair(
-    eventType: string,
-    payload: Record<string, unknown>,
-    openEventId: number,
-    owner: string | null,
-    openedAt: number,
-  ): void {
-    const pair = openingPair(eventType);
-    if (!pair) return;
-    const key = pair.key(payload);
-    if (!key) return;
-    this.db.run(
-      `INSERT OR IGNORE INTO event_pair_runs
-       (pair_name, correlation_key, open_event_id, owner, status, opened_at, expected_close_at, note)
-       VALUES (?, ?, ?, ?, 'open', ?, ?, ?)`,
-      [pair.name, key, openEventId, owner, openedAt, openedAt + pair.timeoutMs, `opened by ${eventType}`],
-    );
-    this.closeConventionPairFromEarlierEvent(pair, key, openEventId, openedAt);
-  }
-
-  private closeConventionPairFromEarlierEvent(
-    pair: PairContract,
-    key: string,
-    openEventId: number,
-    openedAt: number,
-  ): void {
-    if (pair.allowEarlierClose === false) return;
-    const closeTypes = [...pair.closes];
-    if (closeTypes.length === 0) return;
-    const placeholders = closeTypes.map(() => "?").join(", ");
-    const correlationColumn = pairCorrelationColumn(pair);
-    const rows = this.db
-      .prepare(
-        correlationColumn
-          ? `SELECT id, event_type, data, timestamp
-             FROM events
-             WHERE event_type IN (${placeholders})
-               AND ${correlationColumn} = ?
-               AND id != ?
-             ORDER BY id DESC
-             LIMIT 1`
-          : `SELECT id, event_type, data, timestamp
-             FROM events
-             WHERE event_type IN (${placeholders})
-               AND id != ?
-             ORDER BY id DESC
-             LIMIT 200`,
-      )
-      .all(...closeTypes, ...(correlationColumn ? [key, openEventId] : [openEventId])) as Array<{
-      id?: unknown;
-      event_type?: unknown;
-      data?: unknown;
-      timestamp?: unknown;
-    }>;
-    for (const row of rows) {
-      const eventType = typeof row.event_type === "string" ? row.event_type : "";
-      if (!correlationColumn) {
-        const payload = parseStoredEventData(row.data);
-        if (!payload || pair.key(payload) !== key) continue;
-      }
-      const closeEventId = typeof row.id === "number" ? row.id : Number(row.id);
-      if (!Number.isFinite(closeEventId) || closeEventId <= 0) return;
-      const closeTimestamp = typeof row.timestamp === "number" ? row.timestamp : Number(row.timestamp);
-      this.db.run(
-        `UPDATE event_pair_runs
-         SET status = 'closed',
-             close_event_id = ?,
-             closed_at = ?,
-             note = ?
-         WHERE status IN ('open', 'orphan')
-           AND pair_name = ?
-           AND correlation_key = ?
-           AND open_event_id = ?`,
-        [
-          closeEventId,
-          Math.max(openedAt, Number.isFinite(closeTimestamp) ? closeTimestamp : openedAt),
-          `closed by earlier ${eventType}`,
-          pair.name,
-          key,
-          openEventId,
-        ],
-      );
-      persistEventClosure(this.db, closeEventId, openEventId);
-      return;
-    }
-  }
-
-  private closeConventionPairs(
-    eventType: string,
-    payload: Record<string, unknown>,
-    closeEventId: number,
-    closedAt: number,
-  ): void {
-    const pairs = closingPairs(eventType);
-    for (const pair of pairs) {
-      const rawOpenEventId = payload.openEventId ?? payload.open_event_id;
-      const openEventId = typeof rawOpenEventId === "number" ? rawOpenEventId : Number(rawOpenEventId);
-      if (pair.preferExplicitOpenEventId && Number.isFinite(openEventId) && openEventId > 0) {
-        continue;
-      }
-      const key = pair.key(payload);
-      if (!key) continue;
-      const rows = this.db
-        .prepare(
-          `SELECT open_event_id
-       FROM event_pair_runs
-       WHERE status IN ('open', 'orphan')
-         AND pair_name = ?
-         AND correlation_key = ?`,
-        )
-        .all(pair.name, key) as Array<{ open_event_id?: unknown }>;
-      this.db.run(
-        `UPDATE event_pair_runs
-       SET status = 'closed',
-           close_event_id = ?,
-           closed_at = ?,
-           note = COALESCE(note, ?)
-       WHERE status IN ('open', 'orphan')
-         AND pair_name = ?
-         AND correlation_key = ?`,
-        [closeEventId, closedAt, `closed by ${eventType}`, pair.name, key],
-      );
-      for (const row of rows) {
-        persistEventClosure(this.db, closeEventId, Number(row.open_event_id));
-      }
-    }
-  }
-
   /** Run periodic delivery repair outside the event-persistence path. */
   runHousekeeping(now = Date.now()): void {
     if (now - this.lastHousekeepingAt < this.housekeepingIntervalMs) return;
     this.lastHousekeepingAt = now;
-    this.sweepStalePairs(now);
     this.sweepUnacceptedEvents(now);
-  }
-
-  private sweepStalePairs(now: number): void {
-    try {
-      this.db.run(
-        `UPDATE event_pair_runs
-         SET status = 'orphan',
-             note = COALESCE(note, 'expected closing event did not arrive before timeout')
-         WHERE status = 'open'
-           AND expected_close_at < ?`,
-        [now],
-      );
-    } catch {
-      /* best-effort orphan marking */
-    }
   }
 
   private sweepUnacceptedEvents(now: number): void {

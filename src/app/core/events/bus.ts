@@ -346,18 +346,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "handler.started";
-      source: "cron";
-      owner: string;
-      data: { handler: string; handlerRunId?: string; agent?: string };
-    }
-  | {
-      type: "handler.completed";
-      source: "cron";
-      owner: string;
-      data: { handler: string; handlerRunId?: string; agent?: string; durationMs: number };
-    }
-  | {
       type: "handler.failed";
       source: "cron" | "app-task-controller" | "app-inbox" | "runtime:restart-recovery";
       owner: string;
@@ -414,55 +402,6 @@ export type SystemEvent =
       source: string;
       owner: string;
       data: { projectPath: string; comment?: boolean; commentText?: string };
-    }
-  | {
-      type: "escalation.created";
-      source: string;
-      owner: string;
-      urgency?: EventUrgency;
-      ttl_ms?: number;
-      data: {
-        escalationId: string;
-        sourceAgent: string;
-        reason: string;
-        requestedAction: string;
-        resumeCondition?: string;
-        severity?: "P0" | "P1" | "P2" | "P3";
-        sourceSessionId?: string;
-        projectId?: string;
-        projectPath?: string;
-        parentEscalationId?: string;
-        blockedOn?: string;
-        facts?: Record<string, unknown>;
-        resume?: Record<string, unknown>;
-        dedupKey?: string;
-      };
-    }
-  | {
-      type: "escalation.resolved";
-      source: string;
-      owner: string;
-      data: {
-        openEventId?: number;
-        escalationId?: string;
-        resolverAgent?: string;
-        outcome: "fixed" | "answered" | "dismissed" | "needs_human" | "expired" | string;
-        summary: string;
-        facts?: Record<string, unknown>;
-        resumeInstruction?: string;
-        childEscalationId?: string;
-      };
-    }
-  | {
-      type: "escalation.dismissed";
-      source: string;
-      owner: string;
-      data: {
-        openEventId?: number;
-        escalationId?: string;
-        reason: string;
-        resolverAgent?: string;
-      };
     }
   | {
       type: "message.created";
@@ -1353,8 +1292,6 @@ function isPairTrackedEvent(eventType: string): boolean {
     "workflow.failed",
     "workflow.blocked",
     "workflow.interrupted",
-    "handler.started",
-    "handler.completed",
     "handler.failed",
     "cli.task.requested",
     "cli.task.started",

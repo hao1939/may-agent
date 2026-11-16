@@ -211,23 +211,6 @@ BEGIN
   VALUES (NEW.id, 'event:' || NEW.id, NULL, 'default');
 END;
 
-CREATE TABLE IF NOT EXISTS event_pair_runs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  pair_name TEXT NOT NULL,
-  correlation_key TEXT NOT NULL,
-  open_event_id INTEGER NOT NULL,
-  close_event_id INTEGER,
-  owner TEXT,
-  status TEXT DEFAULT 'open',
-  opened_at INTEGER NOT NULL,
-  expected_close_at INTEGER NOT NULL,
-  closed_at INTEGER,
-  note TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_event_pair_open_event ON event_pair_runs(open_event_id);
-CREATE INDEX IF NOT EXISTS idx_event_pair_close_event ON event_pair_runs(close_event_id);
-CREATE INDEX IF NOT EXISTS idx_event_pair_status ON event_pair_runs(status, expected_close_at);
-
 CREATE TABLE IF NOT EXISTS conversation_requests (
   app_id TEXT NOT NULL,
   conversation_id TEXT NOT NULL,
@@ -329,10 +312,6 @@ CREATE TRIGGER IF NOT EXISTS trg_events_referential_retention
 BEFORE DELETE ON events
 WHEN
   EXISTS (
-    SELECT 1 FROM event_pair_runs p
-    WHERE p.open_event_id = OLD.id AND p.status IN ('open', 'orphan')
-  )
-  OR EXISTS (
     SELECT 1 FROM event_traces t
     WHERE t.parent_event_id = OLD.id AND t.event_id != OLD.id
   )
@@ -477,6 +456,7 @@ export function applyDbSchema(db: SqliteDb): void {
     // type-specific discovery objects after preserving their exact outstanding subset.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
     db.exec("DROP TABLE IF EXISTS event_trace_links");
+    db.exec("DROP TABLE IF EXISTS event_pair_runs");
     db.exec("DROP VIEW IF EXISTS event_direct_app_recovery_candidates");
     db.exec("DROP INDEX IF EXISTS idx_events_direct_app_recovery");
     db.exec(SCHEMA);

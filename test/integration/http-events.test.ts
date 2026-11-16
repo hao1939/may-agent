@@ -396,7 +396,7 @@ describe("HTTP event reads", () => {
     }
   });
 
-  it("retains the four health groups, lookback, TTL rules, pair facts, and ordering", async () => {
+  it("retains delivery-health groups, lookback, TTL rules, and ordering", async () => {
     const now = Date.now();
     const minute = 60_000;
     const unhandled = event("unhandled", now - minute);
@@ -407,26 +407,6 @@ describe("HTTP event reads", () => {
     event("custom-ttl-fresh", now - 3 * minute, "pending", 10 * minute);
     event("accepted", now - minute, "accepted");
     event("old", now - 7 * 60 * minute);
-    const pair = (
-      key: string,
-      status: string,
-      openedAt: number,
-      expectedAt: number,
-      closedAt: number | null = null,
-    ) => {
-      db.prepare(
-        `INSERT INTO event_pair_runs
-        (pair_name, correlation_key, open_event_id, status, opened_at, expected_close_at, closed_at)
-        VALUES ('sample', ?, ?, ?, ?, ?, ?)`,
-      ).run(key, unhandled, status, openedAt, expectedAt, closedAt);
-    };
-    pair("orphan", "orphan", now - minute, now - minute);
-    pair("closed-orphan", "orphan", now - minute, now - minute, now);
-    pair("overdue", "open", now - minute, now - minute);
-    pair("overdue-tie", "open", now - minute, now - minute);
-    pair("earlier-deadline", "open", now - 2 * minute, now - 2 * minute);
-    pair("not-due", "open", now - minute, now + minute);
-    pair("old", "open", now - 7 * 60 * minute, now - minute);
 
     const health = await read("/api/events/delivery-health");
     expect(health).toEqual({
@@ -436,17 +416,8 @@ describe("HTTP event reads", () => {
     });
     expect(health.unhandledEvents.map((row: { id: number }) => row.id)).toEqual([unhandledLaterId, unhandled]);
     expect(health.overduePendingEvents.map((row: { id: number }) => row.id)).toEqual([customExpired, expired]);
-    expect(health.orphanPairs.map((row: { correlationKey: string }) => row.correlationKey)).toEqual(["orphan"]);
-    expect(health.overdueOpenPairs.map((row: { correlationKey: string }) => row.correlationKey)).toEqual([
-      "earlier-deadline",
-      "overdue",
-      "overdue-tie",
-    ]);
-    expect(health.orphanPairs[0]).toMatchObject({
-      openEventId: unhandled,
-      openEventType: "unhandled",
-      openEventData: '{"facts":"kept"}',
-    });
+    expect(health.orphanPairs).toEqual([]);
+    expect(health.overdueOpenPairs).toEqual([]);
   });
 
   it("retains HTTP's narrower health limits and bounds invalid numeric input", async () => {
@@ -481,7 +452,8 @@ describe("HTTP event reads", () => {
 
   it("still distinguishes unavailable delivery schema from empty healthy results", async () => {
     expect(await read("/api/events/delivery-health")).toMatchObject({ schemaReady: true, unhandledEvents: [] });
-    db.exec("DROP TABLE event_pair_runs");
+    db.exec("DROP INDEX IF EXISTS idx_events_delivery");
+    db.exec("ALTER TABLE events DROP COLUMN delivery_route");
     expect(await read("/api/events/delivery-health")).toMatchObject({
       schemaReady: false,
       note: "event delivery schema is not migrated in this state database yet",
@@ -493,10 +465,10 @@ describe("HTTP event reads", () => {
   });
 
   it("preserves health query errors and the legacy empty event-list fallback", async () => {
-    db.exec("ALTER TABLE event_pair_runs DROP COLUMN note");
+    db.exec("ALTER TABLE events DROP COLUMN accepted_by");
     expect(await read("/api/events/delivery-health")).toMatchObject({
       schemaReady: false,
-      error: expect.stringContaining("note"),
+      error: expect.stringContaining("accepted_by"),
       unhandledEvents: [],
       overduePendingEvents: [],
       orphanPairs: [],

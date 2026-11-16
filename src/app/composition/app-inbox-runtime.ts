@@ -90,9 +90,6 @@ const ADMISSION_RECOVERY_BATCH_SIZE = 16;
 const APP_ADMISSION_RECOVERY_SCAN_SIZE = 64;
 const APP_ADMISSION_RECOVERY_BATCH_SIZE = 16;
 const ADMISSION_COMMAND_TURN_GAP_MS = 2;
-// Durable addressed messages get a small recovery window for App registry reloads.
-// The Event row owns this count so process restart cannot reset it.
-const UNROUTABLE_ADDRESS_MAX_ATTEMPTS = 3;
 
 export type StartAppInboxRuntimeOptions = {
   registry: AppRegistry;
@@ -186,47 +183,6 @@ function eventIdentity(event: AgentEvent): string | undefined {
   return eventId ? `event:${eventId}` : undefined;
 }
 
-function recordUnroutableAddressAttempt(
-  db: SqliteDb,
-  eventId: number,
-  diagnostic: string,
-): { attempts: number; terminal: boolean } {
-  return withSqliteBusyRetry(`record unroutable addressed message attempt for event ${eventId}`, () => {
-    // App admission and another route's receipt are independent. Keep the
-    // terminal diagnostic on the App obligation even if another route already
-    // accepted the Event, or accepts it later. Record-only/noop is not delivery.
-    const row = db
-      .prepare(
-        `UPDATE events
-       SET app_admission_attempts = app_admission_attempts + 1,
-           app_admission_error = CASE WHEN app_admission_attempts + 1 >= ?1
-             THEN 'terminal App admission after ' || (app_admission_attempts + 1) || ' unroutable address attempts: ' || ?2
-             ELSE app_admission_error END,
-           delivery_status = CASE WHEN app_admission_attempts + 1 >= ?1
-             AND NOT (delivery_status = 'accepted' AND delivery_route IS NOT 'noop')
-             THEN 'unhandled' ELSE delivery_status END,
-           delivery_note = CASE WHEN app_admission_attempts + 1 >= ?1
-             AND NOT (delivery_status = 'accepted' AND delivery_route IS NOT 'noop')
-             THEN 'terminal App admission after ' || (app_admission_attempts + 1) || ' unroutable address attempts: ' || ?2
-             ELSE delivery_note END,
-           app_admission_pending = CASE WHEN app_admission_attempts + 1 >= ?1 THEN 0 ELSE app_admission_pending END
-       WHERE id = ?3 AND app_admission_pending = 1
-       RETURNING app_admission_attempts, app_admission_pending`,
-      )
-      .get(UNROUTABLE_ADDRESS_MAX_ATTEMPTS, diagnostic, eventId) as
-        { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined;
-    const current =
-      row ??
-      (db.prepare("SELECT app_admission_attempts, app_admission_pending FROM events WHERE id = ?").get(eventId) as
-        { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined);
-    const attempts = Number(current?.app_admission_attempts ?? 0);
-    return {
-      attempts,
-      terminal: attempts >= UNROUTABLE_ADDRESS_MAX_ATTEMPTS && current?.app_admission_pending === 0,
-    };
-  });
-}
-
 function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: string; taskId: string } | null {
   // Exact-task routing authority is entirely in the canonical envelope target.
   // App/project identities in data remain correlation and lifecycle facts.
@@ -236,61 +192,6 @@ function exactTaskTarget(event: AppEvent<Record<string, unknown>>): { appId?: st
 function normalizedAgent(value: unknown): string | undefined {
   if (typeof value !== "string" || !value.trim()) return undefined;
   return value.trim().replace(/^agent:/, "");
-}
-
-const NON_AGENT_MESSAGE_PARTICIPANTS = new Set(["human", "operator", "telegram", "console", "socket"]);
-
-function addressedAgentMessage(event: AgentEvent):
-  | {
-      targetOwner: string;
-      sender: string;
-      sourceAppId?: string;
-      input: AppInput;
-      identity: string;
-    }
-  | undefined {
-  if (event.type !== "message.created") return undefined;
-  const identity = eventIdentity(event);
-  if (!identity) return undefined;
-  const data = eventData(event);
-  // App delivery results are correlated by their stored parent/outbox link;
-  // they are not fresh addressed requests.
-  if (typeof data.appResponseFor === "string" && data.appResponseFor.trim()) return undefined;
-  // `to` is the address. The envelope owner is only a delivery projection and
-  // can still point at a channel-facing agent.
-  const targetOwner = normalizedAgent(data.to);
-  const sender = normalizedAgent(data.from) ?? normalizedAgent((event as { source?: unknown }).source);
-  if (
-    !targetOwner ||
-    !sender ||
-    sender === targetOwner ||
-    NON_AGENT_MESSAGE_PARTICIPANTS.has(sender) ||
-    NON_AGENT_MESSAGE_PARTICIPANTS.has(targetOwner)
-  ) {
-    return undefined;
-  }
-  if (data.intent === "chat.start" || data.intent === "fork") return undefined;
-
-  const context: Record<string, unknown> = {};
-  for (const key of ["from", "intent", "artifact", "priority", "sourceSessionId"] as const) {
-    if (data[key] !== undefined) context[key] = data[key];
-  }
-  context.sourceEventId = Number(identity.slice("event:".length));
-  const sourceAppId =
-    typeof data.sourceAppId === "string" && data.sourceAppId.trim() ? data.sourceAppId.trim() : undefined;
-  return {
-    targetOwner,
-    sender,
-    sourceAppId,
-    input: {
-      kind: "message",
-      data: {
-        message: typeof data.content === "string" ? data.content : "",
-        context,
-      },
-    },
-    identity,
-  };
 }
 
 export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions): Promise<AppInboxRuntime> {
@@ -931,80 +832,6 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           expectedRevision: Number(data.expectedRevision),
         });
         return { accepted: true, by: "conversation-turn-control", route: "direct" };
-      }
-      const message = addressedAgentMessage(event);
-      if (message) {
-        const eventId = eventRowId(event);
-        // A direct admission can commit before its Event marker acknowledgement.
-        // On retry, preserve that accepted recipient instead of reselecting a
-        // different App after registry reload.
-        const existing = eventId
-          ? options.db.prepare("SELECT app_id FROM app_inbox_items WHERE origin_event_id = ? LIMIT 1").get(eventId)
-          : null;
-        const retainedAppId = typeof existing?.app_id === "string" ? existing.app_id : undefined;
-        if (retainedAppId) {
-          return {
-            accepted: true,
-            by: `app-inbox:${retainedAppId}:message`,
-            route: "direct",
-            note: "addressed agent message already admitted to App inbox",
-          };
-        }
-        // A keyed producer retry can redeliver an already-settled unhandled
-        // Event even after its admission marker is cleared. Keep terminal
-        // settlement absorbing before registry selection so a later App install
-        // cannot resurrect the original publication or replace its audit note.
-        const exhausted = eventId
-          ? (options.db
-              .prepare("SELECT app_admission_attempts, app_admission_pending FROM events WHERE id = ?")
-              .get(eventId) as { app_admission_attempts?: unknown; app_admission_pending?: unknown } | undefined)
-          : undefined;
-        if (
-          Number(exhausted?.app_admission_attempts ?? 0) >= UNROUTABLE_ADDRESS_MAX_ATTEMPTS &&
-          exhausted?.app_admission_pending === 0
-        ) {
-          // An Event-interface publication may carry record-only fallback
-          // acceptance. A generic fallback cannot replace rejection; a real
-          // independent route may still accept and retain its own receipt.
-          Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
-          return;
-        }
-        const candidates = host.matchingAppIds(message.targetOwner, message.input);
-        if (candidates.length === 1) {
-          const admitted = receiveInput({
-            appId: candidates[0]!,
-            source:
-              message.sourceAppId && host.isOwnedApp(message.sourceAppId, message.sender)
-                ? { kind: "app", id: message.sourceAppId }
-                : { kind: "system", id: message.identity },
-            input: message.input,
-            originEventId: eventRowId(event),
-            channel: `agent:${message.sender}`,
-            idempotencyKey: message.identity,
-          });
-
-          return {
-            accepted: true,
-            by: `app-inbox:${admitted.item.appId}:message`,
-            route: "direct",
-            note: "addressed agent message admitted to App inbox",
-          };
-        }
-        const diagnostic =
-          candidates.length === 0
-            ? `Addressed agent message ${message.identity} names no canonical App owned by ${message.targetOwner}`
-            : `Addressed agent message ${message.identity} is ambiguous across Apps owned by ${message.targetOwner}`;
-        if (candidates.length === 0 && eventId) {
-          const attempt = recordUnroutableAddressAttempt(options.db, eventId, diagnostic);
-          // Terminal settlement stops App recovery and records its failure
-          // without changing another route's acceptance. Record-only fallback
-          // must not turn this failed admission into apparent delivery.
-          if (attempt.terminal) {
-            Object.defineProperty(event, EVENT_RECORD_ONLY, { value: false, configurable: true });
-            return;
-          }
-        }
-        throw new Error(diagnostic);
       }
       if (event.type === "conversation.message.created") {
         const appId = typeof data.appId === "string" ? data.appId.trim() : "";
