@@ -23,6 +23,13 @@ publication, CI/review feedback and continuation on the same PR. Tune the inputs
 tools and bounded procedure until it works without hidden corrective assistance.
 Then demonstrate the same procedure under Host Task + Watcher coordination.
 
+The requested hosted milestone ends when Alex has assessed current-head required
+CI and feedback and a Telegram notification containing the PR link, head, summary
+and CI evidence has actually been delivered. The human reviews and approves on
+GitHub. This pilot does not collect approval through Telegram; notification
+delivery and GitHub approval are separate facts. Retain the PR observation if a
+later assignment requires following GitHub approval or further comments.
+
 ```text
 Manual pilot:
   operator supplies assignment → bounded agent pass → candidate/PR and evidence
@@ -214,7 +221,12 @@ than automate the unresolved problem.
    durable matching event and a later **accepted owner result**, not merely a
    healthy watcher or successful direct inspection. Rearm needed interests after
    judgment; preserve independent work/waits.
-6. Verify the original outcome and authorized ending. Compare manual intervention,
+6. When Alex judges the current head ready, deliver the review notification through
+   the existing caller/Conversation path to Telegram. Retain its delivery receipt
+   and exact PR/head/CI evidence. Human approval happens on GitHub and is not an
+   exit requirement for this notification milestone. An unsuccessful send remains
+   an explicit delivery gap; it cannot change the coding or CI evidence.
+7. Verify the original outcome and authorized ending. Compare manual intervention,
    latency, cost, repair behavior and effect identity with the standalone trial.
    Test missed-change recovery in an authorized isolated instance; do not restart
    shared production merely to manufacture a test.
@@ -239,6 +251,8 @@ continuity belongs to Task state; evidence remains referenced artifacts.
 - [ ] Phase 3: same-PR external-feedback continuation observed.
 - [ ] Phase 4: process frozen; maturity evidence and limitations reviewed.
 - [ ] Phase 5: compatible activation and native Task + Watcher cycle verified.
+- [ ] Current-head readiness assessed and Telegram PR-review notification delivered;
+      human review and approval take place on GitHub.
 
 **Next action:** Select the first narrow assignment and its exact standalone
 runner/checkout. No task submission, model-backed run, PR publication or

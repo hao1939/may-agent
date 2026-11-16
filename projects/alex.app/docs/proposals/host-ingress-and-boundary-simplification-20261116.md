@@ -52,6 +52,8 @@ App input -> durable admission and Task mapping -> eligible bounded attempt
   -> caller handles the contribution under its own assignment/Request contract
 ```
 
+These are Task dispositions, not new SDK return variants. Bounded workers still
+return `done` or `blocked`; App policy maps continuation facts to Task mechanics.
 The progress/wait branches reuse the same Task. Closure and caller delivery have
 their existing independent records; a delayed notification cannot undo committed
 work. An automatic finite closure needs the agent's full-assignment completion
@@ -63,8 +65,9 @@ Three facts must remain distinguishable in implementation and reads: execution
 ended, result was admitted, and the caller received it. A process can exit with
 no admissible result; an admitted result can await delivery; a delivered
 contribution can leave the caller's wider ask unfinished. None establishes that
-the agent's conclusion is true. Preserve useful accepted work while correcting
-or continuing what remains.
+the agent's conclusion is true. Host-produced execution failure diagnostics keep
+their origin and cannot stand in for an agent conclusion. Preserve useful
+accepted work while correcting or continuing what remains.
 
 Liveness means eligible work can progress under capacity and policy, or has a
 readable execution/recovery blocker. A genuine external wait and administrative
@@ -247,6 +250,17 @@ tables and small focused helpers alone unless an active competing model or
 concrete defect requires a change.
 
 ## Acceptance and next useful milestone
+
+The immediate user-facing delivery goal is one coding assignment through Alex's
+bounded workflow, PR publication, real CI/comment observation, same-Task follow-up
+and a Telegram notification linking the ready PR. The human reviews and approves
+on GitHub. The [Task reference case](../2a-design/task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review)
+owns that boundary; the [pilot plan](../2b-manual/standalone-to-host-pr-pilot.md)
+tracks the connected proof. Existing Task-aware procedures may establish this
+milestone without waiting for the full shared-execution or Conversation cutover.
+Host schedules and delivers; Alex judges readiness from current-head evidence;
+Telegram delivery does not stand in for GitHub approval. Installed watcher,
+native publication/follow-up and notification receipts remain proof obligations.
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |

@@ -126,6 +126,8 @@ publication and external feedback. A **watcher** (SDK `observer`) supplies
 PR/head/CI/review/comment facts; Host schedules the same eligible Task; its agent
 assesses feedback, repairs or responds, and updates the same PR.
 
+For coding delivery, the agent assesses current-head CI and feedback, then sends a Telegram PR link for human review and approval on GitHub.
+If approval is required, retain the exact PR observation and verify the current-head GitHub review; Telegram delivery establishes no approval.
 Retain PR identity/head, evidence, needed Conditions and caller links in existing
 Task state. Rearm one-shot interests while feedback matters; stop them when that
 requirement ends, preserving independent work and waits. Local convergence,

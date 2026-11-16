@@ -63,6 +63,16 @@ Requirements come from its owning finite Task; extra task prose in an agent
 call is not a replacement specification. The standing-review guard returns
 incomplete before specialist calls, verification or round reservations.
 
+For a different target repository, the creator may supply
+`data.context.developmentCheckout: { root: "/absolute/assigned-checkout", baseRef: "origin/main" }`
+in the saved goal. The workflow validates that exact linked Git worktree and
+uses it for candidate identity, verification and specialist instructions; the
+default remains the Task's allocated worktree and `main`. This selects no new
+authority and allocates no checkout: supply an isolated, authorized checkout
+first and preserve its branch. The base reference controls the reviewed diff.
+Task-local evidence and cumulative allowance stay with the owning Task. New
+feedback or procedure-call prose cannot override the saved target assignment.
+
 ## Responsibilities and graph
 
 ```mermaid
@@ -370,6 +380,16 @@ A local `develop-change` result can converge as a contribution while the broader
 Task remains unfinished. Alex must not forward local convergence as proof of PR
 creation, remote CI success, approval, merge or deployment. Those are separate
 facts and permissions; an assignment may stop at an acceptable unmerged PR.
+
+For the coding-delivery milestone, Alex judges the current head ready for human
+review after verifying the required CI and relevant feedback, then uses the
+existing caller/Conversation delivery path to send a Telegram notification.
+Include the PR URL, head commit, concise change summary and CI evidence. The
+human reviews and approves on GitHub; Telegram is only the notification channel.
+Do not introduce a Telegram approval decision or treat a send receipt as GitHub
+approval. If GitHub approval is part of the assignment, retain the PR observation
+until Alex verifies the current-head review. A new push requires reassessing
+readiness and any prior review. Merge and deployment retain their own authority.
 
 ### Publication and retained context
 
