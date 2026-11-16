@@ -1,4 +1,3 @@
-import { admitTaskResultForSchema } from "@may-agent/sdk";
 import { Compile } from "typebox/compile";
 import { Type, type TSchema } from "typebox";
 /**
@@ -242,15 +241,8 @@ export function createWorkflowFinishTool(
     parameters,
     prepareArguments: validateReport,
     execute: async (toolCallId, params, signal, onUpdate) => {
-      // Direct execution must enforce the same contract as the model loop.
+      // Direct execution must enforce the same TypeBox contract as the model loop.
       validateReport(params);
-      const semanticAdmission = admitTaskResultForSchema(outputSchema, (params as { result?: unknown }).result);
-      if (semanticAdmission && !semanticAdmission.ok) {
-        return {
-          content: [{ type: "text" as const, text: `finish() error: ${semanticAdmission.error}` }],
-          details: undefined,
-        };
-      }
       const problem = validateOutput?.((params as { result?: unknown }).result);
       if (problem) {
         return { content: [{ type: "text" as const, text: `finish() error: ${problem}` }], details: undefined };

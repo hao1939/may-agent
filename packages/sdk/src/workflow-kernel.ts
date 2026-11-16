@@ -10,7 +10,6 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import { admitTaskResultForSchema, type TaskReconcileResult } from "./task.js";
 import type { Logger, WorkflowContext } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
@@ -20,7 +19,7 @@ const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
 
-export type WorkflowExecutableModule<TInput = any> = {
+export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = {
   name: string;
   description: string;
   readonly?: boolean;
@@ -28,7 +27,7 @@ export type WorkflowExecutableModule<TInput = any> = {
   outputSchema?: TSchema;
   executionTimeoutMs?: number;
   workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
-  execute: (ctx: WorkflowContext<TInput>) => Promise<ExecutionResult | TaskReconcileResult>;
+  execute: (ctx: WorkflowContext<TInput>) => Promise<ExecutionResult<TOutput>>;
   verify?: (context: unknown, result: unknown) => Promise<unknown>;
   sourcePath?: string;
   sourceScope?: "agent" | "project";
@@ -371,16 +370,7 @@ function schemaDiagnostic(schema: TSchema, value: unknown): string {
     details.push(`${err.instancePath || "/"} ${err.message}`.trim());
     if (details.length >= 5) break;
   }
-  if (details.length > 0) return details.join("; ");
-  const taskAdmission = admitTaskResultForSchema(schema, value);
-  if (taskAdmission && !taskAdmission.ok) return taskAdmission.error;
-  return "value failed schema check";
-}
-
-function checkKernelSchema(schema: TSchema, value: unknown): boolean {
-  if (!Check(schema, value)) return false;
-  const taskAdmission = admitTaskResultForSchema(schema, value);
-  return taskAdmission ? taskAdmission.ok : true;
+  return details.length > 0 ? details.join("; ") : "value failed schema check";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -896,7 +886,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       if (raw.status === "done" && effectiveOptions?.schema) {
         const kindLabel = actualKind === "agent" ? "Agent" : "Workflow";
         if (raw.output !== undefined) {
-          if (!checkKernelSchema(effectiveOptions.schema, raw.output)) {
+          if (!Check(effectiveOptions.schema, raw.output)) {
             const detail = schemaDiagnostic(effectiveOptions.schema, raw.output);
             raw = {
               ...raw,
@@ -1160,14 +1150,14 @@ export async function runWorkflowInvocation<TInput = unknown>(
       assertActive();
       const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
       if (normalized.type === "done") {
-        if (module.outputSchema && !checkKernelSchema(module.outputSchema, normalized.output)) {
+        if (module.outputSchema && !Check(module.outputSchema, normalized.output)) {
           throw new WorkflowValidationError(
             "output",
             `Invalid workflow output for "${module.name}": ${schemaDiagnostic(module.outputSchema, normalized.output)}`,
             normalized.output,
           );
         }
-        if (bindings.outputSchema && !checkKernelSchema(bindings.outputSchema, normalized.output)) {
+        if (bindings.outputSchema && !Check(bindings.outputSchema, normalized.output)) {
           throw new WorkflowValidationError(
             "output",
             `Invalid caller output schema for "${module.name}": ${schemaDiagnostic(bindings.outputSchema, normalized.output)}`,

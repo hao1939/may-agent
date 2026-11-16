@@ -350,7 +350,7 @@ function findNodeModulesSdk(startDir: string): string | undefined {
 import { createHash } from "node:crypto";
 import { isAbsolute, relative } from "node:path";
 import type { TSchema } from "typebox";
-import type { ExecutionResult, TaskReconcileResult, WorkflowContext } from "../../index.js";
+import type { ExecutionResult, WorkflowContext } from "../../index.js";
 
 export interface WorkflowModule {
   name: string;
@@ -360,7 +360,7 @@ export interface WorkflowModule {
   outputSchema?: TSchema;
   executionTimeoutMs?: number;
   workspace?: "shared" | "task" | { kind: "task"; baseBranch: string };
-  execute: (ctx: WorkflowContext) => Promise<ExecutionResult | TaskReconcileResult>;
+  execute: (ctx: WorkflowContext) => Promise<ExecutionResult>;
   verify?: (context: unknown, result: unknown) => Promise<unknown>;
   sourcePath: string;
   sourceScope: "agent" | "project";

@@ -209,19 +209,15 @@ describe("provider-compatible workflow finish schema", () => {
     { state: "incomplete", facts: [] },
     { state: "incomplete", facts: ["Failed"], requests: [] },
     { state: "incomplete", facts: ["Failed"], communication: [] },
-  ])("still rejects invalid state/field combinations at finish execution: %j", async (result) => {
+  ])("uses only the declared TypeBox schema at finish execution: %j", async (result) => {
     const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskReconcileResultSchema);
     const params = {
       status: "partial",
       summary: "Attempt report",
       result: { summary: "Task report", facts: [], ...result },
     };
-    const res = await tool.execute("invalid-report", params);
-    expect(res.terminate).toBeUndefined();
-    expect(res.content[0]).toMatchObject({
-      type: "text",
-      text: expect.stringContaining("finish() error:"),
-    });
+    expect(tool.prepareArguments!(params)).toEqual(params);
+    expect((await tool.execute("schema-valid-report", params)).terminate).toBe(true);
   });
 
   it.each([
