@@ -6,6 +6,7 @@ export async function runXhsCommand(
   appDir: string,
   command: ["status"] | ["prepare"] | ["search", string],
   signal?: AbortSignal,
+  timeoutMs?: number,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   signal?.throwIfAborted();
   const completed = Promise.withResolvers<{
@@ -19,7 +20,7 @@ export async function runXhsCommand(
     {
       encoding: "utf8",
       signal,
-      timeout: command[0] === "search" ? 60_000 : 30_000,
+      timeout: timeoutMs ?? (command[0] === "search" ? 60_000 : 30_000),
       maxBuffer: 1024 * 1024,
       killSignal: "SIGKILL",
     },

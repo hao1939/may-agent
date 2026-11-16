@@ -1,7 +1,9 @@
 import { expect, test } from "bun:test";
 import { resolve } from "node:path";
-import { readFileWritePolicy } from "../../projects/may-agent/src/lib/tools/file-write-policy.js";
-import { checkCrossEditGuard } from "../../projects/may-agent/src/lib/tools/cross-edit-guard.js";
+import {
+  checkCrossEditGuard,
+  readFileWritePolicy,
+} from "../../projects/may-agent/packages/sdk/src/runtime/index.js";
 
 const root = resolve(import.meta.dir, "../..");
 const policy = readFileWritePolicy(resolve(root, "shared"), root);

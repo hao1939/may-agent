@@ -1,3 +1,4 @@
+import { Database } from "bun:sqlite";
 import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -53,6 +54,38 @@ describe("alex/learn-from-daily-work multi-root harvester & synthesizer", () => 
         })}\n`,
       );
 
+      // 4. Seed a May SQLite DB with a failed workflow_runs record
+      const mayDb = new Database(join(containerStateRoot, "may.db"));
+      mayDb.exec(`
+        CREATE TABLE workflow_runs (
+          runId TEXT PRIMARY KEY,
+          app_id TEXT,
+          projectId TEXT,
+          workflow TEXT,
+          status TEXT,
+          result_reason TEXT,
+          result_summary TEXT,
+          startedAt INTEGER,
+          endedAt INTEGER
+        );
+      `);
+      mayDb
+        .prepare(
+          "INSERT INTO workflow_runs (runId, app_id, projectId, workflow, status, result_reason, result_summary, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        )
+        .run(
+          "wr_fail_1",
+          "scout-knowledge-lib",
+          "scout-knowledge-lib",
+          "scout-explore",
+          "error",
+          "source feed parsing failed",
+          "",
+          1794700010000,
+          1794700012000,
+        );
+      mayDb.close();
+
       const discovered = learnFromDailyWork.discoverSessionSources(
         join(sandbox, "container-app"),
         [containerStateRoot, localhostHomeRoot],
@@ -60,10 +93,11 @@ describe("alex/learn-from-daily-work multi-root harvester & synthesizer", () => 
       expect(discovered.geminiLogFiles).toHaveLength(1);
       expect(discovered.codexHistoryFiles).toHaveLength(1);
       expect(discovered.piSessionDirs).toHaveLength(1);
+      expect(discovered.mayDbFiles).toHaveLength(1);
 
       const signals = learnFromDailyWork.harvestSignalsFromSources(discovered);
-      expect(signals).toHaveLength(3);
-      expect(signals.map((s) => s.source).sort()).toEqual(["codex", "gemini", "pi"]);
+      expect(signals).toHaveLength(4);
+      expect(signals.map((s) => s.source).sort()).toEqual(["codex", "gemini", "may-db", "pi"]);
     } finally {
       rmSync(sandbox, { recursive: true, force: true });
     }

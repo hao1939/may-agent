@@ -26,6 +26,7 @@ FROM recoveries`;
 export const REVIEW_LAG_METRIC = "may.evaluation-unfinished-review-age-seconds";
 export const EVALUATION_OPERATION_METRIC =
   "may.evaluation-unsuccessful-task-attempts-6h";
+export const FAILED_WORKFLOW_RUNS_METRIC = "may.failed-workflow-runs-24h";
 export const SQL_TIME_METRIC = "may.daemon-sql-time-percent";
 export const SQL_LATENCY_METRIC = "may.daemon-sql-recent-worst-call-ms";
 export const METRIC_QUERY_DURATION_METRIC = "metric.source-query-worst-ms";
@@ -171,6 +172,35 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
         'examples', json((SELECT json_group_array(json_object('appId', app_id, 'taskId', task_id, 'attemptId', attempt_id))
           FROM (SELECT * FROM cohort WHERE state = 'failed' ORDER BY started_at DESC, attempt_id LIMIT 3))),
         'limits', 'Retained history only. Later success does not prove recovery of the same input. Cause and quality unassessed.') AS note
+    FROM cohort`,
+  },
+  {
+    id: FAILED_WORKFLOW_RUNS_METRIC,
+    name: "Failed workflow runs in a rolling day",
+    owner: "may",
+    project: "may",
+    type: "gauge",
+    unit: "runs",
+    measureInterval: 300_000,
+    threshold: 2,
+    alertOp: ">",
+    description:
+      "Error-status workflow runs across installed Apps finished in the last 24 hours. Sample size is done + error + blocked + interrupted top-level workflow runs; inspect per-workflow breakdown and sample runIds before judging.",
+    sourceQuery: `WITH clock AS (SELECT ${clock} AS cut), cohort AS MATERIALIZED (
+      SELECT runId, COALESCE(app_id, projectId, 'unknown') AS appId, workflow, status, startedAt, endedAt,
+        substr(COALESCE(result_reason, result_summary, ''), 1, 240) AS reason
+      FROM workflow_runs, clock
+      WHERE parentWorkflowRunId IS NULL AND endedAt >= cut - 86400000 AND endedAt < cut
+        AND status IN ('done', 'error', 'blocked', 'interrupted')
+    ) SELECT COALESCE(SUM(status = 'error'), 0) AS value, COUNT(*) AS sampleSize,
+      (SELECT cut FROM clock) AS measuredAt,
+      json_object('start', (SELECT cut - 86400000 FROM clock), 'end', (SELECT cut FROM clock),
+        'denominator', 'done + error + blocked + interrupted top-level workflow runs finished in window',
+        'errorPercent', CASE WHEN COUNT(*) > 0 THEN ROUND(100.0 * SUM(status = 'error') / COUNT(*), 3) ELSE NULL END,
+        'blockedRuns', COALESCE(SUM(status = 'blocked'), 0),
+        'examples', json((SELECT json_group_array(json_object('appId', appId, 'workflow', workflow, 'runId', runId, 'reason', reason))
+          FROM (SELECT * FROM cohort WHERE status = 'error' ORDER BY endedAt DESC, runId DESC LIMIT 3))),
+        'limits', 'Retained workflow_runs history only. Run scripts/audit-workflows.ts for full per-workflow breakdown.') AS note
     FROM cohort`,
   },
   {

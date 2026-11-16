@@ -136,6 +136,177 @@ function discoverAppWorkflows(): string[] {
   return workflows;
 }
 
+function appReachabilityFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (ignoredDirectories.has(entry.name)) continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...appReachabilityFiles(path));
+    } else if (
+      /\.(?:ts|tsx|js|mjs|cjs|md|json)$/.test(entry.name) &&
+      !/\.test\.[^.]+$/.test(entry.name)
+    ) {
+      files.push(path);
+    }
+  }
+  return files;
+}
+
+function checkWorkflowContracts(): void {
+  for (const appEntry of readdirSync(projectsRoot).sort()) {
+    if (!appEntry.endsWith(".app")) continue;
+    const appDir = join(projectsRoot, appEntry);
+    if (!statSync(appDir).isDirectory() || isDisabledRetiredApp(appDir)) continue;
+    const agentsDir = join(appDir, "agents");
+    if (!existsSync(agentsDir)) continue;
+
+    const reachabilityTexts = new Map<string, string>();
+    for (const file of appReachabilityFiles(appDir)) {
+      reachabilityTexts.set(file, readFileSync(file, "utf8"));
+    }
+
+    const agentWorkflowSlugs = new Map<string, Set<string>>();
+    for (const agentEntry of readdirSync(agentsDir).sort()) {
+      const workflowDir = join(agentsDir, agentEntry, "workflows");
+      const slugs = new Set<string>();
+      if (existsSync(workflowDir) && statSync(workflowDir).isDirectory()) {
+        for (const workflowEntry of readdirSync(workflowDir).sort()) {
+          if (!workflowEntry.endsWith(".ts") || workflowEntry.endsWith(".test.ts")) continue;
+          if (workflowEntry.includes("-helpers") || workflowEntry.includes("-utils")) continue;
+          const workflowPath = join(workflowDir, workflowEntry);
+          const display = relative(root, workflowPath);
+          const slug = basename(workflowEntry, ".ts");
+          slugs.add(slug);
+          const text = readFileSync(workflowPath, "utf8");
+          const source = ts.createSourceFile(workflowPath, text, ts.ScriptTarget.Latest, true);
+
+          let exportedName: string | undefined;
+          let hasNameExport = false;
+          let hasDescriptionExport = false;
+          let hasEmptyDescription = false;
+          let hasExecuteExport = false;
+          let isPureReexport = true;
+
+          for (const stmt of source.statements) {
+            if (ts.isExportDeclaration(stmt)) {
+              if (stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+                for (const el of stmt.exportClause.elements) {
+                  const exported = el.name.text;
+                  if (exported === "name") hasNameExport = true;
+                  if (exported === "description") hasDescriptionExport = true;
+                  if (exported === "execute") hasExecuteExport = true;
+                }
+              }
+              continue;
+            }
+            if (ts.isImportDeclaration(stmt)) continue;
+            isPureReexport = false;
+            const isExported =
+              ts.canHaveModifiers(stmt) &&
+              ts.getModifiers(stmt)?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+            if (!isExported) continue;
+
+            if (ts.isVariableStatement(stmt)) {
+              for (const decl of stmt.declarationList.declarations) {
+                if (!ts.isIdentifier(decl.name)) continue;
+                if (decl.name.text === "name") {
+                  hasNameExport = true;
+                  if (decl.initializer && ts.isStringLiteralLike(decl.initializer)) {
+                    exportedName = decl.initializer.text;
+                  }
+                } else if (decl.name.text === "description") {
+                  hasDescriptionExport = true;
+                  if (
+                    decl.initializer &&
+                    ts.isStringLiteralLike(decl.initializer) &&
+                    decl.initializer.text.trim().length === 0
+                  ) {
+                    hasEmptyDescription = true;
+                  }
+                } else if (decl.name.text === "execute") {
+                  hasExecuteExport = true;
+                }
+              }
+            } else if (ts.isFunctionDeclaration(stmt) && stmt.name?.text === "execute") {
+              hasExecuteExport = true;
+            }
+          }
+
+          if (!hasNameExport) {
+            errors.push(`${display}: workflow must export const name`);
+          } else if (exportedName !== undefined && exportedName !== slug) {
+            errors.push(`${display}: exported workflow name "${exportedName}" must match file slug "${slug}"`);
+          }
+          if (!hasDescriptionExport || hasEmptyDescription) {
+            errors.push(`${display}: workflow must export a non-empty description`);
+          }
+          if (!hasExecuteExport) {
+            errors.push(`${display}: workflow must export execute(ctx)`);
+          }
+
+          const pairedTestPath = join(workflowDir, `${slug}.test.ts`);
+          if (!isPureReexport && !existsSync(pairedTestPath)) {
+            errors.push(`${display}: missing paired unit test ${relative(root, pairedTestPath)}`);
+          }
+
+          let referenced = false;
+          for (const [file, fileText] of reachabilityTexts.entries()) {
+            if (file === workflowPath) continue;
+            if (fileText.includes(slug)) {
+              referenced = true;
+              break;
+            }
+          }
+          if (!referenced) {
+            errors.push(
+              `${display}: orphan workflow "${slug}" is not referenced by app.ts, agent instructions/skills, or peer modules`,
+            );
+          }
+        }
+      }
+      agentWorkflowSlugs.set(agentEntry, slugs);
+    }
+
+    const appManifest = join(appDir, "app.ts");
+    if (existsSync(appManifest)) {
+      const appText = readFileSync(appManifest, "utf8");
+      const allSlugs = new Set<string>();
+      for (const slugs of agentWorkflowSlugs.values()) {
+        for (const s of slugs) allSlugs.add(s);
+      }
+      const source = ts.createSourceFile(appManifest, appText, ts.ScriptTarget.Latest, true);
+      const extractStringLiterals = (expr: ts.Expression): string[] => {
+        if (ts.isStringLiteralLike(expr)) return [expr.text];
+        if (ts.isConditionalExpression(expr)) {
+          return [
+            ...extractStringLiterals(expr.whenTrue),
+            ...extractStringLiterals(expr.whenFalse),
+          ];
+        }
+        return [];
+      };
+      const visit = (node: ts.Node): void => {
+        if (
+          ts.isPropertyAssignment(node) &&
+          ((ts.isIdentifier(node.name) && node.name.text === "workflow") ||
+            (ts.isStringLiteralLike(node.name) && node.name.text === "workflow"))
+        ) {
+          for (const targetWorkflow of extractStringLiterals(node.initializer)) {
+            if (!allSlugs.has(targetWorkflow)) {
+              errors.push(
+                `${relative(root, appManifest)}: binds missing workflow "${targetWorkflow}"`,
+              );
+            }
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(source);
+    }
+  }
+}
+
 function checkRetiredCronDeclarations(): void {
   for (const appEntry of readdirSync(projectsRoot).sort()) {
     if (!appEntry.endsWith(".app")) continue;
@@ -270,6 +441,7 @@ for (const entry of readdirSync(projectsRoot).sort()) {
     checkApp(appDir);
 }
 checkRetiredCronDeclarations();
+checkWorkflowContracts();
 
 const defaultRuntimeRoot = join(root, "projects", "may-agent");
 const configuredRuntimeRoot =

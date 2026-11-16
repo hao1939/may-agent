@@ -133,7 +133,7 @@ describe("bounded XHS command execution", () => {
 
   it("stops a stuck search at its existing 60-second command deadline", async () => {
     const fixture = xhsCommandFixture("search");
-    const pending = searchXhs(fixture.root, "query");
+    const pending = searchXhs(fixture.root, "query", undefined, 500);
     try {
       const pid = await fixture.started;
       expect(await pending).toMatchObject({

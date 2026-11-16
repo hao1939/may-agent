@@ -558,7 +558,9 @@ test.each([null, end + 10_000])(
     setSystemTime(now);
     const reads: { metricId: string; cut: number; alertId?: number }[] = [];
     const previousEnabled = process.env.EVALUATION_AUTO_REVIEW_ENABLED;
+    const previousReviewer = process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
     process.env.EVALUATION_AUTO_REVIEW_ENABLED = "true";
+    delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
     let admitted;
     try {
       const event = {
@@ -573,6 +575,8 @@ test.each([null, end + 10_000])(
     } finally {
       if (previousEnabled === undefined) delete process.env.EVALUATION_AUTO_REVIEW_ENABLED;
       else process.env.EVALUATION_AUTO_REVIEW_ENABLED = previousEnabled;
+      if (previousReviewer === undefined) delete process.env.EVALUATION_AUTO_REVIEW_REVIEWER;
+      else process.env.EVALUATION_AUTO_REVIEW_REVIEWER = previousReviewer;
     }
     let modelCalls = 0;
     const ctx = context({

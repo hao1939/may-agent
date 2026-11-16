@@ -91,26 +91,29 @@ export function parseXhsCredentialOutput(
 export function inspectXhsCredential(
   appDir: string,
   signal?: AbortSignal,
+  timeoutMs?: number,
 ): Promise<XhsCredentialStatus> {
-  return runXhsStatus(appDir, "status", signal);
+  return runXhsStatus(appDir, "status", signal, timeoutMs);
 }
 
 /** Workflow action: restore an absent tab, then inspect the actual page. */
 export function prepareXhsSession(
   appDir: string,
   signal?: AbortSignal,
+  timeoutMs?: number,
 ): Promise<XhsCredentialStatus> {
-  return runXhsStatus(appDir, "prepare", signal);
+  return runXhsStatus(appDir, "prepare", signal, timeoutMs);
 }
 
 async function runXhsStatus(
   appDir: string,
   command: "status" | "prepare",
   signal?: AbortSignal,
+  timeoutMs?: number,
 ): Promise<XhsCredentialStatus> {
   let output;
   try {
-    output = await runXhsCommand(appDir, [command], signal);
+    output = await runXhsCommand(appDir, [command], signal, timeoutMs);
   } catch (error) {
     signal?.throwIfAborted();
     return unavailable(

@@ -118,10 +118,11 @@ export async function searchXhs(
   appDir: string,
   query: string,
   signal?: AbortSignal,
+  timeoutMs?: number,
 ): Promise<XhsSearchResult> {
   let output;
   try {
-    output = await runXhsCommand(appDir, ["search", query], signal);
+    output = await runXhsCommand(appDir, ["search", query], signal, timeoutMs);
   } catch (error) {
     signal?.throwIfAborted();
     return {

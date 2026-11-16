@@ -24,6 +24,7 @@ import {
 } from "../may-agent/src/app/core/state/app-inbox-store.js";
 import {
   EVALUATION_OPERATION_METRIC,
+  FAILED_WORKFLOW_RUNS_METRIC,
   reliabilityMetrics,
   REVIEW_LAG_METRIC,
   SQL_LATENCY_METRIC,
@@ -1316,6 +1317,34 @@ test("retains failed attempts after later success and calculates the rate from t
   expect(JSON.parse(observed.note)).toMatchObject({
     failurePercent: 33.333,
     examples: [{ appId: "sample", taskId: "same-task", attemptId: "failed" }],
+  });
+});
+
+test("samples failed top-level workflow runs in a rolling day with bounded examples", () => {
+  const now = Date.now();
+  const insert = db.prepare(
+    `INSERT INTO workflow_runs (runId, app_id, projectId, workflow, task, parentWorkflowRunId, status, startedAt, endedAt, result_reason)
+     VALUES (?, ?, ?, ?, '{}', ?, ?, ?, ?, ?)`,
+  );
+  insert.run("wr_err", "scout-knowledge-lib", "scout-knowledge-lib", "scout-explore", null, "error", now - 20_000, now - 10_000, "feed timeout");
+  insert.run("wr_done", "alex", "alex", "develop-change", null, "done", now - 30_000, now - 15_000, null);
+  insert.run("wr_blocked", "may", "may", "bounded-cleanup", null, "blocked", now - 40_000, now - 20_000, "non-empty diff");
+  insert.run("wr_nested_err", "alex", "alex", "evaluation-report-reader", "wr_done", "error", now - 25_000, now - 18_000, "nested error");
+
+  const observed = sample(FAILED_WORKFLOW_RUNS_METRIC);
+  expect(observed.value).toBe(1);
+  expect(observed.sampleSize).toBe(3);
+  expect(JSON.parse(observed.note)).toMatchObject({
+    errorPercent: 33.333,
+    blockedRuns: 1,
+    examples: [
+      {
+        appId: "scout-knowledge-lib",
+        workflow: "scout-explore",
+        runId: "wr_err",
+        reason: "feed timeout",
+      },
+    ],
   });
 });
 

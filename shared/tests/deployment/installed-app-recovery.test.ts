@@ -89,7 +89,7 @@ describe("installed App operational recovery and startup loadability", () => {
       bus.setDeliveryRecorder(writer.recordDelivery);
 
       const registry = new AppRegistry(async () => [
-        { appDir: join(root, "alex.app"), definition: { ...alexApp, workspace: undefined, schedules: [], metrics: [] } },
+        { appDir: join(root, "alex.app"), definition: { ...alexApp, workspace: undefined, schedules: [], observers: [], metrics: [] } },
         { appDir: join(root, "may.app"), definition: { ...mayApp, workspace: undefined, schedules: [], observers: [], metrics: [] } },
         {
           appDir: join(root, "scout-knowledge-lib.app"),

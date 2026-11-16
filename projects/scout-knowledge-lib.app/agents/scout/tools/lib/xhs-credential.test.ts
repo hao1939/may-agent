@@ -65,7 +65,7 @@ describe("XHS credential status", () => {
 
   it("kills a stuck probe at the existing 30-second deadline", async () => {
     const fixture = xhsCommandFixture();
-    const pending = inspectXhsCredential(fixture.root);
+    const pending = inspectXhsCredential(fixture.root, undefined, 500);
     try {
       const pid = await fixture.started;
       const status = await pending;

@@ -387,6 +387,47 @@ export function harvestSignalsFromSources(
     }
   }
 
+  // 4. May SQLite DB (`workflow_runs` error/blocked anomalies)
+  for (const mayDbPath of sources.mayDbFiles) {
+    let db: Database | undefined;
+    try {
+      db = new Database(mayDbPath, { readonly: true });
+      const hasWorkflowRuns = db
+        .query("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'workflow_runs'")
+        .get();
+      if (hasWorkflowRuns) {
+        const rows = db
+          .query(
+            `SELECT COALESCE(app_id, projectId, 'alex') AS appId,
+                    workflow,
+                    status,
+                    COALESCE(result_reason, result_summary, '') AS detail,
+                    COALESCE(endedAt, startedAt) AS ts
+             FROM workflow_runs
+             WHERE status IN ('error', 'blocked')
+             ORDER BY COALESCE(endedAt, startedAt) DESC
+             LIMIT 40`,
+          )
+          .all() as Array<{
+          appId: string;
+          workflow: string;
+          status: string;
+          detail: string;
+          ts: number;
+        }>;
+        for (const row of rows) {
+          const cleanDetail = row.detail.replace(/\s+/g, " ").trim().slice(0, 360);
+          const syntheticText = `workflow ${row.appId}/${row.workflow} broken (${row.status}): ${cleanDetail || "unexpected failure"}`;
+          pushCandidate("may-db", mayDbPath, syntheticText, row.ts || Date.now());
+        }
+      }
+    } catch {
+      // Ignore locked or incompatible may.db file
+    } finally {
+      db?.close();
+    }
+  }
+
   return signals.slice(-maxSignals);
 }
 

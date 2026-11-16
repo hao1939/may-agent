@@ -101,7 +101,7 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
     },
   };
   const registry = new AppRegistry(async () => [
-    { appDir: alexDir, definition: app },
+    { appDir: alexDir, definition: { ...app, observers: [] } },
     { appDir: mayDir, definition: { ...may, observers: [] } },
   ]);
   await registry.reload();

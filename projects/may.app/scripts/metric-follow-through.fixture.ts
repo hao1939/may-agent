@@ -78,7 +78,7 @@ export async function executeReview(
       taskSnapshot: { live: [], truncated: false },
       events: attempt.events,
     },
-    callAgent: (async (_agent: string, prompt: string) => ({
+    call: (async (_target: string, prompt: string) => ({
       id: "scripted-review",
       kind: "agent",
       status: "done",

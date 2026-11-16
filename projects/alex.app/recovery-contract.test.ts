@@ -72,6 +72,7 @@ async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (t
     ...(options.definition ?? alex),
     workspace: undefined,
     schedules: [],
+    observers: [],
     metrics: [],
   };
   const registry = new AppRegistry(async () => [{ appDir, definition }]);
@@ -181,7 +182,7 @@ async function runtime(execute: TaskAgentRunner["execute"], beforeReconcile?: (t
       db = getDb(root);
       bus = new EventBus();
       if (nextDefinition) {
-        definition = { ...nextDefinition, workspace: undefined, schedules: [], metrics: [] };
+        definition = { ...nextDefinition, workspace: undefined, schedules: [], observers: [], metrics: [] };
         await registry.reload();
       }
       await open();
