@@ -138,7 +138,21 @@ WORKDIR /app
 # durable /app/.state so container restarts heal config drift while preserving
 # symlinked session histories and SQLite databases on /app/.state.
 RUN useradd -u 1000 -m -d /var/lib/mayagent -s /bin/bash mayagent 2>/dev/null || true && \
-    mkdir -p /var/lib/mayagent && \
+    mkdir -p /var/lib/mayagent /etc/profile.d && \
+    printf '%s\n' \
+      'export PATH="/usr/local/bin:${PATH}"' \
+      'export HOME="${HOME:-/var/lib/mayagent}"' \
+      'export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-${HOME}/.pi/agent}"' \
+      'export MODEL_BASE_URL="${MODEL_BASE_URL:-http://host.docker.internal:4000}"' \
+      'export MODEL_API_KEY="${MODEL_API_KEY:-not-needed}"' \
+      'export GEMINI_API_KEY="${GEMINI_API_KEY:-${MODEL_API_KEY}}"' \
+      'export GOOGLE_GEMINI_BASE_URL="${GOOGLE_GEMINI_BASE_URL:-${MODEL_BASE_URL%/}}"' \
+      'export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"' \
+      'export XDG_STATE_HOME="${XDG_STATE_HOME:-/app/.state/cli-state/herdr/state}"' \
+      'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/may-herdr-runtime}"' \
+      > /etc/profile.d/may-agent-env.sh && \
+    chmod 644 /etc/profile.d/may-agent-env.sh && \
+    printf '\n[ -f /etc/profile.d/may-agent-env.sh ] && . /etc/profile.d/may-agent-env.sh\n' >> /etc/bash.bashrc && \
     chown -R mayagent:mayagent /var/lib/mayagent && \
     git config --system --replace-all safe.directory '*'
 

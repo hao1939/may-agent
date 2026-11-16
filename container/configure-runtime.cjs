@@ -234,7 +234,7 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
     ensureSymlink(path.join(geminiHome, "history"), path.join(cliState, "gemini", "history"));
     ensureSymlink(path.join(geminiHome, "tmp"), path.join(cliState, "gemini", "tmp"));
     const geminiProjects = path.join(cliState, "gemini", "projects.json");
-    if (!fs.existsSync(geminiProjects)) fs.writeFileSync(geminiProjects, "{}\n");
+    if (!fs.existsSync(geminiProjects)) fs.writeFileSync(geminiProjects, '{"projects":{}}\n');
     ensureSymlink(path.join(geminiHome, "projects.json"), geminiProjects);
   }
   fs.mkdirSync(claudeHome, { recursive: true });
@@ -363,6 +363,13 @@ if (fs.existsSync(localPiModelsPath)) {
   }
 }
 writeJson(path.join(piDir, "models.json"), piModels);
+
+const piAuthPath = path.join(piDir, "auth.json");
+const piAuth = readJson(piAuthPath);
+for (const provider of ["may-openai", "may-google", "may-anthropic"]) {
+  piAuth[provider] = { type: "api_key", key: "!printf '%s' \"${MODEL_API_KEY:-not-needed}\"" };
+}
+writeJson(piAuthPath, piAuth);
 
 const piSettings = readJson(path.join(piDir, "settings.json"));
 piSettings.defaultProvider = "may-openai";

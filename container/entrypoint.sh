@@ -89,7 +89,22 @@ else
   /usr/local/bin/node /usr/local/bin/configure-runtime.cjs
 fi
 
-# 3. Export runtime environment for supervisord and interactive shells.
+# 3. Export runtime environment for supervisord and interactive shells (`docker exec`).
+if [ "$(id -u)" = "0" ] && [ -d /etc/profile.d ]; then
+  cat > /etc/profile.d/may-agent-env.sh <<EOF
+export PATH="/usr/local/bin:\${PATH}"
+export HOME="\${HOME:-${HOME}}"
+export PI_CODING_AGENT_DIR="\${PI_CODING_AGENT_DIR:-${PI_CODING_AGENT_DIR}}"
+export MODEL_BASE_URL="\${MODEL_BASE_URL:-${MODEL_BASE_URL}}"
+export MODEL_API_KEY="\${MODEL_API_KEY:-not-needed}"
+export GEMINI_API_KEY="\${GEMINI_API_KEY:-\${MODEL_API_KEY}}"
+export GOOGLE_GEMINI_BASE_URL="\${GOOGLE_GEMINI_BASE_URL:-${GOOGLE_GEMINI_BASE_URL}}"
+export XDG_CONFIG_HOME="\${XDG_CONFIG_HOME:-${XDG_CONFIG_HOME}}"
+export XDG_STATE_HOME="\${XDG_STATE_HOME:-${XDG_STATE_HOME}}"
+export XDG_RUNTIME_DIR="\${XDG_RUNTIME_DIR:-${XDG_RUNTIME_DIR}}"
+EOF
+  chmod 644 /etc/profile.d/may-agent-env.sh
+fi
 export CHROME_BIN=""
 [ -x /opt/google/chrome/chrome ] && export CHROME_BIN=/opt/google/chrome/chrome
 [ -z "$CHROME_BIN" ] && [ -x /usr/bin/chromium ] && export CHROME_BIN=/usr/bin/chromium

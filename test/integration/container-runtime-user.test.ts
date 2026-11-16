@@ -107,9 +107,10 @@ describe("container runtime configuration and layout", () => {
     // Native CLI configs contain normalized URLs, full permissions, and never persist MODEL_API_KEY
     const codexRaw = readFileSync(join(home, ".codex/config.toml"), "utf8");
     const piRaw = readFileSync(join(home, ".pi/agent/models.json"), "utf8");
+    const piAuthRaw = readFileSync(join(home, ".pi/agent/auth.json"), "utf8");
     const geminiRaw = readFileSync(join(home, ".gemini/settings.json"), "utf8");
     const claudeRaw = readFileSync(join(home, ".claude/settings.json"), "utf8");
-    for (const raw of [codexRaw, piRaw, geminiRaw, claudeRaw]) {
+    for (const raw of [codexRaw, piRaw, piAuthRaw, geminiRaw, claudeRaw]) {
       expect(raw).not.toContain("secret-key-must-not-persist");
     }
     expect(Bun.TOML.parse(codexRaw)).toMatchObject({
