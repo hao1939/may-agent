@@ -262,11 +262,14 @@ owns that boundary; the [pilot plan](../2b-manual/standalone-to-host-pr-pilot.md
 tracks the connected proof. Existing Task-aware procedures may establish this
 milestone without waiting for the full shared-execution or Conversation cutover.
 Host schedules and delivers; Alex judges readiness from current-head evidence;
-Telegram delivery does not stand in for GitHub approval. The paired local
-activation and advertised watcher are verified, and May has
-delegated one native assignment with a retained request Condition. Native workflow
-publication/follow-up and Telegram delivery remain proof obligations. Exact
-revisions and observed limits are in the [activation record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-paired-activation-and-native-delivery-trial).
+Telegram delivery does not stand in for GitHub approval. One native trial now
+proves this path: Alex's workflow produced [PR #579](https://github.com/hao1939/may-agent/pull/579),
+real watcher facts woke the same Task through CI-running and CI-success results,
+and its retained return reached May and a delivered Telegram review notification.
+It used one operator continuation after a recovery queue delay. The Alex result
+is converged/idle, while the caller Request is fulfilled; terminal Task closure
+was not demonstrated. Exact revisions, timing and delivery limits are in the
+[trial record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#local-paired-activation-and-native-delivery-trial).
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |
@@ -277,16 +280,22 @@ revisions and observed limits are in the [activation record](../archive/implemen
 | Parent-owned storage | Instrument the attempt process and exercise restart/settlement; zero Host SQLite connections in execution children. | Journal cleanup is not this proof, nor a guarantee that every unrelated SQLite test can never contend. |
 | Crash and effect recovery | Lose the acknowledgment after commit and interrupt after an external effect; replay the same receipt, preserve accepted work, inspect uncertain effects, and block unsafe replacement until cleanup is known. | Reuse existing receipts and operation-safety contracts; prove the complete connected worker path, without claiming exactly-once arbitrary effects. |
 | Failure ownership | Return correctable feedback to the active invocation; deliver exhausted/unstartable work to the declared owner, preserving the original obligation. Missing route/recipient stays visible. | Connected recipient-startup/pre-attempt evidence remains separate; saving or admitting a notice does not prove it was handled. |
-| Finite closure | Accepted complete finite assignment closes atomically; oversized/rejected/stale/partial/helper results and standing duties do not. Replay preserves that decision. | Component checks exist; production caller/App eligibility and end-to-end replay remain. |
-| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Local repair is running; live Conversation delegation and request Condition are verified. Full result return, restart and delivery remain to prove. |
-| Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility and paired activation pass; connected blocked/resumed/finished worker evidence remains. |
+| Finite closure | Accepted complete finite assignment closes atomically; oversized/rejected/stale/partial/helper results and standing duties do not. Replay preserves that decision. | Component checks exist; the native trial finished its caller Request but left Alex converged/idle with a closure recommendation. Creator closure and end-to-end replay remain. |
+| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Local repair is running; live delegation, same-Task CI follow-up, caller return and a Telegram send are verified. Restart and addressed durable delivery remain separate proof obligations. |
+| Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility, activation and the native PR-delivery loop pass. Shared-worker blocked/resumed/finished and restart evidence remain. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The next milestone is to finish the admitted native coding trial through the
-existing workflow, PR watcher, same-Task continuation and Telegram delivery. The
-local pair already includes correctness/compatibility repairs and conservative
+The immediate delivery milestone is achieved with the intervention and limits
+above. The next practical trial should remove the operator queue continuation,
+retain an addressed notification receipt through restart and exercise creator
+closure of the finite assignment. Treat the observed queue delay as evidence to
+inspect scheduling and delegated human intent, not proof of starvation or a
+reason to add another scheduler. A real failure/comment repair cycle remains
+separate evidence; do not manufacture one.
+
+The local pair already includes correctness/compatibility repairs and conservative
 parent supervision. Shared-worker policy-derived bounds, restart recovery and
 authorized finite completion retain their separate acceptance obligations.
 Removal of mechanical housekeeping and Conversation ownership cutover follow
-that evidence. Source checks remain separate from any installation rollout or
+that evidence. Source checks remain separate from wider rollout or an unmeasured
 behavior-improvement claim.

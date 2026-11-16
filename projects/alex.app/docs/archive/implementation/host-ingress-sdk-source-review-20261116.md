@@ -234,13 +234,46 @@ The preceding old-binary App reload failed safely with a bare â€œBundle failedâ€
 diagnostic; its failure did not certify activation. Improving that diagnostic is
 the bounded useful coding assignment for the native trial.
 
-May admitted the assignment, created a Topic/Request, delegated to one Alex Task
-and accepted a waiting result retaining its exact request Condition. The first
-publication returned a database-lock error and an exact retry lost its reply;
-readback confirmed one durable input and one target Task. No duplicate assignment
-or direct state mutation was used. This is live admission/delegation evidence,
-not workflow, watcher continuation or Telegram-delivery proof. Existing recovery
-work currently precedes the queued pilot.
+The native trial completed through the existing Task/workflow/watcher/Condition
+and retained caller-return path. May admitted one assignment and delegated one
+Alex Task. The first publication reported a database lock and an exact retry
+lost its reply; readback confirmed one durable input. Recovery work delayed
+startup about eleven minutes; one supported exact-Task continuation was sent.
+No duplicate assignment, direct state mutation or renewed workflow allowance
+was used.
+
+Alex invoked the installed `develop-change` with the explicit Host checkout.
+Bob provided design/review and tech-lead implemented a two-file fix at
+`b5fd2c920cd9c2c283434062382ec1ac5ac65c3e`, using **one of three cumulative rounds**.
+Ten targeted tests and `check:ci` passed. Alex published/read back stacked
+[PR #579](https://github.com/hao1939/may-agent/pull/579), retaining its original
+Task owner block, branch, head and base above #577.
+
+The first accepted result waited on a fingerprint-change Condition. The exact
+resource observer supplied real CI-running facts; Host woke the same Task, and
+Alex accepted another waiting result rearming from that fingerprint. The normal
+15-minute live watcher then supplied both Quality and Container successful on
+the published head. A third accepted Alex result returned the ready PR to May.
+May's caller started about two seconds later, saved the GitHub-review notice and
+fulfilled the original Request. Telegram returned a provider message ID for the
+single-chunk notification. Alex admission to Telegram took about **26 minutes**;
+CI completion to the next watcher observation took about **six minutes**.
+
+This proves a real CI transition and same-Task continuation, not a live repair
+cycle or human-comment response: no repair-required failure or new comment
+occurred. May corrected a rejected communication shape within its invocation.
+The result did not require a Telegram approval or merge/deployment of the fix.
+
+Limits observed in this run remain explicit:
+
+- One operator continuation followed the recovery queue delay; zero-intervention
+  operation under that backlog is not established.
+- Alex's accepted coding result is converged/idle with no Conditions; the Task
+  remains nonterminal. Its closure recommendation did not execute creator closure.
+  The caller Request is fulfilled; these are independent facts.
+- The notification used the existing default-destination Conversation mirror.
+  Its provider message row proves the send. The addressed-message durable
+  delivery ledger and uncertain-send/restart behavior were not exercised.
 
 The named completion-Hook API and Conversation-wrapper cutover remain absent.
 This trial uses the existing retained caller-result path. Parent supervision now
