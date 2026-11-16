@@ -110,7 +110,10 @@ docker exec "$root_container_id" /bin/sh -ec '
   test "$(getent passwd root | cut -d: -f3)" = 0
   test "$(stat -c %u:%g /app)" = 1234:1235
   test "$(stat -c %u:%g /tmp/may-agent-ttyd.sock)" = 0:0
-  herdr --session may-terminal2 status | grep -q "status: running"
+  test "$HERDR_SESSION" = may-terminal2
+  herdr status | grep -q "status: running"
+  herdr status | grep -q "sessions/may-terminal2/herdr.sock"
+  test "$(herdr session list | grep -c "running")" -eq 1
 '
 docker exec "$root_container_id" python3 -c '
 import pathlib

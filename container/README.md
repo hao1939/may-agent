@@ -31,7 +31,7 @@ Rather than spawning a chain of shell setup scripts on startup or intercepting C
 ```
 
 - **Fast startup & self-healing restart:** On container start (`docker run` or `docker restart`), `entrypoint.sh` runs a single fast Node pass (`configure-runtime.cjs`) as root that idempotently migrates legacy `/app/.state` files, preserves `~/.ssh` keys safely, links durable session directories, and refreshes managed CLI/Herdr config files if `MODEL_BASE_URL` or model env vars were overridden. Startup does not remap accounts or recursively chown mounted state.
-- **Native environment & config only:** `herdr`, `pi`, `codex`, `gemini`, and `claude` run directly without wrapper scripts; Herdr's `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_RUNTIME_DIR` and Gemini's `GEMINI_API_KEY` / `GOOGLE_GEMINI_BASE_URL` are exported as native container `ENV` defaults.
+- **Native environment & config only:** `herdr`, `pi`, `codex`, `gemini`, and `claude` run directly without wrapper scripts; Herdr's `HERDR_SESSION=may-terminal2`, `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_RUNTIME_DIR` and Gemini's `GEMINI_API_KEY` / `GOOGLE_GEMINI_BASE_URL` are exported as native container `ENV` defaults.
 
 ## Runtime identity and `docker exec`
 
@@ -47,11 +47,11 @@ an `ssh -F` wrapper. Existing root SSH files and legacy state are migrated by th
 same conflict-checking helper. Only the persisted SSH directory/config ownership
 and modes are normalized for OpenSSH trust checks; key material is preserved.
 
-Attach with native commands:
+Attach with native commands (`HERDR_SESSION=may-terminal2` is pre-set so plain `herdr` attaches to the shared web-terminal server instead of spawning a second `default` server):
 
 ```bash
 docker exec -it may-agent bash
-herdr --session may-terminal2
+herdr
 ```
 
 The named session and durable CLI state paths do not change. The image-owned

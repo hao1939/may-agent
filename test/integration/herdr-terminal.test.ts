@@ -25,13 +25,15 @@ describe("Herdr web terminal", () => {
     expect(source).not.toContain("url.port");
   });
 
-  test("uses one persistent Herdr session for the server and browser clients", () => {
+  test("uses one persistent Herdr session for the server, browser clients, and docker exec shells", () => {
     const source = readFileSync(resolve(repoRoot, "container/supervisord.conf"), "utf8");
+    const dockerfile = readFileSync(resolve(repoRoot, "container/Dockerfile"), "utf8");
 
     expect(source).toContain("[program:terminal-herdr]");
     expect(source).toContain("[program:terminal-ttyd]");
     expect(source.match(/--session may-terminal2/g)).toHaveLength(2);
     expect(source.match(/\/usr\/local\/bin\/herdr/g)).toHaveLength(2);
+    expect(dockerfile).toContain("ENV HERDR_SESSION=may-terminal2");
     expect(source).toContain("--base-path /terminal");
     expect(source).not.toContain("XDG_CONFIG_HOME");
     expect(source).not.toContain("MAY_TERMINAL_BRIDGE");

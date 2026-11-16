@@ -149,6 +149,7 @@ RUN mkdir -p /root /etc/profile.d && \
       'export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"' \
       'export XDG_STATE_HOME="${XDG_STATE_HOME:-/app/.state/cli-state/herdr/state}"' \
       'export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp/may-herdr-runtime}"' \
+      'export HERDR_SESSION="${HERDR_SESSION:-may-terminal2}"' \
       > /etc/profile.d/may-agent-env.sh && \
     chmod 644 /etc/profile.d/may-agent-env.sh && \
     printf '\n[ -f /etc/profile.d/may-agent-env.sh ] && . /etc/profile.d/may-agent-env.sh\n' >> /etc/bash.bashrc && \
@@ -256,6 +257,7 @@ ENV PI_CODING_AGENT_DIR=/root/.pi/agent
 ENV XDG_CONFIG_HOME=/root/.config
 ENV XDG_STATE_HOME=/app/.state/cli-state/herdr/state
 ENV XDG_RUNTIME_DIR=/tmp/may-herdr-runtime
+ENV HERDR_SESSION=may-terminal2
 ENV MODEL_BASE_URL=http://host.docker.internal:4000
 ENV PATH=/usr/local/bin:$PATH
 
