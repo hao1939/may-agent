@@ -241,6 +241,9 @@ export function validateAppDefinition(definition: unknown): string[] {
       if (tasks.validateAction !== undefined && typeof tasks.validateAction !== "function") {
         errors.push(`App ${appId} task validateAction must be a function`);
       }
+      if (tasks.translateBlockedResult !== undefined && typeof tasks.translateBlockedResult !== "function") {
+        errors.push(`App ${appId} task translateBlockedResult must be a function`);
+      }
       if (tasks.closeOnResult !== undefined && typeof tasks.closeOnResult !== "function") {
         errors.push(`App ${appId} task closeOnResult must be a function`);
       }

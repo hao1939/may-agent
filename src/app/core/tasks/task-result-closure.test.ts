@@ -156,6 +156,36 @@ test("convergence and an owner recommendation without App authorization both rem
   expect(g.read.get("review")?.status).toBe("idle");
 });
 
+test("Host finite-done provenance closes an ordinary App-created assignment without global legacy closure", () => {
+  const f = fixture();
+  f.config.closeOnResult = undefined;
+  const claim = f.claim();
+  const applied = completeAppTask(f.config, claim, {
+    summary: "Finite execution completed",
+    result: { answer: 42 },
+    hostCompletion: "finite-done",
+    conversation: false,
+  });
+  expect(applied.cancelledTasks?.[0]?.cancellation).toMatchObject({
+    kind: "closed",
+    acceptedResultAttemptId: claim.attemptId,
+    decidedBy: { kind: "host-execution" },
+  });
+  expect(f.read.get("review")).toMatchObject({ status: "closed", result: { answer: 42 } });
+});
+
+test("Host finite-done provenance never auto-closes Conversation responsibility", () => {
+  const f = fixture();
+  f.config.closeOnResult = undefined;
+  completeAppTask(f.config, f.claim(), {
+    summary: "Conversation turn answered",
+    hostCompletion: "finite-done",
+    conversation: true,
+  });
+  expect(f.read.get("review")?.status).toBe("idle");
+  expect(f.store.readCancellation("review")).toBeNull();
+});
+
 test("new input racing the accepted result is retained rather than closed", () => {
   const f = fixture();
   const first = f.claim();

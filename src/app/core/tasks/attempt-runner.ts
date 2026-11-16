@@ -479,6 +479,8 @@ async function runClaimedTask(
                 acceptanceBasis,
                 workspace: inspected,
                 acceptedLiveEventIds: report.acceptedLiveEventIds,
+                hostCompletion: report.hostCompletion,
+                conversation: isConversationTask(config, claim.taskId),
               });
               if (apply.status === "applied") settleTaskCommunicationInputs(config, claim);
             },

@@ -232,6 +232,7 @@ export type AppTaskCancellation = {
     | { kind: "human" }
     | { kind: "app"; agent: string; attemptId: string }
     | { kind: "app-policy" }
+    | { kind: "host-execution" }
     | { kind: "creator"; creator: ResourceCreator };
   response?: string;
   result?: Record<string, unknown>;

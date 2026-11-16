@@ -21,13 +21,15 @@ export type TaskCapabilityRun = {
   executionFailed?: boolean;
   /** The workflow reported a blocker; retain its diagnosis for the next reconciliation. */
   handlerBlocked?: true;
+  /** Host provenance: a Task-blind public run explicitly returned done. */
+  hostCompletion?: "finite-done";
   workspacePreparationFailed?: boolean;
 };
 
 /** Execution is over; retry only the fenced effects, never the executor. */
 export type PendingTaskSettlement = {
   claim: Omit<AppTaskClaim, "settlement">;
-  report: Pick<TaskCapabilityRun, "handlerResult" | "runId" | "acceptedLiveEventIds">;
+  report: Pick<TaskCapabilityRun, "handlerResult" | "runId" | "acceptedLiveEventIds" | "hostCompletion">;
   acceptanceBasis: TaskAcceptanceBasis;
   workspace?: PreparedTaskWorkspace;
 };

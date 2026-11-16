@@ -3917,6 +3917,9 @@ export function completeAppTask(
     workspace?: { metadata: AppTaskWorkspace; removable: boolean };
     acceptedLiveEventIds?: number[];
     inputKeys?: string[];
+    /** Host-only provenance from the Task-blind public execution boundary. */
+    hostCompletion?: "finite-done";
+    conversation?: boolean;
   },
 ): {
   status: "applied" | "stale";
@@ -3999,7 +4002,10 @@ export function completeAppTask(
     };
   }
   const resourceMutation = finishResourceMutationScope(mutationScope, tree);
-  const closure = acceptedTaskClosure(config, tree, resource, claim);
+  const closure = acceptedTaskClosure(config, tree, resource, claim, {
+    hostCompletion: input.hostCompletion,
+    conversation: input.conversation === true,
+  });
   commitTaskMutation(config, tree, { resourceMutation: {
     ...resourceMutation,
     admissions,
@@ -4020,34 +4026,49 @@ function acceptedTaskClosure(
   tree: TaskTree,
   resource: AppTaskResource,
   claim: AppTaskClaim,
+  provenance: { hostCompletion?: "finite-done"; conversation: boolean },
 ): AppTaskCancellation | undefined {
   const creator = resource.metadata.creator;
   const accepted = tree.attempts?.[claim.attemptId]?.acceptedResult;
+  const hostFiniteDone = provenance.hostCompletion === "finite-done" && !provenance.conversation;
   if (
-    !config.closeOnResult || creator?.appId !== config.resourceStore.appId || creator.taskId !== undefined ||
+    (!hostFiniteDone && !config.closeOnResult) ||
+    creator?.appId !== config.resourceStore.appId || creator.taskId !== undefined ||
     accepted?.state !== "converged" || resource.status.phase !== "converged" ||
     resource.status.currentAttemptId || tree.taskTriggers?.[claim.taskId]?.event ||
     resource.status.conditionIds?.length || resource.status.reviewAt !== undefined ||
     Object.keys(resource.status.inputWaits ?? {}).length
   ) return undefined;
-  const decision = config.closeOnResult(structuredClone({
-    // Internal intents normalize assignment to owner; App policy receives the
-    // public agent field, matching the Task read contract.
-    task: { ...resourceIntent(resource), ...(resource.spec.owner ? { agent: resource.spec.owner } : {}) },
-    creator,
-    acceptedResult: { ...accepted, state: "converged" as const },
-  }));
-  if (decision === null) return undefined;
-  if (!decision || typeof decision.reason !== "string" || !decision.reason.trim())
-    throw new Error("App closeOnResult must return null or a nonblank closure reason");
-  const reason = decision.reason.trim();
+
+  let reason: string;
+  let decidedBy: AppTaskCancellation["decidedBy"];
+  let summary: string;
+  if (hostFiniteDone) {
+    reason = "Public execution returned done for the finite assignment";
+    summary = `Closed by Host settlement: ${reason}`;
+    decidedBy = { kind: "host-execution" };
+  } else {
+    const decision = config.closeOnResult!(structuredClone({
+      // Internal intents normalize assignment to owner; App policy receives the
+      // public agent field, matching the Task read contract.
+      task: { ...resourceIntent(resource), ...(resource.spec.owner ? { agent: resource.spec.owner } : {}) },
+      creator,
+      acceptedResult: { ...accepted, state: "converged" as const },
+    }));
+    if (decision === null) return undefined;
+    if (!decision || typeof decision.reason !== "string" || !decision.reason.trim())
+      throw new Error("App closeOnResult must return null or a nonblank closure reason");
+    reason = decision.reason.trim();
+    summary = `Closed by App policy: ${reason}`;
+    decidedBy = { kind: "app-policy" };
+  }
   return {
     kind: "closed", acceptedResultAttemptId: claim.attemptId,
     appId: config.resourceStore.appId, taskId: claim.taskId,
     generation: resource.metadata.generation, resourceVersion: resource.metadata.resourceVersion,
-    outcome: resource.spec.outcome, reason, summary: `Closed by App policy: ${reason}`,
+    outcome: resource.spec.outcome, reason, summary,
     cancelledAt: resource.status.updatedAt,
-    decidedBy: { kind: "app-policy" },
+    decidedBy,
     response: resource.status.response, result: resource.status.result, facts: resource.status.facts,
   };
 }

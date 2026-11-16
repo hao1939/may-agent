@@ -35,7 +35,7 @@ import type { Static, TSchema } from "typebox";
 import type { AppConversationRequest } from "./app-conversation.js";
 import type { AppEvent, EventSelector } from "./event.js";
 import type { ObservationContract, ResourceObserver } from "./observer.js";
-import type { Condition, ResourceCreator, TaskAction, TaskIntent, TaskStatus } from "./task.js";
+import type { Condition, ResourceCreator, TaskAction, TaskAppRequest, TaskIntent, TaskStatus } from "./task.js";
 import type { MetricDefinition, ObserverContext, ObserverSnapshot, TaskAttempt, TaskDetail } from "./workflow.js";
 
 export { Type } from "typebox";
@@ -327,11 +327,30 @@ export type AppWorkspace = {
   branch?: string;
 };
 
+export type AppTaskBlockedSettlement = {
+  /** Relative continuation delay translated by the Host to its absolute reviewAt clock. */
+  retryAfterMs?: number;
+  conditions?: Condition[];
+  requests?: TaskAppRequest[];
+};
+
+export type AppTaskBlockedResultContext = {
+  task: Readonly<TaskDetail>;
+  summary: string;
+  output?: unknown;
+  facts?: unknown;
+};
+
 /** Optional durable-task policy. Mechanics and storage remain host-private. */
 export type AppTaskPolicy = {
   validateAction?: (action: TaskAction) => string | null;
   /** Optional App-specific semantic admission for externally observable waits. */
   validateCondition?: (condition: Condition) => string | null;
+  /** Pure App boundary from domain blocked data to Host wait mechanics. Returning
+   * null retains a genuine wait without inventing a timer, Condition or request. */
+  translateBlockedResult?: (
+    context: AppTaskBlockedResultContext,
+  ) => AppTaskBlockedSettlement | null;
   /** Pure, opt-in App decision after a converged result is accepted. Only applies
    * to this App's own App-created assignments, never Task-created/delegated work.
    * Return a nonblank reason to end responsibility, or null to retain it. Inspect
