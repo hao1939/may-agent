@@ -44,3 +44,6 @@ and records Alex's source-adoption decision with mixed cost and explicit limits.
 The [Alex-owned activation and fresh replay](alex-owned-activation-replay-20261116.md)
 verifies the later source-root repair in hosted execution and records remaining
 binding, evidence-retention, cost-scope and publication follow-through gaps.
+The [cycle evidence handoff trial](cycle-evidence-handoff-trial-20261116.md)
+keeps the cycle itself as the target and verifies a durable record after closure,
+including an independently rejected first version and Alex's corrected revision.

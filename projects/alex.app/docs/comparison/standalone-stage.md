@@ -83,6 +83,32 @@ Review child-session trails for model usage/cost where exposed. Missing usage
 remains unknown. Fixtures establish mechanics, not live model quality, and a
 standalone result does not settle any existing Host Task.
 
+## Hand off evidence from a hosted trial
+
+Choose a retained output location before starting a hosted experiment. Promised
+evidence must live outside its disposable Task worktree or in durable public
+records. A clean hosted worktree can be removed at settlement, including ignored
+`.state/` files. For manual invocations inside such a worktree, put `outputRoot`
+outside it when the caller needs the evidence afterward.
+
+Keep one compact cycle record that links the agreed objective and hypothesis,
+input/source identities, actual executions, supporting artifacts, owner decision
+and limits, time/cost scope, manual interventions and next owner/action. Bind
+local evidence links to file hashes and give direct JSON pointers or exact public
+raw-line references where ordinary previews are truncated. Historical execution
+paths identify where work ran; label absent paths and reference surviving evidence.
+Report full Task estimates separately from specialist-only usage and unknown
+billing. A retained recommendation does not commission the suggested target edit.
+
+Before finishing, read back the record and verify its live artifact references.
+Resolve each declared JSON pointer against the referenced document as well as
+checking its file hash, and derive record/validation timestamps from the clock.
+Return its absolute path and hash in the accepted Task result. The caller then
+checks the record after Task closure, using only it and its direct evidence links.
+Preserve failed/inconclusive results and distinguish transcript recovery from
+original artifact copies. This is an evidence handoff check; it does not establish
+unattended recovery or improved target behavior.
+
 ## Recover a development invocation manually
 
 The runner creates a fresh invocation and does not restore a previous Task

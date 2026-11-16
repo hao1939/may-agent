@@ -34,6 +34,9 @@ workflow output persistence and manual successor admission remain concrete gaps.
 The user's subsequent scope clarification keeps the improvement cycle as the
 target. Scout remains retained test evidence; its guidance proposal is deferred
 and does not establish a priority to change Scout.
+The [cycle evidence handoff trial](cycle-evidence-handoff-trial-20261116.md)
+now verifies an externally retained record after Task closure, with one
+independent rejection and correction of its field locator/timestamps.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -197,7 +200,7 @@ identified its stale callable snapshot; the operator admitted the successor. Bot
 closed with accepted results, without in-attempt correction. This is a manually
 observed handoff, not unattended ownership of the complete improvement cycle.
 
-The next target is the Alex/Gym improvement cycle itself. The user clarified that
+The current target is the Alex/Gym improvement cycle itself. The user clarified that
 Scout is a retained test case, not an established source of recurring user
 trouble. Preserve Alex's Scout guidance hypothesis as a deferred suggestion;
 an actionable diagnosis alone does not establish its priority or commission a
@@ -228,6 +231,22 @@ public accepted results, workflow/session reads and exact raw-line access where
 needed. This tests one evidence-retention and handoff improvement; it does not
 prove unattended execution, better target behavior or lower model cost. Do not
 add a scheduler, dashboard or generic receipt framework for this single case.
+
+The [handoff trial](cycle-evidence-handoff-trial-20261116.md) has now exercised
+this boundary. Its first record survived Task removal but independent review
+rejected an invalid JSON pointer and hardcoded future timestamps. Alex's retained
+revision passed post-closure hash, pointer, identity, cost-scope and frozen-input
+checks. The two finite attempts report a combined $1.7027728 model estimate,
+separate from the historical cycle costs they record. One operator rejection and
+correction admission were required; reduced effort or cost is not established.
+
+Use the verified recording practice in the next authorized bounded cycle,
+following the [manual handoff guide](standalone-stage.md#hand-off-evidence-from-a-hosted-trial).
+Keep its post-closure inspection and output retention with the operator until
+ordinary hosted execution proves those responsibilities. Workflow structured
+result persistence remains a concrete gap, with public raw-line recovery as the
+existing fallback. No further source repair or target experiment is commissioned
+by completing this handoff trial.
 
 The projection's executable checks are newly derived from real evidence; original
 finishes remain success, human labels remain unreviewed and unavailable usage
