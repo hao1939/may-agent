@@ -122,6 +122,10 @@ export interface TrialDiagnostic {
   };
 }
 
+type SourceRootSelection =
+  | { status: "selected"; root: string; reason: string }
+  | { status: "missing"; issue: string; candidates: Array<{ root: string; eligible: boolean }> };
+
 type CanonicalResolution =
   | { status: "resolved"; directory: string; identity: string }
   | { status: "missing" | "ambiguous"; issue: string; candidates: string[] };
@@ -137,6 +141,56 @@ function containedPath(root: string, path: string): boolean {
   const resolvedRoot = resolve(root);
   const resolvedPath = resolve(path);
   return resolvedPath === resolvedRoot || resolvedPath.startsWith(`${resolvedRoot}${sep}`);
+}
+
+function hasAgentSourceLayout(root: string): boolean {
+  try {
+    const agentsDir = join(root, "agents");
+    if (existsSync(agentsDir) && readdirSync(agentsDir, { withFileTypes: true }).some(
+      (entry) => entry.isDirectory() && existsSync(join(agentsDir, entry.name, "agent.json")),
+    )) return true;
+
+    const projectsDir = join(root, "projects");
+    return existsSync(projectsDir) && readdirSync(projectsDir, { withFileTypes: true }).some(
+      (entry) => entry.isDirectory() && entry.name.endsWith(".app") && existsSync(join(projectsDir, entry.name, "agents")),
+    );
+  } catch {
+    return false;
+  }
+}
+
+function selectSourceRoot(workRoot: string, projectRoot: string): SourceRootSelection {
+  const candidates = [...new Set([workRoot, projectRoot].map((root) => resolve(root)))].map((root) => {
+    try {
+      const realRoot = realpathSync(root);
+      return { root: realRoot, eligible: hasAgentSourceLayout(realRoot) };
+    } catch {
+      return { root, eligible: false };
+    }
+  });
+  const workCandidate = candidates.find((candidate) => candidate.root === (() => {
+    try { return realpathSync(resolve(workRoot)); } catch { return resolve(workRoot); }
+  })());
+  if (workCandidate?.eligible) {
+    return {
+      status: "selected",
+      root: workCandidate.root,
+      reason: "selected explicit work root because it contains an agent source layout",
+    };
+  }
+  const projectCandidate = candidates.find((candidate) => candidate.eligible);
+  if (projectCandidate) {
+    return {
+      status: "selected",
+      root: projectCandidate.root,
+      reason: "selected explicit project root because the work root is not an agent source layout",
+    };
+  }
+  return {
+    status: "missing",
+    issue: "No canonical source root is available from the explicit work/project roots.",
+    candidates,
+  };
 }
 
 function resolveRetainedFile(
@@ -184,13 +238,13 @@ function readBoundedEvidence(
   }
 }
 
-function resolveCanonicalAgentDir(projectRoot: string, agentOrWorkflow: string): CanonicalResolution {
+function resolveCanonicalAgentDir(sourceRoot: string, agentOrWorkflow: string): CanonicalResolution {
   const owner = agentOrWorkflow.split("/", 1)[0];
   const candidates: string[] = [];
-  const globalDir = join(projectRoot, "agents", owner);
+  const globalDir = join(sourceRoot, "agents", owner);
   if (existsSync(join(globalDir, "agent.json"))) candidates.push(globalDir);
 
-  const projectsDir = join(projectRoot, "projects");
+  const projectsDir = join(sourceRoot, "projects");
   if (existsSync(projectsDir)) {
     for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
       if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
@@ -199,15 +253,34 @@ function resolveCanonicalAgentDir(projectRoot: string, agentOrWorkflow: string):
     }
   }
 
-  const identities = candidates.map((candidate) => repoIdentity(projectRoot, candidate)).sort();
-  if (candidates.length === 0) {
+  const resolvedCandidates: string[] = [];
+  const unsafeCandidates: string[] = [];
+  for (const candidate of candidates) {
+    try {
+      const realCandidate = realpathSync(candidate);
+      if (containedPath(sourceRoot, realCandidate)) resolvedCandidates.push(realCandidate);
+      else unsafeCandidates.push(repoIdentity(sourceRoot, candidate));
+    } catch {
+      unsafeCandidates.push(repoIdentity(sourceRoot, candidate));
+    }
+  }
+  const identities = resolvedCandidates.map((candidate) => repoIdentity(sourceRoot, candidate)).sort();
+  if (unsafeCandidates.length > 0) {
+    const allCandidates = [...identities, ...unsafeCandidates].sort();
+    return {
+      status: "ambiguous",
+      issue: `Canonical source candidates are ambiguous or escape the selected source root for target ${agentOrWorkflow}: ${allCandidates.join(", ")}`,
+      candidates: allCandidates,
+    };
+  }
+  if (resolvedCandidates.length === 0) {
     return {
       status: "missing",
       issue: `No canonical source directory resolves uniquely for target: ${agentOrWorkflow}`,
       candidates: [],
     };
   }
-  if (candidates.length > 1) {
+  if (resolvedCandidates.length > 1) {
     return {
       status: "ambiguous",
       issue: `Canonical source directory is ambiguous for target ${agentOrWorkflow}: ${identities.join(", ")}`,
@@ -216,21 +289,21 @@ function resolveCanonicalAgentDir(projectRoot: string, agentOrWorkflow: string):
   }
   return {
     status: "resolved",
-    directory: realpathSync(candidates[0]),
+    directory: resolvedCandidates[0],
     identity: identities[0],
   };
 }
 
 function unsupportedProposalReason(
   proposal: ImprovementProposal,
-  projectRoot: string,
+  sourceRoot: string,
   canonicalDir: string,
   requirementIds: Set<string>,
   outputIds: Set<string>,
 ): string | null {
   for (const change of proposal.proposed_changes) {
     if (isAbsolute(change.file)) return `Unsupported actionable source path: ${change.file}`;
-    const proposedPath = resolve(projectRoot, change.file);
+    const proposedPath = resolve(sourceRoot, change.file);
     if (!existsSync(proposedPath)) return `Unsupported actionable source path: ${change.file}`;
     const actualPath = realpathSync(proposedPath);
     if (!containedPath(canonicalDir, actualPath) || !lstatSync(actualPath).isFile()) {
@@ -416,11 +489,19 @@ function insufficientProposal(target: string, regimes: string[], reason: string)
 }
 
 export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
-  const workRoot = ctx.workspace?.root ?? ctx.workspace?.projectRoot ?? process.cwd();
-  const projectRoot = ctx.workspace?.projectRoot ?? workRoot;
+  const explicitWorkRoot = ctx.workspace?.root ?? ctx.workspace?.projectRoot;
+  const explicitProjectRoot = ctx.workspace?.projectRoot ?? ctx.workspace?.root;
+  if (!explicitWorkRoot || !explicitProjectRoot) {
+    return ctx.blocked("diagnose-improvement requires an explicit work root and project root");
+  }
+  const workRoot = realpathSync(explicitWorkRoot);
+  const projectRoot = realpathSync(explicitProjectRoot);
   const baselineDir = resolve(workRoot, ctx.input.baselineDir);
   const diag = extractBaselineDiagnostics(baselineDir);
-  const canonical = resolveCanonicalAgentDir(projectRoot, diag.target);
+  const sourceRoot = selectSourceRoot(workRoot, projectRoot);
+  const canonical: CanonicalResolution = sourceRoot.status === "selected"
+    ? resolveCanonicalAgentDir(sourceRoot.root, diag.target)
+    : { status: "missing", issue: sourceRoot.issue, candidates: [] };
   const hasEvidenceGap =
     diag.trials.length === 0 || diag.trials.some((trial) => trial.evidenceIssues.length > 0);
   const hasExecutionFailure = diag.trials.some(
@@ -533,7 +614,7 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
       const outputIds = new Set(diag.trials.map((trial) => trial.retainedEvidence.artifact.id));
       const unsupported = unsupportedProposalReason(
         proposal,
-        projectRoot,
+        sourceRoot.status === "selected" ? sourceRoot.root : projectRoot,
         canonical.directory,
         requirementIds,
         outputIds,
@@ -552,7 +633,12 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
     canonical.status === "resolved"
   ) {
     const candidateName = ctx.input.candidateName.trim();
-    preparedLabDir = join(projectRoot, "agents", ".lab", candidateName);
+    const labRoot = join(sourceRoot.status === "selected" ? sourceRoot.root : projectRoot, "agents", ".lab");
+    const candidateDir = resolve(labRoot, candidateName);
+    if (candidateDir === resolve(labRoot) || !containedPath(labRoot, candidateDir)) {
+      return ctx.blocked(`Unsupported candidate name outside the selected source root: ${candidateName}`);
+    }
+    preparedLabDir = candidateDir;
     rmSync(preparedLabDir, { recursive: true, force: true });
     mkdirSync(preparedLabDir, { recursive: true });
     cpSync(canonical.directory, preparedLabDir, { recursive: true });
@@ -596,6 +682,8 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
         benchmark: diag.benchmark,
         detectedRegimes: diag.detectedRegimes,
         aggregateUsage: diag.aggregateUsage,
+        sourceRoot: sourceRoot.status === "selected" ? sourceRoot.root : undefined,
+        sourceRootSelection: sourceRoot.status === "selected" ? sourceRoot.reason : sourceRoot.issue,
         currentSourceIdentity: canonical.status === "resolved" ? canonical.identity : undefined,
         historicalSourceIdentity: diag.historicalSourceIdentity,
         recommendedStage: proposal.recommended_stage,

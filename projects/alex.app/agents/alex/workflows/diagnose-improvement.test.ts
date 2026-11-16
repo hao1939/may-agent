@@ -402,6 +402,152 @@ describe("diagnose-improvement workflow", () => {
     } finally { rmSync(baselineDir, { recursive: true, force: true }); }
   });
 
+  test("uses the explicit isolated work repository for hosted App-shaped roots and .lab operations", async () => {
+    const repo = mkdtempSync(join(tmpdir(), "gym-diag-hosted-repo-"));
+    const domainRoot = mkdtempSync(join(tmpdir(), "gym-diag-hosted-domain-"));
+    const baselineDir = makeBaseline("scout", [{ scenario: "hosted", verdict: "fail" }]);
+    const canonicalDir = addAgent(repo, "scout");
+    const appRoot = join(domainRoot, "projects", "alex.app");
+    mkdirSync(join(appRoot, "agents", "alex"), { recursive: true });
+    writeFileSync(join(appRoot, "agents", "alex", "agent.json"), "{}\n");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir, candidateName: "hosted-candidate" },
+        workspace: { appRoot, projectRoot: appRoot, root: repo, output: repo },
+        mocks: {
+          gym: (step) => {
+            expect(step.task).toContain(`Current canonical source directory: ${canonicalDir}`);
+            expect(step.task).toContain("Current canonical source identity: `projects/fixture.app/agents/scout`");
+            return { status: "done", output: proposal(
+              "projects/fixture.app/agents/scout/AGENTS.md",
+              { requirement: ["hosted#1:requirement"], output: ["hosted#1:output"] },
+            ) };
+          },
+          "tech-lead": (step) => {
+            expect(step.task).toContain(join(repo, "agents", ".lab", "hosted-candidate"));
+            return { status: "done", output: { modified_files: ["AGENTS.md"], summary: "Prepared hosted candidate." } };
+          },
+        },
+      });
+      expect(run.status).toBe("done");
+      expect(output(run).disposition).toBe("actionable");
+      expect((run.report.result?.output as any)?.facts.sourceRoot).toBe(repo);
+      expect((run.report.result?.output as any)?.facts.sourceRootSelection).toContain("explicit work root");
+      expect((run.report.result?.output as any)?.facts.preparedLabDir).toBe(join(repo, "agents", ".lab", "hosted-candidate"));
+      expect(existsSync(join(repo, "agents", ".lab", "hosted-candidate", "agent.json"))).toBe(true);
+      expect(existsSync(join(appRoot, "agents", ".lab", "hosted-candidate"))).toBe(false);
+    } finally {
+      rmSync(repo, { recursive: true, force: true });
+      rmSync(domainRoot, { recursive: true, force: true });
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("preserves a separate project source root when the work root is only scratch", async () => {
+    const scratch = mkdtempSync(join(tmpdir(), "gym-diag-scratch-"));
+    const source = mkdtempSync(join(tmpdir(), "gym-diag-source-"));
+    const baselineDir = makeBaseline("alex", [{ scenario: "separate", verdict: "fail" }]);
+    addAgent(source, "alex");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir }, workspace: { appRoot: source, projectRoot: source, root: scratch, output: scratch },
+        mocks: { gym: () => ({ status: "done", output: proposal(
+          "projects/fixture.app/agents/alex/AGENTS.md",
+          { requirement: ["separate#1:requirement"], output: ["separate#1:output"] },
+        ) }) },
+      });
+      expect(output(run).disposition).toBe("actionable");
+      expect((run.report.result?.output as any)?.facts.sourceRoot).toBe(source);
+      expect((run.report.result?.output as any)?.facts.sourceRootSelection).toContain("explicit project root");
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+      rmSync(source, { recursive: true, force: true });
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("keeps the isolated work repository authoritative when another explicit root also has source", async () => {
+    const isolated = mkdtempSync(join(tmpdir(), "gym-diag-isolated-"));
+    const otherSource = mkdtempSync(join(tmpdir(), "gym-diag-other-source-"));
+    const baselineDir = makeBaseline("scout", [{ scenario: "competing", verdict: "fail" }]);
+    const isolatedCanonical = addAgent(isolated, "scout");
+    addAgent(otherSource, "scout");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir }, workspace: { projectRoot: otherSource, root: isolated },
+        mocks: { gym: (step) => {
+          expect(step.task).toContain(`Current canonical source directory: ${isolatedCanonical}`);
+          expect(step.task).not.toContain(`Current canonical source directory: ${join(otherSource, "projects/fixture.app/agents/scout")}`);
+          return { status: "done", output: proposal(
+            "projects/fixture.app/agents/scout/AGENTS.md",
+            { requirement: ["competing#1:requirement"], output: ["competing#1:output"] },
+          ) };
+        } },
+      });
+      expect(output(run).disposition).toBe("actionable");
+      expect((run.report.result?.output as any)?.facts.sourceRoot).toBe(isolated);
+    } finally {
+      rmSync(isolated, { recursive: true, force: true });
+      rmSync(otherSource, { recursive: true, force: true });
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("fails closed when a selected repository mixes a local target with an escaping duplicate", async () => {
+    const isolated = mkdtempSync(join(tmpdir(), "gym-diag-mixed-escape-"));
+    const outside = mkdtempSync(join(tmpdir(), "gym-diag-mixed-outside-"));
+    const baselineDir = makeBaseline("scout", [{ scenario: "mixed-escape", verdict: "fail" }]);
+    addAgent(isolated, "scout", "app");
+    const outsideAgent = addAgent(outside, "scout", "global");
+    mkdirSync(join(isolated, "agents"), { recursive: true });
+    symlinkSync(outsideAgent, join(isolated, "agents", "scout"), "dir");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir }, workspace: { projectRoot: isolated, root: isolated },
+        mocks: { gym: (step) => {
+          expect(step.task).toContain("ambiguous or escape the selected source root");
+          return { status: "done", output: {
+            target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
+            root_cause_summary: "Boundary retained.", proposed_changes: [],
+          } };
+        } },
+      });
+      expect(output(run).disposition).toBe("insufficient_evidence");
+      expect(output(run).root_cause_summary).toContain("ambiguous or escape");
+      expect((run.report.result?.output as any)?.facts.currentSourceIdentity).toBeUndefined();
+    } finally {
+      rmSync(isolated, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
+  test("does not fall back to another explicit root when the selected repository is ambiguous", async () => {
+    const isolated = mkdtempSync(join(tmpdir(), "gym-diag-ambiguous-isolated-"));
+    const otherSource = mkdtempSync(join(tmpdir(), "gym-diag-unambiguous-other-"));
+    const baselineDir = makeBaseline("scout", [{ scenario: "ambiguous-selected", verdict: "fail" }]);
+    addAgent(isolated, "scout", "global");
+    addAgent(isolated, "scout", "app");
+    addAgent(otherSource, "scout");
+    try {
+      const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
+        input: { baselineDir }, workspace: { projectRoot: otherSource, root: isolated },
+        mocks: { gym: () => ({ status: "done", output: {
+          target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
+          root_cause_summary: "Boundary retained.", proposed_changes: [],
+        } }) },
+      });
+      expect(output(run).disposition).toBe("insufficient_evidence");
+      expect(output(run).root_cause_summary).toContain("ambiguous");
+      expect((run.report.result?.output as any)?.facts.sourceRoot).toBe(isolated);
+      expect((run.report.result?.output as any)?.facts.currentSourceIdentity).toBeUndefined();
+    } finally {
+      rmSync(isolated, { recursive: true, force: true });
+      rmSync(otherSource, { recursive: true, force: true });
+      rmSync(baselineDir, { recursive: true, force: true });
+    }
+  });
+
   test("preserves authoritative blocked status and candidate protection", async () => {
     const baselineDir = makeBaseline("alex", [{
       scenario: "blocked", verdict: "fail", agentStatus: "blocked",
