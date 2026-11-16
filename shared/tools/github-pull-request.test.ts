@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { ObserverContext, TaskDetail } from "@may-agent/sdk";
-import { observationCondition } from "@may-agent/sdk";
+import type { ObserverContext, TaskDetail } from "@may-agent/sdk/app";
+import { observationCondition } from "@may-agent/sdk/app";
 import {
   createGitHubPullRequestObservers,
   observeGitHubPullRequests,

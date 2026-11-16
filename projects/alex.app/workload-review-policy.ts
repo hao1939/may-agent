@@ -1,4 +1,4 @@
-import type { AppTaskInput } from "@may-agent/sdk";
+import type { AppTaskInput } from "@may-agent/sdk/app";
 
 export const WORKLOAD_REVIEW_TASK_ID = "runtime/workload-review";
 export const WORKLOAD_REVIEW_WORKFLOW = "workload-review";

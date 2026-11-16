@@ -1,12 +1,5 @@
-import {
-  admitTaskReconcileResult,
-  taskAgentResultSchema,
-  type ExecutionResult,
-  type TaskReconcileResult,
-  type TaskVerificationContext,
-  type TaskVerificationResult,
-  type WorkflowContext,
-} from "@may-agent/sdk";
+import { type ExecutionResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult, taskAgentResultSchema, type TaskReconcileResult, type TaskVerificationContext, type TaskVerificationResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { taskEmissionKey } from "../../../../../shared/tools/task-emission.js";
 import {
   acceptedPublicationRecovery,
@@ -79,7 +72,7 @@ function procedureContext(input: unknown, taskInput: unknown): string {
 }
 
 async function recoveryTaskContext(
-  ctx: WorkflowContext,
+  ctx: AppWorkflowContext,
   recovery: AcceptedPublicationRecovery | undefined,
 ): Promise<string> {
   if (!recovery || !ctx.reconciliation) return "";
@@ -123,7 +116,7 @@ ${JSON.stringify(previousAttempt, null, 2)}`;
 }
 
 /** Read only the two admitted owner-request shapes; do not recursively infer intent. */
-export function isExperienceReview(ctx: WorkflowContext): boolean {
+export function isExperienceReview(ctx: AppWorkflowContext): boolean {
   return Boolean(
     ctx.reconciliation?.events.items.some(({ event }) => {
       const data = record(event.data);
@@ -145,7 +138,7 @@ export const description =
   "Scout knowledge-library planner. Reviews current task resources and performs the smallest useful library maintenance step.";
 
 async function reviewPublicationFailure(
-  ctx: WorkflowContext,
+  ctx: AppWorkflowContext,
   error: KnowledgePublicationError,
   executionId: string,
   recovery: AcceptedPublicationRecovery,
@@ -280,7 +273,7 @@ export async function verify(
   }
 }
 
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+export async function execute(ctx: AppWorkflowContext): Promise<ExecutionResult> {
   if (!ctx.workspace || !ctx.reconciliation) {
     return ctx.blocked(
       "Scout maintenance requires a canonical App task context",
@@ -454,7 +447,7 @@ Operating rules:
   canonical Task acceptance, not whether all external work is finished.
   If an acceptance branch explicitly permits a blocked-capability/resume-context
   report as the bounded outcome, and your report fulfills that branch, return
-  finish(status: "success", result: {state: "converged", summary, facts, ...}).
+  finish(status: "done", output: {state: "converged", summary, facts, ...}).
   Identify the fulfilled acceptance branch, exact missing capability, verified
   current state, and precise resume context in the report. State which external
   work remains undone; do not claim it was applied, activated, or verified.

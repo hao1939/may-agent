@@ -1,6 +1,6 @@
 import { readNewJudgment, evaluationJudgmentSchema } from "./lib/evaluation-judgment.js";
 import { describe, expect, setSystemTime, test } from "bun:test";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import {
   createTestAppRead,
   createTestAppWorkflowContext as createSdkTestAppWorkflowContext,

@@ -18,7 +18,8 @@ import { readObserverEvidence } from "./lib/observer-evidence.js";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   readSubjectTask,
   taskEvidenceHash,
@@ -211,7 +212,7 @@ export function parsedJudgment(value: unknown): Judgment | null {
     : null;
 }
 
-async function acceptedFacts(ctx: WorkflowContext<Input>): Promise<string[]> {
+async function acceptedFacts(ctx: AppWorkflowContext<Input>): Promise<string[]> {
   const taskId = ctx.reconciliation?.taskId;
   if (!taskId) return [];
   try {
@@ -372,7 +373,7 @@ function readStagedReport(
 }
 
 async function publish(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   subject: SubjectEvidence,
   report: {
     jsonPath: string;
@@ -441,7 +442,7 @@ async function publish(
 }
 
 function done(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   summary: string,
   facts: string[],
 ): ExecutionResult {
@@ -465,7 +466,7 @@ function done(
 }
 
 export async function reviewTaskOutcome(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   command?: PublicCommand,
   reportRoot = configuredTaskReportRoot(),
   readSession?: SessionRead,
@@ -671,7 +672,7 @@ export async function reviewTaskOutcome(
             renderPopulation(populationEvidence(subject)),
           ]
         : []),
-      "Completion contract: assessed and insufficient-evidence are both successful evaluator judgments. Return the schema-valid judgment in finish().result and finish the evaluator execution with status success. Use partial/failure only when your own reviewer execution truly cannot complete; adverse findings about the subject are not reviewer execution failure. Return only the requested structured result.",
+      "Completion contract: assessed and insufficient-evidence are both successful evaluator judgments. Return the schema-valid judgment in finish().output and finish the evaluator execution with status done. Use blocked only when your own reviewer execution truly cannot complete; adverse findings about the subject are not reviewer execution failure. Return only the requested structured result.",
       "Report ownership: do not write Markdown, JSON, or any other task-outcome report file. The workflow validates your judgment and exclusively writes, reads back, and publishes the canonical report.",
       reportFollowUpGuidance,
       evaluationJudgmentGuidance,
@@ -834,7 +835,7 @@ export async function reviewTaskOutcome(
 }
 
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   return reviewTaskOutcome(ctx);
 }

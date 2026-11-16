@@ -1,4 +1,4 @@
-import type { TaskAppRequest, TaskReconcileResult } from "@may-agent/sdk";
+import type { TaskAppRequest, TaskReconcileResult } from "@may-agent/sdk/app";
 import { KnowledgePublicationError } from "./knowledge-publication.js";
 
 export type AcceptedPublicationRecovery = {

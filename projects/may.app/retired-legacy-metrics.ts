@@ -1,8 +1,15 @@
-import type { AppDefinition } from "@may-agent/sdk";
+import type { AppDefinition } from "@may-agent/sdk/app";
 
 // Explicit migration declarations, not an age-based automatic retirement rule.
 // Normal App activation preserves history and stops selecting obsolete sources.
 export const retiredLegacyMetrics: NonNullable<AppDefinition["metrics"]> = [
+  {
+    id: "event.pair-orphan-count",
+    owner: "may",
+    status: "retired",
+    description:
+      "Host #568 removed event-pair tracking and its event_pair_runs table. Preserve historical observations; current Task and input-delivery evidence own operational review.",
+  },
   ...[
     "agent.config-invalid-count-1h",
     "agent.heartbeat-dark-count-2h",

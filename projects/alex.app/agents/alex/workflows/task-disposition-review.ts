@@ -1,4 +1,5 @@
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import { isAlexOperationalRecoveryTask } from "../../../task-completion.js";
 import {
   createPublicTaskEvidenceProvider,
@@ -284,7 +285,7 @@ export async function reviewTaskDispositionBatch(
 }
 
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   try {
     const result = await reviewTaskDispositionBatch(

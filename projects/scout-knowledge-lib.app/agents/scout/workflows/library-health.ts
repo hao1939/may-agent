@@ -7,7 +7,8 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join, relative } from "node:path";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   ACCEPTED_SOURCE_OUTPUTS_METRIC_ID,
   RETIRED_ACCEPTED_SOURCE_OUTPUTS_24H_METRIC_ID,
@@ -856,7 +857,7 @@ function retainedPacket(value: unknown): LibraryHealthPacket | undefined {
     : undefined;
 }
 
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+export async function execute(ctx: AppWorkflowContext): Promise<ExecutionResult> {
   if (!ctx.workspace)
     return ctx.blocked("Library health requires a canonical App workspace");
   const appDir = ctx.workspace.appRoot;

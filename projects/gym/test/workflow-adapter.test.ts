@@ -227,7 +227,7 @@ export async function execute(ctx) {
             lastAssistantText: `step-${stepNum}`,
             messages: [],
             durationMs: 5,
-            finishResult: { status: "success", summary: `step-${stepNum}` },
+            finishResult: { status: "done", summary: `step-${stepNum}` },
             usage: prep.prepared.preparation as any,
             cleanupConfirmed: await prep.cleanupAsync(),
           };
@@ -285,7 +285,7 @@ export async function execute(ctx) {
     expect(defaultDenials.map((d) => d.name)).toEqual(["agents", "query_db"]);
   });
 
-  test("executes and scores real alex.app develop-change workflow_entry scenario end to end", async () => {
+  test("reports retained Task-aware develop-change as blocked without forging a Task envelope", async () => {
     const { spawnSync } = await import("node:child_process");
     const scenarioDir = join(
       import.meta.dirname,
@@ -294,30 +294,16 @@ export async function execute(ctx) {
     const meta = JSON.parse(
       readFileSync(join(scenarioDir, "scenario.json"), "utf8"),
     );
-    expect(meta).toMatchObject({
-      agent_type: "alex",
-      workflow_entry: {
-        agent: "alex",
-        workflow: "develop-change",
-        input: { verify: ["node", "verify.cjs"] },
-      },
-    });
-    const root = mkdtempSync(join(tmpdir(), "gym-develop-change-scenario-"));
+    const root = mkdtempSync(join(tmpdir(), "gym-develop-change-boundary-"));
     tempRoots.push(root);
     const workDir = join(root, "work");
     const gymState = join(root, "state");
     mkdirSync(workDir, { recursive: true });
     mkdirSync(gymState, { recursive: true });
     cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
-    const git = (cwd: string, ...args: string[]) =>
-      execFileSync("git", ["-C", cwd, ...args], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      }).trim();
-
+    const originalSource = readFileSync(join(workDir, "math.cjs"), "utf8");
     const repoRoot = join(import.meta.dirname, "../../..");
-    let implementationAttempts = 0;
-    const stages: string[] = [];
+    const specialistCalls: string[] = [];
     const outcome = await runGymWorkflowEntry({
       entry: meta.workflow_entry,
       defaultAgentName: meta.agent_type,
@@ -331,178 +317,46 @@ export async function execute(ctx) {
       globalAgentsRoot: join(repoRoot, "agents"),
       models: { "gpt-5.6-sol": fakeModel() as any },
       timeoutMs: 30_000,
-      agentFixtures: {
-        bob: ({ task }) => {
-          if (task.includes("Development step: design")) {
-            stages.push("design");
-            return {
-              id: "gym-design",
-              kind: "agent",
-              status: "done",
-              summary: "Designed focused repair",
-              output: {
-                decision: "implement",
-                reason: "The arithmetic operator is localized",
-                design: "Preserve the CommonJS export and return a + b",
-              },
-            };
-          }
-          stages.push("review");
-          return {
-            id: "gym-review",
-            kind: "agent",
-            status: "done",
-            summary: "Reviewed verified candidate",
-            output: {
-              decision: "pass",
-              reason: "The committed candidate satisfies the Task and checks",
-              commit: git(workDir, "rev-parse", "HEAD"),
-              findings: [],
-            },
-          };
+      agentFixtures: Object.fromEntries(["bob", "tech-lead"].map((agent) => [
+        agent,
+        () => {
+          specialistCalls.push(agent);
+          throw new Error("Task-aware development must stop before calling specialists");
         },
-        "tech-lead": () => {
-          implementationAttempts += 1;
-          stages.push(`implementation-${implementationAttempts}`);
-          if (implementationAttempts === 2) {
-            writeFileSync(
-              join(workDir, "math.cjs"),
-              "exports.add = function add(a, b) { return a + b; };\n",
-            );
-            git(workDir, "add", "math.cjs");
-            git(workDir, "commit", "-m", "fix addition");
-          }
-          return {
-            id: `gym-implementation-${implementationAttempts}`,
-            kind: "agent",
-            status: "done",
-            summary:
-              implementationAttempts === 1
-                ? "Inspected but left the failing candidate"
-                : "Fixed and committed addition",
-            output: {
-              decision: "ready",
-              reason:
-                implementationAttempts === 1
-                  ? "Candidate ready for verification"
-                  : "Repair committed",
-            },
-          };
-        },
-      },
+      ])),
     });
 
-    expect(outcome.status).toBe("success");
-    expect(readFileSync(join(workDir, ".git"), "utf8")).toContain("gitdir:");
-    expect(git(workDir, "check-ignore", ".state/probe")).toBe(".state/probe");
-    expect(git(workDir, "check-ignore", "transcript.jsonl")).toBe(
-      "transcript.jsonl",
-    );
-    expect(stages).toEqual([
-      "design",
-      "implementation-1",
-      "implementation-2",
-      "review",
-    ]);
+    expect(outcome.status).toBe("blocked");
+    expect(specialistCalls).toEqual([]);
+    expect(readFileSync(join(workDir, "math.cjs"), "utf8")).toBe(originalSource);
     const report = JSON.parse(
       readFileSync(join(workDir, "workflow-run.json"), "utf8"),
     );
     expect(report).toMatchObject({
       workflow: "develop-change",
-      status: "done",
-      result: { output: { state: "converged" } },
+      status: "blocked",
+      result: {
+        type: "blocked",
+        reason: "Development requires an ordinary Task and its worktree",
+      },
       cleanup: { confirmed: true },
     });
-
-    // The ordinary Gym CLI exports this harness artifact before scoring.
-    writeFileSync(
-      join(workDir, "transcript.jsonl"),
-      `${JSON.stringify({ note: "workflow transcript exported" })}\n`,
-    );
-    expect(git(workDir, "status", "--porcelain")).toBe("");
 
     const built = spawnSync("bun", ["run", "build"], {
       cwd: join(import.meta.dirname, ".."),
       encoding: "utf8",
     });
-    expect({
-      status: built.status,
-      stdout: built.stdout,
-      stderr: built.stderr,
-    }).toMatchObject({ status: 0 });
+    expect({ status: built.status, stderr: built.stderr }).toMatchObject({ status: 0 });
     const scored = spawnSync(
       "node",
       [join(scenarioDir, "success_criteria.js"), workDir],
       {
         encoding: "utf8",
-        env: {
-          ...process.env,
-          NODE_PATH: join(import.meta.dirname, "../dist"),
-        },
+        env: { ...process.env, NODE_PATH: join(import.meta.dirname, "../dist") },
       },
     );
-    expect({
-      status: scored.status,
-      stdout: scored.stdout,
-      stderr: scored.stderr,
-    }).toMatchObject({ status: 0 });
-    expect(JSON.parse(scored.stdout)).toMatchObject({
-      passed: true,
-      summary:
-        "✓ [product] verify-script-passes\n✓ [behavior] workflow-run-report-recorded",
-    });
-
-    const evidencePath = report.result.output.result.development.evidence.path;
-    const evidence = JSON.parse(readFileSync(evidencePath, "utf8"));
-    const passingReport = evidence.reports.find((item: any) => {
-      if (item.stage !== "verification") return false;
-      const record = JSON.parse(readFileSync(item.record.path, "utf8"));
-      return record.passed === true && record.receipt?.exitCode === 0;
-    });
-    expect(passingReport).toBeDefined();
-    const firstAttemptEvidence = structuredClone(evidence);
-    firstAttemptEvidence.reports = evidence.reports.filter(
-      (item: any) => item.stage !== "verification" || item === passingReport,
-    );
-    writeFileSync(
-      evidencePath,
-      `${JSON.stringify(firstAttemptEvidence, null, 2)}\n`,
-    );
-    const firstAttemptScored = spawnSync(
-      "node",
-      [join(scenarioDir, "success_criteria.js"), workDir],
-      {
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          NODE_PATH: join(import.meta.dirname, "../dist"),
-        },
-      },
-    );
-    expect(firstAttemptScored.status).toBe(0);
-    expect(JSON.parse(firstAttemptScored.stdout)).toMatchObject({
-      passed: true,
-    });
-    writeFileSync(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
-
-    const runReportPath = join(workDir, "workflow-run.json");
-    const incompleteReport = structuredClone(report);
-    incompleteReport.result.output.state = "incomplete";
-    writeFileSync(runReportPath, `${JSON.stringify(incompleteReport)}\n`);
-    const rejected = spawnSync(
-      "node",
-      [join(scenarioDir, "success_criteria.js"), workDir],
-      {
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          NODE_PATH: join(import.meta.dirname, "../dist"),
-        },
-      },
-    );
-    expect(rejected.status).toBe(0);
-    expect(JSON.parse(rejected.stdout)).toMatchObject({ passed: false });
-    writeFileSync(runReportPath, `${JSON.stringify(report, null, 2)}\n`);
+    expect({ status: scored.status, stderr: scored.stderr }).toMatchObject({ status: 0 });
+    expect(JSON.parse(scored.stdout)).toMatchObject({ passed: false });
   });
 
   test("executes the candidate dependency tree and does not resurrect a deleted workflow", async () => {

@@ -1,6 +1,6 @@
 import { Check } from "typebox/value";
 import { afterEach, expect, setSystemTime, test } from "bun:test";
-import { admitTaskReconcileResult, type TaskDetail, type TaskWorkload, type WorkflowContext } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type TaskDetail, type TaskWorkload, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { execute } from "./workload-review.js";
 import { workloadReviewPolicy, workloadReviewTask, WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID } from "../../../workload-review-policy.js";
 
@@ -54,7 +54,7 @@ function fixture(heavy = false, notifyOwners = false) {
     },
     done: (summary: string, output: unknown) => ({ status: "done", summary, output }),
     blocked: (summary: string) => ({ status: "blocked", summary }),
-  } as unknown as WorkflowContext;
+  } as unknown as AppWorkflowContext;
   return { ctx, own, task, tasks, workload, prompts, reads, setResponse: (value: unknown) => { response = value; } };
 }
 const state = (result: Awaited<ReturnType<typeof execute>>) => (result.output as { result: { workloadReview: Record<string, unknown> } }).result.workloadReview;

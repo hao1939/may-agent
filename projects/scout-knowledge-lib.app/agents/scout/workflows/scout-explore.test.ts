@@ -20,7 +20,7 @@ import {
 import { parseXhsSearchOutput, searchXhs } from "../tools/lib/xhs-source";
 import { xhsCommandFixture } from "../tools/lib/xhs-command.test-fixture";
 import { publicationTestFixture } from "./lib/publication-test-fixture";
-import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import {
   acquireArxivSource,
@@ -81,7 +81,7 @@ function workflowContext(
     options?: unknown,
   ) => Promise<unknown>,
   source = "xhs",
-): WorkflowContext {
+): AppWorkflowContext {
   return createTestAppWorkflowContext({
     input: { source },
     reconciliation: {
@@ -117,7 +117,7 @@ function workflowContext(
           : {}),
         ...(result.evidence !== undefined ? { facts: result.evidence } : {}),
       };
-    }) as WorkflowContext["call"],
+    }) as AppWorkflowContext["call"],
   });
 }
 
@@ -1235,7 +1235,7 @@ describe("scout-explore workflow prompt", () => {
     ctx.events.emit = (async (event: Record<string, unknown>) => {
       emitted.push(event);
       return { accepted: true };
-    }) as WorkflowContext["events"]["emit"];
+    }) as AppWorkflowContext["events"]["emit"];
     ctx.workspace!.appRoot = appDir;
     ctx.workspace!.projectRoot = projectDir;
     const result = await executeScoutExplore(ctx, {
@@ -1674,7 +1674,7 @@ describe("scout-explore workflow prompt", () => {
     ctx.events.emit = (async (event: Record<string, unknown>) => {
       emitted.push(event);
       return { accepted: true };
-    }) as WorkflowContext["events"]["emit"];
+    }) as AppWorkflowContext["events"]["emit"];
 
     expect(
       Check(ExploreAgentResultSchema, {
@@ -1771,7 +1771,7 @@ describe("scout-explore workflow prompt", () => {
     };
     const firstContext = workflowContext(writer, "hn");
     firstContext.workspace = { ...fixture.workspace };
-    firstContext.events.emit = emit as WorkflowContext["events"]["emit"];
+    firstContext.events.emit = emit as AppWorkflowContext["events"]["emit"];
     const first = await executeScoutExplore(firstContext);
     expect(structuredClone(first)).toMatchObject({
       status: "done",
@@ -1797,7 +1797,7 @@ describe("scout-explore workflow prompt", () => {
         throw new Error("recovery must not rerun the writer");
       }, "hn");
       ctx.workspace = { ...fixture.workspace };
-      ctx.events.emit = emit as WorkflowContext["events"]["emit"];
+      ctx.events.emit = emit as AppWorkflowContext["events"]["emit"];
       ctx.reconciliation!.previousAttempt = {
         attemptId: `attempt-${emitAttempts}`,
         generation: 1,
@@ -1918,7 +1918,7 @@ describe("scout-explore workflow prompt", () => {
     ctx.events.emit = (async () => {
       emitted += 1;
       return { accepted: true };
-    }) as WorkflowContext["events"]["emit"];
+    }) as AppWorkflowContext["events"]["emit"];
     ctx.reconciliation!.previousAttempt = {
       attemptId: "attempt-invalid",
       generation: 1,

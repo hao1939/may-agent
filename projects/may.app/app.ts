@@ -1,12 +1,5 @@
-import {
-  Type,
-  defineApp,
-  type AppDefinition,
-  type AppEvent,
-  type AppInput,
-  type AppTaskAttachment,
-  type AppTaskInput,
-} from "@may-agent/sdk";
+import { Type } from "@may-agent/sdk";
+import { defineApp, type AppDefinition, type AppEvent, type AppInput, type AppTaskAttachment, type AppTaskInput } from "@may-agent/sdk/app";
 import {
   createGitHubPullRequestObservers,
   validateGitHubPullRequestCondition,

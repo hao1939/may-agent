@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { Type, type ExecutionResult, type TaskAppRequest, type WorkflowContext } from "@may-agent/sdk";
+import { Type, type ExecutionResult } from "@may-agent/sdk";
+import { type TaskAppRequest, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import { workloadReviewPolicy, WORKLOAD_REVIEW_INTERVAL_MS, WORKLOAD_REVIEW_TASK_ID, WORKLOAD_REVIEW_WORKFLOW } from "../../../workload-review-policy.js";
 
@@ -45,7 +46,7 @@ const stateSchema = Type.Union([legacyStateSchema, Type.Object({
 }, { additionalProperties: false })]);
 
 /** No new ledger: the accepted result retains the last reviewed evidence. */
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+export async function execute(ctx: AppWorkflowContext): Promise<ExecutionResult> {
   const rec = ctx.reconciliation;
   let ownerFeedback: unknown;
   let ownerNotificationId: string | undefined;
@@ -249,7 +250,7 @@ export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
       `Scoped workload (observation times and unavailable facts are explicit): ${JSON.stringify(workload)}`,
       `Exact commitment previews, not full evidence: ${JSON.stringify(exact)}`,
       `Latest returned owner response, historical evidence rather than proof of application: ${JSON.stringify(ownerFeedback ?? null)}`,
-      'Complete this helper with finish: status "success", a summary, and result containing the recommendation decision ("retain", "reconsider" or "opportunity") and reason, with the optional inspected taskId or inputId and nextStep when supported. Returning advice does not claim that a business change, closure or caller delivery occurred.',
+      'Complete this helper with finish: status "done", a summary, and output containing the recommendation decision ("retain", "reconsider" or "opportunity") and reason, with the optional inspected taskId or inputId and nextStep when supported. Returning advice does not claim that a business change, closure or caller delivery occurred.',
     ].join("\n\n");
     // Expose only subjects inspected in this pass. The helper can correct a
     // mistyped or mixed target within its existing bounded invocation.

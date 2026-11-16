@@ -1,4 +1,5 @@
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   readPublishedEvaluationReport,
   type PublishedReportRequest,
@@ -66,7 +67,7 @@ function checkedReportSummary(
   };
 }
 function finish(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   disposition: string,
   detail: string,
   result: Record<string, unknown> = {},
@@ -112,7 +113,7 @@ function finish(
 }
 
 async function readPriorIntake(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   readLinked = readMetricLinkedTask,
 ) {
   const publication = ctx.input;
@@ -195,7 +196,7 @@ async function readPriorIntake(
 }
 
 export async function intakeEvaluationReport(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   reportRoot?: string,
   subjectReader: SubjectReader = readSubjectTask,
   metricReader: MetricReader = readMetricEvidence,
@@ -436,7 +437,7 @@ export async function intakeEvaluationReport(
   );
 }
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   return intakeEvaluationReport(ctx);
 }

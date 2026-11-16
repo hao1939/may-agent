@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import { hostReportUrl, readHostReport } from "./host-reporting.js";
 import { readMetricEvidence, type MetricReader } from "./metric-evidence.js";
 import type { Reviewer } from "./reviewer-profile.js";
@@ -13,7 +13,7 @@ export function metricReviewTaskId(
 
 /** Last completed observation, not a timer requesting another assessment. */
 export async function metricReviewedThrough(
-  ctx: WorkflowContext<any>,
+  ctx: AppWorkflowContext<any>,
   metricId: string,
   reviewer: Reviewer = "evaluator",
 ): Promise<number> {
@@ -39,13 +39,13 @@ export type MetricSelection = {
   facts: string[];
 };
 export type MetricSelector = (
-  ctx: WorkflowContext<any>,
+  ctx: AppWorkflowContext<any>,
   cursor: string,
   reviewer: Reviewer,
 ) => Promise<MetricSelection>;
 
 export async function selectMetricCandidate(
-  ctx: WorkflowContext<any>,
+  ctx: AppWorkflowContext<any>,
   cursor: string,
   reviewer: Reviewer,
   reader: MetricReader = readMetricEvidence,

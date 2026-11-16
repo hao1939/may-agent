@@ -1,9 +1,5 @@
-import {
-  Type,
-  type Static,
-  type WorkflowContext,
-  type TaskReconcileResult,
-} from "@may-agent/sdk";
+import { Type, type Static } from "@may-agent/sdk";
+import { type AppWorkflowContext, type TaskReconcileResult } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import {
   assessmentRecord,
@@ -57,7 +53,7 @@ const draftSchema = Type.Object(
 );
 
 export async function executeSourceAssessment(
-  ctx: WorkflowContext,
+  ctx: AppWorkflowContext,
   read: (
     url: string,
     signal?: AbortSignal,
@@ -378,6 +374,6 @@ ${JSON.stringify(packet ?? accessFailure)}
   }
 }
 
-export async function execute(ctx: WorkflowContext) {
+export async function execute(ctx: AppWorkflowContext) {
   return executeSourceAssessment(ctx);
 }

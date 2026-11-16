@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 
 type ReconciliationEvents = NonNullable<
-  WorkflowContext["reconciliation"]
+  AppWorkflowContext["reconciliation"]
 >["events"];
 
 type EmissionContext = {

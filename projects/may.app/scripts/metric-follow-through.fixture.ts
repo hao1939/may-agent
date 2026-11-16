@@ -4,7 +4,7 @@ import { AppTaskResourceStore } from "../../may-agent/src/app/core/state/app-tas
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defineApp, type Condition, type TaskExecutor } from "@may-agent/sdk";
+import { defineApp, observationCondition, type Condition, type TaskExecutor } from "@may-agent/sdk/app";
 import { AppRegistry } from "../../may-agent/src/app/core/apps/registry.js";
 import {
   EventBus,
@@ -12,8 +12,8 @@ import {
 } from "../../may-agent/src/app/core/events/bus.js";
 import { HostCapacity } from "../../may-agent/src/app/core/scheduling/host-capacity.js";
 import { createAppTaskCapability } from "../../may-agent/src/app/core/tasks/app-task-capability.js";
+import { getLoadedAppInputContract } from "../../may-agent/src/app/core/tasks/app-task-runtime.js";
 import { startAppInboxRuntime } from "../../may-agent/src/app/composition/app-inbox-runtime.js";
-import { createAppTaskReadTool } from "../../may-agent/src/app/app-task-read-tool.js";
 import { DbWriter } from "../../may-agent/src/lib/db-writer.js";
 import { getDb, closeDb } from "../../may-agent/src/lib/db/connection.js";
 import { createMetricService } from "../../may-agent/src/lib/metrics.js";
@@ -28,7 +28,7 @@ import {
 import { createMetricEvidenceObserver } from "../watchers/metric-evidence.js";
 import { execute as followThrough } from "../agents/may/workflows/metric-follow-through.js";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import type { TaskAttempt, TaskReconcileResult } from "@may-agent/sdk";
+import type { TaskAttempt, TaskReconcileResult } from "@may-agent/sdk/app";
 
 export function handoffDecision(
   review: MetricReview,
@@ -408,25 +408,16 @@ export async function fixture(execute: TaskExecutor) {
         freshness: "fresh",
       },
     ): Promise<Condition> {
-      const reply = await createAppTaskReadTool({
-        bus,
-        appId: () => "may",
-      }).execute("poc-condition", {
-        action: "contract",
-        target: { appId: "may" },
-        observation: {
-          observerId: detector.id,
-          id: "recovery-observation",
-          resource: metricId,
-          expected,
-        },
+      const contract = getLoadedAppInputContract({ bus, appId: "may" });
+      const capability = contract.observations.find((item) => item.id === detector.id);
+      if (!capability)
+        throw new Error(`App ${contract.appId} has no installed observer ${detector.id}`);
+      return observationCondition(capability, {
+        observerId: detector.id,
+        id: "recovery-observation",
+        resource: metricId,
+        expected,
       });
-      const text = reply.content[0];
-      if (text?.type !== "text")
-        throw new Error("Condition tool returned no text");
-      const parsed = JSON.parse(text.text);
-      if (!parsed.condition) throw new Error(JSON.stringify(parsed));
-      return parsed.condition;
     },
     async attach(id: string, inputData: Record<string, unknown> = {}) {
       return tasks.attach({

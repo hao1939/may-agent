@@ -1,8 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  admitTaskReconcileResult,
-  type TaskReconcileResult,
-} from "@may-agent/sdk";
+import { admitTaskReconcileResult, type TaskReconcileResult } from "@may-agent/sdk/app";
 import { KnowledgePublicationError } from "./knowledge-publication";
 import { retainAcceptedPublication } from "./accepted-publication";
 

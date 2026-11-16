@@ -60,7 +60,7 @@ function report(checks) {
 function productionAdmission(resultPath) {
   const source = [
     'import { readFileSync } from "node:fs";',
-    'import { admitTaskReconcileResult } from "@may-agent/sdk";',
+    'import { admitTaskReconcileResult } from "@may-agent/sdk/app";',
     'const value = JSON.parse(readFileSync(process.argv[1], "utf8"));',
     'process.stdout.write(JSON.stringify(admitTaskReconcileResult(value)));',
   ].join("\n");

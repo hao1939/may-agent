@@ -26,6 +26,7 @@ export async function candidate(
   root: string,
   signal: AbortSignal,
   allowDirty = false,
+  baseRef = "main",
 ): Promise<Candidate> {
   const git = (...args: string[]) => command(root, ["git", ...args], signal);
   if (
@@ -47,7 +48,7 @@ export async function candidate(
   }
   return {
     commit: await git("rev-parse", "HEAD"),
-    base: await git("merge-base", "HEAD", "main"),
+    base: await git("merge-base", "--", "HEAD", baseRef),
     dirty,
   };
 }

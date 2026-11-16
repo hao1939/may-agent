@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import type { Condition } from "@may-agent/sdk";
+import type { Condition } from "@may-agent/sdk/app";
 import {
   fixture,
   executeReview,

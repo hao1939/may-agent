@@ -2,7 +2,7 @@ import { afterEach, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { TaskClosure, WorkflowContext } from "@may-agent/sdk";
+import type { TaskClosure, AppWorkflowContext } from "@may-agent/sdk/app";
 import { retainedRequestedReviewTaskIds, runTaskOutcomeSelector } from "./task-outcome-selector.js";
 import {
   hashReport, markTaskReportPublished, renderTaskReportMarkdown,
@@ -61,7 +61,7 @@ function fixture() {
     done: (_summary: string, result: unknown) => result,
   };
   const run = (overrides: Partial<typeof config> = {}) => runTaskOutcomeSelector(
-    ctx as unknown as WorkflowContext<{ reason?: string }>,
+    ctx as unknown as AppWorkflowContext<{ reason?: string }>,
     async () => { samples++; throw new Error("Routine sampling must wait for retained review disposition"); },
     { ...config, ...overrides }, root, async (_ctx, cursor) => ({ candidate: null, cursor, facts: [] }),
   );
@@ -125,7 +125,7 @@ test("older Hosts without creator closure keep finite reviews in the backlog", a
 
 test("modern finite review IDs preserve each reviewer's independent allowance", () => {
   const f = fixture();
-  const ctx = f.ctx as unknown as WorkflowContext<{ reason?: string }>;
+  const ctx = f.ctx as unknown as AppWorkflowContext<{ reason?: string }>;
   expect(retainedRequestedReviewTaskIds(ctx, "evaluator")).toEqual([reviewId]);
   expect(retainedRequestedReviewTaskIds(ctx, "evaluator-deepseek")).toEqual([]);
 });
@@ -140,7 +140,7 @@ test("idle reusable metric services leave the semantic backlog without closure o
   let emitted = 0;
   f.ctx.events.emit = async () => { emitted++; };
   const result = await runTaskOutcomeSelector(
-    f.ctx as unknown as WorkflowContext<{ reason?: string }>,
+    f.ctx as unknown as AppWorkflowContext<{ reason?: string }>,
     async () => { throw new Error("No Task catalog needed when a metric is selected"); },
     config, f.root,
     async (_ctx, cursor) => {
@@ -169,7 +169,7 @@ test("new work on an idle metric service reenters the backlog on the next snapsh
   const f = fixture();
   const service = { taskId: "runtime/metric-review/evaluator/metric-one", agent: "evaluator", status: "idle" };
   f.ctx.reconciliation.taskSnapshot.live = [service];
-  const ctx = f.ctx as unknown as WorkflowContext<{ reason?: string }>;
+  const ctx = f.ctx as unknown as AppWorkflowContext<{ reason?: string }>;
   expect(retainedRequestedReviewTaskIds(ctx)).toEqual([]);
   service.status = "pending";
   expect(retainedRequestedReviewTaskIds(ctx)).toEqual([service.taskId]);

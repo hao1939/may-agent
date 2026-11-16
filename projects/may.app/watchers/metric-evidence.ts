@@ -1,4 +1,4 @@
-import { defineObserver, type ResourceObserver } from "@may-agent/sdk";
+import { defineObserver, type ResourceObserver } from "@may-agent/sdk/app";
 import {
   readMetricObservation,
   type MetricReader,

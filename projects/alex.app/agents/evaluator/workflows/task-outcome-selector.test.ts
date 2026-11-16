@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

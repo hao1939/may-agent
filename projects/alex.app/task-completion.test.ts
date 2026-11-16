@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { AppTaskResultContext } from "@may-agent/sdk";
+import type { AppTaskResultContext } from "@may-agent/sdk/app";
 import { closeAcceptedAssignment } from "./task-completion.js";
 import { taskForInput, taskInputForEvent } from "./app.js";
 

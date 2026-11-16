@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { runWorkflowTest } from "@may-agent/sdk/testing";
 import * as boundedCleanupWorkflow from "./bounded-cleanup.js";
 

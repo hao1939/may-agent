@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   createTestAppRead,
   createTestAppWorkflowContext,
@@ -96,7 +96,7 @@ describe("Scout owner reconciliation boundary", () => {
                 status: "done",
                 output,
               };
-            }) as WorkflowContext["call"],
+            }) as AppWorkflowContext["call"],
             emit: async (event) => {
               emitted.push(event);
             },
@@ -107,7 +107,7 @@ describe("Scout owner reconciliation boundary", () => {
           "If an acceptance branch explicitly permits a blocked-capability/resume-context report as the bounded outcome, and your report fulfills that branch",
         );
         expect(guidance).toContain(
-          'finish(status: "success", result: {state: "converged"',
+          'finish(status: "done", output: {state: "converged"',
         );
         expect(guidance).toContain(
           'Do not return finish(status: "blocked") for this fulfilled report',
@@ -227,7 +227,7 @@ describe("Scout owner reconciliation boundary", () => {
                 facts: ["verified archived bytes at canonical HEAD"],
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
 
@@ -298,7 +298,7 @@ describe("Scout owner reconciliation boundary", () => {
                 facts: ["reviewed current library"],
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
       expect(prompt).toContain("Caller procedure context (advisory)");
@@ -348,7 +348,7 @@ describe("Scout owner reconciliation boundary", () => {
                 facts: ["reviewed current library"],
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
       expect(prompt).toContain("Caller procedure context (advisory)");
@@ -414,7 +414,7 @@ describe("Scout owner reconciliation boundary", () => {
                 facts: ["verified archived bytes at canonical HEAD"],
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
       expect(prompt).toContain("unavailable: task reporting unavailable");
@@ -476,7 +476,7 @@ describe("Scout owner reconciliation boundary", () => {
                   actions: [],
                 },
               };
-            }) as WorkflowContext["call"],
+            }) as AppWorkflowContext["call"],
           }),
         );
         expect(result.status).toBe("blocked");
@@ -575,7 +575,7 @@ describe("Scout owner reconciliation boundary", () => {
                   facts: [`output:${output}`, "owner-judgment:adaptation"],
                 },
               };
-            }) as WorkflowContext["call"],
+            }) as AppWorkflowContext["call"],
           }),
         );
         expect(calls).toBe(2);
@@ -778,7 +778,7 @@ describe("Scout owner reconciliation boundary", () => {
                 facts: [`output:${output}`],
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
       expect(result).toMatchObject({
@@ -859,7 +859,7 @@ describe("Scout owner reconciliation boundary", () => {
                 facts: ["not-yet-accepted", `output:${output}`],
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
       expect(result.status).toBe("blocked");
@@ -924,7 +924,7 @@ describe("Scout owner reconciliation boundary", () => {
                 continue: true,
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
       expect(result).toMatchObject({
@@ -991,7 +991,7 @@ describe("Scout owner reconciliation boundary", () => {
               status,
               facts: { status: "partial", summary: "Consume child results" },
               output,
-            })) as WorkflowContext["call"],
+            })) as AppWorkflowContext["call"],
             emit: async (event) => {
               emitted.push(event);
             },
@@ -1056,7 +1056,7 @@ describe("Scout owner reconciliation boundary", () => {
               facts: ["partial"],
               actions: [],
             },
-          })) as WorkflowContext["call"],
+          })) as AppWorkflowContext["call"],
           emit: async (event) => {
             emitted.push(event);
           },
@@ -1124,7 +1124,7 @@ describe("Scout owner reconciliation boundary", () => {
                 },
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
           emit: async (event) => {
             emitted.push(event as unknown as Record<string, unknown>);
           },
@@ -1256,7 +1256,7 @@ describe("Scout owner reconciliation boundary", () => {
               ],
             },
           };
-        }) as WorkflowContext["call"],
+        }) as AppWorkflowContext["call"],
         emit: async (event) => {
           emitted.push(event as unknown as Record<string, unknown>);
         },
@@ -1410,7 +1410,7 @@ describe("Scout owner reconciliation boundary", () => {
                 actions: [],
               },
             };
-          }) as WorkflowContext["call"],
+          }) as AppWorkflowContext["call"],
         }),
       );
       expect(result.status).toBe("done");
@@ -1472,7 +1472,7 @@ describe("Scout owner reconciliation boundary", () => {
             status: "done",
             summary: agentOutput.summary,
             output: agentOutput,
-          })) as WorkflowContext["call"],
+          })) as AppWorkflowContext["call"],
           emit: async (event) => {
             emitted.push(event as unknown as Record<string, unknown>);
           },
@@ -1531,7 +1531,7 @@ describe("Scout owner reconciliation boundary", () => {
             facts: ["bounded packet is unchanged"],
             actions: [],
           },
-        })) as WorkflowContext["call"],
+        })) as AppWorkflowContext["call"],
         emit: async () => {
           throw new Error(
             "Idempotency key task:key was already used with different event input",
@@ -1584,7 +1584,7 @@ describe("Scout owner reconciliation boundary", () => {
           ],
         },
       },
-    } as WorkflowContext;
+    } as AppWorkflowContext;
     expect(isExperienceReview(ctx)).toBe(true);
 
     const arbitraryNestedReason = {
@@ -1601,7 +1601,7 @@ describe("Scout owner reconciliation boundary", () => {
           ],
         },
       },
-    } as WorkflowContext;
+    } as AppWorkflowContext;
     expect(isExperienceReview(arbitraryNestedReason)).toBe(false);
   });
 
@@ -1651,7 +1651,7 @@ describe("Scout owner reconciliation boundary", () => {
               actions: [],
             },
           };
-        }) as WorkflowContext["call"],
+        }) as AppWorkflowContext["call"],
       }),
     );
 

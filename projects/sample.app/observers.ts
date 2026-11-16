@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { isAbsolute } from "node:path";
-import { defineObserver } from "@may-agent/sdk";
+import { defineObserver } from "@may-agent/sdk/app";
 
 export const documentObserver = defineObserver({
   id: "document",

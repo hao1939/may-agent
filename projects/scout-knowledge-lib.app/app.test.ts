@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { Check } from "typebox/value";
-import { matchesEventSelector } from "@may-agent/sdk";
+import { matchesEventSelector } from "@may-agent/sdk/app";
 import app, {
   evaluationOwnerRequestedInput,
   libraryHealthObservedInput,

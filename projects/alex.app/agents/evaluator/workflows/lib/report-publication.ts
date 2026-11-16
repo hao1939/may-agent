@@ -1,4 +1,4 @@
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import type { PublishedReportRequest } from "../evaluation-report-reader.js";
 import { existsSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -11,7 +11,7 @@ import {
 
 /** Task and metric assessments share the same immutable publication boundary. */
 export async function publishRetainedReport(
-  ctx: WorkflowContext<any>,
+  ctx: AppWorkflowContext<any>,
   event: {
     type: string;
     localKey: string;

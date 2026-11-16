@@ -1,4 +1,5 @@
-import { Type, defineApp, type Static } from "@may-agent/sdk";
+import { Type, type Static } from "@may-agent/sdk";
+import { defineApp } from "@may-agent/sdk/app";
 import { documentObserver } from "./observers.js";
 
 export const reviewInputSchema = Type.Object({

@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import { Type, type Static, type WorkflowContext } from "@may-agent/sdk";
+import { Type, type Static, type AgentContext } from "@may-agent/sdk";
 
 export const name = "diagnose-improvement";
 export const description =
@@ -488,7 +488,7 @@ function insufficientProposal(target: string, regimes: string[], reason: string)
   };
 }
 
-export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
+export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
   const explicitWorkRoot = ctx.workspace?.root ?? ctx.workspace?.projectRoot;
   const explicitProjectRoot = ctx.workspace?.projectRoot ?? ctx.workspace?.root;
   if (!explicitWorkRoot || !explicitProjectRoot) {

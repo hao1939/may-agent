@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { benchmarkDir, loadLabels, loadSuite, materializeScenarioOrInlineCase, selectCoreScenarios } from "../src/loop/store";
 import { assertFrozenInputs, runLoop, verifyLoop } from "../src/loop/run";
 import { machineVerdict } from "../src/loop/store";

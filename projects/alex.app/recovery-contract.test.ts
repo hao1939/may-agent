@@ -2,7 +2,8 @@ import { expect, setSystemTime, test } from "bun:test";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Type, type AppDefinition, type AppTaskInput } from "@may-agent/sdk";
+import { Type } from "@may-agent/sdk";
+import { type AppDefinition, type AppTaskInput } from "@may-agent/sdk/app";
 import { SubagentManager } from "../may-agent/src/lib/manager.ts";
 import {
   createAssistantMessageEventStream,
@@ -271,7 +272,7 @@ test.each(["", "The existing repair already owns this concern."])(
         stream.push({
           type: "done", reason: "toolUse", message: {
             role: "assistant", content: [{ type: "toolCall", id: "finish-one", name: "finish",
-              arguments: { status: "success", summary: "Assessment returned.", result: judgment } }],
+              arguments: { status: "done", summary: "Assessment returned.", output: judgment } }],
             api: "openai-responses", provider: "synthetic", model: "fixture",
             usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
               cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } },
@@ -364,9 +365,9 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
                 input: { operation: "read-publication", publication },
               }
             : {
-                status: "success",
+                status: "done",
                 summary: "Interpretation returned with its limits.",
-                result: judgment,
+                output: judgment,
               };
         if (replies === 2) {
           const result = context.messages.findLast((message) => message.role === "toolResult");

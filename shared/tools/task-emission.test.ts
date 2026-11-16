@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import { memberEmissionKey, taskEmissionKey } from "./task-emission.js";
 
 const event = {
@@ -15,7 +15,7 @@ const fact = {
 };
 
 type ReconciliationEvents = NonNullable<
-  WorkflowContext["reconciliation"]
+  AppWorkflowContext["reconciliation"]
 >["events"];
 
 function context(events: ReconciliationEvents, resourceVersion = 1) {

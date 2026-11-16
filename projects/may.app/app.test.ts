@@ -2,7 +2,7 @@ import { readAppContract } from "../may-agent/src/app/core/reads/app-contract.js
 import { validateAppDefinition } from "../may-agent/src/app/core/apps/definition-validation.js";
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
-import { matchesEventSelector, type AppEvent } from "@may-agent/sdk";
+import { matchesEventSelector, type AppEvent } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import app, {
   evaluationHumanDecisionInput,

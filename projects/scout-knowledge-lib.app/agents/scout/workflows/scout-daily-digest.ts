@@ -5,7 +5,8 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { basename, join } from "node:path";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 
 export const name = "scout-daily-digest";
 export const description =
@@ -21,7 +22,7 @@ export function normalizedDigestBody(content: string): string {
     .trim();
 }
 
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+export async function execute(ctx: AppWorkflowContext): Promise<ExecutionResult> {
   if (!ctx.workspace)
     return ctx.blocked("Scout digest requires a canonical App workspace");
   const appDir = ctx.workspace.appRoot;

@@ -13,13 +13,8 @@ import {
   statSync,
 } from "node:fs";
 import { basename, dirname, isAbsolute, resolve, sep } from "node:path";
-import {
-  observationCondition,
-  type ExecutionResult,
-  type TaskReconcileResult,
-  Type,
-  type WorkflowContext,
-} from "@may-agent/sdk";
+import { type ExecutionResult, Type } from "@may-agent/sdk";
+import { observationCondition, type TaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { xhsCredentialContract } from "../../../watchers/xhs-credential.js";
 import {
   prepareXhsSession,
@@ -924,7 +919,7 @@ function sourceResultEvidence(
 }
 
 export async function executeScoutExplore(
-  ctx: WorkflowContext,
+  ctx: AppWorkflowContext,
   dependencies: ScoutExploreDependencies = defaultDependencies,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
@@ -1436,6 +1431,6 @@ run Git publication or edit the canonical library in this call.`;
   }
 }
 
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+export async function execute(ctx: AppWorkflowContext): Promise<ExecutionResult> {
   return executeScoutExplore(ctx);
 }

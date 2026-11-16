@@ -3,7 +3,8 @@ import {
   populationCut,
 } from "./lib/task-population-evidence.js";
 import { createHash } from "node:crypto";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   createPublicTaskEvidenceProvider,
   sendPublicReadCommand,
@@ -136,7 +137,7 @@ type ParsedReconciliationCommand = {
 };
 
 function reconciliationCommand(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): ReconciliationCommand {
   const reconciliation = ctx.reconciliation;
   const eventPacket = reconciliation?.events;
@@ -318,7 +319,7 @@ function acceptedSelectorJudgmentAfter(
 }
 
 async function reconcileAutomaticReviewInputs(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   requested: string[],
   commandKey: string,
 ): Promise<ExecutionResult> {
@@ -682,7 +683,7 @@ function stateFromFacts(facts: string[]): SelectorState {
 }
 
 async function acceptedSelectorState(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<SelectorState> {
   const taskId = ctx.reconciliation?.taskId;
   if (!taskId) return emptyState();
@@ -1025,7 +1026,7 @@ export async function selectFairCandidate(
 }
 
 export function retainedRequestedReviewTaskIds(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   reviewer: Reviewer = "evaluator",
 ): string[] {
   return (ctx.reconciliation?.taskSnapshot?.live ?? [])
@@ -1050,7 +1051,7 @@ export function retainedRequestedReviewTaskIds(
 }
 
 export async function runTaskOutcomeSelector(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   command?: PublicCommand,
   config = automaticReviewConfig(),
   reportRoot = configuredTaskReportRoot(),
@@ -1244,7 +1245,7 @@ export async function runTaskOutcomeSelector(
 }
 
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   return runTaskOutcomeSelector(ctx);
 }

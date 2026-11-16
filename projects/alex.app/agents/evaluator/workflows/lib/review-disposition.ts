@@ -1,4 +1,4 @@
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import type { Reviewer } from "./reviewer-profile.js";
 import { readPublishedTaskReport } from "./task-report-store.js";
 
@@ -7,7 +7,7 @@ const MAX_DISPOSITIONS = 4;
 /** Consume only this creator's completed finite assessments. Names discover;
  * exact current reads and the validated publication establish authority. */
 export async function consumePublishedReviews(
-  ctx: WorkflowContext<unknown>,
+  ctx: AppWorkflowContext<unknown>,
   taskIds: string[],
   reviewer: Reviewer,
   reportRoot: string,

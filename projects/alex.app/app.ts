@@ -5,13 +5,8 @@ import { retiredEvaluationMetrics } from "./retired-evaluation-metrics.js";
 import { automaticReviewConfig } from "./agents/evaluator/workflows/task-outcome-selector.js";
 import { metricReviewTaskId } from "./agents/evaluator/workflows/lib/metric-selection.js";
 import { readReportFollowUp } from "./agents/evaluator/workflows/lib/report-follow-up.js";
-import {
-  Type,
-  defineApp,
-  type AppEvent,
-  type AppInput,
-  type AppTaskInput,
-} from "@may-agent/sdk";
+import { Type } from "@may-agent/sdk";
+import { defineApp, type AppEvent, type AppInput, type AppTaskInput } from "@may-agent/sdk/app";
 
 import {
   createAlexGitHubPullRequestWatchers,

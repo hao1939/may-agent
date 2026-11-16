@@ -1,4 +1,4 @@
-import type { AppDefinition } from "@may-agent/sdk";
+import type { AppDefinition } from "@may-agent/sdk/app";
 
 export const TASK_EFFORT_METRIC = "may.max-task-recent-model-replies";
 export const EVALUATION_EFFORT_METRIC =

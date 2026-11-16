@@ -1,9 +1,6 @@
 import { readFileSync } from "node:fs";
-import type {
-  ExecutionResult,
-  TaskReconcileResult,
-  WorkflowContext,
-} from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { TaskReconcileResult, AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   packetHash,
   trustedDecisionFromEvent,
@@ -127,7 +124,7 @@ type SelectedFollowUp = {
 };
 
 async function acceptedFollowUpSelection(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   taskId: string,
   packetHash: string,
 ): Promise<SelectedFollowUp | null> {
@@ -178,7 +175,7 @@ async function acceptedFollowUpSelection(
 }
 
 export async function runActivationFollowUp(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   suppliedProvider?: EvidenceProvider,
   publicRead: PublicRead = sendPublicReadCommand,
 ): Promise<ExecutionResult> {
@@ -624,7 +621,7 @@ export async function runActivationFollowUp(
 }
 
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   return runActivationFollowUp(ctx);
 }

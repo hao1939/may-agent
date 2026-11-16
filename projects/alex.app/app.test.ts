@@ -9,7 +9,7 @@ import app, {
 } from "./app.ts";
 import { assertValidAppDefinition } from "../may-agent/src/app/core/apps/definition-validation.ts";
 import { readAppContract } from "../may-agent/src/app/core/reads/app-contract.js";
-import { observationCondition } from "@may-agent/sdk";
+import { observationCondition } from "@may-agent/sdk/app";
 
 test("Alex bootstrap uses ordinary durable Task admission", () => {
   expect(() => assertValidAppDefinition(app)).not.toThrow();

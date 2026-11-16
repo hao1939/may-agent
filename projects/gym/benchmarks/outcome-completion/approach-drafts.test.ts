@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { findOwnedCase } from "../../src/cases/catalog";
 import { benchmarkDir, fingerprintTree, fingerprintValue, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../../src/loop/store";
 import type { GroundTruthCatalog, GroundTruthLabel, InlineBenchmarkCase } from "../../src/loop/types";

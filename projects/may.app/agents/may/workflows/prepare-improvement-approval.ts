@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   approvalCondition,
   buildApprovalProposal,
@@ -88,7 +89,7 @@ export function prepareImprovementApproval(
 }
 
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
 ): Promise<ExecutionResult> {
   const taskId = ctx.reconciliation?.taskId;
   if (!taskId)

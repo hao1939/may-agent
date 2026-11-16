@@ -1,13 +1,5 @@
-import {
-  Type,
-  admitTaskReconcileResult,
-  taskAgentResultSchema,
-  type Static,
-  type TaskCommunication,
-  type TaskReconcileResult,
-  type TaskReconciliationContext,
-  type Condition,
-} from "@may-agent/sdk";
+import { Type, type Static } from "@may-agent/sdk";
+import { admitTaskReconcileResult, taskAgentResultSchema, type TaskCommunication, type TaskReconcileResult, type TaskReconciliationContext, type Condition } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import { bindMetricReuseScope } from "./metric-decision-reuse.js";
 import { metricDecisionSchema } from "./metric-disposition.js";

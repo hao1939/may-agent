@@ -1,11 +1,6 @@
 import { isAbsolute, join, relative, resolve } from "node:path";
-import {
-  Type,
-  admitTaskReconcileResult,
-  type Static,
-  type TaskReconcileResult,
-  type WorkflowContext,
-} from "@may-agent/sdk";
+import { Type, type Static } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type TaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import { commandReceipt } from "../../../command.js";
 import {
@@ -136,13 +131,16 @@ const deliverySchema = Type.Object({
 type DevelopChangeInput = Static<typeof inputSchema>;
 
 /** One bounded workflow; Runtime owns admission, persistence, wakes and recovery. */
-export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
+export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
   const rec = ctx.reconciliation;
   if (!rec || !ctx.workspace)
     return ctx.blocked(
       "Development requires an ordinary Task and its worktree",
     );
-  const root = ctx.workspace.root;
+  let root = ctx.workspace.root;
+  let baseRef = "main";
+  const inspectCandidate = (allowDirty = false) =>
+    candidate(root, ctx.signal, allowDirty, baseRef);
   const archive = new EvidenceStore(
     join(
       ctx.workspace.output,
@@ -234,6 +232,22 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
         "Task changed before this attempt; reconcile the current requirement",
       );
     }
+    // The creator supplies a target checkout through the saved assignment.
+    // Feedback and procedure-call prose cannot redirect development elsewhere.
+    const checkout = (current.input as { data?: { context?: {
+      developmentCheckout?: { root?: unknown; baseRef?: unknown };
+    } } })?.data?.context?.developmentCheckout;
+    if (checkout !== undefined) {
+      if (!checkout || typeof checkout.root !== "string" ||
+          !isAbsolute(checkout.root) || !checkout.root.trim() ||
+          (checkout.baseRef !== undefined &&
+            (typeof checkout.baseRef !== "string" ||
+              !/^[A-Za-z0-9_][A-Za-z0-9._/-]*$/.test(checkout.baseRef)))) {
+        return finish("The assigned developmentCheckout requires an absolute root and an optional Git baseRef; preserve the checkout and correct the assignment before development");
+      }
+      root = resolve(checkout.root);
+      baseRef = typeof checkout.baseRef === "string" ? checkout.baseRef : "main";
+    }
     const context = (current.input as { data?: { context?: {
       periodicReview?: { kind?: string };
       audit?: { mode?: string; identity?: string };
@@ -259,7 +273,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
     const inputKey = digest(rec.events.items);
     // Task-local output must be excluded from source acceptance when stored inside
     // the worktree. Do not edit ignore rules or quietly hide candidate files.
-    await candidate(root, ctx.signal, true);
+    await inspectCandidate(true);
     const mounts = await prepareDevelopmentWorkspace(root, ctx.signal);
     if (mounts.length) ctx.log.info(`Development workspace prerequisites: ${JSON.stringify(mounts)}`);
     const relArchive = relative(resolve(root), resolve(archive.directory));
@@ -440,7 +454,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
     };
 
     await ensureCurrent();
-    const retained = await candidate(root, ctx.signal, true);
+    const retained = await inspectCandidate(true);
     if (
       saved.verified &&
       saved.review?.judgment.decision === "pass" &&
@@ -457,7 +471,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
     while (true) {
       await ensureCurrent();
       if ((await rounds.used()) >= developmentRoundLimit) break;
-      let value = await candidate(root, ctx.signal, true);
+      let value = await inspectCandidate(true);
       const round = await rounds.reserve({
         taskId: rec.taskId,
         generation: rec.generation,
@@ -504,11 +518,11 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
           saved.implementation = undefined;
           continue;
         }
-        value = await candidate(root, ctx.signal);
+        value = await inspectCandidate();
         saved.implementation = value;
         saved.feedback = undefined;
       }
-      value = await candidate(root, ctx.signal);
+      value = await inspectCandidate();
       await ensureCurrent();
       if (!saved.verified || !sameCandidate(saved.verified, value)) {
         ctx.log.info(`Verifying candidate ${value.commit}`);
@@ -516,7 +530,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
         let after: Candidate | undefined;
         let failure = receipt.error;
         try {
-          after = await candidate(root, ctx.signal, true);
+          after = await inspectCandidate(true);
           if (!sameCandidate(value, after))
             failure = "Verification changed the candidate";
         } catch (error) {
@@ -548,7 +562,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
       }
       const review = await ask("bob", "review", reviewSchema, value);
       if (
-        !sameCandidate(value, await candidate(root, ctx.signal)) ||
+        !sameCandidate(value, await inspectCandidate()) ||
         review.commit !== value.commit
       ) {
         throw new Error(

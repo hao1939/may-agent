@@ -398,9 +398,6 @@ export async function runGymWorkflowEntry(
     wfRun = await run({
       ...directOptions,
       cwd: config.workDir,
-      task: {
-        outcome: config.taskText.trim() || "Complete the scenario task",
-      },
     });
   } finally {
     if (workspaceAppCopy) {

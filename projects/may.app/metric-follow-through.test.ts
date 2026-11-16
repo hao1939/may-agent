@@ -1,9 +1,5 @@
 import { expect, test } from "bun:test";
-import {
-  observationCondition,
-  type TaskDetail,
-  type TaskReconciliationContext,
-} from "@may-agent/sdk";
+import { observationCondition, type TaskDetail, type TaskReconciliationContext } from "@may-agent/sdk/app";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import {
   metricReviewHandoff as buildMetricTaskResult,

@@ -154,7 +154,7 @@ test("normal definition activation retires the reviewed catalog and its alerts w
     { definition: app },
     { definition: alexApp },
   ]);
-  expect(retired).toHaveLength(97);
+  expect(retired).toHaveLength(98);
   expect(
     db
       .prepare(
@@ -164,7 +164,7 @@ test("normal definition activation retires the reviewed catalog and its alerts w
   ).toBe(0);
   expect(
     db.prepare("SELECT COUNT(*) AS n FROM metric_snapshots").get()!.n,
-  ).toBe(97);
+  ).toBe(98);
   for (const metric of retired) {
     expect(metrics.get(metric.id)?.status).toBe("retired");
     expect(

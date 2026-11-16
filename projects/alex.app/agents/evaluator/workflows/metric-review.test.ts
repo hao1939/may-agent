@@ -666,6 +666,7 @@ test.each([null, end + 10_000])(
           end: now + 1,
           automatic: true,
           alertId: 8,
+          reviewer: ctx.input.reviewer,
         },
         call: async () => {
           throw new Error("Shared capacity remains enforced");

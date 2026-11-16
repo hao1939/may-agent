@@ -36,7 +36,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
-import { Type, taskAgentResultSchema } from "@may-agent/sdk";
+import { Type } from "@may-agent/sdk";
+import { taskAgentResultSchema } from "@may-agent/sdk/app";
 import {
   run,
   runDirectAgent,
@@ -2604,9 +2605,6 @@ async function main() {
         traceDir: join(wfState, "trace"),
         models: createControlledModelRegistry(),
         timeoutMs: 120_000,
-        task: {
-          outcome: `Diagnose Gym baseline ${baselineDir}`,
-        },
       });
       const rawOut = wfRun.report.result?.output as
         | { output?: Record<string, any> }

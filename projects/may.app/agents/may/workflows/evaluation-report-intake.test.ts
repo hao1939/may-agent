@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AppEvent } from "@may-agent/sdk";
+import type { AppEvent } from "@may-agent/sdk/app";
 import {
   createTestAppRead,
   createTestAppWorkflowContext,

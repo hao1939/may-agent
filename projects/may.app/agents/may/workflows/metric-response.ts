@@ -1,4 +1,5 @@
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { ExecutionResult } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   readMetricEvidence,
   type MetricEvidence,
@@ -16,7 +17,7 @@ import {
 
 export const name = "metric-response";
 export const description =
-  "Read exact metric handling and live Task waits with input:{metricId,alertId} (null without a breach). Compose with input:{review:{task,decisions},conversation?}. A breach episode triggers investigation; new samples only update evidence. Use investigate for useful work: waiting plus continue:true for another bounded internal pass; an exact new or retained repair-result, human-decision, request-return or metric.recovered Condition for an external fact; or a one-time reviewAt for deliberate reconsideration of actual outstanding work such as post-backoff verification. A retained future review remains useful when omitted from a later result. A nextAction, disposition or request alone is not a wake route. Use converged only when fulfilled, or incomplete with the concrete gap when this attempt cannot complete the work. Use no-change and finish the review when only passive collection remains; do not create may.metric.state Conditions or periodic sample-review timers. Retire obsolete saved sample Conditions explicitly while preserving independent work, approvals and deliberate checkpoints. The legacy observe disposition remains readable. Other dispositions are recovered and no-change. In Conversation include conversation:{inputId,topic?,requestUpdates?,requestId?,task?,response?}. For a completed no-change or recovered review use task.state:converged with summary/facts and no Task effects or conversation.task; the decision is accepted directly in Conversation without a follow-up. For remaining work use a waiting review; conversation.task optionally selects an ordinary May work Task, never the executing Task. Use the accepted inputId from events.inputs; communication and requests use the common Task result contract. Omit response for routine automated follow-through. Return the complete output unchanged through finish().result. Code binds new Task identity. Requests commission work; caller Conditions observe results. Preparation alone accepts nothing.";
+  "Read exact metric handling and live Task waits with input:{metricId,alertId} (null without a breach). Compose with input:{review:{task,decisions},conversation?}. A breach episode triggers investigation; new samples only update evidence. Use investigate for useful work: waiting plus continue:true for another bounded internal pass; an exact new or retained repair-result, human-decision, request-return or metric.recovered Condition for an external fact; or a one-time reviewAt for deliberate reconsideration of actual outstanding work such as post-backoff verification. A retained future review remains useful when omitted from a later result. A nextAction, disposition or request alone is not a wake route. Use converged only when fulfilled, or incomplete with the concrete gap when this attempt cannot complete the work. Use no-change and finish the review when only passive collection remains; do not create may.metric.state Conditions or periodic sample-review timers. Retire obsolete saved sample Conditions explicitly while preserving independent work, approvals and deliberate checkpoints. The legacy observe disposition remains readable. Other dispositions are recovered and no-change. In Conversation include conversation:{inputId,topic?,requestUpdates?,requestId?,task?,response?}. For a completed no-change or recovered review use task.state:converged with summary/facts and no Task effects or conversation.task; the decision is accepted directly in Conversation without a follow-up. For remaining work use a waiting review; conversation.task optionally selects an ordinary May work Task, never the executing Task. Use the accepted inputId from events.inputs; communication and requests use the common Task result contract. Omit response for routine automated follow-through. Return the complete output unchanged through finish().output. Code binds new Task identity. Requests commission work; caller Conditions observe results. Preparation alone accepts nothing.";
 
 type Link = { appId: string; taskId: string };
 type Decision = {
@@ -184,7 +185,7 @@ export function metricDecisionFact(
 }
 
 export async function respondToMetric(
-  ctx: WorkflowContext<Input>,
+  ctx: AppWorkflowContext<Input>,
   reader: MetricReader = readMetricEvidence,
   readTask: TaskReader = readMetricLinkedTask,
 ): Promise<ExecutionResult> {
@@ -290,6 +291,6 @@ export async function respondToMetric(
   }
 }
 
-export async function execute(ctx: WorkflowContext<Input>) {
+export async function execute(ctx: AppWorkflowContext<Input>) {
   return respondToMetric(ctx);
 }

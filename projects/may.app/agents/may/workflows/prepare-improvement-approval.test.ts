@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { admitTaskReconcileResult } from "@may-agent/sdk";
+import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { packetHash } from "../../../improvement-approval";
 import {

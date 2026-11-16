@@ -1,4 +1,4 @@
-import type { WorkflowContext } from "@may-agent/sdk";
+import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   metricReviewResult,
   metricReviewSchema,
@@ -15,7 +15,7 @@ export const description =
   "Own an ordinary metric follow-through Task. Keep the handed-off decision as context and ask May to judge current evidence. Host Conditions and dependencies carry observation and delivery.";
 
 export async function execute(
-  ctx: WorkflowContext,
+  ctx: AppWorkflowContext,
   reader: MetricReader = readMetricEvidence,
 ) {
   const rec = ctx.reconciliation;

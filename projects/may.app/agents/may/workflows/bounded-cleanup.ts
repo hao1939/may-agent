@@ -11,12 +11,8 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import {
-  Type,
-  type Static,
-  type TaskReconcileResult,
-  type WorkflowContext,
-} from "@may-agent/sdk";
+import { Type, type Static } from "@may-agent/sdk";
+import { type TaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 
 export const name = "bounded-cleanup";
 export const description =
@@ -241,7 +237,7 @@ export function toTaskReconcileResult(
   };
 }
 
-export async function execute(ctx: WorkflowContext<BoundedCleanupInput | string>) {
+export async function execute(ctx: AppWorkflowContext<BoundedCleanupInput | string>) {
   const workRoot = ctx.workspace?.root ?? ctx.workspace?.projectRoot ?? process.cwd();
   const inputObj: BoundedCleanupInput =
     typeof ctx.input === "string"

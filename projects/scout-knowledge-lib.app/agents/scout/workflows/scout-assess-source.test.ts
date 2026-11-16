@@ -12,7 +12,7 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
-import { admitTaskReconcileResult, type WorkflowContext } from "@may-agent/sdk";
+import { admitTaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import app, { taskForScoutInput } from "../../../app";
 import { execute, executeSourceAssessment } from "./scout-assess-source";
@@ -85,7 +85,7 @@ const packet: SourcePacket = {
 };
 function context(
   root: string,
-  call: WorkflowContext["call"],
+  call: AppWorkflowContext["call"],
   data = input.data,
 ) {
   const current = { ...input, data };
@@ -194,7 +194,7 @@ it("the procedure saves and reads back the analysis with code-owned coverage", a
     options = suppliedOptions;
     expect(prompt).toContain(JSON.stringify(packet));
     return success();
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(options).toMatchObject({ tools: "readonly" });
   expect(result.output).toHaveProperty("state", "converged");
@@ -231,7 +231,7 @@ it("the procedure saves and reads back the analysis with code-owned coverage", a
 it("a changed question reuses the source record and retains previous evidence", async () => {
   const root = temporary();
   await executeSourceAssessment(
-    context(root, (async () => success()) as WorkflowContext["call"]),
+    context(root, (async () => success()) as AppWorkflowContext["call"]),
     async () => packet,
   );
   const first = assessmentRecord(root, sourceUrl);
@@ -244,7 +244,7 @@ it("a changed question reuses the source record and retains previous evidence", 
         ...draft,
         assessment: "Corrected assessment: the claim remains unverified.",
       });
-    }) as WorkflowContext["call"],
+    }) as AppWorkflowContext["call"],
     { ...input.data, outcome: "Focus on limitations" },
   );
   const result = await executeSourceAssessment(next, async () => packet);
@@ -277,7 +277,7 @@ function candidateRecord(root: string) {
 it("a fitting assessment is reused without new bytes, history or a Git commit", async () => {
   const root = temporary();
   await executeSourceAssessment(
-    context(root, (async () => success()) as WorkflowContext["call"]),
+    context(root, (async () => success()) as AppWorkflowContext["call"]),
     async () => packet,
   );
   const first = assessmentRecord(root, sourceUrl);
@@ -286,7 +286,7 @@ it("a fitting assessment is reused without new bytes, history or a Git commit", 
     context(root, (async (_agent, prompt) => {
       expect(prompt).toContain(first.previous);
       return success({ ...draft, reuseExisting: true });
-    }) as WorkflowContext["call"]),
+    }) as AppWorkflowContext["call"]),
     async () => packet,
   );
   expect(structuredClone(result.output)).toMatchObject({
@@ -312,7 +312,7 @@ it.each(["absent", "changed bytes", "symlink", "another candidate file"])(
     if (failure !== "absent") {
       await executeSourceAssessment(
         context(root, (async () =>
-          success()) as WorkflowContext["call"]),
+          success()) as AppWorkflowContext["call"]),
         async () => packet,
       );
     }
@@ -338,7 +338,7 @@ it.each(["absent", "changed bytes", "symlink", "another candidate file"])(
           symlinkSync(join(root, "knowledge/README.md"), record.path);
         }
         return success({ ...draft, reuseExisting: true });
-      }) as WorkflowContext["call"]),
+      }) as AppWorkflowContext["call"]),
       async () => packet,
     );
     expect(structuredClone(result.output)).toMatchObject({
@@ -364,7 +364,7 @@ it.each(["absent", "changed bytes", "symlink", "another candidate file"])(
 it("a partial finish preserves its new gap even when it asks to reuse an older record", async () => {
   const root = temporary();
   await executeSourceAssessment(
-    context(root, (async () => success()) as WorkflowContext["call"]),
+    context(root, (async () => success()) as AppWorkflowContext["call"]),
     async () => packet,
   );
   const previous = assessmentRecord(root, sourceUrl).previous;
@@ -375,7 +375,7 @@ it("a partial finish preserves its new gap even when it asks to reuse an older r
         status: "partial",
         blockers: [{ reason: "The governing reference is still unread.", context: "Pending access" }],
       },
-    })) as WorkflowContext["call"]),
+    })) as AppWorkflowContext["call"]),
     async () => packet,
   );
   expect(result.output).toHaveProperty("state", "incomplete");
@@ -392,7 +392,7 @@ it("standalone no-save uses its assignment without reconciliation or a workspace
       calls++;
       expect(prompt).toContain(input.data.outcome);
       return success();
-    }) as WorkflowContext["call"],
+    }) as AppWorkflowContext["call"],
   });
   ctx.reconciliation = undefined;
   ctx.workspace = undefined;
@@ -410,7 +410,7 @@ it("the hosted assignment overrides conflicting procedure input", async () => {
     expect(prompt).toContain(input.data.outcome);
     expect(prompt).not.toContain("Conflicting request");
     return success();
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   ctx.input = {
     kind: "assess-source",
     data: {
@@ -433,7 +433,7 @@ it("missing hosted assignment cannot fall back to a caller's procedure input", a
   const ctx = context(root, (async () => {
     calls++;
     return success();
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   ctx.reconciliation!.input = undefined as never;
   const result = await executeSourceAssessment(ctx, async () => {
     reads++;
@@ -449,7 +449,7 @@ it("no-save performs the assessment without creating archive files", async () =>
   const root = temporary();
   const ctx = context(
     root,
-    (async () => success()) as WorkflowContext["call"],
+    (async () => success()) as AppWorkflowContext["call"],
     { ...input.data, archive: false },
   );
   const result = await executeSourceAssessment(ctx, async () => packet);
@@ -471,7 +471,7 @@ it("an aborted attempt cannot save a late model result", async () => {
   const ctx = context(root, (async () => {
     controller.abort(new Error("Assignment changed"));
     return success();
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   ctx.signal = controller.signal;
   await expect(
     executeSourceAssessment(ctx, async () => packet),
@@ -503,7 +503,7 @@ it("an actual HTTP denial reaches the same bounded judgment and publication pipe
           assessment:
             "The exact URL returned HTTP 403. No body was read. Further reading needs permitted source access; the cause of the denial is unknown.",
         });
-      }) as WorkflowContext["call"],
+      }) as AppWorkflowContext["call"],
       {
         ...input.data,
         sourceUrl: url,
@@ -548,7 +548,7 @@ it("an unusable draft preserves only an access receipt after retrieval failure",
       output: undefined,
       summary: "No usable model result",
     };
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => {
     throw new Error("HTTP 404");
   });
@@ -573,7 +573,7 @@ it("concurrent edits prevent a successful save and preserve the existing content
       readFileSync(record.path, "utf8") + "\nHuman correction\n",
     );
     return success();
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(structuredClone(result.output)).toMatchObject({
     state: "waiting",
@@ -594,7 +594,7 @@ it("partial analysis is saved with its limits and cannot fulfill the research", 
     success({
       ...draft,
       state: "incomplete",
-    })) as WorkflowContext["call"]);
+    })) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(result.output).toHaveProperty("state", "incomplete");
   expect(assessmentRecord(root, sourceUrl).previous).toContain(
@@ -663,7 +663,7 @@ it.each([
           assessment:
             "The post body was not read. The observed login screen is the only content available. Further body reading requires authorized access to the same source.",
         });
-      }) as WorkflowContext["call"],
+      }) as AppWorkflowContext["call"],
       { sourceUrl: xhsUrl, outcome, acceptance: [acceptance], archive },
     );
     const result = await executeSourceAssessment(ctx, async () => loginPacket);
@@ -700,7 +700,7 @@ it.each([
     const ctx = context(root, (async () => {
       calls++;
       return success();
-    }) as WorkflowContext["call"]);
+    }) as AppWorkflowContext["call"]);
     const result = await executeSourceAssessment(ctx, async () => ({
       ...packet,
       ...mismatch,
@@ -726,7 +726,7 @@ it("preserves the current Host-normalized blocked partial draft", async () => {
       status: "partial",
       blockers: [{ reason: "Read implementation and tests.", context: "Need repository access" }],
     },
-  })) as WorkflowContext["call"]);
+  })) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   const record = assessmentRecord(root, sourceUrl);
   expect(structuredClone(result.output)).toMatchObject({
@@ -757,7 +757,7 @@ it.each([
         ...(partial ? { status: "partial" } : {}),
         blockers: [{ reason: "Implementation and test results were not inspected.", context: "Missing evidence" }],
       },
-    })) as WorkflowContext["call"]);
+    })) as AppWorkflowContext["call"]);
     const result = await executeSourceAssessment(ctx, async () => packet);
     const record = assessmentRecord(root, sourceUrl);
     expect(result.output).toHaveProperty("state", "incomplete");
@@ -787,7 +787,7 @@ it("a completed call without a draft cannot produce or publish an assessment", a
       summary: "No usable draft",
       facts: { status: "partial" },
     };
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(result.output).toHaveProperty("state", "incomplete");
   expect(() => readdirSync(join(root, "knowledge/findings"))).toThrow();
@@ -829,7 +829,7 @@ it("an unsafe canonical target never produces a successful result or a claimed s
   const ctx = context(root, (async () => {
     mkdirSync(record.path); // A conflicting filesystem object appears during analysis.
     return success();
-  }) as WorkflowContext["call"]);
+  }) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
   expect(structuredClone(result.output)).toMatchObject({
     state: "waiting",

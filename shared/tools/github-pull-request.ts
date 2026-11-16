@@ -6,16 +6,8 @@ import {
   readGitHubPullRequestFeedback,
   type GitHubPullRequestFeedback,
 } from "./github-pull-request-feedback.js";
-import { defineObserver, observationCondition } from "@may-agent/sdk";
-import type {
-  AppEvent,
-  AppObserver,
-  AppObserverResult,
-  Condition,
-  ObserverContext,
-  TaskDetail,
-  ResourceObserver,
-} from "@may-agent/sdk";
+import { defineObserver, observationCondition } from "@may-agent/sdk/app";
+import type { AppEvent, AppObserver, AppObserverResult, Condition, ObserverContext, TaskDetail, ResourceObserver } from "@may-agent/sdk/app";
 
 /** Retained May event spelling; other Apps bind the same adapter to their source. */
 export const GITHUB_PULL_REQUEST_EVENT = "may.github.pull-request.state";

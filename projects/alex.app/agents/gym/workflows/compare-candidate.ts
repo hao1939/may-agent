@@ -16,7 +16,7 @@ import {
   describeComparisonObjective,
   type ComparisonObjective,
 } from "@may-agent/gym/comparison";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { AgentContext, ExecutionResult } from "@may-agent/sdk";
 
 export const name = "compare-candidate";
 export const description =
@@ -237,7 +237,7 @@ function trustedRunDir(stateDir: string, stdout: string): string {
 }
 
 export async function compareCandidate(
-  ctx: WorkflowContext,
+  ctx: AgentContext,
 ): Promise<ExecutionResult> {
   let request: Comparison;
   try {
@@ -291,7 +291,7 @@ export async function compareCandidate(
       "Frozen baseline/candidate/objective/scenario/scorer/model/framework identity mismatch before comparison",
     );
   const signal =
-    (ctx as WorkflowContext & { signal?: AbortSignal }).signal ??
+    (ctx as AgentContext & { signal?: AbortSignal }).signal ??
     new AbortController().signal;
   signal.throwIfAborted();
   const outputRoot = resolve(ctx.workspace.output);
@@ -457,6 +457,6 @@ export async function compareCandidate(
     actions: [],
   });
 }
-export async function execute(ctx: WorkflowContext): Promise<ExecutionResult> {
+export async function execute(ctx: AgentContext): Promise<ExecutionResult> {
   return compareCandidate(ctx);
 }

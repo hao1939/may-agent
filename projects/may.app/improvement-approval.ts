@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
-import { readVerifiedApprovalDecision } from "@may-agent/sdk";
+import { readVerifiedApprovalDecision } from "@may-agent/sdk/app";
 
 export interface ActivationAuthorization {
   appId: string;

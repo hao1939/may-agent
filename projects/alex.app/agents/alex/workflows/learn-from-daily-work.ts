@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { Type, type Static, type WorkflowContext } from "@may-agent/sdk";
+import { Type, type Static, type AgentContext } from "@may-agent/sdk";
 
 export const name = "learn-from-daily-work";
 export const description =
@@ -503,7 +503,7 @@ export function stageDraftCasesToGym(
   return stagedIds;
 }
 
-export async function execute(ctx: WorkflowContext<LearnFromDailyWorkInput>) {
+export async function execute(ctx: AgentContext<LearnFromDailyWorkInput>) {
   const projectRoot = ctx.workspace?.projectRoot ?? ctx.workspace?.root ?? process.cwd();
   const input: LearnFromDailyWorkInput =
     ctx.input && typeof ctx.input === "object" ? (ctx.input as LearnFromDailyWorkInput) : {};

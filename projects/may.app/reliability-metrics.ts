@@ -1,4 +1,4 @@
-import type { AppDefinition } from "@may-agent/sdk";
+import type { AppDefinition } from "@may-agent/sdk/app";
 import { join } from "node:path";
 
 const clock = `CAST(strftime('%s','now') AS INTEGER) * 1000`;
@@ -46,18 +46,6 @@ export const reliabilityMetrics: NonNullable<AppDefinition["metrics"]> = [
     priority: "P2",
     description:
       "Host records the maximum direct SQL source duration per collection pass, including failed queries. Under 250 ms is the alert target; a breach requests investigation, not cancellation or a restart. Reconsider this boundary if the median sustains above 100 ms or a worst pass again exceeds approximately 1 second. Notes retain bounded source references and available query plans. No collection means unknown, not zero. Command sources and sample writes are excluded.",
-  },
-  {
-    id: "event.pair-orphan-count",
-    name: "Open orphaned event pairs",
-    owner: "may",
-    type: "gauge",
-    unit: "pairs",
-    measureInterval: 300_000,
-    description:
-      "Diagnostic inventory of legacy event-pair records. An orphan does not establish an unfinished current Task; review current Task and delivery evidence before acting.",
-    sourceQuery:
-      "SELECT COUNT(*) AS value FROM event_pair_runs WHERE status = 'orphan' AND closed_at IS NULL",
   },
   {
     id: SQL_TIME_METRIC,

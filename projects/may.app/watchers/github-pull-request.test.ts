@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { matchesAppTaskCondition } from "../../may-agent/src/app/core/tasks/app-task-condition-tracker.ts";
-import type { Condition, ObserverContext, TaskDetail } from "@may-agent/sdk";
+import type { Condition, ObserverContext, TaskDetail } from "@may-agent/sdk/app";
 import {
   GITHUB_PULL_REQUEST_EVENT,
   createGitHubPullRequestObservers,

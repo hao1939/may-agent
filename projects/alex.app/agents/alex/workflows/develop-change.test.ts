@@ -11,12 +11,7 @@ import {
 import { createServer, type AddressInfo, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import {
-  admitTaskReconcileResult,
-  type TaskDetail,
-  type TaskReconcileResult,
-  type WorkflowContext,
-} from "@may-agent/sdk";
+import { admitTaskReconcileResult, type TaskDetail, type TaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   createTestAppRead,
   createTestAppWorkflowContext,
@@ -159,7 +154,7 @@ function trial() {
           facts: { retained: "execution evidence" },
           output: judgment(stage),
         };
-      }) as WorkflowContext["call"],
+      }) as AppWorkflowContext["call"],
     });
   const run = async (ctx = context()) => {
     const response = await execute(ctx);
@@ -194,6 +189,41 @@ function trial() {
 }
 
 describe("development workflow using real Git and verification", () => {
+  test("develops in the creator's explicit checkout and compares its declared base", async () => {
+    const target = trial();
+    const fallback = trial();
+    const base = target.git(target.worktree, "rev-parse", "HEAD");
+    target.git(target.repo, "branch", "review-base", base);
+    writeFileSync(join(target.repo, "unrelated.txt"), "Existing main work\n");
+    target.git(target.repo, "add", "unrelated.txt");
+    target.git(target.repo, "commit", "-m", "advance main");
+    target.git(target.worktree, "merge", "--ff-only", "main");
+    (target.current.input as any).data.context = {
+      developmentCheckout: { root: target.worktree, baseRef: "review-base" },
+    };
+    const ctx = target.context();
+    ctx.workspace!.root = fallback.worktree;
+    const result = await target.run(ctx);
+    expect(result.state).toBe("converged");
+    expect(target.evidence().verified.base).toBe(base);
+    expect(target.prompts.every((prompt) => prompt.includes(`Worktree: ${target.worktree}`))).toBe(true);
+    expect(readFileSync(join(target.worktree, "answer.cjs"), "utf8")).toContain("=> 1");
+    expect(readFileSync(join(fallback.worktree, "answer.cjs"), "utf8")).toContain("=> 0");
+    expect(existsSync(join(fallback.worktree, ".checks"))).toBe(false);
+  });
+
+  test("rejects an invalid assigned checkout before specialists or verification", async () => {
+    const t = trial();
+    (t.current.input as any).data.context = {
+      developmentCheckout: { root: "../different-repository", baseRef: "--all" },
+    };
+    const result = await t.run();
+    expect(result.state).toBe("incomplete");
+    expect(result.summary).toContain("developmentCheckout");
+    expect(t.calls).toHaveLength(0);
+    expect(existsSync(join(t.worktree, ".checks"))).toBe(false);
+  });
+
   test.each(["accepted policy", "initial periodic input", "initial audit input"])(
     "standing review returns before spending development allowance: %s", async (kind) => {
       const t = trial();
@@ -318,23 +348,13 @@ describe("development workflow using real Git and verification", () => {
       data: { ...t.spec(1).data, constraints: ["Preserve the exported API"] },
     };
     const ctx = t.context();
-    const run = await runWorkflowTest(developChange, {
+    // This retained procedure explicitly needs Host/App capabilities. The
+    // bounded execution test runner deliberately supplies no Task envelope.
+    const result = await execute({
+      ...ctx,
       input: { verify: ["node", "-e", "process.exit(7)"] },
-      reconciliation: ctx.reconciliation,
-      workspace: ctx.workspace,
-      read: ctx.read,
-      mocks: {
-        bob: ({ task, options }) => options?.schema
-          ? ctx.call("bob", task, { ...options, schema: options.schema })
-          : ctx.call("bob", task),
-        "tech-lead": ({ task, options }) =>
-          options?.schema
-            ? ctx.call("tech-lead", task, { ...options, schema: options.schema })
-            : ctx.call("tech-lead", task),
-      },
     });
-    expect(run.ok).toBe(true);
-    expect(run.result?.output).toMatchObject({ state: "incomplete" });
+    expect(result.output).toMatchObject({ state: "incomplete" });
     expect(
       t.calls.filter((call) => call.stage === "implementation"),
     ).toHaveLength(3);
@@ -1259,109 +1279,26 @@ describe("development workflow using real Git and verification", () => {
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
   });
 
-  test("standalone run() supplies the Task envelope to the unified workflow", async () => {
-    const root = mkdtempSync(join(tmpdir(), "develop-change-run-"));
+  test("standalone run() blocks the retained Task-aware procedure before effects", async () => {
+    const root = mkdtempSync(join(tmpdir(), "develop-change-standalone-"));
     roots.push(root);
-    const repo = join(root, "repo");
-    const worktree = join(root, "worktree");
-    const output = join(root, "output");
-    mkdirSync(repo);
-    const git = (cwd: string, ...args: string[]) =>
-      execFileSync("git", ["-C", cwd, ...args], {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      }).trim();
-    git(repo, "init", "-b", "main");
-    git(repo, "config", "user.name", "Standalone Test");
-    git(repo, "config", "user.email", "standalone@example.invalid");
-    writeFileSync(join(repo, ".gitignore"), ".state/\n");
-    writeFileSync(join(repo, "answer.cjs"), "module.exports = () => 0;\n");
-    writeFileSync(
-      join(repo, "verify.cjs"),
-      "require('node:assert/strict').equal(require('./answer.cjs')(), 1); console.log('verified');\n",
-    );
-    git(repo, "add", ".");
-    git(repo, "commit", "-m", "baseline");
-    git(repo, "worktree", "add", "-b", "task/run", worktree);
-
-    const calls: Array<{ agent: string; task: string }> = [];
     const result = await run(
       "alex/develop-change",
+      { verify: ["node", "-e", "process.exit(0)"] },
       {
-        task: "Return 1",
-        acceptance: ["The function returns 1"],
-        constraints: ["Preserve the CommonJS export"],
-        verify: ["node", "verify.cjs"],
-      },
-      {
-        cwd: worktree,
+        cwd: root,
         projectRoot: resolve(import.meta.dirname, "../../../../.."),
-        outputRoot: output,
+        outputRoot: join(root, "output"),
         timeoutMs: 30_000,
-        agentFixtures: {
-          bob: ({ agent, task }) => {
-            calls.push({ agent, task });
-            if (task.includes("Development step: design")) {
-              return {
-                id: "design",
-                kind: "agent",
-                status: "done",
-                summary: "Focused design",
-                output: {
-                  decision: "implement",
-                  reason: "The implementation is localized",
-                  design: "Change the return value and preserve the export",
-                },
-              };
-            }
-            return {
-              id: "review",
-              kind: "agent",
-              status: "done",
-              summary: "Candidate passes review",
-              output: {
-                decision: "pass",
-                reason: "Requirement and verification are satisfied",
-                commit: git(worktree, "rev-parse", "HEAD"),
-                findings: [],
-              },
-            };
-          },
-          "tech-lead": ({ agent, task }) => {
-            calls.push({ agent, task });
-            writeFileSync(
-              join(worktree, "answer.cjs"),
-              "module.exports = () => 1;\n",
-            );
-            git(worktree, "add", "answer.cjs");
-            git(worktree, "commit", "-m", "return required value");
-            return {
-              id: "implementation",
-              kind: "agent",
-              status: "done",
-              summary: "Committed candidate",
-              output: { decision: "ready", reason: "Implemented and committed" },
-            };
-          },
-        },
       },
     );
-
     expect(result.ok).toBe(true);
-    expect(result.result?.output).toMatchObject({ state: "converged" });
-    expect(calls.map((call) => call.agent)).toEqual([
-      "bob",
-      "tech-lead",
-      "bob",
-    ]);
-    expect(calls[0].task).toContain("Current requirement: Return 1");
-    expect(calls[0].task).toContain(
-      'Acceptance: ["The function returns 1"]',
-    );
-    expect(calls[0].task).toContain(
-      'Constraints: ["Preserve the CommonJS export"]',
-    );
-    expect(git(worktree, "status", "--porcelain")).toBe("");
-    expect(readFileSync(join(worktree, ".git"), "utf8")).toContain("gitdir:");
+    expect(result.result).toMatchObject({
+      type: "blocked",
+      reason: "Development requires an ordinary Task and its worktree",
+    });
+    expect(result.result?.output).toBeUndefined();
+    expect(existsSync(join(root, ".checks"))).toBe(false);
+    expect(existsSync(join(root, ".state/alex-development"))).toBe(false);
   });
 });

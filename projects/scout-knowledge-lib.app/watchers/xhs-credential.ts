@@ -1,4 +1,4 @@
-import { defineObserver, type ObservationContract } from "@may-agent/sdk";
+import { defineObserver, type ObservationContract } from "@may-agent/sdk/app";
 import { inspectXhsCredential } from "../agents/scout/tools/lib/xhs-credential.js";
 
 export const xhsCredentialContract: ObservationContract = {

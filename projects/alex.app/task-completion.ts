@@ -1,4 +1,4 @@
-import type { AppTaskResultContext } from "@may-agent/sdk";
+import type { AppTaskResultContext } from "@may-agent/sdk/app";
 
 const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)

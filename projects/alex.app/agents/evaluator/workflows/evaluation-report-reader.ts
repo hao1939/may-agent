@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import type { ExecutionResult, WorkflowContext } from "@may-agent/sdk";
+import type { AgentContext, ExecutionResult } from "@may-agent/sdk";
 import {
   configuredTaskReportRoot,
   isPublishedTaskReportPath,
@@ -180,7 +180,7 @@ function boundedPreview(bytes: Buffer): string {
 }
 
 export async function readEvaluationReports(
-  ctx: WorkflowContext<Input>,
+  ctx: AgentContext<Input>,
   reportRoot = configuredTaskReportRoot(),
 ): Promise<ExecutionResult> {
   const operation = text(ctx.input?.operation) || "list";
@@ -285,7 +285,7 @@ export async function readEvaluationReports(
 }
 
 export async function execute(
-  ctx: WorkflowContext<Input>,
+  ctx: AgentContext<Input>,
 ): Promise<ExecutionResult> {
   return readEvaluationReports(ctx);
 }

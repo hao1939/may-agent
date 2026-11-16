@@ -1,4 +1,4 @@
-import type { Condition } from "@may-agent/sdk";
+import type { Condition } from "@may-agent/sdk/app";
 import {
   createGitHubPullRequestObservers,
   validateGitHubPullRequestCondition,

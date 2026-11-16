@@ -1,12 +1,5 @@
-import {
-  Type,
-  defineApp,
-  type AppEvent,
-  type AppInput,
-  type AppTaskAttachment,
-  type AppTaskInput,
-  type TaskIntent,
-} from "@may-agent/sdk";
+import { Type } from "@may-agent/sdk";
+import { defineApp, type AppEvent, type AppInput, type AppTaskAttachment, type AppTaskInput, type TaskIntent } from "@may-agent/sdk/app";
 import { sourceAssessmentInputSchema } from "./agents/scout/workflows/scout-assess-source.js";
 import { createXhsCredentialObserver } from "./watchers/xhs-credential.js";
 
