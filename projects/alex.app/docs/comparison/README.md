@@ -55,3 +55,7 @@ The [normal development path trial](normal-development-path-trial-20261116.md)
 verifies a bounded repair through integration, activation and a fresh normal
 workflow, with zero operator correction messages and explicit status/retention
 limits. Alex also hands off available Task estimates with its live tail marked.
+The [representative Gym reporting delivery](gym-reporting-delivery-trial-20261116.md)
+produces a tested, reviewed candidate and retained report replays, with integration
+deferred to preserve concurrent migration edits. It also exposes seven internal
+rounds across three workflow calls, narrowing the earlier round-accounting claim.

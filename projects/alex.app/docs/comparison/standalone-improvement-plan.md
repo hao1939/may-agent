@@ -190,47 +190,53 @@ own later evidence.
 The north star remains **correct useful delivery, fewer operator corrections,
 and acceptable total time/cost**. Alex owns scope and disposition. Use a single
 observed bottleneck and a finite hypothesis; improve the process when actual
-work exposes a problem. The linked trial reports preserve the earlier failed,
+work exposes a problem. The linked trial reports preserve earlier failed,
 rejected, no-change and adopted outcomes.
 
+The [representative Gym reporting delivery](gym-reporting-delivery-trial-20261116.md)
+completed an assignment from existing unfinished work. Alex produced candidate
+`772d179073e821df68d57fc4c66c220159ffc920`, passed 20 focused tests/178 assertions,
+obtained independent exact-candidate review and retained a controlled report replay.
+The candidate separates observed quality, resource coverage, run completeness and
+recorded controls while preserving current measured usage and release gates.
+Independent retained-run replay confirmed that every existing comparison field
+remains unchanged and exposed the quality/resource tradeoff explicitly.
+
+The supported disposition is **reviewed candidate; integration deferred**. The
+owner Task and addressed request closed, with a durable validated record and a
+precise handoff. Concurrent migration edits overlap
+`projects/gym/src/loop/types.ts` and `projects/gym/test/loop.test.ts`. The migration
+owner must preserve and settle those edits; Alex or the next integration owner
+then adapts the retained patch to current source, verifies it and reviews any
+conflict resolution before claiming integrated behavior. No candidate source was
+applied to main, and no definition reload or hosted helper was necessary.
+
+There were zero operator correction messages after initial admission. Independent
+observation, testing, replay and reporting still required operator work. The owner
+envelope was 13m 05.579s; the current-cycle model estimate was $13.3094002. Inherited
+owner/helper work was separately $34.2608282, not charged again to this cycle.
+The final record validated 14 artifacts and 20 pointers. Direct recovery artifacts
+are retained outside the owner worktree, which remains available with its unmerged
+candidate. Full workflow/session coverage additionally required operator collection.
+
 The [normal development path trial](normal-development-path-trial-20261116.md)
-completes one controlled cycle through existing `develop-change`, independent
-Bob review, guarded main integration, one definition reload, a fresh ordinary
-helper and automatic dependency continuation. Both Tasks closed with accepted
-results. The source now retains the three-round allowance across invocations for
-the same requirements and reuses an unchanged approved candidate before enforcing
-exhaustion. The exact focused suite passed 45 tests and 272 assertions.
+proved retained round recovery across Task results, not a universal cumulative
+bound. The representative assignment consumed **seven internal rounds across
+three workflow calls**: 1 + 3 + 3. Reentry within the same live owner attempt did
+not recover the preceding call's allowance; changing verification argv also
+changed the requirement key. Alex's caller counted calls as rounds. Partial
+specialist finishes still fail closed, and environment failures triggered repeated
+specialist calls on unchanged source. None of those remaining gaps was repaired
+by this reporting change.
 
-There were zero operator correction messages after the detailed initial
-assignment. This does not mean zero operator work: independent verification,
-observation and reporting remained manual. The cycle took 15m 00s and reports
-$11.4357934 in full Task model estimates, excluding operator and unknown external
-costs. Alex itself supplied $11.1528334 at its earlier query cutoff and correctly
-marked the still-live owner tail partial. General savings are not established.
+The next delivery action is to finish the guarded integration after migration.
+The next bounded process-repair candidate is cumulative allowance across live
+reentry and verification-command changes, with environment failures kept distinct
+from source-repair requests. Do not expand unattended intake on a claim that the
+three-round assignment bound already works. Retain the useful reporting candidate
+and known status/retention limits; add no scheduler or recursive improvement gate.
+General reliability gains and lower operating cost remain unproved.
 
-The integrated evidence CLI validated the final handoff; independent post-closure
-inspection confirmed all 10 declared artifacts and 24 pointer declarations.
-The owner worktree is gone. The helper's reviewed documentation commit remains
-local and its worktree remains available. Durable access uses Alex's retained
-cycle record and copies; some original and nested helper locators still point
-into its worktree. Complete automatic archive export remains unimplemented.
-
-The retained baseline's schema-valid blocked continuation still fails closed.
-The initial proposal to accept that status was not implemented. Correct caller
-SDK configuration and clarified specialist guidance supported one fresh normal
-success; this does not prove partial finishes will cease or recovery is repaired.
-Keep those facts separate when judging the improvement.
-
-The next milestone is **representative useful work through this procedure**,
-with an inspectable outcome and the same correction, time and cost accounting.
-Select the next bounded Gym/Alex assignment from observed user value rather than
-starting another process change merely because another limit is visible. Carry
-known status/retention limits into its acceptance if relevant, and repair one only
-when it blocks the intended outcome. Expand intake after repeatable evidence
-supports it; add no scheduler or recursive improvement gate.
-
-The target remains the improvement cycle. Scout's earlier guidance proposal is
-deferred retained evidence, not an authorized experiment or established priority.
+Scout's earlier proposal remains historical provenance, not an experiment target.
 Do not change benchmark truth, scorer or historical evidence to manufacture a
-better outcome. Full unattended recovery, general reliability gains and lower
-operating cost remain unproved.
+better outcome.
