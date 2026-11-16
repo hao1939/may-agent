@@ -124,7 +124,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(inferWorkspaceRoot(externalTmpDir, otherExternalDir)).toBe(resolve(externalTmpDir));
   });
 
-  test("runs workflow with lab-overlaid agentsRoot, denies hosted tools, and writes run.json without SQLite/EventBus", async () => {
+  test("runs workflow with lab-overlaid agentsRoot, binds declared common-kernel agents, and writes run.json without SQLite/EventBus", async () => {
     const env = setupDirectLayout();
     const seenCalls: Array<{ agent: string; systemPrompt: string; effectiveTools: string[] }> = [];
 
@@ -187,7 +187,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(run.status).toBe("done");
     expect(seenCalls).toHaveLength(1);
     expect(seenCalls[0]?.systemPrompt).toContain("Lab-forked reviewer instructions v2");
-    expect(seenCalls[0]?.effectiveTools).not.toContain("agents");
+    expect(seenCalls[0]?.effectiveTools).toContain("agents");
     expect(run.result).toMatchObject({
       type: "done",
       summary: "Reviewed HEAD~1..HEAD",
@@ -281,6 +281,465 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(toolCalls).toEqual([{ action: "call", agent: "reviewer", task: "must be denied by the supplied binding" }]);
     expect(result.childSessions.map((session) => session.agent)).toEqual(["owner"]);
     expect(cleaned).toBe(1);
+  });
+
+  test("adds no implicit agents tool when undeclared and preserves explicit denial", async () => {
+    const runCase = async (declared: boolean, deny: boolean) => {
+      const env = setupDirectLayout();
+      writeFileSync(
+        join(env.agentsRoot, "reviewer", "agent.json"),
+        JSON.stringify({
+          name: "reviewer",
+          description: "reviewer agent",
+          domain: "test",
+          model: "test",
+          tools: declared ? ["coding", "agents", "finish"] : ["coding", "finish"],
+        }),
+      );
+      let effectiveTools: string[] = [];
+      const result = await runDirectWorkflow({
+        agentName: "owner",
+        workflowName: "review-change",
+        input: { subjectRef: "HEAD" },
+        projectRoot: env.projectRoot,
+        workRoot: env.workRoot,
+        agentsRoot: env.agentsRoot,
+        sharedRoot: env.sharedRoot,
+        outputRoot: env.outputRoot,
+        models: { test: fakeModel() as any },
+        ...(deny ? {
+          resolveToolDenials: (_agent: string, tools: readonly string[]) =>
+            tools.includes("agents") ? [{ name: "agents", reason: "explicit test denial" }] : [],
+        } : {}),
+        runAgent: async (opts): Promise<DirectAgentRunResult> => {
+          const prep = await prepareDirectAgentExecution(opts);
+          effectiveTools = prep.executionManifest.effectiveTools;
+          try {
+            return {
+              sessionId: prep.sessionId,
+              sessionPath: prep.sessionPath,
+              systemPrompt: prep.prepared.systemPrompt,
+              model: prep.model,
+              executionManifest: prep.executionManifest,
+              status: "done",
+              lastAssistantText: "reviewed",
+              messages: [],
+              durationMs: 1,
+              finishResult: {
+                status: "done",
+                summary: "reviewed",
+                output: { subjectRef: "HEAD", summary: "ok" },
+              },
+              structuredResult: { subjectRef: "HEAD", summary: "ok" },
+              usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+              cleanupConfirmed: await prep.cleanupAsync(),
+            };
+          } finally {
+            prep.cleanup();
+          }
+        },
+      });
+      expect(result.ok).toBeTrue();
+      return effectiveTools;
+    };
+
+    expect(await runCase(false, false)).not.toContain("agents");
+    expect(await runCase(true, true)).not.toContain("agents");
+  });
+
+  test("delegates prompt-to-prompt and prompt-to-code through the model-visible common-kernel agents binding", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "summarize.ts"),
+      `
+export const name = "summarize";
+export const description = "Summarize structured input";
+export async function execute(ctx) {
+  return ctx.done("code helper done", { echoed: ctx.input.value });
+}
+`,
+    );
+    const visibleResults: unknown[] = [];
+    const ownerTurns = new Map<string, number>();
+
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Delegate both helper kinds",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        const agentsTool = prep.prepared.tools.find((tool) => tool.name === "agents");
+        if (agentsTool) {
+          const execute = agentsTool.execute.bind(agentsTool);
+          agentsTool.execute = async (...args) => {
+            const result = await execute(...args);
+            const text = result.content.find((item) => item.type === "text")?.text;
+            if (text) visibleResults.push(JSON.parse(text));
+            return result;
+          };
+        }
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          const turn = (ownerTurns.get(opts.agentName) ?? 0) + 1;
+          ownerTurns.set(opts.agentName, turn);
+          const content = opts.agentName === "reviewer"
+            ? [{ type: "toolCall" as const, id: "reviewer_finish", name: "finish", arguments: {
+                status: "done", summary: "prompt helper done", output: { reviewed: true },
+              } }]
+            : turn === 1
+              ? [{ type: "toolCall" as const, id: "owner_prompt", name: "agents", arguments: {
+                  action: "call", agent: "reviewer", input: "Review this",
+                } }]
+              : turn === 2
+                ? [{ type: "toolCall" as const, id: "owner_code", name: "agents", arguments: {
+                    action: "call", agent: "summarize", input: { value: 7 },
+                  } }]
+                : [{ type: "toolCall" as const, id: "owner_finish", name: "finish", arguments: {
+                    status: "done", summary: "parent handled both helpers",
+                  } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "parent handled both helpers" });
+    expect(visibleResults).toEqual([
+      expect.objectContaining({ kind: "agent", status: "done", summary: "prompt helper done", output: { reviewed: true } }),
+      expect.objectContaining({ kind: "workflow", status: "done", summary: "code helper done", output: { echoed: 7 } }),
+    ]);
+    expect((visibleResults[0] as { id?: string }).id).toBeString();
+    expect((visibleResults[1] as { id?: string }).id).toBeString();
+    expect(run.childSessions.map((session) => session.agent)).toEqual(["reviewer", "owner"]);
+    expect(run.report.steps.map((step) => [step.kind, step.target, step.status])).toEqual([
+      ["agent", "reviewer", "done"],
+      ["workflow", "summarize", "done"],
+      ["agent", "owner", "done"],
+    ]);
+  });
+
+  test("rejects a saturated model-visible helper before its code body starts", async () => {
+    const env = setupDirectLayout();
+    const marker = join(env.workRoot, "helper-started.txt");
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "side-effect.ts"),
+      `
+import { writeFileSync } from "node:fs";
+export const name = "side-effect";
+export const description = "Marks body start";
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(marker)}, "started");
+  return ctx.done("started");
+}
+`,
+    );
+    let turn = 0;
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Try one saturated helper",
+      maxConcurrentCalls: 1,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "saturated_call", name: "agents", arguments: {
+                action: "call", agent: "side-effect", input: {},
+              } }]
+            : [{ type: "toolCall" as const, id: "finish_after_denial", name: "finish", arguments: {
+                status: "done", summary: "handled saturation",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "handled saturation" });
+    expect(existsSync(marker)).toBeFalse();
+  });
+
+  test("caps a long-declared code helper at the model tool deadline and still lets the parent finish", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "long-helper.ts"),
+      `
+export const name = "long-helper";
+export const description = "Long declared helper";
+export const executionTimeoutMs = 1000;
+export async function execute(ctx) {
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, 500);
+    ctx.signal.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(ctx.signal.reason);
+    }, { once: true });
+  });
+  return ctx.done("too late");
+}
+`,
+    );
+    let turn = 0;
+    const startedAt = Date.now();
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Bound the helper",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "bounded_helper", name: "agents", arguments: {
+                action: "call", agent: "long-helper", input: {}, timeoutMs: 20,
+              } }]
+            : [{ type: "toolCall" as const, id: "finish_after_timeout", name: "finish", arguments: {
+                status: "done", summary: "parent handled helper timeout",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "parent handled helper timeout" });
+    expect(Date.now() - startedAt).toBeLessThan(400);
+    expect(run.report.steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "workflow", target: "long-helper", status: "error", cleanupConfirmed: true }),
+    ]));
+  });
+
+  test("forwards the actual model tool work-stop signal to a running helper", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "work-stop-helper.ts"),
+      `
+export const name = "work-stop-helper";
+export const description = "Waits for model work stop";
+export const executionTimeoutMs = 2000;
+export async function execute(ctx) {
+  await new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, 1000);
+    ctx.signal.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(ctx.signal.reason);
+    }, { once: true });
+  });
+  return ctx.done("too late");
+}
+`,
+    );
+    let turn = 0;
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Stop helper work but reserve finish time",
+      timeoutMs: 300,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
+                action: "call", agent: "work-stop-helper", input: {},
+              } }]
+            : [{ type: "toolCall" as const, id: "finish_in_reserve", name: "finish", arguments: {
+                status: "done", summary: "finished in reserved interval",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeTrue();
+    expect(run.result).toMatchObject({ type: "done", summary: "finished in reserved interval" });
+    expect(run.report.durationMs).toBeLessThan(300);
+    expect(run.report.steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "workflow", target: "work-stop-helper", status: "error", cleanupConfirmed: true }),
+    ]));
+  });
+
+  test("keeps model-visible helper cleanup uncertainty after the parent handles the tool result and finishes", async () => {
+    const env = setupDirectLayout();
+    let ownerTurn = 0;
+    const run = await runDirectWorkflow({
+      target: "owner",
+      input: "Handle helper cleanup uncertainty",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        if (opts.agentName === "reviewer") {
+          return {
+            sessionId: "reviewer_unconfirmed",
+            sessionPath: join(env.outputRoot, "sessions", "reviewer_unconfirmed"),
+            systemPrompt: "",
+            model: "test",
+            executionManifest: { agent: "reviewer", configuredTools: [], deniedTools: [], effectiveTools: [] },
+            status: "done",
+            lastAssistantText: "done",
+            messages: [],
+            durationMs: 1,
+            finishResult: { status: "done", summary: "helper business result" },
+            usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+            cleanupConfirmed: false,
+          };
+        }
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          ownerTurn += 1;
+          const content = ownerTurn === 1
+            ? [{ type: "toolCall" as const, id: "uncertain_helper", name: "agents", arguments: {
+                action: "call", agent: "reviewer", input: "Return a result",
+              } }]
+            : [{ type: "toolCall" as const, id: "parent_finish", name: "finish", arguments: {
+                status: "done", summary: "parent handled helper result",
+              } }];
+          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(run.ok).toBeFalse();
+    expect(run.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
+    expect(run.report.result).toMatchObject({ type: "done", summary: "parent handled helper result" });
+    expect(run.report.cleanup).toEqual({
+      confirmed: false,
+      unconfirmed: ["agent:reviewer (reviewer_unconfirmed)"],
+    });
   });
 
   test("surfaces unconfirmed descendant cleanup as an explicit error while retaining workspace and report evidence", async () => {

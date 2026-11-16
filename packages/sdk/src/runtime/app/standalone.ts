@@ -7,7 +7,7 @@
  */
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import type { TSchema } from "typebox";
+import { Type, type TSchema } from "typebox";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -22,6 +22,7 @@ import {
   type WorkflowExecutableModule,
   type WorkflowExecutionAllowance,
   type WorkflowKernelOutcome,
+  type WorkflowKernelResolvedTarget,
   type WorkflowKernelStepControl,
   type WorkflowLogEntry,
   type WorkflowRunReport,
@@ -520,6 +521,77 @@ export function defaultDirectToolDenials(configuredTools: readonly string[]): To
     const reason = DIRECT_HOST_TOOL_DENIALS[name];
     return reason ? [{ name, reason }] : [];
   });
+}
+
+const CommonKernelAgentsParams = Type.Object({
+  action: Type.String({ description: 'Only "call" is supported by the bounded common-kernel agents binding.' }),
+  agent: Type.String({ description: "Declared prompt agent or code procedure target." }),
+  input: Type.Optional(Type.Unknown({ description: "Structured procedure input or prompt text." })),
+  task: Type.Optional(Type.String({ description: "Prompt text alias used when input is omitted." })),
+  timeoutMs: Type.Optional(Type.Number({ minimum: 1 })),
+  tools: Type.Optional(Type.Union([Type.Literal("full"), Type.Literal("readonly")])),
+  skill: Type.Optional(Type.String()),
+  operationAllowance: Type.Optional(Type.Integer({ minimum: 1 })),
+}, { additionalProperties: false });
+
+type CommonKernelAgentsCall = {
+  action: string;
+  agent: string;
+  input?: unknown;
+  task?: string;
+  timeoutMs?: number;
+  tools?: "full" | "readonly";
+  skill?: string;
+  operationAllowance?: number;
+};
+
+/**
+ * Built-in agents binding available only inside an admitted common-kernel prompt step.
+ * A caller-supplied provider always takes precedence and is executed unchanged.
+ */
+function createCommonKernelAgentsTool(
+  stepControl: WorkflowKernelStepControl,
+  resolveTarget: (
+    target: string,
+    input: unknown,
+    signal: AbortSignal,
+  ) => WorkflowKernelResolvedTarget | Promise<WorkflowKernelResolvedTarget>,
+): AgentTool {
+  return {
+    name: "agents",
+    label: "Call declared agent",
+    description:
+      'Synchronously call one declared prompt agent or code procedure through the current execution kernel. Only action: "call" is supported; helper lifecycle actions and native CLI fallback are unavailable.',
+    parameters: CommonKernelAgentsParams,
+    execute: async (_toolCallId, rawParams, signal) => {
+      const params = rawParams as CommonKernelAgentsCall;
+      if (params.action !== "call") {
+        throw new Error(`agents action "${String(params.action)}" is unsupported in the bounded common-kernel binding; only "call" is available`);
+      }
+      if (typeof params.agent !== "string" || !params.agent.trim()) {
+        throw new Error('agents action "call" requires a non-empty agent target');
+      }
+      if (params.input === undefined && params.task === undefined) {
+        throw new Error('agents action "call" requires input (or the prompt task alias)');
+      }
+      const input = params.input !== undefined ? params.input : params.task!;
+      const options: CallOptions<TSchema> = {
+        ...(params.timeoutMs !== undefined ? { timeoutMs: params.timeoutMs } : {}),
+        ...(params.tools !== undefined ? { tools: params.tools } : {}),
+        ...(params.skill !== undefined ? { skill: params.skill } : {}),
+        ...(params.operationAllowance !== undefined ? { operationAllowance: params.operationAllowance } : {}),
+      };
+      const result = await stepControl.callTarget(
+        params.agent.trim(),
+        input,
+        options,
+        signal,
+        (nestedControl) => resolveTarget(params.agent.trim(), input, nestedControl.signal),
+      );
+      const text = JSON.stringify(result);
+      return { content: [{ type: "text", text }], details: result };
+    },
+  };
 }
 
 export type DirectAgentFixtureHandler = (call: {
@@ -1342,6 +1414,13 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
+  let resolveDirectTarget: (
+    owner: string,
+    target: string,
+    input: unknown,
+    signal?: AbortSignal,
+  ) => Promise<WorkflowKernelResolvedTarget>;
+
   const executePromptStep = async (
     agent: string,
     prompt: string,
@@ -1361,11 +1440,26 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (!config) {
       throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
     }
-    const denials = options.resolveToolDenials
-      ? options.resolveToolDenials(agent, config.tools)
-      : defaultDirectToolDenials(config.tools).filter(
-          (denial) => options.capabilityProviders?.[denial.name] === undefined,
-        );
+    const explicitAgentsProvider = options.capabilityProviders?.agents;
+    const configuredDenials = options.resolveToolDenials?.(agent, config.tools);
+    const denials = configuredDenials ?? defaultDirectToolDenials(config.tools).filter(
+      (denial) =>
+        options.capabilityProviders?.[denial.name] === undefined &&
+        denial.name !== "agents",
+    );
+    const agentsDenied = denials.some((denial) => denial.name === "agents");
+    const capabilityProviders =
+      config.tools.includes("agents") && !explicitAgentsProvider && !agentsDenied
+        ? {
+            ...options.capabilityProviders,
+            agents: () => ({
+              tools: [createCommonKernelAgentsTool(
+                stepControl,
+                (target, input, signal) => resolveDirectTarget(agent, target, input, signal),
+              )],
+            }),
+          }
+        : options.capabilityProviders;
 
     const directRun = await executeAgent({
       agentName: agent,
@@ -1389,7 +1483,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       toolPolicy: callOpts?.tools,
       operationAllowance,
       toolDenials: denials,
-      capabilityProviders: options.capabilityProviders,
+      capabilityProviders,
       onSessionStarted: options.onSessionStarted,
       drainProcessGroup: options.drainProcessGroup,
       timeoutMs: stepControl.timeoutMs,
@@ -1470,6 +1564,42 @@ export async function runDirectWorkflow<TInput = unknown>(
     };
   };
 
+  let activeScopeSignal: AbortSignal | undefined;
+  resolveDirectTarget = async (owner, target, input, signal = activeScopeSignal) => {
+    const normalized = typeof target === "string" ? target.trim() : "";
+    const slash = normalized.indexOf("/");
+    const procedureOwner = slash === -1 ? owner : normalized.slice(0, slash).trim();
+    if (procedureOwner && (slash !== -1 || !preparedCatalog.prompts.has(normalized))) {
+      await ensureOwnerProcedures(procedureOwner, signal);
+    }
+    if (
+      (normalized === "codex" || normalized === "claude") &&
+      !preparedCatalog.prompts.has(normalized) &&
+      !preparedCatalog.proceduresByOwner.get(owner)?.has(normalized)
+    ) {
+      throw new Error(
+        `agents action "call" does not expose native CLI target "${normalized}"; CLI delegation is a separate capability`,
+      );
+    }
+    const resolved = resolveCallable(owner, normalized, preparedCatalog);
+    if (resolved.kind === "prompt") {
+      return {
+        kind: "agent" as const,
+        invoke: async (callOpts, nestedControl) => {
+          if (typeof input !== "string") {
+            throw new Error(`Prompt target "${normalized}" requires a string prompt input`);
+          }
+          return executePromptStep(resolved.name, input, callOpts, nestedControl);
+        },
+      };
+    }
+    return {
+      kind: "workflow" as const,
+      invoke: (callOpts, nestedControl) =>
+        executeCodeStep(resolved.name, resolved.module, resolved.owner, input, nestedControl, callOpts),
+    };
+  };
+
   const effectiveWorkspace = env?.workspace ?? options.workspace ?? {
     appRoot: resolve(options.projectRoot),
     projectRoot: resolve(options.workRoot),
@@ -1506,7 +1636,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     });
   }
   const authoredModule = targetModule;
-  let activeScopeSignal: AbortSignal | undefined;
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
     {
       ...authoredModule,
@@ -1614,23 +1743,7 @@ export async function runDirectWorkflow<TInput = unknown>(
             },
           };
         }
-        const resolved = resolveCallable(callerOwner, target, preparedCatalog);
-        if (resolved.kind === "prompt") {
-          return {
-            kind: "agent" as const,
-            invoke: async (callOpts, stepControl) => {
-              if (typeof input !== "string") {
-                throw new Error(`Prompt target "${target}" requires a string prompt input`);
-              }
-              return executePromptStep(resolved.name, input, callOpts, stepControl);
-            },
-          };
-        }
-        return {
-          kind: "workflow" as const,
-          invoke: (callOpts, stepControl) =>
-            executeCodeStep(resolved.name, resolved.module, resolved.owner, input, stepControl, callOpts),
-        };
+        return resolveDirectTarget(callerOwner, target, input);
       },
     },
   );

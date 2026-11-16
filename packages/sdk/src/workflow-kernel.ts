@@ -212,7 +212,11 @@ export class WorkflowUnconfirmedCleanupError extends Error {
     public readonly unconfirmed: readonly string[],
     public readonly causeError?: unknown,
   ) {
-    super(`Workflow "${workflow}" finished with unconfirmed descendant cleanup: ${unconfirmed.join(", ")}`);
+    const causeMessage = causeError instanceof Error ? causeError.message : causeError !== undefined ? String(causeError) : "";
+    super(
+      `Workflow "${workflow}" finished with unconfirmed descendant cleanup: ${unconfirmed.join(", ")}` +
+        (causeMessage ? `; originating failure: ${causeMessage}` : ""),
+    );
     this.name = "WorkflowUnconfirmedCleanupError";
   }
 }
@@ -276,6 +280,16 @@ export type WorkflowKernelStepControl = {
   deadlineAt: number;
   stepIndex: number;
   allowance: WorkflowExecutionAllowance;
+  /** Internal bridge for model-visible tools that delegate through this same kernel lifecycle. */
+  callTarget(
+    target: string,
+    input: unknown,
+    options: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
+    signal: AbortSignal | undefined,
+    resolveTarget: (
+      stepControl: WorkflowKernelStepControl,
+    ) => WorkflowKernelResolvedTarget | Promise<WorkflowKernelResolvedTarget>,
+  ): Promise<ExecutionResult>;
 };
 
 export type WorkflowKernelResolvedTarget = {
@@ -755,6 +769,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       stepControl: WorkflowKernelStepControl,
       effectiveOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     ) => Promise<WorkflowStepInvocationResult>,
+    scope?: { signal?: AbortSignal; deadlineAt?: number },
   ): Promise<ExecutionResult> => {
     assertActive();
     if (
@@ -765,12 +780,18 @@ export async function runWorkflowInvocation<TInput = unknown>(
     ) {
       throw new Error(`ctx.call invoked with invalid target name: ${JSON.stringify(target)}`);
     }
+    scope?.signal?.throwIfAborted();
     const effectiveOptions = normalizeEffectiveCallOptions(kind, target, callOptions);
-    const remainingMs = allowance.deadlineAt - Date.now();
+    const effectiveDeadlineAt = Math.min(allowance.deadlineAt, scope?.deadlineAt ?? allowance.deadlineAt);
+    const remainingMs = effectiveDeadlineAt - Date.now();
     if (remainingMs <= 0) {
-      timedOut = true;
-      const err = new Error(timeoutMessage);
-      controller.abort(err);
+      const err = new Error(scope?.deadlineAt !== undefined && effectiveDeadlineAt < allowance.deadlineAt
+        ? `${kind === "agent" ? "Agent" : "Workflow"} step "${target}" timed out before start`
+        : timeoutMessage);
+      if (effectiveDeadlineAt >= allowance.deadlineAt) {
+        timedOut = true;
+        controller.abort(err);
+      }
       throw err;
     }
     const requestedStepMs = effectiveOptions?.timeoutMs ?? remainingMs;
@@ -803,7 +824,10 @@ export async function runWorkflowInvocation<TInput = unknown>(
     }, Math.max(0, stepDeadlineAt - Date.now()));
     stepTimer.unref?.();
     const onParentAbort = () => stepController.abort(controller.signal.reason);
+    const onScopeAbort = () => stepController.abort(scope?.signal?.reason);
     controller.signal.addEventListener("abort", onParentAbort, { once: true });
+    scope?.signal?.addEventListener("abort", onScopeAbort, { once: true });
+    if (scope?.signal?.aborted) onScopeAbort();
     childControllers.add(stepController);
 
     try {
@@ -818,6 +842,30 @@ export async function runWorkflowInvocation<TInput = unknown>(
             deadlineAt: stepDeadlineAt,
             stepIndex,
             allowance,
+            callTarget: (nestedTarget, nestedInput, nestedOptions, nestedSignal, resolveNestedTarget) => {
+              const fallbackKind: "agent" | "workflow" =
+                typeof nestedTarget === "string" && nestedTarget.includes("/")
+                  ? "workflow"
+                  : typeof nestedInput === "string"
+                    ? "agent"
+                    : "workflow";
+              return trackOperation(runBoundStep(
+                fallbackKind,
+                nestedTarget,
+                safePromptPreview(nestedInput),
+                nestedOptions,
+                async (nestedControl, nestedEffectiveOptions) => {
+                  const resolved = await resolveNestedTarget(nestedControl);
+                  const effective = normalizeEffectiveCallOptions(
+                    resolved.kind,
+                    nestedTarget,
+                    nestedEffectiveOptions,
+                  );
+                  return resolved.invoke(effective, nestedControl);
+                },
+                { signal: nestedSignal, deadlineAt: stepDeadlineAt },
+              ));
+            },
           },
           effectiveOptions,
         );
@@ -933,6 +981,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
     } finally {
       clearTimeout(stepTimer);
       controller.signal.removeEventListener("abort", onParentAbort);
+      scope?.signal?.removeEventListener("abort", onScopeAbort);
       childControllers.delete(stepController);
       releaseAllowance();
     }
@@ -1135,6 +1184,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
   let contribution: NormalizedWorkflowContribution | undefined;
   let caughtError: unknown;
+  let authoredExecutionSettled = false;
 
   try {
     const execution = (async () => {
@@ -1160,6 +1210,10 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
       return normalized;
     })();
+    void execution.then(
+      () => { authoredExecutionSettled = true; },
+      () => { authoredExecutionSettled = true; },
+    );
 
     contribution = await Promise.race([execution, stopped]);
   } catch (err) {
@@ -1191,6 +1245,13 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
     }
     await Promise.allSettled([...activeOperations]);
+    for (let settleTurn = 0; settleTurn < 4 && !authoredExecutionSettled; settleTurn++) {
+      await Promise.resolve();
+    }
+    if (!authoredExecutionSettled) {
+      const label = `workflow:${module.name} (${executionId})`;
+      if (!unconfirmedCleanups.includes(label)) unconfirmedCleanups.push(label);
+    }
     if (bindings.confirmCleanup) {
       try {
         const ok = await bindings.confirmCleanup();
