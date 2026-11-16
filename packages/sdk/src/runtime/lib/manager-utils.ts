@@ -71,7 +71,10 @@ export interface SubagentDefinition {
 
   /** Validated skill snapshot retained with this definition by each live session. */
   skillCatalog?: SkillCatalog;
-
+  /** Optional pre-read AGENTS.md identity text captured at catalog snapshot time. */
+  identityText?: string;
+  /** Optional pre-read shared/common-sense.md text captured at catalog snapshot time. */
+  sharedPromptText?: string;
 }
 
 /** Runtime info about a session. */
