@@ -5,7 +5,7 @@ import { admitTaskReconcileResult } from "@may-agent/sdk";
 import { findOwnedCase } from "../../src/cases/catalog";
 import { benchmarkDir, fingerprintValue, loadLabels, loadSuite, materializeScenarioOrInlineCase } from "../../src/loop/store";
 import type { GroundTruthCatalog, GroundTruthLabel, InlineBenchmarkCase } from "../../src/loop/types";
-import { validateSemanticControlSet } from "../../src/scoring/semantic-judge";
+import { buildSemanticJudgeInput, evaluateSemanticJudgeRuns, validateSemanticControlSet, type SemanticCaseResult, type SemanticVerdict } from "../../src/scoring/semantic-judge";
 import { withTempDir } from "../../test/support/temp-dir";
 
 // Native cases.json is authoritative. The review document is historical, not a
@@ -200,6 +200,44 @@ describe("outcome-completion v2 cases (no models)", () => {
     expect(control.expected).toBe("fail");
     expect(scoreDecision(work, input).passed).toBe(true); // Semantic judgment still required, not an overall pass.
   }));
+
+  test("the retained B2 mismatch stays invalid even though both judges accept the candidate", () => {
+    const retained = JSON.parse(readFileSync(join(project, "docs/outcome-v2-attempt-20261116.json"), "utf8"));
+    const mismatch = retained.calibration_mismatches[0];
+    const c = cases[1]!, controls = validateSemanticControlSet(c.semantic_controls);
+    expect(mismatch.case).toBe(c.id);
+    expect(mismatch.control).toEqual(controls.cases.find((control) => control.id === "B2"));
+    expect(mismatch.control.expected).toBe("pass");
+    const input = buildSemanticJudgeInput({}, controls, c.task);
+    expect(input.assignment).toContain("Working tree unchanged since N17");
+    expect(input.assignment).toContain("the repair and regression test");
+    expect(input.cases.find((item) => item.id === "B2")?.decision).toEqual(mismatch.control.decision);
+
+    // Synthetic gate plumbing, NOT model judgments: all other rows are filled
+    // from their keys solely to isolate the actual retained B2 rejection.
+    const gateRow = (id: string, verdict: SemanticVerdict): SemanticCaseResult => ({
+      id, overall: verdict, reason: "Synthetic gate-only fixture.",
+      rules: controls.required_rules.map((rule, index) => ({
+        rule, verdict: verdict === "fail" && index === 0 ? "fail" : "pass",
+        evidence: ["Synthetic gate-only fixture, not semantic calibration."],
+        contradictions: [], confidence: 1,
+      })),
+    });
+    const reference = { cases: [gateRow("candidate", "pass"), ...controls.cases.map((control) => gateRow(control.id, control.expected))] };
+    const rejected = structuredClone(reference);
+    rejected.cases[rejected.cases.findIndex((item) => item.id === "B2")] = mismatch.actual;
+    const result = evaluateSemanticJudgeRuns([
+      { agent: "synthetic-reference-judge", model: "synthetic-reference-model", report: reference },
+      { agent: mismatch.judge, model: "gpt-5.6-sol", report: rejected },
+    ], controls);
+    expect(result.status).toBe("invalid");
+    expect(result.valid).toBe(false);
+    expect(result.passed).toBe(false);
+    expect(result.judges.every((judge) => judge.candidate_verdict === "pass")).toBe(true);
+    expect(result.judges[0]?.controls_passed).toBe(true);
+    expect(result.judges[1]?.controls_passed).toBe(false);
+    expect(result.summary).toContain('calibration control "B2": expected pass, got fail');
+  });
 
   test("decision-only scheduling and ending declarations fail explicit structural gates", () => withTempDir((root) => {
     const { input, work } = materialize(root, cases[0]!);

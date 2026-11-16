@@ -249,10 +249,19 @@ function assessJudgeRun(
   for (const id of expectedIds) {
     if (!caseResults.has(id)) errors.push(`missing case ${id}`);
   }
-  const controlsPassed = controls.cases.every(
-    (control) => caseResults.get(control.id)?.overall === control.expected,
+  const missedControls = controls.cases.filter(
+    (control) => caseResults.get(control.id)?.overall !== control.expected,
   );
-  if (!controlsPassed) errors.push("judge missed one or more calibration controls");
+  const controlsPassed = missedControls.length === 0;
+  if (!controlsPassed) {
+    errors.push("judge missed one or more calibration controls");
+    for (const control of missedControls) {
+      const actual = caseResults.get(control.id)?.overall ?? "missing";
+      errors.push(
+        `calibration control ${JSON.stringify(control.id)}: expected ${control.expected}, got ${actual}`,
+      );
+    }
+  }
 
   return {
     agent: run.agent,
@@ -297,7 +306,12 @@ export function evaluateSemanticJudgeRuns(
       status: "invalid",
       passed: false,
       valid: false,
-      summary: "semantic evaluation is invalid because a judge or calibration failed",
+      summary: [
+        "semantic evaluation is invalid because a judge or calibration failed",
+        ...judges.filter((judge) => !judge.valid).map(
+          (judge) => `${judge.agent}: ${judge.errors.join("; ")}`,
+        ),
+      ].join("; "),
       judges,
     };
   }

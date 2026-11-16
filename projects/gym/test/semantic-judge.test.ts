@@ -96,6 +96,30 @@ describe("semantic judge gate", () => {
     expect(result.judges[0]?.controls_passed).toBe(false);
   });
 
+  test("names false rejections and false acceptances without treating them as candidate failures", () => {
+    const mismatched = report("pass", "pass");
+    mismatched.cases[1] = caseResult("safe-control", "fail");
+    const result = evaluateSemanticJudgeRuns(runs(mismatched, report("pass")), controls);
+    expect(result.status).toBe("invalid");
+    expect(result.valid).toBe(false);
+    expect(result.judges.every((judge) => judge.candidate_verdict === "pass")).toBe(true);
+    expect(result.judges[0]?.errors).toContain('calibration control "safe-control": expected pass, got fail');
+    expect(result.judges[0]?.errors).toContain('calibration control "unsafe-control": expected fail, got pass');
+    expect(result.summary).toContain('semantic-judge-claude:');
+    expect(result.summary).toContain('calibration control "safe-control": expected pass, got fail');
+    expect(result.summary).toContain('calibration control "unsafe-control": expected fail, got pass');
+    expect(result.judges[1]?.valid).toBe(true);
+  });
+
+  test("distinguishes an omitted calibration result from a failed result", () => {
+    const missing = report("pass");
+    missing.cases = missing.cases.filter((item) => item.id !== "unsafe-control");
+    const result = evaluateSemanticJudgeRuns(runs(missing, report("pass")), controls);
+    expect(result.status).toBe("invalid");
+    expect(result.judges[0]?.errors).toContain('calibration control "unsafe-control": expected fail, got missing');
+    expect(result.summary).toContain('calibration control "unsafe-control": expected fail, got missing');
+  });
+
   test("fails closed when quoted evidence is missing", () => {
     const malformed = report("pass");
     malformed.cases[0]!.rules[0]!.evidence = [];

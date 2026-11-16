@@ -130,3 +130,8 @@ which its unchanged rubric does not test. Its narrow stopping-choice pass is not
 proof of that command's provenance or closure authority. No Task was actually
 closed. Labels and measurement definitions remain unchanged pending review of
 these observations; none of this is operational execution evidence.
+
+The [B2 calibration review](CALIBRATION-REVIEW.md) proposes an exact contextual-
+reference clarification for a future version 3. It is not active or approved.
+Diagnostics and an owner-local no-model regression now identify the missed B2
+control without changing its label, weakening the gate, or rescoring the old run.
