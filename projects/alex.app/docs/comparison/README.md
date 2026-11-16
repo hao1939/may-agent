@@ -34,3 +34,5 @@ The [snapshot execution trial](standalone-snapshot-trial-20261116.md) follows th
 experiment through implementation, failed controls, repair and Alex's disposition.
 The [recovery and no-change trial](standalone-recovery-trial-20261116.md) records
 manual checkpoint reuse, interrupted work preservation and non-actionable decisions.
+The [Host handover readiness rehearsal](host-handover-rehearsal-20261116.md) records
+an accepted read-only Alex Task, separate restart checks and the remaining activation gap.
