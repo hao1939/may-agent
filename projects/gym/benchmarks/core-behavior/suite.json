@@ -1,0 +1,21 @@
+{
+  "name": "core-behavior-v1",
+  "version": 1,
+  "evaluation_kind": "behavior",
+  "artifact": "task-result.json",
+  "evaluator": "../../dist/@may-agent/gym/core-behavior.cjs",
+  "core_scenarios": [
+    "behavior-repair-source-preserve-tests",
+    "behavior-repair-test-preserve-source",
+    "behavior-verify-already-correct",
+    "behavior-report-blocked-verification"
+  ],
+  "defaults": {
+    "agent_type": "tech-lead",
+    "output_contract": "task-agent-result",
+    "timeout": 4,
+    "categories": ["core-behavior", "verification", "scope"],
+    "tags": ["behavior", "draft-core"],
+    "task_suffix": "Work only in this isolated workspace. Run `node --test test/duration.test.cjs` from its root and report the observed result. Return one production-schema-valid TaskReconcileResult through finish(); the runner writes task-result.json. Do not write the result file yourself. Do not commit, publish, dispatch other agents, or access external services."
+  }
+}

@@ -259,7 +259,18 @@ export function loadSuite(
   ) {
     throw new Error(`Invalid benchmark suite: ${path}`);
   }
+  if (suite.core_scenarios !== undefined) selectCoreScenarios(suite);
   return { suite, path };
+}
+
+export function selectCoreScenarios(suite: BenchmarkSuite): string[] {
+  const selected = suite.core_scenarios;
+  if (!Array.isArray(selected) || selected.length === 0 ||
+      new Set(selected).size !== selected.length ||
+      selected.some((id) => !suite.scenarios.includes(id))) {
+    throw new Error(`Benchmark ${suite.name} needs a nonempty, unique core_scenarios selection from its cases`);
+  }
+  return [...selected];
 }
 
 export function isApprovedLabel(label: GroundTruthLabel | undefined): boolean {
@@ -505,6 +516,9 @@ export function createRunManifest(input: {
   const evaluatorSource = input.suite.evaluator
     ? join(sourceBenchmarkDir, input.suite.evaluator)
     : null;
+  if (evaluatorSource && !existsSync(evaluatorSource)) {
+    throw new Error(`Evaluator not found: ${evaluatorSource}; run the Gym build before starting trials`);
+  }
   const evaluatorSnapshot =
     evaluatorSource && existsSync(evaluatorSource)
       ? join(frozenBenchmarkDir, input.suite.evaluator!)

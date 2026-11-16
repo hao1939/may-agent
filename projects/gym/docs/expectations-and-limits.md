@@ -44,9 +44,12 @@ unclassified cases do not acquire a kind by inference.
 The current named role-judgment, May alignment and May App outcome-management
 suites produce decisions; they are **judgment** tests, including decisions using
 the production Task-result schema. A production-shaped result alone does not
-turn a case into a behavior test. Existing coding/trajectory scenarios are a
-source for curating behavior benchmarks, not an automatically approved second
-suite. Classify them only after inspecting their scorers and evidence needs.
+turn a case into a behavior test. The separate `core-behavior` suite is the
+first draft behavior slice, checking actual local repairs, verification and
+scope. See [`../benchmarks/CORE.md`](../benchmarks/CORE.md) for its evidence,
+limits and six paired judgment expectations. Existing coding/trajectory
+scenarios remain material for further curation, not automatically approved
+coverage. Classify them only after inspecting their scorers and evidence needs.
 
 For Task-result judgment cases, expectations can address original production
 fields using the existing `exact` and `one_of` matchers:

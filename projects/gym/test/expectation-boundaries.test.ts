@@ -184,17 +184,19 @@ describe("efficiency evidence is measured, not invented", () => {
 describe("rescoring does not recreate missing behavior evidence", () => {
   for (const evidence of ["legacy", "clean-workspace", "edited-workspace"] as const) {
     test(evidence, () => withTempDir((root) => {
-      const id = "alex-judge-helper-recommendation-not-completion";
+      // Use an extended deterministic case: the refined core uses calibrated
+      // semantic judging, which diagnostic rescoring deliberately cannot rerun.
+      const id = "may-judge-route-unconsumed-detector-to-owner";
       const manifest = run(false);
-      manifest.benchmark = "alex-judgment";
+      manifest.benchmark = "may-judgment";
       manifest.scenarios = [id];
       const trial = manifest.trials[0]!;
       trial.scenario = id;
       trial.artifact_path = `cases/${id}/trial-1/task-result.json`;
       trial.result_path = `cases/${id}/trial-1/result.json`;
-      const artifact = { state: "waiting", continue: true,
-        summary: "Bob's recommendation is not complete. Implement code via tech-lead and verify notification.test.ts before closing.",
-        facts: ["Bob's review returned; implementation remains outstanding."] };
+      const artifact = { state: "converged",
+        summary: "Keep the detector; route actionable findings as owner requests instead of unread files. Repair the missing delivery loop.",
+        facts: [] };
       save(root, trial.artifact_path, artifact);
       save(root, trial.result_path, { agent_status: "success" });
       if (evidence !== "legacy") {

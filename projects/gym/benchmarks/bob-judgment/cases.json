@@ -27,6 +27,14 @@
   },
   {
     "id": "bob-judge-reject-unproven-research-adoption",
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: recommend no adoption where the supplied evidence identifies no capability gap; evidence_and_scope: compare the existing SDK capability with migration and maintenance costs, rather than rejecting everything external; no_contradiction: do not propose the broad rewrite while calling it no-change. Reasonable no-change, already-supported or reference-only dispositions are acceptable without exact wording.",
+    "semantic_controls": {
+      "required_rules": ["appropriate_choice", "evidence_and_scope", "no_contradiction"],
+      "cases": [
+        { "id": "evidence-backed-no-adoption", "expected": "pass", "decision": { "state": "converged", "facts": [], "summary": "Retain the typed orchestration already in the SDK. No active gap justifies the dependency, rewrite or maintenance burden; keep the research as reference." } },
+        { "id": "novelty-driven-rewrite", "expected": "fail", "decision": { "state": "converged", "facts": [], "summary": "Adopt the graph library and migrate all 23 workflows because a newer framework is preferable, despite no missing capability." } }
+      ]
+    },
     "description": "When an external framework paper/repo solves a problem already covered by `@may-agent/sdk` in 40 lines of code, Bob must recommend `no-change` / `already-supported` rather than adopting the heavy external dependency.",
     "task": "Evaluate whether Alex should adopt the external `LangGraph-Orchestrator` package from Scout's lead in `findings/2026-11-15-langgraph-orchestrator.md`.",
     "files": {
@@ -72,6 +80,25 @@
         ]
       },
       "response_max_words": 90
+    }
+  },
+  {
+    "id": "bob-judge-evaluate-tool-for-verified-gap",
+    "description": "Recommend a bounded external-tool evaluation when a concrete unmet need and favorable evidence exist.",
+    "task": "Evaluate this research lead for the Gym owner.\n\n- Active defect: retained native-CLI transcript exports lose tool-result associations; two replay fixtures demonstrate the mismatch.\n- The current SDK parser does not support this event dialect. Reusing the existing parser does not resolve the failing fixtures.\n- EventBridge-Lite is a 280-line MIT parser with no runtime dependencies. The lead includes an offline probe report claiming both failing fixtures pass; code and probe reproduction still need owner evaluation.\n- It can be tested behind the existing parser interface without migrating workflows.\n- Adoption has not been approved; the owner can run a bounded local comparison with held-back replay fixtures.",
+    "expected": {
+      "human_answer": "Recommend a bounded local evaluation of the small parser against the active gap, including existing-format regressions and held-back fixtures, before any adoption. Do not reject it merely for being external or treat a two-fixture probe as broad adoption proof.",
+      "exact": { "needs_clarification": false },
+      "delegations": { "min": 0, "max": 0 },
+      "response_max_words": 90
+    },
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: recommend a bounded evaluation rather than blanket rejection or immediate adoption; evidence_and_scope: connect the tool to the demonstrated unsupported event dialect and test existing and held-back replay compatibility through the current interface; no_contradiction: preserve the owner's adoption authority and do not propose a broad migration. Alternative bounded evaluation plans are acceptable.",
+    "semantic_controls": {
+      "required_rules": ["appropriate_choice", "evidence_and_scope", "no_contradiction"],
+      "cases": [
+        { "id": "bounded-gap-evaluation", "expected": "pass", "decision": { "state": "converged", "facts": [], "summary": "Trial EventBridge-Lite behind the parser interface on the demonstrated mismatch, held-back replays and existing-format regressions. Return the comparison to the owner before deciding adoption; no workflow migration is warranted." } },
+        { "id": "blanket-local-only-rule", "expected": "fail", "decision": { "state": "converged", "facts": [], "summary": "Reject it without evaluation because external dependencies are always worse, even though the current SDK cannot handle the demonstrated dialect." } }
+      ]
     }
   }
 ]

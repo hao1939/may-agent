@@ -115,7 +115,14 @@ it requires a fresh baseline. The App's comparison request must name the same
 objective. An omitted objective on a historical manifest means quality; all
 other provenance requirements still apply.
 
-Omit `--scenario` to run the whole suite. Before trial 1, Gym snapshots the
+Omit `--scenario` to run the whole suite, or use `--core` on a suite that declares
+`core_scenarios` to select its small core. Do not combine the two selectors.
+The suite's default role is selected unless `--agent`/`--target` overrides it;
+otherwise the historical `may` fallback remains. Verification inherits the
+baseline's exact selected cases, not a new core selection. See
+[`../benchmarks/CORE.md`](../benchmarks/CORE.md) for the draft expectations.
+
+Before trial 1, Gym snapshots the
 selected scenario directories and benchmark evaluator. The runner executes
 those snapshots, not the live definitions. The command prints the durable run
 directory; the baseline is never mutated after creation.

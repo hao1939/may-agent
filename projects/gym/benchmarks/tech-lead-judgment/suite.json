@@ -1,7 +1,13 @@
 {
-  "name": "tech-lead-judgment-v1",
+  "name": "tech-lead-judgment-v2",
   "evaluation_kind": "judgment",
-  "version": 1,
+  "version": 2,
+  "core_scenarios": [
+    "tech-lead-judge-preserve-creator-test-and-fix-source",
+    "tech-lead-judge-correct-mistaken-test",
+    "tech-lead-judge-preserve-unrelated-worktree-changes",
+    "tech-lead-judge-remove-authorized-owned-scratch"
+  ],
   "artifact": "task-result.json",
   "evaluator": "../may-alignment/score-decision.cjs",
   "cases_file": "cases.json",

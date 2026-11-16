@@ -56,6 +56,8 @@ export interface BenchmarkSuite {
   name: string;
   version: number;
   scenarios: string[];
+  /** Reviewable core selection; other cases remain extended regression material. */
+  core_scenarios?: string[];
   artifact?: string;
   labels_file?: string;
   evaluator?: string;

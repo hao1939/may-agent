@@ -696,7 +696,9 @@ function scoreScenario(
         string,
         (work: string, scen: string) => ScoreResult
       >;
-      return loaded[fnName]!(workDir, scenarioDir);
+      const evaluate = loaded["scoreScenario"] ?? loaded[fnName];
+      if (typeof evaluate !== "function") throw new Error(`Evaluator has no scoreScenario or ${fnName} export: ${evaluatorScript}`);
+      return evaluate(workDir, scenarioDir);
     }
   }
   const bun = (
@@ -2611,7 +2613,7 @@ async function main() {
     console.error("  bun run gym list [--tier <t>] [--category <c>] [--tag <t>]");
     console.error("  bun run gym show <scenario>");
     console.error("  bun run gym run <scenario> [--target <agent|owner/workflow>] [--lab <candidate>] [--timeout 3m]");
-    console.error("  bun run gym test [--benchmark <suite>] [--scenario <id>] [--target <agent|owner/workflow>] [--trials 3] [--objective quality|duration_ms|total_tokens|ops]");
+    console.error("  bun run gym test [--benchmark <suite>] [--core | --scenario <id>] [--target <agent|owner/workflow>] [--trials 3] [--objective quality|duration_ms|total_tokens|ops]");
     console.error("  bun run gym verify --baseline <run> --candidate <lab-fork> [--trials 3]");
     console.error("  bun run gym report <run>");
     console.error("  bun run gym rescore <run>");

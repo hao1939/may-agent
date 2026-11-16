@@ -8,7 +8,17 @@ our expectations) and **behavior** (actually doing the expected thing). Declare
 `evaluation_kind: "judgment"` or `"behavior"` in `suite.json`, with case-level
 overrides when needed. Missing classifications remain unclassified. Report
 these separately; do not present decision-only passes as execution evidence.
-The current named decision suites are judgment tests, not behavior coverage.
+The role decision suites are judgment tests, not behavior coverage.
+`core-behavior` is the first separately executable, draft behavior slice.
+
+## Start with the small core selection
+
+See [`CORE.md`](CORE.md) for six draft expectation pairs (12 judgment cases),
+four executable behavior cases, their observable evidence and remaining gaps.
+`core_scenarios` in each participating suite defines its small core; other cases
+remain extended regressions. Use `gym test --benchmark <suite> --core` to select
+it. Selection is not human approval; all current core labels remain draft.
+The suite's default role is used unless `--agent`/`--target` overrides it.
 
 Before running, define acceptable choices/outcomes, forbidden choices/effects,
 and the evidence that will establish or disprove them. A scorer is an

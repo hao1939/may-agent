@@ -1,7 +1,8 @@
 {
-  "name": "scout-judgment-v1",
+  "name": "scout-judgment-v2",
   "evaluation_kind": "judgment",
-  "version": 1,
+  "version": 2,
+  "core_scenarios": ["scout-judge-honest-partial-coverage-on-blocked-source", "scout-judge-complete-supported-evidence-check"],
   "artifact": "task-result.json",
   "evaluator": "../may-alignment/score-decision.cjs",
   "cases_file": "cases.json",

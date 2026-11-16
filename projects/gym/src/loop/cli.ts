@@ -6,12 +6,13 @@ import { join } from "node:path";
 import { parseComparisonObjective } from "./objective";
 import { renderReport } from "./report";
 import { renderRescore, rescoreRun } from "./rescore";
-import { appendAdjudication, loadSuite, readManifest, resolveRunDir } from "./store";
+import { appendAdjudication, loadSuite, readManifest, resolveRunDir, selectCoreScenarios } from "./store";
 import { runLoop, verifyLoop } from "./run";
 import type { HumanVerdict, ReviewClassification, ReviewReasonCode } from "./types";
 
 interface Args {
   command: string;
+  core: boolean;
   benchmark: string;
   scenarios: string[];
   agent: string;
@@ -34,9 +35,10 @@ function parseArgs(argv: string[]): Args {
   let explicitBenchmark = false;
   const args: Args = {
     command: argv[2] ?? "",
+    core: false,
     benchmark: "may-alignment",
     scenarios: [],
-    agent: "may",
+    agent: "",
     candidate: "baseline",
     trials: 0,
     baseline: "",
@@ -58,6 +60,7 @@ function parseArgs(argv: string[]): Args {
         index++;
         break;
       case "--scenario": args.scenarios.push(value); index++; break;
+      case "--core": args.core = true; break;
       case "--agent":
       case "--target": args.agent = value; index++; break;
       case "--candidate":
@@ -106,7 +109,7 @@ function parseArgs(argv: string[]): Args {
 
 function usage(): never {
   console.error(`Usage:
-  bun run gym test [--benchmark may-alignment] [--scenario ID] [--target <agent|owner/workflow>] [--trials 3] [--objective quality|duration_ms|total_tokens|ops --min-reduction-percent 20]
+  bun run gym test [--benchmark may-alignment] [--core | --scenario ID] [--target <agent|owner/workflow>] [--trials 3] [--objective quality|duration_ms|total_tokens|ops --min-reduction-percent 20]
   bun run gym verify --baseline RUN_ID --candidate LAB_FORK [--trials 3]
   bun run gym review --run RUN_ID --scenario ID --trial N --verdict pass|fail --reviewer NAME --reason TEXT [--classification may-behavior|ground-truth|scorer|harness|unclear] [--reason-code CODE]
   bun run gym rescore [--run] RUN_ID
@@ -116,6 +119,9 @@ function usage(): never {
 
 export async function executeLoopCli(argv: string[] = process.argv): Promise<void> {
   const args = parseArgs(argv);
+  if (args.core && (args.command !== "test" || args.scenarios.length > 0)) {
+    throw new Error("--core selects a test baseline; do not combine it with --scenario. Verification inherits the frozen selection.");
+  }
   if (args.command !== "test" && (args.objective !== undefined || args.minReductionPercent !== undefined)) {
     throw new Error("Declare the comparison objective with test; verify inherits the frozen baseline objective");
   }
@@ -124,6 +130,7 @@ export async function executeLoopCli(argv: string[] = process.argv): Promise<voi
     case "test": {
       const trials = args.trials || 3;
       if (!Number.isInteger(trials) || trials < 1) throw new Error("--trials must be a positive integer");
+      const { suite } = loadSuite(args.benchmark, args.scenarios);
       const created = await runLoop({
         phase: "test",
         objective: parseComparisonObjective({
@@ -131,8 +138,8 @@ export async function executeLoopCli(argv: string[] = process.argv): Promise<voi
           ...(args.minReductionPercent !== undefined ? { min_reduction_percent: args.minReductionPercent } : {}),
         }),
         benchmark: args.benchmark,
-        scenarios: args.scenarios,
-        agent: args.agent,
+        scenarios: args.core ? selectCoreScenarios(suite) : args.scenarios,
+        agent: args.agent || suite.defaults?.agent_type || "may",
         candidate: args.candidate,
         trials,
         timeout: args.timeout,

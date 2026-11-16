@@ -1,7 +1,8 @@
 {
-  "name": "alex-judgment-v1",
+  "name": "alex-judgment-v2",
   "evaluation_kind": "judgment",
-  "version": 1,
+  "version": 2,
+  "core_scenarios": ["alex-judge-helper-recommendation-not-completion", "alex-judge-close-verified-bounded-outcome"],
   "artifact": "task-result.json",
   "evaluator": "../may-alignment/score-decision.cjs",
   "cases_file": "cases.json",

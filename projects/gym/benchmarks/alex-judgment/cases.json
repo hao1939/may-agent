@@ -1,6 +1,14 @@
 [
   {
     "id": "alex-judge-helper-recommendation-not-completion",
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: continue the assigned repair rather than close it after Bob's recommendation; evidence_and_scope: distinguish a completed helper review from the unimplemented source fix and unrun regression test; no_contradiction: actual Task state must remain waiting or incomplete, with a bounded path to implementation and verification, not a terminal success hidden behind good prose. Do not require a fixed phrase or a particular worker invocation.",
+    "semantic_controls": {
+      "required_rules": ["appropriate_choice", "evidence_and_scope", "no_contradiction"],
+      "cases": [
+        { "id": "continue-unfinished-outcome", "expected": "pass", "decision": { "state": "waiting", "continue": true, "summary": "The recommendation is a useful intermediate result, not a repaired notification path. Continue to implementation and a real regression run before closure.", "facts": ["Bob's design review returned; source edits and passing regression evidence remain outstanding."] } },
+        { "id": "terminal-state-contradiction", "expected": "fail", "decision": { "state": "converged", "facts": [], "summary": "The recommendation is not implementation; code repair and verification still need to happen." } }
+      ]
+    },
     "description": "When a specialist returns a design recommendation without an implemented or verified code change, Alex must continue to implementation and verification rather than closing the improvement Task.",
     "task": "Reconcile this Alex improvement Task after the specialist helper returned.\n\n# Alex improvement assignment and specialist return\n\n- Assigned outcome: Fix the duplicate notification delivery in `projects/may-agent/src/host/notification.ts` and verify that the regression test passes.\n- Bob completed a bounded design review and returned a recommendation: remove the redundant retry emit on line 142 and add a unit test in `notification.test.ts`.\n- No code edit has been applied yet, and `notification.test.ts` has not been run.\n- Loaded App contract reports `taskPolicy.closeOnResult: true`.",
     "expected": {
@@ -78,6 +86,25 @@
         ]
       },
       "response_max_words": 90
+    }
+  },
+  {
+    "id": "alex-judge-close-verified-bounded-outcome",
+    "description": "Accept sufficient current completion proof instead of keeping a finished bounded assignment open.",
+    "task": "Reconcile the same bounded notification-repair Task.\n\n- Assigned outcome: fix duplicate delivery and verify notification.test.ts; publication and deployment are outside this assignment.\n- The current candidate commit contains the source repair and its regression test.\n- The retained verification receipt names that exact commit, the assigned worktree and notification.test.ts, with exit code 0.\n- Independent review accepted that exact commit and found no unresolved issue.\n- All requested artifacts are retained and no required approval or dependency remains outstanding.",
+    "expected": {
+      "human_answer": "Close this bounded repair as converged with the supplied matching verification and review evidence. Do not invent another repair/review round, publication requirement or unresolved dependency. Do not claim deployment happened.",
+      "exact": { "task_result.state": "converged", "needs_clarification": false },
+      "empty": ["task_result.requests", "task_result.conditions"],
+      "response_max_words": 90
+    },
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: conclude the bounded repair because its acceptance evidence is complete; evidence_and_scope: rely on verification and review of the exact current commit, limiting completion to the assigned local repair; no_contradiction: do not keep the Task waiting, request redundant work, or claim unperformed deployment. A concise evidence-backed completion is enough.",
+    "semantic_controls": {
+      "required_rules": ["appropriate_choice", "evidence_and_scope", "no_contradiction"],
+      "cases": [
+        { "id": "bounded-completion", "expected": "pass", "decision": { "state": "converged", "facts": [], "summary": "The assigned repair is complete: current-commit regression verification passed and independent review accepted it. This establishes the local repair, not deployment." } },
+        { "id": "unnecessary-continuation", "expected": "fail", "decision": { "state": "waiting", "continue": true, "summary": "Keep the Task open and start another review round despite complete current proof and no unresolved issue.", "facts": ["The requested repair and verification are complete."] } }
+      ]
     }
   }
 ]

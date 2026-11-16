@@ -40,10 +40,10 @@ export interface RescoreResult {
 type Evaluator = (workDir: string, scenarioDir: string) => Pick<ScenarioRunResult, "passed" | "checks" | "summary">;
 
 function evaluatorFor(path: string): Evaluator {
-  const loaded = createRequire(import.meta.url)(path) as { scoreDecision?: Evaluator; scoreTaskResult?: Evaluator };
-  const evaluate = loaded.scoreDecision ?? loaded.scoreTaskResult;
+  const loaded = createRequire(import.meta.url)(path) as { scoreScenario?: Evaluator; scoreDecision?: Evaluator; scoreTaskResult?: Evaluator };
+  const evaluate = loaded.scoreScenario ?? loaded.scoreDecision ?? loaded.scoreTaskResult;
   if (typeof evaluate !== "function") {
-    throw new Error(`Evaluator must export scoreDecision or scoreTaskResult(workDir, scenarioDir): ${path}`);
+    throw new Error(`Evaluator must export scoreScenario, scoreDecision or scoreTaskResult(workDir, scenarioDir): ${path}`);
   }
   return evaluate;
 }
@@ -104,11 +104,14 @@ export function rescoreRun(run: string): RescoreResult {
         existsSync(join(gymRoot, "scenarios", trial.scenario, "semantic_criteria.md")) ||
         Boolean(suite.cases?.find((item) => item.id === trial.scenario)?.semantic_criteria) ||
         existsSync(join(gymRoot, "benchmarks", manifest.benchmark, "scenarios", trial.scenario, "semantic_criteria.md"));
-      const missingWorkspace = !hasWorkspace && score.checks.some((check) => check.name === "decision-only-scope");
+      const missingWorkspace = !hasWorkspace && (
+        manifest.evaluation_kinds?.[trial.scenario] === "behavior" ||
+        score.checks.some((check) => check.name === "decision-only-scope")
+      );
       const rescoredVerdict = requiresSemanticEvaluation || missingWorkspace ? "invalid" : deterministic.verdict;
       const invalidReason = requiresSemanticEvaluation
         ? "current semantic rubric was not evaluated; deterministic rescore is diagnostic only"
-        : missingWorkspace ? "no retained final workspace; cannot re-evaluate decision-only scope"
+        : missingWorkspace ? "no retained final workspace; cannot re-evaluate workspace scope or behavior"
         : deterministic.reason;
       trials.push({
         scenario: trial.scenario,

@@ -19,7 +19,11 @@ Reports distinguish `judgment`, `behavior` and unclassified cases; historical
 runs are not retroactively classified.
 
 See [`docs/expectations-and-limits.md`](docs/expectations-and-limits.md) for the
-benchmark contract, examples and limitations.
+benchmark contract, examples and limitations. The small draft core and its six
+expectation pairs are reviewed in [`benchmarks/CORE.md`](benchmarks/CORE.md).
+Use `gym test --benchmark <role>-judgment --core` for a role's core judgment
+selection, or `--benchmark core-behavior --core` for the first behavior slice.
+These make model calls; draft results are diagnostic, not release approval.
 
 ## Project boundary
 
