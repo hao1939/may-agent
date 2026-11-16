@@ -194,3 +194,7 @@ Preparation checks validated the local document links and active catalog. A copy
 without this review-only directory produced exactly the same active case list;
 adding these documents registered no benchmark or case. No scorer controls or
 agent behavior have been executed or validated by those preparation checks.
+The shared `gym:check` passed 396 Bun tests, six Node/scorer tests, 122-case/
+13-benchmark structural validation and 1,488 review checks; `gym:app:check`
+passed 12 tests. These validate the existing harness/catalog, not this draft's
+as-yet-unimplemented scorer controls or any repair-delivery performance.
