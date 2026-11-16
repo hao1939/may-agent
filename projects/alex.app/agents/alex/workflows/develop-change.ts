@@ -25,7 +25,7 @@ import {
 
 export const name = "develop-change";
 export const description =
-  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires a finite development Task with concrete outcome/acceptance and its worktree; a standing improvement review must delegate one incident assignment first. Input: { verify: [executable, ...arguments] }. Requirements come from that Task, not call-site task prose. Returns evidence for Alex to judge; copy output.result.development unchanged into every later owning Task result.result.development, including waits, so reentry can reuse exact evidence. Does not merge or deploy.";
+  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires a finite development Task with concrete outcome/acceptance and its worktree; a standing improvement review must delegate one incident assignment first. Input: { verify: [executable, ...arguments] }. Requirements come from that Task, not call-site task prose. Returns evidence for Alex to judge; preserve its result.development field in every owning TaskReconcileResult, including waits; a later workflow result supersedes the current receipt after a repair. Does not merge or deploy.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
 // Private procedure options; the owning Task supplies requirements.

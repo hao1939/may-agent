@@ -401,6 +401,38 @@ than inventing replacement execution. Quality was still running near its existin
 15-minute job bound; Container remained successful on d66f695407. No complete
 workflow/watcher/readiness/final addressed notification is claimed at this checkpoint.
 
+### Native workflow and watcher continuation proved; Quality stall remains
+
+Generation 3 ran `develop-change` (`wr_1794866610210_ki6q`) on the retained
+candidate d66f695407. Code ran `check:ci`; Bob selected review of existing work
+and passed the bounded local candidate without repeating implementation. Both
+returned content-addressed artifacts were independently hash-verified.
+`pull-request-wait` run `wr_1794867193803_gc9r` saved a source-bound Condition;
+real observer event 6730879 satisfied it and started attempt
+`r_3_adcf5245-2a3f-4f5e-b176-6b198988becd` on the same Task. Run
+`wr_1794867239121_lgr6` rearmed against actual observed fingerprint
+`5615146912aceb07094fafe430cad9dc5753c17a45c4c2c252d4dd9f5314ef45`.
+No operator continuation was used for this watcher wake.
+
+Quality run 43963536319 was cancelled at its 15-minute job bound. Three
+completed shards reported 717, 991 and 917 passes, no failures, in under four
+minutes; the fourth stopped making visible progress. This is not a full pass.
+Alex's bounded local reproduction also remained incomplete, but its final facts
+omitted that diagnostic result and escalated missing rerun/dispatch permissions.
+Its Task results also omitted canonical `result.development`, retaining only
+prose/fact links and preventing ordinary workflow evidence reuse.
+
+App source `dda1dfff14` changed active CI/comment interests to five-minute
+checks using the existing observer; state-only interests stay hourly, and shared
+provider deferral remains. Fifty-nine focused watcher tests pass; exact successful
+reload is 6730868. Source `2a2a583d3a` clarifies canonical evidence preservation
+and diagnosis before credential escalation; model-surface validation passes and
+exact successful reload is 6730913. Operator feedback returned the diagnostic
+facts and hash-verified original receipt to May. May's native revision run
+`wr_1794867484593_w7lx` preserved the same Task at generation 4 with the stall
+still owed and retired the unnecessary manual-rerun wait. No completed CI repair,
+ready caller result or addressed final Telegram receipt is claimed here.
+
 ## Historical performance observations
 
 The original proposal reported these local measurements before the boundary
