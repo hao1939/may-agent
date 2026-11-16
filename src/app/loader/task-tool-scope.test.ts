@@ -37,53 +37,15 @@ test("rejects duplicate concrete names from overlapping presets with both source
   );
 });
 
-test("rejects an agent-local tool that collides with the built-in Task tool", async () => {
+test("does not inject a built-in tasks tool and allows agent-local tools", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-tool-local-"));
   roots.push(root);
+  expect(await buildTools({ name: "worker", tools: [] } as unknown as AgentConfig, fixtureOptions(root))).toEqual([]);
+
   const toolsDir = join(root, "worker", "tools");
   mkdirSync(toolsDir, { recursive: true });
   writeFileSync(join(toolsDir, "tasks.ts"), 'export default () => ({ name: "tasks" });');
 
-  await expect(
-    buildTools({ name: "worker", tools: [] } as unknown as AgentConfig, fixtureOptions(root)),
-  ).rejects.toThrow(
-    'Agent worker has duplicate model-visible tool name "tasks" from agent-local tools for "worker" and built-in "tasks"',
-  );
-});
-
-test("Task-bound workflow tools use their exact binding; unbound workflows get no Task scope", async () => {
-  const root = mkdtempSync(join(tmpdir(), "may-tool-scope-"));
-  roots.push(root);
-  const binding = { appId: "sample", taskId: "work/one", generation: 3, attemptId: "attempt-one" };
-  const session: { source: string; projectId?: string; taskBinding?: typeof binding } = {
-    source: "workflow:reconcile",
-    projectId: "wrong-display-project",
-    taskBinding: binding,
-  };
-  const tools = await buildTools(
-    { name: "worker", tools: [] } as unknown as AgentConfig,
-    {
-      agentsRoot: root,
-      sharedRoot: root,
-      projectsRoot: root,
-      projectRoot: root,
-      persistDir: root,
-      manager: { activeSessions: new Map([["session-test", session]]) },
-      bus: new EventBus(),
-      getAgentSessionId: () => "session-test",
-    } as unknown as ToolsetLoaderOptions,
-  );
-  const tool = tools.find((row) => row.name === "tasks")!;
-  const get = async () => {
-    const result = await tool.execute("read-one", { action: "get", taskId: "work/two" });
-    return JSON.parse((result.content[0] as { text: string }).text);
-  };
-  // There is intentionally no loaded App in this portable fixture. Reaching
-  // its reader with the exact binding proves scope, without publishing facts.
-  expect(await get()).toEqual({ error: "App sample has no loaded Task runtime" });
-  delete session.taskBinding;
-  expect(await get()).toEqual({ error: "No current App Task scope" });
-  session.source = "app-task-agent";
-  session.projectId = "legacy";
-  expect(await get()).toEqual({ error: "App legacy has no loaded Task runtime" });
+  const tools = await buildTools({ name: "worker", tools: [] } as unknown as AgentConfig, fixtureOptions(root));
+  expect(tools.map((tool) => tool.name)).toEqual(["tasks"]);
 });

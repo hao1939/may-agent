@@ -1,4 +1,3 @@
-import { Type, type TSchema } from "typebox";
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { resolve } from "node:path";
 import {
@@ -14,44 +13,10 @@ export * from "@may-agent/sdk/runtime";
 /** Host capability profile persisted with a session so recovery cannot broaden its tools. */
 export type ToolPolicy = "full" | "readonly";
 
-const READ_ACTIONS = ["list", "created", "workload", "get", "contract", "communication"] as const;
-const READ_ACTION_SET = new Set<string>(READ_ACTIONS);
 const CHAT_TOOL_DENYLIST = new Set(["bash", "background_exec", "cron", "edit", "finish", "write"]);
-const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read", "tasks"]);
+const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read"]);
 const PERSISTENT_CHAT_SUFFIX =
   "This is a persistent conversation. Answer the current input and leave the conversation open for later messages.";
-
-/** Narrow this execution's built-in Task capability without mutating the shared definition. */
-export function readOnlyTaskTool(tool: AgentTool): AgentTool {
-  const parameters = tool.parameters as TSchema & { properties: Record<string, TSchema> };
-  return {
-    ...tool,
-    description:
-      "Read scoped Task lists, workloads, exact assignments, App contracts and current communication. This read-only execution can return recommendations; publishing facts, applying changes, revision and closure require an authorized writing execution.",
-    parameters: {
-      ...parameters,
-      properties: {
-        ...parameters.properties,
-        action: Type.Union(READ_ACTIONS.map((action) => Type.Literal(action))),
-      },
-    },
-    execute: async (...args) => {
-      const input = args[1];
-      if (!input || typeof input !== "object" || !READ_ACTION_SET.has((input as { action?: string }).action ?? "")) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify({ error: "Read-only Task capability does not allow this action" }),
-            },
-          ],
-          details: undefined,
-        };
-      }
-      return tool.execute(...args);
-    },
-  };
-}
 
 export type AgentPreparationOptions = Omit<SdkAgentPreparationOptions, "toolPolicy"> & {
   taskContext?: TaskExecutionContext;
@@ -70,9 +35,7 @@ function hostTools(
     ? tools.filter((tool) => !CHAT_TOOL_DENYLIST.has(tool.name))
     : [...tools];
   if (toolPolicy === "readonly") {
-    selected = selected
-      .filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name))
-      .map((tool) => (tool.name === "tasks" ? readOnlyTaskTool(tool) : tool));
+    selected = selected.filter((tool) => READONLY_TOOL_ALLOWLIST.has(tool.name));
   }
   return selected;
 }

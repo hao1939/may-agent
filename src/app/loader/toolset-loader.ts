@@ -15,7 +15,6 @@ import { createReadTool } from "@may-agent/sdk/runtime";
 import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
 import { readMetricView } from "../adapters/reporting/metric-read.js";
-import { createAppTaskReadTool } from "../app-task-read-tool.js";
 import type { AppRegistry } from "../core/apps/registry.js";
 import type { EventBus } from "../core/events/bus.js";
 import { createRuntimeAppRead } from "../core/reads/app-read.js";
@@ -143,41 +142,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
   const localTools = await loadLocalTools(config.name, agentDir, opts);
   tools.push(...localTools);
   sources.push(...localTools.map(() => `agent-local tools for "${config.name}"`));
-  tools.push(
-    createAppTaskReadTool({
-      bus,
-      scope: () => {
-        const sessionId = opts.getAgentSessionId(config.name);
-        const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;
-        if (session?.taskBinding) return session.taskBinding;
-        if ((session?.source !== "app-task-agent" && session?.source !== "app-task-owner") || !session.projectId) {
-          return undefined;
-        }
-        return { appId: session.projectId };
-      },
-      communicationReader: () => {
-        const sessionId = opts.getAgentSessionId(config.name);
-        return sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.readCommunication : undefined;
-      },
-      workloadReader: () => {
-        const sessionId = opts.getAgentSessionId(config.name);
-        const read = sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.taskRead : undefined;
-        return read?.workload;
-      },
-      createdReader: () => {
-        const sessionId = opts.getAgentSessionId(config.name);
-        return sessionId ? manager.activeSessions.get(sessionId)?.taskContext?.taskRead?.created : undefined;
-      },
-      applier: () => {
-        const sessionId = opts.getAgentSessionId(config.name);
-        const session = sessionId ? manager.activeSessions.get(sessionId) : undefined;
-        if (session?.taskBinding && !session.taskContext)
-          throw new Error("Current Task execution context is unavailable");
-        return session?.taskContext?.applyTaskChanges;
-      },
-    }),
-  );
-  sources.push('built-in "tasks"');
   assertUniqueToolNames(tools.map((tool, index) => ({ tool, source: sources[index]! })), config.name);
   return tools;
 }
