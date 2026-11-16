@@ -41,3 +41,6 @@ closes that activation gap and records an accepted owner no-change decision on r
 The [diagnosis grounding trial](diagnosis-grounding-trial-20261116.md) repairs
 unsupported specialist recommendations, compares retained and synthetic inputs,
 and records Alex's source-adoption decision with mixed cost and explicit limits.
+The [Alex-owned activation and fresh replay](alex-owned-activation-replay-20261116.md)
+verifies the later source-root repair in hosted execution and records remaining
+binding, evidence-retention, cost-scope and publication follow-through gaps.

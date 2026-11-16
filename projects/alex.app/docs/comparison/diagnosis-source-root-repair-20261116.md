@@ -5,7 +5,11 @@
 Alex delivered and accepted reviewed source candidate
 `078d08f4ff817b92f059bc392679956876e9f580` for the hosted diagnosis source-root
 bug. Independent replay and focused checks passed; the candidate is integrated
-into `main`. Runtime definitions are unchanged, so this repair is not yet active.
+into `main`. This source-only trial did not activate runtime definitions. The
+subsequent [Alex-owned activation and fresh replay](alex-owned-activation-replay-20261116.md)
+activates the repair and verifies its exact executed hash and Task-worktree root.
+That follow-up also records stale in-flight bindings and evidence-retention gaps;
+Scout publication behavior remains unverified.
 
 This continues the
 [activation and natural intake evaluation](diagnosis-activation-natural-intake-20261116.md).
@@ -173,9 +177,9 @@ Scout's procedure-access/publication lead remains unresolved. This session does
 not change Scout tools or routing, publish a finding, adjudicate research quality,
 or demonstrate behavioral transfer. Retain the same user-outcome north star;
 do not broaden intake or add process machinery before the narrow hosted replay.
-The active bundle remains
+At the close of this source-only trial, the active bundle remained
 `efdfb2c94e8018b2b53e036376627448cdedc504-definitions-v6`; the final receipt
-checks daemon identity and enabled Apps. No reload or restart belongs to this
+checks daemon identity and enabled Apps. No reload or restart belonged to this
 source-only integration.
 
 ## Evidence and limits

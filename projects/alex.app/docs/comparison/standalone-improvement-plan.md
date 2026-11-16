@@ -24,8 +24,13 @@ publication gap as an intake lead. The
 [source-root repair trial](diagnosis-source-root-repair-20261116.md) freezes a
 transparent two-case natural projection, retains the first hosted insufficient
 result, and carries its discovered diagnosis mechanics bug through Alex's bounded
-implementation/review cycle and source integration. The source-root repair is not
-yet active; the Scout publication lead and behavioral transfer remain unverified.
+implementation/review cycle and source integration. The
+[Alex-owned activation and replay](alex-owned-activation-replay-20261116.md) now
+verifies that repair in a fresh hosted Task. Alex detected an old in-flight
+procedure binding after activation, and the operator admitted the fresh replay.
+The replay returned a qualified Scout guidance proposal; Scout publication and
+behavioral transfer remain unverified. Temporary evidence retention, structured
+workflow output persistence and manual successor admission remain concrete gaps.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -181,14 +186,28 @@ result remains intact. Independent review rejected the first candidate; two
 operator updates were needed. This is progress in inspectability and repair, with
 no demonstrated reduction in human correction or cost.
 
-The next bounded step is controlled activation of the source-root correction and
-one ordinary hosted diagnosis on the unchanged two-case natural projection,
-without candidate preparation. Check loaded source identity and Task-worktree
-resolution before Alex judges the Scout lead. The projection's executable checks
-are newly derived from real evidence; original finishes remain success, human
-labels remain unreviewed and unavailable usage stays unknown. Scout access and
-publication are still unresolved. Do not prescribe routing, modify semantic truth,
-or broaden intake to bypass those limits.
+The source-root correction is now active and verified by a fresh ordinary hosted
+diagnosis on the unchanged two-case projection. The activation Task independently
+identified its stale callable snapshot; the operator admitted the successor. Both
+closed with accepted results, without in-attempt correction. This is a manually
+observed handoff, not unattended ownership of the complete improvement cycle.
+
+Alex's next bounded proposal is one capability-aware Scout guidance candidate:
+use `scout-explore` when callable; otherwise return permitted bounded research and
+an explicitly uncommitted handoff. Give the trial a durable evidence destination
+before it runs; ignored Task state disappeared when the clean worktree closed.
+Use independent review and separately retained behavior checks for unavailable
+tools, callable tools and an existing-publication control, then test fresh natural
+delivery. Relaxing a prerequisite or re-diagnosing unchanged evidence cannot prove
+publication improvement. A direct uncommitted handoff may still leave the user
+outcome incomplete; Alex must retain or separately repair that publication gap.
+
+The projection's executable checks are newly derived from real evidence; original
+finishes remain success, human labels remain unreviewed and unavailable usage
+stays unknown. The two Tasks' combined reported model estimate is $3.0511248,
+excluding operator costs and unknown billing. Workflow result persistence and
+manual successor admission remain gaps. Do not modify semantic truth or broaden
+intake to bypass those limits.
 
 For the earlier retained Scout semantic-score case, no-change and the specific
 human truth judgment remain separate. Disposable Host restart checks passed;
