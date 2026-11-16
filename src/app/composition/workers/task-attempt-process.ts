@@ -617,7 +617,6 @@ async function runTaskWorker(input: {
       hostCapacity,
       taskRuntimeMode: "manual",
       ...(input.appIds ? { taskAppIds: input.appIds } : {}),
-      syncTaskReadModels: false,
       agentNames,
     });
     // Immutable release paths carry the selected source identity. A recovery

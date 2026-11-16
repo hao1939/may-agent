@@ -77,7 +77,6 @@ test("one-App worker reads exact registered peer Tasks without installing their 
         hostCapacity: new HostCapacity(1),
         taskAppIds: ["current"],
         installControllers: false,
-        syncReadModels: false,
         agents,
       },
       { deferRecovery: true },
