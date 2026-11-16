@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-16
 
+- [Decision evidence needs reviewer-scoped, stale-on-change receipts](./findings/2026-11-16-decision-evidence-needs-stale-reviewer-receipts.md) — Decision receipt binds a human check to the reviewer, task wording, readable source set and versions, verdicts, and classifier rules, then marks the check stale when those inputs change; its Rovo layer is a read-only interpretation boundary, while the reported 92/94 and 65/75 results remain producer-authored and Scout did not run the app, audit permissions, or verify adoption.
 - [Derived-output ACLs require complete mediation, not just lineage](./findings/2026-11-16-derived-output-acls-complete-mediation.md) — TrustGraph intersects every input's reader set for derived outputs and permits an action only when its audience remains inside that result; the design still depends on complete source reporting, effect-boundary checks, and an exclusive credential gateway, and Scout did not run the repository, reproduce its demo or proofs, or conduct a security review.
 - [Whole-database diffs expose the gap between task success and clean success](./findings/2026-11-16-whole-database-diffs-agent-benchmark.md) — Software World Model's producer-authored Phase 0 corpus separates target success from collateral, irreversible, and false-completion verdicts; Scout reviewed the pinned README and report statically but did not run the benchmark, reproduce its 635 scored episodes, or independently validate its tables.
 
