@@ -96,6 +96,69 @@ describe("container runtime configuration and layout", () => {
     expect(service.environment.MAY_RUNTIME_OWNERSHIP_PATH).toBeUndefined();
   });
 
+  test.each([
+    ["gemini-4-argon", "gemini-3.8-flash"],
+    ["gemini-4-carbon", "gemini-3.8-flash"],
+    ["gemini-custom-pro", "gemini-custom-flash"],
+  ])("exposes distinct Gemini 4 models with pinned routing to %s and %s", async (proModel, flashModel) => {
+    const home = mkdtempSync(join(tmpdir(), "may-gemini-routing-"));
+    tempDirs.push(home);
+    const settingsPath = join(home, ".gemini/settings.json");
+    const legacyResolution = {
+      default: "gemini-2.5-pro",
+      contexts: [{ condition: { useCustomTools: true }, target: "gemini-3.1-pro-preview-customtools" }],
+    };
+    mkdirSync(join(home, ".gemini"));
+    writeFileSync(settingsPath, JSON.stringify({
+      modelConfigs: {
+        modelIdResolutions: {
+          pro: legacyResolution,
+          "flash-lite": legacyResolution,
+          "gemini-4-carbon": legacyResolution,
+          "gemini-4-hydrogen": legacyResolution,
+          "user-model": legacyResolution,
+        },
+        classifierIdResolutions: { pro: legacyResolution, flash: legacyResolution, "user-tier": legacyResolution },
+      },
+    }));
+    const env = {
+      HOME: home,
+      MAY_SKIP_STATE_LINKS: "1",
+      HERDR_BIN: join(home, "no-herdr"),
+      GEMINI_PRO_MODEL: proModel,
+      GEMINI_FAST_MODEL: flashModel,
+    };
+
+    await runConfigure(env);
+    const firstSettings = readFileSync(settingsPath, "utf8");
+    await runConfigure(env);
+    expect(readFileSync(settingsPath, "utf8")).toBe(firstSettings);
+
+    const { modelConfigs, model } = JSON.parse(firstSettings);
+    expect(model.name).toBe(proModel);
+    const concreteProModels = [...new Set([proModel, "gemini-4-argon", "gemini-4-carbon", "gemini-4-hydrogen"])];
+    for (const id of concreteProModels) {
+      expect(modelConfigs.modelDefinitions[id]).toMatchObject({ displayName: id, tier: "pro", isVisible: true });
+      expect(modelConfigs.customAliases[id]).toEqual({ extends: "chat-base-3", modelConfig: { model: id } });
+      expect(modelConfigs.modelIdResolutions[id]).toEqual({ default: id, contexts: [] });
+    }
+    for (const alias of Object.keys(modelConfigs.modelIdResolutions)) {
+      if (alias === "user-model") continue;
+      expect(modelConfigs.modelIdResolutions[alias].contexts).toEqual([]);
+      expect([...concreteProModels, flashModel]).toContain(modelConfigs.modelIdResolutions[alias].default);
+    }
+    expect(modelConfigs.modelIdResolutions.pro).toEqual({ default: proModel, contexts: [] });
+    expect(modelConfigs.modelIdResolutions[proModel]).toEqual({ default: proModel, contexts: [] });
+    expect(modelConfigs.modelIdResolutions["flash-lite"]).toEqual({ default: flashModel, contexts: [] });
+    expect(modelConfigs.modelIdResolutions[flashModel]).toEqual({ default: flashModel, contexts: [] });
+    expect(modelConfigs.modelIdResolutions["gemini-3.8-flash"]).toEqual({ default: flashModel, contexts: [] });
+    expect(modelConfigs.customAliases["gemini-3.8-flash"].modelConfig.model).toBe(flashModel);
+    expect(modelConfigs.classifierIdResolutions.pro).toEqual({ default: proModel, contexts: [] });
+    expect(modelConfigs.classifierIdResolutions.flash).toEqual({ default: flashModel, contexts: [] });
+    expect(modelConfigs.modelIdResolutions["user-model"]).toEqual(legacyResolution);
+    expect(modelConfigs.classifierIdResolutions["user-tier"]).toEqual(legacyResolution);
+  });
+
   test("configures native CLI endpoints without persisting API keys and migrates legacy state + SSH safely", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-container-cfg-"));
     tempDirs.push(root);
