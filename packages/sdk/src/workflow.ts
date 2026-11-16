@@ -752,6 +752,12 @@ export type TaskAttempt = {
   events: TaskReconciliationEvents;
   /** Runtime-selected schema for the one admitted executor result. */
   resultSchema: Record<string, unknown>;
+  /**
+   * Optional Host preflight for a proposed final result. Returns a correction
+   * finding or null without committing changes or consuming input. Final
+   * settlement rechecks current authority and state; null is not acceptance.
+   */
+  validateResult?(result: TaskReconcileResult): string | null;
   /** Admit requests, Conditions and actions now; this does not end the attempt. */
   apply(changes: TaskChanges): Promise<TaskChangeReceipt>;
   /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
@@ -863,10 +869,7 @@ export type AppWorkflowContext<TInput = unknown> = AgentContext<TInput> & {
     onEvent(listener: (event: AppEvent<Record<string, unknown>>) => void): () => void;
   };
   metrics: WorkflowMetricCapability;
-  workspace?: AgentContext<TInput>["workspace"] & {
-    /** Generated Task entry shared with agents; snapshot and discovery, not live state. */
-    taskFile?: string;
-  };
+  workspace?: AgentContext<TInput>["workspace"];
 };
 
 export type AgentExecutableModule<TInput = unknown, TOutput = unknown> = {
