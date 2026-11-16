@@ -28,8 +28,9 @@ the revised wording and acceptable alternatives before approving case labels.
 
 `core_scenarios` in each role suite is the authoritative executable selection.
 Other cases in that suite remain extended regressions; no old case was deleted.
-The named role suites are version 3 because inputs and expected answers changed.
-`core-behavior` is version 2. Older retained runs keep their original definitions.
+May, Alex and Tech-lead suites are version 3. Bob and Scout are version 4 after
+ownership and missing-material examples changed. `core-behavior` is version 3
+after verification-evidence fixes. Older retained runs keep their definitions.
 
 | Benchmark | Core case IDs |
 | --- | --- |
@@ -42,10 +43,12 @@ The named role suites are version 3 because inputs and expected answers changed.
 Each core judgment case has a plain-language answer, a meaning-based rubric and
 labeled positive/negative calibration examples. The existing calibrated semantic
 judge gate owns open-ended meaning; word-match checks are not a substitute.
-Exact production fields such as the assignment's result state and needed
-clarification remain hard checks. Result state is not Task lifetime. Role-suite
-word counts are advisory targets, not hard failures. A draft rubric and its calibration examples also require review; the
-examples are not independent proof of judge accuracy.
+Exact production fields such as the assignment's result state remain hard checks.
+In a semantic case, clarification inferred from prose is advisory: a question
+mark alone cannot distinguish missing intent from a request for evidence. An
+explicit structured clarification flag is still checked. Result state is not
+Task lifetime. Word targets are advisory. Rubrics and their examples need human
+review; those examples are not independent proof of judge accuracy.
 
 Remove answer-shaped clues from agent-visible fixtures. For example, the source
 case no longer labels its own wrong multiplication as a bug; the agent has to
@@ -71,10 +74,18 @@ verification tool result, and validates the real production Task result.
 Missing action/receipt evidence is invalid, not a pass. A failure to attempt
 verification in an otherwise complete transcript is an agent failure. The task
 provides a verification recipe, not a mandatory command spelling. Common Node/Bun
-test invocations are accepted; source checks may also use direct assertions.
-Repairing a test or its data requires exercising that test. Unsupported methods
-need human review, not an automatic agent-failure verdict. Reporter formatting
-is not the requirement. Efficiency is not a quality gate in this core.
+test invocations and simple read-then-test `&&` chains are accepted. Syntax-only
+checks do not count as running tests. Native command receipts need an actual exit
+status; missing completion is invalid evidence, not success. Arbitrary inline
+JavaScript and complex shell programs need human review rather than keyword-based
+credit or an automatic agent-failure verdict. Direct assertions remain an
+acceptable method, but this checker cannot automatically establish their meaning.
+Reporter formatting is not the requirement. Efficiency is not a quality gate.
+
+Rescoring supplies the original workspace path from the runner's stored result,
+so recorded `cd` and absolute test paths remain meaningful after copying the
+workspace. It does not guess an authorized root from agent-authored command text
+or rewrite original receipts.
 
 The returned `converged` or `incomplete` state describes this assignment's
 fulfillment. It does not by itself close a durable Task.
@@ -96,7 +107,9 @@ agent says verification succeeded.
   communication honesty from a correct state field.
 - B5 is synthetic local recovery, not a real daily-work incident. A representative
   recent failure, recovery and final delivery still needs to be selected and
-  reviewed; Gym scores are supporting evidence, not the primary measure of value.
+  reviewed; see the [proposed hosted diagnosis repair case](REAL-WORK-REVIEW.md).
+  That proposal is not executable or approved. Gym scores remain supporting
+  evidence, not the primary measure of value.
 - These five cases do not yet test actual owner-request acceptance and retry
   deduplication, research integration, Git staging, or guidance surviving and
   being superseded across sessions. Those are the next behavior slices, after
@@ -117,6 +130,10 @@ Historical IDs are retained, but draft answers no longer require a favorite mech
 - `may-judge-route-unconsumed-detector-to-owner`: preserve useful owner handling,
   not necessarily the existing detector. Reuse a sufficient existing route or
   keep valuable additional detection when justified.
+- `bob-judge-app-owner-workflow-ownership`: the explicit Task agent owns its
+  discoverable workflow scope. An App default does not own every specialist's
+  procedure or gain closure authority from a helper result. The revised case is
+  still draft; this is not blanket reapproval of the historical collection.
 
 ## Review definitions before model runs and comparisons
 

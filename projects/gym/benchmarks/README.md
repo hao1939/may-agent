@@ -21,6 +21,8 @@ The review direction is approved; revised exact answers and checks remain draft.
 remain extended regressions. Use `gym test --benchmark <suite> --core` to select
 it. Selection is not human approval; all current core labels remain draft.
 The suite's default role is used unless `--agent`/`--target` overrides it.
+A separate [real-work proposal](REAL-WORK-REVIEW.md) describes a hosted diagnosis
+repair with recovery and delivery. It is not executable or approved yet.
 
 Before running, define acceptable choices/outcomes, forbidden choices/effects,
 and the evidence that will establish or disprove them. A scorer is an

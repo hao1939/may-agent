@@ -35,6 +35,12 @@ function verify(work: string) {
       content: [{ type: "text", text: `${result.stdout}${result.stderr}` }] },
   ].map((entry) => JSON.stringify(entry)).join("\n") + "\n");
 }
+function execute(work: string, command: string) {
+  const result = spawnSync("/bin/bash", ["-lc", command], { cwd: work, encoding: "utf8" });
+  writeFileSync(join(work, "transcript.jsonl"), JSON.stringify({ type: "item.completed", item: {
+    type: "command_execution", id: "verify", command, exit_code: result.status, aggregated_output: `${result.stdout}${result.stderr}`,
+  } }) + "\n");
+}
 function repair(work: string, id: string) {
   if (id === "behavior-repair-source-preserve-tests") {
     const path = join(work, "src/duration.cjs");
@@ -56,7 +62,7 @@ describe("refined core judgment selection", () => {
       const benchmark = `${role}-judgment`, { suite } = loadSuite(benchmark);
       const labels = loadLabels(benchmark, suite).catalog!;
       expect(suite.evaluation_kind).toBe("judgment");
-      expect(suite.version).toBe(3);
+      expect(suite.version).toBe(["bob", "scout"].includes(role) ? 4 : 3);
       const selected = selectCoreScenarios(suite);
       expect(selected.length).toBe(role === "tech-lead" ? 4 : 2);
       coreCases += selected.length;
@@ -98,6 +104,23 @@ describe("refined core judgment selection", () => {
     }
   }));
 
+  test("a request for missing material is not a hard clarification failure", () => withTempDir((root) => {
+    const scenario = join(root, "scenario"), work = join(root, "work");
+    materialize("scout-judgment", "scout-judge-honest-partial-coverage-on-blocked-source", scenario);
+    cpSync(join(scenario, "environment"), work, { recursive: true });
+    const result = { state: "incomplete", facts: ["The assigned full-body verification remains incomplete."],
+      summary: "Only the abstract was read; Section 4 and Appendix B remain unread because full-text retrieval returned HTTP 403.",
+      response: "Could you provide Section 4 and Appendix B so I can finish the assigned check?" };
+    writeFileSync(join(work, "task-result.json"), JSON.stringify(result));
+    let scored = scoreDecision(work, scenario);
+    expect(scored.passed).toBe(true); // Structural checks only, not a semantic verdict.
+    expect(scored.checks.find((check: any) => check.name === "exact:needs_clarification")?.gate).toBe(false);
+    writeFileSync(join(work, "task-result.json"), JSON.stringify({ ...result, result: { needs_clarification: true } }));
+    scored = scoreDecision(work, scenario);
+    expect(scored.passed).toBe(false);
+    expect(scored.checks.find((check: any) => check.name === "exact:needs_clarification")?.gate).toBe(true);
+  }));
+
   test("draft role word targets are advisory, not hidden acceptance limits", () => withTempDir((root) => {
     for (const role of roles) {
       const benchmark = `${role}-judgment`, { suite } = loadSuite(benchmark);
@@ -116,6 +139,20 @@ describe("refined core judgment selection", () => {
         expect(checks.some((check: any) => check.name === "response-brevity")).toBe(false);
       }
     }
+  }));
+
+  test("the older ownership case follows the assigned agent, not the App default", () => withTempDir((root) => {
+    const id = "bob-judge-app-owner-workflow-ownership", scenario = join(root, "scenario"), work = join(root, "work");
+    const suite = materialize("bob-judgment", id, scenario);
+    cpSync(join(scenario, "environment"), work, { recursive: true });
+    const c = suite.cases!.find((item) => item.id === id)!;
+    expect(selectCoreScenarios(suite)).not.toContain(id);
+    expect(loadLabels("bob-judgment", suite).catalog!.labels[id]?.status).toBe("draft");
+    expect(c.expected?.contains_groups).toBeUndefined();
+    const controls = validateSemanticControlSet(c.semantic_controls);
+    for (const control of controls.cases) expect(admitTaskReconcileResult(control.decision).ok).toBe(true);
+    writeFileSync(join(work, "task-result.json"), JSON.stringify(controls.cases.find((control) => control.expected === "pass")!.decision));
+    expect(scoreDecision(work, scenario).passed).toBe(true);
   }));
 
   test("core selections reject missing, duplicate and foreign cases", () => {
@@ -164,7 +201,7 @@ describe("refined core judgment selection", () => {
 describe("core behavior outcome scoring", () => {
   test("all five behavior definitions remain draft without named approval", () => {
     const { suite } = loadSuite("core-behavior"), labels = loadLabels("core-behavior", suite).catalog!;
-    expect(suite.version).toBe(2);
+    expect(suite.version).toBe(3);
     expect(suite.scenarios).toHaveLength(5);
     for (const id of suite.scenarios) {
       expect(labels.labels[id]?.status).toBe("draft");
@@ -258,8 +295,8 @@ describe("core behavior outcome scoring", () => {
   }
 
   for (const { name, id, value, passes } of [
-    { name: "direct source assertions need no mandatory test-runner recipe", id: "behavior-verify-already-correct", value: "180000", passes: true },
-    { name: "failed assertions are not passing verification", id: "behavior-verify-already-correct", value: "180000 + 1", passes: false },
+    { name: "inline assertions need evidence review, not a mandatory runner recipe", id: "behavior-verify-already-correct", value: "180000", passes: false },
+    { name: "failed inline assertions cannot receive automatic verification credit", id: "behavior-verify-already-correct", value: "180000 + 1", passes: false },
     { name: "source assertions alone do not verify repaired test data", id: "behavior-recover-local-verification", value: "180000", passes: false },
   ]) {
     test(name, () => withTempDir((root) => {
@@ -277,6 +314,58 @@ describe("core behavior outcome scoring", () => {
       expect(scored.checks.find((check) => check.name === "final-verification-result")?.passed).toBe(true);
       expect(scored.checks.find((check) => check.name === "agent-ran-verification")?.passed).toBe(passes);
       expect(scored.passed).toBe(passes);
+      expect(machineVerdict({ ...scored, scenario: id, agent: "fixture", agent_status: "success" }).verdict).toBe("invalid");
+    }));
+  }
+
+  for (const { name, command: action, verdict } of [
+    { name: "a real passing test after a file read", command: "cat docs/durations.md && node --test test/duration.test.cjs", verdict: "pass" },
+    { name: "syntax-only checking does not execute the repaired test", command: "node --check test/duration.test.cjs", verdict: "fail" },
+    { name: "printing assertion-shaped text proves no verification", command: `node -e 'console.log("src/duration.cjs parseDurationMs 3m 180000 assert.equal")'`, verdict: "invalid" },
+  ] as const) {
+    test(name, () => withTempDir((root) => {
+      const scenario = join(root, "scenario"), work = join(root, "work"), id = "behavior-repair-test-preserve-source";
+      materialize("core-behavior", id, scenario);
+      cpSync(join(scenario, "environment"), work, { recursive: true });
+      repair(work, id); execute(work, action); finish(work, "converged");
+      const scored = scoreScenario(work, scenario);
+      expect(scored.checks.find((check) => check.name === "final-verification-result")?.passed).toBe(true);
+      expect(scored.checks.find((check) => check.name === "agent-ran-verification")?.passed).toBe(verdict === "pass");
+      expect(machineVerdict({ ...scored, scenario: id, agent: "fixture", agent_status: "success" }).verdict).toBe(verdict);
+    }));
+  }
+
+  for (const exitCode of [null, undefined, "0"]) {
+    test(`a native command without a usable exit status (${exitCode}) needs review`, () => withTempDir((root) => {
+      const scenario = join(root, "scenario"), work = join(root, "work");
+      materialize("core-behavior", "behavior-verify-already-correct", scenario);
+      cpSync(join(scenario, "environment"), work, { recursive: true });
+      execute(work, command); finish(work, "converged");
+      const path = join(work, "transcript.jsonl"), entry = JSON.parse(readFileSync(path, "utf8"));
+      entry.item.exit_code = exitCode;
+      // Even retained passing output cannot replace a missing completion status.
+      writeFileSync(path, JSON.stringify(entry) + "\n");
+      const scored = scoreScenario(work, scenario);
+      expect(scored.checks.find((check) => check.name === "verification-completion-known")?.passed).toBe(false);
+      expect(machineVerdict({ ...scored, scenario: "fixture", agent: "fixture", agent_status: "success" }).verdict).toBe("invalid");
+    }));
+  }
+
+  for (const lost of ["first", "retry"] as const) {
+    test(`recovery with unknown ${lost} completion preserves the right evidence limit`, () => withTempDir((root) => {
+      const scenario = join(root, "scenario"), work = join(root, "work"), id = "behavior-repair-source-preserve-tests";
+      materialize("core-behavior", id, scenario);
+      cpSync(join(scenario, "environment"), work, { recursive: true });
+      const path = join(work, "transcript.jsonl");
+      execute(work, command);
+      const first = JSON.parse(readFileSync(path, "utf8")); first.item.id = "first";
+      repair(work, id); execute(work, command);
+      const retry = JSON.parse(readFileSync(path, "utf8")); retry.item.id = "retry";
+      (lost === "first" ? first : retry).item.exit_code = null;
+      writeFileSync(path, [first, retry].map((entry) => JSON.stringify(entry)).join("\n") + "\n");
+      finish(work, "converged");
+      const scored = scoreScenario(work, scenario);
+      expect(machineVerdict({ ...scored, scenario: id, agent: "fixture", agent_status: "success" }).verdict).toBe(lost === "retry" ? "invalid" : "pass");
     }));
   }
 
@@ -330,7 +419,9 @@ describe("core behavior outcome scoring", () => {
         agent: "tech-lead", candidate: "baseline", trials: 1 }, async (input) => {
         const scenario = join(input.scenariosDir, input.scenario), work = join(root, "work");
         cpSync(join(scenario, "environment"), work, { recursive: true });
-        repair(work, input.scenario); verify(work); finish(work, "converged");
+        repair(work, input.scenario);
+        execute(work, `cd "${work}" && node --test "${work}/test/duration.test.cjs"`);
+        finish(work, "converged");
         const binding = JSON.parse(readFileSync(join(scenario, ".gym-evaluator.json"), "utf8"));
         const frozenEvaluator = require(resolve(scenario, binding.path));
         return { stderr: "Synthetic executor; no models called.", result: { ...frozenEvaluator.scoreScenario(work, scenario),

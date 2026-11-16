@@ -404,10 +404,15 @@ function scoreDecision(workDir, scenarioDir) {
     openEndedMeaning = false,
   ) => {
     const freeTextMetadata = field === "mode" || field === "priority";
-    const judgedSemantically = semanticMeaningCheck && openEndedMeaning;
+    // A projected question mark is not a production decision field. In a
+    // semantic case the readers distinguish missing intent from requests for
+    // evidence; explicit structured clarification decisions remain hard checks.
+    const inferredClarification = field === "needs_clarification" && decision?.task_result &&
+      typeof decision.task_result.result?.needs_clarification !== "boolean";
+    const judgedSemantically = semanticMeaningCheck && (openEndedMeaning || inferredClarification);
     const advisory = freeTextMetadata || judgedSemantically;
     const advisoryReason = judgedSemantically
-      ? "The calibrated semantic judges own this open-ended meaning check."
+      ? "The calibrated semantic judges own this meaning check; prose heuristics are not structured state."
       : "The task defines no fixed vocabulary for this metadata.";
     add(
       name,

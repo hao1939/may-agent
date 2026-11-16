@@ -37,7 +37,7 @@ export interface RescoreResult {
   artifact_path: string;
 }
 
-type Evaluator = (workDir: string, scenarioDir: string) => Pick<ScenarioRunResult, "passed" | "checks" | "summary">;
+type Evaluator = (workDir: string, scenarioDir: string, context?: { originalWorkDir?: string }) => Pick<ScenarioRunResult, "passed" | "checks" | "summary">;
 
 function evaluatorFor(path: string): Evaluator {
   const loaded = createRequire(import.meta.url)(path) as { scoreScenario?: Evaluator; scoreDecision?: Evaluator; scoreTaskResult?: Evaluator };
@@ -60,6 +60,7 @@ export function rescoreRun(run: string): RescoreResult {
   for (const trial of manifest.trials) {
     if (!trial.artifact_path && !trial.workspace_path) throw new Error(`Trial has no captured artifact or workspace: ${trial.scenario} ${trial.trial}`);
     const caseDir = join(runDir, "cases", safeName(trial.scenario), `trial-${trial.trial}`);
+    const originalResult = JSON.parse(readFileSync(join(runDir, trial.result_path), "utf8")) as ScenarioRunResult;
     const workDir = mkdtempSync(join(tmpdir(), "gym-rescore-"));
     try {
       const hasWorkspace = Boolean(trial.workspace_path && existsSync(join(runDir, trial.workspace_path)));
@@ -81,13 +82,12 @@ export function rescoreRun(run: string): RescoreResult {
           destination: currentScenarioDir,
         });
         currentSemantic = existsSync(join(currentScenarioDir, "semantic_criteria.md"));
-        score = evaluate(workDir, currentScenarioDir);
+        // Origin comes from the runner's stored result, not a path guessed from
+        // agent-authored command text. Keep original receipts unchanged.
+        score = evaluate(workDir, currentScenarioDir, { originalWorkDir: originalResult.work_dir });
       } finally {
         rmSync(currentScenarioDir, { recursive: true, force: true });
       }
-      const originalResult = JSON.parse(
-        readFileSync(join(runDir, trial.result_path), "utf8"),
-      ) as ScenarioRunResult;
       const deterministic = machineVerdict({
         scenario: trial.scenario,
         agent: manifest.agent,

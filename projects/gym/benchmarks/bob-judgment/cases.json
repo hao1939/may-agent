@@ -61,25 +61,21 @@
   },
   {
     "id": "bob-judge-app-owner-workflow-ownership",
-    "description": "When reviewing a workflow placement proposal inside a multi-agent App, Bob must enforce the App-owner workflow rule (all workflows owned by the App owner `alex`, assigning specialists per step via `ctx.call`).",
-    "task": "Review the proposed directory layout for the new diagnosis-and-implementation workflow in `alex.app`.\n\n# Proposed workflow placement in `projects/alex.app`\n\n- `alex.app` is owned by `alex` and includes specialist agents `gym`, `bob`, and `tech-lead`.\n- A candidate PR places half of the workflow under `projects/alex.app/agents/gym/workflows/diagnose.ts` and the other half under `projects/alex.app/agents/tech-lead/workflows/apply.ts`.\n- Operators cannot tell which agent owns the end-to-end workflow or how to invoke a single command.",
+    "description": "Make workflow ownership discoverable under the assigned agent, not automatically the App default. The historical ID is retained.",
+    "task": "Review a diagnosis-and-implementation workflow in alex.app.\n\n- The App default agent is alex, but this diagnosis Task is explicitly assigned to gym. Gym owns this experience and retains the obligation to its caller.\n- Runtime discovery resolves the assigned agent's workflow scope; it does not merge every App agent's catalog.\n- A proposed change leaves diagnosis under agents/gym/workflows/diagnose.ts and implementation under agents/tech-lead/workflows/apply.ts, without one discoverable entry point or clear responsibility for the whole assigned outcome.\n- Specialist procedures may be called as bounded contributions. Their completion does not transfer Gym's obligation or close its Task.",
     "expected": {
-      "human_answer": "Place the single unified workflow under the App owner (`projects/alex.app/agents/alex/workflows/`) and have `execute(ctx)` delegate individual steps to specialists (`gym`, `tech-lead`, `bob`) via `ctx.call(...)`.",
-      "exact": {
-        "needs_clarification": false
-      },
-      "delegations": {
-        "min": 0,
-        "max": 0
-      },
-      "contains_groups": {
-        "response_to_hao": [
-          ["alex", "app owner", "agents/alex/workflows"],
-          ["ctx.call", "step", "specialist"],
-          ["single", "unif", "instead of splitting", "consolidate"]
-        ]
-      },
-      "response_target_words": 90
+      "human_answer": "Provide one discoverable entry in Gym's resolved scope, with Gym retaining the assigned outcome and using scoped specialist contributions as needed. Specialist procedures can stay in their own agent scopes; App ownership alone does not require relocating every workflow to Alex or merging catalogs.",
+      "exact": { "needs_clarification": false },
+      "delegations": { "min": 0, "max": 0 },
+      "response_target_words": 100
+    },
+    "semantic_criteria": "Judge meaning. Rules: appropriate_choice: put the discoverable entry under the explicitly assigned Gym agent rather than the App default; evidence_and_scope: distinguish App default, Task assignment and bounded specialist contributions, allowing existing or nested procedures without moving every workflow; no_contradiction: preserve Gym's responsibility to its caller and do not invent cross-agent catalog merging or treat a helper's completion as closure of the enclosing Task. Equivalent scoped designs are acceptable.",
+    "semantic_controls": {
+      "required_rules": ["appropriate_choice", "evidence_and_scope", "no_contradiction"],
+      "cases": [
+        { "id": "assigned-agent-owns-experience", "expected": "pass", "decision": { "state": "converged", "facts": [], "summary": "Expose one Gym entry in agents/gym/workflows and retain its assigned outcome. Use a scoped Tech-lead contribution as needed; that procedure can remain with Tech-lead. Alex being the App default does not relocate Gym's workflow or close its Task." } },
+        { "id": "app-default-overrides-assignment", "expected": "fail", "decision": { "state": "converged", "facts": [], "summary": "Move all App workflows into agents/alex/workflows because the App default must own every experience, ignoring the explicit Gym assignment and specialist scopes." } }
+      ]
     }
   },
   {

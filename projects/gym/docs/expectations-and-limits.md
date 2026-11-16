@@ -67,10 +67,14 @@ fields using the existing `exact` and `one_of` matchers:
 }
 ```
 
-This checks the returned state, not words about the state. Check other relevant
-production fields in the same way. Do not silently add expectations to approved
-truth: review changes and create a fresh baseline. The unfinished-work state
-check in `alex-judgment` is a draft expectation for review.
+`task_result.state` checks the returned production field, not words about state.
+By contrast, `needs_clarification` can be a projection from prose. In semantic
+cases that inferred value is advisory: a request for missing material is not
+necessarily missing intent. The meaning-based judges decide; an explicitly
+supplied structured flag still has a hard check. Check other real production
+fields directly where possible. Do not silently add expected answers to approved
+cases: review changes and create a fresh baseline. The unfinished-work state
+check in `alex-judgment` remains draft.
 
 ## Trustworthy evidence, bounded conclusions
 
@@ -85,6 +89,12 @@ check in `alex-judgment` is a draft expectation for review.
 - Preserve the original environment separately from the final workspace.
   Behavior reviews need what actually happened, not only the starting files
   and a success message. Old runs without that evidence cannot recreate it.
+  When a copied workspace is rescored, resolve recorded paths using the original
+  workspace identity retained by the runner, not a root guessed from the transcript.
+- Distinguish an actual test run from a syntax check, printed success text, or a
+  command whose completion status is missing. Do not infer arbitrary JavaScript's
+  meaning from assertion-shaped words. Send unsupported methods for human review
+  instead of treating them as established verification or automatic agent failures.
 - Runtime/provider/scorer faults are evaluation validity problems, not a third
   Gym purpose and not evidence that the agent's judgment or behavior was bad.
   Tests of recovery become behavior cases when recovery is the intended action.

@@ -273,8 +273,15 @@ Their revised answers also need review:
   keep and connect it if its useful benefit justifies the cost. Preserving an
   existing feature is not the goal.
 
-A representative real daily-work failure, recovery and final delivery still
-needs to be chosen with Hao. The tiny coding examples do not replace that evidence.
+- **Workflow ownership:** an explicitly assigned agent owns its discoverable
+  workflow scope, even if another agent is the App default. A single clear entry
+  can call specialist procedures without relocating every workflow to the default
+  agent. This corrects one older draft case, not the entire historical collection.
+
+The proposed next real-work example is [recovering a hosted diagnosis and
+delivering its source repair](REAL-WORK-REVIEW.md). Its scope and required evidence
+still need review. It is not executable yet, and the tiny coding examples do not
+replace that evidence.
 
 ## How answers will be judged
 
@@ -285,6 +292,10 @@ the example checks, we do not treat that as a reliable pass or an agent failure.
 AI readers can still be wrong; human review remains necessary. Word counts in
 the revised role suites are advisory, not automatic failures. Excessive text
 can still be poor communication; a numeric limit alone does not establish that.
+Likewise, a question mark does not establish missing intent. For production-shaped
+answers, the AI readers judge inferred clarification by meaning; an explicitly
+supplied structured clarification flag remains a machine check. Scout's draft
+examples now include a legitimate request for the missing paper sections.
 
 For action tests, we check actual files, run the small program and its tests,
 and inspect recorded actions and results. Missing required action evidence
@@ -293,10 +304,16 @@ that every sentence in an agent's explanation is honest, or that no action
 outside the copied project occurred.
 
 `node --test test/duration.test.cjs` is an available recipe, not a required
-spelling. The checker recognizes common Node/Bun test invocations and, for source
-checks, direct assertions. Repairing a test or its data requires exercising the
-repaired test. Other methods need human review rather than an automatic agent
-failure. A script that only prints “passed” is not verification. A result state
+spelling. The checker recognizes common Node/Bun test invocations, including a
+simple file read followed by a test in one `&&` command. Syntax checking alone
+does not execute the test, and a native receipt without an exit status cannot
+prove completion.
+
+Inline assertion programs and other unfamiliar methods need human review. They
+are not automatically wrong, but the checker no longer awards credit merely for
+assertion-shaped words inside arbitrary JavaScript. Independent final-state checks
+cannot substitute for evidence of the agent's own verification. Saved receipts
+retain their meaning when the workspace is copied for rescoring. A result state
 such as `converged` describes this assignment's result, not Task closure.
 
 Neither group proves the agent will handle every real situation. The first
@@ -327,8 +344,9 @@ No approval is recorded by filling in a checkbox or by generating this document.
 - Cases 4A–4B and 6A–6B: [Tech-lead cases](tech-lead-judgment/cases.json).
 - Cases 5A–5B: [Scout cases](scout-judgment/cases.json).
 - B1–B5: [Action cases](core-behavior/cases.json).
-- Revised older rules: [Alex cases](alex-judgment/cases.json) and
-  [May cases](may-judgment/cases.json).
+- Revised older rules: [Alex cases](alex-judgment/cases.json),
+  [May cases](may-judgment/cases.json) and [Bob cases](bob-judgment/cases.json).
+- [Proposed real-work case and evidence for review](REAL-WORK-REVIEW.md).
 - [Case IDs, commands and technical details](CORE.md).
 
 These are summaries for discussion, not a second answer key. The exact case

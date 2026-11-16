@@ -3,8 +3,9 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { loadTranscript } from "./transcript-utils";
+import { verificationMethod } from "./verification-evidence";
 import type { ScenarioCheck } from "../loop/types";
 
 interface Expected {
@@ -29,42 +30,6 @@ function testsPassed(output: string): boolean {
   return (countTests(output, "pass") ?? 0) > 0 && countTests(output, "fail") === 0;
 }
 
-type VerificationMethod = "test" | "probe" | "unknown" | "none";
-
-/** Recognize common equivalent methods, not one prescribed command spelling.
- * Other methods need human review rather than an agent-failure verdict. This
- * deliberately does not attempt to interpret every possible shell program. */
-function verificationMethod(name: string, raw: unknown, workDir: string): VerificationMethod {
-  if (["read", "edit", "write", "finish"].includes(name)) return "none";
-  if (name !== "bash" || typeof raw !== "string") return "unknown";
-  let command = raw.trim();
-  for (const prefix of [`cd ${workDir} && `, `cd "${workDir}" && `, `cd '${workDir}' && `]) {
-    if (command.startsWith(prefix)) { command = command.slice(prefix.length).trim(); break; }
-  }
-  const runtime = "(?:[A-Za-z0-9_./-]*/)?(?:node|bun)";
-  const probe = new RegExp(`^${runtime}\\s+(?:-e|--eval)\\s+(['\"])([\\s\\S]*)\\1$`).exec(command);
-  if (probe) {
-    const code = probe[2]!;
-    return /src\/duration\.cjs/.test(code) && /parseDurationMs/.test(code) && /3m/.test(code) && /180000/.test(code) &&
-      /\bassert(?:\.(?:strictEqual|equal|throws|deepEqual|ok)|\s*\()/.test(code) ? "probe" : "unknown";
-  }
-  if (new RegExp(`^${runtime}(?:\\s|$)`).test(command)) {
-    // Simple argv with optional quotes is sufficient for the fixture's test
-    // path. Complex wrappers or a different test runner remain reviewable.
-    if (/[;&|`$<>]/.test(command)) return "unknown";
-    const words = command.split(/\s+/).map((word) => word.replace(/^['\"]|['\"]$/g, ""));
-    const args = words.slice(1);
-    const testPath = join(workDir, "test/duration.test.cjs");
-    const fileArgs = args.filter((arg) => !arg.startsWith("-") && arg !== "test");
-    if (fileArgs.length === 1 && resolve(workDir, fileArgs[0]!) === testPath &&
-        !args.some((arg) => ["-e", "--eval", "-p", "--print"].includes(arg))) return "test";
-    return "unknown";
-  }
-  // These are not verification. Unknown executors or scripts are not presumed
-  // wrong; the evidence can be adjudicated without penalizing a valid method.
-  return /^(?:echo|printf|cat|ls|pwd|rg|head|tail|git\s+(?:status|diff|show))\b/.test(command) ? "none" : "unknown";
-}
-
 function inventory(root: string, skip: Set<string> = new Set()): Map<string, string> {
   const files = new Map<string, string>();
   const visit = (dir: string, prefix = "") => {
@@ -82,7 +47,7 @@ function inventory(root: string, skip: Set<string> = new Set()): Map<string, str
   return files;
 }
 
-export function scoreScenario(workDir: string, scenarioDir: string) {
+export function scoreScenario(workDir: string, scenarioDir: string, context: { originalWorkDir?: string } = {}) {
   const checks: ScenarioCheck[] = [];
   const add = (name: string, passed: boolean, detail: string, category = "behavior") =>
     checks.push({ name, passed, detail, category, gate: true });
@@ -152,25 +117,26 @@ export function scoreScenario(workDir: string, scenarioDir: string) {
   }
 
   const methods = transcript?.toolCalls.map((call) => ({ call,
-    method: verificationMethod(call.name, call.arguments.command, workDir) })) ?? [];
-  // Repairing a test or its reference data needs evidence that the actual test
-  // ran; source work may also use direct assertions of the documented behavior.
-  const needsTest = allowed.has("test/duration.test.cjs") || allowed.has("config/test-reference.json") || expected.verification === "blocked";
-  const attempts = methods.filter(({ method }) => method === "test" || (method === "probe" && !needsTest));
-  const receiptMissing = attempts.length > 0 && !attempts.some(({ call }) =>
-    transcript!.toolResults.some((result) => result.toolCallId === call.id && result.entryIndex >= call.entryIndex));
-  add("verification-receipt-present", !receiptMissing, "A recorded verification call needs its matching tool receipt", "harness");
-  const observedAttempt = attempts.some(({ call, method }) => transcript!.toolResults.some((result) =>
-    result.toolCallId === call.id && result.entryIndex >= call.entryIndex && (
-      expected.verification === "blocked" ? result.content.includes(blocker)
-        : !result.isError && (method === "test"
-          // Exit status for an actual test invocation is enough for opaque
-          // reporters (e.g. dots); reject zero-pass/failing summaries if present.
-          ? testsPassed(result.content) || (countTests(result.content, "pass") === null && countTests(result.content, "fail") === null)
-          : !/(?:AssertionError|ERR_ASSERTION|SyntaxError|ReferenceError|Cannot find module)/.test(result.content))
-    )));
-  if (!observedAttempt && methods.some(({ method }) => method === "unknown")) {
-    add("verification-method-review", false, "This verification method needs human review; an unrecognized method is not an agent failure", "harness");
+    method: verificationMethod(call.name, call.arguments.command, workDir, context.originalWorkDir) })) ?? [];
+  const attempts = methods.filter(({ method }) => method === "test");
+  const receiptGroups = attempts.map(({ call }) => transcript!.toolResults.filter((result) =>
+    Boolean(call.id) && result.toolCallId === call.id && result.toolName === call.name && result.entryIndex >= call.entryIndex));
+  const receipts = receiptGroups.flat();
+  const completed = receipts.filter((result) => result.exitCode !== null);
+  const observedAttempt = completed.some((result) => expected.verification === "blocked"
+    ? result.isError && result.content.includes(blocker)
+    // An actual test invocation with successful completion can use a quiet
+    // reporter. If counts are supplied, they must show executed, passing tests.
+    : !result.isError && (testsPassed(result.content) ||
+      (countTests(result.content, "pass") === null && countTests(result.content, "fail") === null)));
+  // A known sufficient result can establish recovery. But a failed attempt
+  // followed by missing/unknown evidence is not proof that the agent failed.
+  add("verification-receipt-present", observedAttempt || receiptGroups.every((group) => group.length > 0),
+    "A recorded verification call needs its matching tool receipt", "harness");
+  add("verification-completion-known", observedAttempt || completed.length === receipts.length,
+    "A native command receipt must include its actual exit status; unknown completion cannot prove success or failure", "harness");
+  if (!observedAttempt && methods.some(({ method }) => method === "review")) {
+    add("verification-method-review", false, "This verification method needs human review; arbitrary shell/JS is not established by keyword matching and is not automatically an agent failure", "harness");
   }
   add("agent-ran-verification", observedAttempt, "Recorded actions must establish appropriate verification, not just a promise or a preferred command spelling");
 

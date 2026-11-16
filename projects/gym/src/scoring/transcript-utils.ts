@@ -40,6 +40,9 @@ export interface ToolResult {
   content: string;
   /** Whether the tool returned an error */
   isError: boolean;
+  /** Native process exit status; null means completion is unknown, not success.
+   * Generic tool receipts use their tool-level isError instead. */
+  exitCode?: number | null;
   /** Index of the entry in the transcript */
   entryIndex: number;
   /** Timestamp from the entry, if present */
@@ -130,7 +133,8 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
           toolCallId: String(item.id || ""),
           toolName: "bash",
           content: String(item.aggregated_output || ""),
-          isError: item.exit_code !== 0 && item.exit_code !== null,
+          isError: typeof item.exit_code === "number" && item.exit_code !== 0,
+          exitCode: Number.isInteger(item.exit_code) && item.exit_code >= 0 ? item.exit_code : null,
           entryIndex: i,
         });
       } else if (item.type === "file_change") {
