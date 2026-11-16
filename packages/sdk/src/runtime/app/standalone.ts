@@ -8,7 +8,7 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
@@ -42,7 +42,6 @@ import { runCliAgent, type CliAgentInput, type CliAgentOptions, type CliAgentRes
 import { agentExecutionResult, enforceStructuredWorkflowResult, generateId } from "../lib/manager-utils.js";
 import type { ModelWithApiKey, TaskResult } from "../lib/manager-utils.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/runtime-import.js";
-import { discoverAgentSkills, type SkillCatalog } from "../lib/skills.js";
 import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -97,16 +96,8 @@ export type DirectCapabilityProvider = (
 
 export type DirectAgentRunOptions = {
   agentName: string;
-  /** Trusted source already selected by the invocation's captured catalog. */
+  /** Trusted source already selected by the invocation's catalog. */
   agentSource?: AgentDirectory;
-  /** Pre-read agent.json configuration captured at catalog snapshot time. */
-  agentConfig?: AgentConfig;
-  /** Pre-read AGENTS.md identity text captured at catalog snapshot time. */
-  identityText?: string;
-  /** Pre-read shared/common-sense.md text captured at catalog snapshot time. */
-  sharedPromptText?: string;
-  /** Pre-discovered skill catalog captured at catalog snapshot time. */
-  skillCatalog?: SkillCatalog;
   /** Explicit skill name to activate via the shared skill catalog. */
   skill?: string;
   /** Optional ordinary assignment/context facts appended for model requests. */
@@ -337,7 +328,7 @@ async function buildDirectTools(
 export async function prepareDirectAgentExecution(options: DirectAgentRunOptions): Promise<DirectAgentPreparation> {
   validateOperationAllowance(options.operationAllowance);
   const source = resolveAgentSource(options);
-  const config = options.agentConfig ?? readAgentConfigFile(source.dir);
+  const config = readAgentConfigFile(source.dir);
   if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
   const configErrors = validateAgentConfig(config, options.models, options.agentsRoot);
   if (configErrors.length > 0) {
@@ -377,9 +368,6 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
       projectRoot: options.workRoot,
       sharedRoot: options.sharedRoot,
       globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
-      ...(options.identityText !== undefined ? { identityText: options.identityText } : {}),
-      ...(options.sharedPromptText !== undefined ? { sharedPromptText: options.sharedPromptText } : {}),
-      ...(options.skillCatalog !== undefined ? { skillCatalog: options.skillCatalog } : {}),
     });
     definition.fileWritePolicy = fileWritePolicy;
     for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
@@ -811,16 +799,7 @@ function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | un
 
 type DirectPromptDefinition = {
   source: AgentDirectory;
-  config?: AgentConfig;
-  identityText?: string;
-  sharedPromptText?: string;
-  skillCatalog?: SkillCatalog;
 };
-
-function readOptionalPromptFile(path: string): string {
-  if (!existsSync(path)) return "";
-  return readFileSync(path, "utf-8").trim();
-}
 
 type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
   prompts: Map<string, { owner: string; definition: DirectPromptDefinition }>;
@@ -864,8 +843,6 @@ async function buildDirectPromptCatalog(
   const prompts = new Map<string, { owner: string; definition: DirectPromptDefinition }>();
   const proceduresByOwner = new Map<string, ReadonlyMap<string, WorkflowExecutableModule>>();
   const diagnostics: string[] = [];
-  const sharedPromptText = readOptionalPromptFile(join(options.sharedRoot, "common-sense.md"));
-  const globalAgentsRoot = options.globalAgentsRoot ?? join(options.projectRoot, "agents");
 
   for (const agentDir of dirs) {
     signal?.throwIfAborted();
@@ -889,21 +866,10 @@ async function buildDirectPromptCatalog(
     if (existing && existing.definition.source.projectId === agentDir.projectId) {
       throw new Error(`Ambiguous callable owner "${config.name}": ${existing.definition.source.dir}, ${agentDir.dir}`);
     }
-    const appLocal = Boolean(agentDir.projectId || resolve(agentDir.agentsRoot) !== resolve(globalAgentsRoot));
-    const skillCatalog = await discoverAgentSkills({
-      agentDir: agentDir.dir,
-      appLocal,
-      globalAgentDir: resolve(globalAgentsRoot, config.name),
-      sharedRoot: options.sharedRoot,
-    });
     prompts.set(config.name, {
       owner: config.name,
       definition: {
         source: agentDir,
-        config,
-        identityText: readOptionalPromptFile(join(agentDir.dir, "AGENTS.md")),
-        sharedPromptText,
-        skillCatalog,
       },
     });
   }
@@ -1438,7 +1404,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (!promptDef) {
       throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
     }
-    const config = promptDef.config ?? readAgentConfigFile(promptDef.source.dir);
+    const config = readAgentConfigFile(promptDef.source.dir);
     if (!config) {
       throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
     }
@@ -1466,10 +1432,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     const directRun = await executeAgent({
       agentName: agent,
       agentSource: promptDef.source,
-      agentConfig: config,
-      identityText: promptDef.identityText,
-      sharedPromptText: promptDef.sharedPromptText,
-      skillCatalog: promptDef.skillCatalog,
       ...(callOpts?.skill !== undefined ? { skill: callOpts.skill } : {}),
       task: prompt,
       projectRoot: options.projectRoot,
@@ -1608,35 +1570,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     root: resolve(options.workRoot),
     output: resolve(options.workRoot),
   };
-  const resolvedWorkRoot = resolve(options.workRoot);
-  const requiresTaskWorktree =
-    targetModule.workspace === "task" ||
-    (typeof targetModule.workspace === "object" && targetModule.workspace?.kind === "task");
-  if (
-    requiresTaskWorktree &&
-    resolvedWorkRoot === resolve(options.projectRoot) &&
-    !existsSync(join(resolvedWorkRoot, ".git"))
-  ) {
-    const wsError = new Error(
-      `Workflow "${targetModule.name}" requires an isolated Task Git checkout (workspace: "task"), ` +
-        `but workRoot "${resolvedWorkRoot}" is not a Git checkout`,
-    );
-    const executionId =
-      internal === undefined && options.executionId
-        ? options.executionId
-        : `wr_${rootStartedAt}_${Math.random().toString(36).slice(2, 6)}`;
-    return buildPreStartFailureResult({
-      workflowName: targetModule.name,
-      input: options.input,
-      startedAt: rootStartedAt,
-      error: wsError,
-      status: "error",
-      executionId,
-      traceDir: options.traceDir,
-      timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
-      allowance: rootAllowance,
-    });
-  }
   const authoredModule = targetModule;
   const outcome: WorkflowKernelOutcome = await runWorkflowInvocation(
     {

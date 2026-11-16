@@ -370,7 +370,7 @@ export function createCompactionTransform(model: Model<any>, options: Compaction
 import { formatBoundedSkillCatalog, invokeCatalogSkill, parseExplicitSkill, type MaySkill } from "./skills.js";
 import type { SubagentDefinition } from "./manager-utils.js";
 import { createWorkflowFinishTool } from "./tools/lifecycle.js";
-import { createReadTool, withPinnedReadFiles } from "./tools/read.js";
+import { createReadTool } from "./tools/read.js";
 import { createBashTool } from "./tools/bash.js";
 import { createEditTool } from "./tools/edit.js";
 import { createWriteTool } from "./tools/write.js";
@@ -1098,19 +1098,7 @@ export type AgentPreparationOptions = {
 
 function definitionForExecution(options: AgentPreparationOptions): SubagentDefinition {
   const root = options.executionRoot;
-  const pinnedFiles =
-    options.definition.skillCatalog && options.definition.skillCatalog.skills.size > 0
-      ? new Map(
-          [...options.definition.skillCatalog.skills.values()].flatMap((skill) => {
-            const snapshotText = skill.rawContent ?? skill.content;
-            return [
-              [resolve(skill.canonicalPath), snapshotText],
-              [resolve(skill.filePath), snapshotText],
-            ];
-          }),
-        )
-      : undefined;
-  if (!root && !options.bashProcessGroupOwner && !pinnedFiles) return options.definition;
+  if (!root && !options.bashProcessGroupOwner) return options.definition;
   const executionRoot = root ?? options.definition.projectRoot ?? options.projectRoot;
   const agentName = options.definition.name;
   let fileWritePolicy = options.definition.fileWritePolicy;
@@ -1127,10 +1115,8 @@ function definitionForExecution(options: AgentPreparationOptions): SubagentDefin
   }
   const tools = options.definition.tools.map((tool) => {
     switch (tool.name) {
-      case "read": {
-        const baseRead = root ? createReadTool(executionRoot) : tool;
-        return pinnedFiles ? withPinnedReadFiles(baseRead, executionRoot, pinnedFiles) : baseRead;
-      }
+      case "read":
+        return root ? createReadTool(executionRoot) : tool;
       case "bash":
         return options.bashProcessGroupOwner
           ? createBashTool(executionRoot, { processGroupOwner: options.bashProcessGroupOwner })

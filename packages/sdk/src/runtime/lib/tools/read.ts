@@ -25,9 +25,7 @@ import {
 
 
 import { constants } from "fs";
-import { existsSync, realpathSync } from "node:fs";
 import { access as fsAccess, readFile as fsReadFile } from "fs/promises";
-import { resolve } from "node:path";
 import { resolveReadPath } from "./path-utils.js";
 import { withAbortSignal } from "./path-utils.js";
 
@@ -72,50 +70,12 @@ const defaultReadOperations: ReadOperations = {
 
 export interface ReadToolOptions {
   operations?: ReadOperations;
-  /** Optional captured file contents keyed by resolved/canonical path. */
-  pinnedFiles?: ReadonlyMap<string, string>;
 }
-
-function lookupPinnedFile(pinnedFiles: ReadonlyMap<string, string> | undefined, absolutePath: string): string | undefined {
-  if (!pinnedFiles || pinnedFiles.size === 0) return undefined;
-  const resolved = resolve(absolutePath);
-  const direct = pinnedFiles.get(resolved);
-  if (direct !== undefined) return direct;
-  if (existsSync(resolved)) {
-    try {
-      const canonical = realpathSync(resolved);
-      return pinnedFiles.get(canonical);
-    } catch {
-      return undefined;
-    }
-  }
-  return undefined;
-}
-
-const BUILTIN_READ_PIN_FACTORY = Symbol("may.builtinReadPinFactory");
-
-type PinnedReadCapableTool = AgentTool<TSchema> & {
-  [BUILTIN_READ_PIN_FACTORY]?: (pinnedFiles: ReadonlyMap<string, string>) => AgentTool<TSchema>;
-};
 
 export function createReadTool(cwd: string, options?: ReadToolOptions): AgentTool<TSchema> {
-  const baseOps = options?.operations ?? defaultReadOperations;
-  const pinnedFiles = options?.pinnedFiles;
-  const ops: ReadOperations = pinnedFiles
-    ? {
-        access: async (absolutePath) => {
-          if (lookupPinnedFile(pinnedFiles, absolutePath) !== undefined) return;
-          return baseOps.access(absolutePath);
-        },
-        readFile: async (absolutePath) => {
-          const pinned = lookupPinnedFile(pinnedFiles, absolutePath);
-          if (pinned !== undefined) return Buffer.from(pinned, "utf-8");
-          return baseOps.readFile(absolutePath);
-        },
-      }
-    : baseOps;
+  const ops = options?.operations ?? defaultReadOperations;
 
-  const tool: PinnedReadCapableTool = {
+  return {
     name: "read",
     label: "read",
     description: [
@@ -188,41 +148,6 @@ export function createReadTool(cwd: string, options?: ReadToolOptions): AgentToo
 
         return { content: [{ type: "text" as const, text: outputText }], details };
       });
-    },
-  };
-  Object.defineProperty(tool, BUILTIN_READ_PIN_FACTORY, {
-    value: (nextPinned: ReadonlyMap<string, string>) => createReadTool(cwd, { ...options, pinnedFiles: nextPinned }),
-    enumerable: false,
-  });
-  return tool;
-}
-
-export function withPinnedReadFiles(
-  tool: AgentTool,
-  cwd: string,
-  pinnedFiles: ReadonlyMap<string, string>,
-): AgentTool {
-  if (pinnedFiles.size === 0) return tool;
-  const factory = (tool as PinnedReadCapableTool)[BUILTIN_READ_PIN_FACTORY];
-  if (factory) return factory(pinnedFiles);
-  const pinnedReadTool = createReadTool(cwd, { pinnedFiles });
-  return {
-    ...tool,
-    execute: async (toolCallId, params, signal, onUpdate) => {
-      const customResult = await tool.execute(toolCallId, params, signal, onUpdate);
-      if (
-        (customResult as { isError?: boolean }).isError ||
-        !params ||
-        typeof params !== "object" ||
-        typeof (params as { path?: unknown }).path !== "string"
-      ) {
-        return customResult;
-      }
-      const absolutePath = resolveReadPath((params as { path: string }).path, cwd);
-      if (lookupPinnedFile(pinnedFiles, absolutePath) !== undefined) {
-        return pinnedReadTool.execute(toolCallId, params, signal, onUpdate);
-      }
-      return customResult;
     },
   };
 }

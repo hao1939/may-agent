@@ -37,8 +37,6 @@ export interface MaySkill {
   description: string;
   filePath: string;
   content: string;
-  /** Complete original SKILL.md file text including YAML frontmatter, captured for read-back consistency. */
-  rawContent?: string;
   disableModelInvocation?: boolean;
   scope: MaySkillScope;
   contentHash: string;
@@ -138,7 +136,6 @@ export async function discoverAgentSkills(opts: {
     const skill: MaySkill = {
       ...item.skill,
       content: stripFrontmatter(rawContent),
-      rawContent,
       filePath: canonicalPath,
       scope: item.source.scope,
       canonicalPath,
