@@ -78,20 +78,12 @@ function taskAttemptRole(
 
 function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
   const base = createFinishTool({ projectRoot: input.executionPaths.workspaceDir });
-  const parameters = Type.Union([
-    Type.Object({
-      status: Type.Literal("done"),
-      summary: Type.String({ pattern: "\\S" }),
-      output: appTaskAgentResultSchema,
-      facts: Type.Optional(Type.Unknown()),
-    }),
-    Type.Object({
-      status: Type.Literal("blocked"),
-      summary: Type.String({ pattern: "\\S" }),
-      output: Type.Optional(Type.Unknown()),
-      facts: Type.Optional(Type.Unknown()),
-    }),
-  ]);
+  const parameters = Type.Object({
+    status: Type.Union([Type.Literal("done"), Type.Literal("blocked")]),
+    summary: Type.String({ pattern: "\\S" }),
+    output: Type.Optional(Type.Union([appTaskAgentResultSchema, Type.Unknown()])),
+    facts: Type.Optional(Type.Unknown()),
+  });
   return {
     ...base,
     description:

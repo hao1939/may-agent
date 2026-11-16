@@ -135,6 +135,9 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
       manager: {
         callAgent: async (_agent: string, text: string, options: { createFinish: () => AgentTool }) => {
           const finish = options.createFinish();
+          expect((finish.parameters as { type?: string }).type).toBe("object");
+          const missingDoneOutput = await finish.execute("missing-done", { status: "done", summary: "Missing output" }, undefined, undefined);
+          expect(missingDoneOutput.content).toEqual([{ type: "text", text: expect.stringContaining("expected an object") }]);
           const invalid = await finish.execute("invalid", { status: "done", summary: "Pending", output: {
             state: "waiting", summary: "Pending", facts: [], conditions: [{
               id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: {},

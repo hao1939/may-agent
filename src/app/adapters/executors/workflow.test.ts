@@ -114,10 +114,23 @@ export async function execute(ctx) {
     },
     "fixture",
   );
+  let policyInput: { summary: string; output?: unknown; facts?: unknown } | undefined;
   const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
   const result = await runner.execute({
     source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
-    descriptor: { id: "fixture", appDir: join(root, "sample.app"), projectDir: root, app: {} },
+    descriptor: {
+      id: "fixture",
+      appDir: join(root, "sample.app"),
+      projectDir: root,
+      app: {
+        tasks: {
+          translateBlockedResult: ({ summary, output, facts }) => {
+            policyInput = { summary, output, facts };
+            return null;
+          },
+        },
+      },
+    },
     capability: { workflow: "review", task: "Review the candidate" }, handler: "workflow:review",
     executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
     childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false },
@@ -130,6 +143,11 @@ export async function execute(ctx) {
     },
   } as unknown as TaskWorkflowInput);
   const evidence = Array.from({ length: 32 }, (_, index) => `fact-${index + 1}`);
+  expect(policyInput).toEqual({
+    summary: "Await reviewer",
+    output: false,
+    facts: evidence,
+  });
   expect(result).toMatchObject({
     handlerBlocked: true,
     handlerResult: {
@@ -143,6 +161,195 @@ export async function execute(ctx) {
     },
   });
   expect(result.handlerResult.facts).toHaveLength(2);
+});
+
+it.each(["report", "continue"] as const)(
+  "rejects App %s: true when workflow blocked facts are an empty array despite diagnostic context",
+  async (control) => {
+    const root = mkdtempSync(join(tmpdir(), `task-workflow-empty-facts-${control}-`));
+    roots.push(root);
+    const workflowDir = join(root, "owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(
+      join(workflowDir, "empty-facts.ts"),
+      `export const name = "empty-facts";
+export const description = "Blocked without domain progress facts";
+export async function execute(ctx) {
+  return ctx.blocked("No progress", []);
+}`,
+    );
+    AppTaskResourceStore.fromDb(getDb(root), "fixture").bootstrapSnapshot(
+      {
+        project: "fixture",
+        resources: {
+          review: {
+            metadata: { id: "review", generation: 1, resourceVersion: 1 },
+            spec: { parentId: "root", outcome: "Review", acceptance: ["Done"] },
+            status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-empty" },
+          },
+        },
+        attempts: {
+          "attempt-empty": {
+            metadata: { id: "attempt-empty", resourceVersion: 1 },
+            taskId: "review",
+            taskGeneration: 1,
+            specHash: "hash",
+            owner: "owner",
+            handler: "workflow:empty-facts",
+            runtimeId: "rt",
+            state: "running",
+            reason: "event",
+            startedAt: new Date().toISOString(),
+          },
+        },
+      },
+      "fixture",
+    );
+    const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
+    const result = await runner.execute({
+      source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
+      descriptor: {
+        id: "fixture",
+        appDir: join(root, "sample.app"),
+        projectDir: root,
+        app: {
+          tasks: {
+            translateBlockedResult: () => (control === "report" ? { report: true } : { continue: true }),
+          },
+        },
+      },
+      capability: { workflow: "empty-facts", task: "Review the candidate" },
+      handler: "workflow:empty-facts",
+      executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+      childContext: { live: [], completed: [] },
+      taskSnapshot: { live: [], truncated: false },
+      taskEvents: {},
+      executionTimeoutMs: 1000,
+      attempt: {
+        read: { tasks: {} },
+        task: { id: "review", generation: 1, outcome: "Review", acceptance: [], input: {} },
+        attemptId: "attempt-empty",
+        role: { agent: "owner" },
+        resourceVersion: 1,
+        events: { items: [], truncated: false },
+        waits: [],
+        children: [],
+        declaredOutputPaths: [],
+        signal: new AbortController().signal,
+        onEvent: () => () => {},
+      },
+    } as unknown as TaskWorkflowInput);
+    expect(result).toMatchObject({
+      handlerBlocked: true,
+      handlerResult: {
+        state: "error",
+        resultRejected: true,
+        summary: expect.stringContaining(
+          control === "report"
+            ? "report requires waiting or incomplete, true, and non-empty facts"
+            : "continue requires waiting and progress facts",
+        ),
+      },
+    });
+  },
+);
+
+it("bounds oversized blocked workflow contribution facts while passing full facts to App policy", async () => {
+  const root = mkdtempSync(join(tmpdir(), "task-workflow-oversized-facts-"));
+  roots.push(root);
+  const workflowDir = join(root, "owner", "workflows");
+  mkdirSync(workflowDir, { recursive: true });
+  writeFileSync(
+    join(workflowDir, "oversized.ts"),
+    `export const name = "oversized";
+export const description = "Blocked contribution with >8KiB facts";
+export async function execute(ctx) {
+  return ctx.blocked("Await large artifact review", { payload: "x".repeat(9000) });
+}`,
+  );
+  AppTaskResourceStore.fromDb(getDb(root), "fixture").bootstrapSnapshot(
+    {
+      project: "fixture",
+      resources: {
+        review: {
+          metadata: { id: "review", generation: 1, resourceVersion: 1 },
+          spec: { parentId: "root", outcome: "Review", acceptance: ["Done"] },
+          status: { phase: "running", observedGeneration: 0, currentAttemptId: "attempt-oversized" },
+        },
+      },
+      attempts: {
+        "attempt-oversized": {
+          metadata: { id: "attempt-oversized", resourceVersion: 1 },
+          taskId: "review",
+          taskGeneration: 1,
+          specHash: "hash",
+          owner: "owner",
+          handler: "workflow:oversized",
+          runtimeId: "rt",
+          state: "running",
+          reason: "event",
+          startedAt: new Date().toISOString(),
+        },
+      },
+    },
+    "fixture",
+  );
+  let observedFacts: unknown;
+  const runner = createTaskWorkflowRunner({ manager: {} as never, bus: new EventBus() });
+  const result = await runner.execute({
+    source: { projectsRoot: root, projectRoot: root, persistDir: root, agentsRoot: root, sharedRoot: join(root, "shared") },
+    descriptor: {
+      id: "fixture",
+      appDir: join(root, "sample.app"),
+      projectDir: root,
+      app: {
+        tasks: {
+          translateBlockedResult: ({ facts }) => {
+            observedFacts = facts;
+            return { continue: true };
+          },
+        },
+      },
+    },
+    capability: { workflow: "oversized", task: "Review the candidate" },
+    handler: "workflow:oversized",
+    executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+    childContext: { live: [], completed: [] },
+    taskSnapshot: { live: [], truncated: false },
+    taskEvents: {},
+    executionTimeoutMs: 1000,
+    attempt: {
+      read: { tasks: {} },
+      task: { id: "review", generation: 1, outcome: "Review", acceptance: [], input: {} },
+      attemptId: "attempt-oversized",
+      role: { agent: "owner" },
+      resourceVersion: 1,
+      events: { items: [], truncated: false },
+      waits: [],
+      children: [],
+      declaredOutputPaths: [],
+      signal: new AbortController().signal,
+      onEvent: () => () => {},
+    },
+  } as unknown as TaskWorkflowInput);
+  expect(observedFacts).toEqual({ payload: "x".repeat(9000) });
+  expect(result.runId).toBeTruthy();
+  expect(result).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "waiting",
+      continue: true,
+      facts: [
+        `execution-facts:see workflow-run:${result.runId} (exceeds 8192-byte Task facts bound)`,
+        `workflow-blocker-context:see workflow-run:${result.runId} (exceeds 8192-byte Task facts bound)`,
+      ],
+    },
+  });
+  expect(getWorkflowRun(root, result.runId!)?.result_payload).toMatchObject({
+    kind: "facts",
+    state: "available",
+    value: { payload: expect.stringContaining("xxxx") },
+  });
 });
 
 it("inspects the current workflow definition without executing it", async () => {
