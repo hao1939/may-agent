@@ -48,6 +48,12 @@ work and the rejected proposal's useful diagnostics; correcting a result object
 does not authorize repeating an external effect. If a valid result is committed
 but its acknowledgment is lost, replay returns the original receipt.
 
+If execution ends without an admissible finish, Host records that execution
+failure and its evidence. A zero exit code alone supplies no agent conclusion.
+Host-produced timeout, cleanup and delivery diagnostics keep their provenance;
+they must not be presented as the agent's domain judgment or as proof that no
+external effect occurred.
+
 This is trust by default, not guaranteed correctness. Existing attempt identity,
 facts, results and acceptance evidence explain the decision. An outstanding
 Condition keeps its actual observation state; it does not grant infra a new

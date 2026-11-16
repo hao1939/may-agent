@@ -459,6 +459,12 @@ or an idle open Task does not establish a stuck worker or a failed outcome.
 The [runtime](runtime.md#worker-supervision) owns execution-liveness checks;
 Apps and agents own judgments about useful progress.
 
+Operational reads should explain the current execution/cleanup ownership,
+considered input and latest admitted result, outstanding return sources,
+pause/retry eligibility and any undelivered result or recovery feedback. Derive
+these views from existing authoritative records; a projection must not become
+another lifecycle or claim the agent considered unread input.
+
 Waiting releases execution capacity. A matching external fact or deliberate
 deadline can start a new bounded attempt; precise resumption of an old process
 is optional. Administrative pause, an external wait, explicit Stop, closure
