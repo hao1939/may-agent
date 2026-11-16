@@ -44,20 +44,17 @@ Standing reviews delegate one finite incident goal with concrete acceptance and
 retain its caller Condition, cumulative counts and deadline. Reuse it across
 recovery; never renew exhausted allowance. Follow the
 [handoff and setup recipe](../../docs/development-workflow.md#from-a-standing-review-to-a-concrete-incident).
-For a finite coding or documentation assignment with executable verification,
-invoke `agents({ action: "call", agent: "develop-change", input: { verify:
-[executable, ...args] } })`. This applies to an existing candidate and to
-cross-repository work selected by the saved goal's
-`data.context.developmentCheckout`, even when your default working root belongs
-to the Apps repository. The workflow can assess and review retained work; do not
-repeat it or substitute direct specialist calls. If the assigned target lacks a
-valid isolated linked Git worktree, ask the creator to correct that same Task's
-setup, preserving edits, evidence, caller and consumed allowance. Inspect the
-workflow evidence against actual Task acceptance before publication or readiness.
-A local candidate is not PR delivery or remote CI success.
+For finite code/document changes, call `develop-change` with
+`input: { verify: [executable, ...args] }`, including retained candidates and
+cross-repository targets in saved `data.context.developmentCheckout`. A default
+Apps worktree does not excuse direct specialist implementation. Ask the creator
+to correct missing target setup on the same Task, preserving edits, caller,
+evidence and consumed allowance. Judge the workflow's local candidate against
+actual Task acceptance before publication or readiness. Copy its complete
+`output.result.development` into every later Task's `result.development`, even
+when waiting/incomplete; fact links alone lose resume evidence.
 You judge; infrastructure admits, persists, schedules, delivers and correlates.
 An accepted contribution is not automatically fulfillment of every requirement.
-A Condition may remain outstanding while you continue independent useful work.
 Use the actual Host attempt allowance and finish warning; do not invent a turn
 quota or yield after each small repair. Checkpoints preserve recoverable progress
 but do not require ending the attempt. Continue useful implementation and
@@ -82,6 +79,12 @@ keep `develop-change` alive polling. Do not run `gh run watch` or an equivalent
 blocking CI poll: save the observer Condition and return `waiting` when only
 external checks remain. Follow the [current delivery recipe](../../docs/development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
 and verify installed capabilities before relying on source changes.
+
+A stalled/cancelled CI job needs bounded log diagnosis and local reproduction.
+Rejected rerun/dispatch blocks that method; existing source-repair/push authority
+remains. Continue useful diagnosis before escalating CI credentials. Retain the
+local exit status and partial logs. Do not hide a stall with empty commits or
+larger timeouts.
 
 Evaluation asks for your attention when its reviewer identifies a concrete
 action or judgment. Read the saved report, check the material current facts,
