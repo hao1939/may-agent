@@ -23,7 +23,7 @@ import {
   materializeScenarioOrInlineCase,
 } from "../src/loop/store";
 import { withTempDir } from "./support/temp-dir";
-import { outcomeCompletionV2Revisions } from "../benchmarks/outcome-completion/approach-drafts.test";
+import { assertOutcomeCompletionApprovalHistory, outcomeCompletionV2Revisions } from "../benchmarks/outcome-completion/approach-drafts.test";
 
 const root = resolve(import.meta.dirname, ".."),
   archive = join(root, "archive/pre-purpose-layout");
@@ -276,9 +276,10 @@ test("migration preserves all 119 assignments, fixtures, answers, rubrics and ap
         expect(fingerprintValue(meta(after))).toBe(
           fingerprintValue(meta(before)),
         );
-        expect(
-          loadLabels(current.benchmark, current.suite).catalog!.labels[id],
-        ).toEqual(oldLabels.labels[id]);
+        const currentLabel = loadLabels(current.benchmark, current.suite).catalog!.labels[id]!;
+        if (!assertOutcomeCompletionApprovalHistory(id, oldLabels.labels[id]!, currentLabel)) {
+          expect(currentLabel).toEqual(oldLabels.labels[id]);
+        }
       }
     }
     expect(compared.size).toBe(119);

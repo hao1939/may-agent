@@ -5,9 +5,10 @@ one case, one purpose benchmark, one folder. The agent is selected for each run.
 See [organization](../docs/cases-benchmarks-and-agents.md).
 
 The small selection is still **12 judgment cases in six pairs and five behavior
-cases**. It spans six purpose benchmarks, not one mixed-role run. All 17 labels
-remain **draft**. The design direction is approved; the revised exact answers,
-examples and checks still need human review. Relocation did not approve them.
+cases**. It spans six purpose benchmarks, not one mixed-role run. The two
+[outcome-completion core cases](outcome-completion/README.md) now have explicit
+version-2 truth approval; the other **15 remain draft**. That approval does not
+transfer to other answers, checks or model runs. Relocation did not approve them.
 
 ## Six judgment expectations
 

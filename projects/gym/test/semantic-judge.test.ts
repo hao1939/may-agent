@@ -121,6 +121,21 @@ describe("semantic judge gate", () => {
     expect(JSON.stringify(input)).not.toContain("expected");
   });
 
+  test("retains the original assignment as reference data without exposing calibration labels", () => {
+    const assignment = "Deliver a local repair; the installed procedure is required and the check is bun test notification.test.ts.";
+    const input = buildSemanticJudgeInput({ summary: "Use the existing procedure." }, controls, assignment);
+    expect(input.assignment).toBe(assignment);
+    expect(input.cases).toHaveLength(3);
+    for (const item of input.cases) expect(Object.keys(item).sort()).toEqual(["decision", "id"]);
+    expect(input.cases[1]).toEqual({ id: controls.cases[0]!.id, decision: controls.cases[0]!.decision });
+  });
+
+  test("rejects an explicitly empty reference assignment before a judge could run", () => {
+    for (const assignment of ["", " \n "]) {
+      expect(() => buildSemanticJudgeInput({}, controls, assignment)).toThrow("reference assignment must be non-empty");
+    }
+  });
+
   test("rejects duplicate rule and case identities", () => {
     expect(() =>
       validateSemanticControlSet({

@@ -45,7 +45,7 @@ Runtime/scorer faults are evaluation problems, not a third agent-quality score.
 | `outcome-coordination` | Choose valid ownership, requests, prerequisites and fulfillment dispositions? | 16 | — |
 
 There are **121 active cases**. The small review selection remains **12 judgment
-and 5 behavior cases**; all 17 labels are draft. The older collections have mixed
+and 5 behavior cases**; the two outcome-completion core labels are approved and the other 15 remain draft. The older collections have mixed
 review history. Relocation did not approve any new answer or establish agent
 improvement. Case IDs retain historical prefixes to preserve identity; those
 prefixes do not determine their benchmark owner or the run's target.

@@ -1,13 +1,18 @@
 # Revised Gym tests — review the exact answers
 
-**The direction is approved; the revised case answers and checks are still draft.**
+**Outcome-completion version 2 now has explicit expectation/rubric approval;
+the other revised case answers and checks remain draft.**
+
+The [owning benchmark](outcome-completion/README.md#approval-provenance) records
+the scope and session-user provenance of this later approval. It is not model-run
+permission or blanket approval of this review list.
 
 Hao approved the review direction in conversation (“great, approve”). This
 revision applies it: judge useful outcomes rather than a favorite procedure;
 separate finished contributions, fulfilled assignments and authorized Task
 closure; replace rigid review rules; allow simpler replacements; and test
 recovery. Representative daily-work evidence remains a separate next step.
-This records approval of the direction, not approval of these revised definitions.
+That earlier approval covered the direction, not all revised definitions.
 
 The proposal has two parts:
 
@@ -19,8 +24,9 @@ run. Each case has one benchmark-local home. Benchmarks are organized by the
 question being tested; the agent is chosen separately for each run. Historical
 agent-name prefixes in case IDs are retained for identity, not ownership. See [how cases, benchmarks and agents relate](../docs/cases-benchmarks-and-agents.md).
 
-The test definitions have been drafted, but the new agent tests have not been
-run. Agreeing with the overall plan does not automatically approve every
+Apart from the explicitly approved outcome-completion v2 cases, the revised
+definitions remain draft. No v2 baseline has run. Agreeing with the overall plan
+does not automatically approve every
 expected answer, the way answers are scored, or a later agent change.
 
 ## How to review
