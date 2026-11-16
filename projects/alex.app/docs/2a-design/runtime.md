@@ -466,13 +466,12 @@ active-work grace and restart cooldown. Those are process-liveness checks, not
 proof of work completion. App policy judges useful progress, exhausted retries
 and needed intervention through existing observations and routes.
 
-**Source gap:** `task-attempt-process.ts` supports a parent-side worker timeout,
-but `app-runtime.ts` creates attempt and recovery executors without supplying
-it. Worker-local deadlines cannot contain synchronous/non-cooperative hangs.
-A stuck worker can retain a capacity slot while daemon health probes succeed;
-a stuck startup recovery can delay controller readiness. Parent-owned bounded
-supervision and the explicit ongoing-executor exception remain implementation
-work. This design change neither restarts production nor claims that gap fixed.
+**Source gap:** `app-runtime.ts` and `task-attempt-process.ts` now wire
+conservative parent-side worker timeouts (`2h + 60s` for attempts and `10m` for
+recovery) so a non-cooperative worker cannot hold a capacity slot or stall
+startup indefinitely. Resolving the parent deadline dynamically from each
+execution policy and the explicit ongoing-executor exception remain
+implementation work.
 
 ## Recovery
 

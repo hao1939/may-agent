@@ -86,8 +86,8 @@ still apply; recovery/escalation does not invent a new assignment or authority.
 | 3 — reads and App identity | #569 merged reads/action removal; local attachment fence | App/Project identity remains; publish and integrate the verified fence. |
 | 4 — reconciler modules | Deferred | Optional mechanical extraction after settlement stabilizes. |
 | 5a — SDK/shared execution | #566 merged authoring, helpers and settlement component | No production shared-`run()` settlement callers; Host still wraps execution and opens SQLite in the attempt child. |
-| Cross-cutting — execution supervision | Parent worker executor has optional `timeoutMs`; production attempt/recovery factories leave it unset | Wire parent-side finite bounds and confirmed cleanup; worker-local deadlines do not contain a synchronous child hang. |
-| 5b — App/Gym adoption | Local SDK context/import migration passes the 24-workflow paired check | Domain-only development and automatic blocked/resume are not established by compatibility checks. |
+| Cross-cutting — execution supervision | `app-runtime.ts` and `task-attempt-process.ts` wire conservative parent timeouts (`2h + 60s` attempts, `10m` recovery) | Resolve parent bounds per execution policy and explicit ongoing-executor exceptions. |
+| 5b — App/Gym adoption | Local SDK context/import migration passes the 25-workflow paired check | Domain-only development and automatic blocked/resume are not established by compatibility checks. |
 | 6 — Conversation ownership | #570 removed discovery; local retained-return repair | Integrate the repair before retiring the stable execution Task or adding completion Hooks. |
 
 ## Remaining gaps and implementation order
