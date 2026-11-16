@@ -7,7 +7,6 @@ image_ref="${1:?Usage: ci-container-smoke.sh IMAGE SOURCE_COMMIT}"
 source_commit="${2:?Supply the full source commit embedded in the image}"
 [[ "$source_commit" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected a full source commit.' >&2; exit 1; }
 container_id=''
-nonroot_container_id=''
 root_container_id=''
 runtime_container_id=''
 runtime_root=''
@@ -16,9 +15,6 @@ mkdir -p test-results
 cleanup() {
   result=$?
   trap - EXIT
-  if [[ -n "$nonroot_container_id" ]]; then
-    docker rm -f "$nonroot_container_id" >/dev/null || result=1
-  fi
   if [[ -n "$root_container_id" ]]; then
     docker logs "$root_container_id" > test-results/root-container.log 2>&1 || true
     docker rm -f "$root_container_id" >/dev/null || result=1
@@ -48,7 +44,7 @@ grep -q 'Usage: may-agent' test-results/help.txt
 # The CLI toolchain is image-owned rather than installed below /app. Prove its
 # ordinary PATH, exact manifest versions, flags, and permissions as the runtime
 # user from an unrelated working directory while a fresh mount masks /app.
-docker run --rm --network none --read-only --user mayagent \
+docker run --rm --network none --read-only \
   --tmpfs /app --tmpfs /tmp:mode=1777 --workdir /tmp \
   --env HOME=/tmp/may-ci-home \
   --env PI_CODING_AGENT_DIR=/tmp/may-ci-home/.pi/agent \
@@ -84,44 +80,11 @@ docker run --rm --network none --read-only --user mayagent \
     '\''
   ' | tee test-results/cli-tools.txt
 
-# The image entrypoint is normally root so it can align a remote mount owner,
-# but an explicitly non-root launch with already-matching ownership must run
-# the complete supervisor stack, not only the setup helper.
-nonroot_container_id=$(docker run --detach --network none --user mayagent \
-  --tmpfs /app:rw,uid=1000,gid=1000,mode=0775 \
-  --tmpfs /var/lib/mayagent:rw,uid=1000,gid=1000,mode=0755 \
-  --tmpfs /tmp:rw,uid=1000,gid=1000,mode=1777 \
-  --env MODEL_BASE_URL=http://127.0.0.1:9 \
-  --env MODEL_API_KEY=ci-unused \
-  --env MAY_ARGS=--socket \
-  "$image_ref")
-nonroot_ready=false
-for ((attempt = 0; attempt < 30; attempt++)); do
-  status=$(docker exec "$nonroot_container_id" supervisorctl status 2>/dev/null || true)
-  if grep -q '^may-agent .*RUNNING' <<<"$status" \
-    && grep -q '^may-agent-web-proxy .*RUNNING' <<<"$status" \
-    && grep -q '^terminal-ttyd .*RUNNING' <<<"$status"; then
-    nonroot_ready=true
-    break
-  fi
-  [[ $(docker inspect --format '{{.State.Running}}' "$nonroot_container_id") == true ]] || break
-  sleep 1
-done
-if [[ "$nonroot_ready" != true ]]; then
-  docker logs "$nonroot_container_id" >&2 || true
-  exit 1
-fi
-docker rm -f "$nonroot_container_id" >/dev/null
-nonroot_container_id=''
-
-# Root mode uses Docker's default exec identity, keeps mount ownership intact,
-# and gives nginx permission to connect to ttyd's root-owned socket. Nonzero
-# mount-owner UID/GID settings must never cause the root account to be remapped.
+# The root runtime matches Docker exec and preserves existing mount ownership.
+# nginx must be able to connect to ttyd's root-owned socket.
 root_container_id=$(docker run --detach --network none \
   --tmpfs /app:rw,uid=1234,gid=1235,mode=0775 \
   --tmpfs /tmp:rw,mode=1777 \
-  --env MAY_RUNTIME_USER=root \
-  --env MAY_RUNTIME_UID=1234 --env MAY_RUNTIME_GID=1235 \
   --env MODEL_BASE_URL=http://127.0.0.1:9 --env MODEL_API_KEY=ci-unused \
   --env MAY_ARGS=--socket \
   "$image_ref")
@@ -129,6 +92,7 @@ root_ready=false
 for ((attempt = 0; attempt < 30; attempt++)); do
   status=$(docker exec "$root_container_id" supervisorctl status 2>/dev/null || true)
   if grep -q '^may-agent .*RUNNING' <<<"$status" \
+    && grep -q '^chrome .*RUNNING' <<<"$status" \
     && grep -q '^terminal-herdr .*RUNNING' <<<"$status" \
     && grep -q '^terminal-ttyd .*RUNNING' <<<"$status" \
     && docker exec "$root_container_id" curl -fsS --max-time 3 \
@@ -145,7 +109,6 @@ docker exec "$root_container_id" /bin/sh -ec '
   test "$(getent passwd root | cut -d: -f3)" = 0
   test "$(stat -c %u:%g /app)" = 1234:1235
   test "$(stat -c %u:%g /tmp/may-agent-ttyd.sock)" = 0:0
-  test "$MAY_RUNTIME_USER" = root
   herdr --session may-terminal2 status | grep -q "status: running"
 '
 docker exec "$root_container_id" python3 -c '
@@ -164,8 +127,8 @@ for line in status.splitlines():
 docker rm -f "$root_container_id" >/dev/null
 root_container_id=''
 
-# Start the real entrypoint with a custom UID/GID, custom endpoint, and
-# pre-populated legacy state + SSH + root-owned Chrome profile, then run real CLI commands.
+# Start the real entrypoint with a custom endpoint and pre-populated legacy
+# state, SSH, and Chrome profile, then run real CLI commands as root.
 runtime_root="$(mktemp -d)"
 mkdir -p "$runtime_root"/{.state/.ssh,.state/.codex/sessions,agents,projects,shared}
 printf 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFixtureKey\n' > "$runtime_root/.state/.ssh/id_ed25519"
@@ -176,10 +139,10 @@ cat > "$runtime_root/runtime-check.sh" <<'RUNTIME_CHECK'
 #!/bin/bash
 set -euo pipefail
 test "$PWD" = /app
-test "$(id -u):$(id -g)" = "1234:1235"
+test "$(id -u):$(id -g)" = "0:0"
 printf writable > /app/.runtime-write-probe
 rm /app/.runtime-write-probe
-test "$(stat -c '%u:%g' /app/.state/chrome-profile/Preferences)" = "1234:1235"
+test "$(stat -c '%u:%g' /app/.state/chrome-profile/Preferences)" = "0:0"
 test -L "$HOME/.ssh"
 grep -q 'IFixtureKey' "$HOME/.ssh/id_ed25519"
 test -f "$HOME/.codex/sessions/legacy.jsonl"
@@ -209,9 +172,6 @@ runtime_container_id=$(docker create --network none --user root \
   --env MODEL_BASE_URL=https://models.example.test \
   --env MODEL_API_KEY=ci-fixture-key \
   --env GEMINI_MODEL=gemini-fixture \
-  --env MAY_RUNTIME_USER=mayagent \
-  --env MAY_RUNTIME_UID=1234 \
-  --env MAY_RUNTIME_GID=1235 \
   --entrypoint /bin/bash \
   "$image_ref" -ec '
     mkdir -p /app/.state/chrome-profile
@@ -225,9 +185,8 @@ docker start --attach "$runtime_container_id" | tee test-results/runtime-user.tx
 docker rm "$runtime_container_id" >/dev/null
 runtime_container_id=''
 
-# Exercise the shipped binary as its normal unprivileged user. Desktop/VNC
-# startup is outside this runtime smoke test and needs no display or host mount.
-container_id=$(docker create --init --user mayagent --publish 127.0.0.1::8080 \
+# Exercise the shipped binary as its normal root user with fixture agents.
+container_id=$(docker create --init --publish 127.0.0.1::8080 \
   --entrypoint /usr/local/bin/may-agent \
   --env STATE_DIR=/tmp/may-ci-state \
   --env MODEL_BASE_URL=http://127.0.0.1:9 \

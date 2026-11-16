@@ -137,8 +137,7 @@ WORKDIR /app
 # Separate ephemeral container-managed HOME (/var/lib/mayagent) from mounted
 # durable /app/.state so container restarts heal config drift while preserving
 # symlinked session histories and SQLite databases on /app/.state.
-RUN useradd -u 1000 -m -d /var/lib/mayagent -s /bin/bash mayagent 2>/dev/null || true && \
-    mkdir -p /var/lib/mayagent /etc/profile.d && \
+RUN mkdir -p /var/lib/mayagent /etc/profile.d && \
     printf '%s\n' \
       'export PATH="/usr/local/bin:${PATH}"' \
       'export HOME="${HOME:-/var/lib/mayagent}"' \
@@ -153,7 +152,6 @@ RUN useradd -u 1000 -m -d /var/lib/mayagent -s /bin/bash mayagent 2>/dev/null ||
       > /etc/profile.d/may-agent-env.sh && \
     chmod 644 /etc/profile.d/may-agent-env.sh && \
     printf '\n[ -f /etc/profile.d/may-agent-env.sh ] && . /etc/profile.d/may-agent-env.sh\n' >> /etc/bash.bashrc && \
-    chown -R mayagent:mayagent /var/lib/mayagent && \
     git config --system --replace-all safe.directory '*'
 
 # Runtime Node/npm comes from the pinned builder image. This avoids the extra
@@ -219,22 +217,20 @@ COPY container/configure-runtime.cjs /usr/local/bin/configure-runtime.cjs
 RUN set -eu; \
     chmod 755 /usr/local/bin/configure-runtime.cjs; \
     HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs --bake-image; \
-    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs; \
-    chown -R mayagent:mayagent /var/lib/mayagent
+    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs
 
 # Copy supervisord & nginx configs and container runtime helper scripts before
 # the fast-changing compiled may-agent binary.
 COPY container/supervisord.conf /etc/supervisord.conf
 COPY container/may-agent-nginx.conf /etc/may-agent-nginx.conf
 RUN nginx -t -c /etc/may-agent-nginx.conf && \
-    mkdir -p /app/.state/runtime-logs && \
-    chown -R mayagent:mayagent /app/.state/runtime-logs
+    mkdir -p /app/.state/runtime-logs
 
 COPY container/entrypoint.sh container/start-chrome.sh container/may-agent-supervisor-restart.sh /usr/local/bin/
 COPY packages/terminal/bin/may-console.cjs /usr/local/bin/may-console
 
 # Copy compiled runtime tools from builder last for optimal Docker layer caching.
-COPY --from=builder --chown=mayagent:mayagent /build/may-agent /usr/local/bin/may-agent
+COPY --from=builder --chown=root:root /build/may-agent /usr/local/bin/may-agent
 COPY --from=builder /usr/local/bin/bun /usr/local/bin/bun
 COPY packages/webui/static/ /app/projects/platform/ui/
 
@@ -250,9 +246,6 @@ ENV HOME=/var/lib/mayagent
 ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
 
-# Root is the bootstrap/exec identity; services default to mayagent unless
-# the operator explicitly selects MAY_RUNTIME_USER=root.
-ENV MAY_RUNTIME_USER=mayagent
 ENV NODE_ENV=production
 ENV PROJECT_ROOT=/app
 ENV AGENTS_ROOT=/app/agents

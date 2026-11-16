@@ -121,9 +121,9 @@ Every PR and push to `main` reports two independent Linux checks:
 - **Quality** runs the checks and portable tests, including real daemon/socket
   and browser tests. JUnit results are kept even when tests fail.
 - **Container** builds the actual image with its source revision embedded and
-  probes the shipped binary's readiness and UI as its unprivileged user with
-  fixture agents. It also starts the complete stack in explicit root mode and
-  checks root/mount identities, socket ownership, and terminal HTTP access.
+  probes the shipped binary's readiness and UI as root with fixture agents.
+  It also starts the complete stack and checks root/mount identities, socket
+  ownership, and terminal HTTP access.
   This is not a production-App acceptance test.
   It does not mount `/app`, consume deployment credentials, publish an image,
   or deploy. Logs are retained on failure. Documentation/portable-test-only

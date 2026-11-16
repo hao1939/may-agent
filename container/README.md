@@ -30,52 +30,32 @@ Rather than spawning a chain of shell setup scripts on startup or intercepting C
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Fast startup & self-healing restart:** On container start (`docker run` or `docker restart`), `entrypoint.sh` aligns `mayagent`'s UID/GID to the mounted `/app/projects` owner and runs a single fast Node pass (`configure-runtime.cjs`) that idempotently migrates any legacy `/app/.state` files, preserves `~/.ssh` keys safely, links durable session directories, and refreshes managed CLI/Herdr config files if `MODEL_BASE_URL` or model env vars were overridden.
+- **Fast startup & self-healing restart:** On container start (`docker run` or `docker restart`), `entrypoint.sh` runs a single fast Node pass (`configure-runtime.cjs`) as root that idempotently migrates legacy `/app/.state` files, preserves `~/.ssh` keys safely, links durable session directories, and refreshes managed CLI/Herdr config files if `MODEL_BASE_URL` or model env vars were overridden. Startup does not remap accounts or recursively chown mounted state.
 - **Native environment & config only:** `herdr`, `pi`, `codex`, `gemini`, and `claude` run directly without wrapper scripts; Herdr's `XDG_CONFIG_HOME`, `XDG_STATE_HOME`, and `XDG_RUNTIME_DIR` and Gemini's `GEMINI_API_KEY` / `GOOGLE_GEMINI_BASE_URL` are exported as native container `ENV` defaults.
 
 ## Runtime identity and `docker exec`
 
-The image starts as root for bootstrap, but services default to `mayagent`.
-Docker exec uses the image/container user; it does not inherit an entrypoint's
-later `runuser` or environment exports. `HOME`, `PATH`, and Herdr's `XDG_*`
-directories are therefore image-level environment defaults shared by services
-and exec commands.
+The container runs as root. Docker exec, May Host, Herdr, ttyd, Chrome, nginx,
+and deployment helpers use the same identity; sockets are owned by root as well.
+There is no runtime-user switch, UID/GID remapping, or privilege-drop wrapper.
+Starting the entrypoint as non-root fails explicitly.
 
-To explicitly run the complete service stack as root, select:
+`HOME`, `PATH`, and Herdr's `XDG_*` directories are image-level environment
+settings shared by services and exec commands. The existing managed HOME path
+`/var/lib/mayagent` is retained for configuration/history compatibility; it is a
+directory name, not a Unix user selection.
 
-```bash
-# Docker
-# Add the installation's normal mounts, ports, and other environment settings.
-docker run -e MAY_RUNTIME_USER=root <image>
-
-# Compose: use the same Compose files normally used for this installation.
-MAY_RUNTIME_USER=root docker compose -f container/compose.yml up -d
-```
-
-Alternatively, set `MAY_RUNTIME_USER: root` in a Compose override's service
-`environment`. Do not set `user: mayagent` when selecting root mode; startup
-fails rather than silently falling back. A root-mode selection requires a
-container recreation to update Docker's environment.
-
-Root mode keeps UID/GID 0, ignores unprivileged mount-owner UID/GID settings,
-and does not remap the root account or chown the installation to root. Herdr,
-ttyd, Chrome, May Host, and nginx workers use the selected identity; Supervisor
-and ttyd sockets use the same owner. Runtime deployment defaults to that owner
-as well. Root can write any writable mount and can create root-owned host files,
-so enable it only for a trusted installation. Returning to `mayagent` may require
-repairing permissions on state/files created while root mode was active.
-
-Attach to the shared terminal in root mode with native commands:
+Attach with native commands:
 
 ```bash
 docker exec -it may-agent bash
 herdr --session may-terminal2
 ```
 
-In the default unprivileged mode, use `docker exec -it -u mayagent may-agent bash`
-before that same Herdr command. Both modes retain the named `may-terminal2`
-session and the existing CLI home/state layout; changing user does not select
-a different session or imply that every agent supports session restore.
+The named session and CLI state paths do not change. Rebuild/recreate the
+container to apply this runtime policy. Root can modify writable host mounts
+and create root-owned files, so this image is intended for trusted installations.
+Existing mounted file ownership is preserved; read-only mounts stay read-only.
 
 ## 2. Herdr Web Terminal & Native Agent Integrations
 
