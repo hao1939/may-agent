@@ -1,8 +1,10 @@
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -171,6 +173,22 @@ function candidateEvidence(
   return { fingerprint: fingerprintTree(candidatePath), path: candidatePath };
 }
 
+function assertSnapshotHasNoSymbolicLinks(
+  current: string,
+  snapshotRoot: string,
+): void {
+  const stat = lstatSync(current);
+  if (stat.isSymbolicLink()) {
+    throw new Error(
+      `Candidate snapshot contains a symbolic link: ${current.slice(snapshotRoot.length + 1) || "."}`,
+    );
+  }
+  if (!stat.isDirectory()) return;
+  for (const entry of readdirSync(current).sort()) {
+    assertSnapshotHasNoSymbolicLinks(join(current, entry), snapshotRoot);
+  }
+}
+
 function retainedCandidateSnapshot(
   runDir: string,
   manifest: LoopRunManifest,
@@ -185,6 +203,7 @@ function retainedCandidateSnapshot(
   if (!existsSync(snapshotPath)) {
     throw new Error(`Candidate snapshot is missing: ${snapshotPath}`);
   }
+  assertSnapshotHasNoSymbolicLinks(snapshotPath, snapshotPath);
   const actual = fingerprintTree(snapshotPath);
   if (actual !== expected) {
     throw new Error(
@@ -407,6 +426,7 @@ export async function runLoop(
       });
       let stored: StoredTrial;
       try {
+        retainedCandidateSnapshot(created.runDir, created.manifest);
         stored = storeTrial({
           runDir: created.runDir,
           suite,
@@ -430,6 +450,7 @@ export async function runLoop(
       process.stderr.write(`${stored.machine_verdict}\n`);
     }
   }
+  retainedCandidateSnapshot(created.runDir, created.manifest);
   if (currentHarnessFingerprint() !== created.manifest.proof.harness_fingerprint) {
     writeManifest(created.runDir, created.manifest);
     throw new Error("Gym harness changed during execution; run remains incomplete");

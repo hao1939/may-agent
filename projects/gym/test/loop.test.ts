@@ -4,7 +4,9 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -832,7 +834,7 @@ describe("loop evaluation", () => {
       }
     }));
 
-  it("fails closed before a second execution when the retained snapshot is missing", async () =>
+  it("fails closed when the final trial removes the retained snapshot", async () =>
     withTempDirAsync(async (root) => {
       const previousState = process.env["GYM_STATE_DIR"];
       process.env["GYM_STATE_DIR"] = join(root, "state");
@@ -854,7 +856,9 @@ describe("loop evaluation", () => {
           },
           async (input) => {
             executions++;
-            rmSync(input.candidateSnapshot!, { recursive: true, force: true });
+            if (executions === 2) {
+              rmSync(input.candidateSnapshot!, { recursive: true, force: true });
+            }
             return {
               stderr: "",
               result: {
@@ -867,14 +871,18 @@ describe("loop evaluation", () => {
             };
           },
         )).rejects.toThrow("Candidate snapshot is missing");
-        expect(executions).toBe(1);
+        expect(executions).toBe(2);
+        const [runId] = readdirSync(join(root, "state", "benchmarks"));
+        const manifest = readManifest(join(root, "state", "benchmarks", runId!));
+        expect(manifest.trials).toHaveLength(1);
+        expect(manifest.completed_at).toBeNull();
       } finally {
         if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
         else process.env["GYM_STATE_DIR"] = previousState;
       }
     }));
 
-  it("fails closed before a second execution when the retained snapshot is corrupt", async () =>
+  it("fails closed when the final trial corrupts the retained snapshot", async () =>
     withTempDirAsync(async (root) => {
       const previousState = process.env["GYM_STATE_DIR"];
       process.env["GYM_STATE_DIR"] = join(root, "state");
@@ -896,10 +904,12 @@ describe("loop evaluation", () => {
           },
           async (input) => {
             executions++;
-            writeFileSync(
-              join(input.candidateSnapshot!, "AGENTS.md"),
-              "Corrupt snapshot.\n",
-            );
+            if (executions === 2) {
+              writeFileSync(
+                join(input.candidateSnapshot!, "AGENTS.md"),
+                "Corrupt snapshot.\n",
+              );
+            }
             return {
               stderr: "",
               result: {
@@ -912,7 +922,45 @@ describe("loop evaluation", () => {
             };
           },
         )).rejects.toThrow("Candidate snapshot fingerprint mismatch");
-        expect(executions).toBe(1);
+        expect(executions).toBe(2);
+        const [runId] = readdirSync(join(root, "state", "benchmarks"));
+        const manifest = readManifest(join(root, "state", "benchmarks", runId!));
+        expect(manifest.trials).toHaveLength(1);
+        expect(manifest.completed_at).toBeNull();
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("rejects retained candidate symlinks before candidate execution", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      const liveGuidance = join(root, "live-guidance.md");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(liveGuidance, "Version 1.\n");
+      symlinkSync(liveGuidance, join(candidateDir, "AGENTS.md"));
+      let executions = 0;
+      try {
+        await expect(runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 1,
+            agentsRoot,
+          },
+          async () => {
+            executions++;
+            throw new Error("executor must not run");
+          },
+        )).rejects.toThrow("Candidate snapshot contains a symbolic link: AGENTS.md");
+        expect(executions).toBe(0);
       } finally {
         if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
         else process.env["GYM_STATE_DIR"] = previousState;
