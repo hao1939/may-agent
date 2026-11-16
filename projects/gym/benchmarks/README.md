@@ -1,7 +1,18 @@
 # Gym Benchmarks
 
-A benchmark groups stable scenarios with scoring policy, provenance, reporting,
-and human-review rules. It does not own the agent or app being evaluated.
+> **Case = one test. Benchmark = a versioned collection of cases and evaluation
+> rules. Agent/target = the subject. Run = their execution and retained results.**
+
+A benchmark selects one or more cases and defines shared scoring, defaults,
+reporting and human-review rules. It does **not** own or define the agent/App
+being tested. The relationship is not 1:1: an agent can take several benchmarks,
+and a benchmark can test compatible agents or candidate versions in separate runs.
+A role in a name such as `bob-judgment` identifies the collection's focus and
+usual target, not exclusive ownership.
+
+“Scenario” means case in the existing paths and CLI; `suite.json` is the
+machine-readable benchmark definition. For reuse, storage and target selection,
+read [cases, benchmarks, agents and runs](../docs/cases-benchmarks-and-agents.md).
 
 Benchmarks serve two purposes: **judgment** (choosing an approach aligned with
 our expectations) and **behavior** (actually doing the expected thing). Declare

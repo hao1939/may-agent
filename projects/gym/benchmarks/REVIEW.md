@@ -14,6 +14,10 @@ The proposal has two parts:
 - **12 decision tests:** does the agent choose what we would want?
 - **5 action tests:** does the agent actually do the small job correctly?
 
+These 17 cases are a selection across six benchmarks, not one mixed-role run.
+A case is one test; a benchmark groups tests and evaluation rules; the agent is
+the subject. See [how cases, benchmarks and agents relate](../docs/cases-benchmarks-and-agents.md).
+
 The test definitions have been drafted, but the new agent tests have not been
 run. Agreeing with the overall plan does not automatically approve every
 expected answer, the way answers are scored, or a later agent change.

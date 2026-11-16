@@ -1,5 +1,8 @@
 # Gym Documentation
 
+- [`cases-benchmarks-and-agents.md`](cases-benchmarks-and-agents.md) — start here:
+  a case is one test, a benchmark selects tests and evaluation rules, an agent is
+  the subject, and a run records their execution. These are not a 1:1 hierarchy.
 - `expectations-and-limits.md` — the two purposes (judgment and behavior), how
   to define expectations, required evidence and the limits of a passing test.
 

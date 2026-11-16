@@ -1,7 +1,28 @@
-# Agent Gym — Scenario-Based Agent Testing
+# Agent Gym — Agent Judgment and Behavior Benchmarks
 
-Tests agent judgment and behavior in bounded scenarios, using adapters rather
-than depending on one agent runtime.
+Tests agent judgment and behavior through cases grouped into benchmarks, using
+adapters rather than depending on one agent runtime.
+
+## Cases, benchmarks and agents — different things
+
+> **A case is one test. A benchmark is a versioned collection of tests and
+> evaluation rules. An agent is what we test. A run connects them and records
+> what happened.**
+
+```text
+Selected cases + benchmark rules + agent/target + execution setup → run → evidence/results
+```
+
+**There is no one-agent–one-benchmark rule.** One agent can take several
+benchmarks; one benchmark can test several compatible agents or candidate
+versions through separate runs. `bob-judgment` is a role-focused test collection,
+not the owner or definition of Bob. Gym owns the tests; agent/App source owns
+the implementation being tested.
+
+“Scenario” is the existing code/file name for a case, not another layer.
+`--core` selects a subset of a benchmark, not a new benchmark or an approval.
+See [cases, benchmarks, agents and runs](docs/cases-benchmarks-and-agents.md) for
+the relationships, current storage rules and examples.
 
 ## Purpose and limits
 

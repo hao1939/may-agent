@@ -1,12 +1,16 @@
-# Core benchmark — draft expectation review
+# Core test selection — draft expectation review
 
 **Start with [the plain-language review proposal](REVIEW.md).** It explains each
 situation, the answer we expect, what would be wrong, and what you can approve or
 change. This page keeps the case IDs, commands and implementation details.
 
-This is a small, reviewable core, not a replacement for the existing incident
-and regression collection. It has **12 judgment cases in six pairs** and
-**five behavior cases**. All 17 core labels are **draft**. Hao approved the
+This is a review selection across **five role-judgment benchmarks plus
+`core-behavior`**, not one executable 17-case mixed-role benchmark. Each benchmark
+run chooses its cases and a target; a role name does not make the benchmark own
+that agent. See [cases, benchmarks, agents and runs](../docs/cases-benchmarks-and-agents.md).
+
+This small selection does not replace the existing incident and regression
+collection. It has **12 judgment cases in six pairs** and **five behavior cases**. All 17 core labels are **draft**. Hao approved the
 review direction in conversation; the revised answers, calibration examples and
 checks still need exact review. Selecting a case does not approve its answer.
 
