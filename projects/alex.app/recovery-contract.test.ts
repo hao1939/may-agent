@@ -12,8 +12,8 @@ import {
   prepareAgentExecution,
   executePreparedAgent,
 } from "../may-agent/src/lib/agent-execution.ts";
-import { createFinishTool } from "../may-agent/src/lib/tools/lifecycle.ts";
-import { createWriteTool } from "../may-agent/src/lib/tools/write.ts";
+import { createFinishTool } from "../may-agent/packages/sdk/src/runtime/lib/tools/lifecycle.ts";
+import { createWriteTool } from "../may-agent/packages/sdk/src/runtime/lib/tools/write.ts";
 import { closeDb, getDb } from "../may-agent/src/lib/db/connection.ts";
 import { DbWriter } from "../may-agent/src/lib/db-writer.ts";
 import { AppRegistry } from "../may-agent/src/app/core/apps/registry.ts";

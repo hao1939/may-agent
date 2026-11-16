@@ -172,18 +172,12 @@ const referenceResults = {
 };
 
 test("historical case fixtures satisfy the scorer and current Host result contract", () => {
-  const development = JSON.parse(
+  const allScenarios = JSON.parse(
     fs.readFileSync(path.join(__dirname, "suite.json"), "utf8"),
-  ).scenarios;
-  const transfer = JSON.parse(
-    fs.readFileSync(
-      path.resolve(__dirname, "../may-app-outcome-management-transfer/suite.json"),
-      "utf8",
-    ),
   ).scenarios;
   assert.deepEqual(
     Object.keys(referenceResults).sort(),
-    [...development, ...transfer].sort(),
+    [...allScenarios].sort(),
   );
   for (const [scenario, result] of Object.entries(referenceResults)) {
     const scored = scoreScenario(scenario, result);

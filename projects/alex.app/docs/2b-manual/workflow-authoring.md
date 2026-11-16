@@ -57,25 +57,22 @@ Procedure input types belong to that module. Export `inputSchema` (and optional
 `execute(ctx)`; a TypeScript generic alone does not validate runtime data.
 Adding a recipe does not require a new public App input variant.
 
-For example, Alex's `verified-coder` recipe accepts
-`{ task, verify: [executable, ...arguments], maxAttempts?, agent? }`.
-Its SDK input schema validates
-the object before any agent call or command. `maxAttempts` defaults to three
-and is bounded to one through five; `agent` defaults to `tech-lead`. Task text
-remains assignment text, while the named fields select the command and attempt
-limit. Callers using the retired metadata strings or fenced reconciliation
-envelopes must supply this object. The Gym repair-loop scenario uses the same
-contract. Verification uses the same App-local command runner as `develop-change`,
-with literal arguments, bounded output and the workflow's cancellation signal
-and deadline. There is no separate verification timer. The retired
-`verifyCommand` shell string is rejected; move compound checks into a script or
-explicitly select a shell executable when required.
+For example, Alex's `develop-change` procedure has one input schema:
+`{ verify: [executable, ...arguments] }`. Outcome, acceptance and constraints
+always come from `ctx.reconciliation` and `ctx.read.tasks.get(rec.taskId)`, so
+Host, standalone `run()` / `may run`, and Gym execute the same design,
+implementation, command-verification and review procedure. Host supplies its
+durable Task envelope; standalone and Gym create a local Task envelope at their
+invocation boundary. The public standalone convenience input may therefore
+include `task`, `acceptance`, and `constraints`, but `run()` extracts those
+fields before validating the procedure's strict verify-only input schema.
 
-`develop-change` accepts only `{ verify: [executable, ...arguments] }` through
-its exported schema. Outcome, acceptance and constraints come from its owning
-Task. Pass procedure options when invoking it; public goal input and historical
-Task envelopes are not alternative recipe inputs. Retained Task input cannot
-replace the supplied verification command.
+Verification uses the App-local command runner with literal arguments, bounded
+output, and the workflow's cancellation signal and deadline. There is no
+separate verification timer. Callers using retired metadata strings, fenced
+reconciliation envelopes, or the `verifyCommand` shell string must move the
+requirement into the Task envelope and the command into `verify`; put compound
+checks in a script or explicitly select a shell executable when required.
 
 Workflows are bounded and ordered. They may use `await`, but every awaited
 agent, nested workflow, read, metric write, or fact publication must finish in
@@ -85,25 +82,25 @@ the current run.
 
 The stable capabilities are:
 
-| Capability                               | Purpose                                                                        |
-| ---------------------------------------- | ------------------------------------------------------------------------------ |
-| `ctx.input`                              | App-owned typed workflow input                                                 |
-| `ctx.signal`                             | Shared cancellation/deadline signal; pass it to cooperative I/O                  |
-| `ctx.reconciliation`                     | Exact task generation, events, and bounded child/frontier facts when a task owns the run |
-| `ctx.read.appResult(id)`                 | Read one completed App result                                                  |
-| `ctx.read.tasks.get(id)`                 | Read one bounded current-App task resource                                     |
-| `ctx.read.tasks.list(options)`           | List one bounded page of current-App task summaries                            |
-| `ctx.read.execution(id)`                 | Read one bounded execution projection                                          |
-| `ctx.read.metric(id)`                    | Read one metric projection                                                     |
-| `ctx.call(name, input, options?)`        | Run and await one bounded agent or code procedure execution                    |
-| `ctx.events.emit(event)`                 | Publish an immediate durable fact from the current bounded attempt             |
-| `ctx.events.read(type, localKey)`         | Inspect a retained publication in this Task generation                          |
-| `ctx.events.onEvent(listener)`           | Observe live Task input; returns an unsubscribe function, not an acknowledgment |
-| `ctx.metrics.record(...)`                | Record a domain metric definition/sample                                       |
-| `ctx.workspace`                          | App/task-scoped source and output paths when granted                           |
-| `ctx.log`                                | Structured diagnostic logging                                                  |
-| `ctx.done(summary, output?)`             | Return one successful bounded result                                           |
-| `ctx.blocked(reason, evidence?)`         | Return one local terminal blocker                                              |
+| Capability                        | Purpose                                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------------------- |
+| `ctx.input`                       | App-owned typed workflow input                                                           |
+| `ctx.signal`                      | Shared cancellation/deadline signal; pass it to cooperative I/O                          |
+| `ctx.reconciliation`              | Exact task generation, events, and bounded child/frontier facts when a task owns the run |
+| `ctx.read.appResult(id)`          | Read one completed App result                                                            |
+| `ctx.read.tasks.get(id)`          | Read one bounded current-App task resource                                               |
+| `ctx.read.tasks.list(options)`    | List one bounded page of current-App task summaries                                      |
+| `ctx.read.execution(id)`          | Read one bounded execution projection                                                    |
+| `ctx.read.metric(id)`             | Read one metric projection                                                               |
+| `ctx.call(name, input, options?)` | Run and await one bounded agent or code procedure execution                              |
+| `ctx.events.emit(event)`          | Publish an immediate durable fact from the current bounded attempt                       |
+| `ctx.events.read(type, localKey)` | Inspect a retained publication in this Task generation                                   |
+| `ctx.events.onEvent(listener)`    | Observe live Task input; returns an unsubscribe function, not an acknowledgment          |
+| `ctx.metrics.record(...)`         | Record a domain metric definition/sample                                                 |
+| `ctx.workspace`                   | App/task-scoped source and output paths when granted                                     |
+| `ctx.log`                         | Structured diagnostic logging                                                            |
+| `ctx.done(summary, output?)`      | Return one successful bounded result                                                     |
+| `ctx.blocked(reason, evidence?)`  | Return one local terminal blocker                                                        |
 
 The context intentionally excludes raw SQL, global queries, task storage,
 queues, leases, scheduler handles, session steering, human delivery, and
@@ -248,7 +245,11 @@ if (implementation.status !== "done") {
 const review = await ctx.call("qa", reviewPrompt, {
   schema: ReviewResultSchema,
 });
-if (review.status !== "done" || !review.output || review.output.verdict !== "pass") {
+if (
+  review.status !== "done" ||
+  !review.output ||
+  review.output.verdict !== "pass"
+) {
   return ctx.blocked("Review failed", { review });
 }
 ```
@@ -285,15 +286,15 @@ Use these as a starting point, adjusting them to the assignment. They introduce
 no new Host rejection, required helper, fixed review graph or universal retry
 count. Explicit user constraints and established App acceptance still apply.
 
-| Decision | Starting guidance | What to learn from actual use |
-| --- | --- | --- |
-| Sequence | Inspect context and prior evidence; do missing work; check it; return evidence. Use fewer steps when sufficient. | Which omissions actually caused incorrect or incomplete results? |
-| Team | Call a specialist when its contribution adds useful judgment or capacity. Keep narrow assignments clear. | Did it find something useful, or repeat the caller's work? |
-| Updates | Reassess relevant input between meaningful operations, before an affected write, and before relying on affected evidence. | Where did a correction arrive too late or get misunderstood? |
-| Progress | Report a useful finding, blocker or changed expectation through existing facts. Avoid a message for every internal step. | Could the caller understand progress without repeated status requests? |
-| Repair | Feed the failed check and partial work into a bounded, plausible next attempt. Stop or return control when the method no longer fits. | Was another attempt useful, or did it repeat the same failure? |
-| Evidence | Keep compact findings and exact references; use the supplied workspace and existing artifact helpers. | Could another agent find, read and assess the result without repeating the investigation? |
-| Reuse | Check prior evidence against the current requirement and actual target state. | Which reused facts became stale, and which rechecks were unnecessary? |
+| Decision | Starting guidance                                                                                                                     | What to learn from actual use                                                             |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Sequence | Inspect context and prior evidence; do missing work; check it; return evidence. Use fewer steps when sufficient.                      | Which omissions actually caused incorrect or incomplete results?                          |
+| Team     | Call a specialist when its contribution adds useful judgment or capacity. Keep narrow assignments clear.                              | Did it find something useful, or repeat the caller's work?                                |
+| Updates  | Reassess relevant input between meaningful operations, before an affected write, and before relying on affected evidence.             | Where did a correction arrive too late or get misunderstood?                              |
+| Progress | Report a useful finding, blocker or changed expectation through existing facts. Avoid a message for every internal step.              | Could the caller understand progress without repeated status requests?                    |
+| Repair   | Feed the failed check and partial work into a bounded, plausible next attempt. Stop or return control when the method no longer fits. | Was another attempt useful, or did it repeat the same failure?                            |
+| Evidence | Keep compact findings and exact references; use the supplied workspace and existing artifact helpers.                                 | Could another agent find, read and assess the result without repeating the investigation? |
+| Reuse    | Check prior evidence against the current requirement and actual target state.                                                         | Which reused facts became stale, and which rechecks were unnecessary?                     |
 
 For work that may already be complete, describe the decision before the action:
 compare the accepted result with current evidence; return its existing receipt
@@ -520,16 +521,16 @@ SDK test, and Hosted runs enforce identical contracts.
 
 ## Testing
 
-Use `runStandalone` from `@may-agent/sdk/standalone` (or `runTargetTest` /
-`runWorkflowTest` from `@may-agent/sdk/testing`) to execute a workflow module or
-named target through the shared invocation kernel with plugged or scripted
-`mocks` responses, symmetric `inputSchema` / step `schema` / `outputSchema`
-checks, inherited cancellation/deadlines, and strict fixture-consumption
-checks—with zero SQLite or daemon setup.
+Use `runWorkflowTest(moduleOrTarget, options)` from `@may-agent/sdk/testing` to
+execute a workflow module or named target through the shared invocation kernel
+with plugged or scripted `mocks` responses, symmetric `inputSchema` / step
+`schema` / `outputSchema` checks, inherited cancellation/deadlines, and strict
+fixture-consumption checks—with zero SQLite or daemon setup.
 `createTestAppWorkflowContext` remains available for passive context unit stubs.
 For end-to-end standalone prompt, code-procedure, and CLI trials without booting
-the Host, use `may run <target> [input]` or `import { run } from "@may-agent/sdk/standalone"`,
-which auto-discovers the owning App across `projects/*.app` and emits a bounded
+the Host, use `may run <target> [input]` (`may list` for discovery) or
+`import { run, listTargets } from "@may-agent/sdk/standalone"`, which
+auto-discovers the owning App across `projects/*.app` and emits a bounded
 `WorkflowRunReport` (`run.json`) when `--out` / `outputRoot` is supplied.
 
 For the review example, useful checks would include a complete negative review
@@ -561,13 +562,13 @@ and local source/tool details in the owning App.
 
 Use existing checks and review paths to assess adherence:
 
-| Question | Evidence and owner |
-| --- | --- |
-| Are shared mechanics respected? | Host contract tests and the existing canonical-App check establish identity, result admission, retained waits and supported APIs. |
-| Do domain decisions preserve the facts? | Owning App tests contrast recoverable setup, a genuine external prerequisite, failed observation and a successful empty result through production entry/return paths. |
-| Does the agent choose a useful action? | A bounded agent trial checks diagnosis, authorized repair, exact human help when needed, and resumption of the original outcome. Fake replies establish wiring only. |
-| Does ordinary work follow the model? | Evaluation samples actual Task/attempt evidence through its existing failure and periodic inputs; the accountable owner handles recovery and May judges worthwhile improvements. |
-| Which cases remain unknown? | A dated review records App/revision, inspected paths, exercised behavior, exact evidence, gaps and next action. Existing Task results and reports hold this evidence. |
+| Question                                | Evidence and owner                                                                                                                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Are shared mechanics respected?         | Host contract tests and the existing canonical-App check establish identity, result admission, retained waits and supported APIs.                                                |
+| Do domain decisions preserve the facts? | Owning App tests contrast recoverable setup, a genuine external prerequisite, failed observation and a successful empty result through production entry/return paths.            |
+| Does the agent choose a useful action?  | A bounded agent trial checks diagnosis, authorized repair, exact human help when needed, and resumption of the original outcome. Fake replies establish wiring only.             |
+| Does ordinary work follow the model?    | Evaluation samples actual Task/attempt evidence through its existing failure and periodic inputs; the accountable owner handles recovery and May judges worthwhile improvements. |
+| Which cases remain unknown?             | A dated review records App/revision, inspected paths, exercised behavior, exact evidence, gaps and next action. Existing Task results and reports hold this evidence.            |
 
 Give each important decision a contrasting case. For example, opening a missing
 authorized browser tab and asking a human to sign in exercise different
@@ -608,14 +609,14 @@ state repair and coached steps remain visible assistance.
 
 Retain a compact review in the existing Task result or linked evidence:
 
-| Record | Purpose |
-| --- | --- |
-| Scope and versions | Explain what was assessed, the intended contract and what remains untested. |
-| Expected and observed behavior | Trace input, owner, action and caller result with exact Task/attempt/evidence links. |
-| Assistance and cost | Record interventions, repeated effects, tool/model use and elapsed time when measured. |
-| Finding and ownership | Distinguish discovery or documentation gaps, implementation defects, uncertain design and agent judgment. |
-| Smallest next step | Name the owning repair, a simpler alternative and the evidence needed to accept it. |
-| Follow-up evidence | Recheck the original outcome and a contrasting case, preserving the first failure. |
+| Record                         | Purpose                                                                                                   |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Scope and versions             | Explain what was assessed, the intended contract and what remains untested.                               |
+| Expected and observed behavior | Trace input, owner, action and caller result with exact Task/attempt/evidence links.                      |
+| Assistance and cost            | Record interventions, repeated effects, tool/model use and elapsed time when measured.                    |
+| Finding and ownership          | Distinguish discovery or documentation gaps, implementation defects, uncertain design and agent judgment. |
+| Smallest next step             | Name the owning repair, a simpler alternative and the evidence needed to accept it.                       |
+| Follow-up evidence             | Recheck the original outcome and a contrasting case, preserving the first failure.                        |
 
 Keep the general method here, App-specific recipes in the App, and dated results
 with the reviewed Task. Link a useful lesson from the relevant agent guidance so

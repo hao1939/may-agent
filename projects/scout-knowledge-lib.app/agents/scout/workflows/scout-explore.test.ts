@@ -96,7 +96,7 @@ function workflowContext(
       children: { live: [], completed: [] },
     },
     workspace: { ...defaultFixture.workspace },
-    callAgent: (async (agent: string, task: string, options?: unknown) => {
+    call: (async (agent: string, task: string, options?: unknown) => {
       const result = (await runAgent(agent, task, options)) as Record<
         string,
         unknown
@@ -189,7 +189,7 @@ describe("scout-explore workflow prompt", () => {
         lastAssistantText: "Useful candidate found; integration unfinished",
         evidence: {
           status: "partial",
-          next_steps: "Verify and integrate the selected paper",
+          summary: "Verify and integrate the selected paper",
         },
         structuredResult: {
           summary: "Stopped at the operation limit before integration",
@@ -228,7 +228,7 @@ describe("scout-explore workflow prompt", () => {
       executionId: "s_partial",
       finish: {
         status: "partial",
-        next_steps: "Verify and integrate the selected paper",
+        summary: "Verify and integrate the selected paper",
       },
     });
     expect(result).not.toHaveProperty("output.state", "converged");

@@ -1,8 +1,16 @@
 {
   "name": "may-learn-replan-stalled-human-task",
   "description": "Supervise a long-running human request after its owner misses a review checkpoint and bounded recovery finds no progress.",
-  "categories": ["deputy-learning", "conversation-follow-through"],
-  "tags": ["may-agent", "long-running", "checkpoint", "learning-release"],
+  "categories": [
+    "deputy-learning",
+    "conversation-follow-through"
+  ],
+  "tags": [
+    "may-agent",
+    "long-running",
+    "checkpoint",
+    "learning-release"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -18,5 +26,6 @@
     ],
     "criticality": "critical",
     "variant_family": "long-running-request-supervision"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

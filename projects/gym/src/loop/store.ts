@@ -18,7 +18,9 @@ import { parseComparisonObjective, type ComparisonObjective } from "./objective"
 import type {
   BenchmarkSuite,
   GroundTruthCatalog,
+  GroundTruthLabel,
   HumanAdjudication,
+  InlineBenchmarkCase,
   LoopRunManifest,
   MachineVerdict,
   ScenarioRunResult,
@@ -84,6 +86,75 @@ export function benchmarkDir(benchmark: string): string {
   return join(gymRoot, "benchmarks", benchmark);
 }
 
+/**
+ * Resolve an agent directory by name across `agentsRoot` (`/app/agents`) and
+ * optional `projectsRoot` (`/app/projects/*.app/agents/*`).
+ */
+export function resolveGymAgentDir(
+  agentsRoot: string,
+  agentName: string,
+  projectsRoot?: string,
+): string | null {
+  const trimmed = agentName.trim();
+  if (!trimmed) return null;
+
+  const directCandidate = join(agentsRoot, trimmed);
+  if (existsSync(join(directCandidate, "agent.json"))) return directCandidate;
+
+  if (!projectsRoot || !existsSync(projectsRoot)) return null;
+
+  for (const entry of readdirSync(projectsRoot).sort()) {
+    if (!entry.endsWith(".app")) continue;
+    const appDir = join(projectsRoot, entry);
+    try {
+      if (!lstatSync(appDir).isDirectory()) continue;
+    } catch {
+      continue;
+    }
+    if (existsSync(join(appDir, ".disabled"))) continue;
+    const appAgentsDir = join(appDir, "agents");
+    if (!existsSync(appAgentsDir)) continue;
+
+    const byFolder = join(appAgentsDir, trimmed);
+    if (existsSync(join(byFolder, "agent.json"))) return byFolder;
+
+    for (const child of readdirSync(appAgentsDir).sort()) {
+      const candidateDir = join(appAgentsDir, child);
+      const configPath = join(candidateDir, "agent.json");
+      if (!existsSync(configPath)) continue;
+      try {
+        const parsed = JSON.parse(readFileSync(configPath, "utf8")) as { name?: unknown };
+        if (parsed.name === trimmed) return candidateDir;
+      } catch {
+        // Ignore malformed unrelated agent configs.
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolve a `.lab/<labFork>` candidate directory across `agentsRoot/.lab/<labFork>`
+ * or `<resolvedAgentParent>/.lab/<labFork>`.
+ */
+export function resolveGymLabDir(
+  agentsRoot: string,
+  labFork: string,
+  agentName?: string,
+  projectsRoot?: string,
+): string | null {
+  const primary = join(agentsRoot, ".lab", labFork);
+  if (existsSync(primary)) return primary;
+  if (agentName) {
+    const resolvedAgent = resolveGymAgentDir(agentsRoot, agentName, projectsRoot);
+    if (resolvedAgent) {
+      const appLab = join(dirname(resolvedAgent), ".lab", labFork);
+      if (existsSync(appLab)) return appLab;
+    }
+  }
+  return null;
+}
+
 const SEMANTIC_SCENARIO_FILES = [
   "semantic_criteria.md",
   "semantic_controls.json",
@@ -92,6 +163,7 @@ const SEMANTIC_SCENARIO_FILES = [
 const CONTROLLED_HARNESS_PATHS = [
   "src/cli.ts",
   "src/model-registry.ts",
+  "src/workflow-adapter.ts",
   "src/loop",
   "src/scoring",
   "src/scenarios",
@@ -133,13 +205,50 @@ export function applyEvaluatorScenarioOverlay(input: {
   }
 }
 
-export function loadSuite(benchmark: string): {
+export function loadSuite(
+  benchmark: string,
+  adhocScenarios?: string[],
+): {
   suite: BenchmarkSuite;
   path: string;
 } {
-  const path = join(benchmarkDir(benchmark), "suite.json");
-  if (!existsSync(path)) throw new Error(`Benchmark suite not found: ${path}`);
+  const dir = benchmarkDir(benchmark);
+  const path = join(dir, "suite.json");
+  const casesPath = join(dir, "cases.json");
+
+  if (!existsSync(path)) {
+    if (adhocScenarios && adhocScenarios.length > 0) {
+      return {
+        suite: {
+          name: `${benchmark}-adhoc-v1`,
+          version: 1,
+          scenarios: [...adhocScenarios],
+        },
+        path,
+      };
+    }
+    throw new Error(`Benchmark suite not found: ${path}`);
+  }
   const suite = JSON.parse(readFileSync(path, "utf-8")) as BenchmarkSuite;
+  if (existsSync(casesPath)) {
+    const extraCases = JSON.parse(
+      readFileSync(casesPath, "utf-8"),
+    ) as InlineBenchmarkCase[];
+    if (Array.isArray(extraCases)) {
+      suite.cases = [...(suite.cases ?? []), ...extraCases];
+    }
+  }
+  if (Array.isArray(suite.cases) && suite.cases.length > 0) {
+    const existing = new Set(suite.scenarios ?? []);
+    const merged = [...(suite.scenarios ?? [])];
+    for (const c of suite.cases) {
+      if (c.id && !existing.has(c.id)) {
+        existing.add(c.id);
+        merged.push(c.id);
+      }
+    }
+    suite.scenarios = merged;
+  }
   if (
     !suite.name ||
     !Array.isArray(suite.scenarios) ||
@@ -158,14 +267,153 @@ export function loadLabels(
     benchmarkDir(benchmark),
     suite.labels_file ?? "labels.json",
   );
-  if (!existsSync(path)) return { catalog: null, path: null };
-  const catalog = JSON.parse(readFileSync(path, "utf-8")) as GroundTruthCatalog;
-  if (catalog.benchmark !== benchmark) {
-    throw new Error(
-      `Label catalog benchmark mismatch: expected ${benchmark}, found ${catalog.benchmark}`,
-    );
+  let catalog: GroundTruthCatalog | null = null;
+  let resolvedPath: string | null = null;
+  if (existsSync(path)) {
+    catalog = JSON.parse(readFileSync(path, "utf-8")) as GroundTruthCatalog;
+    if (catalog.benchmark !== benchmark) {
+      throw new Error(
+        `Label catalog benchmark mismatch: expected ${benchmark}, found ${catalog.benchmark}`,
+      );
+    }
+    resolvedPath = path;
+  } else if (
+    (Array.isArray(suite.cases) && suite.cases.length > 0) ||
+    !existsSync(join(benchmarkDir(benchmark), "suite.json"))
+  ) {
+    catalog = {
+      version: suite.version || 1,
+      benchmark,
+      labels: {},
+    };
   }
-  return { catalog, path };
+
+  if (catalog && Array.isArray(suite.cases)) {
+    for (const c of suite.cases) {
+      if (!c.id || catalog.labels[c.id]) continue;
+      const status = c.label?.status ?? "approved";
+      catalog.labels[c.id] = {
+        status,
+        source: c.label?.source ?? "synthetic",
+        rationale:
+          c.label?.rationale ??
+          c.description ??
+          (typeof c.expected?.human_answer === "string"
+            ? c.expected.human_answer
+            : `Inline case ${c.id}`),
+        approved_by:
+          c.label?.approved_by !== undefined
+            ? c.label.approved_by
+            : status === "approved"
+              ? "hao"
+              : null,
+        approved_at:
+          c.label?.approved_at !== undefined
+            ? c.label.approved_at
+            : status === "approved"
+              ? "2026-11-15T00:00:00Z"
+              : null,
+      };
+    }
+  }
+
+  // For zero-config ad-hoc runs, treat validated corpus scenarios as approved
+  if (catalog && !resolvedPath && !suite.cases?.length) {
+    for (const s of suite.scenarios) {
+      catalog.labels[s] = {
+        status: "approved",
+        source: "synthetic",
+        rationale: `Ad-hoc corpus scenario ${s}`,
+        approved_by: "hao",
+        approved_at: "2026-11-15T00:00:00Z",
+      };
+    }
+  }
+
+  return { catalog, path: resolvedPath };
+}
+
+export function materializeScenarioOrInlineCase(input: {
+  scenario: string;
+  suite: BenchmarkSuite;
+  sourceBenchmarkDir: string;
+  evaluatorOwner: string | null;
+  destination: string;
+}): void {
+  const inlineCase = input.suite.cases?.find((c) => c.id === input.scenario);
+  const source = join(gymRoot, "scenarios", input.scenario);
+  if (existsSync(source)) {
+    cpSync(source, input.destination, { recursive: true });
+  } else if (!inlineCase) {
+    throw new Error(`Scenario not found: ${source}`);
+  }
+
+  if (inlineCase) {
+    mkdirSync(join(input.destination, "environment"), { recursive: true });
+    const defaults = input.suite.defaults ?? {};
+    const scenarioMeta = {
+      name: inlineCase.id,
+      ...(inlineCase.description ? { description: inlineCase.description } : {}),
+      categories: inlineCase.categories ?? defaults.categories ?? ["judgment"],
+      tags: inlineCase.tags ?? defaults.tags ?? ["inline-case"],
+      tier: inlineCase.tier ?? defaults.tier ?? "smoke",
+      timeout: inlineCase.timeout ?? defaults.timeout ?? 5,
+      agent_type: inlineCase.agent_type ?? defaults.agent_type ?? "may",
+      workflow: false,
+      ...(inlineCase.output_contract ?? defaults.output_contract
+        ? { output_contract: inlineCase.output_contract ?? defaults.output_contract }
+        : {}),
+      ...(inlineCase.workflow_entry
+        ? { workflow_entry: inlineCase.workflow_entry }
+        : {}),
+    };
+    writeFileSync(
+      join(input.destination, "scenario.json"),
+      `${JSON.stringify(scenarioMeta, null, 2)}\n`,
+    );
+
+    const stateSection = inlineCase.state?.trim()
+      ? `\n\n${inlineCase.state.trim()}`
+      : "";
+    const taskSuffix = defaults.task_suffix ? `\n\n${defaults.task_suffix.trim()}` : "";
+    writeFileSync(
+      join(input.destination, "task.md"),
+      `${inlineCase.task.trim()}${stateSection}${taskSuffix}\n`,
+    );
+
+    if (inlineCase.files) {
+      for (const [relPath, content] of Object.entries(inlineCase.files)) {
+        const fileDest = join(input.destination, "environment", relPath);
+        mkdirSync(dirname(fileDest), { recursive: true });
+        writeFileSync(fileDest, content);
+      }
+    }
+    if (inlineCase.expected) {
+      writeFileSync(
+        join(input.destination, "expected.json"),
+        `${JSON.stringify(inlineCase.expected, null, 2)}\n`,
+      );
+    }
+    if (inlineCase.semantic_criteria) {
+      writeFileSync(
+        join(input.destination, "semantic_criteria.md"),
+        `${inlineCase.semantic_criteria.trim()}\n`,
+      );
+    }
+    if (inlineCase.semantic_controls) {
+      writeFileSync(
+        join(input.destination, "semantic_controls.json"),
+        `${JSON.stringify(inlineCase.semantic_controls, null, 2)}\n`,
+      );
+    }
+  }
+
+  applyEvaluatorScenarioOverlay({
+    sourceBenchmarkDir: input.sourceBenchmarkDir,
+    evaluatorOwner: input.evaluatorOwner,
+    scenario: input.scenario,
+    destination: input.destination,
+  });
 }
 
 export function stateRoot(): string {
@@ -186,6 +434,7 @@ export function createRunManifest(input: {
   suite: BenchmarkSuite;
   suitePath: string;
   labelsPath: string | null;
+  labelsCatalog?: GroundTruthCatalog | null;
   baselineRunId?: string;
   objective?: ComparisonObjective;
   candidate: string;
@@ -208,14 +457,25 @@ export function createRunManifest(input: {
     "benchmarks",
     safeName(input.benchmark),
   );
-  cpSync(sourceBenchmarkDir, frozenBenchmarkDir, { recursive: true });
-  const suiteSnapshot = join(
-    frozenBenchmarkDir,
-    relative(sourceBenchmarkDir, input.suitePath),
-  );
+  mkdirSync(frozenBenchmarkDir, { recursive: true });
+  if (existsSync(sourceBenchmarkDir)) {
+    cpSync(sourceBenchmarkDir, frozenBenchmarkDir, { recursive: true });
+  }
+  const suiteSnapshot = existsSync(input.suitePath)
+    ? join(frozenBenchmarkDir, relative(sourceBenchmarkDir, input.suitePath))
+    : join(frozenBenchmarkDir, "suite.json");
+  if (!existsSync(suiteSnapshot)) {
+    writeFileSync(suiteSnapshot, `${JSON.stringify(input.suite, null, 2)}\n`);
+  }
+  const effectiveCatalog = input.labelsCatalog ?? null;
   const labelsSnapshot = input.labelsPath
     ? join(frozenBenchmarkDir, relative(sourceBenchmarkDir, input.labelsPath))
-    : null;
+    : effectiveCatalog
+      ? join(frozenBenchmarkDir, "labels.json")
+      : null;
+  if (labelsSnapshot && (!input.labelsPath || Array.isArray(input.suite.cases)) && effectiveCatalog) {
+    writeFileSync(labelsSnapshot, `${JSON.stringify(effectiveCatalog, null, 2)}\n`);
+  }
   const evaluatorSource = input.suite.evaluator
     ? join(sourceBenchmarkDir, input.suite.evaluator)
     : null;
@@ -241,16 +501,12 @@ export function createRunManifest(input: {
   const scenariosSnapshot = join(inputsDir, "scenarios");
   const evaluatorOwner = evaluatorSource ? dirname(evaluatorSource) : null;
   for (const scenario of input.scenarios) {
-    const source = join(gymRoot, "scenarios", scenario);
-    if (!existsSync(source)) throw new Error(`Scenario not found: ${source}`);
     const snapshot = join(scenariosSnapshot, safeName(scenario));
-    cpSync(source, snapshot, {
-      recursive: true,
-    });
-    applyEvaluatorScenarioOverlay({
+    materializeScenarioOrInlineCase({
+      scenario,
+      suite: input.suite,
       sourceBenchmarkDir,
       evaluatorOwner,
-      scenario,
       destination: snapshot,
     });
   }
@@ -488,6 +744,7 @@ export function storeTrial(input: {
       ? relative(input.runDir, transcriptPath)
       : null,
     duration_ms: input.result.duration_ms ?? null,
+    ...(input.result.usage !== undefined ? { usage: input.result.usage } : {}),
     provenance: {
       prompt_fingerprint: input.result.prompt_hash ?? null,
       framework_revision: input.result.framework_sha ?? null,

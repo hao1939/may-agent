@@ -157,7 +157,7 @@ test("recovered work reaches population review, preserves its cut through admiss
     const ctx = createTestAppWorkflowContext({
       input: admitted,
       workspace,
-      callAgent: async (_agent, prompt) => {
+      call: (async (_agent: string, prompt: unknown) => {
         calls++;
         expect(String(prompt)).toContain("Assess this exact Task AND");
         expect(String(prompt)).toContain(
@@ -179,7 +179,7 @@ test("recovered work reaches population review, preserves its cut through admiss
             followUp: { kind: "request", message: "Investigate the uncovered recurring App failures while preserving the recovered input." },
           },
         };
-      },
+      }) as any,
     });
     ctx.events.emit = async (event) => {
       publications.push(event);

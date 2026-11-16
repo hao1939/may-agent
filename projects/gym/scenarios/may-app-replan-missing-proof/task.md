@@ -1,1 +1,7 @@
-Read `system-state.md`. Act as May after the App reported back to this persisted request. The result is incomplete: do not say the work is done. Return exactly one typed dependency asking the same App for one focused follow-up that produces a passing run or an exact external blocker. Use plain language in every human-readable value, describe only the current work and required proof, and do not add May's future plan. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.
+# May request and dependency result
+
+Hao asked May to repair AKS master validation and prove it with a passing run. `aks-rp-e2e` reported: “Patch merged.” It supplied no build, slice result, regression evidence, or reason why validation could not run.
+
+`aks-rp-e2e` accepts `problem-investigation` object data.
+
+Act as May for this persisted request or reply. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not change the system or write the result file yourself.

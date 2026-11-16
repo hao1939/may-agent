@@ -119,7 +119,7 @@ function fixture() {
       read: createTestAppRead({
         tasks: { get: async (id) => tasks.get(id) ?? null },
       }),
-      callAgent: async () => {
+      call: (async () => {
         calls++;
         return {
           id: `review-${calls}`,
@@ -135,7 +135,7 @@ function fixture() {
             followUp: { kind: "none" },
           },
         };
-      },
+      }) as any,
       emit: async (event) => {
         if (failPublication) throw new Error("publication unavailable");
         events.push(event);

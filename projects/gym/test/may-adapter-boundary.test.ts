@@ -8,6 +8,7 @@ describe("May Gym adapter boundary", () => {
       "utf8",
     );
     expect(source).toContain("runDirectAgent");
+    expect(source).toContain("prepareGymAgentSandbox");
     expect(source).toContain("visibleAgentDir: agentDest");
     expect(source).toContain("systemPrompt: result.systemPrompt");
     expect(source).toContain("toolDenials: gymToolDenials(agentDir)");
@@ -27,12 +28,18 @@ describe("May Gym adapter boundary", () => {
     ]) {
       expect(source).not.toContain(forbidden);
     }
+    const wfAdapterSource = readFileSync(
+      new URL("../src/workflow-adapter.ts", import.meta.url),
+      "utf8",
+    );
+    expect(wfAdapterSource).toContain('from "@may-agent/sdk/standalone"');
+    expect(wfAdapterSource).not.toContain("../../may-agent/src/");
   });
 
   test("the direct agent and workflow adapters do not import hosted infrastructure", () => {
     for (const relPath of [
-      "../../may-agent/src/app/direct-agent.ts",
-      "../../may-agent/src/app/standalone.ts",
+      "../../may-agent/packages/sdk/src/standalone.ts",
+      "../../may-agent/packages/sdk/src/runtime/app/standalone.ts",
       "../src/workflow-adapter.ts",
     ]) {
       const source = readFileSync(new URL(relPath, import.meta.url), "utf8");

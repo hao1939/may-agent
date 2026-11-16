@@ -236,7 +236,7 @@ function scoreTaskResult(workDir, scenarioDir) {
   );
 
   const unexpectedArtifacts = fs.readdirSync(workDir).filter(
-    (name) => !["task-result.json", "system-state.md", "request.json", "transcript.jsonl", "agents"].includes(name),
+    (name) => !["task-result.json", "system-state.md", "request.json", "transcript.jsonl", "workflow-run.json", "agents"].includes(name),
   );
   add(
     "decision-only-scope",

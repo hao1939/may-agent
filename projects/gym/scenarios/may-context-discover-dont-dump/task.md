@@ -1,5 +1,10 @@
-Read `system-state.md`. Decide how to improve May's access to the missing
-context. This is decision-only. Write `alignment-decision.json` with
-`understood_intent`, `mode`, `priority`, `needs_clarification`, `next_action`,
-`delegations`, `constraints`, `preference_updates`, and `response_to_hao` using
-the usual string, boolean, and array types. Then call `finish()`.
+This is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.
+
+# Missing app convention
+
+- May missed one app-specific ownership convention during a review.
+- The convention is current and documented in the app's indexed design page.
+- May's starting context links the global design index but not the app index.
+- A proposal appends fourteen complete app design documents to every May prompt.
+- Several of those documents change often and most are irrelevant to a given task.
+- Adding one stable app-index pointer makes the convention discoverable on demand.

@@ -229,7 +229,7 @@ describe("Task outcome review", () => {
           output: TEST_APP_ROOT,
         },
         signal: controller.signal,
-        callAgent: async () => {
+        call: async () => {
           models++;
           return {
             id: "review",
@@ -276,7 +276,7 @@ describe("Task outcome review", () => {
       const ctx = createTestAppWorkflowContext({
         input: { appId, taskId },
         reconciliation: reconciliation(),
-        callAgent: async (_agent, _prompt, options) => {
+        call: async (_agent, _prompt, options) => {
           calls++;
           expect(options?.schema).toBe(evaluationJudgmentSchema);
           return { id: "optional-report", kind: "agent", status: "done", summary: report.summary, output: report };
@@ -310,7 +310,7 @@ describe("Task outcome review", () => {
       const ctx = createTestAppWorkflowContext({
         input: { appId, taskId },
         reconciliation: reconciliation(),
-        callAgent: async (_agent, _prompt, options) => {
+        call: async (_agent, _prompt, options) => {
           calls++;
           expect(options?.schema).toBe(evaluationJudgmentSchema);
           return { id: "bad-report", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, verification: "not an array" } };
@@ -378,7 +378,7 @@ describe("Task outcome review", () => {
     };
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId, assessmentPurpose: "ongoing" },
-      callAgent: async (_agent, value) => {
+      call: async (_agent, value) => {
         prompt = String(value);
         checkedAt = 200; // A healthy check while the reviewer works is not a Task change.
         return {
@@ -488,7 +488,7 @@ describe("Task outcome review", () => {
           };
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId, assessmentPurpose: "ongoing" },
-      callAgent: async (_agent, value) => {
+      call: async (_agent, value) => {
         prompt = String(value);
         toolOutput = "changed after inspection";
         return {
@@ -660,7 +660,7 @@ describe("Task outcome review", () => {
       createTestAppWorkflowContext({
         input: { appId, taskId, assessmentPurpose: "ongoing" },
         reconciliation: reconciliation(),
-        callAgent: async (_agent, value) => {
+        call: async (_agent, value) => {
           prompt = String(value);
           return {
             id: "s_ongoing",
@@ -731,7 +731,7 @@ describe("Task outcome review", () => {
       input: { appId, taskId },
       reconciliation: reconciliation(),
       workspace: { root, appRoot: root, projectRoot: root, output: root },
-      callAgent: async (_agent, value) => {
+      call: async (_agent, value) => {
         prompt = String(value);
         return {
           id: "s_judge",
@@ -805,7 +805,7 @@ describe("Task outcome review", () => {
       input: { appId, taskId, reviewer: "evaluator-deepseek" },
       reconciliation: reconciliation(),
       workspace: { root, appRoot, projectRoot: appRoot, output: root },
-      callAgent: async (agent, prompt) => {
+      call: async (agent, prompt) => {
         calledAgent = agent;
         suppliedPrompt = prompt;
         return {
@@ -860,7 +860,7 @@ describe("Task outcome review", () => {
       reconciliation: reconciliation(),
       read,
       workspace: { root, appRoot: root, projectRoot: root, output: root },
-      callAgent: async () => {
+      call: async () => {
         modelCalls += 1;
         return {
           id: "s_judge",
@@ -933,7 +933,7 @@ describe("Task outcome review", () => {
       input: { appId, taskId },
       reconciliation: reconciliation(),
       read,
-      callAgent: async () => {
+      call: async () => {
         modelCalls += 1;
         return {
           id: "s_linked_size",
@@ -997,7 +997,7 @@ describe("Task outcome review", () => {
       input: { appId, taskId },
       reconciliation: reconciliation(),
       read: createTestAppRead({ tasks: { get: async () => accepted } }),
-      callAgent: async () => {
+      call: async () => {
         modelCalls++;
         return { id: `s_handoff_${modelCalls}`, kind: "agent", status: "done", summary: "done", output: judgment };
       },
@@ -1029,7 +1029,7 @@ describe("Task outcome review", () => {
     let calls = 0;
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
-      callAgent: async () => {
+      call: async () => {
         calls++;
         return {
           id: "s_judge",
@@ -1103,7 +1103,7 @@ describe("Task outcome review", () => {
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
       reconciliation: reconciliation(),
-      callAgent: async () => {
+      call: async () => {
         modelCalls += 1;
         throw new Error("legacy replay must not call the model");
       },
@@ -1135,7 +1135,7 @@ describe("Task outcome review", () => {
     let calls = 0;
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
-      callAgent: async () => {
+      call: async () => {
         calls += 1;
         return {
           id: "s_empty_turn",
@@ -1178,7 +1178,7 @@ describe("Task outcome review", () => {
     let prompt = "";
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
-      callAgent: async (_agent, value) => {
+      call: async (_agent, value) => {
         prompt = String(value);
         return {
           id: "s_judge",
@@ -1216,7 +1216,7 @@ describe("Task outcome review", () => {
     let emits = 0;
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
-      callAgent: async () => {
+      call: async () => {
         writeFileSync(ref.path, "replaced");
         return {
           id: "s_judge",
@@ -1263,7 +1263,7 @@ describe("Task outcome review", () => {
         projectRoot: workspaceRoot,
         output: workspaceRoot,
       },
-      callAgent: async () => {
+      call: async () => {
         modelCalls += 1;
         return {
           id: "s_retry",
@@ -1323,7 +1323,7 @@ describe("Task outcome review", () => {
       input: { appId, taskId },
       reconciliation: reconciliation(),
       workspace: { root, appRoot: root, projectRoot: root, output: root },
-      callAgent: async () => {
+      call: async () => {
         current = {
           ...detail,
           resourceVersion: 3,
@@ -1379,7 +1379,7 @@ describe("Task outcome review", () => {
         subjectGeneration: 2,
         evidenceHash: "f".repeat(64),
       },
-      callAgent: async () => {
+      call: async () => {
         calls += 1;
         throw new Error("must not call");
       },
@@ -1446,7 +1446,7 @@ describe("Task outcome review", () => {
         createTestAppWorkflowContext({
           input: { appId, taskId },
           reconciliation: reconciliation(),
-          callAgent: async () => {
+          call: async () => {
             modelCalls += 1;
             return {
               id: "s_after_budget",
@@ -1504,7 +1504,7 @@ describe("Task outcome review", () => {
     const result = await reviewTaskOutcome(
       createTestAppWorkflowContext({
         input: { appId: "evaluation", taskId: "runtime/owner-review" },
-        callAgent: async () => {
+        call: async () => {
           calls += 1;
           throw new Error("must not call");
         },
@@ -1533,7 +1533,7 @@ describe("Task outcome review", () => {
     const result = await reviewTaskOutcome(
       createTestAppWorkflowContext({
         input: { appId, taskId },
-        callAgent: async () => {
+        call: async () => {
           calls += 1;
           throw new Error("must not call");
         },
@@ -1558,7 +1558,7 @@ describe("Task outcome review", () => {
         emit: async (value) => {
           emitted.push(value as Record<string, unknown>);
         },
-        callAgent: async () => {
+        call: async () => {
           modelCalls += 1;
           throw new Error("must not call");
         },
@@ -1619,7 +1619,7 @@ describe("Task outcome review", () => {
         createTestAppWorkflowContext({
           input,
           emit: async (value) => emitted.push(value as Record<string, unknown>),
-          callAgent: async () => {
+          call: async () => {
             calls += 1;
             throw new Error("must not call");
           },
@@ -1645,7 +1645,7 @@ describe("Task outcome review", () => {
       let calls = 0;
       const ctx = createTestAppWorkflowContext({
         input: { appId: targetAppId, taskId },
-        callAgent: async () => {
+        call: async () => {
           calls += 1;
           throw new Error("must not call");
         },

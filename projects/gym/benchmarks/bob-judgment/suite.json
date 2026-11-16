@@ -1,0 +1,15 @@
+{
+  "name": "bob-judgment-v1",
+  "version": 1,
+  "artifact": "task-result.json",
+  "evaluator": "../may-alignment/score-decision.cjs",
+  "cases_file": "cases.json",
+  "defaults": {
+    "agent_type": "bob",
+    "output_contract": "task-agent-result",
+    "timeout": 4,
+    "categories": ["bob-judgment", "judgment"],
+    "tags": ["bob-judgment"],
+    "task_suffix": "This is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself."
+  }
+}

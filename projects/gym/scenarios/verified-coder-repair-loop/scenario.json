@@ -1,25 +1,17 @@
 {
   "name": "verified-coder-repair-loop",
-  "description": "Direct workflow_entry scenario exercising alex.app's verified-coder executable-skill workflow (bounded implementation + command verification loop) without Host infrastructure.",
-  "categories": [
-    "bug-fixing",
-    "verification"
-  ],
-  "tags": [
-    "workflow",
-    "executable-skill"
-  ],
+  "description": "Gym runs the unified alex/develop-change Task workflow through design, implementation, command verification, repair, and review in a linked Git worktree.",
+  "categories": ["bug-fixing", "verification"],
+  "tags": ["workflow", "executable-skill"],
   "tier": "smoke",
   "timeout": 5,
-  "agent_type": "tech-lead",
+  "agent_type": "alex",
   "workflow": false,
   "workflow_entry": {
-    "agent": "tech-lead",
-    "workflow": "verified-coder",
+    "agent": "alex",
+    "workflow": "develop-change",
     "input": {
-      "task": "Fix add(a, b) in math.cjs so it returns a + b instead of a - b, preserving module exports.",
-      "verify": ["node", "verify.cjs"],
-      "maxAttempts": 2
+      "verify": ["node", "verify.cjs"]
     }
   }
 }

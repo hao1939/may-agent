@@ -7,7 +7,7 @@ import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { openDatabase, type SqliteDb } from "../may-agent/src/lib/db.js";
 import { applyDbSchema } from "../may-agent/src/lib/db/schema.js";
 import { saveExecutionUsage } from "../may-agent/src/lib/db/execution-usage.js";
-import { createExecutionUsage } from "../may-agent/src/lib/execution-usage.js";
+import { createExecutionUsage } from "../may-agent/packages/sdk/src/runtime/lib/agent-execution.js";
 import { createMetricService } from "../may-agent/src/lib/metrics.js";
 import { createAppReporting } from "../may-agent/src/app/composition/reporting.js";
 import { readMetricEvidence } from "../may-agent/src/app/adapters/reporting/metric-evidence.js";
@@ -229,7 +229,7 @@ test("effort review publishes evidence and reaches an accepted May decision with
         projectRoot: root,
         output: root,
       },
-      callAgent: async (_agent, prompt) => {
+      call: (async (_agent: string, prompt: unknown) => {
         expect(prompt).toContain("not proof of waste");
         expect(prompt).toContain("implementation");
         return {
@@ -249,7 +249,7 @@ test("effort review publishes evidence and reaches an accepted May decision with
               "May should judge the recommendation against current work",
           },
         };
-      },
+      }) as any,
       emit: async (event) => {
         published.push(event);
       },

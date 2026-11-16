@@ -393,7 +393,7 @@ describe("evaluation report reader", () => {
     const listed = await readEvaluationReports(
       createTestAppWorkflowContext({
         input: { operation: "list", limit: 5 },
-        callAgent: async () => {
+        call: async () => {
           throw new Error("must not call");
         },
       }),

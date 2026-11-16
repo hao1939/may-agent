@@ -1,8 +1,16 @@
 {
   "name": "may-conversation-submit-explicit-approval-choice-control",
   "description": "Stop clarifying and submit only the exact attached packet when Hao explicitly chooses option B.",
-  "categories": ["conversation-follow-through", "deputy-learning"],
-  "tags": ["may-agent", "telegram", "approval", "opposite-control"],
+  "categories": [
+    "conversation-follow-through",
+    "deputy-learning"
+  ],
+  "tags": [
+    "may-agent",
+    "telegram",
+    "approval",
+    "opposite-control"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -18,6 +26,9 @@
     ],
     "criticality": "critical",
     "variant_family": "approval-choice-reply",
-    "source_signals": ["incident-s_1785422680323_301"]
-  }
+    "source_signals": [
+      "incident-s_1785422680323_301"
+    ]
+  },
+  "output_contract": "task-agent-result"
 }

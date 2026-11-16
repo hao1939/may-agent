@@ -87,7 +87,7 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            callAgent: (async (_agent, value) => {
+            call: (async (_agent, value) => {
               prompt = value;
               // Agent decisions are fixtures, not evidence of live model behavior.
               return {
@@ -214,7 +214,7 @@ describe("Scout owner reconciliation boundary", () => {
               },
             } as never,
           }),
-          callAgent: (async (_agent, value) => {
+          call: (async (_agent, value) => {
             prompt = value;
             return {
               id: "s_recovery_context",
@@ -285,7 +285,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          callAgent: (async (_agent, value) => {
+          call: (async (_agent, value) => {
             prompt = value;
             return {
               id: "s_string_procedure",
@@ -335,7 +335,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          callAgent: (async (_agent, value) => {
+          call: (async (_agent, value) => {
             prompt = value;
             return {
               id: "s_array_procedure",
@@ -401,7 +401,7 @@ describe("Scout owner reconciliation boundary", () => {
               },
             } as never,
           }),
-          callAgent: (async (_agent, value) => {
+          call: (async (_agent, value) => {
             prompt = value;
             return {
               id: "s_unavailable_context",
@@ -448,7 +448,7 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            callAgent: (async (_agent, prompt) => {
+            call: (async (_agent, prompt) => {
               let output: string;
               if (scenario === "direct-write") {
                 output = join(
@@ -534,7 +534,7 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            callAgent: (async (_agent, prompt) => {
+            call: (async (_agent, prompt) => {
               calls++;
               if (calls === 2) {
                 expect(prompt).toContain(
@@ -751,7 +751,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          callAgent: (async (_agent, prompt) => {
+          call: (async (_agent, prompt) => {
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             expect(candidate).toBeDefined();
             const output = join(candidate!, "knowledge/pending.md");
@@ -842,7 +842,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          callAgent: (async (_agent, prompt) => {
+          call: (async (_agent, prompt) => {
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/incomplete.md");
             writeFileSync(output, "Unfinished draft\n");
@@ -903,7 +903,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          callAgent: (async (_agent, prompt) => {
+          call: (async (_agent, prompt) => {
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/pending.md");
             writeFileSync(output, "Accepted pending content\n");
@@ -985,11 +985,11 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            callAgent: (async () => ({
+            call: (async () => ({
               id: "s_owner_partial",
               kind: "agent",
               status,
-              facts: { status: "partial", next_steps: "Consume child results" },
+              facts: { status: "partial", summary: "Consume child results" },
               output,
             })) as WorkflowContext["call"],
             emit: async (event) => {
@@ -1023,7 +1023,7 @@ describe("Scout owner reconciliation boundary", () => {
     { status: "error", facts: { status: "partial" } },
     {
       status: "done",
-      facts: { status: "partial", next_steps: "Finish the review" },
+      facts: { status: "partial", summary: "Finish the review" },
     },
   ] as const)(
     "does not publish maintenance facts or actions from an incomplete call: %j",
@@ -1045,7 +1045,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: { ...defaultFixture.workspace },
-          callAgent: (async () => ({
+          call: (async () => ({
             id: "s_blocked",
             kind: "agent",
             ...execution,
@@ -1098,7 +1098,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          callAgent: (async (_agent, prompt) => {
+          call: (async (_agent, prompt) => {
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/findings/qualified.md");
             mkdirSync(join(candidate!, "knowledge/findings"), {
@@ -1224,7 +1224,7 @@ describe("Scout owner reconciliation boundary", () => {
           events: { items: [], truncated: false },
         },
         workspace: { ...defaultFixture.workspace },
-        callAgent: (async (
+        call: (async (
           _agent: string,
           value: string,
           options?: Record<string, unknown>,
@@ -1387,7 +1387,7 @@ describe("Scout owner reconciliation boundary", () => {
             root,
             output: appRoot,
           },
-          callAgent: (async (_agent, prompt) => {
+          call: (async (_agent, prompt) => {
             expect(prompt).toContain("Do not move or rename that file");
             const candidateRoot = prompt.match(/- Domain workspace: (.+)/)?.[1];
             expect(candidateRoot).toBeDefined();
@@ -1466,7 +1466,7 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false, throughEventId: eventId },
           },
           workspace: { ...defaultFixture.workspace },
-          callAgent: (async () => ({
+          call: (async () => ({
             id: "s_owner",
             kind: "agent",
             status: "done",
@@ -1520,7 +1520,7 @@ describe("Scout owner reconciliation boundary", () => {
           events: { items: [], truncated: false },
         },
         workspace: { ...defaultFixture.workspace },
-        callAgent: (async () => ({
+        call: (async () => ({
           id: "s_owner",
           kind: "agent",
           status: "done",
@@ -1637,7 +1637,7 @@ describe("Scout owner reconciliation boundary", () => {
           },
         },
         workspace: { ...defaultFixture.workspace },
-        callAgent: (async (_agent: string, value: string) => {
+        call: (async (_agent: string, value: string) => {
           prompt = value;
           return {
             id: "s_review",

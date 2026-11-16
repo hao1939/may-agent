@@ -18,7 +18,9 @@ import {
   gymRoot,
   loadLabels,
   loadSuite,
+  materializeScenarioOrInlineCase,
   readManifest,
+  resolveGymLabDir,
   resolveRunDir,
   safeName,
   snapshotHarness,
@@ -99,6 +101,7 @@ export const executeScenario: ScenarioExecutor = async (input) => {
     input.scenario,
     "--agent",
     input.agent,
+    "--json",
   ];
   if (input.candidate !== "baseline") args.push("--lab", input.candidate);
   if (input.timeout) args.push("--timeout", String(input.timeout));
@@ -141,6 +144,7 @@ function assertSameFile(current: string, frozen: string, label: string): void {
 function candidateEvidence(
   candidate: string,
   configuredAgentsRoot?: string,
+  agentName?: string,
 ): { fingerprint: string | null; path: string | null } {
   if (candidate === "baseline") return { fingerprint: null, path: null };
   const agentsRoot = resolve(
@@ -149,7 +153,11 @@ function candidateEvidence(
       process.env["AGENTS_ROOT"] ||
       join(gymRoot, "../../agents"),
   );
-  const candidatePath = join(agentsRoot, ".lab", candidate);
+  const projectsRoot = join(gymRoot, "..");
+  const baseOwner = agentName?.includes("/") ? agentName.slice(0, agentName.indexOf("/")).trim() : agentName;
+  const candidatePath =
+    resolveGymLabDir(agentsRoot, candidate, baseOwner, projectsRoot) ??
+    join(agentsRoot, ".lab", candidate);
   if (!existsSync(candidatePath)) {
     throw new Error(`Candidate not found: ${candidatePath}`);
   }
@@ -196,7 +204,10 @@ export function assertFrozenInputs(
   if (fingerprintTree(join(baselineDir, "inputs")) !== baseline.proof.input_fingerprint) {
     throw new Error("Frozen input fingerprint changed; create a new baseline");
   }
-  const { suite, path: suitePath } = loadSuite(baseline.benchmark);
+  const { suite, path: suitePath } = loadSuite(
+    baseline.benchmark,
+    baseline.scenarios,
+  );
   if (!baseline.source.harness_snapshot || !baseline.proof.harness_fingerprint) {
     throw new Error("Historical baseline has no frozen Gym harness; create a new baseline");
   }
@@ -209,22 +220,29 @@ export function assertFrozenInputs(
     throw new Error("Frozen Gym harness changed; create a new baseline");
   }
   const sourceBenchmarkDir = join(gymRoot, "benchmarks", baseline.benchmark);
-  assertSameFile(
-    suitePath,
-    join(baselineDir, baseline.source.suite_snapshot),
-    "suite.json",
+  if (existsSync(suitePath)) {
+    assertSameFile(
+      suitePath,
+      join(baselineDir, baseline.source.suite_snapshot),
+      "suite.json",
+    );
+  }
+  const { catalog: labelsCatalog, path: labelsPath } = loadLabels(
+    baseline.benchmark,
+    suite,
   );
-  const { path: labelsPath } = loadLabels(baseline.benchmark, suite);
   if (baseline.source.labels_snapshot) {
-    if (!labelsPath)
+    if (labelsPath && !Array.isArray(suite.cases)) {
+      assertSameFile(
+        labelsPath,
+        join(baselineDir, baseline.source.labels_snapshot),
+        "labels.json",
+      );
+    } else if (!labelsCatalog) {
       throw new Error(
         "Frozen labels exist but current labels are missing; create a new baseline",
       );
-    assertSameFile(
-      labelsPath,
-      join(baselineDir, baseline.source.labels_snapshot),
-      "labels.json",
-    );
+    }
   }
   if (baseline.source.evaluator_snapshot && suite.evaluator) {
     assertSameFile(
@@ -274,15 +292,14 @@ export function assertFrozenInputs(
       baseline.source.scenarios_snapshot,
       safeName(scenario),
     );
-    const currentCase = join(gymRoot, "scenarios", scenario);
     const temporaryRoot = mkdtempSync(join(tmpdir(), "gym-input-check-"));
     const effectiveCase = join(temporaryRoot, safeName(scenario));
     try {
-      cpSync(currentCase, effectiveCase, { recursive: true });
-      applyEvaluatorScenarioOverlay({
+      materializeScenarioOrInlineCase({
+        scenario,
+        suite,
         sourceBenchmarkDir,
         evaluatorOwner,
-        scenario,
         destination: effectiveCase,
       });
       assertSameFile(effectiveCase, frozenCase, scenario);
@@ -299,7 +316,10 @@ export async function runLoop(
   runDir: string;
   manifest: LoopRunManifest;
 }> {
-  const { suite, path: suitePath } = loadSuite(options.benchmark);
+  const { suite, path: suitePath } = loadSuite(
+    options.benchmark,
+    options.scenarios,
+  );
   const { catalog: labels, path: labelsPath } = loadLabels(
     options.benchmark,
     suite,
@@ -315,13 +335,14 @@ export async function runLoop(
       `Scenarios are not in ${options.benchmark}: ${unknown.join(", ")}`,
     );
 
-  const candidate = candidateEvidence(options.candidate, options.agentsRoot);
+  const candidate = candidateEvidence(options.candidate, options.agentsRoot, options.agent);
   const created = createRunManifest({
     phase: options.phase,
     benchmark: options.benchmark,
     suite,
     suitePath,
     labelsPath,
+    labelsCatalog: labels,
     baselineRunId: options.baselineRunId,
     objective: options.objective,
     candidate: options.candidate,

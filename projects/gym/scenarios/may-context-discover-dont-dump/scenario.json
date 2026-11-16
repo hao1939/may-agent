@@ -1,1 +1,32 @@
-{"name":"may-context-discover-dont-dump","description":"Add one discovery pointer instead of dumping fourteen design documents into every prompt.","categories":["signals-and-context","deputy-learning"],"tags":["may-agent","context","simplicity"],"tier":"standard","timeout":5,"agent_type":"may","workflow":false,"learning":{"unit":"signals-and-context","tier":3,"partition":"development","competencies":["diagnosis.input-before-model","evidence.propose-after-proof"],"criticality":"high","variant_family":"discover-not-dump","source_signals":["core-principle-004"]}}
+{
+  "name": "may-context-discover-dont-dump",
+  "description": "Add one discovery pointer instead of dumping fourteen design documents into every prompt.",
+  "categories": [
+    "signals-and-context",
+    "deputy-learning"
+  ],
+  "tags": [
+    "may-agent",
+    "context",
+    "simplicity"
+  ],
+  "tier": "standard",
+  "timeout": 5,
+  "agent_type": "may",
+  "workflow": false,
+  "learning": {
+    "unit": "signals-and-context",
+    "tier": 3,
+    "partition": "development",
+    "competencies": [
+      "diagnosis.input-before-model",
+      "evidence.propose-after-proof"
+    ],
+    "criticality": "high",
+    "variant_family": "discover-not-dump",
+    "source_signals": [
+      "core-principle-004"
+    ]
+  },
+  "output_contract": "task-agent-result"
+}

@@ -167,7 +167,7 @@ test.each(["evaluator", "evaluator-deepseek"] as const)(
           reviewer,
         },
         read,
-        callAgent: async () => {
+        call: async () => {
           modelCalls++;
           return {
             id: "new-review",
@@ -217,7 +217,7 @@ test.each(["evaluator", "evaluator-deepseek"] as const)(
       context({
         input: { ...selection.candidate!, automatic: true },
         read,
-        callAgent: async () => {
+        call: async () => {
           throw new Error("must not call a model");
         },
         emit: async (event: any) => {
@@ -291,7 +291,7 @@ test.each(["value", "revocation", "due", "unavailable"])(
         alertId: 2,
         automatic: true,
       },
-      callAgent: async () => {
+      call: async () => {
         calls++;
         return {
           id: "changed-review",
@@ -350,7 +350,7 @@ test.each([
   const events: any[] = [];
   let calls = 0;
   const ctx = context({
-    callAgent: async (_agent: string, prompt: string) => {
+    call: async (_agent: string, prompt: string) => {
       calls++;
       expect(prompt).toContain("Choose followUp explicitly");
       return { id: "followup-review", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, followUp } };
@@ -393,7 +393,7 @@ test("pre-Task evidence uses the existing report, publication reader and May int
   const events: any[] = [];
   let calls = 0;
   const ctx = context({
-    callAgent: async (_agent: string, prompt: string) => {
+    call: async (_agent: string, prompt: string) => {
       calls++;
       expect(prompt).toContain("A Task is not required");
       expect(prompt).toContain("not verified recovery");
@@ -488,7 +488,7 @@ test("delayed publication reuses judgment, retains its observation boundary and 
   setSystemTime(now);
   const ctx = context({
     input: { metricId: "sample.failures", end, reviewer: "evaluator-deepseek" },
-    callAgent: async () => {
+    call: async () => {
       calls++;
       return {
         id: "fixture",
@@ -534,7 +534,7 @@ test("delayed publication reuses judgment, retains its observation boundary and 
   expect(selected.facts.join("\n")).toContain("metric-observed");
   const changed = context({
     input: { metricId: "other.metric", end, reviewer: "evaluator-deepseek" },
-    callAgent: async () => {
+    call: async () => {
       throw new Error("allowance must defer");
     },
   });
@@ -583,7 +583,7 @@ test.each([null, end + 10_000])(
             ({ result: { nextReviewAt: now + 86_400_000 } }) as any,
         },
       }),
-      callAgent: async () => {
+      call: async () => {
         modelCalls++;
         return {
           id: "exact-signal-review",
@@ -633,7 +633,7 @@ test.each([null, end + 10_000])(
               ({ result: { nextReviewAt: now + 60_000 } }) as any,
           },
         }),
-        callAgent: async () => {
+        call: async () => {
           throw new Error(
             "not-due signal must not consume the shared allowance",
           );
@@ -663,7 +663,7 @@ test.each([null, end + 10_000])(
           automatic: true,
           alertId: 8,
         },
-        callAgent: async () => {
+        call: async () => {
           throw new Error("Shared capacity remains enforced");
         },
       }),
@@ -821,7 +821,7 @@ test("owner-only and unattributed metrics remain reviewable without treating pro
   const root = mkdtempSync(join(tmpdir(), "metric-owner-"));
   roots.push(root);
   const ctx = context({
-    callAgent: async () => ({
+    call: async () => ({
       id: "review",
       kind: "agent",
       status: "done",
@@ -852,7 +852,7 @@ test("publication retry uses the retained assessment even when metric source rea
     reads = 0,
     fail = true;
   const ctx = context({
-    callAgent: async () => {
+    call: async () => {
       calls++;
       return {
         id: "first-assessment",
@@ -906,7 +906,7 @@ test("new reports for a breach retain the direct owner's investigation and dupli
   });
   const review = await reviewMetric(
     context({
-      callAgent: async () => ({
+      call: async () => ({
         id: "review",
         kind: "agent",
         status: "done",
@@ -983,7 +983,7 @@ test("new reports for a breach retain the direct owner's investigation and dupli
   const laterReview = await reviewMetric(
     context({
       input: { metricId: "sample.failures", end: end + 1 },
-      callAgent: async () => ({
+      call: async () => ({
         id: "later-review",
         kind: "agent",
         status: "done",
@@ -1033,7 +1033,7 @@ test("metric optional evidence preserves the original report through publication
   const events: any[] = [];
   let calls = 0;
   const ctx = context({
-    callAgent: async (_agent: string, _prompt: string, options: any) => {
+    call: async (_agent: string, _prompt: string, options: any) => {
       calls++;
       expect(options?.schema).toBe(evaluationJudgmentSchema);
       return { id: "optional-metric", kind: "agent", status: "done", summary: report.summary, output: report };
@@ -1062,7 +1062,7 @@ test("metric review does not silently accept malformed supplied evidence", async
   let calls = 0;
   let publications = 0;
   const ctx = context({
-    callAgent: async (_agent: string, _prompt: string, options: any) => {
+    call: async (_agent: string, _prompt: string, options: any) => {
       calls++;
       expect(options?.schema).toBe(evaluationJudgmentSchema);
       return { id: "bad-metric", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, verification: "not an array" } };

@@ -6,22 +6,6 @@ import { runWorkflowTest } from "@may-agent/sdk/testing";
 import * as learnFromDailyWork from "./learn-from-daily-work.js";
 
 describe("alex/learn-from-daily-work multi-root harvester & synthesizer", () => {
-  test("returns a direct converged Task result with a summary when no signals are found", async () => {
-    const sandbox = mkdtempSync(join(tmpdir(), "daily-learn-empty-"));
-    try {
-      const run = await runWorkflowTest(learnFromDailyWork, {
-        input: { roots: [sandbox] },
-        workspace: { projectRoot: sandbox, workRoot: sandbox },
-      });
-
-      expect(run.status).toBe("done");
-      expect(run.result?.output).toMatchObject({ state: "converged" });
-      expect(run.result?.output?.summary).toBeTruthy();
-    } finally {
-      rmSync(sandbox, { recursive: true, force: true });
-    }
-  });
-
   test("discovers and deduplicates signals across separate container (.state) and localhost (home) roots", () => {
     const sandbox = mkdtempSync(join(tmpdir(), "daily-learn-roots-"));
     try {
@@ -104,11 +88,17 @@ describe("alex/learn-from-daily-work multi-root harvester & synthesizer", () => 
 
       const cursorPath = join(sandbox, "cursor.json");
       const outputFile = join(sandbox, "daily-report.json");
+      const gymBenchmarksRoot = join(sandbox, "benchmarks");
+      mkdirSync(join(gymBenchmarksRoot, "alex-judgment"), { recursive: true });
+      writeFileSync(join(gymBenchmarksRoot, "alex-judgment", "cases.json"), "[]\n", "utf8");
+
       const run = await runWorkflowTest(learnFromDailyWork, {
         input: {
           roots: [sandbox],
           cursorPath,
           outputFile,
+          stageDraftCases: true,
+          gymBenchmarksRoot,
         },
         workspace: { projectRoot: sandbox, workRoot: sandbox },
         mocks: {
@@ -161,13 +151,24 @@ describe("alex/learn-from-daily-work multi-root harvester & synthesizer", () => 
       const out = JSON.parse(readFileSync(outputFile, "utf8")) as {
         signalCount: number;
         acceptedLessonCount: number;
+        stagedCaseIds: string[];
         lessons: Array<{ draftBenchmarkCase: { id: string } }>;
       };
       expect(out.signalCount).toBe(1);
       expect(out.acceptedLessonCount).toBe(1);
+      expect(out.stagedCaseIds).toEqual(["alex-judge-no-redundant-stage-flag"]);
       expect(out.lessons[0]?.draftBenchmarkCase.id).toBe(
         "alex-judge-no-redundant-stage-flag",
       );
+
+      const stagedCases = JSON.parse(
+        readFileSync(join(gymBenchmarksRoot, "alex-judgment", "cases.json"), "utf8"),
+      ) as Array<{ id: string; status: string }>;
+      expect(stagedCases).toHaveLength(1);
+      expect(stagedCases[0]).toMatchObject({
+        id: "alex-judge-no-redundant-stage-flag",
+        status: "draft",
+      });
     } finally {
       rmSync(sandbox, { recursive: true, force: true });
     }

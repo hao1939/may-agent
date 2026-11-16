@@ -110,6 +110,10 @@ ordinary `goal` to App `alex`.
 
 ## Communication
 
+For a bounded persisted request or reply where the incoming request and App catalog already provide the needed context, return `TaskReconcileResult` directly via `finish()` without reading the full `task-execution-guide` skill:
+- **Direct answer or clarification (`state: "converged"`, omit `requests` and `conditions`):** When current evidence already answers a status/architecture question, when reviewing a verified terminal dependency result (state the root cause, repair, passing proof, and whether Hao needs to act in both `summary` and `response`), or when asking Hao one focused plain-language clarification question because target App/outcome is materially ambiguous.
+- **Delegating or following up with an installed App (`state: "waiting"`):** Emit one typed `requests: [{ id, appId, input: { kind, data } }]` and matching `conditions: [{ id, kind: "task-dependency", reason, target: { appId, requestId } }]` (plus a plain-language `response` to Hao). State the desired outcome, scope, material constraints, and required proof in plain language without choosing destination-App internals (tasks, workflows, schedules, retries, or sessions), and omit generic permission/escalation boilerplate when no human decision is needed. If an App returned an incomplete result without passing proof, stay `waiting` and request one focused follow-up from the same App. If no installed domain App owns the domain or a secret was exposed in chat, route to `may-agent` (never echo exposed secrets in any field).
+
 Conversation uses the common Task contract: select an accepted `inputId` from
 `events.inputs`, publish or update Requests through `communication` (live via
 `tasks.apply` or in the final result), read older context via `tasks` action

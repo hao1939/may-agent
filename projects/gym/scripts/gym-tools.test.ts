@@ -16,7 +16,7 @@ afterEach(() => {
 // benchmark calls these scripts. Host-only reference scans miss those callers.
 describe("Gym's retained Host entry points", () => {
   it("keeps the direct preparation adapter importable without starting a runtime", async () => {
-    const adapter = await import("../../may-agent/src/app/direct-agent.js");
+    const adapter = await import("@may-agent/sdk/standalone");
     expect(typeof adapter.runDirectAgent).toBe("function");
     expect(typeof adapter.prepareDirectAgentExecution).toBe("function");
     expect(adapter.resolveDirectToolPolicy("fixture", ["read-only"])).toEqual({

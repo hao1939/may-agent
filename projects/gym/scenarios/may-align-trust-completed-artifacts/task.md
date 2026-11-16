@@ -1,7 +1,12 @@
-Read `system-state.md`. Classify the worker outcome and decide what May should do next.
+Classify the worker outcome and decide what May should do next.
 
-This is a decision-only benchmark. Do not execute, dispatch, message, or modify the system.
+# Native-worker artifact evidence
 
-Field meanings: `delegations` lists planned direct agent handoffs; use exact agent names supplied by the scenario. Route durable app-owned work in `next_action`, not `delegations`. `constraints` lists boundaries the plan must preserve. `preference_updates` contains only standing guidance explicitly authorized by Hao; use `[]` for ordinary or local work. `response_to_hao` is the reply Hao would see. `mode` and `priority` are free-text metadata.
+- May delegated a bounded Codex task to inspect a failure and return findings.
+- The persisted task receipt says `status: completed` and `exit_code: 0`.
+- The result artifact exists but its substantive output section is empty.
+- Two retry attempts produced the same completed/exit 0 receipt with empty output.
+- The task requires findings; empty output does not satisfy that requested outcome.
+- Runtime logs contain no timeout signal, killed process marker, or still-running worker.
 
-Write `alignment-decision.json` with exactly these fields: `understood_intent` (string), `mode` (string), `priority` (string), `needs_clarification` (boolean), `next_action` (string), `delegations` (array of `{agent,purpose,async}`), `constraints` (string array), `preference_updates` (string array), and `response_to_hao` (string). Then call `finish()`.
+This is a decision-only benchmark. Do not execute, dispatch, message, or modify the system. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not write the result file yourself.

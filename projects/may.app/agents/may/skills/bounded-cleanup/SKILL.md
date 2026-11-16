@@ -25,22 +25,25 @@ paused, active, unreplaced, or otherwise still-owned work.
    backup copy inside the workspace for Git-committed material. Treat Git
    history as the recovery path unless the task names an external retention
    requirement.
-5. **Report the boundary.** State the removal and the preserved items directly,
+5. **Block cleanup on non-empty `git diff` or uncopied findings.** If a scoped
+   `git diff` is non-empty or contains uncopied findings, block cleanup
+   (`state: "converged"`, no `requests`) and preserve the worktree until those
+   changes are reconciled.
+6. **Require durable closure before worktree deletion.** Never delete a review
+   or incident worktree before its final closure/disposition is durably
+   submitted through the real submission path. If no durable closure submission
+   path is exposed, block deletion (`state: "converged"`, no `requests`),
+   write `"block worktree cleanup until durable closure is submitted"` in
+   `summary`, and state in `response` that you block cleanup because durable
+   closure must be submitted **before deleting** the worktree, the real
+   submission path is **not exposed**, and **ask** for the submission path or
+   owner help.
+7. **Report the boundary.** State the removal and the preserved items directly,
    with the evidence and recovery path.
 
-## Structured decision pre-submit map
+## `TaskReconcileResult` mapping
 
-For any structured cleanup decision artifact, fill or revise these fields before
-finishing:
-
-- `understood_intent`: name the cleanup/removal intent and the evidence that
-  makes the target obsolete, stale, unused, legacy, or fully superseded.
-- `mode`: use `remove`, `cleanup`, or `triage` when the safe action is bounded.
-- `priority`: name the fully superseded item or class, not the preserved paused
-  or active work.
-- `next_action`: remove only the proved obsolete item; explicitly say paused,
-  active, unreplaced, waiting, or ambiguous items remain untouched.
-- `constraints`: include `Git history is recovery`, `remove only the proved
-superseded item`, `preserve paused and active work`, and `no archival copy`.
-- `response_to_hao`: tell Hao what will be removed now, what will be preserved,
-  and that Git history provides rollback/recovery.
+When returning `TaskReconcileResult` through `finish()`:
+- `summary`: state the exact cleanup action (e.g., `"remove only legacy-alerts and rely on Git history for recovery"` or `"block worktree cleanup until durable closure is submitted"`).
+- `facts`: list the key evidence and constraints (`"Git history is recovery"`, `"remove only the proved superseded item"`, `"preserve paused and active work"`, `"no archival copy"`).
+- `response` (when `state: "converged"`) or `communication[0].message` (when `state: "waiting"`): tell Hao what will be removed or blocked now, what will be preserved, and that Git history provides rollback/recovery.

@@ -4,7 +4,7 @@
 
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource) (*"One authority for each resource"*, *"Simple first"*, *"Composition preserves execution rules"*).
 
-**Design status:** Completed & shipped (2026-11-14, Host PRs #512–#515, #517, #518, #520) — Sections 1–5 are the single normative specification (incorporating all review feedback from Sections 6–11). Sections 6–11 are retained in the Appendix as historical, non-normative review notes.
+**Design status:** Completed & shipped (2026-11-15, Host PRs #512–#558) — Sections 1–5 are the single normative specification (incorporating all review feedback from Sections 6–11). Sections 6–11 are retained in the Appendix as historical, non-normative review notes.
 
 ---
 
@@ -205,11 +205,11 @@ Resolution and contract rules:
 
 Both execution environments bind their capabilities into the shared invocation kernel without duplicating validation, deadline, child-join, or cleanup logic:
 
-1. **Standalone Environment (CLI / Gym / Scripts / SDK Unit Tests — `may run`, `may list`, `run`, `runTargetTest`):**
+1. **Standalone Environment (CLI / Gym / Scripts / SDK Unit Tests — `may run`, `may list`, `run`, `listTargets`, `runWorkflowTest`):**
    - **CLI Surface (`src/app/may.ts` + `src/app/standalone-cli.ts`):** Exposes **`may run <target> [input]`** (alias `may call`) and **`may list`** at the top of `may.ts`—before any SQLite, socket, or daemon Task recovery runs—working identically in source mode (`bun run may run ...`) and in the compiled `may-agent` binary, and retiring the legacy `--run-workflow` CLI exit mode (`src/app/modes/run-workflow.ts`).
-     - **Zero-`--app` Auto-Discovery:** `run(target, input, options?)` (`src/app/standalone.ts`) automatically infers `projectRoot` from `cwd`, discovers the owning App across `projects/*.app/agents/*` and `agents/*`, and locks `PreparedCatalog` to that App's boundary (requiring `<app>/<target>` or `--app` only if two enabled Apps share an agent name).
+     - **Zero-`--app` Auto-Discovery:** `run(target, input, options?)` automatically infers `projectRoot` from `cwd`, discovers the owning App across `projects/*.app/agents/*` and `agents/*`, and locks `PreparedCatalog` to that App's boundary (requiring `<app>/<target>` or `--app` only if two enabled Apps share an agent name).
      - **Minimal Orthogonal Flags & Safe Stdin:** Supports `--readonly`, `--cwd <dir>`, `--out <dir>`, `--timeout <45s|2m|45000>`, `--skill <name>`, and `--json`; reads piped stdin lazily only when no positional or `--input` payload is supplied (never blocking `--help`, `list`, or explicit inputs).
-   - **Programmatic & SDK Standalone Surfaces:** Exposes `run(target, input, options?)`, `listStandaloneTargets(options?)`, `runDirect(options)`, and `runStandalone(moduleOrTarget, options)` directly from `@may-agent/sdk/standalone` (implemented in `src/app/standalone.ts` and `packages/sdk/src/standalone.ts`, with `runTargetTest` in `@may-agent/sdk/testing`) so callers can run prompt agents, `<owner>/<procedure>` code modules, and native `codex`/`claude` CLI executors by importing `@may-agent/sdk/standalone` alone.
+   - **Programmatic & SDK Standalone Surfaces:** Exposes `run(target, input, options?)` (and `run(options)`), `listTargets(options?)`, and `createModelRegistry()` directly from `@may-agent/sdk/standalone`, and `runWorkflowTest(moduleOrTarget, options)` from `@may-agent/sdk/testing`, so callers can run prompt agents, `<owner>/<procedure>` code modules, and native `codex`/`claude` CLI executors by importing `@may-agent/sdk/standalone` alone.
    - **Explicitly supplied local reads vs. unbound Host authority:** Standalone execution has no durable Task ownership, no SQLite, and no implicit live Host authority; unbound Host operations (`events.emit`, Task mutations, unconfigured reads) fail explicitly, while explicitly supplied local reads, Task-shaped snapshots, and fixtures remain available.
    - Creates an independent per-root `WorkflowExecutionAllowance` (`maxConcurrentCalls`) on each root invocation to prevent **cross-root call-allowance interference**.
    - Writes `<outputRoot>/run.json` (`WorkflowRunReport`) and per-session `sessions/<id>/session.jsonl` when `--out` / `outputRoot` / `traceDir` is provided; omitting `--out` / `outputRoot` cleans up temporary scratch output directories automatically (and code-only runs never fabricate empty `session.jsonl` files).
@@ -270,10 +270,10 @@ Start by pruning dead/unused scenarios so the core runtime unification stays sma
   2. Auto-discovered App-local target owners in `run(target, input, options?)` without requiring `--app`, while preserving strict App-local catalog isolation (recovering `callerProjectId`, admitting global agents alongside App-local agents, and locking explicit `--app` / `<app>.app/<target>` scopes), defaulting `workRoot` to `cwd`, retaining scratch `outputRoot` when cleanup is unconfirmed, supporting non-object schemas on native CLI targets, and deriving `listStandaloneTargets` from `buildWorkflowCatalog`.
   3. Added `@may-agent/sdk/standalone` (`run`, `listStandaloneTargets`, `runStandalone`) and `runTargetTest(moduleOrTarget, options)` in `@may-agent/sdk/testing`, and consolidated standalone exports through `src/app/standalone.ts`.
 
-### Phase 5 (Planned): Self-Contained `@may-agent/sdk` Stateless Agent Runtime vs. Durable Host (`src/app/`)
-- **Why:** Currently `packages/sdk/src/standalone.ts` re-exports `run(target, input, options?)` from `../../../src/app/standalone.js`. Inverting that dependency arrow so `@may-agent/sdk` physically owns the stateless agent & workflow runtime makes `@may-agent/sdk` completely self-contained and guarantees at the package boundary that stateless agent execution never depends on Host SQLite, `EventBus`, or daemon state.
-- **Target Two-Layer Split:**
-  1. **`@may-agent/sdk` (Stateless Agent & Workflow Runtime):** Owns contracts/schemas, pure-FS agent & workflow discovery/loading (`agent.json`, `AGENTS.md`, `SKILL.md`, `workflows/*.ts`), the invocation kernel (`runWorkflowInvocation`), stateless prompt-turn execution (`pi-agent-core` + local coding/bash/finish tools), native CLI execution (`codex`/`claude`), and `run(target, input, options?)` / `listStandaloneTargets()`.
+### Phase 5 (Completed — Host PRs #525–#558): Self-Contained `@may-agent/sdk` Stateless Agent Runtime vs. Durable Host (`src/app/`)
+- **Why:** Previously `packages/sdk/src/standalone.ts` reached upward into `../../../src/app/standalone.js`. Inverting that dependency arrow so `@may-agent/sdk` physically owns the stateless agent & workflow runtime makes `@may-agent/sdk` completely self-contained (`"rootDir": "."` in `packages/sdk/tsconfig.json`, enforced by ESLint `no-restricted-imports` forbidding `**/src/app/**`, `**/src/lib/**`, and `bun:sqlite` inside `packages/sdk/`).
+- **Completed Two-Layer Split:**
+  1. **`@may-agent/sdk` (`packages/sdk/src/` + `packages/sdk/src/runtime/` — Stateless Agent & Workflow Runtime):** Physically owns contracts/schemas, pure-FS agent & workflow discovery/loading (`agent.json`, `AGENTS.md`, `SKILL.md`, `workflows/*.ts`), the invocation kernel (`runWorkflowInvocation`), stateless prompt-turn execution (`pi-agent-core` + local coding/bash/finish tools), native CLI execution (`codex`/`claude`), and `run(target, input, options?)` / `listStandaloneTargets()` in `@may-agent/sdk/standalone` with zero `src/` or SQLite imports.
   2. **`may-agent` Host (`src/app/` — Durable Multi-Agent Service):** Imports `@may-agent/sdk` to execute agents and workflows inside durable SQLite `Task` claims (`TaskRunner`), `EventBus`, `Conversation` sessions, worktree lifecycle, cron scheduling, Control Socket, HTTP/WebUI, and Telegram.
 
 ---

@@ -38,68 +38,8 @@ function json(path: string): any {
 }
 
 describe("May App outcome management", () => {
-  test("quarantines every legacy autonomous track", () => {
-    const config = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-learning/autonomous-training.json",
-      ),
-    );
-    const enabled = config.tracks.filter(
-      (track: { enabled?: boolean }) => track.enabled !== false,
-    );
-    expect(enabled).toEqual([
-      expect.objectContaining({
-        id: "app-outcome-management",
-        benchmark: "may-app-outcome-management",
-        scenarios: development,
-      }),
-    ]);
-  });
-
-  test("registers a new immutable competency and pilot learning unit", () => {
-    const competency = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-learning/competencies/system.manage-through-apps.json",
-      ),
-    );
-    const unit = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-learning/units/app-outcome-management/unit.json",
-      ),
-    );
-    const communication = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-learning/competencies/communication.plain-language.json",
-      ),
-    );
-    expect(competency.objective).toContain("accountable installed App");
-    expect(competency.objective).toContain("without choosing the App's tasks");
-    expect(communication.objective).toContain("plain language");
-    expect(communication.objective).toContain("necessary technical terms");
-    expect(unit).toMatchObject({
-      status: "pilot",
-      benchmark: "may-app-outcome-management",
-      release_benchmark: "may-app-outcome-management-transfer",
-      development_scenarios: approvedDevelopment,
-      release_scenarios: release,
-      competencies: expect.arrayContaining(["communication.plain-language"]),
-    });
-  });
-
   test("calibrates plain-language judgment on representative Task results", () => {
-    for (const scenario of [
-      "may-app-answer-status-directly",
-      "may-app-clarify-ambiguous-target",
-      "may-app-delegate-one-shot-outcome",
-      "may-app-explain-task-reconciliation",
-      "may-app-replan-missing-proof",
-      "may-app-review-terminal-result",
-      "may-app-route-host-operation",
-    ]) {
+    for (const scenario of approvedDevelopment) {
       const scenarioDir = resolve(gymRoot, "scenarios", scenario);
       const rubric = readFileSync(
         resolve(scenarioDir, "semantic_criteria.md"),
@@ -112,65 +52,60 @@ describe("May App outcome management", () => {
     }
   });
 
-  test("uses only Hao-approved development truth and keeps other truth draft", () => {
-    const developmentLabels = json(
+  test("uses only Hao-approved development truth and keeps other truth draft in consolidated suite", () => {
+    const labels = json(
       resolve(
         gymRoot,
         "benchmarks/may-app-outcome-management/labels.json",
       ),
     ).labels;
     expect(
-      Object.entries(developmentLabels)
+      Object.entries(labels)
         .filter(([, label]: [string, any]) => label.status === "approved")
         .map(([scenario]) => scenario)
         .sort(),
     ).toEqual([...approvedDevelopment].sort());
     for (const scenario of approvedDevelopment) {
-      expect(developmentLabels[scenario]).toMatchObject({
+      expect(labels[scenario]).toMatchObject({
         status: "approved",
         approved_by: "hao",
       });
-      expect(developmentLabels[scenario].approved_at).toBeString();
+      expect(labels[scenario].approved_at).toBeString();
     }
     for (const scenario of development.filter(
       (entry) => !approvedDevelopment.includes(entry),
     )) {
-      expect(developmentLabels[scenario]).toMatchObject({
+      expect(labels[scenario]).toMatchObject({
         status: "draft",
         review_status: "ready",
         approved_by: null,
         approved_at: null,
       });
     }
-
-    const releaseLabels = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-app-outcome-management-transfer/labels.json",
-      ),
-    ).labels;
-    expect(
-      Object.values(releaseLabels).every(
-        (label: any) =>
-          label.status === "draft" &&
-          label.review_status === "withheld" &&
-          label.approved_by === null &&
-          label.approved_at === null,
-      ),
-    ).toBe(true);
+    for (const scenario of release) {
+      expect(labels[scenario]).toMatchObject({
+        status: "draft",
+        review_status: "withheld",
+        approved_by: null,
+        approved_at: null,
+      });
+    }
   });
 
-  test("lets code enforce the approved Task-result shape", () => {
+  test("lets code enforce the approved Task-result shape and forbids answer leaks in task.md", () => {
+    const requiredFooter =
+      "Act as May for this persisted request or reply. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not change the system or write the result file yourself.";
+    for (const scenario of [...development, ...release]) {
+      const scenarioDir = resolve(gymRoot, "scenarios", scenario);
+      const task = readFileSync(resolve(scenarioDir, "task.md"), "utf8");
+      expect(task).toContain(requiredFooter);
+      expect(task).not.toContain("system-state.md");
+      expect(task).not.toMatch(/The correct outcome is to|so omit generic permission|Treat this as supplied evidence; do not/);
+    }
     for (const scenario of approvedDevelopment) {
       const scenarioDir = resolve(gymRoot, "scenarios", scenario);
       const metadata = json(resolve(scenarioDir, "scenario.json"));
-      const task = readFileSync(resolve(scenarioDir, "task.md"), "utf8");
       expect(metadata.output_contract).toBe("task-agent-result");
-      expect(task).toContain("through `finish()`");
-      expect(task.replace(/\s+/g, " ")).toContain(
-        "runner writes `task-result.json`",
-      );
-      expect(task).toContain("write the result file yourself");
     }
   });
 
@@ -182,15 +117,6 @@ describe("May App outcome management", () => {
       );
       expect(task).toMatch(/persisted (request|reply)/);
       expect(task).not.toContain("Conversation Task");
-    }
-
-    for (const relativePath of [
-      "benchmarks/may-learning/units/app-outcome-management/lesson.md",
-      "benchmarks/may-learning/units/app-outcome-management/practice.md",
-    ]) {
-      const guidance = readFileSync(resolve(gymRoot, relativePath), "utf8");
-      expect(guidance).not.toContain("May Task result");
-      expect(guidance).not.toContain("persisted Task");
     }
   });
 

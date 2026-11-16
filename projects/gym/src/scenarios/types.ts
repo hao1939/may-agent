@@ -28,8 +28,6 @@ export interface ScenarioMeta {
   workflow: boolean;
   /** Direct workflow execution entry via Host-free runDirectWorkflow. */
   workflow_entry?: WorkflowScenarioEntry;
-  /** Expose a sandboxed Host-free `workflow` tool to the agent during the scenario. */
-  allow_workflow?: boolean;
   output_contract?: "task-agent-result";
   learn_between_phases?: boolean;
   phase_cleanup?: string[];

@@ -35,9 +35,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { Type, taskAgentResultSchema } from "@may-agent/sdk";
 import {
+  run,
   runDirectAgent,
   type AgentExecutionManifest,
   type ToolDenial,
@@ -50,6 +51,10 @@ import {
   matchesFilters,
 } from "./scenarios/catalog";
 import type { ScenarioMeta, WorkflowScenarioEntry } from "./scenarios/types";
+import { formatValidation, validateScenarioCorpus } from "./scenarios/validate";
+import { executeLoopCli } from "./loop/cli";
+import { loadSuite } from "./loop/store";
+import type { BenchmarkSuite, InlineBenchmarkCase } from "./loop/types";
 import {
   buildSemanticJudgeInput,
   evaluateSemanticJudgeRuns,
@@ -58,7 +63,13 @@ import {
   type SemanticJudgeRun,
 } from "./scoring/semantic-judge";
 import {
+  loadTranscript,
+  usageSummary,
+  type TranscriptUsageSummary,
+} from "./scoring/transcript-utils";
+import {
   buildGymToolDenials,
+  prepareGymAgentSandbox,
   resolveGymAgentDir,
   runGymWorkflowEntry,
 } from "./workflow-adapter";
@@ -75,6 +86,7 @@ interface ScoreCheck {
   detail: string;
   category?: string;
   code?: string;
+  gate?: boolean;
 }
 
 interface Judgment {
@@ -95,6 +107,7 @@ interface RunResult {
   scenario: string;
   adapter: string;
   agent: string;
+  workflow_target?: string | null;
   lab_fork: string | null;
   workflow: boolean;
   passed: boolean;
@@ -105,6 +118,7 @@ interface RunResult {
   agent_status: string;
   execution_error?: string;
   duration_ms: number;
+  usage?: TranscriptUsageSummary | null;
   session_id: string;
   session_path: string;
   work_dir: string;
@@ -164,7 +178,6 @@ interface AdapterOpts {
    */
   commonSensePath?: string;
   outputContract?: ScenarioMeta["output_contract"];
-  allowWorkflow?: boolean;
 }
 
 // ── Paths ──────────────────────────────────────────────────────────────
@@ -207,38 +220,22 @@ function createMayAgentAdapter(): Adapter {
       agentName = opts.agentName;
       gymRoot = opts.gymRoot;
       outputContract = opts.outputContract;
+      const projectsRoot = join(REPO_ROOT, "projects");
 
-      // Resolve agents root (with optional lab fork overlay)
-      if (opts.labFork) {
-        const labDir = join(APP_AGENTS_ROOT, ".lab", opts.labFork);
-        if (!existsSync(labDir))
-          throw new Error(`Lab fork not found: ${labDir}`);
-        const gymAgents = join(opts.gymRoot, "agents-lab");
-        cpSync(APP_AGENTS_ROOT, gymAgents, { recursive: true });
-        rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
-        rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
-        // FIX (EXP-152): cpSync merges directories — it does NOT delete files
-        // that exist in target but not in source. We must pre-remove target subdirs
-        // that the fork replaces, so fork's skills/ fully replaces agent's skills/.
-        const agentTarget = join(gymAgents, opts.agentName);
-        for (const entry of readdirSync(labDir, { withFileTypes: true })) {
-          if (entry.isDirectory()) {
-            rmSync(join(agentTarget, entry.name), {
-              recursive: true,
-              force: true,
-            });
-          }
-        }
-        cpSync(labDir, agentTarget, { recursive: true });
-        agentsRoot = gymAgents;
-      } else if (opts.sandboxAgents || opts.commonSensePath) {
-        // Copy agents to gym-local dir so writes (e.g. context.md) don't pollute the real dir.
-        // Also required when overlaying a custom common-sense.md so we don't mutate the real one.
-        const gymAgents = join(opts.gymRoot, "agents-sandbox");
-        cpSync(APP_AGENTS_ROOT, gymAgents, { recursive: true });
-        rmSync(join(gymAgents, ".lab"), { recursive: true, force: true });
-        rmSync(join(gymAgents, ".git"), { recursive: true, force: true });
-        agentsRoot = gymAgents;
+      if (opts.agentName === "codex" || opts.agentName === "claude") {
+        agentsRoot = APP_AGENTS_ROOT;
+        void projectRoot;
+        return;
+      }
+
+      if (opts.labFork || opts.sandboxAgents || opts.commonSensePath) {
+        agentsRoot = prepareGymAgentSandbox({
+          baseAgentsRoot: APP_AGENTS_ROOT,
+          projectsRoot,
+          gymRoot: opts.gymRoot,
+          agentName: opts.agentName,
+          ...(opts.labFork ? { labFork: opts.labFork } : {}),
+        });
       } else {
         agentsRoot = APP_AGENTS_ROOT;
       }
@@ -259,15 +256,13 @@ function createMayAgentAdapter(): Adapter {
       const resolvedAgentDir = resolveGymAgentDir(
         agentsRoot,
         opts.agentName,
-        join(REPO_ROOT, "projects"),
+        projectsRoot,
       );
       if (!resolvedAgentDir) {
         throw new Error(
           `Agent '${opts.agentName}' not found in: ${agentsRoot}`,
         );
       }
-
-      // ── Identity injection handled above in runAgent() ──────────────
 
       void projectRoot;
     },
@@ -279,6 +274,59 @@ function createMayAgentAdapter(): Adapter {
     ): Promise<AdapterResult> {
       const gymState = join(gymRoot, "state");
       mkdirSync(gymState, { recursive: true });
+
+      if (agentName === "codex" || agentName === "claude") {
+        try {
+          const timeoutMs = timeoutMin * 60 * 1000;
+          const traceDir = join(gymState, "cli-trace");
+          const cliRun = await run(agentName, readFileSync(taskFile, "utf8"), {
+            projectRoot: REPO_ROOT,
+            workRoot: workDir,
+            agentsRoot,
+            projectsRoot: join(REPO_ROOT, "projects"),
+            globalAgentsRoot: join(REPO_ROOT, "agents"),
+            sharedRoot: join(REPO_ROOT, "shared"),
+            outputRoot: gymState,
+            traceDir,
+            models: createControlledModelRegistry(),
+            timeoutMs,
+            outputSchema:
+              outputContract === "task-agent-result"
+                ? taskAgentResultSchema
+                : undefined,
+            onNotice: (message) => console.error(`  [${agentName}] ${message}`),
+          });
+          writeFileSync(
+            join(workDir, "workflow-run.json"),
+            `${JSON.stringify(cliRun.report, null, 2)}\n`,
+          );
+          if (
+            outputContract === "task-agent-result" &&
+            cliRun.report.result?.output !== undefined
+          ) {
+            writeFileSync(
+              join(workDir, "task-result.json"),
+              `${JSON.stringify(cliRun.report.result.output, null, 2)}\n`,
+            );
+          }
+
+          return {
+            sessionId: cliRun.report.executionId,
+            status: cliRun.status === "done" ? "success" : cliRun.status,
+            sessionPath: cliRun.report.steps[0]?.transcriptPath || traceDir,
+            ...(cliRun.report.error?.message ? { error: cliRun.report.error.message } : {}),
+          };
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          console.error(`  [${agentName}] ${msg}`);
+          return {
+            sessionId: "",
+            status: "error",
+            sessionPath: "",
+            error: msg,
+          };
+        }
+      }
 
       // ── Identity Sandbox ───────────────────────────────────────────
       // Copy agent directory into workDir/agents/<name>/ so the agent
@@ -409,46 +457,7 @@ function createMayAgentAdapter(): Adapter {
 // ── Adapter: claude-code ───────────────────────────────────────────────
 
 function createClaudeCodeAdapter(): Adapter {
-  return {
-    name: "claude-code",
-
-    setup() {
-      try {
-        execSync("which claude", { stdio: "pipe" });
-      } catch {
-        throw new Error(
-          "claude CLI not found. Install: https://docs.anthropic.com/en/docs/claude-code",
-        );
-      }
-    },
-
-    runAgent(
-      taskFile: string,
-      workDir: string,
-      timeoutMin: number,
-    ): AdapterResult {
-      const task = readFileSync(taskFile, "utf-8");
-      const timeoutMs = timeoutMin * 60 * 1000;
-
-      try {
-        execSync(
-          `claude -p ${JSON.stringify(task)} --dangerously-skip-permissions --output-format json --max-turns 50`,
-          {
-            cwd: workDir,
-            timeout: timeoutMs,
-            encoding: "utf-8",
-            stdio: ["pipe", "pipe", "pipe"],
-            maxBuffer: 10 * 1024 * 1024,
-          },
-        );
-        return { sessionId: "", status: "success", sessionPath: "" };
-      } catch (err: unknown) {
-        const e = err as { killed?: boolean; signal?: string };
-        const status = e.killed || e.signal === "SIGTERM" ? "timeout" : "error";
-        return { sessionId: "", status, sessionPath: "" };
-      }
-    },
-  };
+  return createMayAgentAdapter();
 }
 
 // ── Adapter: generic ───────────────────────────────────────────────────
@@ -498,7 +507,7 @@ function createGenericAdapter(): Adapter {
 
 const ADAPTERS: Record<string, () => Adapter> = {
   "may-agent": createMayAgentAdapter,
-  "claude-code": createClaudeCodeAdapter,
+  "claude-code": createMayAgentAdapter,
   generic: createGenericAdapter,
 };
 
@@ -635,8 +644,45 @@ function exportCombinedTranscript(
 
 // ── Scoring ────────────────────────────────────────────────────────────
 
-function scoreScenario(scenarioDir: string, workDir: string): ScoreResult {
+function scoreScenario(
+  scenarioDir: string,
+  workDir: string,
+  outputContract?: ScenarioMeta["output_contract"],
+): ScoreResult {
   const criteriaPath = join(scenarioDir, "success_criteria.js");
+  if (!existsSync(criteriaPath)) {
+    const expectedPath = join(scenarioDir, "expected.json");
+    if (existsSync(expectedPath)) {
+      const expectedJson = JSON.parse(readFileSync(expectedPath, "utf8")) as {
+        expected?: Record<string, unknown>;
+      };
+      const isTaskResultContract =
+        Boolean(expectedJson.expected) &&
+        typeof expectedJson.expected === "object" &&
+        !Array.isArray(expectedJson.expected);
+      const evaluatorScript = isTaskResultContract
+        ? join(
+            GYM_PROJECT_ROOT,
+            "benchmarks",
+            "may-app-outcome-management",
+            "score-task-result.cjs",
+          )
+        : join(
+            GYM_PROJECT_ROOT,
+            "benchmarks",
+            "may-alignment",
+            "score-decision.cjs",
+          );
+      const fnName = isTaskResultContract
+        ? "scoreTaskResult"
+        : "scoreDecision";
+      const loaded = require(evaluatorScript) as Record<
+        string,
+        (work: string, scen: string) => ScoreResult
+      >;
+      return loaded[fnName]!(workDir, scenarioDir);
+    }
+  }
   const bun = (
     globalThis as {
       Bun?: {
@@ -856,7 +902,7 @@ async function judgeScenarioMeaning(
   if (!existsSync(rubricPath)) return null;
 
   const controlsPath = join(scenarioDir, "semantic_controls.json");
-  const candidatePath = ["alignment-decision.json", "task-result.json"]
+  const candidatePath = ["task-result.json", "alignment-decision.json"]
     .map((name) => join(workDir, name))
     .find((path) => existsSync(path));
   if (!existsSync(controlsPath)) {
@@ -1116,7 +1162,6 @@ async function runMultiSessionScenario(
     sandboxAgents: true,
     commonSensePath,
     outputContract: meta.output_contract,
-    allowWorkflow: meta.allow_workflow,
   });
 
   const startMs = Date.now();
@@ -1393,6 +1438,7 @@ async function runMultiSessionScenario(
   const model = readAgentModel(effectiveAgentsRoot, agentName);
   const prompt = observedPrompt(lastResult, effectiveAgentsRoot, agentName);
   const execution = terminalExecution(allSessionResults);
+  const transcript = loadTranscript(join(workDir, "transcript.jsonl"));
 
   return {
     scenario: scenarioName,
@@ -1408,6 +1454,7 @@ async function runMultiSessionScenario(
     agent_status: execution.status,
     execution_error: execution.error,
     duration_ms: durationMs,
+    usage: transcript ? usageSummary(transcript) : null,
     session_id: allSessionResults.map((r) => r.sessionId).join(","),
     session_path: lastResult.sessionPath,
     work_dir: workDir,
@@ -1428,15 +1475,36 @@ async function runMultiSessionScenario(
 async function runScenario(
   scenarioName: string,
   adapter: Adapter,
-  agentName: string,
+  agentOrTarget: string,
   labFork: string,
   timeoutOverride?: number,
   commonSensePath?: string,
 ): Promise<RunResult> {
-  const scenarioDir = join(SCENARIOS_DIR, scenarioName);
-  const meta = loadScenarioMeta(scenarioDir);
+  const inlineFound = findInlineBenchmarkCase(scenarioName);
+  const directScenarioDir = join(SCENARIOS_DIR, scenarioName);
+  const meta: ScenarioMeta | null = inlineFound
+    ? inlineCaseToMeta(inlineFound.inlineCase, inlineFound.suite)
+    : loadScenarioMeta(directScenarioDir);
+
+  let cliWorkflowOverride: WorkflowScenarioEntry | undefined;
+  let agentName = agentOrTarget;
+  if (agentOrTarget && agentOrTarget.includes("/")) {
+    const slashIdx = agentOrTarget.indexOf("/");
+    const owner = agentOrTarget.slice(0, slashIdx).trim();
+    const wfName = agentOrTarget.slice(slashIdx + 1).trim();
+    if (owner && wfName && !wfName.includes("/")) {
+      agentName = owner;
+      cliWorkflowOverride = {
+        agent: owner,
+        workflow: wfName,
+        ...(meta?.workflow_entry?.input !== undefined ? { input: meta.workflow_entry.input } : {}),
+      };
+    }
+  }
+
+  const effectiveWorkflowEntry = cliWorkflowOverride ?? meta?.workflow_entry;
   const requestedAgent =
-    agentName || meta?.workflow_entry?.agent || meta?.agent_type || "tech-lead";
+    agentName || effectiveWorkflowEntry?.agent || meta?.agent_type || "tech-lead";
   const resolvedAgentName =
     !agentName &&
     !resolveGymAgentDir(APP_AGENTS_ROOT, requestedAgent, join(REPO_ROOT, "projects"))
@@ -1455,10 +1523,20 @@ async function runScenario(
     );
   }
 
-  // Validate single-session scenario
-  for (const required of ["task.md", "success_criteria.js", "environment"]) {
-    if (!existsSync(join(scenarioDir, required))) {
-      throw new Error(`Missing: ${join(scenarioDir, required)}`);
+  if (!inlineFound) {
+    // Validate single-session scenario: requires task.md, environment, and either success_criteria.js or expected.json
+    for (const required of ["task.md", "environment"]) {
+      if (!existsSync(join(directScenarioDir, required))) {
+        throw new Error(`Missing: ${join(directScenarioDir, required)}`);
+      }
+    }
+    if (
+      !existsSync(join(directScenarioDir, "success_criteria.js")) &&
+      !existsSync(join(directScenarioDir, "expected.json"))
+    ) {
+      throw new Error(
+        `Missing scorer: expected success_criteria.js or expected.json in ${directScenarioDir}`,
+      );
     }
   }
 
@@ -1473,8 +1551,49 @@ async function runScenario(
   mkdirSync(workDir, { recursive: true });
   mkdirSync(stateDir, { recursive: true });
 
-  // Copy environment
-  cpSync(join(scenarioDir, "environment"), workDir, { recursive: true });
+  let scenarioDir = directScenarioDir;
+  if (inlineFound) {
+    const { inlineCase, suite } = inlineFound;
+    if (inlineCase.files) {
+      for (const [relPath, content] of Object.entries(inlineCase.files)) {
+        const dest = join(workDir, relPath);
+        mkdirSync(dirname(dest), { recursive: true });
+        writeFileSync(dest, content);
+      }
+    }
+    const stateSection = inlineCase.state?.trim()
+      ? `\n\n${inlineCase.state.trim()}`
+      : "";
+    const suffix = suite.defaults?.task_suffix
+      ? `\n\n${suite.defaults.task_suffix.trim()}`
+      : "";
+    writeFileSync(
+      join(gymRoot, "task.md"),
+      `${inlineCase.task.trim()}${stateSection}${suffix}\n`,
+    );
+    if (inlineCase.expected) {
+      writeFileSync(
+        join(gymRoot, "expected.json"),
+        `${JSON.stringify(inlineCase.expected, null, 2)}\n`,
+      );
+    }
+    if (inlineCase.semantic_criteria) {
+      writeFileSync(
+        join(gymRoot, "semantic_criteria.md"),
+        `${inlineCase.semantic_criteria.trim()}\n`,
+      );
+    }
+    if (inlineCase.semantic_controls) {
+      writeFileSync(
+        join(gymRoot, "semantic_controls.json"),
+        `${JSON.stringify(inlineCase.semantic_controls, null, 2)}\n`,
+      );
+    }
+    scenarioDir = gymRoot;
+  } else {
+    // Copy environment
+    cpSync(join(directScenarioDir, "environment"), workDir, { recursive: true });
+  }
 
   // Setup adapter
   adapter.setup(PROJECT_ROOT, {
@@ -1484,7 +1603,6 @@ async function runScenario(
     sandboxAgents: learnBetween,
     commonSensePath,
     outputContract: meta?.output_contract,
-    allowWorkflow: meta?.allow_workflow,
   });
 
   // Load injected context (simulates production session context for FM-2.6/FM-3.1 testing)
@@ -1498,6 +1616,16 @@ async function runScenario(
   const contextPrefix = injectedContext ? `${injectedContext}\n\n` : "";
 
   const startMs = Date.now();
+  const brief = readScenarioBrief(scenarioName);
+  const displayTarget = effectiveWorkflowEntry
+    ? `${effectiveWorkflowEntry.agent || resolvedAgentName}/${effectiveWorkflowEntry.workflow}`
+    : `${resolvedAgentName}${labFork ? ` (lab: ${labFork})` : ""}`;
+  console.error(`── Running Gym Scenario: ${scenarioName} ──`);
+  console.error(`  Target:   ${displayTarget}`);
+  if (brief.description) console.error(`  Tests:    ${brief.description}`);
+  if (brief.taskPreview) console.error(`  Task:     ${brief.taskPreview}`);
+  if (brief.expectedBehavior) console.error(`  Expected: ${brief.expectedBehavior}`);
+
   let lastResult: AdapterResult = {
     sessionId: "",
     status: "unknown",
@@ -1505,7 +1633,7 @@ async function runScenario(
   };
   const allPhaseResults: AdapterResult[] = [];
 
-  if (meta?.workflow_entry) {
+  if (effectiveWorkflowEntry) {
     if (!adapter.runWorkflow) {
       throw new Error(`Adapter '${adapter.name}' does not support workflow_entry scenarios`);
     }
@@ -1515,7 +1643,10 @@ async function runScenario(
       taskFile,
       `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`,
     );
-    lastResult = await adapter.runWorkflow(meta.workflow_entry, taskFile, workDir, timeout);
+    console.error(
+      `  Running workflow ${effectiveWorkflowEntry.agent || resolvedAgentName}/${effectiveWorkflowEntry.workflow} on ${scenarioName}...`,
+    );
+    lastResult = await adapter.runWorkflow(effectiveWorkflowEntry, taskFile, workDir, timeout);
   } else if (isWorkflow) {
     // Multi-phase: split task.md on "---"
     const fullTask = readFileSync(join(scenarioDir, "task.md"), "utf-8");
@@ -1645,7 +1776,13 @@ async function runScenario(
       `${contextPrefix}Work in this directory: ${workDir}\n\n${taskContent}\n`,
     );
 
+    console.error(
+      `  Running agent '${resolvedAgentName}'${labFork ? ` (lab: ${labFork})` : ""} on ${scenarioName}...`,
+    );
     lastResult = await adapter.runAgent(taskFile, workDir, timeout);
+    console.error(
+      `  Agent '${resolvedAgentName}' finished (${lastResult.status}, ${((Date.now() - startMs) / 1000).toFixed(1)}s)`,
+    );
   }
 
   // Agent failed to launch (e.g. unregistered agent) — abort before scoring
@@ -1698,7 +1835,7 @@ async function runScenario(
   }
 
   // Mechanical score
-  const score = scoreScenario(scenarioDir, workDir);
+  const score = scoreScenario(scenarioDir, workDir, meta?.output_contract);
 
   // LLM judge (if rubric exists)
   const taskContent = readFileSync(join(scenarioDir, "task.md"), "utf-8");
@@ -1742,11 +1879,15 @@ async function runScenario(
   const model = readAgentModel(effectiveAgentsRoot, resolvedAgentName);
   const prompt = observedPrompt(lastResult, effectiveAgentsRoot, resolvedAgentName);
   const execution = terminalExecution(isWorkflow ? allPhaseResults : [lastResult]);
+  const transcript = loadTranscript(join(workDir, "transcript.jsonl"));
 
   return {
     scenario: scenarioName,
     adapter: adapter.name,
     agent: resolvedAgentName,
+    workflow_target: effectiveWorkflowEntry
+      ? `${effectiveWorkflowEntry.agent || resolvedAgentName}/${effectiveWorkflowEntry.workflow}`
+      : null,
     lab_fork: labFork || null,
     workflow: isWorkflow,
     passed: gatedScore.passed,
@@ -1757,6 +1898,7 @@ async function runScenario(
     agent_status: execution.status,
     execution_error: execution.error,
     duration_ms: durationMs,
+    usage: transcript ? usageSummary(transcript) : null,
     session_id: lastResult.sessionId,
     session_path: lastResult.sessionPath,
     work_dir: workDir,
@@ -1778,6 +1920,8 @@ async function runScenario(
  * Get the current git short SHA for the framework.
  */
 function computeFrameworkSha(): string | null {
+  const pinned = process.env["GYM_FRAMEWORK_SHA"]?.trim();
+  if (pinned) return pinned;
   try {
     return (
       execSync("git rev-parse --short HEAD", {
@@ -1796,6 +1940,7 @@ function computeFrameworkSha(): string | null {
  * Read the `model` field from an agent's agent.json.
  */
 function readAgentModel(agentsRoot: string, agentName: string): string | null {
+  if (agentName === "codex" || agentName === "claude") return `${agentName}-cli`;
   try {
     const agentDir =
       resolveGymAgentDir(agentsRoot, agentName, join(REPO_ROOT, "projects")) ??
@@ -1814,6 +1959,9 @@ function observedPrompt(
   agentsRoot: string,
   agentName: string,
 ): { hash: string; text: string } | null {
+  if (agentName === "codex" || agentName === "claude") {
+    return { hash: `${agentName}-cli`, text: `${agentName}-cli` };
+  }
   if (result.systemPrompt) {
     return {
       hash: createHash("sha256")
@@ -1842,7 +1990,9 @@ function assembleEffectivePrompt(
   agentName: string,
 ): { hash: string; text: string } | null {
   try {
-    const agentDir = join(agentsRoot, agentName);
+    const agentDir =
+      resolveGymAgentDir(agentsRoot, agentName, join(REPO_ROOT, "projects")) ??
+      join(agentsRoot, agentName);
     if (!existsSync(agentDir)) return null;
 
     const sections: string[] = [];
@@ -1901,6 +2051,284 @@ function assembleEffectivePrompt(
 
 // ── CLI ────────────────────────────────────────────────────────────────
 
+export function parseTimeoutMinutes(raw: string): number {
+  const trimmed = raw.trim();
+  const match = /^([0-9]+(?:\.[0-9]+)?)(ms|s|m)?$/i.exec(trimmed);
+  if (!match) {
+    const fallback = parseInt(trimmed, 10);
+    return Number.isFinite(fallback) && fallback > 0 ? fallback : 5;
+  }
+  const amount = Number(match[1]);
+  const unit = (match[2] ?? "m").toLowerCase();
+  if (unit === "ms") return Math.max(0.1, amount / 60_000);
+  if (unit === "s") return Math.max(0.1, amount / 60);
+  return amount;
+}
+
+function inlineCaseToMeta(
+  inlineCase: InlineBenchmarkCase,
+  suite: BenchmarkSuite,
+): ScenarioMeta {
+  const rawTier = inlineCase.tier ?? suite.defaults?.tier ?? "smoke";
+  const tier: ScenarioMeta["tier"] =
+    rawTier === "full" || rawTier === "standard" ? rawTier : "smoke";
+  return {
+    name: inlineCase.id,
+    description: inlineCase.description,
+    categories: inlineCase.categories ?? suite.defaults?.categories ?? ["judgment"],
+    tags: inlineCase.tags ?? suite.defaults?.tags ?? ["inline-case"],
+    tier,
+    timeout: inlineCase.timeout ?? suite.defaults?.timeout ?? 5,
+    agent_type: inlineCase.agent_type ?? suite.defaults?.agent_type ?? "may",
+    workflow: false,
+    output_contract:
+      inlineCase.output_contract ?? suite.defaults?.output_contract,
+    workflow_entry: inlineCase.workflow_entry,
+  };
+}
+
+function findInlineBenchmarkCase(scenarioName: string): {
+  benchmark: string;
+  suite: BenchmarkSuite;
+  inlineCase: InlineBenchmarkCase;
+} | null {
+  const benchmarksRoot = join(GYM_PROJECT_ROOT, "benchmarks");
+  if (!existsSync(benchmarksRoot)) return null;
+  for (const entry of readdirSync(benchmarksRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    try {
+      const { suite } = loadSuite(entry.name);
+      const found = suite.cases?.find((c) => c.id === scenarioName);
+      if (found) {
+        return { benchmark: entry.name, suite, inlineCase: found };
+      }
+    } catch {
+      // Ignore benchmarks without suite.json
+    }
+  }
+  return null;
+}
+
+function readScenarioBrief(scenarioName: string): {
+  description?: string;
+  taskPreview?: string;
+  expectedBehavior?: string;
+} {
+  try {
+    const inlineFound = findInlineBenchmarkCase(scenarioName);
+    if (inlineFound) {
+      const { inlineCase } = inlineFound;
+      const description = inlineCase.description?.trim() || undefined;
+      const firstPara = inlineCase.task
+        .trim()
+        .split(/\n\s*\n/)[0]
+        ?.replace(/\s+/g, " ")
+        .trim();
+      const taskPreview =
+        firstPara && firstPara.length > 140
+          ? `${firstPara.slice(0, 137)}...`
+          : firstPara || undefined;
+      const exp = inlineCase.expected as
+        | {
+            human_answer?: string;
+            approval_case?: { correct_behavior?: string };
+          }
+        | undefined;
+      const expectedBehavior =
+        exp?.human_answer?.trim() ||
+        exp?.approval_case?.correct_behavior?.trim() ||
+        undefined;
+      return { description, taskPreview, expectedBehavior };
+    }
+
+    const scenarioDir = join(SCENARIOS_DIR, scenarioName);
+    const meta = loadScenarioMeta(scenarioDir);
+    const description = meta?.description?.trim() || undefined;
+    let taskPreview: string | undefined;
+    const taskPath = join(scenarioDir, "task.md");
+    if (existsSync(taskPath)) {
+      const firstPara = readFileSync(taskPath, "utf-8")
+        .trim()
+        .split(/\n\s*\n/)[0]
+        ?.replace(/\s+/g, " ")
+        .trim();
+      if (firstPara) {
+        taskPreview = firstPara.length > 140 ? `${firstPara.slice(0, 137)}...` : firstPara;
+      }
+    }
+    let expectedBehavior: string | undefined;
+    const expectedPath = join(scenarioDir, "expected.json");
+    if (existsSync(expectedPath)) {
+      const parsed = JSON.parse(readFileSync(expectedPath, "utf-8")) as {
+        human_answer?: string;
+        approval_case?: { correct_behavior?: string; situation?: string };
+      };
+      expectedBehavior =
+        parsed.human_answer?.trim() ||
+        parsed.approval_case?.correct_behavior?.trim() ||
+        undefined;
+    }
+    return { description, taskPreview, expectedBehavior };
+  } catch {
+    return {};
+  }
+}
+
+function readObservedArtifactPreview(workDir: string): string | undefined {
+  if (!workDir || !existsSync(workDir)) return undefined;
+  try {
+    const taskResPath = join(workDir, "task-result.json");
+    if (existsSync(taskResPath)) {
+      const parsed = JSON.parse(readFileSync(taskResPath, "utf-8")) as {
+        state?: string;
+        summary?: string;
+        response?: string;
+      };
+      if (parsed.response) return `[${parsed.state ?? "result"}] response: "${parsed.response}"`;
+      if (parsed.summary) return `[${parsed.state ?? "result"}] summary: "${parsed.summary}"`;
+    }
+    const alignPath = join(workDir, "alignment-decision.json");
+    if (existsSync(alignPath)) {
+      const parsed = JSON.parse(readFileSync(alignPath, "utf-8")) as {
+        next_action?: string;
+        response_to_hao?: string;
+      };
+      if (parsed.response_to_hao) return `response_to_hao: "${parsed.response_to_hao}"`;
+      if (parsed.next_action) return `next_action: "${parsed.next_action}"`;
+    }
+    const wfRunPath = join(workDir, "workflow-run.json");
+    if (existsSync(wfRunPath)) {
+      const parsed = JSON.parse(readFileSync(wfRunPath, "utf-8")) as {
+        result?: { summary?: string };
+      };
+      if (parsed.result?.summary) return `workflow summary: "${parsed.result.summary}"`;
+    }
+  } catch {
+    // Ignore preview read errors
+  }
+  return undefined;
+}
+
+export function formatScenarioInfo(scenarioName: string): string {
+  const inlineFound = findInlineBenchmarkCase(scenarioName);
+  const scenarioDir = join(SCENARIOS_DIR, scenarioName);
+  if (!inlineFound && !existsSync(scenarioDir)) {
+    throw new Error(`Scenario not found: ${scenarioName}`);
+  }
+  const meta: ScenarioMeta | null = inlineFound
+    ? inlineCaseToMeta(inlineFound.inlineCase, inlineFound.suite)
+    : loadScenarioMeta(scenarioDir);
+  const brief = readScenarioBrief(scenarioName);
+  const defaultTarget = meta?.workflow_entry
+    ? `${meta.workflow_entry.agent || meta.agent_type}/${meta.workflow_entry.workflow}`
+    : meta?.agent_type || "tech-lead";
+  const lines: string[] = [
+    `── Scenario: ${scenarioName} ────────────────────────────────────────────`,
+    `  What it tests:   ${brief.description ?? "(no description)"}`,
+    `  Default target:  ${defaultTarget} (tier: ${meta?.tier ?? "unknown"}, timeout: ${meta?.timeout ?? 5}m)`,
+    `  Categories/Tags: ${(meta?.categories ?? []).join(", ")} | tags: ${(meta?.tags ?? []).join(", ")}`,
+  ];
+  if (brief.taskPreview) {
+    lines.push(`  Task prompt:     ${brief.taskPreview}`);
+  }
+  const stateText =
+    inlineFound?.inlineCase.state ??
+    (existsSync(join(scenarioDir, "environment", "system-state.md"))
+      ? readFileSync(join(scenarioDir, "environment", "system-state.md"), "utf-8")
+      : undefined);
+  if (stateText) {
+    const statePreview = stateText
+      .trim()
+      .split("\n")
+      .slice(0, 6)
+      .map((l) => `    ${l}`)
+      .join("\n");
+    lines.push("  Scenario context:");
+    lines.push(statePreview);
+  }
+  if (brief.expectedBehavior) {
+    lines.push(`  Expected answer: ${brief.expectedBehavior}`);
+  }
+  lines.push("");
+  lines.push(`  Run command:     bun run gym run ${scenarioName} --target ${defaultTarget}`);
+  lines.push("────────────────────────────────────────────────────────────────────────");
+  return lines.join("\n");
+}
+
+export function formatScenarioSummary(result: RunResult): string {
+  const statusIcon = result.passed ? "✓ PASS" : "✗ FAIL";
+  const baseTarget = result.workflow_target || result.agent;
+  const targetLabel = `${baseTarget}${result.lab_fork ? ` (lab: ${result.lab_fork})` : ""}`;
+  const durationSec = (result.duration_ms / 1000).toFixed(2);
+  const usageStr = result.usage
+    ? `${result.usage.turns} turn(s), ${result.usage.ops} tool op(s), ${result.usage.total_tokens.toLocaleString()} tokens ($${result.usage.cost_usd.toFixed(4)})`
+    : "n/a";
+
+  const brief = readScenarioBrief(result.scenario);
+  const observedPreview = readObservedArtifactPreview(result.work_dir);
+
+  const gatingChecks = result.checks.filter((c) => c.gate !== false);
+  const advisoryChecks = result.checks.filter((c) => c.gate === false);
+  const gatingPassed = gatingChecks.filter((c) => c.passed).length;
+
+  const lines: string[] = [
+    "",
+    `── Gym Scenario Result: ${statusIcon} ──────────────────────────────────────`,
+    `  Scenario:   ${result.scenario}`,
+  ];
+  if (brief.description) {
+    lines.push(`  Tests:      ${brief.description}`);
+  }
+  if (brief.taskPreview) {
+    lines.push(`  Task:       ${brief.taskPreview}`);
+  }
+  if (brief.expectedBehavior) {
+    lines.push(`  Expected:   ${brief.expectedBehavior}`);
+  }
+  if (observedPreview) {
+    lines.push(`  Observed:   ${observedPreview}`);
+  }
+  lines.push(
+    `  Target:     ${targetLabel} (${result.model ?? "unknown model"})`,
+    `  Status:     ${result.agent_status}${result.execution_error ? ` (${result.execution_error})` : ""}`,
+    `  Duration:   ${durationSec}s (${result.duration_ms} ms)`,
+    `  Telemetry:  ${usageStr}`,
+    `  Checks:     ${gatingPassed}/${gatingChecks.length} gating passed${advisoryChecks.length > 0 ? ` (${advisoryChecks.filter((c) => c.passed).length}/${advisoryChecks.length} advisory)` : ""}`,
+  );
+
+  if (result.semantic_evaluation) {
+    const sem = result.semantic_evaluation;
+    const judgeDetails = sem.judges
+      .map((j) => `${j.agent}=${j.candidate_verdict}${j.controls_passed ? "" : " (controls failed)"}`)
+      .join(", ");
+    lines.push(`  Semantic:   ${sem.status.toUpperCase()} (${judgeDetails || sem.summary})`);
+  }
+
+  lines.push("");
+  lines.push("  Gating Checks:");
+  for (const c of gatingChecks) {
+    const icon = c.passed ? "✓" : "✗";
+    const cat = c.category ? `[${c.category}] ` : "";
+    lines.push(`    ${icon} ${cat}${c.name}: ${c.detail}`);
+  }
+
+  const failedAdvisory = advisoryChecks.filter((c) => !c.passed);
+  if (failedAdvisory.length > 0) {
+    lines.push("");
+    lines.push("  Advisory Notes (non-gating):");
+    for (const c of failedAdvisory) {
+      lines.push(`    • ${c.name}: ${c.detail}`);
+    }
+  }
+
+  if (result.work_dir) {
+    lines.push("");
+    lines.push(`  Artifacts:  ${result.work_dir}`);
+  }
+  lines.push("────────────────────────────────────────────────────────────────────────");
+  return lines.join("\n");
+}
+
 function parseArgs(argv: string[]) {
   const args = {
     scenario: "",
@@ -1914,41 +2342,53 @@ function parseArgs(argv: string[]) {
     tag: "",
     list: false,
     runAll: false,
+    json: false,
   };
 
   let i = 2; // skip bun and script path
+  if (argv[2] === "run" || argv[2] === "call") {
+    i = 3;
+  } else if (argv[2] === "list") {
+    args.list = true;
+    i = 3;
+  }
   while (i < argv.length) {
-    const arg = argv[i];
+    const arg = argv[i]!;
     switch (arg) {
       case "--adapter":
-        args.adapter = argv[++i];
+        args.adapter = argv[++i]!;
         break;
       case "--agent":
-        args.agent = argv[++i];
+      case "--target":
+        args.agent = argv[++i]!;
         break;
       case "--lab":
-        args.lab = argv[++i];
+      case "--candidate":
+        args.lab = argv[++i]!;
         break;
       case "--common-sense":
-        args.commonSense = argv[++i];
+        args.commonSense = argv[++i]!;
         break;
       case "--timeout":
-        args.timeout = parseInt(argv[++i]);
+        args.timeout = parseTimeoutMinutes(argv[++i]!);
         break;
       case "--tier":
-        args.tier = argv[++i];
+        args.tier = argv[++i]!;
         break;
       case "--category":
-        args.category = argv[++i];
+        args.category = argv[++i]!;
         break;
       case "--tag":
-        args.tag = argv[++i];
+        args.tag = argv[++i]!;
         break;
       case "--list":
         args.list = true;
         break;
       case "--run-all":
         args.runAll = true;
+        break;
+      case "--json":
+        args.json = true;
         break;
       default:
         if (arg.startsWith("-")) {
@@ -1964,10 +2404,108 @@ function parseArgs(argv: string[]) {
 }
 
 async function main() {
+  const firstSubcommand = process.argv[2];
+  if (
+    firstSubcommand === "test" ||
+    firstSubcommand === "verify" ||
+    firstSubcommand === "report" ||
+    firstSubcommand === "rescore" ||
+    firstSubcommand === "review"
+  ) {
+    await executeLoopCli(process.argv);
+    return;
+  }
+  if (firstSubcommand === "validate") {
+    const result = validateScenarioCorpus(SCENARIOS_DIR);
+    console.log(formatValidation(result, process.argv.includes("--verbose")));
+    if (!result.passed) process.exitCode = 1;
+    return;
+  }
+  if (
+    firstSubcommand === "show" ||
+    firstSubcommand === "describe" ||
+    firstSubcommand === "info"
+  ) {
+    const targetScenario = process.argv[3];
+    if (!targetScenario) {
+      console.error("Usage: bun run gym show <scenario>");
+      process.exit(1);
+    }
+    console.log(formatScenarioInfo(targetScenario));
+    return;
+  }
+  if (firstSubcommand === "diagnose") {
+    const baselineArg = process.argv[3];
+    if (!baselineArg) {
+      console.error("Usage: bun run gym diagnose <baseline-run-dir> [--json]");
+      process.exit(1);
+    }
+    const baselineDir = resolve(baselineArg);
+    console.error(`── Running Alex Improvement Diagnosis on: ${baselineDir} ──`);
+    const wfState = mkdtempSync(join(tmpdir(), "gym-diagnose-"));
+    try {
+      const wfRun = await run({
+        agentName: "alex",
+        workflowDir: join(REPO_ROOT, "projects", "alex.app", "agents", "alex", "workflows"),
+        workflowName: "diagnose-improvement",
+        input: { baselineDir },
+        cwd: wfState,
+        projectRoot: REPO_ROOT,
+        workRoot: wfState,
+        agentsRoot: join(REPO_ROOT, "projects", "alex.app", "agents"),
+        projectsRoot: join(REPO_ROOT, "projects"),
+        globalAgentsRoot: join(REPO_ROOT, "agents"),
+        sharedRoot: join(REPO_ROOT, "shared"),
+        outputRoot: wfState,
+        traceDir: join(wfState, "trace"),
+        models: createControlledModelRegistry(),
+        timeoutMs: 120_000,
+        task: {
+          outcome: `Diagnose Gym baseline ${baselineDir}`,
+        },
+      });
+      const rawOut = wfRun.report.result?.output as
+        | { output?: Record<string, any> }
+        | Record<string, any>
+        | undefined;
+      const proposal = (rawOut?.output ?? rawOut) as Record<string, any> | undefined;
+      if (!proposal || wfRun.status !== "done") {
+        console.error(`Diagnosis failed: ${wfRun.report.result?.type === "done" ? wfRun.report.result.summary : wfRun.report.result?.reason ?? wfRun.status}`);
+        process.exit(1);
+      }
+      if (process.argv.includes("--json")) {
+        console.log(JSON.stringify(proposal, null, 2));
+      } else {
+        console.log("");
+        console.log("── Alex Improvement Plan (via `alex/diagnose-improvement` -> `gym`) ──────────");
+        console.log(`  Target:            ${proposal.target}`);
+        console.log(`  Recommended Stage: ${proposal.recommended_stage}`);
+        console.log(`  Detected Regimes:  ${(proposal.detected_regimes || []).join(", ")}`);
+        console.log(`  Root Cause:        ${proposal.root_cause_summary}`);
+        console.log("");
+        console.log("  Proposed Changes:");
+        for (const ch of proposal.proposed_changes || []) {
+          console.log(`    • [${ch.file}] ${ch.change_summary}`);
+        }
+        if (proposal.verification_plan) {
+          console.log("");
+          console.log(
+            `  Verification Plan: benchmark=${proposal.verification_plan.benchmark}, objective=${proposal.verification_plan.objective}, scenarios=${(proposal.verification_plan.scenarios || []).join(", ")}`,
+          );
+        }
+        console.log("────────────────────────────────────────────────────────────────────────────");
+      }
+    } finally {
+      rmSync(wfState, { recursive: true, force: true });
+    }
+    return;
+  }
+
   const args = parseArgs(process.argv);
 
   // ── List mode ────────────────────────────────────────────────────
   if (args.list) {
+    const isDirectSubcommandList = process.argv[2] === "list";
     const scenarios = listScenarios(SCENARIOS_DIR);
     for (const name of scenarios) {
       const meta = loadScenarioMeta(join(SCENARIOS_DIR, name));
@@ -1976,9 +2514,19 @@ async function main() {
       if (meta) {
         const tier = String(meta.tier || "unknown");
         const cats = (meta.categories || []).join(",");
-        console.log(
-          `${name.padEnd(42)} tier=${tier.padEnd(10)} categories=${cats}`,
-        );
+        const defaultTarget = meta.workflow_entry
+          ? `${meta.workflow_entry.agent || meta.agent_type}/${meta.workflow_entry.workflow}`
+          : String(meta.agent_type || "tech-lead");
+        const desc = meta.description ? ` — ${meta.description}` : "";
+        if (isDirectSubcommandList) {
+          console.log(
+            `${name.padEnd(42)} target=${defaultTarget.padEnd(22)} tier=${tier.padEnd(8)}${desc}`,
+          );
+        } else {
+          console.log(
+            `${name.padEnd(42)} tier=${tier.padEnd(10)} categories=${cats}`,
+          );
+        }
       } else {
         console.log(`${name.padEnd(42)} (no metadata)`);
       }
@@ -2066,13 +2614,14 @@ async function main() {
   // ── Single scenario ──────────────────────────────────────────────
   if (!args.scenario) {
     console.error("Usage:");
-    console.error("  bun run scenario:run -- <scenario> [options]");
-    console.error(
-      "  bun run scenario:list -- [--tier <t>] [--category <c>] [--tag <t>]",
-    );
-    console.error(
-      "  bun run scenario:run -- --run-all [--tier <t>] [--category <c>]",
-    );
+    console.error("  bun run gym list [--tier <t>] [--category <c>] [--tag <t>]");
+    console.error("  bun run gym show <scenario>");
+    console.error("  bun run gym run <scenario> [--target <agent|owner/workflow>] [--lab <candidate>] [--timeout 3m]");
+    console.error("  bun run gym test [--benchmark <suite>] [--scenario <id>] [--target <agent|owner/workflow>] [--trials 3] [--objective quality|duration_ms|total_tokens|ops]");
+    console.error("  bun run gym verify --baseline <run> --candidate <lab-fork> [--trials 3]");
+    console.error("  bun run gym report <run>");
+    console.error("  bun run gym rescore <run>");
+    console.error("  bun run gym validate [--verbose]");
     console.error("");
     console.error("Adapters: may-agent (default), claude-code, generic");
     console.error("");
@@ -2132,7 +2681,11 @@ async function main() {
       execution_manifest: null,
     };
   }
-  console.log(JSON.stringify(result, null, 2));
+  if (args.json) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(formatScenarioSummary(result));
+  }
 
   if (!result.passed) process.exit(1);
 }

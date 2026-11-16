@@ -42,18 +42,46 @@ export interface CheckResult {
   code?: string; // e.g., "C2.3", "P42"
 }
 
+export interface WorkflowRunReport {
+  workflow?: string;
+  status?: string;
+  result?: { summary?: string; output?: unknown };
+  steps?: Array<{
+    target?: string;
+    status?: string;
+    cleanupConfirmed?: boolean;
+  }>;
+  cleanup?: { confirmed?: boolean };
+}
+
 // ── Score Builder ──────────────────────────────────────────────────────
 
 export class Score {
   readonly workDir: string;
   readonly transcriptPath: string;
   readonly transcript: Transcript | null;
+  readonly workflowRun: WorkflowRunReport | null;
   readonly checks: CheckResult[] = [];
 
   constructor(workDir: string) {
     this.workDir = workDir;
     this.transcriptPath = join(workDir, "transcript.jsonl");
     this.transcript = loadTranscript(this.transcriptPath);
+    const workflowRunPath = join(workDir, "workflow-run.json");
+    this.workflowRun = existsSync(workflowRunPath)
+      ? this.readWorkflowRun(workflowRunPath)
+      : null;
+  }
+
+  private readWorkflowRun(path: string): WorkflowRunReport | null {
+    try {
+      const value = JSON.parse(readFileSync(path, "utf8"));
+      return value && typeof value === "object"
+        ? (value as WorkflowRunReport)
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   // ── Check registration ───────────────────────────────────────────────
@@ -90,7 +118,9 @@ export class Score {
       this.checks.push({
         name: `${code}: ${name}`,
         passed,
-        detail: passed ? `Convention ${code} satisfied` : `FAIL: Convention ${code} violated`,
+        detail: passed
+          ? `Convention ${code} satisfied`
+          : `FAIL: Convention ${code} violated`,
         category: "convention",
         code,
       });
@@ -165,8 +195,13 @@ export class Score {
   }
 
   /** Check if a tool was called with matching args. */
-  hasToolWithArgs(toolName: string, argPatterns: Record<string, string | RegExp | number | boolean>): boolean {
-    return this.transcript ? hasToolCallWithArgs(this.transcript, toolName, argPatterns) : false;
+  hasToolWithArgs(
+    toolName: string,
+    argPatterns: Record<string, string | RegExp | number | boolean>,
+  ): boolean {
+    return this.transcript
+      ? hasToolCallWithArgs(this.transcript, toolName, argPatterns)
+      : false;
   }
 
   /** Count calls to a specific tool. */
@@ -181,7 +216,9 @@ export class Score {
 
   /** Check if a read/verify happened after a write to the same file. */
   hasVerifyAfterWrite(filePath: string): boolean {
-    return this.transcript ? hasVerificationAfterWrite(this.transcript, filePath) : false;
+    return this.transcript
+      ? hasVerificationAfterWrite(this.transcript, filePath)
+      : false;
   }
 
   /** Get the finish() call details. */
@@ -216,7 +253,9 @@ export class Score {
   /** Check if the first assistant message contains a pattern (for promise checking). */
   firstMessageContains(pattern: string | RegExp): boolean {
     if (!this.transcript) return false;
-    const firstAssistant = this.transcript.entries.find((e) => e.role === "assistant");
+    const firstAssistant = this.transcript.entries.find(
+      (e) => e.role === "assistant",
+    );
     if (!firstAssistant) return false;
     const text = extractText(firstAssistant.content);
     if (pattern instanceof RegExp) return pattern.test(text);
@@ -252,6 +291,45 @@ export class Score {
     return readFileSync(p, "utf-8");
   }
 
+  /** Whether a valid workflow-run.json report was loaded. */
+  hasWorkflowRun(): boolean {
+    return this.workflowRun !== null;
+  }
+
+  /** Workflow terminal status, or null when no report was loaded. */
+  workflowStatus(): string | null {
+    return this.workflowRun?.status ?? null;
+  }
+
+  /** Workflow result summary, or null when unavailable. */
+  workflowSummary(): string | null {
+    return this.workflowRun?.result?.summary ?? null;
+  }
+
+  /** Typed workflow result output, or null when unavailable. */
+  workflowOutput<T = unknown>(): T | null {
+    return (this.workflowRun?.result?.output as T | undefined) ?? null;
+  }
+
+  /** Recorded child workflow steps. */
+  workflowSteps(): NonNullable<WorkflowRunReport["steps"]> {
+    return this.workflowRun?.steps ?? [];
+  }
+
+  /** Whether a child target reached the requested status. */
+  hasWorkflowStep(target: string, status?: string): boolean {
+    return this.workflowSteps().some(
+      (step) =>
+        step.target === target &&
+        (status === undefined || step.status === status),
+    );
+  }
+
+  /** Whether the workflow and all recorded child executions cleaned up. */
+  workflowCleanupConfirmed(): boolean {
+    return this.workflowRun?.cleanup?.confirmed === true;
+  }
+
   // ── Report ───────────────────────────────────────────────────────────
 
   /**
@@ -260,7 +338,9 @@ export class Score {
    */
   report(): never {
     const passed = this.checks.every((c) => c.passed);
-    const summary = this.checks.map((c) => `${c.passed ? "✓" : "✗"} [${c.category}] ${c.name}`).join("\n");
+    const summary = this.checks
+      .map((c) => `${c.passed ? "✓" : "✗"} [${c.category}] ${c.name}`)
+      .join("\n");
 
     const result = {
       passed,

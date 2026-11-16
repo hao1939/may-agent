@@ -52,31 +52,31 @@ An agent name alone grants no deployment authority.
 
 ### May Console controls
 
-| Command               | Action                                                    |
-| --------------------- | --------------------------------------------------------- |
-| `/apps [app]`         | List Apps or select the current App                       |
-| `/topics`             | List Topics and their linked Task count                    |
-| `/topics more`        | Continue to the next older Topic page                      |
-| `/topic [ref\|clear]` | Show, follow, or leave one Topic                          |
+| Command                  | Action                                                                             |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| `/apps [app]`            | List Apps or select the current App                                                |
+| `/topics`                | List Topics and their linked Task count                                            |
+| `/topics more`           | Continue to the next older Topic page                                              |
+| `/topic [ref\|clear]`    | Show, follow, or leave one Topic                                                   |
 | `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps or recent terminal Tasks |
-| `/tasks more`         | Continue the exact prior Task list when another page exists |
-| `/todo [all]`         | Show open human actions on selected or reachable Tasks      |
-| `/todo more`          | Continue the exact prior human-action page                  |
-| `/task <ref>`         | Read one exact Task                                       |
-| `/watch [ref]`        | Watch or show one Task                                    |
-| `/unwatch`            | Leave the watch without changing the Task                 |
-| `/cancel [ref]`       | Cancel the named or currently watched Task                |
-| `Esc`                | Stop the observed active Conversation Turn; leaves background Tasks running |
-| `/help`              | Show available controls                                  |
+| `/tasks more`            | Continue the exact prior Task list when another page exists                        |
+| `/todo [all]`            | Show open human actions on selected or reachable Tasks                             |
+| `/todo more`             | Continue the exact prior human-action page                                         |
+| `/task <ref>`            | Read one exact Task                                                                |
+| `/watch [ref]`           | Watch or show one Task                                                             |
+| `/unwatch`               | Leave the watch without changing the Task                                          |
+| `/cancel [ref]`          | Cancel the named or currently watched Task                                         |
+| `Esc`                    | Stop the observed active Conversation Turn; leaves background Tasks running        |
+| `/help`                  | Show available controls                                                            |
 
 Local client and Host administration controls:
 
-| Command | Action |
-| --- | --- |
-| `/exit` (`/quit`) | Close only Console |
-| `/shell` | Leave Console for a shell; exiting that shell exits the client |
-| `/reload` | Reload Host definitions across Apps |
-| `/restart` | Restart the Host, affecting all Apps |
+| Command           | Action                                                         |
+| ----------------- | -------------------------------------------------------------- |
+| `/exit` (`/quit`) | Close only Console                                             |
+| `/shell`          | Leave Console for a shell; exiting that shell exits the client |
+| `/reload`         | Reload Host definitions across Apps                            |
+| `/restart`        | Restart the Host, affecting all Apps                           |
 
 `/tasks` shows each Task's plain state, concrete goal, and whether it needs you.
 Use `/task <ref>` for the goal, current progress or wait, expected result, exact
@@ -162,25 +162,33 @@ bun src/app/may.ts --agent bob --task "check your periodic tasks"
 # Standalone zero-daemon execution (no SQLite, socket, or Task recovery started):
 bun src/app/may.ts list
 bun src/app/may.ts run alex "Summarize architecture risks in src/app" --readonly
-bun src/app/may.ts run tech-lead/verified-coder '{"task":"Fix parser","verify":["bun","test"]}' --out /tmp/vc-run
+bun src/app/may.ts run alex/develop-change '{"task":"Fix parser","verify":["bun","test"]}' --out /tmp/develop-change-run
 git diff | bun src/app/may.ts run alex/review-change --readonly --json
 ```
 
+`alex/develop-change` is one Task-backed workflow in Host, standalone, and Gym.
+The standalone command accepts `task` (plus optional `acceptance` and
+`constraints`) as a convenience, builds a local Task envelope, and passes only
+`verify` to the procedure. The procedure then reads the requirement through the
+same reconciliation and Task-read interfaces used by the Host; it still produces
+only a locally committed, verified, reviewed candidate and does not merge or
+deploy it.
+
 ### Flags
 
-| Flag                             | Description                                                             |
-| -------------------------------- | ----------------------------------------------------------------------- |
-| `--chat`                         | Compatibility alias that enables the quiet built-in console view        |
-| `--console`                      | Enable the built-in development readline console                        |
-| `--socket`                       | Enable Unix socket for external control                                 |
-| `--cron`                         | Enable cron jobs (heartbeats, JS handlers, scheduled tasks)             |
-| `--telegram`                     | Enable the Telegram Conversation and Task adapter                        |
-| `--web`                          | Enable web UI                                                           |
-| `--status`                       | Print system dashboard and exit (agent quality, process health, trends) |
-| `--status --notify`              | Print dashboard and also send it to Telegram                            |
-| `--send <agent> --message "msg"` | Send a message through the running daemon and exit                      |
+| Flag                             | Description                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `--chat`                         | Compatibility alias that enables the quiet built-in console view                            |
+| `--console`                      | Enable the built-in development readline console                                            |
+| `--socket`                       | Enable Unix socket for external control                                                     |
+| `--cron`                         | Enable cron jobs (heartbeats, JS handlers, scheduled tasks)                                 |
+| `--telegram`                     | Enable the Telegram Conversation and Task adapter                                           |
+| `--web`                          | Enable web UI                                                                               |
+| `--status`                       | Print system dashboard and exit (agent quality, process health, trends)                     |
+| `--status --notify`              | Print dashboard and also send it to Telegram                                                |
+| `--send <agent> --message "msg"` | Send a message through the running daemon and exit                                          |
 | `run <target> [input]`           | Run a prompt agent, `<owner>/<procedure>`, or CLI executor standalone (no SQLite or daemon) |
-| `list`                           | List callable standalone prompt agents, code procedures, and CLI executors |
+| `list`                           | List callable standalone prompt agents, code procedures, and CLI executors                  |
 
 Use `run <target> [input]` / `list` for ephemeral, Host-free standalone execution (zero SQLite, socket, or daemon startup); use `--task "<prompt>"` when submitting durable Task work through the Host runtime with SQLite persistence. Otherwise, at least one of `--chat`, `--cron`, `--task`, `--oneshot`, `--status`,
 `--send --message`, `--emit`, `--web`, `--socket`, or `--telegram` is required.
@@ -191,8 +199,8 @@ Use `run <target> [input]` / `list` for ephemeral, Host-free standalone executio
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MODEL_BASE_URL`     | Shared model API URL used by Pi, Codex, and Claude.                                                                                                                                                                                                                                                               |
 | `MODEL_API_KEY`      | Credential for the shared model API. Defaults to `not-needed` for an unauthenticated local endpoint.                                                                                                                                                                                                              |
-| `DEEPSEEK_BASE_URL`  | Optional independent OpenAI Responses endpoint for the experimental `deepseek-v4-flash` model. Both DeepSeek variables are required to expose the option; partial configuration fails explicitly.                                                                                                                  |
-| `DEEPSEEK_API_KEY`   | Credential for the experimental DeepSeek route. Keep it in operator-owned environment/credential storage; never commit it. The route has no fallback and its tariff is unknown.                                                                                                                                    |
+| `DEEPSEEK_BASE_URL`  | Optional independent OpenAI Responses endpoint for the experimental `deepseek-v4-flash` model. Both DeepSeek variables are required to expose the option; partial configuration fails explicitly.                                                                                                                 |
+| `DEEPSEEK_API_KEY`   | Credential for the experimental DeepSeek route. Keep it in operator-owned environment/credential storage; never commit it. The route has no fallback and its tariff is unknown.                                                                                                                                   |
 | `MAY_DAEMON_QUIET=1` | Suppresses the daemon-mode `info` log forwarder. By default, when neither `--console` nor `--chat` is enabled, the daemon forwards `bus.emit({type:"info"})` events through `log()` so operator-facing messages (reload summaries, telegram diagnostics, startup checks) are visible. Set this to `1` to opt out. |
 
 The experimental DeepSeek entry uses a conservative 128k operational context cap. Its model `samplingParams` pin the configured high-effort Responses request even when ordinary agent thinking selection is off; a caller that needs another request shape must explicitly override those sampling parameters. This is compatibility configuration, not evaluator-adoption evidence; see the [DeepSeek evaluator pilot](../evaluation/deepseek-v4-flash-evaluator-pilot-2026-09.md).
@@ -228,15 +236,15 @@ roster because app ownership and model selection change independently.
 }
 ```
 
-| Field          | Required | Description                                                                                          |
-| -------------- | -------- | ---------------------------------------------------------------------------------------------------- |
-| `name`         | Yes      | Must match directory name                                                                            |
-| `description`  | Yes      | Role summary (visible to other agents)                                                               |
-| `domain`       | Yes      | Domain of expertise                                                                                  |
-| `model`        | Yes      | Canonical model ID, such as `claude-opus-5` or `gpt-5.6-sol`.                                        |
-| `tools`        | Yes      | Tool presets (see below)                                                                             |
-| `compaction`   | No       | Enable automatic context compaction for long sessions                                                |
-| `delegateDeny` | No       | Block delegation to specific agents                                                                  |
+| Field          | Required | Description                                                   |
+| -------------- | -------- | ------------------------------------------------------------- |
+| `name`         | Yes      | Must match directory name                                     |
+| `description`  | Yes      | Role summary (visible to other agents)                        |
+| `domain`       | Yes      | Domain of expertise                                           |
+| `model`        | Yes      | Canonical model ID, such as `claude-opus-5` or `gpt-5.6-sol`. |
+| `tools`        | Yes      | Tool presets (see below)                                      |
+| `compaction`   | No       | Enable automatic context compaction for long sessions         |
+| `delegateDeny` | No       | Block delegation to specific agents                           |
 
 agent.json is **purely operational** — model, tools, limits, delegation rules.
 Always-loaded prompt content lives in `shared/common-sense.md` and the
@@ -250,16 +258,16 @@ for source status. Current configuration should omit it.
 
 ### Tool Presets
 
-| Preset                            | Description                                                                                              |
-| --------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `coding`                          | Read, write, edit, and shell tools scoped to the project root                                            |
-| `read-only`                       | Read files only                                                                                          |
-| `agents`                          | Agent cooperation (`call`, `fork`, `follow-up`, `context`, `list`, `peek`, `cancel`, `sessions`)         |
-| `workflow`                        | Multi-step workflow recipes                                                                              |
-| `query_db`                        | Read-only DB query tool                                                                                  |
-| `checkpoint`                      | Persist explicit session checkpoints                                                                     |
-| `cli-delegation`                  | Start a native coding-worker process with a persistent worker record; not an App/task ownership boundary |
-| `finish`                          | Finish the current task with a structured result                                                         |
+| Preset           | Description                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------- |
+| `coding`         | Read, write, edit, and shell tools scoped to the project root                                            |
+| `read-only`      | Read files only                                                                                          |
+| `agents`         | Agent cooperation (`call`, `fork`, `follow-up`, `context`, `list`, `peek`, `cancel`, `sessions`)         |
+| `workflow`       | Multi-step workflow recipes                                                                              |
+| `query_db`       | Read-only DB query tool                                                                                  |
+| `checkpoint`     | Persist explicit session checkpoints                                                                     |
+| `cli-delegation` | Start a native coding-worker process with a persistent worker record; not an App/task ownership boundary |
+| `finish`         | Finish the current task with a structured result                                                         |
 
 ### Adding a New Agent
 
@@ -274,16 +282,16 @@ See [Agent Convention](agent-convention.md) for full directory layout.
 
 Agents cooperate through these canonical actions on the `agents` tool:
 
-| Action     | Type    | Description                                   |
-| ---------- | ------- | --------------------------------------------- |
-| `call`     | Sync    | Block until child agent completes, get result |
-| `fork`     | Async   | Start a helper owned by the live caller; returns sessionId |
-| `follow-up`| Control | Send a correction or additional context to a running owned helper |
-| `context`  | Query   | Read parent/origin/root/workflow context      |
-| `list`     | Query   | List available agents and active sessions     |
-| `peek`     | Query   | Read a running session's progress             |
-| `cancel`   | Control | Stop a running session                        |
-| `sessions` | Query   | Query persisted execution sessions            |
+| Action      | Type    | Description                                                       |
+| ----------- | ------- | ----------------------------------------------------------------- |
+| `call`      | Sync    | Block until child agent completes, get result                     |
+| `fork`      | Async   | Start a helper owned by the live caller; returns sessionId        |
+| `follow-up` | Control | Send a correction or additional context to a running owned helper |
+| `context`   | Query   | Read parent/origin/root/workflow context                          |
+| `list`      | Query   | List available agents and active sessions                         |
+| `peek`      | Query   | Read a running session's progress                                 |
+| `cancel`    | Control | Stop a running session                                            |
+| `sessions`  | Query   | Query persisted execution sessions                                |
 
 The removed `requests` action is not a work lifecycle or routing primitive.
 Use request status for caller correlation, task status for App work, and
@@ -304,11 +312,11 @@ the exact one-shot result and error. These source defaults do not identify an in
 
 ## Session Kinds
 
-| Kind   | Created by                                                                 | Lifecycle                                                   |
-| ------ | -------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `chat` | Explicit direct-agent chat                                                 | Persistent execution context; never May App work authority. |
-| `job`  | Scoped `agents.fork` or a direct managed invocation                       | Bounded execution; no independent recovery or durable Task ownership. |
-| `call` | `agents.call`, workflow `ctx.call`, standalone heartbeat agent step        | Bounded synchronous work owned by its caller/workflow.      |
+| Kind   | Created by                                                          | Lifecycle                                                             |
+| ------ | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `chat` | Explicit direct-agent chat                                          | Persistent execution context; never May App work authority.           |
+| `job`  | Scoped `agents.fork` or a direct managed invocation                 | Bounded execution; no independent recovery or durable Task ownership. |
+| `call` | `agents.call`, workflow `ctx.call`, standalone heartbeat agent step | Bounded synchronous work owned by its caller/workflow.                |
 
 See [sessions.md](../2a-design/sessions.md) for details.
 

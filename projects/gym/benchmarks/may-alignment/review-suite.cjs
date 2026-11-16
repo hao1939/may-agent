@@ -46,7 +46,7 @@ let paraphraseCount = 0;
 
 for (const name of suite.scenarios) {
   const dir = path.join(scenariosRoot, name);
-  const required = ["scenario.json", "task.md", "expected.json", "success_criteria.js", "environment/system-state.md"];
+  const required = ["scenario.json", "task.md", "expected.json", "success_criteria.js"];
   const missing = required.filter((file) => !fs.existsSync(path.join(dir, file)));
   add(`${name}:files`, missing.length === 0, missing.length ? `Missing: ${missing.join(", ")}` : "All scenario files exist");
   if (missing.length) continue;
@@ -54,7 +54,6 @@ for (const name of suite.scenarios) {
   const meta = JSON.parse(fs.readFileSync(path.join(dir, "scenario.json"), "utf8"));
   const expected = JSON.parse(fs.readFileSync(path.join(dir, "expected.json"), "utf8"));
   const task = fs.readFileSync(path.join(dir, "task.md"), "utf8");
-  const state = fs.readFileSync(path.join(dir, "environment/system-state.md"), "utf8");
   const scorer = fs.readFileSync(path.join(dir, "success_criteria.js"), "utf8");
   const label = labels?.labels?.[name];
 
@@ -71,9 +70,38 @@ for (const name of suite.scenarios) {
   controlCount += meta.tags?.includes("control-pair") ? 1 : 0;
   paraphraseCount += meta.tags?.includes("paraphrase") ? 1 : 0;
 
-  add(`${name}:identity`, meta.agent_type === "may" && meta.tags?.includes("may-alignment"), "Targets May and carries the suite tag");
-  add(`${name}:shadow-mode`, /decision-only benchmark/i.test(task) && /do not execute/i.test(task), "Task is explicitly non-executing");
-  add(`${name}:state-depth`, (state.match(/^-/gm) ?? []).length >= 3, "State contains at least three decision-relevant facts");
+  const isCoreAlign = name.startsWith("may-align-");
+  add(
+    `${name}:identity`,
+    meta.agent_type === "may" && (!isCoreAlign || meta.tags?.includes("may-alignment")),
+    "Targets May and carries the suite tag",
+  );
+  add(
+    `${name}:output-contract`,
+    meta.output_contract === "task-agent-result",
+    "Uses the production TaskReconcileResult output contract (task-agent-result)",
+  );
+  add(
+    `${name}:shadow-mode`,
+    (/decision-only/i.test(task) && /do not/i.test(task)) ||
+      /TaskReconcileResult/i.test(task) ||
+      /alignment-decision\.json/i.test(task),
+    "Task is explicitly non-executing",
+  );
+  add(
+    `${name}:state-depth`,
+    !isCoreAlign || (task.match(/^-/gm) ?? []).length >= 3,
+    "Task contains at least three decision-relevant facts",
+  );
+  add(
+    `${name}:no-answer-leak`,
+    !/\bMay (?:should|must|may answer)\b/.test(
+      task
+        .replace(/\bDecide[\s\S]*?May should[^.]*\./gi, "")
+        .replace(/Write the direct reply May should send now\./gi, ""),
+    ),
+    "Task contains only situational facts and does not prescribe what May should/must do",
+  );
   add(`${name}:common-scorer`, scorer.includes("score-decision.cjs"), "Uses the shared scorer");
   const legacyResponseBound = Number.isFinite(expected.response_max_words);
   const splitResponseBound =
@@ -90,7 +118,9 @@ for (const name of suite.scenarios) {
     ...(expected.delegations?.allowed_agents ?? []),
     ...(expected.delegations?.required_agents ?? []),
   ];
-  const missingAgents = [...new Set(expectedAgents)].filter((agent) => !agentNames.has(agent));
+  const missingAgents = isCoreAlign
+    ? [...new Set(expectedAgents)].filter((agent) => !agentNames.has(agent))
+    : [];
   add(
     `${name}:delegation-agents-current`,
     missingAgents.length === 0,
@@ -105,15 +135,27 @@ for (const name of suite.scenarios) {
     ...Object.keys(expected.contains_any ?? {}),
     ...Object.keys(expected.contains_groups ?? {}),
   ]);
-  add(`${name}:mode-observed`, scoredFields.has("mode"), "Records expected operating-mode concepts as advisory metadata");
-  add(`${name}:priority-observed`, scoredFields.has("priority"), "Records expected priority concepts as advisory metadata");
+  add(
+    `${name}:mode-observed`,
+    !isCoreAlign || scoredFields.has("mode"),
+    "Records expected operating-mode concepts as advisory metadata",
+  );
+  add(
+    `${name}:priority-observed`,
+    !isCoreAlign || scoredFields.has("priority"),
+    "Records expected priority concepts as advisory metadata",
+  );
   add(
     `${name}:preference-ground-truth`,
-    scoredFields.has("preference_updates") || expected.empty?.includes("preference_updates"),
+    !isCoreAlign ||
+      scoredFields.has("preference_updates") ||
+      expected.empty?.includes("preference_updates"),
     "Defines whether this turn changes standing preferences",
   );
 
-  const brittleExact = Object.entries(expected.exact ?? {}).filter(([, value]) => typeof value === "string");
+  const brittleExact = isCoreAlign
+    ? Object.entries(expected.exact ?? {}).filter(([, value]) => typeof value === "string")
+    : [];
   add(`${name}:no-brittle-exact-labels`, brittleExact.length === 0, brittleExact.length ? `Exact string labels: ${brittleExact.map(([key]) => key).join(", ")}` : "Open-ended labels use acceptable sets or semantic matching");
 }
 

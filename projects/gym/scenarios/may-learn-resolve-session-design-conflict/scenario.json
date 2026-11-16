@@ -1,7 +1,10 @@
 {
   "name": "may-learn-resolve-session-design-conflict",
   "description": "Deputy transfer: move useful but conflicting session evidence toward a safe learning decision.",
-  "categories": ["deputy-learning", "learning-evidence"],
+  "categories": [
+    "deputy-learning",
+    "learning-evidence"
+  ],
   "tags": [
     "may-agent",
     "codex-sessions",
@@ -24,5 +27,6 @@
     ],
     "criticality": "high",
     "variant_family": "learning-source-authority"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

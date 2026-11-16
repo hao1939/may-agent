@@ -1,8 +1,16 @@
 {
   "name": "may-learn-admission-review-complete-gate-before-debugging",
   "description": "Route an admission closure blocker without drifting into infrastructure debugging.",
-  "categories": ["deputy-learning", "admission-review"],
-  "tags": ["may-agent", "decision-first", "precise-blocker", "learning-development"],
+  "categories": [
+    "deputy-learning",
+    "admission-review"
+  ],
+  "tags": [
+    "may-agent",
+    "decision-first",
+    "precise-blocker",
+    "learning-development"
+  ],
   "tier": "smoke",
   "timeout": 5,
   "agent_type": "may",
@@ -18,5 +26,6 @@
     ],
     "criticality": "critical",
     "variant_family": "admission-review-decision-first"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

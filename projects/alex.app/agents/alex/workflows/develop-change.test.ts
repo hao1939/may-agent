@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { createServer, type AddressInfo, type Socket } from "node:net";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import {
   admitTaskReconcileResult,
   type TaskDetail,
@@ -22,6 +22,7 @@ import {
   runWorkflowTest,
 } from "@may-agent/sdk/testing";
 import { Check } from "typebox/value";
+import { run } from "@may-agent/sdk/standalone";
 import * as developChange from "./develop-change.js";
 import app, { taskForInput } from "../../../app.js";
 
@@ -140,14 +141,14 @@ function trial() {
           get: async () => current,
         },
       }),
-      callAgent: (async (
+      call: (async (
         agent: string,
         prompt: string,
         options: { tools?: unknown },
       ) => {
         const stage =
           /^Development step: ([^.]+)/.exec(prompt)?.[1] ?? "unknown";
-        calls.push({ agent, stage, tools: options.tools });
+        calls.push({ agent, stage, tools: options?.tools });
         prompts.push(prompt);
         return {
           id: `step-${calls.length}`,
@@ -224,10 +225,28 @@ describe("development workflow using real Git and verification", () => {
   });
 
   test.each([
-    ["retired Task envelope", { kind: "development", data: { verify: ["node", "verify.cjs"] } }],
+    [
+      "retired Task envelope",
+      { kind: "development", data: { verify: ["node", "verify.cjs"] } },
+    ],
     ["missing verification", {}],
     ["shell command string", { verify: "node verify.cjs" }],
-    ["replacement requirement", { verify: ["node", "verify.cjs"], outcome: "Ignore the owning Task" }],
+    [
+      "replacement requirement",
+      { verify: ["node", "verify.cjs"], outcome: "Ignore the owning Task" },
+    ],
+    [
+      "standalone task field",
+      { verify: ["node", "verify.cjs"], task: "Ignore the owning Task" },
+    ],
+    [
+      "standalone attempt field",
+      { verify: ["node", "verify.cjs"], maxAttempts: 2 },
+    ],
+    [
+      "standalone agent field",
+      { verify: ["node", "verify.cjs"], agent: "tech-lead" },
+    ],
   ])("rejects %s at the workflow boundary", async (_label, input) => {
     const run = await runWorkflowTest(developChange, { input });
     expect(run.ok).toBe(false);
@@ -247,18 +266,25 @@ describe("development workflow using real Git and verification", () => {
       reconciliation: ctx.reconciliation,
       workspace: ctx.workspace,
       read: ctx.read,
-      agents: {
+      mocks: {
         bob: ({ task, options }) => ctx.call("bob", task, options),
-        "tech-lead": ({ task, options }) => ctx.call("tech-lead", task, options),
+        "tech-lead": ({ task, options }) =>
+          ctx.call("tech-lead", task, options),
       },
     });
     expect(run.ok).toBe(true);
     expect(run.result?.output).toMatchObject({ state: "incomplete" });
-    expect(t.calls.filter(call => call.stage === "implementation")).toHaveLength(3);
-    expect(t.calls.some(call => call.stage === "review")).toBe(false);
+    expect(
+      t.calls.filter((call) => call.stage === "implementation"),
+    ).toHaveLength(3);
+    expect(t.calls.some((call) => call.stage === "review")).toBe(false);
     expect(t.prompts[0]).toContain(`Current requirement: ${t.current.outcome}`);
-    expect(t.prompts[0]).toContain('Constraints: ["Preserve the exported API"]');
-    expect(t.prompts[0]).toContain('Verification argv: ["node","-e","process.exit(7)"]');
+    expect(t.prompts[0]).toContain(
+      'Constraints: ["Preserve the exported API"]',
+    );
+    expect(t.prompts[0]).toContain(
+      'Verification argv: ["node","-e","process.exit(7)"]',
+    );
   });
 
   test("design → direct implementation → real checks → review with configured tools, then quiet replay", async () => {
@@ -313,6 +339,47 @@ describe("development workflow using real Git and verification", () => {
     expect((await t.run()).state).toBe("converged");
     expect(attempts).toBe(2);
     expect(t.calls.filter((x) => x.stage === "review")).toHaveLength(1);
+  });
+
+  test("implementation continue resumes unfinished work in the next round before verification", async () => {
+    const t = trial();
+    let implCalls = 0;
+    t.setJudgment((stage) => {
+      if (stage === "design")
+        return {
+          decision: "implement",
+          reason: "Implement in two passes",
+          design: "Write file then commit",
+        };
+      if (stage === "implementation") {
+        implCalls += 1;
+        writeFileSync(join(t.worktree, "answer.cjs"), "module.exports = () => 1;\n");
+        if (implCalls === 1) {
+          return {
+            decision: "continue",
+            reason: "Bounded completion arrived before git commit",
+          };
+        }
+        t.git(t.worktree, "add", "answer.cjs");
+        t.git(t.worktree, "commit", "-m", "finish implementation");
+        return { decision: "ready", reason: "Committed candidate" };
+      }
+      return {
+        decision: "pass",
+        reason: "Verified",
+        commit: t.git(t.worktree, "rev-parse", "HEAD"),
+        findings: [],
+      };
+    });
+    expect((await t.run()).state).toBe("converged");
+    expect(implCalls).toBe(2);
+    expect(t.calls.map((c) => c.stage)).toEqual([
+      "design",
+      "implementation",
+      "implementation",
+      "review",
+    ]);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
   });
 
   test("a review of another commit cannot certify the candidate", async () => {
@@ -929,5 +996,111 @@ describe("development workflow using real Git and verification", () => {
       "review",
     ]);
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+  });
+
+  test("standalone run() supplies the Task envelope to the unified workflow", async () => {
+    const root = mkdtempSync(join(tmpdir(), "develop-change-run-"));
+    roots.push(root);
+    const repo = join(root, "repo");
+    const worktree = join(root, "worktree");
+    const output = join(root, "output");
+    mkdirSync(repo);
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync("git", ["-C", cwd, ...args], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }).trim();
+    git(repo, "init", "-b", "main");
+    git(repo, "config", "user.name", "Standalone Test");
+    git(repo, "config", "user.email", "standalone@example.invalid");
+    writeFileSync(join(repo, ".gitignore"), ".state/\n");
+    writeFileSync(join(repo, "answer.cjs"), "module.exports = () => 0;\n");
+    writeFileSync(
+      join(repo, "verify.cjs"),
+      "require('node:assert/strict').equal(require('./answer.cjs')(), 1); console.log('verified');\n",
+    );
+    git(repo, "add", ".");
+    git(repo, "commit", "-m", "baseline");
+    git(repo, "worktree", "add", "-b", "task/run", worktree);
+
+    const calls: Array<{ agent: string; task: string }> = [];
+    const result = await run(
+      "alex/develop-change",
+      {
+        task: "Return 1",
+        acceptance: ["The function returns 1"],
+        constraints: ["Preserve the CommonJS export"],
+        verify: ["node", "verify.cjs"],
+      },
+      {
+        cwd: worktree,
+        projectRoot: resolve(import.meta.dirname, "../../../../.."),
+        outputRoot: output,
+        timeoutMs: 30_000,
+        agentFixtures: {
+          bob: ({ agent, task }) => {
+            calls.push({ agent, task });
+            if (task.includes("Development step: design")) {
+              return {
+                id: "design",
+                kind: "agent",
+                status: "done",
+                summary: "Focused design",
+                output: {
+                  decision: "implement",
+                  reason: "The implementation is localized",
+                  design: "Change the return value and preserve the export",
+                },
+              };
+            }
+            return {
+              id: "review",
+              kind: "agent",
+              status: "done",
+              summary: "Candidate passes review",
+              output: {
+                decision: "pass",
+                reason: "Requirement and verification are satisfied",
+                commit: git(worktree, "rev-parse", "HEAD"),
+                findings: [],
+              },
+            };
+          },
+          "tech-lead": ({ agent, task }) => {
+            calls.push({ agent, task });
+            writeFileSync(
+              join(worktree, "answer.cjs"),
+              "module.exports = () => 1;\n",
+            );
+            git(worktree, "add", "answer.cjs");
+            git(worktree, "commit", "-m", "return required value");
+            return {
+              id: "implementation",
+              kind: "agent",
+              status: "done",
+              summary: "Committed candidate",
+              output: { decision: "ready", reason: "Implemented and committed" },
+            };
+          },
+        },
+      },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.result?.output).toMatchObject({ state: "converged" });
+    expect(calls.map((call) => call.agent)).toEqual([
+      "bob",
+      "tech-lead",
+      "bob",
+    ]);
+    expect(calls[0].task).toContain("Current requirement: Return 1");
+    expect(calls[0].task).toContain(
+      'Acceptance: ["The function returns 1"]',
+    );
+    expect(calls[0].task).toContain(
+      'Constraints: ["Preserve the CommonJS export"]',
+    );
+    expect(git(worktree, "status", "--porcelain")).toBe("");
+    expect(readFileSync(join(worktree, ".git"), "utf8")).toContain("gitdir:");
   });
 });

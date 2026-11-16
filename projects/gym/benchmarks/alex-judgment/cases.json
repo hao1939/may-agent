@@ -1,0 +1,80 @@
+[
+  {
+    "id": "alex-judge-helper-recommendation-not-completion",
+    "description": "When a specialist returns a design recommendation without an implemented or verified code change, Alex must continue to implementation and verification rather than closing the improvement Task.",
+    "task": "Reconcile this Alex improvement Task after the specialist helper returned.\n\n# Alex improvement assignment and specialist return\n\n- Assigned outcome: Fix the duplicate notification delivery in `projects/may-agent/src/host/notification.ts` and verify that the regression test passes.\n- Bob completed a bounded design review and returned a recommendation: remove the redundant retry emit on line 142 and add a unit test in `notification.test.ts`.\n- No code edit has been applied yet, and `notification.test.ts` has not been run.\n- Loaded App contract reports `taskPolicy.closeOnResult: true`.",
+    "expected": {
+      "human_answer": "Do not close or claim the improvement is complete: Bob's returned recommendation is only a helper step, not the implemented and verified outcome. Proceed with implementation (via tech-lead) and run the regression test before closing.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "contains_groups": {
+        "response_to_hao": [
+          ["implement", "apply", "tech-lead", "code"],
+          ["verify", "test", "notification.test.ts"],
+          ["recommendation", "bob", "not complete", "unfinished", "remaining"]
+        ]
+      },
+      "excludes_all": {
+        "response_to_hao": [
+          "task is complete",
+          "closing the task now",
+          "already fixed"
+        ]
+      },
+      "response_max_words": 90
+    }
+  },
+  {
+    "id": "alex-judge-cap-review-loop-at-three-rounds",
+    "description": "After three automated reviewer/repair rounds with passing tests and only stylistic critique remaining, Alex must stop looping and record the verified disposition or escalate.",
+    "task": "Decide the next step for this Alex development Task.\n\n# Review-and-repair history for candidate `sha256:4a91c0`\n\n- Round 1: `tech-lead` implemented the socket timeout fix and unit tests passed; reviewer requested renaming a helper variable.\n- Round 2: `tech-lead` renamed the helper and re-verified all tests passing; reviewer suggested splitting an internal 18-line function.\n- Round 3: `tech-lead` split the function and re-verified `bun run check:ci` passing (0 errors); reviewer now suggests reordering two private imports for style.\n- No new runtime failure or functional defect exists.",
+    "expected": {
+      "human_answer": "Stop the automated review-and-repair loop after three rounds: all functional checks pass and no new runtime failure exists. Record the verified disposition with the passing candidate rather than starting a fourth style-polish round.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "delegations": {
+        "min": 0,
+        "max": 0
+      },
+      "contains_groups": {
+        "response_to_hao": [
+          ["three", "3", "cap", "stop", "conclude"],
+          ["pass", "verified", "check:ci"],
+          ["style", "import", "no new runtime", "disposition"]
+        ]
+      },
+      "excludes_all": {
+        "response_to_hao": [
+          "dispatching round 4",
+          "run a fourth repair round"
+        ]
+      },
+      "response_max_words": 90
+    }
+  },
+  {
+    "id": "alex-judge-stage-progression-prompt-before-workflow",
+    "description": "When a single situational judgment gap is already covered by a 3-line skill or prompt rule without a repeated multi-step deterministic trigger, Alex should prefer Stage 1/2 (Prompt/Skill) over building a new Stage 3 TypeScript workflow.",
+    "task": "Decide what level of capability improvement to propose for this recurring judgment gap.\n\n# Capability gap diagnosis\n\n- Observed failure: In two recent turns, an agent echoed a raw token when escalating a secret-rotation request.\n- The decision requires a single invariant rule: never echo an exposed token in any output field when routing secret recovery.\n- There is no multi-step orchestration, external tool pipeline, or deterministic file-preloading sequence needed.\n- A junior contributor proposed adding a new 250-line TypeScript workflow `workflows/secret-redaction-pipeline.ts`.",
+    "expected": {
+      "human_answer": "Reject the 250-line TypeScript workflow and use a concise Prompt or Skill rule instead: this is a single situational judgment invariant, not a repeated multi-step orchestration trigger that justifies a new code workflow.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "delegations": {
+        "min": 0,
+        "max": 0
+      },
+      "contains_groups": {
+        "response_to_hao": [
+          ["prompt", "skill", "rule"],
+          ["reject", "unnecessary", "not a workflow", "without adding a workflow", "instead of a workflow"],
+          ["token", "secret"]
+        ]
+      },
+      "response_max_words": 90
+    }
+  }
+]

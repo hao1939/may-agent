@@ -45,7 +45,7 @@ fi
 # ── Normal / run-all mode: capture output, display, and record ─────────
 _tmpout=$(mktemp)
 _exit_code=0
-bun "$GYM_CLI" "$@" > "$_tmpout" 2>&1 || _exit_code=$?
+bun "$GYM_CLI" "$@" --json > "$_tmpout" 2>&1 || _exit_code=$?
 
 # Always display output to caller
 cat "$_tmpout"

@@ -55,14 +55,6 @@ function validateMetadata(id: string, meta: ScenarioMeta | null, issues: Validat
   if (typeof meta.workflow !== "boolean") {
     issues.push({ severity: "warning", scenario: id, code: "metadata-workflow", detail: "workflow should be boolean" });
   }
-  if (meta.allow_workflow !== undefined && typeof meta.allow_workflow !== "boolean") {
-    issues.push({
-      severity: "warning",
-      scenario: id,
-      code: "metadata-allow-workflow",
-      detail: "allow_workflow should be boolean when present",
-    });
-  }
   if (meta.workflow_entry !== undefined) {
     if (
       !meta.workflow_entry ||

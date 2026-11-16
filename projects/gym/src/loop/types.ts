@@ -24,6 +24,29 @@ export type ReviewReasonCode =
   | "harness_problem";
 export type LabelStatus = "draft" | "approved";
 
+export interface InlineBenchmarkCase {
+  id: string;
+  description?: string;
+  task: string;
+  state?: string;
+  files?: Record<string, string>;
+  expected?: Record<string, unknown>;
+  semantic_criteria?: string;
+  semantic_controls?: Record<string, unknown>;
+  agent_type?: string;
+  tier?: string;
+  timeout?: number;
+  categories?: string[];
+  tags?: string[];
+  output_contract?: "task-agent-result";
+  workflow_entry?: {
+    agent: string;
+    workflow: string;
+    input?: unknown;
+  };
+  label?: Partial<GroundTruthLabel> & { status?: LabelStatus };
+}
+
 export interface BenchmarkSuite {
   name: string;
   version: number;
@@ -31,6 +54,16 @@ export interface BenchmarkSuite {
   artifact?: string;
   labels_file?: string;
   evaluator?: string;
+  defaults?: {
+    agent_type?: string;
+    tier?: string;
+    timeout?: number;
+    categories?: string[];
+    tags?: string[];
+    task_suffix?: string;
+    output_contract?: "task-agent-result";
+  };
+  cases?: InlineBenchmarkCase[];
 }
 
 export interface GroundTruthLabel {
@@ -56,6 +89,15 @@ export interface ScenarioCheck {
   gate?: boolean;
 }
 
+export interface TrialUsageTelemetry {
+  turns: number;
+  ops: number;
+  total_tokens: number;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+}
+
 export interface ScenarioRunResult {
   scenario: string;
   agent: string;
@@ -69,6 +111,7 @@ export interface ScenarioRunResult {
   /** Exact subject execution error, distinct from scorer summary. */
   execution_error?: string;
   duration_ms?: number;
+  usage?: TrialUsageTelemetry | null;
   session_id?: string;
   session_path?: string;
   work_dir?: string;
@@ -89,6 +132,7 @@ export interface StoredTrial {
   artifact_path: string | null;
   transcript_path: string | null;
   duration_ms: number | null;
+  usage?: TrialUsageTelemetry | null;
   provenance: {
     prompt_fingerprint: string | null;
     framework_revision: string | null;
@@ -162,6 +206,22 @@ export interface DurationComparison {
   reduction_percent: number | null;
 }
 
+export interface UsageAggregate {
+  measured_trials: number;
+  total_trials: number;
+  turns: number | null;
+  ops: number | null;
+  total_tokens: number | null;
+}
+
+export interface UsageComparison {
+  baseline: UsageAggregate;
+  candidate: UsageAggregate;
+  token_reduction_percent: number | null;
+  ops_reduction_percent: number | null;
+  turns_reduction_percent: number | null;
+}
+
 export interface ScenarioComparison {
   scenario: string;
   baseline: { pass: number; fail: number; invalid: number };
@@ -169,6 +229,7 @@ export interface ScenarioComparison {
   delta_passes: number;
   regression: boolean;
   duration: DurationComparison;
+  usage?: UsageComparison;
 }
 
 export interface RunComparison {
@@ -183,6 +244,7 @@ export interface RunComparison {
   objective: ComparisonObjective;
   objective_met: boolean | null;
   duration: DurationComparison;
+  usage?: UsageComparison;
   gate: "pass" | "fail" | "needs-human-review";
   scenarios: ScenarioComparison[];
 }

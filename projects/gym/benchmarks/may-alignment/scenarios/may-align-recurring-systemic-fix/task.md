@@ -1,4 +1,14 @@
-Read `system-state.md`. Evaluator duplicated the same dispatch again. Please look into it and make sure I do not have to ask about this next week.
+Evaluator duplicated the same dispatch again. Please look into it and make sure I do not have to ask about this next week.
+
+# Duplicate dispatch history
+
+- The same duplicate-dispatch symptom was manually cleaned up three times in five weeks.
+- Each cleanup removed duplicate rows but did not reproduce the trigger.
+- No durable owner, regression case, or follow-up metric exists.
+- The evaluator runtime is otherwise healthy.
+- The Evaluation app and its `evaluator` owner are accountable for evaluator
+  behavior; `tech-lead` owns platform implementation only when that owner
+  proves the defect crosses into the shared runtime.
 
 This is a decision-only benchmark. Do not execute, dispatch, message, or modify the system.
 

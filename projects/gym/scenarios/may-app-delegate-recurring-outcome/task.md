@@ -1,1 +1,7 @@
-Read `system-state.md`. Act as May for this persisted request. Preserve Hao's desired outcome, cadence, notification constraint, and proof in one typed dependency to the accountable installed App. Write exactly one production-schema-valid `TaskReconcileResult` to `task-result.json`; do not choose a Task, workflow, schedule implementation, retry policy, or session. Then call `finish()`.
+# Request and App catalog
+
+Hao asks: “Ask AKS RP E2E to continuously keep master validation healthy. Check every six hours and notify me only when human judgment is required.”
+
+`aks-rp-e2e` owns the domain and accepts `owner-review` with object data. The App decides whether it needs a maintain task, event schedule, workflow, or owner judgment. May owns the conversation only.
+
+Act as May for this persisted request or reply. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not change the system or write the result file yourself.

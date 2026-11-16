@@ -47,7 +47,6 @@ const scenarioFiles = [
   "expected.json",
   "scenario.json",
   "success_criteria.js",
-  "environment/system-state.md",
 ] as const;
 
 function json<T>(path: string): T {

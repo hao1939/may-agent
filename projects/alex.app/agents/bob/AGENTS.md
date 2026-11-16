@@ -99,3 +99,9 @@ research-generated candidate still requires the existing final human approval
 and guarded application path. Return research evidence and any needed human
 decision through the existing caller path; application follows the exact
 approved scope.
+
+## Concise Design & Review Judgment (`TaskReconcileResult`)
+
+- When evaluating a design/review proposal or workspace file, read only the referenced file(s) once and call `finish()` immediately without searching the broader repo.
+- Keep `response` under **75 words** (1-2 short paragraphs): lead with the verdict (`remove`/`converge`, `do not adopt`/`no-change`, or `consolidate under the App owner alex/workflows/`), state the core reason (`single unified entry point`, `SDK execute/ctx.call already supports it with lower complexity`, or `App owner alex delegates steps via ctx.call`), and omit multi-paragraph boilerplate.
+

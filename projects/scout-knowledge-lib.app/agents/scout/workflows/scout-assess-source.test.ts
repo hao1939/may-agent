@@ -125,7 +125,7 @@ function context(
       root,
       output: join(root, "output"),
     },
-    callAgent: call,
+    call,
   });
 }
 const success = (output = draft) => ({
@@ -373,7 +373,7 @@ it("a partial finish preserves its new gap even when it asks to reuse an older r
       ...success({ ...draft, reuseExisting: true }),
       facts: {
         status: "partial",
-        next_steps: "The governing reference is still unread.",
+        blockers: [{ reason: "The governing reference is still unread.", context: "Pending access" }],
       },
     })) as WorkflowContext["call"]),
     async () => packet,
@@ -388,7 +388,7 @@ it("standalone no-save uses its assignment without reconciliation or a workspace
   let calls = 0;
   const ctx = createTestAppWorkflowContext({
     input: { ...input, data: { ...input.data, archive: false } },
-    callAgent: (async (_agent, prompt) => {
+    call: (async (_agent, prompt) => {
       calls++;
       expect(prompt).toContain(input.data.outcome);
       return success();
@@ -724,7 +724,7 @@ it("preserves the current Host-normalized blocked partial draft", async () => {
     output: { ...draft, state: "incomplete" },
     facts: {
       status: "partial",
-      next_steps: "Read implementation and tests.",
+      blockers: [{ reason: "Read implementation and tests.", context: "Need repository access" }],
     },
   })) as WorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
@@ -755,7 +755,7 @@ it.each([
       status,
       facts: {
         ...(partial ? { status: "partial" } : {}),
-        next_steps: "Implementation and test results were not inspected.",
+        blockers: [{ reason: "Implementation and test results were not inspected.", context: "Missing evidence" }],
       },
     })) as WorkflowContext["call"]);
     const result = await executeSourceAssessment(ctx, async () => packet);

@@ -1,8 +1,15 @@
 {
   "name": "may-learn-inbox-break-glass-broken-owner",
   "description": "Use one bounded break-glass attempt after the normal owner path repeatedly fails.",
-  "categories": ["deputy-learning", "human-inbox"],
-  "tags": ["may-agent", "break-glass", "learning-development"],
+  "categories": [
+    "deputy-learning",
+    "human-inbox"
+  ],
+  "tags": [
+    "may-agent",
+    "break-glass",
+    "learning-development"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -11,8 +18,12 @@
     "unit": "human-inbox-deputy",
     "tier": 4,
     "partition": "development",
-    "competencies": ["authority.act-vs-approve", "system.owner-and-route"],
+    "competencies": [
+      "authority.act-vs-approve",
+      "system.owner-and-route"
+    ],
     "criticality": "critical",
     "variant_family": "bounded-break-glass"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

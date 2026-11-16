@@ -31,6 +31,42 @@ function sourceFiles(dir: string): string[] {
   return files;
 }
 
+function isAppRuntimeDeclaration(path: string, appDir: string): boolean {
+  const display = relative(appDir, path).replaceAll("\\", "/");
+  if (/\.test\.[^.]+$/.test(display)) return false;
+  return /^(?:app\.[^/]+|watchers\/|agents\/(?:[^/]+\/)*workflows\/)/.test(display);
+}
+
+function importSpecifiers(path: string, text: string): string[] {
+  const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
+  const specifiers: string[] = [];
+  const addLiteral = (node: ts.Expression | undefined) => {
+    if (node && ts.isStringLiteralLike(node)) specifiers.push(node.text);
+  };
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      addLiteral(node.moduleSpecifier);
+    } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+      addLiteral(node.moduleReference.expression);
+    } else if (
+      ts.isImportTypeNode(node) &&
+      ts.isLiteralTypeNode(node.argument) &&
+      ts.isStringLiteralLike(node.argument.literal)
+    ) {
+      specifiers.push(node.argument.literal.text);
+    } else if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) && node.expression.text === "require"))
+    ) {
+      addLiteral(node.arguments[0]);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return specifiers;
+}
+
 function checkApp(appDir: string): void {
   const id = basename(appDir);
   const manifest = join(appDir, "app.ts");
@@ -43,6 +79,17 @@ function checkApp(appDir: string): void {
     const display = relative(root, path);
     if (text.includes("@may-agent/sdk/legacy"))
       errors.push(`${display}: imports the retired legacy SDK`);
+    for (const specifier of importSpecifiers(path, text)) {
+      if (specifier === "@may-agent/sdk/runtime" || specifier.startsWith("@may-agent/sdk/runtime/")) {
+        errors.push(`${display}: Apps cannot import Host-internal @may-agent/sdk/runtime`);
+      }
+      if (
+        isAppRuntimeDeclaration(path, appDir) &&
+        (specifier === "@may-agent/sdk/standalone" || specifier.startsWith("@may-agent/sdk/standalone/"))
+      ) {
+        errors.push(`${display}: App runtime declarations cannot import @may-agent/sdk/standalone`);
+      }
+    }
     if (/\bdefineProjectApp\b/.test(text))
       errors.push(`${display}: uses retired defineProjectApp`);
     if (/\bProjectApp(?:Action|Context)?\b/.test(text))

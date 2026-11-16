@@ -1,8 +1,16 @@
 {
   "name": "may-conversation-clarify-approval-choice-replay",
   "description": "Recover an attached approval packet and clarify its missing A/B choice before acting.",
-  "categories": ["conversation-follow-through", "deputy-learning"],
-  "tags": ["may-agent", "telegram", "approval", "real-replay"],
+  "categories": [
+    "conversation-follow-through",
+    "deputy-learning"
+  ],
+  "tags": [
+    "may-agent",
+    "telegram",
+    "approval",
+    "real-replay"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -18,6 +26,9 @@
     ],
     "criticality": "critical",
     "variant_family": "approval-choice-reply",
-    "source_signals": ["incident-s_1785422680323_301"]
-  }
+    "source_signals": [
+      "incident-s_1785422680323_301"
+    ]
+  },
+  "output_contract": "task-agent-result"
 }

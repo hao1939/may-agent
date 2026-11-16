@@ -30,5 +30,6 @@
     "variant_family": "current-architecture-app-agent",
     "source_review": "/app/projects/gym.app/.state/reviews/incident-telegram-field-b04b37df70b8ac81f416.md",
     "label_status": "draft"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

@@ -169,7 +169,7 @@ test("owner composition binds optional scope to fresh evidence through both help
   const workflow = await execute(
     createTestAppWorkflowContext({
       reconciliation: reconciliation(),
-      callAgent: async () => ({
+      call: async () => ({
         id: "owner",
         kind: "agent",
         status: "done",
@@ -482,7 +482,7 @@ test("the recorded reviewAt-only counterexample passes composition, helper, and 
   const workflow = await execute(
     createTestAppWorkflowContext({
       reconciliation: reconciliation(),
-      callAgent: (async (_agent: string, value: string) => {
+      call: (async (_agent: string, value: string) => {
         prompt = value;
         return {
           id: "recorded-timed-review",
@@ -533,7 +533,7 @@ test("mixed new input reaches judgment with the original requirements and existi
     createTestAppWorkflowContext({
       input: rec.input,
       reconciliation: rec,
-      callAgent: (async (_agent: string, prompt: string) => {
+      call: (async (_agent: string, prompt: string) => {
         calls++;
         expect(prompt).toContain("Also verify Linux");
         expect(prompt).toContain("All requirements fulfilled");
@@ -609,7 +609,7 @@ test("an older sample-driven handoff asks for one current judgment instead of re
     createTestAppWorkflowContext({
       input: rec.input,
       reconciliation: rec,
-      callAgent: (async (_agent: string, prompt: string) => {
+      call: (async (_agent: string, prompt: string) => {
         calls++;
         expect(prompt).toContain(
           "Retire every obsolete retained may.metric.state Condition",
@@ -665,7 +665,7 @@ test("an unchanged unsupported saved plan is current context, never a replayed j
       createTestAppWorkflowContext({
         input: rec.input,
         reconciliation: rec,
-        callAgent: (async (_agent: string, prompt: string) => {
+        call: (async (_agent: string, prompt: string) => {
           calls++;
           expect(prompt).toContain("A repair is pending");
           expect(prompt).toContain("All requirements fulfilled");
@@ -725,7 +725,7 @@ test("initial eventless handoff still reaches the owner and preserves a genuine 
     createTestAppWorkflowContext({
       input: rec.input,
       reconciliation: rec,
-      callAgent: (async () => {
+      call: (async () => {
         calls++;
         return {
           id: "initial-judgment",
@@ -764,7 +764,7 @@ test("owner failure blocks and invalid output retains an incomplete result", asy
     const result = await execute(
       createTestAppWorkflowContext({
         reconciliation: reconciliation(),
-        callAgent: (async () => response) as never,
+        call: (async () => response) as never,
       }),
     );
     if (response.status === "error") {

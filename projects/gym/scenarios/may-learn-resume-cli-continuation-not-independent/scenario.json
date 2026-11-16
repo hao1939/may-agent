@@ -1,8 +1,16 @@
 {
   "name": "may-learn-resume-cli-continuation-not-independent",
   "description": "Separate continuation from an independent opinion.",
-  "categories": ["deputy-learning", "cli-workers", "sessions"],
-  "tags": ["may-agent", "resume", "learning-release"],
+  "categories": [
+    "deputy-learning",
+    "cli-workers",
+    "sessions"
+  ],
+  "tags": [
+    "may-agent",
+    "resume",
+    "learning-release"
+  ],
   "tier": "smoke",
   "timeout": 5,
   "agent_type": "may",
@@ -17,5 +25,6 @@
     ],
     "criticality": "high",
     "variant_family": "continuation-vs-independence"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

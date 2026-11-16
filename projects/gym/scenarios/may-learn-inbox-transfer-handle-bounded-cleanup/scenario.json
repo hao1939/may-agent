@@ -1,8 +1,16 @@
 {
   "name": "may-learn-inbox-transfer-handle-bounded-cleanup",
   "description": "Held-back inbox transfer: finish a clarified cleanup under existing owner policy.",
-  "categories": ["deputy-learning", "human-inbox"],
-  "tags": ["may-agent", "telegram", "learning-release", "cleanup"],
+  "categories": [
+    "deputy-learning",
+    "human-inbox"
+  ],
+  "tags": [
+    "may-agent",
+    "telegram",
+    "learning-release",
+    "cleanup"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -11,8 +19,11 @@
     "unit": "human-inbox-deputy",
     "tier": 4,
     "partition": "release",
-    "competencies": ["communication.human-attention-judgment"],
+    "competencies": [
+      "communication.human-attention-judgment"
+    ],
     "criticality": "high",
     "variant_family": "human-inbox-bounded-cleanup"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

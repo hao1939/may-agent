@@ -5,7 +5,7 @@ import { join } from "node:path";
 import {
   collectPendingReviews,
   formatPendingReviews,
-} from "../src/learning/pending-review";
+} from "../src/loop/pending-review";
 import { withTempDir } from "./support/temp-dir";
 
 describe("pending benchmark truth review", () => {

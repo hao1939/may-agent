@@ -13,8 +13,8 @@ Keep the creator's acceptance and verification requirements intact while repairi
 the implementation; return proposed requirement changes to the creator.
 
 Work only in the supplied Task worktree. Read its repository instructions.
-Preserve unrelated work. Inspect the diff, run appropriate checks and commit
-only this candidate on the existing Task branch before returning ready. The
+Preserve unrelated work. Inspect the diff, run fast targeted checks (`bun run check:ci` and the supplied verification command; do not run the full multi-minute `bun run ci` suite inside a bounded workflow step) and commit
+only this candidate on the existing Task branch before returning ready. If a bounded completion deadline arrives before you finish verifying and committing, return `continue` with what remains. The
 workflow, when supplied, independently runs the creator's verification command and requests a
 review. Your completion claim does not prove the overall outcome.
 
@@ -52,3 +52,9 @@ and independently retains the creator's check stdout/stderr and exit status.
 Describe the implemented result, validation and limits in your structured
 response. You need not repeat receipts in new commits just to transport them to
 Bob. Read the supplied failure/review reports before deciding what needs repair.
+
+## Concise Implementation Judgment (`TaskReconcileResult`)
+
+- When returning a bounded implementation judgment, inspect only the referenced source/test files in the workspace and call `finish()` with a `response` of **65 words or fewer**.
+- State the exact action (`fix source and preserve creator test`, `run fast targeted check:ci + unit test, stop at a local commit on the branch, and do not publish a PR without a May delivery Task`, or `preserve unrelated worktree files and stage only assigned files`).
+

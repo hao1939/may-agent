@@ -195,3 +195,38 @@ also changing event names, execution entry points and caller-result handling.
 Review evidence is source inspection plus the disposable Node transport probe;
 no live Host, Task, deployment or external provider was used. Design checks
 validate document structure and existing examples, not the proposed transport.
+
+## Review of merged PRs #523 and #524 (2026-11-14)
+
+The merged source aligns with the revised smaller proposal. Durable messages
+and admission remain on the existing path; `conversation.updated` avoids the
+journal while respecting transaction commit; duplicate socket entry points
+are removed. The normal worker reply path regenerates its wake in the parent
+from the relayed durable message. See the
+[alignment review and disposable reproductions](../archive/reviews/event-control-pr523-pr524-alignment-20261114.md).
+
+Before treating this design as complete:
+
+- **P1 — missed-wake recovery remains open (R3).** Listener overflow only logs
+  loss. A saved answer can remain unread when unrelated Task notifications
+  displace its final Conversation wake. Expose a coalesced subscriber gap
+  signal and use the consumer's existing refresh queue; keep this obligation
+  in `events.md`, not only the historical appendix.
+- **P2 — reject ephemeral wakes before durable publication.** The retained
+  trusted raw operator path broadcasts `conversation.updated` and then throws
+  because there is no durable Event ID. Share its classification with
+  DbWriter and reject it before emission; internal wakes can keep using the bus.
+- **Correct scope and status.** Replace "shipped" with "source merged;
+  deployment unverified" unless an installed revision is observed. JSON-line
+  framing remains, but four commands, special `chat` subscription behavior
+  and hidden text-to-control rewriting were retired. Document that cutover
+  and preserve `task.cancel` / `project.action.invoke` as deliberate translators
+  in the cleanup table too.
+- **Correct evidence.** Final diffs are #523 −381 and #524 −178 net lines,
+  including tests. The −441 and "80%+" figures are unsupported by final evidence.
+  The established efficiency gain is zero journal rows for Conversation wakes.
+
+Validation: 160 targeted tests and four local-daemon recovery scenarios passed;
+two extra disposable probes reproduced the boundaries above. These checks
+establish source behavior, not deployment or live provider delivery. Keep the
+follow-up focused on those boundaries and the owning contracts.

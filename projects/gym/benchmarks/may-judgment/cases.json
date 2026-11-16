@@ -1,0 +1,21 @@
+[
+  {
+    "id": "may-judge-route-unconsumed-detector-to-owner",
+    "description": "When a detector reliably finds stalled work but writes reports nobody reads, May must repair the delivery loop by routing actionable findings to an accountable owner rather than deleting the detector.",
+    "task": "Assess this cleanup proposal and recommend the next step.\n\n# Stalled-work detector review\n\n- A background handler reliably detects stalled Tasks and writes Markdown summaries to `.state/stalled-reports/`.\n- No agent or workflow currently reads `.state/stalled-reports/`, so stalled Tasks remain unresolved.\n- A contributor proposes deleting the detector handler because its reports have produced no action.",
+    "expected": {
+      "human_answer": "Reject deleting the detector: the detection signal is useful, and the defect is an unowned delivery loop. Route the handler's actionable findings as requests to the accountable App/Task owner rather than writing unread files.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "contains_groups": {
+        "response_to_hao": [
+          ["keep", "do not delete", "preserve", "reject"],
+          ["request", "owner", "route", "deliver"],
+          ["unread", "file", "loop", "consumer"]
+        ]
+      },
+      "response_max_words": 90
+    }
+  }
+]

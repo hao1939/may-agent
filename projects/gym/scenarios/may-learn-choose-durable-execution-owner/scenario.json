@@ -1,8 +1,17 @@
 {
   "name": "may-learn-choose-durable-execution-owner",
   "description": "Execution boundary judgment: use tracked coding work, owner review, and supervisor-owned restart.",
-  "categories": ["deputy-learning", "system-operations", "ownership"],
-  "tags": ["may-agent", "delegation", "supervisor", "learning-development"],
+  "categories": [
+    "deputy-learning",
+    "system-operations",
+    "ownership"
+  ],
+  "tags": [
+    "may-agent",
+    "delegation",
+    "supervisor",
+    "learning-development"
+  ],
   "tier": "smoke",
   "timeout": 5,
   "agent_type": "may",
@@ -18,6 +27,9 @@
     ],
     "criticality": "critical",
     "variant_family": "durable-worker-and-supervisor-boundary",
-    "source_signals": ["hao-preference-d6bbf2e4a846cdfe5e33"]
-  }
+    "source_signals": [
+      "hao-preference-d6bbf2e4a846cdfe5e33"
+    ]
+  },
+  "output_contract": "task-agent-result"
 }

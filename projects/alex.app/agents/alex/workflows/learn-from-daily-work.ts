@@ -36,6 +36,10 @@ export const learnFromDailyWorkInputSchema = Type.Object(
     cursorPath: Type.Optional(Type.String({ minLength: 1 })),
     /** Optional path to write the synthesized daily learning report JSON. */
     outputFile: Type.Optional(Type.String({ minLength: 1 })),
+    /** Whether to automatically stage accepted draft benchmark cases into projects/gym/benchmarks/<role>-judgment/cases.json. */
+    stageDraftCases: Type.Optional(Type.Boolean()),
+    /** Optional override for the Gym benchmarks root directory (defaults to <workspaceRoot>/projects/gym/benchmarks). */
+    gymBenchmarksRoot: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: true },
 );
@@ -130,6 +134,20 @@ export function discoverSessionSources(
   }
   const parentRoot = dirname(dirname(resolve(projectRoot)));
 
+  const homeSubdirs: string[] = [];
+  if (existsSync("/home")) {
+    try {
+      for (const entry of readdirSync("/home")) {
+        const full = join("/home", entry);
+        if (existsSync(full) && statSync(full).isDirectory()) {
+          homeSubdirs.push(full);
+        }
+      }
+    } catch {
+      // Ignore if /home is not readable
+    }
+  }
+
   const rawRoots =
     explicitRoots && explicitRoots.length > 0
       ? explicitRoots
@@ -142,6 +160,7 @@ export function discoverSessionSources(
           homedir(),
           passwdHome,
           process.env.USER ? `/home/${process.env.USER}` : "",
+          ...homeSubdirs,
           ...envRoots,
         ];
 
@@ -395,6 +414,54 @@ export function validateDraftBenchmarkCase(draft: {
   return { ok: true };
 }
 
+/**
+ * Stages accepted draft benchmark cases into `<gymBenchmarksRoot>/<role>-judgment/cases.json`
+ * with `"status": "draft"` (deduplicating by case `id`) so `gym test` can immediately evaluate them.
+ */
+export function stageDraftCasesToGym(
+  lessons: DailyLearningSynthesis["lessons"],
+  gymBenchmarksRoot: string,
+): string[] {
+  const stagedIds: string[] = [];
+  for (const lesson of lessons) {
+    const check = validateDraftBenchmarkCase(lesson.draftBenchmarkCase);
+    if (!check.ok) continue;
+    const casesPath = join(gymBenchmarksRoot, `${lesson.role}-judgment`, "cases.json");
+    if (!existsSync(casesPath)) continue;
+    try {
+      const existing = JSON.parse(readFileSync(casesPath, "utf8")) as Array<Record<string, unknown>>;
+      const rawId = lesson.draftBenchmarkCase.id
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const caseId = rawId.startsWith(`${lesson.role}-`) ? rawId : `${lesson.role}-${rawId}`;
+      if (existing.some((entry) => entry.id === caseId)) continue;
+      existing.push({
+        id: caseId,
+        status: "draft",
+        description: lesson.draftBenchmarkCase.description,
+        task: lesson.draftBenchmarkCase.task,
+        expected: {
+          human_answer: lesson.draftBenchmarkCase.expectedHumanAnswer,
+          exact: {
+            needs_clarification: false,
+          },
+          contains_groups: {
+            response_to_hao: lesson.draftBenchmarkCase.requiredConcepts,
+          },
+          response_max_words: 100,
+        },
+      });
+      writeFileSync(casesPath, `${JSON.stringify(existing, null, 2)}\n`, "utf8");
+      stagedIds.push(caseId);
+    } catch {
+      // Ignore unparseable or read-only cases.json
+    }
+  }
+  return stagedIds;
+}
+
 export async function execute(ctx: WorkflowContext<LearnFromDailyWorkInput>) {
   const projectRoot = ctx.workspace?.projectRoot ?? ctx.workspace?.root ?? process.cwd();
   const input: LearnFromDailyWorkInput =
@@ -439,7 +506,7 @@ export async function execute(ctx: WorkflowContext<LearnFromDailyWorkInput>) {
       );
     }
     return ctx.done(drySummary, {
-      state: "converged" as const,
+      state: "converged",
       summary: drySummary,
       facts: [
         `scannedRoots:${sources.scannedRoots.length}`,
@@ -491,8 +558,16 @@ export async function execute(ctx: WorkflowContext<LearnFromDailyWorkInput>) {
     scannedRoots: sources.scannedRoots,
     signalCount: signals.length,
     acceptedLessonCount: acceptedLessons.length,
+    stagedCaseIds: [] as string[],
     lessons: acceptedLessons,
   };
+  if (input.stageDraftCases) {
+    const defaultBenchmarksRoot = existsSync(join(projectRoot, "projects", "gym", "benchmarks"))
+      ? join(projectRoot, "projects", "gym", "benchmarks")
+      : join(dirname(dirname(resolve(projectRoot))), "projects", "gym", "benchmarks");
+    const benchmarksRoot = input.gymBenchmarksRoot?.trim() || defaultBenchmarksRoot;
+    outputPayload.stagedCaseIds = stageDraftCasesToGym(acceptedLessons, benchmarksRoot);
+  }
   if (input.outputFile?.trim()) {
     writeFileSync(
       resolve(projectRoot, input.outputFile.trim()),
@@ -502,12 +577,15 @@ export async function execute(ctx: WorkflowContext<LearnFromDailyWorkInput>) {
   }
 
   return ctx.done(synthesis.summary, {
-    state: "converged" as const,
+    state: "converged",
     summary: synthesis.summary,
     facts: [
       `scannedRoots:${sources.scannedRoots.length}`,
       `signalCount:${signals.length}`,
       `acceptedLessonCount:${acceptedLessons.length}`,
+      ...(outputPayload.stagedCaseIds.length > 0
+        ? [`stagedCases:${outputPayload.stagedCaseIds.length}`]
+        : []),
     ],
     result: outputPayload,
   });

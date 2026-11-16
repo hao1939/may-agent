@@ -1,4 +1,12 @@
-Read `system-state.md`. Going forward, do not keep agents busy merely to maximize utilization. Dispatch only when the expected value is clear. Treat this as standing guidance.
+Going forward, do not keep agents busy merely to maximize utilization. Dispatch only when the expected value is clear. Treat this as standing guidance.
+
+# Existing guidance context
+
+- May's older context says "keep agents busy" and "idle agents = wasted capacity."
+- Existing valid guidance allows an agent to explore when it has a useful,
+  specific question with clear expected value.
+- Recent low-value dispatches created review load without moving project goals.
+- No immediate work is requested in this turn; Hao is correcting the decision rule itself.
 
 This is a decision-only benchmark. Do not execute, dispatch, message, or modify the system.
 

@@ -105,6 +105,15 @@ export const inputSchema = Type.Union([
   }, { additionalProperties: false }),
   Type.Object({ kind: Type.Literal("compare-candidate"), data: comparisonData }, { additionalProperties: false }),
   Type.Object({
+    kind: Type.Literal("daily-work-learning"),
+    data: Type.Object({
+      maxSignals: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
+      targetRole: Type.Optional(Type.String({ minLength: 1 })),
+      dryRun: Type.Optional(Type.Boolean()),
+      stageDraftCases: Type.Optional(Type.Boolean()),
+    }, { additionalProperties: false }),
+  }, { additionalProperties: false }),
+  Type.Object({
     kind: Type.Literal("automatic-review"),
     data: details,
   }, { additionalProperties: false }),
@@ -305,6 +314,16 @@ export function taskInputForEvent(event: AppEvent<Record<string, unknown>>): App
     }
     return { kind: "review-task-outcome", data: { appId, taskId, assessmentPurpose: "ongoing", automatic: true, ...(automatic.reviewer === "evaluator-deepseek" ? { reviewer: automatic.reviewer } : {}) } } as AppInput;
   }
+  if (event.type === "daily.work.learning.requested") {
+    return {
+      kind: "daily-work-learning",
+      data: {
+        ...(typeof data.maxSignals === "number" ? { maxSignals: data.maxSignals } : { maxSignals: 15 }),
+        ...(typeof data.targetRole === "string" ? { targetRole: data.targetRole } : {}),
+        ...(typeof data.dryRun === "boolean" ? { dryRun: data.dryRun } : {}),
+      },
+    } as AppInput;
+  }
   if (event.type !== "evaluation.task.review.requested") return null;
   const appId = typeof data.appId === "string" ? data.appId.trim() : "";
   const taskId = typeof data.taskId === "string" ? data.taskId.trim() : "";
@@ -484,6 +503,21 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       priority: "P1" as const,
     }};
   }
+  if (admitted.input.kind === "daily-work-learning") {
+    return { kind: "desired" as const, intent: {
+      id: "learning/daily-work",
+      parentId: "root",
+      agent: "alex",
+      workflow: "learn-from-daily-work",
+      outcome: "Harvest daily user signals across container and localhost roots, extract role-specific judgment lessons, and synthesize leak-free benchmark drafts.",
+      acceptance: [
+        "Scan configured container (.state) and localhost ($HOME) session roots since the last cursor.",
+        "Return validated role-specific lessons and draft benchmark cases with zero system-state.md or answer leaks.",
+      ],
+      input: data,
+      priority: "P2" as const,
+    }};
+  }
   const assignment = record(data.assignment);
   const selected = typeof assignment.agent === "string" ? assignment.agent : "alex";
   return { kind: "desired" as const, intent: {
@@ -555,6 +589,11 @@ export default defineApp({
       event: "scout.research.qualified",
       toInput: taskInputForEvent,
     },
+    {
+      id: "daily-work-learning-requested",
+      event: "daily.work.learning.requested",
+      toInput: taskInputForEvent,
+    },
   ],
   schedules: [
     ...(installedWorkloadReview.enabled ? [installedWorkloadReview.schedule] : []),
@@ -602,6 +641,15 @@ export default defineApp({
             candidateLimit: 1,
           } },
         },
+      },
+    },
+    {
+      id: "daily-work-learning",
+      intervalMs: 24 * 60 * 60 * 1000,
+      catchUp: "latest" as const,
+      input: {
+        kind: "daily-work-learning" as const,
+        data: { maxSignals: 25 },
       },
     },
   ],

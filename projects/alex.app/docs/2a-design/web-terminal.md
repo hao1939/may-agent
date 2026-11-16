@@ -44,10 +44,14 @@ Herdr session. An interactive agent CLI may still require its own native resume
 operation; Herdr preserves the terminal session and process state while it
 exists, not provider-side conversation history after a process is gone.
 
-Herdr state and configuration use the persistent May state root through the
-`may-herdr` wrapper. The wrapper isolates `XDG_CONFIG_HOME`, `XDG_STATE_HOME`,
-and `XDG_RUNTIME_DIR` under that root so container-user defaults do not make
-session discovery depend on a transient home directory.
+Herdr state and configuration use the container's `may-herdr` wrapper:
+`XDG_STATE_HOME` is persisted under `/app/.state/cli-state/herdr/state`,
+`XDG_CONFIG_HOME` lives in the container-managed `/var/lib/mayagent/.config`
+(`resume_agents_on_restore = true`), and `XDG_RUNTIME_DIR` uses local `/tmp`
+so Unix sockets never sit on networked or bind-mounted filesystems. On startup,
+`setup-herdr-integrations.sh` installs session-reporting hooks/extensions for
+**Pi**, **Codex**, **Gemini**, and **Claude**, with all approval prompts and
+hook-trust dialogs pre-approved inside the container boundary.
 
 ## Browser behavior
 
@@ -86,10 +90,11 @@ offer an explicit “Copy to system clipboard” action rather than claim succes
 
 ## Agent CLI integration
 
-Container startup installs Herdr integration hooks for Codex and Claude and
-keeps their configuration under persistent state. These hooks let Herdr
-observe agent state; they do not grant model/tool permissions or replace the
-CLI's own resume and approval policy.
+The container image pre-bakes native Herdr integrations (`pi`, `codex`, `claude`),
+CLI configs, and Codex hook trust into `/var/lib/mayagent`, while `configure-runtime.cjs`
+links durable CLI session histories and Herdr state under `/app/.state/cli-state/*`.
+Every CLI (`pi`, `codex`, `gemini`, `claude`, `herdr`) runs directly as a native
+binary without shell wrapper scripts.
 
 Use Herdr commands inside the shared terminal to create or select panes and
 start the desired CLI. Session layout belongs to Herdr configuration, not to a
@@ -119,9 +124,10 @@ reviewed durably.
 
 ## Implementation references
 
+- `projects/may-agent/container/Dockerfile`
 - `projects/may-agent/container/supervisord.conf`
-- `projects/may-agent/container/may-herdr.sh`
-- `projects/may-agent/container/setup-herdr-integrations.sh`
+- `projects/may-agent/container/entrypoint.sh`
+- `projects/may-agent/container/configure-runtime.cjs`
 - `projects/may-agent/container/ttyd-clipboard-bridge.js`
 - `projects/may-agent/container/patch-ttyd-index.cjs`
 - `projects/may-agent/test/integration/herdr-terminal.test.ts`

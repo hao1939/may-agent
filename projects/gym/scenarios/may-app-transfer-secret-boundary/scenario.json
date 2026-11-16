@@ -1,11 +1,31 @@
 {
   "name": "may-app-transfer-secret-boundary",
   "description": "Route credential recovery without repeating the secret.",
-  "categories": ["app-outcome-management", "dependency", "security"],
-  "tags": ["may-agent", "dependency", "secret", "transfer"],
+  "categories": [
+    "app-outcome-management",
+    "dependency",
+    "security"
+  ],
+  "tags": [
+    "may-agent",
+    "dependency",
+    "secret",
+    "transfer"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
   "workflow": false,
-  "learning": { "unit": "app-outcome-management", "tier": 4, "partition": "release", "competencies": ["system.manage-through-apps", "security.secret-channel-boundary"], "criticality": "critical", "variant_family": "security-boundary" }
+  "learning": {
+    "unit": "app-outcome-management",
+    "tier": 4,
+    "partition": "release",
+    "competencies": [
+      "system.manage-through-apps",
+      "security.secret-channel-boundary"
+    ],
+    "criticality": "critical",
+    "variant_family": "security-boundary"
+  },
+  "output_contract": "task-agent-result"
 }

@@ -1,8 +1,16 @@
 {
   "name": "may-learn-route-project-app-request",
   "description": "Operational transfer: route a request through an existing project app and durable task.",
-  "categories": ["deputy-learning", "system-operations"],
-  "tags": ["may-agent", "project-app", "tasks", "learning-release"],
+  "categories": [
+    "deputy-learning",
+    "system-operations"
+  ],
+  "tags": [
+    "may-agent",
+    "project-app",
+    "tasks",
+    "learning-release"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -18,5 +26,6 @@
     ],
     "criticality": "critical",
     "variant_family": "project-app-operation"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": false,
     "strictNullChecks": true,
@@ -19,7 +19,8 @@
   },
   "include": [
     "scripts/*.ts",
-    "shared/tools/**/*.ts"
+    "shared/tools/**/*.ts",
+    "projects/may-agent/packages/sdk/src/text-assets.d.ts"
   ],
   "exclude": [
     "**/node_modules/**",

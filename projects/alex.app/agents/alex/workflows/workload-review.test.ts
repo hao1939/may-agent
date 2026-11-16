@@ -52,11 +52,6 @@ function fixture(heavy = false, notifyOwners = false) {
       expect(options).toMatchObject({ tools: "readonly", timeoutMs: 60_000, operationAllowance: 8 });
       return response;
     },
-    agents: { call: async (_agent: string, prompt: string, options: Record<string, unknown>) => {
-      prompts.push(prompt);
-      expect(options).toMatchObject({ tools: "readonly", timeoutMs: 60_000, operationAllowance: 8 });
-      return response;
-    } },
     done: (summary: string, output: unknown) => ({ status: "done", summary, output }),
     blocked: (summary: string) => ({ status: "blocked", summary }),
   } as unknown as WorkflowContext;

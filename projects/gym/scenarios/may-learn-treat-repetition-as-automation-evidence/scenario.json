@@ -1,7 +1,10 @@
 {
   "name": "may-learn-treat-repetition-as-automation-evidence",
   "description": "Deputy transfer: turn repeated work into tested automation learning without treating repetition as permission.",
-  "categories": ["deputy-learning", "learning-evidence"],
+  "categories": [
+    "deputy-learning",
+    "learning-evidence"
+  ],
   "tags": [
     "may-agent",
     "codex-sessions",
@@ -24,5 +27,6 @@
     ],
     "criticality": "high",
     "variant_family": "learning-automation-authority"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

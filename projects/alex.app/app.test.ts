@@ -407,3 +407,17 @@ test("controller failures reach one Alex recovery Task independently of retry sc
     else process.env.EVALUATION_AUTO_REVIEW_ENABLED = enabled;
   }
 });
+
+test("daily-work-learning schedule routes to alex/learn-from-daily-work", () => {
+  expect(app.schedules?.some((entry) => entry.id === "daily-work-learning")).toBe(true);
+  const intent = taskForInput({
+    id: "daily-1",
+    input: { kind: "daily-work-learning", data: { maxSignals: 25 } },
+  } as never).intent;
+  expect(intent).toMatchObject({
+    id: "learning/daily-work",
+    agent: "alex",
+    workflow: "learn-from-daily-work",
+  });
+});
+

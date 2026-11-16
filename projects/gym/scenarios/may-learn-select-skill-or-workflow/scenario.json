@@ -1,8 +1,16 @@
 {
   "name": "may-learn-select-skill-or-workflow",
   "description": "System knowledge: choose a skill and source discovery instead of inventing a workflow.",
-  "categories": ["deputy-learning", "system-operations"],
-  "tags": ["may-agent", "skills", "workflows", "learning-development"],
+  "categories": [
+    "deputy-learning",
+    "system-operations"
+  ],
+  "tags": [
+    "may-agent",
+    "skills",
+    "workflows",
+    "learning-development"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -11,8 +19,11 @@
     "unit": "system-deputy-operations",
     "tier": 2,
     "partition": "development",
-    "competencies": ["execution.skill-vs-workflow"],
+    "competencies": [
+      "execution.skill-vs-workflow"
+    ],
     "criticality": "high",
     "variant_family": "mechanism-selection"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

@@ -10,6 +10,8 @@ import type {
   RunComparison,
   ScenarioComparison,
   StoredTrial,
+  UsageAggregate,
+  UsageComparison,
 } from "./types";
 
 interface TrialEvidence {
@@ -56,6 +58,60 @@ function durationLines(duration: DurationComparison): string[] {
   return [
     `- Execution duration: ${display(duration.baseline)} → ${display(duration.candidate)}`,
     `- Measured duration reduction: ${duration.reduction_percent === null ? "unknown (requires complete timing and a positive baseline)" : `${duration.reduction_percent.toFixed(2)}%`}`,
+  ];
+}
+
+function aggregateUsage(trials: StoredTrial[]): UsageAggregate {
+  const measured = trials.filter(
+    (trial) =>
+      trial.usage &&
+      typeof trial.usage.turns === "number" &&
+      typeof trial.usage.ops === "number" &&
+      typeof trial.usage.total_tokens === "number",
+  );
+  const complete = measured.length > 0 && measured.length === trials.length;
+  return {
+    measured_trials: measured.length,
+    total_trials: trials.length,
+    turns: complete ? measured.reduce((sum, t) => sum + t.usage!.turns, 0) : null,
+    ops: complete ? measured.reduce((sum, t) => sum + t.usage!.ops, 0) : null,
+    total_tokens: complete ? measured.reduce((sum, t) => sum + t.usage!.total_tokens, 0) : null,
+  };
+}
+
+function reductionPct(baseline: number | null, candidate: number | null): number | null {
+  return baseline !== null && baseline > 0 && candidate !== null
+    ? (1 - candidate / baseline) * 100
+    : null;
+}
+
+function compareUsage(baselineTrials: StoredTrial[], candidateTrials: StoredTrial[]): UsageComparison {
+  const baseline = aggregateUsage(baselineTrials);
+  const candidate = aggregateUsage(candidateTrials);
+  return {
+    baseline,
+    candidate,
+    token_reduction_percent: reductionPct(baseline.total_tokens, candidate.total_tokens),
+    ops_reduction_percent: reductionPct(baseline.ops, candidate.ops),
+    turns_reduction_percent: reductionPct(baseline.turns, candidate.turns),
+  };
+}
+
+function usageLines(usage: UsageComparison | undefined): string[] {
+  if (!usage || (usage.baseline.measured_trials === 0 && usage.candidate.measured_trials === 0)) {
+    return [];
+  }
+  const fmt = (u: UsageAggregate) =>
+    u.total_tokens === null
+      ? `unknown (${u.measured_trials}/${u.total_trials} measured trials)`
+      : `${u.total_tokens} tokens, ${u.turns} turns, ${u.ops} tool ops`;
+  const tokRed =
+    usage.token_reduction_percent === null ? "unknown" : `${usage.token_reduction_percent.toFixed(2)}%`;
+  const opsRed =
+    usage.ops_reduction_percent === null ? "unknown" : `${usage.ops_reduction_percent.toFixed(2)}%`;
+  return [
+    `- Telemetry usage: ${fmt(usage.baseline)} → ${fmt(usage.candidate)}`,
+    `- Measured token / tool-op reduction: tokens ${tokRed}, tool ops ${opsRed}`,
   ];
 }
 
@@ -169,19 +225,20 @@ export function compareRuns(
     throw new Error("Cannot compare different frozen comparison objectives");
   }
   const duration = compareDurations(baseline.trials, candidate.trials);
+  const usage = compareUsage(baseline.trials, candidate.trials);
   const scenarios = baseline.scenarios.map((scenario): ScenarioComparison => {
-    const baselineCounts = counts(baseline.trials.filter((trial) => trial.scenario === scenario));
-    const candidateCounts = counts(candidate.trials.filter((trial) => trial.scenario === scenario));
+    const baselineTrials = baseline.trials.filter((trial) => trial.scenario === scenario);
+    const candidateTrials = candidate.trials.filter((trial) => trial.scenario === scenario);
+    const baselineCounts = counts(baselineTrials);
+    const candidateCounts = counts(candidateTrials);
     return {
       scenario,
       baseline: baselineCounts,
       candidate: candidateCounts,
       delta_passes: candidateCounts.pass - baselineCounts.pass,
       regression: candidateCounts.pass < baselineCounts.pass,
-      duration: compareDurations(
-        baseline.trials.filter((trial) => trial.scenario === scenario),
-        candidate.trials.filter((trial) => trial.scenario === scenario),
-      ),
+      duration: compareDurations(baselineTrials, candidateTrials),
+      usage: compareUsage(baselineTrials, candidateTrials),
     };
   });
   const labelsApproved = baseline.scenarios.every((scenario) => labels?.labels[scenario]?.status === "approved");
@@ -193,12 +250,30 @@ export function compareRuns(
   const noInvalidRuns = [...baseline.trials, ...candidate.trials].every((trial) => trial.machine_verdict !== "invalid");
   const noRegressions = scenarios.every((scenario) => !scenario.regression);
   const improved = scenarios.some((scenario) => scenario.delta_passes > 0);
-  const objectiveMet = objective.metric === "quality"
-    ? improved
-    : duration.reduction_percent === null ? null
-    // Compare totals directly so an exact threshold is not lost to percentage rounding.
-    : duration.candidate.total_ms! < duration.baseline.total_ms! &&
-      duration.candidate.total_ms! <= duration.baseline.total_ms! * (1 - objective.min_reduction_percent / 100);
+  const objectiveMet = (() => {
+    switch (objective.metric) {
+      case "quality":
+        return improved;
+      case "duration_ms":
+        return duration.reduction_percent === null
+          ? null
+          : duration.candidate.total_ms! < duration.baseline.total_ms! &&
+              duration.candidate.total_ms! <=
+                duration.baseline.total_ms! * (1 - objective.min_reduction_percent / 100);
+      case "total_tokens":
+        return usage.token_reduction_percent === null
+          ? null
+          : usage.candidate.total_tokens! < usage.baseline.total_tokens! &&
+              usage.candidate.total_tokens! <=
+                usage.baseline.total_tokens! * (1 - objective.min_reduction_percent / 100);
+      case "ops":
+        return usage.ops_reduction_percent === null
+          ? null
+          : usage.candidate.ops! < usage.baseline.ops! &&
+              usage.candidate.ops! <=
+                usage.baseline.ops! * (1 - objective.min_reduction_percent / 100);
+    }
+  })();
   const qualityGatePassed = sameFrameworkRevision && noInvalidRuns && noRegressions;
   return {
     baseline_run_id: baseline.run_id,
@@ -211,6 +286,7 @@ export function compareRuns(
     objective,
     objective_met: objectiveMet,
     duration,
+    usage,
     // Draft truth cannot produce a definitive regression or release verdict.
     // Review/approve it first, then create a fresh frozen baseline.
     gate: !labelsApproved ? "needs-human-review" : !qualityGatePassed ? "fail"
@@ -230,9 +306,22 @@ function readJson<T>(path: string): T | undefined {
 
 function trialEvidence(runDir: string, trial: StoredTrial): TrialEvidence {
   const caseDir = join(runDir, dirname(trial.result_path));
+  const taskResult = readJson<{
+    response?: string;
+    summary?: string;
+    communication?: Array<{ message?: string }>;
+  }>(join(caseDir, "task-result.json"));
+  const legacyDecision = readJson<{ response_to_hao?: string }>(
+    join(caseDir, "alignment-decision.json"),
+  );
+  const reply =
+    taskResult?.response ??
+    taskResult?.communication?.[0]?.message ??
+    taskResult?.summary ??
+    legacyDecision?.response_to_hao;
   return {
     expected: readJson(join(caseDir, "expected.json")),
-    decision: readJson(join(caseDir, "alignment-decision.json")),
+    decision: reply ? { response_to_hao: reply } : legacyDecision,
     checks: readJson<TrialEvidence["checks"]>(join(caseDir, "checks.json")) ?? [],
   };
 }
@@ -298,6 +387,7 @@ export function renderReport(
       `- One matching framework revision: ${comparison.same_framework_revision}`,
       `- No invalid runs: ${comparison.no_invalid_runs}`,
       ...(comparison.duration ? durationLines(comparison.duration) : []),
+      ...usageLines(comparison.usage),
       "",
       "This gate reports observed evidence, not approval or statistical proof of future reliability. Review absolute quality, per-case tradeoffs, timing variability, implementation cost and the simpler alternative. Execution time is not a model-cost estimate; optimization spend is separate.",
       "",
@@ -359,6 +449,7 @@ export function renderReport(
       lines.push(
         `${item.regression ? "✗" : "✓"} ${item.scenario}: ${item.baseline.pass} → ${item.candidate.pass} passes (${sign})`,
         ...(item.duration ? durationLines(item.duration) : []),
+        ...usageLines(item.usage),
       );
     }
 

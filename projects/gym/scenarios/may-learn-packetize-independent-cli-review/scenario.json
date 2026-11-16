@@ -1,8 +1,16 @@
 {
   "name": "may-learn-packetize-independent-cli-review",
   "description": "Create a neutral fresh independent review packet.",
-  "categories": ["deputy-learning", "cli-workers", "context"],
-  "tags": ["may-agent", "claude", "learning-development"],
+  "categories": [
+    "deputy-learning",
+    "cli-workers",
+    "context"
+  ],
+  "tags": [
+    "may-agent",
+    "claude",
+    "learning-development"
+  ],
   "tier": "smoke",
   "timeout": 5,
   "agent_type": "may",
@@ -11,8 +19,11 @@
     "unit": "cli-worker-opinions",
     "tier": 3,
     "partition": "development",
-    "competencies": ["execution.packetize-cli-worker"],
+    "competencies": [
+      "execution.packetize-cli-worker"
+    ],
     "criticality": "high",
     "variant_family": "fresh-neutral-packet"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

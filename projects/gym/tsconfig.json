@@ -15,5 +15,5 @@
       "@may-agent/sdk/*": ["../may-agent/packages/sdk/src/*.ts"]
     }
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "../may-agent/src/types/text-assets.d.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts", "../may-agent/packages/sdk/src/text-assets.d.ts"]
 }

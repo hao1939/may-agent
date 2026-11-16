@@ -142,6 +142,8 @@ fields.
 | Task intent, result, changes, Conditions and dependencies | [task.ts](../../../may-agent/packages/sdk/src/task.ts) |
 | Attempts, executors, workflow context and public read views | [workflow.ts](../../../may-agent/packages/sdk/src/workflow.ts) |
 | Result validation and normalization | [task-contract.ts](../../../may-agent/packages/sdk/src/task-contract.ts) |
+| Standalone target execution, catalog discovery and invocation kernel | [standalone.ts](../../../may-agent/packages/sdk/src/standalone.ts) |
+| Unit-test target runner and context stubs | [testing.ts](../../../may-agent/packages/sdk/src/testing.ts) |
 
 The types are defined in source; sketches below show usage, not duplicate schemas.
 
@@ -502,6 +504,31 @@ serve different boundaries:
 Background forks, session steering, cancellation, process control, and human
 delivery are host/agent-tool capabilities only when explicitly granted. They
 are not generic workflow SDK methods.
+
+## Standalone execution and testing
+
+When durable Task persistence, SQLite recovery, and Host transports are not
+needed, `@may-agent/sdk/standalone` executes prompt agents (`alex`), code
+procedures (`<owner>/<procedure>`), and native CLI executors (`codex`, `claude`)
+through the same invocation kernel (`runWorkflowInvocation` and `resolveCallable`)
+used by Hosted Task attempts:
+
+- `run(target, input, options?)` (or `run(options)`) resolves the target's
+  owning App across `projects/*.app`, isolates `PreparedCatalog` to that App's
+  boundary (plus global agents), enforces `inputSchema`, step `schema`,
+  `outputSchema`, `readonly` tool restrictions, inherited deadlines, and
+  descendant process-group cleanup confirmation, and writes `run.json`
+  (`WorkflowRunReport`) when an output directory is supplied;
+- `listTargets(options?)` returns the admitted callable prompt, code, and CLI
+  targets across installed Apps under a bounded discovery timeout; and
+- `runWorkflowTest(moduleOrTarget, options)` in `@may-agent/sdk/testing` runs a
+  workflow module or named target in memory against plugged or scripted `mocks`
+  with zero disk or LLM setup.
+
+Standalone execution owns one ephemeral invocation; it does not create durable
+Tasks, claim SQLite leases, or grant implicit Host mutation authority. Unbound
+Host capabilities (`events.emit`, Task mutations, unconfigured reads) fail
+explicitly unless local read snapshots or fixtures are supplied by the caller.
 
 ## Extension rule
 

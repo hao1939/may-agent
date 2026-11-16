@@ -286,19 +286,28 @@ ${JSON.stringify(packet ?? accessFailure)}
     // assignment incomplete. A terminal error with an output is likewise
     // evidence, not accepted completion.
     const facts = result.facts as
-      | { status?: string; next_steps?: string }
+      | {
+          status?: string;
+          summary?: string;
+          blockers?: { reason?: string; context?: string }[];
+        }
       | undefined;
     const complete =
       result.status === "done" &&
       draft.state === "converged" &&
       facts?.status !== "partial";
-    const blocker =
-      typeof facts?.next_steps === "string"
-        ? facts.next_steps
-        : result.status !== "done" && result.summary
-          ? result.summary
-          : "See the assessment for missing evidence.";
-    const limitation = complete ? "" : `Request incomplete. ${blocker}`;
+    const firstBlocker = facts?.blockers?.[0];
+    const blockerText =
+      firstBlocker && typeof firstBlocker.reason === "string" && firstBlocker.reason.trim()
+        ? typeof firstBlocker.context === "string" && firstBlocker.context.trim()
+          ? `${firstBlocker.reason.trim()}: ${firstBlocker.context.trim()}`
+          : firstBlocker.reason.trim()
+        : typeof facts?.summary === "string" && facts.summary.trim()
+          ? facts.summary.trim()
+          : result.status !== "done" && result.summary
+            ? result.summary
+            : "See the assessment for missing evidence.";
+    const limitation = complete ? "" : `Request incomplete. ${blockerText}`;
     // A partial/failed execution must retain its new evidence gap rather than
     // returning an older record in place of that contribution.
     const reuse =

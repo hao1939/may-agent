@@ -56,7 +56,7 @@ function fixture() {
     reconciliation: { appId: "alex", taskId: selectorId, taskSnapshot: { live: [{ taskId: reviewId, agent: "evaluator", status: "idle" }], truncated: false } },
     read: { tasks: { get: async (id: string) => id === selectorId ? { facts: [] as string[] } : review } },
     closeTask: async (change: TaskClosure) => { closes.push(change); review.status = "closed"; return review; },
-    agents: { call: async () => { throw new Error("Disposition must not invoke a model"); } },
+    call: async () => { throw new Error("Disposition must not invoke a model"); },
     events: { emit: async (): Promise<void> => { throw new Error("Do not commission another review during disposition"); } },
     done: (_summary: string, result: unknown) => result,
   };

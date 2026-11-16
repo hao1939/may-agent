@@ -1,0 +1,77 @@
+[
+  {
+    "id": "bob-judge-converge-duplicate-entry-points",
+    "description": "When reviewing a runtime surface that exposes both `run(target, task)` and a duplicate `runDirectWorkflow(workflow, task)` wrapper, Bob must recommend deleting/converging the duplicate wrapper onto the unified `run()` entry point.",
+    "task": "Review the proposed SDK runtime API surface in `proposals/sdk-surface.md` and return your design judgment.",
+    "files": {
+      "proposals/sdk-surface.md": "# SDK Runtime API Proposal\n\n- `@may-agent/sdk/standalone` already exposes `run(target, task, options)` which accepts agent names, `agent/workflow` targets, and external executors (`codex`, `claude`).\n- This PR keeps a second exported function `runDirectWorkflow(workflowPath, input, options)` that duplicates workspace staging and session transcript collection.\n- Callers in `projects/gym` are confused about when to call `run()` vs `runDirectWorkflow()`.\n"
+    },
+    "expected": {
+      "human_answer": "Recommend removing `runDirectWorkflow` and converging all callers onto the unified `run(target, task, options)` entry point so there is one clear contract without duplicate staging or transcript logic.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "delegations": {
+        "min": 0,
+        "max": 0
+      },
+      "contains_groups": {
+        "response_to_hao": [
+          ["remove", "delete", "retire", "eliminate"],
+          ["rundirectworkflow"],
+          ["converge", "unif", "single", "run("]
+        ]
+      },
+      "response_max_words": 90
+    }
+  },
+  {
+    "id": "bob-judge-reject-unproven-research-adoption",
+    "description": "When an external framework paper/repo solves a problem already covered by `@may-agent/sdk` in 40 lines of code, Bob must recommend `no-change` / `already-supported` rather than adopting the heavy external dependency.",
+    "task": "Evaluate whether Alex should adopt the external `LangGraph-Orchestrator` package from Scout's lead in `findings/2026-11-15-langgraph-orchestrator.md`.",
+    "files": {
+      "findings/2026-11-15-langgraph-orchestrator.md": "# Research Lead: `LangGraph-Orchestrator`\n\n- External library: `LangGraph-Orchestrator`, a 45,000-LOC graph state-machine library for multi-agent step routing.\n- Local comparison: `@may-agent/sdk` already supports deterministic multi-step workflows via `execute(ctx)` and `ctx.call(agent, prompt, { schema })` in ~180 LOC with full TypeScript type safety.\n- Adoption impact: Adopting `LangGraph-Orchestrator` would require rewriting all 23 existing App workflows and adding 14 transitive npm dependencies without solving any active defect.\n"
+    },
+    "expected": {
+      "human_answer": "Recommend no-change (`already-supported` / `unsuitable`): `@may-agent/sdk` already provides typed `execute(ctx)` and `ctx.call()` orchestration with far lower complexity and maintenance cost than adopting a 45k-LOC external dependency.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "delegations": {
+        "min": 0,
+        "max": 0
+      },
+      "contains_groups": {
+        "response_to_hao": [
+          ["no-change", "no change", "reject", "do not adopt", "already-supported", "already supported"],
+          ["cost", "complexity", "dependencies", "maintenance"],
+          ["sdk", "ctx.call", "execute"]
+        ]
+      },
+      "response_max_words": 90
+    }
+  },
+  {
+    "id": "bob-judge-app-owner-workflow-ownership",
+    "description": "When reviewing a workflow placement proposal inside a multi-agent App, Bob must enforce the App-owner workflow rule (all workflows owned by the App owner `alex`, assigning specialists per step via `ctx.call`).",
+    "task": "Review the proposed directory layout for the new diagnosis-and-implementation workflow in `alex.app`.\n\n# Proposed workflow placement in `projects/alex.app`\n\n- `alex.app` is owned by `alex` and includes specialist agents `gym`, `bob`, and `tech-lead`.\n- A candidate PR places half of the workflow under `projects/alex.app/agents/gym/workflows/diagnose.ts` and the other half under `projects/alex.app/agents/tech-lead/workflows/apply.ts`.\n- Operators cannot tell which agent owns the end-to-end workflow or how to invoke a single command.",
+    "expected": {
+      "human_answer": "Place the single unified workflow under the App owner (`projects/alex.app/agents/alex/workflows/`) and have `execute(ctx)` delegate individual steps to specialists (`gym`, `tech-lead`, `bob`) via `ctx.call(...)`.",
+      "exact": {
+        "needs_clarification": false
+      },
+      "delegations": {
+        "min": 0,
+        "max": 0
+      },
+      "contains_groups": {
+        "response_to_hao": [
+          ["alex", "app owner", "agents/alex/workflows"],
+          ["ctx.call", "step", "specialist"],
+          ["single", "unif", "instead of splitting", "consolidate"]
+        ]
+      },
+      "response_max_words": 90
+    }
+  }
+]

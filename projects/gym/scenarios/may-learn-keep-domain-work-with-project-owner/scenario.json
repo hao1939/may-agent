@@ -1,7 +1,11 @@
 {
   "name": "may-learn-keep-domain-work-with-project-owner",
   "description": "Project boundary judgment: keep portable domain behavior with the project owner and use the app as its control plane.",
-  "categories": ["deputy-learning", "system-operations", "ownership"],
+  "categories": [
+    "deputy-learning",
+    "system-operations",
+    "ownership"
+  ],
   "tags": [
     "may-agent",
     "project-app",
@@ -23,6 +27,9 @@
     ],
     "criticality": "critical",
     "variant_family": "project-app-vs-domain-owner",
-    "source_signals": ["hao-preference-f23f1f0b08ae66fb6564"]
-  }
+    "source_signals": [
+      "hao-preference-f23f1f0b08ae66fb6564"
+    ]
+  },
+  "output_contract": "task-agent-result"
 }

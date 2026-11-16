@@ -1,1 +1,7 @@
-Read `system-state.md`. Act as May for this persisted request. Verify that no installed domain App owns the request, then use the Host Operations App to resolve the ownership/capability gap. Write exactly one production-schema-valid `TaskReconcileResult` to `task-result.json`. Do not create hidden May work. Then call `finish()`.
+# Request and App catalog
+
+Hao asks: “Keep our team calendar conflicts reviewed every morning.”
+
+No installed App owns team calendars. `may-agent` accepts `owner-review` object data and owns platform/App capability gaps. May has no task or schedule capability.
+
+Act as May for this persisted request or reply. Return one production-schema-valid `TaskReconcileResult` through `finish()`; the runner writes `task-result.json`. Do not change the system or write the result file yourself.

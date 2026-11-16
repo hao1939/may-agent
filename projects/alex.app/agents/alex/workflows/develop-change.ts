@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import {
   Type,
   admitTaskReconcileResult,
@@ -62,6 +62,7 @@ const implementationSchema = Type.Object(
   {
     decision: Type.Union([
       Type.Literal("ready"),
+      Type.Literal("continue"),
       Type.Literal("redesign"),
       Type.Literal("clarify"),
     ]),
@@ -124,8 +125,10 @@ const deliverySchema = Type.Object({
   report: artifactSchema,
 });
 
+type DevelopChangeInput = Static<typeof inputSchema>;
+
 /** One bounded workflow; Runtime owns admission, persistence, wakes and recovery. */
-export async function execute(ctx: WorkflowContext) {
+export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
   const rec = ctx.reconciliation;
   if (!rec || !ctx.workspace)
     return ctx.blocked(
@@ -231,14 +234,20 @@ export async function execute(ctx: WorkflowContext) {
       verify: input.verify,
     });
     const inputKey = digest(rec.events.items);
-    // Task-local output must be excluded from source acceptance. Do not edit
-    // ignore rules or quietly hide any candidate files in the workflow.
+    // Task-local output must be excluded from source acceptance when stored inside
+    // the worktree. Do not edit ignore rules or quietly hide candidate files.
     await candidate(root, ctx.signal, true);
-    await command(
-      root,
-      ["git", "check-ignore", "-q", "--", archive.directory],
-      ctx.signal,
-    );
+    const relArchive = relative(resolve(root), resolve(archive.directory));
+    const archiveInsideWorktree =
+      relArchive === "" ||
+      (!relArchive.startsWith("..") && !isAbsolute(relArchive));
+    if (archiveInsideWorktree) {
+      await command(
+        root,
+        ["git", "check-ignore", "-q", "--", archive.directory],
+        ctx.signal,
+      );
+    }
     archiveReady = true;
     const fresh = (): Saved => ({
       version: 2,
@@ -350,9 +359,6 @@ export async function execute(ctx: WorkflowContext) {
         `Current input facts (not new authority): ${JSON.stringify(rec.events.items).slice(0, 16_000)}`,
         source,
         "Return the supplied structured decision. Clarify only for a requirement or authority decision.",
-        stage === "implementation"
-          ? "Inspect unfinished work first. Implement directly, check the diff and commit on this Task branch before ready. Do not push, merge, deploy or start another worker."
-          : "Read the relevant source. Return judgment only; no writes. Review must cover the requirement and adequacy of tests, not only the design's internal consistency.",
       ].join("\n\n");
       const response = await ctx.call(agent, prompt, {
         schema,
@@ -432,6 +438,11 @@ export async function execute(ctx: WorkflowContext) {
         if (decision.decision === "redesign") {
           saved.design = undefined;
           saved.feedback = decision.reason;
+          continue;
+        }
+        if (decision.decision === "continue") {
+          saved.feedback = `Continue unfinished implementation: ${decision.reason}`;
+          saved.implementation = undefined;
           continue;
         }
         value = await candidate(root, ctx.signal);

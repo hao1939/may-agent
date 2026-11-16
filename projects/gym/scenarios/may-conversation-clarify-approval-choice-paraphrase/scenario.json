@@ -1,8 +1,16 @@
 {
   "name": "may-conversation-clarify-approval-choice-paraphrase",
   "description": "Apply the same missing-choice judgment to paraphrased generic approval wording.",
-  "categories": ["conversation-follow-through", "deputy-learning"],
-  "tags": ["may-agent", "telegram", "approval", "paraphrase"],
+  "categories": [
+    "conversation-follow-through",
+    "deputy-learning"
+  ],
+  "tags": [
+    "may-agent",
+    "telegram",
+    "approval",
+    "paraphrase"
+  ],
   "tier": "standard",
   "timeout": 5,
   "agent_type": "may",
@@ -18,6 +26,9 @@
     ],
     "criticality": "critical",
     "variant_family": "approval-choice-reply",
-    "source_signals": ["incident-s_1785422680323_301"]
-  }
+    "source_signals": [
+      "incident-s_1785422680323_301"
+    ]
+  },
+  "output_contract": "task-agent-result"
 }

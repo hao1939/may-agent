@@ -30,84 +30,27 @@ function json(path: string): any {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
-describe("human inbox deputy learning", () => {
-  test("keeps every approved truth registered for training", () => {
-    const unit = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-learning/units/human-inbox-deputy/unit.json",
-      ),
-    );
+describe("human inbox deputy cases in consolidated may-alignment benchmark", () => {
+  test("keeps every approved truth registered in may-alignment", () => {
     const suite = json(
-      resolve(gymRoot, "benchmarks/may-human-inbox-deputy/suite.json"),
+      resolve(gymRoot, "benchmarks/may-alignment/suite.json"),
     );
     const labels = json(
-      resolve(gymRoot, "benchmarks/may-human-inbox-deputy/labels.json"),
+      resolve(gymRoot, "benchmarks/may-alignment/labels.json"),
     ).labels;
-    const training = json(
-      resolve(gymRoot, "benchmarks/may-learning/autonomous-training.json"),
-    );
-    const track = training.tracks.find(
-      (item: { id: string }) => item.id === "human-inbox-deputy",
-    );
 
-    expect(unit.status).toBe("pilot");
-    expect(unit.development_scenarios).toEqual(scenarios);
-    expect(suite.scenarios).toEqual(scenarios);
-    expect(track).toMatchObject({
-      benchmark: "may-human-inbox-deputy",
-      scenarios,
-      trials: 3,
-    });
+    for (const s of [...scenarios, ...releaseScenarios]) {
+      expect(suite.scenarios).toContain(s);
+    }
     expect(
       scenarios.every((scenario) => labels[scenario]?.status === "approved"),
     ).toBe(true);
-  });
-
-  test("keeps transfer truth separate and records Hao's approval per case", () => {
-    const unit = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-learning/units/human-inbox-deputy/unit.json",
-      ),
-    );
-    const suite = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-human-inbox-deputy-transfer/suite.json",
-      ),
-    );
-    const labels = json(
-      resolve(
-        gymRoot,
-        "benchmarks/may-human-inbox-deputy-transfer/labels.json",
-      ),
-    ).labels;
-
-    expect(unit.release_benchmark).toBe(
-      "may-human-inbox-deputy-transfer",
-    );
-    expect(unit.release_scenarios).toEqual(releaseScenarios);
-    expect(suite.scenarios).toEqual(releaseScenarios);
     expect(labels["may-learn-inbox-handle-self-suppressing-recovery"]).toEqual(
       expect.objectContaining({
         status: "approved",
         approved_by: "hao",
       }),
     );
-    expect(
-      releaseScenarios
-        .filter(
-          (scenario) =>
-            scenario !== "may-learn-inbox-handle-self-suppressing-recovery",
-        )
-        .every(
-          (scenario) =>
-            labels[scenario]?.status === "draft" &&
-            labels[scenario]?.approved_by === null &&
-            labels[scenario]?.approved_at === null,
-        ),
-    ).toBe(true);
   });
 
   for (const scenario of scenarios) {

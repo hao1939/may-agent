@@ -104,7 +104,53 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
   const toolResults: ToolResult[] = [];
 
   for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
+    const entry = entries[i] as TranscriptEntry & {
+      type?: string;
+      item?: Record<string, any>;
+      usage?: Record<string, any>;
+    };
+
+    // Native CLI (`codex` / `claude`) `events.jsonl` compatibility from `@may-agent/sdk/standalone`
+    if (entry.type === "item.completed" && entry.item) {
+      const item = entry.item;
+      if (item.type === "command_execution") {
+        toolCalls.push({
+          id: String(item.id || ""),
+          name: "bash",
+          arguments: { command: String(item.command || "") },
+          entryIndex: i,
+          callIndex: toolCalls.length,
+        });
+        toolResults.push({
+          toolCallId: String(item.id || ""),
+          toolName: "bash",
+          content: String(item.aggregated_output || ""),
+          isError: item.exit_code !== 0 && item.exit_code !== null,
+          entryIndex: i,
+        });
+      } else if (item.type === "file_change") {
+        const firstPath =
+          Array.isArray(item.changes) && item.changes[0]?.path
+            ? String(item.changes[0].path)
+            : "";
+        toolCalls.push({
+          id: String(item.id || ""),
+          name: "write",
+          arguments: { path: firstPath },
+          entryIndex: i,
+          callIndex: toolCalls.length,
+        });
+      }
+    } else if (entry.type === "turn.completed" && entry.usage) {
+      entry.role = "assistant";
+      const inTok = Number(entry.usage.input_tokens ?? entry.usage.input ?? 0);
+      const outTok = Number(entry.usage.output_tokens ?? entry.usage.output ?? 0);
+      entry.usage = {
+        input: inTok,
+        output: outTok,
+        totalTokens: Number(entry.usage.totalTokens ?? inTok + outTok),
+      };
+    }
 
     // Assistant entries contain tool calls in their content array
     if (entry.role === "assistant" && Array.isArray(entry.content)) {
@@ -283,6 +329,53 @@ export function totalCost(transcript: Transcript): number {
     }
   }
   return cost;
+}
+
+/**
+ * Calculate total tokens consumed across all assistant turns in the transcript.
+ */
+export function totalTokens(transcript: Transcript): number {
+  let tokens = 0;
+  for (const entry of transcript.entries) {
+    if (typeof entry.usage?.totalTokens === "number" && Number.isFinite(entry.usage.totalTokens)) {
+      tokens += entry.usage.totalTokens;
+    }
+  }
+  return tokens;
+}
+
+export interface TranscriptUsageSummary {
+  turns: number;
+  ops: number;
+  total_tokens: number;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: number;
+}
+
+/**
+ * Summarize assistant turns, tool operations, token counts, and estimated cost
+ * from a parsed transcript.
+ */
+export function usageSummary(transcript: Transcript): TranscriptUsageSummary {
+  let inputTokens = 0;
+  let outputTokens = 0;
+  for (const entry of transcript.entries) {
+    if (typeof entry.usage?.input === "number" && Number.isFinite(entry.usage.input)) {
+      inputTokens += entry.usage.input;
+    }
+    if (typeof entry.usage?.output === "number" && Number.isFinite(entry.usage.output)) {
+      outputTokens += entry.usage.output;
+    }
+  }
+  return {
+    turns: countTurns(transcript),
+    ops: totalOps(transcript),
+    total_tokens: totalTokens(transcript),
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cost_usd: totalCost(transcript),
+  };
 }
 
 /**

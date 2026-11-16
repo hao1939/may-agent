@@ -1,8 +1,16 @@
 {
   "name": "may-learn-handle-cli-timeout-and-retry",
   "description": "Recover from a classified CLI timeout with a changed retry.",
-  "categories": ["deputy-learning", "cli-workers", "reliability"],
-  "tags": ["may-agent", "timeout", "learning-development"],
+  "categories": [
+    "deputy-learning",
+    "cli-workers",
+    "reliability"
+  ],
+  "tags": [
+    "may-agent",
+    "timeout",
+    "learning-development"
+  ],
   "tier": "smoke",
   "timeout": 5,
   "agent_type": "may",
@@ -11,8 +19,11 @@
     "unit": "cli-worker-opinions",
     "tier": 3,
     "partition": "development",
-    "competencies": ["reliability.cli-worker-lifecycle"],
+    "competencies": [
+      "reliability.cli-worker-lifecycle"
+    ],
     "criticality": "critical",
     "variant_family": "classified-retry"
-  }
+  },
+  "output_contract": "task-agent-result"
 }

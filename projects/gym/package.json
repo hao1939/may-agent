@@ -18,15 +18,8 @@
     "test": "bun run build && bun test ./test ./scripts && node --test ./benchmarks/may-alignment/score-decision.test.cjs ./benchmarks/may-app-outcome-management/score-task-result.test.cjs",
     "review:may-alignment": "node ./benchmarks/may-alignment/review-suite.cjs",
     "review:may-canary": "bun ./src/loop/canary-review.ts",
-    "review:may-learning": "bun ./src/learning/review-cli.ts",
-    "review:pending": "bun ./src/learning/pending-review-cli.ts",
-    "review:may-learning-release": "bun ./src/learning/release-review-cli.ts",
-    "review:may-deputy-learning": "bun ./src/learning/release-review-cli.ts may-deputy-learning",
-    "review:may-deputy-learning-release": "bun ./src/learning/release-review-cli.ts may-deputy-learning-transfer",
-    "review:may-system-deputy": "bun ./src/learning/track-review-cli.ts system-deputy-operations",
-    "review:may-system-deputy-intake": "bun ./src/learning/track-review-cli.ts system-deputy-learning-intake",
     "benchmark:may-alignment": "bash ./benchmarks/may-alignment/run.sh",
-    "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment && bun run review:may-learning && bun run review:may-learning-release && bun run review:may-deputy-learning && bun run review:may-deputy-learning-release && bun run review:may-system-deputy"
+    "check": "bun run typecheck && bun run test && bun run scenario:validate && bun run review:may-alignment"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
