@@ -14,6 +14,8 @@ import { createTaskAdmissionProcess } from "./composition/workers/task-admission
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
+  DEFAULT_TASK_ATTEMPT_WORKER_TIMEOUT_MS,
+  DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS,
 } from "./composition/workers/task-attempt-process.js";
 import { AppRegistry } from "./core/apps/registry.js";
 import { EventBus } from "./core/events/bus.js";
@@ -219,8 +221,16 @@ export async function runAppRuntime(opts: {
     taskRuntimeMode: backgroundEnabled ? "controllers" : "none",
     appRegistry,
     hostCapacity,
-    executeTaskAttempt: createTaskAttemptProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
-    executeTaskRecovery: createTaskRecoveryProcessExecutor({ bus, definitionSource: workerDefinitionSource }),
+    executeTaskAttempt: createTaskAttemptProcessExecutor({
+      bus,
+      timeoutMs: DEFAULT_TASK_ATTEMPT_WORKER_TIMEOUT_MS,
+      definitionSource: workerDefinitionSource,
+    }),
+    executeTaskRecovery: createTaskRecoveryProcessExecutor({
+      bus,
+      timeoutMs: DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS,
+      definitionSource: workerDefinitionSource,
+    }),
   });
   markStartupPhase("agents-and-tasks");
 
@@ -300,6 +310,7 @@ export async function runAppRuntime(opts: {
     schedulesEnabled: backgroundEnabled && CRON_ENABLED,
     attachTask: appTasks.attach,
     admitConversation: appTasks.admitConversation,
+    admitConversationChange: appTasks.admitConversationChange,
     stopConversationTurn: appTasks.stopTurn,
     admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
       appTasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),

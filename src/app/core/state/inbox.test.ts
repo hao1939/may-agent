@@ -924,3 +924,77 @@ it("reopening fences interrupted attempts and pre-reopen events while preserving
     idempotencyKey: `task:${late.id}`, inboxInputId: late.id, inputContext: { id: late.id, input: late.input, source: late.source } }))
     .toThrow("predates Task reopening");
 });
+
+it("retains exact Task generation across deferred admission and restart without trusting domain context", async () => {
+  const { db, path, config, input } = fixture();
+  admitTaskInput(config, input);
+  const app = defineApp({
+    id: "example", version: 1, agent: "example-owner", inputSchema: Type.Unknown(), tasks: {},
+    task: () => { throw new Error("An exact target must bypass App mapping"); },
+  });
+  const submission = {
+    id: "fenced-feedback", appId: app.id, targetTaskId: "work/one", targetTaskGeneration: 1,
+    source: { kind: "human" as const, id: "operator" },
+    // The domain field cannot weaken the saved Host fence.
+    input: { kind: "feedback", data: { context: { expectedGeneration: 2 } } },
+  };
+  const deferredHost = new AppInboxHost({
+    db, apps: [app], attachTask: () => { throw new Error("Storage temporarily unavailable"); },
+  });
+  expect(deferredHost.admit(submission).item).toMatchObject({ status: "pending", targetTaskGeneration: 1 });
+  deferredHost.close();
+  const original = config.resourceStore.readTask("work/one")!;
+  observeAppTaskIntent(config, {
+    appAgent: "example-owner", creator: { appId: "example" }, creatorRevision: true,
+    intent: { ...original.spec, id: "work/one", outcome: "Revised requirements" },
+  });
+  expect(config.resourceStore.readTask("work/one")?.metadata.generation).toBe(2);
+  const restarted = openState(path);
+  connections.push(restarted.resourceStore.db);
+  const host = new AppInboxHost({ db: restarted.resourceStore.db, apps: [app], attachTask: (input) => admitTaskInput(restarted, input) });
+  setSystemTime(new Date(getAppInboxItem(db, submission.id)!.availableAt! + 1));
+  await host.recoverAdmissions();
+  expect(host.get(submission.id)).toMatchObject({
+    status: "done", handling: { phase: "failed", reason: expect.stringContaining("current generation 2") },
+  });
+  expect(config.resourceStore.readTaskContext({ taskIds: [], admissionIds: [`task:${submission.id}`] }).appTaskAdmissions?.[`task:${submission.id}`]).toBeUndefined();
+  expect(host.admit(submission).created).toBe(false);
+  expect(() => host.admit({ ...submission, targetTaskGeneration: 2 })).toThrow("different input");
+  host.close();
+});
+
+it("returns an accepted exact admission after requirements advance or close, and rejects fresh input to closed work", () => {
+  const { db, config, input } = fixture();
+  admitTaskInput(config, input);
+  const item = createAppInboxItem(db, {
+    id: "accepted-feedback", appId: "example", targetTaskId: "work/one", targetTaskGeneration: 1,
+    source: { kind: "human", id: "operator" }, input: { kind: "feedback", data: {} },
+  }).item;
+  const admission = {
+    appId: item.appId, attachment: { kind: "existing" as const, taskId: item.targetTaskId! },
+    inputContext: { id: item.id, input: item.input, source: item.source },
+    idempotencyKey: `task:${item.id}`, inboxInputId: item.id,
+  };
+  const accepted = admitTaskInput(config, admission);
+  const current = config.resourceStore.readTask("work/one")!;
+  observeAppTaskIntent(config, {
+    appAgent: "example-owner", creator: { appId: "example" }, creatorRevision: true,
+    intent: { ...current.spec, id: "work/one", outcome: "Revised requirements" },
+  });
+  expect(admitTaskInput(config, admission)).toMatchObject({ generation: accepted.generation, changed: false });
+  const revised = config.resourceStore.readTask("work/one")!;
+  cancelAppTask(config, {
+    appId: "example", taskId: "work/one", expectedGeneration: revised.metadata.generation,
+    expectedResourceVersion: revised.metadata.resourceVersion, reason: "Closed fixture",
+  });
+  expect(admitTaskInput(config, admission)).toMatchObject({ generation: accepted.generation, changed: false });
+  const fresh = createAppInboxItem(db, {
+    id: "closed-feedback", appId: "example", targetTaskId: "work/one", targetTaskGeneration: revised.metadata.generation,
+    source: item.source, input: item.input,
+  }).item;
+  expect(() => admitTaskInput(config, {
+    ...admission, inboxInputId: fresh.id, idempotencyKey: `task:${fresh.id}`,
+    inputContext: { id: fresh.id, input: fresh.input, source: fresh.source },
+  })).toThrow();
+  expect(config.resourceStore.readTask("work/one")?.metadata.generation).toBe(2);
+});

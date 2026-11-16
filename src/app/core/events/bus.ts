@@ -276,6 +276,8 @@ export type SystemEvent =
         appId: string;
         /** Continue one exact existing Task instead of resolving new App work. */
         targetTaskId?: string;
+        /** Host envelope fence for exact Task attachment, retained through recovery. */
+        targetTaskGeneration?: number;
         input: { kind: string; data: unknown };
         source?: { kind: "human" | "app" | "system"; id: string };
         parentId?: string;

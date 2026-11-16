@@ -74,6 +74,8 @@ export type AdmitAppInput = {
   parentId?: string;
   /** Attach this inputContext to one exact existing Task in the target App. */
   targetTaskId?: string;
+  /** Host envelope fence for exact Task attachment, retained through recovery. */
+  targetTaskGeneration?: number;
   /** Existing Conversation Topic that this admitted work belongs to. */
   topicId?: string;
   conversationId?: string;

@@ -56,6 +56,10 @@ import {
   type AppEventAdmissionPlan,
   type AppEventAdmissionRoute,
 } from "../core/state/app-event-admission-store.js";
+import { conversationTaskId } from "../core/state/conversation-identity.js";
+import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
+import { listPendingConversationTaskChanges, type ConversationTaskChangeRef } from "../core/state/retained-conversation-task-returns.js";
+import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
 import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
 
@@ -90,6 +94,7 @@ export type StartAppInboxRuntimeOptions = {
   bus: EventBus;
   attachTask?: (input: Parameters<AppTaskAttacher>[0] & { appDir: string }) => ReturnType<AppTaskAttacher>;
   admitConversation?: AppInboxHostOptions["admitConversation"];
+  admitConversationChange?: AppTaskCapability["admitConversationChange"];
   stopConversationTurn?: AppInboxHostOptions["stopConversationTurn"];
   admitTaskEvent?: (input: {
     appId: string;
@@ -246,6 +251,46 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
     armConversationUpdate();
   };
 
+  const admitConversationTaskChanges = (changes: readonly ConversationTaskChangeRef[]): void => {
+    // Admit each Conversation once. Admission reads all eligible saved links;
+    // choosing one representative Topic could hide another caller's report.
+    const seen = new Set<string>();
+    for (const change of changes) {
+      const { appId, conversationId, taskAppId, taskId, attemptId, closedGeneration } = change;
+      if (taskAppId === appId && taskId === conversationTaskId(appId, conversationId)) continue;
+      if (!attemptId && closedGeneration === undefined) continue;
+      const identity = JSON.stringify([
+        appId,
+        conversationId,
+        taskAppId,
+        taskId,
+        attemptId ?? null,
+        closedGeneration ?? null,
+      ]);
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+      try {
+        const admitted = options.admitConversationChange?.({
+          appId,
+          conversationId,
+          taskAppId,
+          taskId,
+          ...(attemptId !== undefined ? { attemptId } : { closedGeneration: closedGeneration! }),
+        });
+        if (!admitted) throw new Error("Conversation Task change has no available execution owner");
+      } catch (error) {
+        // Saved links/outcomes remain due for the existing recovery scan.
+        // One unavailable Conversation must not prevent another from receiving work.
+        reportFailure({
+          appId,
+          conversationId,
+          stage: "conversation-change",
+          disposition: "recovery-pending",
+          error: `Task ${taskAppId}/${taskId}, outcome ${attemptId ?? `closed:${closedGeneration}`}: ${String(error)}`,
+        });
+      }
+    }
+  };
   const host = new AppInboxHost({
     db: options.db,
     apps: loaded.map((entry) => entry.definition),
@@ -398,6 +443,17 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         }
         await host.recoverAdmissions();
         if (!closed) await host.recoverTaskResults();
+        // Exact inbox waits do not cover retained Topic subscriptions or old
+        // Conversation handoffs. Repair missed/late links on the same bounded
+        // recovery turn, using saved receipts for deduplication.
+        if (!closed && options.admitConversationChange) {
+          for (const entry of loaded) {
+            if (closed) return;
+            if (entry.definition.conversation)
+              admitConversationTaskChanges(listPendingConversationTaskChanges(options.db, entry.definition.id, 64));
+            await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          }
+        }
       })
       .catch((error) => reportRuntimeFailure("dependency-recovery", error))
       .finally(() => {
@@ -876,6 +932,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           originEventId: eventRowId(event),
           parentId: typeof data.parentId === "string" ? data.parentId : undefined,
           targetTaskId: readEventTaskTarget(event)?.taskId,
+          targetTaskGeneration: typeof data.targetTaskGeneration === "number" ? data.targetTaskGeneration : undefined,
           conversationId: typeof data.conversationId === "string" ? data.conversationId : undefined,
           conversationSequence:
             typeof data.conversationId === "string"
@@ -910,6 +967,11 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
           void host
             .refreshTaskResults(appId, taskId)
             .catch((error) => reportRuntimeFailure("input-result", error, appId));
+          if (options.admitConversationChange && (closed || typeof data.attemptId === "string"))
+            admitConversationTaskChanges(listConversationTaskLinks(options.db, appId, taskId).map((link) => ({
+              ...link, taskAppId: appId, taskId,
+              ...(closed ? { closedGeneration: Number(data.generation) } : { attemptId: String(data.attemptId) }),
+            })));
         }
         // Closure is already committed; its notification cannot become fresh Task input.
         if (closed) return { accepted: true, by: "task-runtime-notification", route: "direct" };
