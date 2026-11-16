@@ -498,13 +498,6 @@ export async function execute(ctx) {
       read: {
         tasks: {
           list: async () => ({ items: [] }),
-          outcomes: async () => ({
-            projection: "outcomes",
-            manifestVersion: null,
-            sourceCount: 0,
-            outcomeCount: 0,
-            outcomes: [],
-          }),
           get: async () => null,
           workload: async ({ limit } = {}) => ({ items: [], limit }) as any,
         },

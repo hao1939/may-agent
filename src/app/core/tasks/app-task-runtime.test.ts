@@ -62,7 +62,6 @@ import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskWorkflowRunner } from "../../adapters/executors/workflow.js";
 import { createAppTaskReadTool } from "../../app-task-read-tool.js";
-import { readTaskOutcomes } from "../../adapters/reporting/task-outcomes.js";
 import type { TaskAgentRunner, TaskSessionRecovery } from "./execution.js";
 import {
   applyCanonicalAgentResidueCleanup,
@@ -500,7 +499,6 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
       generation: 1,
       entries: [{ appDir: f.appDir, definition: definition() }],
     },
-    readOutcomes: readTaskOutcomes,
     executors: {
       inspect: async ({ read }) => {
         const detail = await read.tasks.get("work/accepted", { acceptedEvidence: { limit: 1 } });
@@ -526,12 +524,6 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
         const nextPage = await read.tasks.list({ limit: 1, cursor: page.nextCursor });
         expect(next.items.map((item: { id: string }) => item.id)).toEqual(nextPage.items.map((item) => item.id));
         expect(next.nextCursor).toBe(nextPage.nextCursor);
-        for (const includeDone of [false, true]) {
-          const projection = { taskId: "work/accepted", includeDone };
-          const outcome = await read.tasks.outcomes(projection);
-          expect(outcome.sourceCount).toBe(2);
-          expect(await toolRead({ action: "outcomes", ...projection })).toEqual(JSON.parse(JSON.stringify(outcome)));
-        }
         await expect(read.tasks.list({ limit: 101 })).rejects.toThrow("between 1 and 100");
         expect(await toolRead({ action: "list", limit: 101 })).toEqual({
           error: "Task list limit must be an integer between 1 and 100",
@@ -557,14 +549,6 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
   const claim = claimObservedAppTask(config, { taskId: "work/accepted", appAgent: "sample-owner", handler: "auto" });
   if (claim.kind !== "claimed") throw new Error("Expected claim");
   completeAppTask(config, claim, { summary: "Accepted report", result: { revision: 1 } });
-  mkdirSync(join(f.appDir, "tasks"), { recursive: true });
-  writeFileSync(
-    join(f.appDir, "tasks", "outcome-projection.json"),
-    JSON.stringify({
-      version: 1,
-      groups: [{ id: "pair", outcome: "Review pair", taskIds: ["work/accepted", "work/active"] }],
-    }),
-  );
   await reconcileLoadedAppTaskOnce({
     bus,
     appId: "sample",

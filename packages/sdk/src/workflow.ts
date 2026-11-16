@@ -225,34 +225,6 @@ export type TaskCreatedPage = {
 
 export type TaskCreatedOptions = Pick<TaskListOptions, "limit" | "cursor">;
 
-/** Opt-in, read-only shadow grouping. Legacy Task identities remain the traceability authority. */
-export type TaskOutcomeProjection = {
-  /** Include ended history. Omitted means open assignments, including idle. */
-  includeDone?: boolean;
-  /** Return only the outcome containing this exact Task after the active/history filter. */
-  taskId?: string;
-};
-
-export type TaskOutcomeView = {
-  id: string;
-  outcome: string;
-  status: TaskView["status"];
-  memberCount: number;
-  memberTaskIds: string[];
-  /** Exact legacy views; callers may use tasks.get(id) for full detail and linked records. */
-  members: TaskView[];
-  /** True when no reviewed manifest mapping exists; lossless fallback prevents hidden Tasks. */
-  ungrouped?: boolean;
-};
-
-export type TaskOutcomePage = {
-  projection: "outcomes";
-  manifestVersion: number | null;
-  sourceCount: number;
-  outcomeCount: number;
-  outcomes: TaskOutcomeView[];
-};
-
 export type ExecutionView = {
   id: string;
   kind: "agent" | "workflow";
@@ -364,8 +336,6 @@ export type AppRead = {
      * fleet. Reading neither accepts work nor authorizes repriority/closure. */
     workload?(options?: TaskWorkloadOptions): Promise<TaskWorkload>;
     list(options?: TaskListOptions): Promise<TaskPage>;
-    /** Opt-in outcome grouping. Optional Host reporting capability; rejects when not installed. */
-    outcomes(options?: TaskOutcomeProjection): Promise<TaskOutcomePage>;
     get(taskId: string, options?: TaskReadOptions): Promise<TaskDetail | null>;
   };
   execution(executionId: string): Promise<ExecutionView | null>;

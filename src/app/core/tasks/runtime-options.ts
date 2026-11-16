@@ -1,7 +1,6 @@
 import { type TaskExecutor } from "@may-agent/sdk";
 import type { AppRegistry, AppRegistrySnapshot } from "../apps/registry.js";
 import { type EventBus } from "../events/bus.js";
-import type { TaskOutcomeReader } from "../reads/reporting.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import { type AppTaskDispatch } from "./controller.js";
 import type { TaskAgentRunner, TaskRunner, TaskSessionRecovery, TaskWorkflowRunner } from "./execution.js";
@@ -42,8 +41,6 @@ export interface AppTaskRuntimeOptions {
   workflows?: TaskWorkflowRunner;
   /** Optional worktree implementation; required only by worktree-backed attempts. */
   workspaces?: TaskWorkspaces;
-  /** Optional projection; canonical Task reads remain available without it. */
-  readOutcomes?: TaskOutcomeReader;
   appRegistry?: AppRegistry;
   /** Prospective canonical generation used during one coordinated reload. */
   appRegistrySnapshot?: AppRegistrySnapshot;

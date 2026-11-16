@@ -227,7 +227,6 @@ function runtimeTaskAttempt(
   const taskReadOptions = {
     getDb: () => descriptor.resourceStore.db,
     taskStateConfig: appTaskConfig(descriptor),
-    readOutcomes: opts.readOutcomes,
     workloadSource: runtimeWorkloadSource(opts, descriptor, input.dispatch, claim.taskId),
   };
   const creator = { appId: descriptor.id, taskId: claim.taskId };

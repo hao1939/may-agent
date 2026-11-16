@@ -647,13 +647,6 @@ describe("portable workflow kernel & runWorkflowTest", () => {
         read: {
           tasks: {
             list: async () => ({ items: [] }),
-            outcomes: async () => ({
-              projection: "outcomes",
-              manifestVersion: null,
-              sourceCount: 0,
-              outcomeCount: 0,
-              outcomes: [],
-            }),
             get: async () => null,
             workload: async ({ limit } = {}) =>
               ({ items: [], summary: { requestedLimit: limit ?? 0 } }) as any,

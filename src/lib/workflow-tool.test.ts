@@ -315,7 +315,6 @@ export async function execute(ctx) {
       appResult: async () => null,
       tasks: {
         list: async () => ({ items: [] }),
-        outcomes: async () => ({ outcomes: [] }),
         get: async () => ({ id: "current", status: "pending", generation: 1, outcome: "resource task" }),
       },
       execution: async () => null,
@@ -1570,7 +1569,6 @@ export async function execute(ctx) {
         taskRead: {
           list: async () => ({ items: [] }),
           get: async () => null,
-          outcomes: async () => ({ items: [] }),
           workload: async () => ({} as any),
         },
         observeEvents: () => () => {},

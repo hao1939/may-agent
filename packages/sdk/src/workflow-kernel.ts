@@ -429,7 +429,7 @@ function defaultUnavailableRead(): AppRead {
   return {
     contract: unavailable,
     appResult: unavailable,
-    tasks: { list: unavailable, outcomes: unavailable, get: unavailable },
+    tasks: { list: unavailable, get: unavailable },
     execution: unavailable,
     metric: unavailable,
   };
