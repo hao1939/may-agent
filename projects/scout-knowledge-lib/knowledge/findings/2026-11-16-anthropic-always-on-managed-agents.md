@@ -1,7 +1,7 @@
 ---
-summary: "Anthropic does not appear to present one named 'always-on agent' proposal. The strongest primary-source match is a stack assembled across Managed Agents, scheduled deployments, persistent memory, long-horizon harnesses, and increasingly hands-off Claude Code workflows."
-triggers: ["Anthropic always-on agents", "Managed Agents", "persistent agents", "long-running Claude", "scheduled deployments", "agent autonomy"]
-source_basis: "Primary Anthropic engineering, research, safety, and Claude Platform documentation reviewed 2026-11-16."
+summary: "Anthropic does not publish a formal white paper named for 'always-on agents.' The strongest title match is the full Engineering article 'Effective harnesses for long-running agents'; the strongest production-architecture source is 'Scaling Managed Agents: Decoupling the brain from the hands.' Together with Anthropic's memory work, they support resumable, artifact-backed agent operation—not continuous model cognition."
+triggers: ["Anthropic always-on agents", "Anthropic white paper", "Effective harnesses for long-running agents", "Managed Agents", "persistent agents", "long-running Claude", "scheduled deployments", "agent autonomy"]
+source_basis: "Full text and metadata of primary Anthropic Engineering and Science articles, official site search, sitemap, safety material, and Claude Platform documentation reviewed 2026-11-16."
 ---
 
 <ai_context>
@@ -12,9 +12,43 @@ This finding disambiguates the phrase “Anthropic always-on agents.” Use it w
 
 **Question:** What publicly described Anthropic idea is likely behind the phrase “always-on agents,” and what does it actually mean?
 
-**Disposition:** New synthesis from several primary Anthropic sources. Scout did not find the exact phrase **“always-on”** used as the name of a single Anthropic architecture in the reviewed material. The likeliest referent is the combination of **Claude Managed Agents**, **scheduled deployments**, **persistent memory**, and Anthropic's long-running-agent operating patterns.
+**Disposition:** Corrected synthesis from several primary Anthropic sources. Scout did not find the exact phrase **“always-on”** used as the name of a single Anthropic architecture. After Hao's correction, Scout searched Anthropic's official site and sitemap beyond the sources in the first pass and read the complete relevant Anthropic articles. The official search returned no result for “white paper” or “always-on agents,” and one result for “long-running agents.” The most likely referent is an Anthropic Engineering article that may have been described informally as a white paper, not a formally published paper or PDF.
 
 **Observed:** 2026-11-16. Source publication dates and live-document limitations are listed below.
+
+## Correction: the strongest “white paper” candidates
+
+No reviewed candidate is formally presented by Anthropic as a **white paper** or conventional research paper: the pages have Engineering or Science team labels, article-style bylines, no paper abstract or stable PDF, and no stated formal publication venue. Anthropic hosts them under `/research/`, but that URL namespace alone does not make them research papers. Ranked by fit to Hao's description:
+
+1. **Strongest title and operating-method match — “Effective harnesses for long-running agents”**  
+   **Anthropic Engineering; Justin Young; November 26, 2025**  
+   https://www.anthropic.com/research/effective-harnesses-for-long-running-agents
+
+   This is the only result returned by Anthropic's official search for “long-running agents,” and its title directly matches the correction signal. It reports a two-role harness for work spanning many context windows: an initializer creates a structured feature list, `init.sh`, progress notes, and an initial Git state; later coding sessions read those artifacts, select one unfinished feature, make incremental progress, test end to end, commit, and leave a clean handoff. Its central claim is that compaction alone does not reliably bridge fresh sessions: long-running work needs external artifacts, incremental scope, recoverable version history, and explicit verification.
+
+   Its reported limitations are material. The demonstration is optimized for full-stack web application development; the model can still mark work complete prematurely, miss bugs that its browser tooling cannot observe, and leave open whether one general agent or specialized testing/QA/cleanup agents perform best. This is an engineering report and recipe, not a proof of reliable indefinite autonomy.
+
+2. **Strongest production-architecture match — “Scaling Managed Agents: Decoupling the brain from the hands”**  
+   **Anthropic Engineering; Lance Martin, Gabe Cemaj, and Michael Cohen; April 8, 2026**  
+   https://www.anthropic.com/research/managed-agents
+
+   This article specifies the hosted architecture behind durable agent runs: a **session** as an append-only external event log, a replaceable **harness** that calls Claude and routes tools, and replaceable **sandboxes/tools** that perform actions. `emitEvent` durably records progress; a crashed harness can `wake(sessionId)`, reload events with `getSession`/`getEvents`, and resume. Sandboxes are provisioned as tools only when needed. Credentials stay outside untrusted execution, either bound to initialized resources or held behind a vault-backed MCP proxy.
+
+   The article's central systems claim is that stable interfaces around state and computation should outlast any particular model or harness. It reports roughly 60% lower p50 and over 90% lower p95 time-to-first-token after separating inference from sandbox startup. It does **not** establish task success rates, safe indefinite operation, or general reliability; it explicitly treats harness design as changing with model capability.
+
+3. **Strongest persistent-memory match — “The components of agent memory”**  
+   **Anthropic Engineering; Lance Martin; November 6, 2026**  
+   https://www.anthropic.com/research/components-of-agent-memory
+
+   This later article defines agent memory as knowledge learned from experience and retained between sessions in readable external context. It distinguishes in-session notes from offline “dreaming,” where agents revisit logs to correct mistakes, consolidate notes, build linked wikis, prune or promote memories, and shape what future sessions preload. Reported evaluations show both benefits and failure modes: a growing Stainless wiki improved combined wiki-plus-search performance from 54% to 61% while saving about 20,000 tokens per question, but another wiki became larger than its source corpus; stale or false memory can mislead future sessions; concurrent writers lost contract facts until the workflow assigned one page per contract; maintenance requires additional compute.
+
+4. **Supporting multi-day deployment account — “Long-running Claude for scientific computing”**  
+   **Anthropic Science; Siddharth Mishra-Sharma; March 23, 2026**  
+   https://www.anthropic.com/research/long-running-claude
+
+   This is a practitioner account of multi-day scientific coding using `CLAUDE.md`, a progress changelog, Git, reference implementations and tests, detached compute sessions, and occasional human steering. It supports the “agents working overnight” interpretation most directly, but the resulting solver remained non-production-grade, had test gaps, and made elementary domain mistakes.
+
+**Assessment of uncertainty:** Candidate 1 is the best match to the words “paper” and “long-running agents.” Candidate 2 is the best match to the durable, resumable service architecture that the first Scout synthesis emphasized. Candidate 3 is the best match if Hao meant persistent cross-session cognition or memory. None is verified as a formal white paper, so the corrected conclusion is not “the white paper does not exist”; it is narrower: **Scout could not verify a formally labeled Anthropic white paper, and the strongest official candidates are full Engineering/Science articles.**
 
 ## Short answer
 
@@ -22,7 +56,15 @@ Anthropic's published direction is not a model that literally thinks continuousl
 
 So “always-on” is best treated as shorthand for **always available, resumable, stateful, and triggerable**, not evidence of an uninterrupted conscious process or a fully unsupervised digital employee.
 
-## Strongest primary sources
+## How the correction changes the original synthesis
+
+- **Changes:** The first version led with Managed Agents as the strongest match and said Anthropic did not appear to have one named proposal. The corrected version gives **“Effective harnesses for long-running agents”** first place as the likeliest source Hao meant, because it is the exact official title match and Anthropic's own search result. The claim is also tightened from “there is no white paper” to “no formally labeled white paper was verified.”
+- **Confirms:** The complete articles still support the original architectural synthesis. Persistence is externalized into feature lists, progress files, Git history, tests, durable event logs, memory directories, and replaceable harness/sandbox processes. Long-running operation is a sequence of model/tool cycles and sessions, not one unbroken context window.
+- **Extends:** “The components of agent memory” adds a missing maintenance loop: durable memory requires retrospective consolidation and correction, not just storage. Offline “dreaming” can repair false notes and build indexes, but can also consume substantial compute, overgrow the corpus, preserve hallucinations, or suffer concurrent-write loss.
+- **Does not support:** None of the sources establishes a general, continuously self-directed digital worker. The demonstrations remain domain-bounded, expensive, dependent on tests or other oracles, vulnerable to weak self-evaluation and stale memory, and subject to explicit security boundaries and human steering.
+- **Governance implication:** The deployment—not merely a model response—becomes the relevant control object: objective, schedule, authority, credentials, memory writers, evidence, budget, model/harness version, interruption, and revocation all need accountable ownership. The Managed Agents article supplies concrete credential isolation, while the harness and memory articles show why verification, provenance, concurrency control, and memory correction are ongoing requirements.
+
+## Supporting primary-source inventory for the stack synthesis
 
 1. **Scaling Managed Agents with stable interfaces** — Anthropic Engineering, published **2026-04-08**  
    https://www.anthropic.com/research/managed-agents
