@@ -26,7 +26,8 @@
 - [`system-periodic-review-20261116.md`](system-periodic-review-20261116.md) — current
   system-wide daily review at 09:00 UTC; a small coordinator delegates finite work,
   collects its result and rearms. The first B2 review/proposal is delivered;
-  implementation/evaluation remain separate approval-gated work.
+  an immediate manual test then exposed unresolved May-only scope regression.
+  Implementation/evaluation remain separate approval-gated work.
 - [`may-periodic-review-20261116.md`](may-periodic-review-20261116.md) — historical
   May-only setup, superseded by the system-wide selection policy above.
 - [`cases-benchmarks-and-agents.md`](cases-benchmarks-and-agents.md) — start here:

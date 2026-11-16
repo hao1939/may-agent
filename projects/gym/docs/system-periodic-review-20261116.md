@@ -1,5 +1,10 @@
 # System-wide daily improvement review — 2026-11-16
 
+**Latest observed state:** the 21:36 UTC manual early pass woke and rearmed, but
+regressed to a May-only checkpoint and omitted explicit scope/incident history.
+The canonical assignment still says May. System-wide continued operation is
+not validated; see the final section. No corrective wake has been sent.
+
 Alex owns system-wide improvement. May was the first pilot, not the standing
 scope boundary. The existing daily Task accepted this correction and is waiting
 for **2026-11-17 at 09:00 UTC**. The cadence remains daily at 09:00 UTC.
@@ -123,3 +128,39 @@ public Task/attempt/session/usage reads, admission, accepted checkpoint chain,
 artifact hashes and unchanged incident accounting. The same directory retains
 the actual submitted input and proposed wording. No new schema, work registry or
 scheduler was introduced.
+
+## Manual early-pass test — scope preservation failed
+
+The user requested one immediate check of the small coordinator. Event
+**`6730521`** woke the same Task; accepted attempt
+`r_1_f023d010-3562-49f0-aba0-e49251d8ea67` ran from **21:36:39.058 to
+21:37:48.307 UTC**. It returned waiting at generation 1, resourceVersion **57**,
+with the same Host-accepted top-level deadline **2026-11-17 09:00 UTC**.
+No new finite Task, benchmark, judge run or implementation was started. The
+completed B2 review remained approval-blocked. Budget counters, the plan and
+previous checkpoint link were preserved.
+
+This was **not a clean success**. The accepted result changed
+`system/improvement-review` to **`may/improvement-review`**, dropped
+`currentScope`, and omitted `incidentHistory`. Its new checkpoint explicitly
+says “May delivery and efficiency improvement review.” Earlier records remain
+recoverable through public accepted evidence and the checkpoint chain; they were
+not erased, but the current policy record no longer faithfully carries them.
+
+The canonical Task outcome/acceptance still contain the original May-only
+assignment. The system-wide correction had been stored in addressed inputs and
+checkpoints rather than a formal specification rewrite. That conflict is a
+plausible contributor, not a proved sole cause. The next repair should reconcile
+the canonical requirements and retained policy, not merely add another reminder
+or schedule another test. That repair was **not** authorized or performed by
+this early-pass commission. The daily deadline remains armed; the observed
+scope regression is unresolved.
+
+Public Task, attempt, transcript, usage and before/after preservation checks are
+retained in `.state/gym-coordinator-early-pass-20261116-01/verification.json`.
+The one owner attempt used **seven replies**, **69.249 seconds**, and a scoped
+SDK model-cost estimate of **$0.671136**, excluding this operator session.
+Billing/operator cost remain unknown. A missing `python` command was recovered
+with Node for checkpoint JSON parsing; no functional verification is implied.
+There was no finish-envelope rejection in this attempt. This manual wake does
+not establish automatic due-day behavior or repeated unattended reliability.
