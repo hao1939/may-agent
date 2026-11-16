@@ -309,6 +309,14 @@ test("a managed Task accepts progress after helper cancellation and continues fr
       const owner = config.initialState?.model?.id === "owner";
       const attempt = owner ? ++ownerRuns : 0;
       if (!owner) helperRuns++;
+      if (owner) {
+        const finish = config.initialState?.tools?.find((tool) => tool.name === "finish");
+        expect(finish).toBeDefined();
+        const parameters = finish!.parameters as Record<string, unknown>;
+        expect(parameters.type).toBe("object");
+        expect(parameters.anyOf).toBeUndefined();
+        expect(parameters.oneOf).toBeUndefined();
+      }
       let replies = 0;
       return createAgentRun({
         ...config,
@@ -324,11 +332,29 @@ test("a managed Task accepts progress after helper cancellation and continues fr
             if (replies === 1) {
               return call("finish", {
                 status: "done",
+                summary: "Missing Task result",
+              }, "missing-done-output");
+            }
+            expect(continuationContext).toContain("finish() error");
+            if (replies === 2) {
+              return call("finish", {
+                status: "done",
+                summary: "Extra Task result field",
+                output: {
+                  state: "converged",
+                  summary: "Not yet admissible",
+                  facts: [],
+                  unexpected: true,
+                },
+              }, "extra-done-field");
+            }
+            if (replies === 3) {
+              return call("finish", {
+                status: "done",
                 summary: "Invalid domain checkpoint cannot complete the Task",
                 output: { checkpoint: "reviewed" },
               }, "invalid-done");
             }
-            expect(continuationContext).toContain("finish() error");
             return call("finish", {
               status: "done",
               summary: "Reviewed retained draft",

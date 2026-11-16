@@ -8,19 +8,12 @@ type HostedTaskInput = TaskAgentInput | TaskWorkflowInput;
 type TranslationOptions = {
   now?: () => number;
   diagnosticFacts?: readonly string[];
+  storageFacts?: unknown;
 };
 
-const MAX_INLINE_EXECUTION_FACTS_BYTES = 8192;
-
-function serializedFact(facts: unknown, runId: string | null = null): string {
+function serializedFact(facts: unknown): string {
   try {
-    const serialized = JSON.stringify(facts);
-    if (Buffer.byteLength(serialized, "utf8") <= MAX_INLINE_EXECUTION_FACTS_BYTES) {
-      return `execution-facts:${serialized}`;
-    }
-    return runId
-      ? `execution-facts:see workflow-run:${runId} (exceeds ${MAX_INLINE_EXECUTION_FACTS_BYTES}-byte Task facts bound)`
-      : `execution-facts:[exceeds ${MAX_INLINE_EXECUTION_FACTS_BYTES}-byte Task facts bound]`;
+    return `execution-facts:${JSON.stringify(facts)}`;
   } catch {
     return "execution-facts:[unserializable]";
   }
@@ -28,6 +21,7 @@ function serializedFact(facts: unknown, runId: string | null = null): string {
 
 function hasDomainProgressFacts(facts: unknown): boolean {
   if (facts === undefined) return false;
+  if (typeof facts === "string") return facts.trim().length > 0;
   if (Array.isArray(facts)) {
     return (
       facts.length > 0
@@ -37,25 +31,20 @@ function hasDomainProgressFacts(facts: unknown): boolean {
   return true;
 }
 
-function directFactStrings(facts: unknown, runId: string | null = null): string[] {
+function directFactStrings(facts: unknown): string[] {
   if (facts === undefined) return [];
   if (
     Array.isArray(facts)
     && facts.length <= 32
     && facts.every((fact) => typeof fact === "string" && fact.trim().length > 0)
-    && Buffer.byteLength(JSON.stringify(facts), "utf8") <= MAX_INLINE_EXECUTION_FACTS_BYTES
   ) return facts;
-  return [serializedFact(facts, runId)];
+  return [serializedFact(facts)];
 }
 
-function factStrings(
-  facts: unknown,
-  diagnosticFacts: readonly string[] = [],
-  runId: string | null = null,
-): string[] {
-  const directFacts = directFactStrings(facts, runId);
+function factStrings(facts: unknown, diagnosticFacts: readonly string[] = []): string[] {
+  const directFacts = directFactStrings(facts);
   if (directFacts.length + diagnosticFacts.length <= 32) return [...directFacts, ...diagnosticFacts];
-  return [serializedFact(facts, runId), ...diagnosticFacts];
+  return [serializedFact(facts), ...diagnosticFacts];
 }
 
 function resultRunId(result: RunResult): string | null {
@@ -155,6 +144,15 @@ export function translateHostedBlockedContribution(
     }
   }
   const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
+  if (
+    (hint?.report === true || hint?.continue === true)
+    && (facts === undefined || (Array.isArray(facts) && facts.length === 0))
+  ) {
+    return rejectedBlockedResult(
+      "Blocked result report or continuation requires contribution facts; Host diagnostics are not agent evidence",
+      runId,
+    );
+  }
   if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
     return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
   }
@@ -193,7 +191,7 @@ export function translateHostedBlockedContribution(
     {
       state: "waiting",
       summary,
-      facts: factStrings(facts, options.diagnosticFacts, runId),
+      facts: factStrings(options.storageFacts === undefined ? facts : options.storageFacts, options.diagnosticFacts),
       actions: hint?.actions === undefined ? [] : hint.actions,
       ...(hint?.report === true ? { report: true as const } : {}),
       ...(hint?.continue === true ? { continue: true as const } : {}),
@@ -246,7 +244,7 @@ export function translateHostedExecutionResult(
     {
       state: "converged",
       summary,
-      facts: factStrings(contribution.facts, [], runId),
+      facts: factStrings(contribution.facts),
       actions: [],
       ...outputResult(contribution.output),
     },

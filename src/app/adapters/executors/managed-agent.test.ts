@@ -22,6 +22,7 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
       state: "waiting", continue: true, summary: "Patch written; verification remains.",
       facts: ["Patch saved"], result: { changes: ["parser.ts"] },
     };
+    const blockedFacts = { payload: "x".repeat(9000) };
     let calls = 0;
     const runner = createTaskAgentRunner({ manager: {
       callAgent: async (_agent: string, task: string, options: CallAgentOptions) => {
@@ -36,7 +37,12 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
           const stream = createAssistantMessageEventStream();
           stream.push({ type: "done", reason: "toolUse", message: usageReply({
             stopReason: "toolUse", content: [{ type: "toolCall", id: "report", name: "finish",
-              arguments: { status, summary: report.summary, output: report } }],
+              arguments: {
+                status,
+                summary: report.summary,
+                output: report,
+                ...(status === "blocked" ? { facts: blockedFacts } : {}),
+              } }],
           }) });
           return stream;
         };
@@ -64,9 +70,10 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
           state: "waiting",
           summary: report.summary,
           result: report,
-          facts: [],
+          facts: [`execution-facts:${JSON.stringify(blockedFacts)}`],
         },
       });
+      expect(result.handlerResult.facts[0]).not.toContain("workflow-run:");
     }
     expect(result.handlerResult.actions).toEqual([]);
   } finally {

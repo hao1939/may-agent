@@ -22,6 +22,27 @@ import type { TaskDefinitionSource, TaskWorkflowInput, TaskWorkflowRunner } from
 import { localAgentDir } from "../discovery/local-agents.js";
 import { translateHostedBlockedContribution } from "./hosted-result-settlement.js";
 
+const MAX_INLINE_WORKFLOW_FACT_BYTES = 8192;
+
+function workflowFactsForTaskStorage(facts: unknown, runId: string): unknown {
+  let bytes: number;
+  if (
+    Array.isArray(facts)
+    && facts.length < 32
+    && facts.every((fact) => typeof fact === "string" && fact.trim().length > 0)
+  ) {
+    bytes = facts.reduce((total, fact) => total + Buffer.byteLength(fact, "utf8"), 0);
+  } else {
+    try {
+      bytes = Buffer.byteLength(JSON.stringify(facts), "utf8");
+    } catch {
+      bytes = Buffer.byteLength("[unserializable]", "utf8");
+    }
+  }
+  if (bytes <= MAX_INLINE_WORKFLOW_FACT_BYTES) return facts;
+  return [`workflow-contribution-facts:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`];
+}
+
 /** Composition selects the built-in runner. Core does not load workflows. */
 export function createTaskWorkflowRunner(
   input: { manager: SubagentManager; bus: EventBus },
@@ -204,7 +225,10 @@ async function executeTaskWorkflow(
       : translateHostedBlockedContribution(
           input,
           { summary, output: result.output, facts: result.facts, runId },
-          { diagnosticFacts },
+          {
+            diagnosticFacts,
+            storageFacts: workflowFactsForTaskStorage(result.facts, runId),
+          },
         ).handlerResult;
     bus.emit({
       [EVENT_RECORD_ONLY]: true,

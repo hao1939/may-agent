@@ -97,6 +97,42 @@ export async function execute(ctx) {
   }
 });
 
+test("settles oversized facts from the actual public run() without inventing a workflow reference", async () => {
+  const root = mkdtempSync(join(tmpdir(), "hosted-result-large-facts-"));
+  try {
+    const workflowDir = join(root, "projects", "sample.app", "agents", "owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(join(root, "projects", "sample.app", "app.ts"), "export default {};\n");
+    writeFileSync(
+      join(root, "projects", "sample.app", "agents", "owner", "agent.json"),
+      JSON.stringify({ name: "owner", description: "Fixture owner", domain: "test", model: "test", tools: ["finish"] }),
+    );
+    writeFileSync(join(root, "projects", "sample.app", "agents", "owner", "AGENTS.md"), "# Fixture owner\n");
+    writeFileSync(
+      join(workflowDir, "blocked.ts"),
+      `export const name = "blocked";
+export const description = "Oversized public evidence fixture";
+export async function execute(ctx) {
+  return { ...ctx.blocked("fixture blocked", { payload: "x".repeat(9000) }), output: false };
+}
+`,
+    );
+    const publicResult = await run("owner/blocked", {}, { projectRoot: root, models: {} });
+    const facts = { payload: "x".repeat(9000) };
+    expect(publicResult.ok).toBe(true);
+    expect(translateHostedExecutionResult(publicResult, input())).toMatchObject({
+      handlerBlocked: true,
+      handlerResult: {
+        state: "waiting",
+        result: { value: false },
+        facts: [`execution-facts:${JSON.stringify(facts)}`],
+      },
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test.each([
   [false, { value: false }],
   [null, { value: null }],
@@ -182,6 +218,18 @@ test("large public fact arrays retain exact evidence through the Task-compatible
     translateHostedExecutionResult(runResult({ type: "done", summary: "Direct evidence", facts: direct }), input())
       .handlerResult.facts,
   ).toEqual(direct);
+});
+
+test.each(["done", "blocked"] as const)("oversized public %s facts remain inline and lossless", (type) => {
+  const facts = { payload: "x".repeat(9000) };
+  const translated = translateHostedExecutionResult(
+    runResult(type === "done"
+      ? { type, summary: "Evidence complete", facts }
+      : { type, reason: "Await external review", facts }),
+    input(),
+  );
+  expect(translated.handlerResult.facts).toEqual([`execution-facts:${JSON.stringify(facts)}`]);
+  expect(translated.handlerResult.facts[0]).not.toContain("workflow-run:");
 });
 
 test.each([
@@ -412,6 +460,90 @@ test.each([
   expect(translated.handlerResult.resultRejected).toBeUndefined();
 });
 
+test.each([
+  ["report", { report: true }],
+  ["continue", { continue: true }],
+  ["report and continue", { report: true, continue: true }],
+] as const)("Host diagnostics cannot provide contribution evidence for %s", (_label, settlement) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "No agent evidence", facts: [] }),
+    input({ tasks: { translateBlockedResult: () => settlement } }),
+    { diagnosticFacts: ["workflow-blocker-context:[]"] },
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "error",
+      resultRejected: true,
+      summary: expect.stringContaining("Host diagnostics are not agent evidence"),
+      facts: ["execution-run:run-1"],
+      actions: [],
+    },
+  });
+});
+
+test.each([
+  ["report", { report: true }],
+  ["continue", { continue: true }],
+  ["report and continue", { report: true, continue: true }],
+] as const)("blank scalar facts cannot support %s", (_label, settlement) => {
+  for (const facts of ["", "   ", "\t\n"]) {
+    const translated = translateHostedExecutionResult(
+      runResult({ type: "blocked", reason: "No progress", facts }),
+      input({ tasks: { translateBlockedResult: () => settlement } }),
+    );
+    expect(translated.handlerResult).toMatchObject({ state: "error", resultRejected: true });
+  }
+});
+
+test.each([
+  [false, "execution-facts:false"],
+  [null, "execution-facts:null"],
+  [{ inspected: false }, 'execution-facts:{"inspected":false}'],
+  ["observed", "execution-facts:\"observed\""],
+  [["", false, "  ", "observed"], 'execution-facts:["",false,"  ","observed"]'],
+] as const)("valid domain progress facts remain eligible: %p", (facts, storedFact) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Domain progress", facts }),
+    input({ tasks: { translateBlockedResult: () => ({ report: true, continue: true }) } }),
+  );
+  expect(translated.handlerResult).toMatchObject({
+    state: "waiting",
+    report: true,
+    continue: true,
+    facts: [storedFact],
+  });
+});
+
+test("domain facts remain eligible while a real Condition can wait without facts", () => {
+  const progress = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Domain progress", facts: { inspected: false } }),
+    input({ tasks: { translateBlockedResult: () => ({ report: true, continue: true }) } }),
+  );
+  expect(progress.handlerResult).toMatchObject({
+    state: "waiting",
+    report: true,
+    continue: true,
+    facts: ['execution-facts:{"inspected":false}'],
+  });
+
+  const wait = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Await review" }),
+    input({ tasks: { translateBlockedResult: () => ({
+      retryAfterMs: 25,
+      conditions: [{ requestId: "review" }],
+    }) } }),
+    { now: () => 100 },
+  );
+  expect(wait.handlerResult).toMatchObject({
+    state: "waiting",
+    reviewAt: 125,
+    conditions: [{ requestId: "review" }],
+    facts: [],
+  });
+  expect(wait.handlerResult.resultRejected).toBeUndefined();
+});
+
 test("blocked translator actions and reports use ordinary Task admission", () => {
   const action = {
     kind: "retire-condition" as const,
@@ -439,7 +571,7 @@ test("blocked translator actions and reports use ordinary Task admission", () =>
   expect(malformedReport.handlerResult).toMatchObject({
     state: "error",
     resultRejected: true,
-    summary: expect.stringContaining("report requires waiting or incomplete, true, and non-empty facts"),
+    summary: expect.stringContaining("requires contribution facts"),
   });
 
   const malformedAction = translateHostedExecutionResult(
