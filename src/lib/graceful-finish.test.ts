@@ -75,6 +75,7 @@ const partial = {
   status: "blocked",
   summary: progress.summary,
   output: progress,
+  facts: progress.facts,
 };
 
 function stalledTool(onStopped: () => void = () => {}): AgentTool {
@@ -314,6 +315,14 @@ test("a managed Task accepts progress after helper cancellation and continues fr
           }
           if (attempt === 2) {
             continuationContext = JSON.stringify(context);
+            if (replies === 1) {
+              return call("finish", {
+                status: "done",
+                summary: "Invalid domain checkpoint cannot complete the Task",
+                output: { checkpoint: "reviewed" },
+              }, "invalid-done");
+            }
+            expect(continuationContext).toContain("finish() error");
             return call("finish", {
               status: "done",
               summary: "Reviewed retained draft",
@@ -387,7 +396,9 @@ test("a managed Task accepts progress after helper cancellation and continues fr
               agent: "owner",
               inputSchema: Type.Object({}),
               workspace: { kind: "local", localPath: "." },
-              tasks: {},
+              tasks: {
+                translateBlockedResult: () => ({ continue: true, report: true }),
+              },
             }),
           },
         ],
@@ -423,7 +434,11 @@ test("a managed Task accepts progress after helper cancellation and continues fr
     expect(task.status.phase).toBe("pending");
     expect(task.status.inputWaits).toMatchObject({ "task:review": { pending: true } });
     const attempt = store.readAttempt(task.status.observedAttemptId!);
-    expect(attempt?.acceptedResult, task.status.summary).toMatchObject(progress);
+    expect(attempt?.acceptedResult, task.status.summary).toMatchObject({
+      ...progress,
+      report: true,
+      result: progress,
+    });
     expect(task.status.executionFailures ?? 0).toBe(0);
     expect(manager.status()).toEqual([]);
     await run();

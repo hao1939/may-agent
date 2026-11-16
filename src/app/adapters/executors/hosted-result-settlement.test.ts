@@ -255,6 +255,26 @@ test("blocked uses the App translator and controlled clock for continuation, Con
   });
 });
 
+test.each([
+  [false, { value: false }],
+  [null, { value: null }],
+  [{ checkpoint: "partial" }, { checkpoint: "partial" }],
+] as const)("blocked preserves non-Task checkpoint data %p", (output, expected) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Checkpoint retained", output, facts: ["checkpoint:saved"] }),
+    input({ tasks: { translateBlockedResult: () => ({ continue: true }) } }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "waiting",
+      continue: true,
+      result: expected,
+      facts: ["checkpoint:saved"],
+    },
+  });
+});
+
 test("blocked translator null intentionally retains an unqualified wait", () => {
   const translated = translateHostedExecutionResult(
     runResult({ type: "blocked", reason: "Wait without a fabricated prerequisite", output: { checkpoint: 1 } }),
@@ -344,6 +364,28 @@ test("bad hints and rejected App validation are contract failures, not empty suc
     resultRejected: true,
     summary: expect.stringContaining("observer is unavailable"),
   });
+});
+
+test.each([
+  ["actions null", { actions: null }],
+  ["actions object", { actions: {} }],
+  ["actions string", { actions: "retire" }],
+  ["report false", { report: false }],
+  ["report null", { report: null }],
+  ["report string", { report: "true" }],
+  ["report number", { report: 1 }],
+] as const)("blocked translator rejects supplied invalid descriptor value: %s", (_label, descriptor) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Malformed descriptor", facts: ["checkpoint:saved"] }),
+    input({ tasks: { translateBlockedResult: () => descriptor as unknown as AppTaskBlockedSettlement } }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: { state: "error", resultRejected: true, actions: [] },
+  });
+  expect(translated.handlerResult.reviewAt).toBeUndefined();
+  expect(translated.handlerResult.conditions).toBeUndefined();
+  expect(translated.handlerResult.requests).toBeUndefined();
 });
 
 test("blocked translator actions and reports use ordinary Task admission", () => {

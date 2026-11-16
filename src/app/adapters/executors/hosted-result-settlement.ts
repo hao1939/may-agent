@@ -56,7 +56,7 @@ function outputResult(output: unknown): Pick<NormalizedTaskHandlerResult, "resul
 }
 
 const DEFAULT_WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
-const TRANSLATED_WAIT_HINT_KEYS = new Set([...DEFAULT_WAIT_HINT_KEYS, "actions", "report"]);
+const TRANSLATED_WAIT_HINT_KEYS = new Set([...DEFAULT_WAIT_HINT_KEYS, "actions", "report", "continue"]);
 
 function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlement {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -120,6 +120,15 @@ export function translateHostedBlockedContribution(
     }
   }
   const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
+  if (hint && Object.hasOwn(hint, "actions") && !Array.isArray(hint.actions)) {
+    return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
+  }
+  if (hint && Object.hasOwn(hint, "report") && hint.report !== true) {
+    return rejectedBlockedResult("Blocked result report must be true when supplied", runId);
+  }
+  if (hint && Object.hasOwn(hint, "continue") && hint.continue !== true) {
+    return rejectedBlockedResult("Blocked result continue must be true when supplied", runId);
+  }
 
   let reviewAt: number | undefined;
   if (hint?.retryAfterMs !== undefined) {
@@ -138,8 +147,9 @@ export function translateHostedBlockedContribution(
       state: "waiting",
       summary,
       facts: factStrings(facts),
-      actions: hint?.actions ?? [],
+      actions: hint?.actions === undefined ? [] : hint.actions,
       ...(hint?.report === true ? { report: true as const } : {}),
+      ...(hint?.continue === true ? { continue: true as const } : {}),
       ...(reviewAt !== undefined ? { reviewAt } : {}),
       ...(hint?.conditions !== undefined ? { conditions: hint.conditions } : {}),
       ...(hint?.requests !== undefined ? { requests: hint.requests } : {}),

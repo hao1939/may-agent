@@ -1,5 +1,8 @@
 import type { TaskAttempt } from "@may-agent/sdk/app";
 import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk/app";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
+import { Type } from "typebox";
+import { createFinishTool } from "@may-agent/sdk/runtime";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
@@ -73,6 +76,50 @@ function taskAttemptRole(
   return { agent, instructions };
 }
 
+function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
+  const base = createFinishTool({ projectRoot: input.executionPaths.workspaceDir });
+  const parameters = Type.Union([
+    Type.Object({
+      status: Type.Literal("done"),
+      summary: Type.String({ pattern: "\\S" }),
+      output: appTaskAgentResultSchema,
+      facts: Type.Optional(Type.Unknown()),
+    }),
+    Type.Object({
+      status: Type.Literal("blocked"),
+      summary: Type.String({ pattern: "\\S" }),
+      output: Type.Optional(Type.Unknown()),
+      facts: Type.Optional(Type.Unknown()),
+    }),
+  ]);
+  return {
+    ...base,
+    description:
+      `${base.description} Done output must satisfy the Task result contract; blocked output remains domain checkpoint data.`,
+    parameters,
+    execute: async (toolCallId, params, signal, onUpdate) => {
+      const report = params as { status?: unknown; output?: unknown };
+      if (report.status === "done") {
+        const admitted = normalizeTaskHandlerResult(
+          report.output,
+          { type: "done", summary: "", runId: null },
+          {
+            validateAction: input.descriptor.app.tasks?.validateAction,
+            validateCondition: input.descriptor.app.tasks?.validateCondition,
+          },
+        );
+        const problem = admitted.resultRejected
+          ? admitted.summary
+          : (input.validateResult?.(admitted as import("@may-agent/sdk/app").TaskReconcileResult) ?? null);
+        if (problem) {
+          return { content: [{ type: "text" as const, text: `finish() error: ${problem}` }], details: undefined };
+        }
+      }
+      return base.execute(toolCallId, params, signal, onUpdate);
+    },
+  };
+}
+
 async function executeTaskAgent(
   input: TaskAgentInput,
   manager: SubagentManager,
@@ -142,13 +189,7 @@ async function executeTaskAgent(
     recoveryOwner: APP_TASK_RECOVERY_OWNER,
     trace,
     requireFinish: true,
-    outputSchema: appTaskAgentResultSchema,
-    validateOutput: (output: unknown) => {
-      const admitted = normalizeTaskHandlerResult(output, { type: "done", summary: "", runId: null }, admissionOptions);
-      return admitted.resultRejected
-        ? admitted.summary
-        : (input.validateResult?.(admitted as import("@may-agent/sdk/app").TaskReconcileResult) ?? null);
-    },
+    createFinish: () => createManagedTaskFinish(input),
     toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,

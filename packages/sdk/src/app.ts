@@ -336,6 +336,8 @@ export type AppTaskBlockedSettlement = {
   actions?: TaskAction[];
   /** Publish partial progress while the Task retains its remaining wait. Requires non-empty domain facts. */
   report?: true;
+  /** Continue the same Task in a fresh attempt after retaining this checkpoint. */
+  continue?: true;
 };
 
 export type AppTaskBlockedResultContext = {

@@ -8,6 +8,7 @@ import type { TaskAgentInput } from "../../core/tasks/execution.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../../core/tasks/app-task-output-paths.js";
 import { executePreparedAgent, prepareAgentExecution } from "../../../lib/agent-execution.js";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
 import type { CallAgentOptions } from "../../../lib/manager.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
@@ -132,13 +133,20 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
     let prompt = "";
     const runner = createTaskAgentRunner({
       manager: {
-        callAgent: async (_agent: string, text: string, options: { validateOutput: (value: unknown) => string | null }) => {
-          expect(options.validateOutput({ state: "waiting", summary: "Pending", facts: [], conditions: [{
-            id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: {},
-          }] })).toContain("expected.state must be ready");
-          expect(options.validateOutput({ state: "waiting", summary: "Pending", facts: [], conditions: [{
-            id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: { state: "ready" },
-          }] })).toBeNull();
+        callAgent: async (_agent: string, text: string, options: { createFinish: () => AgentTool }) => {
+          const finish = options.createFinish();
+          const invalid = await finish.execute("invalid", { status: "done", summary: "Pending", output: {
+            state: "waiting", summary: "Pending", facts: [], conditions: [{
+              id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: {},
+            }],
+          } });
+          expect(invalid.content).toEqual([{ type: "text", text: expect.stringContaining("expected.state must be ready") }]);
+          const valid = await finish.execute("valid", { status: "done", summary: "Pending", output: {
+            state: "waiting", summary: "Pending", facts: [], conditions: [{
+              id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: { state: "ready" },
+            }],
+          } });
+          expect(valid.terminate).toBe(true);
           prompt = text;
           return {
             status: "done",
