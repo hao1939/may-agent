@@ -114,7 +114,10 @@ snapshot, report index and raw records under Task output `.state/alex-developmen
 Current references use `{ path, sha256 }`; read the exact bytes and verify hashes.
 A checksum proves byte identity, not that an agent's claim is true. Correlate
 specialist execution IDs and subprocess records with trusted runtime/session
-records and actual Git state. Reports alone are insufficient. The
+records and actual Git state. Capture those runtime/process observations through
+an existing trusted channel outside agent-writable source space as they occur;
+a worker-writable `.state` file is not independent proof of its own producer.
+Reports alone are insufficient. The
 [existing evidence helper](../../../../shared/tools/task-evidence.ts) supplies
 retention, not independent outcome truth.
 
@@ -186,3 +189,8 @@ exact acceptance, protected files, baseline/probe, authoritative evidence source
 installed capabilities, authority and cumulative budget. Only then consider native
 registration, reviewed truth/check controls and a separately authorized bounded
 execution. There is no model-ready baseline or execution permission in this draft.
+
+Preparation checks validated the local document links and active catalog. A copy
+without this review-only directory produced exactly the same active case list;
+adding these documents registered no benchmark or case. No scorer controls or
+agent behavior have been executed or validated by those preparation checks.
