@@ -204,13 +204,14 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(persistedReport.cleanup).toEqual({ confirmed: true });
   });
 
-  test("invokes prompt helpers through the shared engine when agents is explicitly bound", async () => {
+  test("executes the supplied agents capability binding without substituting intrinsic delegation", async () => {
     const env = setupDirectLayout();
-    const turns = new Map<string, number>();
-    const invoked: string[] = [];
+    const providerCalls: string[] = [];
+    const toolCalls: unknown[] = [];
+    let cleaned = 0;
     const result = await runDirectWorkflow({
       target: "owner",
-      input: "Delegate one bounded review",
+      input: "Use the explicitly bound agents service",
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -218,21 +219,35 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
       capabilityProviders: {
-        agents: () => { throw new Error("manager-bound agents backend must not be used"); },
+        agents: ({ agentName }) => {
+          providerCalls.push(agentName);
+          return {
+            tools: [{
+              name: "agents",
+              label: "Bound agents fixture",
+              description: "Uses the caller-supplied service binding",
+              parameters: { type: "object", properties: {} } as any,
+              execute: async (_id, params) => {
+                toolCalls.push(params);
+                return { content: [{ type: "text", text: JSON.stringify({ denied: "fixture policy" }) }] };
+              },
+            }],
+            cleanup: () => { cleaned += 1; },
+          };
+        },
       },
       runAgent: async (opts): Promise<DirectAgentRunResult> => {
         const prep = await prepareDirectAgentExecution(opts);
-        invoked.push(opts.agentName);
+        let turn = 0;
         prep.prepared.runner.streamFn = () => {
           const stream = createAssistantMessageEventStream();
-          const turn = (turns.get(opts.agentName) ?? 0) + 1;
-          turns.set(opts.agentName, turn);
-          const content = opts.agentName === "owner" && turn === 1
+          turn += 1;
+          const content = turn === 1
             ? [{ type: "toolCall" as const, id: "tc_agents", name: "agents", arguments: {
-                action: "call", agent: "reviewer", task: "Review through the common engine",
+                action: "call", agent: "reviewer", task: "must be denied by the supplied binding",
               } }]
-            : [{ type: "toolCall" as const, id: `tc_finish_${opts.agentName}_${turn}`, name: "finish", arguments: {
-                status: "done", summary: opts.agentName === "reviewer" ? "helper complete" : "owner complete",
+            : [{ type: "toolCall" as const, id: "tc_finish", name: "finish", arguments: {
+                status: "done", summary: "bound provider executed",
               } }];
           stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
           return stream;
@@ -243,6 +258,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
             signal: opts.signal,
             deadlineAt: opts.deadlineAt,
           });
+          prep.cleanup();
           return {
             ...executed,
             sessionId: prep.sessionId,
@@ -252,16 +268,19 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
             executionManifest: prep.executionManifest,
             cleanupConfirmed: await prep.cleanupAsync(),
           };
-        } finally {
-          prep.cleanup();
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
         }
       },
     });
 
     expect(result.ok).toBeTrue();
-    expect(result.result).toMatchObject({ type: "done", summary: "owner complete" });
-    expect(invoked).toEqual(["owner", "reviewer"]);
-    expect(result.childSessions.map((session) => session.agent)).toEqual(["reviewer", "owner"]);
+    expect(result.result).toMatchObject({ type: "done", summary: "bound provider executed" });
+    expect(providerCalls).toEqual(["owner"]);
+    expect(toolCalls).toEqual([{ action: "call", agent: "reviewer", task: "must be denied by the supplied binding" }]);
+    expect(result.childSessions.map((session) => session.agent)).toEqual(["owner"]);
+    expect(cleaned).toBe(1);
   });
 
   test("surfaces unconfirmed descendant cleanup as an explicit error while retaining workspace and report evidence", async () => {

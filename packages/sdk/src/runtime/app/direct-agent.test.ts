@@ -305,7 +305,7 @@ describe("direct agent tool policy", () => {
     const agentDir = join(root, "agents", "example");
     await mkdir(agentDir, { recursive: true });
     await writeFile(join(agentDir, "agent.json"), JSON.stringify({
-      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db", "tasks"],
+      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db", "agents"],
     }));
     let cleaned = 0;
     try {
@@ -319,10 +319,124 @@ describe("direct agent tool policy", () => {
               execute: async () => ({ content: [{ type: "text", text: "ok" }] }) }],
             cleanup: () => { cleaned += 1; },
           }),
-          tasks: () => { throw new Error("later provider failed"); },
+          agents: () => { throw new Error("later provider failed"); },
         },
       })).rejects.toThrow("later provider failed");
       expect(cleaned).toBe(1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("owns cleanup before rejecting an empty capability binding", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-empty-binding-cleanup-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db"],
+    }));
+    let syncCleaned = 0;
+    let asyncCleaned = 0;
+    try {
+      await expect(prepareDirectAgentExecution({
+        agentName: "example", task: "test", projectRoot: root, workRoot: root,
+        agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        capabilityProviders: {
+          query_db: () => ({
+            tools: [],
+            cleanup: () => { syncCleaned += 1; },
+            cleanupAsync: async () => { asyncCleaned += 1; return true; },
+          }),
+        },
+      })).rejects.toThrow("returned no tools");
+      expect({ syncCleaned, asyncCleaned }).toEqual({ syncCleaned: 1, asyncCleaned: 1 });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("attempts every mixed closer once and preserves the preparation error with cleanup uncertainty", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-mixed-cleanup-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+      name: "example", description: "example", domain: "test", model: "test",
+      tools: ["query_db", "agents", "cli-delegation"],
+    }));
+    const closed: string[] = [];
+    const tool = (name: string) => ({
+      name, description: "fixture", parameters: { type: "object", properties: {} } as any,
+      execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
+    });
+    let caught: unknown;
+    try {
+      try {
+        await prepareDirectAgentExecution({
+          agentName: "example", task: "test", projectRoot: root, workRoot: root,
+          agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+          models: { test: { id: "test-model" } as any },
+          capabilityProviders: {
+            query_db: () => ({
+              tools: [tool("duplicate")],
+              cleanupAsync: async () => { closed.push("query_db:async"); return true; },
+            }),
+            agents: () => ({
+              tools: [tool("duplicate")],
+              cleanup: () => { closed.push("agents:sync"); throw new Error("agents cleanup failed"); },
+            }),
+            "cli-delegation": () => ({
+              tools: [tool("cli")],
+              cleanup: () => { closed.push("cli:sync"); },
+              cleanupAsync: async () => { closed.push("cli:async"); return true; },
+            }),
+          },
+        });
+      } catch (error) {
+        caught = error;
+      }
+      expect(caught).toBeInstanceOf(Error);
+      expect((caught as Error).name).toBe("WorkflowUnconfirmedCleanupError");
+      expect(((caught as any).causeError as Error).message).toContain("duplicate");
+      expect(closed.sort()).toEqual(["agents:sync", "cli:async", "cli:sync", "query_db:async"].sort());
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("retains cleanup uncertainty across cleanup then cleanupAsync and closes every resource once", async () => {
+    const root = await mkdtemp(join(tmpdir(), "may-direct-split-cleanup-"));
+    const agentDir = join(root, "agents", "example");
+    await mkdir(agentDir, { recursive: true });
+    await writeFile(join(agentDir, "agent.json"), JSON.stringify({
+      name: "example", description: "example", domain: "test", model: "test", tools: ["query_db", "agents"],
+    }));
+    const closed: string[] = [];
+    const tool = (name: string) => ({
+      name, description: "fixture", parameters: { type: "object", properties: {} } as any,
+      execute: async () => ({ content: [{ type: "text", text: "ok" }] }),
+    });
+    try {
+      const prep = await prepareDirectAgentExecution({
+        agentName: "example", task: "test", projectRoot: root, workRoot: root,
+        agentsRoot: join(root, "agents"), sharedRoot: join(root, "shared"), outputRoot: join(root, "output"),
+        models: { test: { id: "test-model" } as any },
+        capabilityProviders: {
+          query_db: () => ({
+            tools: [tool("query_db")],
+            cleanup: () => { closed.push("query_db:sync"); },
+            cleanupAsync: async () => { closed.push("query_db:async"); return true; },
+          }),
+          agents: () => ({
+            tools: [tool("agents")],
+            cleanup: () => { closed.push("agents:sync"); throw new Error("sync close failed"); },
+          }),
+        },
+      });
+      expect(() => prep.cleanup()).toThrow("cleanup handlers failed");
+      expect(await prep.cleanupAsync()).toBe(false);
+      expect(await prep.cleanupAsync()).toBe(false);
+      expect(closed.sort()).toEqual(["agents:sync", "query_db:async", "query_db:sync"].sort());
     } finally {
       await rm(root, { recursive: true, force: true });
     }

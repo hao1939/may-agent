@@ -7,7 +7,7 @@
  */
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { Type, type TSchema } from "typebox";
+import type { TSchema } from "typebox";
 import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -211,16 +211,29 @@ export function resolveDirectToolPolicy(
 type DirectToolResources = {
   cleanupSync: Array<() => void>;
   cleanupAsync: Array<() => Promise<boolean>>;
+  cleanupConfirmed: boolean;
 };
 
-async function cleanupDirectToolResources(resources: DirectToolResources): Promise<boolean> {
-  let confirmed = true;
+function cleanupDirectToolResourcesSync(resources: DirectToolResources): void {
+  const failures: unknown[] = [];
   for (const close of resources.cleanupSync.splice(0).reverse()) {
     try {
       close();
-    } catch {
-      confirmed = false;
+    } catch (error) {
+      resources.cleanupConfirmed = false;
+      failures.push(error);
     }
+  }
+  if (failures.length > 0) {
+    throw new AggregateError(failures, "One or more direct capability cleanup handlers failed");
+  }
+}
+
+async function cleanupDirectToolResources(resources: DirectToolResources): Promise<boolean> {
+  try {
+    cleanupDirectToolResourcesSync(resources);
+  } catch {
+    // The retained flag keeps uncertainty visible after cleanup() followed by cleanupAsync().
   }
   const asyncClosers = resources.cleanupAsync.splice(0).reverse();
   const outcomes = await Promise.all(
@@ -232,7 +245,8 @@ async function cleanupDirectToolResources(resources: DirectToolResources): Promi
       }
     }),
   );
-  return confirmed && outcomes.every(Boolean);
+  if (!outcomes.every(Boolean)) resources.cleanupConfirmed = false;
+  return resources.cleanupConfirmed;
 }
 
 async function buildDirectTools(
@@ -286,13 +300,13 @@ async function buildDirectTools(
           sessionId,
         });
         const binding: DirectCapabilityBinding = Array.isArray(provided) ? { tools: provided } : provided;
+        if (binding?.cleanup) cleanupSync.push(binding.cleanup);
+        if (binding?.cleanupAsync) cleanupAsync.push(binding.cleanupAsync);
         if (!binding || !Array.isArray(binding.tools) || binding.tools.length === 0) {
           throw new Error(
             `Capability provider "${capability}" returned no tools for agent ${config.name}`,
           );
         }
-        if (binding.cleanup) cleanupSync.push(binding.cleanup);
-        if (binding.cleanupAsync) cleanupAsync.push(binding.cleanupAsync);
         tools.push(...binding.tools);
         break;
       }
@@ -337,7 +351,7 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
     ...readFileWritePolicy(options.sharedRoot, options.projectRoot),
     execution: { root: resolve(options.workRoot), sourceRoot: resolve(options.projectRoot) },
   };
-  const resources: DirectToolResources = { cleanupSync: [], cleanupAsync: [] };
+  const resources: DirectToolResources = { cleanupSync: [], cleanupAsync: [], cleanupConfirmed: true };
   try {
     const tools = await buildDirectTools(
       config,
@@ -394,9 +408,7 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
       sessionPath,
       model: config.model,
       executionManifest,
-      cleanup: () => {
-        for (const close of resources.cleanupSync.splice(0).reverse()) close();
-      },
+      cleanup: () => cleanupDirectToolResourcesSync(resources),
       cleanupAsync: () => cleanupDirectToolResources(resources),
     };
   } catch (error) {
@@ -503,99 +515,6 @@ export function defaultDirectToolDenials(configuredTools: readonly string[]): To
     const reason = DIRECT_HOST_TOOL_DENIALS[name];
     return reason ? [{ name, reason }] : [];
   });
-}
-
-const directAgentsToolParameters = Type.Object({
-  action: Type.Union([Type.Literal("call"), Type.Literal("list")]),
-  agent: Type.Optional(Type.String()),
-  task: Type.Optional(Type.String()),
-  input: Type.Optional(Type.Unknown()),
-  tools: Type.Optional(Type.Union([Type.Literal("full"), Type.Literal("readonly")])),
-  timeoutMs: Type.Optional(Type.Number()),
-  operationAllowance: Type.Optional(Type.Number()),
-});
-
-function createDirectInvocationAgentsTool(input: {
-  list: () => string[];
-  call: (params: {
-    target: string;
-    input: unknown;
-    tools?: "full" | "readonly";
-    timeoutMs?: number;
-    operationAllowance?: number;
-  }) => Promise<unknown>;
-}): AgentTool {
-  return {
-    name: "agents",
-    label: "Agents",
-    description:
-      "Call a bounded prompt agent or code procedure through the current shared invocation engine. " +
-      "Only synchronous call/list are supported in this execution scope; durable or detached work belongs to the Host.",
-    parameters: directAgentsToolParameters,
-    execute: async (_toolCallId, rawParams) => {
-      try {
-        const params = rawParams as {
-          action: "call" | "list";
-          agent?: string;
-          task?: string;
-          input?: unknown;
-          tools?: "full" | "readonly";
-          timeoutMs?: number;
-          operationAllowance?: number;
-        };
-        if (params.action === "list") {
-          return { content: [{ type: "text", text: JSON.stringify({ targets: input.list() }) }], details: undefined };
-        }
-        const target = params.agent?.trim();
-        if (!target) throw new Error("agents.call requires agent");
-        const hasInput = Object.hasOwn(params, "input");
-        const callInput = hasInput ? params.input : params.task;
-        if (callInput === undefined) throw new Error("agents.call requires task or input");
-        const result = await input.call({
-          target,
-          input: callInput,
-          ...(params.tools ? { tools: params.tools } : {}),
-          ...(params.timeoutMs !== undefined ? { timeoutMs: params.timeoutMs } : {}),
-          ...(params.operationAllowance !== undefined ? { operationAllowance: params.operationAllowance } : {}),
-        });
-        return { content: [{ type: "text", text: JSON.stringify(result) }], details: undefined };
-      } catch (error) {
-        return {
-          content: [{ type: "text", text: JSON.stringify({ error: error instanceof Error ? error.message : String(error) }) }],
-          details: undefined,
-        };
-      }
-    },
-  };
-}
-
-const directCliDelegationParameters = Type.Object({
-  tool: Type.Union([Type.Literal("claude"), Type.Literal("codex")]),
-  prompt: Type.String(),
-  timeoutMs: Type.Optional(Type.Number()),
-});
-
-function createDirectInvocationCliTool(
-  call: (tool: "claude" | "codex", prompt: string, timeoutMs?: number) => Promise<unknown>,
-): AgentTool {
-  return {
-    name: "run_cli_agent",
-    label: "Run CLI Agent",
-    description: "Run one bounded CLI helper through the current shared invocation scope.",
-    parameters: directCliDelegationParameters,
-    execute: async (_toolCallId, rawParams) => {
-      try {
-        const params = rawParams as { tool: "claude" | "codex"; prompt: string; timeoutMs?: number };
-        const result = await call(params.tool, params.prompt, params.timeoutMs);
-        return { content: [{ type: "text", text: JSON.stringify(result) }], details: undefined };
-      } catch (error) {
-        return {
-          content: [{ type: "text", text: JSON.stringify({ status: "failed", error: error instanceof Error ? error.message : String(error) }) }],
-          details: undefined,
-        };
-      }
-    },
-  };
 }
 
 export type DirectAgentFixtureHandler = (call: {
@@ -1437,74 +1356,10 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (!config) {
       throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
     }
-    const invocationProviders: Record<string, DirectCapabilityProvider> = {
-      ...options.capabilityProviders,
-    };
-    if (config.tools.includes("agents") && options.capabilityProviders?.agents) {
-      invocationProviders.agents = () => [
-        createDirectInvocationAgentsTool({
-          list: () => [
-            ...preparedCatalog.prompts.keys(),
-            ...[...preparedCatalog.proceduresByOwner.entries()].flatMap(([owner, procedures]) =>
-              [...procedures.keys()].map((name) => `${owner}/${name}`),
-            ),
-          ].sort(),
-          call: async ({ target, input, tools, timeoutMs, operationAllowance }) => {
-            if (depth + 1 > maxDepth) throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
-            const nestedTimeoutMs = timeoutMs === undefined ? stepControl.timeoutMs : Math.min(timeoutMs, stepControl.timeoutMs);
-            const nested = await runDirectWorkflow(
-              {
-                ...options,
-                reconciliation,
-                executionId: undefined,
-                module: undefined,
-                workflowName: undefined,
-                target,
-                input,
-                outputSchema: undefined,
-                tools,
-                operationAllowance,
-                signal: stepControl.signal,
-                timeoutMs: nestedTimeoutMs,
-                deadlineAt: Math.min(stepControl.deadlineAt, Date.now() + nestedTimeoutMs),
-                traceDir: undefined,
-              },
-              {
-                depth: depth + 1,
-                allowance: stepControl.allowance,
-                catalog: preparedCatalog,
-                callerOwner: agent,
-                tools,
-              },
-            );
-            childSessions.push(...nested.childSessions);
-            if (!nested.ok) throw nested.error ?? new Error(nested.report.error?.message ?? `Execution ${nested.status}`);
-            return {
-              id: nested.report.executionId,
-              kind: nested.result?.type === "done" ? "done" : "blocked",
-              ...(nested.result ?? {}),
-              cleanupConfirmed: nested.report.cleanup.confirmed,
-            };
-          },
-        }),
-      ];
-    }
-    if (config.tools.includes("cli-delegation") && options.capabilityProviders?.["cli-delegation"]) {
-      invocationProviders["cli-delegation"] = () => [
-        createDirectInvocationCliTool(async (tool, cliPrompt, timeoutMs) => {
-          const boundedTimeout = timeoutMs === undefined ? stepControl.timeoutMs : Math.min(timeoutMs, stepControl.timeoutMs);
-          return executeCliStep(tool, cliPrompt, undefined, {
-            ...stepControl,
-            timeoutMs: boundedTimeout,
-            deadlineAt: Math.min(stepControl.deadlineAt, Date.now() + boundedTimeout),
-          });
-        }),
-      ];
-    }
     const denials = options.resolveToolDenials
       ? options.resolveToolDenials(agent, config.tools)
       : defaultDirectToolDenials(config.tools).filter(
-          (denial) => invocationProviders[denial.name] === undefined,
+          (denial) => options.capabilityProviders?.[denial.name] === undefined,
         );
 
     const directRun = await executeAgent({
@@ -1529,7 +1384,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       toolPolicy: callOpts?.tools,
       operationAllowance,
       toolDenials: denials,
-      capabilityProviders: invocationProviders,
+      capabilityProviders: options.capabilityProviders,
       onSessionStarted: options.onSessionStarted,
       drainProcessGroup: options.drainProcessGroup,
       timeoutMs: stepControl.timeoutMs,
