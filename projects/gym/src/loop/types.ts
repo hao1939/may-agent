@@ -23,10 +23,13 @@ export type ReviewReasonCode =
   | "fixture_problem"
   | "harness_problem";
 export type LabelStatus = "draft" | "approved";
+/** What this test can establish; never infer behavior from a decision artifact. */
+export type EvaluationKind = "judgment" | "behavior";
 
 export interface InlineBenchmarkCase {
   id: string;
   description?: string;
+  evaluation_kind?: EvaluationKind;
   task: string;
   state?: string;
   files?: Record<string, string>;
@@ -48,6 +51,8 @@ export interface InlineBenchmarkCase {
 }
 
 export interface BenchmarkSuite {
+  /** Default for cases; individual cases may override it. Missing means unclassified. */
+  evaluation_kind?: EvaluationKind;
   name: string;
   version: number;
   scenarios: string[];
@@ -91,6 +96,8 @@ export interface ScenarioCheck {
 }
 
 export interface TrialUsageTelemetry {
+  tokens_measured?: boolean;
+  ops_measured?: boolean;
   turns: number;
   ops: number;
   total_tokens: number;
@@ -132,6 +139,8 @@ export interface StoredTrial {
   result_path: string;
   artifact_path: string | null;
   transcript_path: string | null;
+  /** Retained final workspace, separate from the original environment. */
+  workspace_path?: string | null;
   duration_ms: number | null;
   usage?: TrialUsageTelemetry | null;
   provenance: {
@@ -154,6 +163,8 @@ export interface LoopRunManifest {
   agent: string;
   trials_per_scenario: number;
   scenarios: string[];
+  /** Frozen case-level scope. Historical runs remain unclassified. */
+  evaluation_kinds?: Record<string, EvaluationKind | null>;
   started_at: string;
   completed_at: string | null;
   proof: {

@@ -63,6 +63,8 @@ export interface TranscriptEntry {
 }
 
 export interface Transcript {
+  /** Malformed/skipped entries make telemetry coverage incomplete. */
+  parse_errors?: number;
   /** All raw entries from the JSONL */
   entries: TranscriptEntry[];
   /** All tool calls made by the assistant */
@@ -89,14 +91,17 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
 
   const raw = readFileSync(transcriptPath, "utf-8");
   const entries: TranscriptEntry[] = [];
+  let parseErrors = 0;
 
   for (const line of raw.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
-      entries.push(JSON.parse(trimmed));
+      const entry = JSON.parse(trimmed);
+      if (entry && typeof entry === "object" && !Array.isArray(entry)) entries.push(entry);
+      else parseErrors++;
     } catch {
-      // Skip malformed lines
+      parseErrors++;
     }
   }
 
@@ -143,12 +148,14 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
       }
     } else if (entry.type === "turn.completed" && entry.usage) {
       entry.role = "assistant";
-      const inTok = Number(entry.usage.input_tokens ?? entry.usage.input ?? 0);
-      const outTok = Number(entry.usage.output_tokens ?? entry.usage.output ?? 0);
+      const inTok = entry.usage.input_tokens ?? entry.usage.input;
+      const outTok = entry.usage.output_tokens ?? entry.usage.output;
       entry.usage = {
         input: inTok,
         output: outTok,
-        totalTokens: Number(entry.usage.totalTokens ?? inTok + outTok),
+        totalTokens: entry.usage.totalTokens ?? (
+          typeof inTok === "number" && typeof outTok === "number" ? inTok + outTok : undefined
+        ),
       };
     }
 
@@ -200,7 +207,7 @@ export function loadTranscript(transcriptPath: string): Transcript | null {
     }
   }
 
-  return { entries, toolCalls, toolResults };
+  return { entries, toolCalls, toolResults, parse_errors: parseErrors };
 }
 
 // ── Query Helpers ──────────────────────────────────────────────────────
@@ -351,6 +358,9 @@ export interface TranscriptUsageSummary {
   input_tokens: number;
   output_tokens: number;
   cost_usd: number;
+  /** Zero tokens without complete usage records is not a measured zero. */
+  tokens_measured: boolean;
+  ops_measured: boolean;
 }
 
 /**
@@ -368,7 +378,11 @@ export function usageSummary(transcript: Transcript): TranscriptUsageSummary {
       outputTokens += entry.usage.output;
     }
   }
+  const assistantEntries = transcript.entries.filter((entry) => entry.role === "assistant");
   return {
+    tokens_measured: !transcript.parse_errors && assistantEntries.length > 0 && assistantEntries.every((entry) =>
+      Number.isSafeInteger(entry.usage?.totalTokens) && entry.usage!.totalTokens! >= 0),
+    ops_measured: !transcript.parse_errors && assistantEntries.length > 0,
     turns: countTurns(transcript),
     ops: totalOps(transcript),
     total_tokens: totalTokens(transcript),

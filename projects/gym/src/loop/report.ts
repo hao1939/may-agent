@@ -65,17 +65,23 @@ function aggregateUsage(trials: StoredTrial[]): UsageAggregate {
   const measured = trials.filter(
     (trial) =>
       trial.usage &&
-      typeof trial.usage.turns === "number" &&
-      typeof trial.usage.ops === "number" &&
-      typeof trial.usage.total_tokens === "number",
+      trial.usage.tokens_measured !== false &&
+      trial.usage.ops_measured !== false &&
+      [trial.usage.turns, trial.usage.ops, trial.usage.total_tokens].every(
+        (value) => Number.isSafeInteger(value) && value >= 0,
+      ),
   );
   const complete = measured.length > 0 && measured.length === trials.length;
+  const total = (key: "turns" | "ops" | "total_tokens"): number | null => {
+    const value = measured.reduce((sum, trial) => sum + trial.usage![key], 0);
+    return complete && Number.isSafeInteger(value) ? value : null;
+  };
   return {
     measured_trials: measured.length,
     total_trials: trials.length,
-    turns: complete ? measured.reduce((sum, t) => sum + t.usage!.turns, 0) : null,
-    ops: complete ? measured.reduce((sum, t) => sum + t.usage!.ops, 0) : null,
-    total_tokens: complete ? measured.reduce((sum, t) => sum + t.usage!.total_tokens, 0) : null,
+    turns: total("turns"),
+    ops: total("ops"),
+    total_tokens: total("total_tokens"),
   };
 }
 
@@ -98,7 +104,7 @@ function compareUsage(baselineTrials: StoredTrial[], candidateTrials: StoredTria
 }
 
 function usageLines(usage: UsageComparison | undefined): string[] {
-  if (!usage || (usage.baseline.measured_trials === 0 && usage.candidate.measured_trials === 0)) {
+  if (!usage) {
     return [];
   }
   const fmt = (u: UsageAggregate) =>
@@ -211,6 +217,9 @@ export function compareRuns(
     candidate.proof.label_catalog_fingerprint !== suppliedTruthFingerprint
   )) throw new Error("Cannot compare without the exact frozen truth catalog");
   if (!sameStrings(baseline.scenarios, candidate.scenarios)) throw new Error("Cannot compare different scenario sets");
+  if (fingerprintValue(baseline.evaluation_kinds ?? null) !== fingerprintValue(candidate.evaluation_kinds ?? null)) {
+    throw new Error("Cannot compare different judgment/behavior scopes");
+  }
   if (baseline.trials_per_scenario !== candidate.trials_per_scenario) throw new Error("Cannot compare different trial counts");
   if (
     !baseline.proof.input_fingerprint || baseline.proof.input_fingerprint !== candidate.proof.input_fingerprint ||
@@ -353,6 +362,8 @@ export function renderReport(
       (trial.machine_verdict !== "pass" || trial.label_status !== "approved") &&
       !latestReview(reviews, trial.scenario, trial.trial),
   );
+  const scope = (scenario: string) => manifest.evaluation_kinds?.[scenario] ?? "unclassified";
+  const scopeCounts = (kind: string) => manifest.scenarios.filter((scenario) => scope(scenario) === kind).length;
   const lines = [
     `# Gym ${manifest.phase === "test" ? "Test" : "Verification"} Report`,
     "",
@@ -362,6 +373,8 @@ export function renderReport(
     `- Agent: \`${manifest.agent}\``,
     `- Trials: ${manifest.trials.length}`,
     `- Objective: ${describeComparisonObjective(manifest.comparison_objective)}`,
+    `- Test scope: ${scopeCounts("judgment")} judgment, ${scopeCounts("behavior")} behavior, ${scopeCounts("unclassified")} unclassified scenarios`,
+    "- Limits: judgment tests assess choices, not execution. Behavior tests assess only the observed actions and outcomes in their fixtures. Neither proves general production reliability.",
     `- Human adjudications: ${reviews.length}`,
     "",
     "## Review status",
@@ -371,7 +384,16 @@ export function renderReport(
     `- Review queue: ${pendingTrials.length} trial${pendingTrials.length === 1 ? "" : "s"}`,
     approvedScenarios.length === manifest.scenarios.length
       ? "- Result status: machine verdicts use human-approved truth"
-      : "- Result status: **provisional — draft or missing truth cannot establish a May regression**",
+      : "- Result status: **provisional — draft or missing truth cannot establish an agent regression**",
+    "",
+    "## Evidence by purpose",
+    "",
+    "| Purpose | Scenarios | Pass trials | Fail trials | Invalid trials |",
+    "| --- | ---: | ---: | ---: | ---: |",
+    ...["judgment", "behavior", "unclassified"].map((kind) => {
+      const observed = counts(manifest.trials.filter((trial) => scope(trial.scenario) === kind));
+      return `| ${kind} | ${scopeCounts(kind)} | ${observed.pass} | ${observed.fail} | ${observed.invalid} |`;
+    }),
     "",
   ];
   if (comparison) {
@@ -403,7 +425,7 @@ export function renderReport(
     lines.push(
       `### ${icon} ${scenario}`,
       "",
-      `Machine: ${result.pass}/${scenarioTrials.length} pass, ${result.fail} fail, ${result.invalid} invalid · Ground truth: **${labelStatus}**`,
+      `Scope: **${scope(scenario)}** · Machine: ${result.pass}/${scenarioTrials.length} pass, ${result.fail} fail, ${result.invalid} invalid · Ground truth: **${labelStatus}**`,
     );
     const firstEvidence = scenarioTrials[0] ? trialEvidence(runDir, scenarioTrials[0]) : undefined;
     if (firstEvidence?.expected?.human_answer) {
@@ -427,6 +449,7 @@ export function renderReport(
         lines.push(`  - ${kind} · ${check.name}: ${cleanLine(check.detail ?? "failed")}`);
       }
       lines.push(`  - Evidence: \`${trial.result_path}\``);
+      if (trial.workspace_path) lines.push(`  - Final workspace: \`${trial.workspace_path}\``);
     }
     lines.push("");
   }

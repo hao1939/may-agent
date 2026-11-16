@@ -1,5 +1,6 @@
 {
   "name": "scout-judgment-v1",
+  "evaluation_kind": "judgment",
   "version": 1,
   "artifact": "task-result.json",
   "evaluator": "../may-alignment/score-decision.cjs",

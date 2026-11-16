@@ -1,5 +1,6 @@
 {
   "name": "may-deputy-alignment-v1",
+  "evaluation_kind": "judgment",
   "version": 3,
   "artifact": "task-result.json",
   "labels_file": "labels.json",

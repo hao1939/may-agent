@@ -541,11 +541,14 @@ describe("loop evaluation", () => {
           ),
         ).toBe(true);
         expect(existsSync(scenarioSandbox)).toBe(false);
+        expect(existsSync(join(created.runDir, stored.trials[0]!.workspace_path!, "task-result.json"))).toBe(true);
 
         const rescored = rescoreRun(created.runDir);
         expect(rescored.trials[0]?.original_verdict).toBe("pass");
         expect(rescored.trials[0]?.rescored_verdict).toBe("invalid");
-        expect(rescored.trials[0]?.summary).toContain("Deterministic result was fail");
+        // Current evaluator overlays are materialized too: open-ended meaning
+        // is advisory until semantic judging is repeated, not a lexical failure.
+        expect(rescored.trials[0]?.summary).toContain("Deterministic result was pass");
         expect(existsSync(rescored.artifact_path)).toBe(true);
         expect(readManifest(created.runDir).trials[0]?.machine_verdict).toBe(
           "pass",

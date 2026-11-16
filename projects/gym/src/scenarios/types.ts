@@ -18,6 +18,7 @@ export interface WorkflowScenarioEntry {
 }
 
 export interface ScenarioMeta {
+  evaluation_kind?: "judgment" | "behavior";
   name: string;
   description?: string;
   categories: string[];

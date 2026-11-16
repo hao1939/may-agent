@@ -3,6 +3,18 @@
 A benchmark groups stable scenarios with scoring policy, provenance, reporting,
 and human-review rules. It does not own the agent or app being evaluated.
 
+Benchmarks serve two purposes: **judgment** (choosing an approach aligned with
+our expectations) and **behavior** (actually doing the expected thing). Declare
+`evaluation_kind: "judgment"` or `"behavior"` in `suite.json`, with case-level
+overrides when needed. Missing classifications remain unclassified. Report
+these separately; do not present decision-only passes as execution evidence.
+The current named decision suites are judgment tests, not behavior coverage.
+
+Before running, define acceptable choices/outcomes, forbidden choices/effects,
+and the evidence that will establish or disprove them. A scorer is an
+implementation of human-reviewed expectations, not an authority to approve
+truth. See [expectations and limits](../docs/expectations-and-limits.md).
+
 Keep hidden expectations outside the agent-visible fixture. Generated runs and
 reports belong under `.state/`; approved labels and append-only human reviews
 remain version-controlled with the benchmark.

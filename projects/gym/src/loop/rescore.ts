@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import {
   copyFileSync,
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -9,9 +10,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, join } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 
-import { gymRoot, loadSuite, machineVerdict, readManifest, resolveRunDir, safeName } from "./store";
+import { gymRoot, loadSuite, machineVerdict, materializeScenarioOrInlineCase, readManifest, resolveRunDir, safeName } from "./store";
 import type { MachineVerdict, ScenarioCheck, ScenarioRunResult } from "./types";
 
 interface RescoredTrial {
@@ -39,11 +40,12 @@ export interface RescoreResult {
 type Evaluator = (workDir: string, scenarioDir: string) => Pick<ScenarioRunResult, "passed" | "checks" | "summary">;
 
 function evaluatorFor(path: string): Evaluator {
-  const loaded = createRequire(import.meta.url)(path) as { scoreDecision?: Evaluator };
-  if (typeof loaded.scoreDecision !== "function") {
-    throw new Error(`Evaluator must export scoreDecision(workDir, scenarioDir): ${path}`);
+  const loaded = createRequire(import.meta.url)(path) as { scoreDecision?: Evaluator; scoreTaskResult?: Evaluator };
+  const evaluate = loaded.scoreDecision ?? loaded.scoreTaskResult;
+  if (typeof evaluate !== "function") {
+    throw new Error(`Evaluator must export scoreDecision or scoreTaskResult(workDir, scenarioDir): ${path}`);
   }
-  return loaded.scoreDecision;
+  return evaluate;
 }
 
 export function rescoreRun(run: string): RescoreResult {
@@ -56,15 +58,33 @@ export function rescoreRun(run: string): RescoreResult {
   const trials: RescoredTrial[] = [];
 
   for (const trial of manifest.trials) {
-    if (!trial.artifact_path) throw new Error(`Trial has no captured artifact: ${trial.scenario} ${trial.trial}`);
+    if (!trial.artifact_path && !trial.workspace_path) throw new Error(`Trial has no captured artifact or workspace: ${trial.scenario} ${trial.trial}`);
     const caseDir = join(runDir, "cases", safeName(trial.scenario), `trial-${trial.trial}`);
     const workDir = mkdtempSync(join(tmpdir(), "gym-rescore-"));
     try {
-      copyFileSync(join(runDir, trial.artifact_path), join(workDir, basename(trial.artifact_path)));
-      const statePath = join(caseDir, "environment", "system-state.md");
-      if (existsSync(statePath)) copyFileSync(statePath, join(workDir, "system-state.md"));
-      const currentScenarioDir = join(gymRoot, "scenarios", trial.scenario);
-      const score = evaluate(workDir, currentScenarioDir);
+      const hasWorkspace = Boolean(trial.workspace_path && existsSync(join(runDir, trial.workspace_path)));
+      if (hasWorkspace) {
+        cpSync(join(runDir, trial.workspace_path!), workDir, { recursive: true });
+      } else {
+        if (trial.artifact_path) copyFileSync(join(runDir, trial.artifact_path), join(workDir, basename(trial.artifact_path)));
+        const statePath = join(caseDir, "environment", "system-state.md");
+        if (existsSync(statePath)) copyFileSync(statePath, join(workDir, "system-state.md"));
+      }
+      const currentScenarioDir = mkdtempSync(join(tmpdir(), "gym-rescore-case-"));
+      let score: ReturnType<Evaluator>;
+      let currentSemantic = false;
+      try {
+        materializeScenarioOrInlineCase({
+          scenario: trial.scenario, suite,
+          sourceBenchmarkDir: join(gymRoot, "benchmarks", manifest.benchmark),
+          evaluatorOwner: dirname(resolve(evaluatorPath)),
+          destination: currentScenarioDir,
+        });
+        currentSemantic = existsSync(join(currentScenarioDir, "semantic_criteria.md"));
+        score = evaluate(workDir, currentScenarioDir);
+      } finally {
+        rmSync(currentScenarioDir, { recursive: true, force: true });
+      }
       const originalResult = JSON.parse(
         readFileSync(join(runDir, trial.result_path), "utf8"),
       ) as ScenarioRunResult;
@@ -77,14 +97,18 @@ export function rescoreRun(run: string): RescoreResult {
         summary: score.summary,
       });
       const requiresSemanticEvaluation =
+        currentSemantic ||
         (originalResult.semantic_evaluation !== undefined && originalResult.semantic_evaluation !== null) ||
         existsSync(join(caseDir, "semantic-evaluation.json")) ||
         existsSync(join(caseDir, "semantic_criteria.md")) ||
-        existsSync(join(currentScenarioDir, "semantic_criteria.md")) ||
+        existsSync(join(gymRoot, "scenarios", trial.scenario, "semantic_criteria.md")) ||
+        Boolean(suite.cases?.find((item) => item.id === trial.scenario)?.semantic_criteria) ||
         existsSync(join(gymRoot, "benchmarks", manifest.benchmark, "scenarios", trial.scenario, "semantic_criteria.md"));
-      const rescoredVerdict = requiresSemanticEvaluation ? "invalid" : deterministic.verdict;
+      const missingWorkspace = !hasWorkspace && score.checks.some((check) => check.name === "decision-only-scope");
+      const rescoredVerdict = requiresSemanticEvaluation || missingWorkspace ? "invalid" : deterministic.verdict;
       const invalidReason = requiresSemanticEvaluation
         ? "current semantic rubric was not evaluated; deterministic rescore is diagnostic only"
+        : missingWorkspace ? "no retained final workspace; cannot re-evaluate decision-only scope"
         : deterministic.reason;
       trials.push({
         scenario: trial.scenario,

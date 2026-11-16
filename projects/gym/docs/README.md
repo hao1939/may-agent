@@ -1,5 +1,8 @@
 # Gym Documentation
 
+- `expectations-and-limits.md` — the two purposes (judgment and behavior), how
+  to define expectations, required evidence and the limits of a passing test.
+
 - `triage.md` — historical scenario inventory and curation analysis.
 - `legacy-runner-report.md` — first runner audit retained for provenance; it
   does not describe the current CLI.
