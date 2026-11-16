@@ -100,13 +100,37 @@ paths identify where work ran; label absent paths and reference surviving eviden
 Report full Task estimates separately from specialist-only usage and unknown
 billing. A retained recommendation does not commission the suggested target edit.
 
-Before finishing, read back the record and verify its live artifact references.
-Resolve each declared JSON pointer against the referenced document as well as
-checking its file hash, and derive record/validation timestamps from the clock.
-Return its absolute path and hash in the accepted Task result. The caller then
-checks the record after Task closure, using only it and its direct evidence links.
-Preserve failed/inconclusive results and distinguish transcript recovery from
-original artifact copies. This is an evidence handoff check; it does not establish
+Before finishing, generate and validate the record with the deterministic helper:
+
+```bash
+bun projects/alex.app/scripts/cycle-evidence.ts generate \
+  /absolute/path/to/cycle-input.json /durable/new-invocation-directory
+bun projects/alex.app/scripts/cycle-evidence.ts validate \
+  /durable/new-invocation-directory/cycle-record.json
+```
+
+The input contains the substantive cycle fields plus `artifacts` with paths and
+explicit `jsonPointers`; the helper samples the clock, hash-binds every direct
+evidence path, rejects unresolved pointers, and exclusively creates the retained
+output directory. Relative artifact and direct-evidence paths resolve from the
+input file. A supplied `artifacts[].sha256` is preserved and verified; omit it only
+when generation should bind the current invocation bytes.
+
+For hosted work, set `generation.disposableRoots` to the Task worktree or other
+roots removed at settlement. Generation rejects both its output directory and every
+linked artifact under those roots. This is an explicit generation-time durability
+boundary; historical validate-only records remain readable without it. For
+historical records, set `generation.attemptInterval` so `createdAt` is checked
+against that attempt rather than today's clock. Keep failed and revised records in
+separate directories. The helper validates mechanical evidence integrity, not the
+semantic completeness of the cycle's objective, decision, ownership or cost scope;
+those substantive fields remain part of the caller's record contract and review.
+
+Before finishing, read back the record and validation receipt. Return their
+absolute paths and hashes in the accepted Task result. The caller then checks the
+record after Task closure, using only it and its direct evidence links. Preserve
+failed/inconclusive results and distinguish transcript recovery from original
+artifact copies. This is an evidence handoff check; it does not establish
 unattended recovery or improved target behavior.
 
 ## Recover a development invocation manually
