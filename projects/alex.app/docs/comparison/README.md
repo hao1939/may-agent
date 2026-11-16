@@ -32,3 +32,5 @@ The [first standalone trial](standalone-first-trial-20261116.md) records exercis
 behavior, corrections, cost limits and the prepared next experiment.
 The [snapshot execution trial](standalone-snapshot-trial-20261116.md) follows that
 experiment through implementation, failed controls, repair and Alex's disposition.
+The [recovery and no-change trial](standalone-recovery-trial-20261116.md) records
+manual checkpoint reuse, interrupted work preservation and non-actionable decisions.

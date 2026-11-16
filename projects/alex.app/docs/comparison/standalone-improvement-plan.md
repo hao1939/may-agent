@@ -4,7 +4,9 @@ Status: manual execution verified; the first replay and next scope are recorded
 in the [first trial](standalone-first-trial-20261116.md). The
 [snapshot execution trial](standalone-snapshot-trial-20261116.md) carries the
 selected experiment through implementation, repair, verification and disposition.
-Further standalone tuning and Host handover remain incremental work.
+The [recovery and no-change trial](standalone-recovery-trial-20261116.md) verifies
+manual interruption/reuse and live diagnosis boundaries without a runtime patch.
+Further tuning on representative work and Host handover remain incremental work.
 The independent Host assignment completed
 without being stopped by the standalone trial.
 
@@ -141,3 +143,13 @@ retain unresolved tradeoffs for Alex's judgment rather than adding recursive gat
 Success in this session is a reproducible start and one justified experiment
 scope. Live experiments, a completed cycle and Host handover each require their
 own later evidence.
+
+## Current next milestone
+
+Manual execution, the snapshot experiment and bounded interruption/reuse controls
+are recorded. Prepare one controlled Host handover rehearsal on a representative
+existing assignment. Inspect the installed Apps/SDK revision and Task evidence
+delivery before execution; observe ordinary recovery with the same requirements
+and candidate identities. The manual full-TaskDetail recipe is demonstrated,
+but automatic persistence and Host recovery remain unverified. Keep behavioral
+transfer, human correction and total cost as separate outcome observations.
