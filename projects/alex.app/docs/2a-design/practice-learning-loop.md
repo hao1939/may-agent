@@ -59,6 +59,10 @@ Repeated successful steps can become focused workflows when their benefit
 warrants it. The initial milestone is one inspectable, trustworthy improvement
 cycle. Broader intake and automation follow evidence from that milestone.
 
+Follow the [standalone trial plan](../comparison/standalone-improvement-plan.md)
+to tune this cycle manually alongside existing Host work before handing the
+proven procedure to Host scheduling and recovery.
+
 ```text
 work produces evidence
   -> Alex's evaluator reviews selected eligible Task evidence

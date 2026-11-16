@@ -21,3 +21,7 @@ current implementation is under `alex.app/agents/gym/workflows/`; the standalone
 Run the workflow regression with `bun run gym:app:check`. Retained comparison
 evidence and historical experiments remain reachable through
 [retirement and preservation](../../archive/retired-apps/README.md).
+
+The [standalone improvement trial plan](standalone-improvement-plan.md) describes
+manual experiments alongside Alex's Host work, from reproducible stage execution
+through one trustworthy cycle and later Host-driven execution.
