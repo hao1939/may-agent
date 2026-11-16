@@ -34,7 +34,6 @@ export async function prepareDaemonAgents(opts: {
   executeTaskAttempt?: AppTaskRuntimeOptions["executeAttempt"];
   executeTaskRecovery?: AppTaskRuntimeOptions["executeRecovery"];
   taskAppIds?: readonly string[];
-  syncTaskReadModels?: boolean;
   agentNames?: readonly string[];
 }): Promise<{
   loaderOpts: AgentLoaderOptions;
@@ -167,7 +166,6 @@ export async function prepareDaemonAgents(opts: {
       ...(opts.executeTaskAttempt ? { executeAttempt: opts.executeTaskAttempt } : {}),
       ...(opts.executeTaskRecovery ? { executeRecovery: opts.executeTaskRecovery } : {}),
       ...(opts.taskAppIds ? { taskAppIds: opts.taskAppIds } : {}),
-      syncReadModels: opts.syncTaskReadModels !== false,
       installControllers: taskRuntimeMode === "controllers",
       executors: {
         "codex-goal": codexGoalExecutor,

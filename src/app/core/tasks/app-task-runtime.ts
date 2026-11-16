@@ -74,7 +74,6 @@ import {
   configuredAppAgent,
   configuredRegistryEntries,
   prepareAppTaskRuntimeDescriptors,
-  syncProjectReadModel,
   type AppTaskRuntimeDescriptor,
 } from "./runtime-definition.js";
 import type { AppTaskRuntimeOptions } from "./runtime-options.js";
@@ -1396,7 +1395,6 @@ async function commitAppTaskRuntimeDescriptors(
         message: `[app-task] App ${id} agent "${descriptor.agent}" is unavailable; retained Tasks remain visible`,
       });
     }
-    if (opts.syncReadModels !== false) syncProjectReadModel(opts, descriptor);
     installed.push(descriptor);
   }
 
