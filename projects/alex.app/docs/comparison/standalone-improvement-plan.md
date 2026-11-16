@@ -1,7 +1,9 @@
 # Standalone improvement trial plan
 
-Status: planned. This plan prepares manual experiments alongside Alex's existing
-Host assignment; it does not start another run or change that assignment.
+Status: manual execution verified; the first replay and next scope are recorded
+in the [first trial](standalone-first-trial-20261116.md). Further experiments and
+Host handover remain incremental work. The independent Host assignment completed
+without being stopped by the standalone trial.
 
 ## Direction and first milestone
 
@@ -60,9 +62,10 @@ daily intake, adding more targets or introducing further orchestration.
 Reuse the existing implementations:
 
 - `alex/diagnose-improvement` and `bun run gym diagnose <baseline-run-dir> --json`
-  provide baseline diagnosis entry points. Their current verdicts need validation:
-  diagnosis reads status from the wrong location, prescribes changes too early,
-  and does not represent every legitimate disposition. Start without candidate
+  provide baseline diagnosis entry points. The reused Host repair reads actual
+  result status and supports no-change/insufficient-evidence dispositions. The
+  first live replay still exposed unsupported source/causal assumptions; inspect
+  proposals against actual source and truth evidence. Start without candidate
   preparation; the candidate path can remove an existing candidate directory.
 - `alex/develop-change` supplies design, implementation, real verification,
   exact-commit review and retained recovery evidence. Its private input is
@@ -70,6 +73,8 @@ Reuse the existing implementations:
   the explicit Task envelope. It requires a linked Git worktree and ignored state.
 - The SDK's `run()` retains traces with explicit `outputRoot` and `traceDir`.
   Deterministic `agentFixtures` let us debug mechanics before live model calls.
+  The [manual stage runner](standalone-stage.md) now exposes these capabilities
+  through saved invocation inputs and receipts.
 - Workflow `ctx.call` can run specialists standalone. A standalone prompt Alex
   currently lacks hosted `agents` and live Task tools, so initially the operator
   invokes stages explicitly, keeping Alex's scope and disposition decisions in

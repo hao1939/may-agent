@@ -28,3 +28,5 @@ through one trustworthy cycle and later Host-driven execution.
 
 Use the [manual stage runner guide](standalone-stage.md) for executable inputs,
 fixture/live mode, observation and result interpretation.
+The [first standalone trial](standalone-first-trial-20261116.md) records exercised
+behavior, corrections, cost limits and the prepared next experiment.
