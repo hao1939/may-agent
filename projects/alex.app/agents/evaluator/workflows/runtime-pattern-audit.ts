@@ -61,8 +61,13 @@ export function workflowInventoryRootFromAppRoot(appRoot: string): string {
   return dirname(dirname(resolve(appRoot)));
 }
 
+type RuntimePatternAuditBuildOptions = {
+  snapshotDir?: string;
+};
+
 export function buildRuntimePatternAuditPacket(
   input: RuntimePatternAuditInput = {},
+  options: RuntimePatternAuditBuildOptions = {},
 ): RuntimePatternAuditPacket {
   const now =
     typeof input.now === "number" && Number.isFinite(input.now)
@@ -136,10 +141,12 @@ export function buildRuntimePatternAuditPacket(
 
   let snapshotPaths: { jsonPath: string; markdownPath: string } | undefined;
   if (input.persistSnapshot === true) {
-    const outDir = join(rootDir, ".state", "workflow-audits");
-    mkdirSync(outDir, { recursive: true });
-    const jsonPath = join(outDir, "latest.json");
-    const markdownPath = join(outDir, "latest.md");
+    const snapshotDir = resolve(
+      options.snapshotDir ?? join(rootDir, ".state", "workflow-audits"),
+    );
+    mkdirSync(snapshotDir, { recursive: true });
+    const jsonPath = join(snapshotDir, "latest.json");
+    const markdownPath = join(snapshotDir, "latest.md");
     writeFileSync(jsonPath, `${JSON.stringify(latest, null, 2)}\n`, "utf8");
     writeFileSync(markdownPath, formatWorkflowAuditMarkdown(latest), "utf8");
     snapshotPaths = { jsonPath, markdownPath };
@@ -165,11 +172,18 @@ export async function execute(
   const rootDir = ctx.workspace?.appRoot
     ? workflowInventoryRootFromAppRoot(ctx.workspace.appRoot)
     : process.cwd();
-  const packet = buildRuntimePatternAuditPacket({
-    ...ctx.input,
-    rootDir: ctx.input?.rootDir ?? rootDir,
-    persistSnapshot: ctx.input?.persistSnapshot ?? true,
-  });
+  const packet = buildRuntimePatternAuditPacket(
+    {
+      ...ctx.input,
+      rootDir: ctx.input?.rootDir ?? rootDir,
+      persistSnapshot: ctx.input?.persistSnapshot ?? true,
+    },
+    {
+      snapshotDir: ctx.workspace?.output
+        ? join(ctx.workspace.output, "workflow-audits")
+        : undefined,
+    },
+  );
   ctx.signal.throwIfAborted();
 
   const summary =

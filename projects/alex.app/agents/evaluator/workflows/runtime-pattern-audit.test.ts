@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
@@ -56,25 +56,35 @@ test("runtime-pattern-audit resolves the installed sibling-App inventory from an
     ).toEqual(["alex:runtime-pattern-audit", "may:task-delivery"]);
 
     const projectRoot = join(root, "workspaces", "alex");
+    const outputRoot = join(projectRoot, ".state", "output");
     mkdirSync(projectRoot, { recursive: true });
     const ctx = createTestAppWorkflowContext({
       workflow: "runtime-pattern-audit",
-      input: { persistSnapshot: false },
       workspace: {
         appRoot,
         projectRoot,
         root: projectRoot,
-        output: join(projectRoot, ".state", "output"),
+        output: outputRoot,
       },
     });
     const res = await execute(ctx);
     expect(res.status).toBe("done");
     expect(res.summary).toContain("across 2 workflows");
+    const snapshotDir = join(outputRoot, "workflow-audits");
     expect(res.output).toMatchObject({
       state: "converged",
-      result: { latestTotals: { workflows: 2, canonicalWorkflows: 2 } },
+      result: {
+        latestTotals: { workflows: 2, canonicalWorkflows: 2 },
+        snapshotPaths: {
+          jsonPath: join(snapshotDir, "latest.json"),
+          markdownPath: join(snapshotDir, "latest.md"),
+        },
+      },
       facts: expect.arrayContaining(["workflows:2"]),
     });
+    expect(existsSync(join(snapshotDir, "latest.json"))).toBe(true);
+    expect(existsSync(join(snapshotDir, "latest.md"))).toBe(true);
+    expect(existsSync(join(inventoryRoot, ".state"))).toBe(false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
