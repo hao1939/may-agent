@@ -1,32 +1,34 @@
-/**
- * Executable Skill (`diagnose-improvement` workflow) — Stage 3 of the
- * Prompt -> Skill -> Code Workflow progression for Alex (`alex.app` owner).
- *
- * Supports two modes in one workflow owned by `alex`:
- * 1. **Diagnose Only (`candidateName` omitted):**
- *    Pre-reads a frozen Gym baseline (`manifest.json` + failing/slow trial
- *    `result.json` + `transcript.jsonl`), classifies failure and efficiency
- *    regimes in deterministic code, and calls the `gym` specialist (`readonly`)
- *    to produce a structured `ImprovementProposal`.
- * 2. **Diagnose + Prepare `.lab/<candidateName>` (`candidateName` provided):**
- *    After `gym` diagnoses the baseline, seeds `/app/agents/.lab/<candidateName>`
- *    from the target agent's canonical directory and delegates implementation
- *    of the candidate change inside `.lab/<candidateName>` to `tech-lead`.
- */
-
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import {
+  cpSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { Type, type Static, type WorkflowContext } from "@may-agent/sdk";
 
 export const name = "diagnose-improvement";
 export const description =
-  "Analyze a frozen Gym baseline run via the gym specialist and optionally prepare a .lab/<candidateName> improvement via tech-lead.";
+  "Analyze a frozen Gym baseline using verified source and retained trial evidence, then optionally prepare a .lab candidate.";
 
 export const diagnoseImprovementInputSchema = Type.Object(
   {
     baselineDir: Type.String({ minLength: 1 }),
     outputFile: Type.Optional(Type.String({ minLength: 1 })),
     candidateName: Type.Optional(Type.String({ minLength: 1 })),
+  },
+  { additionalProperties: false },
+);
+
+const evidenceCitationSchema = Type.Object(
+  {
+    requirement: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
+    output: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
   },
   { additionalProperties: false },
 );
@@ -53,6 +55,7 @@ export const improvementProposalSchema = Type.Object(
         {
           file: Type.String({ minLength: 1 }),
           change_summary: Type.String({ minLength: 1 }),
+          evidence_citations: Type.Optional(evidenceCitationSchema),
         },
         { additionalProperties: false },
       ),
@@ -87,9 +90,18 @@ const candidateImplResultSchema = Type.Object(
 export type DiagnoseImprovementInput = Static<typeof diagnoseImprovementInputSchema>;
 export type ImprovementProposal = Static<typeof improvementProposalSchema>;
 
+type RetainedEvidence = {
+  id: string;
+  path: string;
+  content?: string;
+  truncated?: boolean;
+  issue?: string;
+};
+
 export interface TrialDiagnostic {
   scenario: string;
   verdict: string;
+  scoringSignal: string;
   agentStatus: string;
   turns: number;
   ops: number;
@@ -97,21 +109,131 @@ export interface TrialDiagnostic {
   failedChecks: string[];
   evidenceIssues: string[];
   hasReadonlyWriteConflict: boolean;
+  retainedEvidence: {
+    requirement: RetainedEvidence;
+    result: RetainedEvidence;
+    artifact: RetainedEvidence;
+    transcript: RetainedEvidence;
+  };
+  historicalExecutedDefinition: {
+    promptHash?: string;
+    frameworkRevision?: string;
+    model?: string;
+  };
 }
 
-function resolveCanonicalAgentDir(projectRoot: string, agentOrWorkflow: string): string | null {
-  const owner = agentOrWorkflow.includes("/")
-    ? agentOrWorkflow.slice(0, agentOrWorkflow.indexOf("/"))
-    : agentOrWorkflow;
+type CanonicalResolution =
+  | { status: "resolved"; directory: string; identity: string }
+  | { status: "missing" | "ambiguous"; issue: string; candidates: string[] };
+
+const MAX_EVIDENCE_CHARS = 6_000;
+
+function repoIdentity(projectRoot: string, path: string): string {
+  const rel = relative(projectRoot, path);
+  return rel.split(sep).join("/") || ".";
+}
+
+function containedPath(root: string, path: string): boolean {
+  const resolvedRoot = resolve(root);
+  const resolvedPath = resolve(path);
+  return resolvedPath === resolvedRoot || resolvedPath.startsWith(`${resolvedRoot}${sep}`);
+}
+
+function resolveRetainedPath(baselineDir: string, supplied: string | undefined): string | null {
+  if (!supplied || isAbsolute(supplied)) return null;
+  const path = resolve(baselineDir, supplied);
+  return containedPath(baselineDir, path) ? path : null;
+}
+
+function readBoundedEvidence(
+  baselineDir: string,
+  id: string,
+  suppliedPath: string | undefined,
+): RetainedEvidence {
+  const safePath = resolveRetainedPath(baselineDir, suppliedPath);
+  const displayPath = suppliedPath || "(missing)";
+  if (!safePath) {
+    return { id, path: displayPath, issue: suppliedPath ? "path escapes baseline" : "path is missing" };
+  }
+  if (!existsSync(safePath)) return { id, path: displayPath, issue: "file is missing" };
+  try {
+    if (!lstatSync(safePath).isFile()) return { id, path: displayPath, issue: "path is not a file" };
+    const text = readFileSync(safePath, "utf8");
+    return {
+      id,
+      path: displayPath,
+      content: text.slice(0, MAX_EVIDENCE_CHARS),
+      ...(text.length > MAX_EVIDENCE_CHARS ? { truncated: true } : {}),
+    };
+  } catch (error) {
+    return {
+      id,
+      path: displayPath,
+      issue: `file is unreadable: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+}
+
+function resolveCanonicalAgentDir(projectRoot: string, agentOrWorkflow: string): CanonicalResolution {
+  const owner = agentOrWorkflow.split("/", 1)[0];
+  const candidates: string[] = [];
   const globalDir = join(projectRoot, "agents", owner);
-  if (existsSync(join(globalDir, "agent.json"))) return globalDir;
+  if (existsSync(join(globalDir, "agent.json"))) candidates.push(globalDir);
 
   const projectsDir = join(projectRoot, "projects");
-  if (!existsSync(projectsDir)) return null;
-  for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
-    const candidate = join(projectsDir, entry.name, "agents", owner);
-    if (existsSync(join(candidate, "agent.json"))) return candidate;
+  if (existsSync(projectsDir)) {
+    for (const entry of readdirSync(projectsDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || !entry.name.endsWith(".app")) continue;
+      const candidate = join(projectsDir, entry.name, "agents", owner);
+      if (existsSync(join(candidate, "agent.json"))) candidates.push(candidate);
+    }
+  }
+
+  const identities = candidates.map((candidate) => repoIdentity(projectRoot, candidate)).sort();
+  if (candidates.length === 0) {
+    return {
+      status: "missing",
+      issue: `No canonical source directory resolves uniquely for target: ${agentOrWorkflow}`,
+      candidates: [],
+    };
+  }
+  if (candidates.length > 1) {
+    return {
+      status: "ambiguous",
+      issue: `Canonical source directory is ambiguous for target ${agentOrWorkflow}: ${identities.join(", ")}`,
+      candidates: identities,
+    };
+  }
+  return {
+    status: "resolved",
+    directory: realpathSync(candidates[0]),
+    identity: identities[0],
+  };
+}
+
+function unsupportedProposalReason(
+  proposal: ImprovementProposal,
+  projectRoot: string,
+  canonicalDir: string,
+  requirementIds: Set<string>,
+  outputIds: Set<string>,
+): string | null {
+  for (const change of proposal.proposed_changes) {
+    if (isAbsolute(change.file)) return `Unsupported actionable source path: ${change.file}`;
+    const proposedPath = resolve(projectRoot, change.file);
+    if (!existsSync(proposedPath)) return `Unsupported actionable source path: ${change.file}`;
+    const actualPath = realpathSync(proposedPath);
+    if (!containedPath(canonicalDir, actualPath) || !lstatSync(actualPath).isFile()) {
+      return `Unsupported actionable source path: ${change.file}`;
+    }
+    const citations = change.evidence_citations;
+    if (!citations) return `Actionable change lacks requirement/output citations: ${change.file}`;
+    if (citations.requirement.some((id) => !requirementIds.has(id))) {
+      return `Actionable change cites unsupported requirement evidence: ${change.file}`;
+    }
+    if (citations.output.some((id) => !outputIds.has(id))) {
+      return `Actionable change cites unsupported output evidence: ${change.file}`;
+    }
   }
   return null;
 }
@@ -122,123 +244,142 @@ export function extractBaselineDiagnostics(baselineDir: string): {
   scenarios: string[];
   trials: TrialDiagnostic[];
   detectedRegimes: string[];
+  aggregateUsage: { trials: number; turns: number; ops: number; totalTokens: number };
+  historicalSourceIdentity: { candidateSnapshot?: string; candidateFingerprint?: string };
 } {
   const manifestPath = join(baselineDir, "manifest.json");
-  if (!existsSync(manifestPath)) {
-    throw new Error(`Baseline manifest.json not found at: ${manifestPath}`);
-  }
+  if (!existsSync(manifestPath)) throw new Error(`Baseline manifest.json not found at: ${manifestPath}`);
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
     agent: string;
     benchmark: string;
     scenarios: string[];
+    proof?: { candidate_fingerprint?: string };
+    source?: { candidate_snapshot?: string };
     trials: Array<{
       scenario: string;
+      trial?: number;
       machine_verdict?: string;
+      label_status?: string;
       agent_status?: string;
       usage?: { turns?: number; ops?: number; total_tokens?: number };
       result_path?: string;
+      artifact_path?: string;
       transcript_path?: string;
+      requirement_path?: string;
+      provenance?: { prompt_fingerprint?: string; framework_revision?: string; model?: string };
     }>;
   };
 
   const regimes = new Set<string>();
   const trialDiagnostics: TrialDiagnostic[] = [];
+  let turns = 0;
+  let ops = 0;
+  let totalTokens = 0;
 
-  for (const trial of manifest.trials || []) {
-    const resPath = trial.result_path ? join(baselineDir, trial.result_path) : "";
-    const trPath = trial.transcript_path ? join(baselineDir, trial.transcript_path) : "";
+  for (const [index, trial] of (manifest.trials || []).entries()) {
     const evidenceIssues: string[] = [];
     let failedChecks: string[] = [];
     let agentStatus = "unknown";
     const verdict = trial.machine_verdict;
+    const trialKey = `${trial.scenario}#${trial.trial ?? index + 1}`;
+    const resultRelative = trial.result_path;
+    const requirementRelative =
+      trial.requirement_path || (resultRelative ? join(dirname(resultRelative), "task.md") : undefined);
+    const retainedEvidence = {
+      requirement: readBoundedEvidence(baselineDir, `${trialKey}:requirement`, requirementRelative),
+      result: readBoundedEvidence(baselineDir, `${trialKey}:result`, resultRelative),
+      artifact: readBoundedEvidence(baselineDir, `${trialKey}:output`, trial.artifact_path),
+      transcript: readBoundedEvidence(baselineDir, `${trialKey}:transcript`, trial.transcript_path),
+    };
+    for (const [kind, evidence] of Object.entries(retainedEvidence)) {
+      if (evidence.issue) evidenceIssues.push(`${kind} evidence ${evidence.issue} at ${evidence.path}`);
+    }
 
     if (verdict !== "pass" && verdict !== "fail") {
       evidenceIssues.push(
-        verdict
-          ? `machine_verdict is invalid: ${verdict}`
-          : "machine_verdict is missing from the manifest trial",
+        verdict ? `machine_verdict is invalid: ${verdict}` : "machine_verdict is missing from the manifest trial",
       );
     }
 
-    if (!resPath) {
-      evidenceIssues.push("result_path is missing from the manifest trial");
-    } else if (!existsSync(resPath)) {
-      evidenceIssues.push(`result.json not found at ${resPath}`);
-    } else {
+    if (!retainedEvidence.result.issue && resultRelative) {
       try {
-        const res = JSON.parse(readFileSync(resPath, "utf8")) as {
+        const fullResultPath = resolveRetainedPath(baselineDir, resultRelative);
+        if (!fullResultPath) throw new Error("result path escapes baseline");
+        const result = JSON.parse(readFileSync(fullResultPath, "utf8")) as {
           agent_status?: string;
           checks?: Array<{ name: string; passed: boolean; gate?: boolean; detail?: string }>;
+          prompt_hash?: string;
+          framework_sha?: string;
+          model?: string;
         };
-        if (typeof res.agent_status === "string" && res.agent_status.trim()) {
-          agentStatus = res.agent_status;
+        if (typeof result.agent_status === "string" && result.agent_status.trim()) {
+          agentStatus = result.agent_status;
         } else {
-          evidenceIssues.push("result.json is missing agent_status");
+          evidenceIssues.push("result evidence is missing agent_status");
         }
-        if (!Array.isArray(res.checks)) {
-          evidenceIssues.push("result.json is missing checks");
+        if (!Array.isArray(result.checks)) {
+          evidenceIssues.push("result evidence is missing checks");
         } else {
-          failedChecks = res.checks
-            .filter((c) => c && c.passed === false && c.gate !== false)
-            .map((c) => `${c.name}: ${c.detail || "failed"}`);
+          failedChecks = result.checks
+            .filter((check) => check?.passed === false && check.gate !== false)
+            .map((check) => `${check.name}: ${check.detail || "failed"}`);
         }
+        trial.provenance = {
+          prompt_fingerprint: trial.provenance?.prompt_fingerprint || result.prompt_hash,
+          framework_revision: trial.provenance?.framework_revision || result.framework_sha,
+          model: trial.provenance?.model || result.model,
+        };
       } catch (error) {
         evidenceIssues.push(
-          `result.json is malformed: ${error instanceof Error ? error.message : String(error)}`,
+          `result evidence is malformed: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
 
-    let hasReadonlyWriteConflict = false;
-    if (trPath && existsSync(trPath)) {
-      const trText = readFileSync(trPath, "utf8");
-      if (
-        agentStatus === "blocked" &&
-        (/no file-writing tool/i.test(trText) || /readonly tools/i.test(trText))
-      ) {
-        hasReadonlyWriteConflict = true;
-        regimes.add("readonly_write_conflict");
-      }
-    }
+    const transcriptText = retainedEvidence.transcript.content || "";
+    const hasReadonlyWriteConflict =
+      agentStatus === "blocked" &&
+      (/no file-writing tool/i.test(transcriptText) || /readonly tools/i.test(transcriptText));
+    if (hasReadonlyWriteConflict) regimes.add("readonly_write_conflict");
 
-    const turns = trial.usage?.turns ?? 0;
-    const ops = trial.usage?.ops ?? 0;
-    const totalTokens = trial.usage?.total_tokens ?? 0;
+    const trialTurns = trial.usage?.turns ?? 0;
+    const trialOps = trial.usage?.ops ?? 0;
+    const trialTokens = trial.usage?.total_tokens ?? 0;
+    turns += trialTurns;
+    ops += trialOps;
+    totalTokens += trialTokens;
 
-    if (evidenceIssues.length > 0) {
-      regimes.add("insufficient_evidence");
-    }
-    if (agentStatus !== "unknown" && agentStatus !== "success") {
-      regimes.add("execution_failure");
-    } else if (evidenceIssues.length === 0 && verdict === "fail") {
-      regimes.add("quality_failure");
-    }
-    if (
-      evidenceIssues.length === 0 &&
-      agentStatus === "success" &&
-      (ops >= 3 || totalTokens >= 25_000)
-    ) {
-      regimes.add("token_or_op_bloat");
-    }
+    if (evidenceIssues.length > 0) regimes.add("insufficient_evidence");
+    if (agentStatus !== "unknown" && agentStatus !== "success") regimes.add("execution_failure");
+    if (verdict === "fail") regimes.add("scoring_signal");
 
     trialDiagnostics.push({
       scenario: trial.scenario,
       verdict: verdict ?? "missing",
+      scoringSignal:
+        verdict === "fail"
+          ? "The scorer reported a failure signal; this is not by itself a confirmed agent defect or human adjudication."
+          : verdict === "pass"
+            ? "The scorer reported a pass signal; this is not human adjudication."
+            : "No valid scoring signal is available.",
       agentStatus,
-      turns,
-      ops,
-      totalTokens,
+      turns: trialTurns,
+      ops: trialOps,
+      totalTokens: trialTokens,
       failedChecks,
       evidenceIssues,
       hasReadonlyWriteConflict,
+      retainedEvidence,
+      historicalExecutedDefinition: {
+        promptHash: trial.provenance?.prompt_fingerprint,
+        frameworkRevision: trial.provenance?.framework_revision,
+        model: trial.provenance?.model,
+      },
     });
   }
 
-  if (trialDiagnostics.length === 0) {
-    regimes.add("insufficient_evidence");
-  } else if (regimes.size === 0) {
-    regimes.add("healthy_baseline");
-  }
+  if (trialDiagnostics.length === 0) regimes.add("insufficient_evidence");
+  else if (regimes.size === 0) regimes.add("healthy_baseline");
 
   return {
     target: manifest.agent,
@@ -246,6 +387,21 @@ export function extractBaselineDiagnostics(baselineDir: string): {
     scenarios: manifest.scenarios || [],
     trials: trialDiagnostics,
     detectedRegimes: [...regimes],
+    aggregateUsage: { trials: trialDiagnostics.length, turns, ops, totalTokens },
+    historicalSourceIdentity: {
+      candidateSnapshot: manifest.source?.candidate_snapshot,
+      candidateFingerprint: manifest.proof?.candidate_fingerprint,
+    },
+  };
+}
+
+function insufficientProposal(target: string, regimes: string[], reason: string): ImprovementProposal {
+  return {
+    target,
+    disposition: "insufficient_evidence",
+    detected_regimes: regimes.length > 0 ? regimes : ["insufficient_evidence"],
+    root_cause_summary: reason,
+    proposed_changes: [],
   };
 }
 
@@ -254,164 +410,151 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
   const projectRoot = ctx.workspace?.projectRoot ?? workRoot;
   const baselineDir = resolve(workRoot, ctx.input.baselineDir);
   const diag = extractBaselineDiagnostics(baselineDir);
-
-  const isWorkflowTarget = diag.target.includes("/");
+  const canonical = resolveCanonicalAgentDir(projectRoot, diag.target);
   const hasEvidenceGap =
-    diag.trials.length === 0 || diag.trials.some((t) => t.evidenceIssues.length > 0);
+    diag.trials.length === 0 || diag.trials.some((trial) => trial.evidenceIssues.length > 0);
   const hasExecutionFailure = diag.trials.some(
-    (t) => t.evidenceIssues.length === 0 && t.agentStatus !== "success",
+    (trial) => trial.evidenceIssues.length === 0 && trial.agentStatus !== "success",
   );
-  const hasQualityFailure = diag.trials.some(
-    (t) =>
-      t.evidenceIssues.length === 0 && t.agentStatus === "success" && t.verdict === "fail",
-  );
-  const hasEfficiencyProblem = diag.detectedRegimes.includes("token_or_op_bloat");
-  const evidenceDisposition: ImprovementProposal["disposition"] =
-    hasEvidenceGap || hasExecutionFailure
-      ? "insufficient_evidence"
-      : hasQualityFailure || hasEfficiencyProblem
-        ? "actionable"
-        : "no_change";
+  const hasScoringSignal = diag.trials.some((trial) => trial.verdict === "fail");
 
-  // Step 1: Delegate diagnostic analysis to the `gym` specialist (`readonly`)
-  const prompt = [
-    "# Gym Capability Improvement Diagnosis",
-    "",
-    `Target: \`${diag.target}\``,
-    `Benchmark: \`${diag.benchmark}\``,
-    `Detected Regimes: ${diag.detectedRegimes.map((r) => `\`${r}\``).join(", ")}`,
-    "",
-    "## Trial Diagnostics",
-    JSON.stringify(diag.trials, null, 2),
-    "",
-    "## Evidence Boundary",
-    `Deterministic evidence disposition: \`${evidenceDisposition}\``,
-    "- Treat result.json `agent_status` as authoritative for execution status; only `pass` or `fail` manifest verdicts are valid scoring evidence.",
-    "- Evidence gaps and execution failures require `insufficient_evidence`; do not prescribe a behavioral remediation for them.",
-    "- A `no_change` evidence disposition requires `no_change`.",
-    "- An `actionable` evidence disposition permits a supported proposal, but you may still return `no_change` or `insufficient_evidence` when no worthwhile remediation is justified.",
-    "- For `no_change` or `insufficient_evidence`, return no proposed changes, recommended stage, or verification plan.",
-    "- For `actionable`, recommend only the smallest mechanism supported by the diagnostics and include a verification plan.",
-    "- Do NOT call any tools. Call `finish(status: \"done\", result: ...)` immediately with the structured proposal.",
-  ].join("\n");
+  let proposal: ImprovementProposal;
+  if (canonical.status !== "resolved" || hasEvidenceGap || hasExecutionFailure) {
+    const boundaryPrompt = [
+      "# Gym Capability Improvement Diagnosis — Evidence Boundary",
+      `Target: ${diag.target}`,
+      `Canonical source resolution: ${JSON.stringify(canonical)}`,
+      `Historical executed source identity: ${JSON.stringify(diag.historicalSourceIdentity)}`,
+      `Aggregate usage (neutral observation only): ${JSON.stringify(diag.aggregateUsage)}`,
+      "Retained evidence (bounded; truncation is explicit):",
+      JSON.stringify(diag.trials, null, 2),
+      "The deterministic disposition is insufficient_evidence. Do not propose changes. A score or label is not human adjudication.",
+    ].join("\n");
+    const boundaryStep = await ctx.call("gym", boundaryPrompt, {
+      tools: "readonly",
+      schema: improvementProposalSchema,
+    });
+    if (boundaryStep.status !== "done") {
+      return ctx.blocked(boundaryStep.summary || "gym evidence-boundary review did not complete");
+    }
+    const reason =
+      canonical.status !== "resolved"
+        ? canonical.issue
+        : hasExecutionFailure
+          ? "Execution failure prevents attributing a behavioral defect."
+          : "Required retained requirement/result/output/transcript evidence is missing or unreadable.";
+    proposal = insufficientProposal(diag.target, diag.detectedRegimes, reason);
+  } else if (!hasScoringSignal) {
+    proposal = {
+      target: diag.target,
+      disposition: "no_change",
+      detected_regimes: diag.detectedRegimes,
+      root_cause_summary:
+        "No failed scoring signal or retained requirement/output contradiction supports a behavioral edit. Aggregate usage is reported neutrally.",
+      proposed_changes: [],
+    };
+  } else {
+    const prompt = [
+      "# Gym Capability Improvement Diagnosis",
+      "",
+      `Target: \`${diag.target}\``,
+      `Benchmark: \`${diag.benchmark}\``,
+      `Current canonical source identity: \`${canonical.identity}\``,
+      `Historical executed source identity: ${JSON.stringify(diag.historicalSourceIdentity)}`,
+      `Aggregate usage (neutral observation only): ${JSON.stringify(diag.aggregateUsage)}`,
+      "",
+      "## Retained Trial Evidence",
+      JSON.stringify(diag.trials, null, 2),
+      "",
+      "## Evidence Boundary",
+      "- A failed machine score is a scoring signal, not a confirmed agent defect. label_status, machine labels, or claimed approval do not establish genuine human adjudication.",
+      "- Aggregate usage is neutral context and cannot authorize a behavioral edit.",
+      "- Distinguish the current canonical source identity from the historical executed definition and snapshot identity.",
+      "- Actionable changes must name existing repository-relative files under the current canonical source directory.",
+      "- Every actionable change must cite supplied requirement and output evidence IDs in evidence_citations.",
+      "- Citation matching is structural support only; explicitly judge whether the retained requirement/output contradiction supports the proposed root cause.",
+      "- Return no_change or insufficient_evidence when the retained evidence does not support a worthwhile smallest change.",
+      "- Do NOT call tools. Call finish immediately with the structured proposal.",
+    ].join("\n");
 
-  const step = await ctx.call("gym", prompt, {
-    tools: "readonly",
-    schema: improvementProposalSchema,
-  });
+    const step = await ctx.call("gym", prompt, { tools: "readonly", schema: improvementProposalSchema });
+    if (step.status !== "done" || !step.output) {
+      return ctx.blocked(step.summary || "gym failed to produce an improvement proposal");
+    }
+    const rawProposal = step.output as ImprovementProposal;
+    proposal = {
+      ...rawProposal,
+      target: diag.target,
+      detected_regimes: diag.detectedRegimes,
+      ...(rawProposal.disposition === "actionable"
+        ? {
+            recommended_stage: diag.target.includes("/")
+              ? "stage3_workflow"
+              : rawProposal.recommended_stage,
+            verification_plan: rawProposal.verification_plan
+              ? {
+                  benchmark: diag.benchmark,
+                  scenarios: diag.scenarios,
+                  objective: "quality" as const,
+                }
+              : undefined,
+          }
+        : { proposed_changes: [], recommended_stage: undefined, verification_plan: undefined }),
+    };
 
-  if (step.status !== "done" || !step.output) {
-    return ctx.blocked(step.summary || "gym failed to produce an improvement proposal");
-  }
-
-  const rawProposal = step.output as ImprovementProposal;
-  const disposition: ImprovementProposal["disposition"] =
-    evidenceDisposition === "actionable" ? rawProposal.disposition : evidenceDisposition;
-  const proposal: ImprovementProposal =
-    disposition === "actionable"
-      ? {
-          ...rawProposal,
-          target: diag.target,
-          disposition,
-          recommended_stage: isWorkflowTarget
-            ? "stage3_workflow"
-            : rawProposal.recommended_stage,
-          detected_regimes: diag.detectedRegimes,
-          verification_plan: rawProposal.verification_plan
-            ? {
-                benchmark: diag.benchmark,
-                scenarios: diag.scenarios,
-                objective: hasQualityFailure
-                  ? "quality"
-                  : rawProposal.verification_plan.objective,
-              }
-            : undefined,
-        }
-      : {
-          target: diag.target,
-          disposition,
-          detected_regimes: diag.detectedRegimes,
-          root_cause_summary: rawProposal.root_cause_summary,
-          proposed_changes: [],
-        };
-
-  if (
-    proposal.disposition === "actionable" &&
-    (!proposal.recommended_stage ||
-      proposal.proposed_changes.length === 0 ||
-      !proposal.verification_plan)
-  ) {
-    return ctx.blocked("gym returned an incomplete actionable improvement proposal");
+    if (
+      proposal.disposition === "actionable" &&
+      (!proposal.recommended_stage || proposal.proposed_changes.length === 0 || !proposal.verification_plan)
+    ) {
+      proposal = insufficientProposal(
+        diag.target,
+        diag.detectedRegimes,
+        "Gym returned an incomplete actionable recommendation.",
+      );
+    } else if (proposal.disposition === "actionable") {
+      const requirementIds = new Set(
+        diag.trials.map((trial) => trial.retainedEvidence.requirement.id),
+      );
+      const outputIds = new Set(diag.trials.map((trial) => trial.retainedEvidence.artifact.id));
+      const unsupported = unsupportedProposalReason(
+        proposal,
+        projectRoot,
+        canonical.directory,
+        requirementIds,
+        outputIds,
+      );
+      if (unsupported) {
+        proposal = insufficientProposal(diag.target, diag.detectedRegimes, unsupported);
+      }
+    }
   }
 
   let preparedLabDir: string | undefined;
   let candidateSummary: string | undefined;
-
-  // Step 2 (optional): If `candidateName` is supplied, seed `.lab/<candidateName>`
-  // and delegate candidate preparation to `tech-lead`.
-  if (ctx.input.candidateName?.trim() && proposal.disposition === "actionable") {
+  if (
+    ctx.input.candidateName?.trim() &&
+    proposal.disposition === "actionable" &&
+    canonical.status === "resolved"
+  ) {
     const candidateName = ctx.input.candidateName.trim();
-    const canonicalDir = resolveCanonicalAgentDir(projectRoot, diag.target);
-    if (!canonicalDir) {
-      return ctx.blocked(`Cannot find canonical agent directory for target: ${diag.target}`);
-    }
     preparedLabDir = join(projectRoot, "agents", ".lab", candidateName);
     rmSync(preparedLabDir, { recursive: true, force: true });
     mkdirSync(preparedLabDir, { recursive: true });
-    cpSync(canonicalDir, preparedLabDir, { recursive: true });
-
-    const scenarioHints = diag.scenarios
-      .map((s) => {
-        const expPath = join(projectRoot, "projects", "gym", "scenarios", s, "expected.json");
-        const semPath = join(
-          projectRoot,
-          "projects",
-          "gym",
-          "scenarios",
-          s,
-          "semantic_criteria.md",
-        );
-        const statePath = join(
-          projectRoot,
-          "projects",
-          "gym",
-          "scenarios",
-          s,
-          "environment",
-          "system-state.md",
-        );
-        const exp = existsSync(expPath) ? readFileSync(expPath, "utf8").trim() : "";
-        const sem = existsSync(semPath) ? readFileSync(semPath, "utf8").trim() : "";
-        const st = existsSync(statePath) ? readFileSync(statePath, "utf8").trim() : "";
-        return `### Scenario: ${s}\nState:\n${st}\nExpected:\n${exp}${sem ? `\nSemantic Criteria:\n${sem}` : ""}`;
-      })
-      .join("\n\n");
+    cpSync(canonical.directory, preparedLabDir, { recursive: true });
 
     const implPrompt = [
       "# Prepare Gym `.lab` Candidate",
       "",
-      `Edit ONLY files inside \`${preparedLabDir}\` (never edit production files outside \`.lab/\`).`,
-      "",
-      "## Diagnosis from `gym` Specialist",
+      `Edit ONLY files inside \`${preparedLabDir}\`.`,
+      `Current canonical source identity: \`${canonical.identity}\``,
+      `Historical executed source identity: ${JSON.stringify(diag.historicalSourceIdentity)}`,
+      "## Supported Diagnosis",
       JSON.stringify(proposal, null, 2),
-      "",
-      "## Failing Trial Diagnostics",
+      "## Retained Evidence",
       JSON.stringify(diag.trials, null, 2),
-      "",
-      "## Scenario Expectations, Semantic Rubrics & Evidence",
-      scenarioHints,
-      "",
-      `Read \`${join(preparedLabDir, "AGENTS.md")}\` and the existing skills under \`${join(preparedLabDir, "skills")}\` (for example \`provider-proof-approval/SKILL.md\` and \`system-deputy-decisions/SKILL.md\`).`,
-      "IMPORTANT RULES:",
-      "1. Prefer refining existing skills and/or adding a concise fast-path bullet in `AGENTS.md` rather than inventing a new catch-all skill that adds an extra `read` turn.",
-      "2. Ensure every semantic rubric requirement (such as `canary_and_control`, `concrete_remediation_proposal`, `approval_before_mutation`) and `response_max_words` brevity limit (keep `response_to_hao` <= 55 words) is explicitly enforced.",
-      "3. Ensure `preference_updates` stays `[]` unless Hao explicitly stated a durable preference.",
-      `Apply the minimal generalizable update inside \`${preparedLabDir}\` and call \`finish(status: "done", result: ...)\`.`,
+      "Apply only the cited smallest generalizable update and call finish.",
     ].join("\n");
-
-    const implStep = await ctx.call("tech-lead", implPrompt, {
-      schema: candidateImplResultSchema,
-    });
+    const implStep = await ctx.call("tech-lead", implPrompt, { schema: candidateImplResultSchema });
     if (implStep.status !== "done" || !implStep.output) {
       return ctx.blocked(implStep.summary || "tech-lead failed to prepare the .lab candidate");
     }
@@ -437,6 +580,9 @@ export async function execute(ctx: WorkflowContext<DiagnoseImprovementInput>) {
         target: diag.target,
         benchmark: diag.benchmark,
         detectedRegimes: diag.detectedRegimes,
+        aggregateUsage: diag.aggregateUsage,
+        currentSourceIdentity: canonical.status === "resolved" ? canonical.identity : undefined,
+        historicalSourceIdentity: diag.historicalSourceIdentity,
         recommendedStage: proposal.recommended_stage,
         ...(preparedLabDir ? { preparedLabDir } : {}),
         ...(candidateSummary ? { candidateSummary } : {}),
