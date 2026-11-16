@@ -3,8 +3,10 @@
 **Draft for review. No executable cases or approvals added.**
 
 A [two-question diagnostic pilot](../docs/approach-pilot-20261116.md) now records
-actual Alex answers, costs and a disclosed harness-path fault. It is not an
-approved score or evidence that the planned mechanisms were executed.
+actual Alex answers, costs and a disclosed harness-path fault. Two
+[follow-up contrasts](../docs/approach-contrasts-20261116.md) test an authorized
+alternative when the procedure is unavailable and evidence for an outdated
+candidate. Neither pilot is an approved score or evidence of actual execution.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is
