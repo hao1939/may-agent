@@ -17,6 +17,11 @@ controls. [labels.json](labels.json) is the single approval catalog;
 The existing scorer and production `TaskReconcileResult` contract are reused;
 there is no new planning API or mechanism registry.
 
+An [inactive style-evidence v4 draft](STYLE-EVIDENCE-REVIEW.md) proposes closing
+unscored command-provenance and Task-ending gaps. Its replacement/control file
+lives under `drafts/`, outside native discovery; it does not change v3 approvals,
+results or the active suite. Preparation is not truth approval or run permission.
+
 | Case | Expected judgment | Selection |
 | --- | --- | --- |
 | `alex-judge-helper-recommendation-not-completion` | Advice is not the repair; use the installed required procedure and inspect its returned candidate/check/review evidence. | Core |

@@ -24,6 +24,7 @@ import {
 } from "../src/loop/store";
 import { withTempDir } from "./support/temp-dir";
 import { assertOutcomeCompletionApprovalHistory, outcomeCompletionRevisions } from "../benchmarks/outcome-completion/approach-drafts.test";
+import "../benchmarks/outcome-completion/style-evidence-draft.test";
 
 const root = resolve(import.meta.dirname, ".."),
   archive = join(root, "archive/pre-purpose-layout");
