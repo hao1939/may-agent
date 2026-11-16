@@ -473,6 +473,60 @@ resumption after the handoff fix. The direct repair exception does not prove a
 workflow implementation step. CI repair, current-head green checks and the final
 addressed Telegram readiness receipt are still owed.
 
+### Managed-finish repair and another real watcher continuation
+
+After the first direct fixture hypothesis failed, Alex restored its own changes
+and returned the unresolved diagnosis to May. May answered that exact escalation
+and authorized one bounded deeper test diagnosis; consumed workflow rounds were
+not reset. An interrupted, unaccepted Bob finish proposal supplied a diagnostic
+clue through operator feedback; it was not treated as an accepted review.
+
+Alex then observed the actual third-call rejection: the test repeatedly sent
+`verification_facts`, rejected by the current finish schema, and kept retrying.
+Changing that one field to `facts` passed the 31-test file and affected shard
+(862 pass, two skips). Independent Bob session
+`s_1794869546870_0bae1137-73e1-4157-a98e-9de9392aa09e` approved the exact repair.
+Alex committed and pushed `3fc13d76f0af7f1bfd923b5fa6994021570b3bbf` to the
+same PR. The earlier workflow receipt remains bound to d66, with the direct
+exception and new checks recorded separately.
+
+Hosted run 43974259880 completed all four shards, confirming the prior hang is
+resolved. Container passed; Quality failed `app-event-translation.test.ts:155`
+with two broken-route calls instead of one. Native observer event 6731128 at
+23:00:46 UTC satisfied the saved source-bound fingerprint Condition and started
+same-Task generation-4 attempt `r_4_c3b8b171-5037-4aa5-99fe-b388a82d38e8`.
+No operator continuation or CI-stage relay caused that wake.
+
+Alex repeated the test/file locally, then escalated denied CI rerun/dispatch,
+concluding that no source repair was warranted. Local passes and an unchanged
+file did not establish that conclusion. Unmerged #580 already contains the
+matching correction: assert immediate replay before reload, then explicitly
+await the unresolved route's reload retry while retaining one healthy-route
+translation. Operator feedback returns that existing evidence to May; the
+original human promise stays open. Guidance now requires assertion/source and
+related-fix diagnosis before credential escalation. Final readiness and addressed
+Telegram delivery have not yet been established.
+
+### Nested Bash groups and supporting source repair
+
+Several nested GNU `timeout` groups survived Bash cancellation as verified
+orphans. Operator cleanup was limited to the exact abandoned groups and retained
+receipts. Apps `e78e66d207` documents foreground plus KILL escalation; exact
+successful activation is 6731048. Subsequent native diagnostics followed that
+recipe and exited cleanly; this does not certify general process containment.
+
+Supporting draft [#582](https://github.com/hao1939/may-agent/pull/582), source
+`648b2a3dbe`, extends live and persisted cleanup from the original group to live
+groups inside its owned setsid session. Inspection/termination uncertainty retains
+the recovery sidecar. Four real GNU-timeout regressions cover normal settlement,
+abort, live recovery after leader exit, and persisted recovery; a separate
+session survives. All four fail against the original implementation. Fifty-five
+focused Bash tests and full local CI pass (3,439 passed, no failures, two existing
+skips; browser and Compose configuration coverage ran). Independent review and
+hosted checks remain pending. No binary was deployed. Descendants creating a
+separate session remain outside the scope; this is not universal process-tree
+containment or installed recovery proof.
+
 ## Historical performance observations
 
 The original proposal reported these local measurements before the boundary

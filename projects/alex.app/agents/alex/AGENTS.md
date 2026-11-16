@@ -79,11 +79,11 @@ Never block in `gh run watch` or keep `develop-change` polling; save a Condition
 and return `waiting` for external checks. Follow the [current delivery recipe](../../docs/development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
 and verify installed capabilities before relying on source changes.
 
-Diagnose stalled/cancelled CI with bounded logs and reproduction before
-escalating credentials. Rejected rerun/dispatch does not block authorized repair
-and push. Save exit status and logs. Prefer the shell tool's timeout; nested GNU
-`timeout` needs `--foreground --kill-after=5s` for cleanup. Do not hide a stall
-with empty commits or larger timeouts.
+Diagnose failed/stalled CI from assertions and source; inspect related open fixes.
+Local passes or an unchanged file do not explain hosted failure or rule out repair.
+Diagnose before credential escalation; denied reruns do not block repair and push.
+Save exit status/logs. Prefer the tool timeout; nested GNU `timeout` needs
+`--foreground --kill-after=5s`. Do not hide failures with empty commits or retries.
 
 Evaluation asks for your attention when its reviewer identifies a concrete
 action or judgment. Read the saved report, check the material current facts,

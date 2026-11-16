@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last verified at `238f476d3d`; binary activation is distinct from App reload and current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
+**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last verified at `e78e66d207`; binary activation is distinct from App reload and current `main`. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete. The first delivery follow-up needed operator intervention and did not establish its final addressed Telegram readiness notice. The user selected existing PR #574 for the next trial: assign the outcome to May, observe normal execution, and repair demonstrated gaps at their owning boundary.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -286,17 +286,22 @@ and independently reviewed the retained candidate. Source-bound watcher event
 6730879 woke that same Task, which rearmed against its observed fingerprint.
 That continuation required no operator queue wake.
 
-Readiness remains blocked by a real Quality timeout: three shards passed 2,625
-tests with no failures, while one stalled. Alex initially treated unavailable
-rerun credentials as the blocker without explaining its local reproduction, and
-kept workflow references only in prose. App guidance now preserves canonical
-`result.development` and retains bounded diagnosis/repair before escalation.
-May retired the manual rerun request and left the same Alex owner responsible
-for the actual stall. The existing active CI/comment observer now uses five-minute
-checks, with provider backoff retained. Current-head green CI, fresh repaired-code
-evidence if required, the caller return and the final addressed Telegram provider
-receipt are still required. Historical evidence and operator interventions must
-remain explicit; this is not yet a completed autonomous delivery claim.
+The initial Quality timeout is now diagnosed and repaired: its test repeatedly
+submitted obsolete `verification_facts` to a finish schema requiring `facts`.
+Alex fixed that field, verified the whole file and affected shard, obtained Bob
+review and pushed `3fc13d76f0` to the same PR under May's explicit direct-repair
+exception. The original workflow receipt certifies the prior candidate; it does
+not certify this later repair. All four hosted shards now finish. Container
+passed, but Quality exposed the existing reload/translation fixture race also
+addressed in unmerged #580. Native watcher event 6731128 observed the actual
+failed current-head checks and woke the same generation-4 Task, without operator
+continuation. Alex's local passes did not explain that failure; operator evidence
+identified the matching existing correction rather than supplying a CI rerun.
+Guidance now requires reading the failing assertion/source and related open fixes
+before treating local passes as grounds for credential escalation. Current-head
+green CI, accurate repaired-candidate evidence, the caller return and the final
+addressed Telegram provider receipt remain required. This is not yet a completed
+autonomous delivery claim.
 
 Bounded reproduction narrowed the stall to a single live-input test. A repair
 workflow reached its caller deadline before implementation; Host automatically
@@ -312,6 +317,15 @@ revision changes the execution output directory. Sixty-four workflow/evidence
 tests pass, including the failing-before regression and conservative exhausted
 or corrupt usage; successful activation is 6731019. The original delivery promise
 and final readiness/notification gates remain open.
+
+The run also exposed Bash cleanup that confirmed only the original process
+group, allowing nested GNU `timeout` groups in the same session to survive.
+Supporting draft [#582](https://github.com/hao1939/may-agent/pull/582) drains the
+owned session for live and persisted cleanup. Its four real-process regressions
+fail before the fix; 55 focused tests and full local CI (3,439 pass, two skips)
+pass afterward. This is unpublished-to-runtime source evidence, not installed
+cleanup proof. Descendants that create a separate session remain outside scope.
+Apps use `timeout --foreground --kill-after=5s` when an inner timeout is needed.
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |
