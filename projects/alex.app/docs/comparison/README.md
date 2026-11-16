@@ -59,3 +59,7 @@ The [representative Gym reporting delivery](gym-reporting-delivery-trial-2026111
 produces a tested, reviewed candidate and retained report replays, with integration
 deferred to preserve concurrent migration edits. It also exposes seven internal
 rounds across three workflow calls, narrowing the earlier round-accounting claim.
+The [cumulative review-round repair](alex-review-rounds-repair-20261116.md)
+reserves rounds before work across live reentry and command changes. Its
+deterministic regressions preserve unfinished acceptance and exact verification;
+hosted activation and real-work transfer remain to be observed.

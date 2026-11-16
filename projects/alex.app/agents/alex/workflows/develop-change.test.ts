@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { createServer, type AddressInfo, type Socket } from "node:net";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   admitTaskReconcileResult,
   type TaskDetail,
@@ -25,6 +25,7 @@ import { Check } from "typebox/value";
 import { run } from "@may-agent/sdk/standalone";
 import * as developChange from "./develop-change.js";
 import app, { taskForInput } from "../../../app.js";
+import { EvidenceStore } from "../../../../../shared/tools/task-evidence.js";
 
 const { execute } = developChange;
 
@@ -106,8 +107,10 @@ function trial() {
       findings: [],
     };
   };
-  const context = (signal = new AbortController().signal): WorkflowContext =>
-    createTestAppWorkflowContext({
+  const context = (
+    signal = new AbortController().signal,
+  ): Parameters<typeof execute>[0] =>
+    createTestAppWorkflowContext<{ verify: string[] }>({
       input: { verify: (current.input as any).data.verify },
       signal,
       reconciliation: {
@@ -120,7 +123,7 @@ function trial() {
         owner: "tech-lead",
         outcome: current.outcome,
         acceptance: current.acceptance,
-        input: current.input,
+        input: current.input as any, // Owning Task envelope, distinct from procedure options.
         children: { live: [], completed: [] },
         waits: { open: [], note: "" },
         taskSnapshot: { live: [], truncated: false },
@@ -135,9 +138,6 @@ function trial() {
       read: createTestAppRead({
         tasks: {
           list: async () => ({ items: [] }),
-          outcomes: async () => {
-            throw Error("unused");
-          },
           get: async () => current,
         },
       }),
@@ -248,7 +248,8 @@ describe("development workflow using real Git and verification", () => {
       { verify: ["node", "verify.cjs"], agent: "tech-lead" },
     ],
   ])("rejects %s at the workflow boundary", async (_label, input) => {
-    const run = await runWorkflowTest(developChange, { input });
+    // Deliberately invalid inputs exercise runtime schema admission.
+    const run = await runWorkflowTest(developChange, { input: input as any });
     expect(run.ok).toBe(false);
     expect(run.started).toBe(false);
     expect(run.steps).toEqual([]);
@@ -261,15 +262,19 @@ describe("development workflow using real Git and verification", () => {
       data: { ...t.spec(1).data, constraints: ["Preserve the exported API"] },
     };
     const ctx = t.context();
-    const run = await runWorkflowTest<unknown>(developChange, {
+    const run = await runWorkflowTest(developChange, {
       input: { verify: ["node", "-e", "process.exit(7)"] },
       reconciliation: ctx.reconciliation,
       workspace: ctx.workspace,
       read: ctx.read,
       mocks: {
-        bob: ({ task, options }) => ctx.call("bob", task, options),
+        bob: ({ task, options }) => options?.schema
+          ? ctx.call("bob", task, { ...options, schema: options.schema })
+          : ctx.call("bob", task),
         "tech-lead": ({ task, options }) =>
-          ctx.call("tech-lead", task, options),
+          options?.schema
+            ? ctx.call("tech-lead", task, { ...options, schema: options.schema })
+            : ctx.call("tech-lead", task),
       },
     });
     expect(run.ok).toBe(true);
@@ -338,6 +343,119 @@ describe("development workflow using real Git and verification", () => {
     expect((await t.run()).state).toBe("converged");
     expect(attempts).toBe(2);
     expect(t.calls.filter((x) => x.stage === "review")).toHaveLength(1);
+  });
+
+  test("live reentry shares three rounds even before the owner accepts a result", async () => {
+    const t = trial();
+    t.setJudgment(() => ({ decision: "invalid" }));
+    const first = await execute(t.context());
+    expect(first.output).toMatchObject({ state: "incomplete" });
+    expect(t.current.result).toBeUndefined();
+
+    // The owner continues its live attempt without first settling a Task result.
+    t.setJudgment((stage) =>
+      stage === "design"
+        ? { decision: "implement", reason: "Repair", design: "Return 1" }
+        : { decision: "ready", reason: "Claims ready without fixing the source" },
+    );
+    const second = await execute(t.context());
+    expect(second.output).toMatchObject({ state: "incomplete" });
+    expect(t.calls.filter(({ stage }) => stage === "implementation")).toHaveLength(
+      2,
+    );
+
+    const third = t.context();
+    third.input = { verify: ["node", "./verify.cjs", "1"] };
+    const count = t.calls.length;
+    const result = await t.run(third);
+    expect(result.state).toBe("incomplete");
+    expect(result.summary).toContain("3 cumulative");
+    expect(t.calls).toHaveLength(count);
+    expect(t.evidence().roundsUsed).toBe(3);
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe(
+      "check\ncheck\n",
+    );
+    expect(t.current.acceptance).toEqual(["The function returns 1"]);
+  });
+
+  test("a changed verification command does not replenish accepted round usage", async () => {
+    const t = trial();
+    t.setImplementation(() => {});
+    expect((await t.run()).state).toBe("incomplete");
+    const calls = t.calls.length;
+    const ctx = t.context();
+    ctx.input = { verify: ["node", "./verify.cjs", "1"] };
+    expect((await t.run(ctx)).state).toBe("incomplete");
+    expect(t.calls).toHaveLength(calls);
+    expect(t.evidence().roundsUsed).toBe(3);
+    expect(t.evidence().verified).toBeUndefined();
+  });
+
+  test("cancellation consumes its reserved round without an accepted result", async () => {
+    const t = trial();
+    const controller = new AbortController();
+    const ctx = t.context(controller.signal);
+    const call = ctx.call;
+    ctx.call = (async (...args: Parameters<typeof call>) => {
+      await call(...args);
+      controller.abort(new Error("Interrupted specialist"));
+      throw controller.signal.reason;
+    }) as typeof call;
+    await expect(execute(ctx)).rejects.toThrow("Interrupted specialist");
+    expect(t.current.result).toBeUndefined();
+    t.setJudgment(() => ({ decision: "invalid" }));
+    for (let attempt = 0; attempt < 3; attempt++) await t.run();
+    expect(t.calls).toHaveLength(3);
+    expect(t.evidence().roundsUsed).toBe(3);
+  });
+
+  test("concurrent invocations cannot reserve more than three rounds", async () => {
+    const t = trial();
+    t.setJudgment(() => ({ decision: "invalid" }));
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () => execute(t.context())),
+    );
+    for (const result of results)
+      expect(result.output).toMatchObject({ state: "incomplete" });
+    expect(t.calls).toHaveLength(3);
+  });
+
+  test.each(["known", "unknown"])(
+    "legacy evidence with %s usage cannot replenish the allowance during migration",
+    async (usage) => {
+      const t = trial();
+      if (usage === "known") t.setImplementation(() => {});
+      await t.run();
+      const delivery = t.current.result!.development as any;
+      const directory = dirname(delivery.evidence.path);
+      // Simulate pre-repair evidence: no durable reservation slots existed.
+      for (let round = 1; round <= 3; round++)
+        rmSync(join(directory, `round-${round}.reserved.json`), { force: true });
+      if (usage === "unknown") {
+        const historic = t.evidence();
+        delete historic.roundsUsed;
+        delivery.evidence = await new EvidenceStore(directory).put(
+          JSON.stringify(historic),
+          "json",
+        );
+      }
+      const count = t.calls.length;
+      const ctx = t.context();
+      ctx.input = { verify: ["node", "./verify.cjs", "1"] };
+      expect((await t.run(ctx)).state).toBe("incomplete");
+      expect(t.calls).toHaveLength(count);
+      expect(t.evidence().roundsUsed).toBe(3);
+    },
+  );
+
+  test("an unreadable prior allowance does not silently grant a fresh budget", async () => {
+    const t = trial();
+    await t.run();
+    rmSync((t.current.result!.development as any).evidence.path);
+    const calls = t.calls.length;
+    expect((await t.run()).state).toBe("incomplete");
+    expect(t.calls).toHaveLength(calls);
+    expect(t.evidence().roundsUsed).toBe(3);
   });
 
   test("implementation continue resumes unfinished work in the next round before verification", async () => {

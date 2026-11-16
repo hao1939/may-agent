@@ -73,9 +73,9 @@ control when it cannot satisfy them.
 The process is one reconciliation loop: read the latest requirements, check
 the work so far, and decide what to do next. Execute that step and save the
 result. Feedback, failed checks and recovery all lead to another iteration. The
-current workflow allows three rounds in one execution; that bounds the
-invocation, not the number of iterations available to the Task. Matching
-evidence lets later invocations skip completed work.
+workflow reserves at most three cumulative rounds for the development Task
+across invocations. Matching evidence lets later invocations skip completed
+work; reentry and changed verification commands do not renew the allowance.
 
 Agents make judgments; the workflow runs the steps and checks. Bob assesses
 the design before tech-lead implements it. Code runs verification, and Bob
@@ -527,6 +527,30 @@ future actual-project trial must confirm the App workspace and Task worktree
 before executing; changing the App's workspace can affect its other Tasks.
 
 ## Proof and reproduction
+
+### Cumulative development allowance
+
+`develop-change` reserves at most three rounds for the existing development Task
+in its Task-local `.state/alex-development/<task-digest>/` archive. Each
+`round-N.reserved.json` is an atomic link to a complete immutable receipt,
+written before specialist or verification work. Live workflow reentry,
+cancellation, concurrent calls, changed verification argv, new feedback,
+generation changes and candidate commits do not replenish that allowance.
+The allowance remains consumed when an owner has not yet returned a Task result.
+
+Candidate acceptance remains separate: changed verification argv invalidates
+the old passing receipt, and an unchanged verified/reviewed candidate may still
+replay after round three without new work. Readable prior Task evidence seeds
+the consumed count when migrating or recovering an archive. Unknown prior usage
+leaves no provable remaining rounds; unavailable verification receipts cannot
+certify a candidate. Exhaustion returns incomplete with evidence for the owner
+to disposition; it does not claim the original acceptance is met or recommend
+calling the same loop again.
+
+These are local allowance receipts, not a second Task lifecycle or a general
+run/cost budget. Retain the Task archive. This source repair has deterministic
+coverage; live activation and Host restart/workspace-replacement behavior have
+not been demonstrated. See the [repair record](comparison/alex-review-rounds-repair-20261116.md).
 
 Run these checks from the Apps repository root:
 

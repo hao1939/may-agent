@@ -15,6 +15,10 @@ import {
   sameCandidate,
   type Candidate,
 } from "./lib/repository.js";
+import {
+  DevelopmentRounds,
+  developmentRoundLimit,
+} from "./lib/development-rounds.js";
 
 import {
   artifactSchema,
@@ -94,7 +98,9 @@ const savedSchema = Type.Object(
     taskId: text,
     requirementKey: text,
     inputKey: text,
-    roundsUsed: Type.Optional(Type.Integer({ minimum: 0, maximum: 3 })),
+    roundsUsed: Type.Optional(
+      Type.Integer({ minimum: 0, maximum: developmentRoundLimit }),
+    ),
     design: Type.Optional(designSchema),
     implementation: Type.Optional(candidateSchema),
     verified: Type.Optional(candidateSchema),
@@ -144,6 +150,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
       digest({ appId: rec.appId, taskId: rec.taskId }),
     ),
   );
+  const rounds = new DevelopmentRounds(archive);
   let archiveReady = false;
   let saved: Saved | undefined;
   const finish = async (message: string, complete = false) => {
@@ -152,6 +159,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
     let report;
     try {
       if (saved && archiveReady) {
+        saved.roundsUsed = Math.max(saved.roundsUsed ?? 0, await rounds.used());
         evidence = await archive.put(
           `${JSON.stringify(saved, null, 2)}\n`,
           "json",
@@ -163,6 +171,8 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
             "This records local work. Task settlement and Request closure must be read from Runtime.",
             `Task: ${rec.taskId}`,
             `Requirement: ${saved.requirementKey}`,
+            `Cumulative rounds reserved: ${saved.roundsUsed}/${developmentRoundLimit}`,
+            `Allowance receipts: ${archive.directory}/round-*.reserved.json`,
             `Worktree: ${root}`,
             `Verified candidate: ${JSON.stringify(saved.verified ?? null)}`,
             `Review: ${saved.review?.judgment.decision ?? "not available"}`,
@@ -269,15 +279,27 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
         : []),
       current.result?.development,
     ];
+    let recoveredState = false;
+    let recoveredRounds = 0;
     for (const previous of previousResults) {
       if (!Check(deliverySchema, previous)) continue;
+      let recoveredCount = false;
       try {
-        await archive.read(previous.report);
         const recovered: unknown = JSON.parse(
           await archive.read(previous.evidence),
         );
         if (!Check(savedSchema, recovered) || recovered.taskId !== rec.taskId)
-          continue;
+          throw new Error("Prior delivery cannot establish this Task's allowance");
+        // Usage remains consumed even if commands, requirements or receipt
+        // availability invalidate the old candidate's verification. Legacy
+        // evidence without a count cannot establish any remaining allowance.
+        recoveredRounds = Math.max(
+          recoveredRounds,
+          recovered.roundsUsed ?? developmentRoundLimit,
+        );
+        recoveredCount = true;
+        if (recoveredState) continue;
+        await archive.read(previous.report);
         for (const report of currentReports(recovered.reports)) {
           await archive.read(report.record);
           await archive.read(report.report);
@@ -295,13 +317,20 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
             delete saved.review;
           }
         }
-        break;
+        recoveredState = true;
       } catch (error) {
+        if (!recoveredCount) recoveredRounds = developmentRoundLimit;
         ctx.log.info(
-          `Prior evidence is unavailable; inspect the candidate afresh: ${String(error)}`,
+          `Prior evidence is unavailable; retain consumed allowance and inspect only within the remaining rounds: ${String(error)}`,
         );
       }
     }
+    await rounds.inherit(recoveredRounds, {
+      taskId: rec.taskId,
+      generation: rec.generation,
+      source: "prior Task delivery; unknown usage conservatively reserves the remaining allowance",
+    });
+    saved.roundsUsed = await rounds.used();
     const ensureCurrent = async () => {
       ctx.signal.throwIfAborted();
       const latest = await ctx.read.tasks.get(rec.taskId);
@@ -411,10 +440,20 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
       );
     }
 
-    while ((saved.roundsUsed ?? 0) < 3) {
+    while (true) {
       await ensureCurrent();
+      if ((await rounds.used()) >= developmentRoundLimit) break;
       let value = await candidate(root, ctx.signal, true);
-      saved.roundsUsed = (saved.roundsUsed ?? 0) + 1;
+      const round = await rounds.reserve({
+        taskId: rec.taskId,
+        generation: rec.generation,
+        requirementKey,
+        inputKey,
+        verify: input.verify,
+        candidate: value,
+      });
+      if (round === undefined) break;
+      saved.roundsUsed = await rounds.used();
       if (!saved.design) {
         saved.design = await ask("bob", "design", designSchema, value);
         // The new judgment supersedes the old request for repair. Honor review
@@ -515,7 +554,7 @@ export async function execute(ctx: WorkflowContext<DevelopChangeInput>) {
       if (review.decision === "redesign") saved.design = undefined;
     }
     return finish(
-      "Development remains unfinished after this bounded repair loop; continue the same Task from the saved evidence",
+      `Development remains unfinished after ${developmentRoundLimit} cumulative rounds; retain the same Task and evidence for the owner's disposition. Reentry or changed verification argv does not renew the allowance`,
     );
   } catch (error) {
     if (ctx.signal.aborted) throw error;

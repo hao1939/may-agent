@@ -55,5 +55,5 @@ infrastructure uncertainty separate from a verdict about the candidate. Return u
 ## References
 
 - `/app/projects/gym/docs/test-improve-verify-loop.md`
-- `/app/projects/gym/benchmarks/may-alignment/HUMAN-REVIEW-DESIGN.md`
-- `/app/projects/gym/benchmarks/may-alignment/README.md`
+- `/app/projects/gym/archive/pre-purpose-layout/benchmarks/may-alignment/HUMAN-REVIEW-DESIGN.md`
+- `/app/projects/gym/archive/pre-purpose-layout/benchmarks/may-alignment/README.md`
