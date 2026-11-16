@@ -5,7 +5,12 @@
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first). Repair existing boundaries and remove duplicate decisions before adding interfaces or state.
 
 **Design status:** Accepted direction; the owning contract is in `2a-design/`.
-**Implementation status:** Partial, reviewed at Host `4c2ddaa3e4`. Portable preparation, skills, model execution and the workflow kernel exist. Full standalone/Host parity and parent worker supervision remain incomplete. No runtime change or deployment is established by this documentation refinement.
+**Implementation status:** Partial. Standalone skill activation, service absence,
+snapshots and workspace prerequisites are implemented foundations, followed by
+the root/App SDK split and bounded helper lifecycle. Hosted invocation, parent
+worker supervision and paired adoption remain incomplete. The
+[source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
+pins the completed scope; source status is not deployment evidence.
 
 ## One authority for the design
 
@@ -17,9 +22,11 @@ invocation; and one lifecycle executes the agent in either environment.
 
 [Host Runtime](../2a-design/runtime.md) owns orchestration, supervision and recovery.
 [Task attempts](../2a-design/task-attempts.md) own durable claim/settlement. Neither
-requires another agent implementation. Current SDK types remain callable; this
-record does not propose a universal context object, service registry, result
-schema, agent base class or new public invocation signature.
+requires another agent implementation. SDK entry points and compatibility limits
+are owned by [SDK](../2a-design/sdk.md).
+The [ingress/SDK follow-up](host-ingress-and-boundary-simplification-20261116.md)
+owns the shared-run/App/Conversation integration sequence; this record retains
+the complementary parent-worker supervision boundary.
 
 The [earlier migration and review record](../archive/unified-agent-instance-runtime.md)
 and [workflow extraction record](../archive/workflow-business-host-boundary.md)
@@ -31,13 +38,10 @@ the behavior it proposed.
 
 | Boundary | Smallest useful change | Verification |
 | --- | --- | --- |
-| Agent invocation | Make manager/session execution use the portable lifecycle, supplying controls and persistence through explicit adapters. Remove duplicated corrective finish, recovery and terminal classification. | Paired finish/rejection, partial-result, cancellation and cleanup races; existing Host persistence/recovery regressions. |
-| Tools and services | Resolve effective tools explicitly with actual local or Host-backed implementations. Remove mode-derived grants/denials; keep explicit caller/installation restrictions. | Provided delegation and work-management tools have identical schemas/results/errors; unavailable backends cannot succeed silently. |
-| Context and result boundary | Share generic preparation and refresh with ordinary assignment/facts/references. Keep Host claim/lease coordinates private and translate explicit caller/App results at settlement. | Root and helper context, refresh/compaction, stale reads, rejected results and Host Task acceptance without a Host-specific agent lifecycle. |
-| Skills | Pass deliberate selection to shared full-body activation; retain optional discovery. | Availability alone loads no body; explicit selection delivers the requested body or rejects an unavailable name in either mode. |
-| Missing services | Replace production use of test-style reads and silent partial-binding defaults with actual local adapters or explicit errors. | Successful absent-item/empty-list reads remain distinct from unavailable/failed services and denied effects. |
-| Directory setup | Check declared isolation prerequisites before dispatch in either environment. Keep allocation and cleanup environment-owned. | Missing required checkout rejects before effects; supplied paths work consistently. |
-| Definition consistency | Retain one resolved definition and any supporting source whose consistency is required. Avoid a new snapshot service. | Mid-invocation source changes cannot silently replace instructions, tools or selected skill bodies; later invocations can adopt updates. |
+| Hosted agent invocation | Make Host execution call shared `run()` and its kernel lifecycle with explicit controls/providers. | Real Host finish/rejection, cancellation, identities, cleanup and checkpoint recovery. |
+| Worker input and capabilities | Remove injected Task briefs/tools/schema from domain workers; construct explicit current input at the App boundary. | Hosted/standalone payload parity, explicit coordinator tools and fresh resumed input. |
+| Storage and settlement | Parent owns Host SQLite; connect the existing result translator and preserve finite-assignment eligibility. | No child Host DB connections; admitted results, stale generations and restart cannot falsely close work. |
+| Paired adoption | Migrate App/coordinator imports and workers against an exact Host/SDK revision. | Whole-pair checks plus blocked/wake/resume/completion through the real App. |
 | Host worker supervision | Supply parent-owned bounds for bounded attempt and startup-recovery workers; explicitly handle ongoing native executors. | A hung child cannot hold readiness/capacity indefinitely behind a healthy daemon; retain ownership until confirmed exit/cleanup. |
 
 These changes replace existing decisions; they must not add a parallel runner,
@@ -47,12 +51,15 @@ App/caller decisions, not inference from generic prose or tool names.
 
 ## Evidence and limits
 
-The source review ran 286 focused tests across 11 Host/SDK files with no failures.
+The earlier review at Host `4c2ddaa3e4` ran 286 focused tests across 11 Host/SDK
+files with no failures.
 Temporary, model-free fixtures additionally reproduced: missing standalone
 explicit skill delivery, Task outcome/acceptance absent from prompt-agent context,
 mutable identity after catalog capture, acceptance of an unallocated required
-Task worktree, and unbound reads returning `null`. The worker-supervision finding
-is from production wiring inspection, not a live hung-worker incident.
+Task worktree, and unbound reads returning `null`. Those standalone reproductions
+predate the completed convergence work and are
+not a current defect list. The worker-supervision finding is from production
+wiring inspection, not a live hung-worker incident.
 
 Tests demonstrate existing contracts, not full parity or long-running deployment
 health. Use the owning [paired acceptance cases](../2a-design/agent-runtime.md#acceptance)

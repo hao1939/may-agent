@@ -29,6 +29,15 @@ Files hold full prompts, transcripts, workflow inputs/results, large event
 bodies and evaluation evidence. Keeping these payloads out of bounded resource
 rows does not make the resource rows disposable.
 
+The event writer owns event persistence and delivery bookkeeping, not a second
+execution state machine. Task attempts, sessions and workflow runs own their
+execution state and restart recovery. The `event_pair_runs` handler/workflow
+pair tracker and its restart repair are retired; retention must not depend on
+that projection. See the [merged source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md).
+This journal cleanup does not establish a single SQLite writer: current Task
+attempt children still construct `DbWriter`. Moving those writes to the parent
+is a separate [execution integration gap](agent-runtime.md#source-convergence).
+
 Files are authoritative for full execution artifacts:
 
 ```text

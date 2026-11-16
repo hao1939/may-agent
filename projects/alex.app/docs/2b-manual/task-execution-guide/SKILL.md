@@ -222,6 +222,14 @@ existing waits. Retire an obsolete wait explicitly through the supported action.
 
 ## Decide how this attempt ends
 
+You judge whether the addressed work is sufficient under the assignment and App
+policy. Host admission records that judgment after contract, authority and
+freshness checks. An accepted result is a committed report, not independent
+verification that your conclusion is true. Preserve useful work, explain gaps
+and correct specific rejection feedback within the current allowance. A lost
+acknowledgment is a reason to inspect/replay the existing receipt, not repeat
+an external effect. See [judgment and admission](../../2a-design/task-attempts.md#agent-judgment-and-infra-admission).
+
 **Report useful progress, mark only fulfilled requirements complete, and
 continue the remaining work.** A patch can be accepted while its required
 verification is still pending. Use `waiting` with `continue: true` when another

@@ -28,9 +28,14 @@ installed adoption remains unverified.
 
 ## Best next candidates
 
-1. **Task entry clarity:** distinguish assigned input from pending unclaimed
+1. **Ingress/SDK integration:** preserve retained Conversation return and exact
+   Task-input fences, then establish one compatible Host/App worker through
+   shared execution, blocked continuation and accepted finite completion. The
+   [remaining gaps](host-ingress-and-boundary-simplification-20261116.md) distinguish
+   merged foundations from pending adoption and ownership changes.
+2. **Task entry clarity:** distinguish assigned input from pending unclaimed
    input using current reads and evidence links.
-2. **Recovery adoption:** real-model diagnosis and the scripted human-reply path
+3. **Recovery adoption:** real-model diagnosis and the scripted human-reply path
    have evidence. The accepted-release probe identifies missing generic
    pre-attempt controller routes. The App correction now has a real-controller
    regression through repair and original return; independent recipient startup
@@ -43,7 +48,8 @@ Prompt/checker cleanup is already assigned elsewhere.
 
 | Record | Current status and remaining scope |
 | --- | --- |
-| [Shared agent runtime convergence](unified-agent-instance-runtime.md) | Accepted boundary; remove mode-derived tool/context behavior and duplicated invocation decisions, fix explicit skills/absence/directory/definition consistency, and complete parent worker supervision. Source parity remains partial. |
+| [Host ingress and SDK convergence: remaining work](host-ingress-and-boundary-simplification-20261116.md) | #568/#569/#566/#570 are merged; established rules are promoted to owning contracts. Repair retained Conversation delivery and exact-input generation fencing, establish a compatible App pair, connect Host to shared `run()` with parent-only SQLite, then complete wait/resume and Conversation ownership. App identity cleanup and reconciler extraction remain separate. |
+| [Shared agent runtime convergence](unified-agent-instance-runtime.md) | Standalone skills/services/snapshots/workspace rules and root/App SDK foundations are implemented. Hosted invocation, explicit capability wiring, parent worker supervision and paired adoption remain; uses the ingress/SDK follow-up for the common integration sequence. |
 | [Teaching agents](agent-behavior-and-capability-extension.md) | Use existing instructions/skills/workflows; the remaining question is one discover-author-activate-fresh-use path with useful outcomes, not a new trainer. |
 | [App author usability](app-environment-review-20260928.md) | Choose one concrete author/worker discovery failure and compare the smallest correction. Avoid another capability inventory. |
 | [Current gaps and historical leads](design-implementation-convergence.md) | Host #456 closed freshness-by-event-name. Other September rows are historical leads requiring reproduction, not confirmed current defects. |

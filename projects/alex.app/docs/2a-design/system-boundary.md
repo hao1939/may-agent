@@ -17,6 +17,11 @@ inputs remain a convergence gap rather than an alternate accepted boundary.
 The safe-retry default below is a capability requirement; coverage must be
 verified at each operation's effect boundary. Existing Task replay does not
 certify every installed tool or external provider effect.
+SDK authoring, canonical ingress and external Task reads have been simplified;
+companion SDK context/import adoption is prepared in a local unmerged patch.
+Shared `run()` supervision and connected domain-worker adoption remain incomplete. See the
+[source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
+and [remaining convergence work](../proposals/host-ingress-and-boundary-simplification-20261116.md).
 
 The responsibility split is:
 
@@ -33,6 +38,30 @@ third work owner or another service an App must assemble. The creator controls
 the requested scope. [Agent ownership and App scope](agents.md#task-ownership-and-app-scope)
 distinguishes that authority from carrying the Task's outcome. Current durable
 admission remains App-scoped; standalone Tasks are an explicit follow-up.
+
+## Ingress, Task process and bounded execution
+
+Keep three responsibilities distinct:
+
+| Layer | Owns | Boundary |
+| --- | --- | --- |
+| Ingress and communication | Validate addressed input; retain Conversation messages, accepted Requests and reply destinations | Assign durable work through App input; communication history is not another domain assignment |
+| Host Task process | Admission, claims, waits, retry/backoff, recovery, result admission and caller projection | Deterministic mechanics execute App policy; they do not choose a domain strategy |
+| Agent execution SDK | Bounded agent/procedure calls, domain judgment, iteration and contribution results | Workers receive explicit input and supplied capabilities; they need no Task storage or reconciliation envelope |
+
+A procedure can iterate between an implementer and reviewer within one bounded
+run. Deciding to redesign or request clarification belongs there. Persisting a
+wait, waking on an observation, fencing a stale attempt and retrying an eligible
+infrastructure failure belong to Host. A coordinator may explicitly use Task
+domain data/tools; that does not make Task management part of every worker's SDK.
+
+The root [SDK](sdk.md#stable-root-surface) now separates execution authoring from
+App/Task contracts. Host executors still use Task-specific preparation, and
+Conversation still has a stable execution Task. Calling shared `run()` without
+changing worker prompts/tools/schemas, removing that Conversation wrapper and
+delivering through completion Hooks are remaining requirements, not available
+APIs. A worker's `done` is a bounded contribution; only accepted settlement of
+the owning finite assignment can authorize closure.
 
 ## Installation declarations
 
@@ -392,6 +421,73 @@ Together they persist accepted work, coordinate bounded attempts, recover and
 expose truthful results. Interfaces and other concrete capabilities attach to
 those contracts.
 
+Host is accountable for reliable execution and faithful records. The assigned
+agent judges useful work, sufficiency and the conclusion under its assignment
+and App policy. **Host result admission records an authorized judgment.** It
+establishes who reported what, for which work and execution; it does not certify
+the conclusion's semantic truth. A caller can use the returned answer directly.
+Reviewing a contribution against a wider assignment remains that caller's work,
+without a mandatory second evaluator for every result. The
+[attempt contract](task-attempts.md#agent-judgment-and-infra-admission) owns the
+exact admission rules.
+
+### Responsibilities through a Task
+
+| Boundary | Host responsibility | Agent, App or installation decision |
+| --- | --- | --- |
+| Input | Validate the addressed route, schema and authority; durably retain admitted input, correlation and replay identity before acknowledging acceptance. | Interpret the ask, choose its owner and map it to new or existing work. |
+| Requirements and state | Apply authorized changes with generation/version checks; preserve accepted state, pending input and exact caller relationships. | Decide the requested scope, constraints, acceptance and authorized revisions. |
+| Scheduling | Derive eligibility from durable state; apply capacity, declared priority, pause, retry and timing policy; recover lost queue hints. | Decide useful priorities and continuation within the assignment; installation supplies resource limits. |
+| Invocation | Supply the selected definition, current scoped input, permitted capabilities and environment; retain execution identity and bounded evidence. | Choose methods, domain iterations and helper calls; capabilities execute the requested operations. |
+| Supervision | Enforce declared execution limits and Stop; fence late effects, confirm cleanup and retain capacity ownership until required cleanup completes. | Choose execution budgets and supported ongoing-executor policy; judge whether progress is useful. |
+| Result admission | Validate shape/limits, live attempt and generation, authority, affected revisions and explicitly declared checks; commit accepted decisions and required effects consistently. Return specific rejection feedback. | Judge completion and evidence sufficiency; declare any domain validation or normalization in the App/caller contract. |
+| Wait and continuation | Retain exact Conditions, dependencies and deadlines; deliver matching facts and schedule an eligible fresh attempt with current context and retained evidence. | Choose what fact is needed, its producer, and the decision it enables. |
+| Retry and recovery | Reuse operation identity, inspect known effects, pace eligible retries and restore the same obligation after interruption. Preserve uncertainty and exhausted allowances. | Diagnose unresolved failures and choose repair, another method, waiting or escalation within authority. |
+| Feedback and delivery | Retain accepted results and undelivered feedback; retry declared delivery paths, deduplicate receipts and expose missing routing or failed delivery. | Choose the meaning and recipient of a domain request or human escalation through declared routes. |
+| Ending | Execute authorized closure or cancellation and retain its disposition/evidence; prevent stale execution or later facts from reopening ended work. | Decide whether the assignment can end under creator authority and App policy. |
+
+These are responsibilities of existing records and controls, not additional
+Task states, services or queues. Registration and atomic definition replacement
+remain prerequisites for executing the selected App contract.
+
+### What continued operation means
+
+Host must make eligible work runnable when capacity and prerequisites permit,
+or expose the concrete reason it cannot progress. Useful independent work may
+run while other results remain outstanding. Quiet execution, an unresolved wait
+or an idle open Task does not establish a stuck worker or a failed outcome.
+The [runtime](runtime.md#worker-supervision) owns execution-liveness checks;
+Apps and agents own judgments about useful progress.
+
+Waiting releases execution capacity. A matching external fact or deliberate
+deadline can start a new bounded attempt; precise resumption of an old process
+is optional. Administrative pause, an external wait, explicit Stop, closure
+and retry exhaustion retain their own meanings and recovery controls. Background
+pause keeps admission active and follows the declared
+[foreground eligibility rule](runtime.md#pausing).
+
+Host can detect a configured limit, failed operation, missing declared route or
+unrecoverable execution. Those facts use the existing caller or declared
+operational route; merely recording a diagnostic does not establish delivery or
+recipient action. Escalation carries the original obligation and evidence.
+It grants no new authority, resets no retry allowance and does not mean the
+human owes an action. The [recovery contract](#retry-and-recovery-ownership)
+owns this feedback path; an agent judges the next intervention.
+
+Host reliability is bounded by the chosen storage, retention and provider
+contracts. Recovering a missed wake can be cheap; replaying an uncertain external
+effect may be costly. Preserve accepted work and operation identities, recover
+queue hints from authoritative state, and inspect uncertain effects through
+supported capabilities before repetition. An interrupted attempt may lose
+uncommitted computation. Backup recovery can leave explicit evidence gaps.
+This follows [robustness for the goal](../1-principles/design-philosophy.md#robust-enough-for-the-goal)
+without requiring perfect execution history or exactly-once arbitrary effects.
+
+**Implementation scope:** this matrix clarifies the accepted responsibility
+boundary. It does not establish complete production coverage. Parent watchdog
+wiring, shared invocation/settlement, blocked-result continuation and retained
+caller delivery have distinct [source gaps and local repairs](../proposals/host-ingress-and-boundary-simplification-20261116.md#host-responsibility-model).
+
 Failure containment stays with admission and execution. The Host preserves
 evidence, releases resources and applies known bounded responses. Apps or LLMs
 judge uncertain diagnosis, repair and scope. Metric-service placement remains
@@ -604,8 +700,9 @@ adapters; Apps do not inspect Host session artifacts to administer recovery.
 See [Runtime recovery](runtime.md#recovery) for the remaining private recovery
 confirmation gap and the distinction between ownership and optional history.
 
-Apps with paused task reconciliation continue to store new work but do not
-start task attempts.
+Apps with paused background reconciliation continue to store new work. Background
+attempts wait for resume; admitted human input follows the
+[foreground eligibility rule](runtime.md#pausing).
 
 Continuing the same obligation may mean rerunning an attempt from its input.
 Precise session or step resumption is not required by this boundary. Prefer

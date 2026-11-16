@@ -446,6 +446,20 @@ descendant cleanup are confirmed; a sent signal is not completed cleanup.
 An intentionally ongoing native executor needs an explicit responsiveness and
 stop policy, not an accidental unlimited wait or a universal short timeout.
 
+The supervisor acts on declared deadlines, cancellation, lost execution ownership
+and supported liveness observations. Silence, slow domain progress or an open
+Condition alone is not evidence that execution should be killed. A timeout is
+an execution fact; a user Stop retains its cancellation semantics. Neither
+certifies that external effects were rolled back. Preserve partial evidence and
+uncertain effects for the owner. A Stop is not automatically undone by retry;
+continuation follows its existing explicit control scope.
+
+Stopping execution does not fulfill or abandon its Task. After confirmed
+cleanup, ordinary recovery may start a fresh eligible attempt on the same Task.
+When safe cleanup cannot be confirmed, retain that concrete blocker and expose
+it through the existing caller or declared recovery route. A responsive daemon,
+a saved failure event and successful recipient admission are separate facts.
+
 The process supervisor restarts exited Host services. Independent maintenance
 probes the control socket and durable daemon heartbeat, with failure pacing,
 active-work grace and restart cooldown. Those are process-liveness checks, not

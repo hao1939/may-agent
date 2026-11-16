@@ -9,6 +9,14 @@ same Task. Then change the reviewer guidance and check a fresh execution.
 The [sample App](../../../sample.app/README.md) is the runnable source for this
 walkthrough; the examples import it rather than maintain a second App.
 
+**Version scope:** This Task-aware sample requires its compatible Host/App pair.
+The SDK root/App split is merged, but the current sample and other Apps have not
+completed that migration. New domain workers use root `AgentContext`; App
+declarations and Task/coordinator contracts use `@may-agent/sdk/app`. Follow
+[paired adoption gaps](../proposals/host-ingress-and-boundary-simplification-20261116.md#establish-a-compatible-host-and-app-pair)
+before using this walkthrough with the newer Host. A passing check against an
+older local SDK does not establish compatibility with merged Host `main`.
+
 The responsibility split is small:
 
 | Part | Responsibility |

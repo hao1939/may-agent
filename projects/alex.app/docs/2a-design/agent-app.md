@@ -10,6 +10,10 @@ and native executors perform bounded attempts under the shared lifecycle.
 Task reads are exposed through the SDK, tools, control socket and HTTP. Pure
 translators perform no work. App-specific behavior and installation state need
 their own evidence; Host source checks do not certify every App.
+App authoring is imported from `@may-agent/sdk/app`; root SDK authoring is for
+bounded workers. Existing App source needs a compatible SDK revision. Shared
+execution settlement is implemented as a component, with Host caller wiring
+and paired App migration still incomplete; see [SDK results](sdk.md#one-execution-result).
 
 An App is an organized extension of its owner agent, with one durable address
 for its domain scope. It declares input policy, Task mapping, shared context
@@ -26,11 +30,26 @@ The accepted [one-lifecycle contract](task-resource-engine.md#one-lifecycle-base
 uses a stable Task lineage for Conversation execution too. Tasks record outcomes
 and remain available until an authorized owner closes them; ordinary Apps can
 close after accepting the requested result by convention. The controller need not
-classify finite and maintained responsibilities. Conversation execution and
-ordinary App work use this shared Task controller; `conversation` selects the
-bounded agent turn capability.
+infer whether a responsibility is finite or maintained. App policy must preserve
+standing duties when adopting finite-done settlement; a bounded contribution
+alone does not end continuing responsibility. Conversation execution and ordinary
+App work currently use this shared Task controller; `conversation` selects the
+bounded agent turn capability. Removing that execution Task is a separate cutover.
 
 ## Choosing the stored record
+
+### One external Task read contract
+
+Console, WebUI and Telegram read Tasks through `HumanTaskService`: control
+`tasks.list` / `task.get` and HTTP `/api/tasks` / `/api/task`. The duplicate
+`app.tasks.list`, `app.task.get`, `app.tasks.workload` socket commands and
+`/api/apps/:appId/tasks` HTTP routes are retired. In-process SDK/coordinator
+`RuntimeTaskRead` remains a scoped reader; it is not another external contract.
+Raw-JSON project action discovery/invocation is also retired. Loaded App identity
+is the intended top-level UI unit; legacy saved-project rows and status scraping
+remain an explicit gap rather than a second accepted work authority.
+
+### Addressed input and conversational Requests
 
 This document's Host request APIs track addressed input handling and caller
 results. The conversational **Request** is the accepted ask whose loop May must
@@ -317,6 +336,14 @@ caller correlation, then maps and attaches the Task input before returning
 where possible. Failed attachment remains durable for recovery. Execution runs
 asynchronously; caller completion projects the exact accepted result.
 See [Events](events.md) for admission guarantees.
+
+Exact human Task messages carry the expected generation in trusted Host-envelope
+metadata, independently of domain input. The local Host repair retains this fence
+through delayed admission and restart and checks it in the attachment transaction.
+A stale or closed target receives a readable rejection; input cannot reopen it.
+An identical already accepted operation reuses its original receipt after the
+Task advances. The HTTP adapter also recognizes older accepted envelopes. This
+repair is unmerged; the merged-source baseline still has the preflight-only gap.
 
 An App may declare `conversation: { mode: "task", inputKinds: [...] }`.
 Conversation input uses a stable Task with executor `agent`, common Task results,
@@ -707,10 +734,12 @@ owner agents. Assigned agents own Tasks and judge progress under that policy. Ap
 receive raw SQL, request or adapter state, unrestricted task storage, global
 runtime paths, scheduler handles, or recovery APIs.
 
-When task reconciliation is paused, the Host admits input and keeps schedules,
-observers, and declared event routes active, but starts no new task attempts.
-Durable task intent and wakes accumulate for resume. Pause and resume remain
-explicit control operations, not conclusions inferred from open work.
+When background task reconciliation is paused, the Host admits input and keeps
+schedules, observers, and declared event routes active. Background attempts wait
+for resume; pending admitted human input follows the
+[foreground eligibility rule](runtime.md#pausing). Durable task intent and wakes
+accumulate for resume. Pause and resume remain explicit control operations,
+not conclusions inferred from open work.
 
 ## Reliability convention
 

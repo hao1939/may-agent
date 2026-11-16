@@ -5,10 +5,11 @@
 **Choice basis:** [Choosing the Right Mechanism](../1-principles/code-vs-data.md#composition-preserves-execution-rules).
 
 **Design status:** Accepted.
-**Implementation status:** Bounded workflows use the scoped SDK context,
-Task-bound execution, cancellation, retained results and shared result admission.
-Agent-selected workflow calls and workflow-selected agent calls preserve the
-caller's Task binding. [Enforcement and guidance](#enforcement-infrastructure-and-guidance)
+**Implementation status:** Root worker authoring uses `AgentContext` and bounded
+`ExecutionResult`; Task-aware coordinator/compatibility context lives under
+`@may-agent/sdk/app`. Standalone and testing take explicit domain input. Existing
+Host adapters still supply Task-specific context and results; shared `run()` and
+companion App adoption remain incomplete. [Enforcement and guidance](#enforcement-infrastructure-and-guidance)
 separates mechanical guarantees from author judgment and remaining gaps.
 
 
@@ -175,15 +176,14 @@ Rules:
 - export explicit `name`, `description`, and `execute` (plus optional declarative
   `inputSchema` and `outputSchema` metadata validated by the shared invocation
   kernel before or around `execute(ctx)`);
-- receive procedure parameters through typed `ctx.input`; for Task-bound work,
-  read the authoritative outcome, acceptance and admitted input through the
-  supplied Task context and scoped reads;
+- receive requirements, acceptance, constraints and relevant evidence through
+  typed `ctx.input`; the App boundary constructs current input for Task-backed work;
 - return one terminal contribution, normally with `ctx.done(...)` or
   `ctx.blocked(...)`; preserve failure evidence and allow control failures to throw;
 - call agents and nested procedures with `ctx.call`;
 - keep deterministic mechanics in imported TypeScript helpers;
-- use `ctx.read` only for exact bounded current facts;
-- publish facts with `ctx.events.emit`, never as a work-dispatch shortcut; and
+- use explicitly supplied domain tools for additional facts; Task-aware
+  coordinators may use `/app` scoped reads and fact publication; and
 - keep tests beside the workflow or in the owning App's established test
   layout.
 
@@ -195,15 +195,12 @@ unscoped event history, the current working directory or an unrestricted query.
 
 ## Scoped context
 
-The canonical context contains:
-
-- typed `input`;
-- optional bounded `reconciliation` facts when a task owns the attempt;
-- exact `read` projections for one App result, task, execution, or metric;
-- bounded agent and nested-workflow execution;
-- fact publication and domain metric recording;
-- the allocated workspace/output paths; and
-- logging plus one terminal result vocabulary.
+The canonical `AgentContext<TInput>` contains typed `input`, `signal`, bounded
+`call`, optional workspace/output paths, logging, `done` and `blocked`.
+`WorkflowContext` is its deprecated alias. `reconciliation`, `read`, `events`
+and `metrics` are not root worker fields. Explicit Task coordinators and legacy
+Host procedures use `AppWorkflowContext` from `/app`; the Task-specific sections
+below describe that binding, not a prerequisite for domain workers.
 
 It intentionally contains no raw database, event bus, task store, queue, lease,
 scheduler, recovery handle, global path set, session manager, or arbitrary
@@ -231,7 +228,7 @@ replay did not remove local repair within an executing workflow.
 
 ### Task reconciliation input
 
-For task-owned execution, `ctx.reconciliation` supplies:
+For the Host-bound `/app` compatibility context, `ctx.reconciliation` supplies:
 
 - App/task identity and current generation/resource version;
 - selected agent, outcome, and acceptance;
@@ -381,7 +378,7 @@ report unapplied work as admitted. The Host does not infer semantic relevance,
 automatically accept unseen events, or waive generation/cancellation fences.
 This uses the existing result, event, attempt, and Condition records.
 
-`ctx.events.emit` publishes observed or produced facts. In a resource-backed
+In `AppWorkflowContext`, `ctx.events.emit` publishes observed or produced facts. In a resource-backed
 task attempt, every event requires a stable `localKey`. The Host verifies the
 attempt fence, deduplicates that key within the task generation, persists the
 event and exact target wake, and only then exposes it to subscribers. This
@@ -423,6 +420,7 @@ own this boundary. Current workflow fields also expose a Task entry when present
 ```ts
 ctx.workspace?.root;
 ctx.workspace?.output;
+// AppWorkflowContext compatibility only:
 ctx.workspace?.taskFile;
 ```
 

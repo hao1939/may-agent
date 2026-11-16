@@ -29,7 +29,7 @@ export async function execute(ctx: WorkflowContext<Input>): Promise<ExecutionRes
     [
       "Review this exact subject within the caller's assignment:",
       ctx.input.subjectRef,
-      "Use shared Task context and relevant updates. Return the subject reference,",
+      "Use the supplied subject reference and authorized source reads. Return the subject reference,",
       "a summary and available findings. Omit a verdict or evidence references",
       "you do not have; explain remaining work in the summary. Do not modify the subject.",
     ].join("\n"),

@@ -5,6 +5,11 @@
 Archived documents preserve rationale and evidence. They are not current
 contracts; Tier-2 design governs when wording conflicts.
 
+The [Host ingress and SDK source review — 2026-11-16](implementation/host-ingress-sdk-source-review-20261116.md)
+records merged #568/#569/#566/#570, promoted contracts, paired-check failures and
+the retained-delivery/integration limits. Remaining work stays in the
+[active follow-up](../proposals/host-ingress-and-boundary-simplification-20261116.md).
+
 ## Decisions
 
 | Document                                                                                                             | Current authority                                                                                       |

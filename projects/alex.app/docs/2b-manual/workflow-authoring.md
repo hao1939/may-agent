@@ -13,6 +13,15 @@ For standalone/Host execution semantics, use
 fixture and standalone runners, use [SDK execution and testing](../2a-design/sdk.md#standalone-execution-and-testing).
 Historical extraction examples are not current API instructions.
 
+For SDK #566 and later, author domain procedures against root `AgentContext`:
+explicit `input`, `signal`, `call`, workspace, logging, `done` and `blocked`.
+Root `WorkflowContext` is its deprecated alias. Task coordinators and legacy
+Host-bound procedures use `AppWorkflowContext` from `@may-agent/sdk/app`.
+Sections below that use `reconciliation`, `read`, `events`, `metrics` or
+`taskFile` describe that explicit binding, not fields available to every worker.
+The [source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
+documents the incomplete Host/App pairing; do not activate an incompatible pair.
+
 The [enforcement table](../2a-design/workflows.md#enforcement-infrastructure-and-guidance)
 identifies what shared code enforces, what it only supports, and known gaps.
 The best practices below guide author decisions; uncertain choices stay advisory
@@ -66,23 +75,24 @@ Procedure input types belong to that module. Export `inputSchema` (and optional
 `execute(ctx)`; a TypeScript generic alone does not validate runtime data.
 Adding a recipe does not require a new public App input variant.
 
-For example, Alex's `develop-change` procedure has one input schema:
-`{ verify: [executable, ...arguments] }`. Outcome, acceptance and constraints
-always come from `ctx.reconciliation` and `ctx.read.tasks.get(rec.taskId)`, so
-Host, standalone `run()` / `may run`, and Gym can execute that same procedure.
-Host supplies its durable Task context; standalone and Gym can supply local
-assignment data in the current compatibility shape. This is specific to this
-procedure, not a requirement for every agent to understand Host Tasks, and it
-does not prove complete prompt-agent parity. The public standalone convenience
-input may therefore include `task`, `acceptance`, and `constraints`, but `run()` extracts those
-fields before validating the procedure's strict verify-only input schema.
+For example, the current App checkout's legacy `develop-change` takes
+`{ verify: [executable, ...arguments] }` and reads its assignment through
+`ctx.reconciliation` and scoped Task reads. That implementation is not compatible
+with the new root context and does not establish standalone/Gym parity.
+The domain-worker prototype instead takes explicit requirements, acceptance,
+constraints, verification, feedback and prior evidence. Host input construction,
+blocked translation and fresh resumed input remain integration work. The
+[active follow-up](../proposals/host-ingress-and-boundary-simplification-20261116.md)
+tracks this distinction. Neither interface grants broader authority than the
+assignment. The execution SDK validates and carries domain input; it no longer
+constructs a synthetic reconciliation envelope or extracts a hidden Task brief.
 
 Verification uses the App-local command runner with literal arguments, bounded
 output, and the workflow's cancellation signal and deadline. There is no
-separate verification timer. Callers using retired metadata strings, fenced
-reconciliation envelopes, or the `verifyCommand` shell string must move the
-requirement into the Task envelope and the command into `verify`; put compound
-checks in a script or explicitly select a shell executable when required.
+separate verification timer. Keep requirements in explicit worker input and
+verification in literal command arguments; put compound checks in a script or
+explicitly select a shell executable when required. An App translator supplies
+the owning Task's current scope when creating that worker input.
 
 Workflows have bounded, explicit control flow; they need not be strictly
 sequential. Use `await` and joins for in-run dependencies. Every started required
@@ -93,7 +103,9 @@ not an indefinitely awaited promise.
 
 ## Workflow Context
 
-The stable capabilities are:
+Root execution capabilities are `input`, `signal`, `call`, workspace, logging,
+`done` and `blocked`. The following table includes the additional Host-bound
+`AppWorkflowContext` compatibility capabilities:
 
 | Capability                        | Purpose                                                                                  |
 | --------------------------------- | ---------------------------------------------------------------------------------------- |
@@ -541,12 +553,14 @@ must not be described as completed parity.
 
 ## Testing
 
-Use `runWorkflowTest(moduleOrTarget, options)` from `@may-agent/sdk/testing` to
+Use `runTargetTest(moduleOrTarget, { input, mocks })` from `@may-agent/sdk/testing` to
 execute a workflow module or named target through the shared invocation kernel
 with plugged or scripted `mocks` responses, symmetric `inputSchema` / step
 `schema` / `outputSchema` checks, inherited cancellation/deadlines, and strict
 fixture-consumption checks—with zero SQLite or daemon setup.
 `createTestAppWorkflowContext` remains available for passive context unit stubs.
+`runWorkflowTest` is a deprecated compatibility alias. Tests of a Task-aware
+context stub do not prove that a root domain worker receives those capabilities.
 For end-to-end standalone prompt, code-procedure, and CLI trials without booting
 the Host, use `may run <target> [input]` (`may list` for discovery) or
 `import { run, listTargets } from "@may-agent/sdk/standalone"`, which

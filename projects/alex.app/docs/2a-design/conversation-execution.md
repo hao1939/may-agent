@@ -6,6 +6,12 @@
 
 **Design status:** Accepted.
 **Implementation status:** Implemented in merged [Host #449](https://github.com/hao1939/may-agent/pull/449) and its paired Apps source. Conversation uses ordinary Task attempts, communication, requests and Conditions. Source integration does not establish deployment; revisions and checks belong in the [implementation record](../archive/implementation/task-owned-host-simplification-20261111.md).
+The later [ingress/SDK source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
+records removal of parallel Conversation change discovery and the remaining
+retained-delivery gaps. Stable Conversation execution Tasks still exist.
+Replacing them with ingress-managed bounded turns and completion Hooks remains
+[follow-up](../proposals/host-ingress-and-boundary-simplification-20261116.md#single-task-conversation-ownership),
+not an implemented cutover.
 
 [Message Lifecycle](message-lifecycle.md) owns what an accepted human ask means.
 This chapter owns its execution, ordering, Stop and recovery. The agent judges
@@ -128,10 +134,22 @@ supply `conversationId` without forcing a Conversation execution Task through
 exact-Task routing keep their own validation rules.
 
 Common `requests` and request Conditions deliver independent contributions via
-`app.dependency.updated`. Existing Topic/Task subscriptions can also admit a
-linked-result system input. Use the existing saved links, not a second watcher
-or notification queue. Failed return admission remains discoverable; a result
-notification does not itself fulfill the human Request or broaden authority.
+`app.dependency.updated`. Current source projects exact inbox-backed waits
+through `AppInboxHost.refreshTaskResults()` and `recoverTaskResults()`.
+Those exact waits are distinct from retained Topic subscriptions and legacy
+`conversation-follow-up:` relationships. The local Host repair keeps a
+compatibility reader for their result/closure delivery and historical Topic
+references, using live notifications and bounded periodic recovery. It reuses
+saved delivery receipts and preserves late links; no supervision command or new
+queue is required. This repair is unmerged. Preserve these obligations and
+receipts in an equivalent migration before deleting the compatibility reader.
+
+The required contract is one retained caller return with restart recovery,
+including an outcome recorded before notification and a link added after the
+outcome. A result notification does not itself fulfill the human Request or
+broaden authority. A future completion Hook is outbound Task-to-caller delivery;
+a Condition is inbound evidence that wakes waiting Task work. Neither requires
+a second queue or grants authority from a display link alone.
 
 ### One bounded decision
 

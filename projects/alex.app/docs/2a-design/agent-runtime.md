@@ -5,7 +5,13 @@
 **Choice basis:** [Simple first](../1-principles/core-principles.md#simple-first) and [Apps own meaning; the Host owns mechanics](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution once; supply context, tools and operational services at the boundary instead of recreating Host inside standalone.
 
 **Design status:** Accepted.
-**Implementation status:** Partial. The SDK owns portable agent preparation, the model/tool runner, skills and the workflow kernel. Host still has a separate invocation lifecycle and Task-specific preparation; standalone still has capability, context, skill, absence and definition-consistency gaps. [Source convergence](#source-convergence) identifies them. This contract is the accepted target, not a claim of deployed parity or a new callable API.
+**Implementation status:** Partial. Standalone preparation, explicit skills,
+service absence and supplied workspace paths share runtime rules;
+root worker authoring and bounded helper calls use the execution SDK. Host still
+has a separate invocation lifecycle and Task-specific preparation. Shared
+`run()` supervision, parent-only SQLite and companion App adoption remain gaps.
+[Source convergence](#source-convergence) distinguishes completed foundations
+from remaining integration. Source status does not establish deployed parity.
 
 ## One agent, different environments
 
@@ -132,20 +138,18 @@ For the agent, a workspace is simply its working directory and supplied source,
 output and evidence paths. Host may allocate a Git worktree; a standalone caller
 may supply an existing directory. Allocation, branch identity, retention and
 cleanup belong to the environment, not a term the agent must learn to execute.
-A required isolated checkout is checked before work starts in either mode;
-reject missing setup rather than silently running in a canonical directory.
+The environment owns required isolation. Host may enforce its checkout contract;
+standalone runs in the supplied `cwd`/`workRoot` without inferring a Git-checkout
+preflight from workflow workspace metadata. A procedure checks the concrete
+prerequisites its work requires.
 Current SDK `workspace` fields remain usable path bindings, not a new work owner.
 
-Resolve instructions, configured tools and skill bodies once for an invocation,
-and keep that definition consistent for its helpers. Changes apply to later
-invocations. In this sense, a **snapshot** means a consistent selected definition,
-not another Task-state store, copied installation or mandatory snapshot service.
-
-Retaining resolved values is sufficient when it meets the need. Host can keep a
-release reference for activation and recovery. Supporting files required to stay
-consistent must resolve from that selected source; an ordinary live file read
-instead reports the file at read time. Definition consistency and fresh context
-are independent: stable instructions can coexist with changing work facts.
+Standalone resolves selected agent sources and reads configuration, instructions
+and skill bodies from disk when needed. It does not pin arbitrary file reads to
+a captured byte snapshot. A recorded definition revision identifies a selected
+entry, not every future file read. Callers requiring immutable supporting files
+supply an immutable source directory. Host generation/restart fences and fresh
+file evidence are separate guarantees.
 
 ## One invocation lifecycle
 
@@ -191,25 +195,32 @@ for the dividing line and contrasting examples.
 
 ## Source convergence
 
-The source review at Host `4c2ddaa3e4` found these remaining differences. They are
-not repaired by this documentation change; the [focused follow-up](../proposals/unified-agent-instance-runtime.md)
-keeps implementation work separate from the contract.
+Standalone skills, explicit context/services, supplied workspace paths and the
+execution/App SDK split are implemented foundations. Source files are read
+directly; standalone does not require a Git checkout from workspace metadata. Explicitly declared
+prompt/code helper calls use the common kernel and its admission, cancellation,
+identity and cleanup lifecycle; supplied providers keep precedence. Retained
+legacy finishes normalize at the read boundary without restoring old authoring.
+The [source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
+pins that scope. These foundations do not establish hosted parity.
 
 | Boundary | Current difference | Required correction |
 | --- | --- | --- |
-| Tool composition | Standalone denies Host-backed bundles; Host injects a Task tool. | Supply effective tools and real adapters explicitly, without mode-derived grants/denials. |
-| Context and completion | Standalone workflow Task context does not reach its prompt agent; hosted Tasks use a special brief/schema. | Share generic agent context preparation/refresh; keep Host bookkeeping and explicit caller result admission at their boundary. |
-| Skill selection | Standalone converts `skill` into advisory task text instead of full-body activation. | Use the shared explicit activation path; keep default selection optional. |
-| Missing services | Standalone uses test-style reads and some partial bindings default to empty data/no-ops. | Use actual local services or explicit errors; reserve fakes for tests. |
-| Directory prerequisite | Standalone does not enforce a declared Task-worktree requirement. | Validate equivalent setup before dispatch; keep allocation out of agent reasoning. |
-| Definition consistency | Standalone captures configuration but later reads mutable identity/skill/tool source. | Retain one resolved definition and the supporting source required by its contract. |
-| Invocation | Host `executeSession()` and SDK `executePreparedAgent()` separately implement terminal/recovery decisions. | Keep one lifecycle; Host adds persistence, controls and orchestration through adapters. |
+| Hosted invocation | Host still has Task-specific manager/worker execution rather than calling shared `run()` unchanged. | Keep one execution lifecycle; Host supplies persistence, controls and supervision through adapters. |
+| Tools, input and finish | Host injects Task tools, reconciliation briefs and Task finish schemas. | Supply explicit worker input and declared tools; keep Task admission and blocked translation at the App/settlement boundary. |
+| Host capability wiring | Standalone helper/provider semantics exist; the full Host caller has not adopted them. | Preserve explicit tools, CLI capabilities, deadlines, identities, cleanup uncertainty and captured definitions through the real Host path. |
+| Storage and recovery | The attempt child still constructs `DbWriter`; shared-run settlement has no production callers. | Keep Host SQLite writes in the parent and preserve pinned generation, accepted checkpoints and restart fences. |
+| Public worker types | Deferral and CLI evidence reachable from root still contain Task identities. | Remove implicit Host identity requirements while retaining explicit coordinator domain tools under `/app`. |
+| Paired adoption | Local App imports/contexts pass the 24-workflow pairing check; domain-worker continuation is not connected. | Integrate the companion patch and verify fresh input, prior evidence and wait/resume behavior through the real Host path. |
 
 Current source entry points are [portable agent execution](../../../may-agent/packages/sdk/src/runtime/lib/agent-execution.ts),
 [standalone composition](../../../may-agent/packages/sdk/src/runtime/app/standalone.ts),
 [Host preparation](../../../may-agent/src/lib/agent-execution.ts), and
 [session management](../../../may-agent/src/lib/manager.ts). Public callable APIs
 remain those in [SDK](sdk.md); this design does not invent a replacement signature.
+The [convergence follow-up](../proposals/host-ingress-and-boundary-simplification-20261116.md)
+owns the remaining integration sequence; the [earlier runtime follow-up](../proposals/unified-agent-instance-runtime.md)
+retains the additional worker-supervision boundary.
 
 ## Acceptance
 

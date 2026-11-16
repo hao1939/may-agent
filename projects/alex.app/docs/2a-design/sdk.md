@@ -5,8 +5,13 @@
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#convention-over-configuration).
 
 **Design status:** Accepted.
-**Implementation status:** Durable App work, including Conversation turns, uses
-Task reconciliation. The shared bounded Task collection is exposed as
+**Implementation status:** The root execution contract and App binding are
+separate in merged Host #566. Root authoring uses `AgentContext` and
+`ExecutionResult`; App/Task contracts live at `@may-agent/sdk/app`. Standalone
+and SDK tests carry explicit domain input. A local unmerged companion App patch
+migrates imports and contexts against that SDK. Host Task executors and the
+connected domain-worker path have not completed their migration. Durable App
+work, including Conversation turns, still uses Task reconciliation. The shared bounded Task collection is exposed as
 `read.tasks.list/get`. Public App and Task intent use `agent` to select a managed
 agent. `TaskIntent.mode` is retired for new intent; the reconciler rejects it.
 New Task authoring rejects the old `owner` spelling. Stored `owner` and historical
@@ -152,23 +157,29 @@ requirement for every agent to understand Host's bookkeeping.
 
 ## Stable root surface
 
-The root package exports:
+Choose the entry point by responsibility:
 
-- `defineApp`, `Type`, and App declaration types;
-- `AppInput`, `TaskIntent`, task reconciliation results, and `AppResult`;
-- `AppEvent`, `EventSelector`, and pure selector matching;
-- input/event schedules, subscriptions, observation-only selectors, observers,
-  actions, and workspace policy;
-- task policy, `TaskAction`, Conditions, reconciliation and verification
-  results; and
-- bounded workflow, read, logging, metric, and execution contracts.
+| Entry point | Use |
+| --- | --- |
+| `@may-agent/sdk` | `Type`/`Static`, `AgentContext<TInput>`, `AgentExecutableModule`, `ExecutionResult`, call options and logging for bounded workers |
+| `@may-agent/sdk/app` | `defineApp`, `defineObserver`, `observationCondition`, App inputs/policy, Task/Condition/event contracts and explicit coordinator/compatibility context |
+| `@may-agent/sdk/standalone` | `run(target, input, options?)`, target discovery and explicit execution capabilities |
+| `@may-agent/sdk/testing` | `runTargetTest(moduleOrTarget, { input, mocks })` for bounded in-memory execution |
+
+Root `WorkflowContext` is a deprecated alias of `AgentContext`, not the old
+Task-aware context. A coordinator or unmigrated Host-bound procedure uses
+`AppWorkflowContext` from `/app` for scoped reads, reconciliation, events and
+metrics. Moving an import does not supply those capabilities to standalone.
+Root `ExecutionDeferredError`/`ExecutionDeferral` and nested CLI evidence still
+carry Task identities in current source: semantic Task blindness remains a gap,
+even though named Task/Conversation/approval contracts moved out of the root.
 
 It does not export raw SQL, task-state files and locks, scheduler handles,
 global runtime paths, queue/lease/recovery APIs, prompt packets, request
 dispositions, or a generic event handler context.
 
 The Host's generic `publish/get/subscribe` interface is also not an SDK
-capability. Apps use only narrow typed capabilities during a task attempt:
+capability. App/coordinator bindings use narrow typed capabilities during a task attempt:
 
 - call an agent or bounded workflow;
 - read scoped resources;
@@ -273,16 +284,19 @@ and translates them to App input. Neither observer form runs App work directly.
 
 ## Workflow contract
 
-`WorkflowContext` supplies typed input, scoped reads, bounded agent/workflow
-calls, facts, metrics, optional workspace, logging and terminal result helpers.
-`reconciliation` is present for Task-owned runs; standalone bounded workflows
-may omit it. The [source type](../../../may-agent/packages/sdk/src/workflow.ts)
-defines the full fields and return types.
+`AgentContext<TInput>` supplies `input`, `signal`, `call`, optional workspace,
+logging, `done(summary, output?)` and `blocked(reason, facts?)`.
+The output-free `blocked` helper returns `ExecutionResult<never>`, so a module
+with a concrete output type can return either branch without a cast.
+The [source type](../../../may-agent/packages/sdk/src/workflow.ts) defines the
+full fields and return types. Domain acceptance and business iteration belong
+inside the agent/procedure; queue management does not.
 
 The workflow input is App-owned. The Host carries it across the execution
 boundary without parsing prompts or reconstructing it from global task state.
 
-For App-owned work, `reconciliation` supplies bounded current facts:
+The remaining Task-aware interface is `AppWorkflowContext` from `/app`.
+Its optional `reconciliation` supplies bounded current facts:
 App/task identity, generation, selected agent, outcome, acceptance, typed input,
 live/completed child views, a bounded snapshot of other live App tasks for
 frontier-health review, and the ordered unobserved event batch that drove this
@@ -360,14 +374,42 @@ exists only to typecheck that host integration against the paired Runtime.
 Agent calls and nested workflows return the same bounded
 [`ExecutionResult`](../../../may-agent/packages/sdk/src/workflow.ts).
 
-`done` and `blocked` end the current bounded workflow run. They do not mutate or
-complete a task by themselves. The Runtime validates the result against the
-owning task and App acceptance policy before admitting it.
+`done` and `blocked` end the current bounded run. `output` and optional `facts`
+are domain data, not a `TaskReconcileResult`; `output.state` has no generic
+orchestration meaning. A helper's completion does not complete its caller.
+New finishes use `done`/`blocked`, `summary`, `output` and `facts`. Historical
+finish envelopes are normalized only when retained evidence is read.
+
+The agent/procedure supplies the conclusion under its caller's contract. Host
+[admission](task-attempts.md#agent-judgment-and-infra-admission) validates and
+records that conclusion. It does not add a semantic reviewer or treat a passing
+shape/hash check as proof of the outcome. A declared App domain check remains
+App policy even when executed deterministically.
+
+The Host settlement component translates `done` into a converged proposal only
+after existing Task-result admission accepts its size, facts and shape. Only
+then may it attach Host-only finite-done provenance. Existing generation,
+input, wait, creator and atomic closure fences remain authoritative; current
+auto-closure covers ordinary same-App App-created assignments, excluding
+Conversation and Task-created/delegated work. This component is implemented but
+not connected to production shared-`run()` callers.
+
+For `blocked`, an App may supply pure `tasks.translateBlockedResult` to turn
+domain facts into Conditions, typed requests or `retryAfterMs`. Returning `null`
+retains a wait without inventing a wake source. Without a translator, the
+component accepts a validated wait descriptor containing only those fields.
+Domain workers should return domain facts and leave this mapping to the App.
+Parking alone does not establish a producer or automatic resumption: App
+translation, wake-up and fresh invocation-input construction must be wired.
 
 A durable wait is represented by a task dependency or Condition, not by holding
 a workflow open or resuming it as a hidden controller.
 
 ## Task contracts
+
+These are Host/App and coordinator contracts imported from `/app`, not the
+root domain-worker execution result. Existing Task executors still use them
+while shared-`run()` integration is incomplete.
 
 [`TaskIntent`](../../../may-agent/packages/sdk/src/task.ts) declares desired work.
 
@@ -494,7 +536,8 @@ explicit maintenance CLI, not a runtime workflow import.
 ## Agent tools and SDK
 
 Agent tools and SDK capabilities may share runtime implementations, but they
-serve different boundaries:
+serve different boundaries. The event, metric and Task-read rows below require
+the explicit Host-bound `AppWorkflowContext`; they are not root worker fields:
 
 | Intent                                         | Model tool                   | Workflow capability        |
 | ---------------------------------------------- | ---------------------------- | -------------------------- |
@@ -517,8 +560,9 @@ standalone denial or an implicit hosted grant.
 When durable Task persistence, SQLite recovery, and Host transports are not
 needed, `@may-agent/sdk/standalone` executes prompt agents (`alex`), code
 procedures (`<owner>/<procedure>`), and native CLI executors (`codex`, `claude`)
-through the same invocation kernel (`runWorkflowInvocation` and `resolveCallable`)
-used by Hosted Task attempts:
+through the shared invocation kernel (`runWorkflowInvocation` and `resolveCallable`).
+Hosted Task attempts share kernel pieces but do not yet call this public engine
+unchanged:
 
 - `run(target, input, options?)` (or `run(options)`) resolves the target's
   owning App across `projects/*.app`, isolates `PreparedCatalog` to that App's
@@ -528,8 +572,8 @@ used by Hosted Task attempts:
   (`WorkflowRunReport`) when an output directory is supplied;
 - `listTargets(options?)` returns the admitted callable prompt, code, and CLI
   targets across installed Apps under a bounded discovery timeout; and
-- `runWorkflowTest(moduleOrTarget, options)` in `@may-agent/sdk/testing` runs a
-  workflow module or named target in memory against plugged or scripted `mocks`
+- `runTargetTest(moduleOrTarget, { input, mocks })` in `@may-agent/sdk/testing` runs a
+  module or named target in memory against plugged or scripted `mocks`
   with zero disk or LLM setup.
 
 The default standalone runner owns one ephemeral invocation; it does not start
@@ -538,10 +582,19 @@ An explicit local backend can provide a capability without becoming the Host.
 Provided tools/services must honor their actual contract; test fixtures belong
 only to explicitly selected test execution.
 
-**Current limits:** the runner denies several Host-backed tool bundles, does not
-carry workflow Task context into prompt-agent preparation, uses advisory text for
-explicit skills, and defaults some unbound reads to test-style `null`/empty data.
-Shared kernel tests do not establish complete prompt-agent parity. See
+Standalone now handles explicit skills, capability providers, missing-service
+errors and supplied directory paths through shared rules. Standalone reads
+source files directly and does not infer a Git-checkout requirement from
+`workspace: "task"`; callers supply any required immutable source or isolation.
+Declared bounded prompt/code helper calls use the existing kernel; explicit
+providers retain precedence. This does not grant durable background actions.
+Cleanup uncertainty is reported rather than treated as confirmed termination.
+
+**Current limits:** Host still wraps prompts/finish schemas, injects Task
+capabilities and opens SQLite in the attempt child. Paired App/Gym migration,
+Host capability wiring, input freshness and restart acceptance remain incomplete.
+Current workspace declarations still use `task`; the proposed `isolated`
+spelling is not yet a callable authoring contract. See
 [source convergence](agent-runtime.md#source-convergence) for the accepted target.
 A missing item after a successful read can be `null`; a missing backend or failed
 operation must be an error, as defined by [service absence](agent-runtime.md#missing-data-and-unavailable-services).
@@ -570,7 +623,7 @@ composition remains Host-private.
 
 ## Integrity checklist
 
-- The root package is the only authoring entry point.
+- Root authoring is for execution; `/app` owns App/Task bindings and compatibility.
 - App definitions are pure to import and validate.
 - Every durable App outcome resolves to or wakes its responsible Task.
 - Task reconciliation is the only durable App work loop.

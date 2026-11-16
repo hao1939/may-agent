@@ -72,7 +72,9 @@ Host orchestration ┘
 ```
 
 **Source status:** SDK preparation, skills and the model/workflow kernels are
-portable. Manager invocation and mode-specific composition are not fully
+portable. Root execution authoring is separate from `/app` bindings, and external
+Task reads use one human-facing contract. Manager invocation and mode-specific
+composition are not fully
 converged. The graph below maps current Host code; it does not certify parity.
 [Source convergence](agent-runtime.md#source-convergence) owns those gaps, and
 [worker supervision](runtime.md#worker-supervision) owns long-running containment.
@@ -89,7 +91,7 @@ flowchart TB
     end
 
     %% 2. App Declarations Layer
-    subgraph Apps["2. Declarative Apps Layer (defineApp via @may-agent/sdk)"]
+    subgraph Apps["2. Declarative Apps Layer (defineApp via @may-agent/sdk/app)"]
         direction LR
         MayApp["may.app (agent: 'may')<br/>conversation: { mode: 'task' }<br/>Goals, PR & Metric Oversight"]
         ScoutApp["scout-knowledge-lib.app (agent: 'scout')<br/>Source Exploration, Assessment,<br/>Knowledge Library Maintenance"]

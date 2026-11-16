@@ -27,10 +27,26 @@ schemas remain usable adapter contracts while that simplification is pending.
 ## Agent judgment and infra admission
 
 The worker judges actions, sufficiency and completion within its assignment and
-App policy. Infra validates identity, authority, freshness, schema and any
-declared acceptance checks, then records and executes the admitted decision.
-Accepted convergence marks the addressed input done and returns its result;
-callers can use it without a mandatory second judgment.
+App policy. **Admission is the Host's commit decision about that judgment.**
+Infra validates identity, authority, freshness, schema/size limits, affected
+revisions and explicitly declared checks, then records and executes the admitted
+decision. Domain checks and permitted normalization belong to the App/caller
+contract; their execution does not authorize generic Host code to invent another
+definition of success. Matching an evidence hash establishes byte identity;
+matching a schema establishes shape. Neither establishes semantic truth.
+
+Accepted convergence records the agent's conclusion for the addressed input,
+marks that input done and returns its result. Callers can use it without a
+mandatory second judgment. A caller handling a wider assignment judges what
+that contribution means for its own remaining work. Helpers cannot complete
+their callers' assignments merely by finishing their own contributions.
+
+Host must distinguish a proposed finish, its committed admission and later
+delivery. If admission fails, give the active invocation a specific correction
+where supported, within its existing allowance. Preserve previously committed
+work and the rejected proposal's useful diagnostics; correcting a result object
+does not authorize repeating an external effect. If a valid result is committed
+but its acknowledgment is lost, replay returns the original receipt.
 
 This is trust by default, not guaranteed correctness. Existing attempt identity,
 facts, results and acceptance evidence explain the decision. An outstanding
@@ -331,7 +347,7 @@ binds bytes, not source authority or semantic truth. See the
 
 | Outcome                                                                                 | Runtime disposition                                                                                                                                                                |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Valid `converged` result                                                                | Accept the exact input's outcome when current-attempt checks, evidence, actions and verification permit; keep the Task open                                                          |
+| Valid `converged` result                                                                | Record the agent's conclusion for the exact input after mechanical and declared App/caller checks; return its result and keep the Task open unless an authorized closure policy applies |
 | Valid `waiting` result                                                     | Retain independent Conditions and input; yield on a return route or schedule useful work; structural children alone do not establish a wait |
 | Valid `incomplete` result                                                               | Retain unsuccessful attempt facts, report the input's first accepted blocker to its linked caller, and retry unfinished work with backoff; no cancellation or implicit parent wake |
 | Unavailable agent/workflow/executor or failed workspace prerequisite                    | Visible failure and same-Task paced recovery; the declared procedure retries and App routes arrange investigation; shared prerequisites still apply                                                                                                         |

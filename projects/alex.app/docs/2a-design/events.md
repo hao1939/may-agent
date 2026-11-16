@@ -19,6 +19,11 @@ The [freshness review](../archive/reviews/condition-freshness-20261112.md) recor
 the contract, upgrade boundary and portable checks.
 The [boundary review](../archive/reviews/resource-event-boundary-20260927.md)
 records the original reproductions and links the September 30 source recheck.
+Canonical ingress and journal cleanup are merged. Exact inbox-backed Task result
+projection remains; retained legacy/Topic-only Conversation delivery has gaps
+after removal of its parallel scan. The [source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
+and [Conversation contract](conversation-execution.md#routing-and-authority)
+distinguish that regression from the intended single return path.
 
 
 For progress, failure feedback and when facts wake an agent, read [Execution feedback](execution-feedback.md).
@@ -27,6 +32,12 @@ For progress, failure feedback and when facts wake an agent, read [Execution fee
 
 An event records input or change that crossed the Host boundary. It may carry
 actionable App input or report a fact for zero or more consumers.
+
+Canonical ingress uses declared App inputs, Conversation admission and exact
+Task/Condition controls. A `message.created` addressed-agent envelope does not
+implicitly resolve an App or create work. Historical `escalation.*` names do not
+have a special feedback-routing hook. An App may declare an ordinary domain
+subscription; a name alone supplies neither an owner nor a delivery contract.
 
 Request and fact are semantic roles of this same Event interface, not separate
 transport or storage APIs. A caller request additionally creates a correlation
@@ -680,8 +691,9 @@ event-owner fallback.
 
 ### App and project
 
-- `project.comment.created` and `project.owner.requested` may be explicit App
-  subscriptions when the App owes a distinct result;
+- `app.input.requested` carries validated typed input to the addressed App;
+- human Conversation uses its ingress resource; exact Task messages use the
+  Task input contract rather than a raw event shortcut;
 - domain/provider observations feed App input translators, exact task wakes, or
   projections;
 - task reconciliation lifecycle events are evidence, not scheduling commands;
@@ -689,22 +701,20 @@ event-owner fallback.
   that exact Task;
 - an event published by a fenced Task attempt carries Task provenance and is a
   progress/finding/fact, not a competing completion or an automatic self-wake;
-- typed App actions create App input rather than publishing an actionable event
-  shortcut.
+- domain subscriptions must be explicitly declared; arbitrary event names do
+  not become App commands.
 
-A project comment is not classified merely by transport. A human-addressed
-comment that needs acknowledgment becomes an App request; a provider-like
-change fact that deterministically revises desired work belongs to a task
-subscription. If one event type carries both meanings, its translators must
-classify content explicitly or the producer should publish clearer types.
+WebUI/control raw-JSON project action discovery/invocation is retired. The
+remaining project-comment UI already publishes App input; the dual Project/App
+identity and its replacement by canonical Conversation or Task ingress remain
+follow-up. Do not treat either legacy project event spelling as automatic routing.
 
 ### Metrics and escalation
 
 - metric breach, stall, and recovery events are measured facts;
-- escalation creation and resolution represent an explicit ownership-boundary
-  dependency; and
-- alerts and escalations keep their current state in their owning projection or
-  source obligation, not in event delivery rows.
+- a request for another owner's help uses ordinary typed work and caller links;
+- alerts and domain escalation obligations keep their state with their owning
+  resource, not in event delivery rows or a built-in `escalation.*` lifecycle.
 
 ### Runtime and diagnostics
 

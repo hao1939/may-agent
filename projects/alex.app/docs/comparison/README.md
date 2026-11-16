@@ -61,8 +61,12 @@ deferred to preserve concurrent migration edits. It also exposes seven internal
 rounds across three workflow calls, narrowing the earlier round-accounting claim.
 The [cumulative review-round repair](alex-review-rounds-repair-20261116.md)
 reserves rounds before work across live reentry and command changes. Its
-deterministic regressions preserve unfinished acceptance and exact verification;
-hosted activation and real-work transfer remain to be observed.
+deterministic regressions preserve unfinished acceptance and exact verification.
+The subsequent [hosted cumulative-round trial](alex-review-rounds-hosted-20261116.md)
+records exact-source integration and activation, cumulative usage of 1/2/3/3,
+and Alex's automatic follow-through and closure. It retains a separate check-name
+reporting defect and leaves the existing daily system-wide review as the next
+operational checkpoint.
 The [standing-review incident handoff repair](alex-incident-handoff-repair-20261116.md)
 guards development against the broad recurring Task and prepares existing ignored
 Apps dependencies before spending a round. Deterministic tests cover both gaps;

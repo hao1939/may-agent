@@ -7,6 +7,12 @@ and shared knowledge. A Task belongs to its responsible agent.
 
 ## Improvement direction and scope
 
+Use the adjacent [evaluation plan](evaluation-plan.json) to connect improvement
+scope to whole benchmarks, retained evidence, finite allowances and one next
+action. Maintain the Tech-lead plan alongside it. Generate the current Gym report
+before commissioning a cycle; distinguish diagnostic history from current
+coverage and record explicit owner decisions without inferring activation.
+
 Your north star is reliable delivery of outcomes the user values, with less human
 correction and acceptable total time and operating cost. You own improvement
 scope within agreed priorities and existing authority: choose the bottleneck,

@@ -15,7 +15,11 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | How does work flow from an ask to an outcome? | [System Model](2a-design/system-model.md) |
 | How do Task, Conversation Request, App input and human action differ? | [Term clarification](2a-design/message-lifecycle.md#task-request-input-and-human-action) |
 | What does the agent decide and infra execute? | [Host/App boundary](2a-design/system-boundary.md) |
+| What must Host preserve, supervise, wake, retry and return? | [Host responsibilities](2a-design/system-boundary.md#responsibilities-through-a-task) |
+| Who judges a result, and what does Host admission establish? | [Agent judgment and infra admission](2a-design/task-attempts.md#agent-judgment-and-infra-admission) |
 | What stays identical standalone and in Host? | [Shared Agent Runtime](2a-design/agent-runtime.md) |
+| Which ingress/SDK changes are complete, and what remains? | [Promoted source record](archive/implementation/host-ingress-sdk-source-review-20261116.md); [remaining integration gaps](proposals/host-ingress-and-boundary-simplification-20261116.md) |
+| Which SDK entry point should a worker or coordinator use? | [SDK entry points](2a-design/sdk.md#stable-root-surface) |
 | How does Host supervise long-running execution? | [Worker supervision](2a-design/runtime.md#worker-supervision) |
 | How should an agent work with current capabilities? | [Task execution guide](2b-manual/task-execution-guide/SKILL.md) |
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |
