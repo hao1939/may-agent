@@ -176,8 +176,10 @@ Their normal working root is `/app`. Preserve the image entrypoint when supplyin
 custom supervisor configuration: it prepares the native CLI settings and links
 durable histories. The container runs as root throughout: services, interactive
 terminals, and Docker exec share one identity and the same image-level HOME/XDG
-environment. Startup does not remap UID/GID or recursively change mounted
-ownership. The runtime-user and mount-owner identity configuration knobs are
+environment. HOME is `/root`, matching native OpenSSH lookup; durable histories
+and SSH state remain under `STATE_DIR`. Startup does not remap UID/GID or
+recursively change mounted ownership. Only the SSH directory/config metadata is
+normalized for OpenSSH's ownership checks. The runtime-user and mount-owner identity configuration knobs are
 removed. See the
 [container identity guide](container/README.md#runtime-identity-and-docker-exec)
 for attachment commands, compatibility, and writable-mount risks.

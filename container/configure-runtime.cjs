@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const home = process.env.HOME || "/var/lib/mayagent";
+const home = process.env.HOME || "/root";
 const projectRoot = process.env.PROJECT_ROOT || "/app";
 const stateDir = process.env.STATE_DIR || path.join(projectRoot, ".state");
 const baseUrlRaw = (process.env.MODEL_BASE_URL || "http://host.docker.internal:4000").replace(/\/+$/, "");
@@ -169,7 +169,13 @@ if (process.env.MAY_SKIP_STATE_LINKS !== "1") {
   const sshConfig = fs.existsSync(sshConfigPath) ? fs.readFileSync(sshConfigPath, "utf8") : "";
   if (!sshConfig.includes("StrictHostKeyChecking accept-new")) {
     fs.appendFileSync(sshConfigPath, "Host *\n  StrictHostKeyChecking accept-new\n", { mode: 0o600 });
-    fs.chmodSync(sshConfigPath, 0o600);
+  }
+  // OpenSSH rejects a user config owned by the former runtime UID, even when
+  // root can read it. Preserve key bytes and normalize only this trust boundary.
+  fs.chmodSync(sshConfigPath, 0o600);
+  if (process.getuid?.() === 0) {
+    fs.chownSync(sshPersistDir, 0, 0);
+    fs.chownSync(sshConfigPath, 0, 0);
   }
 
   // Symlink durable Herdr & CLI histories/sessions into HOME
@@ -584,7 +590,7 @@ for (const root of trustedRoots) {
 writeJson(path.join(home, ".claude.json"), claudeState);
 
 // 7. Ensure native Herdr integrations are present & configured in settings/hooks
-// (baked into /var/lib/mayagent at image build time; re-applied if settings were regenerated).
+// (baked into /root at image build time; re-applied if settings were regenerated).
 const herdrBin = process.env.HERDR_BIN || "/usr/local/bin/herdr";
 if (fs.existsSync(herdrBin)) {
   const integrations = [

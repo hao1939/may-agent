@@ -41,6 +41,9 @@ describe("container runtime configuration and layout", () => {
     expect(entrypoint).not.toContain("MAY_RUNTIME_USER");
     expect(dockerfile).not.toContain("useradd");
     expect(dockerfile).toContain('USER root\nENTRYPOINT');
+    expect(dockerfile).toContain("ENV HOME=/root");
+    expect(dockerfile).toContain("ENV PI_CODING_AGENT_DIR=/root/.pi/agent");
+    expect(dockerfile).toContain("ENV XDG_CONFIG_HOME=/root/.config");
     expect(supervisor).toContain("[supervisord]\nuser=root");
     expect(supervisor).toContain("chown=root:root");
     expect(supervisor).toContain("[program:chrome]\nuser=root");
@@ -82,7 +85,8 @@ describe("container runtime configuration and layout", () => {
     writeFileSync(join(root, "container/compose.yml"), read("container/compose.yml"));
     writeFileSync(join(root, ".env"), "");
     const { stdout } = await execute("docker", [
-      "compose", "-f", join(root, "container/compose.yml"), "config", "--format", "json",
+      "compose", "--env-file", join(root, ".env"),
+      "-f", join(root, "container/compose.yml"), "config", "--format", "json",
     ], { env: { PATH: process.env.PATH || "/usr/bin:/bin", HOME: root }, timeout: 10_000 });
     const service = JSON.parse(stdout).services.may;
     expect(service.user).toBe("root");
@@ -106,6 +110,7 @@ describe("container runtime configuration and layout", () => {
     mkdirSync(join(home, ".config/herdr"), { recursive: true });
     writeFileSync(join(stateDir, ".ssh/id_ed25519"), "ssh-ed25519 LEGACY_KEY\n", { mode: 0o600 });
     writeFileSync(join(home, ".ssh/known_hosts"), "github.com ssh-ed25519 AAAA\n", { mode: 0o600 });
+    writeFileSync(join(home, ".ssh/id_rsa"), "EXISTING_HOME_KEY\n", { mode: 0o600 });
     writeFileSync(join(stateDir, ".codex/sessions/s1.jsonl"), '{"id":"legacy-1"}\n');
     writeFileSync(join(stateDir, ".pi/agent/sessions/p1.jsonl"), '{"id":"legacy-pi"}\n');
     writeFileSync(join(home, ".config/herdr/config.toml"), "resume_agents_on_restore = false\n");
@@ -124,6 +129,7 @@ describe("container runtime configuration and layout", () => {
     expect(lstatSync(join(home, ".ssh")).isSymbolicLink()).toBe(true);
     expect(lstatSync(join(stateDir, ".ssh")).isSymbolicLink()).toBe(true);
     expect(readFileSync(join(home, ".ssh/id_ed25519"), "utf8")).toBe("ssh-ed25519 LEGACY_KEY\n");
+    expect(readFileSync(join(home, ".ssh/id_rsa"), "utf8")).toBe("EXISTING_HOME_KEY\n");
     expect(readFileSync(join(home, ".ssh/known_hosts"), "utf8")).toContain("github.com");
 
     // Appending to known_hosts survives a subsequent restart without false conflict failure
@@ -180,5 +186,7 @@ describe("container runtime configuration and layout", () => {
     mkdirSync(join(stateDir, ".ssh"), { recursive: true });
     writeFileSync(join(stateDir, ".ssh/id_ed25519"), "ssh-ed25519 DIFFERENT_CONFLICTING_KEY\n", { mode: 0o600 });
     await expect(runConfigure({ HOME: home, STATE_DIR: stateDir })).rejects.toThrow();
+    expect(readFileSync(join(stateDir, "ssh/id_ed25519"), "utf8")).toBe("ssh-ed25519 LEGACY_KEY\n");
+    expect(readFileSync(join(home, ".ssh/id_rsa"), "utf8")).toBe("EXISTING_HOME_KEY\n");
   });
 });

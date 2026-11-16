@@ -106,6 +106,7 @@ done
 [[ "$root_ready" == true ]] || { docker logs "$root_container_id" >&2; exit 1; }
 docker exec "$root_container_id" /bin/sh -ec '
   test "$(id -u):$(id -g)" = 0:0
+  test "$HOME" = "$(getent passwd root | cut -d: -f6)"
   test "$(getent passwd root | cut -d: -f3)" = 0
   test "$(stat -c %u:%g /app)" = 1234:1235
   test "$(stat -c %u:%g /tmp/may-agent-ttyd.sock)" = 0:0
@@ -143,8 +144,21 @@ test "$(id -u):$(id -g)" = "0:0"
 printf writable > /app/.runtime-write-probe
 rm /app/.runtime-write-probe
 test "$(stat -c '%u:%g' /app/.state/chrome-profile/Preferences)" = "0:0"
+test "$HOME" = "$(getent passwd root | cut -d: -f6)"
 test -L "$HOME/.ssh"
-grep -q 'IFixtureKey' "$HOME/.ssh/id_ed25519"
+# Existing root keys and legacy keys retain their bytes and native lookup paths.
+test "$(sha256sum "$HOME/.ssh/id_ecdsa" | cut -d" " -f1)" = "$(cat /tmp/existing-ssh.sha)"
+test "$(sha256sum "$HOME/.ssh/id_ed25519" | cut -d" " -f1)" = "$(cat /tmp/legacy-ssh.sha)"
+# Exercise trust repair on already-migrated state from the former runtime UID.
+chown 1234:1235 /app/.state/ssh /app/.state/ssh/config
+chmod 664 /app/.state/ssh/config
+/usr/local/bin/node /usr/local/bin/configure-runtime.cjs
+test "$(stat -c '%u:%g:%a' /app/.state/ssh/config)" = "0:0:600"
+test "$(stat -c '%u:%g:%a' /app/.state/ssh)" = "0:0:700"
+ssh -G ci-ssh-alias 2>/dev/null | grep -q '^hostname target.example.invalid$'
+ssh-keygen -y -f "$HOME/.ssh/id_ed25519" | cut -d" " -f1-2 > /tmp/derived-ssh.pub
+cut -d" " -f1-2 "$HOME/.ssh/id_ed25519.pub" > /tmp/expected-ssh.pub
+cmp /tmp/derived-ssh.pub /tmp/expected-ssh.pub
 test -f "$HOME/.codex/sessions/legacy.jsonl"
 test -L "$HOME/.pi/agent/sessions"
 test -L "$HOME/.gemini/history"
@@ -174,9 +188,15 @@ runtime_container_id=$(docker create --network none --user root \
   --env GEMINI_MODEL=gemini-fixture \
   --entrypoint /bin/bash \
   "$image_ref" -ec '
-    mkdir -p /app/.state/chrome-profile
+    mkdir -p /app/.state/chrome-profile /root/.ssh
     printf "root-chrome-cache\n" > /app/.state/chrome-profile/Preferences
-    chown -R 0:0 /app/.state/chrome-profile /app/.state/.ssh /app/.state/.codex
+    rm /app/.state/.ssh/id_ed25519
+    ssh-keygen -q -t ed25519 -N "" -C ci-legacy -f /app/.state/.ssh/id_ed25519
+    ssh-keygen -q -t ecdsa -N "" -C ci-existing -f /root/.ssh/id_ecdsa
+    sha256sum /root/.ssh/id_ecdsa | cut -d" " -f1 > /tmp/existing-ssh.sha
+    sha256sum /app/.state/.ssh/id_ed25519 | cut -d" " -f1 > /tmp/legacy-ssh.sha
+    printf "Host ci-ssh-alias\n  HostName target.example.invalid\n" > /app/.state/.ssh/config
+    chown -R 1234:1235 /app/.state/.ssh
     exec /usr/local/bin/entrypoint.sh /runtime-check.sh
   ')
 docker cp "$runtime_root/." "$runtime_container_id:/app"

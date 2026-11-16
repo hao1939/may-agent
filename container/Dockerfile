@@ -134,13 +134,13 @@ RUN set -eux; \
 
 WORKDIR /app
 
-# Separate ephemeral container-managed HOME (/var/lib/mayagent) from mounted
+# Separate ephemeral container-managed HOME (/root) from mounted
 # durable /app/.state so container restarts heal config drift while preserving
 # symlinked session histories and SQLite databases on /app/.state.
-RUN mkdir -p /var/lib/mayagent /etc/profile.d && \
+RUN mkdir -p /root /etc/profile.d && \
     printf '%s\n' \
       'export PATH="/usr/local/bin:${PATH}"' \
-      'export HOME="${HOME:-/var/lib/mayagent}"' \
+      'export HOME="${HOME:-/root}"' \
       'export PI_CODING_AGENT_DIR="${PI_CODING_AGENT_DIR:-${HOME}/.pi/agent}"' \
       'export MODEL_BASE_URL="${MODEL_BASE_URL:-http://host.docker.internal:4000}"' \
       'export MODEL_API_KEY="${MODEL_API_KEY:-not-needed}"' \
@@ -212,12 +212,12 @@ RUN set -eu; \
     rm -rf /root/.npm /root/.cache /tmp/*
 
 # Pre-bake default CLI configs, Herdr integrations, and Codex hook trust into
-# /var/lib/mayagent at image build time so the container is ready out of the box.
+# /root at image build time so the container is ready out of the box.
 COPY container/configure-runtime.cjs /usr/local/bin/configure-runtime.cjs
 RUN set -eu; \
     chmod 755 /usr/local/bin/configure-runtime.cjs; \
-    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs --bake-image; \
-    HOME=/var/lib/mayagent MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs
+    HOME=/root MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs --bake-image; \
+    HOME=/root MAY_SKIP_STATE_LINKS=1 /usr/local/bin/node /usr/local/bin/configure-runtime.cjs
 
 # Copy supervisord & nginx configs and container runtime helper scripts before
 # the fast-changing compiled may-agent binary.
@@ -240,9 +240,9 @@ RUN chmod 755 /usr/local/bin/may-agent /usr/local/bin/entrypoint.sh /usr/local/b
 # Virtual display
 ENV DISPLAY=:99
 
-# Container-managed HOME (/var/lib/mayagent) holds static baked CLI configs,
+# Container-managed HOME (/root) matches OpenSSH's passwd-based root lookup,
 # while durable sessions and Herdr state live under /app/.state.
-ENV HOME=/var/lib/mayagent
+ENV HOME=/root
 ENV SHELL=/bin/bash
 ENV TERM=xterm-256color
 
@@ -252,8 +252,8 @@ ENV AGENTS_ROOT=/app/agents
 ENV SHARED_ROOT=/app/shared
 ENV PROJECTS_ROOT=/app/projects
 ENV STATE_DIR=/app/.state
-ENV PI_CODING_AGENT_DIR=/var/lib/mayagent/.pi/agent
-ENV XDG_CONFIG_HOME=/var/lib/mayagent/.config
+ENV PI_CODING_AGENT_DIR=/root/.pi/agent
+ENV XDG_CONFIG_HOME=/root/.config
 ENV XDG_STATE_HOME=/app/.state/cli-state/herdr/state
 ENV XDG_RUNTIME_DIR=/tmp/may-herdr-runtime
 ENV MODEL_BASE_URL=http://host.docker.internal:4000

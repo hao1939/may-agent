@@ -4,11 +4,11 @@ This directory defines the shipped Linux container image (`Dockerfile`), Docker 
 
 ## 1. Static Pre-Baked Image + Durable `/app` State (Zero Shell Wrappers)
 
-Rather than spawning a chain of shell setup scripts on startup or intercepting CLI invocations with wrapper scripts, the image **pre-bakes** default CLI configs, Herdr plugins/hooks, and Codex hook trust into `/var/lib/mayagent` at `docker build` time, and symlinks the **real native CLI binaries** directly into `/usr/local/bin/{pi,codex,gemini,claude}`:
+Rather than spawning a chain of shell setup scripts on startup or intercepting CLI invocations with wrapper scripts, the image **pre-bakes** default CLI configs, Herdr plugins/hooks, and Codex hook trust into `/root` at `docker build` time, and symlinks the **real native CLI binaries** directly into `/usr/local/bin/{pi,codex,gemini,claude}`:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ Container-Managed Layer: HOME=/var/lib/mayagent (pre-baked in image)    │
+│ Container-Managed Layer: HOME=/root (pre-baked in image)               │
 │   ~/.codex/{config.toml,hooks.json,herdr-agent-state.sh}                │
 │   ~/.pi/agent/{models.json,settings.json,extensions/herdr-*.ts}         │
 │   ~/.gemini/{settings.json,trustedFolders.json,policies/full-access.toml}│
@@ -40,10 +40,12 @@ and deployment helpers use the same identity; sockets are owned by root as well.
 There is no runtime-user switch, UID/GID remapping, or privilege-drop wrapper.
 Starting the entrypoint as non-root fails explicitly.
 
-`HOME`, `PATH`, and Herdr's `XDG_*` directories are image-level environment
-settings shared by services and exec commands. The existing managed HOME path
-`/var/lib/mayagent` is retained for configuration/history compatibility; it is a
-directory name, not a Unix user selection.
+`HOME=/root`, `PATH`, and Herdr's `XDG_*` directories are image-level environment
+settings shared by services and exec commands. HOME matches root's passwd entry,
+so OpenSSH finds persisted aliases and default keys through `/root/.ssh` without
+an `ssh -F` wrapper. Existing root SSH files and legacy state are migrated by the
+same conflict-checking helper. Only the persisted SSH directory/config ownership
+and modes are normalized for OpenSSH trust checks; key material is preserved.
 
 Attach with native commands:
 
@@ -52,10 +54,11 @@ docker exec -it may-agent bash
 herdr --session may-terminal2
 ```
 
-The named session and CLI state paths do not change. Rebuild/recreate the
-container to apply this runtime policy. Root can modify writable host mounts
+The named session and durable CLI state paths do not change. The image-owned
+CLI config home moves to `/root`; its history links still target `.state`.
+Rebuild/recreate the container to apply this runtime policy. Root can modify writable host mounts
 and create root-owned files, so this image is intended for trusted installations.
-Existing mounted file ownership is preserved; read-only mounts stay read-only.
+Other mounted file ownership is preserved; read-only mounts stay read-only.
 
 ## 2. Herdr Web Terminal & Native Agent Integrations
 
