@@ -1,6 +1,6 @@
 import { afterAll, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { generateCycleRecord, validateCycleRecord } from "./cycle-evidence.ts";
@@ -81,6 +81,40 @@ test("generation rejects output and evidence under declared disposable roots", (
   outputInput.executions[0].directEvidence[0].artifactPath = disposableArtifact;
   writeFileSync(t.input, JSON.stringify(outputInput));
   expect(() => generateCycleRecord(t.input, join(t.retained, "evidence-output"))).toThrow("direct evidence is within disposable root");
+});
+
+test("generation rejects artifact symlinks into disposable roots", () => {
+  const t = fixture();
+  const disposable = join(t.root, "task-worktree");
+  mkdirSync(disposable);
+  const disposableArtifact = join(disposable, "artifact.json");
+  writeFileSync(disposableArtifact, JSON.stringify({ result: "temporary" }));
+  const linkedArtifact = join(t.retained, "artifact-link.json");
+  symlinkSync(disposableArtifact, linkedArtifact, "file");
+
+  const linkedInput = JSON.parse(readFileSync(t.input, "utf8"));
+  linkedInput.generation = { disposableRoots: [disposable] };
+  linkedInput.artifacts[0].path = linkedArtifact;
+  linkedInput.executions[0].directEvidence[0].artifactPath = linkedArtifact;
+  writeFileSync(t.input, JSON.stringify(linkedInput));
+
+  expect(() => generateCycleRecord(t.input, join(t.retained, "linked-artifact-output"))).toThrow("artifact is within disposable root");
+});
+
+test("generation rejects output-parent symlinks into disposable roots before creation", () => {
+  const t = fixture();
+  const disposable = join(t.root, "task-worktree");
+  mkdirSync(disposable);
+  const outputParent = join(t.retained, "output-parent-link");
+  symlinkSync(disposable, outputParent, "dir");
+
+  const linkedInput = JSON.parse(readFileSync(t.input, "utf8"));
+  linkedInput.generation = { disposableRoots: [disposable] };
+  writeFileSync(t.input, JSON.stringify(linkedInput));
+  const output = join(outputParent, "output");
+
+  expect(() => generateCycleRecord(t.input, output)).toThrow("outputRoot is within disposable root");
+  expect(existsSync(join(disposable, "output"))).toBe(false);
 });
 
 test("direct evidence is hash-bound even without JSON pointers", () => {

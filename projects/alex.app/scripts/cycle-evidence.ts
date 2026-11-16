@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /** Deterministic generation and validation for retained improvement-cycle evidence. */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
@@ -48,6 +48,19 @@ function pointerDeclarations(record: Record<string, any>) {
 function isWithin(root: string, candidate: string) {
   const path = relative(root, candidate);
   return path === "" || (!path.startsWith(`..${sep}`) && path !== ".." && !isAbsolute(path));
+}
+
+function canonicalPath(path: string) {
+  const absolute = resolve(path);
+  const missing: string[] = [];
+  let existing = absolute;
+  while (!existsSync(existing)) {
+    const parent = dirname(existing);
+    if (parent === existing) throw new Error(`path has no existing parent: ${absolute}`);
+    missing.unshift(relative(parent, existing));
+    existing = parent;
+  }
+  return resolve(realpathSync(existing), ...missing);
 }
 
 export function validateCycleRecord(recordFile: string, options: ValidationOptions = {}) {
@@ -122,10 +135,10 @@ export function generateCycleRecord(inputFile: string, outputRoot: string, now =
   const inputPath = resolve(inputFile);
   const input = object(JSON.parse(readFileSync(inputPath, "utf8")));
   const inputRoot = dirname(inputPath);
-  const root = resolve(outputRoot);
+  const root = canonicalPath(outputRoot);
   const disposableRoots = (input.generation?.disposableRoots ?? []).map((path: unknown) => {
     if (typeof path !== "string") throw new Error("generation.disposableRoots must contain paths");
-    return resolve(inputRoot, path);
+    return canonicalPath(resolve(inputRoot, path));
   });
   const rejectDisposable = (path: string, label: string) => {
     const disposableRoot = disposableRoots.find((candidate: string) => isWithin(candidate, path));
@@ -134,7 +147,7 @@ export function generateCycleRecord(inputFile: string, outputRoot: string, now =
   rejectDisposable(root, "outputRoot");
   const artifacts = (input.artifacts ?? []).map((artifact: any) => {
     if (!artifact || typeof artifact.path !== "string") throw new Error("each artifact requires path");
-    const path = resolve(inputRoot, artifact.path);
+    const path = canonicalPath(resolve(inputRoot, artifact.path));
     rejectDisposable(path, "artifact");
     if (!existsSync(path)) throw new Error(`missing artifact: ${path}`);
     const actualSha256 = sha256File(path);
@@ -147,7 +160,7 @@ export function generateCycleRecord(inputFile: string, outputRoot: string, now =
     ...execution,
     directEvidence: (execution.directEvidence ?? []).map((evidence: any) => {
       if (!evidence || typeof evidence.artifactPath !== "string") return evidence;
-      const artifactPath = resolve(inputRoot, evidence.artifactPath);
+      const artifactPath = canonicalPath(resolve(inputRoot, evidence.artifactPath));
       rejectDisposable(artifactPath, "direct evidence");
       return { ...evidence, artifactPath };
     }),
