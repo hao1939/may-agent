@@ -20,7 +20,6 @@ import { readConversationRequest } from "../../../src/app/core/state/conversatio
 import {
   admitConversationTaskInput,
   conversationTaskIntent,
-  listPendingConversationTaskChanges,
 } from "../../../src/app/core/state/conversation-task-turns.js";
 import { readAppConversationResource } from "../../../src/app/core/state/conversations.js";
 import { createAppTaskCapability } from "../../../src/app/core/tasks/app-task-capability.js";
@@ -401,7 +400,6 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
       attachTask: tasks.attach,
       readDependency: tasks.readDependency,
       admitConversation: tasks.admitConversation,
-      admitConversationChange: tasks.admitConversationChange,
       stopConversationTurn: tasks.stopTurn,
       admitTaskEvent: ({ appId, event, intent, targetedTaskId, conditionTaskIds }) =>
         tasks.admitEvent({ appId, event, intent, targetedTaskId, conditionTaskIds }),
@@ -497,12 +495,6 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
           await discussion;
           if (nested) {
             assert.equal(contexts.length, onePlace ? 1 : 2, "Saving B's wait must not execute A");
-            assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
-            f.bus.emit({
-              type: "conversation.supervision.review",
-              source: "timer",
-              data: { project: "sample", limit: 1 },
-            });
           }
           const returned = replyAfter("The measurement is 17.");
           measurement.resolve();
@@ -536,7 +528,6 @@ async function delegation(nested = false, contendAdmission = false, onePlace = f
           await resumed;
           assert.equal(contexts.length, onePlace ? 3 : 4);
           assert.deepEqual(Object.keys(f.store.readSnapshot().resources!).sort(), ids);
-          assert.equal(listPendingConversationTaskChanges(f.db, "sample").length, 0);
         } finally {
           // Release the fixture's HTTP barrier before draining its workers,
           // including when an assertion or event wait fails while it is held.

@@ -32,12 +32,9 @@ import { runtimeWorkloadSource } from "../reads/task-workload.js";
 import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
-  admitConversationTaskChange,
   admitConversationTaskInput,
-  conversationTaskExecutionId,
   conversationTaskIntent,
   stopConversationTaskTurn,
-  type ConversationTaskChangeRef,
 } from "../state/conversation-task-turns.js";
 import { admitTaskInput } from "../state/inbox.js";
 import {
@@ -479,36 +476,6 @@ export function stopLoadedConversationTurn(input: { bus: EventBus; target: AppTu
   });
   wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [result.taskId] });
   return result;
-}
-
-/** Notification text is a hint. Only the exact stored outcome or closure can become input. */
-export function admitLoadedConversationChange(input: ConversationTaskChangeRef & { bus: EventBus }) {
-  const descriptor = loadedAppTaskRuntimeDescriptor(input.bus, input.appId);
-  if (!descriptor) return null;
-  const taskId = conversationTaskExecutionId(appTaskConfig(descriptor), input.appId, input.conversationId);
-  if (!descriptor.resourceStore.readTask(taskId)) return null;
-  if (!descriptor.app.conversation) return { taskId, created: false };
-  const source = AppTaskResourceStore.activeFromDb(descriptor.resourceStore.db, input.taskAppId);
-  if (
-    descriptor.resourceStore.isCancelled(taskId) ||
-    (input.taskAppId === descriptor.id && input.taskId === taskId) ||
-    !source
-  )
-    return { taskId, created: false };
-  if (input.attemptId !== undefined) {
-    const attempt = source.readAttempt(input.attemptId);
-    if (attempt?.taskId !== input.taskId || (!attempt.acceptedResult && attempt.state !== "failed"))
-      return { taskId, created: false };
-  } else if (source.readCancellation(input.taskId)?.generation !== input.closedGeneration)
-    return { taskId, created: false };
-  const admitted = admitConversationTaskChange(
-    appTaskConfig(descriptor),
-    { resourceStore: source },
-    input,
-    descriptor.app.conversation.inputKinds,
-  );
-  wakeLoadedAppTasks({ bus: input.bus, appId: descriptor.id, taskIds: [admitted.taskId] });
-  return { taskId: admitted.taskId, created: admitted.created };
 }
 
 /** Bounded exact-identity check used before asynchronously admitting feedback. */

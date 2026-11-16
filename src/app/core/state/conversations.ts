@@ -7,7 +7,6 @@ import type {
 } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../../../lib/db.js";
 import { listAppInboxConversationItems, readActiveAppTurn, type AppInboxItem } from "./app-inbox-store.js";
-import { conversationTaskLinksSql } from "./conversation-task-links.js";
 import { displayTaskReferences } from "./task-reference-index.js";
 import {
   listConversationRequests,
@@ -453,11 +452,11 @@ function hydrateConversationTopics(db: SqliteDb, rows: ConversationTopicRow[]): 
   const taskRows = rows.length
     ? (db
         .prepare(
-          `SELECT topic_id, task_app_id AS app_id, task_id
-           FROM (${conversationTaskLinksSql()})
+          `SELECT topic_id, app_id, task_id
+           FROM conversation_topic_tasks
            WHERE topic_id IN (${rows.map(() => "?").join(",")})
-           GROUP BY topic_id, task_app_id, task_id
-           ORDER BY MIN(linked_at), task_app_id, task_id`,
+           GROUP BY topic_id, app_id, task_id
+           ORDER BY MIN(linked_at), app_id, task_id`,
         )
         .all(...rows.map((row) => requiredText(row.id, "topic id"))) as Array<Record<string, unknown>>)
     : [];
