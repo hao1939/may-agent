@@ -6,6 +6,10 @@ in the [first trial](standalone-first-trial-20261116.md). The
 selected experiment through implementation, repair, verification and disposition.
 The [recovery and no-change trial](standalone-recovery-trial-20261116.md) verifies
 manual interruption/reuse and live diagnosis boundaries without a runtime patch.
+The [Host readiness rehearsal](host-handover-rehearsal-20261116.md) returned an
+accepted Alex disposition: synchronize the older active diagnosis and instructions
+before broad handover. Ordinary Task admission/closure and separate disposable
+Host restart checks passed.
 Further tuning on representative work and Host handover remain incremental work.
 The independent Host assignment completed
 without being stopped by the standalone trial.
@@ -146,10 +150,12 @@ own later evidence.
 
 ## Current next milestone
 
-Manual execution, the snapshot experiment and bounded interruption/reuse controls
-are recorded. Prepare one controlled Host handover rehearsal on a representative
-existing assignment. Inspect the installed Apps/SDK revision and Task evidence
-delivery before execution; observe ordinary recovery with the same requirements
-and candidate identities. The manual full-TaskDetail recipe is demonstrated,
-but automatic persistence and Host recovery remain unverified. Keep behavioral
-transfer, human correction and total cost as separate outcome observations.
+Manual execution, snapshot integrity, interruption/reuse and a read-only Host
+readiness assessment are recorded. Prepare and synchronize a reviewed Alex
+definition bundle containing the corrected diagnosis and current instructions;
+verify both active hashes and its bundle/source identity before the broader
+rehearsal. Preserve unrelated edits and existing obligations. Then observe one
+representative assignment with the same requirements, candidate identities and
+evidence contracts. Separate disposable Host restart checks passed, while
+automatic development-checkpoint restoration and behavioral transfer remain
+unverified. Keep human correction and total cost as outcome observations.
