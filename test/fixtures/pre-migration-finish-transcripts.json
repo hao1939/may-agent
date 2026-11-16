@@ -75,6 +75,43 @@
       "isError": false
     }
   ],
+  "blockedWithEvidenceOnly": [
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "legacy-blocked-evidence",
+          "name": "finish",
+          "arguments": {
+            "status": "blocked",
+            "summary": "Historical review remains",
+            "verification_facts": [
+              "Historical source checks passed"
+            ],
+            "verification_evidence": [
+              "Historical candidate retained"
+            ],
+            "next_steps": [
+              "Obtain external review"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "legacy-blocked-evidence",
+      "toolName": "finish",
+      "content": [
+        {
+          "type": "text",
+          "text": "⚠️ BLOCKED: Historical review remains"
+        }
+      ],
+      "isError": false
+    }
+  ],
   "failure": [
     {
       "role": "assistant",

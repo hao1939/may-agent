@@ -50,6 +50,17 @@ describe("finish result extraction", () => {
       }),
       finishResult("finish-current", "✅ SUCCESS: Current"),
     ])).toEqual({ status: "done", summary: "Current", output: undefined, facts: undefined });
+    for (const facts of [false, null]) {
+      expect(extractFinishParams([
+        finishCall(`finish-facts-${String(facts)}`, {
+          status: "blocked",
+          summary: "Blocked",
+          facts,
+          verification_facts: ["Legacy fallback must not replace direct facts"],
+        }),
+        finishResult(`finish-facts-${String(facts)}`, "⚠️ BLOCKED: Blocked"),
+      ])?.facts).toBe(facts);
+    }
   });
 
   it("extracts a successfully executed schema-backed finish payload", () => {
@@ -84,6 +95,16 @@ describe("finish result extraction", () => {
       facts: {
         blockers: [{ reason: "External review pending", context: "The saved work is not complete" }],
         verification_evidence: ["Historical draft retained"],
+      },
+    });
+    expect(extractFinishParams(historicalTranscripts.blockedWithEvidenceOnly)).toEqual({
+      status: "blocked",
+      summary: "Historical review remains",
+      output: undefined,
+      facts: {
+        verification_facts: ["Historical source checks passed"],
+        verification_evidence: ["Historical candidate retained"],
+        next_steps: ["Obtain external review"],
       },
     });
     expect(extractFinishParams(historicalTranscripts.failure)).toEqual({

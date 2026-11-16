@@ -615,13 +615,17 @@ function normalizedFinishStatus(status: unknown): FinishParams["status"] {
 }
 
 function isHistoricalFinish(args: Record<string, unknown>): boolean {
+  const blockedWithLegacyEvidence =
+    args.status === "blocked" &&
+    ["verification_facts", "verification_evidence", "next_steps"].some((key) => hasOwn(args, key));
   return (
     args.status === "success" ||
     args.status === "failure" ||
     args.status === "partial" ||
     hasOwn(args, "result") ||
     hasOwn(args, "blockers") ||
-    hasOwn(args, "deliverables")
+    hasOwn(args, "deliverables") ||
+    blockedWithLegacyEvidence
   );
 }
 

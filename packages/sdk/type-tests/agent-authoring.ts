@@ -28,6 +28,7 @@ const module: AgentExecutableModule<Input, { length: number }> = {
   name: "length",
   description: "Measure input",
   async execute(ctx: AgentContext<Input>): Promise<ExecutionResult<{ length: number }>> {
+    if (ctx.input.value.length === 0) return ctx.blocked("Input is empty");
     return ctx.done("Measured", { length: ctx.input.value.length });
   },
 };

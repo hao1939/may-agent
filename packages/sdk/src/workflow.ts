@@ -836,7 +836,7 @@ export type AgentContext<TInput = unknown> = {
   };
   log: Logger;
   done<T>(summary: string, output?: T): ExecutionResult<T>;
-  blocked(reason: string, facts?: unknown): ExecutionResult;
+  blocked(reason: string, facts?: unknown): ExecutionResult<never>;
 };
 
 /**

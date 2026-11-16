@@ -1092,7 +1092,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
       summary,
       ...(output !== undefined ? { output } : {}),
     }),
-    blocked: (reason: string, facts?: unknown): ExecutionResult => ({
+    blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
       id: executionId,
       kind: "workflow",
       status: "blocked",

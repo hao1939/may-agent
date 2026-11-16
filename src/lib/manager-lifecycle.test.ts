@@ -397,6 +397,15 @@ describe("manager session lifecycle", () => {
         verification_evidence: ["Historical draft retained"],
       },
     });
+    expect(restore("legacy-blocked-evidence", historicalTranscripts.blockedWithEvidenceOnly)).toMatchObject({
+      status: "blocked",
+      summary: "Historical review remains",
+      facts: {
+        verification_facts: ["Historical source checks passed"],
+        verification_evidence: ["Historical candidate retained"],
+        next_steps: ["Obtain external review"],
+      },
+    });
     expect(restore("legacy-failure", historicalTranscripts.failure)).toMatchObject({
       status: "error",
       summary: "Historical verification failed",
