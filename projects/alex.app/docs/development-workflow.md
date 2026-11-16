@@ -498,7 +498,9 @@ A wait for only `state: closed` will not wake on CI failure or a comment.
 Construction saves nothing. While delivery remains incomplete and only external
 results remain, return `waiting` with the saved Condition and a scoped progress
 report—not the local workflow's `converged` result as whole-Task completion.
-Exact checks serve active interests; idle work with an old Condition alone does
+CI/comment interests use the existing observer's five-minute check interval;
+state-only observation retains its hourly cadence. Shared provider deferral still
+applies. Exact checks serve active interests; idle work with an old Condition alone does
 not request them. The installed helper binds the resource and exact
 source `app:alex:observer:github-pull-request`. Saved interests also recover
 missed changes; they need no owner block for shared/read-only PRs in this

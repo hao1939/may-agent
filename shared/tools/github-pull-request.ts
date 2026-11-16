@@ -20,6 +20,9 @@ const MAX_REVIEW_PAGES = 4;
 const MAX_DISCOVERY_PAGES = 2;
 export const GITHUB_PULL_REQUEST_OBSERVER = "github-pull-request";
 const CONDITION_CHECK_INTERVAL_MS = 60 * 60_000;
+// Active CI/comment follow-up needs a useful bounded cadence after rearming;
+// retain the slower state-only policy and the existing shared provider backoff.
+const FEEDBACK_CHECK_INTERVAL_MS = 5 * 60_000;
 const REQUEST_TIMEOUT_MS = 15_000;
 const CONDITION_READ_TIMEOUT_MS = REQUEST_TIMEOUT_MS * (MAX_REVIEW_PAGES + 1);
 const OBSERVER_INTERVAL_MS = 15 * 60_000;
@@ -1029,7 +1032,9 @@ export function createGitHubPullRequestObservers(
       id: GITHUB_PULL_REQUEST_OBSERVER,
       type: gitHubPullRequestEvent(scope.appId),
       description: `Read an exact PR in ${scope.repository}: resource github:<owner>/<repo>#<number>. Returns state, merged, headSha, draft, commit-bound reviews, reviewsComplete and fingerprint. ${scope.feedback ? "Also returns feedback: head-pinned check runs and commit statuses, issue comments and inline review comments, per-set completeness and errors. Review/comment body previews are bounded; digests detect edits. Empty checks do not establish required CI passing." : "Does not read CI checks or comments."} Does not read unresolved threads or branch-protection requirements. Save a fingerprint-change Condition for continued follow-through; no separate watch registration.`,
-      intervalMs: CONDITION_CHECK_INTERVAL_MS,
+      intervalMs: scope.feedback
+        ? FEEDBACK_CHECK_INTERVAL_MS
+        : CONDITION_CHECK_INTERVAL_MS,
       timeoutMs: scope.feedback
         ? REQUEST_TIMEOUT_MS * DELIVERY_READ_REQUESTS
         : CONDITION_READ_TIMEOUT_MS,
