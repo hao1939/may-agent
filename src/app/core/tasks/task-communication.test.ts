@@ -802,7 +802,7 @@ test("managed finish corrects invalid input scope in one model execution and pre
     arguments: {
       status: "done",
       summary: result.summary,
-      verification_facts: ["Synthetic managed execution completed"],
+      facts: ["Synthetic managed execution completed"],
       output: result,
     },
   });
