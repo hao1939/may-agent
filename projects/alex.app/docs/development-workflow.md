@@ -306,6 +306,10 @@ watcher supplies facts; Host retains work, delivers events and schedules
 eligible attempts. No new Host phases or permanently running PR workflow are
 needed. Publication still uses separately authorized tools.
 
+Follow the [standalone-to-Host pilot plan](2b-manual/standalone-to-host-pr-pilot.md)
+to manually tune bounded passes and their feedback before automating coordination.
+Its checklist records experiment progress, not another delivery lifecycle.
+
 For example:
 
 ```text
