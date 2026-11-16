@@ -1,8 +1,9 @@
 # Outcome completion
 
-**Version 3 — five judgment cases with approved expectations. B's contextual-
-evidence clarification is active; no version-3 model baseline. The version-2
-attempt stopped on grader calibration and remains incomplete.**
+**Version 3 — five judgment cases with approved expectations. A frozen-Alex
+judgment baseline passed all five cases with calibrated judges; two initial
+format errors recovered within their executions. The version-2 attempt remains
+incomplete. These are not operational-delivery results.**
 
 Tests whether a compatible subject understands its bounded assignment, chooses an
 available authorized approach and identifies sufficient fulfillment evidence.
@@ -151,6 +152,27 @@ these observations; none of this is operational execution evidence.
 The [B2 calibration review](CALIBRATION-REVIEW.md) records the exact approved
 contextual-reference clarification now active in version 3. Diagnostics and an
 owner-local no-model regression identify the missed B2 control without changing
-its label, weakening the gate, or rescoring the old run. A fresh version-3 baseline
-still requires separate execution permission; no new model calls were made when
-recording or applying the clarification approval.
+its label, weakening the gate, or rescoring the old run. No model calls were made
+when recording or applying the clarification approval; execution was authorized
+separately afterward.
+
+## Version-3 frozen-subject baseline
+
+The [commissioned frozen-Alex run](../../docs/outcome-v3-frozen496-20261116.md)
+retains **five pass / zero fail / zero invalid** final results. It used the same
+Alex instruction source as the v2 attempt (`49668e6cd3`), the approved v3 rubric,
+a finish-only target and two read-only judges. B ran first; both judges classified
+B2 and every other control according to the approved keys. All 15 executions and
+the completed native manifest are retained without rewriting the v2 attempt.
+
+Two initial waiting results included `response`; SDK admission rejected them and
+Alex corrected them within the same executions. The five passing final artifacts
+are not five first-try-valid outputs. The unchanged style rubric still does not
+validate its extra `check:ci` attribution or closing declaration.
+
+A concurrent v3 run tested a different installed Alex profile and timeout. Its
+records were not substituted or pooled with this explicitly requested original-
+profile baseline. This result is valid for its frozen measurement and setup,
+not automatically selected in the shared agent plan or evidence that the current
+installed/edited Alex is the same subject. One trial per case does not establish
+reliability, actual implementation/check/review, autonomy, safety or savings.

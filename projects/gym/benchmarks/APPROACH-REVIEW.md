@@ -21,8 +21,10 @@ No models ran for this implementation; registration and passing non-model checks
 did not themselves approve labels or establish semantic-grader accuracy. The
 separate user approval is recorded in that benchmark's `labels.json`, bound to
 exact native-case fingerprints. The [first v2 attempt](../docs/outcome-v2-attempt-20261116.md)
-stopped at calibration and remains incomplete; the v3 clarification has no model
-baseline. Truth approval still does not authorize model calls.
+stopped at calibration and remains incomplete. The separately commissioned
+[frozen-Alex v3 baseline](../docs/outcome-v3-frozen496-20261116.md) passed all five
+cases with calibrated judges; it includes two recovered format errors and is not
+operational-delivery evidence. Truth approval itself did not authorize those calls.
 
 Before testing a complicated execution, ask whether the agent understands both
 **what it owes** and **how our existing system can help it deliver**. This is

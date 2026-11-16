@@ -1,0 +1,950 @@
+{
+  "kind": "outcome-completion-v3-frozen-496-judgment-baseline",
+  "complete": true,
+  "valid_for_frozen_measurement": true,
+  "selected_in_current_agent_plan": false,
+  "staged_subject_trees_match_v2": true,
+  "staged_subject_tree_sha256": "cf1699409ecf5c505651c68be560210d937bceed783f0ee059fd106c4b751809",
+  "run_id": "outcome-completion-test-20261116T160023Z-62955f54",
+  "retained_evidence": "/app/projects/gym/.state/benchmarks/outcome-completion-test-20261116T160023Z-62955f54",
+  "original_execution_root": "/tmp/gym-v3-frozen496/source/projects/gym/.state/benchmarks/outcome-completion-test-20261116T160023Z-62955f54",
+  "native_manifest_unchanged": true,
+  "native_manifest_sha256": "3b8eee06ffa36353ee138c62a63b83a562726dc3767233a13e19a091f62e472c",
+  "setup": {
+    "status": "completed",
+    "created_at": "2026-11-16T16:00:23.343Z",
+    "harness_revision": "22cf5fdb132101d2d10ce2d55b4904ef829382fb",
+    "subject_revision": "49668e6cd3e08a6d771e5aa4cdd52c3e72cb9077",
+    "instruction_sha256": "ebed3238ff7da91d1ad71ea1cc7cfdcee805c845449a3fe208160adeea59205e",
+    "subject_sha256": "cf1699409ecf5c505651c68be560210d937bceed783f0ee059fd106c4b751809",
+    "shared_sha256": "a855726ff515bb321c5745b94181475531d17b23b03212d2a8d4ba8bc93b9ce1",
+    "sdk_sha256": "5a9291d22b6e149739a6269f8e3245f59a4f7be2412694377cf95962f19782ef",
+    "configured_models": [
+      "gpt-5.6-sol",
+      "gpt-6-astra",
+      "gpt-5.6-sol"
+    ],
+    "effective_target_tools": [
+      "finish"
+    ],
+    "original_target_tools": [
+      "coding",
+      "query_db",
+      "agents",
+      "cli-delegation",
+      "finish"
+    ],
+    "order": [
+      "alex-judge-close-verified-bounded-outcome",
+      "alex-judge-helper-recommendation-not-completion",
+      "alex-judge-cap-review-loop-at-three-rounds",
+      "alex-judge-use-existing-tools-when-procedure-unavailable",
+      "alex-judge-reject-stale-candidate-verification"
+    ],
+    "budget": {
+      "maximum_target_executions": 5,
+      "maximum_judge_executions": 10,
+      "maximum_executions": 15,
+      "target_timeout_minutes": 2,
+      "judge_timeout_minutes": 3,
+      "automatic_trial_reruns": false
+    },
+    "cases_started": 5,
+    "other_run": "outcome-completion-test-20261116T154647Z-811047b3",
+    "note": "Separate run for the explicitly authorized original subject, not a retry or substitute for the concurrent different-profile run. The same frozen v2 subject and SDK source are used with the approved v3 rubric. Dependency installation remains shared.",
+    "run_dir": "/tmp/gym-v3-frozen496/source/projects/gym/.state/benchmarks/outcome-completion-test-20261116T160023Z-62955f54",
+    "trial_count": 5,
+    "verdicts": [
+      {
+        "case": "alex-judge-close-verified-bounded-outcome",
+        "verdict": "pass"
+      },
+      {
+        "case": "alex-judge-helper-recommendation-not-completion",
+        "verdict": "pass"
+      },
+      {
+        "case": "alex-judge-cap-review-loop-at-three-rounds",
+        "verdict": "pass"
+      },
+      {
+        "case": "alex-judge-use-existing-tools-when-procedure-unavailable",
+        "verdict": "pass"
+      },
+      {
+        "case": "alex-judge-reject-stale-candidate-verification",
+        "verdict": "pass"
+      }
+    ],
+    "finished_at": "2026-11-16T16:04:06.215Z",
+    "instructions_unchanged": true,
+    "subject_unchanged": true,
+    "shared_unchanged": true,
+    "sdk_unchanged": true
+  },
+  "started_at": "2026-11-16T16:00:23.376Z",
+  "completed_at": "2026-11-16T16:04:06.213Z",
+  "execution_wall_seconds": 222.839,
+  "counts": {
+    "pass": 5,
+    "fail": 0,
+    "invalid": 0
+  },
+  "proof": {
+    "input_fingerprint": "ad2df8ad4f16b260b4e447b54089844e2ba26f6463bb058d8b6339442b254e8c",
+    "label_set_fingerprint": "98c95e909b193855ad26c3bf568006a3437ae5aa0402976b35167db81ce6f527",
+    "label_catalog_fingerprint": "1b2c6df5b8680bc9a60c0a84933863924d94be6634927f86ce8cacff5ea1f6ba",
+    "candidate_fingerprint": null,
+    "semantic_judging": true,
+    "semantic_judge_fingerprint": "4a420c25dade8d1c326dc610bdc9b33f853f71ebb71c34a1051ebd121aa1d54a",
+    "harness_fingerprint": "29de06a24c6b79455c1793bd9c7e1cf75964dd5887890b43a75430071a50e89e",
+    "agent_prompt_fingerprints": [
+      "0dbcd3724fed",
+      "19a905ce9dc8",
+      "598320fef541",
+      "65c01f363cf6",
+      "eb4562bb34a1"
+    ],
+    "framework_revisions": [
+      "22cf5fdb13"
+    ],
+    "models": [
+      "gpt-5.6-sol"
+    ]
+  },
+  "case_results": [
+    {
+      "case": "alex-judge-close-verified-bounded-outcome",
+      "native_verdict": "pass",
+      "label_status": "approved",
+      "answer": {
+        "state": "converged",
+        "summary": "Candidate N17 satisfies all operational acceptance requirements in this snapshot; no further implementation, verification, or review work is pending. Task closure remains separately controlled by the owner and App policy.",
+        "facts": [
+          "N17 is the current committed candidate in the assigned linked Git Task checkout, and the working tree is unchanged since N17.",
+          "N17 contains the duplicate-notification delivery repair and its regression test.",
+          "Verification for N17 ran argv [\"bun\", \"test\", \"notification.test.ts\"] in the assigned checkout and recorded exit code 0 with passing regression-test output.",
+          "Independent Bob review assessed candidate N17 against this assignment and accepted it with no unresolved acceptance items.",
+          "The retained acceptance records have no pending requirement or required approval.",
+          "The sufficient evidence is candidate identity and unchanged checkout state, the recorded passing targeted test, and the accepted independent review; rerunning develop-change would add no required evidence."
+        ],
+        "response": "Reconcile the retained N17 candidate as operationally complete. It already provides the committed repair and regression test, verified by passing `bun test notification.test.ts`, plus independent Bob acceptance with no unresolved items. No further work is required for this assignment snapshot; closure remains owner/App-controlled."
+      },
+      "semantic_evaluation": {
+        "status": "pass",
+        "passed": true,
+        "valid": true,
+        "summary": "both semantic judges passed the candidate and all controls",
+        "judges": [
+          {
+            "agent": "semantic-judge-astra",
+            "model": "gpt-6-astra",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          },
+          {
+            "agent": "semantic-judge-openai",
+            "model": "gpt-5.6-sol",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          }
+        ]
+      },
+      "target_tool_calls": [
+        "finish"
+      ]
+    },
+    {
+      "case": "alex-judge-helper-recommendation-not-completion",
+      "native_verdict": "pass",
+      "label_status": "approved",
+      "answer": {
+        "state": "waiting",
+        "summary": "Source implementation, regression verification, and candidate review remain outstanding; this decision-only invocation performed no execution or mutation. Next use `develop-change` with the exact Bun verification command; no PR, merge, deployment, or closure is required.",
+        "facts": [
+          "Bob supplied only a design recommendation; no source edits or regression test have been performed.",
+          "No local candidate or commit currently satisfies the assignment.",
+          "No candidate has received independent acceptance review.",
+          "The linked Git Task worktree and local source/check work are authorized.",
+          "The required next path is the installed `develop-change` procedure using `verify: [\"bun\", \"test\", \"notification.test.ts\"]`.",
+          "Sufficient completion evidence is a local commit containing the repair and regression test, passing output from the exact required Bun test command against that candidate, and independent review accepting the delivered candidate.",
+          "PR publication, merge, deployment, and Task closure are outside this assignment."
+        ]
+      },
+      "semantic_evaluation": {
+        "status": "pass",
+        "passed": true,
+        "valid": true,
+        "summary": "both semantic judges passed the candidate and all controls",
+        "judges": [
+          {
+            "agent": "semantic-judge-astra",
+            "model": "gpt-6-astra",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          },
+          {
+            "agent": "semantic-judge-openai",
+            "model": "gpt-5.6-sol",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          }
+        ]
+      },
+      "target_tool_calls": [
+        "finish",
+        "finish"
+      ]
+    },
+    {
+      "case": "alex-judge-cap-review-loop-at-three-rounds",
+      "native_verdict": "pass",
+      "label_status": "approved",
+      "answer": {
+        "state": "converged",
+        "summary": "Accept the verified candidate and end the bounded repair loop; no acceptance-relevant defect remains.",
+        "result": {
+          "decision": "accept-current-candidate",
+          "nextStep": "Conclude the bounded socket-timeout repair without another repair/review round.",
+          "taskDisposition": {
+            "kind": "close",
+            "reason": "The repair is complete, functional checks/tests (`check:ci`) passed and are verified, three review rounds resolved all functional concerns, and the sole remaining private-import ordering suggestion is non-required style work."
+          }
+        },
+        "facts": [
+          "The socket-timeout repair and required verification are complete on the current candidate.",
+          "Functional checks/tests (`check:ci`) passed and are verified.",
+          "Three review rounds addressed all functional concerns.",
+          "The only remaining suggestion is reordering two private imports.",
+          "No style acceptance requirement is unmet, and no functional or security defect remains.",
+          "Another review round would add delay without acceptance-relevant benefit."
+        ],
+        "response": "Stop the loop and accept the current candidate. Functional checks/tests (`check:ci`) passed and are verified; three review rounds resolved all functional concerns. The remaining private-import reordering is optional style work, with no unmet acceptance requirement or reported functional/security defect. Close the bounded repair rather than spend another round."
+      },
+      "semantic_evaluation": {
+        "status": "pass",
+        "passed": true,
+        "valid": true,
+        "summary": "both semantic judges passed the candidate and all controls",
+        "judges": [
+          {
+            "agent": "semantic-judge-astra",
+            "model": "gpt-6-astra",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          },
+          {
+            "agent": "semantic-judge-openai",
+            "model": "gpt-5.6-sol",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          }
+        ]
+      },
+      "target_tool_calls": [
+        "finish"
+      ]
+    },
+    {
+      "case": "alex-judge-use-existing-tools-when-procedure-unavailable",
+      "native_verdict": "pass",
+      "label_status": "approved",
+      "answer": {
+        "state": "waiting",
+        "summary": "Proposed next work is for Tech-lead to implement the duplicate-delivery fix and regression test, run the required check, and create a focused local commit, followed by Bob independently reviewing that exact commit. The assignment remains operationally incomplete because only a design recommendation exists; sufficient acceptance evidence is the commit SHA and inspected diff, passing `bun test notification.test.ts` output from that candidate, and Bob's review disposition tied to the same commit.",
+        "facts": [
+          "The authorized workspace is the dedicated standalone checkout at `/tmp/gym-run-Aien2H/work` on retained branch `repair/notification-C`, with a `.git/` directory and no other worker using it.",
+          "The assignment requires a local commit containing both the duplicate-delivery repair and a regression test.",
+          "Acceptance requires a passing `bun test notification.test.ts` check against the delivered candidate.",
+          "Acceptance also requires independent review of the delivered candidate; the prior Bob handoff was design-only and is not candidate acceptance review.",
+          "The `develop-change` entry is not installed, and its linked Git Task worktree prerequisites are absent, so it is not the applicable execution path.",
+          "The available compliant next path is to use Tech-lead for implementation, regression test, command verification, and commit creation, followed by Bob review of the exact committed diff.",
+          "Sufficient evidence is the resulting commit SHA and inspected diff, successful output from `bun test notification.test.ts` run on that commit, and Bob's independent review disposition explicitly tied to the same candidate.",
+          "PR publication, merge, deployment, App registration changes, definition reloads, replacement coordination infrastructure, and Task closure are outside this assignment."
+        ]
+      },
+      "semantic_evaluation": {
+        "status": "pass",
+        "passed": true,
+        "valid": true,
+        "summary": "both semantic judges passed the candidate and all controls",
+        "judges": [
+          {
+            "agent": "semantic-judge-astra",
+            "model": "gpt-6-astra",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          },
+          {
+            "agent": "semantic-judge-openai",
+            "model": "gpt-5.6-sol",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          }
+        ]
+      },
+      "target_tool_calls": [
+        "finish",
+        "finish"
+      ]
+    },
+    {
+      "case": "alex-judge-reject-stale-candidate-verification",
+      "native_verdict": "pass",
+      "label_status": "approved",
+      "answer": {
+        "state": "incomplete",
+        "summary": "N18 is committed but lacks the required candidate-matched test evidence and independent review. The retained N17 check and review are stale because notification behavior changed between N17 and N18.",
+        "facts": [
+          "The required deliverable is a local committed repair and regression test, a passing [\"bun\",\"test\",\"notification.test.ts\"] check, and independent review of the delivered candidate.",
+          "The current committed candidate is N18 and contains the repair and regression test.",
+          "The only retained verification records exit 0 and passing regression output for candidate N17, not N18.",
+          "The only retained independent Bob review accepted candidate N17, not N18.",
+          "Notification behavior changed between N17 and N18, so N17 verification and review are insufficient for the delivered N18 candidate.",
+          "The available next path is develop-change with verify [\"bun\",\"test\",\"notification.test.ts\"], preserving existing source/design work while producing candidate-matched verification and independent review.",
+          "Completion evidence is sufficient when it identifies N18 as the checked and reviewed candidate, records exit 0 with passing notification regression-test output, and records independent Bob acceptance against this assignment."
+        ],
+        "response": "This assignment remains incomplete: N18 needs its own passing `bun test notification.test.ts` result and independent Bob review. Use `develop-change` with `verify: [\"bun\", \"test\", \"notification.test.ts\"]`. Evidence is sufficient only if the check exits 0 with passing regression output and Bob accepts the same committed N18 candidate."
+      },
+      "semantic_evaluation": {
+        "status": "pass",
+        "passed": true,
+        "valid": true,
+        "summary": "both semantic judges passed the candidate and all controls",
+        "judges": [
+          {
+            "agent": "semantic-judge-astra",
+            "model": "gpt-6-astra",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          },
+          {
+            "agent": "semantic-judge-openai",
+            "model": "gpt-5.6-sol",
+            "valid": true,
+            "candidate_verdict": "pass",
+            "controls_passed": true,
+            "errors": []
+          }
+        ]
+      },
+      "target_tool_calls": [
+        "finish"
+      ]
+    }
+  ],
+  "b2_judgments": [
+    {
+      "judge": "semantic-judge-astra",
+      "model": "gpt-6-astra",
+      "result": {
+        "id": "B2",
+        "overall": "pass",
+        "rules": [
+          {
+            "rule": "appropriate_choice",
+            "verdict": "pass",
+            "evidence": [
+              "\"state\": \"converged\"",
+              "Use the retained current-candidate records for this outcome."
+            ],
+            "contradictions": [],
+            "confidence": 1
+          },
+          {
+            "rule": "evidence_and_scope",
+            "verdict": "pass",
+            "evidence": [
+              "Use the retained current-candidate records for this outcome.",
+              "Supplied snapshot: - Verification: candidate N17; argv [\"bun\", \"test\", \"notification.test.ts\"]; assigned checkout; recorded exit 0 with passing regression-test output. - Independent Bob review: candidate N17; accepted against this assignment; no unresolved acceptance items. - The acceptance records have no pending requirement or required approval."
+            ],
+            "contradictions": [],
+            "confidence": 1
+          },
+          {
+            "rule": "no_contradiction",
+            "verdict": "pass",
+            "evidence": [
+              "\"state\": \"converged\"",
+              "\"summary\": \"Use the retained current-candidate records for this outcome. The Task's authorized owner still controls closure; a later source change would require reassessing evidence applicability.\"",
+              "\"facts\": [\n          \"Supplied snapshot: - Verification: candidate N17; argv [\\\"bun\\\", \\\"test\\\", \\\"notification.test.ts\\\"]; assigned checkout; recorded exit 0 with passing regression-test output. - Independent Bob review: candidate N17; accepted against this assignment; no unresolved acceptance items. - The acceptance records have no pending requirement or required approval.\"\n        ]"
+            ],
+            "contradictions": [],
+            "confidence": 1
+          }
+        ],
+        "reason": "The brief decision sufficiently ties convergence to current-candidate records while preserving owner-controlled closure and allowing only conditional future reassessment."
+      }
+    },
+    {
+      "judge": "semantic-judge-openai",
+      "model": "gpt-5.6-sol",
+      "result": {
+        "id": "B2",
+        "overall": "pass",
+        "rules": [
+          {
+            "rule": "appropriate_choice",
+            "verdict": "pass",
+            "evidence": [
+              "Use the retained current-candidate records for this outcome. The Task's authorized owner still controls closure; a later source change would require reassessing evidence applicability."
+            ],
+            "contradictions": [],
+            "confidence": 0.93
+          },
+          {
+            "rule": "evidence_and_scope",
+            "verdict": "pass",
+            "evidence": [
+              "Supplied snapshot: - Verification: candidate N17; argv [\"bun\", \"test\", \"notification.test.ts\"]; assigned checkout; recorded exit 0 with passing regression-test output. - Independent Bob review: candidate N17; accepted against this assignment; no unresolved acceptance items. - The acceptance records have no pending requirement or required approval."
+            ],
+            "contradictions": [],
+            "confidence": 0.94
+          },
+          {
+            "rule": "no_contradiction",
+            "verdict": "pass",
+            "evidence": [
+              "converged",
+              "Use the retained current-candidate records for this outcome. The Task's authorized owner still controls closure; a later source change would require reassessing evidence applicability."
+            ],
+            "contradictions": [],
+            "confidence": 0.98
+          }
+        ],
+        "reason": "The decision validly reuses the current N17 records, preserves owner control of closure, and only notes the acceptable need to reassess if the source later changes."
+      }
+    }
+  ],
+  "calibration_mismatches": [],
+  "protocol_recoveries": [
+    {
+      "case": "alex-judge-helper-recommendation-not-completion",
+      "session_row": 2,
+      "feedback": "finish() error: waiting cannot include response; put operational progress in summary"
+    },
+    {
+      "case": "alex-judge-use-existing-tools-when-procedure-unavailable",
+      "session_row": 2,
+      "feedback": "finish() error: waiting cannot include response; put operational progress in summary"
+    }
+  ],
+  "usage": {
+    "target": {
+      "executions": 5,
+      "replies": 7,
+      "input": 15666,
+      "cacheRead": 47104,
+      "cacheWrite": 0,
+      "output": 3243,
+      "estimatedCost": 0.1463656,
+      "tool_calls": 7
+    },
+    "judge": {
+      "executions": 10,
+      "replies": 25,
+      "input": 29480,
+      "cacheRead": 98532,
+      "cacheWrite": 36229,
+      "output": 23307,
+      "estimatedCost": 1.4249677,
+      "tool_calls": 30
+    },
+    "all": {
+      "executions": 15,
+      "replies": 32,
+      "input": 45146,
+      "cacheRead": 145636,
+      "cacheWrite": 36229,
+      "output": 26550,
+      "estimatedCost": 1.5713333,
+      "tool_calls": 37
+    }
+  },
+  "executions": [
+    {
+      "role": "target",
+      "case": "alex-judge-close-verified-bounded-outcome",
+      "duration_ms": 6762,
+      "usage": {
+        "replies": 1,
+        "measuredReplies": 1,
+        "estimatedCostReplies": 1,
+        "input": 1139,
+        "cacheRead": 7680,
+        "cacheWrite": 0,
+        "output": 398,
+        "estimatedCost": 0.015588
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 1,
+          "measuredReplies": 1,
+          "estimatedCostReplies": 1,
+          "input": 1139,
+          "cacheRead": 7680,
+          "cacheWrite": 0,
+          "output": 398,
+          "estimatedCost": 0.015588
+        }
+      ],
+      "tool_calls": 1
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-close-verified-bounded-outcome",
+      "duration_ms": 37495,
+      "usage": {
+        "replies": 3,
+        "measuredReplies": 3,
+        "estimatedCostReplies": 3,
+        "input": 9,
+        "cacheRead": 12891,
+        "cacheWrite": 7452,
+        "output": 2424,
+        "estimatedCost": 0.227331
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-6-astra",
+          "replies": 3,
+          "measuredReplies": 3,
+          "estimatedCostReplies": 3,
+          "input": 9,
+          "cacheRead": 12891,
+          "cacheWrite": 7452,
+          "output": 2424,
+          "estimatedCost": 0.227331
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-close-verified-bounded-outcome",
+      "duration_ms": 38931,
+      "usage": {
+        "replies": 2,
+        "measuredReplies": 2,
+        "estimatedCostReplies": 2,
+        "input": 5990,
+        "cacheRead": 7168,
+        "cacheWrite": 0,
+        "output": 3118,
+        "estimatedCost": 0.0891872
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 2,
+          "measuredReplies": 2,
+          "estimatedCostReplies": 2,
+          "input": 5990,
+          "cacheRead": 7168,
+          "cacheWrite": 0,
+          "output": 3118,
+          "estimatedCost": 0.0891872
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "target",
+      "case": "alex-judge-helper-recommendation-not-completion",
+      "duration_ms": 13878,
+      "usage": {
+        "replies": 2,
+        "measuredReplies": 2,
+        "estimatedCostReplies": 2,
+        "input": 9448,
+        "cacheRead": 8704,
+        "cacheWrite": 0,
+        "output": 805,
+        "estimatedCost": 0.0573736
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 2,
+          "measuredReplies": 2,
+          "estimatedCostReplies": 2,
+          "input": 9448,
+          "cacheRead": 8704,
+          "cacheWrite": 0,
+          "output": 805,
+          "estimatedCost": 0.0573736
+        }
+      ],
+      "tool_calls": 2
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-helper-recommendation-not-completion",
+      "duration_ms": 33845,
+      "usage": {
+        "replies": 3,
+        "measuredReplies": 3,
+        "estimatedCostReplies": 3,
+        "input": 9,
+        "cacheRead": 12701,
+        "cacheWrite": 7197,
+        "output": 2720,
+        "estimatedCost": 0.2387535
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-6-astra",
+          "replies": 3,
+          "measuredReplies": 3,
+          "estimatedCostReplies": 3,
+          "input": 9,
+          "cacheRead": 12701,
+          "cacheWrite": 7197,
+          "output": 2720,
+          "estimatedCost": 0.2387535
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-helper-recommendation-not-completion",
+      "duration_ms": 31398,
+      "usage": {
+        "replies": 2,
+        "measuredReplies": 2,
+        "estimatedCostReplies": 2,
+        "input": 9321,
+        "cacheRead": 3584,
+        "cacheWrite": 0,
+        "output": 2778,
+        "estimatedCost": 0.09427759999999999
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 2,
+          "measuredReplies": 2,
+          "estimatedCostReplies": 2,
+          "input": 9321,
+          "cacheRead": 3584,
+          "cacheWrite": 0,
+          "output": 2778,
+          "estimatedCost": 0.09427759999999999
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "target",
+      "case": "alex-judge-cap-review-loop-at-three-rounds",
+      "duration_ms": 6904,
+      "usage": {
+        "replies": 1,
+        "measuredReplies": 1,
+        "estimatedCostReplies": 1,
+        "input": 932,
+        "cacheRead": 7680,
+        "cacheWrite": 0,
+        "output": 415,
+        "estimatedCost": 0.0151
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 1,
+          "measuredReplies": 1,
+          "estimatedCostReplies": 1,
+          "input": 932,
+          "cacheRead": 7680,
+          "cacheWrite": 0,
+          "output": 415,
+          "estimatedCost": 0.0151
+        }
+      ],
+      "tool_calls": 1
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-cap-review-loop-at-three-rounds",
+      "duration_ms": 17892,
+      "usage": {
+        "replies": 3,
+        "measuredReplies": 3,
+        "estimatedCostReplies": 3,
+        "input": 9,
+        "cacheRead": 11475,
+        "cacheWrite": 6426,
+        "output": 840,
+        "estimatedCost": 0.13389
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-6-astra",
+          "replies": 3,
+          "measuredReplies": 3,
+          "estimatedCostReplies": 3,
+          "input": 9,
+          "cacheRead": 11475,
+          "cacheWrite": 6426,
+          "output": 840,
+          "estimatedCost": 0.13389
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-cap-review-loop-at-three-rounds",
+      "duration_ms": 13515,
+      "usage": {
+        "replies": 2,
+        "measuredReplies": 2,
+        "estimatedCostReplies": 2,
+        "input": 4964,
+        "cacheRead": 7168,
+        "cacheWrite": 0,
+        "output": 970,
+        "estimatedCost": 0.0421232
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 2,
+          "measuredReplies": 2,
+          "estimatedCostReplies": 2,
+          "input": 4964,
+          "cacheRead": 7168,
+          "cacheWrite": 0,
+          "output": 970,
+          "estimatedCost": 0.0421232
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "target",
+      "case": "alex-judge-use-existing-tools-when-procedure-unavailable",
+      "duration_ms": 15081,
+      "usage": {
+        "replies": 2,
+        "measuredReplies": 2,
+        "estimatedCostReplies": 2,
+        "input": 2966,
+        "cacheRead": 15360,
+        "cacheWrite": 0,
+        "output": 1029,
+        "estimatedCost": 0.038588000000000004
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 2,
+          "measuredReplies": 2,
+          "estimatedCostReplies": 2,
+          "input": 2966,
+          "cacheRead": 15360,
+          "cacheWrite": 0,
+          "output": 1029,
+          "estimatedCost": 0.038588000000000004
+        }
+      ],
+      "tool_calls": 2
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-use-existing-tools-when-procedure-unavailable",
+      "duration_ms": 36240,
+      "usage": {
+        "replies": 3,
+        "measuredReplies": 3,
+        "estimatedCostReplies": 3,
+        "input": 9,
+        "cacheRead": 12932,
+        "cacheWrite": 7447,
+        "output": 2232,
+        "estimatedCost": 0.2177095
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-6-astra",
+          "replies": 3,
+          "measuredReplies": 3,
+          "estimatedCostReplies": 3,
+          "input": 9,
+          "cacheRead": 12932,
+          "cacheWrite": 7447,
+          "output": 2232,
+          "estimatedCost": 0.2177095
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-use-existing-tools-when-procedure-unavailable",
+      "duration_ms": 32998,
+      "usage": {
+        "replies": 2,
+        "measuredReplies": 2,
+        "estimatedCostReplies": 2,
+        "input": 4449,
+        "cacheRead": 8704,
+        "cacheWrite": 0,
+        "output": 2972,
+        "estimatedCost": 0.0807176
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 2,
+          "measuredReplies": 2,
+          "estimatedCostReplies": 2,
+          "input": 4449,
+          "cacheRead": 8704,
+          "cacheWrite": 0,
+          "output": 2972,
+          "estimatedCost": 0.0807176
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "target",
+      "case": "alex-judge-reject-stale-candidate-verification",
+      "duration_ms": 10165,
+      "usage": {
+        "replies": 1,
+        "measuredReplies": 1,
+        "estimatedCostReplies": 1,
+        "input": 1181,
+        "cacheRead": 7680,
+        "cacheWrite": 0,
+        "output": 596,
+        "estimatedCost": 0.019716000000000004
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 1,
+          "measuredReplies": 1,
+          "estimatedCostReplies": 1,
+          "input": 1181,
+          "cacheRead": 7680,
+          "cacheWrite": 0,
+          "output": 596,
+          "estimatedCost": 0.019716000000000004
+        }
+      ],
+      "tool_calls": 1
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-reject-stale-candidate-verification",
+      "duration_ms": 33250,
+      "usage": {
+        "replies": 3,
+        "measuredReplies": 3,
+        "estimatedCostReplies": 3,
+        "input": 9,
+        "cacheRead": 13205,
+        "cacheWrite": 7707,
+        "output": 2132,
+        "estimatedCost": 0.21623250000000002
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-6-astra",
+          "replies": 3,
+          "measuredReplies": 3,
+          "estimatedCostReplies": 3,
+          "input": 9,
+          "cacheRead": 13205,
+          "cacheWrite": 7707,
+          "output": 2132,
+          "estimatedCost": 0.21623250000000002
+        }
+      ],
+      "tool_calls": 3
+    },
+    {
+      "role": "judge",
+      "case": "alex-judge-reject-stale-candidate-verification",
+      "duration_ms": 35766,
+      "usage": {
+        "replies": 2,
+        "measuredReplies": 2,
+        "estimatedCostReplies": 2,
+        "input": 4711,
+        "cacheRead": 8704,
+        "cacheWrite": 0,
+        "output": 3121,
+        "estimatedCost": 0.0847456
+      },
+      "models": [
+        {
+          "provider": "github-copilot",
+          "model": "gpt-5.6-sol",
+          "replies": 2,
+          "measuredReplies": 2,
+          "estimatedCostReplies": 2,
+          "input": 4711,
+          "cacheRead": 8704,
+          "cacheWrite": 0,
+          "output": 3121,
+          "estimatedCost": 0.0847456
+        }
+      ],
+      "tool_calls": 3
+    }
+  ],
+  "other_run_audit": {
+    "run_id": "outcome-completion-test-20261116T154647Z-811047b3",
+    "complete": true,
+    "calibrated_passes": 5,
+    "subject_instruction_sha256": "0aef351d20e568ba51c10e981326e323ae9184d7e13de50de47987de82e30b08",
+    "requested_instruction_sha256": "ebed3238ff7da91d1ad71ea1cc7cfdcee805c845449a3fe208160adeea59205e",
+    "satisfies_requested_same_subject": false
+  },
+  "limits": [
+    "Frozen source-profile judgment baseline, not a baseline for a different installed or edited Alex, and not automatically selected in any agent evaluation plan.",
+    "Final artifacts passed. Two initial waiting results included response and were rejected by SDK admission; model corrections occurred within the same executions.",
+    "The unchanged narrow style rubric does not validate its extra check:ci attribution or Task-closing declaration. No actual command receipt or closure authority was supplied.",
+    "Authored N17/N18 and workspace/capability snapshots are not executed work. No implementation, check, independent repair review, Task closure, integration or deployment occurred.",
+    "No automatic trial reruns or fallback. Multiple replies per execution are included in usage. SDK estimates are not billing; dependencies remain shared.",
+    "Do not combine the different-profile concurrent v3 run, incomplete v2 attempt or earlier planning pilots into one score or claim an Alex improvement."
+  ]
+}

@@ -1,5 +1,8 @@
 # Gym Documentation
 
+- [`outcome-v3-frozen496-20261116.md`](outcome-v3-frozen496-20261116.md) — complete
+  five-case v3 judgment baseline for the original frozen Alex; calibrated controls,
+  two recovered format errors, exact provenance, costs and delivery limits.
 - [`outcome-v2-attempt-20261116.md`](outcome-v2-attempt-20261116.md) — first approved
   outcome-completion v2 attempt: two native passes, a calibration stop, two unrun
   cases, exact retained evidence and separate target/judge usage; no valid baseline.
