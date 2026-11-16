@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runStage } from "./standalone-stage.ts";
 
 const roots: string[] = [];
@@ -20,7 +21,22 @@ function trial(kind: "done" | "blocked" | "cancel" = "done") {
   git("config", "user.name", "Standalone fixture");
   git("config", "user.email", "fixture@example.invalid");
   writeFileSync(join(repo, ".gitignore"), ".state/\n");
-  git("add", ".gitignore");
+  const sdkIndex = fileURLToPath(import.meta.resolve("@may-agent/sdk"));
+  writeFileSync(join(repo, "tsconfig.json"), JSON.stringify({ compilerOptions: { paths: { "@may-agent/sdk": [sdkIndex] } } }));
+  // Give the fixture its own linked source root even when tests run on shared main.
+  const appRoot = resolve(import.meta.dir, "..");
+  for (const agent of ["alex", "gym"]) {
+    const target = join(repo, "projects", "alex.app", "agents", agent);
+    mkdirSync(target, { recursive: true });
+    writeFileSync(join(target, "agent.json"), readFileSync(join(appRoot, "agents", agent, "agent.json")));
+    writeFileSync(join(target, "AGENTS.md"), `# ${agent} fixture\n`);
+    if (agent === "alex") {
+      mkdirSync(join(target, "workflows"));
+      writeFileSync(join(target, "workflows", "diagnose-improvement.ts"), readFileSync(join(appRoot, "agents", agent, "workflows", "diagnose-improvement.ts")));
+    }
+  }
+  writeFileSync(join(repo, "projects/alex.app/app.ts"), "export {};\n");
+  git("add", ".");
   git("commit", "-m", "fixture baseline");
   git("worktree", "add", "-b", "trial", cwd);
   const baselineDir = join(root, "baseline");
@@ -39,7 +55,7 @@ function trial(kind: "done" | "blocked" | "cancel" = "done") {
   const config = {
     target: "alex/diagnose-improvement", input: { baselineDir },
     task: { outcome: "Diagnose the captured execution failure", acceptance: ["Preserve insufficient evidence"] },
-    cwd, projectRoot: resolve(import.meta.dir, "../../.."), outputRoot, timeoutMs: 10_000, fixtureFile,
+    cwd, projectRoot: cwd, outputRoot, timeoutMs: 10_000, fixtureFile,
   };
   const configFile = join(root, "stage.json");
   writeFileSync(configFile, JSON.stringify(config));
