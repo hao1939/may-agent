@@ -25,6 +25,11 @@ import { prepareDaemonAgents } from "../../daemon-agents.js";
 import { listConfiguredAgentNames, type ModelRegistry } from "@may-agent/sdk/runtime";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
+// Execution adapters own the admitted deadline (including ongoing native goals).
+// The parent bounds an unresponsive process, rather than imposing another lifetime.
+export const DEFAULT_TASK_WORKER_LIVENESS_TIMEOUT_MS = 5 * 60_000;
+const WORKER_HEARTBEAT_INTERVAL_MS = 30_000;
+export const DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS = 10 * 60_000;
 const WORKER_RELAY_BATCH_SIZE = 1;
 const WORKER_RELAY_TURN_DELAY_MS = 5;
 const WORKER_RELAY_BACKLOG_LIMIT = 256;
@@ -72,7 +77,7 @@ type WorkerEventFrame = {
 };
 type WorkerResultFrame = { kind: "result"; dependentTaskIds: string[]; taskChecks?: unknown };
 type WorkerErrorFrame = { kind: "error"; error: string; taskChecks?: unknown };
-type WorkerFrame = WorkerEventFrame | WorkerResultFrame | WorkerErrorFrame;
+type WorkerFrame = WorkerEventFrame | WorkerResultFrame | WorkerErrorFrame | { kind: "heartbeat" };
 
 export type TaskAttemptProcessRequest = {
   appId: string;
@@ -104,6 +109,7 @@ function parseWorkerFrame(value: unknown): WorkerFrame {
     throw new Error("Task worker frame is too large");
   if (!value || typeof value !== "object") throw new Error("Task worker returned an invalid frame");
   const parsed = value as Partial<WorkerFrame>;
+  if (parsed.kind === "heartbeat") return { kind: "heartbeat" };
   if (parsed.kind === "event") {
     if (
       !Number.isSafeInteger(parsed.eventId) || Number(parsed.eventId) <= 0 || !parsed.event ||
@@ -169,6 +175,8 @@ function spawnPrivateWorker(args: string[]): ChildProcess {
 export function createTaskAttemptProcessExecutor(input: {
   bus: EventBus;
   timeoutMs?: number;
+  /** Process responsiveness bound; independent of App execution deadlines. */
+  livenessTimeoutMs?: number;
   /** Capture the published source before an asynchronous child startup can race reload. */
   definitionSource?: () => TaskWorkerDefinitionSource | null;
   /** Test seam; production always uses the private current-binary worker. */
@@ -193,6 +201,7 @@ export function createTaskAttemptProcessExecutor(input: {
       input.spawnWorker?.(workerRequest) ?? spawnPrivateWorker(workerArguments(workerRequest)),
       input.timeoutMs,
       workerRequest,
+      input.livenessTimeoutMs ?? DEFAULT_TASK_WORKER_LIVENESS_TIMEOUT_MS,
     );
   };
 }
@@ -215,7 +224,7 @@ export function createTaskRecoveryProcessExecutor(input: {
           "--task-recovery-once",
           ...(source ? ["--task-worker-source", JSON.stringify(source)] : []),
         ]),
-      input.timeoutMs,
+      input.timeoutMs ?? DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS,
     );
   };
 }
@@ -225,6 +234,7 @@ async function runWorkerProcess(
   child: ChildProcess,
   timeoutMs?: number,
   task?: TaskAttemptProcessRequest,
+  livenessTimeoutMs?: number,
 ): Promise<string[]> {
   if (!child.connected) {
     child.kill("SIGKILL");
@@ -249,7 +259,7 @@ async function runWorkerProcess(
       if (frame.recordOnly) Object.defineProperty(frame.event, EVENT_RECORD_ONLY, { value: true, configurable: true });
       relayedEvents.add(frame.event);
       bus.fanoutPersisted(frame.event, frame.eventId);
-    } else {
+    } else if (frame.kind !== "heartbeat") {
       mergeTaskChecks(bus, frame.taskChecks);
       if (frame.kind === "result") result = frame.dependentTaskIds;
       else workerError = frame.error;
@@ -287,7 +297,9 @@ async function runWorkerProcess(
   child.on("message", (message) => {
     if (protocolError) return;
     try {
-      enqueueFrame(parseWorkerFrame(message));
+      const frame = parseWorkerFrame(message);
+      // Heartbeats never enter the persisted Event relay or its bounded queue.
+      if (frame.kind !== "heartbeat") enqueueFrame(frame);
     } catch (error) {
       protocolError = error instanceof Error ? error : new Error(String(error));
       child.kill("SIGKILL");
@@ -329,7 +341,7 @@ async function runWorkerProcess(
       )
     : () => {};
   try {
-    const exit = await waitForChild(child, timeoutMs);
+    const exit = await waitForChild(child, timeoutMs, livenessTimeoutMs);
     await relayDrained();
     if (protocolError) throw protocolError;
     if (workerError) throw new Error(workerError);
@@ -347,23 +359,41 @@ async function runWorkerProcess(
 function waitForChild(
   child: ChildProcess,
   timeoutMs?: number,
+  livenessTimeoutMs?: number,
 ): Promise<{ code: number | null; signal: NodeJS.Signals | null }> {
   return new Promise((resolveExit, reject) => {
     let timeoutError: Error | undefined;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
-    const timer =
-      timeoutMs && timeoutMs > 0
-        ? setTimeout(() => {
-            timeoutError = new Error(`Task worker exceeded ${timeoutMs}ms`);
-            child.kill("SIGTERM");
-            killTimer = setTimeout(() => child.kill("SIGKILL"), 5_000);
-            killTimer.unref();
-          }, timeoutMs)
-        : undefined;
+    let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+    const stop = (error: Error) => {
+      if (timeoutError) return;
+      timeoutError = error;
+      child.kill("SIGTERM");
+      killTimer = setTimeout(() => child.kill("SIGKILL"), 5_000);
+      killTimer.unref();
+    };
+    const timer = timeoutMs && timeoutMs > 0
+      ? setTimeout(() => stop(new Error(`Task worker exceeded ${timeoutMs}ms`)), timeoutMs)
+      : undefined;
     timer?.unref();
+    const armHeartbeat = () => {
+      if (!livenessTimeoutMs || livenessTimeoutMs <= 0 || timeoutError) return;
+      if (heartbeatTimer) clearTimeout(heartbeatTimer);
+      heartbeatTimer = setTimeout(
+        () => stop(new Error(`Task worker heartbeat missed for ${livenessTimeoutMs}ms`)), livenessTimeoutMs,
+      );
+      heartbeatTimer.unref();
+    };
+    const heartbeat = (message: unknown) => {
+      if (message && typeof message === "object" && "kind" in message && message.kind === "heartbeat") armHeartbeat();
+    };
+    child.on("message", heartbeat);
+    armHeartbeat();
     const cleanup = () => {
       if (timer) clearTimeout(timer);
+      if (heartbeatTimer) clearTimeout(heartbeatTimer);
       if (killTimer) clearTimeout(killTimer);
+      child.off("message", heartbeat);
       child.off("error", onError);
     };
     function onError(error: Error) {
@@ -515,58 +545,62 @@ async function runTaskWorker(input: {
     { label: "task-worker-event-relay" },
   );
 
-  const manager = new SubagentManager({
-    persistDir: input.roots.persistDir,
-    projectRoot: input.roots.projectRoot,
-    bus,
-  });
-  const appSources = new DefinitionSourceReleaseStore(input.roots.projectRoot, input.roots.persistDir);
-  const activeSource = input.definitionSource ?? appSources.ensureCurrent();
-  const registry = new AppRegistry(
-    discoverAppDefinitions(
-      activeSource.projectsRoot,
-      input.roots.projectsRoot,
-      {},
-      input.definitionSource?.appDirectories,
-    ),
-  );
-  await registry.reload();
-  const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
-  const task = input.task;
-  // Workflows may call any helper declared by their App. Load those profiles
-  // from the same pinned source, plus the default and selected executor.
-  // Recovery needs the whole active catalog for retained Tasks.
-  const agentNames = task
-    ? registry
-        .snapshot()
-        .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
-        .flatMap(({ appDir, definition }) => {
-          const configured = definition.agent;
-          const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
-            /^agent:/,
-            "",
-          );
-          const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
-          const names = [
-            agent,
-            ...listConfiguredAgentNames(resolve(activeSource.projectsRoot, basename(appDir), "agents")),
-          ];
-          if (!resourceStore) return names;
-          const selected = readAppTaskAgent(
-            appTaskContext({
-              appDir,
-              projectDir: appDir,
-              agent,
-              maxConcurrent: 1,
-              resourceStore,
-            }),
-            task.taskId,
-          );
-          return selected ? [...names, selected] : names;
-        })
-    : undefined;
-  const hostCapacity = new HostCapacity(1);
+  const sendHeartbeat = () => { void writeWorkerFrame({ kind: "heartbeat" }).catch(stopWithParent); };
+  const heartbeatTimer = setInterval(sendHeartbeat, WORKER_HEARTBEAT_INTERVAL_MS);
+  heartbeatTimer.unref();
+  sendHeartbeat();
   try {
+    const manager = new SubagentManager({
+      persistDir: input.roots.persistDir,
+      projectRoot: input.roots.projectRoot,
+      bus,
+    });
+    const appSources = new DefinitionSourceReleaseStore(input.roots.projectRoot, input.roots.persistDir);
+    const activeSource = input.definitionSource ?? appSources.ensureCurrent();
+    const registry = new AppRegistry(
+      discoverAppDefinitions(
+        activeSource.projectsRoot,
+        input.roots.projectsRoot,
+        {},
+        input.definitionSource?.appDirectories,
+      ),
+    );
+    await registry.reload();
+    const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
+    const task = input.task;
+    // Workflows may call any helper declared by their App. Load those profiles
+    // from the same pinned source, plus the default and selected executor.
+    // Recovery needs the whole active catalog for retained Tasks.
+    const agentNames = task
+      ? registry
+          .snapshot()
+          .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
+          .flatMap(({ appDir, definition }) => {
+            const configured = definition.agent;
+            const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
+              /^agent:/,
+              "",
+            );
+            const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
+            const names = [
+              agent,
+              ...listConfiguredAgentNames(resolve(activeSource.projectsRoot, basename(appDir), "agents")),
+            ];
+            if (!resourceStore) return names;
+            const selected = readAppTaskAgent(
+              appTaskContext({
+                appDir,
+                projectDir: appDir,
+                agent,
+                maxConcurrent: 1,
+                resourceStore,
+              }),
+              task.taskId,
+            );
+            return selected ? [...names, selected] : names;
+          })
+      : undefined;
+    const hostCapacity = new HostCapacity(1);
     await prepareDaemonAgents({
       agentsRoot: activeSource.agentsRoot,
       sharedRoot: input.roots.sharedRoot,
@@ -602,6 +636,7 @@ async function runTaskWorker(input: {
     });
     throw error;
   } finally {
+    clearInterval(heartbeatTimer);
     process.off("message", incoming);
     process.off("disconnect", stopWithParent);
     await closeInstalledAppTaskRuntimes(bus);

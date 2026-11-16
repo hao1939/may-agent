@@ -9,6 +9,7 @@ import type {
   TaskPage,
   TaskReadOptions,
 } from "@may-agent/sdk/app";
+import type { ConversationTaskChangeRef } from "../state/retained-conversation-task-returns.js";
 import type { AppTaskAttacher } from "../inbox/app-inbox-host.js";
 import type { TaskInputObservation } from "../inbox/input-context.js";
 import type { EventBus } from "../events/bus.js";
@@ -16,6 +17,7 @@ import type { AppRegistrySnapshot } from "../apps/registry.js";
 import {
   admitLoadedCanonicalAppTaskEvent,
   admitLoadedConversationInput,
+  admitLoadedConversationChange,
   attachLoadedAppTask,
   getLoadedAppInputContract,
   cancelLoadedAppTask,
@@ -45,6 +47,7 @@ export type AppTaskCapability = {
   admitConversation(
     item: Parameters<typeof admitLoadedConversationInput>[0]["item"],
   ): ReturnType<typeof admitLoadedConversationInput>;
+  admitConversationChange(input: ConversationTaskChangeRef): ReturnType<typeof admitLoadedConversationChange>;
   stopTurn(
     target: Parameters<typeof stopLoadedConversationTurn>[0]["target"],
   ): ReturnType<typeof stopLoadedConversationTurn>;
@@ -126,6 +129,7 @@ export function createAppTaskCapability(options: {
     },
     attach: (input) => attachLoadedAppTask({ ...input, bus: options.bus }),
     admitConversation: (item) => admitLoadedConversationInput({ bus: options.bus, item }),
+    admitConversationChange: (input) => admitLoadedConversationChange({ ...input, bus: options.bus }),
     stopTurn: (target) => stopLoadedConversationTurn({ bus: options.bus, target }),
     admitEvent: (input) => admitLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),
     previewEvent: (input) => previewLoadedCanonicalAppTaskEvent({ ...input, bus: options.bus }),

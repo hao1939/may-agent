@@ -158,6 +158,55 @@ describe("importRuntimeModule", () => {
     ).rejects.toThrow();
   });
 
+  it("preserves compiler diagnostics when the real bundler throws and permits a corrected retry", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-import-diagnostic-"));
+    roots.push(root);
+
+    const modulePath = join(root, "broken-handler.ts");
+    const options = { forceBundle: true, cacheDir: join(root, ".cache") } as const;
+    writeFileSync(modulePath, "export const broken = ;\n");
+
+    let thrown: unknown;
+    try {
+      await importRuntimeModule(modulePath, options);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(Error);
+    const failure = thrown as Error;
+    expect(failure.message).toContain(`Failed to bundle runtime module ${modulePath}`);
+    expect(failure.message).toContain("Unexpected ;");
+    expect(failure.cause).toBeInstanceOf(AggregateError);
+
+    writeFileSync(modulePath, "export const value = 'corrected';\n");
+    const corrected = await importRuntimeModule<{ value: string }>(modulePath, options);
+    expect(corrected.value).toBe("corrected");
+  });
+
+  it("preserves compiler diagnostics from an unsuccessful returned build result", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-import-result-diagnostic-"));
+    roots.push(root);
+
+    const modulePath = join(root, "returned-failure.ts");
+    writeFileSync(modulePath, "export const value = 'not-built';\n");
+    const build = spyOn(Bun, "build").mockImplementation(async () => {
+      return {
+        success: false,
+        logs: [{ message: "synthetic returned compiler diagnostic" }],
+        outputs: [],
+      } as unknown as Awaited<ReturnType<typeof Bun.build>>;
+    });
+
+    try {
+      await expect(
+        importRuntimeModule(modulePath, { forceBundle: true, cacheDir: join(root, ".cache") }),
+      ).rejects.toThrow(`Failed to bundle runtime module ${modulePath}:\nsynthetic returned compiler diagnostic`);
+    } finally {
+      build.mockRestore();
+    }
+  });
+
   it("preserves dynamic relative imports from the original module directory", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-import-relative-"));
     roots.push(root);

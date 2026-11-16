@@ -16,7 +16,6 @@ import {
   readAppTaskAdmissionOutcome,
 } from "../app/core/tasks/app-task-reconciler.js";
 import { createTaskDecisionContext } from "./task-decision-context.js";
-import { prepareTaskWorkspaceContext } from "./task-workspace-context.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 
 const cleanup: Array<() => void> = [];
@@ -89,8 +88,8 @@ function fixture(count = 6) {
       },
       taskRead: { get: async () => read() },
       details: { task, declaredOutputs: [] },
+      detailRoot: join(root, "task-context"),
     } as unknown as TaskExecutionContext;
-    const entry = prepareTaskWorkspaceContext(context, root, []);
     const message = await createTaskDecisionContext(context)();
     const content = message.content;
     if (!Array.isArray(content)) throw new Error("Expected text blocks");
@@ -101,7 +100,7 @@ function fixture(count = 6) {
       packet,
       bytes: Buffer.byteLength(text.text),
       detail: readFileSync(packet.coverage.detail, "utf8"),
-      entry: "taskFile" in entry ? readFileSync(entry.taskFile, "utf8") : entry.error,
+      text: text.text,
     };
   };
   return {
@@ -146,7 +145,7 @@ test("repeated empty convergence stays accountable, even if the worker ignores t
     expect(p.packet.work.assignedAtStart).toMatchObject({ newEvents: 0, continuingInputs: 6 });
     expect(p.packet.work.retainedInputs).toMatchObject({ observed: 6, pendingWork: 6, truncated: false });
     expect(next.previousAttempt?.acceptedResult).toHaveProperty("inputKeys", []);
-    expect(p.entry).toContain("6 earlier unanswered inputs");
+    expect(p.text).toContain("6 earlier unanswered inputs");
   }
   expect(remaining).toEqual([6, 6, 6]);
   console.log(JSON.stringify({ case: "worker-repeats", remaining, work: p.packet.work ?? null }));

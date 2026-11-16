@@ -24,9 +24,22 @@ Disabling that deadline does not disable cancellation, app-server exit/error
 handling, or native goal completion/blocking. JSON-RPC requests stay bounded;
 active-turn startup remains bounded by 30 seconds, a final turn still has
 30 minutes to settle, retained turn completions are bounded to the latest 64
-turns, and malformed terminal Task results are capped at 3 correction turns per
+turns, and rejected terminal Task results are capped at 3 correction turns per
 attempt before failing cleanly. Individual commands and test-run limits are
 unchanged.
+
+Terminal results pass SDK shape admission and the Host's optional
+`TaskAttempt.validateResult` preflight. The latter uses the same contextual
+admission as managed agents, including real wait routes and App policy, without
+committing the candidate. A finding returns to the same native thread within
+the existing three-correction allowance and whole-execution deadline. Correcting
+a declaration does not authorize repeating an external effect. Final settlement
+still rechecks authority and freshness.
+
+The native goal pursues the invocation's assigned input. Finishing a finite
+request can complete that execution while the durable Task retains other input,
+Conditions and the full outcome. Prompt guidance makes this distinction explicit;
+it is not a mechanical guarantee of agent judgment or a new Task lifecycle.
 
 Progress reporting continues for the attempt's full lifetime. `maxProgressEvents`
 (64 by default) bounds the pending FIFO publication queue, rather than the total

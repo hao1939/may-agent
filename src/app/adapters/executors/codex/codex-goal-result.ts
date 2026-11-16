@@ -11,7 +11,10 @@ function boundedError(error: string): string {
 }
 
 /** Boundary between one terminal Codex goal turn and May Task admission. */
-export function admitCodexGoalTaskResult(finalAnswer: string | null): CodexGoalTaskResultAdmission {
+export function admitCodexGoalTaskResult(
+  finalAnswer: string | null,
+  validateResult?: (result: TaskReconcileResult) => string | null,
+): CodexGoalTaskResultAdmission {
   if (!finalAnswer?.trim()) {
     return retry("terminal Codex turn returned no final answer");
   }
@@ -25,6 +28,8 @@ export function admitCodexGoalTaskResult(finalAnswer: string | null): CodexGoalT
 
   const admitted = admitTaskReconcileResult(candidate);
   if (!admitted.ok) return retry(`May Task result admission rejected the candidate: ${admitted.error}`);
+  const finding = validateResult?.(admitted.result);
+  if (finding) return retry(`May Task result preflight rejected the candidate: ${finding}`);
   return { kind: "accepted", result: admitted.result };
 }
 
@@ -37,6 +42,7 @@ function retry(reason: string): Extract<CodexGoalTaskResultAdmission, { kind: "r
       "The previous executor turn ended, but May did not accept its Task result.",
       `Admission finding: ${boundedReason}`,
       "The May Task remains pending. Continue the same Task from current workspace facts.",
+      "Correct the result using retained evidence; do not repeat already completed external effects to repair its declaration.",
       'Return exactly one JSON object whose state is "converged", "waiting", or a fact-backed "incomplete", and which passes the supplied Task result schema.',
     ].join("\n"),
   };
