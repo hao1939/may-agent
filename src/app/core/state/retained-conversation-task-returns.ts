@@ -30,7 +30,14 @@ const returnedWithoutSelectionSql = `(
     AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
         AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
-        AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation))
+        AND json_extract(admission.admission_json, '$.taskGeneration') <= attempt.task_generation
+        AND (json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
+          OR json_extract(admission.admission_json, '$.resultAttemptId') IS NULL)
+        AND NOT EXISTS (SELECT 1 FROM app_task_control_receipts reopened
+          WHERE reopened.app_id = attempt.app_id AND reopened.task_id = attempt.task_id
+            AND reopened.action = 'reopen'
+            AND reopened.expected_generation >= json_extract(admission.admission_json, '$.taskGeneration')
+            AND reopened.expected_generation < attempt.task_generation)))
   )`;
 
 function returnedAttemptSql(selectedReportSql: string, returnedSql = returnedWithoutSelectionSql): string {
@@ -47,7 +54,11 @@ const directSelectedReportSql = `SELECT 1 FROM app_task_admissions admission
     ON origin_input.id = json_extract(admission.admission_json, '$.inputEvent.data.request.id')
   WHERE admission.app_id = attempt.app_id
     AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
-    AND json_extract(admission.admission_json, '$.taskGeneration') = attempt.task_generation
+    AND json_extract(admission.admission_json, '$.taskGeneration') <= attempt.task_generation
+    AND NOT EXISTS (SELECT 1 FROM app_task_control_receipts reopened
+      WHERE reopened.app_id = attempt.app_id AND reopened.task_id = attempt.task_id
+        AND reopened.action = 'reopen'
+        AND reopened.expected_generation >= json_extract(admission.admission_json, '$.taskGeneration'))
     AND json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
     AND attempt.attempt_id IN (SELECT value FROM json_each(${admissionReportIdsSql}))
     AND origin_input.app_id = link.app_id
@@ -57,7 +68,10 @@ const directSelectedReportSql = `SELECT 1 FROM app_task_admissions admission
 const materializedSelectedReportSql = `SELECT 1 FROM selected_reports report
   WHERE report.app_id = attempt.app_id
     AND report.task_id = attempt.task_id
-    AND report.task_generation = attempt.task_generation
+    AND report.task_generation <= attempt.task_generation
+    AND NOT EXISTS (SELECT 1 FROM app_task_control_receipts reopened
+      WHERE reopened.app_id = attempt.app_id AND reopened.task_id = attempt.task_id
+        AND reopened.action = 'reopen' AND reopened.expected_generation >= report.task_generation)
     AND report.attempt_id = attempt.attempt_id
     AND report.origin_app_id = link.app_id
     AND report.origin_conversation_id = link.conversation_id
@@ -131,17 +145,34 @@ function conversationChangesSql(selectedReportSql: string, materializedAttempts 
     AND link.task_generation <= json_extract(closed.cancellation_json, '$.generation'))`;
 }
 
+export type ConversationTaskChangeCursor = {
+  changedAt: string | number;
+  taskAppId: string;
+  taskId: string;
+  inputId: string;
+};
+
 export function listPendingConversationTaskChanges(
   db: SqliteDb,
   appId: string,
   limit = 100,
 ): ConversationTaskChangeRef[] {
+  return readPendingConversationTaskChangePage(db, appId, limit).changes;
+}
+
+/** Advance past attempted links even when admission fails; retry them on the next cycle. */
+export function readPendingConversationTaskChangePage(
+  db: SqliteDb,
+  appId: string,
+  limit = 100,
+  after?: ConversationTaskChangeCursor,
+): { changes: ConversationTaskChangeRef[]; nextCursor?: ConversationTaskChangeCursor } {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
     throw new Error("Conversation change limit must be an integer from 1 to 100");
   // Exclude closed conversations and self-returns before reading attempt bodies.
   // Many caller/Topic links can refer to one Task; interpret each eligible
   // Task's retained attempts once. Exact admission reads stay direct.
-  return db
+  const rows = db
     .prepare(
       `
     WITH live_conversations AS MATERIALIZED (
@@ -187,14 +218,22 @@ export function listPendingConversationTaskChanges(
       WHERE json_extract(admission.admission_json, '$.resultAttemptId') IS NULL
         AND report.value IS NOT NULL
     ), changes AS (${conversationChangesSql(materializedSelectedReportSql, true)})
-    SELECT appId, conversationId, topicId, originInputId, taskAppId, taskId, attemptId, closedGeneration
+    SELECT appId, conversationId, topicId, originInputId, taskAppId, taskId, attemptId, closedGeneration,
+      changedAt, inputId
     FROM changes
     WHERE ${undeliveredChangeSql}
+      ${after ? "AND (changedAt, taskAppId, taskId, inputId) > (?, ?, ?, ?)" : ""}
     ORDER BY changedAt, taskAppId, taskId, inputId LIMIT ?
   `,
     )
-    .all(appId, appId, limit)
-    .map((row) => {
+    .all(appId, appId, ...(after ? [after.changedAt, after.taskAppId, after.taskId, after.inputId] : []), limit);
+  const last = rows.at(-1);
+  return {
+    ...(last && rows.length === limit ? { nextCursor: {
+      changedAt: typeof last.changedAt === "number" ? last.changedAt : String(last.changedAt),
+      taskAppId: String(last.taskAppId), taskId: String(last.taskId), inputId: String(last.inputId),
+    } } : {}),
+    changes: rows.map((row) => {
       const ref = {
         appId: String(row.appId),
         conversationId: String(row.conversationId),
@@ -206,7 +245,8 @@ export function listPendingConversationTaskChanges(
       return typeof row.attemptId === "string"
         ? { ...ref, attemptId: row.attemptId }
         : { ...ref, closedGeneration: Number(row.closedGeneration) };
-    });
+    }),
+  };
 }
 
 export function admitConversationTaskChange(

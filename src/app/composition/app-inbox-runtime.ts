@@ -58,7 +58,7 @@ import {
 } from "../core/state/app-event-admission-store.js";
 import { conversationTaskId } from "../core/state/conversation-identity.js";
 import { listConversationTaskLinks } from "../core/state/conversation-task-links.js";
-import { listPendingConversationTaskChanges, type ConversationTaskChangeRef } from "../core/state/retained-conversation-task-returns.js";
+import { readPendingConversationTaskChangePage, type ConversationTaskChangeCursor, type ConversationTaskChangeRef } from "../core/state/retained-conversation-task-returns.js";
 import type { AppTaskCapability } from "../core/tasks/app-task-capability.js";
 import { hasConversationExecutionTask } from "../core/state/app-inbox-store.js";
 import { observationDemandReader, readTaskObservationInterests } from "../core/state/observation-demand.js";
@@ -390,6 +390,7 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
   let inputRecovery: Promise<void> | null = null;
   const inputRecoveryIntervalMs = Math.max(60_000, options.scanIntervalMs ?? 5_000);
   let nextInputRecoveryAt = 0;
+  const conversationRecoveryCursors = new Map<string, ConversationTaskChangeCursor>();
   let inputRecoveryCursor = 0;
   let inputRecoveryCycleMaxId = 0;
   const recoverInputs = (): Promise<void> => {
@@ -449,8 +450,17 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
         if (!closed && options.admitConversationChange) {
           for (const entry of loaded) {
             if (closed) return;
-            if (entry.definition.conversation)
-              admitConversationTaskChanges(listPendingConversationTaskChanges(options.db, entry.definition.id, 64));
+            if (entry.definition.conversation) {
+              const appId = entry.definition.id;
+              const page = readPendingConversationTaskChangePage(
+                options.db, appId, 64, conversationRecoveryCursors.get(appId),
+              );
+              // Failed admissions remain durable. Advance this sweep regardless
+              // so one broken Conversation cannot monopolize every bounded page.
+              if (page.nextCursor) conversationRecoveryCursors.set(appId, page.nextCursor);
+              else conversationRecoveryCursors.delete(appId);
+              admitConversationTaskChanges(page.changes);
+            }
             await new Promise<void>((resolve) => setTimeout(resolve, 0));
           }
         }

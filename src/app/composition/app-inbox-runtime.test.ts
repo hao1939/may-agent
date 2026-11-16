@@ -788,7 +788,7 @@ describe("App inbox runtime", () => {
     expect(messages).toEqual([]);
   });
 
-  it("recovers grouped outcomes after admission failure and runtime restart, retaining overflow and late links", async () => {
+  it.each(["notification", "recovery"] as const)("recovers grouped outcomes after %s admission failure and runtime restart, retaining overflow and late links", async (source) => {
     const appPath = join(root, "evaluation.app", "app.js");
     writeFileSync(appPath, readFileSync(appPath, "utf8").replace('id: "evaluation",', 'id: "evaluation", conversation: { mode: "task", inputKinds: ["message", "task-outcome", "task-closed"] },'));
     const store = AppTaskResourceStore.fromDb(db, "evaluation");
@@ -824,7 +824,7 @@ describe("App inbox runtime", () => {
     };
     const topics = Array.from({ length: 105 }, (_, i) => `topic-${String(i).padStart(3, "0")}`);
     topics.forEach((id) => link(id));
-    link("other-topic", "other-chat");
+    link("zz-other-topic", "other-chat");
     let currentTime = Date.now();
     let broken = true;
     let calls = 0;
@@ -850,13 +850,26 @@ describe("App inbox runtime", () => {
       return bus;
     };
     const bus = await connect();
-    bus.emit({ type: "project.task.reconciled", source: "fixture",
-      data: { project: "evaluation", taskId: "worker", attemptId: worker.attemptId } });
-    expect(calls).toBe(2);
-    expect(returned).toEqual([{ conversationId: "other-chat", topicIds: ["other-topic"] }]);
-    expect(failures).toEqual([expect.objectContaining({
+    if (source === "notification") {
+      bus.emit({ type: "project.task.reconciled", source: "fixture",
+        data: { project: "evaluation", taskId: "worker", attemptId: worker.attemptId } });
+    } else {
+      // Miss the live notification. A full oldest page keeps failing, but must
+      // not prevent the healthy Conversation on the next page from recovering.
+      await runtime!.start();
+      await waitUntil(() => failures.length > 0);
+      expect(returned).toEqual([]);
+      currentTime += 60_000;
+      runtime!.scanNow();
+      await waitUntil(() => returned.length === 1);
+    }
+    const initialCalls = calls;
+    expect(calls).toBe(source === "notification" ? 2 : 3);
+    expect(returned).toEqual([{ conversationId: "other-chat", topicIds: ["zz-other-topic"] }]);
+    expect(failures).toHaveLength(source === "notification" ? 1 : 2);
+    expect(failures[0]).toMatchObject({
       appId: "evaluation", conversationId: "chat", stage: "conversation-change", disposition: "recovery-pending",
-    })]);
+    });
     runtime!.close();
     broken = false;
     await connect();
@@ -871,7 +884,7 @@ describe("App inbox runtime", () => {
     currentTime += 60_000;
     await waitUntil(() => returned.length === 4);
     expect(returned[3]).toEqual({ conversationId: "chat", topicIds: ["late-topic"] });
-    expect(calls).toBe(5);
+    expect(calls).toBe(initialCalls + 3);
     expect(listPendingConversationTaskChanges(db, "evaluation")).toEqual([]);
   });
 

@@ -14,7 +14,6 @@ import { createTaskAdmissionProcess } from "./composition/workers/task-admission
 import {
   createTaskAttemptProcessExecutor,
   createTaskRecoveryProcessExecutor,
-  DEFAULT_TASK_ATTEMPT_WORKER_TIMEOUT_MS,
   DEFAULT_TASK_RECOVERY_WORKER_TIMEOUT_MS,
 } from "./composition/workers/task-attempt-process.js";
 import { AppRegistry } from "./core/apps/registry.js";
@@ -223,7 +222,6 @@ export async function runAppRuntime(opts: {
     hostCapacity,
     executeTaskAttempt: createTaskAttemptProcessExecutor({
       bus,
-      timeoutMs: DEFAULT_TASK_ATTEMPT_WORKER_TIMEOUT_MS,
       definitionSource: workerDefinitionSource,
     }),
     executeTaskRecovery: createTaskRecoveryProcessExecutor({

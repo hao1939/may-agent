@@ -17,6 +17,7 @@ import {
   observeAppTaskIntent,
   readAppTaskAdmissionOutcome,
   reopenAppTask,
+  reportAppTaskFailure,
 } from "../tasks/app-task-reconciler.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { AppTaskResourceStore } from "./app-task-resource-store.js";
@@ -1026,4 +1027,99 @@ test("recovers a retained handoff without a Topic subscription or new caller com
   f.reopen();
   expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
   expect(admitConversationTaskChange(f.context(), f.context(), changes[0]!).created).toBe(false);
+});
+
+
+test.each(["waiting", "incomplete"] as const)("revised %s reports return only to the selected caller and its Topic", (state) => {
+  const f = fixture();
+  const origin = f.admit();
+  completeCommunicationTask(f.context(), f.claim(origin.taskId), decision);
+  const topicId = getAppInboxItem(f.db, origin.item.id)!.topicId!;
+  admitTaskInput(f.context(), {
+    appId: app.id, idempotencyKey: `conversation-follow-up:${app.id}:${origin.item.id}`,
+    attachment: { kind: "desired", intent: {
+      id: "worker", parentId: "root", outcome: "Measure", acceptance: ["Verified"],
+    } },
+    inputContext: { id: origin.item.id, source: origin.item.source, input: { kind: "measure", data: {} } },
+  });
+  linkConversationTopicTask(f.db, topicId, app.id, "worker");
+  createConversationTopic(f.db, {
+    id: "unrelated", appId: app.id, conversationId: "chat", title: "Unrelated",
+    openedBy: "human", originMessageId: "unrelated",
+  });
+  linkConversationTopicTask(f.db, "unrelated", app.id, "worker");
+  observeAppTaskIntent(f.context(), { appAgent: app.id, intent: {
+    id: "worker", parentId: "root", outcome: "Measure revised", acceptance: ["Verified"],
+  } });
+  const claim = f.claim("worker");
+  expect(claim.generation).toBe(2);
+  if (state === "waiting") {
+    deferAppTask(f.context(), claim, {
+      disposition: "waiting", report: true, summary: "Measurement pending",
+      facts: ["measurement:partial"], reviewAt: Date.now() + 60_000,
+    });
+  } else {
+    reportAppTaskFailure(f.context(), claim, {
+      summary: "Measurement incomplete", report: true, facts: ["measurement:partial"],
+    });
+  }
+  f.reopen();
+  const changes = listPendingConversationTaskChanges(f.db, app.id);
+  expect(changes).toHaveLength(2);
+  expect(changes).toEqual(expect.arrayContaining([
+    expect.objectContaining({ topicId, originInputId: origin.item.id, attemptId: claim.attemptId }),
+    expect.objectContaining({ topicId, attemptId: claim.attemptId }),
+  ]));
+  expect(changes.some((change) => change.topicId === "unrelated")).toBe(false);
+  // Live notifications and recovery must select the same callers after revision.
+  const returned = admitConversationTaskChange(f.context(), f.context(), {
+    conversationId: "chat", taskId: "worker", attemptId: claim.attemptId, topicId,
+  });
+  expect(returned.created).toBe(true);
+  expect(returned.item.input.data).toMatchObject({ topicIds: [topicId], originInputIds: [origin.item.id] });
+  expect(admitConversationTaskChange(f.context(), f.context(), {
+    conversationId: "chat", taskId: "worker", attemptId: claim.attemptId, topicId: "unrelated",
+  }).created).toBe(false);
+  f.reopen();
+  expect(listPendingConversationTaskChanges(f.db, app.id)).toEqual([]);
+});
+
+
+test.each(["revision", "reopen"] as const)("standalone incomplete reports remain returnable after %s of settled work", (operation) => {
+  const f = fixture();
+  const origin = f.admit();
+  completeCommunicationTask(f.context(), f.claim(origin.taskId), decision);
+  const topicId = getAppInboxItem(f.db, origin.item.id)!.topicId!;
+  admitTaskInput(f.context(), {
+    appId: app.id, idempotencyKey: "worker-input",
+    attachment: { kind: "desired", intent: {
+      id: "worker", parentId: "root", outcome: "Measure", acceptance: ["Verified"],
+    } },
+    inputContext: { id: origin.item.id, source: origin.item.source, input: { kind: "measure", data: {} } },
+  });
+  completeAppTask(f.context(), f.claim("worker"), { summary: "Measured" });
+  if (operation === "revision") {
+    observeAppTaskIntent(f.context(), { appAgent: app.id, intent: {
+      id: "worker", parentId: "root", outcome: "Measure revised", acceptance: ["Verified"],
+    } });
+  } else {
+    let worker = f.store.readTask("worker")!;
+    cancelAppTask(f.context(), {
+      appId: app.id, taskId: "worker", expectedGeneration: worker.metadata.generation,
+      expectedResourceVersion: worker.metadata.resourceVersion, decision: "app-policy", reason: "Withdrawn",
+    });
+    worker = f.store.readTask("worker")!;
+    reopenAppTask(f.context(), {
+      appId: app.id, taskId: "worker", expectedGeneration: worker.metadata.generation,
+      expectedResourceVersion: worker.metadata.resourceVersion, reason: "Fresh measurement", controlKey: "reopen-worker",
+    });
+  }
+  const claim = f.claim("worker");
+  reportAppTaskFailure(f.context(), claim, { summary: "Measurement incomplete", facts: ["measurement:partial"] });
+  linkConversationTopicTask(f.db, topicId, app.id, "worker");
+  f.reopen();
+  const pending = listPendingConversationTaskChanges(f.db, app.id).filter((change) => change.attemptId === claim.attemptId);
+  expect(pending).toEqual([{ appId: app.id, conversationId: "chat", topicId, taskAppId: app.id,
+    taskId: "worker", attemptId: claim.attemptId }]);
+  expect(admitConversationTaskChange(f.context(), f.context(), pending[0]!).created).toBe(true);
 });
