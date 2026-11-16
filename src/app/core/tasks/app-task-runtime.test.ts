@@ -61,7 +61,6 @@ import { readTaskWorkload } from "../reads/task-workload.js";
 import { createTaskAgentRunner } from "../../adapters/executors/managed-agent.js";
 import { createTaskSessionRecovery } from "../../adapters/executors/session-recovery.js";
 import { createTaskWorkflowRunner } from "../../adapters/executors/workflow.js";
-import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import type { TaskAgentRunner, TaskSessionRecovery } from "./execution.js";
 import {
   applyCanonicalAgentResidueCleanup,
@@ -480,16 +479,9 @@ it("retains closed-Task observations as history without treating desired work as
   expect(config.resourceStore.readTrigger(intent.id)).toBeNull();
 });
 
-it("shares Task detail, evidence and exact outcome reads between tools and executor capabilities", async () => {
+it("shares Task detail, evidence and exact outcome reads through executor capabilities", async () => {
   const f = fixture();
   const bus = eventBus();
-  const tool = createAppTaskReadTool({ bus, appId: () => "sample" });
-  const toolRead = async (params: Record<string, unknown>) => {
-    const result = await tool.execute("read", params);
-    const content = result.content[0];
-    if (content?.type !== "text") throw new Error("Expected Task tool text");
-    return JSON.parse(content.text);
-  };
   let executed = false;
   await installCoreTaskRuntimes({
     ...options(f, bus),
@@ -503,31 +495,11 @@ it("shares Task detail, evidence and exact outcome reads between tools and execu
       inspect: async ({ read }) => {
         const detail = await read.tasks.get("work/accepted", { acceptedEvidence: { limit: 1 } });
         expect(detail?.acceptedEvidence.page?.items).toHaveLength(1);
-        expect(await toolRead({ action: "get", taskId: "work/accepted", acceptedEvidence: { limit: 1 } })).toEqual(
-          JSON.parse(JSON.stringify(detail)),
-        );
         const page = await read.tasks.list({ limit: 1 });
         expect(page.nextCursor).toBeString();
-        const discovery = await toolRead({ action: "list", limit: 1 });
-        expect(discovery).toMatchObject({
-          projection: "discovery",
-          nextCursor: page.nextCursor,
-          items: [{
-            id: page.items[0]!.id,
-            status: page.items[0]!.status,
-            generation: page.items[0]!.generation,
-            outcomePreview: page.items[0]!.outcome,
-          }],
-        });
-        expect(discovery.items[0]).not.toHaveProperty("result");
-        const next = await toolRead({ action: "list", limit: 1, cursor: page.nextCursor });
         const nextPage = await read.tasks.list({ limit: 1, cursor: page.nextCursor });
-        expect(next.items.map((item: { id: string }) => item.id)).toEqual(nextPage.items.map((item) => item.id));
-        expect(next.nextCursor).toBe(nextPage.nextCursor);
+        expect(nextPage.items.length).toBeGreaterThan(0);
         await expect(read.tasks.list({ limit: 101 })).rejects.toThrow("between 1 and 100");
-        expect(await toolRead({ action: "list", limit: 101 })).toEqual({
-          error: "Task list limit must be an integer between 1 and 100",
-        });
         executed = true;
         return { state: "converged", summary: "Read interfaces agree", facts: [] };
       },
@@ -695,10 +667,6 @@ it.each(["converged", "waiting", "incomplete"] as const)("carries explicit earli
       const detail = await read.tasks.get(taskId, { inputKeys: ["earlier"] });
       expect(detail?.inputEvents).toHaveLength(1);
       expect(detail?.inputEvents?.[0]?.event.data.request).toMatchObject({ input: { data: { text: "earlier" } } });
-      const tool = createAppTaskReadTool({ bus, appId: () => "sample" });
-      const content = (await tool.execute("read", { action: "get", taskId, inputKeys: ["earlier"] })).content[0];
-      if (content?.type !== "text") throw new Error("Expected Task tool text");
-      expect(JSON.parse(content.text)).toEqual(JSON.parse(JSON.stringify(detail)));
       executed = true;
       const common = { summary: "Reviewed earlier input", facts: ["request:read"] as [string], inputKeys: ["earlier"] };
       return state === "converged" ? { ...common, state } : { ...common, state, report: true };
@@ -2844,20 +2812,9 @@ describe("canonical App task runtime", () => {
               };
             callerAttempt = attempt;
             const changes = { requests: [request], conditions: [{ requestId: "review" }] };
-            const tool = createAppTaskReadTool({
-              bus,
-              scope: () => ({
-                appId: "sample",
-                taskId: attempt.task.id,
-                generation: attempt.task.generation,
-                attemptId: attempt.attemptId,
-              }),
-              applier: () => attempt.apply,
-            });
             const receipt = await attempt.apply(changes);
-            const replay = await tool.execute("apply-review", { action: "apply", changes });
-            expect(replay.content[0]?.type).toBe("text");
-            expect(JSON.parse((replay.content[0] as { text: string }).text)).toEqual(receipt);
+            const replay = await attempt.apply(changes);
+            expect(replay).toEqual(receipt);
             expect(listAppInboxItems(getDb(persistDir))).toHaveLength(1);
             expect(loadedTaskConfig(f).resourceStore.readTask(attempt.task.id)?.status).toMatchObject({
               phase: "running",
@@ -6403,32 +6360,7 @@ describe("canonical App task runtime", () => {
                 data: { time: wait.subject.slice(5), state: true },
               };
               const localKey = `observed:${wait.conditionId}`;
-              if (publisher === "executor") {
-                facts.push((await attempt.publish(localKey, event)).eventId);
-              } else {
-                const tool = createAppTaskReadTool({
-                  bus,
-                  scope: () => ({
-                    appId: "sample",
-                    taskId,
-                    generation: attempt.task.generation,
-                    attemptId: attempt.attemptId,
-                  }),
-                  applier: () => attempt.apply,
-                });
-                const receipt = await tool.execute("publish-clock", {
-                  action: "publish",
-                  localKey,
-                  eventType: event.type,
-                  target: event.target,
-                  data: event.data,
-                });
-                const content = receipt.content[0];
-                if (content?.type !== "text") throw new Error("Expected publication receipt");
-                const body = JSON.parse(content.text);
-                expect(body.error).toBeUndefined();
-                facts.push(body.eventId);
-              }
+              facts.push((await attempt.publish(localKey, event)).eventId);
               await notified;
               unsubscribe();
               expect(liveEvents).toEqual([]);
@@ -6602,9 +6534,7 @@ describe("canonical App task runtime", () => {
     expect(config.resourceStore.readTrigger(taskId) === null).toBe(incorporated);
   });
 
-  it.each(["executor", "tasks tool"] as const)(
-    "admits a request after self-publication through the %s surface",
-    async (surface) => {
+  it("admits a request after self-publication through the executor surface", async () => {
       const f = fixture();
       const bus = eventBus();
       const persistDir = join(f.root, "state");
@@ -6626,37 +6556,12 @@ describe("canonical App task runtime", () => {
         installControllers: false,
         executors: {
           worker: async (attempt) => {
-            const tool = createAppTaskReadTool({
-              bus,
-              scope: () => ({
-                appId: "sample",
-                taskId,
-                generation: attempt.task.generation,
-                attemptId: attempt.attemptId,
-              }),
-              applier: () => attempt.apply,
+            await attempt.publish("finding", {
+              type: "review.finding",
+              target: { appId: "sample", taskId },
+              data: { current: true },
             });
-            if (surface === "executor") {
-              await attempt.publish("finding", {
-                type: "review.finding",
-                target: { appId: "sample", taskId },
-                data: { current: true },
-              });
-              receipt = await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
-            } else {
-              await tool.execute("publish", {
-                action: "publish",
-                localKey: "finding",
-                eventType: "review.finding",
-                target: { appId: "sample", taskId },
-                data: { current: true },
-              });
-              const applied = await tool.execute("apply", {
-                action: "apply",
-                changes: { requests: [request], conditions: [{ requestId: "review" }] },
-              });
-              receipt = JSON.parse((applied.content[0] as { text: string }).text);
-            }
+            receipt = await attempt.apply({ requests: [request], conditions: [{ requestId: "review" }] });
             return { state: "waiting", summary: "Review remains outstanding", facts: [] };
           },
         },

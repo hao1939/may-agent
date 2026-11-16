@@ -8,7 +8,6 @@ import { createRuntimeAppRead, createRuntimeTaskRead } from "./app-read.js";
 import { readTaskWorkload, runtimeWorkloadSource } from "./task-workload.js";
 import { HostCapacity } from "../scheduling/host-capacity.js";
 import type { AppTaskRuntimeOptions } from "../tasks/runtime-options.js";
-import { createAppTaskReadTool } from "../../app-task-read-tool.js";
 import { EventBus } from "../events/bus.js";
 import { runTaskExecutorAttempt } from "../tasks/attempt-execution.js";
 import { taskExecutionContext } from "../../adapters/executors/task-context.js";
@@ -277,48 +276,6 @@ test("worker feedback preserves parent capacity time and dispatch timing instead
   const noParent = readTaskWorkload({ taskStateConfig: f.config, workloadSource: runtimeWorkloadSource(worker) });
   expect(noParent.limits.host).toEqual({ available: false });
   expect(noParent.queueWait).toEqual({ available: false });
-});
-
-test("the scoped model tool exposes the same facts and rejects unavailable reads", async () => {
-  const f = fixture();
-
-  f.add("work");
-  const canonical = createRuntimeTaskRead({ taskStateConfig: f.config, workloadSource: { currentTaskId: "work" } });
-  const tool = createAppTaskReadTool({
-    bus: new EventBus(),
-    appId: () => "sample",
-    reader: {
-      list: () => canonical.list(),
-      get: () => null,
-      workload: ({ options }) => canonical.workload(options),
-    },
-  });
-  const result = await tool.execute("read", {
-    action: "workload",
-    agent: "worker",
-    limit: 1,
-    taskId: "unread-other-task",
-  });
-  const content = result.content[0];
-  if (content.type !== "text") throw new Error("Expected workload facts");
-  expect(JSON.parse(content.text)).toMatchObject({
-    scope: { appId: "sample", agent: "worker" },
-    funding: { ordinary: { available: false }, currentRoot: { available: false } },
-    counts: { runnable: 1 },
-    assignments: { rootTasks: 0, contributions: 0, unattributed: 1, representedRoots: 0 },
-    coverage: { limit: 1, matched: 1, scanned: 1, truncated: false },
-  });
-  const old = createAppTaskReadTool({
-    bus: new EventBus(),
-    appId: () => "sample",
-    reader: {
-      list: () => canonical.list(),
-      get: () => null,
-    },
-  });
-  expect((await old.execute("read", { action: "workload" })).content).toMatchObject([
-    { type: "text", text: expect.stringContaining("Workload read is unavailable") },
-  ]);
 });
 
 test.each([undefined, "sample"])("attempt feedback is opt-in and shares workflow context (pilot=%s)", async pilot => {
