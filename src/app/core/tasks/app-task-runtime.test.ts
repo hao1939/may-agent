@@ -1078,7 +1078,7 @@ it("applies AppTaskPolicy.maxAttemptMs per Task without changing Task generation
   const observedAgentTimeouts: number[] = [];
   const observedWorkflowTimeouts: number[] = [];
   const observedCodexMaxAttempt: Array<number | "unlimited" | undefined> = [];
-  let codexPolicy: number | "unlimited" | undefined = 45_000;
+  let codexPolicy: number | "unlimited" | undefined = 3 * 60 * 60_000;
   let agentPolicy: number | "unlimited" | undefined = 12_000;
 
   const agents: TaskAgentRunner = {
@@ -1161,7 +1161,7 @@ it("applies AppTaskPolicy.maxAttemptMs per Task without changing Task generation
   await run("work/codex");
   await run("work/workflow");
   await run("work/agent");
-  expect(observedCodexMaxAttempt).toEqual([45_000]);
+  expect(observedCodexMaxAttempt).toEqual([3 * 60 * 60_000]);
   expect(observedWorkflowTimeouts).toEqual([25_000]);
   expect(observedAgentTimeouts).toEqual([12_000]);
   expect(config.resourceStore.readTask("work/codex")?.spec.outcome).toBe("Long campaign");
@@ -1176,7 +1176,7 @@ it("applies AppTaskPolicy.maxAttemptMs per Task without changing Task generation
   });
   expect(config.resourceStore.readTask("work/codex")?.metadata.generation).toBe(1);
   await run("work/codex");
-  expect(observedCodexMaxAttempt).toEqual([45_000, "unlimited"]);
+  expect(observedCodexMaxAttempt).toEqual([3 * 60 * 60_000, "unlimited"]);
 
   // Bounded executors reject "unlimited" cleanly as an attempt failure instead of crashing.
   agentPolicy = "unlimited";

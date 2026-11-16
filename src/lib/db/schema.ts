@@ -491,6 +491,7 @@ export function applyDbSchema(db: SqliteDb): void {
 const APP_INBOX_COLUMNS: Array<[string, string]> = [
   ["continues_request_id", "TEXT"],
   ["target_task_id", "TEXT"],
+  ["target_task_generation", "INTEGER"],
   ["topic_id", "TEXT"],
   ["channel", "TEXT"],
   ["channel_target_id", "TEXT"],

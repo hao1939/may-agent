@@ -31,6 +31,19 @@ event emission and output-path helpers live beside their lifecycle callers.
 `execution.ts` and `workspace.ts` are private contracts; concrete implementations
 live in `adapters/` and `conversations/`, selected in `composition/task-execution.ts`.
 
+## Worker supervision
+
+Execution adapters enforce the effective App `tasks.maxAttemptMs`, their bounded
+executor defaults, or supported ongoing native goals. The parent process adds no
+fixed attempt lifetime: a valid three-hour or unlimited native attempt must not
+be cut short by an unrelated process ceiling. Private IPC heartbeats run every
+30 seconds, including during worker preparation. Five minutes without a heartbeat
+requests termination, then forced termination after five seconds. Capacity stays
+reserved until the worker's exit is observed. A heartbeat proves process
+responsiveness; it does not judge domain progress or accept a result. Executor
+operation deadlines and native liveness checks continue to bound external waits.
+Startup recovery separately retains its ten-minute process limit.
+
 ## Coordination dispatch
 
 Trusted coordination and human work share the existing foreground capacity.
