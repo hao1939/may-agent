@@ -154,6 +154,17 @@ Use an ignored agent overlay such as:
 Keep the candidate change narrow and reviewable. Gym does not automatically
 rewrite or promote the real agent.
 
+Before executing a candidate, Gym retains its tree and fingerprint under the
+run's `candidate/` directory. Every trial uses that retained overlay rather than
+resolving the live `.lab` fork again. Editing or deleting the live fork during a
+run therefore does not change the candidate used by later trials.
+
+Candidate snapshots must contain regular files and directories; materialize
+symbolic links before running a comparison. Gym checks the retained snapshot
+before and after every trial and before completion. Missing snapshots, changed
+fingerprints or symbolic links stop execution without falling back to live
+source, and the run remains incomplete.
+
 ## 4. Verify against the frozen baseline
 
 ```bash

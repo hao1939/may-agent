@@ -1,8 +1,11 @@
 # Standalone improvement trial plan
 
 Status: manual execution verified; the first replay and next scope are recorded
-in the [first trial](standalone-first-trial-20261116.md). Further experiments and
-Host handover remain incremental work. The independent Host assignment completed
+in the [first trial](standalone-first-trial-20261116.md). The
+[snapshot execution trial](standalone-snapshot-trial-20261116.md) carries the
+selected experiment through implementation, repair, verification and disposition.
+Further standalone tuning and Host handover remain incremental work.
+The independent Host assignment completed
 without being stopped by the standalone trial.
 
 ## Direction and first milestone
@@ -84,9 +87,10 @@ Reuse the existing implementations:
   Verify target support before choosing it for another role.
 
 Before trusting a behavioral comparison, resolve or demonstrate protection
-against the known live-candidate execution problem: Gym retains a snapshot but
-can execute the changing live `.lab` candidate. A recorded fingerprint alone is
-insufficient. Current role-judgment cases also lack explicit approval metadata;
+against candidate input drift. The snapshot trial repairs live `.lab` resolution
+and verifies retained bytes before/after execution; linked candidate files must
+be materialized. A recorded fingerprint alone is insufficient. Current
+role-judgment cases still lack explicit approval metadata;
 use existing approved truth or obtain real adjudication, never invent approvals.
 Deterministic checks can establish a narrower mechanics claim while these gaps
 remain, with that limitation recorded.

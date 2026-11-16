@@ -30,3 +30,5 @@ Use the [manual stage runner guide](standalone-stage.md) for executable inputs,
 fixture/live mode, observation and result interpretation.
 The [first standalone trial](standalone-first-trial-20261116.md) records exercised
 behavior, corrections, cost limits and the prepared next experiment.
+The [snapshot execution trial](standalone-snapshot-trial-20261116.md) follows that
+experiment through implementation, failed controls, repair and Alex's disposition.
