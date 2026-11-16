@@ -70,6 +70,33 @@ describe("Gym Host-free workflow support & executable-skill exemplar", () => {
     ).toBe(appLab);
   });
 
+  test("overlays an exact retained candidate snapshot without resolving the live lab", () => {
+    const root = mkdtempSync(join(tmpdir(), "gym-retained-candidate-"));
+    tempRoots.push(root);
+    const agentsRoot = join(root, "agents");
+    const projectsRoot = join(root, "projects");
+    const appAgent = join(projectsRoot, "sample.app", "agents", "app-owner");
+    const retainedCandidate = join(root, "run", "candidate");
+    mkdirSync(appAgent, { recursive: true });
+    mkdirSync(retainedCandidate, { recursive: true });
+    writeFileSync(join(appAgent, "agent.json"), "{}\n");
+    writeFileSync(join(appAgent, "AGENTS.md"), "Base guidance.\n");
+    writeFileSync(join(retainedCandidate, "AGENTS.md"), "Retained guidance.\n");
+
+    const sandbox = prepareGymAgentSandbox({
+      baseAgentsRoot: agentsRoot,
+      projectsRoot,
+      gymRoot: join(root, "gym"),
+      agentName: "app-owner",
+      labFork: "deleted-live-candidate",
+      labDir: retainedCandidate,
+    });
+
+    expect(readFileSync(join(sandbox, "app-owner", "AGENTS.md"), "utf8")).toBe(
+      "Retained guidance.\n",
+    );
+  });
+
   test("runs canonical docs/examples/review-change.ts through runWorkflowTest with inputSchema and fixture checks", async () => {
     const badInput = await runWorkflowTest(reviewChangeExemplar, {
       input: { subjectRef: "" },

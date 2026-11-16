@@ -4,7 +4,9 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -774,6 +776,191 @@ describe("loop evaluation", () => {
         expect(snapshot).toBe("candidate");
         expect(readFileSync(join(created.runDir, snapshot!, "AGENTS.md"), "utf-8"))
           .toBe("Exact candidate guidance.\n");
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("executes the retained candidate snapshot across trials after live mutation and deletion", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(join(candidateDir, "AGENTS.md"), "Retained candidate bytes.\n");
+      const observed: string[] = [];
+      try {
+        const created = await runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 2,
+            agentsRoot,
+          },
+          async (input) => {
+            expect(input.candidateSnapshot).not.toBeNull();
+            observed.push(
+              readFileSync(join(input.candidateSnapshot!, "AGENTS.md"), "utf8"),
+            );
+            if (observed.length === 1) {
+              writeFileSync(join(candidateDir, "AGENTS.md"), "Mutated live bytes.\n");
+              rmSync(candidateDir, { recursive: true, force: true });
+            }
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision-produced", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        );
+        expect(observed).toEqual([
+          "Retained candidate bytes.\n",
+          "Retained candidate bytes.\n",
+        ]);
+        expect(created.manifest.trials).toHaveLength(2);
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("fails closed when the final trial removes the retained snapshot", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(join(candidateDir, "AGENTS.md"), "Candidate.\n");
+      let executions = 0;
+      try {
+        await expect(runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 2,
+            agentsRoot,
+          },
+          async (input) => {
+            executions++;
+            if (executions === 2) {
+              rmSync(input.candidateSnapshot!, { recursive: true, force: true });
+            }
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision-produced", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        )).rejects.toThrow("Candidate snapshot is missing");
+        expect(executions).toBe(2);
+        const [runId] = readdirSync(join(root, "state", "benchmarks"));
+        const manifest = readManifest(join(root, "state", "benchmarks", runId!));
+        expect(manifest.trials).toHaveLength(1);
+        expect(manifest.completed_at).toBeNull();
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("fails closed when the final trial corrupts the retained snapshot", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(join(candidateDir, "AGENTS.md"), "Candidate.\n");
+      let executions = 0;
+      try {
+        await expect(runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 2,
+            agentsRoot,
+          },
+          async (input) => {
+            executions++;
+            if (executions === 2) {
+              writeFileSync(
+                join(input.candidateSnapshot!, "AGENTS.md"),
+                "Corrupt snapshot.\n",
+              );
+            }
+            return {
+              stderr: "",
+              result: {
+                scenario: input.scenario,
+                agent: "may",
+                passed: true,
+                checks: [{ name: "decision-produced", passed: true }],
+                agent_status: "success",
+              },
+            };
+          },
+        )).rejects.toThrow("Candidate snapshot fingerprint mismatch");
+        expect(executions).toBe(2);
+        const [runId] = readdirSync(join(root, "state", "benchmarks"));
+        const manifest = readManifest(join(root, "state", "benchmarks", runId!));
+        expect(manifest.trials).toHaveLength(1);
+        expect(manifest.completed_at).toBeNull();
+      } finally {
+        if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
+        else process.env["GYM_STATE_DIR"] = previousState;
+      }
+    }));
+
+  it("rejects retained candidate symlinks before candidate execution", async () =>
+    withTempDirAsync(async (root) => {
+      const previousState = process.env["GYM_STATE_DIR"];
+      process.env["GYM_STATE_DIR"] = join(root, "state");
+      const agentsRoot = join(root, "agents");
+      const candidateDir = join(agentsRoot, ".lab", "candidate-a");
+      const liveGuidance = join(root, "live-guidance.md");
+      mkdirSync(candidateDir, { recursive: true });
+      writeFileSync(liveGuidance, "Version 1.\n");
+      symlinkSync(liveGuidance, join(candidateDir, "AGENTS.md"));
+      let executions = 0;
+      try {
+        await expect(runLoop(
+          {
+            phase: "verify",
+            benchmark: "may-alignment",
+            scenarios: ["may-align-proof-before-adopt"],
+            agent: "may",
+            candidate: "candidate-a",
+            trials: 1,
+            agentsRoot,
+          },
+          async () => {
+            executions++;
+            throw new Error("executor must not run");
+          },
+        )).rejects.toThrow("Candidate snapshot contains a symbolic link: AGENTS.md");
+        expect(executions).toBe(0);
       } finally {
         if (previousState === undefined) delete process.env["GYM_STATE_DIR"];
         else process.env["GYM_STATE_DIR"] = previousState;

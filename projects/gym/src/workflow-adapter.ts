@@ -91,18 +91,22 @@ export function applyGymLabOverlay(options: {
   projectsRoot: string;
   agentName: string;
   labFork: string;
+  labDir?: string;
 }): string {
-  const { targetAgentDir, baseAgentsRoot, projectsRoot, agentName, labFork } =
-    options;
-  const labDir = resolveGymLabDir(
+  const {
+    targetAgentDir,
     baseAgentsRoot,
-    labFork,
-    agentName,
     projectsRoot,
-  );
-  if (!labDir) {
+    agentName,
+    labFork,
+    labDir: retainedLabDir,
+  } = options;
+  const labDir =
+    retainedLabDir ??
+    resolveGymLabDir(baseAgentsRoot, labFork, agentName, projectsRoot);
+  if (!labDir || !existsSync(labDir)) {
     throw new Error(
-      `Lab fork not found: ${join(baseAgentsRoot, ".lab", labFork)}`,
+      `Lab fork not found: ${labDir ?? join(baseAgentsRoot, ".lab", labFork)}`,
     );
   }
   mkdirSync(targetAgentDir, { recursive: true });
@@ -130,8 +134,16 @@ export function prepareGymAgentSandbox(options: {
   gymRoot: string;
   agentName: string;
   labFork?: string;
+  labDir?: string;
 }): string {
-  const { baseAgentsRoot, projectsRoot, gymRoot, agentName, labFork } = options;
+  const {
+    baseAgentsRoot,
+    projectsRoot,
+    gymRoot,
+    agentName,
+    labFork,
+    labDir,
+  } = options;
   const resolvedBaseDir = resolveGymAgentDir(
     baseAgentsRoot,
     agentName,
@@ -175,6 +187,7 @@ export function prepareGymAgentSandbox(options: {
       projectsRoot,
       agentName,
       labFork,
+      ...(labDir ? { labDir } : {}),
     });
   }
 

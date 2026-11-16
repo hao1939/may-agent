@@ -1,8 +1,10 @@
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -59,6 +61,8 @@ export type ScenarioExecutor = (input: {
   scenariosDir: string;
   agent: string;
   candidate: string;
+  candidateSnapshot: string | null;
+  candidateFingerprint: string | null;
   timeout?: number;
   agentsRoot?: string;
 }) => Promise<ExecutionResult>;
@@ -119,6 +123,9 @@ export const executeScenario: ScenarioExecutor = async (input) => {
         "agents",
       ),
       ...(input.agentsRoot ? { GYM_AGENTS_ROOT: input.agentsRoot } : {}),
+      ...(input.candidateSnapshot
+        ? { GYM_CANDIDATE_SNAPSHOT: input.candidateSnapshot }
+        : {}),
     },
     stdout: "pipe",
     stderr: "pipe",
@@ -164,6 +171,46 @@ function candidateEvidence(
     throw new Error(`Candidate not found: ${candidatePath}`);
   }
   return { fingerprint: fingerprintTree(candidatePath), path: candidatePath };
+}
+
+function assertSnapshotHasNoSymbolicLinks(
+  current: string,
+  snapshotRoot: string,
+): void {
+  const stat = lstatSync(current);
+  if (stat.isSymbolicLink()) {
+    throw new Error(
+      `Candidate snapshot contains a symbolic link: ${current.slice(snapshotRoot.length + 1) || "."}`,
+    );
+  }
+  if (!stat.isDirectory()) return;
+  for (const entry of readdirSync(current).sort()) {
+    assertSnapshotHasNoSymbolicLinks(join(current, entry), snapshotRoot);
+  }
+}
+
+function retainedCandidateSnapshot(
+  runDir: string,
+  manifest: LoopRunManifest,
+): string | null {
+  if (manifest.candidate === "baseline") return null;
+  const snapshot = manifest.source.candidate_snapshot;
+  const expected = manifest.proof.candidate_fingerprint;
+  if (!snapshot || !expected) {
+    throw new Error("Candidate snapshot proof is missing; refusing live fallback");
+  }
+  const snapshotPath = resolve(runDir, snapshot);
+  if (!existsSync(snapshotPath)) {
+    throw new Error(`Candidate snapshot is missing: ${snapshotPath}`);
+  }
+  assertSnapshotHasNoSymbolicLinks(snapshotPath, snapshotPath);
+  const actual = fingerprintTree(snapshotPath);
+  if (actual !== expected) {
+    throw new Error(
+      `Candidate snapshot fingerprint mismatch: expected ${expected}, found ${actual}`,
+    );
+  }
+  return snapshotPath;
 }
 
 function refreshObservedProvenance(manifest: LoopRunManifest): void {
@@ -360,6 +407,10 @@ export async function runLoop(
       process.stderr.write(
         `${scenario} trial ${trial}/${options.trials} (${options.candidate})... `,
       );
+      const candidateSnapshot = retainedCandidateSnapshot(
+        created.runDir,
+        created.manifest,
+      );
       const execution = await executor({
         scenario,
         scenariosDir: join(
@@ -368,11 +419,14 @@ export async function runLoop(
         ),
         agent: options.agent,
         candidate: options.candidate,
+        candidateSnapshot,
+        candidateFingerprint: created.manifest.proof.candidate_fingerprint,
         timeout: options.timeout,
         agentsRoot: options.agentsRoot,
       });
       let stored: StoredTrial;
       try {
+        retainedCandidateSnapshot(created.runDir, created.manifest);
         stored = storeTrial({
           runDir: created.runDir,
           suite,
@@ -396,6 +450,7 @@ export async function runLoop(
       process.stderr.write(`${stored.machine_verdict}\n`);
     }
   }
+  retainedCandidateSnapshot(created.runDir, created.manifest);
   if (currentHarnessFingerprint() !== created.manifest.proof.harness_fingerprint) {
     writeManifest(created.runDir, created.manifest);
     throw new Error("Gym harness changed during execution; run remains incomplete");
