@@ -1062,6 +1062,9 @@ Receipts are `standalone-config-snapshot-1794945510982.json`,
 `fc03-independent-check-ci.log` under the existing local trial directory.
 The same Host Task reached its actual 72/72 allowance; Root authorized a finite
 creator revision to 80 after its active workflow returns, retaining all usage.
-The independent App Task continues at generation seven with cumulative total 24.
+Read-back confirms Host generation twenty retains 72 consumed rounds with a
+cumulative total of 80. May revised the independent App Task to generation seven
+with a cumulative total of 32 and 16 consumed, superseding Root's requested
+24-round batch without resetting prior usage.
 The published source remains a partial checkpoint, with no unified activation
 or readiness notification established.
