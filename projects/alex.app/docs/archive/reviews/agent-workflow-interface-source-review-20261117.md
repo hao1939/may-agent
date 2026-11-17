@@ -2082,3 +2082,36 @@ Further evidence: `04c5-hosted-failures.json`, `final-pair-app-complete.json`,
 `canonical-periodic-recovery-baseline.log`. The native Alex observer independently
 records exact-head CI progress in events6741683,6741691,6741703 and6741719, and
 the retained Task's existing `pr589-current-head-feedback` Condition wakes it.
+
+The final local pair advances to App054e64b4f1ac6682eddbb62286472412c3723c9e,
+preserving canonical ef7's runtime-audit repair as well as reviewed Appb7. Its
+exact configured scan again reports1,140 passes/six unchanged baseline failures;
+its typecheck, design, changed-source owning tests and complete Gym check pass.
+This is fresh final-pair evidence, not relabeled App5fba/earlier Gym receipts.
+
+Root activates this authorized local trial using the supported immutable-archive
+`deploy.sh` and standard receipt-backed supervisor restart. It preserves current
+ef7 as the prior App release and verifies ancestry before selecting the candidate.
+At23:18 UTC the standard receipt settles succeeded/healthy with duplicateDeploy
+false. Installed binary SHA8638a8c4fe6b46d3fa1c55d689a178b5f52e84add1f5e3f649ef5b8ca28e1fbf
+matches requested/loaded; SDK files match frozen Host3f48, accepted App source is
+054e, HTTP readiness/control health pass, and all127 Host reservations remain.
+Required590 and the legitimate ef7 changes survive. No GitHub merge/broad release
+or direct canonical Scout edit occurs. Independent activation facts reach the
+original Host and May Tasks through their existing input routes, events6741834/35.
+
+May's creator separately revises the retained Apps Task to generation12, within
+the unchanged64 limit, for the six configured fixtures. Root identifies an
+evidence-freshness mistake in its handoff: the preceding accepted b7 source summary
+does not prove those new generation12 repairs. The feedback corrects that claim
+and retains exact failing receipts. This is a concrete Task-use finding for the
+user's separate design work, not a new Task mechanism or a completed repair.
+
+Further evidence: `054e-app-complete.json`, `054e-gym-check.log`,
+`054e-independent-typecheck.log`, `054e-independent-design.log`,
+`054e-preserved-runtime-owning.log`, `054e-local-activation-controller.json`,
+`054e-independent-activation-readback.json`, `054e-activation-host-feedback-receipt.json`
+and `054e-activation-may-feedback-receipt.json`. Standard deployment receipt:
+`projects/may-agent/.state/deploy-receipts/unified-interface-local-trial-20261117-3f48-054e.json`.
+The installed workflow/Scout trial, source readiness Telegram and late-comment
+follow-through remain to be demonstrated.

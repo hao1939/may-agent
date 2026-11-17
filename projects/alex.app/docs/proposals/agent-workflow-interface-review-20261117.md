@@ -4,7 +4,10 @@
 defines the enduring behavior. This proposal tracks the remaining cutover work.
 **Implementation status:** Host source is published through `04c544c104` in draft
 [#589](https://github.com/hao1939/may-agent/pull/589). The paired App contribution
-at `b7d6b41b7a` is reviewed and verified for its scoped compatibility checks. The installed runtime has not changed.
+at `b7d6b41b7a` is reviewed and verified for its scoped compatibility checks.
+The authorized local candidate is active: Host/SDK `3f48a1e2cd` includes the
+required #590 repair; App `054e64b4f1` includes canonical ef7 and reviewed Appb7.
+The deployment receipt and independent binary/SDK/App read-back match and report healthy.
 
 The implemented source uses one canonical catalog, mandatory `{prompt,data?}`
 input, common validated results and awaited calls for agents and workflows.
@@ -16,14 +19,14 @@ without fabricating output or execution identity.
 
 The remaining work, in order, is:
 
-1. Verify one exact compatible final Host/SDK/App pair and activate it locally,
-   preserving legitimate installation changes and the required Task-revision
-   repair. The prepared integration passes184 Task-revision/reconciliation tests,
-   Host static checks, App type/design and full Gym checks. The combined App scan
-   reports1,140 passes and six periodic-event tests that also fail on canonical main with the
-   installed SDK; that separate work belongs to the user. Source is staged without
-   activation. Preserve subsequent legitimate canonical changes when preparing
-   the final runtime trial.
+1. Finish the installed native integration trial and remaining configured App
+   compatibility disposition. Exact active App054e/Host3f48 passes184 revision/
+   reconciliation tests, Host static checks, App type/design and complete Gym
+   checks (405 tests,1,488 review checks). The full App scan reports1,140 passes
+   and six periodic-event failures; each also fails on canonical main with the
+   preceding installed SDK. May's creator reopens the retained App Task at
+   generation12 within its existing64 limit for those exact fixtures. Keep that
+   scoped compatibility work distinct from the user's Task/ingress/event redesign.
 2. Prove native workflow → PR push → CI/comment repair → Telegram review-link
    delivery, including a late review comment. Human approval stays on GitHub.
 
@@ -53,7 +56,7 @@ forwarding, retained bindings and quiet replay; all77 owning tests, typecheck
 and design checks pass independently, with native review acceptance. The prior
 full App/Gym receipts remain specific to Appcdc/Host3e1.
 
-No unified candidate is activated and readiness notification remains unproved.
+The local candidate is active; final native trial and readiness notification remain unproved.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
