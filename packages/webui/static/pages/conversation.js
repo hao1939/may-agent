@@ -7,6 +7,11 @@ let mayStopPending = false;
 let maySendPending = false;
 let mayUnconfirmedInput = null;
 let mayFocusedTask = null;
+let mayConversationContext = null;
+let mayRequestPage = 0;
+const MAY_REQUEST_PAGE_SIZE = 6;
+const MAY_TASK_REF_PAGE_SIZE = 3;
+const mayTaskRefPages = new Map();
 
 function isMayConversation() {
   return Boolean(humanInterface.appId) && isAgentChatActive(humanInterface.agent);
@@ -60,39 +65,67 @@ function renderMayConversationFocusBar() {
   }
 }
 
+function changeMayRequestPage(delta) {
+  mayRequestPage += delta;
+  renderMayConversationContextBar(mayConversationContext);
+}
+
+function changeMayTaskRefPage(requestId, delta) {
+  mayTaskRefPages.set(requestId, Math.max(0, (mayTaskRefPages.get(requestId) || 0) + delta));
+  renderMayConversationContextBar(mayConversationContext);
+}
+
 function renderMayConversationContextBar(conversation) {
   const bar = document.getElementById('conversation-context-bar');
   if (!bar) return;
+  mayConversationContext = conversation;
   if (!isMayConversation()) {
     bar.hidden = true;
     bar.style.display = 'none';
     bar.replaceChildren();
     return;
   }
-  const openRequests = (Array.isArray(conversation.requests) ? conversation.requests : []).filter(
+  const openRequests = (Array.isArray(conversation?.requests) ? conversation.requests : []).filter(
     (req) => req && req.status === 'open',
   );
   if (!openRequests.length) {
+    mayRequestPage = 0;
+    mayTaskRefPages.clear();
     bar.hidden = true;
     bar.style.display = 'none';
     bar.replaceChildren();
     return;
   }
+  const requestPageCount = Math.ceil(openRequests.length / MAY_REQUEST_PAGE_SIZE);
+  mayRequestPage = Math.min(Math.max(0, mayRequestPage), requestPageCount - 1);
+  const requestStart = mayRequestPage * MAY_REQUEST_PAGE_SIZE;
+  const visibleRequests = openRequests.slice(requestStart, requestStart + MAY_REQUEST_PAGE_SIZE);
   bar.hidden = false;
   bar.style.display = 'flex';
   let html = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-  html += `<span style="color:var(--fg2)">Open asks (${openRequests.length}):</span>`;
-  for (const req of openRequests.slice(0, 6)) {
-    const taskChips = (Array.isArray(req.taskRefs) ? req.taskRefs : [])
-      .slice(0, 3)
+  html += `<span style="color:var(--fg2)">Open asks (${openRequests.length}), showing ${requestStart + 1}-${requestStart + visibleRequests.length}:</span>`;
+  for (const req of visibleRequests) {
+    const taskRefs = (Array.isArray(req.taskRefs) ? req.taskRefs : []).filter((ref) => ref?.appId && ref?.taskId);
+    const taskPageCount = Math.max(1, Math.ceil(taskRefs.length / MAY_TASK_REF_PAGE_SIZE));
+    const taskPage = Math.min(mayTaskRefPages.get(req.id) || 0, taskPageCount - 1);
+    mayTaskRefPages.set(req.id, taskPage);
+    const taskStart = taskPage * MAY_TASK_REF_PAGE_SIZE;
+    const taskChips = taskRefs
+      .slice(taskStart, taskStart + MAY_TASK_REF_PAGE_SIZE)
       .map(
         (ref) =>
           `<button type="button" class="ask-btn" style="padding:1px 6px;font-size:11px" onclick="openConversationTask(${jsStringAttr(ref.appId)}, ${jsStringAttr(ref.taskId)})" title="Open Task ${attrEsc(ref.appId + '/' + ref.taskId)}">${esc(ref.appId)} · ${esc(ref.ref || ref.taskId)}</button>`,
       )
       .join(' ');
+    const taskPager = taskRefs.length > MAY_TASK_REF_PAGE_SIZE
+      ? `<span data-task-ref-page="${taskPage + 1}/${taskPageCount}" style="display:inline-flex;gap:3px;align-items:center"><button type="button" class="ask-btn" onclick="changeMayTaskRefPage(${jsStringAttr(req.id)}, -1)" ${taskPage === 0 ? 'disabled' : ''} title="Previous Task references">‹</button><span>${taskStart + 1}-${Math.min(taskStart + MAY_TASK_REF_PAGE_SIZE, taskRefs.length)} of ${taskRefs.length} Tasks</span><button type="button" class="ask-btn" onclick="changeMayTaskRefPage(${jsStringAttr(req.id)}, 1)" ${taskPage + 1 >= taskPageCount ? 'disabled' : ''} title="Next Task references">›</button></span>`
+      : '';
     html += `<span data-request-id="${attrEsc(req.id)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:3px 8px">` +
       `<span style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${attrEsc(req.scope || '')}">${esc(req.scope || req.id)}</span>` +
-      `${taskChips}</span>`;
+      `${taskChips}${taskPager}</span>`;
+  }
+  if (requestPageCount > 1) {
+    html += `<span data-request-page="${mayRequestPage + 1}/${requestPageCount}" style="display:inline-flex;gap:4px;align-items:center"><button type="button" class="ask-btn" onclick="changeMayRequestPage(-1)" ${mayRequestPage === 0 ? 'disabled' : ''}>Previous asks</button><button type="button" class="ask-btn" onclick="changeMayRequestPage(1)" ${mayRequestPage + 1 >= requestPageCount ? 'disabled' : ''}>Next asks</button></span>`;
   }
   html += '</div>';
   bar.innerHTML = html;

@@ -44,6 +44,7 @@ describe("HTTP human Task reads and board", () => {
     lastReadTopicId?: string;
   };
   let published: any[];
+  let acceptedPublications: Map<string, { eventId: number; eventType: string; delivery: "accepted" }>;
   let onPublish: ((event: any) => void) | undefined;
   let rejectPublish: boolean;
   let rejectConversationRead: boolean;
@@ -54,6 +55,7 @@ describe("HTTP human Task reads and board", () => {
   beforeEach(async () => {
     conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
     published = [];
+    acceptedPublications = new Map();
     onPublish = undefined;
     rejectPublish = false;
     rejectConversationRead = false;
@@ -82,18 +84,31 @@ describe("HTTP human Task reads and board", () => {
         if (appId !== "support" || conversationId !== "retained-room" || options?.limit !== 30) throw new Error("Invalid conversation read");
         if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
         conversation.lastReadTopicId = options?.topicId;
-        return conversation;
+        const messages = options?.topicId
+          ? conversation.messages.filter((message) => message.metadata?.topicId === options.topicId)
+          : conversation.messages.slice(-options.limit);
+        return { ...conversation, messages };
       },
       publishEvent: (event) => {
         published.push(event);
         onPublish?.(event);
         if (rejectPublish) throw new Error("fixture persistence unavailable");
+        const key = String(event.idempotencyKey || "");
+        const replay = acceptedPublications.get(key);
+        if (replay) return replay;
         if (event.type === "conversation.turn.stop.requested") {
           conversation.activeTurn = { id: "turn-two", revision: 8 };
         } else if (event.type === "conversation.message.created") {
-          conversation.messages.push({ id: event.idempotencyKey, author: { kind: "human" }, text: event.data.text });
+          conversation.messages.push({
+            id: event.idempotencyKey,
+            author: { kind: "human" },
+            text: event.data.text,
+            ...(event.data.context ? { context: event.data.context } : {}),
+          });
         }
-        return { eventId: published.length, eventType: event.type, delivery: "accepted" };
+        const receipt = { eventId: acceptedPublications.size + 1, eventType: event.type, delivery: "accepted" as const };
+        acceptedPublications.set(key, receipt);
+        return receipt;
       },
       agentName: "helper",
       instance: "task-test",
@@ -1576,14 +1591,27 @@ describe("HTTP human Task reads and board", () => {
     await read("/api/task?appId=alpha&taskId=missing", 503);
   });
 
-  test("HTTP Conversation reads forward exact identity and bounded options", async () => {
-    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
+  test("HTTP Conversation reads forward exact identity, retained Topics, and bounded options", async () => {
+    const olderTopicId = "topic_retained_older";
+    conversation.messages = [
+      { id: "older-topic-message", author: { kind: "agent" }, text: "Retained Topic context", metadata: { topicId: olderTopicId } },
+      ...Array.from({ length: 30 }, (_, index) => ({ id: `recent-${index}`, author: { kind: "agent" }, text: `Recent ${index}` })),
+    ];
+    const recent = await read("/api/conversation?appId=support&conversationId=retained-room");
+    expect(recent.messages).toHaveLength(30);
+    expect(recent.messages.some((message: any) => message.id === "older-topic-message")).toBe(false);
+    const retainedTopic = await read(`/api/conversation?${new URLSearchParams({ appId: "support", conversationId: "retained-room", topicId: olderTopicId })}`);
+    expect(conversation.lastReadTopicId).toBe(olderTopicId);
+    expect(retainedTopic.messages).toEqual([conversation.messages[0]]);
+    await read("/api/conversation?appId=support&conversationId=retained-room&topicId=", 400);
     await read("/api/conversation?appId=support", 400);
     await read("/api/conversation?conversationId=retained-room", 400);
     rejectConversationRead = true;
     expect(await read("/api/conversation?appId=support&conversationId=retained-room", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
     rejectConversationRead = false;
-    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
+    const recovered = await read("/api/conversation?appId=support&conversationId=retained-room");
+    expect(recovered).toMatchObject({ activeTurn: conversation.activeTurn });
+    expect(recovered.messages).toEqual(conversation.messages.slice(-30));
     expect(published).toHaveLength(0);
     control.close();
     await read("/api/conversation?appId=support&conversationId=retained-room", 503);
@@ -1671,35 +1699,68 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
 
-      // Open Requests and Task chips render in Conversation Mode and pass focusedTask on send.
-      conversation.requests = [
-        { id: "req_1", status: "open", scope: "Verify the release candidate", taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }] },
-      ];
+      // Open Requests and Task chips stay bounded but make omitted identities navigable.
+      conversation.requests = Array.from({ length: 7 }, (_, index) => ({
+        id: `req_${index + 1}`,
+        status: "open",
+        scope: index === 0 ? "Verify <img src=x onerror=window.fixtureUnsafe=true> release" : `Ask ${index + 1}`,
+        taskRefs: index === 0
+          ? Array.from({ length: 4 }, (__, taskIndex) => ({ appId: "alpha", taskId: `work/${taskIndex}`, ref: `ref0000${taskIndex}` }))
+          : [],
+      }));
       conversation.messages.push({
         id: "agent-msg-1",
         author: { kind: "agent", id: "helper" },
-        text: "Started verification on alpha/work/0.",
-        metadata: {
-          taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }],
-        },
+        text: "Started <script>window.fixtureUnsafe=true</script> verification.",
+        metadata: { taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }] },
       });
       await page.evaluate("void refreshMayConversation()");
       await page.waitForSelector('#conversation-context-bar [data-request-id="req_1"]');
-      expect(await page.$eval("#conversation-context-bar", el => el.textContent)).toContain("Verify the release candidate");
+      expect(await page.$eval("#conversation-context-bar", el => el.textContent)).toContain("showing 1-6");
+      expect(await page.$("#conversation-context-bar img")).toBeNull();
+      expect(await page.$("#chat-messages script")).toBeNull();
+      expect(await page.evaluate("Boolean(window.fixtureUnsafe)")).toBe(false);
+      await page.click('#conversation-context-bar [data-task-ref-page] button[title="Next Task references"]');
+      expect(await page.$eval('#conversation-context-bar [data-request-id="req_1"]', el => el.textContent)).toContain("alpha · ref00003");
+      await page.click('#conversation-context-bar [data-request-page] button:last-child');
+      await page.waitForSelector('#conversation-context-bar [data-request-id="req_7"]');
+      expect(await page.$eval("#conversation-context-bar", el => el.textContent)).toContain("showing 7-7");
+      await page.click('#conversation-context-bar [data-request-page] button:first-child');
       expect(await page.$eval('#chat-messages [data-task-ref="alpha:work/0"]', el => el.textContent)).toContain("Task alpha · 8f12ac90");
       await page.click('#chat-messages [data-focus-task="alpha:work/0"]');
       await page.waitForSelector('#conversation-focus-bar [data-focused-task="alpha:work/0"]');
       await page.type("#chat-input", "Check the edge case on this Task");
-      rejectPublish = true;
+
+      // Accept the event durably, then lose only the browser acknowledgement.
+      const beforeLostAckMessages = conversation.messages.length;
+      const beforeLostAckPublications = published.length;
+      await page.evaluate(`window.fixtureOriginalFetch = window.fetch;
+        window.fixtureLoseMessageAck = true;
+        window.fetch = async (url, init) => {
+          const response = await window.fixtureOriginalFetch(url, init);
+          if (window.fixtureLoseMessageAck && String(url).endsWith('/api/events') && JSON.parse(init.body).type === 'conversation.message.created') {
+            window.fixtureLoseMessageAck = false;
+            window.fixtureLostAckObserved = true;
+            throw new Error('fixture acknowledgement lost after acceptance');
+          }
+          return response;
+        };`);
       await page.click("#chat-send");
-      await page.waitForFunction(() => document.body.textContent!.includes("Message was not confirmed"));
+      await page.waitForFunction("window.fixtureLostAckObserved && !maySendPending");
+      expect(published.length).toBe(beforeLostAckPublications + 1);
       const firstFocusedAttempt = published.at(-1);
-      // Refocusing the same Task keeps the unconfirmed send identity.
+      expect(firstFocusedAttempt.type).toBe("conversation.message.created");
+      expect(conversation.messages).toHaveLength(beforeLostAckMessages + 1);
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Check the edge case on this Task");
+
+      // Same-focus reselection keeps the unknown operation identity; replay is deduplicated.
       await page.evaluate("focusMayConversationTask('alpha', 'work/0', '8f12ac90')");
-      rejectPublish = false;
+      const beforeReplayPublications = published.length;
       await page.click("#chat-send");
-      await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
+      await page.waitForFunction('document.querySelector("#chat-input").value === ""');
+      expect(published.length).toBe(beforeReplayPublications + 1);
       expect(published.at(-1).idempotencyKey).toBe(firstFocusedAttempt.idempotencyKey);
+      expect(conversation.messages).toHaveLength(beforeLostAckMessages + 1);
       expect(published.at(-1)).toMatchObject({
         type: "conversation.message.created",
         target: { appId: "support" },
@@ -1710,11 +1771,38 @@ describe("HTTP human Task reads and board", () => {
           metadata: { channel: "web-ui" },
         },
       });
-      // Switching to another agent hides May's Conversation context and focus bars.
+
+      // Changed text or target creates a distinct operation after an unknown acknowledgement.
+      await page.type("#chat-input", "Changed text");
+      rejectPublish = true;
+      let beforeUnknown = published.length;
+      let rejectedSend = page.waitForResponse(response => response.url() === `${base}/api/events` && response.status() === 503);
+      await page.click("#chat-send");
+      await rejectedSend;
+      await page.waitForFunction("!maySendPending");
+      expect(published.length).toBe(beforeUnknown + 1);
+      const changedTextAttempt = published.at(-1);
+      expect(changedTextAttempt.idempotencyKey).not.toBe(firstFocusedAttempt.idempotencyKey);
+      await page.evaluate("focusMayConversationTask('alpha', 'work/1', 'ref00001')");
+      beforeUnknown = published.length;
+      rejectedSend = page.waitForResponse(response => response.url() === `${base}/api/events` && response.status() === 503);
+      await page.click("#chat-send");
+      await rejectedSend;
+      await page.waitForFunction("!maySendPending");
+      expect(published.length).toBe(beforeUnknown + 1);
+      expect(published.at(-1).idempotencyKey).not.toBe(changedTextAttempt.idempotencyKey);
+      rejectPublish = false;
+      await page.evaluate("window.fetch = window.fixtureOriginalFetch; focusMayConversationTask(null)");
+      expect(await page.$eval("#conversation-focus-bar", el => getComputedStyle(el).display)).toBe("none");
+
+      // Other-agent and historical-session views hide May's Conversation context.
       await page.evaluate("routeTo('/agents/worker')");
       await page.waitForFunction("currentAgentChat === 'worker'");
       expect(await page.$eval("#conversation-context-bar", el => getComputedStyle(el).display)).toBe("none");
       expect(await page.$eval("#conversation-focus-bar", el => getComputedStyle(el).display)).toBe("none");
+      await page.evaluate("routeTo('/sessions/helper-old-session')");
+      await page.waitForFunction("currentTab === 'sessions'");
+      expect(await page.$eval("#conversation-context-bar", el => getComputedStyle(el).display)).toBe("none");
     } finally { await browser.close(); }
   });
 
