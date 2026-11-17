@@ -213,7 +213,7 @@ test.each(["work-stop", "cancel"] as const)("nested helper calls preserve the %s
           if (options?.signal?.aborted) return abortedReply();
           return name === "leaf"
             ? call("hold", {})
-            : call("agents", { action: "call", agent: name === "owner" ? "helper" : "leaf", task: "Review" });
+            : call("agents", { action: "call", agent: name === "owner" ? "global/helper" : "global/leaf", input: { prompt: "Review" } });
         },
       });
     },
@@ -254,7 +254,7 @@ test.each(["work-stop", "cancel"] as const)("nested helper calls preserve the %s
     controller.abort(stop === "work-stop" ? new ExecutionWorkEnded() : new Error("Explicit Stop"));
     expect((await manager.waitFor(ownerId)).status).toBe("interrupted");
     expect(manager.status()).toEqual([]);
-    for (const [caller, child] of [
+    for (const [caller, _child] of [
       ["helper", "leaf"],
       ["owner", "helper"],
     ]) {
@@ -267,9 +267,9 @@ test.each(["work-stop", "cancel"] as const)("nested helper calls preserve the %s
       if (content?.type !== "text") throw new Error("Missing helper receipt text");
       const result = JSON.parse(content.text);
       if (stop === "work-stop") {
-        expect(result).toMatchObject({ sessionId: ids.get(child), status: "interrupted" });
+        expect(result).toMatchObject({ status: "error", summary: expect.stringContaining("allowance ended") });
       } else {
-        expect(result).toEqual({ error: "Caller execution stopped" });
+        expect(result).toEqual({ status: "error", summary: "Caller execution stopped" });
       }
     }
     expect(JSON.stringify(manager.progress(ids.get("leaf")!, 100))).toContain("Review interrupted; completion unknown");
@@ -360,7 +360,7 @@ test("a managed Task accepts progress after helper cancellation and continues fr
               output: { state: "converged", summary: "Reviewed retained draft", facts: ["draft:reviewed"] },
             });
           }
-          if (!helperStopped) return call("agents", { action: "call", agent: "helper", task: "Review the draft" });
+          if (!helperStopped) return call("agents", { action: "call", agent: "global/helper", input: { prompt: "Review the draft" } });
           // The helper's inherited deadline may fire just before the caller's
           // wrap-up timer. Either ordering must preserve its result. Feedback
           // can also steer between a proposed finish and tool dispatch.
