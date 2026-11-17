@@ -165,15 +165,19 @@ projects/<id>.app/agents/<agent>/workflows/<name>.ts
 agents/<agent>/workflows/<name>.ts
 ```
 
-For an App Task, agent selection resolves from the Task, nearest explicit
-ancestor, then the App default. If that agent is App-local, its App-local
-workflow directory is the complete scope; otherwise the standalone agent
-directory applies. Runtime never merges catalogs from several agents or
-discovers an App-root workflow registry.
+For an App Task, responsible-agent selection resolves from the Task, nearest
+explicit ancestor, then the App default. That agent still owns the assignment;
+its workflow directory is a source location rather than an invocation ACL.
 
-Workflow names need only be unique within the resolved agent scope. Duplicate
-effective names are invalid and visible in catalog diagnostics rather than
-resolved by filesystem order.
+The refined [discovery rule](execution-contributions.md#discovery-and-callable-names)
+combines registered agents and workflows in one runtime catalog. App-owned names
+are `<appId>/<declaredName>` and global names are `global/<declaredName>`.
+Names are unique across both kinds in their namespace, including workflows owned
+by different agents in the same App. Duplicate registration/reload is an error;
+directory order and local-first lookup never choose the winner. Ownership
+remains metadata, so changing a target's implementation preserves its address.
+No additional App-root workflow registry is required. Existing owner-qualified
+workflow names and owner-only name uniqueness still need source migration.
 
 ## Module contract
 
@@ -188,8 +192,9 @@ Rules:
 - export explicit `name`, `description`, and `execute` (plus optional declarative
   `inputSchema` and `outputSchema` metadata validated by the shared invocation
   kernel before or around `execute(ctx)`);
-- receive requirements, acceptance, constraints and relevant evidence through
-  typed `ctx.input`; the App boundary constructs current input for Task-backed work;
+- receive a required nonempty `ctx.input.prompt` and optional typed
+  `ctx.input.data` through the common invocation envelope; the App boundary
+  constructs it from current Task outcome and domain input for Task-backed work;
 - return one terminal contribution, normally with `ctx.done(...)` or
   `ctx.blocked(...)`; preserve failure evidence and allow control failures to throw;
 - call agents and nested procedures with `ctx.call`;
@@ -342,7 +347,7 @@ for observations that can justify a later change.
 | Participants and method | Choose agents, models, skills, deterministic helpers or direct tools that fit the assignment and granted capabilities. Bob and tech-lead are not universal roles. |
 | Order and branching | Use the necessary steps, including a path that accepts existing work without implementation. Independent operations may run concurrently when their effects do not conflict and the caller's scope permits it. |
 | Review and verification | Choose domain evidence, commands and whether independent review is required. A paper assessment need not run a compiler; an explicit acceptance requirement cannot be silently weakened. |
-| Input and output shape | Own private procedure parameters and structured step results. Add public App input only for a distinct caller-facing contract, not for each workflow or task. Keep results bounded and large evidence referenced. |
+| Input and output shape | Own the domain schema for invocation `data` and returned `output`, within the common input/result envelopes. Add public App input only for a distinct caller-facing contract. Keep results bounded and large evidence referenced. |
 | Repair and feedback response | Choose bounded local repair, another agent judgment or return to the caller. Check updates at useful operation boundaries; long operations must cooperate with cancellation or expose bounded observation opportunities. No fixed retry count or review graph applies to every workflow. |
 | Evidence format and reuse | Define domain artifacts and applicability rules while retaining shared Task entry/discovery links. Preserve readable references, or report incompatibility and inspect current state. |
 

@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Host `main` at `8a795c12d9` includes merged #584's ordinary command cancellation. The authorized local installation now runs the #586 loading-repair candidate `204552b29d` with matching SDK, while Apps definitions remain pinned to `ae5803dd52`. Interrupted PR #582 completed ordinary workflow implementation, fresh same-Task continuation with two of three rounds consumed, real watcher-driven CI/comment follow-up, caller return and the original addressed Telegram notice (50657). Setup repairs and a timing correction remain explicit interventions. The next demonstrated gap is returned evidence disappearing during producer-worktree cleanup. Shared hosted execution, a domain-only development worker and single-Task Conversation ownership remain incomplete.
+**Implementation status:** Host `main` is `43fc420a8f`, including ordinary command cancellation and the loading repair. The #585 trial completed workflow repair, native publication, watcher-driven follow-up and an addressed Telegram review notification; Apps revision `e3a5b96d1d` also repairs durable evidence retention and scoped caller replies. Its latest seventh-round head `58d2e55dc8` has passing Quality/Container checks and resolved review threads, but is unmerged. The next interface slice removes invocation permissions, requires one `{ prompt, data? }` input, converges results and establishes canonical discovery; public `fork` retirement is recommended. Shared hosted execution, a domain-only development worker and single-Task Conversation ownership also remain incomplete. Older trial revisions below are historical evidence.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -285,8 +285,12 @@ execution output; it retains evidence and cumulative receipts without teaching
 Host cleanup Alex's result shape. The regression now reads every canonical and
 stage artifact with its original checksum after removing the producer worktree.
 All 78 workflow/evidence tests pass, including cancellation, extension and
-corrupt-history coverage. Legacy #585 references still require verified recovery
-from the pre-cleanup operator archive before normal caller reread can be claimed.
+corrupt-history coverage. Native Alex subsequently recovered 44 immutable
+artifacts and six reservation receipts from the pre-cleanup archive with explicit
+provenance and checksum verification; its existing creator independently reread
+all 50 recovered sources. Round seven now writes its canonical result to the
+stable archive automatically. Automatic readability after this latest producer
+worktree is removed remains a separate live acceptance check.
 
 ### Keep one model-facing invocation tool
 
@@ -294,11 +298,33 @@ Review of [#585](https://github.com/hao1939/may-agent/pull/585) at `085d619f12`
 confirmed a design mismatch: its restricted constructor shares implementation
 with `agents`, but publishes a second `workflows` name and parameter schema.
 The [SDK tool contract](../2a-design/sdk.md#agent-tools-and-sdk) uses `agents.call`
-for both prompt agents and code procedures. Keep that surface and scope its
-actions/catalog to granted capabilities. Preserve the legitimate local-owner
-restriction without granting broad delegation or statically binding a standing
-Task to its procedure. Production loader/Task tests must prove actual scoped
-invocation, denial of ungranted operations, and common serialization/context.
+for both prompt agents and code procedures. The earlier repair interpreted local
+procedure access as excluding prompt delegation. The human clarified that either
+implementation must be callable in the same way and may call either kind.
+That clarification supersedes the procedure-only interpretation. The subsequent
+human comments remove invocation permission support entirely, rather than unify
+its checks. App ownership remains descriptive; registered callables are listed
+and called without per-target grants or App-based invocation denials.
+The [unified-call proposal](agent-workflow-interface-review-20261117.md) specifies
+the input/result contracts, exact naming rule, public fork retirement and paired
+Host/SDK/App migration for review. Production loader/Task
+tests must prove the required-prompt input, common result, canonical discovery,
+preserved assignment and cancellation rather than encode the rejected permission
+profiles or prompt/code distinction. The proposed cooperation tool has only
+`list` and awaited `call`: parallel joins stay in workflow code; independently
+owned work stays in Tasks. Retire public `fork` and its session controls instead
+of extending them to code workflows. This integration record retains trial
+chronology; the focused proposal and contribution contract own the interface.
+
+At reviewed head `58d2e55dc8`, temporary production-dispatch probes with stubbed
+model calls confirmed prompt structured-input rejection, dropped workflow
+references/criteria, different finish flags, route-dependent deny handling,
+omitted discovery schemas and local name shadowing. Local probe and receipt:
+`.state/pr585-agents-convergence-e2e-20261117/design-contract-probes.{ts,json}`.
+They establish current gaps, not live model or refined-interface parity. A source
+inventory found no explicit fork callers in the checked active Alex/May/Scout
+source/guidance; Host `runAgent()` had only the tool's fork branch as a non-test
+caller. Model-generated tool usage is not statically enumerable.
 
 The new human correction was admitted by event 6733764 and returned through the
 existing May coordinator. The existing Alex Task is generation 4 with three
@@ -335,8 +361,18 @@ An operator review found the new public body had dropped its routing owner block
 and included a local artifact path. Feedback event 6734188 returned this concrete
 metadata defect to the same owner; guidance now requires preserving the block and
 keeping local evidence paths in Task results. This intervention is distinct from
-routine CI-stage relay. The original delivery request remains pending until the
-observer/caller path and addressed Telegram review notification are verified.
+routine CI-stage relay. The original observer/caller path subsequently delivered
+the addressed Telegram notification (delivery 50674). A new review comment then
+exposed a test that could pass without inspecting the actual procedure result.
+The human authorized total seven on the same Task, preserving all six consumed
+rounds. Native round seven repaired that assertion, pushed `58d2e55dc8`, answered
+and resolved the thread, and observed passing hosted checks. This proves that
+review follow-up slice, not conformance to the subsequently clarified interface.
+The same Task retained a Condition for design disposition. The completed review
+was returned through its existing May conversation by event 6734542; admission
+does not yet prove the owner has incorporated it. The current head remains
+design-incomplete, with no eighth round authorized and no new design-ready
+Telegram notification requested.
 
 ### Connect shared execution and settlement
 

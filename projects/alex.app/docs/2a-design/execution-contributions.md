@@ -22,8 +22,8 @@ shape and discovery stay with [Workflows](workflows.md). Use the
 
 **Same assignment, authority, acceptance requirements and effect rules; the
 method may differ.** Code handles understood work efficiently. An agent can
-handle cases the code cannot resolve, without losing the assignment or gaining
-different permissions. This lets Apps improve their methods while callers keep
+handle cases the code cannot resolve, without changing the assignment or its
+acceptance criteria. This lets Apps improve their methods while callers keep
 one meaning for accepted work.
 
 This file owns the shared behavior. The App/caller owns the particular outcome,
@@ -100,7 +100,7 @@ decision. This needs no new partial-result state or Task lifecycle.
 ## Invocation and ownership
 
 A workflow orchestrates agent operations. Wrapping operations in a workflow
-preserves the same Task identity, permissions, remaining execution allowance,
+preserves the same Task identity, supplied tools, remaining execution allowance,
 workspace, feedback and cancellation mechanisms as direct agent execution.
 There is no workflow-specific work lifecycle or parallel Task reconciler.
 
@@ -111,20 +111,83 @@ that procedure. General assignments do not need a new public input kind for
 each workflow. Procedure parameters belong to the workflow invocation; the
 owning Task remains authoritative for the desired outcome and acceptance.
 
-The model `agents` tool lists and invokes the selected agent's catalog:
+The model `agents` tool lists and invokes the runtime's registered callables.
+It is a built-in cooperation capability, rather than a permission preset or a
+tool enabled by the existence of a `workflows` directory:
 
 ```ts
 agents({ action: "list" });
-agents({ action: "call", agent: "implement-and-verify", input: {
-  objective: "Update the parser", maxIterations: 2,
+agents({ action: "call", agent: "alex/implement-and-verify", input: {
+  prompt: "Update the parser and verify the change",
+  data: { maxIterations: 2 },
 } });
 ```
 
-The `task` string remains available for prompt targets; code procedures accept
-structured `input`. Nested procedures and agents use
-`ctx.call(name, input, options)`. Neither interface permits selecting another
-App's private workflow catalog. Adding a workflow normally changes only its
-owning agent's files and guidance.
+The target input contract is one structured envelope for either implementation:
+
+```ts
+type ExecutionInput<T = unknown> = {
+  prompt: string; // Required, nonempty assignment text for either implementation.
+  data?: T;       // Optional JSON-compatible domain data, references and criteria.
+};
+```
+
+Nested procedures and agents use `ctx.call(name, input, options)` with that same
+envelope. The prompt adapter presents both fields to the model; code reads
+`ctx.input.prompt` and `ctx.input.data`. Target schemas may constrain `data`;
+they do not remove the required `prompt`. Define validation against the complete
+envelope and return its complete schema in discovery. Execution capabilities,
+Task identity, cancellation and remaining allowance stay in inherited context.
+Bare strings, `task`, and separate `context_files`/`success_criteria` fields are
+retired authoring forms; migrate their content into `prompt`/`data`. Backend
+tuning belongs in the definition, rather than kind-specific call options.
+
+Common call options are `timeoutMs` (positive and only shortening the parent
+bound) and `schema` (a caller requirement for `result.output`, applied alongside
+the target schema). The model call carries them in `options`; the SDK uses its
+third argument. Executor-specific skill, operation-count and tool-profile
+options are outside this contract. The input envelope contains only `prompt`
+and optional `data`; reject old or conflicting authoring fields explicitly.
+
+### Discovery and callable names
+
+Use one catalog and one address rule for agents and workflows:
+
+- An App-owned callable is `<appId>/<declaredName>`; a global callable is
+  `global/<declaredName>`. Reserve `global` for that namespace. Names cannot
+  contain `/`. Directory ownership is metadata, not another address component.
+- Agents and workflows share the namespace. Duplicate canonical names reject
+  registration or reload; neither kind shadows the other. Keep the prior valid
+  definition active after a rejected reload.
+- List every registered callable in the selected runtime catalog with `name`,
+  `description`, complete `inputSchema` and any declared `outputSchema`. The
+  input schema includes the required prompt even without extra data requirements.
+  Sort descriptors by canonical name. Callers pass that `name` unchanged. Use
+  fully qualified names; no bare-name, local-first or fuzzy fallback is part of
+  the target contract.
+- Invocation has no separate permission system: remove procedure-only profiles,
+  target allow/deny lists, App-based invocation denials and permission-filtered
+  discovery. All registered callables are callable. App namespaces identify
+  ownership; they are not invocation ACLs. Actual tool provisioning and Host
+  Task mutation contracts belong to their existing APIs.
+
+Model `agents({ action: "list" })`, the proposed SDK `ctx.list()`, and standalone
+`listTargets` enumerate the same prepared catalog for equivalent runtime inputs.
+They return the same target descriptors, without implementation-kind collections
+or active-session lists. Static workflow code can call known canonical names
+without listing first; discovery is available when it needs runtime inspection.
+The SDK `ctx.list()` binding remains implementation work, not an available API.
+
+Replacing an implementation keeps the same canonical name, input and result
+contract. It does not register both implementations under that name at once.
+The model-facing cooperation surface is `list` and awaited `call`. The
+[unified-call proposal](../proposals/agent-workflow-interface-review-20261117.md)
+specifies retirement of `fork` and its session controls. Parallel joined calls
+remain ordinary workflow code; durable independently owned work uses Tasks.
+
+**Current gap:** this envelope, discovery rule, permission removal and reduced
+tool surface are the refined target design. Host #585 and existing App call
+sites still need migration; sharing the `agents` tool name does not implement it.
 
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.
@@ -528,12 +591,11 @@ an incompatible envelope needs a specific rollout decision, not a blind bypass.
 
 ## Result admission
 
-Terminal agent and workflow contributions use:
+The refined public result contract is identical for agent and workflow calls:
 
 ```ts
 type ExecutionResult<T = unknown> = {
-  id: string;
-  kind: "agent" | "workflow";
+  id?: string; // Runtime supplies the actual child ID when execution started.
   status: "done" | "blocked" | "error" | "interrupted";
   summary: string;
   output?: T;
@@ -541,12 +603,25 @@ type ExecutionResult<T = unknown> = {
 };
 ```
 
-The model-facing tools retain legacy diagnostic fields such as `sessionId`,
-`workflowRunId`, `outputDir` and workflow steps while exposing this common
-terminal vocabulary. Callers use the normalized `status`, `summary`, `output`
-and `facts` to assess the contribution. Raw agent `lastAssistantText`,
-`structuredResult` and `finishResult` payload aliases are replaced by these
-shared fields; do not add more copies of large payloads for compatibility.
+Require `status` and a nonempty `summary` for either implementation. Prompt
+executors submit this contribution through `finish()`; code returns it through
+the SDK. Apply the same caller/target output-schema checks on both routes before
+exposing an output as schema-valid. The runtime binds identity; a producer cannot
+substitute its caller's ID. A rejection before execution has no child ID.
+
+Validate any supplied output across every status. A successful contribution with
+a requested output schema must supply matching output. An incomplete/failed
+invocation may omit output it could not produce; retain malformed supplied output
+as diagnostics, without exposing it as valid typed data. Domain schemas should
+support legitimate incomplete reports through their ordinary optional fields.
+
+Callers use `status`, `summary`, `output` and `facts` to assess the contribution.
+Backend kind, `sessionId`, `workflowRunId`, output directories, workflow steps,
+raw `lastAssistantText`, `structuredResult` and `finishResult` belong in execution
+diagnostics rather than alternative public result shapes or payload aliases.
+Useful output and facts must remain JSON-compatible and available through the
+same envelope for either implementation. This migration remains outstanding in
+Host #585; the current SDK still exposes a required diagnostic `kind` field.
 An explicit partial agent result is `blocked` with its partial output retained,
 not `done`. Both optional `output` and `facts` survive every authored terminal
 status and nested workflow boundary. A workflow may return an error or
@@ -555,7 +630,8 @@ failed persistence still follow the execution fences and failure path. Retain
 both fields in the existing bounded run artifact, including explicit unavailable
 markers when evidence exceeds retention limits. Prose-only calls may return a
 summary when no structured result was requested; this does not manufacture
-verified domain data.
+verified domain data. Both still return the common envelope; unstructured
+assistant text alone is not a successful finish report.
 
 Invocation/setup failure can occur before a child exists, and cancelled scopes
 or infrastructure failures may throw. Do not fabricate a terminal execution ID

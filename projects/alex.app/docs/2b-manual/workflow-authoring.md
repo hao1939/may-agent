@@ -263,6 +263,13 @@ result, without an action to unblock the executing Task itself.
 
 ## Agent And Nested Workflow Calls
 
+**Migration note:** examples in this manual still describe the current SDK's
+string prompts, raw workflow input and short names. The refined
+[invocation contract](../2a-design/execution-contributions.md#invocation-and-ownership)
+requires `{ prompt, data? }` for both kinds and canonical names from one catalog;
+its Host/App migration has not landed. It also recommends retiring public `fork`
+in favor of awaited calls, workflow joins and independently owned Tasks.
+
 Use `ctx.call(...)` when another agent or procedure can return a bounded result during
 this run:
 
@@ -299,9 +306,9 @@ if (result.status !== "done") {
 }
 ```
 
-Background forks and direct agent messages cannot satisfy a workflow
-dependency. If work must outlive this run or cross an App boundary, use the App
-request/task model instead.
+Direct agent messages cannot satisfy an awaited workflow dependency. Use the App
+request/task model when an independently owned result must outlive this run.
+App membership alone does not require a separate Task for a bounded helper call.
 
 All four call directions share the same contribution rules. Give a helper its
 specific outcome, constraints and relevant references. The Host supplies caller

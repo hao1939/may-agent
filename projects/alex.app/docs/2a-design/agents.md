@@ -10,7 +10,9 @@ dependencies are implemented. Helpers retain their live caller's scope and
 cancellation. Ended Host sessions cannot resume; unfinished work starts a fresh
 Task attempt. Supported native CLI thread continuation remains separate. The
 [execution review](../archive/reviews/execution-consolidation-poc-20260914.md)
-retains the trials and their limits.
+retains the trials and their limits. The refined cooperation design below removes
+invocation permissions, unifies input/result/discovery, and recommends retiring
+`fork`; those source changes are not yet implemented.
 
 Agent registration has two scopes:
 
@@ -156,74 +158,57 @@ These relationships guide capability implementation, not a second routing job
 for the model. A helper remains an ordinary tool: supply input and receive a
 result. Retain `ctx.call` and the model-facing `agents.call` as thin scoped
 wrappers, preserving useful agent cooperation without independent session recovery.
-The caller's trusted execution context supplies permissions, exact ownership,
-cancellation and remaining allowance; the agent does not construct that context.
+The caller's execution context supplies exact Task identity, available tools,
+cancellation and remaining allowance. Invocation adds no target permission
+profiles, allow/deny lists or App-based call denials.
 
 ## Agent tool actions
 
-The model-facing `agents` tool manages bounded execution:
+The refined cooperation surface treats prompt agents and code workflows alike;
+see [common invocation](execution-contributions.md#invocation-and-ownership).
 
-| Action     | Behavior                                                         | When to use                                                          |
-| ---------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `call`     | Await one child prompt agent or code procedure (`input` / `task`) | Current attempt needs the result                                     |
-| `fork`     | Start a child prompt session and return its ID                   | Bounded background exploration whose lifecycle the caller still owns |
-| `list`     | List registered prompt agents, code procedures, and active sessions | Discovery                                                         |
-| `peek`     | Read recent output from a running child                          | Observe a fork                                                       |
-| `cancel`   | Cancel a running child                                           | Stop obsolete bounded execution                                      |
-| `context`  | Read caller/session lineage context                              | Agent context management                                             |
-| `sessions` | Query persisted execution summaries                              | Diagnostics/history                                                  |
+| Action | Behavior | When to use |
+| --- | --- | --- |
+| `list` | List one catalog of registered callables and their contracts | Discover an exact canonical name |
+| `call` | Await a bounded contribution with `{ prompt, data? }` input and the common result | Current invocation needs the result |
 
-`call` and `fork` create causal child sessions. Only `call` blocks.
+The recommendation is to retire `fork` and the session-management actions from
+this cooperation tool. A fork's distinct value is letting a model start a helper,
+continue its own work and later collect the result. It also requires session
+handles, inspection, live steering, result collection and cleanup semantics.
+No active explicit fork callers were found in the checked Alex, May and Scout
+source/guidance; existing workflows use awaited `ctx.call`.
 
-```text
-Root App/workflow attempt
-  ├── call("dev", task)       # awaited bounded child
-  ├── call("reviewer", task)  # awaited bounded child
-  └── fork("scout", task)     # caller retains lifecycle responsibility
-```
+Use parallel joined calls in a workflow when concurrent bounded work is useful.
+Use a Task when an independent outcome must survive the caller. Removing public
+forking gives up ad hoc model-controlled background helper execution; it does
+not remove workflow concurrency, Host observation or cancellation.
 
-Forking does not create durable App ownership. A workflow must not fork work and
-then return while still owing its result. Long-lived or independently
-recoverable work belongs in an App request or task.
-
-Required helpers must be joined or stopped before their caller completes, and
-caller cancellation stops them. Parallel awaited workflow calls already support
-concurrent bounded work. The agents tool retains `fork` as a scoped model-tool
-capability, tested through its public action. It no longer creates detached
-responsibility or a second message notification. Existing durable dispatch
-guidance is migrated to App Tasks. A returned session ID is not a durable result
-promise; inspect the result or use an awaited call when it is required.
-
-Trusted live caller context supplies Task binding, execution root, tool policy,
-abort signal and deadline. A restricted caller's helper retains that policy;
-conflicting profile overrides are rejected rather than guessing a privilege
-hierarchy. Different profiles are not automatically ordered by name.
+Required children settle or stop before their caller completes. Caller timeout
+or Stop propagates cancellation through the entire child tree. Current Host
+code still exposes `fork`, `peek`, `follow-up`, `cancel`, `context` and `sessions`;
+their public cooperation-tool retirement remains implementation work. Existing
+execution records, Task feedback, diagnostic reads and operator/Host controls
+remain the places for supervision, feedback and cancellation.
 
 ## Workflow capability
 
-Canonical workflows call agents and procedures through their scoped context:
+The refined interface calls either implementation through the same envelope
+and canonical [name](execution-contributions.md#discovery-and-callable-names):
 
 ```ts
-const result = await ctx.call("dev", task);
+const result = await ctx.call("alex/dev", { prompt: task });
 
 const [implementation, review] = await Promise.all([
-  ctx.call("dev", implementationTask),
-  ctx.call("reviewer", reviewTask),
+  ctx.call("alex/dev", { prompt: implementationTask }),
+  ctx.call("alex/reviewer", { prompt: reviewTask }),
 ]);
 ```
 
-Both return the shared bounded result:
-
-```ts
-type ExecutionResult<T = unknown> = {
-  id: string;
-  kind: "agent" | "workflow";
-  status: "done" | "blocked" | "error" | "interrupted";
-  summary: string;
-  output?: T;
-  facts?: unknown;
-};
-```
+Both return the shared [bounded result](execution-contributions.md#result-admission).
+Backend kind and session/workflow aliases remain execution diagnostics, rather
+than fields a caller must inspect to consume a contribution. The current SDK
+requires migration before these examples are deployed call syntax.
 
 The workflow decides how this evidence affects its own result. The App/task
 boundary then validates and admits that result; a successful child session does
@@ -370,21 +355,19 @@ records source and test status separately from deployment and behavioral quality
 | -------------------------------------------------------------- | --------------------------------------- |
 | Need another capability before this bounded attempt can finish | `agents.call` / `ctx.call`              |
 | Several independent bounded checks                             | parallel awaited calls                  |
-| Short exploration still owned by this live caller              | `agents.fork`, then inspect/join/cancel |
+| Short exploration still owned by this live caller              | Awaited call; parallel joined calls inside a workflow |
 | Another domain owes an eventual result                         | Cross-App task dependency               |
 | Durable desired outcome needs repeated attempts                | App task                                |
 | Optional FYI with no result obligation                         | `message` notification                  |
 | Repeatable multi-step bounded process                          | `ctx.call`                              |
 
-The fork row follows the bounded caller contract above. Do not rely on
-detached auto-resume to fulfill an App obligation.
 Provider-specific helpers and direct CLI calls follow the same
 [execution rules](system-boundary.md#execution) without needing their own Tasks.
 
 ## Integrity checklist
 
 - Every agent call belongs to one bounded caller attempt.
-- A caller does not finish while an unjoined fork still carries required work.
+- A caller does not finish while an unjoined child still carries required work.
 - Durable cross-owner obligations use task dependencies, not messages or events.
 - Child execution results remain evidence until admitted by the owning
   workflow/App/task.

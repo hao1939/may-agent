@@ -578,6 +578,28 @@ runs. Each batch rechecks current Conditions, so cancelled or satisfied waits
 are ignored. A missed notification, overflow or failed read falls back to normal
 periodic observation; the queue is disposable, not another authority.
 
+### Two watch modes: `one-shot` vs. `continuous` (and M:N fan-out)
+
+Resource watches and Task Conditions operate in one of two explicit modes (see
+[Event System Refinement](../proposals/event-system-refinement-20261117.md#2-extensible-resource-watcher-architecture-pluggable-per-resource-watchers--two-watch-modes-one-shot-vs-continuous)):
+
+1. **`one-shot` watch (default for exact target state):**
+   - Wakes the Task **once** when `expected` matches, transitions `state` to
+     `"true"`, and unsubscribes immediately.
+2. **`continuous` watch (consistent watch while resource is open):**
+   - Subscribes a Task to an open external resource (`subject: "resource:..."`,
+     such as `resource:github:hao1939/may-agent#587`).
+   - Polls each unique `(observerId, resource)` **once** per interval regardless
+     of how many Tasks watch it, and fans out changed `fingerprint` observations
+     to **all** subscribed Tasks (`M:N` Task ↔ Resource relationship), including
+     Tasks currently in `converged` (`idle`) phase while waiting for human review
+     or merge.
+   - Stays active (`state = "false"`) across multiple updates and automatically
+     unsubscribes **only** when:
+     1. The **Resource closes** (`closed: true` / `state === "closed"` / `merged === true`),
+        after delivering that final terminal fact once to all subscribed Tasks; or
+     2. The **Task closes** (`closed` / `cancelled`).
+
 Publication suppression yields to the existing Condition matcher: unchanged
 data is published when a current open wait needs it. This covers both new Tasks
 and a removed/recreated Condition on the same Task without storing another wait

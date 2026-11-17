@@ -193,7 +193,7 @@ message rendering. It applies the same plan on entry, selection and reconnect:
 | Bound direct-agent chat | Exact selected session ID | Saved session transcript |
 | Unbound direct-agent chat | No session events | No saved thread yet |
 | Generic Sessions chat | Selected session or configured interface-agent `chat` alias | Saved session transcript once bound |
-| Main May Conversation | Global diagnostics and the configured Conversation updates | Canonical Conversation read |
+| Main May Conversation | Global diagnostics and the configured Conversation updates | Canonical Conversation read (`messages`, `activeTurn`, and pinned open `requests` with clickable `Task <appId> · <ref>` chips that navigate to `/projects/<appId>.app/tasks?appId=<appId>&task=<taskId>`) |
 
 An unbound worker never uses the interface-agent `chat` alias. Direct chat
 renders saved turns on initial selection, turn/session end and reconnect;

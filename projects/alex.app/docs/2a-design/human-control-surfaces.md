@@ -40,9 +40,18 @@ The ordinary human objects are:
 
 - an App, which owns a responsibility;
 - a Request, which is an accepted ask May must close the loop on in Conversation;
-- a Task, which is durable work reconciled by an App;
-- a Topic, which links related turns to exact Tasks; and
+- a Task, which is durable work reconciled by an App; and
 - a Conversation message, which is how a human talks with May.
+
+`Topic` is strictly an internal implementation record that links related turns
+to exact Tasks when needed; it is never exposed as a human-managed object,
+selector, or command. Every human or agent interaction operates in one of two
+modes (see [Unified Input Channel Design](../proposals/input-channel-design-and-experience-20261117.md)):
+
+1. **Conversation Mode (`may:primary`):** One shared human conversation stream
+   with pinned open Requests and clickable Task reference chips.
+2. **Task-Focused Mode (`{ appId, taskId }` / `ref`):** Isolated inspection,
+   live watching, and generation-fenced steering/control of one exact Task.
 
 An inbox item correlates one input with its handling result.
 It may finish while a conversational Request remains unresolved. Host row IDs
@@ -74,8 +83,6 @@ Every human adapter exposes the same small meanings:
 | Meaning               | Console form                                 | Telegram form                                       |
 | --------------------- | -------------------------------------------- | --------------------------------------------------- |
 | list or select App    | `/apps [app]`                                | native `/apps [app]`                                |
-| list Topics           | `/topics`                                    | native `/topics`                                    |
-| show or follow Topic  | `/topic [ref\|clear]`                        | native `/topic [ref\|clear]`                        |
 | list Tasks            | `/tasks [all] [history]`, then `/tasks more` | native `/tasks [all] [history]`, then `/tasks more` |
 | show human actions    | `/todo [all]`, `/todo more`                  | native `/todo [all]`, `/todo more`                  |
 | read one Task         | `/task <ref>`                                | native `/task <ref>`                                |
@@ -104,25 +111,13 @@ Host. Remove that ambiguous command from the ordinary adapter; any retained
 shutdown control belongs to explicit Host administration with its scope visible.
 `/todo` lists Tasks needing human action, not every open conversational Request.
 
-Each surface may also follow one Topic. `/topics` lists the newest page of short
-references, plain titles, and linked Task counts; `/topics more` reads older
-pages. `/topic <ref>` resolves that exact Topic from indexed storage even when
-it is old, selects it, and shows bounded related turns plus linked Task
-references. `/topic` shows the current selection and `/topic clear` leaves it.
-The selection only adds the exact Topic ID to later human messages. It never
-starts, stops, or owns work. Switching Topic ends an unrelated local Task watch,
-but the Task continues.
-
-Older Topics remain addressable by stable reference and paged history rather
-than being copied into every May prompt. Selecting an older Topic or replying
-to one of its messages supplies the exact identity, so the Host loads its
-bounded turns and current canonical Task links. When ordinary text refers to an
-older discussion without an exact identity, May may use bounded read-only Topic
-lookup and then choose the relevant exact Topic. Adapters do not guess by
-keywords, silently change their selected Topic, or treat lookup as work.
+Internal Topic links remain preserved in storage for historical messages and
+reply correlation, but `/topics` and `/topic` are retired from human surfaces.
+Humans navigate directly between Conversation (`may:primary`) and Tasks (`/task <ref>`,
+`/watch <ref>`, or clicking a Task chip in WebUI).
 
 Clarifying questions and answers use the same Conversation on every surface.
-An adapter preserves reply coordinates and Topic identity when available, but
+An adapter preserves reply coordinates and internal Topic identity when available, but
 does not parse the answer or maintain a questionnaire. May interprets a full or
 partial answer from the shared ordered Turns. If the question came from an
 exact Task's human-owned Condition, the rendered question carries that Task
@@ -132,7 +127,7 @@ responds from another surface.
 `replyTo` records a human-selected reply target, not the last message an adapter
 displayed. Replayed history and asynchronous results must not silently bind the
 next human message. Console has no message-reply gesture: bare text uses the
-shared Conversation plus its selected App, Topic, and watched Task context.
+shared Conversation plus its selected App and watched Task context.
 
 Each adapter surface keeps one selected App, initially `may`. `/apps` lists
 Apps and `/apps <app>` changes that local selection. `/tasks` reads live Tasks

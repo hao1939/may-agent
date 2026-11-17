@@ -541,27 +541,36 @@ the explicit Host-bound `AppWorkflowContext`; they are not root worker fields:
 
 | Intent                                         | Model tool                   | Workflow capability        |
 | ---------------------------------------------- | ---------------------------- | -------------------------- |
-| Ask another agent and await its bounded result | `agents` (`action: "call"`)  | `ctx.call`                 |
-| Run a reusable bounded workflow                | `agents` (`action: "call"`)  | `ctx.call`                 |
+| Await a bounded contribution from an agent or workflow | `agents` (`action: "call"`) | `ctx.call`          |
 | Publish a fact                                 | event tool where authorized  | `ctx.events.emit`          |
 | Publish from the current fenced Task attempt   | `tasks` publish              | `ctx.events.emit`          |
 | Record a domain sample                         | metric tool where authorized | `ctx.metrics.record`       |
 | Read this App's Tasks                          | `tasks` list/get             | `ctx.read.tasks.list/get`  |
 | Finish this bounded execution                  | finish/result                | `ctx.done` / `ctx.blocked` |
 
-A caller granted only its own local procedures still uses `agents`. Scope its
-advertised actions and discovered targets to that grant, and enforce the same
-scope during invocation. Local procedure access does not imply prompt-agent
-delegation, foreign-owner procedures or helper/session control. Preserve the
-common tool's serialization, cancellation and result behavior for the granted
-calls; a separate model-facing `workflow` or `workflows` tool is not the scope
-boundary.
+Prompt agents and code workflows implement the same bounded call interface.
+Either can call either. The refined [input contract](execution-contributions.md#invocation-and-ownership)
+is always `{ prompt: string, data?: T }`, with a required nonempty `prompt`.
+Both return the same [result envelope](execution-contributions.md#result-admission).
+Domain schemas constrain their data; backend kind is execution metadata.
+Raw string input, `task` and kind-specific input/result alternatives retire
+during the paired Host/App migration.
 
-Background forks, session steering, cancellation, process control and human
-delivery require explicitly supplied tools/backends; they are not generic
-workflow SDK methods. The same provided tool must honor the same contract in
-either environment. A Host-backed implementation does not justify a hidden
-standalone denial or an implicit hosted grant.
+Invocation has no separate permission support: remove procedure-only profiles,
+per-target allow/deny lists, App-based invocation denials and permission-filtered
+discovery. Every callable registered in the selected runtime catalog can be
+listed and called. [Canonical names](execution-contributions.md#discovery-and-callable-names)
+are `<appId>/<declaredName>` or `global/<declaredName>`, with duplicate names
+rejected and no local-first fallback. App ownership is descriptive; this catalog
+adds no authorization to mutate Tasks or access an unavailable external tool.
+
+The target cooperation tool has only `list` and awaited `call`. The
+[unified-call proposal](../proposals/agent-workflow-interface-review-20261117.md)
+specifies retiring `fork` and its session controls. Workflows compose parallel
+awaited calls; Tasks retain independently owned work. Runtime cancellation,
+process supervision and human delivery remain supplied Host/tool backends.
+Host #585 still needs migration to this refined contract; these paragraphs do
+not describe deployed input, naming or tool-action compatibility.
 
 ## Standalone execution and testing
 
@@ -570,7 +579,8 @@ needed, `@may-agent/sdk/standalone` executes prompt agents (`alex`), code
 procedures (`<owner>/<procedure>`), and native CLI executors (`codex`, `claude`)
 through the shared invocation kernel (`runWorkflowInvocation` and `resolveCallable`).
 Hosted Task attempts share kernel pieces but do not yet call this public engine
-unchanged:
+unchanged. The source coverage below still has the old names/input and App-scope
+restrictions; the refined invocation contract above requires paired migration:
 
 - `run(target, input, options?)` (or `run(options)`) resolves the target's
   owning App across `projects/*.app`, isolates `PreparedCatalog` to that App's

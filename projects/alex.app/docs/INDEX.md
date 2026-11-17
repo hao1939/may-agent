@@ -32,7 +32,7 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | What is the solid Task + Watcher use case? | [A PR through CI and review](2a-design/task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review) |
 | How do we tune PR delivery standalone before Host automation? | [Standalone-to-Host pilot plan](2b-manual/standalone-to-host-pr-pilot.md) |
 | How can Alex carry a change through PR, CI and review feedback? | [Development follow-through](development-workflow.md#pr-follow-through-across-bounded-attempts); [current watcher recipe and bounds](development-workflow.md#publishing-and-waiting-for-github-pull-request-facts) |
-| How do agents and workflows call each other? | [Contributions](2a-design/execution-contributions.md) |
+| How do agents and workflows call each other? | [Contributions](2a-design/execution-contributions.md); [pending unified-call proposal](proposals/agent-workflow-interface-review-20261117.md) |
 | What must code and agents both honor? | [Common contribution contract](2a-design/execution-contributions.md#common-contract-for-code-and-agents) |
 | When is a human ask fulfilled? | [Message lifecycle](2a-design/message-lifecycle.md) |
 | How is a Conversation turn executed or stopped? | [Conversation execution](2a-design/conversation-execution.md) |

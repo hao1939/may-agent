@@ -129,8 +129,10 @@ assesses feedback, repairs or responds, and updates the same PR.
 For coding delivery, the agent assesses current-head CI and feedback, then sends a Telegram PR link for human review and approval on GitHub.
 If approval is required, retain the exact PR observation and verify the current-head GitHub review; Telegram delivery establishes no approval.
 Retain PR identity/head, evidence, needed Conditions and caller links in existing
-Task state. Rearm one-shot interests while feedback matters; stop them when that
-requirement ends, preserving independent work and waits. Local convergence,
+Task state. A `continuous` resource watch on the open PR (`resource:github:<owner>/<repo>#<number>`)
+stays active across multiple `fingerprint` changes (including while the Task is
+`converged`/`idle` awaiting human review on GitHub) and unsubscribes automatically
+only when the PR closes/merges or the Task closes. Local convergence,
 stale CI/approvals, silence and partial reads do not prove delivery success or
 grant merge, deployment or closure authority.
 

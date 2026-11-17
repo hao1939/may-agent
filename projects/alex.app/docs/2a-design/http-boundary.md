@@ -136,12 +136,20 @@ See the [reader consolidation record](../archive/reviews/shared-project-metadata
 for compatibility and verification limits.
 
 All browser Task reads use the same `tasks.list` and `task.get` service as
-Console and Telegram, addressed by stable App and Task identities:
+Console and Telegram, addressed by stable App and Task identities or the
+eight-character Task `ref`:
 
 ```text
-GET /api/tasks?appId=<app>&limit=30&cursor=<opaque-cursor>
+GET /api/tasks?appId=<app>&q=<query>&limit=30&cursor=<opaque-cursor>
+GET /api/task?ref=<ref>
 GET /api/task?appId=<app>&taskId=<exact-task-id>
+GET /api/task/transcript?ref=<ref>
+GET /api/task/transcript?appId=<app>&taskId=<exact-task-id>
 ```
+
+`GET /api/conversation` reads the shared Conversation (`may:primary`), returning
+the newest 30 messages, `activeTurn`, and open `requests` whose `taskRefs` are
+enriched with each Task's short `ref`.
 
 The duplicate `/api/apps/:appId/tasks` family and its `app.tasks.list` /
 `app.task.get` socket commands are retired. App domain pages use the same human
@@ -149,8 +157,9 @@ Task contract; they do not reconstruct an SDK projection in the browser. See
 the [App UI convention](webui.md#app-ui-convention).
 
 The board shows one page at a time, newest changes first, with a server-side
-state filter and an option to include retained finished/cancelled Tasks.
-Counts and text filtering explicitly apply only to the displayed page. The
+state filter, optional case-insensitive keyword filter (`q` across `ref`,
+`taskId`, `outcome`, and `summary`), and an option to include retained
+finished/cancelled Tasks. The
 board does not rebuild a whole-App tree or claim global integrity/capacity
 from a partial page. Exact detail keeps the full goal, acceptance, current
 attempt/progress, parent identity, outputs, Conditions, dependencies, and
@@ -194,8 +203,8 @@ POST /api/events -> publish(event) -> EventReceipt
 ```
 
 Specialized endpoints construct the same canonical requests. In particular,
-`POST /api/task/input` validates an exact App/Task identity, `expectedGeneration`,
-message, App input kind and idempotency key before admitting
+`POST /api/task/input` validates an exact App/Task identity (or display `ref`),
+`expectedGeneration`, message, App input kind and idempotency key before admitting
 `app.input.requested`. The Host rechecks generation at admission. This endpoint
 cannot create replacement work, reopen a closed Task or steer its native thread
 directly. A schema-valid request must still be accepted by the owning App.

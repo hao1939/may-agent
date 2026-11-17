@@ -46,8 +46,6 @@ Everyday help presents conversation and Task controls first:
 | Command                  | Meaning                                               |
 | ------------------------ | ----------------------------------------------------- |
 | `/apps [app]`            | List Apps or select one App                           |
-| `/topics`, `/topics more` | List Conversation Topics page by page                |
-| `/topic [ref\|clear]`   | Show, follow, or leave one Topic                      |
 | `/tasks [all] [history]` | List Tasks owned by the selected App, optionally all Apps/history |
 | `/tasks more`            | Continue the current Task page                        |
 | `/todo [all]`            | Show Tasks that explicitly need human action         |
@@ -67,9 +65,10 @@ Local client and Host administration commands have a separate help group:
 | `/reload` | Reload Host definitions across Apps |
 | `/restart` | Restart the Host, affecting all Apps |
 
-Command, App, Topic references, and recently rendered Task references
+Command, App, and recently rendered Task references
 support tab completion. Completion uses bounded local caches; it never asks a
-model to interpret a command.
+model to interpret a command. (`/topics` and `/topic` are retired from human
+surfaces; Topic remains an internal correlation record.)
 
 Host request history, session listing, and session cancellation are
 not ordinary Console commands. Diagnostic raw/session output remains behind
@@ -131,11 +130,6 @@ prompt is:
 ```text
 you[may]>
 ```
-
-Following a Topic adds its short reference to the prompt, for example
-`you[may · 0df0c0ed]>`. Later bare text carries the exact Topic ID. Topic
-selection is local context, not work; Task progress remains under `/task` and
-`/watch`.
 
 When the selected App has open human actions, the prompt includes their
 authoritative count, such as `you[evaluation · 2 todo]>`.
