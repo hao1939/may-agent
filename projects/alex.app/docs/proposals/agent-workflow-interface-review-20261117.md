@@ -32,25 +32,23 @@ The remaining high-value gaps are:
   all 31 workflow-tool tests and `check:ci` pass. Host3e1 also migrates lifecycle
   fixtures and requires finish in canonical model-tool prompt calls; its 26
   owning tests and `check:ci` pass. Retain a committed real-manager missing-report
-  regression beside the successful report cases. Hoste764's completed hosted run reports 42 failures
-  across 18 files (3,495 tests, two skips); Container passes. This supersedes
-  Host3fb's 59-failure baseline.
-  Full current-head Quality remains required; that baseline predates Host3e1.
-- Finish the configured-target body/caller/guidance disposition. Discovery
-  enumerates all 33 targets in the source snapshot; enumeration alone does not
-  establish execution or live effects. Installation configuration selects its
-  enabled Apps independently of source availability. App `5fdaad20b3` repairs
-  inventory configuration: explicit fixtures prove all 33 source targets and
-  omission of the disabled sample target. All five owning tests pass independently
-  against Host `cb4f3583e5`. The same configured pair passes all 1,145 default
-  App tests across 81 files, typechecking and the full design check. This does
-  not establish installed availability. App `cdc1f01926` adds the complete
-  body/caller/guidance/owning-check disposition index; all six audit tests,
-  typechecking and design checks pass against Host3e1. The index records remaining
-  effects and serves source review; it does not prove execution of every target.
+  regression beside the successful report cases. Host3e1's completed hosted run
+  reports 34 failures across 18 files (3,491 tests, two skips); Container passes.
+  This supersedes Hoste764's 42-failure baseline. Full current-head Quality
+  remains required.
 - Verify and activate one exact compatible local pair, preserving legitimate
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
+
+The paired App source contribution is reviewed and verified at `cdc1f01926`.
+Explicit fixtures prove all 33 source targets and disabled-App omission; the
+disposition index maps bodies, callers, guidance and owning checks. All six audit
+tests, typechecking and design checks pass independently against Host3e1. The
+same exact configured pair passes all 1,146 default App tests across 81 files
+and the complete private Gym check: 405 Bun tests and 1,488 review checks.
+Native independent review also accepts the exact App source contribution.
+Installation configuration/evidence is supplied explicitly. The index supports
+source review; these checks do not prove execution of every target or activation.
 
 App27a repairs current-assignment forwarding and retained approval reuse. All
 77 owning tests, typechecking and design checks pass independently. A production
@@ -75,8 +73,10 @@ installed availability.
 The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#actual-gym-cli-verification-and-configured-inventory-regression)
 records exact revisions, checks and limitations. May continues implementation
 through the retained native Tasks/workflows. Their creator saved finite cumulative
-limits of 112 Host and 64 App rounds at generations25/11, preserving all prior
-96/48 reservations and identities. No unified candidate is activated.
+limits of 128 Host and 64 App rounds at generations26/11, preserving all prior
+reservations and identities. Host's retained 112 entries include 102 ordinary
+round reservations and ten conservative retained-allowance entries; they are
+not evidence of 112 implementation executions. No unified candidate is activated.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -359,12 +359,13 @@ The remaining implementation order is:
    fork/session controls, aliases and bare strings must not return to satisfy old
    fixtures. Run owning tests and `check:ci` for each coherent checkpoint, then
    full current-head Quality.
-2. **Finish App consumers.** Preserve the verified invocation-assignment forwarding
+2. **Preserve the reviewed App candidate.** Retain invocation-assignment forwarding
    and fresh judgment with retained receipts, usage and identical replay.
    Preserve the verified native Gym temporary-workspace binding and actual CLI
    protocol coverage and corrected source/configuration inventory fixtures.
-   Complete the 33-target body/caller/guidance disposition: discovery enumeration
-   and private helper tests cannot establish registered entrypoints.
+   Keep the completed 33-target body/caller/guidance disposition and its explicit
+   remaining effects. Final pairing and installed behavior still need verification;
+   a Host-only checkpoint cannot certify a different App revision.
 3. **Verify and trial the pair.** Bind App imports and TypeScript aliases to one
    exact clean Host/SDK provider; keep the native development provider unchanged
    until a verified replacement is ready at a quiescent boundary. Supply any

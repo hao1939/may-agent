@@ -1829,3 +1829,43 @@ Evidence under the trial directory: `3e1-independent-owning.log`,
 `cdc-3e1-independent-inventory.log`, `cdc-3e1-independent-typecheck.log`,
 `cdc-3e1-independent-design.log`, `5fd-cb4-independent-gym-check.log` and
 `current-host-3e1-verified-receipt.json`.
+
+## Current pair checks, Host CI and finite continuation
+
+The exact published Appcdc/Host3e1 pair passes **1,146 configured default App
+tests across 81 files**, six audit tests, App typechecking, the complete design
+check and the complete private Gym check (**405 Bun tests across 29 files and
+1,488 review checks**, subsequent Node checks and case validation). Genuine
+installation markers/evidence are explicit isolated prerequisites. Native Bob
+review `s_1794953887393_71c4cf52-ebef-45d2-96dd-e0c75d7745b6` also accepts
+exact Appcdc as a local source contribution, retaining outer activation/effect
+obligations. App source review is complete; full Host readiness remains open.
+
+Completed current Host3e1/run44187860730 reports **3,491 tests, 34 failures
+across 18 files, two skips**. Container passes, Quality fails. This supersedes
+Hoste764's 42-failure map. Lifecycle failures are gone; required finish exposes
+one additional create-tool provider-fixture failure. The exact artifact map,
+not an inferred subtraction from the previous total, governs the next source work.
+
+The installed development path stopped at 112 recorded reservations. Read-only
+audit finds 102 ordinary round reservations and ten conservative retained-allowance
+entries; seven of the latter were created together after interrupted delivery
+made usage appear unknown. Preserve every entry; a reservation is not proof of
+an executed coding round. This operational finding is handed off for the user's
+Task-system work, outside this unified-interface implementation. No ledger
+refund/reset or generic Task redesign was performed.
+
+May saved one finite Host-only continuation through `revise-assignment` run
+`wr_1794953938627_9b10`: same Task, generation26, cumulative limit128 and all112
+prior consumed/reserved entries retained. Apps remains capped at64. Root read
+back the saved context; the revised Task still required its existing explicit
+retry from attention. Exactly fenced retry event6741365 was accepted, followed
+by current-CI/source feedback6741369. The next workflow must inspect and retain
+the useful dirty55-test fixture repair left by interruption. No unified runtime
+is activated, and no new Task or broader release is authorized.
+
+Evidence under the trial directory: `cdc-3e1-independent-app-full.log`,
+`cdc-3e1-independent-gym-check.log`, `cdc-3e1-configured-prerequisites.json`,
+`3e1-hosted-failures.json`, `3e1-hosted-failure-file-map.json`,
+`112-host-reservation-readback.json`, `128-host-creator-readback.json`,
+`128-host-explicit-retry-receipt.json` and `current-host-3e1-ci-receipt.json`.
