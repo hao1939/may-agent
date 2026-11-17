@@ -1626,6 +1626,20 @@ on the same Tasks (112 Host and64 App total), preserving all usage, bindings and
 evidence. Event6740990 records delivery of that request, not saved revision or
 new implementation. No unified candidate is activated or ready for notification.
 
+May subsequently saved the requested revisions through its existing workflow:
+Host generation25/total112 and Apps generation11/total64. Root's Task read-back
+confirms both retained checkouts, identities and acceptance. The Host ledger
+then contains97 actual reservations and Apps48, retaining all prior usage.
+Native development has resumed; this establishes continuation, not completion.
+
+A follow-up probe matches the real Gym CLI's directory layout rather than the
+earlier in-repository protocol fixture. The CLI creates its work directory under
+`tmpdir()` but supplies the repository as `projectRoot`. The capability rejects
+the external `cwd` before spawning a process. App63ec therefore still fails the
+actual native scenario route despite its passing protocol probe. May received
+the reproduction and minimal isolated-workspace binding correction in
+event6741015; no global path-check relaxation is needed.
+
 Evidence under the trial directory: `6b-63ec-independent-host-owning.log`,
 `6b-63ec-independent-host-check-ci.log`,
 `6b-63ec-independent-app-owning.log`, `6b-63ec-independent-app-checks.log`,
@@ -1635,3 +1649,6 @@ Evidence under the trial directory: `6b-63ec-independent-host-owning.log`,
 `current-finite-continuation-receipt.json`, plus
 `63ec-gym-diagnose-real-cli.log`, `63ec-native-protocol-probe.ts`,
 `63ec-native-protocol-observation.json` and `63ec-assignment-root-docs-check.log`.
+Continuation read-backs are `finite-continuation-8b86f804-readback.json` and
+`finite-continuation-5cb8bf19-readback.json`; the caller-layout reproduction is
+`63ec-native-real-cwd-probe.ts` / `63ec-native-real-cwd-observation.json`.

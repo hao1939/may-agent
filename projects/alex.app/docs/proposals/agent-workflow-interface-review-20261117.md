@@ -31,11 +31,15 @@ The remaining high-value gaps are:
   existing input-change path. Add a two-invocation regression with empty Task
   events, preserving valid receipts and all consumed allowance; identical
   assignments must still replay quietly.
-- Finish configured-target verification after the Gym CLI repairs in App63ec.
+- Finish the native Gym caller's workspace binding after the App63ec repairs.
   Diagnosis now reaches baseline validation through its canonical target; both
   backend adapters pass through real SDK child processes with deterministic
   local protocol fixtures. Nine adapter tests, App typechecking and design
-  checks also pass independently. The earlier complete private check at App920 passes
+  checks also pass independently. However, the actual CLI creates its workspace
+  under `/tmp`; passing the repository as the capability root rejects that
+  directory before spawn. Bind execution to the existing isolated Gym workspace
+  and regress this actual caller layout. Do not weaken the shared path check.
+  The earlier complete private check at App920 passes
   403 tests and 1,488 benchmark-review checks with two existing installation
   evidence files supplied as explicit read-only prerequisites; this does not
   prove external model behavior or a portable clean checkout.
@@ -54,9 +58,9 @@ The remaining high-value gaps are:
 
 The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#current-assignment-and-published-cli-repairs)
 records exact revisions, checks and limitations. May continues implementation
-through the retained native Tasks/workflows. Their last finite batches exhausted
-96 Host and 48 App rounds; a bounded continuation is requested from their existing
-creator, preserving all usage and identities. No unified candidate is activated.
+through the retained native Tasks/workflows. Their creator saved finite cumulative
+limits of 112 Host and 64 App rounds at generations25/11, preserving all prior
+96/48 reservations and identities. No unified candidate is activated.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
