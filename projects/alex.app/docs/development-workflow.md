@@ -657,19 +657,22 @@ not model quality or full daemon recovery.
 ### November 17 command-cleanup candidate
 
 The paired source candidate reexports `commandReceipt` from public
-`@may-agent/sdk/command`. Commands keep the enclosing `ctx.signal`, with no
-additional execution timer. The helper joins its owned Linux process group and
-output before returning; the kernel joins commands associated with its signal
-even when authored code omits an await. Cancellation cannot certify a candidate,
-and cleanup uncertainty remains an execution error even when authored code
-catches it. Install the matching Host/SDK before integrating this import.
+`@may-agent/sdk/command`. Await commands and pass `ctx.signal`. Cancellation stops
+the owned process group using the SDK's existing TERM/KILL cleanup. The kernel
+gives awaited code up to two seconds to settle after cancellation. A cancelled
+verification is a failure, never a passing candidate. Install the matching
+Host/SDK before integrating the new import.
+
+This is reasonable cancellation for ordinary commands. Forgotten awaits,
+detached sessions and crash-proof command ownership are outside this milestone;
+there is no command registry or new durable cleanup-blocker lifecycle. Existing
+execution failures remain visible to the owner through the normal failure path.
 
 Safe redo uses the current workflow and Task-local reservations. The interrupted
 edit regression starts a fresh invocation, retains the edit, repeats design
 judgment and converges after two consumed rounds on the same Task. There is no
-new resume cursor, reset, refund or stage allowance. Command ownership across a
-Host crash, durable blocking on uncertain cleanup, and containment of separate
-sessions remain gaps; portable tests do not establish live activation.
+new resume cursor, reset, refund or stage allowance. Portable tests do not
+establish live activation or a new interrupted PR-delivery run.
 
 ### November 13 command-duration correction
 

@@ -261,9 +261,11 @@ continuity belongs to Task state; evidence remains referenced artifacts.
 
 **Next action:** Review the #574 evidence and freeze the useful process before a
 fresh narrow assignment tests operation without diagnostic relays or a direct
-repair exception. Include a timed-out invocation: cancellation must reach its
-children, cleanup must finish before replacement, and a fresh invocation may
-redo useful work on the same Task/PR. Keep the existing three-round development
+repair exception. Include a timed-out invocation: pass cancellation through its
+awaited calls, allow bounded cleanup through the existing executors, then use the
+normal retry/failure policy. A fresh invocation may redo useful work on the same
+Task/PR. Detached-process containment and crash-proof command ownership are not
+requirements for this milestone. Keep the existing three-round development
 limit; every started round counts, including cancellation, with no reset on
 reentry. Escalate clearly if exhausted. Exact step restoration and per-step time
 prediction are unnecessary; retain source work, accepted results and effect

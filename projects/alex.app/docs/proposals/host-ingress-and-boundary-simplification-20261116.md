@@ -153,100 +153,73 @@ progress; ineffective work and escalation remain App-owned judgments.
 
 ### Cancel on timeout, redo safe work, keep one round limit
 
-The 17 November refinement chooses cancellation and repeatable work over
-remaining-time prediction or exact workflow resumption. A bounded invocation
-starts ordinary work and is cancelled when its declared deadline expires. No
-per-step remaining-time estimate or durable step cursor is required.
+The 17 November refinement calls for reasonable cancellation of ordinary work.
+Cancel the running invocation at its deadline, give awaited work a short cleanup
+period, and let the existing retry policy start a fresh invocation when useful.
+Repeated work is acceptable. Universal descendant containment, exact workflow
+resumption and crash-proof command ownership are outside this milestone.
 
-1. **One inherited cancellation scope.** Agent calls, nested workflows, tools
-   and their child processes inherit the enclosing scope. Parent timeout
-   propagates cancellation to every attached descendant. Execution adapters stop
-   I/O, terminate owned processes and join cleanup; non-cooperative processes
-   receive bounded termination followed by forced kill. Release capacity and
-   permit replacement only after exit is confirmed. Uncertain cleanup stays a
-   visible blocker. Context cancellation carries the signal; the executor owns
-   actual process termination. Explicit human Stop does not automatically retry.
-2. **Fresh invocation with retained work.** After timeout and confirmed cleanup,
-   the existing Host retry policy may run the same Task again within its
-   allowance. The workflow can start from the beginning, inspect the existing
-   checkout and redo planning, implementation checks, tests or review as useful.
-   Exact matching evidence may be reused, but no step-by-step resume guarantee
-   is needed. Retain the Task, requirements, source edits, PR and accepted caller
-   results. Before repeating an uncertain publication or notification, inspect
-   existing state and use its existing receipt/idempotency identity.
-3. **Keep the existing three-round rule.** Reserve one Task-local development
-   round before starting that round's work. A started round counts whether it
-   succeeds, fails, times out or is cancelled; no refund or stage-specific
-   accounting. Reentry, restart and a different output directory do not reset
-   the count. A watcher wake or read of CI state does not itself start a round.
-   At three consumed rounds, return the remaining work to the owner for a
-   decision; neither retry nor a replacement Task silently renews the allowance.
+1. **Pass cancellation through ordinary awaited calls.** Agent calls, nested
+   workflows, I/O and commands receive the enclosing signal. On timeout, abort
+   it immediately. Each executor stops the processes it owns using existing
+   cleanup, with TERM followed by KILL when necessary. Give awaited code a
+   bounded cleanup period and report failures through the existing execution
+   error path. Explicit human Stop does not automatically retry. Workflow code
+   must await its commands; no registry for forgotten promises is needed.
+2. **Fresh invocation with retained work.** After cancellation, the existing
+   Host retry/failure policy decides whether to run the same Task again. The
+   workflow inspects the existing checkout and repeats planning, implementation,
+   tests or review as useful. Retain the Task, requirements, source edits, PR and
+   accepted results. Inspect uncertain publication/notification effects before
+   repeating them using their existing receipts. No durable step cursor is needed.
+3. **Keep the existing three-round rule.** Reserve a Task-local round before
+   starting that round's work. A started round counts whether it succeeds, fails,
+   times out or is cancelled. Reentry and a different output directory do not
+   reset the count. Watcher observations alone consume no development round.
+   After three rounds, return the remaining work to the owner for a decision.
 
-Host owns propagation, process cleanup, fencing and scheduling under declared
-retry policy. Alex's workflow owns the development-round limit and decides what
-can usefully be redone. Task retains the work; the workflow is an ordinary new
-bounded invocation. The original delivery promise remains open until fulfilled
-or explicitly dispositioned by its owner.
+Host supplies cancellation, bounded execution and its existing recovery policy.
+Alex chooses what to redo and owns the fixed development allowance. Cancellation
+is a request to stop work, not rollback or proof that a result is correct.
+Failures stay visible through ordinary execution diagnostics; this work adds no
+new durable cleanup-blocker lifecycle, cgroup setup or process inventory.
 
-Supporting #582 proves cleanup of nested groups inside the owned Linux session.
-It does not cover descendants creating separate sessions, so it alone does not
-establish the full descendant-cancellation target above. First prove cancellation
-through the real execution tree and block overlapping replacement while cleanup
-is unresolved. Then time out a real development pass and verify that a fresh
-invocation can redo work on the same Task/PR, preserve consumed rounds and reach
-the Telegram notice, or escalate clearly when the fixed allowance is exhausted.
-No exact-step restoration or recovery of an unaccepted worker result is required.
+Supporting #582 improves nested process-group cleanup inside the owned Linux
+session. That hardening can proceed separately. Handling arbitrary detached
+sessions or a Host crash is not a prerequisite for this cancellation milestone.
+The useful acceptance target is an ordinary interrupted development pass whose
+awaited commands stop, followed by a fresh invocation on the same Task/PR that
+retains consumed rounds and reaches the review notice or clear owner escalation.
 
 ### Command cancellation implementation candidate — 17 November
 
-Host [PR #584](https://github.com/hao1939/may-agent/pull/584), source
-`9747fc880e36c3c766eb0686d14eb8c5fbaa20ac`, and paired Apps source
-`cd2ab50ff68711f51694c9bc5f8b566ffeed57dd` move Alex's Git/verification
-command helper to public `@may-agent/sdk/command`. It runs argv without shell interpolation in an owned
-Linux process group. On cancellation or leader exit it uses the SDK's existing
-bounded TERM/KILL drain and waits for output closure before returning a receipt.
-A cancelled command cannot supply passing verification evidence. There is no
-new command deadline or remaining-time estimate.
+Host [PR #584](https://github.com/hao1939/may-agent/pull/584) supplies public
+`@may-agent/sdk/command`; paired Apps source
+`cd2ab50ff68711f51694c9bc5f8b566ffeed57dd` reexports it for Alex's existing
+Git/verification calls. Await the helper and pass `ctx.signal`. It runs argv
+without shell interpolation, retains bounded output, and uses the SDK's existing
+process-group cleanup on cancellation or leader exit. A cancelled command cannot
+supply passing verification evidence.
 
-The shared workflow kernel joins commands started with its exact `ctx.signal`,
-including a command the authored body did not await. Ownership travels on that
-signal so a compiled Host and a separately loaded SDK helper share the same
-scope. Cleanup uncertainty survives an authored catch and nested workflow
-failure; the kernel reports unconfirmed cleanup rather than a successful run.
-Alex keeps its existing Task-local three-round reservations. A fresh invocation
-repairs retained edits and repeats useful judgment; an interrupted round still
-counts and no exact step cursor is added.
+The kernel gives awaited authored code up to two seconds to settle after
+cancellation, replacing the former 50 ms grace. The context is fenced at once;
+cleanup time grants no additional business execution. The initial candidate's
+per-signal command registry, implicit joins for unawaited commands and extra
+output-closure protocol are removed. A command that ignores its signal still
+ends through the existing bounded execution failure path.
 
-Portable regressions use real processes to cover cancellation, natural leader
-exit, a TERM-ignoring child, an unrelated surviving process, nested cancellation
-across separately bundled modules, and an escaped process retaining output pipes.
-The original command helper fails both command regressions; removing the kernel
-join fails the connected nested cancellation regression. Alex's retained-edit
-regression verifies successful fresh invocation with two consumed rounds on the
-same Task. These are execution-mechanics checks with scripted judgments.
+Portable regressions cover ordinary cancellation, leader exit with an attached
+child, a TERM-ignoring child, an unrelated surviving process, nested awaited
+cancellation and failure receipts. Alex's retained-edit regression checks that
+fresh execution converges on the same Task with two consumed rounds. These tests
+use real processes and scripted judgments; they do not establish model quality.
 
-Validation on the paired source: 64 App workflow/evidence tests passed. The
-design/contract check passed for 27 workflows and 10 agents from a short temporary
-checkout; the prompt-budget checker includes absolute skill paths, so the same
-source exceeded its budget under the longer worktree path. No prompt budget was
-changed. Host type/boundary/lint checks and all five new process/receipt tests
-passed. The local full gate finished with 3,491 passing tests, two skips and one
-unchanged browser-test failure (`Node is detached from document` during a
-refreshing-panel click). A single targeted diagnostic run passed; that does not
-replace the failed full run. Hosted Quality and Container subsequently passed
-on PR #584 at `9747fc880e36c3c766eb0686d14eb8c5fbaa20ac` ([run](https://github.com/hao1939/may-agent/actions/runs/44031798394)).
-Independent review remains required; the source has not been activated.
-
-Remaining gaps are explicit: command ownership is in memory, this candidate does
-not persist a process sidecar for Host crash recovery, and group cleanup does not
-contain descendants creating new sessions. An escaped process that retains an
-output pipe produces bounded, unconfirmed cleanup; other escaping descendants
-are outside this guarantee. The hosted wrapper/Task recovery path still needs
-connected proof that uncertainty remains a durable blocker before replacement.
-#582 extends the drain to nested groups in the owned session; it does not close
-these remaining ownership gaps. The paired Host/SDK must be installed before
-integrating Alex's new import. Source verification does not establish activation
-or another live PR-to-Telegram run.
+The earlier source `9747fc880e36c3c766eb0686d14eb8c5fbaa20ac` passed hosted
+Quality and Container, and 64 paired App workflow/evidence tests passed. Those
+results describe the superseded candidate; the simplification needs fresh checks
+on its own head. Exact current validation is recorded in PR #584. Install the
+matching Host/SDK before adopting Alex's import. Source verification and release
+remain separate; no new live PR-to-Telegram run is claimed here.
 
 ### Connect shared execution and settlement
 
@@ -418,7 +391,7 @@ readiness/notification gates stayed open until the later final receipt below.
 
 The run also exposed Bash cleanup that confirmed only the original process
 group, allowing nested GNU `timeout` groups in the same session to survive.
-Supporting draft [#582](https://github.com/hao1939/may-agent/pull/582) drains the
+Supporting [#582](https://github.com/hao1939/may-agent/pull/582) drains the
 owned session for live and persisted cleanup. Its four real-process regressions
 fail before the fix; 55 focused tests and full local CI (3,439 pass, two skips)
 pass afterward. Both current-head hosted checks also pass. This source is not
@@ -434,10 +407,14 @@ original caller, and retired its completed PR wait. May first answered a later
 diagnostic input (Telegram 50616), then the existing 23:15 review timer woke her
 without operator relay. She settled the original human assignment and emitted
 its exact addressed readiness notice in event 6731237; Telegram delivery 50618
-is confirmed. The PR remains open and unmerged, and no coding contribution was
-deployed. The [evidence record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#green-head-caller-return-and-original-addressed-notice)
+is confirmed. At that milestone the PR was open and unmerged, and no coding
+contribution had been deployed; #574 has since merged. The [evidence record](../archive/implementation/host-ingress-sdk-source-review-20261116.md#green-head-caller-return-and-original-addressed-notice)
 retains the exact promise, message and provider receipt identities. This proves
 the repaired integration on an intervened run, not zero-intervention operation.
+
+The following gates span the wider Host roadmap. Crash recovery and complete
+descendant containment are separate hardening work, not prerequisites for the
+ordinary cancellation milestone above.
 
 | Gate | Required evidence | Current gap |
 | --- | --- | --- |
@@ -453,17 +430,17 @@ the repaired integration on an intervened run, not zero-intervention operation.
 | Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility, activation and the native PR-delivery loop pass. Shared-worker blocked/resumed/finished and restart evidence remain. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The next implementation priority is cancellation through the actual execution
-tree, followed by safe redo under the existing fixed three-round allowance.
-A timed-out invocation is cancelled and cleaned up; a later eligible invocation
-can repeat useful work on the same Task/PR. Do not add remaining-time prediction,
+The next implementation priority is reasonable cancellation of ordinary
+awaited work, followed by redo under the existing fixed three-round allowance.
+A timed-out invocation receives cancellation and a short cleanup grace; a later
+eligible invocation can repeat useful work on the same Task/PR. Do not add remaining-time prediction,
 exact step restoration or special allowance refunds. The next acceptance target
 is one fresh, narrow assignment that reaches the notification boundary without
 diagnostic relays or a direct-repair exception, including an interrupted pass.
 Clear owner escalation is the expected outcome if its allowance is exhausted.
 The completed #574 run supplies the live baseline. The command cancellation
 candidate above supplies portable source evidence for one boundary, not proof
-of the full recovery refinement. Creator closure, restart delivery and shared-worker parity remain
+of a new live interrupted delivery. Creator closure, restart delivery and shared-worker parity remain
 separate obligations. Supporting #582 still needs independent review and
 separate deployment authority.
 

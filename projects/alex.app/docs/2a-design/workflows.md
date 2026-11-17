@@ -69,8 +69,11 @@ its execution limit. If the method no longer fits, return useful evidence and
 control to the caller instead of extending the allowance or becoming a controller.
 
 No per-step estimate of remaining time is required. Enforce the declared bound
-by propagating cancellation through attached child execution and confirming
-process cleanup. A later eligible invocation can start the procedure again using
+by passing cancellation through awaited child calls and allowing a short, bounded
+cleanup period. Executors use their existing process termination and error paths.
+Ordinary cancellation does not require containing arbitrary detached processes
+or adding crash-proof command ownership. A later eligible invocation can start
+the procedure again using
 retained work; repeated computation, checks and review are acceptable when safe.
 Exact step restoration is optional. Preserve accepted results and external effect
 identities, and inspect uncertain effects before repeating them. Timeout retry
