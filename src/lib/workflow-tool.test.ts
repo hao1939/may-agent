@@ -348,7 +348,7 @@ export async function execute(ctx) {
 export const name = "cancel";
 export const description = "Cancellation test workflow";
 export async function execute(ctx) {
-  await ctx.call("worker", "wait forever");
+  await ctx.call("global/worker", { prompt: "wait forever" });
   return ctx.done("must not complete");
 }
 `,
@@ -405,7 +405,7 @@ export async function execute(ctx) {
 export const name = "parent";
 export const description = "Unawaited child fixture";
 export async function execute(ctx) {
-  void ${kind === "workflow" ? 'ctx.call("child", {})' : 'ctx.call("worker", "work")'};
+  void ${kind === "workflow" ? 'ctx.call("global/child", { prompt: "Run child" })' : 'ctx.call("global/worker", { prompt: "work" })'};
   await ctx.read.execution("entered");
   return ctx.done("parent result");
 }`);
@@ -413,7 +413,7 @@ export async function execute(ctx) {
 export const name = "child";
 export const description = "Required helper fixture";
 export async function execute(ctx) {
-  await ctx.call("worker", "work");
+  await ctx.call("global/worker", { prompt: "work" });
   return ctx.done("child result");
 }`);
     const entered = Promise.withResolvers<void>();
@@ -453,7 +453,7 @@ export const name = "timeout";
 export const description = "Timeout test workflow";
 export async function execute(ctx) {
   try {
-    await ctx.call("worker", "wait forever");
+    await ctx.call("global/worker", { prompt: "wait forever" });
   } catch {}
   await ctx.events.emit({ type: "test.late-effect", data: {} });
   return ctx.done("late completion");
@@ -518,7 +518,7 @@ export const name = "timeout";
 export const description = "Setup timeout test workflow";
 export async function execute(ctx) {
   try {
-    await ctx.call("worker", "must not start after the deadline");
+    await ctx.call("global/worker", { prompt: "must not start after the deadline" });
   } catch {}
   await ctx.events.emit({ type: "test.late-effect", data: {} });
   return ctx.done("late completion");
@@ -594,7 +594,7 @@ export async function execute(ctx) {
         `
       export const name = "parent";
       export const description = "Parent bound fixture";
-      export async function execute(ctx) { return await ctx.call("child", {}); }
+      export async function execute(ctx) { return await ctx.call("global/child", { prompt: "Run child" }); }
     `,
       );
       writeFileSync(
@@ -896,7 +896,7 @@ export const name = "coordinate";
 export const description = "Immediate coordination event test";
 export async function execute(ctx) {
   await ctx.events.emit({ type: "test.child.requested", data: { key: "child-one" } });
-  await ctx.call("worker", "finish parent work");
+  await ctx.call("global/worker", { prompt: "finish parent work" });
   return ctx.done("parent complete");
 }
 `,
@@ -967,7 +967,7 @@ export const description = "Live Task feedback test";
 export async function execute(ctx) {
   let instruction = "none";
   ctx.events.onEvent((event) => { instruction = event.data.instruction; });
-  await ctx.call("worker", "wait for feedback");
+  await ctx.call("global/worker", { prompt: "wait for feedback" });
   return ctx.done(instruction);
 }
 `,
@@ -1027,7 +1027,7 @@ export async function execute(ctx) {
 export const name = "app-agent";
 export const description = "App SDK Agent adapter test";
 export async function execute(ctx) {
-  const result = await ctx.call("worker", String(ctx.input), { operationAllowance: 50 });
+  const result = await ctx.call("global/worker", { prompt: String(ctx.input) }, { operationAllowance: 50 });
   ctx.log.info(result.summary);
   return ctx.done("adapted", result);
 }
@@ -1124,7 +1124,7 @@ export async function execute(ctx) {
   try {
     throw new Error("Synthetic read failure");
   } catch {
-    return ctx.call("worker", "Use the Host-supplied Task entry; do not copy reconciliation into this prompt.");
+    return ctx.call("global/worker", { prompt: "Use the Host-supplied Task entry; do not copy reconciliation into this prompt." });
   }
 }
 `);
@@ -1292,7 +1292,7 @@ export async function execute(ctx) {
 export const name = "invalid-allowance";
 export const description = "Invalid operation allowance test";
 export async function execute(ctx) {
-  return ctx.call("worker", "must not run", { operationAllowance: Number.POSITIVE_INFINITY });
+  return ctx.call("global/worker", { prompt: "must not run" }, { operationAllowance: Number.POSITIVE_INFINITY });
 }
 `,
     );
@@ -1329,7 +1329,7 @@ export async function execute(ctx) {
 export const name = "app-error";
 export const description = "App SDK error normalization test";
 export async function execute(ctx) {
-  return ctx.call("worker", "fail once");
+  return ctx.call("global/worker", { prompt: "fail once" });
 }
 `,
     );
@@ -1376,7 +1376,7 @@ export async function execute(ctx) {
 export const name = "app-parent";
 export const description = "App SDK parent";
 export async function execute(ctx) {
-  const child = await ctx.call("app-child", { probe: "kept-structured" });
+  const child = await ctx.call("global/app-child", { prompt: "Run child", data: { probe: "kept-structured" } });
   return ctx.done("parent complete", child);
 }
 `,
@@ -1764,10 +1764,10 @@ export async function execute(ctx) {
 export const name = "parent";
 export const description = "Interleaved code and concurrent prompt calls";
 export async function execute(ctx) {
-  await ctx.call("helper-proc", {});
+  await ctx.call("sample/helper-proc", { prompt: "Run helper" });
   await Promise.all([
-    ctx.call("slow", "slow prompt"),
-    ctx.call("fast", "fast prompt"),
+    ctx.call("global/slow", { prompt: "slow prompt" }),
+    ctx.call("global/fast", { prompt: "fast prompt" }),
   ]);
   return ctx.done("All steps complete");
 }
