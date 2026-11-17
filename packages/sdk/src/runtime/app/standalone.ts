@@ -865,6 +865,7 @@ async function buildDirectPromptCatalog(
     diagnostics: [],
     pendingImports: 0,
   },
+  pendingImportState: DirectCatalogState = state,
 ): Promise<DirectCatalogState> {
   signal?.throwIfAborted();
   const { dirs } = collectDeduplicatedRuntimeAgentDirs(options);
@@ -894,8 +895,8 @@ async function buildDirectPromptCatalog(
     const workflowDir = join(agentDir.dir, "workflows");
     if (!existsSync(workflowDir)) continue;
     const loaded = await buildWorkflowCatalog(workflowDir, signal, {
-      onImportStart: () => { state.pendingImports += 1; },
-      onImportSettled: () => { state.pendingImports -= 1; },
+      onImportStart: () => { pendingImportState.pendingImports += 1; },
+      onImportSettled: () => { pendingImportState.pendingImports -= 1; },
     });
     const merged = new Map(proceduresByOwner.get(namespace) ?? []);
     for (const workflow of loaded.workflows.values()) {
@@ -1638,6 +1639,8 @@ export async function runDirectWorkflow<TInput = unknown>(
             callerOwner,
             workflowDir,
             ctx.signal,
+            undefined,
+            preparedCatalog,
           );
           ctx.signal.throwIfAborted();
           for (const [name, entry] of captured.prompts) {

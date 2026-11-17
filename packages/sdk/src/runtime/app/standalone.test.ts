@@ -1378,7 +1378,7 @@ export async function execute(ctx) { return ctx.done("after"); }
       const stopped = await observeBoundedResult(run);
       expect(stopped).toBeDefined();
       expect(stopped?.result.ok).toBe(false);
-      expect(stopped?.result.report.cleanup.confirmed).toBe(true);
+      expect(stopped?.result.report.cleanup.confirmed).toBe(false);
     } finally {
       gate.release();
       await observeBoundedResult(gate.completed);
