@@ -51,6 +51,8 @@ function trial(kind: "done" | "blocked" | "cancel" = "done") {
   const handler = kind === "cancel"
     ? "({signal}) => new Promise((resolve, reject) => { if (signal.aborted) reject(signal.reason); else signal.addEventListener('abort', () => reject(signal.reason), {once:true}); })"
     : `async () => ({id:'fixture',kind:'agent',status:${JSON.stringify(kind === "blocked" ? "error" : "done")},summary:'Fixture result',output:${JSON.stringify(output)},cleanupConfirmed:true})`;
+  // Standalone fixture keys name the backing prompt definition; the workflow
+  // still calls the canonical App-local address alex/gym.
   writeFileSync(fixtureFile, `export const agentFixtures = { gym: ${handler} };\n`);
   const config = {
     target: "alex/diagnose-improvement", input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } },

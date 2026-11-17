@@ -1514,12 +1514,11 @@ describe("development workflow using real Git and verification", () => {
         timeoutMs: 30_000,
       },
     );
-    expect(result.ok).toBe(true);
-    expect(result.result).toMatchObject({
-      type: "blocked",
-      reason: "Development requires an ordinary Task and its worktree",
+    expect(result).toMatchObject({
+      status: "blocked",
+      summary: "Development requires an ordinary Task and its worktree",
     });
-    expect(result.result?.output).toBeUndefined();
+    expect(result.output).toBeUndefined();
     expect(existsSync(join(root, ".checks"))).toBe(false);
     expect(existsSync(join(root, ".state/alex-development"))).toBe(false);
   });
