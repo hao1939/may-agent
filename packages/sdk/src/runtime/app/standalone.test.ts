@@ -1222,9 +1222,8 @@ export async function execute(ctx) {
         name: "healthy", description: "Independent supplied module",
         async execute(ctx) {
           if (lookup) {
-            try { await ctx.call("global/broken", { prompt: "must not run" }); }
-            catch (error) { return ctx.done("healthy", String(error)); }
-            throw new Error("Malformed owner was admitted");
+            const child = await ctx.call("global/broken", { prompt: "must not run" });
+            return ctx.done("healthy", child.summary);
           }
           return ctx.done("healthy");
         },
@@ -2199,6 +2198,19 @@ export const description = "Echo the canonical envelope";
 export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
 `,
     );
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "invalid-targets.ts"),
+      `
+export const name = "invalid-targets";
+export const description = "Return pre-start failures through the common result envelope";
+export async function execute(ctx) {
+  const targets = ["echo", "owner/echo", "global/ echo", "global /echo", "global/", "/echo"];
+  const results = [];
+  for (const target of targets) results.push({ target, result: await ctx.call(target, { prompt: "run" }) });
+  return ctx.done("checked invalid targets", results);
+}
+`,
+    );
 
     const descriptors = await listStandaloneTargets({ projectRoot: env.projectRoot });
     const echo = descriptors.find((descriptor) => descriptor.name === "global/echo");
@@ -2219,6 +2231,28 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
       summary: "echoed",
       output: input,
     });
+
+    const invalidTargets = await run("global/invalid-targets", { prompt: "check invalid targets" }, {
+      projectRoot: env.projectRoot,
+      cwd: env.projectRoot,
+      models: {},
+      timeoutMs: 1_000,
+    });
+    expect(invalidTargets).toMatchObject({
+      status: "done",
+      summary: "checked invalid targets",
+      output: [
+        { target: "echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "owner/echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "global/ echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "global /echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "global/", result: { status: "error", summary: expect.any(String) } },
+        { target: "/echo", result: { status: "error", summary: expect.any(String) } },
+      ],
+    });
+    for (const entry of invalidTargets.output as Array<{ result: Record<string, unknown> }>) {
+      expect(entry.result).not.toHaveProperty("id");
+    }
 
     const reviewer = descriptors.find((descriptor) => descriptor.name === "global/reviewer");
     expect(reviewer).toBeDefined();

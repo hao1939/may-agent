@@ -1021,9 +1021,9 @@ export async function runWorkflowInvocation<TInput = unknown>(
           };
         }
       } catch (error) {
-        resolved = {
-          kind: fallbackKind,
-          invoke: async () => { throw error; },
+        return {
+          status: "error" as const,
+          summary: error instanceof Error ? error.message : String(error),
         };
       }
       return runBoundStep(

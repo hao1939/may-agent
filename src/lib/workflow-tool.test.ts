@@ -38,12 +38,8 @@ describe("workflow execution boundaries", () => {
 export const name = "parent";
 export const description = "ctx.call must reject an excluded foreign-App prompt target";
 export async function execute(ctx) {
-  try {
-    await ctx.call("foreign", "input");
-    throw new Error("Foreign prompt target should not execute");
-  } catch (error) {
-    return ctx.done("checked", [error.message]);
-  }
+  const child = await ctx.call("foreign", { prompt: "input" });
+  return ctx.done("checked", [child.summary]);
 }
 `);
     const foreign: SubagentDefinition = {
@@ -247,19 +243,23 @@ export async function execute(ctx) { return ctx.call("other-app/foreign", { prom
 export const name = "parent";
 export const description = "Recover from a missing method";
 export async function execute(ctx) {
-  try {
-    const child = await ctx.call("missing", {});
-    return ctx.done("unexpected child result", { child });
-  } catch (error) {
-    return ctx.done("caller can choose another method", { reason: error.message });
-  }
+  const child = await ctx.call("missing", { prompt: "try the missing method" });
+  return ctx.done("caller can choose another method", { child });
 }`);
     const runner = createWorkflowRunner({ manager: {} as any, workflowDir: root });
     const result = await runner.run("parent", "bounded assignment");
-    expect(result).toMatchObject({ type: "done", summary: "caller can choose another method" });
+    expect(result).toMatchObject({
+      type: "done",
+      summary: "caller can choose another method",
+      output: {
+        child: {
+          status: "error",
+          summary: expect.stringContaining("missing"),
+        },
+      },
+    });
     if (result.type !== "done") throw new Error("Expected caller recovery");
-    expect(result.output).toMatchObject({ reason: expect.stringContaining("missing") });
-    expect(result.output).not.toHaveProperty("child");
+    expect((result.output as { child: unknown }).child).not.toHaveProperty("id");
   });
 
   it("exposes normalized blocked evidence to model workflow callers and preserves setup errors without an ID", async () => {

@@ -1549,7 +1549,14 @@ export async function runDirectWorkflow<TInput = unknown>(
 
   let activeScopeSignal: AbortSignal | undefined;
   resolveDirectTarget = async (owner, target, input, signal = activeScopeSignal) => {
-    if (typeof target !== "string" || !target || target.trim() !== target || target.split("/").length !== 2) {
+    if (
+      typeof target !== "string" ||
+      !target ||
+      /\s/u.test(target) ||
+      target.split("/").length !== 2 ||
+      target.startsWith("/") ||
+      target.endsWith("/")
+    ) {
       throw new Error(`Invalid callable target ${JSON.stringify(target)} (expected exact "<app>/<name>" or "global/<name>")`);
     }
     const slash = target.indexOf("/");
