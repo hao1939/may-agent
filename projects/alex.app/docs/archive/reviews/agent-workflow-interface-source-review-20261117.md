@@ -1735,3 +1735,19 @@ Evidence under the trial directory: `38d-real-gym-cli-observation.json`,
 `3fb-hosted-quality.log`, `b6e-d8-source-default-audit.log`,
 `b6e-d8-configured-audit.log`, `b6e-d8-configured-audit-observation.json`,
 `b6e-installed-config.json` and `current-app-inventory-config-review-receipt.json`.
+
+## Steering review repaired and published
+
+May's Host `e7642b5a2ce4751e417d35e7375cf322219bb7d9` removes only the
+misleading duplicate steering case identified by review5946872526. Independent
+verification passes all31 workflow-tool tests, including actual prequeued
+interruption, completed-step retention and first-signal precedence, plus
+`check:ci`. Root published the commit, read back the exact PR head, replied with
+the evidence and resolved thread `PRRT_kwDORdj3Ac64qVgQ`:
+[resolution](https://github.com/hao1939/may-agent/pull/589#discussion_r4606362612).
+The earlier native observation/follow-up now has a completed source repair;
+broader CI, configured inventory and connected installed trial remain open.
+
+Evidence: `e764-independent-workflow-tool.log`,
+`e764-independent-check-ci.log` and `e764-steering-review-resolution.json` under
+the trial directory.

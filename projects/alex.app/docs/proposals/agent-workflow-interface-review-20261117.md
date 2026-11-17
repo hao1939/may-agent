@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`d8ca9ce75c` and App `38de5ef532`. The installed runtime has not changed.
+`e7642b5a2c` and App `38de5ef532`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -28,7 +28,8 @@ The remaining high-value gaps are:
   steering and SIGINT child-drain assertions. Host3fb additionally migrates
   dispatch/result-handoff fixtures; all 17 owning tests and `check:ci` pass.
   Hostd8 also passes 23 tool/cancellation tests and `check:ci`, including explicit
-  rejection of retired actions. Host3fb's completed hosted run reports 59 failures
+  rejection of retired actions. Hoste764 resolves the steering coverage review;
+  all 31 workflow-tool tests and `check:ci` pass. Host3fb's completed hosted run reports 59 failures
   across 21 files; Container passes. The earlier 70-failure baseline is superseded.
   Full current-head Quality remains required.
 - Finish the configured-target body/caller/guidance disposition. Discovery
