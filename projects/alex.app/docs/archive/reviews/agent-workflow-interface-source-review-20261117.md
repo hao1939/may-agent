@@ -2024,3 +2024,61 @@ Evidence under the trial directory: `2228-independent-owning.log`,
 `local-integration-22285e5d97-b7d6b41b7a.json`,
 `2228-nested-workflow-error-parity.json`, `fc04-nested-workflow-error-parity.json`
 and `fc04-independent-parity-feedback-receipt.json`.
+
+
+## Common failure reports published with control unwinding preserved
+
+May commits Host04c544c104e145081ac9e47462a17f81666b1471, retaining fc04's
+ordinary-error normalization and preserving allowance, deferral and cleanup
+control exceptions. Root independently passes299 tests across six owning files,
+17 session-graph integration tests and `check:ci`, then pushes/read-backs the
+exact SHA on PR589. Committed standalone regressions consume an ordinary failed
+child without catch and preserve typed deferral. Existing shared concurrency,
+cleanup and cancellation assertions pass. The cancellation fixture observes the
+actual child's start, interruption and stop rather than merely matching an error.
+The E4 fixture consumes the mandatory envelope and retains its real metric lifecycle.
+
+Independent hosted/standalone production probes return common error reports;
+their IDs match the persisted failed child or standalone trace. Native Bob review
+s_1794956745092_870c109f-96db-4cf4-81a6-1c42ef6203f7 accepts this exact scoped
+source contribution. The cumulative Host ledger contains127 reservations of128;
+all records/effects remain. Publication feedback uses the existing Task input,
+not a replacement assignment or an allowance renewal. Both current-head checks
+pass: completed hosted run44196145154 reports3,494 tests, zero failures and two
+skips. These whole-suite artifacts supersede the earlier three-failure baseline.
+
+Prepared local integration Host3f48a1e2cd1868b093c347cb512b9d990bbb8b60
+contains Host04c5 and required separate590 repair. App5fbaeb20a4ab46e04d2a3b91796d0845cc08aa2f
+contains canonical f179 and reviewed Appb7. Its184 revision/reconciliation tests,
+Host static checks, App type/design and complete Gym check pass (405 Bun tests,
+1,488 review checks). The final-pair ordinary-error probe also passes. Existing
+configuration/evidence is copied read-only with hashes recorded. The source
+release is staged; the accepted release pointer and installed runtime are unchanged.
+
+The complete combined App scan reports1,140 passes and six failures across81files.
+All six reproduce on canonical main with the installed SDK. They concern canonical
+ae40's migration: three `app.schedules.find` assertions in `may.app/app.test.ts`
+and the schedule-producer assertion in `may.app/reliability-metrics.test.ts`,
+Scout's retired scheduled-event subscription assertion in its `app.test.ts`,
+and the recovery fixture's retired `scout.explore` event. The user owns that
+Task/ingress/event work. These baseline failures remain visible and the final
+configured App suite is not green. The first collection process ended after seven
+complete chunks; Root verified it was absent, retained all56 completed files and
+resumed only the remaining25 files. No tests were skipped or relabeled as passes.
+Canonical ef7 subsequently fixes workflow-audit
+request fields; preserve that legitimate runtime-source change in any activation
+candidate rather than deploying the earlier App5fba snapshot unchanged.
+
+Evidence under the trial directory: `04c5-independent-owning.log`,
+`04c5-independent-lineage.log`, `04c5-independent-check-ci.log`,
+`04c5-nested-workflow-error-parity.json`, `04c5-publication-feedback-receipt.json`,
+`pr589-04c5-description-receipt.json`, `local-integration-04c544c104-b7d6b41b7a.json`,
+`final-pair-configured-prerequisites.json`, `final-pair-host-revision.log`,
+`final-pair-host-check-ci.log`, `final-pair-typecheck.log`, `final-pair-design.log`,
+`final-pair-gym-check.log`, `final-pair-staged-source.json`,
+`canonical-periodic-baseline-tests.log` and `canonical-periodic-metric-baseline.log`.
+Further evidence: `04c5-hosted-failures.json`, `final-pair-app-complete.json`,
+`final-pair-app-complete.log`, `canonical-periodic-scout-baseline.log` and
+`canonical-periodic-recovery-baseline.log`. The native Alex observer independently
+records exact-head CI progress in events6741683,6741691,6741703 and6741719, and
+the retained Task's existing `pr589-current-head-feedback` Condition wakes it.

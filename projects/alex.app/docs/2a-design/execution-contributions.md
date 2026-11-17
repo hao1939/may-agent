@@ -695,13 +695,16 @@ Useful output and facts must remain JSON-compatible and available through the
 same envelope for either implementation. Draft Host #589 implements this source
 cutover; the installed runtime still uses the earlier interface. The
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
-tracks remaining adapter gaps and verification.
+tracks the remaining full-suite, compatible activation and connected trial work.
 An explicit partial agent result is `blocked` with its partial output retained,
 not `done`. Both optional `output` and `facts` survive every authored terminal
 status and nested workflow boundary. A workflow may return an error or
 interrupted contribution with useful evidence; actual caller cancellation and
-failed persistence still follow the execution fences and failure path. Retain
-both fields in the existing bounded run artifact, including explicit unavailable
+failed persistence still follow the execution fences and failure path. Ordinary
+exceptions after a child workflow starts return the same error report with its
+actual child identity. Typed deferral, allowance exhaustion and unconfirmed
+cleanup retain their existing supervision paths rather than becoming ordinary
+child reports. Retain both fields in the existing bounded run artifact, including explicit unavailable
 markers when evidence exceeds retention limits. A call without an output schema
 may return a valid report containing only status and summary. Prompt execution
 still requires `finish()`; unstructured assistant text alone is not a successful
@@ -709,17 +712,13 @@ finish report. Use the existing bounded corrective prompt and failure path when
 the required report is missing. This requirement applies equally to model-tool
 calls and calls made from workflows.
 
-Invocation/setup failure can occur before a child exists, and cancelled scopes
-or infrastructure failures may throw. Do not fabricate a terminal execution ID
-to make those paths look like completed calls. Existing control errors or thrown
-failures describe the failed operation; available diagnostic references remain
-discoverable. The shared contract does not require every tool response or
-exception to be an `ExecutionResult`. The system-facing workflow adapter keeps
-its failure contract: when a terminal result is available, its typed exception
-carries the normalized `execution` and includes the run reference in its message.
-The Task adapter retains that reference while preserving `state: error` and the
-existing recovery path. Evidence preservation must not turn failure into an
-accepted result or require a new Task lifecycle.
+Setup can fail before a child exists; cancelled scopes and infrastructure failures
+may throw. Preserve available diagnostics without fabricating a terminal child ID.
+Control errors and setup failures need not be an `ExecutionResult`. The system-facing
+workflow adapter retains its failure contract: when a terminal result exists, its
+typed exception carries normalized `execution` and the run reference in its message.
+The Task adapter retains that reference, `state: error` and the existing recovery
+path. Preserving evidence neither accepts failed work nor creates a new Task lifecycle.
 
 When a caller requires structured output, the App owns a TypeBox or equivalent
 schema and pure checks for admission. Use those same checks for newly proposed

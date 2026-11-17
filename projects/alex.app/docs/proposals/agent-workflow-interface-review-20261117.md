@@ -2,7 +2,7 @@
 
 **Design status:** Accepted; the [owning contract](../2a-design/execution-contributions.md)
 defines the enduring behavior. This proposal tracks the remaining cutover work.
-**Implementation status:** Host source is published through `22285e5d97` in draft
+**Implementation status:** Host source is published through `04c544c104` in draft
 [#589](https://github.com/hao1939/may-agent/pull/589). The paired App contribution
 at `b7d6b41b7a` is reviewed and verified for its scoped compatibility checks. The installed runtime has not changed.
 
@@ -16,22 +16,22 @@ without fabricating output or execution identity.
 
 The remaining work, in order, is:
 
-1. Finish the remaining Host workflow fixtures and ordinary nested-error parity,
-   then pass full current-head Quality and Container. The latest completed
-   Quality baseline is Host2228: 3,492 tests, three failures, two skips;
-   Container passes. Local Hostfc04 repairs an actual gap: ordinary thrown code
-   failures escaped `ctx.call`, while prompt failures returned common results.
-   Independent hosted/standalone probes now return error reports with real child
-   IDs. Static checks pass; broader owning checks pass301 tests and fail one
-   shared-concurrency-control test, so publication waits for preserved supervision
-   unwinding. The metric envelope fixture,
-   canonical cancellation fixture and committed standalone regression remain.
-
-2. Verify one exact compatible final Host/SDK/App pair and activate it locally,
+1. Verify one exact compatible final Host/SDK/App pair and activate it locally,
    preserving legitimate installation changes and the required Task-revision
-   repair. Validate the final runtime path as well as the isolated source pair.
-3. Prove native workflow → PR push → CI/comment repair → Telegram review-link
+   repair. The prepared integration passes184 Task-revision/reconciliation tests,
+   Host static checks, App type/design and full Gym checks. The combined App scan
+   reports1,140 passes and six periodic-event tests that also fail on canonical main with the
+   installed SDK; that separate work belongs to the user. Source is staged without
+   activation. Preserve subsequent legitimate canonical changes when preparing
+   the final runtime trial.
+2. Prove native workflow → PR push → CI/comment repair → Telegram review-link
    delivery, including a late review comment. Human approval stays on GitHub.
+
+Host04c5 passes complete hosted Quality and Container:3,494 tests, zero failures,
+two skips. All316 owning tests and static checks pass independently, including
+shared concurrency limits, typed deferral and cancellation. Hosted/standalone
+probes consume ordinary child error reports with real IDs. This completes the
+Host source/fixture step; compatible activation and the connected trial remain.
 
 The reviewed Appcdc/Host3e1 pair passes all 1,146 configured App tests across
 81 files, typechecking, design checks and complete private Gym checks (405 Bun
