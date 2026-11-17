@@ -564,3 +564,21 @@ the agent config. Native workflow `wr_1794937770387_ve3g` is continuing the
 registry/SDK repair on the retained Task. Exact source, dirty-state readback and
 probe receipts are retained in the local trial record. No callable activation
 or #589 readiness notification has occurred.
+
+
+At clean `73f89ae9a4`, Root independently verified real loader preparation and
+publication into `SubagentManager`: all three same-declared-name namespaces
+coexist, exact lookups select their owner, duplicate canonical registration
+rejects preparation, and the prior published generation remains intact. The
+25 owning loader/model tests pass. Root pushed this native source checkpoint to
+the existing draft for immediate parallel review; publication was administrative.
+The alias-preservation review thread was resolved with the already recorded
+intentional breaking-change rationale. Timeout and schema findings remain open.
+
+The native workflow reached forty consumed rounds. Two bounded SDK attempts
+were fully reverted after legacy and production fixture failures, so they do not
+establish retained SDK implementation. Root authorized a further finite total
+of forty-eight on the same ledger, preserving all forty consumed rounds. Future
+passes should retain coherent partial source and migrate affected retired
+fixtures, reporting failures explicitly; an unfinished draft checkpoint does not
+need to claim full cutover readiness. No second compatibility mode is accepted.

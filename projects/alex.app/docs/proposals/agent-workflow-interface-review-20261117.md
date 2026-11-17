@@ -9,9 +9,11 @@ handling. Source merge and installed-runtime activation are separate facts.
 Draft [#589](https://github.com/hao1939/may-agent/pull/589) is published for
 parallel review. Checkpoint `a6d46285aa` includes canonical model list/call,
 removal of its public permissions/session actions, bounded complete preparation,
-and fixed target snapshots with current-caller bindings. Independent production
-model checks pass. Standalone SDK cooperation, namespace preservation in the
-loader/registry, common SDK results and paired App migration remain incomplete.
+and fixed target snapshots with current-caller bindings. Checkpoint `73f89ae9a4`
+also preserves canonical namespaces through the real loader/manager and rejects
+same-address duplicates. Independent production checks pass at those boundaries.
+Standalone SDK cooperation, common SDK results and paired App migration remain
+incomplete.
 A production standalone probe still fails because prompt execution configured
 only with `finish` does not receive built-in cooperation. Narrow checks do not
 establish full CI or cutover readiness. No callable candidate is activated.
@@ -283,10 +285,9 @@ The model list/call adapter is implemented at the published checkpoint; preserve
 its verified snapshot and actual-caller behavior. Finish the remaining production
 boundaries in this order:
 
-1. Preserve canonical identity through the real loader and manager. Cover
-   `global/reviewer`, `alpha/reviewer` and `beta/reviewer` together; reject only
-   duplicate canonical addresses, including agent/workflow collisions. Keep
-   failed-reload retention and the active tree's captured definitions.
+1. Retain the verified loader/manager namespace repair. Complete the remaining
+   catalog bindings without reintroducing bare-name shadowing or lookup aliases;
+   cover agent/workflow collisions and failed-reload retention.
 2. Bind standalone prompt cooperation and workflow `ctx.list()`/`ctx.call()` to
    the original complete catalog. An agent configured only with `finish` still
    receives built-in list/call. Selecting an `alpha/*` root cannot hide or block
