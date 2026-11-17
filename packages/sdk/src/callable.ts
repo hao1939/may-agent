@@ -74,10 +74,10 @@ function schemaDiagnostic(schema: TSchema, value: unknown): string {
 }
 
 function assertNameComponent(value: string, label: string): string {
-  if (typeof value !== "string" || !value || value.trim() !== value || value.includes("/")) {
+  if (typeof value !== "string" || !value || /\s/u.test(value) || value.includes("/")) {
     throw new CallableValidationError(
       "catalog",
-      `${label} must be a nonempty exact name component without '/'`,
+      `${label} must be a nonempty exact name component without '/' or whitespace`,
       value,
     );
   }

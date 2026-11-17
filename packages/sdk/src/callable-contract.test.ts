@@ -74,6 +74,9 @@ describe("canonical callable catalog", () => {
     expect(() => canonicalCallableName("global", "x")).toThrow('App id "global" is reserved');
     expect(() => canonicalCallableName("alex", "bad/name")).toThrow("without '/'");
     expect(() => canonicalCallableName(" Alex", "name")).toThrow("exact name component");
+    expect(() => canonicalCallableName("alpha team", "reviewer")).toThrow("without '/' or whitespace");
+    expect(() => canonicalCallableName("alpha", "team reviewer")).toThrow("without '/' or whitespace");
+    expect(() => canonicalCallableName("alpha", "team\treviewer")).toThrow("without '/' or whitespace");
   });
 
   test("failed reload preserves the prior active catalog and captured calls stay pinned", async () => {
