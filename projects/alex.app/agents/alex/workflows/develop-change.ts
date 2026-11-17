@@ -320,7 +320,12 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
     let recoveredState = false;
     let recoveredRounds = 0;
     for (const previous of previousResults) {
-      if (!Check(deliverySchema, previous)) continue;
+      if (previous === undefined) continue;
+      if (!Check(deliverySchema, previous)) {
+        recoveredRounds = Math.max(recoveredRounds, roundLimit);
+        ctx.log.info("Malformed prior development delivery; retain the full consumed allowance");
+        continue;
+      }
       let recoveredCount = false;
       try {
         // A creator revision may allocate a different execution output root.

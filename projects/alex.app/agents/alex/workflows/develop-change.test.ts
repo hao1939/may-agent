@@ -602,6 +602,30 @@ describe("development workflow using real Git and verification", () => {
     expect(t.calls).toHaveLength(3);
   });
 
+  test.each(["malformed delivery", "missing evidence", "legacy count"])(
+    "an extended total grants no work when prior usage is unknown: %s", async (kind) => {
+      const t = trial();
+      await t.run();
+      const delivery = t.current.result!.development as any;
+      if (kind === "malformed delivery") delete delivery.evidence.sha256;
+      else if (kind === "missing evidence") rmSync(delivery.evidence.path);
+      else {
+        const historic = t.evidence();
+        delete historic.roundsUsed;
+        delivery.evidence = await new EvidenceStore(dirname(delivery.evidence.path))
+          .put(JSON.stringify(historic), "json");
+      }
+      const calls = t.calls.length;
+      t.current.generation++;
+      (t.current.input as any).data.context = { developmentRoundLimit: 6 };
+      const ctx = t.context();
+      ctx.workspace!.output = join(t.worktree, ".state", "extended-output");
+      expect((await t.run(ctx)).state).toBe("incomplete");
+      expect(t.calls).toHaveLength(calls);
+      expect(t.evidence().roundsUsed).toBe(6);
+    },
+  );
+
   test.each([3, 6])("concurrent invocations cannot exceed the saved total of %p rounds", async (limit) => {
     const t = trial();
     (t.current.input as any).data.context = { developmentRoundLimit: limit };
