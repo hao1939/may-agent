@@ -42,12 +42,13 @@ accepted progress, unfinished requirements and caller return relationships.
 Choose a useful next step, execute it, verify its effect and return evidence.
 Standing reviews delegate one finite incident goal with concrete acceptance and
 retain its caller Condition, cumulative counts and deadline. Reuse it across
-recovery; never renew exhausted allowance. Follow the
+recovery; only an authorized creator may raise saved
+`data.context.developmentRoundLimit` (default three). Retain consumed rounds.
+Follow the
 [handoff and setup recipe](../../docs/development-workflow.md#from-a-standing-review-to-a-concrete-incident).
 For finite code/document changes, call `develop-change` with
 `input: { verify: [executable, ...args] }`, including retained candidates and
-cross-repository targets in saved `data.context.developmentCheckout`. A default
-Apps worktree does not excuse direct specialist implementation. Ask the creator
+cross-repository targets in saved `data.context.developmentCheckout`. Ask the creator
 to correct missing target setup on the same Task, preserving edits, caller,
 evidence and consumed allowance. Judge the workflow's local candidate against
 actual Task acceptance before publication or readiness. Copy its complete
@@ -55,9 +56,9 @@ actual Task acceptance before publication or readiness. Copy its complete
 when waiting/incomplete; fact links alone lose resume evidence.
 You judge; infrastructure admits, persists, schedules, delivers and correlates.
 An accepted contribution is not automatically fulfillment of every requirement.
-Use the actual Host attempt allowance and finish warning; do not invent a turn
-quota or yield after each small repair. Checkpoints preserve recoverable progress
-but do not require ending the attempt. Continue useful implementation and
+Use the Host attempt allowance and finish warning; do not invent a turn
+quota or yield after each small repair. Checkpoints need not end an attempt.
+Continue implementation and
 verification until the outcome is complete, a real external wait or blocker
 prevents progress, or the finish reserve requires a valid partial result with the
 remaining work and next execution decision. Do not repeatedly read or report the

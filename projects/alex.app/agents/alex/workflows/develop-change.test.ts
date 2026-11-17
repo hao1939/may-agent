@@ -524,15 +524,94 @@ describe("development workflow using real Git and verification", () => {
     expect(t.evidence().roundsUsed).toBe(3);
   });
 
-  test("concurrent invocations cannot reserve more than three rounds", async () => {
+  test("a saved creator allowance continues at round four without replacing consumed receipts", async () => {
+    const t = trial();
+    t.setImplementation(() => {});
+    expect((await t.run()).state).toBe("incomplete");
+    expect(t.evidence().roundsUsed).toBe(3);
+    const priorDirectory = dirname((t.current.result!.development as any).evidence.path);
+    const reservations = [1, 2, 3].map((round) => {
+      const path = join(priorDirectory, `round-${round}.reserved.json`);
+      return { path, body: readFileSync(path, "utf8") };
+    });
+    const failed = t.evidence().reports.filter((report: any) => report.stage === "verification");
+    expect(failed).toHaveLength(3);
+
+    t.current.generation++;
+    (t.current.input as any).data.context = { developmentRoundLimit: 6 };
+    t.setImplementation(() => {
+      writeFileSync(join(t.worktree, "answer.cjs"), "module.exports = () => 1;\n");
+      t.git(t.worktree, "add", "answer.cjs");
+      t.git(t.worktree, "commit", "-m", "authorized continuation");
+    });
+    const ctx = t.context();
+    ctx.workspace!.output = join(t.worktree, ".state", "new-output");
+    expect((await t.run(ctx)).state).toBe("converged");
+    expect(t.current.id).toBe("goal/trial");
+    expect(t.evidence().roundsUsed).toBe(4);
+    const directory = dirname((t.current.result!.development as any).evidence.path);
+    expect(JSON.parse(readFileSync(join(directory, "round-4.reserved.json"), "utf8")))
+      .toMatchObject({ round: 4, roundLimit: 6, generation: 2 });
+    for (const receipt of reservations)
+      expect(readFileSync(receipt.path, "utf8")).toBe(receipt.body);
+    for (const report of failed)
+      expect(JSON.parse(readFileSync(report.record.path, "utf8")).passed).toBe(false);
+  });
+
+  test("lowering or removing a saved allowance preserves usage beyond the default limit", async () => {
+    const t = trial();
+    (t.current.input as any).data.context = { developmentRoundLimit: 6 };
+    t.setJudgment(() => ({ decision: "invalid" }));
+    for (let attempt = 0; attempt < 6; attempt++) await t.run();
+    expect(t.evidence().roundsUsed).toBe(6);
+    const calls = t.calls.length;
+    for (const context of [{ developmentRoundLimit: 4 }, {}]) {
+      t.current.generation++;
+      (t.current.input as any).data.context = context;
+      const ctx = t.context();
+      ctx.workspace!.output = join(t.worktree, ".state", `output-${t.current.generation}`);
+      expect((await t.run(ctx)).state).toBe("incomplete");
+      expect(t.evidence().roundsUsed).toBe(6);
+      expect(t.calls).toHaveLength(calls);
+    }
+  });
+
+  test.each([0, -1, 1.5, "6", null, Infinity])(
+    "rejects invalid saved developmentRoundLimit %p before spending work", async (limit) => {
+      const t = trial();
+      (t.current.input as any).data.context = { developmentRoundLimit: limit };
+      const output = await t.run();
+      expect(output.state).toBe("incomplete");
+      expect(output.summary).toContain("developmentRoundLimit");
+      expect(t.calls).toHaveLength(0);
+      expect(existsSync(join(t.worktree, ".checks"))).toBe(false);
+    },
+  );
+
+  test("a caller-context allowance cannot replace the saved Task's default limit", async () => {
     const t = trial();
     t.setJudgment(() => ({ decision: "invalid" }));
+    for (let attempt = 0; attempt < 3; attempt++) await t.run();
+    const ctx = t.context();
+    ctx.reconciliation!.input = {
+      ...t.current.input,
+      data: { ...(t.current.input as any).data, context: { developmentRoundLimit: 6 } },
+    };
+    expect((await t.run(ctx)).state).toBe("incomplete");
+    expect(t.evidence().roundsUsed).toBe(3);
+    expect(t.calls).toHaveLength(3);
+  });
+
+  test.each([3, 6])("concurrent invocations cannot exceed the saved total of %p rounds", async (limit) => {
+    const t = trial();
+    (t.current.input as any).data.context = { developmentRoundLimit: limit };
+    t.setJudgment(() => ({ decision: "invalid" }));
     const results = await Promise.all(
-      Array.from({ length: 6 }, () => execute(t.context())),
+      Array.from({ length: limit * 2 }, () => execute(t.context())),
     );
     for (const result of results)
       expect(result.output).toMatchObject({ state: "incomplete" });
-    expect(t.calls).toHaveLength(3);
+    expect(t.calls).toHaveLength(limit);
   });
 
   test.each(["known", "unknown"])(

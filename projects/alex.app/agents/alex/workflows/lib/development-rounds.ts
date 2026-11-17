@@ -1,4 +1,4 @@
-import { link, lstat } from "node:fs/promises";
+import { link, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { EvidenceStore } from "../../../../../../shared/tools/task-evidence.js";
 
@@ -15,14 +15,22 @@ export class DevelopmentRounds {
   }
 
   async used(): Promise<number> {
+    let names: string[];
+    try {
+      names = await readdir(this.archive.directory);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return 0;
+      throw error;
+    }
     let used = 0;
-    for (let round = 1; round <= developmentRoundLimit; round++) {
-      try {
-        await lstat(this.path(round));
-        used = round;
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-      }
+    // Count all occupied slots even after the creator lowers/removes a limit.
+    for (const name of names) {
+      const match = /^round-([1-9][0-9]*)\.reserved\.json$/.exec(name);
+      if (!match) continue;
+      const round = Number(match[1]);
+      if (!Number.isSafeInteger(round))
+        throw new Error("Cannot establish consumed development rounds");
+      used = Math.max(used, round);
     }
     return used;
   }
@@ -48,8 +56,11 @@ export class DevelopmentRounds {
       await this.retain(round, { ...facts, kind: "retained-allowance" });
   }
 
-  async reserve(facts: Record<string, unknown>): Promise<number | undefined> {
-    for (let round = 1; round <= developmentRoundLimit; round++)
+  async reserve(
+    facts: Record<string, unknown>,
+    limit = developmentRoundLimit,
+  ): Promise<number | undefined> {
+    for (let round = 1; round <= limit; round++)
       if (await this.retain(round, { ...facts, kind: "round-reservation" }))
         return round;
     return undefined;

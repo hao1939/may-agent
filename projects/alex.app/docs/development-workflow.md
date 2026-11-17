@@ -115,8 +115,10 @@ control when it cannot satisfy them.
 The process is one reconciliation loop: read the latest requirements, check
 the work so far, and decide what to do next. Execute that step and save the
 result. Feedback, failed checks and recovery all lead to another iteration. The
-workflow reserves at most three cumulative rounds for the development Task
-across invocations. Matching evidence lets later invocations skip completed
+workflow defaults to three cumulative rounds for the development Task
+across invocations; an explicit creator-saved total can extend it as described
+under [cumulative allowance](#cumulative-development-allowance).
+Matching evidence lets later invocations skip completed
 work; reentry and changed verification commands do not renew the allowance.
 
 Agents make judgments; the workflow runs the steps and checks. Bob assesses
@@ -148,8 +150,8 @@ it with `ctx.signal`. The installed Host/SDK and App definitions must support
 that export together; a source import passing typecheck does not prove a compiled
 Host can load the workflow. Timeout aborts ordinary awaited work and uses existing
 TERM/KILL cleanup. The next eligible invocation inspects the same checkout and
-can repeat useful work; interrupted rounds stay consumed under the three-round
-limit. Neither cancellation nor a fresh passing check erases the failed receipt.
+can repeat useful work; interrupted rounds stay consumed under the saved total
+limit (default three). Neither cancellation nor a fresh passing check erases the failed receipt.
 No command registry, durable step cursor or allowance refund is required.
 
 The [17 November live trial](archive/implementation/host-ingress-sdk-source-review-20261116.md#ordinary-command-cancellation-and-fresh-continuation)
@@ -644,8 +646,16 @@ before executing; changing the App's workspace can affect its other Tasks.
 
 ### Cumulative development allowance
 
-`develop-change` reserves at most three rounds for the existing development Task
-in its Task-local `.state/alex-development/<task-digest>/` archive. Each
+`develop-change` defaults to three rounds for the existing development Task.
+An explicitly authorized creator may revise that same Task's saved
+`data.context.developmentRoundLimit` to a positive safe integer total, such as
+six to permit three further rounds after three were consumed. The workflow reads
+the authoritative saved Task; invocation arguments, reconciliation snapshots and
+feedback cannot grant an extension. Invalid totals stop before development work.
+There is no automatic renewal or separate grant ledger. Preserve the full
+assignment, caller, checkout and evidence when revising it.
+
+Usage stays in its Task-local `.state/alex-development/<task-digest>/` archive. Each
 `round-N.reserved.json` is an atomic link to a complete immutable receipt,
 written before specialist or verification work. Live workflow reentry,
 cancellation, concurrent calls, changed verification argv, new feedback,
@@ -654,12 +664,17 @@ The allowance remains consumed when an owner has not yet returned a Task result.
 
 Candidate acceptance remains separate: changed verification argv invalidates
 the old passing receipt, and an unchanged verified/reviewed candidate may still
-replay after round three without new work. Readable prior Task evidence seeds
+replay after exhaustion without new work. Readable prior Task evidence seeds
 the consumed count when migrating or recovering an archive. Unknown prior usage
-leaves no provable remaining rounds; unavailable verification receipts cannot
+conservatively consumes the applicable total; unavailable verification receipts cannot
 certify a candidate. Exhaustion returns incomplete with evidence for the owner
 to disposition; it does not claim the original acceptance is met or recommend
 calling the same loop again.
+
+All occupied round numbers count, independent of the current limit. Lowering or
+removing a saved limit never forgets rounds above three; moving execution output
+retains the saved count. New reservations record the effective total and Task
+generation without replacing earlier receipts. Cancellation never refunds work.
 
 These are local allowance receipts, not a second Task lifecycle or a general
 run/cost budget. Retain the Task archive. This source repair has deterministic

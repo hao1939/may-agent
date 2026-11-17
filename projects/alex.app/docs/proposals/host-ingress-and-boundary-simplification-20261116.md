@@ -302,13 +302,21 @@ invocation, denial of ungranted operations, and common serialization/context.
 The new human correction was admitted by event 6733764 and returned through the
 existing May coordinator. The existing Alex Task is generation 4 with three
 consumed rounds; its prior checksummed evidence was retained. The native owner
-confirmed that the fixed allowance cannot express an additional bounded workflow
-repair. No source was changed, rounds reset, replacement Task created or direct
-implementation exception exercised. The original request remains pending on an
-explicit human allowance disposition; old-head green CI does not establish
-readiness for the rejected design. An owner-set total allowance preserving prior
-usage is a proposed remedy, awaiting the user's decision, not an implemented or
-approved policy. Both existing review discussions still need actual resolution.
+confirmed that the fixed allowance could not express an additional bounded
+workflow repair. The human then approved a creator-set total and three additional
+rounds on that same Task. The App implementation reads saved
+`data.context.developmentRoundLimit` (default three), preserves consumed rounds
+across reentry/output changes and lower/removed totals, and rejects invalid totals
+before work. Feedback or invocation arguments cannot grant an extension. Unknown
+prior usage conservatively exhausts the applicable total. There is no grant
+ledger, reset, replacement Task or direct implementation exception.
+
+Focused workflow/evidence checks pass, including continuation at round four,
+immutable earlier receipts, lower/removed totals, invalid grants, stale caller
+context and concurrent reservation. Local adoption and the real #585 continuation
+still need runtime evidence. The original request remains pending; old-head green
+CI does not establish readiness for the rejected design. Both existing review
+discussions still need actual resolution.
 
 ### Connect shared execution and settlement
 

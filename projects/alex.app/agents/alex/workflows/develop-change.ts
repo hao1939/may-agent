@@ -95,7 +95,7 @@ const savedSchema = Type.Object(
     requirementKey: text,
     inputKey: text,
     roundsUsed: Type.Optional(
-      Type.Integer({ minimum: 0, maximum: developmentRoundLimit }),
+      Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
     ),
     design: Type.Optional(designSchema),
     implementation: Type.Optional(candidateSchema),
@@ -150,6 +150,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
     join(ctx.workspace.output, taskArchive),
   );
   const rounds = new DevelopmentRounds(archive);
+  let roundLimit = developmentRoundLimit;
   let archiveReady = false;
   let saved: Saved | undefined;
   const finish = async (message: string, complete = false) => {
@@ -170,7 +171,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
             "This records local work. Task settlement and Request closure must be read from Runtime.",
             `Task: ${rec.taskId}`,
             `Requirement: ${saved.requirementKey}`,
-            `Cumulative rounds reserved: ${saved.roundsUsed}/${developmentRoundLimit}`,
+            `Cumulative rounds reserved: ${saved.roundsUsed}/${roundLimit}`,
             `Allowance receipts: ${archive.directory}/round-*.reserved.json`,
             `Worktree: ${root}`,
             `Verified candidate: ${JSON.stringify(saved.verified ?? null)}`,
@@ -249,9 +250,18 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       baseRef = typeof checkout.baseRef === "string" ? checkout.baseRef : "main";
     }
     const context = (current.input as { data?: { context?: {
+      developmentRoundLimit?: unknown;
       periodicReview?: { kind?: string };
       audit?: { mode?: string; identity?: string };
     } } })?.data?.context;
+    // Only the creator-saved Task can grant a larger total; call arguments,
+    // feedback and reconciliation snapshots cannot renew consumed work.
+    if (context?.developmentRoundLimit !== undefined) {
+      const limit = context.developmentRoundLimit;
+      if (typeof limit !== "number" || !Number.isSafeInteger(limit) || limit < 1)
+        return finish("Saved developmentRoundLimit must be a positive safe integer; ask the creator to correct the same Task before development");
+      roundLimit = limit;
+    }
     const periodic = current.result?.periodicReview as { mode?: string } | undefined;
     if (periodic?.mode === "standing" ||
         context?.periodicReview?.kind === "standing-task-owned-review" ||
@@ -332,7 +342,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         // evidence without a count cannot establish any remaining allowance.
         recoveredRounds = Math.max(
           recoveredRounds,
-          recovered.roundsUsed ?? developmentRoundLimit,
+          recovered.roundsUsed ?? roundLimit,
         );
         recoveredCount = true;
         if (recoveredState) continue;
@@ -362,7 +372,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         }
         recoveredState = true;
       } catch (error) {
-        if (!recoveredCount) recoveredRounds = developmentRoundLimit;
+        if (!recoveredCount) recoveredRounds = Math.max(recoveredRounds, roundLimit);
         ctx.log.info(
           `Prior evidence is unavailable; retain consumed allowance and inspect only within the remaining rounds: ${String(error)}`,
         );
@@ -485,16 +495,17 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
 
     while (true) {
       await ensureCurrent();
-      if ((await rounds.used()) >= developmentRoundLimit) break;
+      if ((await rounds.used()) >= roundLimit) break;
       let value = await inspectCandidate(true);
       const round = await rounds.reserve({
         taskId: rec.taskId,
         generation: rec.generation,
         requirementKey,
         inputKey,
+        roundLimit,
         verify: input.verify,
         candidate: value,
-      });
+      }, roundLimit);
       if (round === undefined) break;
       saved.roundsUsed = await rounds.used();
       if (!saved.design) {
@@ -597,7 +608,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       if (review.decision === "redesign") saved.design = undefined;
     }
     return finish(
-      `Development remains unfinished after ${developmentRoundLimit} cumulative rounds; retain the same Task and evidence for the owner's disposition. Reentry or changed verification argv does not renew the allowance`,
+      `Development remains unfinished with ${saved.roundsUsed} cumulative rounds consumed (total limit ${roundLimit}); retain the same Task and evidence for the owner's disposition. Reentry or changed verification argv does not renew the allowance`,
     );
   } catch (error) {
     if (ctx.signal.aborted) throw error;

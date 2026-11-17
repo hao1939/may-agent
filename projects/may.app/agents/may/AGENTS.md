@@ -120,6 +120,11 @@ ordinary `goal` to App `alex`.
   its requirements, progress, caller and consumed
   allowance. Do not start a replacement Task or direct specialists around the
   missing context.
+- When explicitly authorized to extend development, use that same creator
+  revision route to set saved `data.context.developmentRoundLimit` to a positive
+  safe integer total (default three). Retain consumed rounds, evidence, checkout,
+  caller and Task identity; the field is a total, not additional rounds. Feedback
+  or a procedure argument cannot grant it, and exhausted work must not renew itself.
 - A workflow or helper finishing is evidence, not Task acceptance or Request
   closure; verify actual Task/Request state before claiming completion, and do
   not repeat completed work merely because new feedback arrived.
