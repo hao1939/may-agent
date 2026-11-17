@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`63fda1a435` and App `2c5ddf5733`. The installed runtime has not changed.
+`63fda1a435` and App `92003fbb90`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -24,13 +24,17 @@ configured runtime location needs validation.
 
 The remaining high-value gaps are:
 
-- Finish Gym CLI diagnostic consumers. Its private check currently reports
-  eleven retired result-wrapper reads and one obsolete adapter option. Main App
-  typechecking does not cover this private package.
+- Finish two real Gym CLI callers. `diagnose` still omits its canonical target;
+  the native backend adapter still passes a bare backend name and string input
+  to public `run`. Both production probes fail before execution. App 920 fixes
+  the twelve private-package type errors; its complete private check passes
+  403 tests and 1,488 benchmark-review checks with two existing installation
+  evidence files supplied as explicit read-only prerequisites. Those checks
+  do not exercise the two failing entrypoints.
 - Complete meaningful Host/CLI fixture migration, preserving real cancellation,
-  steering and SIGINT child-drain assertions. Previous Host bb895's completed
-  hosted run reports 107 failing cases; the worker/export repairs supersede their
-  corresponding failures. Full current-head Quality remains open.
+  steering and SIGINT child-drain assertions. Current Host 63f's completed hosted
+  run reports 84 failures across 25 files; Container passes. The earlier
+  107-failure baseline is superseded. Full current-head Quality remains required.
 - Finish the configured-target body/caller/guidance disposition. Discovery
   enumerates all 33 targets in the source snapshot; enumeration alone does not
   establish execution or live effects. Installation configuration selects its
@@ -39,7 +43,7 @@ The remaining high-value gaps are:
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
 
-The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#canonical-worker-boundary-and-configured-app-checks)
+The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#remaining-cli-callers-and-current-host-ci)
 records exact revisions, checks and limitations. May continues implementation
 through the retained native Tasks/workflows; no unified candidate is activated.
 

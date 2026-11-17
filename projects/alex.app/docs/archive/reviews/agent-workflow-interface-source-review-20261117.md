@@ -1526,3 +1526,57 @@ Evidence under the trial directory: `63f-independent-owning.log`,
 `2c5-63f-installed-config.json`, `2c5-63f-independent-consumers.log`,
 `2c5-63f-independent-checks.log`, `2c5-63f-independent-full-app-test.log`,
 `2c5-63f-independent-gym-check.log` and `63f-steering-review.json`.
+
+
+## Remaining CLI callers and current Host CI
+
+Native App `92003fbb90fc7a606d9dea074f6063e5b30f313b` repairs the private Gym
+CLI's eleven obsolete report reads and removes the invalid adapter option. It is
+published on the retained App review branch. Independent package typechecking
+passes. The first complete private check reports 391 passes and twelve failures
+because its existing evaluation plans reference two ignored installation evidence
+files absent from a clean source snapshot. Root supplies exact existing read-only
+copies, recording their hashes and sizes. The full command then passes all
+403 Bun tests, subsequent node tests, case/scenario validation and all 1,488
+benchmark-review checks. No plan, truth, source or native provider was changed.
+This is explicitly configured verification, not a portable-clean-checkout claim.
+
+Two actual callers still fail despite passing those checks. `gym diagnose`
+selects `agentName`/`workflowName` without `target`; public `run` rejects the empty
+canonical address before loading the baseline. The native backend adapter calls
+`run("codex", rawString, options)`, although the backend is not a registered
+callable and string input is retired. A real SDK probe returns pre-start error
+with no ID or trace report; the adapter's unconditional trace read cannot repair
+that invalid invocation. May received both reproductions. Supply the actual
+canonical diagnosis target and use the existing native CLI capability or an
+explicitly registered contribution for backend execution; do not restore implicit
+pseudo targets or bare aliases. Their entrypoint coverage remains required.
+
+Host63f's completed hosted run now supplies the current failure baseline:
+**3,503 tests, 84 failures across 25 files and two skips**. Container passes.
+The 107-failure bb895 result is superseded. The native handler initially counted
+one shard's 23 failures; Root's complete artifact map corrected that count.
+Repair the actual current mapped source/fixture backlog; passing `check:ci` or
+reusing the narrower 143-test receipt cannot close that new input.
+
+Persisted native observer event6740634 contains Root's steering review5946872526
+and the exact63f head. The subsequent Host handler references its actual inline
+comment4605993437 and requests repair through `develop-change`, then obtains a
+read-only diagnosis after that workflow returns the unchanged narrow candidate.
+A later pass uses the full test command as verification. This demonstrates
+observation and follow-up initiation, not completed repair or final readiness.
+Root did not directly wake Host for the new review; its later direct message
+supplies the complete current CI artifact count.
+
+Exact current source and evidence remain retained. No unified runtime is
+activated; configured pair activation, late-comment repair and Telegram
+review-link delivery remain open.
+
+Evidence under the trial directory: `920-63f-independent-gym-check.log`,
+`920-gym-existing-plan-evidence.json`,
+`920-63f-independent-gym-with-plan-evidence.log`,
+`920-gym-diagnose-real-cli.log`, `920-gym-cli-call-shape.json`,
+`920-real-cli-review-receipt.json`, `920-configured-gym-check-receipt.json`,
+`63f-hosted-failures.json`, `63f-hosted-failure-file-map.json`,
+`63f-hosted-quality.log`, `current-63f-ci-total-receipt.json` and
+`native-steering-review-observation.json`.
