@@ -787,7 +787,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/apps")
-        return req.method === "GET" ? handleApps() : json({ error: "GET required" }, 405);
+        return req.method === "GET" ? handleApps(url) : json({ error: "GET required" }, 405);
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/conversation" && req.method === "GET") return handleConversationRead(url);
       if (url.pathname === "/api/task/transcript")

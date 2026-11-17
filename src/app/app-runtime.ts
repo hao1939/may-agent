@@ -517,11 +517,12 @@ export async function runAppRuntime(opts: {
     listTasks,
     getTask,
   });
-  if (WEB_ENABLED) {
+  const daemonHttpEnabled = backgroundEnabled || WEB_ENABLED;
+  if (daemonHttpEnabled) {
     const { port } = await startWebMode({
       interface: humanInterface,
       stateDir: opts.persistDir,
-      port: parseWebPort(process.env.WEB_PORT),
+      port: parseWebPort(process.env.DAEMON_HTTP_PORT ?? process.env.WEB_PORT),
       services: { events, getStatus, getAppConversation, listApps, listTasks, getTask },
     });
     bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
@@ -568,7 +569,7 @@ export async function runAppRuntime(opts: {
     status: "running",
   });
 
-  if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
+  if (!interactiveConsole && !CRON_ENABLED && !daemonHttpEnabled && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
     bus.emit({
       type: "info",
       message: "[console] Non-TTY console invocation has no active daemon interfaces. Exiting.",

@@ -1,15 +1,14 @@
 #!/usr/bin/env node
-const net = require("node:net");
 const { userInfo } = require("node:os");
 const { randomUUID } = require("node:crypto");
-const path = require("node:path");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
 
 const stateDir = process.env.STATE_DIR || "/app/.state";
 const instance = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "background";
 const daemonAgent = process.env.AGENT?.trim() || process.env.DAEMON_AGENT?.trim() || "host";
-const socketPath = path.join(stateDir, "instances", instance, `${daemonAgent}.sock`);
+const daemonEndpoint = (process.env.MAY_ENDPOINT || process.env.DAEMON_HTTP_URL || `http://127.0.0.1:${process.env.DAEMON_HTTP_PORT || process.env.WEB_PORT || "8081"}`).replace(/\/$/, "");
+const wakeEndpoint = daemonEndpoint.replace(/^http/, "ws") + "/ws";
 const source = "may-console";
 const conversationAppId = process.env.CONVERSATION_APP?.trim();
 if (!conversationAppId) throw new Error("Console requires CONVERSATION_APP");
@@ -60,7 +59,6 @@ const pendingTaskReads = [];
 let nextTaskPage = null;
 let nextTodoPage = null;
 const pendingRuntimeControls = new Map();
-const pendingPublishReceipts = [];
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 const shownTaskRevisions = new Map();
@@ -305,19 +303,48 @@ function subscribedSessions() {
   return debug || raw ? ["*"] : [];
 }
 
+function removePending(queue, pending) {
+  const index = queue.indexOf(pending);
+  if (index >= 0) queue.splice(index, 1);
+}
+
+async function httpJson(pathname, options = {}) {
+  const response = await fetch(`${daemonEndpoint}${pathname}`, {
+    ...options,
+    headers: { ...(options.body ? { "content-type": "application/json" } : {}), ...(options.headers || {}) },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body?.error || `HTTP ${response.status}`);
+  return body;
+}
+
 function sendFrame(frame, opts = {}) {
-  if (!connected || !socket || socket.destroyed) {
-    if (!opts.silent) printLine(`[disconnected] ${socketPath}`);
-    return false;
-  }
-  try {
-    socket.write(`${JSON.stringify(frame)}\n`);
-    if (frame?.type === "publish") pendingPublishReceipts.push(opts.receiptKind || null);
+  if (frame?.type === "subscribe") {
+    if (!connected || !socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify(frame));
     return true;
-  } catch (err) {
-    if (!opts.silent) printLine(`[socket write failed] ${err && err.message ? err.message : String(err)}`);
-    return false;
   }
+  if (frame?.type === "publish" && frame.event) {
+    void httpJson("/api/events", { method: "POST", body: JSON.stringify(frame.event) })
+      .then((result) => handleEvent({ type: "ok", command: "publish", ...result, __receiptKind: opts.receiptKind }))
+      .catch((error) => handleEvent({ type: "error", command: "publish", message: error.message, __receiptKind: opts.receiptKind }));
+    return true;
+  }
+  if (frame?.type === "task.cancel") {
+    const query = frame.ref
+      ? `ref=${encodeURIComponent(frame.ref)}`
+      : `appId=${encodeURIComponent(frame.appId)}&taskId=${encodeURIComponent(frame.taskId)}`;
+    void httpJson(`/api/task?${query}`)
+      .then((task) => httpJson("/api/events", { method: "POST", body: JSON.stringify({
+        type: "app.task.cancel.requested",
+        target: { appId: task.appId, taskId: task.taskId },
+        data: { expectedGeneration: task.generation, expectedResourceVersion: task.resourceVersion, reason: frame.reason },
+        idempotencyKey: `app-task-cancel:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
+      }) }).then((result) => handleEvent({ type: "ok", command: "task.cancel", task, ...result })))
+      .catch((error) => handleEvent({ type: "error", command: "task.cancel", message: error.message }));
+    return true;
+  }
+  return false;
 }
 
 function conversationInputFrame(message, reply) {
@@ -384,15 +411,10 @@ function requestConversation(kind = "startup", options = {}) {
 }
 
 function sendConversationRead(pending = {}) {
-  return sendFrame(
-    {
-      type: "app.conversation.get",
-      appId: conversationAppId,
-      conversationId,
-      limit: 30,
-    },
-    { silent: true },
-  );
+  void httpJson(`/api/conversation?appId=${encodeURIComponent(conversationAppId)}&conversationId=${encodeURIComponent(conversationId)}&limit=30`)
+    .then((conversation) => handleEvent({ type: "ok", command: "app.conversation.get", conversation, __pending: pending }))
+    .catch((error) => handleEvent({ type: "error", command: "app.conversation.get", message: error.message, __pending: pending }));
+  return true;
 }
 
 function readWillComplete(sent) {
@@ -411,7 +433,11 @@ function requestApps(appId = null, command = "/apps", select = false, selection 
 }
 
 function sendAppRead(pending) {
-  return sendFrame({ type: "apps.list", ...(pending.appId ? { appId: pending.appId } : {}) }, { silent: true });
+  const query = pending.appId ? `?appId=${encodeURIComponent(pending.appId)}` : "";
+  void httpJson(`/api/apps${query}`)
+    .then((apps) => handleEvent({ type: "ok", command: "apps.list", apps, __pending: pending }))
+    .catch((error) => handleEvent({ type: "error", command: "apps.list", message: error.message, __pending: pending }));
+  return true;
 }
 
 function requestTasks(options = {}) {
@@ -431,17 +457,16 @@ function requestTasks(options = {}) {
 }
 
 function sendTaskListRead(pending) {
-  return sendFrame(
-    {
-      type: "tasks.list",
-      ...(pending.appId ? { appId: pending.appId } : {}),
-      ...(pending.includeDone ? { includeDone: true } : {}),
-      ...(pending.humanActionOnly ? { humanActionOnly: true } : {}),
-      ...(pending.cursor ? { cursor: pending.cursor } : {}),
-      limit: pending.limit,
-    },
-    { silent: true },
-  );
+  const query = new URLSearchParams();
+  if (pending.appId) query.set("appId", pending.appId); else query.set("allApps", "true");
+  if (pending.includeDone) query.set("includeDone", "true");
+  if (pending.humanActionOnly) query.set("humanActionOnly", "true");
+  if (pending.cursor) query.set("cursor", pending.cursor);
+  query.set("limit", String(pending.limit));
+  void httpJson(`/api/tasks?${query}`)
+    .then((tasks) => handleEvent({ type: "ok", command: "tasks.list", tasks, __pending: pending }))
+    .catch((error) => handleEvent({ type: "error", command: "tasks.list", message: error.message, __pending: pending }));
+  return true;
 }
 
 function requestTodoRefresh() {
@@ -482,15 +507,13 @@ function requestTask(input) {
 }
 
 function sendTaskRead(pending) {
-  return sendFrame(
-    {
-      type: "task.get",
-      ...(pending.ref ? { ref: pending.ref } : {}),
-      ...(pending.appId ? { appId: pending.appId } : {}),
-      ...(pending.taskId ? { taskId: pending.taskId } : {}),
-    },
-    { silent: true },
-  );
+  const query = new URLSearchParams();
+  if (pending.ref) query.set("ref", pending.ref);
+  else { query.set("appId", pending.appId); query.set("taskId", pending.taskId); }
+  void httpJson(`/api/task?${query}`)
+    .then((task) => handleEvent({ type: "ok", command: "task.get", task, __pending: pending }))
+    .catch((error) => handleEvent({ type: "error", command: "task.get", message: error.message, __pending: pending }));
+  return true;
 }
 
 function appendConversationMessage({ author, text, transient = false, metadata = {}, idempotencyKey }) {
@@ -1160,7 +1183,7 @@ function handleEvent(event) {
       handleConnected(event);
       return;
     case "ok":
-      const receiptKind = event.command === "publish" ? pendingPublishReceipts.shift() : null;
+      const receiptKind = event.__receiptKind || null;
       if (receiptKind === "human-turn" && event.approval) {
         printNotice("reason" in event.approval ? event.approval.reason
           : `${event.approval.decision} recorded for the exact proposal.`);
@@ -1178,7 +1201,8 @@ function handleEvent(event) {
         requestConversation("sync");
       }
       if (event.command === "app.conversation.get") {
-        const pending = pendingConversationReads.shift();
+        const pending = event.__pending || pendingConversationReads[0];
+        removePending(pendingConversationReads, pending);
         if (pending?.kind === "startup" || pending?.kind === "sync") {
           const next = event.conversation?.activeTurn ?? null;
           if (next && (!activeTurn || activeTurn.id !== next.id || activeTurn.revision !== next.revision)) {
@@ -1194,11 +1218,13 @@ function handleEvent(event) {
         if (conversationSyncDirty) requestConversation("sync");
       }
       if (event.command === "apps.list") {
-        const pending = pendingAppReads.shift();
+        const pending = event.__pending || pendingAppReads[0];
+        removePending(pendingAppReads, pending);
         renderApps(event.apps, pending);
       }
       if (event.command === "tasks.list") {
-        const pending = pendingTaskListReads.shift();
+        const pending = event.__pending || pendingTaskListReads[0];
+        removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
           todoReadInFlight = false;
           applyTodoRefresh(event.tasks);
@@ -1213,7 +1239,8 @@ function handleEvent(event) {
         }
       }
       if (event.command === "task.get") {
-        const pending = pendingTaskReads.shift();
+        const pending = event.__pending || pendingTaskReads[0];
+        removePending(pendingTaskReads, pending);
         const task = event.task;
         if (pending?.kind === "watch-start") {
           if (task?.terminal) {
@@ -1281,23 +1308,25 @@ function handleEvent(event) {
       // answer is the human-visible response.
       return;
     case "error":
-      if (event.command === "publish" && pendingPublishReceipts.shift() === "stop-turn") {
+      if (event.command === "publish" && event.__receiptKind === "stop-turn") {
         printNotice(`[${daemonAgent}] Stop was not confirmed: ${event.message || "unknown error"}`);
         requestConversation("sync");
         return;
       }
       if (event.command === "app.conversation.get") {
-        pendingConversationReads.shift();
+        removePending(pendingConversationReads, event.__pending || pendingConversationReads[0]);
         if (conversationSyncDirty) requestConversation("sync");
       }
       if (event.command === "apps.list") {
-        const pending = pendingAppReads.shift();
+        const pending = event.__pending || pendingAppReads[0];
+        removePending(pendingAppReads, pending);
         if (pending?.select && pending.selectionVersion === appSelectionVersion) {
           selectAppContext(pending.previousAppId);
         }
       }
       if (event.command === "tasks.list") {
-        const pending = pendingTaskListReads.shift();
+        const pending = event.__pending || pendingTaskListReads[0];
+        removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
           todoReadInFlight = false;
           if (todoReadDirty) {
@@ -1307,7 +1336,8 @@ function handleEvent(event) {
         }
       }
       if (event.command === "task.get") {
-        const pending = pendingTaskReads.shift();
+        const pending = event.__pending || pendingTaskReads[0];
+        removePending(pendingTaskReads, pending);
         if (pending?.kind === "watch-refresh") watchedTaskReadInFlight = false;
         if (pending?.kind === "auto-follow" && desiredAutoFollow) {
           const pendingKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
@@ -1351,86 +1381,40 @@ function handleEvent(event) {
 }
 
 function connectSocket() {
-  if (closing) return;
-  if (socket && !socket.destroyed) return;
-
-  socket = net.createConnection(socketPath);
-  socket.setEncoding("utf8");
-  // Partial frames belong to this connection, never to a later reconnect.
-  let buffer = "";
-
-  socket.on("connect", () => {
+  if (closing || (socket && socket.readyState < WebSocket.CLOSING)) return;
+  socket = new WebSocket(wakeEndpoint);
+  socket.onopen = () => {
     connected = true;
     reconnectDelayMs = 250;
     lastDisconnectedMessage = "";
-    sendFrame(
-      {
-        type: "subscribe",
-        sessions: subscribedSessions(),
-        conversations: [conversationId],
-        taskApps: [selectedApp],
-        task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
-      },
-      { silent: true },
-    );
-    if (pendingConversationReads.length > 0) {
-      for (const pending of pendingConversationReads) sendConversationRead(pending);
-    } else {
-      requestConversation();
-    }
-    for (const pending of pendingAppReads) sendAppRead(pending);
-    for (const pending of pendingTaskListReads) sendTaskListRead(pending);
-    for (const pending of pendingTaskReads) sendTaskRead(pending);
+    subscribe();
+    if (pendingConversationReads.length === 0) requestConversation();
     if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh")) requestTodoRefresh();
-    if (!pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) {
-      watchedTaskReadInFlight = false;
-      refreshWatchedTask();
-    }
+    if (!pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) { watchedTaskReadInFlight = false; refreshWatchedTask(); }
     if (!pendingTaskReads.some((pending) => pending.kind === "auto-follow")) requestDesiredAutoFollow();
     flushPendingCommands();
     flushPendingInput();
     refreshPrompt();
-  });
-
-  socket.on("data", (chunk) => {
-    buffer += chunk;
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        handleEvent(JSON.parse(line));
-      } catch {
-        printLine(line);
-      }
-    }
-  });
-
-  socket.on("error", (err) => {
+  };
+  socket.onmessage = (message) => {
+    try { handleEvent(JSON.parse(String(message.data))); }
+    catch { printLine(String(message.data)); }
+  };
+  socket.onerror = () => {
     connected = false;
-    const message = err && err.message ? err.message : String(err);
-    if (message !== lastDisconnectedMessage) {
-      lastDisconnectedMessage = message;
-      printLine(`[socket] waiting for daemon: ${message}`);
+    if (lastDisconnectedMessage !== "daemon unavailable") {
+      lastDisconnectedMessage = "daemon unavailable";
+      printLine(`[websocket] waiting for daemon at ${wakeEndpoint}`);
     }
-  });
-
-  socket.on("close", () => {
+  };
+  socket.onclose = () => {
     connected = false;
     socket = null;
-    pendingPublishReceipts.length = 0;
-    // Reads are idempotent. Preserve and replay them after reconnect so a
-    // daemon restart cannot silently swallow /tasks, /task, /apps, or sync.
-    if (pendingConversationReads.length > 0) {
-      pendingConversationReads.splice(0, pendingConversationReads.length, { kind: "startup" });
-      conversationSyncDirty = false;
-    }
     if (closing) return;
     refreshPrompt();
     scheduleReconnect();
-  });
+  };
 }
-
 function scheduleReconnect() {
   if (closing || reconnectTimer) return;
   const delay = reconnectDelayMs;
@@ -1639,7 +1623,7 @@ function handleCommand(input) {
       return;
     case "shell":
       closing = true;
-      if (socket) socket.end();
+      if (socket) socket.close();
       rl.close();
       spawn("bash", ["-i"], { stdio: "inherit" }).on("exit", (code) => process.exit(code || 0));
       return;
@@ -1724,7 +1708,7 @@ function flushPendingInput() {
 function closeAndExit(code) {
   closing = true;
   if (reconnectTimer) clearTimeout(reconnectTimer);
-  if (socket) socket.end();
+  if (socket) socket.close();
   rl.close();
   process.exit(code);
 }
@@ -1765,11 +1749,11 @@ rl.on("close", () => {
   if (closing) return;
   closing = true;
   if (reconnectTimer) clearTimeout(reconnectTimer);
-  if (socket) socket.end();
+  if (socket) socket.close();
 });
 
 console.log("May daemon terminal");
-console.log(`Socket: ${socketPath}`);
+console.log(`Endpoint: ${daemonEndpoint}`);
 console.log(`Type a message for ${daemonAgent}. Try /help for console commands.`);
 refreshPrompt();
 connectSocket();
