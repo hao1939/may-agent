@@ -775,9 +775,12 @@ pass; the earlier published head rejects before that workflow body starts.
 Common root validation errors now return without an execution ID. Supplied
 invalid partial output still escapes validation.
 
-The local `50050df8d4e248edaebd8a2e5edbddbd42bfb54d` registration-name repair
+The `50050df8d4e248edaebd8a2e5edbddbd42bfb54d` registration-name repair
 passes eleven owning tests, but it does not repair actual standalone child
-lookup. The production call-surface probe still invokes `global/ echo` and
+lookup. Native Alex independently pushed this commit to the existing PR from
+session `s_1794943154169_b596df4d-9e6b-4e43-99fa-3949f8499cb5`; Root's later push
+was a no-op. This establishes native publication, while the earlier Root pushes
+remain administrative evidence. The production call-surface probe still invokes `global/ echo` and
 `global /echo`; other invalid child names throw. Separate clean-snapshot
 integration/export verification has 26 passes and seven failures. A downloaded
 superseded-head hosted log contains a completed shard with 724 passes, two skips
@@ -813,6 +816,17 @@ and four direct specialist exchanges. It now invokes `develop-change` over all
 33 configured targets on the retained candidate. This is correction of a domain
 completion judgment; the Host's valid report admission alone cannot certify it.
 The original Host delivery Task and final paired-trial obligation remain open.
+
+Root also prepared an independent clean App `a818` / Host `50050` fixture without
+changing the live App workflow's saved `4858` dependency binding. Actual imports
+of both `@may-agent/sdk/app` and `@may-agent/sdk/runtime` resolve into that one
+newer Host snapshot. Three selected App suites return 113 passes and eight
+failures: seven retained-evidence/workload handoff failures and one old public
+result-wrapper expectation. Thus the remaining failures cannot be dismissed as
+an unavailable provider. The binding receipt and full test log are retained as
+`a818-host500-binding.json` and `a818-host500-independent-apps.log`. May received
+them for the next coherent verification pass, preserving the active tree's
+current snapshot.
 
 Exact receipts and logs are retained under the existing local trial directory.
 No unified Host/SDK/App pair has been activated, no native readiness Telegram

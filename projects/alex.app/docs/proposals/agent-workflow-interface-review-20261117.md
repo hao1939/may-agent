@@ -4,8 +4,9 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`28512c1971`. Independent checks pass 194 focused tests and `check:ci`; production
-probes cover all four directions, the common root result, invalid root/child
+`50050df8d4`. Independent checks at preceding `28512c1971` pass 194 focused tests
+and `check:ci`; the later registration-name validator passes eleven owning tests
+but actual whitespace dispatch remains broken. Production probes cover all four directions, the common root result, invalid root/child
 input, the enclosing discovery timeout and full-envelope Task workflow ingress.
 Complete CI remains open: a superseded head's completed shard recorded 47
 failures, and current local integration/export checks still fail. Paired App
