@@ -2471,6 +2471,28 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
     expect(result.ok).toBe(true);
     expect(result.result).toEqual({ type: "done", summary: "echoed", output: input });
 
+    const reviewer = descriptors.find((descriptor) => descriptor.name === "global/reviewer");
+    expect(reviewer).toBeDefined();
+    const promptRun = await run(reviewer!.name, { prompt: "inspect", data: { ref: "HEAD" } }, {
+      projectRoot: env.projectRoot,
+      cwd: env.projectRoot,
+      models: {},
+      timeoutMs: 1_000,
+      agentFixtures: {
+        reviewer: async ({ task }) => ({
+          id: "s_canonical_prompt",
+          kind: "agent",
+          status: "done",
+          summary: task,
+        }),
+      },
+    });
+    expect(promptRun.ok).toBe(true);
+    expect(promptRun.result).toMatchObject({
+      type: "done",
+      summary: 'inspect\n\nInput data:\n{\n  "ref": "HEAD"\n}',
+    });
+
     for (const [target, invalidInput, expected] of [
       [echo!.name, { data: { marker: "preserved" } }, "Invalid callable input"],
       [echo!.name, { prompt: "   ", data: { marker: "preserved" } }, "non-whitespace"],

@@ -1396,6 +1396,15 @@ export async function runDirectWorkflow<TInput = unknown>(
     signal?: AbortSignal,
   ) => Promise<WorkflowKernelResolvedTarget>;
 
+  const promptTaskFromInput = (input: unknown, target: string): string => {
+    if (typeof input === "string") return input;
+    if (!input || typeof input !== "object" || typeof (input as { prompt?: unknown }).prompt !== "string") {
+      throw new Error(`Prompt target "${target}" requires a canonical { prompt, data? } input`);
+    }
+    const { prompt, data } = input as { prompt: string; data?: unknown };
+    return data === undefined ? prompt : `${prompt}\n\nInput data:\n${JSON.stringify(data, null, 2)}`;
+  };
+
   const executePromptStep = async (
     agent: string,
     prompt: string,
@@ -1556,12 +1565,8 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (resolved.kind === "prompt") {
       return {
         kind: "agent" as const,
-        invoke: async (callOpts, nestedControl) => {
-          if (typeof input !== "string") {
-            throw new Error(`Prompt target "${normalized}" requires a string prompt input`);
-          }
-          return executePromptStep(resolved.name, input, callOpts, nestedControl);
-        },
+        invoke: async (callOpts, nestedControl) =>
+          executePromptStep(resolved.name, promptTaskFromInput(input, normalized), callOpts, nestedControl),
       };
     }
     return {
@@ -1679,12 +1684,8 @@ export async function runDirectWorkflow<TInput = unknown>(
           rootPromptTarget = undefined;
           return {
             kind: "agent" as const,
-            invoke: async (callOpts, stepControl) => {
-              if (typeof input !== "string") {
-                throw new Error(`Prompt target "${target}" requires a string prompt input`);
-              }
-              return executePromptStep(target, input, callOpts, stepControl);
-            },
+            invoke: async (callOpts, stepControl) =>
+              executePromptStep(target, promptTaskFromInput(input, target), callOpts, stepControl),
           };
         }
         if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
