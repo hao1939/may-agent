@@ -24,13 +24,7 @@ export type {
   TaskVerificationContext, TaskVerificationResult, TaskVerifier, TaskReconcileAdmission,
 } from "./task.js";
 export { defineObserver, observationCondition } from "./observer.js";
-export type {
-  ObservationContract,
-  ObservationInterest,
-  ObserverHealth,
-  ResourceObservation,
-  ResourceObserver,
-} from "./observer.js";
+export type { ObservationContract, ObservationInterest, ObserverHealth, ResourceObserver } from "./observer.js";
 export { ExecutionDeferredError } from "./workflow.js";
 export type { ExecutionDeferral } from "./workflow.js";
 export { workflowResult, workflowResultVersion } from "./workflow-result.js";

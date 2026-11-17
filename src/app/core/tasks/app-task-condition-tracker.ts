@@ -1,4 +1,5 @@
 import { readVerifiedApprovalDecision } from "@may-agent/sdk/app";
+import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { commitTaskMutation, type AppTaskContext, type TaskTree } from "./app-task-store.js";
 import { taskEventPredatesReopening, type AppTaskCondition } from "./app-task-state.js";
@@ -22,6 +23,16 @@ function stableValue(value: unknown): unknown {
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, entry]) => [key, stableValue(entry)]),
   );
+}
+
+function resourceObservationFingerprint(event: Record<string, unknown>): string | undefined {
+  const explicit = eventField(event, "fingerprint");
+  if (typeof explicit === "string" && explicit) return explicit;
+  if (!isRecord(event.data)) return undefined;
+  const { resource: _resource, ...value } = event.data;
+  return createHash("sha256")
+    .update(JSON.stringify(stableValue({ value })))
+    .digest("hex");
 }
 
 function sameEvent(left: Record<string, unknown>, right: Record<string, unknown>): boolean {
@@ -393,7 +404,7 @@ function applyConditionEvent(
     const observed = { ...observation(event), ...(kind === "progress" ? { state: "progress" } : {}) };
     const continuous = condition.spec.mode === "continuous";
     const tracksDelivery = continuous || terminal;
-    const fingerprint = eventField(event, "fingerprint");
+    const fingerprint = tracksDelivery ? resourceObservationFingerprint(event) : undefined;
     const activeResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
         (["waiting", "running", "pending"].includes(resource.status.phase) ||

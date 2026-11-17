@@ -110,7 +110,7 @@ export function bindResourceObserver(options: {
         signature = typeof value.fingerprint === "string" && value.fingerprint
           ? value.fingerprint
           : fingerprint({ value });
-        event = { type: definition.type, source, owner, data: { ...value, resource, fingerprint: signature } };
+        event = { type: definition.type, source, owner, data: { ...value, resource } };
       } catch (error) {
         signal.throwIfAborted();
         status.checkedAt = now();
