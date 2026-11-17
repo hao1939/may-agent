@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type Static } from "@may-agent/sdk";
 import type { TaskReconcileResult, AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   packetHash,
@@ -29,6 +29,12 @@ type Input = {
   sourceReceipt: string;
   newSubjectTask: { appId: string; taskId: string; generation: number };
 };
+const activationFollowUpDataSchema = Type.Record(Type.String(), Type.Unknown());
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+  data: activationFollowUpDataSchema,
+}, { additionalProperties: false });
+type EnvelopeInput = Static<typeof inputSchema>;
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -621,7 +627,7 @@ export async function runActivationFollowUp(
 }
 
 export async function execute(
-  ctx: AppWorkflowContext<Input>,
+  ctx: AppWorkflowContext<EnvelopeInput>,
 ): Promise<ExecutionResult> {
-  return runActivationFollowUp(ctx);
+  return runActivationFollowUp({ ...ctx, input: ctx.input.data as Input });
 }

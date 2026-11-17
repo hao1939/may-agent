@@ -1,4 +1,4 @@
-import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type Static } from "@may-agent/sdk";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   readMetricEvidence,
@@ -38,6 +38,12 @@ type Input = {
   review?: MetricReview;
   conversation?: MetricConversation;
 };
+const metricResponseDataSchema = Type.Record(Type.String(), Type.Unknown());
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+  data: metricResponseDataSchema,
+}, { additionalProperties: false });
+type EnvelopeInput = Static<typeof inputSchema>;
 type TaskReader = (
   appId: string,
   taskId: string,
@@ -291,6 +297,6 @@ export async function respondToMetric(
   }
 }
 
-export async function execute(ctx: AppWorkflowContext<Input>) {
-  return respondToMetric(ctx);
+export async function execute(ctx: AppWorkflowContext<EnvelopeInput>) {
+  return respondToMetric({ ...ctx, input: ctx.input.data as Input });
 }

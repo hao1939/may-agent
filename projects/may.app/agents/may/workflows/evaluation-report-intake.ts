@@ -1,4 +1,4 @@
-import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type Static } from "@may-agent/sdk";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   readPublishedEvaluationReport,
@@ -23,12 +23,18 @@ import {
 
 export const name = "evaluation-report-intake";
 export const description =
-  'Run agents({action:"call",agent:"evaluation-report-intake",input:message.context.publication}); preserve the complete publication object, with appId and taskId or metricId at the top level, not { publication: ... }. Integrity-check that report and reread its canonical current subject.';
+  'Call may/evaluation-report-intake with {prompt,data:message.context.publication}; preserve the complete publication object in data, with appId and taskId or metricId at the data top level, not data.publication. Integrity-check that report and reread its canonical current subject.';
 
 const missingPublicationIdentity =
-  'Evaluation report intake requires the complete flat publication object. Run agents({action:"call",agent:"evaluation-report-intake",input:message.context.publication}); appId and taskId (or metricId and optional alertId) must be top-level input fields, all publication fields must be preserved, and input.publication is not accepted.';
+  'Evaluation report intake requires the complete publication object in input.data. Call may/evaluation-report-intake with {prompt,data:message.context.publication}; appId and taskId (or metricId and optional alertId) must be data fields, all publication fields must be preserved, and data.publication is not accepted.';
 
 type Input = PublishedReportRequest;
+const evaluationReportIntakeDataSchema = Type.Record(Type.String(), Type.Unknown());
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+  data: evaluationReportIntakeDataSchema,
+}, { additionalProperties: false });
+type EnvelopeInput = Static<typeof inputSchema>;
 type SubjectReader = (subject: {
   appId: string;
   taskId: string;
@@ -437,7 +443,7 @@ export async function intakeEvaluationReport(
   );
 }
 export async function execute(
-  ctx: AppWorkflowContext<Input>,
+  ctx: AppWorkflowContext<EnvelopeInput>,
 ): Promise<ExecutionResult> {
-  return intakeEvaluationReport(ctx);
+  return intakeEvaluationReport({ ...ctx, input: ctx.input.data as Input });
 }
