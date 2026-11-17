@@ -196,8 +196,8 @@ export async function executeSourceAssessment(
       ? coverageSummary(packet)
       : "No source text was supplied to the assessment agent. Retrieval/extraction failed; source content and any unrecorded redirect remain unknown.";
     const result = await ctx.call(
-      "scout",
-      `
+      "scout-knowledge-lib/scout",
+      { prompt: `
 Assess this exact source against the complete current assignment below.
 The workflow owns source retrieval and all archive writes. This call is read-only;
 return the assessment through finish, including on a no-save request. Do not edit
@@ -242,13 +242,8 @@ ${record?.previous.slice(0, 18_000) || "None"}
 Source coverage: ${coverage}
 Source excerpts (page/text-unit character offsets are zero-based, end-exclusive):
 ${JSON.stringify(packet ?? accessFailure)}
-`,
-      {
-        schema: draftSchema,
-        tools: "readonly",
-        timeoutMs: 180_000,
-        operationAllowance: 12,
-      },
+` },
+      { schema: draftSchema, timeoutMs: 180_000 },
     );
     ctx.signal.throwIfAborted();
     const suppliedDraft = Check(draftSchema, result.output)

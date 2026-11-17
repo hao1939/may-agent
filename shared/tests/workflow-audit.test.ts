@@ -11,13 +11,13 @@ import {
 } from "../../scripts/audit-workflows.ts";
 import * as ts from "typescript";
 
-test("discoverStaticWorkflows finds all 25 canonical and re-exported workflows with zero contract errors", () => {
+test("discoverStaticWorkflows finds all 26 canonical and re-exported workflows with zero contract errors", () => {
   const workflows = discoverStaticWorkflows(process.cwd());
-  expect(workflows.length).toBe(25);
+  expect(workflows.length).toBe(26);
   const canonical = workflows.filter((w) => !w.isReexport);
   const reexports = workflows.filter((w) => w.isReexport);
-  expect(canonical.length).toBe(22);
-  expect(reexports.length).toBe(3);
+  expect(canonical.length).toBe(24);
+  expect(reexports.length).toBe(2);
 
   for (const wf of workflows) {
     expect(wf.hasValidContract, `${wf.path} errors: ${wf.contractErrors.join(", ")}`).toBe(true);

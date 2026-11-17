@@ -90,7 +90,7 @@ function context(
 ) {
   const current = { ...input, data };
   return createTestAppWorkflowContext({
-    input: current,
+    input: { prompt: "Assess the assigned source", data },
     reconciliation: {
       task: {
         id: "goal/test",
@@ -125,7 +125,8 @@ function context(
       root,
       output: join(root, "output"),
     },
-    call,
+    call: (async (agent: string, input: { prompt: string }, options?: unknown) =>
+      (call as any)(agent, input.prompt, options)) as AppWorkflowContext["call"],
   });
 }
 const success = (output = draft) => ({
@@ -190,13 +191,16 @@ it("supplies bounded excerpts with exact offsets, including the tail", () => {
 it("the procedure saves and reads back the analysis with code-owned coverage", async () => {
   const root = temporary();
   let options: unknown;
-  const ctx = context(root, (async (_agent, prompt, suppliedOptions) => {
+  const ctx = context(root, (async (agent, prompt, suppliedOptions) => {
     options = suppliedOptions;
+    expect(agent).toBe("scout-knowledge-lib/scout");
     expect(prompt).toContain(JSON.stringify(packet));
     return success();
   }) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
-  expect(options).toMatchObject({ tools: "readonly" });
+  expect(options).toMatchObject({ timeoutMs: 180_000 });
+  expect(options).not.toHaveProperty("tools");
+  expect(options).not.toHaveProperty("operationAllowance");
   expect(result.output).toHaveProperty("state", "converged");
   expect(admitTaskReconcileResult(result.output).ok).toBe(true);
   const record = assessmentRecord(root, sourceUrl);
@@ -388,7 +392,8 @@ it("standalone no-save uses its assignment without reconciliation or a workspace
   let calls = 0;
   const ctx = createTestAppWorkflowContext({
     input: { ...input, data: { ...input.data, archive: false } },
-    call: (async (_agent, prompt) => {
+    call: (async (_agent, input: { prompt: string }) => {
+      const prompt = input.prompt;
       calls++;
       expect(prompt).toContain(input.data.outcome);
       return success();

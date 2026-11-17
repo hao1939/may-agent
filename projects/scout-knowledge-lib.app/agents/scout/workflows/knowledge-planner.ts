@@ -167,8 +167,8 @@ async function reviewPublicationFailure(
   let review: ExecutionResult;
   try {
     review = await ctx.call(
-      "scout",
-      `Publication failed after your writer call.
+      "scout-knowledge-lib/scout",
+      { prompt: `Publication failed after your writer call.
 Review this failure against the original Task and return an ordinary Task result.
 This call is read-only: inspect the exact archive and candidate before judging.
 Do not repeat publication or edit the canonical library in this diagnosis call.
@@ -181,11 +181,8 @@ canonical publication evidence and will still pass the workflow verifier.
 ${facts.join("\n")}
 
 ## Current Task
-${JSON.stringify(ctx.reconciliation, null, 2)}`,
-      {
-        timeoutMs: 1_800_000,
-        schema: taskAgentResultSchema,
-      },
+${JSON.stringify(ctx.reconciliation, null, 2)}` },
+      { timeoutMs: 1_800_000, schema: taskAgentResultSchema },
     );
   } catch (error) {
     return ctx.blocked("Scout publication diagnosis failed", {
@@ -473,7 +470,7 @@ ${experienceContext}
 ## Canonical reconciliation context (authoritative requirement)
 ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
-  const result = await ctx.call("scout", prompt, {
+  const result = await ctx.call("scout-knowledge-lib/scout", { prompt }, {
     timeoutMs: 1_800_000,
     schema: taskAgentResultSchema,
   });

@@ -1158,12 +1158,8 @@ run Git publication or edit the canonical library in this call.`;
     ),
   );
 
-  const result = await ctx.call(agent, agentTask, {
+  const result = await ctx.call(`scout-knowledge-lib/${agent}`, { prompt: agentTask }, {
     schema: ExploreAgentResultSchema,
-    // Source retrieval, duplicate checks, integration and read-back exceeded
-    // the default 24 operations in a real cycle. Keep one bounded call and
-    // the existing time limit; do not add a workflow-owned continuation loop.
-    operationAllowance: 48,
   });
   ctx.signal.throwIfAborted();
 

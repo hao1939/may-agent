@@ -96,8 +96,8 @@ function workflowContext(
       children: { live: [], completed: [] },
     },
     workspace: { ...defaultFixture.workspace },
-    call: (async (agent: string, task: string, options?: unknown) => {
-      const result = (await runAgent(agent, task, options)) as Record<
+    call: (async (agent: string, input: { prompt: string }, options?: unknown) => {
+      const result = (await runAgent(agent, input.prompt, options)) as Record<
         string,
         unknown
       >;
@@ -232,7 +232,7 @@ describe("scout-explore workflow prompt", () => {
       },
     });
     expect(result).not.toHaveProperty("output.state", "converged");
-    expect(callOptions).toMatchObject({ operationAllowance: 48 });
+    expect(callOptions).not.toHaveProperty("operationAllowance");
   });
 
   it("does not accept structured output from a blocked agent call", async () => {
