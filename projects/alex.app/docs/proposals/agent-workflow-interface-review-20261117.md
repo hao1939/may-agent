@@ -44,7 +44,9 @@ The remaining high-value gaps are:
   enabled Apps independently of source availability. App `5fdaad20b3` repairs
   inventory configuration: explicit fixtures prove all 33 source targets and
   omission of the disabled sample target. All five owning tests pass independently
-  against Host `cb4f3583e5`; the full configured App checks are running.
+  against Host `cb4f3583e5`. The same configured pair passes all 1,145 default
+  App tests across 81 files, typechecking and the full design check. This does
+  not close the model-tool report defect or establish installed availability.
 - Verify and activate one exact compatible local pair, preserving legitimate
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
@@ -339,18 +341,21 @@ retains the earlier findings and exact repair evidence.
 
 The remaining implementation order is:
 
-1. **Finish App consumers.** Preserve the verified invocation-assignment forwarding
+1. **Finish Host report admission and migration.** Require finish reports in the
+   canonical model-tool prompt adapter and prove that plain assistant text cannot
+   return `done`. Preserve valid output/facts, actual identity and bounded
+   correction. Continue from exact current-head CI artifacts, preserving real
+   cancellation, steering, lineage and SIGINT child-drain assertions. The steering
+   coverage review is resolved; retain its actual interruption tests. Retired
+   fork/session controls, aliases and bare strings must not return to satisfy old
+   fixtures. Run owning tests and `check:ci` for each coherent checkpoint, then
+   full current-head Quality.
+2. **Finish App consumers.** Preserve the verified invocation-assignment forwarding
    and fresh judgment with retained receipts, usage and identical replay.
    Preserve the verified native Gym temporary-workspace binding and actual CLI
-   protocol coverage. Complete the 33-target body/caller/guidance disposition and
-   correct the inventory test's installation-configuration boundary: discovery
-   enumeration and private helper tests cannot establish registered entrypoints.
-2. **Finish Host fixture and source migration.** Work from the exact current-head
-   CI artifacts, preserving real cancellation, steering, lineage and SIGINT
-   child-drain assertions. Fix the open steering review without turning it into
-   an ordinary completion test. Retired fork/session controls, aliases and bare
-   strings must not return to satisfy old fixtures. Run owning tests and
-   `check:ci` for each coherent checkpoint, then full current-head Quality.
+   protocol coverage and corrected source/configuration inventory fixtures.
+   Complete the 33-target body/caller/guidance disposition: discovery enumeration
+   and private helper tests cannot establish registered entrypoints.
 3. **Verify and trial the pair.** Bind App imports and TypeScript aliases to one
    exact clean Host/SDK provider; keep the native development provider unchanged
    until a verified replacement is ready at a quiescent boundary. Supply any

@@ -1761,7 +1761,11 @@ fixture explicitly disables sample and expects the remaining 32. Independent
 verification against Host `cb4f3583e58cc2b761178038a8d06606bce46206` passes
 all five audit tests with the genuine installation disable markers present.
 Root pushed the checkpoint to the retained App review branch. Full configured
-App checks remain in progress.
+App verification subsequently passes **1,145 default tests across81files**,
+typechecking and the complete design checks against the same exact Hostcb4 pair.
+The genuine installation disable markers are explicit isolated prerequisites;
+this is configured source evidence, not installed activation or report-contract
+readiness.
 
 The completed hosted Hoste764/run44185627355 reports **3,495 tests,
 42 failures across18files, two skips**; Container passes. Its four-shard
@@ -1782,6 +1786,8 @@ valid success fixtures and a missing-report regression through the same retained
 Host Task (event6741229). Low-level direct manager runs keep their own contract.
 
 Evidence under the trial directory: `5fd-cb4-independent-inventory.log`,
+`5fd-cb4-independent-app-full.log`, `5fd-cb4-independent-app-typecheck.log`,
+`5fd-cb4-independent-app-design.log`,
 `5fd-cb4-configured-prerequisites.json`, `cb4-independent-lifecycle.log`,
 `cb4-independent-check-ci.log`, `cb4-canonical-finish-observation.ts`,
 `cb4-canonical-finish-observation.json`, `current-host-finish-contract-receipt.json`,
