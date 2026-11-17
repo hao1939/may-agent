@@ -2,7 +2,7 @@
 summary: "SciResearch-Eval's abstract reports that autonomous experimental agents can execute procedures yet remain severely overconfident when a supplied simulator is physically wrong. The reusable evaluation pattern is to test scientific agents under deliberately misspecified tools, score calibrated intervals against exact ground truth, and distinguish naming the fault from designing experiments that remain valid despite it. Scout reviewed only the complete arXiv API abstract and metadata, not the paper, environment, tasks, graders, code, episode records, or statistical analysis."
 triggers: ["SciResearch-Eval", "experimental agents", "model misspecification", "scientific judgment", "calibrated intervals", "flawed simulator"]
 last_updated: "2026-11-17"
-source_basis: "One bounded arXiv cs.AI Atom request returned HTTP 200 in 511 ms with one request and no Retry-After value. Assessment is limited to the complete API abstract for arXiv:2611.21541v1; the full paper and artifacts were not reviewed."
+source_basis: "One bounded arXiv cs.AI Atom request returned HTTP 200 in 289 ms with one request and no Retry-After value. Assessment is limited to the complete API abstract for arXiv:2611.21541v1; the full paper and artifacts were not reviewed."
 </ai_context>
 
 # Experimental Agents Need Model-Misspecification Tests, Not Just Procedural Traps
@@ -62,7 +62,7 @@ The workflow supplied one bounded request to:
 
 `https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`
 
-The request returned HTTP `200` in `511 ms`; request count was `1`. `Retry-After` was unavailable (`null`), and no deferred retry time was supplied. Scout made no retry, pagination request, fallback request, or query variant.
+The request returned HTTP `200` in `289 ms`; request count was `1`. `Retry-After` was unavailable (`null`), and no deferred retry time was supplied. Scout made no retry, pagination request, fallback request, or query variant.
 
 ## Evidence limitations
 
