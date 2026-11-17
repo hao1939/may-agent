@@ -250,6 +250,11 @@ Root owns this design, task breakdown, independent review and trial assessment.
 May owns implementation through Alex's existing development workflow, publication,
 CI/comment follow-up and return evidence. The following are ordered checklist
 items within the owned outcome, not additional Tasks for each code layer.
+The existing local-candidate workflow binds evidence to one checkout. If the
+paired App migration needs its own checkout and continuation, use a finite App
+source contribution with its own exact revision and return through the existing
+Task/Condition path. Retain the original delivery Task, its usage and the final
+paired-activation obligation; a passing Host commit cannot certify App edits.
 
 | Item | Implementation work | Completion evidence |
 | --- | --- | --- |

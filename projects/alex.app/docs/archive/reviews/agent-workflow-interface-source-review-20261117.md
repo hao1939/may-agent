@@ -323,3 +323,22 @@ retained, through May's supported creator revision at the completed boundary.
 The native PR watcher remains the feedback producer; no merge or activation has
 occurred. This failure demonstrates why baseline-failing regression evidence
 and a passing local suite establish only their tested contracts.
+
+At 16:18 UTC, native commit `9e9c215a5cec1eaa2cd1e08a938422ce1059891b`
+added starting resource version to the key and an owning round-trip regression.
+Root reviewed the clean candidate and reran both independent production-API
+probes: no-op then real requirements change passed, and P0 → P1 → P0 now saves
+each requested priority while generation remains one and resource versions
+advance two, three, four. Source approval is conditional on new-head checks and
+review resolution; it is not activation evidence.
+
+Root also assigned the demonstrated App specialist-context defect through May
+as distinct Alex Task ref `5cb8bf19`
+(`input/appdep_a5ef480a7c34b965ca935397`), cumulative limit three. Its outcome
+ends at a locally committed, verified, reviewed Apps candidate, so it cannot
+require its own future publication/activation before returning. It must keep
+the owning Task's source requirements and selected checks, clarify exact setup
+dependencies, and retain failed receipts and consumed rounds. It changes no
+Host source or existing Task identity/allowance. This is separate from the
+original callable Task and the Host revision incident; Root will review the
+App candidate before May's authorized local integration and definition activation.

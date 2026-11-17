@@ -167,9 +167,9 @@ old receipts and reject stale/foreign controls through the same authority checks
 **Installed gap:** the [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#revision-admission-blocker)
 reproduces a generation-only admission-key collision in installed `43fc420a` and
 baseline source. Focused [PR #590](https://github.com/hao1939/may-agent/pull/590)
-at `54528704a9` fixes the original no-op case and passes full local CI, but a
-reviewer-found metadata round-trip defect remains reproducible. Hosted Quality
-also failed; repair, current-head checks and activation remain pending.
+at `54528704a9` fixes the original no-op case but has a reviewer-found metadata
+round-trip defect. Candidate `9e9c215a5c` passes independent production-API probes
+for both cases. Current-head CI, review resolution and activation remain pending.
 Do not delete live receipts as a workaround.
 
 ## Workspace ownership and cleanup
