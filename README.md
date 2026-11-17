@@ -55,6 +55,14 @@ The [execution source map](src/lib/README.md) locates session ownership, context
 preparation, the model loop and workflows. `src/lib` is Host infrastructure.
 Project apps use `@may-agent/sdk`; local control clients use `@may-agent/control`.
 
+For local argv commands, workflows can import `runCommand` from
+`@may-agent/sdk/command` and pass their exact `ctx.signal`. The Linux helper
+captures bounded stdout/stderr and joins its owned process group before returning
+a receipt. The workflow also joins commands started with that signal, including
+commands the authored body did not await. Unconfirmed cleanup fails the workflow
+report. This scope is in memory; durable crash recovery and containment of
+descendants creating separate sessions remain separate requirements.
+
 For execution-context changes, start with
 [`app-dependency-catalog.ts`](src/app/app-dependency-catalog.ts) for the installed
 App input summaries shared by conversation and Task execution, and

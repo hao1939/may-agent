@@ -1,0 +1,15 @@
+export type CommandReceipt = {
+    argv: string[];
+    cwd: string;
+    startedAt: string;
+    endedAt: string;
+    exitCode: number | null;
+    signal: string | null;
+    stdout: string;
+    stderr: string;
+    error?: string;
+};
+/** Run an argv command on Linux, retaining bounded output and joining its owned
+ * process group on exit or cancellation. Use the execution's signal to join
+ * workflow cleanup. Cancellation never becomes a passing check. */
+export declare function runCommand(root: string, argv: string[], signal: AbortSignal): Promise<CommandReceipt>;
