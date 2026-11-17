@@ -55,6 +55,14 @@ The [execution source map](src/lib/README.md) locates session ownership, context
 preparation, the model loop and workflows. `src/lib` is Host infrastructure.
 Project apps use `@may-agent/sdk`; local control clients use `@may-agent/control`.
 
+For local argv commands, workflows can import `runCommand` from
+`@may-agent/sdk/command` and pass `ctx.signal`. Await the command. The Linux helper
+captures bounded stdout/stderr and joins its owned process group before returning
+a receipt. Cancellation sends TERM, then KILL if needed, using the existing SDK
+cleanup. The workflow gives awaited code up to two seconds to settle after
+cancellation. Forgotten awaits, detached sessions and crash recovery are outside
+this helper's contract.
+
 For execution-context changes, start with
 [`app-dependency-catalog.ts`](src/app/app-dependency-catalog.ts) for the installed
 App input summaries shared by conversation and Task execution, and

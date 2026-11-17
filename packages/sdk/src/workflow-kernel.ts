@@ -18,7 +18,8 @@ const MAX_REPORT_STEPS = 64;
 const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
-const AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS = 50;
+// Give awaited commands time for the existing bounded TERM/KILL cleanup.
+const AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS = 2_000;
 
 /** @deprecated Use `AgentExecutableModule` for Task-transparent authoring. */
 export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = Omit<

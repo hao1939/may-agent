@@ -39,6 +39,9 @@ plugin({
     build.onResolve({ filter: /^@may-agent\/sdk\/app$/ }, () => ({
       path: resolve(SDK_ROOT, "app.ts"),
     }));
+    build.onResolve({ filter: /^@may-agent\/sdk\/command$/ }, () => ({
+      path: resolve(SDK_ROOT, "command.ts"),
+    }));
     build.onResolve({ filter: /^@may-agent\/sdk\/task$/ }, () => ({
       path: resolve(SDK_ROOT, "task.ts"),
     }));

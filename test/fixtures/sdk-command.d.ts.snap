@@ -1,0 +1,15 @@
+export type CommandReceipt = {
+    argv: string[];
+    cwd: string;
+    startedAt: string;
+    endedAt: string;
+    exitCode: number | null;
+    signal: string | null;
+    stdout: string;
+    stderr: string;
+    error?: string;
+};
+/** Await an argv command on Linux using the enclosing cancellation signal.
+ * Stop its process group on cancellation or leader exit before returning a
+ * bounded output receipt. Detached sessions and crash recovery are out of scope. */
+export declare function runCommand(root: string, argv: string[], signal: AbortSignal): Promise<CommandReceipt>;

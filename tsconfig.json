@@ -19,6 +19,9 @@
       "@may-agent/sdk/app": [
         "./packages/sdk/src/app.ts"
       ],
+      "@may-agent/sdk/command": [
+        "./packages/sdk/src/command.ts"
+      ],
       "@may-agent/sdk/standalone": [
         "./packages/sdk/src/standalone.ts"
       ],
