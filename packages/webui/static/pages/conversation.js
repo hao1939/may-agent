@@ -6,23 +6,10 @@ let mayConversationDirty = false;
 let mayStopPending = false;
 let maySendPending = false;
 let mayUnconfirmedInput = null;
-let maySelectedTopicId = null;
 let mayFocusedTask = null;
 
 function isMayConversation() {
   return Boolean(humanInterface.appId) && isAgentChatActive(humanInterface.agent);
-}
-
-function shortConversationTopicRef(topicId) {
-  const raw = String(topicId || '');
-  const clean = raw.startsWith('topic_') ? raw.slice('topic_'.length) : raw;
-  return clean.slice(0, 8) || '????????';
-}
-
-function selectMayConversationTopic(topicId) {
-  maySelectedTopicId = topicId || null;
-  renderMayConversationFocusBar();
-  void refreshMayConversation();
 }
 
 function focusMayConversationTask(appId, taskId, ref) {
@@ -54,7 +41,7 @@ function renderMayConversationFocusBar() {
   const bar = document.getElementById('conversation-focus-bar');
   const input = document.getElementById('chat-input');
   if (!bar) return;
-  const active = isMayConversation() && Boolean(maySelectedTopicId || mayFocusedTask);
+  const active = isMayConversation() && Boolean(mayFocusedTask);
   bar.hidden = !active;
   bar.style.display = active ? 'flex' : 'none';
   if (!active) {
@@ -62,29 +49,14 @@ function renderMayConversationFocusBar() {
     if (input && isMayConversation()) input.placeholder = 'Talk with May…';
     return;
   }
-  const pills = [];
-  if (maySelectedTopicId) {
-    pills.push(
-      `<span data-focused-topic="${attrEsc(maySelectedTopicId)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;padding:2px 8px;color:var(--fg2)">` +
-      `<span>Topic: <b style="color:var(--fg)">${esc(shortConversationTopicRef(maySelectedTopicId))}</b></span>` +
-      `<button type="button" onclick="selectMayConversationTopic(null)" title="Clear Topic filter" style="background:none;border:none;color:var(--fg2);cursor:pointer;padding:0 2px">×</button>` +
-      `</span>`,
-    );
-  }
-  if (mayFocusedTask) {
-    const label = `${mayFocusedTask.appId}/${mayFocusedTask.ref || mayFocusedTask.taskId}`;
-    pills.push(
-      `<span data-focused-task="${attrEsc(mayFocusedTask.appId + ':' + mayFocusedTask.taskId)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--accent);border-radius:999px;padding:2px 8px;color:var(--accent)">` +
-      `<span>Focused Task: <b>${esc(label)}</b></span>` +
-      `<button type="button" onclick="focusMayConversationTask(null)" title="Clear focused Task" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0 2px">×</button>` +
-      `</span>`,
-    );
-  }
-  bar.innerHTML = pills.join('');
+  const label = `${mayFocusedTask.appId}/${mayFocusedTask.ref || mayFocusedTask.taskId}`;
+  bar.innerHTML =
+    `<span data-focused-task="${attrEsc(mayFocusedTask.appId + ':' + mayFocusedTask.taskId)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--accent);border-radius:999px;padding:2px 8px;color:var(--accent)">` +
+    `<span>Focused Task: <b>${esc(label)}</b></span>` +
+    `<button type="button" onclick="focusMayConversationTask(null)" title="Clear focused Task" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0 2px">×</button>` +
+    `</span>`;
   if (input && isMayConversation()) {
-    input.placeholder = mayFocusedTask
-      ? `Talk with May about ${mayFocusedTask.appId}/${mayFocusedTask.ref || mayFocusedTask.taskId}…`
-      : `Continue Topic ${shortConversationTopicRef(maySelectedTopicId)}…`;
+    input.placeholder = `Talk with May about ${label}…`;
   }
 }
 
@@ -97,11 +69,10 @@ function renderMayConversationContextBar(conversation) {
     bar.replaceChildren();
     return;
   }
-  const topics = Array.isArray(conversation.topics) ? conversation.topics : [];
   const openRequests = (Array.isArray(conversation.requests) ? conversation.requests : []).filter(
     (req) => req && req.status === 'open',
   );
-  if (!topics.length && !openRequests.length && !maySelectedTopicId) {
+  if (!openRequests.length) {
     bar.hidden = true;
     bar.style.display = 'none';
     bar.replaceChildren();
@@ -110,30 +81,18 @@ function renderMayConversationContextBar(conversation) {
   bar.hidden = false;
   bar.style.display = 'flex';
   let html = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-  if (topics.length || maySelectedTopicId) {
-    html += `<label style="display:inline-flex;align-items:center;gap:6px;color:var(--fg2)">Topic <select id="conversation-topic-select" onchange="selectMayConversationTopic(this.value || null)" style="background:var(--bg2);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px">`;
-    html += `<option value="">All topics</option>`;
-    for (const topic of topics) {
-      const selected = topic.id === maySelectedTopicId ? ' selected' : '';
-      const taskCount = Array.isArray(topic.taskRefs) && topic.taskRefs.length ? ` (${topic.taskRefs.length})` : '';
-      html += `<option value="${attrEsc(topic.id)}"${selected}>${esc(shortConversationTopicRef(topic.id))} · ${esc(topic.title)}${esc(taskCount)}</option>`;
-    }
-    html += `</select></label>`;
-  }
-  if (openRequests.length) {
-    html += `<span style="color:var(--fg2)">Open asks (${openRequests.length}):</span>`;
-    for (const req of openRequests.slice(0, 6)) {
-      const taskChips = (Array.isArray(req.taskRefs) ? req.taskRefs : [])
-        .slice(0, 3)
-        .map(
-          (ref) =>
-            `<button type="button" class="ask-btn" style="padding:1px 6px;font-size:11px" onclick="openConversationTask(${jsStringAttr(ref.appId)}, ${jsStringAttr(ref.taskId)})" title="Open Task ${attrEsc(ref.appId + '/' + ref.taskId)}">${esc(ref.appId)} · ${esc(ref.ref || ref.taskId)}</button>`,
-        )
-        .join(' ');
-      html += `<span data-request-id="${attrEsc(req.id)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:3px 8px">` +
-        `<span style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${attrEsc(req.scope || '')}">${esc(req.scope || req.id)}</span>` +
-        `${taskChips}</span>`;
-    }
+  html += `<span style="color:var(--fg2)">Open asks (${openRequests.length}):</span>`;
+  for (const req of openRequests.slice(0, 6)) {
+    const taskChips = (Array.isArray(req.taskRefs) ? req.taskRefs : [])
+      .slice(0, 3)
+      .map(
+        (ref) =>
+          `<button type="button" class="ask-btn" style="padding:1px 6px;font-size:11px" onclick="openConversationTask(${jsStringAttr(ref.appId)}, ${jsStringAttr(ref.taskId)})" title="Open Task ${attrEsc(ref.appId + '/' + ref.taskId)}">${esc(ref.appId)} · ${esc(ref.ref || ref.taskId)}</button>`,
+      )
+      .join(' ');
+    html += `<span data-request-id="${attrEsc(req.id)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:3px 8px">` +
+      `<span style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${attrEsc(req.scope || '')}">${esc(req.scope || req.id)}</span>` +
+      `${taskChips}</span>`;
   }
   html += '</div>';
   bar.innerHTML = html;
@@ -167,7 +126,6 @@ function refreshMayConversation() {
         const params = new URLSearchParams({
           appId: humanInterface.appId,
           conversationId: humanInterface.conversationId,
-          ...(maySelectedTopicId ? { topicId: maySelectedTopicId } : {}),
         });
         const response = await fetch('/api/conversation?' + params.toString(), { signal: AbortSignal.timeout(5000) });
         const conversation = await response.json();
@@ -176,13 +134,9 @@ function refreshMayConversation() {
         mayActiveTurn = conversation.activeTurn || null;
         renderMayConversationContextBar(conversation);
         renderMayConversationFocusBar();
-        const topicsById = new Map((conversation.topics || []).map((t) => [t.id, t]));
         const messages = document.getElementById('chat-messages');
         const fragment = document.createDocumentFragment();
-        const visibleMessages = maySelectedTopicId
-          ? (conversation.messages || []).filter((m) => m.metadata?.topicId === maySelectedTopicId)
-          : (conversation.messages || []);
-        for (const message of visibleMessages) {
+        for (const message of conversation.messages || []) {
           const el = document.createElement('div');
           el.className = message.author.kind === 'human' ? 'msg user' : 'msg assistant';
           el.dataset.messageId = message.id;
@@ -192,7 +146,6 @@ function refreshMayConversation() {
           body.textContent = message.text;
           el.appendChild(body);
 
-          const topicId = message.metadata?.topicId;
           const rawTaskRefs = [
             ...(Array.isArray(message.metadata?.taskRefs) ? message.metadata.taskRefs : []),
             ...(message.metadata?.followTask ? [message.metadata.followTask] : []),
@@ -205,20 +158,10 @@ function refreshMayConversation() {
             seenTasks.add(key);
             return true;
           });
-          if (topicId || taskRefs.length) {
+          if (taskRefs.length) {
             const meta = document.createElement('div');
             meta.className = 'msg-meta';
             meta.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:11px;align-items:center';
-            if (topicId) {
-              const topic = topicsById.get(topicId);
-              const topicBtn = document.createElement('button');
-              topicBtn.type = 'button';
-              topicBtn.className = 'ask-btn';
-              topicBtn.style.cssText = 'padding:1px 6px;font-size:11px';
-              topicBtn.textContent = `Topic ${shortConversationTopicRef(topicId)}${topic?.title ? ' · ' + topic.title : ''}`;
-              topicBtn.onclick = () => selectMayConversationTopic(topicId);
-              meta.appendChild(topicBtn);
-            }
             for (const ref of taskRefs) {
               const openBtn = document.createElement('button');
               openBtn.type = 'button';
@@ -298,9 +241,8 @@ async function sendMayConversation() {
   const text = input.value;
   if (!text.trim() || maySendPending) return;
   maySendPending = true;
-  const topicKey = maySelectedTopicId || '';
   const focusKey = mayFocusedTask ? `${mayFocusedTask.appId}:${mayFocusedTask.taskId}` : '';
-  const signature = `${text}\0${topicKey}\0${focusKey}`;
+  const signature = `${text}\0${focusKey}`;
   // An unknown HTTP outcome may already be durable. Retrying the unchanged
   // draft + focus keeps its identity instead of admitting the same ask twice.
   if (mayUnconfirmedInput?.signature !== signature) {
@@ -310,10 +252,6 @@ async function sendMayConversation() {
   const context = {
     ...(mayFocusedTask ? { focusedTask: { appId: mayFocusedTask.appId, taskId: mayFocusedTask.taskId } } : {}),
   };
-  const metadata = {
-    channel: 'web-ui',
-    ...(maySelectedTopicId ? { topicId: maySelectedTopicId } : {}),
-  };
   try {
     await publishChatEvent({
       type: 'conversation.message.created', target: { appId: humanInterface.appId },
@@ -322,7 +260,7 @@ async function sendMayConversation() {
         author: { kind: 'human', id },
         text: text.trim(),
         ...(Object.keys(context).length ? { context } : {}),
-        metadata,
+        metadata: { channel: 'web-ui' },
       },
       idempotencyKey: id,
     });

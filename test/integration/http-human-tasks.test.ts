@@ -1671,10 +1671,7 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
 
-      // Topics, open Requests, and Task chips render in Conversation and pass focus metadata on send.
-      conversation.topics = [
-        { id: "topic_8f12ac90", title: "Release verification", taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }] },
-      ];
+      // Open Requests and Task chips render in Conversation Mode and pass focusedTask on send.
       conversation.requests = [
         { id: "req_1", status: "open", scope: "Verify the release candidate", taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }] },
       ];
@@ -1683,7 +1680,6 @@ describe("HTTP human Task reads and board", () => {
         author: { kind: "agent", id: "helper" },
         text: "Started verification on alpha/work/0.",
         metadata: {
-          topicId: "topic_8f12ac90",
           taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }],
         },
       });
@@ -1693,17 +1689,13 @@ describe("HTTP human Task reads and board", () => {
       expect(await page.$eval('#chat-messages [data-task-ref="alpha:work/0"]', el => el.textContent)).toContain("Task alpha · 8f12ac90");
       await page.click('#chat-messages [data-focus-task="alpha:work/0"]');
       await page.waitForSelector('#conversation-focus-bar [data-focused-task="alpha:work/0"]');
-      await page.select("#conversation-topic-select", "topic_8f12ac90");
-      await page.waitForSelector('#conversation-focus-bar [data-focused-topic="topic_8f12ac90"]');
-      expect(conversation.lastReadTopicId).toBe("topic_8f12ac90");
       await page.type("#chat-input", "Check the edge case on this Task");
       rejectPublish = true;
       await page.click("#chat-send");
       await page.waitForFunction(() => document.body.textContent!.includes("Message was not confirmed"));
       const firstFocusedAttempt = published.at(-1);
-      // Reselecting the same Topic or Task keeps the unconfirmed send identity.
-      await page.evaluate("selectMayConversationTopic('topic_8f12ac90'); focusMayConversationTask('alpha', 'work/0', '8f12ac90')");
-      await page.waitForFunction("!mayConversationRead");
+      // Refocusing the same Task keeps the unconfirmed send identity.
+      await page.evaluate("focusMayConversationTask('alpha', 'work/0', '8f12ac90')");
       rejectPublish = false;
       await page.click("#chat-send");
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
@@ -1715,7 +1707,7 @@ describe("HTTP human Task reads and board", () => {
           conversationId: "retained-room",
           text: "Check the edge case on this Task",
           context: { focusedTask: { appId: "alpha", taskId: "work/0" } },
-          metadata: { channel: "web-ui", topicId: "topic_8f12ac90" },
+          metadata: { channel: "web-ui" },
         },
       });
       // Switching to another agent hides May's Conversation context and focus bars.
