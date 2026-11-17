@@ -47,6 +47,7 @@ const worker = defineApp({
         {
           source: Type.String({ minLength: 1 }),
           constraints: Type.Optional(Type.Array(Type.String())),
+          priority: Type.Optional(Type.Union([Type.Literal("P0"), Type.Literal("P1")])),
         },
         { additionalProperties: false },
       ),
@@ -61,6 +62,7 @@ const worker = defineApp({
       outcome: `Measure ${input.data.source}`,
       acceptance: [`Verify ${input.data.source}`],
       ...(input.data.constraints ? { constraints: [...input.data.constraints] } : {}),
+      ...(input.data.priority ? { priority: input.data.priority } : {}),
       input: { source: input.data.source },
       executor: input.data.source === "beta" ? "secondary" : "primary",
     },
@@ -600,4 +602,112 @@ test("an effective no-op and legacy receipt do not consume a later real revision
   f.reopen();
   expect(() => f.revise()).toThrow("requirements changed");
   expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(2);
+});
+
+test("same-generation metadata revisions use the starting resource version for round-trip identity", () => {
+  const f = fixture();
+  const target = f.context("worker");
+  const old = f.claim("worker", "child");
+  recordAppTaskAttemptSession(target, old, "old-session");
+  const legacyKey = `task-revision:${JSON.stringify(["worker", "child", 1])}`;
+  const currentIntent = readAppTaskIntent(target, "child")!;
+  expect(
+    admitTaskInput(target, {
+      appId: "worker",
+      creator: { appId: "creator", taskId: "parent" },
+      creatorRevision: true,
+      attachment: { kind: "desired", intent: currentIntent },
+      idempotencyKey: legacyKey,
+      inputContext: {
+        id: legacyKey,
+        source: { kind: "app", id: "creator" },
+        input: { kind: "measure", data: { source: "alpha" } },
+      },
+    }),
+  ).toMatchObject({ generation: 1, changed: false });
+
+  const revisePriority = (priority: "P0" | "P1", constraints?: string[]) =>
+    reviseAppTask({
+      source: f.context("creator"),
+      target: f.context("worker"),
+      app: worker,
+      actor: f.actor,
+      change: {
+        ...f.change,
+        input: { kind: "measure", data: { source: "alpha", priority, ...(constraints ? { constraints } : {}) } },
+      },
+    });
+  const admissionCount = () =>
+    (
+      f.db.prepare("SELECT COUNT(*) AS count FROM app_task_admissions WHERE app_id = ?").get("worker") as {
+        count: number;
+      }
+    ).count;
+  const assertAdvancedOnce = (
+    beforeVersion: number,
+    beforeAdmissions: number,
+    beforeEvents: number,
+    priority: "P0" | "P1",
+  ) => {
+    const task = f.context("worker").resourceStore.readTask("child")!;
+    expect(task.metadata).toMatchObject({ generation: 1, resourceVersion: beforeVersion + 1 });
+    expect(task.spec.priority).toBe(priority);
+    expect(task.status.currentAttemptId).toBe(old.attemptId);
+    expect(f.context("worker").resourceStore.readAttempt(old.attemptId)?.state).toBe("running");
+    expect(admissionCount()).toBe(beforeAdmissions + 1);
+    expect(f.context("worker").resourceStore.readTrigger("child")?.events).toHaveLength(beforeEvents + 1);
+  };
+
+  let task = target.resourceStore.readTask("child")!;
+  let admissions = admissionCount();
+  let events = target.resourceStore.readTrigger("child")!.events.length;
+  expect(revisePriority("P0")).toMatchObject({ generation: 1, changed: true });
+  assertAdvancedOnce(task.metadata.resourceVersion, admissions, events, "P0");
+
+  task = target.resourceStore.readTask("child")!;
+  admissions = admissionCount();
+  const attempt = target.resourceStore.readAttempt(old.attemptId);
+  const triggers = target.resourceStore.readTrigger("child");
+  expect(revisePriority("P0", ["mapper-only"])).toMatchObject({ generation: 1, changed: false });
+  expect(target.resourceStore.readTask("child")).toEqual(task);
+  expect(target.resourceStore.readAttempt(old.attemptId)).toEqual(attempt);
+  expect(target.resourceStore.readTrigger("child")).toEqual(triggers);
+  expect(admissionCount()).toBe(admissions);
+
+  f.reopen();
+  expect(revisePriority("P0")).toMatchObject({ generation: 1, changed: false });
+  expect(f.context("worker").resourceStore.readTask("child")).toEqual(task);
+  expect(admissionCount()).toBe(admissions);
+
+  task = f.context("worker").resourceStore.readTask("child")!;
+  admissions = admissionCount();
+  events = f.context("worker").resourceStore.readTrigger("child")!.events.length;
+  expect(revisePriority("P1")).toMatchObject({ generation: 1, changed: true });
+  assertAdvancedOnce(task.metadata.resourceVersion, admissions, events, "P1");
+
+  task = f.context("worker").resourceStore.readTask("child")!;
+  admissions = admissionCount();
+  events = f.context("worker").resourceStore.readTrigger("child")!.events.length;
+  expect(revisePriority("P0")).toMatchObject({ generation: 1, changed: true });
+  assertAdvancedOnce(task.metadata.resourceVersion, admissions, events, "P0");
+  expect(renewAppTaskAttemptLease(f.context("worker"), old)).toBe(true);
+
+  expect(() =>
+    reviseAppTask({
+      source: f.context("creator"),
+      target: f.context("worker"),
+      app: worker,
+      actor: { ...f.actor, taskId: "sibling" },
+      change: { ...f.change, input: { kind: "measure", data: { source: "alpha", priority: "P1" } } },
+    }),
+  ).toThrow("caller is no longer current");
+  expect(() =>
+    reviseAppTask({
+      source: f.context("creator"),
+      target: f.context("worker"),
+      app: worker,
+      actor: f.actor,
+      change: { ...f.change, expectedGeneration: 2 },
+    }),
+  ).toThrow("requirements changed");
 });

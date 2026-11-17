@@ -72,10 +72,13 @@ export function reviseAppTask(input: {
   return stateTransaction(db, () => {
     recheck();
     const desiredHash = createHash("sha256").update(JSON.stringify(desiredSpec)).digest("hex");
+    // Generation can stay fixed for metadata-only writes. Fence the receipt to
+    // the exact persisted state that this desired revision started from.
     const key = `task-revision:${JSON.stringify([
       change.appId,
       change.taskId,
       change.expectedGeneration,
+      before.metadata.resourceVersion,
       desiredHash,
     ])}`;
     return admitTaskInput(target, {
