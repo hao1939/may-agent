@@ -129,6 +129,33 @@ describe("importRuntimeModule", () => {
     expect(stdout.trim()).toBe("standalone-canary");
   });
 
+  it("bundles and executes the public command helper from a compiled runtime outside a workspace", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-runtime-command-import-"));
+    roots.push(root);
+    const modulePath = join(root, "command.ts");
+    writeFileSync(modulePath, `
+      import { runCommand } from "@may-agent/sdk/command";
+      export async function execute(root: string, executable: string): Promise<string> {
+        const receipt = await runCommand(root, [executable, "-e", "console.log('command-import-ok')"], new AbortController().signal);
+        if (receipt.error) throw new Error(receipt.error);
+        return receipt.stdout.trim();
+      }
+    `);
+    const runner = join(root, "runtime-import-command");
+    await promisify(execFile)(process.execPath, [
+      "build", "--compile",
+      new URL("../../../../../test/fixtures/runtime-import-command.ts", import.meta.url).pathname,
+      "--outfile", runner,
+    ], { timeout: 10_000 });
+    const { stdout } = await promisify(execFile)(runner, [
+      modulePath, join(root, ".cache"), process.execPath,
+    ], {
+      timeout: 10_000,
+      env: { ...process.env, MAY_AGENT_SDK_ROOT: new URL("../../../", import.meta.url).pathname },
+    });
+    expect(stdout.trim()).toBe("command-import-ok");
+  }, 25_000);
+
   it("rejects the retired SDK entry point for external App declarations", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-runtime-legacy-import-"));
     roots.push(root);
