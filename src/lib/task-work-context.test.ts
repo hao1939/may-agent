@@ -23,6 +23,14 @@ afterEach(() => {
   for (const close of cleanup.splice(0)) close();
 });
 
+function resolveJsonPointer(source: unknown, pointer: string): unknown {
+  return pointer
+    .split("/")
+    .slice(1)
+    .map((key) => key.replaceAll("~1", "/").replaceAll("~0", "~"))
+    .reduce<unknown>((value, key) => (value as Record<string, unknown>)[key], source);
+}
+
 function fixture(count = 6) {
   const root = mkdtempSync(join(tmpdir(), "unfinished-input-poc-"));
   const databasePath = join(root, "state.db");
@@ -211,7 +219,7 @@ test("a waiting result's scope is not completion; genuine waits do not keep the 
   expect(claimObservedAppTask(f.config, { taskId: "work", appAgent: "owner", handler: "agent" }).kind).toBe("waiting");
 });
 
-test("a large carried-over assignment remains discoverable through ordinary reads", async () => {
+test("a large carried-over assignment remains discoverable through content-addressed detail and scoped reads", async () => {
   const f = fixture(90);
   // Drain the bounded event batches, preserving every input. This does not judge fulfillment.
   for (let i = 0; i < 3; i++) completeAppTask(f.config, f.claim(), { summary: "Prior result", inputKeys: [] });
@@ -219,6 +227,17 @@ test("a large carried-over assignment remains discoverable through ordinary read
   const c = f.claim();
   expect(c.continuedInputKeys).toHaveLength(90);
   const p = await f.brief(c);
+  const detail = JSON.parse(p.detail);
+  const continued = p.packet.events.attemptInput.preview.continuedInputs.preview[0];
+  expect(p.packet.coverage.detail).toMatch(/\/decisions\/[a-f0-9]{64}\.json$/);
+  expect(continued.omitted).toBe(true);
+  expect(resolveJsonPointer(detail, continued.pointer)).toEqual(detail.events.attemptInput.continuedInputs[0]);
+  expect(p.text).toContain("content-addressed coverage.detail");
+  expect(p.text).toContain("using its JSON-pointer references");
+  expect(p.text).toContain("/createdAssignments references instead use coverage.createdAssignmentsDetail");
+  expect(p.text).toContain("use a supplied scoped Task read when available");
+  expect(p.text).toContain("keep the missing detail as an explicit evidence boundary");
+  expect(p.text).not.toContain("detail/context.json");
   const longest = Math.max(...p.detail.split("\n").map((line) => Buffer.byteLength(line)));
   expect(longest < 50 * 1024).toBe(true);
   expect(p.bytes).toBeLessThan(18 * 1024);
