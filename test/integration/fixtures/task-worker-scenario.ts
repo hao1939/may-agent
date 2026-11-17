@@ -98,26 +98,28 @@ export function fixture(agent: string, wait = false, workflow = true, conversati
         ? "Answer the admitted Conversation input using fixture facts.\n"
         : "Run only the declared fixture workflow.\n",
     );
-    writeFileSync(
-      join(dir, "workflows", "probe.ts"),
-      `
-      export const name = "probe";
-      export const description = "Deterministic process-boundary probe";
-      export async function execute(ctx) {
-        if (!ctx.input.wait) return ctx.done("done", {
-          state: "converged", summary: "completed by " + ctx.reconciliation.agent, facts: []
-        });
-        const feedback = new Promise(resolve => ctx.events.onEvent(event => {
-          if (event.type === "worker.feedback") resolve();
-        }));
-        const target = { appId: "sample", taskId: "work/one" };
-        await ctx.events.emit({ localKey: "ready", type: "worker.ready", target, data: {} });
-        await feedback;
-        await ctx.events.emit({ localKey: "feedback-seen", type: "worker.feedback.seen", target, data: {} });
-        return new Promise(() => {}); // The Host's cancellation signal must end this bounded attempt.
-      }
-    `,
-    );
+    if (name === agent) {
+      writeFileSync(
+        join(dir, "workflows", "probe.ts"),
+        `
+        export const name = "probe";
+        export const description = "Deterministic process-boundary probe";
+        export async function execute(ctx) {
+          if (!ctx.input.data.wait) return ctx.done("done", {
+            state: "converged", summary: "completed by " + ctx.reconciliation.agent, facts: []
+          });
+          const feedback = new Promise(resolve => ctx.events.onEvent(event => {
+            if (event.type === "worker.feedback") resolve();
+          }));
+          const target = { appId: "sample", taskId: "work/one" };
+          await ctx.events.emit({ localKey: "ready", type: "worker.ready", target, data: {} });
+          await feedback;
+          await ctx.events.emit({ localKey: "feedback-seen", type: "worker.feedback.seen", target, data: {} });
+          return new Promise(() => {}); // The Host's cancellation signal must end this bounded attempt.
+        }
+      `,
+      );
+    }
   }
   const db = getDb(persistDir);
   const store = AppTaskResourceStore.fromDb(db, "sample");

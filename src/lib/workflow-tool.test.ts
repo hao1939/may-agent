@@ -64,6 +64,36 @@ export async function execute(ctx) {
     expect(calls).toBe(0);
   });
 
+  it("seeds root workflows under the captured canonical owner key without importing them twice", async () => {
+    const root = workflowRoot("workflow-canonical-root-owner-");
+    writeFileSync(join(root, "parent.ts"), `
+export const name = "parent";
+export const description = "Calls one root-owned workflow";
+export async function execute(ctx) {
+  return ctx.call("sample/helper", { prompt: "Run the helper" });
+}
+`);
+    writeFileSync(join(root, "helper.ts"), `
+export const name = "helper";
+export const description = "Root-owned helper";
+export async function execute(ctx) { return ctx.done("helper complete"); }
+`);
+    const owner: SubagentDefinition = {
+      name: "owner", description: "Owner", domain: "test", model: fakeModel(), tools: [],
+      agentDir: root, appLocal: true, projectId: "sample",
+    };
+
+    const result = await createWorkflowRunner({
+      manager: {} as any,
+      workflowDir: root,
+      agentName: "owner",
+      projectId: "sample",
+      agentDefinitions: new Map([["sample/owner", owner]]),
+    }).run("parent", "Run the parent");
+
+    expect(result).toMatchObject({ type: "done", summary: "helper complete" });
+  });
+
   it.each(["timeout", "cancel"])("prepares every selected Hosted catalog and bounds stalled imports on %s", async (mode) => {
     const root = workflowRoot("workflow-catalog-stop-");
     const gate = await controlledWorkflowImport(root);

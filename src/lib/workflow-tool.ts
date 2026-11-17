@@ -433,7 +433,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     diagnostics: string[];
     pendingImports: number;
     callableCatalog?: CallableCatalog;
-    canonicalRoutes?: ReadonlyMap<string, string>;
+    canonicalRoutes?: ReadonlyMap<string, { kind: "prompt"; owner: string } | { kind: "code"; owner: string; name: string }>;
   };
 
   function capturePromptCatalog(
@@ -447,8 +447,23 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
       }),
     );
     const prompts = new Map<string, { owner: string; definition: SubagentDefinition }>();
+    const requestedOwner = opts.agentName ?? "workflow";
+    const currentProjectId = opts.projectId ?? opts.taskBinding?.appId;
+    const matchingOwners = [...definitions].filter(([, definition]) => definition.name === requestedOwner);
+    const scopedOwners = currentProjectId === undefined
+      ? matchingOwners
+      : matchingOwners.filter(([, definition]) => definition.appLocal && definition.projectId === currentProjectId);
+    const ownerCandidates = scopedOwners.length > 0 ? scopedOwners : matchingOwners;
+    if (ownerCandidates.length > 1) {
+      throw new Error(
+        `Ambiguous root workflow owner "${requestedOwner}": ${ownerCandidates.map(([owner]) => owner).join(", ")}`,
+      );
+    }
+    const rootProcedureOwner = definitions.has(requestedOwner)
+      ? requestedOwner
+      : ownerCandidates[0]?.[0] ?? requestedOwner;
     const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>([
-      [opts.agentName ?? "workflow", catalog.workflows],
+      [rootProcedureOwner, catalog.workflows],
     ]);
     const diagnostics = [...catalog.diagnostics];
     for (const [name, definition] of definitions) {
@@ -501,12 +516,12 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
       if (targetCatalog.callableCatalog) return;
       for (const owner of targetCatalog.prompts.keys()) await ensureOwnerProcedures(owner, signal);
 
-      const routes = new Map<string, string>();
+      const routes = new Map<string, { kind: "prompt"; owner: string } | { kind: "code"; owner: string; name: string }>();
       const definitions: CallableDefinition[] = [];
       for (const [owner, prompt] of targetCatalog.prompts) {
         const appId = prompt.definition.appLocal ? prompt.definition.projectId : undefined;
         const canonical = canonicalCallableName(appId, prompt.definition.name);
-        routes.set(canonical, owner);
+        routes.set(canonical, { kind: "prompt", owner });
         definitions.push({
           appId,
           declaredName: prompt.definition.name,
@@ -524,7 +539,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           : (owner === callerOwner ? effectiveProjectId : undefined);
         for (const workflow of workflows.values()) {
           const canonical = canonicalCallableName(appId, workflow.name);
-          routes.set(canonical, `${owner}/${workflow.name}`);
+          routes.set(canonical, { kind: "code", owner, name: workflow.name });
           definitions.push({
             appId,
             declaredName: workflow.name,
@@ -886,7 +901,15 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           if (!envelope || typeof envelope !== "object" || typeof envelope.prompt !== "string" || !envelope.prompt.trim()) {
             throw new Error(`Callable "${target}" requires a nonblank { prompt, data? } input envelope`);
           }
-          const resolved = resolveCallable(callerOwner, routedTarget, targetCatalog);
+          const resolved = routedTarget.kind === "prompt"
+            ? resolveCallable(callerOwner, routedTarget.owner, targetCatalog)
+            : {
+                kind: "code" as const,
+                name: routedTarget.name,
+                owner: routedTarget.owner,
+                module: targetCatalog.proceduresByOwner.get(routedTarget.owner)!.get(routedTarget.name)!,
+                readonly: Boolean(targetCatalog.proceduresByOwner.get(routedTarget.owner)!.get(routedTarget.name)!.readonly),
+              };
           if (resolved.kind === "code") {
             return {
               kind: "workflow" as const,
