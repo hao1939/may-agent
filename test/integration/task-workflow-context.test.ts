@@ -41,13 +41,13 @@ test.each(routes.flatMap((route) => (["feedback", "cancel"] as const).map((mode)
       join(agentDir, "workflows", "inspect.ts"),
       `
 export const name = "inspect";
-export const description = "Inspect with a specialist; input {marker:string}";
+export const description = "Inspect with a specialist; input {prompt:string,data:{marker:string}}";
 export async function execute(ctx) {
   const task = await ctx.read.tasks.get(ctx.reconciliation.taskId);
-  const result = await ctx.call("worker", ctx.input.marker);
-  await ctx.reviseTask({ appId: "worker", taskId: "child-" + ctx.input.marker, expectedGeneration: 1,
-    input: { kind: "message", data: { marker: ctx.input.marker } } });
-  return ctx.done("inspected", { marker: ctx.input.marker, task: task.id, root: ctx.workspace.root, result });
+  const result = await ctx.call("global/worker", { prompt: "Inspect " + ctx.input.data.marker });
+  await ctx.reviseTask({ appId: "worker", taskId: "child-" + ctx.input.data.marker, expectedGeneration: 1,
+    input: { kind: "message", data: { marker: ctx.input.data.marker } } });
+  return ctx.done("inspected", { marker: ctx.input.data.marker, task: task.id, root: ctx.workspace.root, result });
 }`,
     );
     if (route === "nested-workflow") {
@@ -63,7 +63,7 @@ export async function execute(ctx) {
         `
 export const name = "inspect";
 export const description = "Nested contribution";
-export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
+export async function execute(ctx) { return ctx.call("global/delegate", ctx.input); }
 `,
       );
     }
@@ -108,8 +108,8 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
                       name: owner ? ownerTool!.name : "hold",
                       arguments: owner
                         ? route === "agent"
-                          ? { action: "call", agent: "worker", task: marker }
-                          : { action: "call", agent: "inspect", input: { marker } }
+                          ? { action: "call", agent: "global/worker", input: { prompt: marker } }
+                          : { action: "call", agent: "global/inspect", input: { prompt: "Inspect task context", data: { marker } } }
                         : { marker },
                     },
                   ]
@@ -174,20 +174,10 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
     );
     const loadedAgents = tools.find((tool) => tool.name === "agents")!;
     const loadedParameters = loadedAgents.parameters as any;
-    if (route === "agent") {
-      expect(loadedParameters.properties.action.enum).toContain("fork");
-    } else {
-      expect(loadedParameters.properties.action.enum).toEqual(["call", "list"]);
-      expect(Object.keys(loadedParameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
-      for (const request of [
-        { action: "fork", agent: "worker", task: "denied" },
-        { action: "call", agent: "foreign/inspect", input: { marker: "denied" } },
-      ]) {
-        const denial = await loadedAgents.execute("denial", request, undefined, undefined);
-        const text = denial.content.find((part) => part.type === "text");
-        expect(text?.type === "text" ? JSON.parse(text.text).error : "").toMatch(/Procedure-only agents tool/);
-      }
-    }
+    expect(loadedParameters.anyOf).toHaveLength(2);
+    expect(loadedParameters.anyOf[0].properties.action.const).toBe("list");
+    expect(loadedParameters.anyOf[1].properties.action.const).toBe("call");
+    expect(Object.keys(loadedParameters.anyOf[1].properties).sort()).toEqual(["action", "agent", "input", "options"]);
     manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools, agentDir });
     manager.register({
       name: "worker",
@@ -385,12 +375,14 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           const text = reply.content.find((part) => part.type === "text");
           if (text?.type !== "text") throw new Error("Missing handoff result text");
           const returned = JSON.parse(text.text);
-          expect(returned).toMatchObject({ kind: route === "agent" ? "agent" : "workflow", status: "done" });
+          expect(returned).toMatchObject({ status: "done" });
+          expect(returned.kind).toBeUndefined();
           expect(returned.id).toBeTruthy();
           expect(route === "agent" ? returned.output.result.marker : returned.output.marker).toBe(["alpha", "beta"][i]);
           if (route !== "agent") {
             expect(returned.output.task).toBe(["alpha", "beta"][i]);
-            expect(returned.output.result).toMatchObject({ kind: "agent", status: "done" });
+            expect(returned.output.result).toMatchObject({ status: "done" });
+            expect(returned.output.result.kind).toBeUndefined();
           }
         }
       } else expect(results.every((r) => r.status === "rejected")).toBe(true);
@@ -426,7 +418,7 @@ export const description = "Inspect retained Task state";
 export async function execute(ctx) {
   const current = await ctx.read.tasks.get(ctx.reconciliation.taskId);
   return ctx.done("inspected", {
-    marker: ctx.input.marker,
+    marker: ctx.input.data.marker,
     correction: current.input.correction,
     condition: current.conditions[0].id,
   });
@@ -472,7 +464,6 @@ export async function execute(ctx) {
             if (text?.type !== "text") throw new Error("Missing agents.call result text");
             const returned = JSON.parse(text.text);
             expect(returned).toMatchObject({
-              kind: "workflow",
               status: "done",
               output: {
                 marker: "accepted",
@@ -490,7 +481,7 @@ export async function execute(ctx) {
                     type: "toolCall",
                     id: "inspect",
                     name: "agents",
-                    arguments: { action: "call", agent: "inspect", input: { marker: "accepted" } },
+                    arguments: { action: "call", agent: "global/inspect", input: { prompt: "Inspect retained state", data: { marker: "accepted" } } },
                   },
                 ]
               : [
