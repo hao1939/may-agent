@@ -537,6 +537,35 @@ describe("public Task evidence", () => {
     expect(delegated.evidenceHash).toBeUndefined();
   });
 
+  test("does not treat mutable requestedBy navigation as immutable creator provenance", async () => {
+    const { creator, ...withoutCreator } = appTask;
+    const requestedBy = {
+      appId: "evaluation",
+      taskId: "review/current-waiter",
+      status: "waiting",
+    };
+    const baseline = await readSubjectTask(
+      { appId: "sample", taskId: "goal/one" },
+      fixture(withoutCreator),
+    );
+    const navigated = await readSubjectTask(
+      { appId: "sample", taskId: "goal/one" },
+      fixture({ ...withoutCreator, requestedBy }),
+    );
+    expect(baseline.disposition).toBe("eligible");
+    expect(navigated.disposition).toBe("eligible");
+    expect(navigated.reason).not.toContain("Evaluation created");
+    expect(navigated.task?.appTask).not.toHaveProperty("creator");
+    expect(navigated.task?.appTask).toHaveProperty("requestedBy", requestedBy);
+    expect(navigated.task?.readBack).toMatchObject({
+      gaps: expect.arrayContaining([
+        expect.stringContaining(
+          "Optional creator/delegation provenance is unavailable",
+        ),
+      ]),
+    });
+  });
+
   test("retains verified Scout ownership without inventing optional creator provenance", async () => {
     const { creator, ...withoutCreator } = appTask;
     const view = {
