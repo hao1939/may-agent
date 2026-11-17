@@ -2,8 +2,11 @@
 
 UI source follows the shared [App UI convention](../alex.app/docs/2a-design/webui.md#app-ui-convention):
 pages live under `ui/`, and general Task status views belong to the Host.
-On MLVM, `/projects/aks-rp-e2e.app/ui/` opens the task entry page. It links to
-each dedicated task/progress/conversation page and to
+On MLVM, `/projects/aks-rp-e2e.app/ui/` shows the four workstreams' canonical
+status, latest report, update time and any input request or prerequisite.
+It refreshes every 20 seconds while visible using exact, read-only `/api/task`
+requests. Busy means running, not proof of useful progress; failed reads show
+unavailable. It links to each dedicated task/progress/conversation page and to
 `/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e` for current status and waits.
 `ui/kanban/` is only a compatibility entry for older status-board bookmarks.
 See [MLVM integration](mlvm/README.md) for the separate operational installation.

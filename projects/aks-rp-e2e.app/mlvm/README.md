@@ -4,9 +4,16 @@
 
 The App home at `/projects/aks-rp-e2e.app/ui/` is the task entry page, with
 direct links to Compiler, Spec repair, Knowledge and Kubernetes 1.38. Each opens
-its existing dedicated task/progress/conversation page. The home also links to
-the Host's status board for current states and waits; it keeps no separate Task
-snapshot or status logic. Its source is [../ui/index.html](../ui/index.html).
+its existing dedicated task/progress/conversation page. Each card reads its exact
+identity through the Host's `/api/task` and shows current status, latest report,
+update time and input request/prerequisites. Busy labels the canonical `running`
+state; it does not claim forward progress. Report times and Task update times
+are labelled separately. Unknown statuses stay visible and failed reads show
+unavailable, never idle. Checks run every 20 seconds while visible and on manual
+refresh, with bounded requests and no overlapping refresh batches.
+The home also links to the Host's full status board. It stores no Task snapshot
+and derives no lifecycle state. Source: [../ui/index.html](../ui/index.html) and
+[../ui/app.js](../ui/app.js).
 
 The operational installation's existing `/projects/aks-rp-e2e.app/ui/kanban/`
 entry delegates to the Host's `/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e`
@@ -78,6 +85,8 @@ network or model calls. Live activation and a real merge remain separate proof.
 
 ```sh
 bun test ./projects/aks-rp-e2e.app/mlvm/compiler-pull-request.test.ts
+# Browser status/read-failure checks use local fixtures; needs Chrome (CHROME_BIN).
+bun test ./projects/aks-rp-e2e.app/mlvm/task-home.browser.test.ts
 MAY_HOST_SOURCE=/path/to/host bun ./projects/aks-rp-e2e.app/mlvm/verify-host.ts
 python3 projects/aks-rp-e2e.app/mlvm/stage-release.py BASE_RELEASE NEW_RELEASE
 ```
