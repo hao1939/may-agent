@@ -18,8 +18,9 @@ built-in cooperation, common SDK results and paired App migration remain open.
 A production standalone probe still fails because prompt execution configured
 only with `finish` does not receive built-in cooperation. Narrow checks do not
 establish full CI or cutover readiness. No callable candidate is activated.
-The focused Task-revision fix #590 is active locally; that activation does not
-activate this callable cutover. The [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
+The focused Task-revision fix #590 has an earlier successful local trial, but
+a later executable readback reports baseline `0606e2df`; carry the fix into the
+paired candidate and reverify the actual running artifact before activation. The [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
 records later local checkpoints, failed checks and the remaining connected proof.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).

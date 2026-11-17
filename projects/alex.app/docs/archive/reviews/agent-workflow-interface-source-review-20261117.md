@@ -606,3 +606,39 @@ report also fails the older SDK terminal validator; public `run()` still exposes
 a legacy wrapper. These are retained source obligations, not setup or activation
 failures. The original Task continues at generation sixteen with forty consumed
 rounds preserved in a finite total of forty-eight.
+
+
+## Standalone cooperation checkpoint review
+
+Published draft #589 remains at `1de011188a3391e7542143ca8f529555fd9e5c31`.
+Its Container check passes; Quality stops at an unused
+`discoverAgentsRootForTarget` helper in `standalone.ts`. The five-suite native
+result at that head is 93 pass and 20 fail. Earlier 104/9 results describe the
+older catalog checkpoint and cannot establish current-head validation.
+
+The next native workflow retains the same delivery Task and consumed rounds.
+Root independently exercised its uncommitted composition repair through the
+real standalone prompt execution loop, with a deterministic local model stream
+and synthetic definitions configured only with `finish`. The probe now reaches
+agent→agent, agent→workflow, workflow→agent and workflow→workflow calls, preserves
+prompt/data, and observes identical complete descriptor lists. Common-result
+checks still fail: child results expose `kind`/`cliCalls` and public `run()` exposes
+`ok`/`report`/`result` wrappers. This is intermediate production-path evidence,
+not a committed checkpoint, external-model trial or local activation.
+
+The accompanying exact-name repair rejects bare and outer-whitespace names,
+but the shared resolver still trims components: `global/ echo` and
+`global /echo` execute the registered `global/echo`. Validate exact captured
+catalog membership rather than partially validating a name before permissive
+resolution. Rejected pre-start calls also still throw instead of returning the
+common error without an execution ID. These findings were returned through May
+to the same active workflow; they do not justify retaining legacy calls.
+
+A fresh running-executable readback at 18:27 UTC reports version `0606e2df` and
+SHA-256 `ea489459f03291a2c5753ebeeb687e9553d1efdb919c6da84f26f4f2148adcb1`.
+That differs from the earlier successful #590 activation receipt. The old
+receipt establishes that trial only; it cannot establish the currently loaded
+source. Do not overwrite another operator's runtime changes. The eventual
+paired callable trial must identify its actual running artifact, retain the
+Task-revision source repair and current legitimate installation changes, and
+verify the compatible App revision before claiming activation.
