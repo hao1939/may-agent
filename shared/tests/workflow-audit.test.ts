@@ -9,6 +9,8 @@ import {
   discoverStaticWorkflows,
   formatWorkflowAuditMarkdown,
 } from "../../scripts/audit-workflows.ts";
+import { listTargets } from "@may-agent/sdk/standalone";
+import { Check } from "typebox/value";
 import * as ts from "typescript";
 
 test("discoverStaticWorkflows finds all 26 canonical and re-exported workflows with zero contract errors", () => {
@@ -24,6 +26,62 @@ test("discoverStaticWorkflows finds all 26 canonical and re-exported workflows w
     if (!wf.isReexport) {
       expect(wf.pairedTestPath).toBeTruthy();
     }
+  }
+});
+
+const configuredCallableTargets = [
+  "alex/alex",
+  "alex/bob",
+  "alex/compare-candidate",
+  "alex/develop-change",
+  "alex/diagnose-improvement",
+  "alex/evaluation-report-reader",
+  "alex/evaluator",
+  "alex/gym",
+  "alex/judge",
+  "alex/learn-from-daily-work",
+  "alex/metric-review",
+  "alex/pull-request-wait",
+  "alex/runtime-pattern-audit",
+  "alex/task-disposition-review",
+  "alex/task-outcome-review",
+  "alex/task-outcome-selector",
+  "alex/tech-lead",
+  "alex/workload-review",
+  "may/bounded-cleanup",
+  "may/evaluation-report-intake",
+  "may/improvement-activation-follow-up",
+  "may/may",
+  "may/metric-follow-through",
+  "may/metric-response",
+  "may/prepare-improvement-approval",
+  "may/revise-assignment",
+  "sample/sample-reviewer",
+  "scout-knowledge-lib/knowledge-planner",
+  "scout-knowledge-lib/library-health",
+  "scout-knowledge-lib/scout",
+  "scout-knowledge-lib/scout-assess-source",
+  "scout-knowledge-lib/scout-daily-digest",
+  "scout-knowledge-lib/scout-explore",
+] as const;
+
+test("all 33 configured targets expose only canonical names and callable envelopes", async () => {
+  const targets = await listTargets({
+    cwd: process.cwd(),
+    projectRoot: process.cwd(),
+    projectsRoot: join(process.cwd(), "projects"),
+    globalAgentsRoot: join(process.cwd(), "agents"),
+    sharedRoot: join(process.cwd(), "shared"),
+    timeoutMs: 120_000,
+  });
+
+  expect(targets.map((target) => target.name)).toEqual(configuredCallableTargets);
+  for (const target of targets) {
+    expect(target.name.split("/")).toHaveLength(2);
+    expect(target.description.trim().length, target.name).toBeGreaterThan(0);
+    expect(JSON.stringify(target.inputSchema), target.name).toContain('"prompt"');
+    expect(Check(target.inputSchema, { data: {} }), `${target.name} accepted a missing prompt`).toBe(false);
+    expect(Check(target.inputSchema, { task: "legacy" }), `${target.name} accepted a retired task field`).toBe(false);
   }
 });
 
