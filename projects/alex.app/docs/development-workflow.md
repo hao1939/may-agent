@@ -143,6 +143,24 @@ overrides keeps the existing bounded execution path and ordinary recovery.
 The command helper's separate two-minute cutoff is also removed: a valid
 verification may take longer while remaining within the workflow allowance.
 
+Use the public `@may-agent/sdk/command` helper through Alex's reexport and await
+it with `ctx.signal`. The installed Host/SDK and App definitions must support
+that export together; a source import passing typecheck does not prove a compiled
+Host can load the workflow. Timeout aborts ordinary awaited work and uses existing
+TERM/KILL cleanup. The next eligible invocation inspects the same checkout and
+can repeat useful work; interrupted rounds stay consumed under the three-round
+limit. Neither cancellation nor a fresh passing check erases the failed receipt.
+No command registry, durable step cursor or allowance refund is required.
+
+The [17 November live trial](archive/implementation/host-ingress-sdk-source-review-20261116.md#ordinary-command-cancellation-and-fresh-continuation)
+confirms this boundary on one Task/generation/PR: a parent deadline stopped the
+held verification and its TERM-ignoring child; fresh workflow execution retained
+the candidate and recorded two rounds used. The command helper's compiled
+loading repair in Host #586 is also locally adopted. The same trial completed
+watcher-driven current-head CI follow-up, review resolution, caller return and
+addressed Telegram delivery (provider message 50657). It required setup repairs;
+producer cleanup still removed local evidence before caller readback.
+
 Alex, Bob and tech-lead live under `alex.app/agents/`, with names `alex`,
 `bob` and `tech-lead`. Alex owns the workflow catalog and chooses
 `develop-change` when useful. May requests an outcome from App Alex through
@@ -272,7 +290,12 @@ content-addressed files and never replaces an existing artifact. Its common
 recovery rule is described in the [workflow contract](2a-design/execution-contributions.md#evidence-retention-and-autonomous-recovery). Alex supplies
 the Git/requirement validity checks and team policy. Raw JSON preserves exact values; readable Markdown supports paginated
 inspection of long text. These are local deliverables retained with the Task
-worktree, not a permanent archive independent of worktree retention.
+worktree, not a permanent archive independent of worktree retention. The #582
+trial demonstrated the practical gap: normal convergence removed the clean
+allocated worktree before May could read the returned reports. The next retention
+repair must make published result references survive that cleanup using the
+existing output contract, and verify checksums from the caller after settlement.
+Until then, retained paths alone do not prove accessible caller evidence.
 
 The full reports are outside the Host's 16 KiB Task result field. Code bounds
 summary previews, retains full explanations, and validates the aggregate return
@@ -358,8 +381,8 @@ exact suppression of repeated questions during retry.
 
 ## PR follow-through across bounded attempts
 
-**Accepted Task use case; watcher source implemented, not activated by this
-change.** This is the ordinary [Task + Watcher model](2a-design/task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review),
+**Accepted Task use case; installed watcher delivery is proven by the
+[PR #574 receipts](archive/implementation/host-ingress-sdk-source-review-20261116.md#green-head-caller-return-and-original-addressed-notice).** This is the ordinary [Task + Watcher model](2a-design/task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review),
 not an Alex-specific delivery lifecycle. `develop-change` remains the bounded
 local design/implementation/verification/review procedure. One Alex-owned Task
 carries the broader authorized outcome through publication, CI, review feedback
@@ -544,7 +567,8 @@ wake even when PR `updated_at` does not change, while unchanged polls stay quiet
 Live scans run every fifteen minutes. They share at most sixteen HTTP requests,
 reserve one worst-case complete feedback read per pass, and retain the existing
 bounded discovery/fair traversal. Exact interests use Host's four-resource
-batches, hourly fallback and prompt checks after accepted Task results. A full
+batches, five-minute checks for active CI/comment interests, hourly state-only
+fallback and prompt checks after accepted Task results. A full
 exact read makes at most fourteen requests: PR, up to four review pages, up to
 two 25-item pages per feedback set, and PR confirmation. Requests have 15-second
 deadlines; the overall exact deadline is 210 seconds and supports cancellation.

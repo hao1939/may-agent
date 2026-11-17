@@ -582,6 +582,111 @@ should start one fresh narrow assignment with enough workflow time and complete
 without those interventions; closure, restart delivery, shared-worker parity and
 separate-session Bash containment remain distinct gaps.
 
+## Ordinary command cancellation and fresh continuation
+
+On 17 November the authorized local adoption installed merged #584 at
+`8a795c12d9c9cdcec6a55601dacd5d96ff817d1f`. Deployment correlation
+`ordinary-cancellation-584-20261117` succeeded healthy at 08:21:31 UTC with
+matching artifact/loaded hashes and no duplicate deployment. Apps `6cbff3a597`
+adopted the public command import and three retained-edit assertions; reload
+6733346 activated `ae5803dd525fd98e78fb07998b526bba8fe79d5b`. The extra commit
+preserves an unrelated generated workflow audit by ignoring its output directory
+after the first reload rejected that untracked source. Sixty-four paired tests,
+root typecheck, design/model-surface checks and three-App compatibility passed.
+
+The fresh assignment selected PR #582's real proc-scan review finding, with no
+live competing owner. Original input `app_7bd9886d-10f0-44f1-8fb9-3de14dfa5431`
+was admitted by event 6733348; May delegated through
+`appdep_eb34057b2b17261bc97d6baf` to Alex Task
+`input/appdep_eb34057b2b17261bc97d6baf`, generation 1. Operator code did not
+implement or push the assigned PR repair. The external verification harness
+holds its first ordinary attached child through cancellation, then checks that
+both old processes stopped before running five actual Bash test files.
+
+Initial catalog loading failed before workflow execution or round reservation:
+command cleanup imported the coding runtime and exposed SDK dependency subpath
+resolution failures. Alex's ordinary escalation reached May, who installed
+temporary ignored dependency shims and returned through
+`appdep_23083cdbcfadc3bfe7a404ab`, waking the same Task. Root coordinated the
+portable repair, #586 at `204552b29d0c406c16835eb2fafa11c2ed4f4cca`.
+It maps `/command` and extracts existing shared cleanup from the coding runtime.
+The new regression compiles a real runner, bundles an external public SDK command
+consumer and executes it outside the workspace. Full local CI passed 3,495 tests
+with zero failures and two expected skips; Quality and Container passed in
+[run 44048507002](https://github.com/hao1939/may-agent/actions/runs/44048507002).
+The PR is ready for review and unmerged. Authorized local adoption used
+correlation `command-runtime-import-586-20261117` and succeeded at 09:00:07 UTC:
+source, binary hash, loaded hash and SDK provenance match; readiness is healthy
+and all three services run. A separate compiled probe using the installed SDK
+executes the public command helper and force-bundles the installed workflow.
+Its first probe mistakenly expected a default workflow export; checking the
+actual named `name`/`execute` contract fixed that harness assertion. Both logs
+are retained. The same waiting Task, generation, caller and Condition survive
+the restart. This deployment is a recorded operator integration intervention;
+it does not deploy the #582 coding contribution.
+
+Workflow `wr_1794904346549_h4zw` started 08:32:26 UTC. Verification began
+08:38:07.873 UTC with a ready attached TERM-ignoring child. Host status responded
+in 12 ms while it was held. At 08:47:14.878 UTC the workflow returned the actual
+execution-allowance-ended error; both held PIDs subsequently disappeared without
+operator kill. `agents.call` did not expose the requested 180-second override:
+the existing 15-minute parent deadline supplied the actual bound. Explicit timing
+correction event 6733575 did not revise the Task generation or renew allowance.
+
+Fresh attempt `r_1_359879e7-427d-457b-be1a-47e7c4b4f4b2` ran workflow
+`wr_1794905293159_thba` from 08:48:13 to 08:48:51 UTC. The retry verification
+receipt confirms the earlier child was ready and both prior processes stopped.
+Fresh verification passed 56 Bash tests; Bob reviewed retained candidate
+`d432afcef507f2851da836d9ae2b1b2b25f053e5`. Checksummed evidence and report
+references verify, and both round reservation files name the same Task and
+generation with `roundsUsed: 2`. The interrupted first round was not refunded.
+Alex's full local gate failed only the Docker-CLI-dependent configuration tests
+because its execution environment lacked Docker; that gate is not recorded as a
+pass. Alex pushed the candidate to the existing PR, replied to and resolved
+`discussion_r4595972490`, then saved `pr582-current-head-feedback` through the
+existing `pull-request-wait` procedure.
+
+Quality and Container passed on exact head `d432afcef5` in
+[run 44051024101](https://github.com/hao1939/may-agent/actions/runs/44051024101).
+Observer event 6733678 carried both passing checks and woke the same generation-1
+Task in attempt `r_1_8bcd7fbf-8325-412d-9fa5-61ad8afcbe85`. Alex converged and
+returned the original caller at 09:01:18 UTC, retaining canonical development
+references and a readiness record. May settled original human input
+`app_7bd9886d-10f0-44f1-8fb9-3de14dfa5431` at 09:01:52 UTC. Addressed event
+6733702 identifies communication `pr582-review-ready-20261117` and message
+`task-message:1afbe60864add51cd2020137067a69ee445a33c821cc110efadf623f83184b3c`.
+The Telegram operation
+`5cf59592cb2b18ea15328fa8a325df4a8898939371e6d0e051a92397cf378a22`
+reached `delivered`. Provider message **50657**
+was delivered at 09:01:53.764 UTC. Its opening is:
+
+> Please review and approve on GitHub: https://github.com/hao1939/may-agent/pull/582
+
+The original promise, addressed message event and Telegram delivery receipt are
+retained in the evidence directory. Approval remains on GitHub. No #582 merge or
+coding deployment occurred. This new trial establishes implementation inside
+`develop-change`, interrupted-round accounting, real timeout/process cleanup,
+fresh continuation, publication, substantive comment resolution, watcher-driven
+CI follow-up, caller return and the original addressed notification. Setup
+repair, deployment and timing interventions remain explicit.
+
+**New gap:** producer cleanup removed the clean allocated Task worktree after
+convergence, including ignored development reports. May's native final result
+explicitly says the returned artifact paths were no longer present for her
+independent read; she used the admitted exact-head result and hosted checks.
+The operator had already verified their checksums and retained the snapshot, both round
+reservations, stage identities and failed/passing verification receipts outside
+the disposable worktree. That trial archive does not repair normal caller
+consumption. Preserve published result evidence across source-worktree cleanup
+through the existing output/retention contract, and verify post-settlement caller
+readback before claiming durable artifact delivery or later evidence reuse.
+
+Local evidence index: `.state/ordinary-cancellation-e2e-20261117/README.md`.
+The verified timeout/continuation snapshot retains hashes, both reservations and
+process evidence. This proves ordinary cancellation and retained-work retry,
+not separate-session containment, crash recovery or zero-intervention operation.
+The setup repairs and timing correction remain explicit interventions.
+
 ## Historical performance observations
 
 The original proposal reported these local measurements before the boundary

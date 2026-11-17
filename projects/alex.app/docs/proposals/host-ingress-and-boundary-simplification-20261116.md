@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Host `main` at `082a63977d` includes merged #574, #576 and #577: PR-delivery repairs, transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The last verified local installation ran Host source `81c3720dd3` with Apps definitions activated at `b6075771dd`; binary activation is distinct from App reload and current `main`. PR #574 reached green current-head CI and addressed Telegram readiness delivery through the native May/Alex path, with explicit diagnostic interventions and a direct-repair exception after workflow exhaustion. An unattended workflow implementation is not established. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete.
+**Implementation status:** Host `main` at `8a795c12d9` includes merged #584's ordinary command cancellation. The authorized local installation now runs the #586 loading-repair candidate `204552b29d` with matching SDK, while Apps definitions remain pinned to `ae5803dd52`. Interrupted PR #582 completed ordinary workflow implementation, fresh same-Task continuation with two of three rounds consumed, real watcher-driven CI/comment follow-up, caller return and the original addressed Telegram notice (50657). Setup repairs and a timing correction remain explicit interventions. The next demonstrated gap is returned evidence disappearing during producer-worktree cleanup. Shared hosted execution, a domain-only development worker and single-Task Conversation ownership remain incomplete.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -16,6 +16,7 @@ The [source and verification record](../archive/implementation/host-ingress-sdk-
 | Three responsibility layers | [Host/App boundary](../2a-design/system-boundary.md#ingress-task-process-and-bounded-execution) | Ingress owns addressed input/communication; Host owns deterministic Task mechanics; workers own domain judgment and bounded iteration. |
 | SDK authoring and completion | [SDK](../2a-design/sdk.md#stable-root-surface) | Root `AgentContext`/`ExecutionResult`, App/Task binding under `/app`, explicit standalone/test input, domain `output` and `facts`. |
 | Execution lifecycle | [Shared runtime](../2a-design/agent-runtime.md#source-convergence) and [workflows](../2a-design/workflows.md#scoped-context) | Shared standalone preparation, explicit services/skills, bounded helper calls and cleanup; Host adoption remains partial. |
+| Interrupted development | [Development workflow](../development-workflow.md#responsibilities-and-graph) | Await commands with cancellation; retain edits and consumed rounds; fresh execution continues on the same Task/PR. The installed #582 trial reaches the addressed review notice. |
 | Canonical ingress | [Events](../2a-design/events.md#purpose) | No implicit addressed-agent `message.created` routing or special `escalation.*` feedback routing. |
 | Event journal | [Storage](../2a-design/storage.md#decision) | Execution records own lifecycle/recovery; `event_pair_runs` and its restart repair are retired. |
 | External Task reads | [App contract](../2a-design/agent-app.md#one-external-task-read-contract) | One human-facing socket/HTTP Task reader; internal scoped SDK reads remain. Raw-JSON project action invocation is retired. |
@@ -230,10 +231,61 @@ Earlier verification showed that restoring the former 50 ms grace fails the
 nested awaited-command cancellation regression; two Host workflow-boundary
 deadline tests and the design check for 27 workflows and 9 agents also passed.
 
-Local adoption remains: install the matching Host/SDK before adopting Alex's
-import, then verify an interrupted pass through the real Task execution and
-existing retry path. Source merge and portable retained-edit tests do not prove
-that activation or a new live interrupted PR-to-Telegram run.
+Local adoption succeeded on 17 November: the healthy deployment receipt pins
+Host/SDK `8a795c12d9` with matching loaded/artifact hashes; definition reload
+6733346 activated Apps `ae5803dd52`, including the command import and retained-edit
+assertions. All three Apps passed SDK compatibility checks; 64 paired tests,
+typecheck and the 27-workflow/nine-agent design checks passed.
+
+The new [PR #582 trial](../archive/implementation/host-ingress-sdk-source-review-20261116.md#ordinary-command-cancellation-and-fresh-continuation)
+then established actual timeout cancellation and fresh continuation. The first
+parent attempt reached its configured 15-minute allowance; both the awaited
+verification process and its attached TERM-ignoring child stopped. Host controls
+remained responsive. The next invocation reused the same Task, generation,
+checkout and PR, retained the implementation, and recorded two of three rounds
+consumed. Fresh verification passed 56 tests and Bob reviewed exact candidate
+`d432afcef5`; Alex pushed it, answered/resolved the review finding and saved an
+exact watcher Condition for current-head CI. Real observer event 6733678 carried
+both passing checks and woke the same generation-1 Task. Alex returned readiness
+through its retained caller; May settled the original human input and emitted
+addressed event 6733702. Telegram provider message **50657** was delivered at
+09:01:53 UTC, beginning with the requested GitHub-review notice. No #582 merge
+or deployment occurred. Development stayed inside the ordinary workflow; the
+setup repairs below prevent a zero-intervention claim.
+
+The trial exposed a real integration gap before any round started: loading the
+public command helper from a compiled Host pulled in the coding runtime and
+failed SDK subpath resolution. May escalated and installed temporary dependency
+shims. Portable repair [#586](https://github.com/hao1939/may-agent/pull/586),
+`204552b29d`, maps `/command` and shares dependency-free process-group cleanup.
+Its compiled external-consumer regression, full local gate (3,495 pass, two
+expected skips), Quality and Container pass. It is ready for review and unmerged.
+Authorized local adoption succeeded healthy at 09:00:07 UTC, with matching
+binary/SDK provenance. A compiled installed-SDK probe executes a real command
+and force-bundles the installed workflow; the same waiting Task and Condition
+survive activation. These setup repairs and the explicit timing correction
+remain recorded interventions; the trial does not establish zero-intervention
+operation. The original 180-second preference was unavailable through
+`agents.call`; the actual parent allowance supplied the tested deadline.
+
+### Preserve returned evidence through caller consumption
+
+The #582 delivery reached its notification boundary but exposed the next concrete
+gap: after Alex converged, cleanup removed its otherwise clean Task worktree,
+including ignored development evidence. The canonical result still referenced
+those paths. May explicitly recorded that she could not reread them and relied
+on Alex's admitted result and hosted checks. Independent trial receipts were
+preserved before cleanup; that operator archive is not the normal return path.
+
+Make returned evidence readable after producer settlement, using the existing
+output/retention contracts. Keep source-worktree disposal separate from the
+lifetime of published result files. Do not have generic Host cleanup interpret
+Alex's `result.development` shape. A focused reproduction must cover a producer
+with no source changes in its allocated worktree, development in an authorized
+target checkout, convergence and caller readback of every referenced artifact
+with its original checksum. Preserve cumulative rounds and failed verification
+receipts on later same-Task input. This is the highest-value demonstrated gap;
+it precedes wider runtime parity and Conversation ownership changes.
 
 ### Connect shared execution and settlement
 
@@ -357,7 +409,7 @@ proved workflow execution, real watcher-driven same-Task CI continuation and a
 Telegram mirror send, with an operator queue continuation. It did not prove an
 addressed durable final notification or a substantive repair cycle.
 
-The active acceptance target is existing [PR #574](https://github.com/hao1939/may-agent/pull/574).
+The completed baseline used existing [PR #574](https://github.com/hao1939/may-agent/pull/574).
 May owns the human promise; Alex Task `input/appdep_1ee136a45d4c842a8ae0f507`
 owns the PR. The run exposed three App handoff gaps: a new PR was routed into
 unrelated exhausted work; the superseded writer was not drained before handoff;
@@ -439,24 +491,22 @@ ordinary cancellation milestone above.
 | Parent-owned storage | Instrument the attempt process and exercise restart/settlement; zero Host SQLite connections in execution children. | Journal cleanup is not this proof, nor a guarantee that every unrelated SQLite test can never contend. |
 | Crash and effect recovery | Lose the acknowledgment after commit and interrupt after an external effect; replay the same receipt, preserve accepted work, inspect uncertain effects, and block unsafe replacement until cleanup is known. | Reuse existing receipts and operation-safety contracts; prove the complete connected worker path, without claiming exactly-once arbitrary effects. |
 | Failure ownership | Return correctable feedback to the active invocation; deliver exhausted/unstartable work to the declared owner, preserving the original obligation. Missing route/recipient stays visible. | Connected recipient-startup/pre-attempt evidence remains separate; saving or admitting a notice does not prove it was handled. |
+| Returned evidence lifetime | After producer settlement and disposable-worktree cleanup, the original caller can read every referenced result artifact and verify its checksum. Later input retains usage and failed receipts. | #582 cleanup removed Alex's ignored evidence before May could reread it. Adopt the existing output/retention contract and verify producer-to-caller readback. |
 | Finite closure | Accepted complete finite assignment closes atomically; oversized/rejected/stale/partial/helper results and standing duties do not. Replay preserves that decision. | Component checks exist; the native trial finished its caller Request but left Alex converged/idle with a closure recommendation. Creator closure and end-to-end replay remain. |
-| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Live delegation, same-Task CI follow-up, accepted caller return, original-promise disposition and addressed Telegram delivery are verified for #574. Restart/replay delivery remains a separate proof obligation. |
+| Input and retained return | Attachment generation race, legacy/Topic/late links, closure, deduplication and restart preserve exact caller obligations. | Live delegation, same-Task CI follow-up, accepted caller return, original-promise disposition and addressed Telegram delivery are verified for #574 and interrupted #582. Restart/replay delivery remains a separate proof obligation. |
 | Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility, activation and the native PR-delivery loop pass. Shared-worker blocked/resumed/finished and restart evidence remain. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The next integration priority is adopting the merged ordinary command
-cancellation helper and proving redo under the existing fixed three-round allowance.
-A timed-out invocation receives cancellation and a short cleanup grace; a later
-eligible invocation can repeat useful work on the same Task/PR. Do not add remaining-time prediction,
-exact step restoration or special allowance refunds. The next acceptance target
-is one fresh, narrow assignment that reaches the notification boundary without
-diagnostic relays or a direct-repair exception, including an interrupted pass.
-Clear owner escalation is the expected outcome if its allowance is exhausted.
-The completed #574 run supplies the live baseline. The merged command cancellation
-implementation above supplies portable source evidence for one boundary, not proof
-of a new live interrupted delivery. Creator closure, restart delivery and shared-worker parity remain
-separate obligations. Supporting #582 still needs independent review and
-separate deployment authority.
+The interrupted #582 trial now reaches the addressed Telegram notice through
+ordinary workflow execution, real watcher facts and retained caller return.
+The immediate integration priority is preserving returned artifact references
+through producer cleanup and caller readback, as demonstrated above. The portable
+#586 loading repair is locally adopted with its own healthy deployment receipt
+and compiled installed-SDK check; its review and merge remain separate. Keep the
+simple cancellation and three-round rule. Clear owner escalation remains the
+expected outcome if the allowance is exhausted. Creator closure, restart delivery
+and shared-worker parity remain separate obligations; #582 still needs human
+GitHub review and separate deployment authority.
 
 Removal of mechanical housekeeping and Conversation ownership cutover follow
 that evidence. Source checks remain separate from wider rollout or an unmeasured

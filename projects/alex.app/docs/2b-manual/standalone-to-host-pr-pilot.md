@@ -10,6 +10,15 @@ Telegram approval notice against the original human input (provider message
 50618). The run required diagnostic interventions and a direct-repair exception
 after workflow exhaustion; pure workflow implementation and zero-intervention
 operation remain unproved. See the [final receipts and limits](../archive/implementation/host-ingress-sdk-source-review-20261116.md#green-head-caller-return-and-original-addressed-notice).
+A fresh interrupted #582 trial now proves actual parent-deadline cancellation
+of an awaited verification and attached TERM-ignoring child, then fresh workflow
+continuation on the same Task/generation/PR with two of three rounds consumed.
+Alex published and resolved the real review finding; the watcher woke the same
+Task for passing current-head CI, the caller returned, and the original addressed
+Telegram notice was delivered (provider message 50657). The command-loading gap
+was repaired in #586 and locally adopted. Setup interventions remain recorded;
+producer cleanup removed returned evidence before caller readback, which is the
+next retention gap. See the [trial evidence and interventions](../archive/implementation/host-ingress-sdk-source-review-20261116.md#ordinary-command-cancellation-and-fresh-continuation).
 This page owns the experiment method. The
 [shared runtime contract](../2a-design/agent-runtime.md) and
 [current delivery recipe](../development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
