@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`e7642b5a2c` and App `5fdaad20b3`. The installed runtime has not changed.
+`3e1ff5d142` and App `cdc1f01926`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -24,20 +24,18 @@ configured runtime location needs validation.
 
 The remaining high-value gaps are:
 
-- Enforce required prompt finish reports in the model-tool adapter. An independent
-  production probe on local Host `cb4f3583e5` returns `done` from plain assistant
-  text without any `finish()` call. Workflow/standalone prompt calls already
-  require finish. May received the reproduction and must repair this adapter
-  and its success fixtures before Root publishes that checkpoint.
 - Complete meaningful Host/CLI fixture migration, preserving real cancellation,
   steering and SIGINT child-drain assertions. Host3fb additionally migrates
   dispatch/result-handoff fixtures; all 17 owning tests and `check:ci` pass.
   Hostd8 also passes 23 tool/cancellation tests and `check:ci`, including explicit
   rejection of retired actions. Hoste764 resolves the steering coverage review;
-  all 31 workflow-tool tests and `check:ci` pass. Hoste764's completed hosted run reports 42 failures
+  all 31 workflow-tool tests and `check:ci` pass. Host3e1 also migrates lifecycle
+  fixtures and requires finish in canonical model-tool prompt calls; its 26
+  owning tests and `check:ci` pass. Retain a committed real-manager missing-report
+  regression beside the successful report cases. Hoste764's completed hosted run reports 42 failures
   across 18 files (3,495 tests, two skips); Container passes. This supersedes
   Host3fb's 59-failure baseline.
-  Full current-head Quality remains required.
+  Full current-head Quality remains required; that baseline predates Host3e1.
 - Finish the configured-target body/caller/guidance disposition. Discovery
   enumerates all 33 targets in the source snapshot; enumeration alone does not
   establish execution or live effects. Installation configuration selects its
@@ -46,7 +44,10 @@ The remaining high-value gaps are:
   omission of the disabled sample target. All five owning tests pass independently
   against Host `cb4f3583e5`. The same configured pair passes all 1,145 default
   App tests across 81 files, typechecking and the full design check. This does
-  not close the model-tool report defect or establish installed availability.
+  not establish installed availability. App `cdc1f01926` adds the complete
+  body/caller/guidance/owning-check disposition index; all six audit tests,
+  typechecking and design checks pass against Host3e1. The index records remaining
+  effects and serves source review; it does not prove execution of every target.
 - Verify and activate one exact compatible local pair, preserving legitimate
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
@@ -62,6 +63,14 @@ controlled local protocol cases in their external `/tmp` workspaces. The complet
 private Gym check passes 405 tests and all 1,488 review checks with two genuine
 installation evidence files supplied read-only. This is configured verification;
 external model behavior and portable clean-checkout setup remain separate limits.
+The complete configured Gym check also passes at App5fd/Hostcb4.
+
+Host3e1 closes the model-tool report defect found at local Hostcb4. An independent
+real-manager matrix checks five cases: absent finish fails after one corrective
+prompt; valid finish retains output/facts and actual identity; summary-only and
+outputless blocked reports succeed in their respective states; a corrective
+finish succeeds. This closes adapter parity at source level, not full CI or
+installed availability.
 
 The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#actual-gym-cli-verification-and-configured-inventory-regression)
 records exact revisions, checks and limitations. May continues implementation

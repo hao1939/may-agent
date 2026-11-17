@@ -1792,3 +1792,40 @@ Evidence under the trial directory: `5fd-cb4-independent-inventory.log`,
 `cb4-independent-check-ci.log`, `cb4-canonical-finish-observation.ts`,
 `cb4-canonical-finish-observation.json`, `current-host-finish-contract-receipt.json`,
 `e764-hosted-failures.json` and `e764-hosted-failure-file-map.json`.
+
+## Required finish repaired and checkpoints published
+
+Root reviewed and pushed Host `3e1ff5d1424145e74324a80bc16f79a69aebd4c8`,
+including the lifecycle migration. Canonical model-tool prompt calls now set
+`requireFinish: true`. Valid provider fixtures return actual finish reports and
+preserve their output/facts. All26 owning tests and `check:ci` pass independently.
+
+The same real-manager reproduction that returned `done` at Hostcb4 now returns
+`error` after exactly two child provider turns: the initial prose and one bounded
+corrective request. An extended five-case production matrix additionally proves
+valid output/facts retention, actual child identity, summary-only successful
+finish, outputless blocked finish and successful finish after correction. The
+Host still accepts legitimate outputless reports and preserves direct low-level
+manager behavior. Root requested a committed real-manager negative regression
+in the next existing fixture batch; the independent matrix is an observation,
+not a committed repository test. Feedback event6741258 also records publication
+and directs continued source work from the42-failure Hoste764 baseline.
+
+Root also reviewed/pushed App `cdc1f01926739df6b00b01e6452cbeac3b74447c`.
+Its explicit33-target index maps source bodies, callers, guidance and owning
+verification, with remaining external effects stated separately. All six audit
+tests, App typechecking and the full design checks pass independently against
+Host3e1. This closes the missing disposition index; checking referenced files
+cannot prove every target's execution or effects. The complete configured
+App5fd/Hostcb4 private Gym check also passes405 Bun tests and1,488 review checks,
+with the genuine installation evidence prerequisites preserved.
+
+No unified runtime is activated. Full current-head Host Quality, an exact final
+paired check and the connected native trial remain open.
+
+Evidence under the trial directory: `3e1-independent-owning.log`,
+`3e1-independent-check-ci.log`, `3e1-canonical-finish-observation.json`,
+`3e1-canonical-report-matrix.ts` / `.json` / `.log`,
+`cdc-3e1-independent-inventory.log`, `cdc-3e1-independent-typecheck.log`,
+`cdc-3e1-independent-design.log`, `5fd-cb4-independent-gym-check.log` and
+`current-host-3e1-verified-receipt.json`.
