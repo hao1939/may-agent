@@ -274,6 +274,19 @@ development round is reserved, and do not justify weakening the verification
 command or making unrelated source changes. The links restore the existing
 local environment; they do not prove compatibility or reproducibility.
 
+**Refinement gap from the November 17 trial:** repository verification can
+discover a prerequisite missing beyond that limited workspace preflight. The
+current failure loop can then spend further rounds rerunning an unchanged
+candidate. The implementation agent should use its existing `clarify` decision
+to return the exact setup dependency when no source repair is warranted. An
+unchanged candidate is not ready merely because the failure is environmental.
+Retain the failed command and consumed round; after setup is repaired, rerun the
+required check on the same Task. This needs no refund, extra allowance ledger,
+generic Host error classifier or attempt to inventory every possible tool.
+The [live source review](archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment)
+records the observed repeated Docker prerequisite failure and a separate
+cancellation-test failure; neither is a passing verification receipt.
+
 ## Reconciliation and updates
 
 The accepted Task result stores a small versioned `development` record with

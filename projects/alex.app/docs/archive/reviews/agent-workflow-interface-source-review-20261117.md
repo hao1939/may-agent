@@ -253,3 +253,26 @@ The ingress proposal also removes automatic Task closure from its transport
 cutover: notification, idle state and closure have different owning decisions.
 These are clarified requirements and review findings, not claims of installed
 support or new implementation assignments.
+
+At 15:58–15:59 UTC, native May workflow `wr_1794931082004_d9nc` revised the
+same focused repair Task from generation one to two, total four with three
+rounds retained. Its scoped result completed exact allowance request
+`appdep_efb3811e531116e465757266`; read-only audit confirmed `status: done`.
+Alex entered `develop-change` run `wr_1794931110330_edqv` on that same Task.
+This establishes one working creator-revision and dependency-return path, not
+completion of every older escalation or the original blocked revision.
+
+Root also retried ingress key `root-hotfix-ci-extra-failure-1794931107836`
+with different input. Installed Host rejected it as a definitive conflict;
+read-only audit found only original event `6736098`. Earlier identical replay
+and stale-generation checks remain separate evidence.
+
+The last retained three-round workflow evidence includes seven failures:
+six missing-Docker configuration cases and the standalone work-stop test at
+`packages/sdk/src/runtime/app/standalone.test.ts:875`. The latter failed its
+300ms whole-run bound under sixteen-shard load and passed when Root ran its
+owning case alone. That contrast does not establish a fixed race or a passing
+full suite. Root returned the exact failure to May; final current-candidate CI
+must be read independently. The repeated environment failures also motivate
+using the existing specialist `clarify` return when setup, rather than a code
+change, is needed. This is App execution guidance, not a new Host classifier.
