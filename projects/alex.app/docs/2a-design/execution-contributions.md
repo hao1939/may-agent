@@ -155,6 +155,13 @@ third argument. Executor-specific skill, operation-count and tool-profile
 options are outside this contract. The input envelope contains only `prompt`
 and optional `data`; reject old or conflicting authoring fields explicitly.
 
+Task/App ingress keeps its own domain-input contract. Its execution adapter builds
+the meaningful prompt from the current assignment and places domain input under
+`data`, so root workflows and child calls receive the same `ctx.input` envelope.
+This does not wrap stored Task input or `ctx.reconciliation.input`: those remain
+the Task's domain input. Migrate workflow body reads alongside schemas and
+callers; a common descriptor alone cannot make top-level domain reads correct.
+
 ### Discovery and callable names
 
 Use one catalog and one address rule for agents and workflows:

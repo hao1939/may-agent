@@ -760,3 +760,60 @@ synthetic production-boundary checks, not external-model, paired-activation or
 Telegram delivery proof. No unified candidate has been activated. The most recent
 executable readback still identifies baseline `0606e2df`; the earlier #590 local
 receipt must be re-established in the final compatible candidate.
+
+
+## Root adapters and full migration boundary
+
+Root published native Host `28512c1971be85c791df0e9ed76429c3b8a20de9` for parallel
+review. Independent verification on its clean detached snapshot passes 194 tests
+across nine affected Host/SDK suites and `check:ci`. Ten production four-direction
+checks pass. A real controlled import settles at 106ms with a 100ms root timeout;
+previously it remained pending beyond the 1500ms watchdog. A fresh SQLite Task
+runner probe now admits the full workflow schema and preserves the assignment,
+Task identity, domain data and unchanged reconciliation input. All five checks
+pass; the earlier published head rejects before that workflow body starts.
+Common root validation errors now return without an execution ID. Supplied
+invalid partial output still escapes validation.
+
+The local `50050df8d4e248edaebd8a2e5edbddbd42bfb54d` registration-name repair
+passes eleven owning tests, but it does not repair actual standalone child
+lookup. The production call-surface probe still invokes `global/ echo` and
+`global /echo`; other invalid child names throw. Separate clean-snapshot
+integration/export verification has 26 passes and seven failures. A downloaded
+superseded-head hosted log contains a completed shard with 724 passes, two skips
+and 47 failures. Other processes persisted until cancellation. Full CI is an
+open migration requirement, not merely a pending readiness announcement.
+Preserve meaningful lineage, cancellation and result tests while migrating
+retired inputs/actions. In particular, replacing the real standalone SIGINT
+child-drain regression with a help smoke test loses coverage; migrate its
+fixture to a registered contribution and the canonical envelope instead.
+
+The paired App checkpoint `a8181ba58287949c91cf178a6f9708965669a5a3` is clean and
+published on its retained backup branch. Forty focused tests pass against frozen
+Host `485856afa7`. Real standalone invocation of its report reader with
+`data.operation = "read-publication"` and no publication now correctly blocks.
+Clean frozen `009d038e57` instead silently lists five reports because the body
+reads the old top-level field. This demonstrates why schema/type checks alone
+cannot establish the App migration. Metric review, Task review, runtime audit,
+comparison and active May/Scout bodies/callers remain to migrate at `a818`.
+
+The live App trial also exposed a checkout mismatch. A direct specialist's
+relative edits and initial checks ran in its generation-generated workspace,
+not the retained candidate named in its prose assignment. The useful edits were
+preserved and recovered into the retained branch, then checked against the exact
+provider. A supported `develop-change` execution must bind tools to the saved
+candidate rather than rely on a prose path or an unsupported shell `workdir`
+argument. Root preserved a rescue patch; no primary Apps source was changed.
+
+The App Task then reported convergence despite the remaining full active-App
+acceptance. Root retained its useful partial source and returned the concrete
+gaps through May. May revised the same Task to generation six, cumulative total
+sixteen with at least eight prior rounds retained: four recorded workflow rounds
+and four direct specialist exchanges. It now invokes `develop-change` over all
+33 configured targets on the retained candidate. This is correction of a domain
+completion judgment; the Host's valid report admission alone cannot certify it.
+The original Host delivery Task and final paired-trial obligation remain open.
+
+Exact receipts and logs are retained under the existing local trial directory.
+No unified Host/SDK/App pair has been activated, no native readiness Telegram
+has been proved, and late-comment follow-up remains unverified.

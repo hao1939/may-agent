@@ -4,18 +4,17 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`eedf54fac4`. Canonical model list/call, loader namespace preservation, standalone
-cooperation, common child results, shared call options, invalid child-input
-admission and inherited read-only Task context have focused verification.
-The newer local `eb77e74da6` checkpoint also passes all four call directions and
-the common public `run()` result probe. Its retained test migration passes 32
-tests but is still uncommitted. Paired App checkpoint `009d038e57` now passes 100
-focused tests and real development-envelope admission; broader active App
-migration remains open. Remaining implementation work is listed below. Full
-current-head CI and the connected local trial remain open;
-no unified candidate is activated. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#published-child-admission-and-paired-source-checkpoint)
-records exact revisions, failed checks and the actual installed-runtime boundary.
+`28512c1971`. Independent checks pass 194 focused tests and `check:ci`; production
+probes cover all four directions, the common root result, invalid root/child
+input, the enclosing discovery timeout and full-envelope Task workflow ingress.
+Complete CI remains open: a superseded head's completed shard recorded 47
+failures, and current local integration/export checks still fail. Paired App
+checkpoint `a8181ba582` repairs development, diagnosis and report-reader envelopes
+and passes 40 additional focused tests; full active-App migration is unfinished.
+The same App Task is revised to generation six for that remaining work through
+its workflow. No unified candidate is activated. The
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#root-adapters-and-full-migration-boundary)
+records exact revisions, failed checks and the runtime boundary.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -295,7 +294,12 @@ this order, returning source evidence after each coherent checkpoint:
    Bind both SDK imports and TypeScript path aliases to one exact clean provider
    snapshot; private `node_modules` alone is insufficient in this repository.
    Remove raw-input compatibility fallbacks and verify the actual exported schema
-   against `{ prompt, data }` through production admission.
+   against `{ prompt, data }` through production admission. Inventory domain
+   reads in workflow bodies as well: most legacy bodies still read top-level
+   fields even when discovery supplies the common schema. Read those fields from
+   `ctx.input.data`; preserve intentionally authoritative Task domain input in
+   `ctx.reconciliation.input`. Scope includes all configured Apps, not only
+   files already changed or errors caught by TypeScript.
 4. **Verify and trial the pair.** Pass current-head portable and hosted checks,
    resolve substantive comments, then activate the exact compatible local pair
    and prove native workflow/PR/CI/comment/notification follow-through. Carry the
