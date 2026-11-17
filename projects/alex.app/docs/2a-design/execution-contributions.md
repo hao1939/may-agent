@@ -222,9 +222,14 @@ The model-facing cooperation surface is `list` and awaited `call`. The
 specifies retirement of `fork` and its session controls. Parallel joined calls
 remain ordinary workflow code; durable independently owned work uses Tasks.
 
-**Current gap:** this envelope, discovery rule, permission removal and reduced
-tool surface are the refined target design. Host #585 and existing App call
-sites still need migration; sharing the `agents` tool name does not implement it.
+**Source coverage and rollout gap:** draft Host #589 has independently verified
+common envelopes/results, all four call directions, exact canonical discovery,
+immutable prompt/config snapshots and finite cancellation. Pending native imports
+remain explicitly unconfirmed on timeout/abort. This promotes verified source
+behavior; the installed API still requires the paired cutover. App targets,
+callers, fixtures and trusted-result consumers remain under migration, with full
+CI and the connected local trial open. See the
+[cutover status](../proposals/agent-workflow-interface-review-20261117.md).
 
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.

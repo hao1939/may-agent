@@ -4,47 +4,34 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`5cdc43973c`. This checkpoint preserves exact targets supplied to the `agents` tool; independent
-exact-clean `check:ci` and all 34 standalone tests pass. At preceding `185ffeb1ce`,
-44 owning tests and the public snapshot checks passed. The real public `run()`
-snapshot probe retains model, identity text and descriptors after edits. Both catalog paths share the same capture helper, and
-owning regressions cover missing identity/shared prompt files plus fresh later
-invocations. Production probes at `185ffeb1ce` also pass all four call directions,
-canonical name/error checks, schema/report validation and Task workflow ingress,
-including unchanged raw reconciliation input. The reviewer resolved the metadata,
-naming and schema discussions from that evidence.
+`ffbd59ecbc`. Independent exact-clean `check:ci` and 44 owning tests pass.
+Shared callable cancellation settles within the existing finite cleanup grace.
+The original explicit-module timeout/abort probe now reports unconfirmed cleanup
+while a native import remains pending; both cleanup defects are repaired.
 
-Shared callable cancellation settlement is finite and retains cooperative
-cleanup joins. An exact `5cdc43973c` probe still shows explicit-module imports
-pending after timeout/cancel while cleanup is incorrectly reported confirmed.
-Reuse caller-owned catalog state; do not add another cancellation mechanism. The
-existing execution read projects bounded trusted CLI receipts for sessions/direct
-children, but nested workflow coverage and visible truncation remain open.
-The preceding `b6f153b5ec` fixes prompt blocked reports without unavailable
-output and removes legacy `dataSchema` authoring. Earlier production probes
-cover all four call directions, exact canonical dispatch, common root results,
-invalid root/child input, enclosing discovery timeout and full-envelope Task
-workflow ingress. These are bounded source checks, not complete cutover proof.
+At `185ffeb1ce`, production probes pass all four call directions, canonical
+names/discovery, schema/report validation, immutable prompt/config snapshots and
+Task workflow ingress with raw reconciliation input. The metadata, naming,
+schema, timeout and import review discussions are resolved from independent
+evidence. These checks establish source behavior, not installed availability.
 
-Paired App checkpoint `f9e6a982a1` is published on its retained review branch.
-Against exact Host `fc03d87609`, six affected suites pass all 112 tests and the
-root typecheck passes; both SDK entrypoints and the Gym workspace resolve to
-candidate source. The broader canonical App check still reports four Scout
-input/optional-ID errors. Local `5a1d5c89e6` passes 150 more selected tests but
-is not certified: all four workload handoff cases still fail, now exposing an
-App-saved callable envelope wrapped again by the Host Task adapter. Exactly one
-adapter must construct the envelope; saved Task input remains domain input.
-Three retained-report recovery cases pass. Full active-App bodies, callers,
-fixtures, guidance and trusted-receipt consumers remain unfinished.
+App checkpoint `7255076158` is published on its retained review branch. Its exact
+pair with Host `185ffeb1ce` passes 66 workload/recovery tests and fails four real
+owner-handoff cases. Raw Task-input mapping is repaired. The failed fixtures
+never reach their scripted helper through the new catalog, then report a blocked
+result without a valid continuation. Migrate those fixtures and retain exact
+Condition, restart and cancellation assertions. The canonical App check still
+reports four Scout input/optional-ID errors; integrity and design examples pass.
+Full configured-target bodies, callers, guidance and result consumers remain
+unfinished.
 
-Complete CI remains open. The superseded `2f6aaaf1` hosted Quality run had three
-completed shards with 968/8, 800/15 and 722/52 pass/fail counts (plus two skips),
-and another shard was cancelled unfinished. Narrow green checks do not replace
-current-head CI. Pending-import cleanup reporting, durable
-prompt partial-report coverage and substantive reviews also remain open. No
-unified candidate is activated; connected native-trial and readiness-notification
-acceptance are unproved. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#exact-model-target-names-published)
+Trusted execution reads project real CLI receipts for sessions/direct children,
+but nested workflow coverage, visible truncation and actual development/Gym
+consumers remain open. A durable real-prompt partial-report regression, meaningful
+Host/CLI fixture migration and complete current-head CI also remain required.
+No unified candidate is activated; connected native-trial and Telegram review-link
+notification acceptance are unproved. The
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#import-cleanup-repair-and-paired-app-mapping)
 records exact revisions and remaining verification boundaries.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
@@ -319,11 +306,11 @@ this order, returning source evidence after each coherent checkpoint:
    the real prompt-execution regression for omitted unavailable output. Expose trusted
    CLI receipts through the existing execution read/observer and migrate actual
    consumers; avoid a second result alias or an unbounded process-local run store.
-2. **Close captured-catalog gaps.** Preserve verified exact child-name admission;
-   capture prompt config, identity and metadata once per invocation tree and use
-   that snapshot in actual prompt preparation, not only discovery. Retain pending imports
-   through explicit-module cancellation, and bound settlement when a child ignores
-   cancellation. Preserve the existing finite cancellation/cleanup policy.
+2. **Retain verified catalog and cancellation behavior.** Preserve exact-name
+   admission, immutable prompt/config snapshots and explicit missing-file absence.
+   Keep pending imports visible through cancellation and finite settlement for
+   uncooperative children. These repairs are verified source behavior; remaining
+   fixture migration must exercise their actual production paths.
 3. **Complete the paired App contribution.** Migrate all active definitions,
    full-envelope schemas, callers, result/diagnostic consumers and guidance.
    Bind both SDK imports and TypeScript path aliases to one exact clean provider

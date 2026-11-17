@@ -1191,3 +1191,57 @@ Evidence under the trial directory: `5cdc-independent-standalone.log`,
 `next-source-obligations-receipt.json`. Earlier snapshot and App evidence retain
 their exact original revisions; this checkpoint does not certify full CI or
 complete App migration.
+
+
+## Import cleanup repair and paired App mapping
+
+Root independently verified and published native Host
+`ffbd59ecbc611a4ad71b5ee54dc0acc60ae51071`. The explicit-module preparation
+wrapper shares the invocation's pending-import counter while preserving its
+separately built catalog. This retains snapshot merging and avoids inventing a
+second cancellation mechanism. The owning assertion again requires unconfirmed
+cleanup. All 44 standalone/callable tests and exact-clean `check:ci` pass.
+The original controlled probe now returns `WorkflowUnconfirmedCleanupError`
+and `cleanup.confirmed: false` for timeout and parent abort while the native
+import remains pending and the workflow body never starts.
+
+The reviewer resolved the distinct
+[shared callable settlement](https://github.com/hao1939/may-agent/pull/589#discussion_r4605327155)
+and [explicit import reporting](https://github.com/hao1939/may-agent/pull/589#discussion_r4605373975)
+discussions from their owning tests and independent production probes. Existing
+review resolutions do not replace full CI or final acceptance.
+
+App `725507615871181181f28ad5a7fb0cef0ce8d53c` repairs the duplicate saved
+Task-input envelope and is published on its retained backup branch. Independent
+verification pairs it with immutable Host `185ffeb1ce`: 66 tests pass and four
+real workload owner-handoff cases fail. An unchanged-assertion diagnostic shows
+`helperCalls: 0` and a blocked workflow reason before the invalid waiting
+settlement. The stale manager fixture exposes only `callAgent` and a legacy
+finish wrapper, bypassing the canonical captured definitions required by the
+new route. This is further fixture migration, not evidence to relax exact
+Conditions or rewrite a failure as waiting. All four restart/during-review/
+withdrawn/cancelled-target cases remain required.
+
+May rebound both ignored SDK paths at a terminal native-workflow boundary and
+recorded actual Bun resolution to immutable 185. Root read that receipt back.
+The claimed private Gym workspace receipt only checks SDK resolution from its
+working directory; the package link still resolves to `/app/projects/gym`.
+Root's separate immutable pair resolves the actual candidate Gym package and
+leaves native work untouched. May must finish actual binding/verification at a
+safe boundary before certifying that provider setup.
+
+Exact 725/185 `check:may-design` passes integrity/examples and fails the four
+known Scout optional-ID/input errors. Host execution-read probes still fail
+nested workflow receipt traversal, 65-to-64 receipt truncation visibility and
+message-tail omission visibility; actual receipt/trust/direct-child checks pass.
+Those source/consumer repairs, meaningful full CI and the paired local trial
+remain open. No unified runtime is activated.
+
+Evidence under the trial directory: `ffbd-independent-owning.log`,
+`ffbd-independent-check-ci.log`, `module-import-cleanup-1794947285812.json`,
+`5cdc-timeout-review-resolution.json`, `ffbd-import-review-resolution.json`,
+`pair-7255076158-185ffeb1ce.json`, `725-185-independent-workload-recovery.log`,
+`725-185-workload-cause-diagnostic.log`, `725-185-design-check.log`,
+`paired-frozen-host-sdk-binding-1794947175354.json` and
+`execution-receipts-1794947207795.json`. The pinned full Host run is still in
+progress at this checkpoint; it is not included in the passing-test claim.
