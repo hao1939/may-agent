@@ -4,40 +4,42 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`bb8958cbf9` and App `0bee25cb23`. The installed runtime has not changed.
+`63fda1a435` and App `2c5ddf5733`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
-cancellation and Task ingress. Host bb895 separates callable-input typing from
-raw reconciliation-input typing; its exact `check:ci` passes. Earlier owning
-checks establish bounded nested receipt reads and real prompt partial-result
-admission. These are source checkpoints, not full CI or installed availability.
+cancellation and Task ingress. Host 63f repairs canonical root-owner discovery
+and captured Task-handler dispatch. All 35 real worker/process tests, 48 owning
+tests and exact `check:ci` pass. The raw Task-input SDK typing, export snapshots,
+Scout root admission and bounded nested receipt reads have verified source
+repairs. These checkpoints do not establish full Host CI or installed availability.
 
-App 0bee repairs actual Scout Task admission: its exported attachment, schema and
-body agree on the raw saved domain input within the single outer call envelope.
-A real Host admission probe reaches the body. The exact App0bee/Hostbb895 pair
-passes App typechecking and 67 targeted tests. Design integrity, checked examples
-and canonical App typing pass; model-surface checking exceeds Alex's prompt
-budget at the long snapshot path. The unchanged App source passes that checker
-from a shorter physical path. Final configured-location validation remains
-required; changing evidence-directory length does not establish runtime readiness.
+App 2c5 preserves development receipts, restores standalone-stage's live model
+registry and migrates the primary Gym workflow adapter. Its exact pair with Host
+63f passes 93 consumer tests, App typechecking and the full design check. With the
+installation's existing App-disable markers supplied as explicit isolated
+configuration, the default App command passes all 1,143 tests across 81 files.
+Long snapshot paths can still overflow model prompt/skill budgets; the final
+configured runtime location needs validation.
 
 The remaining high-value gaps are:
 
-- Repair root workflow discovery under canonical owner keys and verify the real
-  Task-worker boundary. Same-source double registration currently rejects a
-  valid root; distinct duplicate canonical targets must still reject.
-- Finish development/Gym receipt consumers, standalone-stage diagnostics and the
-  complete configured-target body/caller/guidance migration. Discovery enumerates
-  all 33 targets; discovery alone does not establish execution or live effects.
+- Finish Gym CLI diagnostic consumers. Its private check currently reports
+  eleven retired result-wrapper reads and one obsolete adapter option. Main App
+  typechecking does not cover this private package.
 - Complete meaningful Host/CLI fixture migration, preserving real cancellation,
-  steering and SIGINT child-drain assertions. SDK export snapshots and full
-  current-head Host/App checks remain required.
+  steering and SIGINT child-drain assertions. Previous Host bb895's completed
+  hosted run reports 107 failing cases; the worker/export repairs supersede their
+  corresponding failures. Full current-head Quality remains open.
+- Finish the configured-target body/caller/guidance disposition. Discovery
+  enumerates all 33 targets in the source snapshot; enumeration alone does not
+  establish execution or live effects. Installation configuration selects its
+  enabled Apps independently of source availability.
 - Verify and activate one exact compatible local pair, preserving legitimate
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
 
-The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#verified-task-admission-and-independent-input-typing)
+The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#canonical-worker-boundary-and-configured-app-checks)
 records exact revisions, checks and limitations. May continues implementation
 through the retained native Tasks/workflows; no unified candidate is activated.
 

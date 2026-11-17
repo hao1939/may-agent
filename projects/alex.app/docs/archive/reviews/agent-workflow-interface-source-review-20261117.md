@@ -1462,3 +1462,67 @@ Evidence under the trial directory: `scout-root-admission-1794949411973.json`,
 `0bee-checkpoint-and-path-budget-receipt.json`. The separate pair's
 `0bee-bb895-independent-typecheck.log`, `0bee-bb895-independent-owning.log`
 and `0bee-bb895-independent-design.log` are under the unified-589 pair directory.
+
+
+## Canonical worker boundary and configured App checks
+
+Native Host `63fda1a435e124526f334e67612a6fd14b3359b4` repairs root procedure
+seeding under the captured canonical owner and keeps code routes as structured
+owner/name pairs. Captured Task-agent dispatch resolves the retained definition
+rather than silently falling back to an unavailable bare registry key. The real
+worker fixture registers its probe only for the selected handler and consumes
+its domain input through the mandatory envelope. Distinct canonical conflicts
+still reject. Both SDK declaration snapshots are updated to the reviewed surface.
+Root independently verifies all 48 owning tests, all 35 real worker/process tests
+and exact `check:ci`; the checkpoint is published on PR #589.
+
+Native App `90303dd0d1400f6338bba48fe8023f9b02de7865` retains Host-authored
+execution diagnostics in development reports and migrates standalone-stage/Gym
+to the existing diagnostic runner. Independent checks pass 92 consumer tests,
+App typechecking and full design validation at the shorter physical snapshot.
+Root then exercises actual standalone-stage with the committed App configuration
+and no agent fixture. The hardcoded empty model registry fails before any model
+request with unknown model. May repairs live registry construction at published
+`2c5ddf57336f9e66b530514c01752df6d05bc66c`; 93 consumer tests pass.
+
+A separate exact App2c5/Host63f pair passes App typechecking and full design
+validation. Root supplies only the installation's existing ignored App-disable
+markers as initial isolated configuration: `aks-rp-e2e` and `sample` remain
+disabled, and no native source/provider/configuration changes. The default App
+command passes **1,143 tests across 81 files**. Its earlier unconfigured App903
+diagnostic reached all 85 default files: nine chunks passed, one chunk had
+40 passes and one failure because the installed-App assertion expects three
+Apps but sees five without those markers. The final five-file chunk passes.
+The original uninstrumented App903 command exited without a failure summary;
+the later diagnostic must not be described as that original run's output.
+
+The independent private Gym check genuinely runs from its package directory and
+finds twelve type errors at App2c5: eleven retired `RunResult.report` reads in
+`src/cli.ts` and obsolete `cwd` in the direct workflow adapter. A preliminary
+`bun --cwd projects/gym run check` invocation only printed help and returned zero;
+that invocation is explicitly excluded from passing-check claims. May is migrating
+the remaining real consumers. No universal result wrapper is restored.
+
+Root also obtains authoritative completed hosted results for Host bb895: four
+JUnit shards contain 3,502 tests, 107 failures and two skips. The file map comes
+from JUnit, replacing the earlier unreliable interleaved-log grouping. These are
+bb895 results, not current63f failure counts; the 35 worker and SDK snapshot
+passes supersede their earlier failures. Container passes at current63f; its
+Quality check remains open at this checkpoint.
+
+Root posts a new actual GitHub [steering coverage review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5946872526)
+on63f. The migrated case never calls `steer` and asserts ordinary completion with
+"should not reach here". Restore a real trigger/interruption assertion or remove
+that misleading duplicate while preserving the following real steering tests.
+This review is not yet resolved. Actual CLI SIGINT child-drain coverage, full
+Host CI, remaining consumer migration and the connected local trial remain open.
+No unified candidate is activated; Telegram review-link delivery is unproved.
+
+Evidence under the trial directory: `63f-independent-owning.log`,
+`63f-independent-workers.log`, `63f-independent-check-ci.log`,
+`bb895-hosted-quality.log`, `bb895-hosted-test-results.zip`,
+`bb895-hosted-failure-file-map.json`, `903-standalone-stage-live-models.json`,
+`903-default-chunks-diagnostic.log`, `903-remaining-default-chunks.log`,
+`2c5-63f-installed-config.json`, `2c5-63f-independent-consumers.log`,
+`2c5-63f-independent-checks.log`, `2c5-63f-independent-full-app-test.log`,
+`2c5-63f-independent-gym-check.log` and `63f-steering-review.json`.
