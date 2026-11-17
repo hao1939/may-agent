@@ -518,27 +518,32 @@ export function defaultDirectToolDenials(configuredTools: readonly string[]): To
   });
 }
 
-const CommonKernelAgentsParams = Type.Object({
-  action: Type.String({ description: 'Only "call" is supported by the bounded common-kernel agents binding.' }),
-  agent: Type.String({ description: "Declared prompt agent or code procedure target." }),
-  input: Type.Optional(Type.Unknown({ description: "Structured procedure input or prompt text." })),
-  task: Type.Optional(Type.String({ description: "Prompt text alias used when input is omitted." })),
-  timeoutMs: Type.Optional(Type.Number({ minimum: 1 })),
-  tools: Type.Optional(Type.Union([Type.Literal("full"), Type.Literal("readonly")])),
-  skill: Type.Optional(Type.String()),
-  operationAllowance: Type.Optional(Type.Integer({ minimum: 1 })),
-}, { additionalProperties: false });
+const CommonKernelAgentsParams = Type.Union([
+  Type.Object({
+    action: Type.Literal("list"),
+  }, { additionalProperties: false }),
+  Type.Object({
+    action: Type.Literal("call"),
+    agent: Type.String({ minLength: 1, description: "Exact canonical app/name or global/name target." }),
+    input: Type.Object({
+      prompt: Type.String({ minLength: 1 }),
+      data: Type.Optional(Type.Unknown()),
+    }, { additionalProperties: false }),
+    options: Type.Optional(Type.Object({
+      timeoutMs: Type.Optional(Type.Number({ minimum: 1 })),
+      schema: Type.Optional(Type.Unknown()),
+    }, { additionalProperties: false })),
+  }, { additionalProperties: false }),
+]);
 
-type CommonKernelAgentsCall = {
-  action: string;
-  agent: string;
-  input?: unknown;
-  task?: string;
-  timeoutMs?: number;
-  tools?: "full" | "readonly";
-  skill?: string;
-  operationAllowance?: number;
-};
+type CommonKernelAgentsCall =
+  | { action: "list" }
+  | {
+      action: "call";
+      agent: string;
+      input: { prompt: string; data?: unknown };
+      options?: { timeoutMs?: number; schema?: TSchema };
+    };
 
 /**
  * Built-in agents binding available only inside an admitted common-kernel prompt step.
@@ -546,6 +551,7 @@ type CommonKernelAgentsCall = {
  */
 function createCommonKernelAgentsTool(
   stepControl: WorkflowKernelStepControl,
+  listTargets: () => readonly CallableDescriptor[],
   resolveTarget: (
     target: string,
     input: unknown,
@@ -554,34 +560,34 @@ function createCommonKernelAgentsTool(
 ): AgentTool {
   return {
     name: "agents",
-    label: "Call declared agent",
+    label: "List or call contributions",
     description:
-      'Synchronously call one declared prompt agent or code procedure through the current execution kernel. Only action: "call" is supported; helper lifecycle actions and native CLI fallback are unavailable.',
+      "List the complete captured callable catalog or synchronously call one exact canonical target.",
     parameters: CommonKernelAgentsParams,
     execute: async (_toolCallId, rawParams, signal) => {
       const params = rawParams as CommonKernelAgentsCall;
-      if (params.action !== "call") {
-        throw new Error(`agents action "${String(params.action)}" is unsupported in the bounded common-kernel binding; only "call" is available`);
+      if (params.action === "list") {
+        const descriptors = listTargets();
+        return { content: [{ type: "text", text: JSON.stringify(descriptors) }], details: descriptors };
       }
       if (typeof params.agent !== "string" || !params.agent.trim()) {
-        throw new Error('agents action "call" requires a non-empty agent target');
+        throw new Error('agents action "call" requires a non-empty canonical agent target');
       }
-      if (params.input === undefined && params.task === undefined) {
-        throw new Error('agents action "call" requires input (or the prompt task alias)');
-      }
-      const input = params.input !== undefined ? params.input : params.task!;
+      validateCallableInput(Type.Object({
+        prompt: Type.String({ minLength: 1 }),
+        data: Type.Optional(Type.Unknown()),
+      }, { additionalProperties: false }), params.input);
       const options: CallOptions<TSchema> = {
-        ...(params.timeoutMs !== undefined ? { timeoutMs: params.timeoutMs } : {}),
-        ...(params.tools !== undefined ? { tools: params.tools } : {}),
-        ...(params.skill !== undefined ? { skill: params.skill } : {}),
-        ...(params.operationAllowance !== undefined ? { operationAllowance: params.operationAllowance } : {}),
+        ...(params.options?.timeoutMs !== undefined ? { timeoutMs: params.options.timeoutMs } : {}),
+        ...(params.options?.schema !== undefined ? { schema: params.options.schema } : {}),
       };
+      const target = params.agent.trim();
       const result = await stepControl.callTarget(
-        params.agent.trim(),
-        input,
+        target,
+        params.input,
         options,
         signal,
-        (nestedControl) => resolveTarget(params.agent.trim(), input, nestedControl.signal),
+        (nestedControl) => resolveTarget(target, params.input, nestedControl.signal),
       );
       const text = JSON.stringify(result);
       return { content: [{ type: "text", text }], details: result };
@@ -848,8 +854,6 @@ async function buildDirectPromptCatalog(
     }
     const promptEntry = { owner: namespace, definition: { source: agentDir } };
     prompts.set(canonicalName, promptEntry);
-    // Compatibility aliases remain internal until the fixture migration removes bare calls.
-    if (!prompts.has(config.name)) prompts.set(config.name, promptEntry);
 
     const workflowDir = join(agentDir.dir, "workflows");
     if (!existsSync(workflowDir)) continue;
@@ -866,7 +870,6 @@ async function buildDirectPromptCatalog(
       merged.set(workflow.name, workflow);
     }
     proceduresByOwner.set(namespace, merged);
-    if (!proceduresByOwner.has(config.name)) proceduresByOwner.set(config.name, merged);
     diagnostics.push(...loaded.diagnostics);
   }
 
@@ -1383,12 +1386,38 @@ export async function runDirectWorkflow<TInput = unknown>(
   ) => Promise<WorkflowKernelResolvedTarget>;
 
   const promptTaskFromInput = (input: unknown, target: string): string => {
-    if (typeof input === "string") return input;
     if (!input || typeof input !== "object" || typeof (input as { prompt?: unknown }).prompt !== "string") {
       throw new Error(`Prompt target "${target}" requires a canonical { prompt, data? } input`);
     }
     const { prompt, data } = input as { prompt: string; data?: unknown };
     return data === undefined ? prompt : `${prompt}\n\nInput data:\n${JSON.stringify(data, null, 2)}`;
+  };
+
+  const captureCallableDescriptors = (): readonly CallableDescriptor[] => {
+    const definitions: CallableDefinition[] = [];
+    for (const [name, entry] of preparedCatalog.prompts) {
+      const slash = name.indexOf("/");
+      if (slash === -1) continue;
+      definitions.push({
+        ...(name.slice(0, slash) !== "global" ? { appId: name.slice(0, slash) } : {}),
+        declaredName: name.slice(slash + 1),
+        description: readAgentConfigFile(entry.definition.source.dir)?.description ?? name,
+        async invoke() { return { status: "error", summary: "descriptor only" }; },
+      });
+    }
+    for (const [namespace, workflows] of preparedCatalog.proceduresByOwner) {
+      for (const workflow of workflows.values()) {
+        definitions.push({
+          ...(namespace !== "global" ? { appId: namespace } : {}),
+          declaredName: workflow.name,
+          description: workflow.description,
+          ...(workflow.inputSchema ? { inputSchema: workflow.inputSchema } : {}),
+          ...(workflow.outputSchema ? { outputSchema: workflow.outputSchema } : {}),
+          async invoke() { return { status: "error", summary: "descriptor only" }; },
+        });
+      }
+    }
+    return new CallableCatalog(definitions).list();
   };
 
   const executePromptStep = async (
@@ -1412,24 +1441,23 @@ export async function runDirectWorkflow<TInput = unknown>(
     }
     const explicitAgentsProvider = options.capabilityProviders?.agents;
     const configuredDenials = options.resolveToolDenials?.(agent, config.tools);
-    const denials = configuredDenials ?? defaultDirectToolDenials(config.tools).filter(
+    const denials = (configuredDenials ?? defaultDirectToolDenials(config.tools)).filter(
       (denial) =>
-        options.capabilityProviders?.[denial.name] === undefined &&
-        denial.name !== "agents",
+        denial.name !== "agents" &&
+        options.capabilityProviders?.[denial.name] === undefined,
     );
-    const agentsDenied = denials.some((denial) => denial.name === "agents");
-    const capabilityProviders =
-      config.tools.includes("agents") && !explicitAgentsProvider && !agentsDenied
-        ? {
-            ...options.capabilityProviders,
-            agents: () => ({
-              tools: [createCommonKernelAgentsTool(
-                stepControl,
-                (target, input, signal) => resolveDirectTarget(agent, target, input, signal),
-              )],
-            }),
-          }
-        : options.capabilityProviders;
+    const capabilityProviders = explicitAgentsProvider
+      ? options.capabilityProviders
+      : {
+          ...options.capabilityProviders,
+          agents: () => ({
+            tools: [createCommonKernelAgentsTool(
+              stepControl,
+              captureCallableDescriptors,
+              (target, input, signal) => resolveDirectTarget(agent, target, input, signal),
+            )],
+          }),
+        };
 
     const directRun = await executeAgent({
       agentName: config.name,
@@ -1663,33 +1691,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       // Native imports cannot be forcibly stopped. Keep uncertainty visible if
       // preparation outlives this invocation, and fence its late continuation.
       confirmCleanup: () => preparedCatalog.pendingImports === 0,
-      listTargets: () => {
-        const definitions: CallableDefinition[] = [];
-        for (const [name, entry] of preparedCatalog.prompts) {
-          const slash = name.indexOf("/");
-          if (slash === -1) continue;
-          definitions.push({
-            ...(name.slice(0, slash) !== "global" ? { appId: name.slice(0, slash) } : {}),
-            declaredName: name.slice(slash + 1),
-            description: readAgentConfigFile(entry.definition.source.dir)?.description ?? name,
-            async invoke() { return { status: "error", summary: "descriptor only" }; },
-          });
-        }
-        for (const [namespace, workflows] of preparedCatalog.proceduresByOwner) {
-          if (namespace !== "global" && ![...preparedCatalog.prompts.keys()].some((name) => name.startsWith(`${namespace}/`))) continue;
-          for (const workflow of workflows.values()) {
-            definitions.push({
-              ...(namespace !== "global" ? { appId: namespace } : {}),
-              declaredName: workflow.name,
-              description: workflow.description,
-              ...(workflow.inputSchema ? { inputSchema: workflow.inputSchema } : {}),
-              ...(workflow.outputSchema ? { outputSchema: workflow.outputSchema } : {}),
-              async invoke() { return { status: "error", summary: "descriptor only" }; },
-            });
-          }
-        }
-        return new CallableCatalog(definitions).list();
-      },
+      listTargets: captureCallableDescriptors,
       resolveTarget: async (target, input) => {
         // The synthetic root prompt wrapper was already resolved during preparation;
         // do not import its procedure catalog merely to start that prompt.
