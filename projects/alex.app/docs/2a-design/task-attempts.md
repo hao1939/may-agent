@@ -159,14 +159,17 @@ owner path without another human confirmation.
 A revision that leaves persisted desired state unchanged is a no-op: preserve
 the generation and active attempt, and leave later changes at that generation
 admissible. Compare the effective stored requirements rather than App-only mapper
-metadata. Bind a revision's identity to its expected generation and intended
-change; a saved unchanged request must not reserve every later change. Preserve
+metadata. Bind a revision's identity to its starting resource version, expected
+generation and intended change. Priority/category changes can preserve generation;
+returning to an earlier value must apply a new change rather than replay an old
+receipt. A saved unchanged request must not reserve every later change. Preserve
 old receipts and reject stale/foreign controls through the same authority checks.
 **Installed gap:** the [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#revision-admission-blocker)
 reproduces a generation-only admission-key collision in installed `43fc420a` and
 baseline source. Focused [PR #590](https://github.com/hao1939/may-agent/pull/590)
-at `54528704a9` passes the corrected regression, independent production-API probe
-and full local CI. Hosted checks and activation remain pending.
+at `54528704a9` fixes the original no-op case and passes full local CI, but a
+reviewer-found metadata round-trip defect remains reproducible. Hosted Quality
+also failed; repair, current-head checks and activation remain pending.
 Do not delete live receipts as a workaround.
 
 ## Workspace ownership and cleanup

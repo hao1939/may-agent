@@ -303,3 +303,23 @@ overwritten by this pass. At 16:09 UTC the PR observer emitted event `6736222`
 and the same Task rearmed `pr590-current-head`; current-head Container passed
 while Quality and automated review were still running. This is native
 observation/reconsideration, not activation or proof of original #589 readiness.
+
+At 16:12 UTC hosted Quality failed in
+`test/e2e/task-startup-no-schedules.test.ts:212`; its retained fixture logs show
+SQLite contention around approval and workflow admission after restart.
+Container passed. Copilot also raised
+[a real revision defect](https://github.com/hao1939/may-agent/pull/590#discussion_r4602310501):
+priority/category updates can preserve generation, so returning to an earlier
+desired spec reuses its old key. At 16:13 Root independently reproduced
+P0 → P1 → P0 against clean `54528704a9`: all remain generation one, and the final
+call incorrectly returns unchanged while P1 stays persisted. The earlier
+source approval is withdrawn for activation until this counterexample is fixed.
+
+The smallest correction binds operation identity to the starting resource
+version as well as generation and desired state. Add a same-generation round
+trip beside the no-op regression, preserving old receipts and current attempt
+fences. Root authorized total six on the same hotfix Task with all four rounds
+retained, through May's supported creator revision at the completed boundary.
+The native PR watcher remains the feedback producer; no merge or activation has
+occurred. This failure demonstrates why baseline-failing regression evidence
+and a passing local suite establish only their tested contracts.
