@@ -1,13 +1,5 @@
 import type { ApprovalProposal, EventInput } from "./events.js";
 
-export type HumanSurfaceTopic = {
-  id: string;
-  title: string;
-  openedBy: string;
-  originMessageId: string;
-  taskRefs: Array<{ appId: string; taskId: string; ref?: string }>;
-};
-
 export type HumanSurfaceTaskRef = {
   appId: string;
   taskId: string;
@@ -49,11 +41,9 @@ export type HumanConversationInputOptions = {
   channelTargetId?: string;
   channelThreadId?: string;
   channelMessageId?: number;
-  topicId?: string;
   replyTo?: string;
-  focusedApp?: string;
-  focusedTask?: { appId: string; taskId: string };
   context?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   approvalReply?: { target: { appId: string; taskId: string }; proposal: ApprovalProposal };
   idempotencyKey?: string;
 };
@@ -61,24 +51,6 @@ export type HumanConversationInputOptions = {
 /** One logical human conversation; provider chat/topic IDs are coordinates. */
 export function primaryConversationId(agent: string): string {
   return `${agent.trim() || "host"}:primary`;
-}
-
-export function topicReference(topic: Pick<HumanSurfaceTopic, "id">): string {
-  const value = topic.id.startsWith("topic_") ? topic.id.slice("topic_".length) : topic.id;
-  return value.slice(0, 8) || "????????";
-}
-
-export function resolveConversationTopic<T extends Pick<HumanSurfaceTopic, "id">>(
-  topics: readonly T[],
-  ref: string,
-): T | undefined {
-  const normalized = ref.trim().toLowerCase();
-  if (!normalized) return undefined;
-  const matches = topics.filter((topic) => {
-    const id = topic.id.toLowerCase();
-    return id === normalized || id === `topic_${normalized}` || topicReference(topic).toLowerCase() === normalized;
-  });
-  return matches.length === 1 ? matches[0] : undefined;
 }
 
 export function humanTaskStatusLabel(task: Pick<HumanSurfaceTaskSummary, "status" | "humanAction">): string {
@@ -147,8 +119,6 @@ export function representedTaskIdentities(
 export function buildHumanConversationMessageEvent(input: HumanConversationInputOptions): EventInput {
   const context: Record<string, unknown> = {
     ...(input.context ?? {}),
-    ...(input.focusedApp ? { focusedApp: input.focusedApp } : {}),
-    ...(input.focusedTask ? { focusedTask: { appId: input.focusedTask.appId, taskId: input.focusedTask.taskId } } : {}),
   };
   return {
     type: "conversation.message.created",
@@ -161,11 +131,11 @@ export function buildHumanConversationMessageEvent(input: HumanConversationInput
       ...(input.replyTo ? { replyTo: input.replyTo } : {}),
       ...(input.approvalReply ? { approvalReply: input.approvalReply } : {}),
       metadata: {
+        ...(input.metadata ?? {}),
         channel: input.channel,
         ...(input.channelTargetId !== undefined ? { channelTargetId: input.channelTargetId } : {}),
         ...(input.channelThreadId !== undefined ? { channelThreadId: input.channelThreadId } : {}),
         ...(input.channelMessageId !== undefined ? { channelMessageId: input.channelMessageId } : {}),
-        ...(input.topicId ? { topicId: input.topicId } : {}),
       },
     },
     idempotencyKey: input.idempotencyKey ?? input.authorId,

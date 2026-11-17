@@ -19,16 +19,13 @@ export function createTaskReadHandlers(options: {
   async function handleConversationRead(url: URL): Promise<Response> {
     const appId = url.searchParams.get("appId")?.trim();
     const conversationId = url.searchParams.get("conversationId")?.trim();
-    const topicId = url.searchParams.get("topicId")?.trim();
     if (!appId || !conversationId) return json({ error: "appId and conversationId required" }, 400);
-    if (url.searchParams.has("topicId") && !topicId) return json({ error: "topicId must be non-empty" }, 400);
     try {
       const response = await daemonRead({
         type: "app.conversation.get",
         appId,
         conversationId,
         limit: 30,
-        ...(topicId ? { topicId } : {}),
       });
       // This endpoint already validates its input and supplies bounded options.
       // A daemon error also covers unavailable/failed storage reads, not just
@@ -61,39 +58,61 @@ export function createTaskReadHandlers(options: {
 
   async function handleHumanTaskRead(url: URL): Promise<Response> {
     const appId = url.searchParams.get("appId")?.trim();
+    const ref = url.searchParams.get("ref")?.trim();
     const detail = url.pathname === "/api/task";
-    if (!appId && (detail || url.searchParams.get("allApps") !== "true"))
+    if (detail) {
+      const taskId = url.searchParams.get("taskId")?.trim();
+      if (!ref && (!appId || !taskId)) {
+        return json({ error: appId ? "taskId required" : "ref or appId and taskId required" }, 400);
+      }
+      if (url.searchParams.has("ref") && !ref) {
+        return json({ error: "ref must be non-empty" }, 400);
+      }
+      let evidenceOptions: Record<string, unknown>;
+      try {
+        evidenceOptions = taskEvidenceQuery(url);
+      } catch (error) {
+        return json({ error: error instanceof Error ? error.message : String(error) }, 400);
+      }
+      try {
+        const response = await daemonRead({
+          type: "task.get",
+          ...(ref ? { ref } : { appId, taskId }),
+          ...evidenceOptions,
+        });
+        if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
+        if (response.type !== "ok" || !("task" in response)) {
+          throw new Error("Invalid daemon Task response");
+        }
+        return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
+      } catch (error) {
+        return json({ error: error instanceof Error ? error.message : String(error) }, 503);
+      }
+    }
+    if (!appId && url.searchParams.get("allApps") !== "true")
       return json({ error: "appId required (or allApps=true for a list)" }, 400);
-    const taskId = url.searchParams.get("taskId")?.trim();
-    if (detail && !taskId) return json({ error: "taskId required" }, 400);
     const includeDone = url.searchParams.get("includeDone");
     if (includeDone !== null && includeDone !== "true" && includeDone !== "false") {
       return json({ error: "includeDone must be true or false" }, 400);
     }
-    let evidenceOptions: Record<string, unknown>;
     try {
-      evidenceOptions = taskEvidenceQuery(url);
+      taskEvidenceQuery(url);
     } catch (error) {
       return json({ error: error instanceof Error ? error.message : String(error) }, 400);
     }
     try {
-      const response = await daemonRead(
-        detail
-          ? { type: "task.get", appId, taskId, ...evidenceOptions }
-          : {
-              type: "tasks.list",
-              ...(appId ? { appId } : {}),
-              includeDone: includeDone === "true",
-              ...(url.searchParams.has("status") ? { status: url.searchParams.getAll("status") } : {}),
-              ...(url.searchParams.has("limit") ? { limit: Number(url.searchParams.get("limit")) } : {}),
-              ...(url.searchParams.has("cursor") ? { cursor: url.searchParams.get("cursor") } : {}),
-            },
-      );
+      const response = await daemonRead({
+        type: "tasks.list",
+        ...(appId ? { appId } : {}),
+        includeDone: includeDone === "true",
+        ...(url.searchParams.has("status") ? { status: url.searchParams.getAll("status") } : {}),
+        ...(url.searchParams.has("limit") ? { limit: Number(url.searchParams.get("limit")) } : {}),
+        ...(url.searchParams.has("cursor") ? { cursor: url.searchParams.get("cursor") } : {}),
+      });
       if (response.type === "error") return json({ error: response.message ?? "Task read failed" }, 400);
-      if (response.type !== "ok" || (!detail && !response.tasks) || (detail && !("task" in response))) {
+      if (response.type !== "ok" || !response.tasks) {
         throw new Error("Invalid daemon Task response");
       }
-      if (detail) return response.task ? json(response.task) : json({ error: "Task not found" }, 404);
       return json(response.tasks);
     } catch (error) {
       return json({ error: error instanceof Error ? error.message : String(error) }, 503);

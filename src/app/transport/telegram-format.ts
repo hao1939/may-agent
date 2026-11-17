@@ -13,8 +13,6 @@ import {
   humanTaskStatusLabel,
   primaryConversationId,
   representedTaskIdentities,
-  resolveConversationTopic,
-  topicReference,
 } from "@may-agent/control";
 import {
   approvalProposalForTask,
@@ -28,7 +26,24 @@ import {
 
 export type TelegramApprovalAnchor = ApprovalProposal;
 
-export { primaryConversationId, representedTaskIdentities, resolveConversationTopic, topicReference };
+export { primaryConversationId, representedTaskIdentities };
+
+export function topicReference(topic: AppConversationTopic): string {
+  const value = topic.id.startsWith("topic_") ? topic.id.slice("topic_".length) : topic.id;
+  return value.slice(0, 8) || "????????";
+}
+
+export function resolveConversationTopic(
+  topics: AppConversationTopic[],
+  ref: string,
+): AppConversationTopic | undefined {
+  const normalized = ref.trim().toLowerCase();
+  const matches = topics.filter((topic) => {
+    const id = topic.id.toLowerCase();
+    return id === normalized || id === `topic_${normalized}` || topicReference(topic).toLowerCase() === normalized;
+  });
+  return matches.length === 1 ? matches[0] : undefined;
+}
 
 export function renderTelegramApps(apps: HumanAppView[], selectedApp?: string): string {
   if (apps.length === 0) return "No Apps found.";
@@ -452,7 +467,7 @@ export function telegramConversationInputEvent(input: {
     channelTargetId: input.chatId,
     ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
     channelMessageId: input.messageId,
-    ...(input.conversationTopicId ? { topicId: input.conversationTopicId } : {}),
+    ...(input.conversationTopicId ? { metadata: { topicId: input.conversationTopicId } } : {}),
     ...(input.replyToSourceId
       ? { replyTo: input.replyToSourceId }
       : input.replyToMessageId === undefined

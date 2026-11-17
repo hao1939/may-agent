@@ -167,7 +167,7 @@ function projectTaskConditionHtml({ condition, id }) {
 function projectTaskDetailHtml(task) {
   const d = task.diagnostics;
   const field = (label, value) => `<div><b>${esc(label)}</b><span>${esc(value ?? "unknown")}</span></div>`;
-  return `<div class="task-detail-head"><div class="task-detail-id">${esc(task.appId)} / ${esc(task.taskId)} · ${esc(task.ref)}</div><div style="display:flex;gap:6px"><button type="button" id="task-discuss-with-may" onclick="discussTaskWithMay(${jsStringAttr(task.appId)}, ${jsStringAttr(task.taskId)}, ${jsStringAttr(task.ref)})">Discuss with May</button><button onclick="closeTaskDetail()">Close</button></div></div>
+  return `<div class="task-detail-head"><div class="task-detail-id">${esc(task.appId)} / ${esc(task.taskId)} · ${esc(task.ref)}</div><button onclick="closeTaskDetail()">Close</button></div>
     <h4>Goal</h4><p>${esc(task.outcome)}</p>
     <h4>State</h4><p>${esc(task.status)} · ${esc(task.statusDetail)}</p>
     ${task.progress ? `<h4>Current progress</h4><p>${esc(task.progress.stage)} · ${esc(task.progress.message || "")} · ${esc(projectTaskFormatTime(task.progress.updatedAt))}</p>` : ""}

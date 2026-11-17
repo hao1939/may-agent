@@ -6,7 +6,6 @@ let mayConversationDirty = false;
 let mayStopPending = false;
 let maySendPending = false;
 let mayUnconfirmedInput = null;
-let mayFocusedTask = null;
 let mayConversationContext = null;
 let mayRequestPage = 0;
 const MAY_REQUEST_PAGE_SIZE = 6;
@@ -17,52 +16,10 @@ function isMayConversation() {
   return Boolean(humanInterface.appId) && isAgentChatActive(humanInterface.agent);
 }
 
-function focusMayConversationTask(appId, taskId, ref) {
-  if (!appId || !taskId) {
-    mayFocusedTask = null;
-  } else {
-    mayFocusedTask = { appId: String(appId), taskId: String(taskId), ...(ref ? { ref: String(ref) } : {}) };
-  }
-  renderMayConversationFocusBar();
-  const input = document.getElementById('chat-input');
-  if (input && isMayConversation()) input.focus();
-}
-
-function discussTaskWithMay(appId, taskId, ref) {
-  focusMayConversationTask(appId, taskId, ref);
-  if (humanInterface.agent) {
-    currentAgentSubTab = 'chat';
-    routeTo('/agents/' + encodeURIComponent(humanInterface.agent));
-  }
-}
-
 function openConversationTask(appId, taskId) {
   if (!appId || !taskId) return;
   const query = new URLSearchParams({ appId: String(appId), task: String(taskId) });
   routeTo(`/projects/${encodeURIComponent(String(appId) + '.app')}/tasks?${query.toString()}`);
-}
-
-function renderMayConversationFocusBar() {
-  const bar = document.getElementById('conversation-focus-bar');
-  const input = document.getElementById('chat-input');
-  if (!bar) return;
-  const active = isMayConversation() && Boolean(mayFocusedTask);
-  bar.hidden = !active;
-  bar.style.display = active ? 'flex' : 'none';
-  if (!active) {
-    bar.replaceChildren();
-    if (input && isMayConversation()) input.placeholder = 'Talk with May…';
-    return;
-  }
-  const label = `${mayFocusedTask.appId}/${mayFocusedTask.ref || mayFocusedTask.taskId}`;
-  bar.innerHTML =
-    `<span data-focused-task="${attrEsc(mayFocusedTask.appId + ':' + mayFocusedTask.taskId)}" style="display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--accent);border-radius:999px;padding:2px 8px;color:var(--accent)">` +
-    `<span>Focused Task: <b>${esc(label)}</b></span>` +
-    `<button type="button" onclick="focusMayConversationTask(null)" title="Clear focused Task" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0 2px">×</button>` +
-    `</span>`;
-  if (input && isMayConversation()) {
-    input.placeholder = `Talk with May about ${label}…`;
-  }
 }
 
 function changeMayRequestPage(delta) {
@@ -143,7 +100,6 @@ function updateConversationStop() {
     contextBar.hidden = true;
     contextBar.style.display = 'none';
   }
-  renderMayConversationFocusBar();
 }
 
 function refreshMayConversation() {
@@ -166,7 +122,6 @@ function refreshMayConversation() {
         if (!isMayConversation()) return;
         mayActiveTurn = conversation.activeTurn || null;
         renderMayConversationContextBar(conversation);
-        renderMayConversationFocusBar();
         const messages = document.getElementById('chat-messages');
         const fragment = document.createDocumentFragment();
         for (const message of conversation.messages || []) {
@@ -205,16 +160,6 @@ function refreshMayConversation() {
               openBtn.title = `Open ${ref.appId}/${ref.taskId}`;
               openBtn.onclick = () => openConversationTask(ref.appId, ref.taskId);
               meta.appendChild(openBtn);
-
-              const focusBtn = document.createElement('button');
-              focusBtn.type = 'button';
-              focusBtn.className = 'ask-btn';
-              focusBtn.dataset.focusTask = `${ref.appId}:${ref.taskId}`;
-              focusBtn.style.cssText = 'padding:1px 6px;font-size:11px';
-              focusBtn.textContent = 'Focus';
-              focusBtn.title = `Focus next message on ${ref.appId}/${ref.taskId}`;
-              focusBtn.onclick = () => focusMayConversationTask(ref.appId, ref.taskId, ref.ref);
-              meta.appendChild(focusBtn);
             }
             el.appendChild(meta);
           }
@@ -274,17 +219,12 @@ async function sendMayConversation() {
   const text = input.value;
   if (!text.trim() || maySendPending) return;
   maySendPending = true;
-  const focusKey = mayFocusedTask ? `${mayFocusedTask.appId}:${mayFocusedTask.taskId}` : '';
-  const signature = `${text}\0${focusKey}`;
   // An unknown HTTP outcome may already be durable. Retrying the unchanged
-  // draft + focus keeps its identity instead of admitting the same ask twice.
-  if (mayUnconfirmedInput?.signature !== signature) {
-    mayUnconfirmedInput = { signature, id: `web-ui:${crypto.randomUUID()}` };
+  // draft keeps its identity instead of admitting the same ask twice.
+  if (mayUnconfirmedInput?.text !== text) {
+    mayUnconfirmedInput = { text, id: `web-ui:${crypto.randomUUID()}` };
   }
   const { id } = mayUnconfirmedInput;
-  const context = {
-    ...(mayFocusedTask ? { focusedTask: { appId: mayFocusedTask.appId, taskId: mayFocusedTask.taskId } } : {}),
-  };
   try {
     await publishChatEvent({
       type: 'conversation.message.created', target: { appId: humanInterface.appId },
@@ -292,7 +232,6 @@ async function sendMayConversation() {
         conversationId: humanInterface.conversationId,
         author: { kind: 'human', id },
         text: text.trim(),
-        ...(Object.keys(context).length ? { context } : {}),
         metadata: { channel: 'web-ui' },
       },
       idempotencyKey: id,

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -185,6 +186,13 @@ describe("HTTP human Task reads and board", () => {
       `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
       VALUES (?, ?, 2, 3, 2, ?, 'normal', 0, 0, ?, ?)`,
     ).run(appId, id, phase, n, JSON.stringify(resource));
+    const digest = createHash("sha256")
+      .update(`task-reference-v1\0${Buffer.byteLength(appId, "utf8")}:${appId}\0${Buffer.byteLength(id, "utf8")}:${id}`)
+      .digest("hex");
+    db.prepare(
+      `INSERT OR IGNORE INTO app_task_refs(digest, prefix8, prefix16, app_id, task_id, indexed_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).run(digest, digest.slice(0, 8), digest.slice(0, 16), appId, id, n);
   }
 
   async function read(path: string, status = 200) {
@@ -1562,10 +1570,16 @@ describe("HTTP human Task reads and board", () => {
     expect(await read(`/api/task?${new URLSearchParams({ appId: "alpha", taskId: "work/a ?&" })}`)).toEqual(
       service.getTask({ appId: "alpha", taskId: "work/a ?&" }),
     );
+    const refView = service.getTask({ appId: "alpha", taskId: "work/a ?&" })!;
+    expect(await read(`/api/task?${new URLSearchParams({ ref: refView.ref })}`)).toEqual(
+      service.getTask({ ref: refView.ref }),
+    );
     expect(await read(`/api/task?${new URLSearchParams({ appId: "alpha", taskId: "work/a ?&", acceptedEvidence: "true", evidenceLimit: "1" })}`)).toEqual(
       service.getTask({ appId: "alpha", taskId: "work/a ?&", acceptedEvidence: { limit: 1 } }),
     );
     await read("/api/task?appId=alpha&taskId=work%2Fa&evidenceLimit=1", 400);
+    await read("/api/task?ref=", 400);
+    await read("/api/task?ref=00000000", 404);
     expect((await read("/api/tasks?appId=alpha&status=waiting")).items).toEqual([]);
     expect(await read("/api/tasks?allApps=true&status=running&status=waiting&limit=8"))
       .toEqual(service.listTasks({ status: ["running", "waiting"], limit: 8 }));
@@ -1591,19 +1605,15 @@ describe("HTTP human Task reads and board", () => {
     await read("/api/task?appId=alpha&taskId=missing", 503);
   });
 
-  test("HTTP Conversation reads forward exact identity, retained Topics, and bounded options", async () => {
-    const olderTopicId = "topic_retained_older";
-    conversation.messages = [
-      { id: "older-topic-message", author: { kind: "agent" }, text: "Retained Topic context", metadata: { topicId: olderTopicId } },
-      ...Array.from({ length: 30 }, (_, index) => ({ id: `recent-${index}`, author: { kind: "agent" }, text: `Recent ${index}` })),
-    ];
+  test("HTTP Conversation reads forward exact identity and bounded options", async () => {
+    conversation.messages = Array.from({ length: 35 }, (_, index) => ({
+      id: `recent-${index}`,
+      author: { kind: "agent" },
+      text: `Recent ${index}`,
+    }));
     const recent = await read("/api/conversation?appId=support&conversationId=retained-room");
     expect(recent.messages).toHaveLength(30);
-    expect(recent.messages.some((message: any) => message.id === "older-topic-message")).toBe(false);
-    const retainedTopic = await read(`/api/conversation?${new URLSearchParams({ appId: "support", conversationId: "retained-room", topicId: olderTopicId })}`);
-    expect(conversation.lastReadTopicId).toBe(olderTopicId);
-    expect(retainedTopic.messages).toEqual([conversation.messages[0]]);
-    await read("/api/conversation?appId=support&conversationId=retained-room&topicId=", 400);
+    expect(recent.messages[0].id).toBe("recent-5");
     await read("/api/conversation?appId=support", 400);
     await read("/api/conversation?conversationId=retained-room", 400);
     rejectConversationRead = true;
@@ -1727,8 +1737,7 @@ describe("HTTP human Task reads and board", () => {
       expect(await page.$eval("#conversation-context-bar", el => el.textContent)).toContain("showing 7-7");
       await page.click('#conversation-context-bar [data-request-page] button:first-child');
       expect(await page.$eval('#chat-messages [data-task-ref="alpha:work/0"]', el => el.textContent)).toContain("Task alpha · 8f12ac90");
-      await page.click('#chat-messages [data-focus-task="alpha:work/0"]');
-      await page.waitForSelector('#conversation-focus-bar [data-focused-task="alpha:work/0"]');
+      expect(await page.$('#chat-messages [data-focus-task="alpha:work/0"]')).toBeNull();
       await page.type("#chat-input", "Check the edge case on this Task");
 
       // Accept the event durably, then lose only the browser acknowledgement.
@@ -1748,18 +1757,17 @@ describe("HTTP human Task reads and board", () => {
       await page.click("#chat-send");
       await page.waitForFunction("window.fixtureLostAckObserved && !maySendPending");
       expect(published.length).toBe(beforeLostAckPublications + 1);
-      const firstFocusedAttempt = published.at(-1);
-      expect(firstFocusedAttempt.type).toBe("conversation.message.created");
+      const firstAttempt = published.at(-1);
+      expect(firstAttempt.type).toBe("conversation.message.created");
       expect(conversation.messages).toHaveLength(beforeLostAckMessages + 1);
       expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Check the edge case on this Task");
 
-      // Same-focus reselection keeps the unknown operation identity; replay is deduplicated.
-      await page.evaluate("focusMayConversationTask('alpha', 'work/0', '8f12ac90')");
+      // Retrying unchanged text keeps the unknown operation identity; replay is deduplicated.
       const beforeReplayPublications = published.length;
       await page.click("#chat-send");
       await page.waitForFunction('document.querySelector("#chat-input").value === ""');
       expect(published.length).toBe(beforeReplayPublications + 1);
-      expect(published.at(-1).idempotencyKey).toBe(firstFocusedAttempt.idempotencyKey);
+      expect(published.at(-1).idempotencyKey).toBe(firstAttempt.idempotencyKey);
       expect(conversation.messages).toHaveLength(beforeLostAckMessages + 1);
       expect(published.at(-1)).toMatchObject({
         type: "conversation.message.created",
@@ -1767,39 +1775,28 @@ describe("HTTP human Task reads and board", () => {
         data: {
           conversationId: "retained-room",
           text: "Check the edge case on this Task",
-          context: { focusedTask: { appId: "alpha", taskId: "work/0" } },
           metadata: { channel: "web-ui" },
         },
       });
 
-      // Changed text or target creates a distinct operation after an unknown acknowledgement.
+      // Changed text creates a distinct operation after an unknown acknowledgement.
       await page.type("#chat-input", "Changed text");
       rejectPublish = true;
-      let beforeUnknown = published.length;
-      let rejectedSend = page.waitForResponse(response => response.url() === `${base}/api/events` && response.status() === 503);
+      const beforeUnknown = published.length;
+      const rejectedSend = page.waitForResponse(response => response.url() === `${base}/api/events` && response.status() === 503);
       await page.click("#chat-send");
       await rejectedSend;
       await page.waitForFunction("!maySendPending");
       expect(published.length).toBe(beforeUnknown + 1);
       const changedTextAttempt = published.at(-1);
-      expect(changedTextAttempt.idempotencyKey).not.toBe(firstFocusedAttempt.idempotencyKey);
-      await page.evaluate("focusMayConversationTask('alpha', 'work/1', 'ref00001')");
-      beforeUnknown = published.length;
-      rejectedSend = page.waitForResponse(response => response.url() === `${base}/api/events` && response.status() === 503);
-      await page.click("#chat-send");
-      await rejectedSend;
-      await page.waitForFunction("!maySendPending");
-      expect(published.length).toBe(beforeUnknown + 1);
-      expect(published.at(-1).idempotencyKey).not.toBe(changedTextAttempt.idempotencyKey);
+      expect(changedTextAttempt.idempotencyKey).not.toBe(firstAttempt.idempotencyKey);
       rejectPublish = false;
-      await page.evaluate("window.fetch = window.fixtureOriginalFetch; focusMayConversationTask(null)");
-      expect(await page.$eval("#conversation-focus-bar", el => getComputedStyle(el).display)).toBe("none");
+      await page.evaluate("window.fetch = window.fixtureOriginalFetch");
 
       // Other-agent and historical-session views hide May's Conversation context.
       await page.evaluate("routeTo('/agents/worker')");
       await page.waitForFunction("currentAgentChat === 'worker'");
       expect(await page.$eval("#conversation-context-bar", el => getComputedStyle(el).display)).toBe("none");
-      expect(await page.$eval("#conversation-focus-bar", el => getComputedStyle(el).display)).toBe("none");
       await page.evaluate("routeTo('/sessions/helper-old-session')");
       await page.waitForFunction("currentTab === 'sessions'");
       expect(await page.$eval("#conversation-context-bar", el => getComputedStyle(el).display)).toBe("none");
