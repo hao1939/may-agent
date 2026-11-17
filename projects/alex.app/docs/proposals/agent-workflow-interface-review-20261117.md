@@ -11,9 +11,10 @@ parallel review. Checkpoint `a6d46285aa` includes canonical model list/call,
 removal of its public permissions/session actions, bounded complete preparation,
 and fixed target snapshots with current-caller bindings. Checkpoint `73f89ae9a4`
 also preserves canonical namespaces through the real loader/manager and rejects
-same-address duplicates. Independent production checks pass at those boundaries.
-Standalone SDK cooperation, common SDK results and paired App migration remain
-incomplete.
+same-address duplicates. At `c9fc3db8fc`, standalone workflows list the complete
+catalog and call across Apps; `6ab032f440` preserves stalled-import cleanup state.
+Independent checks pass at those boundaries. Fixed prompt metadata, standalone
+built-in cooperation, common SDK results and paired App migration remain open.
 A production standalone probe still fails because prompt execution configured
 only with `finish` does not receive built-in cooperation. Narrow checks do not
 establish full CI or cutover readiness. No callable candidate is activated.

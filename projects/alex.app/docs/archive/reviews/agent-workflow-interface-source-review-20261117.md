@@ -582,3 +582,27 @@ of forty-eight on the same ledger, preserving all forty consumed rounds. Future
 passes should retain coherent partial source and migrate affected retired
 fixtures, reporting failures explicitly; an unfinished draft checkpoint does not
 need to claim full cutover readiness. No second compatibility mode is accepted.
+
+
+## Retained standalone catalog progress
+
+Root pushed native `c9fc3db8fc` and `6ab032f440` promptly to the existing draft.
+At clean `c9fc3db8fc`, independent production probes confirm complete workflow
+`ctx.list()` and a successful `alpha/bridge` → `beta/echo` call with prompt/data
+preserved. The actual five-suite result is 104 pass and 9 fail, including retired
+fixture semantics and real unconfirmed-import cleanup defects. The cleanup repair
+at `6ab032f440` passes both owning root-preparation timeout/cancel cases
+independently; a full green suite at that revision is not established.
+
+A separate clean-`c9fc3db8fc` probe modifies only synthetic agent metadata during
+its controller workflow. Its second `ctx.list()` reflects the changed description,
+so descriptors are not yet a fixed snapshot. The child workflow correctly keeps
+its old captured implementation. The
+[review finding](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5944021806)
+requires capturing prompt metadata and using it for discovery and actual prompt
+execution. The all-four-direction probe still stops at missing built-in prompt
+cooperation. A schema-bearing workflow returning the agreed literal common
+report also fails the older SDK terminal validator; public `run()` still exposes
+a legacy wrapper. These are retained source obligations, not setup or activation
+failures. The original Task continues at generation sixteen with forty consumed
+rounds preserved in a finite total of forty-eight.
