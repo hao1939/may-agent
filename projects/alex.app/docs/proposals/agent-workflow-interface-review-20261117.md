@@ -11,12 +11,13 @@ parallel review. Checkpoint `a6d46285aa` includes canonical model list/call,
 removal of its public permissions/session actions, bounded complete preparation,
 and fixed target snapshots with current-caller bindings. Checkpoint `73f89ae9a4`
 also preserves canonical namespaces through the real loader/manager and rejects
-same-address duplicates. At `c9fc3db8fc`, standalone workflows list the complete
-catalog and call across Apps; `6ab032f440` preserves stalled-import cleanup state.
-Independent checks pass at those boundaries. Fixed prompt metadata, standalone
-built-in cooperation, common SDK results and paired App migration remain open.
-A production standalone probe still fails because prompt execution configured
-only with `finish` does not receive built-in cooperation. Narrow checks do not
+same-address duplicates. At `c1348034f9`, standalone workflows share complete discovery and cross-App
+calls, and prompt agents configured only with `finish` receive built-in
+cooperation. Native checks report 112 focused tests passing and `check:ci`
+passing. Independent production probes now reach all four call directions and
+matching descriptor lists, but common-result assertions still fail. Fixed prompt
+metadata, exact component-name dispatch, explicit-module import-cleanup tracking,
+common SDK results and paired App migration remain open. These checks do not
 establish full CI or cutover readiness. No callable candidate is activated.
 The focused Task-revision fix #590 has an earlier successful local trial, but
 a later executable readback reports baseline `0606e2df`; carry the fix into the

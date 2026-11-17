@@ -642,3 +642,19 @@ source. Do not overwrite another operator's runtime changes. The eventual
 paired callable trial must identify its actual running artifact, retain the
 Task-revision source repair and current legitimate installation changes, and
 verify the compatible App revision before claiming activation.
+
+
+At clean native `c1348034f99d29d2fa8e42a013b0fe89197b1430`, the focused five
+suites now report 112 pass and no failures, and `check:ci` passes. Root pushed
+that checkpoint immediately to draft #589. Independent reruns confirm the
+cooperation/discovery improvement and retain the result-wrapper and component-
+whitespace failures above. A new explicit-module preparation probe also confirms
+that both timeout and cancellation report cleanup as complete while an observed
+import remains pending. The
+[current review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5944336882)
+records the exact dispatch and cleanup defects; the corresponding fixture must
+keep its unconfirmed-cleanup assertion. Passing focused suites after changing
+that assertion cannot close this finding. The original workflow has ended at
+its actual cumulative 48/48 boundary; subsequent repair must preserve all usage
+and continue through the same Task and workflow path. Full hosted CI, common SDK
+results, paired App migration, activation and connected delivery remain open.
