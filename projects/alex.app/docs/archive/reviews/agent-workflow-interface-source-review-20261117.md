@@ -976,3 +976,44 @@ Evidence is `b6-independent-focused.log`, `b6-independent-check-ci.log`,
 `ff6-host2f-recovery.log` and `ff6-host2f-migrated-fixtures.log` under the
 existing local trial directory. Snapshot, import-cleanup, trusted diagnostics,
 full CI, activation and the remaining connected-trial requirements stay open.
+
+## Published configuration and execution-read checkpoint
+
+Root published native Host `0a52518cd1d5b4b84c04a53b8880212d9220dd8a` to draft
+#589 and App `bc0b80b9bb96e488a21540a3eeb5257e8e4061c3` to its retained Apps
+review branch. Both were independently frozen with exact Git identity and clean
+status; both App SDK resolution paths point to the same exact Host source.
+The Host passes 123 tests across six affected suites and `check:ci`.
+
+Host `ead9c36660` captures standalone agent configuration and `d2122a2d32` adds
+owning coverage. The stronger production probe confirms stable model and
+descriptors after source edits, but prompt preparation still reads changed
+`AGENTS.md` bytes. The new owning test changes agent name/configuration rather
+than identity text, so it does not close that gap. Root delivered the exact
+reproducer through May to the existing Host Task; the metadata review stays open.
+Host `0a52518cd1` adds bounded trusted CLI receipts to the existing execution
+read from retained Host tool-result evidence. Consumer migration and substantive
+projection coverage remain required; source existence alone is not final proof.
+
+App `bc0b80b9bb` migrates the four review/comparison entry points. Against the
+exact clean Host above, four affected suites pass 62 tests and fail eight, all
+in Task-outcome review. Six reproduce the preceding baseline; two cancellation
+cases now fail before the intended aborted read and need fixture/admission
+correction while retaining their cancellation assertions. Native implementation
+is already editing that owning test; Root preserved the active checkout.
+
+The superseded `2f6aaaf1` hosted Quality log contains three completed shards:
+968 pass/8 fail, 800 pass/15 fail and 722 pass/2 skip/52 fail. The fourth shard
+was cancelled unfinished and contains additional failures. These counts do not
+establish a complete-suite total. Root supplied the actual failure inventory
+through May for canonical export/namespace, manager lifecycle, Task-worker and
+CLI/composition fixture migration, preserving meaningful runtime regressions.
+No retired public API, weakened Task rule or deleted cancellation regression is
+justified by that migration. Current-head full CI remains a final gate.
+
+Evidence under the existing local trial directory: `0a-independent-focused.log`,
+`0a-independent-check-ci.log`, `standalone-config-snapshot-1794945146280.json`,
+`bc0-host0a-binding.json`, `bc0-host0a-migrated-fixtures.log`, and
+`2f-cancelled-quality-summary.json`. Existing native workflows and cumulative
+ledgers are preserved. No compatible candidate activation or readiness Telegram
+is established by this checkpoint.

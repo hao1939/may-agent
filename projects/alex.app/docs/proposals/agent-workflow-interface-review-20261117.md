@@ -4,26 +4,34 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`b6f153b5ec`. Independent checks at this exact head pass 122 affected tests and
-`check:ci`; a real prompt execution now accepts blocked reports without
-unavailable output in one reply. The preceding `2f6aaaf15c` passes all eight
-workflow schema/report checks; `aac9bd6e21` passes the
-production exact-child-dispatch/common-error probe. Checks at preceding
-`28512c1971` pass 194 focused tests and `check:ci`. Production probes cover all four directions, the common root result, invalid root/child
-input, the enclosing discovery timeout and full-envelope Task workflow ingress.
-Complete CI remains open: a superseded head's completed shard recorded 47
-failures, and current local integration/export checks still fail. Paired App
-checkpoint `a8181ba582` repairs development, diagnosis and report-reader envelopes
-and passes 40 additional focused tests; full active-App migration is unfinished.
-The same App Task continues that remaining work through its workflow; newer
-partial `ff6edba21a` adds canonical fixture migration and fixes all three
-retained-report recovery cases against frozen Host `2f6aaaf1`. Four workload
-handoff cases and six evaluator checks remain red, and active workflow-body
-migration is unfinished. Captured metadata/configuration, pending-import cleanup,
-trusted diagnostics and complete consumer/CI migration also remain open.
-No unified candidate is activated. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#root-adapters-and-full-migration-boundary)
-records exact revisions, failed checks and the runtime boundary.
+`0a52518cd1`. Independent exact-clean checks pass 123 affected tests and
+`check:ci`. This adds captured standalone agent configuration and a bounded
+Host-retained CLI receipt projection through existing execution reads. The real
+snapshot probe confirms stable model/descriptors but still catches live rereading
+of `AGENTS.md` identity; complete invocation-tree capture remains open.
+The preceding `b6f153b5ec` fixes prompt blocked reports without unavailable
+output and removes legacy `dataSchema` authoring. Earlier production probes
+cover all four call directions, exact canonical dispatch, common root results,
+invalid root/child input, enclosing discovery timeout and full-envelope Task
+workflow ingress. These are bounded source checks, not complete cutover proof.
+
+Paired App checkpoint `bc0b80b9bb` is published on its retained review branch.
+It migrates metric review, Task-outcome review, runtime-pattern audit and Gym
+comparison entries to the common envelope. Against exact Host `0a52518cd1`,
+four affected suites report 62 passes and eight Task-outcome-review failures.
+Three retained-report recovery cases passed at preceding App `ff6edba21a` /
+Host `2f6aaaf1`; four workload handoff cases remain open. Full active-App
+bodies, callers, fixtures, guidance and trusted-receipt consumers are unfinished.
+
+Complete CI remains open. The superseded `2f6aaaf1` hosted Quality run had three
+completed shards with 968/8, 800/15 and 722/52 pass/fail counts (plus two skips),
+and another shard was cancelled unfinished. Narrow green checks do not replace
+current-head CI. Pending-import cleanup, finite cancellation settlement, durable
+prompt partial-report coverage and substantive reviews also remain open. No
+unified candidate is activated; connected native-trial and readiness-notification
+acceptance are unproved. The
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#published-configuration-and-execution-read-checkpoint)
+records exact revisions and remaining verification boundaries.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
