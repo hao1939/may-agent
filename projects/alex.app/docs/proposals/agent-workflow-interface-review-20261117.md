@@ -188,6 +188,10 @@ return the same descriptor list for equivalent runtime configuration. `ctx.list(
 is a proposed SDK binding. Listing is optional for statically authored workflows.
 Calls and discovery within an invocation use the same prepared definition/catalog
 snapshot; a reload does not silently redirect an active call tree.
+Prepare the complete selected catalog within that invocation's finite timeout
+and cancellation lifetime. Do not grow discovery by importing another owner on
+its first call. A selected stalled import can fail bounded preparation; old
+fixtures requiring unused imports to remain lazy must migrate to this rule.
 
 The runtime catalog consists of configured agent definitions and workflow
 entrypoints discovered by the existing loader. Invocation input cannot request

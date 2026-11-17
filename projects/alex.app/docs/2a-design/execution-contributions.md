@@ -179,7 +179,16 @@ Model `agents({ action: "list" })`, the proposed SDK `ctx.list()`, and standalon
 They return the same target descriptors, without implementation-kind collections
 or active-session lists. Static workflow code can call known canonical names
 without listing first; discovery is available when it needs runtime inspection.
-The SDK `ctx.list()` binding remains implementation work, not an available API.
+Candidate SDK source exposes `ctx.list()`; complete production binding and
+installed availability still need verification. Use the actual installed API.
+
+Prepare and validate the complete selected catalog within the enclosing finite
+execution and cancellation bound, including asynchronous imports. Expose one
+fixed snapshot to discovery and child calls; a later call cannot grow its list
+or resolve a missing entry through another registry. A stalled selected module
+can fail bounded preparation even when that module would not have been called.
+Reload can supply a new snapshot to a later invocation. This keeps completeness,
+duplicate rejection and cancellation understandable without another loader mode.
 
 A native CLI backend or utility is not automatically a registered contribution.
 If configuration exposes it as a callable, include its canonical descriptor and
@@ -220,10 +229,10 @@ Each call has two distinct inputs:
   contracts, not a requirement to construct a Task envelope. An input path or
   agent name cannot establish authority or broaden access. Resolve the exact
   current caller session, never the latest session sharing an agent name.
-- **Assigned contribution:** the requested outcome, constraints, relevant
-  references and expected evidence. The caller supplies ordinary task text or
-  private workflow parameters. There is no public schema per scenario and no
-  requirement to copy the whole Task or transcript into each call.
+- **Assigned contribution:** the common `{ prompt, data? }` envelope carries
+  the requested outcome, constraints, references and expected evidence. A target
+  can constrain its domain data through the listed input schema. Neither executor
+  needs a different handoff form or the whole Task/transcript copied into it.
 
 `TASK.md` describes the overall Task. The specific call describes the receiver's
 role. Receiving the shared brief never assigns the receiver the entire Task.
