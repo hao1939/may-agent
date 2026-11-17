@@ -2115,3 +2115,55 @@ and `054e-activation-may-feedback-receipt.json`. Standard deployment receipt:
 `projects/may-agent/.state/deploy-receipts/unified-interface-local-trial-20261117-3f48-054e.json`.
 The installed workflow/Scout trial, source readiness Telegram and late-comment
 follow-through remain to be demonstrated.
+
+
+## Installed trial exposes assignment and worker-catalog gaps
+
+The original Scout owner discovers the canonical `scout-knowledge-lib/scout-explore`
+target and calls it with the required envelope for retained arXiv2611.19700v1.
+Actual workflow wr_1794957664762_0zq0, pinned to active App054e, instead reads
+`ctx.reconciliation.input` and constructs a fresh standing scan. It returns done
+for2611.21577v1 and publishes through its protected workflow at8c91641cc7, parent
+1604ad110d. A subsequent misdirected scan publishes atba34f88d43. Neither fulfills
+the requested prepared finding. These effects remain; Root does not revert or
+directly edit canonical Scout files. Root's attempted direct session cancellation
+is rejected by the Task-owned-session fence after the first workflow is already
+terminal. App input6741889 corrects the actual owner, which retains the original
+May wait and stops repeating that prepared-finding trial. No cancellation is claimed.
+
+Independent production-body probe uses the existing disposable publication Git
+fixture and no network/model/live publication. A current HN input with a unique
+prompt and inherited arXiv Task input performs one inherited arXiv acquisition
+and no child call at054e: `contractSatisfied:false`. This proves a body migration
+gap that the 33-target disposition index did not establish as complete effects.
+
+May implements App5a386d2952a99e306e7e905f50220ffdde6f9316: current prompt/data
+precede Task background, explicit current source wins, invalid explicit source
+blocks, and prepared evidence uses its own contract without a replacement fetch
+or a contradictory missing source packet. Root's same probe now passes: zero
+arXiv acquisitions, one current HN child call, exact assignment retained. All87
+Scout owning tests and App typecheck pass independently against Host3f48. Root
+pushes/read-backs this scoped checkpoint on the existing backup branch for review;
+native final review and compatible activation remain. The worker's1147-test receipt
+uses the retained branch/provider185; it does not prove that the six canonical
+ae40 fixtures were repaired. Only the Scout module and owning test changed.
+
+The live Scout `agents.list` also contains only six Scout targets. Host worker
+bootstrap filters `agentNames` by selected Task App before preparing the manager,
+so registered Alex/May contributions disappear from the actual worker catalog.
+This violates shared discovery despite the isolated matrix and green Host04c5 CI.
+Root supplies the exact source and native catalog to the retained Host Task and
+posts the same real finding as a portable late review on PR589:
+https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5948418690 .
+May repairs loading while retaining `taskAppIds`/Task authority scope; actual worker
+coverage must invoke cross-App workflow and prompt targets, not merely list them.
+The same128 Host limit and64 App limit remain; no automatic renewal is authorized.
+
+Evidence: `054e-scout-current-assignment-probe.json`,
+`5a38-scout-current-assignment-probe.json`, `5a38-independent-scout-owning.log`,
+`5a38-independent-typecheck.log`, `054e-live-scout-catalog.json`,
+`054e-live-worker-catalog-feedback-receipt.json`,
+`054e-scout-assignment-apps-feedback-receipt.json`,
+`054e-stop-misdirected-scout-trial.json`, `pr589-live-worker-review-receipt.json`
+and the persisted actual workflow run. Final installed repair/read-back, original
+prepared publication and Telegram review-link delivery remain unproved.

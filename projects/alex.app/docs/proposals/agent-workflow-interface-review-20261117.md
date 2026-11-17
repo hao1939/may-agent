@@ -9,7 +9,7 @@ The authorized local candidate is active: Host/SDK `3f48a1e2cd` includes the
 required #590 repair; App `054e64b4f1` includes canonical ef7 and reviewed Appb7.
 The deployment receipt and independent binary/SDK/App read-back match and report healthy.
 
-The implemented source uses one canonical catalog, mandatory `{prompt,data?}`
+The source provides one canonical catalog, mandatory `{prompt,data?}`
 input, common validated results and awaited calls for agents and workflows.
 Invocation permissions and public fork/session actions are removed. Independent
 production probes cover all four call directions, immutable definition snapshots,
@@ -17,9 +17,17 @@ bounded cancellation and Task ingress. Canonical model calls require `finish()`;
 a real-manager regression proves that missing reports fail after one correction
 without fabricating output or execution identity.
 
-The remaining work, in order, is:
+The installed trial exposes two additional integration gaps: real Task workers
+still filter loaded profiles to the caller App, and Scout's workflow body reads
+inherited Task input instead of the current call. May's scoped Scout repair
+`5a386d2952` is independently verified and pushed for review; the Host worker
+repair is running through the retained Task. The remaining work, in order, is:
 
-1. Finish the installed native integration trial and remaining configured App
+1. Finish Task-worker catalog loading and its actual-process regression, then
+   pass CI on the resulting Host revision. Preserve scoped Task runtime registration
+   and actor fences while discovering/calling all registered contributions.
+2. Verify and activate the repaired pair, then finish the native integration trial
+   and remaining configured App
    compatibility disposition. Exact active App054e/Host3f48 passes184 revision/
    reconciliation tests, Host static checks, App type/design and complete Gym
    checks (405 tests,1,488 review checks). The full App scan reports1,140 passes
@@ -27,14 +35,15 @@ The remaining work, in order, is:
    preceding installed SDK. May's creator reopens the retained App Task at
    generation12 within its existing64 limit for those exact fixtures. Keep that
    scoped compatibility work distinct from the user's Task/ingress/event redesign.
-2. Prove native workflow → PR push → CI/comment repair → Telegram review-link
+3. Prove native workflow → PR push → CI/comment repair → Telegram review-link
    delivery, including a late review comment. Human approval stays on GitHub.
 
 Host04c5 passes complete hosted Quality and Container:3,494 tests, zero failures,
 two skips. All316 owning tests and static checks pass independently, including
 shared concurrency limits, typed deferral and cancellation. Hosted/standalone
 probes consume ordinary child error reports with real IDs. This completes the
-Host source/fixture step; compatible activation and the connected trial remain.
+earlier Host source/fixture step. The subsequently observed worker-catalog gap
+reopens source work despite those passing checks.
 
 The reviewed Appcdc/Host3e1 pair passes all 1,146 configured App tests across
 81 files, typechecking, design checks and complete private Gym checks (405 Bun
