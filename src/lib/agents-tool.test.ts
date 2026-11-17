@@ -472,6 +472,65 @@ describe("agents tool", () => {
     );
   });
 
+  it("restricts a procedure-only agents tool to the caller's granted local procedures", async () => {
+    const ownerDir = join(persistDir, "owner");
+    const siblingDir = join(persistDir, "sibling");
+    for (const [dir, name] of [[ownerDir, "own"], [siblingDir, "foreign"]] as const) {
+      mkdirSync(join(dir, "workflows"), { recursive: true });
+      writeFileSync(
+        join(dir, "workflows", `${name}.ts`),
+        `export const name = "${name}"; export const description = "fixture"; export async function execute(ctx) { return ctx.done("${name}"); }`,
+      );
+    }
+    manager.register({
+      name: "owner",
+      description: "Owner",
+      domain: "platform",
+      model: mockModel(),
+      tools: [echoTool()],
+      agentDir: ownerDir,
+      appLocal: true,
+      projectId: "sample",
+    });
+    manager.register({
+      name: "sibling",
+      description: "Sibling",
+      domain: "platform",
+      model: mockModel(),
+      tools: [echoTool()],
+      agentDir: siblingDir,
+      appLocal: true,
+      projectId: "sample",
+    });
+    manager.activeSessions.set("s_owner", {
+      sessionId: "s_owner",
+      definition: manager.getAgentDefinition("owner"),
+    } as any);
+    const tool = manager.createAgentsTool({
+      getCallerAgentName: () => "owner",
+      getCallerSessionId: () => "s_owner",
+      localProceduresOnly: true,
+    });
+
+    const parameters = tool.parameters as any;
+    expect(tool.name).toBe("agents");
+    expect(parameters.properties.action.enum).toEqual(["call", "list"]);
+    expect(Object.keys(parameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
+
+    expect((await callTool(tool, { action: "call", agent: "sibling/foreign", task: "run" })).error).toContain(
+      'only procedures owned by "owner"',
+    );
+    expect((await callTool(tool, { action: "call", agent: "owner/own", task: "run" })).error).toContain(
+      "Local workflows are available only during a Task attempt",
+    );
+    expect((await callTool(tool, { action: "call", agent: "missing", task: "run" })).error).toContain(
+      'Local workflow "missing" not found',
+    );
+    expect((await callTool(tool, { action: "fork", agent: "owner/own", task: "run" })).error).toContain(
+      'Procedure-only agents tool does not support action "fork"',
+    );
+  });
+
   it("discovers and invokes code procedures via action: 'call' with structured input while rejecting fork/peek/follow-up on procedures", async () => {
     const ownerDir = join(persistDir, "owner");
     mkdirSync(join(ownerDir, "workflows"), { recursive: true });

@@ -88,6 +88,8 @@ export interface CreateAgentsToolOptions {
   /** Optional App read factory for code procedures invoked via action: "call". */
   createRead?: (taskContext?: TaskExecutionContext) => AppRead;
   onWorkflowEvent?: (event: WorkflowEvent) => void;
+  /** Expose only the caller's local workflows; no prompt-agent delegation or session control. */
+  localProceduresOnly?: boolean;
 }
 
 // ── Main export ────────────────────────────────────────────────────────
@@ -170,6 +172,15 @@ const AgentsToolParams = Type.Object({
   ),
 });
 
+const LocalProcedureAgentsToolParams = Type.Object({
+  action: StringEnum(["call", "list"] as const, {
+    description: "'list': discover local procedures granted to this agent. 'call': synchronously invoke one in the current Task attempt.",
+  }),
+  agent: AgentsToolParams.properties.agent,
+  task: AgentsToolParams.properties.task,
+  input: AgentsToolParams.properties.input,
+});
+
 type AgentsToolParamsType = Static<typeof AgentsToolParams>;
 
 function appendContextFiles(task: string, contextFiles?: string[], successCriteria?: string[]): string {
@@ -201,6 +212,7 @@ function appendContextFiles(task: string, contextFiles?: string[], successCriter
  * to avoid circular imports and keep the module testable.
  */
 export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAgentsToolOptions): AgentTool {
+  const localProceduresOnly = opts?.localProceduresOnly === true;
   const getCallerSessionId = opts?.getCallerSessionId;
   const getCallerAgentName = opts?.getCallerAgentName;
   const callDeny = opts?.callDeny;
@@ -315,12 +327,16 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
   return {
     name: "agents",
     label: "Agents",
-    description:
-      "Cooperate with other agents and procedures. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Durable cross-App work uses App Task requests; helper updates use the exact sessionId.",
-    parameters: AgentsToolParams,
+    description: localProceduresOnly
+      ? "Discover and synchronously invoke the local procedures granted to this agent. Only list and call are available; procedures retain the current Task context, inputs, Conditions, cancellation, and result contract."
+      : "Cooperate with other agents and procedures. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Durable cross-App work uses App Task requests; helper updates use the exact sessionId.",
+    parameters: localProceduresOnly ? LocalProcedureAgentsToolParams : AgentsToolParams,
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
       try {
+        if (localProceduresOnly && params.action !== "call" && params.action !== "list") {
+          return textResult(JSON.stringify({ error: `Procedure-only agents tool does not support action "${params.action}"` }));
+        }
         switch (params.action) {
           case "call": {
             const hasInput = Object.hasOwn(params, "input") && params.input !== undefined;
@@ -344,6 +360,17 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               }
             }
 
+            if (localProceduresOnly && params.agent.includes("/")) {
+              const owner = params.agent.slice(0, params.agent.indexOf("/")).trim();
+              if (owner !== callerAgentCall) {
+                return textResult(
+                  JSON.stringify({
+                    error: `Procedure-only agents tool can invoke only procedures owned by "${callerAgentCall ?? "the caller"}".`,
+                  }),
+                );
+              }
+            }
+
             const codeLookup = await resolveCodeProcedure(callerAgentCall, params.agent, parentSid, signal);
             if (codeLookup.kind === "error") {
               return textResult(JSON.stringify({ error: codeLookup.error }));
@@ -357,6 +384,9 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
                 throw new Error("Current Task execution context is unavailable");
               }
               const context = session?.taskContext;
+              if (localProceduresOnly && (!session?.taskBinding || !context)) {
+                throw new Error("Local workflows are available only during a Task attempt");
+              }
               const lineage = getCallerLineage(parentSid);
               const rawInput = hasInput ? params.input : params.task!;
               const taskText = typeof rawInput === "string" ? rawInput : JSON.stringify(rawInput);
@@ -385,6 +415,13 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
               const wfResult = await runner.run(codeLookup.name, taskText, codeLookup.catalog);
               return textResult(
                 JSON.stringify({ ...wfResult, ...workflowExecutionResult(wfResult) }, null, 2),
+              );
+            }
+            if (localProceduresOnly) {
+              return textResult(
+                JSON.stringify({
+                  error: `Local workflow "${params.agent}" not found. Use action: 'list' to see available workflows.`,
+                }),
               );
             }
 
@@ -505,6 +542,16 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
             const callerName = getCallerAgentName?.();
             const callerSid = getCallerSessionId?.();
             const callerDef = callerDefinition(callerName, callerSid);
+            if (localProceduresOnly) {
+              const procedures: Array<{ name: string; owner: string; description: string }> = [];
+              if (callerDef?.agentDir) {
+                const catalog = await buildWorkflowCatalog(join(callerDef.agentDir, "workflows"), signal);
+                for (const wf of catalog.workflows.values()) {
+                  procedures.push({ name: wf.name, owner: callerDef.name, description: wf.description });
+                }
+              }
+              return textResult(JSON.stringify({ procedures }, null, 2));
+            }
             const agents = Array.from(manager.agents.values()).map((a) => ({
               name: a.definition.name,
               description: a.definition.description,

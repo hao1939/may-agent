@@ -1,4 +1,15 @@
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { createRuntimeAppRead } from "../../src/app/core/reads/app-read.js";
+import { createTaskAgentRunner } from "../../src/app/adapters/executors/managed-agent.js";
+import { runTaskAgent, runTaskExecutorAttempt } from "../../src/app/core/tasks/attempt-execution.js";
+import { appTaskTestContext } from "../../src/app/core/tasks/app-task-test-support.js";
+import {
+  claimObservedAppTask,
+  deferAppTask,
+  observeAppTaskIntent,
+} from "../../src/app/core/tasks/app-task-reconciler.js";
+import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
+import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
 import { getDb } from "../../src/lib/db/connection.js";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import type { AppEvent, TaskDetail } from "@may-agent/sdk/app";
@@ -75,7 +86,8 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       persistDir,
       agentRunFactory: (config) => {
         let step = 0;
-        const owner = config.initialState!.tools!.some((tool) => tool.name === "agents");
+        const ownerTool = config.initialState!.tools!.find((tool) => tool.name === "agents");
+        const owner = Boolean(ownerTool);
         return createAgentRun({
           ...config,
           streamFn: (_model, context) => {
@@ -93,7 +105,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
                     {
                       type: "toolCall",
                       id: "operation",
-                      name: owner ? "agents" : "hold",
+                      name: owner ? ownerTool!.name : "hold",
                       arguments: owner
                         ? route === "agent"
                           ? { action: "call", agent: "worker", task: marker }
@@ -111,7 +123,12 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
                           status: "done",
                           summary: marker,
                           facts: ["Observed fixture"],
-                          output: { marker },
+                          output: {
+                            state: "converged",
+                            summary: `Settled ${marker}`,
+                            facts: [`settled:${marker}`],
+                            result: { marker },
+                          },
                         },
                       },
                     ]
@@ -141,7 +158,9 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       },
     });
     const bus = new EventBus();
-    const tools = await buildTools({ name: "owner", tools: ["agents", "finish"] } as never, {
+    const tools = await buildTools(
+      { name: "owner", tools: route === "agent" ? ["agents", "finish"] : ["finish"] } as never,
+      {
       manager,
       bus,
       agentDir,
@@ -151,7 +170,24 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       projectRoot: root,
       persistDir,
       getAgentSessionId: () => "wrong-same-name-session",
-    });
+      },
+    );
+    const loadedAgents = tools.find((tool) => tool.name === "agents")!;
+    const loadedParameters = loadedAgents.parameters as any;
+    if (route === "agent") {
+      expect(loadedParameters.properties.action.enum).toContain("fork");
+    } else {
+      expect(loadedParameters.properties.action.enum).toEqual(["call", "list"]);
+      expect(Object.keys(loadedParameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
+      for (const request of [
+        { action: "fork", agent: "worker", task: "denied" },
+        { action: "call", agent: "foreign/inspect", input: { marker: "denied" } },
+      ]) {
+        const denial = await loadedAgents.execute("denial", request, undefined, undefined);
+        const text = denial.content.find((part) => part.type === "text");
+        expect(text?.type === "text" ? JSON.parse(text.text).error : "").toMatch(/Procedure-only agents tool/);
+      }
+    }
     manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools, agentDir });
     manager.register({
       name: "worker",
@@ -335,8 +371,15 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
         for (let i = 0; i < results.length; i++) {
           const result = results[i];
           if (result.status !== "fulfilled") throw result.reason;
+          expect(result.value.structuredResult).toEqual({
+            state: "converged",
+            summary: `Settled ${["alpha", "beta"][i]}`,
+            facts: [`settled:${["alpha", "beta"][i]}`],
+            result: { marker: ["alpha", "beta"][i] },
+          });
           const reply = result.value.messages.find(
-            (message) => message.role === "toolResult" && message.toolName === "agents",
+            (message) =>
+              message.role === "toolResult" && message.toolName === "agents",
           );
           if (!reply || reply.role !== "toolResult") throw new Error("Missing handoff result");
           const text = reply.content.find((part) => part.type === "text");
@@ -344,7 +387,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           const returned = JSON.parse(text.text);
           expect(returned).toMatchObject({ kind: route === "agent" ? "agent" : "workflow", status: "done" });
           expect(returned.id).toBeTruthy();
-          expect(returned.output.marker).toBe(["alpha", "beta"][i]);
+          expect(route === "agent" ? returned.output.result.marker : returned.output.marker).toBe(["alpha", "beta"][i]);
           if (route !== "agent") {
             expect(returned.output.task).toBe(["alpha", "beta"][i]);
             expect(returned.output.result).toMatchObject({ kind: "agent", status: "done" });
@@ -367,3 +410,239 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
   },
   20_000,
 );
+
+test("scoped agents.call settles through Task admission without replacing retained input or Conditions", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-task-workflow-settlement-"));
+  const appDir = join(root, "sample.app");
+  const persistDir = join(root, ".state");
+  const agentDir = join(root, "agents", "owner");
+  mkdirSync(appDir, { recursive: true });
+  mkdirSync(join(agentDir, "workflows"), { recursive: true });
+  writeFileSync(
+    join(agentDir, "workflows", "inspect.ts"),
+    `
+export const name = "inspect";
+export const description = "Inspect retained Task state";
+export async function execute(ctx) {
+  const current = await ctx.read.tasks.get(ctx.reconciliation.taskId);
+  return ctx.done("inspected", {
+    marker: ctx.input.marker,
+    correction: current.input.correction,
+    condition: current.conditions[0].id,
+  });
+}
+`,
+  );
+  const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
+  const config = appTaskTestContext({
+    appDir,
+    agent: "owner",
+    maxConcurrent: 1,
+    resourceStore: store,
+    tree: {
+      project: "sample",
+      project_lifecycle: "active",
+      root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null } },
+      tasks: {},
+    },
+  });
+  const taskId = "work/inspect";
+  const bus = new EventBus();
+  const model = fakeModel();
+  const manager = new SubagentManager({
+    persistDir,
+    agentRunFactory: (runner) => {
+      let step = 0;
+      return createAgentRun({
+        ...runner,
+        streamFn: (_model, context) => {
+          step++;
+          let procedureResult: { marker: string; correction: string; condition: string } | undefined;
+          if (step === 2) {
+            const reply = context.messages.findLast(
+              (message) =>
+                message.role === "toolResult" &&
+                message.toolName === "agents" &&
+                message.toolCallId === "inspect",
+            );
+            if (!reply || reply.role !== "toolResult") throw new Error("Missing agents.call result");
+            expect(reply.isError).toBe(false);
+            const text = reply.content.find((part) => part.type === "text");
+            if (text?.type !== "text") throw new Error("Missing agents.call result text");
+            const returned = JSON.parse(text.text);
+            expect(returned).toMatchObject({
+              kind: "workflow",
+              status: "done",
+              output: {
+                marker: "accepted",
+                correction: "keep-this-input",
+                condition: "publication-approval",
+              },
+            });
+            expect(returned.error).toBeUndefined();
+            procedureResult = returned.output;
+          }
+          const content: AssistantMessage["content"] =
+            step === 1
+              ? [
+                  {
+                    type: "toolCall",
+                    id: "inspect",
+                    name: "agents",
+                    arguments: { action: "call", agent: "inspect", input: { marker: "accepted" } },
+                  },
+                ]
+              : [
+                  {
+                    type: "toolCall",
+                    id: "finish",
+                    name: "finish",
+                    arguments: {
+                      status: "done",
+                      summary: "Procedure result accepted",
+                      facts: ["agents.call returned retained Task state"],
+                      output: {
+                        state: "waiting",
+                        summary: "Procedure result settled; publication approval remains independent",
+                        facts: ["procedure:inspect"],
+                        result: procedureResult,
+                      },
+                    },
+                  },
+                ];
+          const message: AssistantMessage = {
+            role: "assistant",
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            content,
+            stopReason: "toolUse",
+            timestamp: Date.now(),
+            usage: {
+              input: 0,
+              output: 0,
+              totalTokens: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+              cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+            },
+          };
+          const stream = createAssistantMessageEventStream();
+          stream.push({ type: "done", reason: "toolUse", message });
+          return stream;
+        },
+      });
+    },
+  });
+  const tools = await buildTools({ name: "owner", tools: [] } as never, {
+    manager,
+    bus,
+    agentDir,
+    agentsRoot: join(root, "agents"),
+    projectsRoot: root,
+    sharedRoot: root,
+    projectRoot: root,
+    persistDir,
+  });
+  manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools, agentDir });
+  const descriptor = {
+    id: "sample",
+    appDir,
+    projectDir: root,
+    agent: "owner",
+    resourceStore: store,
+    app: { id: "sample", version: 1, agent: "owner", tasks: { maxConcurrent: 1 } },
+  } as AppTaskRuntimeDescriptor;
+  const opts: AppTaskRuntimeOptions = {
+    bus,
+    projectRoot: root,
+    projectsRoot: root,
+    agentsRoot: join(root, "agents"),
+    sharedRoot: root,
+    persistDir,
+    agents: createTaskAgentRunner({ manager }),
+  };
+  try {
+    observeAppTaskIntent(config, {
+      appAgent: "owner",
+      intent: {
+        id: taskId,
+        parentId: "root",
+        agent: "owner",
+        outcome: "Inspect a granted local procedure",
+        acceptance: ["Settle the procedure result while retaining independent state"],
+        input: { correction: "keep-this-input" },
+      },
+    });
+    const initial = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent:owner" });
+    if (initial.kind !== "claimed") throw new Error(`Initial claim failed: ${initial.kind}`);
+    deferAppTask(config, initial, {
+      disposition: "waiting",
+      continue: true,
+      summary: "Prepared for procedure inspection",
+      conditions: [
+        {
+          id: "publication-approval",
+          type: "approval.observed",
+          subject: "publication:draft",
+          expected: true,
+          owner: "human:reviewer",
+        },
+      ],
+    });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent:owner" });
+    if (claim.kind !== "claimed") throw new Error(`Execution claim failed: ${claim.kind}`);
+    const execution = {
+      opts,
+      descriptor,
+      claim,
+      executionPaths: { appDir, projectDir: root, workspaceDir: root },
+      childContext: { live: [], completed: [] },
+      taskSnapshot: { live: [], truncated: false },
+    };
+    const run = await runTaskExecutorAttempt({
+      ...execution,
+      execute: (attempt, taskEvents, acceptedLiveEventIds) =>
+        runTaskAgent({ ...execution, attempt, taskEvents, acceptedLiveEventIds }),
+    });
+    expect(run.handlerResult).toMatchObject({
+      state: "waiting",
+      result: {
+        marker: "accepted",
+        correction: "keep-this-input",
+        condition: "publication-approval",
+      },
+    });
+    deferAppTask(config, claim, {
+      ...run.handlerResult,
+      disposition: "waiting",
+      acceptedLiveEventIds: run.acceptedLiveEventIds,
+    });
+    const current = await createRuntimeAppRead({ getDb: () => store.db, taskStateConfig: config }).tasks.get(taskId, {
+      acceptedEvidence: { limit: 8 },
+    });
+    expect(current?.input).toEqual({ correction: "keep-this-input" });
+    expect(current?.result).toEqual({
+      marker: "accepted",
+      correction: "keep-this-input",
+      condition: "publication-approval",
+    });
+    expect(current?.conditions).toEqual([
+      expect.objectContaining({
+        id: "publication-approval",
+        observation: expect.objectContaining({ state: "unknown" }),
+      }),
+    ]);
+    expect(
+      current?.acceptedEvidence.page?.items.find((item) => item.attemptId === claim.attemptId)?.acceptedResult.result,
+    ).toEqual({
+      marker: "accepted",
+      correction: "keep-this-input",
+      condition: "publication-approval",
+    });
+  } finally {
+    closeDb(persistDir);
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 15_000);
