@@ -6,14 +6,15 @@ The interfaces below define the requested cutover.
 is merged into main `0606e2df16d0a44016bbef1c6294dac4c4c11d94`; its shared
 tool name still fronts incompatible inputs, results, discovery and permission
 handling. Source merge and installed-runtime activation are separate facts.
-Draft [#589](https://github.com/hao1939/may-agent/pull/589) publishes the partial
-catalog, standalone dispatch, SDK discovery and built-in cooperation work for
-parallel review. Checkpoint `d5f4699dee` also bounds complete hosted catalog
-preparation and removes its App-based call filtering; 83 selected tests pass.
-Current-head Quality still fails while Container passes. Passing legacy adapter
-tests does not establish their pending interface migration.
-Production model/SDK parity, removal of old
-interfaces and paired App migration remain incomplete. No candidate is activated.
+Draft [#589](https://github.com/hao1939/may-agent/pull/589) is published for
+parallel review. Checkpoint `a6d46285aa` includes canonical model list/call,
+removal of its public permissions/session actions, bounded complete preparation,
+and fixed target snapshots with current-caller bindings. Independent production
+model checks pass. Standalone SDK cooperation, namespace preservation in the
+loader/registry, common SDK results and paired App migration remain incomplete.
+A production standalone probe still fails because prompt execution configured
+only with `finish` does not receive built-in cooperation. Narrow checks do not
+establish full CI or cutover readiness. No callable candidate is activated.
 The focused Task-revision fix #590 is active locally; that activation does not
 activate this callable cutover. The [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
 records later local checkpoints, failed checks and the remaining connected proof.
@@ -278,31 +279,24 @@ paired-activation obligation; a passing Host commit cannot certify App edits.
 | E — Execution | Keep joined workflow concurrency and inherited cancellation; preserve normal Task/Condition continuation and evidence on safe redo. | Stop/timeout through a mixed tree cleans up ordinary children, starts no further children, and preserves evidence; helper completion cannot settle its Task. |
 | F — Local trial | Build and run the paired candidate Host/SDK/Apps before PR merge. Assign bounded coding work through May, observe workflow/PR/CI/comment follow-up, and verify Telegram review-link delivery. | Record exact candidate SHAs, executable identity, native Task/workflow references, current PR head/checks, addressed comment and notification receipt. Record failures as open gaps. |
 
-For the next Host continuation, finish A–C at the production boundary before
-spending the remaining rounds on standalone fixtures alone:
+The model list/call adapter is implemented at the published checkpoint; preserve
+its verified snapshot and actual-caller behavior. Finish the remaining production
+boundaries in this order:
 
-1. Prepare the shared catalog from captured agent definitions and workflow
-   modules. `manager-agents-tool.ts` and `workflow-tool.ts` currently prepare
-   incompatible lookups; use the SDK `CallableCatalog` as the common authority,
-   including `ctx.list()` bindings. Capture definitions before asynchronous
-   imports; a missing target in that snapshot must not fall through to a newer
-   live registry. Check duplicates across all selected workflow directories.
-   Cover `global/reviewer`, `alpha/reviewer` and `beta/reviewer` together through
-   the real loader/manager. Selecting a canonical root cannot silently narrow
-   its child catalog: standalone `ctx.list()` must expose the same configured
-   descriptors, and an `alpha/*` workflow can call a registered `beta/*` target.
-   Keep prepared target definitions separate from each call's runtime bindings:
-   when a parent lists and a child calls through their shared snapshot, the
-   grandchild's actual parent is the child, with that call's scope and trace.
-2. Reduce the model tool to list/call with mandatory structured input and common
-   options. Remove the procedure-only/deny branches and corresponding loader and
-   configuration fields. Internal runtime cancellation and diagnostics remain
-   usable by their owning Host APIs without public helper-session actions.
-3. Route workflow child calls through that captured catalog and common report
-   validation. Migrate Task adapters and required production fixtures in the same
-   branch. A focused production test should list then invoke the exact listed
-   agent and workflow names, preserving prompt/data and the result envelope.
-4. Bind the separate App contribution to the resulting candidate SDK, migrate
+1. Preserve canonical identity through the real loader and manager. Cover
+   `global/reviewer`, `alpha/reviewer` and `beta/reviewer` together; reject only
+   duplicate canonical addresses, including agent/workflow collisions. Keep
+   failed-reload retention and the active tree's captured definitions.
+2. Bind standalone prompt cooperation and workflow `ctx.list()`/`ctx.call()` to
+   the original complete catalog. An agent configured only with `finish` still
+   receives built-in list/call. Selecting an `alpha/*` root cannot hide or block
+   a registered `beta/*` child. Share the mandatory envelope and common options;
+   remove standalone task aliases and executor-specific call fields.
+3. Converge SDK result producers and consumers: workflow completion helpers,
+   public `run()`, Task adapters, output validation and trusted execution
+   diagnostics. Prove all four directions through actual production adapters,
+   retaining useful partial results and bounded cancellation.
+4. Bind the paired App contribution to the resulting candidate SDK, migrate
    active registrations and consumers, then run broader checks and paired trials.
 
 These are source checkpoints within the saved outcome, not new approval gates or

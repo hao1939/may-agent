@@ -541,3 +541,26 @@ Host implementation. A candidate dependency link also followed the App
 checkout's shared `node_modules` link. Root restored the primary SDK and gave
 the paired checkout private dependency links; its candidate SDK resolution was
 independently verified. Neither setup correction establishes source readiness.
+
+
+## Model snapshot checkpoint and standalone boundary
+
+Published `4485c69797` removes the model tool's legacy permission, fork/session
+and alias branches and dispatches captured definitions. Root independently ran
+its three owning suites: 67 pass, no failures or skips; `check:ci` also passed.
+Later `a6d46285aa` fixes per-tree preparation and actual-caller binding. Eight
+independent production model checks pass: later invocations see their own
+snapshot, active parents/children share captured targets, grandchildren retain
+the actual parent, and invalid input starts no child. This is model-boundary
+proof, not a complete SDK or installed-candidate claim.
+
+At clean `a6d46285aa`, a separate deterministic production standalone probe lists
+the expected complete catalog, then invokes a prompt target configured only
+with `finish`. That execution has no built-in `agents` tool. All-four-direction
+execution, matching model/SDK discovery and the common public `run()` result
+therefore remain unproved; current source still exposes the legacy SDK tool
+schema/result wrapper. The fixture deliberately does not enable cooperation in
+the agent config. Native workflow `wr_1794937770387_ve3g` is continuing the
+registry/SDK repair on the retained Task. Exact source, dirty-state readback and
+probe receipts are retained in the local trial record. No callable activation
+or #589 readiness notification has occurred.
