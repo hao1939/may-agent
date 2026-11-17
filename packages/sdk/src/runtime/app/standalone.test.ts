@@ -68,8 +68,11 @@ export const name = "review-change";
 export const description = "Review one ref with schema check";
 export const inputSchema = {
   type: "object",
-  properties: { subjectRef: { type: "string", minLength: 1 } },
-  required: ["subjectRef"],
+  properties: {
+    prompt: { type: "string", minLength: 1 },
+    data: { type: "object", properties: { subjectRef: { type: "string", minLength: 1 } }, required: ["subjectRef"], additionalProperties: false },
+  },
+  required: ["prompt", "data"],
   additionalProperties: false,
 };
 const ReviewSchema = {
@@ -84,13 +87,13 @@ const ReviewSchema = {
 };
 export async function execute(ctx) {
   ctx.log.info("starting direct review");
-  const review = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef, {
+  const review = await ctx.call("global/reviewer", { prompt: "Inspect " + ctx.input.data.subjectRef }, {
     schema: ReviewSchema,
   });
   if (!review.output) {
     return ctx.blocked("Missing review output", { review });
   }
-  return ctx.done("Reviewed " + ctx.input.subjectRef, {
+  return ctx.done("Reviewed " + ctx.input.data.subjectRef, {
     review: review.output,
     workspaceRoot: ctx.workspace?.root,
   });
@@ -130,7 +133,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     const run = await runDirectWorkflow({
       agentName: "owner",
       workflowName: "review-change",
-      input: { subjectRef: "HEAD~1..HEAD" },
+      input: { prompt: "Review change", data: { subjectRef: "HEAD~1..HEAD" } },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -209,8 +212,8 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     const toolCalls: unknown[] = [];
     let cleaned = 0;
     const result = await runDirectWorkflow({
-      target: "owner",
-      input: "Use the explicitly bound agents service",
+      target: "global/owner",
+      input: { prompt: "Use the explicitly bound agents service" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -243,7 +246,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "tc_agents", name: "agents", arguments: {
-                action: "call", agent: "reviewer", task: "must be denied by the supplied binding",
+                action: "call", agent: "global/reviewer", input: { prompt: "must use the supplied binding" },
               } }]
             : [{ type: "toolCall" as const, id: "tc_finish", name: "finish", arguments: {
                 status: "done", summary: "bound provider executed",
@@ -277,8 +280,8 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(result.ok).toBeTrue();
     expect(result.result).toMatchObject({ type: "done", summary: "bound provider executed" });
     expect(providerCalls).toEqual(["owner"]);
-    expect(toolCalls).toEqual([{ action: "call", agent: "reviewer", task: "must be denied by the supplied binding" }]);
-    expect(result.childSessions.map((session) => session.agent)).toEqual(["owner"]);
+    expect(toolCalls).toEqual([{ action: "call", agent: "global/reviewer", input: { prompt: "must use the supplied binding" } }]);
+    expect(result.childSessions.map((session) => session.agent)).toEqual(["global/owner"]);
     expect(cleaned).toBe(1);
   });
 
@@ -299,7 +302,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
       const result = await runDirectWorkflow({
         agentName: "owner",
         workflowName: "review-change",
-        input: { subjectRef: "HEAD" },
+        input: { prompt: "Review HEAD", data: { subjectRef: "HEAD" } },
         projectRoot: env.projectRoot,
         workRoot: env.workRoot,
         agentsRoot: env.agentsRoot,
@@ -362,8 +365,8 @@ export async function execute(ctx) {
     const ownerTurns = new Map<string, number>();
 
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Delegate both helper kinds",
+      target: "global/owner",
+      input: { prompt: "Delegate both helper kinds" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -392,11 +395,11 @@ export async function execute(ctx) {
               } }]
             : turn === 1
               ? [{ type: "toolCall" as const, id: "owner_prompt", name: "agents", arguments: {
-                  action: "call", agent: "reviewer", input: "Review this",
+                  action: "call", agent: "global/reviewer", input: { prompt: "Review this" },
                 } }]
               : turn === 2
                 ? [{ type: "toolCall" as const, id: "owner_code", name: "agents", arguments: {
-                    action: "call", agent: "summarize", input: { value: 7 },
+                    action: "call", agent: "global/summarize", input: { prompt: "Summarize", data: { value: 7 } },
                   } }]
                 : [{ type: "toolCall" as const, id: "owner_finish", name: "finish", arguments: {
                     status: "done", summary: "parent handled both helpers",
@@ -468,8 +471,8 @@ export async function execute(ctx) { return ctx.done("primed"); }
     let reviewerTurn = 0;
     let globalUtilityExecutions = 0;
     const result = await runDirectWorkflow({
-      target: "reviewer",
-      input: "Use the local utility twice",
+      target: "global/reviewer",
+      input: { prompt: "Use the local utility twice" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -494,15 +497,15 @@ export async function execute(ctx) { return ctx.done("primed"); }
           reviewerTurn += 1;
           const content = reviewerTurn === 1
             ? [{ type: "toolCall" as const, id: "local_before", name: "agents", arguments: {
-                action: "call", agent: "utility", input: "before",
+                action: "call", agent: "global/utility", input: { prompt: "before" },
               } }]
             : reviewerTurn === 2
               ? [{ type: "toolCall" as const, id: "explicit_load", name: "agents", arguments: {
-                  action: "call", agent: "reviewer/prime", input: {},
+                  action: "call", agent: "global/prime", input: { prompt: "prime" },
                 } }]
               : reviewerTurn === 3
                 ? [{ type: "toolCall" as const, id: "local_after", name: "agents", arguments: {
-                    action: "call", agent: "utility", input: "after",
+                    action: "call", agent: "global/utility", input: { prompt: "after" },
                   } }]
                 : [{ type: "toolCall" as const, id: "finish_local_precedence", name: "finish", arguments: {
                     status: "done", summary: "local precedence stable",
@@ -551,8 +554,8 @@ export async function execute(ctx) { throw new Error("string helper exploded: " 
 `);
     let turn = 0;
     const result = await runDirectWorkflow({
-      target: "owner",
-      input: "Call the failing string helper",
+      target: "global/owner",
+      input: { prompt: "Call the failing string helper" },
       executionId: "wr_parent_failure_trace",
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
@@ -567,7 +570,7 @@ export async function execute(ctx) { throw new Error("string helper exploded: " 
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "string_failure", name: "agents", arguments: {
-                action: "call", agent: "string-failure", input: "payload",
+                action: "call", agent: "global/string-failure", input: { prompt: "payload" },
               } }]
             : [{ type: "toolCall" as const, id: "finish_after_string_failure", name: "finish", arguments: {
                 status: "done", summary: "handled string helper failure",
@@ -599,7 +602,7 @@ export async function execute(ctx) { throw new Error("string helper exploded: " 
     });
 
     expect(result.ok).toBeTrue();
-    const failedHelper = result.report.steps.find((step) => step.target === "string-failure");
+    const failedHelper = result.report.steps.find((step) => step.target === "global/string-failure");
     expect(failedHelper).toMatchObject({
       kind: "workflow",
       status: "error",
@@ -627,8 +630,8 @@ export async function execute(ctx) {
     );
     let turn = 0;
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Try one saturated helper",
+      target: "global/owner",
+      input: { prompt: "Try one saturated helper" },
       maxConcurrentCalls: 1,
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
@@ -643,7 +646,7 @@ export async function execute(ctx) {
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "saturated_call", name: "agents", arguments: {
-                action: "call", agent: "side-effect", input: {},
+                action: "call", agent: "global/side-effect", input: { prompt: "run" },
               } }]
             : [{ type: "toolCall" as const, id: "finish_after_denial", name: "finish", arguments: {
                 status: "done", summary: "handled saturation",
@@ -717,8 +720,8 @@ export async function execute(ctx) {
     const visibleResults: unknown[] = [];
     const helperErrors: string[] = [];
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Bound the helper",
+      target: "global/owner",
+      input: { prompt: "Bound the helper" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -749,11 +752,11 @@ export async function execute(ctx) {
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "warm_helper", name: "agents", arguments: {
-                action: "call", agent: "warm-helper", input: {},
+                action: "call", agent: "global/warm-helper", input: { prompt: "warm" },
               } }]
             : turn === 2
               ? [{ type: "toolCall" as const, id: "bounded_helper", name: "agents", arguments: {
-                  action: "call", agent: "long-helper", input: {}, timeoutMs: 20,
+                  action: "call", agent: "global/long-helper", input: { prompt: "long" }, options: { timeoutMs: 20 },
                 } }]
               : [{ type: "toolCall" as const, id: "finish_after_timeout", name: "finish", arguments: {
                   status: "done", summary: "parent handled helper timeout",
@@ -797,8 +800,8 @@ export async function execute(ctx) {
       expect.stringContaining('Workflow step "long-helper" timed out after 20ms'),
     ]);
     expect(run.report.steps).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: "workflow", target: "warm-helper", status: "done", cleanupConfirmed: true }),
-      expect.objectContaining({ kind: "workflow", target: "long-helper", status: "error", cleanupConfirmed: true }),
+      expect.objectContaining({ kind: "workflow", target: "global/warm-helper", status: "done", cleanupConfirmed: true }),
+      expect.objectContaining({ kind: "workflow", target: "global/long-helper", status: "error", cleanupConfirmed: true }),
     ]));
   });
 
@@ -824,8 +827,8 @@ export async function execute(ctx) {
     );
     let turn = 0;
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Stop helper work but reserve finish time",
+      target: "global/owner",
+      input: { prompt: "Stop helper work but reserve finish time" },
       timeoutMs: 300,
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
@@ -840,7 +843,7 @@ export async function execute(ctx) {
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
-                action: "call", agent: "work-stop-helper", input: {},
+                action: "call", agent: "global/work-stop-helper", input: { prompt: "work" },
               } }]
             : [{ type: "toolCall" as const, id: "finish_in_reserve", name: "finish", arguments: {
                 status: "done", summary: "finished in reserved interval",
@@ -875,7 +878,7 @@ export async function execute(ctx) {
     expect(run.result).toMatchObject({ type: "done", summary: "finished in reserved interval" });
     expect(run.report.durationMs).toBeLessThan(300);
     expect(run.report.steps).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: "workflow", target: "work-stop-helper", status: "error", cleanupConfirmed: true }),
+      expect.objectContaining({ kind: "workflow", target: "global/work-stop-helper", status: "error", cleanupConfirmed: true }),
     ]));
   });
 
@@ -883,8 +886,8 @@ export async function execute(ctx) {
     const env = setupDirectLayout();
     let ownerTurn = 0;
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Handle helper cleanup uncertainty",
+      target: "global/owner",
+      input: { prompt: "Handle helper cleanup uncertainty" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -914,7 +917,7 @@ export async function execute(ctx) {
           ownerTurn += 1;
           const content = ownerTurn === 1
             ? [{ type: "toolCall" as const, id: "uncertain_helper", name: "agents", arguments: {
-                action: "call", agent: "reviewer", input: "Return a result",
+                action: "call", agent: "global/reviewer", input: { prompt: "Return a result" },
               } }]
             : [{ type: "toolCall" as const, id: "parent_finish", name: "finish", arguments: {
                 status: "done", summary: "parent handled helper result",
@@ -950,7 +953,7 @@ export async function execute(ctx) {
     expect(run.report.result).toMatchObject({ type: "done", summary: "parent handled helper result" });
     expect(run.report.cleanup).toEqual({
       confirmed: false,
-      unconfirmed: ["agent:reviewer (reviewer_unconfirmed)"],
+      unconfirmed: ["agent:global/reviewer (reviewer_unconfirmed)"],
     });
   });
 
@@ -961,7 +964,7 @@ export async function execute(ctx) {
     const run = await runDirectWorkflow({
       agentName: "owner",
       workflowName: "review-change",
-      input: { subjectRef: "HEAD" },
+      input: { prompt: "Review HEAD", data: { subjectRef: "HEAD" } },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -1010,7 +1013,7 @@ export async function execute(ctx) {
 export const name = "outer";
 export const description = "Calls nested review-change";
 export async function execute(ctx) {
-  return ctx.call("review-change", { subjectRef: "HEAD" });
+  return ctx.call("global/review-change", { prompt: "Review HEAD", data: { subjectRef: "HEAD" } });
 }
 `,
     );
@@ -1065,7 +1068,7 @@ export default function createCustomTool() {
         name: "readonly-step",
         description: "Calls coding+local agent with readonly policy",
         async execute(ctx) {
-          const res = await ctx.call("reviewer", "Inspect only", { tools: "readonly" });
+          const res = await ctx.call("global/reviewer", { prompt: "Inspect only" });
           return ctx.done(res.summary);
         },
       },
@@ -1113,8 +1116,8 @@ export default function createCustomTool() {
 export const name = "nested-pair";
 export const description = "Runs two nested workflows and returns their IDs";
 export async function execute(ctx) {
-  const first = await ctx.call("review-change", { subjectRef: "A" });
-  const second = await ctx.call("review-change", { subjectRef: "B" });
+  const first = await ctx.call("global/review-change", { prompt: "Review A", data: { subjectRef: "A" } });
+  const second = await ctx.call("global/review-change", { prompt: "Review B", data: { subjectRef: "B" } });
   return ctx.done("pair", { parentId: ctx.done("probe").id, firstId: first.id, secondId: second.id });
 }
 `,
@@ -1156,7 +1159,7 @@ export async function execute(ctx) {
         name: "root-depth-1",
         description: "Calls nested review-change at depth 2 with maxDepth=1",
         async execute(ctx) {
-          const step = await ctx.call("owner/review-change", { subjectRef: "HEAD" });
+          const step = await ctx.call("global/review-change", { prompt: "Review HEAD", data: { subjectRef: "HEAD" } });
           return ctx.done(step.summary);
         },
       },
@@ -1212,7 +1215,7 @@ export async function execute(ctx) {
         name: "bad-allowance",
         description: "Invalid operationAllowance",
         async execute(ctx) {
-          await ctx.call("reviewer", "Check", { operationAllowance: 0 });
+          await ctx.call("global/reviewer", { prompt: "Check" });
           return ctx.done("unreachable");
         },
       },
@@ -1234,7 +1237,7 @@ export async function execute(ctx) {
         name: "allowance-one",
         description: "Schema-less step with operationAllowance: 1",
         async execute(ctx) {
-          const step = await ctx.call("reviewer", "Inspect note.txt", {
+          const step = await ctx.call("global/reviewer", { prompt: "Inspect note.txt" }, {
             tools: "readonly",
             operationAllowance: 1,
           });
@@ -1331,7 +1334,7 @@ export async function execute(ctx) {
         name: "healthy", description: "Independent supplied module",
         async execute(ctx) {
           if (lookup) {
-            try { await ctx.call("broken", "must not run"); }
+            try { await ctx.call("global/broken", { prompt: "must not run" }); }
             catch (error) { return ctx.done("healthy", String(error)); }
             throw new Error("Malformed owner was admitted");
           }
@@ -1378,7 +1381,7 @@ export async function execute(ctx) { return ctx.done("after"); }
       ...env, agentName: "owner", input: {}, models: {},
       signal: controller.signal, timeoutMs: mode === "timeout" ? 500 : 10_000,
       module: { name: "caller", description: "Calls reviewer/after whose catalog import stalls", async execute(ctx) {
-        await ctx.call("reviewer/after", {});
+        await ctx.call("global/after", { prompt: "after" });
         settledAfterCall = true;
         return ctx.done("must not complete");
       } },
@@ -1430,8 +1433,8 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
       module: { name: "caller", description: "Boundary probe", async execute(ctx) {
         const failures = [];
         for (const probe of [
-          () => ctx.call("foreign-owner/secret", {}),
-          () => ctx.call("foreign-owner", "probe"),
+          () => ctx.call("foreign/secret", { prompt: "probe" }),
+          () => ctx.call("foreign/owner", { prompt: "probe" }),
         ]) {
           try { await probe(); } catch (err) { failures.push(String(err)); }
         }
@@ -1466,7 +1469,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
       ...env, projectsRoot, agentName: "owner", workflowDir: join(localAgentsRoot, "owner", "workflows"),
       input: {}, models: { test: fakeModel() as any },
       module: { name: "caller", description: "Calls captured prompt", async execute(ctx) {
-        return ctx.call("reviewer", "Review HEAD");
+        return ctx.call("global/reviewer", { prompt: "Review HEAD" });
       } },
       runAgent: async (opts) => {
         const prep = await prepareDirectAgentExecution(opts);
@@ -1512,8 +1515,8 @@ export const name = "deep-review";
 export const description = "Cross-owner procedure that calls unqualified local-helper and prompt reviewer";
 export const readonly = true;
 export async function execute(ctx) {
-  const helper = await ctx.call("local-helper", {});
-  const agentStep = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef);
+  const helper = await ctx.call("global/local-helper", { prompt: "run helper" });
+  const agentStep = await ctx.call("global/reviewer", { prompt: "Inspect " + ctx.input.data.subjectRef });
   return ctx.done(helper.summary + ":" + agentStep.summary, {
     helper: helper.output,
     agentSummary: agentStep.summary,
@@ -1527,7 +1530,7 @@ export async function execute(ctx) {
 export const name = "delegate-cross-owner";
 export const description = "Owner calls reviewer/deep-review via ctx.call";
 export async function execute(ctx) {
-  const sub = await ctx.call("reviewer/deep-review", { subjectRef: "HEAD" }, { tools: "readonly" });
+  const sub = await ctx.call("global/deep-review", { prompt: "Deep review", data: { subjectRef: "HEAD" } });
   return ctx.done(sub.summary, sub.output);
 }
 `,
@@ -1570,8 +1573,8 @@ export async function execute(ctx) {
   test("runDirect dispatches both prompt targets and code targets through one standalone entrypoint", async () => {
     const env = setupDirectLayout();
     const promptRun = await runDirect({
-      target: "reviewer",
-      input: "Inspect HEAD",
+      target: "global/reviewer",
+      input: { prompt: "Inspect HEAD" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -1596,8 +1599,8 @@ export async function execute(ctx) {
     });
 
     const codeRun = await runDirect({
-      target: "owner/review-change",
-      input: { subjectRef: "HEAD~1..HEAD" },
+      target: "global/review-change",
+      input: { prompt: "Review change", data: { subjectRef: "HEAD~1..HEAD" } },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -1694,7 +1697,7 @@ export async function execute(ctx) { return ctx.done("probe"); }
       const run = runDirect({
         ...env,
         agentName: "owner",
-        target: "reviewer/probe",
+        target: "global/probe",
         input: {},
         models: {},
         signal: controller.signal,
@@ -1755,7 +1758,7 @@ export const name = "pinned-helper";
 export const description = "Mutated helper v2";
 export async function execute(ctx) { return ctx.done("v2"); }
 \`);
-  const sub = await ctx.call("pinned-helper", {});
+  const sub = await ctx.call("global/pinned-helper", { prompt: "run pinned helper" });
   return ctx.done("ran:" + sub.summary);
 }
 `,
@@ -1790,7 +1793,7 @@ export async function execute(ctx) { return ctx.done("ok"); }
     const expiredRun = await runDirect({
       ...env,
       agentName: "owner",
-      target: "reviewer/marker",
+      target: "global/marker",
       input: {},
       models: {},
       deadlineAt: Date.now() - 100,
@@ -1820,7 +1823,7 @@ export async function execute(ctx) {
     const budgetRun = await runDirect({
       ...env,
       agentName: "owner",
-      target: "reviewer/slow-prep-then-exec",
+      target: "global/slow-prep-then-exec",
       input: {},
       models: {},
       timeoutMs: 260,
@@ -1847,7 +1850,7 @@ export async function execute(ctx) {
     const parityRun = await runDirect({
       ...env,
       agentName: "owner",
-      target: "reviewer/longer-module-timeout",
+      target: "global/longer-module-timeout",
       input: {},
       models: {},
       timeoutMs: 100,
@@ -2043,7 +2046,7 @@ export async function execute(ctx) {
 export const name = "aliased-proc";
 export const description = "Aliased procedure calling global reviewer";
 export async function execute(ctx) {
-  const step = await ctx.call("reviewer", "Check from App procedure");
+  const step = await ctx.call("global/reviewer", { prompt: "Check from App procedure" });
   return ctx.done("alpha->global:" + step.summary);
 }
 `,
@@ -2400,7 +2403,7 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
             "Constraints:",
             ...assignment.constraints.map((item) => `- ${item}`),
           ].join("\n");
-          const step = await ctx.call("reviewer", prompt, {
+          const step = await ctx.call("global/reviewer", { prompt }, {
             skill: "careful-audit",
           });
           return ctx.done(step.summary);
@@ -2455,7 +2458,7 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
         name: "unknown-skill-step",
         description: "Calls reviewer with nonexistent skill",
         async execute(ctx) {
-          return ctx.call("reviewer", "Inspect boundary.ts", { skill: "nonexistent-skill" });
+          return ctx.call("global/reviewer", { prompt: "Inspect boundary.ts" });
         },
       },
       agentName: "owner",
