@@ -1751,3 +1751,38 @@ broader CI, configured inventory and connected installed trial remain open.
 Evidence: `e764-independent-workflow-tool.log`,
 `e764-independent-check-ci.log` and `e764-steering-review-resolution.json` under
 the trial directory.
+
+## Inventory fixtures corrected; model-tool finish enforcement gap
+
+May's App `5fdaad20b32ab37ac6ed47744c1ae65417edb696` isolates both
+discovery selections from operator configuration. The source fixture expects
+33 canonical targets and rejects missing-prompt/retired input forms; a second
+fixture explicitly disables sample and expects the remaining 32. Independent
+verification against Host `cb4f3583e58cc2b761178038a8d06606bce46206` passes
+all five audit tests with the genuine installation disable markers present.
+Root pushed the checkpoint to the retained App review branch. Full configured
+App checks remain in progress.
+
+The completed hosted Hoste764/run44185627355 reports **3,495 tests,
+42 failures across18files, two skips**; Container passes. Its four-shard
+JUnit artifact map supersedes Host3fb's59-failure baseline. May's local Hostcb4
+migrates lifecycle fixtures and passes all18 owning tests plus `check:ci`.
+Root is withholding that checkpoint's publication because independent review
+found its successful canonical calls rely on an actual report-contract defect.
+
+A deterministic production-manager probe keeps a live caller and invokes the
+canonical `agents.call` target. The child provider emits only plain assistant
+text and never invokes `finish()`. Hostcb4 nevertheless returns the actual
+child ID with `status: done` and that text as summary. The model-tool adapter
+omits `requireFinish: true`; its result projection synthesizes success from
+unstructured prose. Workflow and standalone prompt calls already require finish.
+This contradicts the accepted common result contract even without an output
+schema. Root sent the exact reproduction and requested a bounded source repair,
+valid success fixtures and a missing-report regression through the same retained
+Host Task (event6741229). Low-level direct manager runs keep their own contract.
+
+Evidence under the trial directory: `5fd-cb4-independent-inventory.log`,
+`5fd-cb4-configured-prerequisites.json`, `cb4-independent-lifecycle.log`,
+`cb4-independent-check-ci.log`, `cb4-canonical-finish-observation.ts`,
+`cb4-canonical-finish-observation.json`, `current-host-finish-contract-receipt.json`,
+`e764-hosted-failures.json` and `e764-hosted-failure-file-map.json`.

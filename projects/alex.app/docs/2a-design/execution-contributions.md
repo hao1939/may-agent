@@ -691,18 +691,22 @@ Backend kind, `sessionId`, `workflowRunId`, output directories, workflow steps,
 raw `lastAssistantText`, `structuredResult` and `finishResult` belong in execution
 diagnostics rather than alternative public result shapes or payload aliases.
 Useful output and facts must remain JSON-compatible and available through the
-same envelope for either implementation. This migration remains outstanding in
-Host #585; the current SDK still exposes a required diagnostic `kind` field.
+same envelope for either implementation. Draft Host #589 implements this source
+cutover; the installed runtime still uses the earlier interface. The
+[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
+tracks remaining adapter gaps and verification.
 An explicit partial agent result is `blocked` with its partial output retained,
 not `done`. Both optional `output` and `facts` survive every authored terminal
 status and nested workflow boundary. A workflow may return an error or
 interrupted contribution with useful evidence; actual caller cancellation and
 failed persistence still follow the execution fences and failure path. Retain
 both fields in the existing bounded run artifact, including explicit unavailable
-markers when evidence exceeds retention limits. Prose-only calls may return a
-summary when no structured result was requested; this does not manufacture
-verified domain data. Both still return the common envelope; unstructured
-assistant text alone is not a successful finish report.
+markers when evidence exceeds retention limits. A call without an output schema
+may return a valid report containing only status and summary. Prompt execution
+still requires `finish()`; unstructured assistant text alone is not a successful
+finish report. Use the existing bounded corrective prompt and failure path when
+the required report is missing. This requirement applies equally to model-tool
+calls and calls made from workflows.
 
 Invocation/setup failure can occur before a child exists, and cancelled scopes
 or infrastructure failures may throw. Do not fabricate a terminal execution ID
