@@ -10,7 +10,7 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import { validateCallableOptions, type CallableDescriptor } from "./callable.js";
+import { validateCallableInput, validateCallableOptions, type CallableDescriptor } from "./callable.js";
 import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
@@ -295,6 +295,8 @@ export type WorkflowKernelStepControl = {
   deadlineAt: number;
   stepIndex: number;
   allowance: WorkflowExecutionAllowance;
+  /** Effective runtime tool context inherited from the enclosing execution. */
+  tools?: "full" | "readonly";
   /** Internal bridge for model-visible tools that delegate through this same kernel lifecycle. */
   callTarget(
     target: string,
@@ -594,14 +596,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
     return failBeforeStart(bindings.signal.reason ?? new Error(`Workflow "${module.name}" was aborted before start`));
   }
 
-  if (bindings.tools === "readonly" && !module.readonly) {
-    return failBeforeStart(
-      new Error(
-        `Workflow "${module.name}" cannot run with tools: "readonly" unless the module declares readonly: true`,
-      ),
-    );
-  }
-
   let allowance: WorkflowExecutionAllowance;
   let timeoutMs: number;
   let effectiveTimeoutMessage: string;
@@ -837,6 +831,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
             deadlineAt: stepDeadlineAt,
             stepIndex,
             allowance,
+            ...(enclosingReadonly ? { tools: "readonly" as const } : bindings.tools ? { tools: bindings.tools } : {}),
             callTarget: (nestedTarget, nestedInput, nestedOptions, nestedSignal, resolveNestedTarget) => {
               const fallbackKind: "agent" | "workflow" =
                 typeof nestedTarget === "string" && nestedTarget.includes("/")
@@ -992,6 +987,17 @@ export async function runWorkflowInvocation<TInput = unknown>(
       return Promise.reject(err);
     }
     return trackOperation((async () => {
+      const descriptor = bindings.listTargets?.().find((candidate) => candidate.name === target);
+      if (descriptor) {
+        try {
+          validateCallableInput(descriptor.inputSchema, input);
+        } catch (error) {
+          return {
+            status: "error" as const,
+            summary: error instanceof Error ? error.message : String(error),
+          };
+        }
+      }
       const promptPreview = safePromptPreview(input);
       const fallbackKind: "agent" | "workflow" =
         typeof target === "string" && target.includes("/")

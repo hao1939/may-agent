@@ -1458,7 +1458,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       models: options.models,
       requireFinish: true,
       outputSchema: callOpts?.schema,
-      toolPolicy: options.tools,
+      toolPolicy: stepControl.tools,
       operationAllowance,
       toolDenials: denials,
       capabilityProviders,
@@ -1519,7 +1519,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         allowance: stepControl.allowance,
         catalog: preparedCatalog,
         callerOwner: targetOwner,
-        tools: options.tools,
+        tools: stepControl.tools,
       },
     );
     for (const session of sub.childSessions) {

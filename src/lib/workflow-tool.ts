@@ -829,7 +829,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           undefined,
           stepControl.signal,
           stepControl.allowance,
-          inheritedTools,
+          stepControl.tools,
           resolved.owner,
         );
         stepControl.signal.throwIfAborted();

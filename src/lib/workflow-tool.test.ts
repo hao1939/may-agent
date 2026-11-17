@@ -135,7 +135,7 @@ export async function execute(ctx) { return ctx.done("after"); }
     mkdirSync(join(reviewerDir, "workflows"), { recursive: true });
     writeFileSync(join(workflowDir, "parent.ts"), `
 export const name = "parent";
-export const description = "Calls a cross-owner readonly procedure";
+export const description = "Calls a cross-owner procedure";
 export async function execute(ctx) { return ctx.call("sample/deep", { prompt: "Run the deep review" }); }
 `);
     writeFileSync(join(workflowDir, "local.ts"), `
@@ -169,7 +169,7 @@ export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); 
         callAgentDefinition: async (definition: SubagentDefinition, task: string, options: { toolPolicy?: string; skill?: string }) => {
           expect(definition).toBe(reviewer);
           expect(task).toBe("Review HEAD");
-          expect(options.toolPolicy).toBe("readonly");
+          expect(options.toolPolicy).toBeUndefined();
           expect(options.skill).toBeUndefined();
           promptCalls++;
           return { sessionId: "s_captured", status: "done", messages: [],
@@ -1039,7 +1039,7 @@ export async function execute(ctx) {
 export const name = "app-agent";
 export const description = "App SDK Agent adapter test";
 export async function execute(ctx) {
-  const result = await ctx.call("global/worker", { prompt: String(ctx.input) }, { operationAllowance: 50 });
+  const result = await ctx.call("global/worker", { prompt: String(ctx.input) });
   ctx.log.info(result.summary);
   return ctx.done("adapted", result);
 }
@@ -1057,10 +1057,8 @@ export async function execute(ctx) {
       eventsPath: "/evidence/events.jsonl",
     };
     let agentSessionSource: string | undefined;
-    let operationAllowance: number | undefined;
-    const callAgent = async (_agent: string, _task: string, options: { source?: string; operationAllowance?: number }) => {
+    const callAgent = async (_agent: string, _task: string, options: { source?: string }) => {
       agentSessionSource = options.source;
-      operationAllowance = options.operationAllowance;
       return {
         sessionId: "s_app_step",
         status: "done",
@@ -1084,7 +1082,7 @@ export async function execute(ctx) {
     const runner = createWorkflowRunner({
       manager: {
         callAgent,
-        callAgentDefinition: (_def: SubagentDefinition, task: string, options: { source?: string; operationAllowance?: number }) =>
+        callAgentDefinition: (_def: SubagentDefinition, task: string, options: { source?: string }) =>
           callAgent(_def.name, task, options),
       } as any,
       workflowDir,
@@ -1118,7 +1116,6 @@ export async function execute(ctx) {
       },
     });
     expect(agentSessionSource).toBe("heartbeat");
-    expect(operationAllowance).toBe(50);
     expect(logged).toEqual([expect.stringMatching(/^\[workflow:wr_[^\]]+\] \[info\] bounded move complete$/)]);
   });
 
@@ -1292,7 +1289,7 @@ export async function execute(ctx) {
     expect(helperCalls).toBe(1);
   });
 
-  it("rejects invalid operation allowances before provider execution", async () => {
+  it("rejects retired callable options before provider execution", async () => {
     const root = workflowRoot("app-workflow-invalid-allowance-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
@@ -1325,7 +1322,7 @@ export async function execute(ctx) {
 
     const result = await runner.run("invalid-allowance", "input");
     expect(result).toMatchObject({ type: "error" });
-    expect(result.type === "error" ? result.error : "").toContain("finite positive integer");
+    expect(result.type === "error" ? result.error : "").toContain("Unsupported callable option: operationAllowance; use only timeoutMs and schema");
     expect(calls).toBe(0);
   });
 

@@ -215,24 +215,20 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect(resolutions).toBe(1);
   });
 
-  test("runTargetTest forwards root skill and outputSchema options and preserves root executable concurrency allowance", async () => {
+  test("runTargetTest forwards outputSchema and preserves root executable concurrency allowance", async () => {
     const outputSchema = Type.Object({ verdict: Type.Literal("pass") });
-    let observedSkill: string | undefined;
     let observedSchema: unknown;
     const valid = await runTargetTest("reviewer", {
       input: "Check HEAD",
-      skill: "review",
       outputSchema,
       mocks: {
-        reviewer: ({ options }) => {
-          observedSkill = options?.skill;
-          observedSchema = options?.schema;
+        reviewer: ({ options: callOptions }) => {
+          observedSchema = callOptions?.schema;
           return { output: { verdict: "pass" } };
         },
       },
     });
     expect(valid.ok).toBe(true);
-    expect(observedSkill).toBe("review");
     expect(observedSchema).toBe(outputSchema);
     expect(valid.result?.output).toEqual({ verdict: "pass" });
 
@@ -773,7 +769,7 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect(calls).toEqual(["unified"]);
   });
 
-  test("uses a queued mock's explicit kind before validating call options", async () => {
+  test("rejects retired call options before consuming queued mocks", async () => {
     const run = await runTargetTest({
       name: "caller", description: "Calls code with string input",
       async execute(ctx: WorkflowContext) {
@@ -781,7 +777,7 @@ describe("portable workflow kernel & runTargetTest", () => {
       },
     }, { input: {}, mocks: { code: [{ kind: "workflow", summary: "must not run" }] } });
     expect(run.ok).toBe(false);
-    expect(String(run.error)).toContain('Call option "skill" is only supported for prompt targets');
+    expect(String(run.error)).toContain("Unsupported callable option: skill; use only timeoutMs and schema");
     expect(run.unconsumedFixtures).toEqual([{ kind: "workflow", target: "code", remaining: 1 }]);
   });
 
@@ -810,7 +806,7 @@ describe("portable workflow kernel & runTargetTest", () => {
   );
 
   test.each([{ skill: "review" }, { operationAllowance: 2 }])(
-    "classifies a string-input prompt mock before validating prompt-only options: %j",
+    "rejects retired prompt call options before consuming mocks: %j",
     async (options) => {
       const run = await runTargetTest({
         name: "caller",
@@ -820,14 +816,13 @@ describe("portable workflow kernel & runTargetTest", () => {
           return ctx.done(child.summary);
         },
       }, { input: {}, mocks: { reviewer: { summary: "reviewed" } } });
-      expect(run.ok).toBe(true);
-      expect(run.result).toMatchObject({ type: "done", summary: "reviewed" });
-      expect(run.steps[0]?.kind).toBe("agent");
-      expect(run.unconsumedFixtures).toEqual([]);
+      expect(run.ok).toBe(false);
+      expect(String(run.error)).toContain("Unsupported callable option");
+      expect(run.unconsumedFixtures).toEqual([{ kind: "workflow", target: "reviewer", remaining: 1 }]);
     },
   );
 
-  test("supports unified ctx.call, resolveCallable, mocks, dual output schemas, and readonly enforcement", async () => {
+  test("supports unified ctx.call, resolveCallable, mocks, dual output schemas, and retired-option rejection", async () => {
     const childCodeMod = {
       name: "child-proc",
       description: "Readonly code procedure",
@@ -872,7 +867,6 @@ describe("portable workflow kernel & runTargetTest", () => {
       description: "Calls child code and prompt via ctx.call",
       async execute(ctx: AgentContext<{ item: string }>) {
         const res = await ctx.call("owner/child-proc", { item: ctx.input.item }, {
-          tools: "readonly",
           schema: Type.Object({
             item: Type.String(),
             score: Type.Number({ minimum: 90 }),
@@ -903,7 +897,7 @@ describe("portable workflow kernel & runTargetTest", () => {
       status: "done",
     });
 
-    // Rejects calling a non-readonly code module with tools: "readonly"
+    // Rejects retired invocation restrictions before executing a code module
     const mutatingMod = {
       name: "mutating-proc",
       description: "Mutating procedure without readonly: true",
@@ -926,9 +920,9 @@ describe("portable workflow kernel & runTargetTest", () => {
       },
     );
     expect(readonlyRejected.ok).toBe(false);
-    expect(String(readonlyRejected.error)).toContain('cannot run with tools: "readonly"');
+    expect(String(readonlyRejected.error)).toContain("Unsupported callable option: tools; use only timeoutMs and schema");
 
-    // Rejects prompt-only options (skill / operationAllowance) on code targets
+    // Rejects retired prompt-specific options on every callable target
     const skillOnCode = await runTargetTest(
       {
         name: "caller-skill",
@@ -944,17 +938,16 @@ describe("portable workflow kernel & runTargetTest", () => {
       },
     );
     expect(skillOnCode.ok).toBe(false);
-    expect(String(skillOnCode.error)).toContain('Call option "skill" is only supported for prompt targets');
+    expect(String(skillOnCode.error)).toContain("Unsupported callable option: skill; use only timeoutMs and schema");
 
     // SDK-only string target execution via runTargetTest
     expect(typeof listTargets).toBe("function");
     const sdkDirectPrompt = await runTargetTest("reviewer", {
       input: "Check HEAD",
-      tools: "readonly",
       mocks: {
-        reviewer: ({ task, options }) => ({
+        reviewer: ({ task }) => ({
           status: "done",
-          summary: `SDK prompt: ${task} (${options?.tools ?? "default"})`,
+          summary: `SDK prompt: ${task}`,
           facts: { checkedFiles: 3 },
         }),
       },
@@ -962,7 +955,7 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect(sdkDirectPrompt.ok).toBe(true);
     expect(sdkDirectPrompt.result).toEqual({
       type: "done",
-      summary: "SDK prompt: Check HEAD (readonly)",
+      summary: "SDK prompt: Check HEAD",
       facts: { checkedFiles: 3 },
     });
 
@@ -1011,10 +1004,7 @@ describe("portable workflow kernel & runTargetTest", () => {
         name: "overlapping-mock-and-workflow",
         description: "Calls reviewer with prompt options via mocks",
         async execute(ctx) {
-          const step = await ctx.call("reviewer", "Check diff", {
-            skill: "review",
-            operationAllowance: 2,
-          });
+          const step = await ctx.call("reviewer", "Check diff");
           return ctx.done(step.summary);
         },
       },
@@ -1024,7 +1014,7 @@ describe("portable workflow kernel & runTargetTest", () => {
         mocks: {
           reviewer: (call) => ({
             status: "done",
-            summary: `mock:${call.options?.skill}:${call.options?.operationAllowance}`,
+            summary: `mock:${call.task}`,
           }),
         },
       },
@@ -1032,7 +1022,7 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect(overlappingRun.ok).toBe(true);
     expect(overlappingRun.result).toEqual({
       type: "done",
-      summary: "mock:review:2",
+      summary: "mock:Check diff",
     });
     expect(overlappingRun.steps[0]?.kind).toBe("agent");
 
