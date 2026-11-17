@@ -276,3 +276,21 @@ full suite. Root returned the exact failure to May; final current-candidate CI
 must be read independently. The repeated environment failures also motivate
 using the existing specialist `clarify` return when setup, rather than a code
 change, is needed. This is App execution guidance, not a new Host classifier.
+
+At 16:02 UTC, Root independently verified clean hotfix
+`54528704a9d6eb223c2fd48de4bb38862a5d30ba`: all twenty owning tests passed with
+107 assertions; the production-API probe preserved no-op generation one and
+admitted a real change at generation two. The exact corrected regression also
+failed baseline `0606e2df16` at the intended admission collision in a temporary
+archive. Root matched its test hash to the committed candidate.
+
+The fourth native development round returned incomplete despite finding no new
+source defect. Bob's review requested PR/head, activation and original-Task
+revision evidence before accepting the local candidate. This leaks the wider
+Task's delivery scope into a procedure explicitly ending at local source
+evidence, making later delivery a prerequisite of its earlier stage. Root
+returned that boundary correction through May with independent source approval.
+Alex still owes exact-candidate full CI, PR/checks and supported activation on
+the same Task; no additional code round is needed merely to run delivery.
+The later paired App migration should correct specialist context to assess the
+local candidate while retaining the outer Task's unresolved obligations.

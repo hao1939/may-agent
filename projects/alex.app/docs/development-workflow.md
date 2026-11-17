@@ -37,6 +37,16 @@ by its local candidate. The [PR follow-through direction](#pr-follow-through-acr
 below explains how a broader Alex assignment can use this procedure without
 turning it into a permanently running workflow.
 
+A local candidate review uses the owning Task's implementation requirements and
+the procedure's selected verification. It must not require PR publication,
+remote checks, activation or caller delivery before returning that candidate:
+Alex performs those operations after this bounded call returns. Keep those wider
+obligations in the Task and report them as remaining work. Missing verification
+still blocks a readiness claim; it does not by itself require another code edit.
+See the [live review](archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment)
+for the current scope leak in Bob's review. The paired App migration must correct
+that specialist context without weakening the owning Task's acceptance.
+
 ## From a standing review to a concrete incident
 
 A standing improvement review owns problem selection, cumulative incident
