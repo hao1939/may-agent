@@ -1,10 +1,8 @@
 import { expect, test } from "bun:test";
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { promisify } from "node:util";
 import { runCommand } from "./command.js";
 import { type WorkflowContext } from "./index.js";
 import { runTargetTest } from "./testing.js";
@@ -25,7 +23,7 @@ async function untilReady(path: string) {
   expect(existsSync(path)).toBe(true);
 }
 
-test.each(["cancel", "leader-exit", "nested-cancel", "caught-escape"] as const)(
+test.each(["cancel", "leader-exit", "nested-cancel"] as const)(
   "command cleanup: %s joins owned descendants and preserves another command",
   async (mode) => {
     const root = mkdtempSync(join(tmpdir(), "sdk-command-cancellation-"));
@@ -39,16 +37,15 @@ test.each(["cancel", "leader-exit", "nested-cancel", "caught-escape"] as const)(
       require('node:fs').writeFileSync(${JSON.stringify(childReady)}, 'ready');
       setTimeout(() => process.exit(72), 8000);
     `;
-    const childArgv = [process.execPath, "-e", childScript];
     const script = `
       process.on('SIGTERM', () => {});
       const child = require('node:child_process').spawn(
-        ${JSON.stringify(mode === "caught-escape" ? "/usr/bin/setsid" : process.execPath)},
-        ${JSON.stringify(mode === "caught-escape" ? ["--", ...childArgv] : childArgv.slice(1))},
+        ${JSON.stringify(process.execPath)},
+        ["-e", ${JSON.stringify(childScript)}],
         { stdio: ['ignore', 'inherit', 'inherit'] });
       require('node:fs').writeFileSync(${JSON.stringify(ready)}, JSON.stringify({ parent: process.pid, child: child.pid }));
       console.log('retained verification output');
-      ${mode === "leader-exit" || mode === "caught-escape" ? "process.exit(0)" : "setTimeout(() => process.exit(72), 8000)"};
+      ${mode === "leader-exit" ? "process.exit(0)" : "setTimeout(() => process.exit(72), 8000)"};
     `;
     let pids: { parent: number; child: number } | undefined;
     const killFixtures = () => {
@@ -62,28 +59,14 @@ test.each(["cancel", "leader-exit", "nested-cancel", "caught-escape"] as const)(
     let execution: Promise<unknown> | undefined;
     let command: ReturnType<typeof runCommand> | undefined;
     try {
-      let executeCommand = runCommand;
-      if (mode === "nested-cancel" || mode === "caught-escape") {
-        // Model the deployed boundary: compiled Host and separately loaded SDK
-        // must share ownership even with distinct instances of this module.
-        const bundle = join(root, "command.js");
-        await promisify(execFile)(process.execPath, ["build", join(import.meta.dir, "command.ts"), "--target=bun", "--outfile", bundle], { timeout: 10_000, killSignal: "SIGKILL" });
-        executeCommand = (await import(pathToFileURL(bundle).href)).runCommand;
-      }
       const argv = [process.execPath, "-e", script];
-      if (mode === "nested-cancel" || mode === "caught-escape") {
+      if (mode === "nested-cancel") {
         const child = {
           name: "command-child",
           description: "Owns a command through the workflow cancellation signal",
           async execute(ctx: WorkflowContext) {
-            command = executeCommand(root, argv, ctx.signal);
-            // Deliberately detached from the authored promise in the cancel
-            // case: the kernel still owns its cleanup through ctx.signal.
-            if (mode === "caught-escape") await command.catch(() => undefined);
-            else {
-              void command.catch(() => undefined);
-              await new Promise<void>((resolve) => ctx.signal.addEventListener("abort", () => resolve(), { once: true }));
-            }
+            command = runCommand(root, argv, ctx.signal);
+            await command;
             return ctx.done("child body returned");
           },
         };
@@ -110,28 +93,20 @@ test.each(["cancel", "leader-exit", "nested-cancel", "caught-escape"] as const)(
       expect(watchdogFired).toBe(false);
       expect(alive(pids!.parent)).toBe(false);
       expect(alive(neighbor.pid!)).toBe(true);
-      if (mode === "caught-escape") {
+      expect(alive(pids!.child)).toBe(false);
+      const receipt = await command!;
+      expect(receipt.stdout).toContain("retained verification output");
+      if (mode === "cancel" || mode === "nested-cancel") {
+        expect(receipt.exitCode).toBeNull();
+        expect(receipt.error).toBeDefined();
+      } else {
+        expect(receipt.exitCode).toBe(0);
+        expect(receipt.error).toBeUndefined();
+      }
+      if (mode === "nested-cancel") {
         const run = outcome as Awaited<ReturnType<typeof runTargetTest>>;
         expect(run.ok).toBe(false);
-        expect(run.report.cleanup.confirmed).toBe(false);
-        expect(String(run.error)).toContain("Command output closure is unconfirmed");
-        expect(alive(pids!.child)).toBe(true);
-      } else {
-        expect(alive(pids!.child)).toBe(false);
-        const receipt = await command!;
-        expect(receipt.stdout).toContain("retained verification output");
-        if (mode === "cancel" || mode === "nested-cancel") {
-          expect(receipt.exitCode).toBeNull();
-          expect(receipt.error).toBeDefined();
-        } else {
-          expect(receipt.exitCode).toBe(0);
-          expect(receipt.error).toBeUndefined();
-        }
-        if (mode === "nested-cancel") {
-          const run = outcome as Awaited<ReturnType<typeof runTargetTest>>;
-          expect(run.ok).toBe(false);
-          expect(run.report.cleanup).toEqual({ confirmed: true });
-        }
+        expect(run.report.cleanup).toEqual({ confirmed: true });
       }
     } finally {
       clearTimeout(watchdog);

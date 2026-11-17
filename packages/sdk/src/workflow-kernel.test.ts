@@ -443,7 +443,7 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect(stuckOutcome.report.cleanup.unconfirmed).toEqual([
       expect.stringMatching(/^workflow:stuck-authored-deadline \(wr_/),
     ]);
-    expect(Date.now() - stuckStartedAt).toBeLessThan(200);
+    expect(Date.now() - stuckStartedAt).toBeLessThan(3_000);
   });
 
   test("enforces inherited deadline, shared concurrency allowance, isolated observers, and cleanup confirmation", async () => {

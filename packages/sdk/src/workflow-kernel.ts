@@ -9,7 +9,6 @@
 
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
-import { openCommandScope } from "./command-scope.js";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
 import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
 
@@ -19,7 +18,8 @@ const MAX_REPORT_STEPS = 64;
 const MAX_REPORT_LOGS = 128;
 const MAX_OBSERVER_ERRORS = 16;
 const MAX_PROMPT_CHARS = 2_000;
-const AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS = 50;
+// Give awaited commands time for the existing bounded TERM/KILL cleanup.
+const AUTHORED_EXECUTION_SETTLEMENT_GRACE_MS = 2_000;
 
 /** @deprecated Use `AgentExecutableModule` for Task-transparent authoring. */
 export type WorkflowExecutableModule<TInput = any, TOutput = unknown> = Omit<
@@ -654,7 +654,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
   }
 
   const controller = new AbortController();
-  const joinCommands = openCommandScope(controller.signal);
   let fenced = false;
   let timedOut = false;
   let abortedExternally = false;
@@ -1257,7 +1256,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
       }
     }
     await Promise.allSettled([...activeOperations]);
-    unconfirmedCleanups.push(...await joinCommands());
     if (!authoredExecutionSettled && settleAuthoredExecution) {
       // The execution deadline fences authored work. This separate, finite grace
       // only observes whether cancellation-driven cleanup has actually settled;

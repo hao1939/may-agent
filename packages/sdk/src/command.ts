@@ -1,5 +1,4 @@
-import { execFile, type ExecFileException } from "node:child_process";
-import { CommandCleanupError, trackCommand } from "./command-scope.js";
+import { execFile } from "node:child_process";
 import { drainBashProcessGroup } from "./runtime/lib/tools/bash.js";
 
 export type CommandReceipt = {
@@ -14,9 +13,9 @@ export type CommandReceipt = {
   error?: string;
 };
 
-/** Run an argv command on Linux, retaining bounded output and joining its owned
- * process group on exit or cancellation. Use the execution's signal to join
- * workflow cleanup. Cancellation never becomes a passing check. */
+/** Await an argv command on Linux using the enclosing cancellation signal.
+ * Stop its process group on cancellation or leader exit before returning a
+ * bounded output receipt. Detached sessions and crash recovery are out of scope. */
 export function runCommand(
   root: string,
   argv: string[],
@@ -25,32 +24,26 @@ export function runCommand(
   signal.throwIfAborted();
   if (!argv.length || !argv[0]) throw new Error("Command argv must not be empty");
   const startedAt = new Date().toISOString();
-  const command = new Promise<CommandReceipt>((resolve, reject) => {
-    type Completion = {
-      error: ExecFileException | null;
-      stdout: string;
-      stderr: string;
-    };
-    let complete!: (value: Completion) => void;
-    const completed = new Promise<Completion>((resolve) => { complete = resolve; });
-    let cleanup: Promise<void> | undefined;
+  return new Promise((resolve, reject) => {
+    let cleanup: Promise<boolean> | undefined;
+    const drain = () => cleanup ??= child.pid
+      ? drainBashProcessGroup(child.pid)
+      : Promise.resolve(true);
     const beginCleanup = () => {
-      cleanup ??= (async () => {
-        let closeTimer: ReturnType<typeof setTimeout> | undefined;
-        try {
-          if (child.pid && !await drainBashProcessGroup(child.pid)) {
-            throw new CommandCleanupError("Command process cleanup is unconfirmed");
-          }
-          // A descendant outside the owned group may retain a pipe. Never let
-          // that prevent bounded settlement or claim its cleanup is confirmed.
-          const { error, stdout, stderr } = await Promise.race([
-            completed,
-            new Promise<never>((_, fail) => {
-              closeTimer = setTimeout(() => fail(new CommandCleanupError(
-                "Command output closure is unconfirmed after process cleanup",
-              )), 1_000);
-            }),
-          ]);
+      void drain().then((stopped) => {
+        if (!stopped) reject(new Error("Command process group did not stop"));
+      }, reject);
+    };
+    // execFile's signal option can invoke its callback before the process exits.
+    // Handle cancellation ourselves and wait for the existing SDK group cleanup.
+    const child = execFile(
+      "/usr/bin/setsid",
+      ["--", ...argv],
+      { cwd: root, maxBuffer: 2 * 1024 * 1024, encoding: "utf8" },
+      (error, stdout, stderr) => {
+        signal.removeEventListener("abort", beginCleanup);
+        void drain().then((stopped) => {
+          if (!stopped) throw new Error("Command process group did not stop");
           const cancelled = signal.aborted;
           resolve({
             argv: [...argv],
@@ -67,30 +60,11 @@ export function runCommand(
               ? { error: String(signal.reason ?? "Command cancelled") }
               : error ? { error: error.message } : {}),
           });
-        } catch (error) {
-          // Without confirmed cleanup the workflow must not permit replacement.
-          reject(error instanceof CommandCleanupError ? error : new CommandCleanupError(String(error)));
-        } finally {
-          clearTimeout(closeTimer);
-          signal.removeEventListener("abort", beginCleanup);
-          child.stdout?.destroy();
-          child.stderr?.destroy();
-        }
-      })();
-    };
-    // Do not pass signal to execFile: its abort callback runs before exit.
-    const child = execFile(
-      "/usr/bin/setsid",
-      ["--", ...argv],
-      { cwd: root, maxBuffer: 2 * 1024 * 1024, encoding: "utf8" },
-      (error, stdout, stderr) => {
-        complete({ error, stdout, stderr });
-        beginCleanup();
+        }).catch(reject);
       },
     );
     child.once("exit", beginCleanup);
     signal.addEventListener("abort", beginCleanup, { once: true });
     if (signal.aborted) beginCleanup();
   });
-  return trackCommand(signal, command);
 }
