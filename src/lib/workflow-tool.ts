@@ -3,8 +3,13 @@ import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.
 import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { ExecutionDeferredError } from "@may-agent/sdk/app";
 import {
+  CallableCatalog,
+  canonicalCallableName,
   resolveCallable,
   runWorkflowInvocation,
+  type CallableDescriptor,
+  type CallableDefinition,
+  type ExecutionInput,
   type PreparedCatalog,
   type WorkflowExecutableModule,
   type WorkflowKernelBindings,
@@ -428,6 +433,8 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     proceduresByOwner: Map<string, WorkflowCatalog["workflows"]>;
     diagnostics: string[];
     pendingImports: number;
+    callableCatalog?: CallableCatalog;
+    canonicalRoutes?: ReadonlyMap<string, string>;
   };
 
   function capturePromptCatalog(
@@ -475,7 +482,6 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     if (depth > 1) assertWorkflowExecution();
     const targetCatalog: HostedCatalogState =
       "workflows" in catalog ? capturePromptCatalog(catalog, parentSessionId) : catalog;
-    let activeScopeSignal: AbortSignal | undefined;
     const ensureOwnerProcedures = async (owner: string, signal: AbortSignal): Promise<void> => {
       if (targetCatalog.proceduresByOwner.has(owner)) return;
       const definition = targetCatalog.prompts.get(owner)?.definition;
@@ -494,16 +500,48 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         if (!targetCatalog.diagnostics.includes(diag)) targetCatalog.diagnostics.push(diag);
       }
     };
-    const loadTargetOwnerProcedures = async (target: string, signal: AbortSignal): Promise<void> => {
-      const normalized = typeof target === "string" ? target.trim() : "";
-      if (!normalized) return;
-      const slash = normalized.indexOf("/");
-      if (slash !== -1) {
-        const owner = normalized.slice(0, slash).trim();
-        if (owner) await ensureOwnerProcedures(owner, signal);
-        return;
+    const prepareCallableCatalog = async (signal: AbortSignal): Promise<void> => {
+      if (targetCatalog.callableCatalog) return;
+      for (const owner of targetCatalog.prompts.keys()) await ensureOwnerProcedures(owner, signal);
+
+      const routes = new Map<string, string>();
+      const definitions: CallableDefinition[] = [];
+      for (const [owner, prompt] of targetCatalog.prompts) {
+        const appId = prompt.definition.appLocal ? prompt.definition.projectId : undefined;
+        const canonical = canonicalCallableName(appId, prompt.definition.name);
+        routes.set(canonical, owner);
+        definitions.push({
+          appId,
+          declaredName: prompt.definition.name,
+          description: prompt.definition.description,
+          ...(prompt.outputSchema ? { outputSchema: prompt.outputSchema } : {}),
+          async invoke() {
+            throw new Error("Hosted callable definitions are dispatched by the workflow kernel");
+          },
+        });
       }
-      await ensureOwnerProcedures(callerOwner, signal);
+      for (const [owner, workflows] of targetCatalog.proceduresByOwner) {
+        const ownerDefinition = targetCatalog.prompts.get(owner)?.definition;
+        const appId = ownerDefinition?.appLocal
+          ? ownerDefinition.projectId
+          : (owner === callerOwner ? effectiveProjectId : undefined);
+        for (const workflow of workflows.values()) {
+          const canonical = canonicalCallableName(appId, workflow.name);
+          routes.set(canonical, `${owner}/${workflow.name}`);
+          definitions.push({
+            appId,
+            declaredName: workflow.name,
+            description: workflow.description,
+            ...(workflow.inputSchema ? { inputSchema: workflow.inputSchema } : {}),
+            ...(workflow.outputSchema ? { outputSchema: workflow.outputSchema } : {}),
+            async invoke() {
+              throw new Error("Hosted callable definitions are dispatched by the workflow kernel");
+            },
+          });
+        }
+      }
+      targetCatalog.callableCatalog = new CallableCatalog(definitions);
+      targetCatalog.canonicalRoutes = routes;
     };
     const localSteps: CompletedStep[] = [];
     const callerMeta = getCallerSessionMeta(parentSessionId);
@@ -821,6 +859,10 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         };
       };
 
+      const catalogSignal = parentSignal ?? new AbortController().signal;
+      await prepareCallableCatalog(catalogSignal);
+      const listedTargets: readonly CallableDescriptor[] = targetCatalog.callableCatalog!.list();
+
       const bindings: WorkflowKernelBindings = {
         executionId: runId,
         startedAt: run.startedAt,
@@ -848,32 +890,22 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         // An unfinished native import is not confirmed cleanup. Its eventual
         // continuation checks the scope signal before publishing or executing.
         confirmCleanup: () => targetCatalog.pendingImports === 0,
+        listTargets: () => listedTargets,
         resolveTarget: async (target, input) => {
-          if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
-          if (!hasStructuredAgentCatalog && typeof target === "string" && !target.includes("/")) {
-            const codeModule = targetCatalog.proceduresByOwner.get(callerOwner)?.get(target);
-            if (!codeModule) {
-              return {
-                kind: "agent" as const,
-                invoke: async (callOptions, stepControl) => {
-                  const steering = steeringQueue.shift();
-                  if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-                  if (typeof input !== "string") {
-                    throw new Error(`Prompt target "${target}" requires a string prompt input`);
-                  }
-                  return executePromptStep(target, input, callOptions, stepControl);
-                },
-              };
-            }
+          const routedTarget = targetCatalog.canonicalRoutes?.get(target);
+          if (!routedTarget) throw new Error(`Callable target not found: ${target}`);
+          const envelope = input as ExecutionInput;
+          if (!envelope || typeof envelope !== "object" || typeof envelope.prompt !== "string" || !envelope.prompt.trim()) {
+            throw new Error(`Callable "${target}" requires a nonblank { prompt, data? } input envelope`);
           }
-          const resolved = resolveCallable(callerOwner, target, targetCatalog);
+          const resolved = resolveCallable(callerOwner, routedTarget, targetCatalog);
           if (resolved.kind === "code") {
             return {
               kind: "workflow" as const,
               invoke: async (callOptions, stepControl) => {
                 const steering = steeringQueue.shift();
                 if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-                return executeCodeStep(resolved, input, callOptions, stepControl);
+                return executeCodeStep(resolved, envelope, callOptions, stepControl);
               },
             };
           }
@@ -882,10 +914,10 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
             invoke: async (callOptions, stepControl) => {
               const steering = steeringQueue.shift();
               if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
-              if (typeof input !== "string") {
-                throw new Error(`Prompt target "${target}" requires a string prompt input`);
-              }
-              return executePromptStep(resolved.name, input, callOptions, stepControl);
+              const prompt = envelope.data === undefined
+                ? envelope.prompt
+                : `${envelope.prompt}\n\nAssignment data:\n${JSON.stringify(envelope.data, null, 2)}`;
+              return executePromptStep(resolved.name, prompt, callOptions, stepControl);
             },
           };
         },
@@ -893,7 +925,6 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
       const outcome = await runWorkflowInvocation({
         ...workflow,
         async execute(ctx) {
-          activeScopeSignal = ctx.signal;
           ctx.signal.throwIfAborted();
           return workflow.execute(ctx);
         },
