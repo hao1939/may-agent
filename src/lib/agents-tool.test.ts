@@ -46,9 +46,9 @@ describe("canonical agents list/call", () => {
     manager.register({ name: "reviewer", description: "Beta reviewer", domain: "review", model: mockModel(), tools: [], appLocal: true, projectId: "beta" });
     manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("global/reviewer") } as any);
     let dispatched: unknown;
-    manager.callAgentDefinition = async (definition, task) => {
-      dispatched = { name: definition.name, task };
-      return { sessionId: "s_child", status: "done", lastAssistantText: "reviewed", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: "reviewed", output: { verdict: "accept" } } };
+    manager.callAgentDefinition = async (definition, task, options) => {
+      dispatched = { name: definition.name, task, requireFinish: options?.requireFinish };
+      return { sessionId: "s_child", status: "done", lastAssistantText: "reviewed", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: "reviewed", output: { verdict: "accept" }, facts: ["finish committed"] } };
     };
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
     const schema = JSON.stringify(tool.parameters);
@@ -56,8 +56,12 @@ describe("canonical agents list/call", () => {
     const listed = await callTool(tool, { action: "list" });
     expect(listed.map((item: any) => item.name)).toEqual(["alpha/reviewer", "beta/reviewer", "global/reviewer"]);
     const result = await callTool(tool, { action: "call", agent: listed[0].name, input: { prompt: "Review", data: { ref: "HEAD" } } });
-    expect(result).toEqual({ id: "s_child", status: "done", summary: "reviewed", output: { verdict: "accept" } });
-    expect(dispatched).toEqual({ name: "reviewer", task: 'Review\n\nAssignment data (JSON):\n{\n  "ref": "HEAD"\n}' });
+    expect(result).toEqual({ id: "s_child", status: "done", summary: "reviewed", output: { verdict: "accept" }, facts: ["finish committed"] });
+    expect(dispatched).toEqual({
+      name: "reviewer",
+      task: 'Review\n\nAssignment data (JSON):\n{\n  "ref": "HEAD"\n}',
+      requireFinish: true,
+    });
     expect((await callTool(tool, { action: "call", agent: "alpha-reviewer", input: { prompt: "legacy alias" } })).id).toBeUndefined();
   });
 

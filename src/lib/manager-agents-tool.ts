@@ -56,6 +56,7 @@ export interface AgentsToolManagerDeps {
       source?: string;
       trace?: EventTrace;
       parseSkillCommand?: boolean;
+      requireFinish?: boolean;
       signal?: AbortSignal;
       timeout?: number;
       taskBinding?: TaskBinding;
@@ -166,6 +167,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       source: "agents.call",
       trace: parent.trace,
       parseSkillCommand: false,
+      requireFinish: true,
       signal: context.signal,
       timeout: context.timeoutMs,
       taskBinding: session?.taskBinding,

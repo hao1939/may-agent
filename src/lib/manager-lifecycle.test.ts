@@ -3,6 +3,7 @@ import { getDb } from "./db/connection.js";
 import {
   createAssistantMessageEventStream,
   getCurrentSystemPrompt,
+  getCurrentTools,
   type AssistantMessage,
 } from "@earendil-works/pi-ai";
 import type { TaskDetail } from "@may-agent/sdk/app";
@@ -121,13 +122,26 @@ describe("manager session lifecycle", () => {
           streamFn: (model, context) => {
             const stream = createAssistantMessageEventStream();
             const reply = () => {
+              const requiresFinish = getCurrentTools(context.messages).some((tool) => tool.name === "finish");
               const message: AssistantMessage = {
                 role: "assistant",
                 api: model.api,
                 provider: model.provider,
                 model: model.id,
-                content: [{ type: "text", text: `Reply from ${model.id}` }],
-                stopReason: replyFailure ? "error" : "stop",
+                content: requiresFinish
+                  ? [{
+                      type: "toolCall",
+                      id: `finish-${model.id}`,
+                      name: "finish",
+                      arguments: {
+                        status: "done",
+                        summary: `Reply from ${model.id}`,
+                        output: { model: model.id },
+                        facts: ["finish committed"],
+                      },
+                    }]
+                  : [{ type: "text", text: `Reply from ${model.id}` }],
+                stopReason: replyFailure ? "error" : requiresFinish ? "toolUse" : "stop",
                 errorMessage: replyFailure,
                 timestamp: Date.now(),
                 usage: {
@@ -190,7 +204,7 @@ describe("manager session lifecycle", () => {
         new AbortController().signal,
       );
       const result = JSON.parse((response.content[0] as { text: string }).text);
-      expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from worker" });
+      expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from worker", output: { model: "worker" }, facts: ["finish committed"] });
       expect(requests[1].prompt).toContain(prompt);
       expect(requests[1].prompt).not.toContain(skill.content);
     },
@@ -304,7 +318,7 @@ describe("manager session lifecycle", () => {
       );
       const result = JSON.parse((response.content[0] as { text: string }).text);
       const childId = result.id as string;
-      expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from captured" });
+      expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from captured", output: { model: "captured" }, facts: ["finish committed"] });
       expect(manager.result(childId)).toMatchObject({
         sessionId: childId,
         status: "done",
@@ -345,7 +359,7 @@ describe("manager session lifecycle", () => {
     );
     const result = JSON.parse((response.content[0] as { text: string }).text);
     const childId = result.id as string;
-    expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from private" });
+    expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from private", output: { model: "private" }, facts: ["finish committed"] });
     expect(manager.result(childId)).toMatchObject({ sessionId: childId, status: "done" });
     expect(requests.at(-1)).toMatchObject({
       model: "private",
