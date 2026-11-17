@@ -1947,3 +1947,31 @@ No unified runtime is activated.
 Evidence under the trial directory: `2286-independent-owning.log`,
 `2286-independent-check-ci.log`, `2286-container.log`, `pr589-current.json`,
 `2286-publication-source-feedback.json` and its accepted delivery receipt.
+
+
+## Discovery fixtures and fresh whole-suite evidence
+
+Root independently reviewed and pushed Host
+`76cafc9ab80ac87f236243876022ee75d6460e18`. Its six owning files pass51 tests,
+with two existing skips, and `check:ci`. Canonical health names, built-in
+cooperation-tool mocks, loader scope, duplicate-tool provenance and effective
+finish schema assertions match the new interface. A fake successful prompt now
+supplies the finish call and receipt rather than succeeding from assistant prose.
+
+The completed Host2286/run44191401441 artifact set reports3,492 tests,
+15 failures across12files and two skips. This replaces the earlier34-failure
+baseline; it does not establish a passing current-head suite. The remaining
+source groups are documented in `2286-remaining-source-leads.md`. May continues
+through the same bounded workflow, without restoring retired model actions or
+weakening cancellation/error-recovery coverage.
+
+Container2286's artifact contains an empty runtime-user.txt after the root
+container checks completed, narrowing exit141 to the runtime-user stage. A
+local40-run synthetic SSH/early-grep probe does not reproduce the failure.
+The exact pipeline remains untraced; no speculative source fix was made.
+Current-head CI must establish both required checks. No activation occurred.
+
+Evidence: `76ca-independent-owning.log`, `76ca-independent-check-ci.log`,
+`2286-hosted-failures.json`, `2286-hosted-failure-file-map.json`,
+`2286-container-results.zip`, `2286-container-sigpipe-probe.json` and
+`pr589-76ca-description-receipt.json` under the trial directory.
