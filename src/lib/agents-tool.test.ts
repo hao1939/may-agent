@@ -514,8 +514,8 @@ describe("agents tool", () => {
 
     const parameters = tool.parameters as any;
     expect(tool.name).toBe("agents");
-    expect(parameters.properties.action.enum).toContain("call");
-    expect(parameters.properties.action.enum).toContain("list");
+    expect(parameters.properties.action.enum).toEqual(["call", "list"]);
+    expect(Object.keys(parameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
 
     expect((await callTool(tool, { action: "call", agent: "sibling/foreign", task: "run" })).error).toContain(
       'only procedures owned by "owner"',

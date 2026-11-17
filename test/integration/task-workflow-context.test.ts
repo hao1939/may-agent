@@ -112,7 +112,12 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
                           status: "done",
                           summary: marker,
                           facts: ["Observed fixture"],
-                          output: { marker },
+                          output: {
+                            state: "converged",
+                            summary: `Settled ${marker}`,
+                            facts: [`settled:${marker}`],
+                            result: { marker },
+                          },
                         },
                       },
                     ]
@@ -156,6 +161,22 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       getAgentSessionId: () => "wrong-same-name-session",
       },
     );
+    const loadedAgents = tools.find((tool) => tool.name === "agents")!;
+    const loadedParameters = loadedAgents.parameters as any;
+    if (route === "agent") {
+      expect(loadedParameters.properties.action.enum).toContain("fork");
+    } else {
+      expect(loadedParameters.properties.action.enum).toEqual(["call", "list"]);
+      expect(Object.keys(loadedParameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
+      for (const request of [
+        { action: "fork", agent: "worker", task: "denied" },
+        { action: "call", agent: "foreign/inspect", input: { marker: "denied" } },
+      ]) {
+        const denial = await loadedAgents.execute("denial", request, undefined, undefined);
+        const text = denial.content.find((part) => part.type === "text");
+        expect(text?.type === "text" ? JSON.parse(text.text).error : "").toMatch(/Procedure-only agents tool/);
+      }
+    }
     manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools, agentDir });
     manager.register({
       name: "worker",
@@ -339,6 +360,12 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
         for (let i = 0; i < results.length; i++) {
           const result = results[i];
           if (result.status !== "fulfilled") throw result.reason;
+          expect(result.value.structuredResult).toEqual({
+            state: "converged",
+            summary: `Settled ${["alpha", "beta"][i]}`,
+            facts: [`settled:${["alpha", "beta"][i]}`],
+            result: { marker: ["alpha", "beta"][i] },
+          });
           const reply = result.value.messages.find(
             (message) =>
               message.role === "toolResult" && message.toolName === "agents",
@@ -349,7 +376,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           const returned = JSON.parse(text.text);
           expect(returned).toMatchObject({ kind: route === "agent" ? "agent" : "workflow", status: "done" });
           expect(returned.id).toBeTruthy();
-          expect(returned.output.marker).toBe(["alpha", "beta"][i]);
+          expect(route === "agent" ? returned.output.result.marker : returned.output.marker).toBe(["alpha", "beta"][i]);
           if (route !== "agent") {
             expect(returned.output.task).toBe(["alpha", "beta"][i]);
             expect(returned.output.result).toMatchObject({ kind: "agent", status: "done" });

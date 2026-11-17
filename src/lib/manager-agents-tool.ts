@@ -172,6 +172,15 @@ const AgentsToolParams = Type.Object({
   ),
 });
 
+const LocalProcedureAgentsToolParams = Type.Object({
+  action: StringEnum(["call", "list"] as const, {
+    description: "'list': discover local procedures granted to this agent. 'call': synchronously invoke one in the current Task attempt.",
+  }),
+  agent: AgentsToolParams.properties.agent,
+  task: AgentsToolParams.properties.task,
+  input: AgentsToolParams.properties.input,
+});
+
 type AgentsToolParamsType = Static<typeof AgentsToolParams>;
 
 function appendContextFiles(task: string, contextFiles?: string[], successCriteria?: string[]): string {
@@ -321,7 +330,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     description: localProceduresOnly
       ? "Discover and synchronously invoke the local procedures granted to this agent. Only list and call are available; procedures retain the current Task context, inputs, Conditions, cancellation, and result contract."
       : "Cooperate with other agents and procedures. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Durable cross-App work uses App Task requests; helper updates use the exact sessionId.",
-    parameters: AgentsToolParams,
+    parameters: localProceduresOnly ? LocalProcedureAgentsToolParams : AgentsToolParams,
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
       try {
