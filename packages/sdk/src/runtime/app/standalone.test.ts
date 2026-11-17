@@ -361,6 +361,7 @@ export async function execute(ctx) {
 `,
     );
     const visibleResults: unknown[] = [];
+    const visibleErrors: string[] = [];
     const ownerTurns = new Map<string, number>();
 
     const run = await runDirectWorkflow({
@@ -378,10 +379,15 @@ export async function execute(ctx) {
         if (agentsTool) {
           const execute = agentsTool.execute.bind(agentsTool);
           agentsTool.execute = async (...args) => {
-            const result = await execute(...args);
-            const text = result.content.find((item) => item.type === "text")?.text;
-            if (text) visibleResults.push(JSON.parse(text));
-            return result;
+            try {
+              const result = await execute(...args);
+              const text = result.content.find((item) => item.type === "text")?.text;
+              if (text) visibleResults.push(JSON.parse(text));
+              return result;
+            } catch (error) {
+              visibleErrors.push(String(error));
+              throw error;
+            }
           };
         }
         prep.prepared.runner.streamFn = () => {
@@ -393,16 +399,20 @@ export async function execute(ctx) {
                 status: "done", summary: "prompt helper done", output: { reviewed: true },
               } }]
             : turn === 1
-              ? [{ type: "toolCall" as const, id: "owner_prompt", name: "agents", arguments: {
-                  action: "call", agent: "global/reviewer", input: { prompt: "Review this" },
+              ? [{ type: "toolCall" as const, id: "owner_non_exact", name: "agents", arguments: {
+                  action: "call", agent: " global/reviewer ", input: { prompt: "Do not normalize this target" },
                 } }]
               : turn === 2
-                ? [{ type: "toolCall" as const, id: "owner_code", name: "agents", arguments: {
-                    action: "call", agent: "global/summarize", input: { prompt: "Summarize", data: { value: 7 } },
+                ? [{ type: "toolCall" as const, id: "owner_prompt", name: "agents", arguments: {
+                    action: "call", agent: "global/reviewer", input: { prompt: "Review this" },
                   } }]
-                : [{ type: "toolCall" as const, id: "owner_finish", name: "finish", arguments: {
-                    status: "done", summary: "parent handled both helpers",
-                  } }];
+                : turn === 3
+                  ? [{ type: "toolCall" as const, id: "owner_code", name: "agents", arguments: {
+                      action: "call", agent: "global/summarize", input: { prompt: "Summarize", data: { value: 7 } },
+                    } }]
+                  : [{ type: "toolCall" as const, id: "owner_finish", name: "finish", arguments: {
+                      status: "done", summary: "parent handled both helpers",
+                    } }];
           stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
           return stream;
         };
@@ -431,6 +441,9 @@ export async function execute(ctx) {
 
     expect(run.ok).toBeTrue();
     expect(run.result).toMatchObject({ type: "done", summary: "parent handled both helpers" });
+    expect(visibleErrors).toEqual([
+      'Error: Invalid callable target " global/reviewer " (expected exact "<app>/<name>" or "global/<name>")',
+    ]);
     expect(visibleResults).toEqual([
       expect.objectContaining({ status: "done", summary: "prompt helper done", output: { reviewed: true } }),
       expect.objectContaining({ status: "done", summary: "code helper done", output: { echoed: 7 } }),
@@ -439,6 +452,7 @@ export async function execute(ctx) {
     expect((visibleResults[1] as { id?: string }).id).toBeString();
     expect(run.childSessions.map((session) => session.agent)).toEqual(["global/reviewer", "global/owner"]);
     expect(run.report.steps.map((step) => [step.kind, step.target, step.status])).toEqual([
+      ["workflow", " global/reviewer ", "error"],
       ["agent", "global/reviewer", "done"],
       ["workflow", "global/summarize", "done"],
       ["agent", "global/owner", "done"],

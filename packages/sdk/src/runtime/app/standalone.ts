@@ -594,7 +594,7 @@ function createCommonKernelAgentsTool(
         ...(params.options?.timeoutMs !== undefined ? { timeoutMs: params.options.timeoutMs } : {}),
         ...(params.options?.schema !== undefined ? { schema: params.options.schema } : {}),
       };
-      const target = params.agent.trim();
+      const target = params.agent;
       const result = await stepControl.callTarget(
         target,
         params.input,
