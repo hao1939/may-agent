@@ -18,7 +18,7 @@ import historicalTranscripts from "../../test/fixtures/pre-migration-finish-tran
 import { agentExecutionResult } from "./agent-execution.js";
 import { closeDb, getDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
-import { appendSessionMessage, loadAllSessionMetas } from "./persistence.js";
+import { appendSessionMessage } from "./persistence.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 
@@ -175,25 +175,26 @@ describe("manager session lifecycle", () => {
     skillCatalog: { skills: new Map([[skill.name, skill]]), diagnostics: [], omittedFromPrompt: [] },
   });
 
-  it.each([
-    ["call", "caller-only-guide"], ["fork", "caller-only-guide"],
-    ["call", "review-guide"], ["fork", "review-guide"],
-  ] as const)("%s treats leading $%s as delegated text", async (action, name) => {
-    manager.register(skilledWorker());
-    holdReplies = true;
-    const caller = manager.run("worker", "Coordinate the review");
-    await started.promise;
-    holdReplies = false;
-    const task = `$${name} Review the patch`;
-    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
-    const response = await tool.execute("delegate", { action, agent: "worker", task });
-    const result = JSON.parse((response.content[0] as { text: string }).text);
-    expect(result.error).toBeUndefined();
-    expect(await manager.waitFor(result.sessionId)).toMatchObject({ status: "done" });
-    expect(requests[1].prompt).toContain(task);
-    expect(requests[1].prompt).not.toContain(skill.content);
-    expect(manager.registryStore.getSession(result.sessionId)?.task).toBe(task);
-  });
+  it.each(["caller-only-guide", "review-guide"] as const)(
+    "canonical call treats leading $%s as delegated text",
+    async (name) => {
+      manager.register(skilledWorker());
+      holdReplies = true;
+      const caller = manager.run("worker", "Coordinate the review");
+      await started.promise;
+      holdReplies = false;
+      const prompt = `$${name} Review the patch`;
+      const response = await manager.createAgentsTool({ getCallerSessionId: () => caller }).execute(
+        "delegate",
+        { action: "call", agent: "global/worker", input: { prompt } },
+        new AbortController().signal,
+      );
+      const result = JSON.parse((response.content[0] as { text: string }).text);
+      expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from worker" });
+      expect(requests[1].prompt).toContain(prompt);
+      expect(requests[1].prompt).not.toContain(skill.content);
+    },
+  );
 
   it("retains direct skill commands and explicit activation for authored calls", async () => {
     manager.register(skilledWorker());
@@ -207,32 +208,31 @@ describe("manager session lifecycle", () => {
     expect(requests[1].prompt).toContain("Review in a procedure");
   });
 
-  it("delivers a helper correction into its next model request without starting another execution", async () => {
+  it("delivers an internal helper correction into its next model request without starting another execution", async () => {
     manager.register(skilledWorker());
     holdReplies = true;
     const caller = manager.run("worker", "Coordinate the review");
     await started.promise;
     started = Promise.withResolvers<void>();
-    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
-    const call = async (params: Record<string, unknown>) => {
-      const response = await tool.execute("helper-control", params);
-      return JSON.parse((response.content[0] as { text: string }).text);
-    };
-    const helper = await call({ action: "fork", agent: "worker", task: "Inspect the candidate" });
+    const helperResult = manager.callAgentDefinition(
+      manager.getAgentDefinition("global/worker")!,
+      "Inspect the candidate",
+      { parentSessionId: caller, source: "agents.call", parseSkillCommand: false },
+    );
     await started.promise;
+    const helperId = manager.status().find((session) => session.parentSessionId === caller)?.sessionId;
+    expect(helperId).toBeString();
     const correction = "$review-guide Preserve the patch and use the available search tool";
-    expect(await call({ action: "follow-up", sessionId: helper.sessionId, content: correction }))
-      .toMatchObject({ accepted: true, sessionId: helper.sessionId });
+    manager.followUpHelper(helperId!, correction, caller);
     expect(manager.status()).toHaveLength(2);
     holdReplies = false;
     requests[1].reply();
-    expect(await manager.waitFor(helper.sessionId)).toMatchObject({ status: "done" });
+    expect(await helperResult).toMatchObject({ sessionId: helperId, status: "done" });
     expect(requests).toHaveLength(3);
     expect(requests[2].prompt).toContain(correction);
     expect(requests[2].prompt).not.toContain(skill.content);
-    expect(JSON.stringify(manager.progress(helper.sessionId))).toContain(correction);
-    const closed = await call({ action: "follow-up", sessionId: helper.sessionId, content: "Too late" });
-    expect(closed.error).toContain("live helper");
+    expect(JSON.stringify(manager.progress(helperId!))).toContain(correction);
+    expect(() => manager.followUpHelper(helperId!, "Too late", caller)).toThrow("live helper");
     expect(requests).toHaveLength(3);
   });
 
@@ -277,74 +277,81 @@ describe("manager session lifecycle", () => {
     });
   });
 
-  it.each(["call", "fork"] as const)(
-    "%s executes the Task's captured helper after registry replacement",
-    async (action) => {
-      const captured = { ...definition("captured"), name: "helper" };
-      manager.register(captured);
-      const context = taskContext(persistDir, new Map([[captured.name, captured]]));
-      holdReplies = true;
-      const caller = manager.run("worker", "Coordinate the review", { taskContext: context });
-      await started.promise;
-      manager.register({ ...definition("replacement"), name: "helper" });
-      holdReplies = false;
+  it("canonical call executes the Task's captured helper after registry replacement", async () => {
+    const captured = { ...definition("captured"), name: "helper" };
+    manager.register(captured);
+    const context = taskContext(persistDir, new Map([["global/helper", captured]]));
+    holdReplies = true;
+    const caller = manager.run("worker", "Coordinate the review", { taskContext: context });
+    await started.promise;
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
+    manager.register({ ...definition("replacement"), name: "helper" });
+    holdReplies = false;
 
-      for (const replacement of ["public", "private", "removed"] as const) {
-        if (replacement === "private")
-          manager.register({
-            ...definition("replacement"),
-            name: "helper",
-            appLocal: true,
-            projectId: "another-app",
-          });
-        if (replacement === "removed") manager.unregister("helper");
-        const response = await manager.createAgentsTool({ getCallerSessionId: () => caller }).execute("delegate", {
-          action,
-          agent: "helper",
-          task: "Inspect the candidate",
+    for (const replacement of ["public", "private", "removed"] as const) {
+      if (replacement === "private")
+        manager.register({
+          ...definition("replacement"),
+          name: "helper",
+          appLocal: true,
+          projectId: "another-app",
         });
-        const result = JSON.parse((response.content[0] as { text: string }).text);
-        expect(result.error).toBeUndefined();
-        expect(await manager.waitFor(result.sessionId)).toMatchObject({
-          status: "done",
-          lastAssistantText: "Reply from captured",
-        });
-        expect(requests.at(-1)).toMatchObject({
-          model: "captured",
-          systemPrompt: expect.stringContaining("Instructions for captured"),
-        });
-      }
-    },
-  );
-
-  it.each(["call", "fork"] as const)(
-    "%s checks the captured helper's App boundary before any execution",
-    async (action) => {
-      const captured = { ...definition("private"), name: "helper", appLocal: true, projectId: "another-app" };
-      manager.register(captured);
-      const context = taskContext(persistDir, new Map([[captured.name, captured]]));
-      holdReplies = true;
-      const caller = manager.run("worker", "Coordinate the review", { taskContext: context });
-      await started.promise;
-      // Reloading the same name as a public agent cannot grant access to the
-      // private definition retained by this attempt.
-      manager.register({ ...definition("replacement"), name: "helper" });
-      holdReplies = false;
-      const before = structuredClone(loadAllSessionMetas(manager.registryStore.persistDir));
-
-      const response = await manager.createAgentsTool({ getCallerSessionId: () => caller }).execute("delegate", {
-        action,
-        agent: "helper",
-        task: "Inspect the candidate",
-      });
+      if (replacement === "removed") manager.unregister("helper");
+      const response = await tool.execute(
+        "delegate",
+        { action: "call", agent: "global/helper", input: { prompt: "Inspect the candidate" } },
+        new AbortController().signal,
+      );
       const result = JSON.parse((response.content[0] as { text: string }).text);
-      expect(result.error).toContain('app-local to "another-app"');
-      expect(result.sessionId).toBeUndefined();
-      expect(requests).toHaveLength(1);
-      expect(manager.status().map((session) => session.sessionId)).toEqual([caller]);
-      expect(loadAllSessionMetas(manager.registryStore.persistDir)).toEqual(before);
-    },
-  );
+      const childId = result.id as string;
+      expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from captured" });
+      expect(manager.result(childId)).toMatchObject({
+        sessionId: childId,
+        status: "done",
+        lastAssistantText: "Reply from captured",
+      });
+      expect(requests.at(-1)).toMatchObject({
+        model: "captured",
+        systemPrompt: expect.stringContaining("Instructions for captured"),
+      });
+    }
+  });
+
+  it("retains the captured helper's exact App-qualified identity after registry replacement", async () => {
+    const captured = { ...definition("private"), name: "helper", appLocal: true, projectId: "another-app" };
+    manager.register(captured);
+    const context = taskContext(persistDir, new Map([["another-app/helper", captured]]));
+    holdReplies = true;
+    const caller = manager.run("worker", "Coordinate the review", { taskContext: context });
+    await started.promise;
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
+    manager.register({ ...definition("replacement"), name: "helper" });
+    holdReplies = false;
+
+    const missingResponse = await tool.execute(
+      "delegate-missing",
+      { action: "call", agent: "global/helper", input: { prompt: "Do not change namespaces" } },
+      new AbortController().signal,
+    );
+    expect(JSON.parse((missingResponse.content[0] as { text: string }).text)).toEqual({
+      status: "error",
+      summary: "Callable target not found: global/helper",
+    });
+
+    const response = await tool.execute(
+      "delegate",
+      { action: "call", agent: "another-app/helper", input: { prompt: "Inspect the candidate" } },
+      new AbortController().signal,
+    );
+    const result = JSON.parse((response.content[0] as { text: string }).text);
+    const childId = result.id as string;
+    expect(result).toEqual({ id: expect.any(String), status: "done", summary: "Reply from private" });
+    expect(manager.result(childId)).toMatchObject({ sessionId: childId, status: "done" });
+    expect(requests.at(-1)).toMatchObject({
+      model: "private",
+      systemPrompt: expect.stringContaining("Instructions for private"),
+    });
+  });
 
   it("rejects a premature result and resolves concurrent waiters to the completed result", async () => {
     holdReplies = true;
