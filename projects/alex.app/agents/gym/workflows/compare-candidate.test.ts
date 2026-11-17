@@ -130,7 +130,7 @@ if (mode === "control") process.exit(1);
 }
 
 function context(setup: ReturnType<typeof fixture>, signal?: AbortSignal) {
-  const ctx = createTestAppWorkflowContext({ input: setup.request, signal });
+  const ctx = createTestAppWorkflowContext({ input: { prompt: "Compare candidate", data: setup.request }, signal });
   if (signal) (ctx as typeof ctx & { signal: AbortSignal }).signal = signal;
   ctx.workspace = {
     root: setup.root,

@@ -50,8 +50,10 @@ function createTestAppWorkflowContext(
     existsSync(join(supplied.appRoot, "criteria", "criteria.md"))
       ? supplied.appRoot
       : TEST_APP_ROOT;
+  const rawInput = options.input ?? {};
   return createSdkTestAppWorkflowContext({
     ...options,
+    input: { prompt: "Review task outcome", data: rawInput },
     workspace: supplied
       ? { ...supplied, appRoot }
       : {

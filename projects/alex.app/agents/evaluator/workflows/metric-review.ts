@@ -6,6 +6,7 @@ import {
 import { existsSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type Static } from "typebox";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   claimSemanticAllowance,
@@ -39,14 +40,18 @@ import {
 export const name = "metric-review";
 export const description =
   "Review a pinned metric observation using the existing Evaluation allowance and report publication.";
-type Input = {
-  metricId: string;
-  end: number;
-  reviewer?: Reviewer;
-  automatic?: boolean;
-  /** Automatic reviews identify a recorded breach or recovery. */
-  alertId?: number;
-};
+const metricReviewDataSchema = Type.Object({
+  metricId: Type.String({ minLength: 1 }),
+  end: Type.Number(),
+  reviewer: Type.Optional(Type.Union([Type.Literal("evaluator"), Type.Literal("evaluator-deepseek")])),
+  automatic: Type.Optional(Type.Boolean()),
+  alertId: Type.Optional(Type.Number()),
+}, { additionalProperties: false });
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1 }),
+  data: metricReviewDataSchema,
+}, { additionalProperties: false });
+type Input = Static<typeof inputSchema>;
 
 export async function reviewMetric(
   ctx: AppWorkflowContext<Input>,
@@ -55,9 +60,10 @@ export async function reviewMetric(
   readOwnerTask: MetricOwnerTaskReader = readMetricOwnerTask,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
-  const { metricId, alertId: requestedAlertId } = ctx.input;
-  const end = Number(ctx.input.end);
-  const profile = reviewerProfile(ctx.input.reviewer);
+  const input = ctx.input.data;
+  const { metricId, alertId: requestedAlertId } = input;
+  const end = Number(input.end);
+  const profile = reviewerProfile(input.reviewer);
   if (
     !metricId ||
     !Number.isSafeInteger(end) ||
@@ -87,7 +93,7 @@ export async function reviewMetric(
   }
   ctx.signal.throwIfAborted();
   const quiet =
-    ctx.input.automatic &&
+    input.automatic &&
     (requestedAlertId === undefined || end <= reviewedThrough);
   const noNewTransition = () => {
     const summary = `Metric ${metricId} has no new automatic transition to review; no assessment was performed.`;
@@ -186,7 +192,7 @@ export async function reviewMetric(
     // An old automatic sample request can settle quietly. If it already has a
     // judgment, finish publishing those exact bytes before settling it instead.
     if (quiet) return noNewTransition();
-    if (ctx.input.automatic) {
+    if (input.automatic) {
       const reuse = await checkMetricDecisionReuse(
         evidence,
         reader,

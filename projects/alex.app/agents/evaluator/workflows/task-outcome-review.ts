@@ -19,6 +19,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type Static } from "typebox";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   readSubjectTask,
@@ -55,16 +56,21 @@ export const description =
 
 export { evaluationJudgmentSchema as resultSchema } from "./lib/evaluation-judgment.js";
 
-type Input = {
-  appId?: string;
-  taskId?: string;
-  subjectGeneration?: number;
-  evidenceHash?: string;
-  assessmentPurpose?: AssessmentPurpose;
-  reviewer?: "evaluator" | "evaluator-deepseek";
-  automatic?: true;
-  populationEnd?: number;
-};
+const taskOutcomeReviewDataSchema = Type.Object({
+  appId: Type.Optional(Type.String({ minLength: 1 })),
+  taskId: Type.Optional(Type.String({ minLength: 1 })),
+  subjectGeneration: Type.Optional(Type.Number()),
+  evidenceHash: Type.Optional(Type.String({ minLength: 1 })),
+  assessmentPurpose: Type.Optional(Type.Union([Type.Literal("outcome"), Type.Literal("ongoing")])),
+  reviewer: Type.Optional(Type.Union([Type.Literal("evaluator"), Type.Literal("evaluator-deepseek")])),
+  automatic: Type.Optional(Type.Literal(true)),
+  populationEnd: Type.Optional(Type.Number()),
+}, { additionalProperties: false });
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1 }),
+  data: taskOutcomeReviewDataSchema,
+}, { additionalProperties: false });
+type Input = Static<typeof inputSchema>;
 type Judgment = Omit<EvaluationJudgment, "followUp"> & {
   followUp?: ReportFollowUp;
 };
@@ -446,8 +452,9 @@ function done(
   summary: string,
   facts: string[],
 ): ExecutionResult {
-  const requestedGeneration = Number(ctx.input?.subjectGeneration);
-  const requestedEvidenceHash = text(ctx.input?.evidenceHash);
+  const input = ctx.input.data;
+  const requestedGeneration = Number(input.subjectGeneration);
+  const requestedEvidenceHash = text(input.evidenceHash);
   const requestFacts = [
     ...(Number.isSafeInteger(requestedGeneration) && requestedGeneration > 0
       ? [`requested-subject-generation:${requestedGeneration}`]
@@ -472,17 +479,18 @@ export async function reviewTaskOutcome(
   readSession?: SessionRead,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
-  const profile = reviewerProfile(ctx.input?.reviewer);
-  const appId = text(ctx.input?.appId);
-  const taskId = text(ctx.input?.taskId);
+  const input = ctx.input.data;
+  const profile = reviewerProfile(input.reviewer);
+  const appId = text(input.appId);
+  const taskId = text(input.taskId);
   const subject = await readSubjectTask(
     {
       appId,
       taskId,
-      ...(ctx.input.populationEnd
-        ? { populationEnd: ctx.input.populationEnd }
+      ...(input.populationEnd
+        ? { populationEnd: input.populationEnd }
         : {}),
-      ...(ctx.input?.automatic === true ? { automatic: true } : {}),
+      ...(input.automatic === true ? { automatic: true } : {}),
     },
     command,
     readSession,
@@ -491,7 +499,7 @@ export async function reviewTaskOutcome(
   ctx.signal.throwIfAborted();
   if (subject.disposition !== "eligible") {
     const summary = `${subject.disposition}: ${subject.reason}`;
-    if (ctx.input?.automatic === true && subject.acquisitionFailed) {
+    if (input.automatic === true && subject.acquisitionFailed) {
       await ctx.events.emit({
         type: "evaluation.review_failed",
         localKey: taskEmissionKey(ctx, "automatic-evidence-acquisition-failed"),
@@ -511,13 +519,13 @@ export async function reviewTaskOutcome(
     return done(ctx, summary, [
       `review-disposition:${subject.disposition}`,
       `subject:${appId}/${taskId}`,
-      ...(ctx.input?.automatic === true && subject.acquisitionFailed
+      ...(input.automatic === true && subject.acquisitionFailed
         ? ["owner-review:automatic-evidence-acquisition-failed"]
         : []),
     ]);
   }
-  const expectedGeneration = Number(ctx.input?.subjectGeneration);
-  const expectedEvidenceHash = text(ctx.input?.evidenceHash);
+  const expectedGeneration = Number(input.subjectGeneration);
+  const expectedEvidenceHash = text(input.evidenceHash);
   const detail = object(object(subject.task).detail);
   const actualGeneration = Number(detail.generation);
   if (
@@ -544,7 +552,7 @@ export async function reviewTaskOutcome(
         : []),
     ]);
   }
-  const assessment = assessmentContext(subject, ctx.input?.assessmentPurpose);
+  const assessment = assessmentContext(subject, input.assessmentPurpose);
   const paths = taskReportPaths(
     appId,
     taskId,
@@ -722,10 +730,10 @@ export async function reviewTaskOutcome(
     {
       appId,
       taskId,
-      ...(ctx.input.populationEnd
-        ? { populationEnd: ctx.input.populationEnd }
+      ...(input.populationEnd
+        ? { populationEnd: input.populationEnd }
         : {}),
-      ...(ctx.input?.automatic === true ? { automatic: true } : {}),
+      ...(input.automatic === true ? { automatic: true } : {}),
     },
     command,
     readSession,

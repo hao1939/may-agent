@@ -76,8 +76,12 @@ const judgment = {
     "Recommend owner investigation and next-day reconsideration; recovery is unverified",
 };
 function context(options: any = {}) {
+  const raw = options.input ?? { metricId: "sample.failures", end };
+  const input = raw && typeof raw === "object" && "metricId" in raw && !("report" in raw)
+    ? { prompt: "Review metric", data: raw }
+    : raw;
   return createTestAppWorkflowContext({
-    input: { metricId: "sample.failures", end },
+    input,
     workspace: {
       root: appRoot,
       appRoot,
@@ -85,6 +89,7 @@ function context(options: any = {}) {
       output: appRoot,
     },
     ...options,
+    input,
   });
 }
 
