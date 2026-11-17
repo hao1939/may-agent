@@ -4,11 +4,14 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`0a52518cd1`. Independent exact-clean checks pass 123 affected tests and
-`check:ci`. This adds captured standalone agent configuration and a bounded
-Host-retained CLI receipt projection through existing execution reads. The real
-snapshot probe confirms stable model/descriptors but still catches live rereading
-of `AGENTS.md` identity; complete invocation-tree capture remains open.
+`fc03d87609`. Independent exact-clean checks pass 123 affected tests and
+`check:ci`. Standalone agent configuration is captured, and the direct adapter
+now captures identity/shared prompt text. The real public `run()` probe still
+catches live rereading of `AGENTS.md`: its separate discovery catalog omits the
+text snapshots. Missing files must also freeze absence rather than permit a
+later live read. The existing execution read projects bounded trusted CLI
+receipts for sessions/direct children, but nested workflow coverage and visible
+receipt/transcript truncation remain open.
 The preceding `b6f153b5ec` fixes prompt blocked reports without unavailable
 output and removes legacy `dataSchema` authoring. Earlier production probes
 cover all four call directions, exact canonical dispatch, common root results,

@@ -1028,3 +1028,40 @@ to the same retained review branch. After the actual 16-round boundary, Root
 asked May to continue the same App Task with a finite cumulative total of 24,
 preserving all prior usage and source. No native workflow was restarted for the
 independent checks.
+
+## Public-root identity and bounded receipt follow-up
+
+May independently published native `fc03d87609b2a19fd64b4cd60792c4a7522bc3b7`.
+Root's exact clean snapshot passes all 123 affected tests and `check:ci`.
+The direct workflow adapter captures existing identity and shared prompt bytes,
+with an owning before/after regression. However, the unchanged real public
+`run()` → workflow → agent reproducer still observes the edited identity.
+`listTargets()` constructs another captured prompt catalog with source/config
+only; the direct-only owning test misses this public path. Missing identity or
+shared prompt files also produce `undefined`, which permits later live reads.
+Both constructors must capture the same complete definition, including explicit
+absence, without adding another snapshot mechanism. Root returned this exact
+source diagnosis through May and kept the metadata review open.
+
+The exact same Host also reports confirmed cleanup while the controlled import
+remains pending, for explicit-module timeout and cancellation. The root-target
+fix does not close this separate preparation path. Finite settlement for a
+callable that ignores cancellation remains required.
+
+Root exercised the actual new execution reader with fresh SQLite and synthetic
+retained JSONL. It projects trusted Host tool receipts for a session and a direct
+workflow child and rejects producer facts/mismatched bindings. It omits nested
+workflow receipts, silently reduces 65 receipts in one session to 64, and loses
+an early receipt beyond the transcript tail without indicating truncation. These
+are bounded evidence/consumer gaps to address through the existing read and
+lineage, not reasons for a new store or Task lifecycle.
+
+Receipts are `standalone-config-snapshot-1794945510982.json`,
+`module-import-cleanup-1794945512043.json`,
+`execution-receipts-1794945396290.json`, `fc03-independent-focused.log` and
+`fc03-independent-check-ci.log` under the existing local trial directory.
+The same Host Task reached its actual 72/72 allowance; Root authorized a finite
+creator revision to 80 after its active workflow returns, retaining all usage.
+The independent App Task continues at generation seven with cumulative total 24.
+The published source remains a partial checkpoint, with no unified activation
+or readiness notification established.
