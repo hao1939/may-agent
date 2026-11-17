@@ -106,6 +106,8 @@ export type DirectAgentRunOptions = {
   agentName: string;
   /** Trusted source already selected by the invocation's catalog. */
   agentSource?: AgentDirectory;
+  /** Complete immutable configuration captured with the callable catalog. */
+  agentConfig?: Readonly<AgentConfig>;
   /** Explicit skill name to activate via the shared skill catalog. */
   skill?: string;
   /** Optional ordinary assignment/context facts appended for model requests. */
@@ -340,7 +342,7 @@ async function buildDirectTools(
 export async function prepareDirectAgentExecution(options: DirectAgentRunOptions): Promise<DirectAgentPreparation> {
   validateOperationAllowance(options.operationAllowance);
   const source = resolveAgentSource(options);
-  const config = readAgentConfigFile(source.dir);
+  const config = options.agentConfig ? structuredClone(options.agentConfig) : readAgentConfigFile(source.dir);
   if (!config) throw new Error(`Agent "${options.agentName}" is disabled or has no agent.json`);
   const configErrors = validateAgentConfig(config, options.models, options.agentsRoot);
   if (configErrors.length > 0) {
@@ -817,6 +819,7 @@ function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | un
 
 type DirectPromptDefinition = {
   source: AgentDirectory;
+  config: Readonly<AgentConfig>;
 };
 
 type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
@@ -857,7 +860,10 @@ async function buildDirectPromptCatalog(
     if (prompts.has(canonicalName)) {
       throw new Error(`Duplicate callable canonical name: ${canonicalName}`);
     }
-    const promptEntry = { owner: namespace, definition: { source: agentDir } };
+    const promptEntry = {
+      owner: namespace,
+      definition: { source: agentDir, config: Object.freeze(structuredClone(config)) },
+    };
     prompts.set(canonicalName, promptEntry);
 
     const workflowDir = join(agentDir.dir, "workflows");
@@ -890,6 +896,13 @@ async function buildDirectPromptCatalog(
             agentsRoot: options.agentsRoot,
             relativeDir: `agents/${fixtureAgent}`,
           },
+          config: Object.freeze({
+            name: fixtureAgent,
+            description: fixtureAgent,
+            domain: "fixture",
+            model: "fixture",
+            tools: [],
+          }),
         },
       });
     }
@@ -1390,7 +1403,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       definitions.push({
         ...(name.slice(0, slash) !== "global" ? { appId: name.slice(0, slash) } : {}),
         declaredName: name.slice(slash + 1),
-        description: readAgentConfigFile(entry.definition.source.dir)?.description ?? name,
+        description: entry.definition.config.description,
         async invoke() { return { status: "error", summary: "descriptor only" }; },
       });
     }
@@ -1420,10 +1433,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     if (!promptDef) {
       throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
     }
-    const config = readAgentConfigFile(promptDef.source.dir);
-    if (!config) {
-      throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
-    }
+    const config = promptDef.config;
     const fixture = options.agentFixtures?.[agent] ?? options.agentFixtures?.[config.name];
     if (fixture) {
       return fixture({ agent: config.name, task: prompt, options: callOpts, ...stepControl });
@@ -1451,6 +1461,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     const directRun = await executeAgent({
       agentName: config.name,
       agentSource: promptDef.source,
+      agentConfig: config,
       task: prompt,
       projectRoot: options.projectRoot,
       workRoot: options.workRoot,
@@ -1883,7 +1894,10 @@ export async function listTargets(
       });
       const namespace = dir.projectId ?? "global";
       const promptName = canonicalCallableName(dir.projectId, config.name);
-      capturedCatalog.prompts.set(promptName, { owner: namespace, definition: { source: dir } });
+      capturedCatalog.prompts.set(promptName, {
+        owner: namespace,
+        definition: { source: dir, config: Object.freeze(structuredClone(config)) },
+      });
       const app = dir.projectId ? `${dir.projectId}.app` : undefined;
       routes.set(promptName, {
         target: config.name,
