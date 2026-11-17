@@ -115,6 +115,7 @@ __pycache__/
 # Project app runtime scratch.
 /projects/*.app/.state/
 /projects/*.app/.disabled
+/projects/alex.app/workflow-audits/
 
 # Generated/copied top-level artifacts - not source-of-truth
 /ui/
