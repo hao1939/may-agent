@@ -389,8 +389,16 @@ describe("development workflow using real Git and verification", () => {
     );
   });
 
-  test("identical invocation assignments quiet-replay while changed assignments get fresh judgment without repeating valid work", async () => {
+  test("identical invocation assignments quiet-replay while changed assignments preserve scoped guidance and get fresh judgment without repeating valid work", async () => {
     const t = trial();
+    (t.current.input as any).data.context = {
+      executionGuidance: "Preserve the scoped specialist judgment boundary",
+      developmentCheckout: { root: t.worktree, baseRef: "main" },
+      sdkProvider: {
+        sourceCommit: "185ffeb1ce99d58e1b55b6fca224105465031591",
+        sourceRoot: "/immutable/provider",
+      },
+    };
     expect((await t.run()).state).toBe("converged");
     expect(t.calls).toEqual([
       { agent: "alex/bob", stage: "design", tools: undefined },
@@ -400,6 +408,16 @@ describe("development workflow using real Git and verification", () => {
     expect(t.prompts[0]).toContain(
       "Current invocation assignment: Run the selected development procedure",
     );
+    expect(t.prompts[0]).toContain(
+      "Preserve the scoped specialist judgment boundary",
+    );
+    expect(t.prompts[0]).toContain(
+      '"sourceCommit":"185ffeb1ce99d58e1b55b6fca224105465031591"',
+    );
+    expect(t.prompts[0]).toContain(
+      "Keep the owning Task's wider acceptance visible as context",
+    );
+    expect(t.prompts[0]).toContain("exact SETUP dependency");
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
     expect(t.evidence().roundsUsed).toBe(1);
 
@@ -428,10 +446,22 @@ describe("development workflow using real Git and verification", () => {
       { agent: "alex/bob", stage: "design", tools: undefined },
       { agent: "alex/bob", stage: "review", tools: undefined },
     ]);
-    for (const prompt of t.prompts.slice(3))
+    for (const prompt of t.prompts.slice(3)) {
       expect(prompt).toContain(
         "Current invocation assignment: Assess the retained candidate against the revised invocation assignment",
       );
+      expect(prompt).toContain(
+        "Preserve the scoped specialist judgment boundary",
+      );
+      expect(prompt).toContain(
+        "Keep the owning Task's wider acceptance visible as context",
+      );
+      expect(prompt).toContain(
+        "Retained reports, local verification receipts, and bounded child execution projections",
+      );
+      expect(prompt).toContain("/.state/alex-development/");
+      expect(prompt).toContain("preserve diagnostics.truncated");
+    }
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
     expect(t.evidence().roundsUsed).toBe(2);
 
