@@ -2106,6 +2106,127 @@ export async function execute(ctx) {
     });
   });
 
+  test("returns an error when a real prompt run omits schema-required finish output", async () => {
+    const env = setupDirectLayout();
+    let promptMessages: DirectAgentRunResult["messages"] = [];
+    const result = await run("global/reviewer", { prompt: "Return a verdict" }, {
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
+      outputSchema: Type.Object({ verdict: Type.Literal("pass") }),
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        let turn = 0;
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "finish_without_output", name: "finish", arguments: {
+                status: "done", summary: "omitted the required verdict",
+              } }]
+            : [{ type: "text" as const, text: "I cannot correct the omitted output." }];
+          stream.push({
+            type: "done",
+            reason: turn === 1 ? "toolUse" : "stop",
+            message: usageReply({ stopReason: turn === 1 ? "toolUse" : "stop", content }),
+          });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          promptMessages = executed.messages;
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(result).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: "Workflow agent step ended without calling finish() after one corrective prompt",
+    });
+    expect(promptMessages).toContainEqual(expect.objectContaining({
+      role: "toolResult",
+      toolCallId: "finish_without_output",
+      isError: true,
+      content: expect.arrayContaining([expect.objectContaining({
+        type: "text",
+        text: expect.stringContaining("status done requires the schema-validated output payload"),
+      })]),
+    }));
+  });
+
+  test("admits a real prompt blocked result without unavailable schema output in one turn", async () => {
+    const env = setupDirectLayout();
+    let promptTurns = 0;
+    const result = await run("global/reviewer", { prompt: "Return a verdict when evidence exists" }, {
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
+      outputSchema: Type.Object({ verdict: Type.Literal("pass") }),
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          promptTurns += 1;
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: usageReply({
+              stopReason: "toolUse",
+              content: [{ type: "toolCall", id: "finish_blocked_without_output", name: "finish", arguments: {
+                status: "blocked", summary: "Evidence unavailable",
+              } }],
+            }),
+          });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(promptTurns).toBe(1);
+    expect(result).toMatchObject({
+      id: expect.any(String),
+      status: "blocked",
+      summary: "Evidence unavailable",
+    });
+    expect(result).not.toHaveProperty("output");
+  });
+
   test("recovers App-local prompt callerProjectId without agentFixtures, admits global agents from App procedures, enforces explicit App scope, defaults workRoot to cwd, retains scratch outputRoot on unconfirmed cleanup, supports array outputSchema on CLI runner, and lists exported procedure names", async () => {
     const env = setupDirectLayout();
     const projectsRoot = join(env.projectRoot, "projects");
