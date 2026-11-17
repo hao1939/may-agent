@@ -49,6 +49,7 @@ import {
   validateCallableInput,
   type CallableDefinition,
   type CallableDescriptor,
+  type CallableResult,
 } from "../../callable.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
@@ -966,8 +967,11 @@ export async function runDirectWorkflow<TInput = unknown>(
     catalog?: DirectCatalogState;
     callerOwner?: string;
     tools?: "full" | "readonly";
+    /** A public root run may provide an already captured catalog without becoming a nested call. */
+    root?: boolean;
   },
 ): Promise<DirectWorkflowRunResult> {
+  const nested = internal !== undefined && internal.root !== true;
   const depth = internal?.depth ?? 1;
   const maxDepth = options.maxDepth ?? DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH;
   if (!Number.isSafeInteger(maxDepth) || maxDepth < 1) {
@@ -977,7 +981,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     const depthErr = new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
     const now = Date.now();
     const executionId =
-      internal === undefined && options.executionId
+      !nested && options.executionId
         ? options.executionId
         : `wr_${now}_${Math.random().toString(36).slice(2, 6)}`;
     return buildPreStartFailureResult({
@@ -992,7 +996,7 @@ export async function runDirectWorkflow<TInput = unknown>(
   }
 
   let callerOwner = internal?.callerOwner ?? options.agentName ?? "direct-agent";
-  const inferredRootOwner = !internal && !options.agentName && options.target;
+  const inferredRootOwner = !nested && !options.agentName && options.target;
   if (inferredRootOwner) {
     callerOwner = options.target!.includes("/")
       ? options.target!.slice(0, options.target!.indexOf("/")).trim()
@@ -1089,7 +1093,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         error: effectiveError,
         status,
         executionId:
-          internal === undefined && options.executionId
+          !nested && options.executionId
             ? options.executionId
             : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`,
         traceDir: options.traceDir,
@@ -1208,7 +1212,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     } catch (prepErr) {
       if (prepController.signal.aborted || preparedCatalog.pendingImports > 0) {
         const executionId =
-          internal === undefined && options.executionId
+          !nested && options.executionId
             ? options.executionId
             : `wr_${prepNow}_${Math.random().toString(36).slice(2, 6)}`;
         const unconfirmed =
@@ -1612,12 +1616,12 @@ export async function runDirectWorkflow<TInput = unknown>(
       },
     },
     {
-      executionId: internal ? undefined : options.executionId,
-      startedAt: internal ? undefined : rootStartedAt,
+      executionId: nested ? undefined : options.executionId,
+      startedAt: nested ? undefined : rootStartedAt,
       input: options.input,
       taskOwned: Boolean(reconciliation),
       tools: internal?.tools ?? options.tools,
-      outputSchema: internal ? undefined : options.outputSchema,
+      outputSchema: nested ? undefined : options.outputSchema,
       signal: options.signal,
       timeoutMs: targetModule.executionTimeoutMs ?? options.timeoutMs,
       deadlineAt: rootAllowance?.deadlineAt ?? options.deadlineAt,
@@ -1688,7 +1692,10 @@ export async function runDirectWorkflow<TInput = unknown>(
           return {
             kind: "agent" as const,
             invoke: async (callOpts, stepControl) =>
-              executePromptStep(target, promptTaskFromInput(input, target), callOpts, stepControl),
+              executePromptStep(target, promptTaskFromInput(input, target), callOpts, {
+                ...stepControl,
+                tools: options.tools ?? stepControl.tools,
+              }),
           };
         }
         if (activeScopeSignal) await loadTargetOwnerProcedures(target, activeScopeSignal);
@@ -1758,14 +1765,28 @@ export type RunOptions<TInput = unknown> = Omit<
   models?: Record<string, ModelWithApiKey>;
 };
 
-export type RunResult = DirectWorkflowRunResult;
+export type RunResult<T = unknown> = CallableResult<T>;
 
 export type TargetSummary = CallableDescriptor;
 
-const standaloneRoutes = new WeakMap<
-  readonly TargetSummary[],
-  ReadonlyMap<string, CanonicalStandaloneRoute>
->();
+export type StandaloneRunDiagnostics = Readonly<{
+  executionId: string;
+  run: DirectWorkflowRunResult;
+}>;
+
+const standaloneDiagnostics = new Map<string, StandaloneRunDiagnostics>();
+
+/** Read trusted execution diagnostics separately from the canonical callable result. */
+export function getRunDiagnostics(executionId: string): StandaloneRunDiagnostics | undefined {
+  return standaloneDiagnostics.get(executionId);
+}
+
+type StandaloneCatalogSnapshot = Readonly<{
+  routes: ReadonlyMap<string, CanonicalStandaloneRoute>;
+  catalog: DirectCatalogState;
+}>;
+
+const standaloneCatalogSnapshots = new WeakMap<readonly TargetSummary[], StandaloneCatalogSnapshot>();
 
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
 
@@ -1844,6 +1865,12 @@ export async function listTargets(
 
     const definitions: CallableDefinition[] = [];
     const routes = new Map<string, CanonicalStandaloneRoute>();
+    const capturedCatalog: DirectCatalogState = {
+      prompts: new Map(),
+      proceduresByOwner: new Map(),
+      diagnostics: [],
+      pendingImports: 0,
+    };
     const unavailable = async () => ({ status: "error" as const, summary: "Discovery descriptor is not executable" });
     for (const [scopeKey, entries] of ownersByScope) {
       listController.signal.throwIfAborted();
@@ -1859,8 +1886,11 @@ export async function listTargets(
         description: config.description,
         invoke: unavailable,
       });
+      const namespace = dir.projectId ?? "global";
+      const promptName = canonicalCallableName(dir.projectId, config.name);
+      capturedCatalog.prompts.set(promptName, { owner: namespace, definition: { source: dir } });
       const app = dir.projectId ? `${dir.projectId}.app` : undefined;
-      routes.set(canonicalCallableName(dir.projectId, config.name), {
+      routes.set(promptName, {
         target: config.name,
         agentsRoot: dir.agentsRoot,
         ...(app ? { app } : {}),
@@ -1873,6 +1903,7 @@ export async function listTargets(
         if (ambiguity) {
           throw new Error(`Callable catalog preparation failed: ${ambiguity}`);
         }
+        const merged = new Map(capturedCatalog.proceduresByOwner.get(namespace) ?? []);
         for (const wf of catalog.workflows.values()) {
           definitions.push({
             ...(dir.projectId ? { appId: dir.projectId } : {}),
@@ -1882,16 +1913,19 @@ export async function listTargets(
             ...(wf.outputSchema ? { outputSchema: wf.outputSchema } : {}),
             invoke: unavailable,
           });
+          merged.set(wf.name, wf);
           routes.set(canonicalCallableName(dir.projectId, wf.name), {
             target: `${config.name}/${wf.name}`,
             agentsRoot: dir.agentsRoot,
             ...(app ? { app } : {}),
           });
         }
+        capturedCatalog.proceduresByOwner.set(namespace, merged);
+        capturedCatalog.diagnostics.push(...catalog.diagnostics);
       }
     }
     const descriptors = [...new CallableCatalog(definitions).list()];
-    standaloneRoutes.set(descriptors, routes);
+    standaloneCatalogSnapshots.set(descriptors, { routes, catalog: capturedCatalog });
     return descriptors;
   } finally {
     clearTimeout(timer);
@@ -1945,8 +1979,9 @@ export async function run<TInput = unknown>(
     ...(options.signal ? { signal: options.signal } : {}),
   });
   const descriptor = descriptors.find((candidate) => candidate.name === rawTarget);
-  const canonicalRoute = standaloneRoutes.get(descriptors)?.get(rawTarget);
-  if (!descriptor || !canonicalRoute) {
+  const captured = standaloneCatalogSnapshots.get(descriptors);
+  const canonicalRoute = captured?.routes.get(rawTarget);
+  if (!descriptor || !canonicalRoute || !captured) {
     throw new Error(`Callable target not found: ${rawTarget}`);
   }
   validateCallableInput(descriptor.inputSchema, input);
@@ -1975,10 +2010,34 @@ export async function run<TInput = unknown>(
       globalAgentsRoot,
       outputRoot,
       models,
+    }, {
+      root: true,
+      depth: 1,
+      catalog: captured.catalog,
+      callerOwner: rawTarget.slice(0, rawTarget.indexOf("/")),
+      ...(options.tools ? { tools: options.tools } : {}),
     });
     cleanupConfirmed = res.report.cleanup.confirmed === true;
-    const retainOutputRoot = !ownsTempOutputRoot || Boolean(options.traceDir) || !cleanupConfirmed;
-    return retainOutputRoot ? { ...res, outputRoot } : res;
+    const diagnosticsRun = (!ownsTempOutputRoot || Boolean(options.traceDir) || !cleanupConfirmed)
+      ? { ...res, outputRoot }
+      : res;
+    standaloneDiagnostics.set(res.report.executionId, Object.freeze({
+      executionId: res.report.executionId,
+      run: diagnosticsRun,
+    }));
+    const contribution = res.result;
+    const summary = contribution
+      ? contribution.type === "done"
+        ? contribution.summary
+        : contribution.reason
+      : res.report.error?.message ?? (res.error instanceof Error ? res.error.message : String(res.error ?? res.status));
+    return Object.freeze({
+      ...(res.started ? { id: res.report.executionId } : {}),
+      status: contribution?.type ?? res.status,
+      summary,
+      ...(contribution?.output !== undefined ? { output: contribution.output } : {}),
+      ...(contribution?.facts !== undefined ? { facts: contribution.facts } : {}),
+    });
   } catch (err) {
     cleanupConfirmed =
       Boolean(err) && typeof err === "object" && (err as { cleanupConfirmed?: unknown }).cleanupConfirmed === true;
