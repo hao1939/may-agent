@@ -1298,3 +1298,38 @@ Evidence under the trial directory: `5d8-independent-receipts.log`,
 `725-app-local-fixture-probe-input.json`,
 `725-185-app-local-fixture-diagnostic.log`, `ffbd-independent-broad.log`,
 `ffbd-broad-progress-summary.json` and `ffbd-broad-cancellation.json`.
+
+## Prompt admission and App envelope checkpoint
+
+Root independently verified and published native Host
+`0e6806c95b63b3ba4e19c6b7bd0154593e6a743a`. All 36 standalone tests and
+exact-clean `check:ci` pass. The added regressions prepare and execute the real
+prompt runner: a blocked finish without unavailable output returns its common
+result in one turn, while a done finish missing schema-required output is
+rejected. This closes the missing positive prompt regression identified in the
+previous checkpoint. It does not establish full Host CI.
+
+App `56e58c00f0645992fc0bf9f2383253ed734aa29d` applies the proven namespace
+fixture correction. Independent owning tests against immutable Host 185 total
+101 pass and three failures. All four original owner-handoff cases now pass;
+the failures remain in standalone-stage diagnosis, blocked-result retention
+and cancellation evidence. The design check still reports the same four Scout
+typing errors. No Condition semantics were weakened to repair the fixtures.
+
+App `bda965c421cf15c46bf3ce610ac6129ec594696e` follows with full-envelope
+schemas and body adapters for pull-request-wait and revise-assignment. All six
+owning tests pass. Production canonical calls enter both registered bodies;
+the standalone environment then reports absent read/revision capabilities.
+Both commits are published on the retained App review branch. Remaining bodies,
+callers and trusted receipt consumers still require migration and broad checks.
+
+The recursive workflow read expansion bound remains under review. Existing
+native workflows continue on their retained Tasks; Root has not revised their
+requirements during execution or changed their implementation source. No
+unified candidate is activated, and the connected trial and Telegram readiness
+link remain unproved.
+
+Evidence under the trial directory: `0e6-independent-standalone.log`,
+`0e6-independent-check-ci.log`, `56e-185-independent-owning.log`,
+`56e-185-design-check.log`, `bda-185-independent-owning.log` and
+`configured-legacy-schema-1794948446858.json`.

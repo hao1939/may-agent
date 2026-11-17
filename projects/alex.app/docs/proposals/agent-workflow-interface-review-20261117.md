@@ -4,9 +4,11 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`5d8a8f31ac`. Independent exact-clean `check:ci` and 67 receipt/persistence/CLI
-owning tests pass; all six production receipt probes now pass. Earlier exact
-`ffbd59ecbc` cleanup verification passes 44 owning tests. Shared callable
+`0e6806c95b`. Independent exact-clean `check:ci` and all 36 standalone tests
+pass, including real prompt finish admission for blocked outputless reports and
+rejection of successful reports missing schema-required output. Earlier exact
+`5d8a8f31ac` verification passes 67 receipt/persistence/CLI tests and all six
+production receipt probes; `ffbd59ecbc` passes 44 owning tests. Shared callable
 cancellation settles within the existing finite cleanup grace.
 The original explicit-module timeout/abort probe now reports unconfirmed cleanup
 while a native import remains pending; both cleanup defects are repaired.
@@ -17,33 +19,31 @@ Task workflow ingress with raw reconciliation input. The metadata, naming,
 schema, timeout and import review discussions are resolved from independent
 evidence. These checks establish source behavior, not installed availability.
 
-App checkpoint `7255076158` is published on its retained review branch. Its exact
-pair with Host `185ffeb1ce` passes 66 workload/recovery tests and fails four real
-owner-handoff cases. Raw Task-input mapping is repaired. The failed fixtures
-never reach their scripted helper through the new catalog, then report a blocked
-result without a valid continuation. Migrate those fixtures and retain exact
-Condition, restart and cancellation assertions. The canonical App check still
-reports four Scout input/optional-ID errors; integrity and design examples pass.
-Full configured-target bodies, callers, guidance and result consumers remain
-unfinished.
+App checkpoint `bda965c421` is published on its retained review branch. Its parent
+`56e58c00f0`, paired with Host `185ffeb1ce`, passes 101 owning tests including all
+four repaired owner-handoff cases; three standalone-stage cases still fail.
+The fixture fix declares its helper `appLocal: true` and preserves the original
+request-ID Conditions, restart and cancellation assertions. Raw Task-input
+mapping is repaired. The canonical App check at that parent still reports four
+Scout input/optional-ID errors; integrity and design examples pass. Full
+configured-target bodies, callers, guidance and result consumers remain unfinished.
 
 Trusted execution reads now project nested workflow CLI receipts and expose
 message/byte/receipt truncation. One source defect remains: the recursive workflow
 query bounds returned sessions but still expands every descendant workflow.
 Bound traversal itself and report omitted subtrees. Actual development/Gym
-consumers, the real-prompt blocked-without-output regression, meaningful Host/CLI
-fixture migration and complete current-head CI also remain required.
+consumers, meaningful Host/CLI fixture migration and complete current-head CI
+also remain required.
 
-Production discovery enumerates all 33 configured targets, but canonical calls
-to `alex/pull-request-wait` and `may/revise-assignment` fail before execution:
-their legacy schemas require top-level domain fields forbidden by the common
-envelope. Discovery alone does not establish a callable migration. For the four
-App handoff cases, an isolated variation adding the missing `appLocal: true` to
-the current scripted helper definition passes every original assertion. May
-still needs to commit and verify that fixture correction on the retained branch.
+Production discovery enumerates all 33 configured targets. App `bda965c421`
+repairs the incompatible schemas and bodies of `alex/pull-request-wait` and
+`may/revise-assignment`: all six owning tests pass and real canonical calls now
+reach their bodies. In the isolated standalone probe, the first reports missing
+`read.contract` and the second reports unavailable Task revision, as expected
+without those capabilities. Discovery and admission do not prove live effects.
 No unified candidate is activated; connected native-trial and Telegram review-link
 notification acceptance are unproved. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#nested-receipt-coverage-and-remaining-read-bound)
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#prompt-admission-and-app-envelope-checkpoint)
 records exact revisions and remaining verification boundaries.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
