@@ -247,8 +247,8 @@ export async function reviewMetric(
       });
     }
     const execution = await ctx.call(
-      profile.agent,
-      [
+      `alex/${profile.agent}`,
+      { prompt: [|
         "Assess this external App metric observation and its comparison windows. A Task is not required: admission, collection or delivery may fail before execution exists.",
         "For effort observations, read the named Tasks and compare accepted deliverables, intermediate artifacts, remaining requirements, new input and waits. High effort or no newly fulfilled input is a reason to inspect, not proof of waste. Account for unsupported executors and unknown prices. Recommend the smallest worthwhile change, or no change when the work justifies its cost; aging out of a metric is not verified recovery.",
         "Judge persistence, recurrence after recovery, changed workload, and coverage gaps. Read the sample duration, calculation rule and calculated value; the latest raw sample can differ from the smoothed value behind an alert. Rising counts alone do not establish a worsening rate. Read sampleSize and source notes for the cohort and exact evidence references. Routine checks can preserve valid waits or recover state; assess cost and Task progress before calling them wasted work. Metric changes do not establish root cause or fulfillment of any input. Later success, acknowledgment and a proposed patch are not verified recovery.",
@@ -262,7 +262,7 @@ export async function reviewMetric(
           subject: { metricId, evidenceHash, ...(alertId ? { alertId } : {}) },
           evidence,
         }),
-      ].join("\n\n"),
+      ].join("\n\n") },
       { schema: evaluationJudgmentSchema },
     );
     const judgment =

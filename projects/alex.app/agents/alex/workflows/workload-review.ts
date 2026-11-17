@@ -259,8 +259,7 @@ export async function execute(ctx: AppWorkflowContext): Promise<ExecutionResult>
       ...(exact.length ? { taskId: Type.Optional(Type.Union(exact.map(task => Type.Literal(task.id)))) } : {}),
       ...(inputs.items.length ? { inputId: Type.Optional(Type.Union(inputs.items.map(input => Type.Literal(input.id)))) } : {}),
     }, { additionalProperties: false, not: { required: ["taskId", "inputId"] } });
-    const response = await ctx.call("alex", prompt, { tools: "readonly", timeoutMs: 60_000,
-      operationAllowance: 8, schema, source: "workload-review" });
+    const response = await ctx.call("alex/alex", { prompt }, { timeoutMs: 60_000, schema });
     ctx.signal.throwIfAborted();
     if (response.status !== "done" || !Check(decisionSchema, response.output) ||
         (response.output.taskId && !exact.some(task => task.id === response.output?.taskId)) ||

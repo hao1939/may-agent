@@ -521,8 +521,7 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
       JSON.stringify(diag.trials, null, 2),
       "The deterministic disposition is insufficient_evidence. Do not propose changes. A score or label is not human adjudication.",
     ].join("\n");
-    const boundaryStep = await ctx.call("gym", boundaryPrompt, {
-      tools: "readonly",
+    const boundaryStep = await ctx.call("alex/gym", { prompt: boundaryPrompt }, {
       schema: improvementProposalSchema,
     });
     if (boundaryStep.status !== "done") {
@@ -573,7 +572,7 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
       "- Finish with the structured proposal after the bounded evidence inspection.",
     ].join("\n");
 
-    const step = await ctx.call("gym", prompt, { tools: "readonly", schema: improvementProposalSchema });
+    const step = await ctx.call("alex/gym", { prompt }, { schema: improvementProposalSchema });
     if (step.status !== "done" || !step.output) {
       return ctx.blocked(step.summary || "gym failed to produce an improvement proposal");
     }
@@ -655,7 +654,7 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
       JSON.stringify(diag.trials, null, 2),
       "Apply only the cited smallest generalizable update and call finish.",
     ].join("\n");
-    const implStep = await ctx.call("tech-lead", implPrompt, { schema: candidateImplResultSchema });
+    const implStep = await ctx.call("alex/tech-lead", { prompt: implPrompt }, { schema: candidateImplResultSchema });
     if (implStep.status !== "done" || !implStep.output) {
       return ctx.blocked(implStep.summary || "tech-lead failed to prepare the .lab candidate");
     }

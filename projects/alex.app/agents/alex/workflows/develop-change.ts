@@ -128,7 +128,8 @@ const deliverySchema = Type.Object({
   report: artifactSchema,
 });
 
-type DevelopChangeInput = Static<typeof inputSchema>;
+type DevelopChangeData = Static<typeof inputSchema>;
+type DevelopChangeInput = { prompt: string; data: DevelopChangeData };
 
 /** One bounded workflow; Runtime owns admission, persistence, wakes and recovery. */
 export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
@@ -273,7 +274,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       return finish("Standing improvement review is not a development assignment. Retain its incident and cumulative counts; create or reuse one finite incident Task with concrete outcome, acceptance and constraints only within the existing allowance. Call-site task prose cannot replace Task requirements. An exhausted incident requires owner disposition, not a new Task or allowance.");
     }
     // The invocation kernel validates the procedure's one input contract.
-    const input = ctx.input as Static<typeof inputSchema>;
+    const input = (ctx.input as { data?: DevelopChangeData }).data ?? (ctx.input as unknown as DevelopChangeData);
     const constraints =
       (current.input as { data?: { constraints?: string[] } })?.data
         ?.constraints ?? [];
@@ -429,6 +430,8 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         `Current requirement: ${current.outcome}`,
         `Acceptance: ${JSON.stringify(current.acceptance)}`,
         `Constraints: ${JSON.stringify(constraints)}`,
+        `Authoritative current Task input: ${JSON.stringify(current.input)}`,
+        `Saved execution guidance and exact bindings: ${JSON.stringify({ executionGuidance: (current.input as any)?.data?.context?.executionGuidance, developmentCheckout: (current.input as any)?.data?.context?.developmentCheckout, sdkProvider: (current.input as any)?.data?.context?.sdkProvider })}`,
         "Procedure scope: assess and return the local source candidate plus the selected local verification. Keep the owning Task's wider acceptance visible as context, but do not require PR publication, hosted checks, activation, integration, deployment, or caller delivery before this local procedure can return. Do not drop source requirements, and do not treat missing required local verification as ready.",
         `Verification argv: ${JSON.stringify(input.verify)}`,
         `Candidate: ${JSON.stringify(value)}`,
@@ -453,9 +456,8 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         source,
         "Return the supplied structured decision. Clarify for a requirement or authority decision, or when verification exposes an exact SETUP dependency and no source repair is warranted. For SETUP, name the dependency, accountable owner, and exact resumption check in reason; do not spend another coding round on an unchanged candidate solely to rerun the missing prerequisite.",
       ].join("\n\n");
-      const response = await ctx.call(agent, prompt, {
-        schema,
-      });
+      const response = await ctx.call(`alex/${agent}`, { prompt }, { schema });
+      const execution = response.id ? await ctx.read.execution(response.id) : null;
       const evidence = await archive.record(
         {
           taskId: rec.taskId,
@@ -464,6 +466,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           stage,
           candidate: value,
           response,
+          execution,
         },
         `# ${stage}\nExecution: ${response.id}\nStatus: ${response.status}\nCandidate: ${JSON.stringify(value)}\n\n${response.summary}\n\n${Object.entries(
           response.output ?? {},
@@ -474,7 +477,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           )
           .join(
             "\n\n",
-          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, cliCalls: response.cliCalls }, null, 2)}`,
+          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, execution }, null, 2)}`,
       );
       saved!.reports.push({ stage, executionId: response.id, ...evidence });
       ctx.signal.throwIfAborted();

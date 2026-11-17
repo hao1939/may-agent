@@ -68,7 +68,7 @@ test("independent review may assess Alex work without App-wide exclusion", () =>
   } };
   const intent = taskForInput({ id: "review-1", input } as never).intent;
   expect(intent).toMatchObject({
-    agent: "evaluator-deepseek", workflow: "task-outcome-review",
+    agent: "evaluator-deepseek", workflow: "alex/task-outcome-review",
     input: { appId: "alex", taskId: "input/change-1", subjectGeneration: 2 },
   });
 });
@@ -145,7 +145,7 @@ test("selected review events return to executable Alex review work", () => {
   expect(automatic).toMatchObject({
     parentId: "root",
     agent: "evaluator-deepseek",
-    workflow: "task-outcome-review",
+    workflow: "alex/task-outcome-review",
     input: { appId: "may", taskId: "input/change-1", populationEnd: 42, automatic: true },
   });
   const requested = taskForInput({ id: "requested-review-1", input: {
@@ -193,7 +193,7 @@ test("declared metric and review-failure subscriptions dispatch executable input
   expect(taskForInput({ id: "metric-1", input } as never).intent).toMatchObject({
     parentId: "root",
     agent: "evaluator-deepseek",
-    workflow: "metric-review",
+    workflow: "alex/metric-review",
     input: { metricId: "tasks.failed", end: 42, automatic: true },
   });
   const failed = failure!.toInput!({
@@ -324,7 +324,7 @@ test("comparison inputs attach to the migrated Gym specialist", () => {
     timeoutMs: 60000, totalAllowanceMs: 60000,
   };
   expect(taskForInput({ id: "comparison-1", input: { kind: "compare-candidate", data } } as never).intent).toMatchObject({
-    agent: "gym", workflow: "compare-candidate", input: data,
+    agent: "gym", workflow: "alex/compare-candidate", input: data,
   });
 });
 
@@ -434,7 +434,7 @@ test("daily-work-learning schedule routes to alex/learn-from-daily-work", () => 
   expect(intent).toMatchObject({
     id: "learning/daily-work",
     agent: "alex",
-    workflow: "learn-from-daily-work",
+    workflow: "alex/learn-from-daily-work",
   });
 });
 
@@ -459,7 +459,7 @@ test("workflow-audit-hourly schedule routes to evaluator/runtime-pattern-audit",
   expect(intent).toMatchObject({
     id: "runtime/workflow-audit",
     agent: "evaluator",
-    workflow: "runtime-pattern-audit",
+    workflow: "alex/runtime-pattern-audit",
     priority: "P2",
   });
 });

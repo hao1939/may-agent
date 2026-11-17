@@ -647,8 +647,8 @@ export async function reviewTaskOutcome(
 
   const observerEvidence = await readObserverEvidence(subject.task, command);
   const execution = await ctx.call(
-    profile.agent,
-    [
+    `alex/${profile.agent}`,
+    { prompt: [|
       assessment.purpose === "ongoing"
         ? "Assess the current obligations represented by this exact public Task snapshot. This is an ongoing-work assessment, not a demand that the eventual outcome already be delivered."
         : "Evaluate the requested outcome represented by this exact public Task snapshot and the historical role/assignment recorded there.",
@@ -682,7 +682,7 @@ export async function reviewTaskOutcome(
         assessment,
         task: subject.task,
       }),
-    ].join("\n\n"),
+    ].join("\n\n") },
     { schema: evaluationJudgmentSchema },
   );
   if (execution.status !== "done") {

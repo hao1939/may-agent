@@ -106,8 +106,8 @@ function trial() {
   const context = (
     signal = new AbortController().signal,
   ): Parameters<typeof execute>[0] =>
-    createTestAppWorkflowContext<{ verify: string[] }>({
-      input: { verify: (current.input as any).data.verify },
+    createTestAppWorkflowContext<{ prompt: string; data: { verify: string[] } }>({
+      input: { prompt: "Run the selected development procedure", data: { verify: (current.input as any).data.verify } },
       signal,
       reconciliation: {
         task: current,
@@ -115,7 +115,7 @@ function trial() {
         taskId: current.id,
         generation: current.generation,
         resourceVersion: 1,
-        agent: "tech-lead",
+        agent: "alex/tech-lead",
         owner: "tech-lead",
         outcome: current.outcome,
         acceptance: current.acceptance,
@@ -136,12 +136,14 @@ function trial() {
           list: async () => ({ items: [] }),
           get: async () => current,
         },
+        execution: async (id) => ({ id, kind: "agent", status: "done", summary: "step complete" }),
       }),
       call: (async (
         agent: string,
-        prompt: string,
+        input: { prompt: string },
         options: { tools?: unknown },
       ) => {
+        const prompt = input.prompt;
         const stage =
           /^Development step: ([^.]+)/.exec(prompt)?.[1] ?? "unknown";
         calls.push({ agent, stage, tools: options?.tools });
@@ -372,9 +374,9 @@ describe("development workflow using real Git and verification", () => {
     const t = trial();
     expect((await t.run()).state).toBe("converged");
     expect(t.calls).toEqual([
-      { agent: "bob", stage: "design", tools: undefined },
-      { agent: "tech-lead", stage: "implementation", tools: undefined },
-      { agent: "bob", stage: "review", tools: undefined },
+      { agent: "alex/bob", stage: "design", tools: undefined },
+      { agent: "alex/tech-lead", stage: "implementation", tools: undefined },
+      { agent: "alex/bob", stage: "review", tools: undefined },
     ]);
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
     const ctx = t.context(); // A fresh invocation; only Task result and repository survive.

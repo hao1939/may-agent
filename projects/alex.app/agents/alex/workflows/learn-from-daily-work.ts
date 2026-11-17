@@ -571,7 +571,7 @@ export async function execute(ctx: AgentContext<LearnFromDailyWorkInput>) {
     JSON.stringify(signals, null, 2),
   ].join("\n");
 
-  const synthesisStep = await ctx.call("bob", prompt, {
+  const synthesisStep = await ctx.call("alex/bob", { prompt }, {
     schema: dailyLearningSynthesisSchema,
   });
 

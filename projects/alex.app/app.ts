@@ -440,7 +440,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: "runtime/task-outcome-selector",
       parentId: "root",
       agent: "evaluator",
-      workflow: "task-outcome-selector",
+      workflow: "alex/task-outcome-selector",
       outcome: "Select bounded external Task and metric reviews under the explicit automatic-review rollout policy.",
       acceptance: ["New samples alone never invoke an LLM.", "Selected reviews preserve canonical subject identity and evidence cutoffs."],
       input: admitted.input,
@@ -452,7 +452,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: WORKFLOW_AUDIT_TASK_ID,
       parentId: "root",
       agent: "evaluator",
-      workflow: "runtime-pattern-audit",
+      workflow: "alex/runtime-pattern-audit",
       outcome: "Continuously audit all registered App workflows for static contract integrity, paired tests, reachability, and rolling runtime execution health.",
       acceptance: [
         "Execute deterministically with zero LLM calls and persist the latest audit snapshot.",
@@ -469,7 +469,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: metricReviewTaskId(metricId, reviewer),
       parentId: "root",
       agent: reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator",
-      workflow: "metric-review",
+      workflow: "alex/metric-review",
       outcome: `Review observations of metric ${metricId} and return an evidence-backed recommendation.`,
       acceptance: [
         "Preserve the exact metric evidence and review cutoff.",
@@ -495,7 +495,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: `review/${safe(`${appId}/${taskId}/${data.subjectGeneration ?? "current"}/${data.evidenceHash ?? "current"}/${reviewer}/${data.automatic === true ? "automatic" : "requested"}/${admitted.id}`)}`,
       parentId: "root",
       agent: reviewer === "evaluator-deepseek" ? "evaluator-deepseek" : "evaluator",
-      workflow: "task-outcome-review",
+      workflow: "alex/task-outcome-review",
       outcome: `Independently review ${appId}/${taskId} from canonical Task evidence.`,
       acceptance: [
         "Read the canonical Task and exact current evidence before judgment.",
@@ -519,7 +519,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: `comparison/${safe(String(data.requestId))}`,
       parentId: "root",
       agent: "gym",
-      workflow: "compare-candidate",
+      workflow: "alex/compare-candidate",
       outcome: `Run the frozen comparison ${String(data.requestId)} and return bounded evidence.`,
       acceptance: ["Verify all frozen identities before execution.", "Retain a complete comparison receipt and disclose invalid or inconclusive trials."],
       input: data,
@@ -532,7 +532,7 @@ export function taskForInput(admitted: Readonly<AppTaskInput>) {
       id: "learning/daily-work",
       parentId: "root",
       agent: "alex",
-      workflow: "learn-from-daily-work",
+      workflow: "alex/learn-from-daily-work",
       outcome: "Harvest daily user signals across container and localhost roots, extract role-specific judgment lessons, and synthesize leak-free benchmark drafts.",
       acceptance: [
         "Scan configured container (.state) and localhost ($HOME) session roots since the last cursor.",
