@@ -716,7 +716,7 @@ export async function execute(ctx) { throw new Error("string helper exploded: " 
     expect(failedHelper).toMatchObject({
       kind: "workflow",
       status: "error",
-      error: { message: "string helper exploded: payload" },
+      summary: "string helper exploded: payload",
       id: expect.stringMatching(/^wr_/),
     });
     expect(failedHelper?.id).not.toBe(result.report.executionId);

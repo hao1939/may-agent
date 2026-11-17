@@ -1571,6 +1571,15 @@ export async function runDirectWorkflow<TInput = unknown>(
       if (sub.started) {
         (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
       }
+      if (sub.started && sub.report.status === "error" && sub.report.cleanup.confirmed) {
+        return {
+          id: sub.report.executionId,
+          kind: "workflow",
+          status: "error",
+          summary: sub.report.error?.message ?? thrown.message,
+          cleanupConfirmed: true,
+        };
+      }
       throw thrown;
     }
     return {

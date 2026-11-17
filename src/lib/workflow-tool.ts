@@ -4,6 +4,7 @@ import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { ExecutionDeferredError } from "@may-agent/sdk/app";
 import {
   CallableCatalog,
+  WorkflowUnconfirmedCleanupError,
   canonicalCallableName,
   resolveCallable,
   runWorkflowInvocation,
@@ -832,22 +833,44 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         const nestedTask =
           typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
         onEvent?.({ type: "workflow.started", workflow: subWorkflow.name, task: nestedTask });
-        const sub = await executeWorkflow(
-          targetCatalog,
-          subWorkflow,
-          nestedTask,
-          depth + 1,
-          parentSessionId,
-          runId,
-          completedSteps,
-          steeringQueue,
-          { value: workflowInput },
-          undefined,
-          stepControl.signal,
-          stepControl.allowance,
-          stepControl.tools,
-          resolved.owner,
-        );
+        let sub: { runId: string; result: WorkflowResult };
+        try {
+          sub = await executeWorkflow(
+            targetCatalog,
+            subWorkflow,
+            nestedTask,
+            depth + 1,
+            parentSessionId,
+            runId,
+            completedSteps,
+            steeringQueue,
+            { value: workflowInput },
+            undefined,
+            stepControl.signal,
+            stepControl.allowance,
+            stepControl.tools,
+            resolved.owner,
+          );
+        } catch (error) {
+          if (
+            error instanceof WorkflowInterrupted ||
+            error instanceof ExecutionDeferredError ||
+            error instanceof WorkflowUnconfirmedCleanupError ||
+            stepControl.signal.aborted
+          ) {
+            throw error;
+          }
+          const childId = error && typeof error === "object" && typeof (error as { executionId?: unknown }).executionId === "string"
+            ? (error as { executionId: string }).executionId
+            : undefined;
+          if (!childId) throw error;
+          return {
+            id: childId,
+            kind: "workflow",
+            status: "error",
+            summary: error instanceof Error ? error.message : String(error),
+          };
+        }
         stepControl.signal.throwIfAborted();
         if (sub.result.type === "done") {
           onEvent?.({ type: "workflow.completed", summary: sub.result.summary });
