@@ -7,7 +7,8 @@ is merged into main `0606e2df16d0a44016bbef1c6294dac4c4c11d94`; its shared
 tool name still fronts incompatible inputs, results, discovery and permission
 handling. Source merge and installed-runtime activation are separate facts.
 Draft [#589](https://github.com/hao1939/may-agent/pull/589) publishes the partial
-catalog, standalone dispatch and SDK discovery checkpoint `79240eb435`.
+catalog, standalone dispatch, SDK discovery and built-in cooperation checkpoint
+`166d8d15b1` for parallel review.
 Production model/SDK parity, removal of old
 interfaces and paired App migration remain incomplete. No candidate is activated.
 The focused Task-revision fix #590 is active locally; that activation does not
@@ -336,6 +337,11 @@ revised by its creator. Preserve the seven consumed #585 rounds and their
 receipts; do not renew them through a replacement Task. Because #585 is merged,
 publish the correction as a follow-up PR, excluding unrelated changes. Coordinate
 any App companion changes explicitly rather than mixing unrelated workspace edits.
+Push coherent committed checkpoints to that draft PR while implementation
+continues, stating the actual checks and remaining gaps. Full cutover readiness
+is required for its readiness claim, not for sharing unfinished work for review.
+The user owns the separate ingress/input and event-system proposals; this
+implementation remains focused on the unified callable interface.
 
 Review and local verification do not wait for merge. First run portable candidate
 checks; then build the exact candidate and activate compatible components for the

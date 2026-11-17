@@ -488,3 +488,23 @@ remain. The removed native-CLI alias tests must not be used as evidence that the
 replacement callable route or mixed-tree cleanup has been verified. The proposal
 now orders the next production-adapter checkpoints explicitly, before further
 standalone-only work.
+
+## Parallel review publication
+
+The user took ownership of the separate ingress/input and event-system proposals
+and requested immediate pushes for parallel review. Root pushed May's committed
+Host checkpoint `166d8d15b1` to the existing #589 branch, updating old remote head
+`79240eb435`. It adds built-in cooperation independent of workflow-directory
+presence and removes loader delegate-deny configuration; the model tool's old
+resolver, controls and permissions still remain. Local source evidence includes
+65 passing selected tests and `check:ci`; the discovery command ran four tests,
+but its requested toolset-loader test path did not exist, so it is not loader
+regression proof.
+
+GitHub read-back found a non-draft PR with a Draft title. Root converted it to an
+actual draft, updated its title/body with concrete remaining work, and verified
+head `166d8d15b1`. Quality and Container checks were running at this checkpoint.
+This publication was a Root administrative intervention while May's workflow
+continued, not autonomous publication or connected-trial proof. Apps design and
+guidance were pushed to the existing bare backup remote at `7460e9a36a`; the Apps
+tree must not be pushed to the separate Host repository as a design PR.
