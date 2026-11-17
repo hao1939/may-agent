@@ -458,7 +458,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           },
         )}`,
         `Retained reports, local verification receipts, and bounded child execution projections: ${JSON.stringify(currentReports(saved!.reports))}`,
-        "Receipt projection limitation: the frozen SDK ExecutionView exposes only child id, kind, status and summary. It does not project trusted child command/CLI receipts; do not claim those receipts are present in read.execution evidence.",
+        "Child execution projections retain Host-authored diagnostics.cliCalls when available. Treat those bounded receipts as trusted execution evidence, preserve diagnostics.truncated as an explicit completeness limit, and never substitute contributor-authored facts for them.",
         "Read the relevant retained reports before judging. Verification receipts include actual argv, directory, exit status, stdout/stderr and candidate readback. An agent's claim alone is not verification. Do not request a new implementation merely to repeat receipts already supplied here.",
         `Current input facts (not new authority): ${JSON.stringify(rec.events.items).slice(0, 16_000)}`,
         source,
@@ -475,7 +475,6 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           candidate: value,
           response,
           execution,
-          receiptProjection: "ExecutionView omits trusted child command/CLI receipts; only its bounded execution projection is retained",
         },
         `# ${stage}\nExecution: ${response.id}\nStatus: ${response.status}\nCandidate: ${JSON.stringify(value)}\n\n${response.summary}\n\n${Object.entries(
           response.output ?? {},
@@ -486,7 +485,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           )
           .join(
             "\n\n",
-          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, execution, receiptProjection: "ExecutionView omits trusted child command/CLI receipts; only its bounded execution projection is retained" }, null, 2)}`,
+          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, execution }, null, 2)}`,
       );
       saved!.reports.push({ stage, executionId: response.id, ...evidence });
       ctx.signal.throwIfAborted();

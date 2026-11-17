@@ -136,7 +136,25 @@ function trial() {
           list: async () => ({ items: [] }),
           get: async () => current,
         },
-        execution: async (id) => ({ id, kind: "agent", status: "done", summary: "step complete" }),
+        execution: async (id) => ({
+          id,
+          kind: "agent",
+          status: "done",
+          summary: "step complete",
+          diagnostics: {
+            cliCalls: [{
+              sessionId: id,
+              toolCallId: `cli-${id}`,
+              taskId: "task-1",
+              tool: "codex",
+              status: "completed",
+              resultPath: "/tmp/result.md",
+              structuredResultPath: "/tmp/result.json",
+              eventsPath: "/tmp/events.jsonl",
+            }],
+            truncated: true,
+          },
+        }),
       }),
       call: (async (
         agent: string,
@@ -1242,15 +1260,30 @@ describe("development workflow using real Git and verification", () => {
     expect(reviewPrompt).toContain(implementation.executionId);
     expect(reviewPrompt).toContain(implementation.report.path);
     expect(reviewPrompt).toContain(verification.report.path);
-    const execution = JSON.parse(
+    const implementationRecord = JSON.parse(
       readFileSync(implementation.record.path, "utf8"),
-    ).response;
-    expect(execution).toMatchObject({
+    );
+    expect(implementationRecord.response).toMatchObject({
       id: "step-2",
       summary: "step complete",
       output: { decision: "ready", reason: "Candidate committed" },
       facts: { retained: "execution evidence" },
     });
+    expect(implementationRecord.execution).toMatchObject({
+      id: "step-2",
+      diagnostics: {
+        cliCalls: [{
+          sessionId: "step-2",
+          toolCallId: "cli-step-2",
+          tool: "codex",
+          status: "completed",
+        }],
+        truncated: true,
+      },
+    });
+    expect(
+      readFileSync(implementation.report.path, "utf8"),
+    ).toContain('"toolCallId": "cli-step-2"');
     const verified = JSON.parse(readFileSync(verification.record.path, "utf8"));
     expect(verified.passed).toBe(true);
     expect(verified.candidate.commit).toBe(evidence.review.candidate.commit);

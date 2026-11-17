@@ -11,7 +11,10 @@
     "agent": "alex",
     "workflow": "develop-change",
     "input": {
-      "verify": ["node", "verify.cjs"]
+      "prompt": "Implement the retained repair candidate",
+      "data": {
+        "verify": ["node", "verify.cjs"]
+      }
     }
   }
 }
