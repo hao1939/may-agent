@@ -45,6 +45,7 @@ import {
   type ToolDenial,
 } from "@may-agent/sdk/standalone";
 import { createControlledModelRegistry } from "./model-registry";
+import { runNativeCliAdapter } from "./native-cli-adapter";
 
 import {
   listScenarios,
@@ -318,54 +319,17 @@ function createMayAgentAdapter(): Adapter {
 
       if (agentName === "codex" || agentName === "claude") {
         try {
-          const timeoutMs = timeoutMin * 60 * 1000;
-          const traceDir = join(gymState, "cli-trace");
-          const cliRun = await run(agentName, readFileSync(taskFile, "utf8"), {
+          return await runNativeCliAdapter({
+            tool: agentName,
+            prompt: readFileSync(taskFile, "utf8"),
             projectRoot: REPO_ROOT,
-            workRoot: workDir,
-            agentsRoot,
-            projectsRoot: join(REPO_ROOT, "projects"),
-            globalAgentsRoot: join(REPO_ROOT, "agents"),
-            sharedRoot: join(REPO_ROOT, "shared"),
-            outputRoot: gymState,
-            traceDir,
-            models: createControlledModelRegistry(),
-            timeoutMs,
-            outputSchema:
-              outputContract === "task-agent-result"
-                ? taskAgentResultSchema
-                : undefined,
-            onNotice: (message) => console.error(`  [${agentName}] ${message}`),
-          });
-          const cliReport = JSON.parse(
-            readFileSync(join(traceDir, "run.json"), "utf8"),
-          ) as {
-            executionId: string;
-            steps: Array<{ transcriptPath?: string }>;
-            error?: { message?: string };
-          };
-          writeFileSync(
-            join(workDir, "workflow-run.json"),
-            `${JSON.stringify(cliReport, null, 2)}\n`,
-          );
-          if (
-            outputContract === "task-agent-result" &&
-            cliRun.output !== undefined
-          ) {
-            writeFileSync(
-              join(workDir, "task-result.json"),
-              `${JSON.stringify(cliRun.output, null, 2)}\n`,
-            );
-          }
-
-          return {
-            sessionId: cliRun.id ?? cliReport.executionId,
-            status: cliRun.status === "done" ? "success" : cliRun.status,
-            sessionPath: cliReport.steps[0]?.transcriptPath || traceDir,
-            ...(cliReport.error?.message
-              ? { error: cliReport.error.message }
+            workDir,
+            persistDir: join(gymState, "cli-trace"),
+            timeoutMs: timeoutMin * 60 * 1000,
+            ...(outputContract === "task-agent-result"
+              ? { outputContract }
               : {}),
-          };
+          });
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
           console.error(`  [${agentName}] ${msg}`);
@@ -2590,16 +2554,7 @@ async function main() {
     const wfState = mkdtempSync(join(tmpdir(), "gym-diagnose-"));
     try {
       const wfRun = await run({
-        agentName: "alex",
-        workflowDir: join(
-          REPO_ROOT,
-          "projects",
-          "alex.app",
-          "agents",
-          "alex",
-          "workflows",
-        ),
-        workflowName: "diagnose-improvement",
+        target: "alex/diagnose-improvement",
         input: {
           prompt: "Diagnose the frozen Gym baseline",
           data: { baselineDir },
