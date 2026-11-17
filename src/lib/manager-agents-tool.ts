@@ -172,6 +172,28 @@ const AgentsToolParams = Type.Object({
   ),
 });
 
+const WorkflowsToolParams = Type.Object({
+  action: StringEnum(["call", "list"] as const, {
+    description:
+      "'list': show this agent's local workflows. 'call': synchronously invoke one local workflow and return its ordinary Task result.",
+  }),
+  agent: Type.Optional(
+    Type.String({
+      description: "Local workflow name. Required for 'call'; use 'list' first if unsure.",
+    }),
+  ),
+  task: Type.Optional(
+    Type.String({
+      description: "String input for the local workflow. Required for 'call' unless structured input is supplied.",
+    }),
+  ),
+  input: Type.Optional(
+    Type.Unknown({
+      description: "Structured input for the local workflow. Required for 'call' unless task is supplied.",
+    }),
+  ),
+});
+
 type AgentsToolParamsType = Static<typeof AgentsToolParams>;
 
 function appendContextFiles(task: string, contextFiles?: string[], successCriteria?: string[]): string {
@@ -321,7 +343,7 @@ export function createAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAg
     description: localWorkflowsOnly
       ? "Discover and synchronously invoke this agent's local workflows during a Task attempt. Workflows retain the current Task context, inputs, Conditions, cancellation, and result contract."
       : "Cooperate with other agents and procedures. Use 'list' for discovery, 'call' to await a result, 'fork' for a bounded helper, 'follow-up' to correct that helper, 'peek'/'cancel' to inspect or stop it, and 'sessions' for execution history. Durable cross-App work uses App Task requests; helper updates use the exact sessionId.",
-    parameters: AgentsToolParams,
+    parameters: localWorkflowsOnly ? WorkflowsToolParams : AgentsToolParams,
     execute: async (_toolCallId, _params, signal) => {
       const params = _params as AgentsToolParamsType;
       try {

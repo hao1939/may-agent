@@ -512,6 +512,10 @@ describe("agents tool", () => {
       localWorkflowsOnly: true,
     });
 
+    const parameters = tool.parameters as any;
+    expect(Object.keys(parameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
+    expect(parameters.properties.action.enum).toEqual(["call", "list"]);
+
     expect((await callTool(tool, { action: "call", agent: "sibling/foreign", task: "run" })).error).toContain(
       'only workflows owned by "owner"',
     );

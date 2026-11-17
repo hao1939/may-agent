@@ -69,6 +69,31 @@ describe("prepared completion contract", () => {
     return { prepared, finish, context };
   }
 
+  it("serializes local workflow calls like agent cooperation", () => {
+    const workflows = {
+      name: "workflows",
+      label: "Workflows",
+      description: "Run a local workflow",
+      parameters: Type.Object({}),
+      execute: async () => ({ content: [{ type: "text" as const, text: "ok" }], details: "ok" }),
+    };
+    const prepared = prepareAgentExecution({
+      definition: {
+        name: "owner",
+        description: "Task owner",
+        domain: "fixture",
+        systemPrompt: "Run the requested local workflow.",
+        model: getBuiltinModel("anthropic", "claude-sonnet-4-20250514"),
+        tools: [workflows, createFinishTool({ projectRoot })],
+      },
+      projectRoot,
+      sessionId: "owner-session",
+      task: "Run local workflows",
+    });
+
+    expect(prepared.tools.find((tool) => tool.name === "workflows")?.executionMode).toBe("sequential");
+  });
+
   const review = {
     status: "done",
     summary: "Reviewed the supplied result",
