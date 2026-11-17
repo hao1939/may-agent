@@ -285,6 +285,9 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       const params = rawParams as CanonicalAgentsToolParamsType;
       let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
+        if (params.action !== "list" && params.action !== "call") {
+          throw new Error(`Unknown agents action: ${String((params as { action?: unknown }).action)}`);
+        }
         const parentSessionId = opts?.getCallerSessionId?.();
         const session = parentSessionId ? manager.activeSessions.get(parentSessionId) : undefined;
         if (!parentSessionId || !session) {

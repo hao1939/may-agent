@@ -135,12 +135,12 @@ describe("parentSessionId via createAgentsTool", () => {
 
     const result = await tool.execute("tc1", {
       action: "call",
-      agent: "worker",
-      task: "do work",
-    });
+      agent: "global/worker",
+      input: { prompt: "do work" },
+    }, new AbortController().signal);
 
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-    const sessionId = parsed.sessionId;
+    const sessionId = parsed.id;
 
     expect(manager.registryStore.getSession(sessionId)?.parentSessionId).toBe(callerSid);
   });
@@ -156,12 +156,12 @@ describe("parentSessionId via createAgentsTool", () => {
 
     const result = await tool.execute("tc1", {
       action: "call",
-      agent: "worker",
-      task: "do work",
-    });
+      agent: "global/worker",
+      input: { prompt: "do work" },
+    }, new AbortController().signal);
 
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-    const sessionId = parsed.sessionId;
+    const sessionId = parsed.id;
 
     const session = manager.registryStore.getSession(sessionId);
     expect(session?.parentSessionId).toBe(callerSid);
@@ -169,7 +169,7 @@ describe("parentSessionId via createAgentsTool", () => {
     expect(session?.projectId).toBe("scout/scout-second-brain-learning");
   });
 
-  it("fork action sets parentSessionId and inherits workflow/project lineage", async () => {
+  it("rejects the retired fork action without starting a child", async () => {
     const callerSid = manager.run("worker", "caller", {
       workflowRunId: "wr_fork_project",
       projectId: "scout/scout-second-brain-learning",
@@ -180,17 +180,13 @@ describe("parentSessionId via createAgentsTool", () => {
 
     const result = await tool.execute("tc1", {
       action: "fork",
-      agent: "worker",
-      task: "do async work",
-    });
+      agent: "global/worker",
+      input: { prompt: "do async work" },
+    }, new AbortController().signal);
 
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-    const sessionId = parsed.sessionId;
-
-    const session = manager.registryStore.getSession(sessionId);
-    expect(session?.parentSessionId).toBe(callerSid);
-    expect(session?.workflowRunId).toBe("wr_fork_project");
-    expect(session?.projectId).toBe("scout/scout-second-brain-learning");
+    expect(parsed).toMatchObject({ status: "error" });
+    expect(manager.status().map((session) => session.sessionId)).toEqual([callerSid]);
   });
 
   it("call without a live caller is rejected without starting a session", async () => {
@@ -198,12 +194,12 @@ describe("parentSessionId via createAgentsTool", () => {
 
     const result = await tool.execute("tc1", {
       action: "call",
-      agent: "worker",
-      task: "do work",
-    });
+      agent: "global/worker",
+      input: { prompt: "do work" },
+    }, new AbortController().signal);
 
     const parsed = JSON.parse(result.content[0].type === "text" ? result.content[0].text : "");
-    expect(parsed.error).toContain("live caller");
+    expect(parsed.summary).toContain("live caller");
     expect(manager.status()).toEqual([]);
   });
 });
