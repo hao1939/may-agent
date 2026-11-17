@@ -337,26 +337,33 @@ function createMayAgentAdapter(): Adapter {
                 : undefined,
             onNotice: (message) => console.error(`  [${agentName}] ${message}`),
           });
+          const cliReport = JSON.parse(
+            readFileSync(join(traceDir, "run.json"), "utf8"),
+          ) as {
+            executionId: string;
+            steps: Array<{ transcriptPath?: string }>;
+            error?: { message?: string };
+          };
           writeFileSync(
             join(workDir, "workflow-run.json"),
-            `${JSON.stringify(cliRun.report, null, 2)}\n`,
+            `${JSON.stringify(cliReport, null, 2)}\n`,
           );
           if (
             outputContract === "task-agent-result" &&
-            cliRun.report.result?.output !== undefined
+            cliRun.output !== undefined
           ) {
             writeFileSync(
               join(workDir, "task-result.json"),
-              `${JSON.stringify(cliRun.report.result.output, null, 2)}\n`,
+              `${JSON.stringify(cliRun.output, null, 2)}\n`,
             );
           }
 
           return {
-            sessionId: cliRun.report.executionId,
+            sessionId: cliRun.id ?? cliReport.executionId,
             status: cliRun.status === "done" ? "success" : cliRun.status,
-            sessionPath: cliRun.report.steps[0]?.transcriptPath || traceDir,
-            ...(cliRun.report.error?.message
-              ? { error: cliRun.report.error.message }
+            sessionPath: cliReport.steps[0]?.transcriptPath || traceDir,
+            ...(cliReport.error?.message
+              ? { error: cliReport.error.message }
               : {}),
           };
         } catch (error) {
@@ -2593,7 +2600,10 @@ async function main() {
           "workflows",
         ),
         workflowName: "diagnose-improvement",
-        input: { baselineDir },
+        input: {
+          prompt: "Diagnose the frozen Gym baseline",
+          data: { baselineDir },
+        },
         cwd: wfState,
         projectRoot: REPO_ROOT,
         workRoot: wfState,
@@ -2606,7 +2616,7 @@ async function main() {
         models: createControlledModelRegistry(),
         timeoutMs: 120_000,
       });
-      const rawOut = wfRun.report.result?.output as
+      const rawOut = wfRun.output as
         | { output?: Record<string, any> }
         | Record<string, any>
         | undefined;
@@ -2614,9 +2624,7 @@ async function main() {
         | Record<string, any>
         | undefined;
       if (!proposal || wfRun.status !== "done") {
-        console.error(
-          `Diagnosis failed: ${wfRun.report.result?.type === "done" ? wfRun.report.result.summary : (wfRun.report.result?.reason ?? wfRun.status)}`,
-        );
+        console.error(`Diagnosis failed: ${wfRun.summary}`);
         process.exit(1);
       }
       if (process.argv.includes("--json")) {

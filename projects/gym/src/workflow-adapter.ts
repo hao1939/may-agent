@@ -395,10 +395,7 @@ export async function runGymWorkflowEntry(
   };
   let wfRun: DirectWorkflowRunResult;
   try {
-    wfRun = await runDirectWorkflow({
-      ...directOptions,
-      cwd: config.workDir,
-    });
+    wfRun = await runDirectWorkflow(directOptions);
   } finally {
     if (workspaceAppCopy) {
       rmSync(dirname(workspaceAppCopy), { recursive: true, force: true });
