@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -65,23 +65,59 @@ const configuredCallableTargets = [
   "scout-knowledge-lib/scout-explore",
 ] as const;
 
-test("all 33 configured targets expose only canonical names and callable envelopes", async () => {
-  const targets = await listTargets({
+async function callableTargets(projectsRoot: string) {
+  return listTargets({
     cwd: process.cwd(),
     projectRoot: process.cwd(),
-    projectsRoot: join(process.cwd(), "projects"),
+    projectsRoot,
     globalAgentsRoot: join(process.cwd(), "agents"),
     sharedRoot: join(process.cwd(), "shared"),
     timeoutMs: 120_000,
   });
+}
 
-  expect(targets.map((target) => target.name)).toEqual(configuredCallableTargets);
-  for (const target of targets) {
-    expect(target.name.split("/")).toHaveLength(2);
-    expect(target.description.trim().length, target.name).toBeGreaterThan(0);
-    expect(JSON.stringify(target.inputSchema), target.name).toContain('"prompt"');
-    expect(Check(target.inputSchema, { data: {} }), `${target.name} accepted a missing prompt`).toBe(false);
-    expect(Check(target.inputSchema, { task: "legacy" }), `${target.name} accepted a retired task field`).toBe(false);
+function sourceInventoryFixture(disabledApps: readonly string[] = []) {
+  const root = mkdtempSync(join(tmpdir(), "workflow-source-inventory-"));
+  const projectsRoot = join(root, "projects");
+  mkdirSync(projectsRoot);
+  for (const app of ["alex.app", "may.app", "sample.app", "scout-knowledge-lib.app"]) {
+    const source = join(process.cwd(), "projects", app);
+    const fixture = join(projectsRoot, app);
+    mkdirSync(fixture);
+    symlinkSync(join(source, "app.ts"), join(fixture, "app.ts"));
+    symlinkSync(join(source, "agents"), join(fixture, "agents"), "dir");
+    if (disabledApps.includes(app)) writeFileSync(join(fixture, ".disabled"), "");
+  }
+  return { root, projectsRoot };
+}
+
+test("all 33 source targets expose only canonical names and callable envelopes", async () => {
+  const fixture = sourceInventoryFixture();
+  try {
+    const targets = await callableTargets(fixture.projectsRoot);
+    expect(targets.map((target) => target.name)).toEqual(configuredCallableTargets);
+    for (const target of targets) {
+      expect(target.name.split("/")).toHaveLength(2);
+      expect(target.description.trim().length, target.name).toBeGreaterThan(0);
+      expect(JSON.stringify(target.inputSchema), target.name).toContain('"prompt"');
+      expect(Check(target.inputSchema, { data: {} }), `${target.name} accepted a missing prompt`).toBe(false);
+      expect(Check(target.inputSchema, { task: "legacy" }), `${target.name} accepted a retired task field`).toBe(false);
+    }
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("configured discovery omits targets from explicitly disabled Apps", async () => {
+  const fixture = sourceInventoryFixture(["sample.app"]);
+  try {
+    const targets = await callableTargets(fixture.projectsRoot);
+    expect(targets.map((target) => target.name)).toEqual(
+      configuredCallableTargets.filter((name) => name !== "sample/sample-reviewer"),
+    );
+    expect(targets.some((target) => target.name.startsWith("sample/"))).toBe(false);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
   }
 });
 
