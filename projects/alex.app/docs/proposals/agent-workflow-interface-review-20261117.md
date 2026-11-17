@@ -15,13 +15,14 @@ cover all four call directions, exact canonical dispatch, common root results,
 invalid root/child input, enclosing discovery timeout and full-envelope Task
 workflow ingress. These are bounded source checks, not complete cutover proof.
 
-Paired App checkpoint `bc0b80b9bb` is published on its retained review branch.
-It migrates metric review, Task-outcome review, runtime-pattern audit and Gym
-comparison entries to the common envelope. Against exact Host `0a52518cd1`,
-four affected suites report 62 passes and eight Task-outcome-review failures.
-Three retained-report recovery cases passed at preceding App `ff6edba21a` /
-Host `2f6aaaf1`; four workload handoff cases remain open. Full active-App
-bodies, callers, fixtures, guidance and trusted-receipt consumers are unfinished.
+Paired App checkpoint `149e30bf0a` is published on its retained review branch.
+It includes the four entry-point migrations from `bc0b80b9bb` and repairs the
+current public Task-read/common-envelope fixtures. Against exact Host
+`0a52518cd1`, five affected suites pass all 88 tests, retaining cancellation and
+evidence checks. Three retained-report recovery cases passed at preceding App
+`ff6edba21a` / Host `2f6aaaf1`; four workload handoff cases remain open. Full
+active-App bodies, callers, fixtures, guidance and trusted-receipt consumers are
+unfinished. May continues the same App Task after its actual 16-round boundary.
 
 Complete CI remains open. The superseded `2f6aaaf1` hosted Quality run had three
 completed shards with 968/8, 800/15 and 722/52 pass/fail counts (plus two skips),

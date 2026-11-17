@@ -1017,3 +1017,14 @@ Evidence under the existing local trial directory: `0a-independent-focused.log`,
 `2f-cancelled-quality-summary.json`. Existing native workflows and cumulative
 ledgers are preserved. No compatible candidate activation or readiness Telegram
 is established by this checkpoint.
+
+The subsequent native App `149e30bf0a303cc8c1c9a65ae3941d28fd74649e` repairs the
+selected evaluator fixtures while preserving cancellation and evidence checks.
+Root froze it independently against the same exact Host `0a52518cd1`: all 88
+tests across five affected suites pass (`149-host0a-migrated-fixtures.log` and
+`149-host0a-binding.json`). This supersedes the eight selected failures above;
+it does not establish full active-App migration. Root pushed this clean checkpoint
+to the same retained review branch. After the actual 16-round boundary, Root
+asked May to continue the same App Task with a finite cumulative total of 24,
+preserving all prior usage and source. No native workflow was restarted for the
+independent checks.
