@@ -379,7 +379,7 @@ describe("Task outcome review", () => {
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId, assessmentPurpose: "ongoing" },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         checkedAt = 200; // A healthy check while the reviewer works is not a Task change.
         return {
           id: "s_judge",
@@ -489,7 +489,7 @@ describe("Task outcome review", () => {
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId, assessmentPurpose: "ongoing" },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         toolOutput = "changed after inspection";
         return {
           id: "s_judge",
@@ -661,7 +661,7 @@ describe("Task outcome review", () => {
         input: { appId, taskId, assessmentPurpose: "ongoing" },
         reconciliation: reconciliation(),
         call: async (_agent, value) => {
-          prompt = String(value);
+          prompt = value.prompt;
           return {
             id: "s_ongoing",
             kind: "agent",
@@ -732,7 +732,7 @@ describe("Task outcome review", () => {
       reconciliation: reconciliation(),
       workspace: { root, appRoot: root, projectRoot: root, output: root },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         return {
           id: "s_judge",
           kind: "agent",
@@ -805,8 +805,9 @@ describe("Task outcome review", () => {
       input: { appId, taskId, reviewer: "evaluator-deepseek" },
       reconciliation: reconciliation(),
       workspace: { root, appRoot, projectRoot: appRoot, output: root },
-      call: async (agent, prompt) => {
+      call: async (agent, input) => {
         calledAgent = agent;
+        const prompt = input.prompt;
         suppliedPrompt = prompt;
         return {
           id: "s_deepseek",
@@ -820,7 +821,7 @@ describe("Task outcome review", () => {
 
     const result = await reviewTaskOutcome(ctx, reader(), root);
     const facts = factsOf(result);
-    expect(calledAgent).toBe("evaluator-deepseek");
+    expect(calledAgent).toBe("alex/evaluator-deepseek");
     expect(suppliedPrompt).toContain("UNIQUE APP ROOT RUBRIC");
     expect(suppliedPrompt).toContain(
       "assessed and insufficient-evidence are both successful evaluator judgments",
@@ -1179,7 +1180,7 @@ describe("Task outcome review", () => {
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         return {
           id: "s_judge",
           kind: "agent",

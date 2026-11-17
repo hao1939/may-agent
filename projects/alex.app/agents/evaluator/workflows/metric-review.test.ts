@@ -350,7 +350,8 @@ test.each([
   const events: any[] = [];
   let calls = 0;
   const ctx = context({
-    call: async (_agent: string, prompt: string) => {
+    call: async (_agent: string, input: { prompt: string }) => {
+      const prompt = input.prompt;
       calls++;
       expect(prompt).toContain("Choose followUp explicitly");
       return { id: "followup-review", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, followUp } };
@@ -393,7 +394,8 @@ test("pre-Task evidence uses the existing report, publication reader and May int
   const events: any[] = [];
   let calls = 0;
   const ctx = context({
-    call: async (_agent: string, prompt: string) => {
+    call: async (_agent: string, input: { prompt: string }) => {
+      const prompt = input.prompt;
       calls++;
       expect(prompt).toContain("A Task is not required");
       expect(prompt).toContain("not verified recovery");
