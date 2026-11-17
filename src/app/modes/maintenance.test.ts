@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { closeDb } from "../../lib/db/connection.js";
 import { currentProcessInstance } from "../../lib/process-identity.js";
+import { spawnFixtureProcess } from "../../../test/fixtures/owned-process.js";
 import type { DaemonHeartbeatRecord } from "../daemon-loops.js";
 import { observeDaemonLiveness, observeDurableDaemonHeartbeat, observeRuntimeLiveness } from "./maintenance.js";
 
@@ -138,17 +140,17 @@ describe("runtime liveness maintenance", () => {
     const childRecordPath = join(root, "child-process.json");
     const processIdentityModule = new URL("../../lib/process-identity.ts", import.meta.url).href;
     mkdirSync(instanceDir, { recursive: true });
-    const child = Bun.spawn(
-      [
-        process.execPath,
-        "-e",
-        `import { writeFileSync } from "node:fs";
-         import { currentProcessInstance } from ${JSON.stringify(processIdentityModule)};
-         writeFileSync(${JSON.stringify(childRecordPath)}, JSON.stringify(currentProcessInstance()));
-         setInterval(() => {}, 1_000);`,
-      ],
-      { stdout: "pipe", stderr: "pipe" },
-    );
+    const child = spawnFixtureProcess([
+      "-e",
+      `import { writeFileSync } from "node:fs";
+       import { currentProcessInstance } from ${JSON.stringify(processIdentityModule)};
+       writeFileSync(${JSON.stringify(childRecordPath)}, JSON.stringify(currentProcessInstance()));
+       setInterval(() => {}, 1_000);`,
+    ]);
+    const exited = new Promise<void>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("exit", () => resolve());
+    });
     try {
       for (let attempt = 0; attempt < 100 && !existsSync(childRecordPath); attempt += 1) await Bun.sleep(10);
       expect(existsSync(childRecordPath)).toBe(true);
@@ -180,7 +182,8 @@ describe("runtime liveness maintenance", () => {
       expect(await observeDaemonLiveness(root, socketPath)).toEqual({ responsive: false, activeWork: false });
     } finally {
       child.kill();
-      await child.exited;
+      await exited;
+      closeDb(root);
       rmSync(root, { recursive: true, force: true });
     }
   });
