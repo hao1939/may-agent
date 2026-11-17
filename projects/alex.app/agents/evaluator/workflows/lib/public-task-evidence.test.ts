@@ -71,14 +71,12 @@ function fixture(
         tasks: [{ id: command.taskId ?? detailView.taskId }],
       };
     if (command.type === "app.task.get")
-      return {
-        type: "ok",
-        command: "app.task.get",
-        appId: command.appId,
-        taskId: command.taskId,
-        task: appView,
-      };
-    return { type: "ok", command: "task.get", task: detailView };
+      throw new Error("retired app.task.get command issued");
+    return {
+      type: "ok",
+      command: "task.get",
+      task: { ...appView, ...detailView },
+    };
   };
 }
 
@@ -353,9 +351,24 @@ describe("public Task evidence", () => {
     );
     expect(changed.evidenceHash).not.toBe(first.evidenceHash);
 
+    const base = fixture();
+    let taskReads = 0;
     const generationMismatch = await readSubjectTask(
       { appId: "sample", taskId: "goal/one" },
-      fixture(appTask, { ...taskDetail, generation: 2 }),
+      async (request) => {
+        const response = await base(request);
+        if (request.type !== "task.get") return response;
+        taskReads += 1;
+        return taskReads === 1
+          ? response
+          : {
+              ...response,
+              task: {
+                ...(response.task as Record<string, unknown>),
+                generation: 2,
+              },
+            };
+      },
     );
     expect(generationMismatch).toMatchObject({
       disposition: "insufficient-evidence",
@@ -376,7 +389,7 @@ describe("public Task evidence", () => {
     const second = await readSubjectTask(subject, fixture(appTask, refreshed));
     expect(first.disposition).toBe("eligible");
     expect(second.evidenceHash).toBe(first.evidenceHash);
-    expect(second.task?.detail).toEqual(refreshed);
+    expect(second.task?.detail).toEqual({ ...appTask, ...refreshed });
   });
 
   for (const key of ["ref", "progress", "updatedAt", "resourceVersion"]) {
@@ -549,14 +562,20 @@ describe("public Task evidence", () => {
       { appId: "sample", taskId: "goal/one" },
       async (request) => {
         const response = await base(request);
-        return request.type === "app.task.get"
-          ? { ...response, appId: "other" }
+        return request.type === "task.get"
+          ? {
+              ...response,
+              task: {
+                ...(response.task as Record<string, unknown>),
+                appId: "other",
+              },
+            }
           : response;
       },
     );
     expect(subject).toMatchObject({
       disposition: "insufficient-evidence",
-      reason: "app.task.get appId identity mismatch",
+      reason: "task.get appId identity mismatch",
     });
   });
 

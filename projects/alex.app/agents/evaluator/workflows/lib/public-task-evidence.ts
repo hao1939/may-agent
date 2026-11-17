@@ -17,7 +17,6 @@ const ALLOWED_COMMANDS = new Set([
   "apps.list",
   "app.tasks.list",
   "tasks.list",
-  "app.task.get",
   "task.get",
   "event.get",
 ]);
@@ -183,7 +182,7 @@ export function taskEvidenceHash(
       stable({
         appId,
         taskId,
-        appTask: task.appTask,
+        appTask: meaningfulTaskDetail(object(task.appTask)),
         detail: meaningfulTaskDetail(object(task.detail)),
         readBack: task.readBack && {
           ...object(task.readBack),
@@ -443,7 +442,7 @@ export function createPublicTaskEvidenceProvider(
     },
     async getAppTask(appId, taskId, acceptedEvidence) {
       const response = await command({
-        type: "app.task.get",
+        type: "task.get",
         appId,
         taskId,
         ...(acceptedEvidence
@@ -458,12 +457,11 @@ export function createPublicTaskEvidenceProvider(
             }
           : {}),
       });
-      if (response.command !== "app.task.get")
-        throw new Error("app.task.get response identity mismatch");
-      assertIdentity(response.appId, appId, "app.task.get appId");
-      assertIdentity(response.taskId, taskId, "app.task.get taskId");
+      if (response.command !== "task.get")
+        throw new Error("task.get response identity mismatch");
       const task = object(response.task);
-      assertIdentity(task.id ?? task.taskId, taskId, "app.task.get Task");
+      assertIdentity(task.appId, appId, "task.get appId");
+      assertIdentity(task.taskId ?? task.id, taskId, "task.get taskId");
       return task;
     },
     async getTask(appId, taskId, acceptedEvidence) {
