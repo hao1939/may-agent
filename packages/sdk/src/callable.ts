@@ -286,8 +286,8 @@ export class CallableCatalog {
           ...(timeoutMs !== undefined ? { timeoutMs } : {}),
         }))
         .then(
-          (value) => ({ settled: true as const, value }),
-          (error) => ({ settled: true as const, error }),
+          (value) => ({ status: "fulfilled" as const, value }),
+          (error: unknown) => ({ status: "rejected" as const, error }),
         );
       const unconfirmed = new Promise<typeof UNCONFIRMED_INVOCATION_SETTLEMENT>((resolve) => {
         const startSettlementBound = () => {
@@ -306,7 +306,7 @@ export class CallableCatalog {
           `Callable "${name}" cleanup remained unconfirmed after ${INVOCATION_SETTLEMENT_GRACE_MS}ms; originating failure: ${cause}`,
         );
       }
-      if (Object.hasOwn(outcome, "error")) throw outcome.error;
+      if (outcome.status === "rejected") throw outcome.error;
       raw = outcome.value;
       if (controller.signal.aborted) {
         throw controller.signal.reason ?? new Error(`Callable "${name}" interrupted`);
