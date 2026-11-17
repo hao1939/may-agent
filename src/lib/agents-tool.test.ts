@@ -37,14 +37,14 @@ function mockModel() {
 }
 
 async function callTool(tool: AgentTool, params: Record<string, unknown>): Promise<any> {
-  const result = (await tool.execute("tc_1", params)) as AgentToolResult<string>;
+  const result = (await tool.execute("tc_1", params, new AbortController().signal)) as AgentToolResult<string>;
   const text = (result.content as any[])[0]?.text ?? "";
   return JSON.parse(text);
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────
 
-describe("agents tool", () => {
+describe.skip("retired agents tool surface", () => {
   let persistDir: string;
   let manager: SubagentManager;
 
@@ -613,6 +613,63 @@ export async function execute(ctx) {
       (await callTool(tool, { action: "follow-up", sessionId: "owner/intake", content: "steer" })).error,
     ).toContain("use action: 'call' for synchronous code procedures");
     manager.activeSessions.delete("s_owner");
+  });
+});
+
+describe("canonical agents list/call", () => {
+  let persistDir: string;
+  let manager: SubagentManager;
+  beforeEach(() => {
+    persistDir = mkdtempSync(join(tmpdir(), "canonical-agents-tool-"));
+    mkdirSync(join(persistDir, "sessions"), { recursive: true });
+    mkdirSync(join(persistDir, "memory"), { recursive: true });
+    manager = new SubagentManager({ persistDir });
+  });
+  afterEach(() => {
+    closeDb(persistDir);
+    rmSync(persistDir, { recursive: true, force: true });
+  });
+
+  it("exposes only list/call and invokes the exact listed canonical agent with one envelope", async () => {
+    manager.register({ name: "reviewer", description: "Global reviewer", domain: "review", model: mockModel(), tools: [] });
+    manager.register({ name: "alpha-reviewer", description: "Alpha reviewer", domain: "review", model: mockModel(), tools: [], appLocal: true, projectId: "alpha" });
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("reviewer") } as any);
+    let dispatched: unknown;
+    manager.callAgent = async (name, task) => {
+      dispatched = { name, task };
+      return { sessionId: "s_child", status: "done", lastAssistantText: "reviewed", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: "reviewed", output: { verdict: "accept" } } };
+    };
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+    const schema = JSON.stringify(tool.parameters);
+    for (const retired of ["fork", "peek", "follow-up", "cancel", "context", "sessions", "context_files", "success_criteria"]) expect(schema).not.toContain(`\"${retired}\"`);
+    const listed = await callTool(tool, { action: "list" });
+    expect(listed.map((item: any) => item.name)).toEqual(["alpha/alpha-reviewer", "global/reviewer"]);
+    const result = await callTool(tool, { action: "call", agent: listed[0].name, input: { prompt: "Review", data: { ref: "HEAD" } } });
+    expect(result).toEqual({ id: "s_child", status: "done", summary: "reviewed", output: { verdict: "accept" } });
+    expect(dispatched).toEqual({ name: "alpha-reviewer", task: 'Review\n\nAssignment data (JSON):\n{\n  "ref": "HEAD"\n}' });
+    expect((await callTool(tool, { action: "call", agent: "alpha-reviewer", input: { prompt: "legacy alias" } })).id).toBeUndefined();
+  });
+
+  it("lists and invokes cross-App workflows despite retired ACL/profile options", async () => {
+    for (const [appId, ownerName] of [["alpha", "alpha-owner"], ["beta", "beta-owner"]] as const) {
+      const agentDir = join(persistDir, ownerName);
+      mkdirSync(join(agentDir, "workflows"), { recursive: true });
+      writeFileSync(join(agentDir, "workflows", "review.ts"), `export const name="review"; export const description="${appId}"; export async function execute(ctx){ return ctx.done("${appId}", ctx.input.data); }`);
+      manager.register({ name: ownerName, description: ownerName, domain: "fixture", model: mockModel(), tools: [], agentDir, appLocal: true, projectId: appId });
+    }
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("alpha-owner") } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller", callDeny: { agents: ["beta-owner"], hint: "retired" }, localProceduresOnly: true });
+    const listed = await callTool(tool, { action: "list" });
+    expect(listed.map((item: any) => item.name)).toEqual(["alpha/alpha-owner", "alpha/review", "beta/beta-owner", "beta/review"]);
+    const result = await callTool(tool, { action: "call", agent: "beta/review", input: { prompt: "Review beta", data: { ref: "HEAD" } } });
+    expect(result).toMatchObject({ status: "done", summary: "beta", output: { ref: "HEAD" } });
+  });
+
+  it("pins definitions captured when the tool is created", async () => {
+    manager.register({ name: "first", description: "First", domain: "fixture", model: mockModel(), tools: [] });
+    const pinned = manager.createAgentsTool();
+    manager.register({ name: "second", description: "Second", domain: "fixture", model: mockModel(), tools: [] });
+    expect((await callTool(pinned, { action: "list" })).map((item: any) => item.name)).toEqual(["global/first"]);
   });
 });
 
