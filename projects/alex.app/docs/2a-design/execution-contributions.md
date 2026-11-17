@@ -184,10 +184,12 @@ input-change/review path, retaining valid evidence and consumed allowance;
 identical assignments may reuse their retained result. This requires neither
 another Task lifecycle nor a Host judgment of domain sufficiency.
 
-**Migration gap:** the current App development workflow drops this invocation
-prompt from helper assignments and its replay key. The
+**Source coverage:** App `27acebb375` forwards the invocation assignment and
+requires fresh judgment when it changes. Independent real-Git verification
+confirms identical-assignment replay, retained receipts and cumulative usage.
+This source repair is not activated; the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
-tracks the consumer repair and regression.
+tracks the remaining paired migration and trial.
 
 ### Discovery and callable names
 

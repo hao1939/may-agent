@@ -1652,3 +1652,40 @@ Evidence under the trial directory: `6b-63ec-independent-host-owning.log`,
 Continuation read-backs are `finite-continuation-8b86f804-readback.json` and
 `finite-continuation-5cb8bf19-readback.json`; the caller-layout reproduction is
 `63ec-native-real-cwd-probe.ts` / `63ec-native-real-cwd-observation.json`.
+
+## Invocation assignment repair and current source checkpoints
+
+Root independently reviewed and published Host
+`3fb1f3ef6d0cb35caacebe5ba209297fcc0cb1d2`. Its seventeen dispatch/result-handoff
+tests and `check:ci` pass. The fixture migration preserves snapshot provenance,
+all terminal statuses, output/facts retention and persisted child evidence.
+The last completed hosted run is now Host6b/run44182782355: **3,503 tests,
+70 failures across 22 files, two skips**; Container passes. Its four-shard
+artifact map supersedes Host63f's 84-failure baseline. May received the complete
+current map in event6741044 and its native reviewer correctly requested more
+source repairs after the partial checkpoint.
+
+Native App `27acebb37543a35ed1ff7be447b59693d740ec6f` repairs development's
+invocation assignment. Its exact independent pair with Host3fb passes all
+77 development tests, App typechecking and full design checks. The workflow
+forwards the current prompt to all specialists and records its identity beside
+the existing input evidence. Changed assignments invalidate retained judgment;
+old evidence without that optional identity gets fresh judgment once. No new
+Task, execution lifecycle or allowance ledger is added.
+
+A separate production `execute()` probe retains the same Task, generation,
+candidate, verification and empty event list. The first invocation calls three
+helpers; changing only the prompt calls two fresh judges, both receiving the
+new assignment. The next identical invocation calls no helper. Actual usage is
+1→2→2, the real verification command runs once, and all prior reports remain.
+This closes the earlier prompt-drop/replay source defect. Root is publishing
+the checkpoint on the existing App review branch; no installed activation is
+claimed. The native Gym external-workspace repair, configured-target disposition,
+remaining Host source/CI migration and connected local trial remain open.
+
+Evidence under the trial directory: `3fb-independent-owning.log`,
+`3fb-independent-check-ci.log`, `6b-hosted-failures.json`,
+`6b-hosted-failure-file-map.json`, `6b-hosted-quality.log`,
+`current-6b-ci-receipt.json`, `27a-3fb-independent-owning.log`,
+`27a-3fb-independent-design.log`, `27a-current-assignment-observation.test.ts`,
+`27a-current-assignment-observation.json` and `current-27a-verified-receipt.json`.

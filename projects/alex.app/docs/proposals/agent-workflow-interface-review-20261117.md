@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`6b50f08842` and App `63ec3f10d2`. The installed runtime has not changed.
+`3fb1f3ef6d` and App `27acebb375`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -24,13 +24,6 @@ configured runtime location needs validation.
 
 The remaining high-value gaps are:
 
-- Preserve the current invocation assignment in the development workflow.
-  Its helper prompts omit `ctx.input.prompt`, and changing only that prompt
-  silently reuses an earlier approval with no fresh judgment. Forward the
-  assignment beside authoritative Task requirements and include it in the
-  existing input-change path. Add a two-invocation regression with empty Task
-  events, preserving valid receipts and all consumed allowance; identical
-  assignments must still replay quietly.
 - Finish the native Gym caller's workspace binding after the App63ec repairs.
   Diagnosis now reaches baseline validation through its canonical target; both
   backend adapters pass through real SDK child processes with deterministic
@@ -44,10 +37,11 @@ The remaining high-value gaps are:
   evidence files supplied as explicit read-only prerequisites; this does not
   prove external model behavior or a portable clean checkout.
 - Complete meaningful Host/CLI fixture migration, preserving real cancellation,
-  steering and SIGINT child-drain assertions. Host 6b migrates nested workflow
-  fixtures; all 14 owning tests and `check:ci` pass. Host 63f's completed hosted
-  run reports 84 failures across 25 files; Container passes. The earlier
-  107-failure baseline is superseded. Full current-head Quality remains required.
+  steering and SIGINT child-drain assertions. Host3fb additionally migrates
+  dispatch/result-handoff fixtures; all 17 owning tests and `check:ci` pass.
+  Host6b's completed hosted run reports 70 failures across 22 files; Container
+  passes. The earlier 84-failure baseline is superseded. Full current-head
+  Quality remains required.
 - Finish the configured-target body/caller/guidance disposition. Discovery
   enumerates all 33 targets in the source snapshot; enumeration alone does not
   establish execution or live effects. Installation configuration selects its
@@ -56,7 +50,13 @@ The remaining high-value gaps are:
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
 
-The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#current-assignment-and-published-cli-repairs)
+App27a repairs current-assignment forwarding and retained approval reuse. All
+77 owning tests, typechecking and design checks pass independently. A production
+probe changes only the prompt with empty Task events: fresh judges receive the
+assignment, existing verification/evidence survives, and identical replay spends
+no additional round. This closes that source gap, without activating the pair.
+
+The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#invocation-assignment-repair-and-current-source-checkpoints)
 records exact revisions, checks and limitations. May continues implementation
 through the retained native Tasks/workflows. Their creator saved finite cumulative
 limits of 112 Host and 64 App rounds at generations25/11, preserving all prior
@@ -334,11 +334,9 @@ retains the earlier findings and exact repair evidence.
 
 The remaining implementation order is:
 
-1. **Finish App consumers.** Carry `ctx.input.prompt` to development helpers beside
-   authoritative Task scope. Include the current assignment in the existing
-   fresh-input judgment path; preserve quiet replay for identical assignments,
-   valid receipts and all actual allowance usage. Regress prompt-only changes
-   with empty Task events. Correct the native Gym adapter's external temporary
+1. **Finish App consumers.** Preserve the verified invocation-assignment forwarding
+   and fresh judgment with retained receipts, usage and identical replay.
+   Correct the native Gym adapter's external temporary
    workspace binding through the existing capability and regress the real caller
    topology. Complete the 33-target body/caller/guidance disposition: discovery
    enumeration and private helper tests cannot establish registered entrypoints.
