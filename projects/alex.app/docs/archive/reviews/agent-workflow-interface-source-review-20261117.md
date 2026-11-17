@@ -938,3 +938,41 @@ Receipts are `standalone-config-snapshot-1794944373036.json` and
 `native-pr589-observation-2f.json` under the existing local trial directory.
 No unified candidate has been activated and no readiness Telegram has been
 established.
+
+## Legacy schema removal and prompt partial-result repair
+
+Root pushed native `b6f153b5ece253ae070f7db6ff292578f58a6899` to draft #589.
+Independent clean-source verification passes all 122 tests across six affected
+suites and `check:ci`. The real prompt-execution reproducer now admits blocked
+finish without unavailable output in one reply and projects the common blocked
+result. The preceding `2f6aaaf1` requests another reply and fails. Internal
+prepared execution may use `done` with a blocked finish; the production
+`agentExecutionResult` projection supplies the caller-visible common status.
+The probe checks that owning boundary. All three finish/admission layers changed,
+and the unused `dataSchema` authoring path is removed with correction feedback.
+The actual omitted-output prompt regression still needs committed owning
+coverage; changing an existing missing-success-output assertion is insufficient.
+
+Root also published native App `ff6edba21ae7160685ffa1f6d563fdd1e159721a` on its
+retained backup branch. A clean pair with exact Host `2f6aaaf1` passes all three
+retained-report owner-loop cases that previously failed canonical registration.
+The four workload handoff cases still fail. Separate metric/Task/cleanup tests
+have 52 passes and six failures before any new workflow-entry prototype.
+Both SDK entrypoints and the TypeScript alias use the same frozen provider;
+the native workflow's saved provider remains unchanged.
+
+The native contribution then prototyped four remaining entry-point migrations
+and reverted them after red checks. The independent baseline reproduces those
+failures, so unchanged red tests alone cannot establish that the prototype
+regressed behavior. Root returned that evidence and a smaller sequence through
+May: migrate one registered canonical entry point, its actual callers and
+production-admission fixture, retain useful source and commit a truthful partial
+checkpoint, then continue the remaining entries. Private domain helpers need
+not become a second public callable input format. Final acceptance still
+requires all active consumers and the complete compatible pair to pass.
+
+Evidence is `b6-independent-focused.log`, `b6-independent-check-ci.log`,
+`partial-prompt-report-1794944755404.json`, `ff6-host2f-binding.json`,
+`ff6-host2f-recovery.log` and `ff6-host2f-migrated-fixtures.log` under the
+existing local trial directory. Snapshot, import-cleanup, trusted diagnostics,
+full CI, activation and the remaining connected-trial requirements stay open.
