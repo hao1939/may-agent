@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { drainBashProcessGroup } from "./runtime/lib/tools/bash.js";
+import { drainBashProcessGroup } from "./runtime/lib/tools/process-group.js";
 
 export type CommandReceipt = {
   argv: string[];
