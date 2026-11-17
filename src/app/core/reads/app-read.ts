@@ -140,7 +140,8 @@ export function readStoredRuntimeTaskView(
   store.db.exec("SAVEPOINT stored_task_detail_read");
   try {
     const result = readTaskDetail(store, taskId, options);
-    if (result && !result.agent && defaultAgent) {
+    // Historical receipts can outlive both their Task resource and App metadata.
+    if (result && !result.agent && defaultAgent && store.readTask(taskId)) {
       const agent = readAppTaskAgent({ resourceStore: store, agent: defaultAgent }, taskId);
       if (agent) {
         result.agent = agent;
