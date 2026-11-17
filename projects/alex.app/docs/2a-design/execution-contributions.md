@@ -163,6 +163,17 @@ This does not wrap stored Task input or `ctx.reconciliation.input`: those remain
 the Task's domain input. Migrate workflow body reads alongside schemas and
 callers; a common descriptor alone cannot make top-level domain reads correct.
 
+A Task-bound root's `data` contains its saved domain input, including an App's
+`{ kind, data }` shape when that is what the Task stores. The target's full input
+schema must admit that shape through the actual execution adapter. An inner
+domain object is not another prompt envelope. Keep callable-input typing separate
+from raw reconciliation-input typing; the runtime supplies different values.
+
+For a nested call, inherited Task input supplies ownership and context; the call
+envelope supplies the assigned contribution. A target may explicitly require
+Task context, but context presence must not silently change its declared input
+schema or substitute the parent's domain input for a supplied assignment.
+
 ### Discovery and callable names
 
 Use one catalog and one address rule for agents and workflows:

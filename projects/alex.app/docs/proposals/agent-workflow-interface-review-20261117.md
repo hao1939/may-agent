@@ -20,18 +20,26 @@ Task workflow ingress with raw reconciliation input. The metadata, naming,
 schema, timeout and import review discussions are resolved from independent
 evidence. These checks establish source behavior, not installed availability.
 
-App checkpoint `a41a21e976` is published on its retained review branch. Its earlier
+App checkpoint `bf6f92e9a0` is published on its retained review branch. Its earlier
 `56e58c00f0`, paired with Host `185ffeb1ce`, passes 101 owning tests including all
 four repaired owner-handoff cases; three standalone-stage cases still fail.
 The fixture fix declares its helper `appLocal: true` and preserves the original
 request-ID Conditions, restart and cancellation assertions. Raw Task-input
-mapping is repaired. The four May workflow adapters added in `a41a21e976` pass
-all 44 May workflow tests. Independent `typecheck` passes, but the canonical App
-check reports seven errors: three new private-helper context type mismatches and
-the four known Scout input/optional-ID errors. Integrity and design examples pass.
+mapping is repaired. At bf6, all 197 owning May/Scout tests pass and the canonical
+App type check reports zero errors. The full design command still fails its model
+surface step: Alex exceeds its prompt budget and May's verification skill is
+omitted. Integrity and design examples pass. The earlier a41 `typecheck` passes.
 The default App test command fails its first affected chunk with the same three
 standalone-stage failures; it does not run later chunks. Full configured-target
 bodies, callers, guidance and result consumers remain unfinished.
+
+A production Task-admission probe finds that bf6's new scout-assess-source schema
+rejects the raw `{ kind, data }` input produced by its actual App attachment.
+Align its declared single data shape, body and callers; test the actual adapter
+and a nested call with independent inherited Task input. SDK callable-input and
+raw reconciliation-input types also remain incorrectly coupled; the
+[current review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5946468448)
+requests their separation without changing runtime behavior.
 
 Trusted execution reads now project nested workflow CLI receipts and expose
 message/byte/receipt truncation. Workflow traversal and session selection are
@@ -47,7 +55,7 @@ reach their bodies. In the isolated standalone probe, the first reports missing
 without those capabilities. Discovery and admission do not prove live effects.
 No unified candidate is activated; connected native-trial and Telegram review-link
 notification acceptance are unproved. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#bounded-traversal-and-may-workflow-adapters)
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#actual-task-admission-and-review-observation)
 records exact revisions and remaining verification boundaries.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).

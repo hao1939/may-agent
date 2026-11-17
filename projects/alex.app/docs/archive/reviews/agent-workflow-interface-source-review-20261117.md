@@ -1375,3 +1375,36 @@ Evidence under the trial directory: `a0b-independent-receipts.log`,
 `a41-185-independent-full-test.log`,
 `checkpoint-app-finite-continuation-receipt.json` and
 `a41-type-and-stage-review-receipt.json`.
+
+## Actual Task admission and review observation
+
+Native App `bf6f92e9a0a420bfc61ad16752188ab75264f7e8` repairs the seven
+canonical App type errors. Root independently ran all 197 selected May/Scout
+tests successfully against immutable Host 185. The design command passes
+integrity, examples and canonical App typing, then reports two model-surface
+errors: Alex's prompt exceeds its budget and May's verification skill is omitted.
+The exact checkpoint is published on the retained App review branch.
+
+A separate production admission probe exposes a remaining defect in bf6's new
+scout-assess-source schema. Root obtains the raw input from its actual exported
+App Task attachment and invokes the real Host a0b Task workflow runner using
+the exact exported schema, substituting only a marker-writing body. The adapter
+correctly supplies `{ prompt, data: { kind: "assess-source", data: domain } }`.
+The schema instead requires the domain fields directly under outer `data`, so
+execution is rejected before the body runs. Direct execute tests do not cover
+this boundary. May received the reproducer and is repairing the declared shape,
+body and tests on the same Task; no Host App-specific routing change is needed.
+
+Root also posted the SDK raw-reconciliation type mismatch as an actual
+[GitHub review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5946468448).
+Native observer event 6740369 includes that exact review ID, commit and body
+digest after publication. Root did not directly wake the Host Task for this new
+review. This establishes native observation, not repair or final readiness.
+Full Host/App checks, remaining consumers, compatible activation and the
+connected trial with Telegram review-link delivery remain open.
+
+Evidence under the trial directory: `bf6-185-independent-owning.log`,
+`bf6-185-independent-design.log`, `scout-root-admission-1794949065168.json`,
+`scout-root-admission-bf6-probe.ts`, `scout-root-admission-review-receipt.json`,
+`a0b-raw-context-type-review.json` and
+`native-raw-context-review-observation.json`.
