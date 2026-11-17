@@ -314,6 +314,8 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
         model: fakeModel(),
         tools: [],
         agentDir: f.root,
+        appLocal: true,
+        projectId: "alex",
       };
       manager.register(alexDef);
       manager.activeSessions.set(attempt.attemptId, {
