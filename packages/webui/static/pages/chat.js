@@ -454,8 +454,8 @@ async function sendChat() {
       pending.sessionId = result.sessionId;
     } else {
       await publishChatEvent({
-        type: 'app.input.requested', target: { appId: humanInterface.appId },
-        data: { input: { kind: 'message', data: { message } }, channel: 'web-ui', conversationId: humanInterface.conversationId },
+        type: 'conversation.message.created', target: { appId: humanInterface.appId },
+        data: { conversationId: humanInterface.conversationId, author: { kind: 'human', id: pending.id }, text: message, metadata: { channel: 'web-ui' } },
         idempotencyKey: pending.id,
       });
     }

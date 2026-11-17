@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { ChildProcess } from "node:child_process";
+import { createHash } from "node:crypto";
 import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -36,8 +37,15 @@ describe("HTTP human Task reads and board", () => {
   let base: string;
   let service: HumanTaskService;
   let registry: AppRegistry;
-  let conversation: { messages: any[]; activeTurn?: { id: string; revision: number } };
+  let conversation: {
+    messages: any[];
+    topics?: any[];
+    requests?: any[];
+    activeTurn?: { id: string; revision: number };
+    lastReadTopicId?: string;
+  };
   let published: any[];
+  let acceptedPublications: Map<string, { eventId: number; eventType: string; delivery: "accepted" }>;
   let onPublish: ((event: any) => void) | undefined;
   let rejectPublish: boolean;
   let rejectConversationRead: boolean;
@@ -48,6 +56,7 @@ describe("HTTP human Task reads and board", () => {
   beforeEach(async () => {
     conversation = { messages: [], activeTurn: { id: "turn-one", revision: 7 } };
     published = [];
+    acceptedPublications = new Map();
     onPublish = undefined;
     rejectPublish = false;
     rejectConversationRead = false;
@@ -75,18 +84,32 @@ describe("HTTP human Task reads and board", () => {
       getAppConversation: (appId, conversationId, options) => {
         if (appId !== "support" || conversationId !== "retained-room" || options?.limit !== 30) throw new Error("Invalid conversation read");
         if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
-        return conversation;
+        conversation.lastReadTopicId = options?.topicId;
+        const messages = options?.topicId
+          ? conversation.messages.filter((message) => message.metadata?.topicId === options.topicId)
+          : conversation.messages.slice(-options.limit);
+        return { ...conversation, messages };
       },
       publishEvent: (event) => {
         published.push(event);
         onPublish?.(event);
         if (rejectPublish) throw new Error("fixture persistence unavailable");
+        const key = String(event.idempotencyKey || "");
+        const replay = acceptedPublications.get(key);
+        if (replay) return replay;
         if (event.type === "conversation.turn.stop.requested") {
           conversation.activeTurn = { id: "turn-two", revision: 8 };
         } else if (event.type === "conversation.message.created") {
-          conversation.messages.push({ id: event.idempotencyKey, author: { kind: "human" }, text: event.data.text });
+          conversation.messages.push({
+            id: event.idempotencyKey,
+            author: { kind: "human" },
+            text: event.data.text,
+            ...(event.data.context ? { context: event.data.context } : {}),
+          });
         }
-        return { eventId: published.length, eventType: event.type, delivery: "accepted" };
+        const receipt = { eventId: acceptedPublications.size + 1, eventType: event.type, delivery: "accepted" as const };
+        acceptedPublications.set(key, receipt);
+        return receipt;
       },
       agentName: "helper",
       instance: "task-test",
@@ -163,6 +186,13 @@ describe("HTTP human Task reads and board", () => {
       `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
       VALUES (?, ?, 2, 3, 2, ?, 'normal', 0, 0, ?, ?)`,
     ).run(appId, id, phase, n, JSON.stringify(resource));
+    const digest = createHash("sha256")
+      .update(`task-reference-v1\0${Buffer.byteLength(appId, "utf8")}:${appId}\0${Buffer.byteLength(id, "utf8")}:${id}`)
+      .digest("hex");
+    db.prepare(
+      `INSERT OR IGNORE INTO app_task_refs(digest, prefix8, prefix16, app_id, task_id, indexed_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).run(digest, digest.slice(0, 8), digest.slice(0, 16), appId, id, n);
   }
 
   async function read(path: string, status = 200) {
@@ -1540,10 +1570,16 @@ describe("HTTP human Task reads and board", () => {
     expect(await read(`/api/task?${new URLSearchParams({ appId: "alpha", taskId: "work/a ?&" })}`)).toEqual(
       service.getTask({ appId: "alpha", taskId: "work/a ?&" }),
     );
+    const refView = service.getTask({ appId: "alpha", taskId: "work/a ?&" })!;
+    expect(await read(`/api/task?${new URLSearchParams({ ref: refView.ref })}`)).toEqual(
+      service.getTask({ ref: refView.ref }),
+    );
     expect(await read(`/api/task?${new URLSearchParams({ appId: "alpha", taskId: "work/a ?&", acceptedEvidence: "true", evidenceLimit: "1" })}`)).toEqual(
       service.getTask({ appId: "alpha", taskId: "work/a ?&", acceptedEvidence: { limit: 1 } }),
     );
     await read("/api/task?appId=alpha&taskId=work%2Fa&evidenceLimit=1", 400);
+    await read("/api/task?ref=", 400);
+    await read("/api/task?ref=00000000", 404);
     expect((await read("/api/tasks?appId=alpha&status=waiting")).items).toEqual([]);
     expect(await read("/api/tasks?allApps=true&status=running&status=waiting&limit=8"))
       .toEqual(service.listTasks({ status: ["running", "waiting"], limit: 8 }));
@@ -1570,13 +1606,22 @@ describe("HTTP human Task reads and board", () => {
   });
 
   test("HTTP Conversation reads forward exact identity and bounded options", async () => {
-    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
+    conversation.messages = Array.from({ length: 35 }, (_, index) => ({
+      id: `recent-${index}`,
+      author: { kind: "agent" },
+      text: `Recent ${index}`,
+    }));
+    const recent = await read("/api/conversation?appId=support&conversationId=retained-room");
+    expect(recent.messages).toHaveLength(30);
+    expect(recent.messages[0].id).toBe("recent-5");
     await read("/api/conversation?appId=support", 400);
     await read("/api/conversation?conversationId=retained-room", 400);
     rejectConversationRead = true;
     expect(await read("/api/conversation?appId=support&conversationId=retained-room", 503)).toMatchObject({ error: "fixture Conversation storage unavailable" });
     rejectConversationRead = false;
-    expect(await read("/api/conversation?appId=support&conversationId=retained-room")).toEqual(conversation);
+    const recovered = await read("/api/conversation?appId=support&conversationId=retained-room");
+    expect(recovered).toMatchObject({ activeTurn: conversation.activeTurn });
+    expect(recovered.messages).toEqual(conversation.messages.slice(-30));
     expect(published).toHaveLength(0);
     control.close();
     await read("/api/conversation?appId=support&conversationId=retained-room", 503);
@@ -1663,6 +1708,98 @@ describe("HTTP human Task reads and board", () => {
       for (const listener of listeners) listener({ type: "conversation.updated", data: { appId: "support", conversationId: "retained-room" } });
       await page.waitForFunction(() => document.querySelector<HTMLButtonElement>("#chat-stop")!.disabled);
       expect(published.some(event => event.type === "session.cancel.requested" || event.type === "session.steer.requested")).toBe(false);
+
+      // Open Requests and Task chips stay bounded but make omitted identities navigable.
+      conversation.requests = Array.from({ length: 7 }, (_, index) => ({
+        id: `req_${index + 1}`,
+        status: "open",
+        scope: index === 0 ? "Verify <img src=x onerror=window.fixtureUnsafe=true> release" : `Ask ${index + 1}`,
+        taskRefs: index === 0
+          ? Array.from({ length: 4 }, (__, taskIndex) => ({ appId: "alpha", taskId: `work/${taskIndex}`, ref: `ref0000${taskIndex}` }))
+          : [],
+      }));
+      conversation.messages.push({
+        id: "agent-msg-1",
+        author: { kind: "agent", id: "helper" },
+        text: "Started <script>window.fixtureUnsafe=true</script> verification.",
+        metadata: { taskRefs: [{ appId: "alpha", taskId: "work/0", ref: "8f12ac90" }] },
+      });
+      await page.evaluate("void refreshMayConversation()");
+      await page.waitForSelector('#conversation-context-bar [data-request-id="req_1"]');
+      expect(await page.$eval("#conversation-context-bar", el => el.textContent)).toContain("showing 1-6");
+      expect(await page.$("#conversation-context-bar img")).toBeNull();
+      expect(await page.$("#chat-messages script")).toBeNull();
+      expect(await page.evaluate("Boolean(window.fixtureUnsafe)")).toBe(false);
+      await page.click('#conversation-context-bar [data-task-ref-page] button[title="Next Task references"]');
+      expect(await page.$eval('#conversation-context-bar [data-request-id="req_1"]', el => el.textContent)).toContain("alpha · ref00003");
+      await page.click('#conversation-context-bar [data-request-page] button:last-child');
+      await page.waitForSelector('#conversation-context-bar [data-request-id="req_7"]');
+      expect(await page.$eval("#conversation-context-bar", el => el.textContent)).toContain("showing 7-7");
+      await page.click('#conversation-context-bar [data-request-page] button:first-child');
+      expect(await page.$eval('#chat-messages [data-task-ref="alpha:work/0"]', el => el.textContent)).toContain("Task alpha · 8f12ac90");
+      expect(await page.$('#chat-messages [data-focus-task="alpha:work/0"]')).toBeNull();
+      await page.type("#chat-input", "Check the edge case on this Task");
+
+      // Accept the event durably, then lose only the browser acknowledgement.
+      const beforeLostAckMessages = conversation.messages.length;
+      const beforeLostAckPublications = published.length;
+      await page.evaluate(`window.fixtureOriginalFetch = window.fetch;
+        window.fixtureLoseMessageAck = true;
+        window.fetch = async (url, init) => {
+          const response = await window.fixtureOriginalFetch(url, init);
+          if (window.fixtureLoseMessageAck && String(url).endsWith('/api/events') && JSON.parse(init.body).type === 'conversation.message.created') {
+            window.fixtureLoseMessageAck = false;
+            window.fixtureLostAckObserved = true;
+            throw new Error('fixture acknowledgement lost after acceptance');
+          }
+          return response;
+        };`);
+      await page.click("#chat-send");
+      await page.waitForFunction("window.fixtureLostAckObserved && !maySendPending");
+      expect(published.length).toBe(beforeLostAckPublications + 1);
+      const firstAttempt = published.at(-1);
+      expect(firstAttempt.type).toBe("conversation.message.created");
+      expect(conversation.messages).toHaveLength(beforeLostAckMessages + 1);
+      expect(await page.$eval("#chat-input", el => (el as HTMLInputElement).value)).toBe("Check the edge case on this Task");
+
+      // Retrying unchanged text keeps the unknown operation identity; replay is deduplicated.
+      const beforeReplayPublications = published.length;
+      await page.click("#chat-send");
+      await page.waitForFunction('document.querySelector("#chat-input").value === ""');
+      expect(published.length).toBe(beforeReplayPublications + 1);
+      expect(published.at(-1).idempotencyKey).toBe(firstAttempt.idempotencyKey);
+      expect(conversation.messages).toHaveLength(beforeLostAckMessages + 1);
+      expect(published.at(-1)).toMatchObject({
+        type: "conversation.message.created",
+        target: { appId: "support" },
+        data: {
+          conversationId: "retained-room",
+          text: "Check the edge case on this Task",
+          metadata: { channel: "web-ui" },
+        },
+      });
+
+      // Changed text creates a distinct operation after an unknown acknowledgement.
+      await page.type("#chat-input", "Changed text");
+      rejectPublish = true;
+      const beforeUnknown = published.length;
+      const rejectedSend = page.waitForResponse(response => response.url() === `${base}/api/events` && response.status() === 503);
+      await page.click("#chat-send");
+      await rejectedSend;
+      await page.waitForFunction("!maySendPending");
+      expect(published.length).toBe(beforeUnknown + 1);
+      const changedTextAttempt = published.at(-1);
+      expect(changedTextAttempt.idempotencyKey).not.toBe(firstAttempt.idempotencyKey);
+      rejectPublish = false;
+      await page.evaluate("window.fetch = window.fixtureOriginalFetch");
+
+      // Other-agent and historical-session views hide May's Conversation context.
+      await page.evaluate("routeTo('/agents/worker')");
+      await page.waitForFunction("currentAgentChat === 'worker'");
+      expect(await page.$eval("#conversation-context-bar", el => getComputedStyle(el).display)).toBe("none");
+      await page.evaluate("routeTo('/sessions/helper-old-session')");
+      await page.waitForFunction("currentTab === 'sessions'");
+      expect(await page.$eval("#conversation-context-bar", el => getComputedStyle(el).display)).toBe("none");
     } finally { await browser.close(); }
   });
 

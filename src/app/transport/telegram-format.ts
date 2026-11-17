@@ -8,6 +8,13 @@
 import type { AppConversationMessage, AppConversationTopic } from "@may-agent/sdk/app";
 import type { ApprovalProposal, EventInput } from "@may-agent/control/events";
 import {
+  buildHumanConversationMessageEvent,
+  humanCurrentTaskText,
+  humanTaskStatusLabel,
+  primaryConversationId,
+  representedTaskIdentities,
+} from "@may-agent/control";
+import {
   approvalProposalForTask,
   fullHumanActionTextForTask as fullHumanActionText,
   humanActionSummaryText as humanActionText,
@@ -19,9 +26,23 @@ import {
 
 export type TelegramApprovalAnchor = ApprovalProposal;
 
-/** One logical human conversation; provider chat/topic IDs are coordinates. */
-export function primaryConversationId(agent: string): string {
-  return `${agent.trim() || "host"}:primary`;
+export { primaryConversationId, representedTaskIdentities };
+
+export function topicReference(topic: AppConversationTopic): string {
+  const value = topic.id.startsWith("topic_") ? topic.id.slice("topic_".length) : topic.id;
+  return value.slice(0, 8) || "????????";
+}
+
+export function resolveConversationTopic(
+  topics: AppConversationTopic[],
+  ref: string,
+): AppConversationTopic | undefined {
+  const normalized = ref.trim().toLowerCase();
+  const matches = topics.filter((topic) => {
+    const id = topic.id.toLowerCase();
+    return id === normalized || id === `topic_${normalized}` || topicReference(topic).toLowerCase() === normalized;
+  });
+  return matches.length === 1 ? matches[0] : undefined;
 }
 
 export function renderTelegramApps(apps: HumanAppView[], selectedApp?: string): string {
@@ -41,23 +62,6 @@ export function renderTelegramApps(apps: HumanAppView[], selectedApp?: string): 
       return `• ${app.id === selectedApp ? "✓ " : ""}${app.id} — ${states.join(" · ")}`;
     }),
   ].join("\n");
-}
-
-export function topicReference(topic: AppConversationTopic): string {
-  const value = topic.id.startsWith("topic_") ? topic.id.slice("topic_".length) : topic.id;
-  return value.slice(0, 8) || "????????";
-}
-
-export function resolveConversationTopic(
-  topics: AppConversationTopic[],
-  ref: string,
-): AppConversationTopic | undefined {
-  const normalized = ref.trim().toLowerCase();
-  const matches = topics.filter((topic) => {
-    const id = topic.id.toLowerCase();
-    return id === normalized || id === `topic_${normalized}` || topicReference(topic).toLowerCase() === normalized;
-  });
-  return matches.length === 1 ? matches[0] : undefined;
 }
 
 export function renderTelegramTopics(
@@ -179,50 +183,8 @@ export function renderTelegramTasks(tasks: HumanTaskView[], includeDone: boolean
   ].join("\n");
 }
 
-function taskStatusLabel(task: Pick<HumanTaskView, "status" | "humanAction">): string {
-  switch (task.status) {
-    case "pending":
-      return "queued";
-    case "running":
-      return "working";
-    case "waiting":
-      return "waiting";
-    case "attention":
-      return task.humanAction ? "needs you" : "needs review";
-    case "idle":
-      return "idle";
-    case "done":
-      return "done";
-    case "closed":
-      return "closed";
-    case "cancelled":
-      return "cancelled";
-  }
-}
-
-function currentTaskText(task: HumanTaskView): string {
-  const observed = task.terminal
-    ? task.response?.trim() || task.summary?.trim()
-    : task.progress?.message?.trim() || task.response?.trim() || task.summary?.trim();
-  if (observed) return observed;
-  switch (task.status) {
-    case "pending":
-      return "No attempt has started yet.";
-    case "running":
-      return "Work is active; no detailed progress has been reported yet.";
-    case "waiting":
-      return "No new progress has been reported while the Task waits.";
-    case "attention":
-      return "No recovery update has been reported yet.";
-    case "idle":
-      return "No work is runnable. The owner must retain a specific next responsibility or close this assignment.";
-    case "done":
-      return "No result summary was recorded.";
-    case "cancelled":
-    case "closed":
-      return "The Task will not continue.";
-  }
-}
+const taskStatusLabel = humanTaskStatusLabel;
+const currentTaskText = humanCurrentTaskText;
 
 export function replyInstruction(_task: HumanTaskView, _conditionId?: string): string {
   return "Reply to this message with an exact response requested above, or with the requested completion evidence. A question, qualification, or requested change is feedback, not completion.";
@@ -343,16 +305,6 @@ export function taskPresentationRevision(task: HumanTaskView): string {
     approvalAnchor: approvalProposalForTask(task),
     humanCondition: humanConditionAnchor(task),
   });
-}
-
-export function representedTaskIdentities(task: HumanTaskView): Array<{ appId: string; taskId: string }> {
-  return [
-    { appId: task.appId, taskId: task.taskId },
-    ...(task.requestedBy ? [{ appId: task.requestedBy.appId, taskId: task.requestedBy.taskId }] : []),
-    ...(task.waitingOn ?? []).flatMap((wait) =>
-      wait.kind === "task" ? [{ appId: wait.appId, taskId: wait.taskId }] : [],
-    ),
-  ];
 }
 
 export function renderTelegramTaskUpdate(task: HumanTaskView): string {
@@ -506,27 +458,22 @@ export function telegramConversationInputEvent(input: {
   context?: Record<string, unknown>;
 }): EventInput {
   const sourceId = `telegram:${input.chatId}:${input.messageId}`;
-  return {
-    type: "conversation.message.created",
-    target: { appId: input.appId },
-    data: {
-      conversationId: input.conversationId,
-      author: { kind: "human", id: sourceId },
-      text: input.message,
-      ...(input.context ? { context: input.context } : {}),
-      ...(input.replyToSourceId
-        ? { replyTo: input.replyToSourceId }
-        : input.replyToMessageId === undefined
-          ? {}
-          : { replyTo: `telegram:${input.chatId}:${input.replyToMessageId}` }),
-      metadata: {
-        channel: "telegram",
-        channelTargetId: input.chatId,
-        ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
-        channelMessageId: input.messageId,
-        ...(input.conversationTopicId ? { topicId: input.conversationTopicId } : {}),
-      },
-    },
+  return buildHumanConversationMessageEvent({
+    appId: input.appId,
+    conversationId: input.conversationId,
+    authorId: sourceId,
+    text: input.message,
+    channel: "telegram",
+    channelTargetId: input.chatId,
+    ...(input.topicId === undefined ? {} : { channelThreadId: String(input.topicId) }),
+    channelMessageId: input.messageId,
+    ...(input.conversationTopicId ? { metadata: { topicId: input.conversationTopicId } } : {}),
+    ...(input.replyToSourceId
+      ? { replyTo: input.replyToSourceId }
+      : input.replyToMessageId === undefined
+        ? {}
+        : { replyTo: `telegram:${input.chatId}:${input.replyToMessageId}` }),
+    ...(input.context ? { context: input.context } : {}),
     idempotencyKey: sourceId,
-  };
+  });
 }
