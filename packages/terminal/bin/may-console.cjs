@@ -4,10 +4,14 @@ const { randomUUID } = require("node:crypto");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
 
-const stateDir = process.env.STATE_DIR || "/app/.state";
 const instance = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "background";
 const daemonAgent = process.env.AGENT?.trim() || process.env.DAEMON_AGENT?.trim() || "host";
-const daemonEndpoint = (process.env.MAY_ENDPOINT || process.env.DAEMON_HTTP_URL || `http://127.0.0.1:${process.env.DAEMON_HTTP_PORT || process.env.WEB_PORT || "8081"}`).replace(/\/$/, "");
+const configuredEndpoint = process.env.MAY_ENDPOINT?.trim() || process.env.DAEMON_HTTP_URL?.trim();
+const configuredPort = process.env.DAEMON_HTTP_PORT?.trim() || process.env.WEB_PORT?.trim();
+if (!configuredEndpoint && !configuredPort && instance !== "background") {
+  throw new Error(`Console instance ${instance} requires MAY_ENDPOINT, DAEMON_HTTP_URL, or DAEMON_HTTP_PORT`);
+}
+const daemonEndpoint = (configuredEndpoint || `http://127.0.0.1:${configuredPort || "8081"}`).replace(/\/$/, "");
 const wakeEndpoint = daemonEndpoint.replace(/^http/, "ws") + "/ws";
 const source = "may-console";
 const conversationAppId = process.env.CONVERSATION_APP?.trim();

@@ -604,6 +604,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // ── WebSocket wakes ──────────────────────────────────────────────────
 
   type WsSubscription = {
+    sessions: Set<string> | null;
     conversations: Set<string>;
     taskApps: Set<string>;
     task?: { appId: string; taskId: string };
@@ -662,6 +663,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   function eventMatchesSubscription(event: PublicEvent, state: WsSubscription): boolean {
     const data = event.data ?? {};
+    const sessionId = typeof data.sessionId === "string" ? data.sessionId : undefined;
+    if (state.sessions === null || (sessionId && state.sessions.has(sessionId))) return true;
     const appId = event.target?.appId ?? (typeof data.appId === "string" ? data.appId : undefined);
     const taskId = event.target?.taskId ?? (typeof data.taskId === "string" ? data.taskId : undefined);
     const conversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
@@ -671,7 +674,12 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   function openDirectWebSocket(ws: any): void {
-    const state: WsSubscription = { conversations: new Set(), taskApps: new Set(), overflowed: false };
+    const state: WsSubscription = {
+      sessions: new Set(),
+      conversations: new Set(),
+      taskApps: new Set(),
+      overflowed: false,
+    };
     state.unsubscribe = services!.events.subscribe({}, (event) => {
       if (!eventMatchesSubscription(event, state)) return;
       if (Number(ws.bufferedAmount ?? 0) > MAX_WS_BUFFERED_BYTES) {
@@ -710,8 +718,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       Array.isArray(value)
         ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).slice(0, 100)
         : [];
+    const sessions = strings(frame.sessions);
+    state.sessions = sessions.includes("*") ? null : new Set(sessions);
     state.conversations = new Set(strings(frame.conversations));
-    state.taskApps = new Set(strings(frame.taskApps));
+    state.taskApps = new Set(strings(frame.taskApps).map((appId) => appId.replace(/\.app$/, "")));
     const task =
       frame.task && typeof frame.task === "object" && !Array.isArray(frame.task)
         ? (frame.task as Record<string, unknown>)
