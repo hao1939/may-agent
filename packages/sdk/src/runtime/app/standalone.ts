@@ -8,7 +8,7 @@
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { Type, type TSchema } from "typebox";
-import { appendFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
@@ -108,6 +108,10 @@ export type DirectAgentRunOptions = {
   agentSource?: AgentDirectory;
   /** Complete immutable configuration captured with the callable catalog. */
   agentConfig?: Readonly<AgentConfig>;
+  /** Immutable prompt identity captured with the callable catalog. */
+  identityText?: string;
+  /** Immutable shared prompt captured with the callable catalog. */
+  sharedPromptText?: string;
   /** Explicit skill name to activate via the shared skill catalog. */
   skill?: string;
   /** Optional ordinary assignment/context facts appended for model requests. */
@@ -382,6 +386,8 @@ export async function prepareDirectAgentExecution(options: DirectAgentRunOptions
       projectRoot: options.workRoot,
       sharedRoot: options.sharedRoot,
       globalAgentsRoot: options.globalAgentsRoot ?? join(options.projectRoot, "agents"),
+      ...(options.identityText !== undefined ? { identityText: options.identityText } : {}),
+      ...(options.sharedPromptText !== undefined ? { sharedPromptText: options.sharedPromptText } : {}),
     });
     definition.fileWritePolicy = fileWritePolicy;
     for (const diagnostic of definition.skillCatalog?.diagnostics ?? []) options.onNotice?.(diagnostic);
@@ -820,7 +826,13 @@ function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | un
 type DirectPromptDefinition = {
   source: AgentDirectory;
   config: Readonly<AgentConfig>;
+  identityText?: string;
+  sharedPromptText?: string;
 };
+
+function readPromptSnapshot(path: string): string | undefined {
+  return existsSync(path) ? readFileSync(path, "utf8") : undefined;
+}
 
 type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
   prompts: Map<string, { owner: string; definition: DirectPromptDefinition }>;
@@ -862,7 +874,12 @@ async function buildDirectPromptCatalog(
     }
     const promptEntry = {
       owner: namespace,
-      definition: { source: agentDir, config: Object.freeze(structuredClone(config)) },
+      definition: {
+        source: agentDir,
+        config: Object.freeze(structuredClone(config)),
+        identityText: readPromptSnapshot(join(agentDir.dir, "AGENTS.md")),
+        sharedPromptText: readPromptSnapshot(join(options.sharedRoot, "common-sense.md")),
+      },
     };
     prompts.set(canonicalName, promptEntry);
 
@@ -1462,6 +1479,8 @@ export async function runDirectWorkflow<TInput = unknown>(
       agentName: config.name,
       agentSource: promptDef.source,
       agentConfig: config,
+      identityText: promptDef.identityText,
+      sharedPromptText: promptDef.sharedPromptText,
       task: prompt,
       projectRoot: options.projectRoot,
       workRoot: options.workRoot,

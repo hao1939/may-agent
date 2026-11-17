@@ -448,7 +448,8 @@ export async function execute(ctx) {
   test("pins prompt identity and model for one callable tree while a later invocation captures updated configuration", async () => {
     const env = setupDirectLayout();
     const reviewerConfigPath = join(env.agentsRoot, "reviewer", "agent.json");
-    const observed: Array<{ agentName: string; model: string; description: string | undefined }> = [];
+    const observed: Array<{ agentName: string; model: string; description: string | undefined; systemPrompt: string }> = [];
+    writeFileSync(join(env.sharedRoot, "common-sense.md"), "ORIGINAL SHARED PROMPT");
     const models = {
       test: { id: "original-model" } as any,
       updated: { id: "updated-model" } as any,
@@ -460,6 +461,7 @@ export async function execute(ctx) {
           agentName: opts.agentName,
           model: prep.model,
           description: opts.agentConfig?.description,
+          systemPrompt: prep.prepared.systemPrompt,
         });
         return {
           sessionId: prep.sessionId,
@@ -485,6 +487,8 @@ export async function execute(ctx) {
         name: "mutate-after-capture",
         description: "Mutates the source configuration after this tree captures its catalog",
         async execute(ctx) {
+          writeFileSync(join(env.agentsRoot, "reviewer", "AGENTS.md"), "CHANGED REVIEWER IDENTITY");
+          writeFileSync(join(env.sharedRoot, "common-sense.md"), "CHANGED SHARED PROMPT");
           writeFileSync(reviewerConfigPath, JSON.stringify({
             name: "reviewer-v2",
             description: "updated reviewer",
@@ -530,9 +534,12 @@ export async function execute(ctx) {
     expect(first.ok).toBeTrue();
     expect(second.ok).toBeTrue();
     expect(observed).toEqual([
-      { agentName: "reviewer", model: "test", description: "reviewer agent" },
-      { agentName: "reviewer-v2", model: "updated", description: "updated reviewer" },
+      expect.objectContaining({ agentName: "reviewer", model: "test", description: "reviewer agent", systemPrompt: expect.stringContaining("Lab-forked reviewer instructions v2") }),
+      expect.objectContaining({ agentName: "reviewer-v2", model: "updated", description: "updated reviewer", systemPrompt: expect.stringContaining("CHANGED REVIEWER IDENTITY") }),
     ]);
+    expect(observed[0]!.systemPrompt).toContain("ORIGINAL SHARED PROMPT");
+    expect(observed[0]!.systemPrompt).not.toContain("CHANGED REVIEWER IDENTITY");
+    expect(observed[1]!.systemPrompt).toContain("CHANGED SHARED PROMPT");
   });
 
   test("uses exact canonical workflow names before and after another catalog call", async () => {
