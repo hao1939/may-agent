@@ -41,10 +41,17 @@ export const sourceAssessmentInputSchema = Type.Object(
   { additionalProperties: true },
 );
 
+const sourceAssessmentTaskInputSchema = Type.Object(
+  {
+    kind: Type.Literal("assess-source"),
+    data: sourceAssessmentInputSchema,
+  },
+  { additionalProperties: false },
+);
 export const inputSchema = Type.Object(
   {
     prompt: Type.String({ minLength: 1, pattern: "\\S" }),
-    data: sourceAssessmentInputSchema,
+    data: sourceAssessmentTaskInputSchema,
   },
   { additionalProperties: false },
 );
@@ -68,12 +75,8 @@ export async function executeSourceAssessment(
     signal?: AbortSignal,
   ) => Promise<SourcePacket> = readSource,
 ) {
-  const raw = (ctx.reconciliation
-    ? ctx.reconciliation.input
-    : { kind: "assess-source", data: ctx.input.data }) as
-    | { kind?: string; data?: unknown }
-    | undefined;
-  const input = raw?.data as Static<typeof sourceAssessmentInputSchema>;
+  const raw = ctx.input.data;
+  const input = raw.data as Static<typeof sourceAssessmentInputSchema>;
   let record: ReturnType<typeof assessmentRecord> | undefined;
   let beforePublication: KnowledgeSnapshot | undefined;
   const finish = (

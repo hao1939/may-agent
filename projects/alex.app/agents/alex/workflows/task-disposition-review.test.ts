@@ -1,9 +1,13 @@
 import { describe, expect, test } from "bun:test";
+import { Check } from "typebox/value";
 import {
   createPublicTaskEvidenceProvider,
   type PublicCommand,
 } from "../../evaluator/workflows/lib/public-task-evidence.js";
-import { reviewTaskDispositionBatch } from "./task-disposition-review.js";
+import {
+  inputSchema,
+  reviewTaskDispositionBatch,
+} from "./task-disposition-review.js";
 import { taskForInput, taskInputForEvent } from "../../../app.js";
 
 function fixture(count = 1) {
@@ -79,6 +83,22 @@ function fixture(count = 1) {
 }
 
 describe("bounded Task disposition review", () => {
+  test("admits only the canonical callable envelope", () => {
+    expect(
+      Check(inputSchema, {
+        prompt: "Review this bounded Task page",
+        data: { appId: "alex", limit: 10 },
+      }),
+    ).toBe(true);
+    expect(Check(inputSchema, { appId: "alex", limit: 10 })).toBe(false);
+    expect(
+      Check(inputSchema, {
+        prompt: "Review this bounded Task page",
+        appId: "alex",
+      }),
+    ).toBe(false);
+  });
+
   test("traverses 528 existing assignments in bounded resumable pages without creating or closing work", async () => {
     const f = fixture(528);
     const seen: string[] = [];
