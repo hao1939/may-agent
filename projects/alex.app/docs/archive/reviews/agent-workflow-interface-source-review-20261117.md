@@ -508,3 +508,36 @@ This publication was a Root administrative intervention while May's workflow
 continued, not autonomous publication or connected-trial proof. Apps design and
 guidance were pushed to the existing bare backup remote at `7460e9a36a`; the Apps
 tree must not be pushed to the separate Host repository as a design PR.
+
+## Fixed preparation and namespace probe
+
+Native workflow `wr_1794936065682_hnuq` produced `c4675a10d7`, `fee62623f6`
+and `d5f4699dee`. Complete hosted catalog preparation now runs inside the
+workflow's finite cancellation bound; the rejected lazy-growing variant was
+removed. The actual model-tool suite is `src/lib/agents-tool.test.ts`, not the
+nonexistent `manager-agents-tool.test.ts`. With that corrected selector, 83
+selected tests pass. May pushed `d5f4699dee` normally to the existing draft;
+its Container check passes and Quality fails. This establishes useful progress
+and native checkpoint publication, not cutover readiness.
+
+An independent credential-free probe found two remaining production gaps:
+
+- Registering `global/reviewer`, `alpha/reviewer` and `beta/reviewer` through
+  the real manager retains only the last definition. The loader also selects
+  by bare name before building a canonical catalog. Distinct namespaces must
+  coexist; duplicate rejection applies to the complete canonical address.
+- Standalone discovery lists both Apps' workflows, but an invoked workflow's
+  `ctx.list()` returns an empty list and an `alpha/bridge` call to registered
+  `beta/echo` fails. Root selection must preserve the complete configured tree
+  catalog for both discovery and dispatch.
+
+The [PR review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5943386521)
+records those findings. The central model-tool migration, common results,
+paired App cutover and connected runtime trial remain open. The same delivery
+Task reached 32 consumed rounds and was revised to cumulative total 40 with
+all usage retained. A stale SDK setup prerequisite was reintroduced during that
+revision; Root clarified that paired App verification cannot gate independent
+Host implementation. A candidate dependency link also followed the App
+checkout's shared `node_modules` link. Root restored the primary SDK and gave
+the paired checkout private dependency links; its candidate SDK resolution was
+independently verified. Neither setup correction establishes source readiness.

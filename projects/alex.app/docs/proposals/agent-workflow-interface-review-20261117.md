@@ -7,8 +7,11 @@ is merged into main `0606e2df16d0a44016bbef1c6294dac4c4c11d94`; its shared
 tool name still fronts incompatible inputs, results, discovery and permission
 handling. Source merge and installed-runtime activation are separate facts.
 Draft [#589](https://github.com/hao1939/may-agent/pull/589) publishes the partial
-catalog, standalone dispatch, SDK discovery and built-in cooperation checkpoint
-`166d8d15b1` for parallel review.
+catalog, standalone dispatch, SDK discovery and built-in cooperation work for
+parallel review. Checkpoint `d5f4699dee` also bounds complete hosted catalog
+preparation and removes its App-based call filtering; 83 selected tests pass.
+Current-head Quality still fails while Container passes. Passing legacy adapter
+tests does not establish their pending interface migration.
 Production model/SDK parity, removal of old
 interfaces and paired App migration remain incomplete. No candidate is activated.
 The focused Task-revision fix #590 is active locally; that activation does not
