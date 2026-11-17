@@ -273,8 +273,10 @@ result, without an action to unblock the executing Task itself.
 string prompts, raw workflow input and short names. The refined
 [invocation contract](../2a-design/execution-contributions.md#invocation-and-ownership)
 requires `{ prompt, data? }` for both kinds and canonical names from one catalog;
-its Host/App migration has not landed. It also recommends retiring public `fork`
-in favor of awaited calls, workflow joins and independently owned Tasks.
+its complete Host/SDK/App migration and activation remain unfinished. The
+accepted cooperation surface has only list and awaited call. Use workflow joins
+for concurrent bounded work and Tasks for outcomes that outlive the caller;
+public `fork` is retired by the target contract.
 
 Use `ctx.call(...)` when another agent or procedure can return a bounded result during
 this run:
