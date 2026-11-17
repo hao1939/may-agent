@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -118,6 +118,44 @@ test("configured discovery omits targets from explicitly disabled Apps", async (
     expect(targets.some((target) => target.name.startsWith("sample/"))).toBe(false);
   } finally {
     rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("all 33 source targets retain an explicit body, caller, guidance, verification, and external-effect disposition", () => {
+  const dispositions = JSON.parse(
+    readFileSync(
+      join(import.meta.dirname, "fixtures/callable-target-dispositions.json"),
+      "utf8",
+    ),
+  ) as Array<Record<string, unknown>>;
+
+  expect(dispositions.map((entry) => entry.target)).toEqual(
+    configuredCallableTargets,
+  );
+  for (const entry of dispositions) {
+    expect(["agent", "workflow"], String(entry.target)).toContain(entry.kind);
+    expect(typeof entry.body, String(entry.target)).toBe("string");
+    expect(existsSync(String(entry.body)), `${entry.target} body`).toBe(true);
+    for (const field of [
+      "callers",
+      "guidance",
+      "owningVerification",
+      "remainingExternalEffects",
+    ] as const) {
+      const values = entry[field];
+      expect(Array.isArray(values), `${entry.target} ${field}`).toBe(true);
+      expect((values as unknown[]).length, `${entry.target} ${field}`).toBeGreaterThan(0);
+      for (const value of values as unknown[]) {
+        expect(typeof value, `${entry.target} ${field}`).toBe("string");
+        expect(String(value).trim().length, `${entry.target} ${field}`).toBeGreaterThan(0);
+      }
+    }
+    for (const path of [
+      ...(entry.guidance as string[]),
+      ...(entry.owningVerification as string[]),
+    ]) {
+      expect(existsSync(path), `${entry.target} disposition path ${path}`).toBe(true);
+    }
   }
 });
 
