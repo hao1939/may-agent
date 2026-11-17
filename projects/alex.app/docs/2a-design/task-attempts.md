@@ -136,6 +136,12 @@ or `result` does not deliver it. Creator revision updates the same assignment
 and schedules reconsideration; it is not itself the answer to every older
 caller input. Return that scoped answer through its saved relationship.
 
+Put the answer in the scoped Task result's `response`/`result`; settlement
+returns it to the correlated Task request. `communication` instead publishes
+through an admitted input's saved human reply context. A Task request or creator
+revision does not supply that context automatically. Missing reply context is
+correction feedback; an ordinary Task result still returns to its linked caller.
+
 Revision is necessary when saved requirements, checkout or allowance change.
 Ordinary feedback adds information and cannot rewrite those fields. Construct a
 complete revision from the current saved assignment, not the original handoff
@@ -164,13 +170,15 @@ generation and intended change. Priority/category changes can preserve generatio
 returning to an earlier value must apply a new change rather than replay an old
 receipt. A saved unchanged request must not reserve every later change. Preserve
 old receipts and reject stale/foreign controls through the same authority checks.
-**Installed gap:** the [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#revision-admission-blocker)
+**Local trial status:** the [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#revision-admission-blocker)
 reproduces a generation-only admission-key collision in installed `43fc420a` and
 baseline source. Focused [PR #590](https://github.com/hao1939/may-agent/pull/590)
 at `54528704a9` fixes the original no-op case but has a reviewer-found metadata
 round-trip defect. Candidate `9e9c215a5c` passes independent production-API probes
-for both cases, both hosted checks and resolved code review. Local activation
-and the original Task's successful creator revision still need read-back.
+for both cases, both hosted checks and resolved code review. The focused fix is
+locally activated; May successfully revised the original Task in place to
+generation twelve, preserving sixteen consumed rounds under total twenty-four.
+This verifies the repair path; the broader callable migration remains incomplete.
 Do not delete live receipts as a workaround.
 
 ## Workspace ownership and cleanup

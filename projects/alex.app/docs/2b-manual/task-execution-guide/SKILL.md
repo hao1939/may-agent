@@ -579,7 +579,11 @@ required scope change to the creator.
 Include the original outstanding input in the result's considered scope when
 you have resolved it; accepting only the new evidence update does not answer
 the original caller. Use the original caller return, and let that caller judge
-its remaining work. See [repair feedback](../../2a-design/execution-feedback.md#return-repair-evidence-to-the-original-work).
+its remaining work. For a Task request, include the answer in the scoped
+result's `response`/`result`; infra returns it to that caller. Use `communication`
+only when the admitted input has saved human reply context. See
+[scoped returns](../../2a-design/task-attempts.md#answer-a-dependency-without-ending-the-wider-work)
+and [repair feedback](../../2a-design/execution-feedback.md#return-repair-evidence-to-the-original-work).
 
 Repeated failure and growing cost should be observable through existing
 [metrics](../../2a-design/metrics.md) and [failure feedback](../../2a-design/execution-feedback.md).

@@ -240,7 +240,7 @@ those mechanisms:
 
 | Priority | Observed gap | Next evidence |
 | --- | --- | --- |
-| 1 | An effective no-op can block the creator's real revision. | Focused hotfix, current-head CI and supported activation; then same Alex Task at total twenty-four with all sixteen consumed rounds retained. |
+| Resolved locally | An effective no-op blocked the creator's real revision. | Focused #590 is active; the same Alex Task is generation twelve at total twenty-four with all sixteen consumed rounds retained. Carry the fix into the later callable candidate. |
 | 2 | Coordinators repeatedly retain answered setup/escalation inputs as waits; revising work has been treated as answering its callers. | Exact scoped return delivered to its saved caller while broader work and unrelated Scout obligations remain retained. A blocker on one input must not become an invented prerequisite for another. |
 | 3 | The unified callable change remains partial and needed manual repair directions. | Coherent Host/SDK/App candidate, owning tests and all four invocation directions through production adapters. |
 | 4 | A watcher saw real CI/comment changes, but readiness notification and subsequent repair are unproved. | Current-head green CI, provider-backed Telegram link, then a late review comment causing the same Task/workflow to repair and reverify. Preserve ordinary Condition demand throughout this trial. |
@@ -378,3 +378,31 @@ explicit-root correction to May. A healthy process and a successful build did
 not prove activation. Preserve the first receipt and use one coordinated owner
 for the corrected supported operation. The original Task revision, paired
 callable cutover and connected notification trial remain outstanding.
+
+At 16:32 UTC, Alex's corrected canonical operation settled receipt
+`pr590-task-revision-admission-20261117-v2` as `succeeded`. Root independently
+matched installed SHA-256 `1571b823de836f2ea697ae9f45d8a3f14cf18b623f0c7b79a06b652bb55e6e89`
+to the requested and loaded artifact, read embedded version `9e9c215a`, checked
+readiness, and verified the paired SDK/UI links. The earlier Alex operation
+using a nonstandard receipt directory was rejected before activation and is
+retained separately. No PR was merged.
+
+May's supported creator workflow `wr_1794933224985_ceqc` then saved the original
+Alex Task as generation twelve with total twenty-four and sixteen consumed
+rounds. Root read back the retained checkout, dirty-file list, PR, caller and
+protection constraints. The normal revision wake entered `develop-change`
+`wr_1794933247365_qfuh` from the selected corrected App definition; the workflow
+record names its immutable release path and content hash. A repeat of the
+identical pre-restart input returned the same event `6736477` and inbox identity
+after activation, with one journal admission. These establish revision,
+continuation and replay mechanics, not completion of the unified implementation
+or fulfillment of every older setup caller. The connected PR/Telegram trial
+remains open.
+
+The focused hotfix Task first tried `communication` against a creator-revision
+input with no saved human reply context. Host rejected the proposed finish with
+specific correction feedback. Alex then returned a normal scoped result for
+the retained request keys, which was accepted. This distinguishes the automatic
+Task caller return from optional human communication and avoids inventing a
+Telegram recipient. The Task contract and execution guide now explain that
+distinction beside scoped repair returns.
