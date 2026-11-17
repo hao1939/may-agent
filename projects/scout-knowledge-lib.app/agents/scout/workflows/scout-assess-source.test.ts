@@ -392,8 +392,8 @@ it("standalone no-save uses its assignment without reconciliation or a workspace
   let calls = 0;
   const ctx = createTestAppWorkflowContext({
     input: { ...input, data: { ...input.data, archive: false } },
-    call: (async (_agent, input: { prompt: string }) => {
-      const prompt = input.prompt;
+    call: (async (_agent, callInput: { prompt: string }) => {
+      const prompt = callInput.prompt;
       calls++;
       expect(prompt).toContain(input.data.outcome);
       return success();

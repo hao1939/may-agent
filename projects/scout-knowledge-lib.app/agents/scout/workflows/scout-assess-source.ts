@@ -59,7 +59,9 @@ export async function executeSourceAssessment(
     signal?: AbortSignal,
   ) => Promise<SourcePacket> = readSource,
 ) {
-  const raw = (ctx.reconciliation ? ctx.reconciliation.input : ctx.input) as
+  const raw = (ctx.reconciliation
+    ? ctx.reconciliation.input
+    : { kind: "assess-source", data: ctx.input.data }) as
     | { kind?: string; data?: unknown }
     | undefined;
   const input = raw?.data as Static<typeof sourceAssessmentInputSchema>;

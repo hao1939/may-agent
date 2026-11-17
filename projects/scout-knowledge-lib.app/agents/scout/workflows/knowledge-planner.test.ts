@@ -87,8 +87,8 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            call: (async (_agent, value) => {
-              prompt = value;
+            call: (async (_agent, value: { prompt: string }) => {
+              prompt = value.prompt;
               // Agent decisions are fixtures, not evidence of live model behavior.
               return {
                 id: `s_blocked_report_${state}`,
@@ -214,7 +214,8 @@ describe("Scout owner reconciliation boundary", () => {
               },
             } as never,
           }),
-          call: (async (_agent, value) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
             prompt = value;
             return {
               id: "s_recovery_context",
@@ -285,7 +286,8 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, value) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
             prompt = value;
             return {
               id: "s_string_procedure",
@@ -335,7 +337,8 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, value) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
             prompt = value;
             return {
               id: "s_array_procedure",
@@ -401,7 +404,8 @@ describe("Scout owner reconciliation boundary", () => {
               },
             } as never,
           }),
-          call: (async (_agent, value) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
             prompt = value;
             return {
               id: "s_unavailable_context",
@@ -448,7 +452,8 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            call: (async (_agent, prompt) => {
+            call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
               let output: string;
               if (scenario === "direct-write") {
                 output = join(
@@ -534,7 +539,8 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            call: (async (_agent, prompt) => {
+            call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
               calls++;
               if (calls === 2) {
                 expect(prompt).toContain(
@@ -751,7 +757,8 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             expect(candidate).toBeDefined();
             const output = join(candidate!, "knowledge/pending.md");
@@ -842,7 +849,8 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/incomplete.md");
             writeFileSync(output, "Unfinished draft\n");
@@ -903,7 +911,8 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/pending.md");
             writeFileSync(output, "Accepted pending content\n");
@@ -1098,7 +1107,8 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
             const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/findings/qualified.md");
             mkdirSync(join(candidate!, "knowledge/findings"), {
@@ -1229,7 +1239,7 @@ describe("Scout owner reconciliation boundary", () => {
           value: string,
           options?: Record<string, unknown>,
         ) => {
-          prompt = value;
+          prompt = (value as { prompt: string }).prompt;
           runOptions = options;
           return {
             id: "s_owner",
@@ -1387,7 +1397,8 @@ describe("Scout owner reconciliation boundary", () => {
             root,
             output: appRoot,
           },
-          call: (async (_agent, prompt) => {
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
             expect(prompt).toContain("Do not move or rename that file");
             const candidateRoot = prompt.match(/- Domain workspace: (.+)/)?.[1];
             expect(candidateRoot).toBeDefined();
@@ -1637,7 +1648,8 @@ describe("Scout owner reconciliation boundary", () => {
           },
         },
         workspace: { ...defaultFixture.workspace },
-        call: (async (_agent: string, value: string) => {
+        call: (async (_agent: string, input: { prompt: string }) => {
+          const value = input.prompt;
           prompt = value;
           return {
             id: "s_review",
