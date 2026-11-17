@@ -322,7 +322,10 @@ function createMayAgentAdapter(): Adapter {
           return await runNativeCliAdapter({
             tool: agentName,
             prompt: readFileSync(taskFile, "utf8"),
-            projectRoot: REPO_ROOT,
+            // Native execution is authorized against this run's isolated Gym
+            // workspace. Repository source remains the caller/adapter source;
+            // it is not the capability root for an external temporary cwd.
+            projectRoot: gymRoot,
             workDir,
             persistDir: join(gymState, "cli-trace"),
             timeoutMs: timeoutMin * 60 * 1000,
