@@ -294,3 +294,12 @@ Alex still owes exact-candidate full CI, PR/checks and supported activation on
 the same Task; no additional code round is needed merely to run delivery.
 The later paired App migration should correct specialist context to assess the
 local candidate while retaining the outer Task's unresolved obligations.
+
+At 16:07 UTC, Alex published focused [PR #590](https://github.com/hao1939/may-agent/pull/590)
+at `54528704a9`. Root read the native full-CI log from that exact-candidate
+delivery attempt and retained it locally: four-shard `bun run ci` completed with
+no failed cases. The earlier failed receipts remain evidence, rather than being
+overwritten by this pass. At 16:09 UTC the PR observer emitted event `6736222`
+and the same Task rearmed `pr590-current-head`; current-head Container passed
+while Quality and automated review were still running. This is native
+observation/reconsideration, not activation or proof of original #589 readiness.
