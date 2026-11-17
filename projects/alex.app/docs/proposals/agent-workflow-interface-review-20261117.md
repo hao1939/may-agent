@@ -172,7 +172,9 @@ Use one rule for every registered agent or workflow:
 2. Agents and workflows share the namespace. Source directory and owning agent
    are metadata, not address components or lookup priority. Duplicate canonical
    names reject catalog preparation/reload. A rejected reload preserves the prior
-   valid catalog. No kind can shadow another.
+   valid catalog. No kind can shadow another. Equal declared names in different
+   namespaces coexist; loading and registration must preserve them before the
+   catalog is built, rather than shadowing or rejecting them by bare name.
 3. Discovery returns one list of descriptors, sorted by canonical name:
    `name`, `description`, complete
    `inputSchema`, and optional `outputSchema`. Include the required-prompt base
@@ -282,6 +284,10 @@ spending the remaining rounds on standalone fixtures alone:
    including `ctx.list()` bindings. Capture definitions before asynchronous
    imports; a missing target in that snapshot must not fall through to a newer
    live registry. Check duplicates across all selected workflow directories.
+   Cover `global/reviewer`, `alpha/reviewer` and `beta/reviewer` together through
+   the real loader/manager. Selecting a canonical root cannot silently narrow
+   its child catalog: standalone `ctx.list()` must expose the same configured
+   descriptors, and an `alpha/*` workflow can call a registered `beta/*` target.
 2. Reduce the model tool to list/call with mandatory structured input and common
    options. Remove the procedure-only/deny branches and corresponding loader and
    configuration fields. Internal runtime cancellation and diagnostics remain

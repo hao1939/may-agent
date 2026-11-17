@@ -161,7 +161,10 @@ Use one catalog and one address rule for agents and workflows:
   contain `/`. Directory ownership is metadata, not another address component.
 - Agents and workflows share the namespace. Duplicate canonical names reject
   registration or reload; neither kind shadows the other. Keep the prior valid
-  definition active after a rejected reload.
+  definition active after a rejected reload. Equal declared names in different
+  namespaces coexist: `global/reviewer`, `alpha/reviewer` and `beta/reviewer`
+  are distinct. Preserve that identity while loading and storing definitions;
+  a bare-name registry must not discard an entry before catalog preparation.
 - List every registered callable in the selected runtime catalog with `name`,
   `description`, complete `inputSchema` and any declared `outputSchema`. The
   input schema includes the required prompt even without extra data requirements.
@@ -187,6 +190,8 @@ execution and cancellation bound, including asynchronous imports. Expose one
 fixed snapshot to discovery and child calls; a later call cannot grow its list
 or resolve a missing entry through another registry. A stalled selected module
 can fail bounded preparation even when that module would not have been called.
+Selecting a canonical root target does not narrow its children to that App;
+the tree keeps the originally configured catalog and cross-namespace callability.
 Reload can supply a new snapshot to a later invocation. This keeps completeness,
 duplicate rejection and cancellation understandable without another loader mode.
 
