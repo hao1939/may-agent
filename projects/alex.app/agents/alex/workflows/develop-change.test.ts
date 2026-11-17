@@ -798,6 +798,9 @@ describe("development workflow using real Git and verification", () => {
       t.git(t.worktree, "commit", "-m", "retain interrupted work");
     });
     expect((await t.run()).state).toBe("converged");
+    expect(t.evidence().roundsUsed).toBe(2);
+    expect(t.calls.filter((call) => call.stage === "design")).toHaveLength(2);
+    expect(t.current.id).toBe("goal/trial");
   });
 
   test("workflow cancellation stops running verification without allowing review", async () => {
