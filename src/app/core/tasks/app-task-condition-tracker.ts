@@ -212,25 +212,22 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
 }
 
 function isTerminalResourceEvent(event: Record<string, unknown>): boolean {
-  const state = normalizedState(eventField(event, "state", "status"));
-  return eventField(event, "closed") === true || eventField(event, "merged") === true || state === "closed" || state === "merged";
+  return eventField(event, "closed") === true;
 }
 
-function matchesContinuousTerminal(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
-  if (condition.spec.mode !== "continuous" || !isTerminalResourceEvent(event)) return false;
-  if (!isRecord(condition.spec.expected)) return true;
-  const expected = { ...condition.spec.expected };
-  for (const field of ["state", "status", "disposition", "result", "outcome", "closed", "merged"]) {
-    delete expected[field];
-  }
-  if (typeof expected.field === "string" &&
-      ["state", "status", "disposition", "result", "outcome", "closed", "merged"].includes(expected.field)) {
-    for (const field of ["field", "anyOf", "equals", "notEquals", "gt", "gte", "lt", "lte"]) delete expected[field];
-  }
-  return matchesExpectedRecord(expected, event);
+function matchesTerminalResourceRoute(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
+  if (!isTerminalResourceEvent(event)) return false;
+  const expected = condition.spec.expected;
+  if (!isRecord(expected)) return true;
+  const correlation = Object.fromEntries(
+    ["source", "timestamp"]
+      .filter((field) => field in expected)
+      .map((field) => [field, expected[field]]),
+  );
+  return matchesExpectedRecord(correlation, event);
 }
 
-function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
+function matches(condition: AppTaskCondition, event: Record<string, unknown>, includeTerminalRoute = true): boolean {
   if (condition.spec.type !== event.type) return false;
   if (condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner)) {
     const approval = readVerifiedApprovalDecision({
@@ -264,10 +261,12 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
   if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
 
   if (isRecord(condition.spec.expected)) {
-    return matchesExpectedRecord(condition.spec.expected, event) || matchesContinuousTerminal(condition, event);
+    return matchesExpectedRecord(condition.spec.expected, event) ||
+      (includeTerminalRoute && matchesTerminalResourceRoute(condition, event));
   }
 
-  return matchesExpectedValue(condition.spec.expected, event) || matchesContinuousTerminal(condition, event);
+  return matchesExpectedValue(condition.spec.expected, event) ||
+    (includeTerminalRoute && matchesTerminalResourceRoute(condition, event));
 }
 
 /** Shared matcher for per-App and global indexed Condition routes. */
@@ -379,11 +378,15 @@ function applyConditionEvent(
   for (const [id, condition] of Object.entries(tree.conditions ?? {})) {
     if (!isCondition(condition)) continue;
     const report = isAppInputReport(condition, event);
-    if (report ? !matchesAppTaskCondition(condition, event, store) : !matches(condition, event)) continue;
+    const predicateMatched = report
+      ? matchesAppTaskCondition(condition, event, store)
+      : matches(condition, event, false);
+    const terminal = !report && isTerminalResourceEvent(event) && matches(condition, event);
+    if (!predicateMatched && !terminal) continue;
     const kind = report ? reportKind(event, store) : undefined;
     const observed = { ...observation(event), ...(kind === "progress" ? { state: "progress" } : {}) };
     const continuous = condition.spec.mode === "continuous";
-    const terminal = continuous && isTerminalResourceEvent(event);
+    const tracksDelivery = continuous || terminal;
     const fingerprint = eventField(event, "fingerprint");
     const activeResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
@@ -397,14 +400,14 @@ function applyConditionEvent(
     const deliveredFingerprints = condition.status.deliveredFingerprints ?? {};
     const waitingResources = activeResources.filter((resource) =>
       (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)) &&
-      (!continuous || fingerprint === undefined || !stableEquals(deliveredFingerprints[resource.metadata.id], fingerprint))
+      (!tracksDelivery || fingerprint === undefined || !stableEquals(deliveredFingerprints[resource.metadata.id], fingerprint))
     );
     // Exhaustion stops automatic execution, not observation of retained waits.
     // Only a Task that still owns the Condition can admit its evidence.
     if (waitingResources.length === 0) continue;
     if (condition.status.state !== "true") {
       condition.metadata.resourceVersion += 1;
-      const nextDeliveredFingerprints = continuous && fingerprint !== undefined
+      const nextDeliveredFingerprints = tracksDelivery && fingerprint !== undefined
         ? Object.fromEntries([
             ...Object.entries(deliveredFingerprints),
             ...waitingResources.map((resource) => [resource.metadata.id, fingerprint] as const),
@@ -412,12 +415,13 @@ function applyConditionEvent(
         : deliveredFingerprints;
       const terminalDeliveredToAll = terminal && fingerprint !== undefined && activeResources.every((resource) =>
         stableEquals(nextDeliveredFingerprints[resource.metadata.id], fingerprint));
+      const satisfied = predicateMatched && !report && (terminal ? terminalDeliveredToAll : !continuous);
       condition.status = {
         ...condition.status,
         observedGeneration: condition.metadata.generation,
-        state: report || (continuous && !terminalDeliveredToAll) ? "false" : "true",
+        state: satisfied ? "true" : "false",
         observed,
-        ...(continuous && fingerprint !== undefined ? { deliveredFingerprints: nextDeliveredFingerprints } : {}),
+        ...(tracksDelivery && fingerprint !== undefined ? { deliveredFingerprints: nextDeliveredFingerprints } : {}),
         ...(kind ? { reports: { ...observedReports(condition, store),
           [kind]: observed,
         } } : {}),

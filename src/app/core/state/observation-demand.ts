@@ -16,6 +16,10 @@ const openDemand = `
   JOIN app_tasks t ON t.app_id=r.app_id AND t.task_id=r.task_id
   WHERE c.state<>'true' AND (t.phase IN ('waiting','running','pending')
     OR (t.phase='converged' AND json_extract(c.condition_json, '$.spec.mode')='continuous'))
+    AND NOT (COALESCE(json_extract(c.condition_json, '$.status.observed.closed'), 0)=1
+      AND EXISTS (SELECT 1 FROM json_each(json_extract(c.condition_json, '$.status.deliveredFingerprints')) delivered
+        WHERE delivered.key=r.task_id
+          AND delivered.value=json_extract(c.condition_json, '$.status.observed.fingerprint')))
     AND NOT EXISTS (SELECT 1 FROM app_task_cancellations x WHERE x.app_id=t.app_id AND x.task_id=t.task_id)`;
 
 /** Indexed projection of existing Conditions. No separate registrations or cached wait identities. */

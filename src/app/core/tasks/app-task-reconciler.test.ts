@@ -5652,7 +5652,7 @@ describe("App task reconciler state", () => {
     }
 
     const terminal = { ...next, fingerprint: "revision-3", state: "closed", closed: true };
-    expect(trackAppTaskConditionEvent(config, { ...terminal, repository: "other/repository" })).toEqual([]);
+    expect(trackAppTaskConditionEvent(config, { ...terminal, source: "app:other:observer:pull-request" })).toEqual([]);
     expect(trackAppTaskConditionEvent(config, terminal).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
     for (const taskIntent of intents) {
       const resumed = declareAndClaimTask(config, {
@@ -5663,6 +5663,58 @@ describe("App task reconciler state", () => {
       completeAppTask(config, resumed, { summary: "terminal state handled" });
     }
     expect(demand("pull-request.state", "app:github:observer:pull-request", "", 10)).toEqual([]);
+  });
+
+  it("uses only declared closed facts and wakes terminal predicate mismatches without satisfying them", () => {
+    const { config, store } = fixture();
+    const source = "app:sample:observer:state";
+    const resource = "resource:shared";
+    const addWatch = (id: string, mode: "one-shot" | "continuous", expectedState: string) => {
+      const taskIntent = { ...intent("monitor"), id };
+      const claim = declareAndClaimTask(config, {
+        intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+      });
+      if (claim.kind !== "claimed") throw new Error("expected claim");
+      deferAppTask(config, claim, {
+        disposition: "waiting", summary: "watching terminal behavior",
+        conditions: [{
+          id: `watch:${id}`, type: "sample.state", subject: resource,
+          expected: { field: "state", equals: expectedState, source }, mode,
+        }],
+      });
+      return taskIntent;
+    };
+    const continuous = addWatch("continuous-watch", "continuous", "active");
+    addWatch("one-shot-watch", "one-shot", "ready");
+    const demand = observationDemandReader(store.db);
+
+    expect(trackAppTaskConditionEvent(config, {
+      type: "sample.state", source, resource: "shared", fingerprint: "revision-1", state: "active", closed: false,
+    }).map((wake) => wake.taskId)).toEqual([continuous.id]);
+    const resumed = declareAndClaimTask(config, {
+      intent: continuous, appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (resumed.kind !== "claimed") throw new Error("expected continuous claim");
+    completeAppTask(config, resumed, { summary: "active state handled" });
+    expect(store.readTask(continuous.id)?.status.phase).toBe("converged");
+
+    expect(trackAppTaskConditionEvent(config, {
+      type: "sample.state", source, resource: "shared", fingerprint: "revision-2",
+      state: "closed", status: "merged", merged: true, closed: false,
+    })).toEqual([]);
+    expect(demand("sample.state", source, "", 10)).toEqual([{ subject: resource }]);
+
+    expect(trackAppTaskConditionEvent(config, {
+      type: "sample.state", source, resource: "shared", fingerprint: "revision-3", state: "failed", closed: true,
+    }).map((wake) => wake.taskId)).toEqual(["continuous-watch", "one-shot-watch"]);
+    const snapshot = readTaskSnapshot(config);
+    expect(snapshot.conditions?.["watch:continuous-watch"]?.status).toMatchObject({
+      state: "false", observed: { closed: true, state: "failed" },
+    });
+    expect(snapshot.conditions?.["watch:one-shot-watch"]?.status).toMatchObject({
+      state: "false", observed: { closed: true, state: "failed" },
+    });
+    expect(demand("sample.state", source, "", 10)).toEqual([]);
   });
 
   it("removes cancelled and owner-closed Tasks from observation demand", () => {
