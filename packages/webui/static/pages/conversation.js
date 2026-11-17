@@ -21,7 +21,6 @@ function shortConversationTopicRef(topicId) {
 
 function selectMayConversationTopic(topicId) {
   maySelectedTopicId = topicId || null;
-  mayUnconfirmedInput = null;
   renderMayConversationFocusBar();
   void refreshMayConversation();
 }
@@ -32,7 +31,6 @@ function focusMayConversationTask(appId, taskId, ref) {
   } else {
     mayFocusedTask = { appId: String(appId), taskId: String(taskId), ...(ref ? { ref: String(ref) } : {}) };
   }
-  mayUnconfirmedInput = null;
   renderMayConversationFocusBar();
   const input = document.getElementById('chat-input');
   if (input && isMayConversation()) input.focus();
@@ -58,6 +56,7 @@ function renderMayConversationFocusBar() {
   if (!bar) return;
   const active = isMayConversation() && Boolean(maySelectedTopicId || mayFocusedTask);
   bar.hidden = !active;
+  bar.style.display = active ? 'flex' : 'none';
   if (!active) {
     bar.replaceChildren();
     if (input && isMayConversation()) input.placeholder = 'Talk with May…';
@@ -94,6 +93,7 @@ function renderMayConversationContextBar(conversation) {
   if (!bar) return;
   if (!isMayConversation()) {
     bar.hidden = true;
+    bar.style.display = 'none';
     bar.replaceChildren();
     return;
   }
@@ -103,10 +103,12 @@ function renderMayConversationContextBar(conversation) {
   );
   if (!topics.length && !openRequests.length && !maySelectedTopicId) {
     bar.hidden = true;
+    bar.style.display = 'none';
     bar.replaceChildren();
     return;
   }
   bar.hidden = false;
+  bar.style.display = 'flex';
   let html = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
   if (topics.length || maySelectedTopicId) {
     html += `<label style="display:inline-flex;align-items:center;gap:6px;color:var(--fg2)">Topic <select id="conversation-topic-select" onchange="selectMayConversationTopic(this.value || null)" style="background:var(--bg2);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px">`;
@@ -145,7 +147,10 @@ function updateConversationStop() {
   button.hidden = !active;
   button.disabled = !active || !mayActiveTurn || mayStopPending;
   const contextBar = document.getElementById('conversation-context-bar');
-  if (contextBar && !active) contextBar.hidden = true;
+  if (contextBar && !active) {
+    contextBar.hidden = true;
+    contextBar.style.display = 'none';
+  }
   renderMayConversationFocusBar();
 }
 

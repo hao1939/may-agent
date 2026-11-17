@@ -41,6 +41,7 @@ describe("HTTP human Task reads and board", () => {
     topics?: any[];
     requests?: any[];
     activeTurn?: { id: string; revision: number };
+    lastReadTopicId?: string;
   };
   let published: any[];
   let onPublish: ((event: any) => void) | undefined;
@@ -80,6 +81,7 @@ describe("HTTP human Task reads and board", () => {
       getAppConversation: (appId, conversationId, options) => {
         if (appId !== "support" || conversationId !== "retained-room" || options?.limit !== 30) throw new Error("Invalid conversation read");
         if (rejectConversationRead) throw new Error("fixture Conversation storage unavailable");
+        conversation.lastReadTopicId = options?.topicId;
         return conversation;
       },
       publishEvent: (event) => {
@@ -1693,9 +1695,19 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForSelector('#conversation-focus-bar [data-focused-task="alpha:work/0"]');
       await page.select("#conversation-topic-select", "topic_8f12ac90");
       await page.waitForSelector('#conversation-focus-bar [data-focused-topic="topic_8f12ac90"]');
+      expect(conversation.lastReadTopicId).toBe("topic_8f12ac90");
       await page.type("#chat-input", "Check the edge case on this Task");
+      rejectPublish = true;
+      await page.click("#chat-send");
+      await page.waitForFunction(() => document.body.textContent!.includes("Message was not confirmed"));
+      const firstFocusedAttempt = published.at(-1);
+      // Reselecting the same Topic or Task keeps the unconfirmed send identity.
+      await page.evaluate("selectMayConversationTopic('topic_8f12ac90'); focusMayConversationTask('alpha', 'work/0', '8f12ac90')");
+      await page.waitForFunction("!mayConversationRead");
+      rejectPublish = false;
       await page.click("#chat-send");
       await page.waitForFunction(() => document.querySelector<HTMLInputElement>("#chat-input")!.value === "");
+      expect(published.at(-1).idempotencyKey).toBe(firstFocusedAttempt.idempotencyKey);
       expect(published.at(-1)).toMatchObject({
         type: "conversation.message.created",
         target: { appId: "support" },
@@ -1706,6 +1718,11 @@ describe("HTTP human Task reads and board", () => {
           metadata: { channel: "web-ui", topicId: "topic_8f12ac90" },
         },
       });
+      // Switching to another agent hides May's Conversation context and focus bars.
+      await page.evaluate("routeTo('/agents/worker')");
+      await page.waitForFunction("currentAgentChat === 'worker'");
+      expect(await page.$eval("#conversation-context-bar", el => getComputedStyle(el).display)).toBe("none");
+      expect(await page.$eval("#conversation-focus-bar", el => getComputedStyle(el).display)).toBe("none");
     } finally { await browser.close(); }
   });
 

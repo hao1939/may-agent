@@ -19,9 +19,17 @@ export function createTaskReadHandlers(options: {
   async function handleConversationRead(url: URL): Promise<Response> {
     const appId = url.searchParams.get("appId")?.trim();
     const conversationId = url.searchParams.get("conversationId")?.trim();
+    const topicId = url.searchParams.get("topicId")?.trim();
     if (!appId || !conversationId) return json({ error: "appId and conversationId required" }, 400);
+    if (url.searchParams.has("topicId") && !topicId) return json({ error: "topicId must be non-empty" }, 400);
     try {
-      const response = await daemonRead({ type: "app.conversation.get", appId, conversationId, limit: 30 });
+      const response = await daemonRead({
+        type: "app.conversation.get",
+        appId,
+        conversationId,
+        limit: 30,
+        ...(topicId ? { topicId } : {}),
+      });
       // This endpoint already validates its input and supplies bounded options.
       // A daemon error also covers unavailable/failed storage reads, not just
       // validation; do not misclassify an internal read failure as HTTP 400.
