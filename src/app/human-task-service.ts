@@ -1088,6 +1088,7 @@ export class HumanTaskService {
       includeDone?: boolean;
       humanActionOnly?: boolean;
       status?: HumanTaskStatus[];
+      q?: string;
       limit?: number;
       cursor?: string;
     } = {},
@@ -1107,6 +1108,9 @@ export class HumanTaskService {
       "cancelled",
     ]);
     if (input.status?.some((status) => !valid.has(status))) throw new Error("Invalid Task status filter");
+    const query = input.q?.trim().toLowerCase();
+    if (query && (query.length > 256 || /[\u0000-\u001f]/.test(query))) throw new Error("Invalid Task search query");
+    const searchPattern = query ? `%${query.replace(/[\\%_]/g, "\\$&")}%` : null;
     const statuses = input.status ? new Set(input.status) : null;
     const humanActionOnly = input.humanActionOnly === true;
     const includeLive = !statuses || [...statuses].some((status) => !["done", "closed", "cancelled"].includes(status));
@@ -1155,6 +1159,30 @@ export class HumanTaskService {
       ? ` AND human_condition.state != 'true' AND ${HUMAN_OWNER_SQL}`
       : "";
     const directGlobalHumanOwnerGroup = directGlobalHumanOwners ? " GROUP BY t.app_id, t.task_id" : "";
+    const liveSearchClause = searchPattern
+      ? ` AND (
+           LOWER(t.task_id) LIKE ? ESCAPE '\\' OR
+           LOWER(COALESCE(json_extract(t.resource_json, '$.spec.outcome'), '')) LIKE ? ESCAPE '\\' OR
+           LOWER(COALESCE(json_extract(t.resource_json, '$.status.summary'), json_extract(a.attempt_json, '$.result.summary'), '')) LIKE ? ESCAPE '\\' OR
+           EXISTS (
+             SELECT 1 FROM app_task_refs search_ref
+             WHERE search_ref.app_id = t.app_id AND search_ref.task_id = t.task_id
+               AND LOWER(search_ref.digest) LIKE ? ESCAPE '\\'
+           )
+         )`
+      : "";
+    const terminalSearchClause = searchPattern
+      ? ` AND (
+           LOWER(c.task_id) LIKE ? ESCAPE '\\' OR
+           LOWER(COALESCE(json_extract(c.cancellation_json, '$.outcome'), json_extract(c.cancellation_json, '$.spec.outcome'), '')) LIKE ? ESCAPE '\\' OR
+           LOWER(COALESCE(json_extract(c.cancellation_json, '$.summary'), json_extract(c.cancellation_json, '$.status.summary'), '')) LIKE ? ESCAPE '\\' OR
+           EXISTS (
+             SELECT 1 FROM app_task_refs search_ref
+             WHERE search_ref.app_id = c.app_id AND search_ref.task_id = c.task_id
+               AND LOWER(search_ref.digest) LIKE ? ESCAPE '\\'
+           )
+         )`
+      : "";
     const parts: string[] = [];
     const values: unknown[] = [];
     if (includeLive && livePhases.length > 0) {
@@ -1169,13 +1197,14 @@ export class HumanTaskService {
            AND (${LIVE_TASK_PHASE_SQL}) IN (${livePhases.map(() => "?").join(", ")})
            AND NOT EXISTS (
              SELECT 1 FROM app_task_cancellations c WHERE c.app_id = t.app_id AND c.task_id = t.task_id
-           )${appId && !humanActionOnly ? " AND t.app_id = ?" : ""}${scopedHumanOwnerClause}${directGlobalHumanOwnerFilter}${directGlobalHumanOwnerGroup}`,
+           )${appId && !humanActionOnly ? " AND t.app_id = ?" : ""}${scopedHumanOwnerClause}${directGlobalHumanOwnerFilter}${liveSearchClause}${directGlobalHumanOwnerGroup}`,
       );
       values.push(
         ...storedPhases,
         ...livePhases,
         ...(appId && !humanActionOnly ? [appId] : []),
         ...scopedHumanOwnerValues,
+        ...(searchPattern ? [searchPattern, searchPattern, searchPattern, searchPattern] : []),
       );
     }
     if (includeCancelled || includeClosed) {
@@ -1185,10 +1214,11 @@ export class HumanTaskService {
            c.cancellation_json AS payload, 2 AS terminal, NULL AS ready, NULL AS attempt_json, NULL AS human_conditions_json,
            ${taskScheduleSourceIdsSql("c.app_id", "c.task_id")} AS schedule_source_ids
          FROM app_task_cancellations c
-         WHERE COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') IN (${closureKinds.map(() => "?").join(", ")})${appId ? " AND c.app_id = ?" : ""}`,
+         WHERE COALESCE(json_extract(c.cancellation_json, '$.kind'), 'cancelled') IN (${closureKinds.map(() => "?").join(", ")})${appId ? " AND c.app_id = ?" : ""}${terminalSearchClause}`,
       );
       values.push(...closureKinds);
       if (appId) values.push(appId);
+      if (searchPattern) values.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
     if (parts.length === 0) return { items: [], ...(humanActionOnly ? { total: 0 } : {}) };
 

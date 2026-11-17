@@ -349,20 +349,10 @@ describe("May Console", () => {
     });
     expect(output).not.toContain("focused work");
 
-    child.stdin.write("/topics\n");
-    await waitFor(
-      () =>
-        output.includes("Recent Topics:") &&
-        output.includes("0df0c0ed  Review the design · 1 Task") &&
-        output.includes("Task progress remains under /task and /watch."),
-    );
-    child.stdin.write("/topic 0df0c0ed\n");
-    await waitFor(
-      () =>
-        output.includes("Following 0df0c0ed: Review the design") &&
-        output.includes("8f12ac90 · evaluation") &&
-        output.includes("you[may · 0df0c0ed]>"),
-    );
+    child.stdin.write("/help\n");
+    await waitFor(() => output.includes("Conversation and Tasks:"));
+    expect(output).not.toContain("/topics");
+    expect(output).not.toContain("/topic [ref|clear]");
 
     // A human may paste the context switch and the next command together.
     // The Console must preserve that input order even though both reads are
@@ -421,7 +411,7 @@ describe("May Console", () => {
     await waitFor(
       () =>
         output.includes("[todo] 2 Tasks need you in evaluation. Run /todo.") &&
-        output.includes("you[evaluation · 0df0c0ed · 2 todo]>"),
+        output.includes("you[evaluation · 2 todo]>"),
     );
     const todoNoticeCount = output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1;
     const automaticTodoView = frames.find(
@@ -567,7 +557,7 @@ describe("May Console", () => {
         },
       },
     });
-    expect(input.event.data.metadata.topicId).toBe("topic_0df0c0edbf95b5bbc5c87598");
+    expect(input.event.data.metadata.topicId).toBeUndefined();
     expect(
       frames.some(
         (frame) =>
@@ -576,7 +566,7 @@ describe("May Console", () => {
           frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
       ),
     ).toBe(true);
-    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90 · 0df0c0ed]> "));
+    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90]> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);
@@ -716,15 +706,6 @@ describe("May Console", () => {
       () => frames.filter((frame) => frame.type === "app.conversation.get").length === beforeConsoleSync + 1,
     );
     await waitFor(() => output.includes("\nyou> Message sent from another Console\n\n"));
-
-    child.stdin.write("/topic\n");
-    await waitFor(() => output.includes("Topic 0df0c0ed: Review the design"));
-    child.stdin.write("/topic clear\n");
-    await waitFor(
-      () =>
-        output.includes("Stopped following Topic 0df0c0ed. Its Tasks continue unchanged.") &&
-        output.includes("you[may]>"),
-    );
 
     child.stdin.write("/reload\n");
     await waitFor(() =>

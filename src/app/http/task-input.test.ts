@@ -63,6 +63,44 @@ describe("Task-scoped human feedback", () => {
       },
     });
   });
+  test("resolves a display ref once and preserves generation-fenced Task input", async () => {
+    const frames: Record<string, unknown>[] = [];
+    const reads: Record<string, unknown>[] = [];
+    const handler = createTaskInputHandler({
+      daemonRead: async (frame) => {
+        reads.push(frame);
+        return { type: "ok", task: target };
+      },
+      admit: async (frame) => {
+        frames.push(frame);
+        return { type: "ok", eventId: 18, requestId: "input-18", created: true };
+      },
+      json: (body, status = 200) => Response.json(body, { status }),
+    });
+
+    const response = await handler(
+      request({
+        ref: "8f12ac90",
+        message: input.message,
+        expectedGeneration: 3,
+        idempotencyKey: "message-by-ref",
+      }),
+    );
+
+    expect(response.status).toBe(202);
+    expect(reads).toEqual([{ type: "task.get", ref: "8f12ac90" }]);
+    expect(frames[0]).toMatchObject({
+      event: {
+        target: { appId: "example" },
+        data: {
+          targetTaskId: "support/version",
+          targetTaskGeneration: 3,
+          input: { data: { context: { expectedGeneration: 3 } } },
+        },
+      },
+    });
+  });
+
   test("the App selects its accepted input kind without changing Task identity", async () => {
     const f = fixture();
     expect((await f.handler(request({ ...input, inputKind: "owner-review" }))).status).toBe(202);

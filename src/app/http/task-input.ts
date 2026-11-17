@@ -53,13 +53,21 @@ export function createTaskInputHandler(options: {
     } catch {
       return options.json({ error: "Valid JSON object required" }, 400);
     }
-    const appId = typeof body.appId === "string" ? body.appId.trim() : "";
-    const taskId = typeof body.taskId === "string" ? body.taskId.trim() : "";
+    const ref = typeof body.ref === "string" ? body.ref.trim() : "";
+    let appId = typeof body.appId === "string" ? body.appId.trim() : "";
+    let taskId = typeof body.taskId === "string" ? body.taskId.trim() : "";
     const message = typeof body.message === "string" ? body.message.trim() : "";
     const key = typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "";
     const kind = body.inputKind === undefined ? "message" : body.inputKind;
-    if (!appId || !taskId || appId.length > 256 || taskId.length > 1_024 || /[\u0000-\u001f]/.test(appId + taskId))
-      return options.json({ error: "Exact appId and taskId required" }, 400);
+    if (
+      (!ref && (!appId || !taskId)) ||
+      (ref && (appId || taskId)) ||
+      ref.length > 64 ||
+      appId.length > 256 ||
+      taskId.length > 1_024 ||
+      /[\u0000-\u001f]/.test(ref + appId + taskId)
+    )
+      return options.json({ error: "ref or exact appId and taskId required" }, 400);
     if (!message || message.length > 16_000)
       return options.json({ error: "Message must contain 1–16000 characters" }, 400);
     if (!/^[a-zA-Z0-9._:-]{1,160}$/.test(key))
@@ -68,6 +76,20 @@ export function createTaskInputHandler(options: {
       return options.json({ error: "Invalid App input kind" }, 400);
     if (!Number.isSafeInteger(body.expectedGeneration) || Number(body.expectedGeneration) < 1)
       return options.json({ error: "expectedGeneration must be a positive integer" }, 400);
+    let resolvedTask: Record<string, unknown> | null = null;
+    if (ref) {
+      try {
+        const read = await options.daemonRead({ type: "task.get", ref });
+        if (read.type !== "ok") return options.json({ error: "Task read unavailable" }, 503);
+        resolvedTask = read.task as Record<string, unknown> | null;
+        if (!resolvedTask) return options.json({ error: "Task not found" }, 404);
+        appId = typeof resolvedTask.appId === "string" ? resolvedTask.appId : "";
+        taskId = typeof resolvedTask.taskId === "string" ? resolvedTask.taskId : "";
+        if (!appId || !taskId) return options.json({ error: "Task identity mismatch" }, 409);
+      } catch {
+        return options.json({ error: "Task read unavailable" }, 503);
+      }
+    }
     const frame: TaskInputCommand = {
       type: "publish",
       event: {
@@ -103,7 +125,7 @@ export function createTaskInputHandler(options: {
           },
           202,
         );
-      const read = await options.daemonRead({ type: "task.get", appId, taskId });
+      const read = resolvedTask ? { type: "ok", task: resolvedTask } : await options.daemonRead({ type: "task.get", appId, taskId });
       if (read.type !== "ok") return options.json({ error: "Task read unavailable" }, 503);
       const task = read.task as Record<string, unknown> | null;
       if (!task) return options.json({ error: "Task not found" }, 404);

@@ -49,6 +49,7 @@ export interface AttachControlSocketOptions {
     includeDone?: boolean;
     humanActionOnly?: boolean;
     status?: string[];
+    q?: string;
     limit?: number;
     cursor?: string;
   }) => unknown;
@@ -408,6 +409,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           ...(frame.includeDone === true ? { includeDone: true } : {}),
           ...(frame.humanActionOnly === true ? { humanActionOnly: true } : {}),
           ...(Array.isArray(frame.status) ? { status: frame.status as string[] } : {}),
+          ...(typeof frame.q === "string" && frame.q.trim() ? { q: frame.q.trim() } : {}),
           ...(frame.limit === undefined ? {} : { limit: Number(frame.limit) }),
           ...(typeof frame.cursor === "string" && frame.cursor.trim() ? { cursor: frame.cursor.trim() } : {}),
         }),

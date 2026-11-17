@@ -160,6 +160,26 @@ function fixture(
 }
 
 describe("Task transcript read", () => {
+  it("resolves a display ref before reading the generation-fenced transcript", async () => {
+    const f = fixture({
+      daemonRead: async (frame) => ({
+        type: "ok",
+        task:
+          frame.ref === "8f12ac90" || (frame.appId === "sample" && frame.taskId === "review/one")
+            ? { appId: "sample", taskId: "review/one", generation: 1, status: "running" }
+            : null,
+      }),
+    });
+
+    const response = await f.handler(new URL("http://example.test/api/task/transcript?ref=8f12ac90"));
+
+    expect(response.status).toBe(200);
+    expect(f.frames).toEqual([
+      { type: "task.get", ref: "8f12ac90" },
+      { type: "task.get", appId: "sample", taskId: "review/one" },
+    ]);
+  });
+
   it("reads an active bound native thread through the production client without activating it or writing state", async () => {
     const f = fixture({
       turns: [

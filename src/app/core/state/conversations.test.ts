@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
+import { applyConversationRequestUpdates } from "./conversation-requests.js";
+import { taskReferenceDigest } from "./task-reference-index.js";
 import { claimAppInboxItem, completeAppInboxClaim, waitAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
 import {
   createConversationTopic,
@@ -152,6 +154,37 @@ describe("Conversation store", () => {
     expect(readAppConversationResource(db, "may", "may:primary")).toMatchObject({
       messages: [{ id: "console:1" }, { id: "event:11" }],
     });
+  });
+
+  it("projects display references on Conversation Request Task links", () => {
+    applyConversationRequestUpdates(db, {
+      appId: "may",
+      conversationId: "may:primary",
+      updateKey: "accept-request",
+      now: 100,
+      updates: [
+        {
+          id: "review",
+          expectedRevision: 0,
+          scope: "Review the design",
+          disposition: "open",
+          taskRefs: [{ appId: "evaluation", taskId: "review/docs" }],
+        },
+      ],
+    });
+
+    expect(readAppConversationResource(db, "may", "may:primary").requests).toEqual([
+      expect.objectContaining({
+        id: "review",
+        taskRefs: [
+          {
+            appId: "evaluation",
+            taskId: "review/docs",
+            ref: taskReferenceDigest("evaluation", "review/docs").slice(0, 8),
+          },
+        ],
+      }),
+    ]);
   });
 
   it("retains historical inbox evidence without presenting its lease as an active Turn", () => {

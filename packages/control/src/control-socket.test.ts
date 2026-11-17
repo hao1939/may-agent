@@ -484,10 +484,10 @@ describe("control socket protocol", () => {
   });
 
 
-  it("passes the derived human-action filter through the Task resource read", async () => {
+  it("passes the human-action and keyword filters through the Task resource read", async () => {
     const core = createCore({
       listTasks: (options) => {
-        expect(options).toEqual({ appId: "evaluation", humanActionOnly: true, limit: 20 });
+        expect(options).toEqual({ appId: "evaluation", humanActionOnly: true, q: "PR 581", limit: 20 });
         return { items: [], total: 0 };
       },
     });
@@ -497,6 +497,7 @@ describe("control socket protocol", () => {
         type: "tasks.list",
         appId: "evaluation",
         humanActionOnly: true,
+        q: "  PR 581  ",
         limit: 20,
       }),
     ).resolves.toEqual({ type: "ok", command: "tasks.list", tasks: { items: [], total: 0 } });
