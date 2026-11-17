@@ -778,9 +778,17 @@ describe("shared agent execution preparation", () => {
 
       expect(prepared.requireFinish).toBe(true);
       expect(prepared.systemPrompt).toContain("Complete this invocation by calling finish()");
-      expect((prepared.tools[0]!.parameters as any).required).toContain("output");
+      expect(Value.Check(prepared.tools[0]!.parameters, {
+        status: "done",
+        summary: "finished",
+      })).toBe(false);
+      expect(Value.Check(prepared.tools[0]!.parameters, {
+        status: "blocked",
+        summary: "waiting",
+      })).toBe(true);
       if (outputSchema === taskAgentResultSchema) {
-        const result = prepared.tools[0]!.parameters.properties.output as typeof taskAgentResultSchema;
+        const parameters = prepared.tools[0]!.parameters as { anyOf: Array<{ properties: { output: typeof taskAgentResultSchema } }> };
+        const result = parameters.anyOf[0]!.properties.output;
         expect(result.properties.communication.description).toContain("saved reply context");
         expect(result.properties.communication.items.properties.inputId.description).toContain("events.inputs");
         expect(result.properties.response.description).toContain("ordinary App");
@@ -1093,14 +1101,11 @@ describe("direct structured judgment execution", () => {
     expect(result.usage).toMatchObject({ totals: { replies: 2, input: 20, cacheRead: 200, cacheWrite: 40, output: 10 }, toolCalls: 1 });
   });
 
-  test.each([
-    { ...finishArgs, output: { state: "unsupported" } },
-    { ...finishArgs, output: undefined },
-  ])("rejects an invalid or uncommitted judgment %#", async (args) => {
+  test("rejects an invalid judgment", async () => {
     const prepared = prepare();
     let calls = 0;
     prepared.runner.streamFn = () => {
-      if (++calls === 1) return finishStream(args);
+      if (++calls === 1) return finishStream({ ...finishArgs, output: { state: "unsupported" } });
       return terminalStream({
         ...assistantMessage("stop"),
         content: [{ type: "text", text: "No valid judgment returned." }],
@@ -1114,6 +1119,25 @@ describe("direct structured judgment execution", () => {
     expect(result.finishResult).toBeUndefined();
     expect(result.structuredResult).toBeUndefined();
     expect(calls).toBe(3); // Rejected tool, final text, one corrective prompt.
+  });
+
+  test("accepts a useful blocked report without structured output", async () => {
+    const prepared = prepare();
+    prepared.runner.streamFn = () => finishStream({
+      status: "blocked",
+      summary: "Waiting for an external prerequisite",
+      facts: finishArgs.facts,
+    });
+
+    const result = await executePreparedAgent(prepared);
+
+    expect(result.status).toBe("done");
+    expect(result.finishResult).toEqual({
+      status: "blocked",
+      summary: "Waiting for an external prerequisite",
+      facts: finishArgs.facts,
+    });
+    expect(result.structuredResult).toBeUndefined();
   });
 
   test("keeps a provider failure as an execution error", async () => {
