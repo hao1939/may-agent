@@ -48,16 +48,29 @@ import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { readMetricHistory } from "../adapters/reporting/metric-observations.js";
-import type { EventInput } from "@may-agent/control/events";
-import { findEventPublication, getEventView } from "../core/events/interface.js";
+import type { EventInput, PublicEvent } from "@may-agent/control/events";
+import { findEventPublication, getEventView, type EventInterface } from "../core/events/interface.js";
+import type { HumanTaskPage, HumanTaskView } from "../human-task-service.js";
+import type { AppConversationResource } from "@may-agent/sdk/app";
 
 // ── Public API ───────────────────────────────────────────────────────────
+
+export type DaemonHttpServices = {
+  events: EventInterface;
+  getStatus(): unknown;
+  getAppConversation(appId: string, conversationId: string, options?: { limit?: number }): AppConversationResource;
+  listApps(appId?: string): unknown[];
+  listTasks(options?: Record<string, unknown>): HumanTaskPage;
+  getTask(input: Record<string, unknown>): HumanTaskView | null;
+};
 
 export interface WebUIOptions {
   interface?: InterfaceBinding;
   stateDir: string;
   port: number;
   hostname?: string;
+  /** Present in the daemon. Omitted only by the bounded standalone compatibility server. */
+  services?: DaemonHttpServices;
 }
 
 type DaemonFrameResult = {
@@ -131,7 +144,10 @@ export async function sendDaemonFrameWithRetry(
   socketPath: string,
   frame: Record<string, unknown>,
   send: typeof sendDaemonEvent = sendDaemonEvent,
-  confirm?: (idempotencyKey: string, frame: Record<string, unknown>) => number | undefined | Promise<number | undefined>,
+  confirm?: (
+    idempotencyKey: string,
+    frame: Record<string, unknown>,
+  ) => number | undefined | Promise<number | undefined>,
 ): Promise<DaemonFrameResult> {
   const publishEvent =
     frame.type === "publish" && frame.event && typeof frame.event === "object" && !Array.isArray(frame.event)
@@ -377,6 +393,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
   const humanInterface = opts.interface ?? interfaceBinding();
   const DAEMON_AGENT = humanInterface.agent;
+  const services = opts.services;
 
   function _db(): SqliteDb {
     return openStateDb(join(STATE_DIR, "may.db"));
@@ -390,6 +407,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   async function handleReadiness(): Promise<Response> {
+    if (services) return json({ ready: true, checkedAt: Date.now(), transport: "in-process" });
     const readiness = await probeDaemonReadiness(conventionSocketPath());
     return json(readiness, readiness.ready ? 200 : 503);
   }
@@ -409,6 +427,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // Per webui.md "Plane C — Steering verbs": one event per verb, async.
 
   async function sendDaemonFrame(frame: Record<string, unknown>): Promise<DaemonFrameResult> {
+    if (services && frame.type === "publish" && frame.event && typeof frame.event === "object") {
+      try {
+        const receipt = services.events.publish(frame.event as EventInput, {
+          source: "web-ui",
+          inputSource: { kind: "human", id: "web-ui" },
+        });
+        return { ok: true, ...receipt };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
     const socketPath = conventionSocketPath();
     return sendDaemonFrameWithRetry(socketPath, frame, sendDaemonEvent, (_key, durableFrame) => {
       if (durableFrame.type !== "publish") return undefined;
@@ -417,6 +446,40 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   async function daemonRead(frame: Record<string, unknown>): Promise<Record<string, unknown>> {
+    if (services) {
+      try {
+        switch (frame.type) {
+          case "status":
+            return { type: "status", command: "status", status: services.getStatus() };
+          case "apps.list":
+            return {
+              type: "ok",
+              command: frame.type,
+              apps: services.listApps(typeof frame.appId === "string" ? frame.appId : undefined),
+            };
+          case "app.conversation.get":
+            return {
+              type: "ok",
+              command: frame.type,
+              conversation: services.getAppConversation(String(frame.appId), String(frame.conversationId), {
+                limit: typeof frame.limit === "number" ? frame.limit : 30,
+              }),
+            };
+          case "tasks.list":
+            return { type: "ok", command: frame.type, tasks: services.listTasks(frame) };
+          case "task.get":
+            return { type: "ok", command: frame.type, task: services.getTask(frame) };
+          default:
+            return { type: "error", command: String(frame.type ?? "read"), message: "Unsupported direct read" };
+        }
+      } catch (error) {
+        return {
+          type: "error",
+          command: String(frame.type ?? "read"),
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
     try {
       return await sendDaemonEvent(conventionSocketPath(), frame, { timeoutMs: 2_000 });
     } catch (error) {
@@ -442,8 +505,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     if (!eventId || getEventView(db, eventId)?.delivery.state !== "accepted") return undefined;
     return { eventId, eventType: "app.input.requested", delivery: "accepted" };
   }
-  const { handleApps, handleConversationRead, handleHumanTaskRead } =
-    createTaskReadHandlers({ daemonRead, json });
+  const { handleApps, handleConversationRead, handleHumanTaskRead } = createTaskReadHandlers({ daemonRead, json });
   const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
   const confirmTaskInput = (command: TaskInputCommand) => {
     const data = {
@@ -451,9 +513,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       targetTaskId: command.event.data.targetTaskId,
       channel: command.event.data.channel,
     };
-    const confirm = (data: Record<string, unknown>) => confirmAcceptedAppInput(
-      command.event.target.appId, command.event.idempotencyKey, data, command.event.data.source,
-    );
+    const confirm = (data: Record<string, unknown>) =>
+      confirmAcceptedAppInput(
+        command.event.target.appId,
+        command.event.idempotencyKey,
+        data,
+        command.event.data.source,
+      );
     // The old envelope still includes the exact generation in domain context.
     // Only confirm an accepted receipt; never publish new unfenced input.
     return confirm({ ...data, targetTaskGeneration: command.event.data.targetTaskGeneration }) ?? confirm(data);
@@ -462,24 +528,27 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     daemonRead,
     json,
     confirm: confirmTaskInput,
-    admit: async (command) =>
-      (await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, () =>
+    admit: async (command) => {
+      if (services) {
+        const receipt = services.events.publish(command.event, {
+          source: "web-ui",
+          inputSource: command.event.data.source,
+        });
+        return { type: "ok", command: "publish", ...receipt };
+      }
+      return (await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, () =>
         confirmTaskInput(command),
-      )) as unknown as Record<string, unknown>,
+      )) as unknown as Record<string, unknown>;
+    },
   });
-  const {
-    handleSession,
-    handleTranscript,
-    handleRawLog,
-    handleSessionCancel,
-    handleSessionMessage,
-  } = createSessionRouteHandlers({
-    stateDir: STATE_DIR,
-    getDb: _db,
-    json,
-    sendDaemonFrame,
-    buildPublishFrame,
-  });
+  const { handleSession, handleTranscript, handleRawLog, handleSessionCancel, handleSessionMessage } =
+    createSessionRouteHandlers({
+      stateDir: STATE_DIR,
+      getDb: _db,
+      json,
+      sendDaemonFrame,
+      buildPublishFrame,
+    });
   const {
     isAllowedProjectPath,
     resolveProjectFile,
@@ -501,12 +570,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     sendAppInputWithRetry,
     confirmAcceptedAppInput,
   });
-  const {
-    handleAgents,
-    handleAgentAbout,
-    handleAgentDefaultSession,
-    handleAgentMessage,
-  } = createAgentRouteHandlers({
+  const { handleAgents, handleAgentAbout, handleAgentDefaultSession, handleAgentMessage } = createAgentRouteHandlers({
     stateDir: STATE_DIR,
     agentsRoot: AGENTS_ROOT,
     sharedRoot: SHARED_ROOT,
@@ -518,27 +582,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     sendDaemonFrame,
     buildPublishFrame,
   });
-  const {
-    handleLiveness,
-    handleMetrics,
-    handleBrowse,
-    handleKnowledgeSearch,
-    handleAlertResolve,
-  } = createMetricAndKnowledgeRouteHandlers({
-    agentsRoot: AGENTS_ROOT,
-    sharedRoot: SHARED_ROOT,
-    projectsRoot: PROJECTS_ROOT,
-    getDb: _db,
-    json,
-    sendDaemonFrame,
-    buildPublishFrame,
-  });
-  const {
-    handleEvents,
-    handleEventDeliveryHealth,
-    handleEventIngress,
-    handleEventView,
-  } = createEventRouteHandlers({
+  const { handleLiveness, handleMetrics, handleBrowse, handleKnowledgeSearch, handleAlertResolve } =
+    createMetricAndKnowledgeRouteHandlers({
+      agentsRoot: AGENTS_ROOT,
+      sharedRoot: SHARED_ROOT,
+      projectsRoot: PROJECTS_ROOT,
+      getDb: _db,
+      json,
+      sendDaemonFrame,
+      buildPublishFrame,
+    });
+  const { handleEvents, handleEventDeliveryHealth, handleEventIngress, handleEventView } = createEventRouteHandlers({
     getDb: _db,
     json,
     isAllowedProjectPath,
@@ -547,9 +601,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     buildEventIngressFrame,
   });
 
-  // ── WebSocket proxy ──────────────────────────────────────────────────
+  // ── WebSocket wakes ──────────────────────────────────────────────────
 
+  type WsSubscription = {
+    conversations: Set<string>;
+    taskApps: Set<string>;
+    task?: { appId: string; taskId: string };
+    overflowed: boolean;
+    unsubscribe?: () => void;
+  };
   const wsToUnix = new Map<any, Duplex>();
+  const wsSubscriptions = new Map<any, WsSubscription>();
+  const MAX_WS_BUFFERED_BYTES = 256 * 1024;
 
   function proxyWebSocket(ws: any): void {
     const socketPath = conventionSocketPath();
@@ -570,7 +633,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (!line.trim()) continue;
         try {
           const event = JSON.parse(line);
-          // Skip subscribe ack responses
           if (event.type === "ok" && event.command === "subscribe") continue;
           ws.send(line);
         } catch {
@@ -598,6 +660,70 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     });
   }
 
+  function eventMatchesSubscription(event: PublicEvent, state: WsSubscription): boolean {
+    const data = event.data ?? {};
+    const appId = event.target?.appId ?? (typeof data.appId === "string" ? data.appId : undefined);
+    const taskId = event.target?.taskId ?? (typeof data.taskId === "string" ? data.taskId : undefined);
+    const conversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
+    if (conversationId && state.conversations.has(conversationId)) return true;
+    if (state.task && appId === state.task.appId && taskId === state.task.taskId) return true;
+    return Boolean(appId && state.taskApps.has(appId));
+  }
+
+  function openDirectWebSocket(ws: any): void {
+    const state: WsSubscription = { conversations: new Set(), taskApps: new Set(), overflowed: false };
+    state.unsubscribe = services!.events.subscribe({}, (event) => {
+      if (!eventMatchesSubscription(event, state)) return;
+      if (Number(ws.bufferedAmount ?? 0) > MAX_WS_BUFFERED_BYTES) {
+        if (!state.overflowed) {
+          state.overflowed = true;
+          try {
+            ws.send(JSON.stringify({ type: "overflow", action: "reread" }));
+          } catch {}
+        }
+        return;
+      }
+      state.overflowed = false;
+      try {
+        ws.send(JSON.stringify(event));
+      } catch {}
+    });
+    wsSubscriptions.set(ws, state);
+    ws.send(JSON.stringify({ type: "connected", agent: DAEMON_AGENT, instance: DAEMON_INSTANCE }));
+  }
+
+  function updateDirectSubscription(ws: any, msg: unknown): void {
+    const state = wsSubscriptions.get(ws);
+    if (!state) return;
+    let frame: Record<string, unknown>;
+    try {
+      frame = JSON.parse(typeof msg === "string" ? msg : new TextDecoder().decode(msg as ArrayBuffer));
+    } catch {
+      ws.send(JSON.stringify({ type: "error", message: "Valid subscription JSON required" }));
+      return;
+    }
+    if (frame.type !== "subscribe") {
+      ws.send(JSON.stringify({ type: "error", message: "Only subscribe frames are accepted on /ws" }));
+      return;
+    }
+    const strings = (value: unknown) =>
+      Array.isArray(value)
+        ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).slice(0, 100)
+        : [];
+    state.conversations = new Set(strings(frame.conversations));
+    state.taskApps = new Set(strings(frame.taskApps));
+    const task =
+      frame.task && typeof frame.task === "object" && !Array.isArray(frame.task)
+        ? (frame.task as Record<string, unknown>)
+        : null;
+    state.task =
+      task && typeof task.appId === "string" && typeof task.taskId === "string"
+        ? { appId: task.appId.trim(), taskId: task.taskId.trim() }
+        : undefined;
+    state.overflowed = false;
+    ws.send(JSON.stringify({ type: "subscribed" }));
+  }
+
   // ── Server ───────────────────────────────────────────────────────────
 
   const server = Bun.serve({
@@ -614,7 +740,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/readiness") return handleReadiness();
       if (url.pathname === "/api/agents") return handleAgents();
       const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
-      if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1], url.searchParams.get("requestId")?.trim());
+      if (defaultSessionMatch)
+        return handleAgentDefaultSession(defaultSessionMatch[1], url.searchParams.get("requestId")?.trim());
       const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
       if (aboutMatch) return handleAgentAbout(aboutMatch[1]);
       if (url.pathname === "/api/browse") return handleBrowse(url);
@@ -622,15 +749,21 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/context-usage") {
         let query: ReturnType<typeof contextUsageQuery>;
-        try { query = contextUsageQuery(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400); }
+        try {
+          query = contextUsageQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400);
+        }
         return json(readContextUsage(_db(), query));
       }
       if (url.pathname === "/api/task-attempts") {
         if (req.method !== "GET") return json({ error: "GET required" }, 405);
         let query: ReturnType<typeof taskAttemptsQuery>;
-        try { query = taskAttemptsQuery(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid attempt filter" }, 400); }
+        try {
+          query = taskAttemptsQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid attempt filter" }, 400);
+        }
         return json(readTaskAttempts(_db(), query));
       }
       const workflowFactsMatch = url.pathname.match(/^\/api\/workflow-runs\/([^/]+)$/);
@@ -645,8 +778,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
       if (url.pathname === "/api/workflow-health") {
         let query: ReturnType<typeof workflowHealthQuery>;
-        try { query = workflowHealthQuery(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid workflow filter" }, 400); }
+        try {
+          query = workflowHealthQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid workflow filter" }, 400);
+        }
         return json(readWorkflowHealth(_db(), query));
       }
       if (url.pathname === "/api/projects") return handleProjects();
@@ -684,8 +820,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);
         let window: ReturnType<typeof healthWindow>;
-        try { window = healthWindow(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid history window" }, 400); }
+        try {
+          window = healthWindow(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid history window" }, 400);
+        }
         return json(readMetricHistory(_db(), metricId, window));
       }
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
@@ -717,13 +856,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     },
     websocket: {
       open(ws: any) {
-        proxyWebSocket(ws);
+        if (services) openDirectWebSocket(ws);
+        else proxyWebSocket(ws);
       },
       message(ws: any, msg: any) {
-        const unix = wsToUnix.get(ws);
-        if (unix && typeof msg === "string" && msg.trim()) unix.write(msg.trim() + "\n");
+        if (services) updateDirectSubscription(ws, msg);
+        else {
+          const unix = wsToUnix.get(ws);
+          if (unix && typeof msg === "string" && msg.trim()) unix.write(msg.trim() + "\n");
+        }
       },
       close(ws: any) {
+        const subscription = wsSubscriptions.get(ws);
+        subscription?.unsubscribe?.();
+        wsSubscriptions.delete(ws);
         const unix = wsToUnix.get(ws);
         if (unix) {
           unix.destroy();
