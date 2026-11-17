@@ -904,3 +904,37 @@ Evidence is `2f-independent-focused.log`, `schema-report-1794943973481.json`,
 `d9-host500-agent-diagnostic.log` and `d9-host500-recovery-diagnostic.log` under
 the existing local trial directory. These checks do not establish activation,
 full CI or readiness notification.
+
+## Captured prompt configuration and native PR observation
+
+The stronger exact-`2f6aaaf1` standalone probe demonstrates live configuration
+rereading in actual prompt execution. After catalog preparation, its synthetic
+controller changes the fixture's model, description and `AGENTS.md` identity,
+then invokes the already listed canonical agent. Real child preparation chooses
+the new model and identity; discovery also changes. Fixing descriptor text alone
+cannot satisfy the accepted immutable-tree contract. Capture and reuse complete
+prompt configuration/identity during bounded preparation, while permitting a
+later independent invocation to observe the new version. Root returned the
+credential-free reproducer and replied on the existing metadata discussion.
+
+The source also retains an unused public `dataSchema` compatibility authoring
+path in `CallableDefinition`/`effectiveInputSchema`, exercised only by its old
+contract fixtures. Complete B by retaining one full-envelope `inputSchema`,
+migrating those fixtures and rejecting legacy authoring with useful feedback.
+This removes a temporary migration path rather than adding a second schema
+translation rule.
+
+There is positive native process evidence before readiness: the existing GitHub
+observer delivered `alex.github.pull-request.state` for `2f6aaaf1`, including the
+new prompt partial-result review, to the same Host Task at generation eighteen.
+It woke session `s_1794944232309_f54e19d2-a1cf-41fb-8670-43be3af9f9c6` without
+Root manually waking that Task. Container was green and Quality remained
+running. This proves observer-to-Task reentry; subsequent repair and the
+late-after-readiness case still need evidence. At the actual 64-round boundary,
+May creator-revised the same Task to generation nineteen with cumulative total
+72 and consumed floor 64. The retained App workflow continued independently.
+
+Receipts are `standalone-config-snapshot-1794944373036.json` and
+`native-pr589-observation-2f.json` under the existing local trial directory.
+No unified candidate has been activated and no readiness Telegram has been
+established.

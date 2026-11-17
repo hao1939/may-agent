@@ -102,6 +102,9 @@ Validate the common envelope and any target input schema against the same value.
 A target schema can constrain `data` but cannot weaken the prompt requirement.
 Discovery exposes the complete effective schema, including the common envelope.
 Executable capabilities, Task coordinates and cancellation remain runtime context.
+Author target requirements with one full-envelope `inputSchema`; remove the
+temporary `dataSchema` compatibility surface rather than keeping two authoring
+contracts after the cutover.
 
 The model call accepts `options` beside `input`; the SDK accepts the same options
 as its third argument. A supplied timeout is positive and can only shorten the
@@ -294,7 +297,8 @@ this order, returning source evidence after each coherent checkpoint:
    CLI receipts through the existing execution read/observer and migrate actual
    consumers; avoid a second result alias or an unbounded process-local run store.
 2. **Close captured-catalog gaps.** Preserve verified exact child-name admission;
-   capture prompt config/metadata once per invocation tree, retain pending imports
+   capture prompt config, identity and metadata once per invocation tree and use
+   that snapshot in actual prompt preparation, not only discovery. Retain pending imports
    through explicit-module cancellation, and bound settlement when a child ignores
    cancellation. Preserve the existing finite cancellation/cleanup policy.
 3. **Complete the paired App contribution.** Migrate all active definitions,
