@@ -2,9 +2,9 @@
 
 **Design status:** Accepted; the [owning contract](../2a-design/execution-contributions.md)
 defines the enduring behavior. This proposal tracks the remaining cutover work.
-**Implementation status:** Host source is published through `76cafc9ab8` in draft
+**Implementation status:** Host source is published through `22285e5d97` in draft
 [#589](https://github.com/hao1939/may-agent/pull/589). The paired App contribution
-at `cdc1f01926` is reviewed and verified. The installed runtime has not changed.
+at `b7d6b41b7a` is reviewed and verified for its scoped compatibility checks. The installed runtime has not changed.
 
 The implemented source uses one canonical catalog, mandatory `{prompt,data?}`
 input, common validated results and awaited calls for agents and workflows.
@@ -16,13 +16,17 @@ without fabricating output or execution identity.
 
 The remaining work, in order, is:
 
-1. Finish Host/CLI fixture migration while preserving real cancellation, steering,
-   child-drain, lineage and Task-fence coverage. Pass full current-head Quality
-   and Container checks. The latest completed Quality baseline is Host2286:
-   3,492 tests, 15 failures across 12 files, two skips, down from34 at Host3e1.
-   Host76ca passes51 owning tests with two existing skips and static checks;
-   its whole-suite result is pending. Container2286 built successfully but failed
-   in runtime-user smoke checks with exit141; the exact pipeline is untraced.
+1. Finish the remaining Host workflow fixtures and ordinary nested-error parity,
+   then pass full current-head Quality and Container. The latest completed
+   Quality baseline is Host2228: 3,492 tests, three failures, two skips;
+   Container passes. Local Hostfc04 repairs an actual gap: ordinary thrown code
+   failures escaped `ctx.call`, while prompt failures returned common results.
+   Independent hosted/standalone probes now return error reports with real child
+   IDs. Static checks pass; broader owning checks pass301 tests and fail one
+   shared-concurrency-control test, so publication waits for preserved supervision
+   unwinding. The metric envelope fixture,
+   canonical cancellation fixture and committed standalone regression remain.
+
 2. Verify one exact compatible final Host/SDK/App pair and activate it locally,
    preserving legitimate installation changes and the required Task-revision
    repair. Validate the final runtime path as well as the isolated source pair.
@@ -44,6 +48,11 @@ Task, ingress and event redesign belongs to the user's separate work.
 
 Exact revisions, focused checks, prior failures and operational findings are in
 the [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
+Appb7d adds compatibility coverage for scoped specialist guidance, assignment
+forwarding, retained bindings and quiet replay; all77 owning tests, typecheck
+and design checks pass independently, with native review acceptance. The prior
+full App/Gym receipts remain specific to Appcdc/Host3e1.
+
 No unified candidate is activated and readiness notification remains unproved.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).

@@ -1975,3 +1975,52 @@ Evidence: `76ca-independent-owning.log`, `76ca-independent-check-ci.log`,
 `2286-hosted-failures.json`, `2286-hosted-failure-file-map.json`,
 `2286-container-results.zip`, `2286-container-sigpipe-probe.json` and
 `pr589-76ca-description-receipt.json` under the trial directory.
+
+
+## Cancellation publication, compatibility and nested-error finding
+
+Root independently reviewed/pushed Host22285e5d975920893095411d1123f1e6ebbafbd7:
+all18 composition/cancellation tests and `check:ci` pass. The real native CLI
+complete/cancel paths retain child-process drainage and Task bindings. Trusted
+retained-instance publication uses the existing control client; no public model
+cancel action is restored. Completed hosted run at this exact revision reports
+3,492 tests, three failures (Task direct report, recovered workflow failure,
+metric canary), two skips. Container passes. This supersedes76ca's8 failures
+and2286's15; the earlier smoke exit141 did not recur without source changes.
+
+Final App composition exposed one additive text conflict with canonical bd4's
+scoped-specialist guidance. Appcdc already contains that behavior alongside the
+new assignment/binding forwarding; no duplicate implementation was needed. May
+adds a meaningful coexistence/replay regression at
+b7d6b41b7a5237cd7ea109cab19b80cfc416d8de. Root independently passes all77 owning
+tests, typechecking and design checks, then pushes to the retained backup branch.
+Native Bob review s_1794955931806_afb6a67f-9759-4e9e-8797-3491ce63f38b accepts
+this scoped source contribution. Apps Task returns idle under the same64 limit.
+Earlier full App/Gym receipts remain exact to their preceding revisions.
+
+A local integration preview preserves required Host repair590 and current
+canonical App source. The sole App conflict resolves to the exact May-reviewed
+body already containing both behaviors; the helper guards both blob identities.
+These local immutable integration commits change no native branch, installed
+artifact, release pointer or remote ref. They are preparation, not activation.
+
+Independent production probe `nested-workflow-error-parity.ts` exposes an actual
+remaining result mismatch at Host2228: ordinary thrown child workflow failures
+escape `ctx.call` in both hosted and standalone execution. Both retain real
+child IDs, but callers must catch exceptions instead of consuming error reports.
+May's local Hostfc041fbd283461143b3660f986cbc649375264a8 normalizes these ordinary
+failures; the same two-path probe now returns common error reports. Hosted IDs
+match persisted child failures; standalone trace IDs remain exact. Static checks pass. Broader owning checks pass301 tests and fail one existing
+shared-concurrency-control test: the adapter normalizes an allowance exception
+that previously unwound. Root holds publication and returns that exact finding
+to May, also requiring preserved standalone deferral control. Control-error unwind,
+the remaining fixtures and a committed standalone SDK regression stay required.
+No unified runtime is activated.
+
+Evidence under the trial directory: `2228-independent-owning.log`,
+`2228-independent-check-ci.log`, `2228-hosted-failures.json`,
+`b7d-independent-owning.log`, `b7d-independent-typecheck.log`,
+`b7d-independent-design.log`, `2228-local-integration-merge-preview.json`,
+`local-integration-22285e5d97-b7d6b41b7a.json`,
+`2228-nested-workflow-error-parity.json`, `fc04-nested-workflow-error-parity.json`
+and `fc04-independent-parity-feedback-receipt.json`.
