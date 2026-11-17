@@ -451,7 +451,7 @@ const scenarios: Record<string, () => Promise<void>> = {
     );
     writeFileSync(join(helperDir, "AGENTS.md"), "PINNED_REVIEWER_INSTRUCTIONS\n");
     const unrelated = join(f.root, "projects", "unrelated.app");
-    mkdirSync(join(unrelated, "agents", "other"), { recursive: true });
+    mkdirSync(join(unrelated, "agents", "other", "workflows"), { recursive: true });
     writeFileSync(
       join(unrelated, "app.ts"),
       'export default { id: "unrelated", version: 1, agent: "other", inputSchema: { type: "object" } };',
@@ -460,22 +460,51 @@ const scenarios: Record<string, () => Promise<void>> = {
       join(unrelated, "agents", "other", "agent.json"),
       JSON.stringify({
         name: "other",
-        description: "Not needed by this Task",
+        description: "Cross-App catalog caller",
         domain: "test",
-        model: "unavailable",
+        model: "test",
         tools: [],
       }),
     );
-    writeFileSync(join(unrelated, "agents", "other", "AGENTS.md"), "Unrelated agent\n");
+    writeFileSync(join(unrelated, "agents", "other", "AGENTS.md"), "CROSS_APP_OTHER_INSTRUCTIONS\n");
+    writeFileSync(
+      join(unrelated, "agents", "other", "workflows", "catalog-helper.ts"),
+      `
+      export const name = "catalog-helper";
+      export const description = "Return the catalog captured for another App caller";
+      export async function execute(ctx) {
+        return ctx.done("catalog captured", ctx.list().map(item => item.name));
+      }
+    `,
+    );
     writeFileSync(
       join(f.appDir, "agents", "owner", "workflows", "probe.ts"),
       `
       export const name = "probe";
-      export const description = "Call a helper through the real worker";
+      export const description = "Compare the full catalog across real worker callers";
       export async function execute(ctx) {
+        const parentCatalog = ctx.list().map(item => item.name);
+        const peer = await ctx.call("unrelated/catalog-helper", { prompt: "List the same captured catalog" });
+        if (peer.status !== "done" || JSON.stringify(peer.output) !== JSON.stringify(parentCatalog)) {
+          throw new Error("Cross-App callers received different catalogs: " + JSON.stringify({ parentCatalog, peer }));
+        }
+        const peerPrompt = await ctx.call("unrelated/other", {
+          prompt: "Review the cross-App fixture",
+          data: { source: "sample/probe" }
+        });
+        if (peerPrompt.status !== "done") throw new Error(peerPrompt.summary);
         const result = await ctx.call("sample/local-reviewer", { prompt: "Review the fixture" });
         if (result.status !== "done") throw new Error(result.summary);
-        return ctx.done("done", { state: "converged", summary: result.summary, facts: [] });
+        return ctx.done("done", {
+          state: "converged",
+          summary: result.summary,
+          facts: [JSON.stringify({
+            catalog: parentCatalog,
+            peerId: peer.id,
+            peerPromptId: peerPrompt.id,
+            reviewerId: result.id
+          })]
+        });
       }
     `,
     );
@@ -500,9 +529,24 @@ const scenarios: Record<string, () => Promise<void>> = {
         "converged",
         JSON.stringify(f.store.readTaskContext({ taskIds: ["work/one"] })),
       );
-      assert.equal(acceptedAttempt(f).acceptedResult?.summary, "Reviewed by the pinned helper");
-      assert.equal(prompts.length, 1);
-      assert(prompts[0].includes("PINNED_REVIEWER_INSTRUCTIONS"));
+      const accepted = acceptedAttempt(f).acceptedResult;
+      assert.equal(accepted?.summary, "Reviewed by the pinned helper");
+      const proof = JSON.parse(String(accepted?.facts?.[0])) as {
+        catalog: string[];
+        peerId?: string;
+        peerPromptId?: string;
+        reviewerId?: string;
+      };
+      assert(proof.catalog.includes("sample/local-reviewer"));
+      assert(proof.catalog.includes("sample/probe"));
+      assert(proof.catalog.includes("unrelated/catalog-helper"));
+      assert(proof.catalog.includes("unrelated/other"));
+      assert.match(proof.peerId ?? "", /^wr_/);
+      assert.match(proof.peerPromptId ?? "", /^s_/);
+      assert.match(proof.reviewerId ?? "", /^s_/);
+      assert.equal(prompts.length, 2);
+      assert(prompts.some((prompt) => prompt.includes("CROSS_APP_OTHER_INSTRUCTIONS")));
+      assert(prompts.some((prompt) => prompt.includes("PINNED_REVIEWER_INSTRUCTIONS")));
     } finally {
       await server.stop(true);
     }
