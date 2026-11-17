@@ -1893,3 +1893,31 @@ finite Host Task/workflow continues; Appcdc's reviewed source is retained.
 Evidence: `ad5-independent-owning.log`, `ad5-independent-check-ci.log`,
 `f386-independent-lifecycle.log` and `f386-independent-check-ci.log` under the
 trial directory.
+
+## Task and workflow context migration verified
+
+Root reviewed and pushed Host `f8711cd1b6cd46229da01ae70fe0a23f81c617d6`.
+All31 owning tests and `check:ci` pass independently. Context preparation now
+uses the canonical target/envelope; compaction checks inspect the effective
+finish union, and workflow-context checks include discovery while preserving
+the distinction between authored reports and runtime-bound execution identity.
+Actual correction, preparation usage, fresh-manager behavior and unsupported
+SDK capability checks remain.
+
+Root also reviewed/pushed Host `9c864a51597e581a82b6de5240aa6a7b68ea76f0`.
+All seven real-provider handoff tests and `check:ci` pass independently. Agent,
+workflow and nested-workflow paths use the same canonical call envelope and
+common result, retaining actual child IDs. Feedback/cancellation, inherited
+Task context, revisions and captured lineage remain tested; scoped settlement
+preserves saved Task input and Conditions. Removed fork and procedure-only
+permission assertions follow the accepted cutover rather than restoring them.
+
+These are source repairs for the known Task/context group. The latest whole
+hosted baseline remains Host3e1's34 failures/18files and predates these commits;
+current-head Quality and the installed trial remain unproved. May continues
+the same finite Task/workflow from the exact artifact map and grouped source
+review, retaining Appcdc and all usage/effects.
+
+Evidence: `f871-independent-owning.log`, `f871-independent-check-ci.log`,
+`9c86-independent-owning.log`, `9c86-independent-check-ci.log` and
+`3e1-hosted-source-triage.md` under the trial directory.

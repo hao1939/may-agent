@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`f386446c04` and App `cdc1f01926`. The installed runtime has not changed.
+`9c864a5159` and App `cdc1f01926`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -33,10 +33,12 @@ The remaining high-value gaps are:
   fixtures and requires finish in canonical model-tool prompt calls; its 26
   owning tests and `check:ci` pass. Hostad5 passes all 55 agent-execution tests;
   Hostf386 commits the real-manager missing-report regression and passes all 19
-  lifecycle tests. Both exact checkpoints pass `check:ci`. Host3e1's completed hosted run
+  lifecycle tests. Hostf871 passes all 31 context tests; Host9c86 passes all seven
+  Task handoff tests, preserving real feedback, cancellation, input and Conditions.
+  All four exact checkpoints pass `check:ci`. Host3e1's completed hosted run
   reports 34 failures across 18 files (3,491 tests, two skips); Container passes.
   This supersedes Hoste764's 42-failure baseline. Full current-head Quality
-  remains required; that baseline predates the two latest fixture checkpoints.
+  remains required; that baseline predates these fixture checkpoints.
 - Verify and activate one exact compatible local pair, preserving legitimate
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
