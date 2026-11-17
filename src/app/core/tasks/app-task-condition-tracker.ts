@@ -218,9 +218,16 @@ function isTerminalResourceEvent(event: Record<string, unknown>): boolean {
 
 function matchesContinuousTerminal(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.mode !== "continuous" || !isTerminalResourceEvent(event)) return false;
-  const expected = isRecord(condition.spec.expected) ? condition.spec.expected : {};
-  return ["source", "timestamp"].every((field) => !(field in expected) ||
-    matchesExpectedRecord({ [field]: expected[field] }, event));
+  if (!isRecord(condition.spec.expected)) return true;
+  const expected = { ...condition.spec.expected };
+  for (const field of ["state", "status", "disposition", "result", "outcome", "closed", "merged"]) {
+    delete expected[field];
+  }
+  if (typeof expected.field === "string" &&
+      ["state", "status", "disposition", "result", "outcome", "closed", "merged"].includes(expected.field)) {
+    for (const field of ["field", "anyOf", "equals", "notEquals", "gt", "gte", "lt", "lte"]) delete expected[field];
+  }
+  return matchesExpectedRecord(expected, event);
 }
 
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
@@ -378,28 +385,39 @@ function applyConditionEvent(
     const continuous = condition.spec.mode === "continuous";
     const terminal = continuous && isTerminalResourceEvent(event);
     const fingerprint = eventField(event, "fingerprint");
-    if (continuous && fingerprint !== undefined && condition.status.observed &&
-        eventField(condition.status.observed as Record<string, unknown>, "fingerprint") === fingerprint) continue;
-    const waitingResources = Object.values(tree.resources ?? {}).filter(
+    const activeResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
         (["waiting", "running", "pending"].includes(resource.status.phase) ||
           (continuous && resource.status.phase === "converged") ||
           (resource.status.phase === "attention" && Boolean(resource.status.retryExhausted))) &&
         resource.status.conditionIds?.includes(id) &&
         !taskEventPredatesReopening(resource, event) &&
-        (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)) &&
         approvalTargetsTask(tree.project ?? "", resource.metadata.id, resource.metadata.generation, condition, event),
+    );
+    const deliveredFingerprints = condition.status.deliveredFingerprints ?? {};
+    const waitingResources = activeResources.filter((resource) =>
+      (!allowedTaskIds || allowedTaskIds.has(resource.metadata.id)) &&
+      (!continuous || fingerprint === undefined || !stableEquals(deliveredFingerprints[resource.metadata.id], fingerprint))
     );
     // Exhaustion stops automatic execution, not observation of retained waits.
     // Only a Task that still owns the Condition can admit its evidence.
     if (waitingResources.length === 0) continue;
     if (condition.status.state !== "true") {
       condition.metadata.resourceVersion += 1;
+      const nextDeliveredFingerprints = continuous && fingerprint !== undefined
+        ? Object.fromEntries([
+            ...Object.entries(deliveredFingerprints),
+            ...waitingResources.map((resource) => [resource.metadata.id, fingerprint] as const),
+          ])
+        : deliveredFingerprints;
+      const terminalDeliveredToAll = terminal && fingerprint !== undefined && activeResources.every((resource) =>
+        stableEquals(nextDeliveredFingerprints[resource.metadata.id], fingerprint));
       condition.status = {
         ...condition.status,
         observedGeneration: condition.metadata.generation,
-        state: report || (continuous && !terminal) ? "false" : "true",
+        state: report || (continuous && !terminalDeliveredToAll) ? "false" : "true",
         observed,
+        ...(continuous && fingerprint !== undefined ? { deliveredFingerprints: nextDeliveredFingerprints } : {}),
         ...(kind ? { reports: { ...observedReports(condition, store),
           [kind]: observed,
         } } : {}),

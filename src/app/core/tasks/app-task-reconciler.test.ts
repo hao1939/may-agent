@@ -5603,11 +5603,11 @@ describe("App task reconciler state", () => {
     const intents = ["watch-a", "watch-b"].map((id) => ({
       ...intent("monitor"), id, outcome: `Watch ${id}`,
     }));
-    const condition = (id: string) => ({
-      id: `pull-request:${id}`,
+    const condition = () => ({
+      id: "pull-request:shared",
       type: "pull-request.state",
       subject: "resource:repo#42",
-      expected: { source: "app:github:observer:pull-request" },
+      expected: { source: "app:github:observer:pull-request", repository: "hao1939/may-agent" },
       mode: "continuous" as const,
     });
     for (const taskIntent of intents) {
@@ -5616,7 +5616,7 @@ describe("App task reconciler state", () => {
       });
       if (claim.kind !== "claimed") throw new Error("expected claim");
       deferAppTask(config, claim, {
-        disposition: "waiting", summary: "watching the pull request", conditions: [condition(taskIntent.id)],
+        disposition: "waiting", summary: "watching the pull request", conditions: [condition()],
       });
     }
     const demand = observationDemandReader(store.db);
@@ -5625,10 +5625,11 @@ describe("App task reconciler state", () => {
     ]);
 
     const changed = {
-      type: "pull-request.state", source: "app:github:observer:pull-request",
+      type: "pull-request.state", source: "app:github:observer:pull-request", repository: "hao1939/may-agent",
       pullRequestId: "repo#42", resource: "repo#42", fingerprint: "revision-1", state: "open",
     };
-    expect(trackAppTaskConditionEvent(config, changed).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
+    expect(trackAppTaskConditionEventForTasks(config, changed, ["watch-a"]).map((wake) => wake.taskId)).toEqual(["watch-a"]);
+    expect(trackAppTaskConditionEventForTasks(config, changed, ["watch-b"]).map((wake) => wake.taskId)).toEqual(["watch-b"]);
     for (const taskIntent of intents) {
       const resumed = declareAndClaimTask(config, {
         intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
@@ -5651,6 +5652,7 @@ describe("App task reconciler state", () => {
     }
 
     const terminal = { ...next, fingerprint: "revision-3", state: "closed", closed: true };
+    expect(trackAppTaskConditionEvent(config, { ...terminal, repository: "other/repository" })).toEqual([]);
     expect(trackAppTaskConditionEvent(config, terminal).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
     for (const taskIntent of intents) {
       const resumed = declareAndClaimTask(config, {
