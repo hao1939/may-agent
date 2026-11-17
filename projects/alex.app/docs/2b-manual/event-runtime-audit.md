@@ -14,7 +14,8 @@ The audit answers three questions:
 
 1. Which event types are currently emitted?
 2. Which handlers or runtime components consume them?
-3. Which events are admitted, unhandled, or waiting for a paired close?
+3. Which required consumers have admitted responsibility, and which linked work
+   or result deliveries remain outstanding?
 
 The event table has retention, so counts are windowed facts. A zero count means
 "not seen in the retained window", not "impossible".
@@ -73,7 +74,9 @@ Before adding a new event type to `SystemEvent`:
 
 1. Identify the emitter site in code.
 2. Identify the consumer or owner route.
-3. Decide whether the event needs pair tracking.
+3. Identify its durable admission boundary and per-consumer recovery evidence.
+   Reuse the owning Task/request lifecycle for work; a new event pair must not
+   duplicate it.
 
 ## Admission Health
 
@@ -97,9 +100,9 @@ Interpretation:
   pending; there is no generic owner fallback that can turn routing into work.
 - `delivery_route='noop'` is only a legacy baseline marker for old rows.
 
-## Pair Health
+## Historical Pair Health
 
-Opening events with expected closing events should appear in pair tracking:
+For producers that already declare event pairs, inspect their retained tracking:
 
 ```sql
 SELECT pair_name, correlation_key, owner, status, opened_at,
@@ -112,6 +115,8 @@ LIMIT 100;
 
 An orphan is an investigation signal. It can mean stuck work, a missing close
 event, a wrong correlation key, a bad timeout, or an event naming issue.
+It does not establish unfinished Task work. Current input and results use their
+own admission, Task and caller records; do not add event pairs to track them.
 
 ## Semantic Trace Health
 
@@ -191,10 +196,11 @@ appended as seen human context only after the adapter actually rendered it;
 May results require no delivery receipt to enter Conversation.
 
 Trace tests should cover new May requests, later/corrective requests, approval,
-cancellation, cross-App Task dependencies and results, failure, and recovery. Compatibility
-execution tests cover async fork/workflow/CLI events, live steering, ended-session
-rejection and fresh Task attempts after confirmed cleanup. Native CLI thread
-continuity remains a separate adapter contract.
+cancellation, cross-App Task dependencies and results, failure, and recovery.
+Historical compatibility reads can retain fork/workflow/CLI evidence. Current
+execution tests cover the supported contribution interface, live steering,
+ended-session rejection and fresh Task attempts after confirmed cleanup. Native
+CLI thread continuity remains a separate adapter contract.
 
 ## Post-rollout state reconciliation
 

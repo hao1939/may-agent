@@ -162,6 +162,13 @@ retry pacing and an App workflow's development allowance bound different costs;
 neither silently renews the other. Already authorized continuation can use the
 owner path without another human confirmation.
 
+A source revision identifies the bytes checked; it does not freeze ordinary
+implementation at that revision. Bind a paired checkout to its intended SDK
+source, then record the actual clean Host/SDK/App revisions used by each check.
+An unavailable paired API can block paired verification while independent Host
+implementation proceeds. Retain the exact dependency and resumption check;
+repeating the unchanged prerequisite is not another development step.
+
 A revision that leaves persisted desired state unchanged is a no-op: preserve
 the generation and active attempt, and leave later changes at that generation
 admissible. Compare the effective stored requirements rather than App-only mapper
@@ -209,6 +216,12 @@ last Condition and satisfying it naturally lead to the same release decision.
 A released workspace is no longer reusable, even while physical removal is
 pending: newer work receives a distinct checkout, branch and private refs.
 Retries of unfinished work reuse their retained checkout.
+
+A checkout has one active editing and commit owner. A creator revision that
+names another Task's checkout does not transfer that ownership. Use distinct
+checkouts for concurrent contributions, or finish and explicitly hand over the
+retained checkout before another Task edits it. Keep each contribution's result,
+usage and caller identity separate; sequential reuse does not merge assignments.
 
 Remove released artifacts after settlement. A cleanup failure cannot undo
 accepted work or rerun its agent; retain the workspace identity and cleanup error

@@ -241,9 +241,9 @@ those mechanisms:
 | Priority | Observed gap | Next evidence |
 | --- | --- | --- |
 | Resolved locally | An effective no-op blocked the creator's real revision. | Focused #590 is active; the same Alex Task is generation twelve at total twenty-four with all sixteen consumed rounds retained. Carry the fix into the later callable candidate. |
-| 2 | Coordinators repeatedly retain answered setup/escalation inputs as waits; revising work has been treated as answering its callers. | Exact scoped return delivered to its saved caller while broader work and unrelated Scout obligations remain retained. A blocker on one input must not become an invented prerequisite for another. |
+| 2 | Coordinators retained answered setup/escalation inputs as waits; revision was treated as answering callers. Root-directed scoped cleanup now completes the old request and removes stale human action. | Fresh native follow-through without another cleanup reminder; preserve broader work and unrelated Scout obligations. |
 | 3 | The unified callable change remains partial and needed manual repair directions. | Coherent Host/SDK/App candidate, owning tests and all four invocation directions through production adapters. |
-| 4 | A watcher saw real CI/comment changes, but readiness notification and subsequent repair are unproved. | Current-head green CI, provider-backed Telegram link, then a late review comment causing the same Task/workflow to repair and reverify. Preserve ordinary Condition demand throughout this trial. |
+| 4 | Watcher CI/comment wakes work, and a Root-triggered #590 notice has provider proof; autonomous #589 readiness notification and subsequent repair remain unproved. | Current-head green #589 CI and Telegram link, then a late comment causing same-Task workflow repair and revalidation. Preserve ordinary Condition demand. |
 | Later | Continuous observation and journal/transport simplification remain proposed. | Independent per-Task delivery, missed-wake recovery and terminal observation before retirement; migrate each cleanup boundary with its actual consumers. |
 
 The design correction keeps continuing observation separate from prerequisite
@@ -406,3 +406,75 @@ the retained request keys, which was accepted. This distinguishes the automatic
 Task caller return from optional human communication and avoids inventing a
 Telegram recipient. The Task contract and execution guide now explain that
 distinction beside scoped repair returns.
+
+May subsequently retired the two exact obsolete generation-one human Conditions
+and returned a scoped answer to `appdep_f8ee63b301c7462be3307da2`. Read-back found
+that request `done`, its caller Condition true, and no `humanAction` in the
+original Alex public view. Root explicitly requested this cleanup; the path
+works, but spontaneous follow-through is not established by that intervention.
+
+## Focused review notification and remaining implementation
+
+Root explicitly requested one review-ready notice for the completed focused
+#590 fix through the existing May Conversation Task. The input saved the known
+`may:primary` reply context at admission. May corrected two rejected reports
+(an invented input-key prefix, then simultaneous `message` and `replyId`) and
+returned one accepted communication. Event `6736592` names that message;
+`notification_messages` confirms Telegram provider message `50703`. Replaying
+the original input returned event `6736582` and the same completed inbox item;
+one provider-message record exists. The fallback Conversation mirror did not
+create an addressed-delivery row, so this is a confirmed single-message send,
+not an offline replay or exactly-once delivery guarantee.
+
+The notice asks for review on GitHub and explicitly keeps #589 unfinished.
+Root supplied its readiness trigger; this proves the notification capability,
+not autonomous #589 readiness. The late-comment-after-readiness trial remains
+outstanding. Ordinary fingerprint Conditions remain the supported observation
+mechanism; continuous observation has not been implemented by these changes.
+
+Native #589 work has reached clean local `92a8655c40`, including standalone
+listed-name dispatch and prompt/data preservation. Root's independent envelope
+probe at clean predecessor `1b63570a71` passed canonical input and rejected
+missing/blank prompts, bare strings, retired fields and noncanonical names.
+The production model/Task adapters, paired Apps and broader fixtures remain
+unfinished despite passing `check:ci`; retain the failed broader test receipts.
+
+App migration also has a concrete registration collision: Alex and Evaluator
+both forward `evaluation-report-reader` into App `alex`. The new namespace
+requires one registration at `alex/evaluation-report-reader`. Root assigned
+that migration finding through May and clarified the stale Tech-lead guidance
+conflict in proposal D. No duplicate-skipping workaround or new permission
+exception is justified. Later candidates must also retain the active #590
+revision repair before local activation.
+
+## Revised scope, checkout ownership and false convergence
+
+The same finite App-guidance Task was creator-revised to generation three with
+explicit acceptance requiring `tech-lead/AGENTS.md` changes. Alex nevertheless
+reported that old `302dc3c39f` already satisfied it. That commit changes only
+`develop-change.ts` and its test. Root inspected the exact supplied decision
+snapshot: the new requirements were present, so this was an incorrect agent
+judgment rather than lost ingress or stale Host context. Root rejected the
+conclusion through May; the same Task entered native `develop-change` and produced
+`bb41c0b365`, actually changing the required guidance file. Its focused check
+passed 79 tests; independent workflow review and activation were still pending
+at this checkpoint. The long-worktree model-surface failure remains recorded.
+Root's exact source review approved the bounded correction, without treating it
+as evidence of later production-model improvement.
+
+May also briefly saved the finite guidance Task's checkout as the original
+#589 Task's paired-App migration checkout. Root caught the overlapping ownership
+before a paired migration commit. May revised the original Task to generation
+fourteen, preserving its cumulative total of thirty-two and twenty-four prior
+consumed rounds, removing that shared selector and treating `92a8655c40` as a
+starting SDK revision rather than a permanent implementation pin. The old
+generation-thirteen workflow returned interrupted progress with its dirty
+`standalone.test.ts` retained; no broader readiness was established.
+
+These observations refine existing boundaries: one editing owner per checkout;
+actual candidate revisions on verification receipts; scoped answers separate
+from revisions and wakes; and reconsideration of an old conclusion against new
+requirements. They do not justify a Host semantic acceptance gate, replacement
+Tasks, a new allowance ledger or another event lifecycle. The event audit now
+distinguishes retained historical pair diagnostics from the authoritative
+Task/request records used for current work.

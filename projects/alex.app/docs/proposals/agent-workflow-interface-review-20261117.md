@@ -10,6 +10,9 @@ Draft [#589](https://github.com/hao1939/may-agent/pull/589) publishes the partia
 catalog, standalone dispatch and SDK discovery checkpoint `79240eb435`.
 Production model/SDK parity, removal of old
 interfaces and paired App migration remain incomplete. No candidate is activated.
+The focused Task-revision fix #590 is active locally; that activation does not
+activate this callable cutover. The [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
+records later local checkpoints, failed checks and the remaining connected proof.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -275,6 +278,32 @@ the owning Task's delivery requirements, actual failed receipts and consumed
 rounds. These are App prompt/return corrections within migration, with no new
 Host phase, classifier or allowance rule. See the
 [observed boundary failure](../archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment).
+
+Migrate guidance and tests that prescribe the retired interface as well. Preserve
+the creator's acceptance and meaningful regressions; update fixtures and calls
+that encode old names, envelopes or built-in CLI assumptions. Preserving an old
+test's literal input cannot require retaining the interface being removed.
+Tech-lead's instructions also currently make publication depend on an embedded
+May Task block. Keep delivery ownership and caller links in retained Task state;
+do not make that public block or a separate May delivery Task a universal
+publication prerequisite. The existing exact PR Condition provides observation
+without the block, as the focused #590 trial demonstrated. Historical body
+metadata may retain its current optional routing meaning. These are consumer
+corrections within D, not a new watcher registry or source of publication authority.
+Its implementation guidance also prescribes canned judgment phrases and says to
+inspect only referenced files while asking the same contributor to implement a
+change. Make the current implementation assignment and relevant investigation
+the scope; require truthful bounded evidence without mandatory answer phrases.
+The trial's repeated unchanged implementation reports motivate this correction,
+but its behavioral effect still needs a fresh native run.
+
+Current App source also re-exports `evaluation-report-reader` from both Alex's
+and Evaluator's workflow directories. Under the agreed App namespace these are
+two registrations for `alex/evaluation-report-reader`, so preparation must
+reject them. Register the shared implementation once and migrate consumers to
+its canonical address; agent-local forwarding files are unnecessary when all
+callers share the catalog. Inventory similar registrations before paired
+activation. Do not silently skip a duplicate because its implementation matches.
 
 May should implement from current Host main in the retained Task-owned worktree,
 with the saved cross-repository selector and cumulative development allowance
