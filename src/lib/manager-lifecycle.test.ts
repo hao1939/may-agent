@@ -103,6 +103,7 @@ describe("manager session lifecycle", () => {
   let bus: EventBus;
   let holdReplies: boolean;
   let replyFailure: string | undefined;
+  let neverFinish: Set<string>;
   let started: ReturnType<typeof Promise.withResolvers<void>>;
   let requests: Array<{ model: string; systemPrompt: string; prompt: string; reply: () => void }>;
 
@@ -110,6 +111,7 @@ describe("manager session lifecycle", () => {
     persistDir = mkdtempSync(join(tmpdir(), "may-manager-lifecycle-"));
     holdReplies = false;
     replyFailure = undefined;
+    neverFinish = new Set();
     started = Promise.withResolvers<void>();
     requests = [];
     bus = new EventBus();
@@ -128,7 +130,7 @@ describe("manager session lifecycle", () => {
                 api: model.api,
                 provider: model.provider,
                 model: model.id,
-                content: requiresFinish
+                content: requiresFinish && !neverFinish.has(model.id)
                   ? [{
                       type: "toolCall",
                       id: `finish-${model.id}`,
@@ -141,7 +143,7 @@ describe("manager session lifecycle", () => {
                       },
                     }]
                   : [{ type: "text", text: `Reply from ${model.id}` }],
-                stopReason: replyFailure ? "error" : requiresFinish ? "toolUse" : "stop",
+                stopReason: replyFailure ? "error" : requiresFinish && !neverFinish.has(model.id) ? "toolUse" : "stop",
                 errorMessage: replyFailure,
                 timestamp: Date.now(),
                 usage: {
@@ -329,6 +331,37 @@ describe("manager session lifecycle", () => {
         systemPrompt: expect.stringContaining("Instructions for captured"),
       });
     }
+  });
+
+  it("returns the real canonical child id when a provider ignores one bounded finish correction", async () => {
+    const unfinished = { ...definition("never-finish"), name: "unfinished" };
+    neverFinish.add(unfinished.model.id);
+    manager.register(unfinished);
+    holdReplies = true;
+    const caller = manager.run("worker", "Coordinate the review");
+    await started.promise;
+    holdReplies = false;
+
+    const response = await manager.createAgentsTool({ getCallerSessionId: () => caller }).execute(
+      "delegate",
+      { action: "call", agent: "global/unfinished", input: { prompt: "Return a canonical report" } },
+      new AbortController().signal,
+    );
+    const result = JSON.parse((response.content[0] as { text: string }).text);
+    const childId = result.id as string;
+
+    expect(result).toEqual({
+      id: expect.any(String),
+      status: "error",
+      summary: "Workflow agent step ended without calling finish() after one corrective prompt",
+    });
+    const childResult = manager.result(childId);
+    expect(childResult).toMatchObject({ sessionId: childId, status: "error" });
+    expect(childResult.finishResult).toBeNull();
+    expect(childResult.structuredResult).toBeUndefined();
+    const childRequests = requests.filter((request) => request.model === unfinished.model.id);
+    expect(childRequests).toHaveLength(2);
+    expect(childRequests[1]!.prompt).toContain("Call finish() now");
   });
 
   it("retains the captured helper's exact App-qualified identity after registry replacement", async () => {
