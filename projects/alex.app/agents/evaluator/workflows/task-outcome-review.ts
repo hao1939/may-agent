@@ -648,7 +648,7 @@ export async function reviewTaskOutcome(
   const observerEvidence = await readObserverEvidence(subject.task, command);
   const execution = await ctx.call(
     `alex/${profile.agent}`,
-    { prompt: [|
+    { prompt: [
       assessment.purpose === "ongoing"
         ? "Assess the current obligations represented by this exact public Task snapshot. This is an ongoing-work assessment, not a demand that the eventual outcome already be delivered."
         : "Evaluate the requested outcome represented by this exact public Task snapshot and the historical role/assignment recorded there.",
@@ -710,8 +710,13 @@ export async function reviewTaskOutcome(
   const judgment = readNewJudgment(execution.output);
   if (!judgment)
     return ctx.blocked("Evaluator returned an invalid task-outcome judgment.", [
-      `execution:${execution.id}`,
+      `execution:${execution.id ?? "unavailable"}`,
     ]);
+  const executionId = text(execution.id);
+  if (!executionId)
+    return ctx.blocked(
+      "Evaluator completed without an execution id; the report cannot be attributed or published truthfully.",
+    );
 
   const current = await readSubjectTask(
     {
@@ -781,7 +786,7 @@ export async function reviewTaskOutcome(
       reviewer: profile.reviewer,
       configuredModel: profile.configuredModel,
       observedModel: "unknown:not-exposed-to-workflow",
-      executionId: execution.id,
+      executionId,
       cost: "unknown",
     },
     judgment,
@@ -795,7 +800,7 @@ export async function reviewTaskOutcome(
   writeImmutable(absoluteMarkdown, renderTaskReportMarkdown(payload) ?? "");
   const report = {
     ...paths,
-    executionId: execution.id,
+    executionId,
     attribution: {
       reviewer: profile.reviewer,
       configuredModel: profile.configuredModel,
@@ -825,7 +830,7 @@ export async function reviewTaskOutcome(
       actualGeneration,
       paths.jsonPath,
       paths.markdownPath,
-      execution.id,
+      executionId,
       assessment,
       report.attribution,
       judgment.disposition,

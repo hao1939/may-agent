@@ -248,7 +248,7 @@ export async function reviewMetric(
     }
     const execution = await ctx.call(
       `alex/${profile.agent}`,
-      { prompt: [|
+      { prompt: [
         "Assess this external App metric observation and its comparison windows. A Task is not required: admission, collection or delivery may fail before execution exists.",
         "For effort observations, read the named Tasks and compare accepted deliverables, intermediate artifacts, remaining requirements, new input and waits. High effort or no newly fulfilled input is a reason to inspect, not proof of waste. Account for unsupported executors and unknown prices. Recommend the smallest worthwhile change, or no change when the work justifies its cost; aging out of a metric is not verified recovery.",
         "Judge persistence, recurrence after recovery, changed workload, and coverage gaps. Read the sample duration, calculation rule and calculated value; the latest raw sample can differ from the smoothed value behind an alert. Rising counts alone do not establish a worsening rate. Read sampleSize and source notes for the cohort and exact evidence references. Routine checks can preserve valid waits or recover state; assess cost and Task progress before calling them wasted work. Metric changes do not establish root cause or fulfillment of any input. Later success, acknowledgment and a proposed patch are not verified recovery.",
@@ -284,6 +284,11 @@ export async function reviewMetric(
         result: { reviewedThrough, reuseEligibility },
       });
     }
+    const executionId = execution.id?.trim();
+    if (!executionId)
+      return ctx.blocked(
+        "Metric reviewer completed without an execution id; the report cannot be attributed or published truthfully.",
+      );
     payload = {
       version: 1,
       rubricVersion: METRIC_RUBRIC_VERSION,
@@ -298,7 +303,7 @@ export async function reviewMetric(
         reviewer: profile.reviewer,
         configuredModel: profile.configuredModel,
         observedModel: "unknown:not-exposed-to-workflow",
-        executionId: execution.id,
+        executionId,
         cost: "unknown",
       },
       judgment,
