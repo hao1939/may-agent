@@ -200,6 +200,7 @@ async function executeTaskWorkflow(
       read: createRuntimeAppRead({
         readContract: attempt.read.contract,
         getDb: runtimeCtx.getDb,
+        persistDir: runtime.persistDir,
         readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
         taskRead: attempt.read.tasks,
       }),

@@ -1,5 +1,6 @@
 import type {
   AppRead,
+  CliCallFacts,
   ExecutionView,
   TaskReadOptions,
   TaskDetail,
@@ -11,6 +12,8 @@ import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskCancellation } from "../tasks/app-task-state.js";
 import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
+import { readSessionMessagesTail } from "../../../lib/persistence.js";
+import { cliCallFacts } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
@@ -27,6 +30,8 @@ import {
 export type RuntimeAppReadOptions = {
   readContract?: AppRead["contract"];
   getDb(): SqliteDb;
+  /** Retained session artifacts used only for bounded Host-authored diagnostics. */
+  persistDir?: string;
   /** Optional reporting; absence is explicit, not an empty or zero-valued report. */
   readMetric?: AppRead["metric"];
   /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
@@ -360,15 +365,43 @@ export function listRuntimeTaskViews(
   };
 }
 
-export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
+const EXECUTION_DIAGNOSTIC_SESSION_LIMIT = 64;
+const EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT = 512;
+const EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION = 1024 * 1024;
+
+function readExecutionCliCalls(opts: Pick<RuntimeAppReadOptions, "getDb" | "persistDir">, id: string, kind: "session" | "workflow"):
+  { cliCalls: CliCallFacts[]; truncated?: true } | undefined {
+  if (!opts.persistDir) return undefined;
+  const db = opts.getDb();
+  const rows = kind === "session"
+    ? [{ sessionId: id }]
+    : db.prepare(
+      `SELECT sessionId FROM sessions WHERE workflowRunId = ? ORDER BY startedAt, sessionId LIMIT ?`,
+    ).all(id, EXECUTION_DIAGNOSTIC_SESSION_LIMIT + 1) as Array<{ sessionId: string }>;
+  const selected = rows.slice(0, EXECUTION_DIAGNOSTIC_SESSION_LIMIT);
+  const calls = selected.flatMap(({ sessionId }) => cliCallFacts(
+    sessionId,
+    readSessionMessagesTail(opts.persistDir!, sessionId, EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT, EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION),
+  ));
+  const bounded = calls.slice(-64);
+  if (bounded.length === 0 && rows.length <= EXECUTION_DIAGNOSTIC_SESSION_LIMIT) return undefined;
+  return {
+    cliCalls: bounded,
+    ...(rows.length > EXECUTION_DIAGNOSTIC_SESSION_LIMIT || calls.length > bounded.length ? { truncated: true as const } : {}),
+  };
+}
+
+export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb" | "persistDir">, id: string): ExecutionView | null {
   const result = getExecutionResultFromDb(opts.getDb(), id);
   if (!result) return null;
   const status = result.status === "escalated" ? "blocked" : result.status;
+  const diagnostics = readExecutionCliCalls(opts, id, result.kind);
   return {
     id: result.id,
     kind: result.kind === "session" ? "agent" : "workflow",
     status,
     summary: result.summary,
+    ...(diagnostics ? { diagnostics } : {}),
   };
 }
 

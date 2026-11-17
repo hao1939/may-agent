@@ -231,6 +231,12 @@ export type ExecutionView = {
   kind: "agent" | "workflow";
   status: "running" | "done" | "blocked" | "error" | "interrupted";
   summary?: string;
+  /** Bounded Host-retained evidence. Contributors cannot author these receipts. */
+  diagnostics?: {
+    cliCalls: CliCallFacts[];
+    /** More matching sessions or receipts exist beyond this projection's bounds. */
+    truncated?: true;
+  };
 };
 
 /** Optional calculation over retained samples; omission uses the latest sample. */

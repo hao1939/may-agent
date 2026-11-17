@@ -80,6 +80,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
               createRuntimeAppRead({
                 readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),
                 getDb: runtimeCtx.getDb,
+                persistDir,
                 taskRead: context?.taskRead,
                 readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
               }),
@@ -156,6 +157,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
           createRuntimeAppRead({
             readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),
             getDb: runtimeCtx.getDb,
+                persistDir,
             taskRead: context?.taskRead,
             readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
           }),

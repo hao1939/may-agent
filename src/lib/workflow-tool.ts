@@ -642,6 +642,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
                 throw new Error("No runtimeCtx - read unavailable");
               }),
             readMetric: async (id) => readMetricView(metricService(), id),
+            ...(persistDir ? { persistDir } : {}),
           });
         if (opts.taskContext && persistDir) {
           opts.taskContext.detailRoot ??= taskDetailRoot(persistDir, opts.taskContext.taskBinding);
