@@ -578,6 +578,12 @@ export async function runAppRuntime(opts: {
       emitPrompt,
     });
   } else {
-    await runDaemonKeepalive({ bus, interfaceAgent, socketEnabled: SOCKET_ENABLED });
+    await runDaemonKeepalive({
+      bus,
+      persistDir: opts.persistDir,
+      instanceLabel: opts.instanceLabel,
+      interfaceAgent,
+      socketEnabled: SOCKET_ENABLED,
+    });
   }
 }
