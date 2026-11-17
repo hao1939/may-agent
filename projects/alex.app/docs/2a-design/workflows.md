@@ -68,6 +68,15 @@ This can remain one workflow while the method is understood and the work fits
 its execution limit. If the method no longer fits, return useful evidence and
 control to the caller instead of extending the allowance or becoming a controller.
 
+No per-step estimate of remaining time is required. Enforce the declared bound
+by propagating cancellation through attached child execution and confirming
+process cleanup. A later eligible invocation can start the procedure again using
+retained work; repeated computation, checks and review are acceptable when safe.
+Exact step restoration is optional. Preserve accepted results and external effect
+identities, and inspect uncertain effects before repeating them. Timeout retry
+follows declared policy; explicit Stop does not automatically retry. App-owned
+allowance rules remain fixed across invocations, including cancelled work.
+
 ### Between invocations
 
 When work or its awaited result must survive the invocation, use Host's existing

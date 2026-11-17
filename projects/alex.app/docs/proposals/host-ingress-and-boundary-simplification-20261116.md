@@ -151,6 +151,52 @@ Stopping the process neither reverses external effects nor proves successful
 Task recovery. A heartbeat establishes process responsiveness, not domain
 progress; ineffective work and escalation remain App-owned judgments.
 
+### Cancel on timeout, redo safe work, keep one round limit
+
+The 17 November refinement chooses cancellation and repeatable work over
+remaining-time prediction or exact workflow resumption. A bounded invocation
+starts ordinary work and is cancelled when its declared deadline expires. No
+per-step remaining-time estimate or durable step cursor is required.
+
+1. **One inherited cancellation scope.** Agent calls, nested workflows, tools
+   and their child processes inherit the enclosing scope. Parent timeout
+   propagates cancellation to every attached descendant. Execution adapters stop
+   I/O, terminate owned processes and join cleanup; non-cooperative processes
+   receive bounded termination followed by forced kill. Release capacity and
+   permit replacement only after exit is confirmed. Uncertain cleanup stays a
+   visible blocker. Context cancellation carries the signal; the executor owns
+   actual process termination. Explicit human Stop does not automatically retry.
+2. **Fresh invocation with retained work.** After timeout and confirmed cleanup,
+   the existing Host retry policy may run the same Task again within its
+   allowance. The workflow can start from the beginning, inspect the existing
+   checkout and redo planning, implementation checks, tests or review as useful.
+   Exact matching evidence may be reused, but no step-by-step resume guarantee
+   is needed. Retain the Task, requirements, source edits, PR and accepted caller
+   results. Before repeating an uncertain publication or notification, inspect
+   existing state and use its existing receipt/idempotency identity.
+3. **Keep the existing three-round rule.** Reserve one Task-local development
+   round before starting that round's work. A started round counts whether it
+   succeeds, fails, times out or is cancelled; no refund or stage-specific
+   accounting. Reentry, restart and a different output directory do not reset
+   the count. A watcher wake or read of CI state does not itself start a round.
+   At three consumed rounds, return the remaining work to the owner for a
+   decision; neither retry nor a replacement Task silently renews the allowance.
+
+Host owns propagation, process cleanup, fencing and scheduling under declared
+retry policy. Alex's workflow owns the development-round limit and decides what
+can usefully be redone. Task retains the work; the workflow is an ordinary new
+bounded invocation. The original delivery promise remains open until fulfilled
+or explicitly dispositioned by its owner.
+
+Supporting #582 proves cleanup of nested groups inside the owned Linux session.
+It does not cover descendants creating separate sessions, so it alone does not
+establish the full descendant-cancellation target above. First prove cancellation
+through the real execution tree and block overlapping replacement while cleanup
+is unresolved. Then time out a real development pass and verify that a fresh
+invocation can redo work on the same Task/PR, preserve consumed rounds and reach
+the Telegram notice, or escalate clearly when the fixed allowance is exhausted.
+No exact-step restoration or recovery of an unaccepted worker result is required.
+
 ### Connect shared execution and settlement
 
 Have Host agent/procedure adapters invoke `run(target, input, options)` with the
@@ -356,15 +402,18 @@ the repaired integration on an intervened run, not zero-intervention operation.
 | Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility, activation and the native PR-delivery loop pass. Shared-worker blocked/resumed/finished and restart evidence remain. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The next acceptance target is one fresh, narrow coding assignment that reaches
-the same notification boundary without diagnostic relays or a direct-repair
-exception. The highest-value execution gap is starting development with too
-little caller time, then exhausting recovery before implementation. Preserve
-consumed rounds while making useful workflow continuation explicit; an expired
-caller must not silently renew allowance or erase the original promise. The
-completed #574 run supplies the baseline, not proof this gap is fixed. Creator
-closure, restart delivery and shared-worker parity remain separate obligations.
-Supporting #582 still needs independent review and separate deployment authority.
+The next implementation priority is cancellation through the actual execution
+tree, followed by safe redo under the existing fixed three-round allowance.
+A timed-out invocation is cancelled and cleaned up; a later eligible invocation
+can repeat useful work on the same Task/PR. Do not add remaining-time prediction,
+exact step restoration or special allowance refunds. The next acceptance target
+is one fresh, narrow assignment that reaches the notification boundary without
+diagnostic relays or a direct-repair exception, including an interrupted pass.
+Clear owner escalation is the expected outcome if its allowance is exhausted.
+The completed #574 run supplies the baseline, not proof this refinement is
+implemented. Creator closure, restart delivery and shared-worker parity remain
+separate obligations. Supporting #582 still needs independent review and
+separate deployment authority.
 
 Removal of mechanical housekeeping and Conversation ownership cutover follow
 that evidence. Source checks remain separate from wider rollout or an unmeasured

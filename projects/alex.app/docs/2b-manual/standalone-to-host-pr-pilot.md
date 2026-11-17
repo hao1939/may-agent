@@ -261,6 +261,12 @@ continuity belongs to Task state; evidence remains referenced artifacts.
 
 **Next action:** Review the #574 evidence and freeze the useful process before a
 fresh narrow assignment tests operation without diagnostic relays or a direct
-repair exception. Give the workflow sufficient caller time and preserve cumulative
-allowance through recovery. No new submission, model-backed run, publication or
-activation is authorized merely by marking this plan agreed.
+repair exception. Include a timed-out invocation: cancellation must reach its
+children, cleanup must finish before replacement, and a fresh invocation may
+redo useful work on the same Task/PR. Keep the existing three-round development
+limit; every started round counts, including cancellation, with no reset on
+reentry. Escalate clearly if exhausted. Exact step restoration and per-step time
+prediction are unnecessary; retain source work, accepted results and effect
+identities. See the [simplified execution refinement](../proposals/host-ingress-and-boundary-simplification-20261116.md#cancel-on-timeout-redo-safe-work-keep-one-round-limit).
+No new submission, model-backed run, publication or activation is authorized
+merely by marking this plan agreed.
