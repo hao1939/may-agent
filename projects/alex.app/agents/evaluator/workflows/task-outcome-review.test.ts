@@ -164,15 +164,11 @@ function reader(
         appId,
         tasks: [{ id: taskId }],
       };
-    if (command.type === "app.task.get")
-      return {
-        type: "ok",
-        command: "app.task.get",
-        appId,
-        taskId: command.taskId,
-        task: currentAppTask(),
-      };
-    return { type: "ok", command: "task.get", task: currentDetail() };
+    return {
+      type: "ok",
+      command: "task.get",
+      task: { ...currentAppTask(), ...currentDetail(), appId, taskId: command.taskId },
+    };
   };
 }
 
@@ -223,7 +219,7 @@ describe("Task outcome review", () => {
       let publications = 0;
       const read = reader();
       const ctx = createSdkTestAppWorkflowContext({
-        input: { appId, taskId, automatic: true as const },
+        input: { prompt: "Review task outcome", data: { appId, taskId, automatic: true as const } },
         workspace: {
           root: TEST_APP_ROOT,
           appRoot: TEST_APP_ROOT,
@@ -554,8 +550,6 @@ describe("Task outcome review", () => {
       reader(
         () => ({
           ...detail,
-          // Human task.get lookalikes are not authoritative scheduling fields.
-          currentObligations: { available: true, reviewAt: 1 },
           diagnostics: {
             ...detail.diagnostics,
             conditions: [
@@ -987,11 +981,15 @@ describe("Task outcome review", () => {
         const producer = request.taskId === emission.taskId;
         if (producer) producerReads++;
         return {
-          type: "ok", command: request.type,
-          appId: request.appId, taskId: request.taskId,
-          task: request.type === "app.task.get"
-            ? { id: request.taskId, generation: 1, result: { fact: producer ? producerFact : helperFact } }
-            : { appId: request.appId, taskId: request.taskId, generation: 1 },
+          type: "ok",
+          command: "task.get",
+          task: {
+            id: request.taskId,
+            appId: request.appId,
+            taskId: request.taskId,
+            generation: 1,
+            result: { fact: producer ? producerFact : helperFact },
+          },
         };
       }
       return base(request);
@@ -1523,11 +1521,11 @@ describe("Task outcome review", () => {
     const base = reader();
     const command: PublicCommand = async (request) => {
       const response = await base(request);
-      if (request.type !== "app.task.get") return response;
+      if (request.type !== "task.get") return response;
       return {
         ...response,
         task: {
-          ...appTask,
+          ...response.task,
           creator: { appId: "external-owner" },
           agent: "evaluator-deepseek",
         },

@@ -109,7 +109,7 @@ function fixture() {
   let failPublication = false;
   const context = (input: any = {}) =>
     createTestAppWorkflowContext({
-      input,
+      input: { prompt: "Review metric evidence", data: input },
       workspace: {
         root: appRoot,
         appRoot,
