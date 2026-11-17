@@ -211,6 +211,18 @@ function matchesExpectedRecord(expected: Record<string, unknown>, event: Record<
   });
 }
 
+function isTerminalResourceEvent(event: Record<string, unknown>): boolean {
+  const state = normalizedState(eventField(event, "state", "status"));
+  return eventField(event, "closed") === true || eventField(event, "merged") === true || state === "closed" || state === "merged";
+}
+
+function matchesContinuousTerminal(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
+  if (condition.spec.mode !== "continuous" || !isTerminalResourceEvent(event)) return false;
+  const expected = isRecord(condition.spec.expected) ? condition.spec.expected : {};
+  return ["source", "timestamp"].every((field) => !(field in expected) ||
+    matchesExpectedRecord({ [field]: expected[field] }, event));
+}
+
 function matches(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
   if (condition.spec.type !== event.type) return false;
   if (condition.spec.type === "project.approval.submitted" && isHumanActionOwner(condition.spec.owner)) {
@@ -245,10 +257,10 @@ function matches(condition: AppTaskCondition, event: Record<string, unknown>): b
   if (String(eventField(event, ...fieldAliases(subject.field)) ?? "") !== subject.value) return false;
 
   if (isRecord(condition.spec.expected)) {
-    return matchesExpectedRecord(condition.spec.expected, event);
+    return matchesExpectedRecord(condition.spec.expected, event) || matchesContinuousTerminal(condition, event);
   }
 
-  return matchesExpectedValue(condition.spec.expected, event);
+  return matchesExpectedValue(condition.spec.expected, event) || matchesContinuousTerminal(condition, event);
 }
 
 /** Shared matcher for per-App and global indexed Condition routes. */
@@ -337,6 +349,9 @@ function observation(event: Record<string, unknown>): Record<string, unknown> {
     pipelineRunId: eventField(event, "pipelineRunId", "pipeline_run_id", "runId", "run_id"),
     pullRequestId: eventField(event, "pullRequestId", "pull_request_id", "prId", "pr_id"),
     sourceCommit: eventField(event, "sourceCommit", "source_commit"),
+    fingerprint: eventField(event, "fingerprint"),
+    closed: eventField(event, "closed"),
+    merged: eventField(event, "merged"),
     state: eventField(event, "state", "status", "disposition", "result", "outcome"),
     timestamp: event.timestamp,
   };
@@ -360,9 +375,15 @@ function applyConditionEvent(
     if (report ? !matchesAppTaskCondition(condition, event, store) : !matches(condition, event)) continue;
     const kind = report ? reportKind(event, store) : undefined;
     const observed = { ...observation(event), ...(kind === "progress" ? { state: "progress" } : {}) };
+    const continuous = condition.spec.mode === "continuous";
+    const terminal = continuous && isTerminalResourceEvent(event);
+    const fingerprint = eventField(event, "fingerprint");
+    if (continuous && fingerprint !== undefined && condition.status.observed &&
+        eventField(condition.status.observed as Record<string, unknown>, "fingerprint") === fingerprint) continue;
     const waitingResources = Object.values(tree.resources ?? {}).filter(
       (resource) =>
         (["waiting", "running", "pending"].includes(resource.status.phase) ||
+          (continuous && resource.status.phase === "converged") ||
           (resource.status.phase === "attention" && Boolean(resource.status.retryExhausted))) &&
         resource.status.conditionIds?.includes(id) &&
         !taskEventPredatesReopening(resource, event) &&
@@ -377,7 +398,7 @@ function applyConditionEvent(
       condition.status = {
         ...condition.status,
         observedGeneration: condition.metadata.generation,
-        state: report ? "false" : "true",
+        state: report || (continuous && !terminal) ? "false" : "true",
         observed,
         ...(kind ? { reports: { ...observedReports(condition, store),
           [kind]: observed,
@@ -394,6 +415,7 @@ function applyConditionEvent(
     if (kind === "progress" && condition.spec.progress === "next-wake") continue;
     for (const resource of waitingResources) {
       const taskId = resource.metadata.id;
+      if (continuous && resource.status.phase === "converged") resource.status.phase = "pending";
       if (eventWakes.has(taskId)) continue;
       const pending = tree.taskTriggers?.[taskId];
       const pendingEvents = pending?.events?.length ? pending.events : pending?.event ? [{ event: pending.event }] : [];

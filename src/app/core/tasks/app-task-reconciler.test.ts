@@ -8,6 +8,7 @@ import {
   type AppTaskContext,
 } from "./app-task-store.js";
 import { AppTaskResourceStore, type AppTaskResourceMutation } from "../state/app-task-resource-store.js";
+import { observationDemandReader } from "../state/observation-demand.js";
 import { admitTaskInput } from "../state/inbox.js";
 import { appTaskTestContext } from "./app-task-test-support.js";
 import { listRuntimeTaskViews, readRuntimeTaskView } from "../reads/app-read.js";
@@ -5595,6 +5596,136 @@ describe("App task reconciler state", () => {
       completeAppTask(config, resumed, { summary: `${taskIntent.id} converged` });
     }
     expect(readTaskSnapshot(config).conditions?.["shared-dependency"]).toBeUndefined();
+  });
+
+  it("keeps continuous demand across convergence, fans out changes, and retires after terminal delivery", () => {
+    const { config, store } = fixture();
+    const intents = ["watch-a", "watch-b"].map((id) => ({
+      ...intent("monitor"), id, outcome: `Watch ${id}`,
+    }));
+    const condition = (id: string) => ({
+      id: `pull-request:${id}`,
+      type: "pull-request.state",
+      subject: "resource:repo#42",
+      expected: { source: "app:github:observer:pull-request" },
+      mode: "continuous" as const,
+    });
+    for (const taskIntent of intents) {
+      const claim = declareAndClaimTask(config, {
+        intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+      });
+      if (claim.kind !== "claimed") throw new Error("expected claim");
+      deferAppTask(config, claim, {
+        disposition: "waiting", summary: "watching the pull request", conditions: [condition(taskIntent.id)],
+      });
+    }
+    const demand = observationDemandReader(store.db);
+    expect(demand("pull-request.state", "app:github:observer:pull-request", "", 10)).toEqual([
+      { subject: "resource:repo#42" },
+    ]);
+
+    const changed = {
+      type: "pull-request.state", source: "app:github:observer:pull-request",
+      pullRequestId: "repo#42", resource: "repo#42", fingerprint: "revision-1", state: "open",
+    };
+    expect(trackAppTaskConditionEvent(config, changed).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
+    for (const taskIntent of intents) {
+      const resumed = declareAndClaimTask(config, {
+        intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+      });
+      if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
+      completeAppTask(config, resumed, { summary: "current state handled" });
+      expect(store.readTask(taskIntent.id)?.status.phase).toBe("converged");
+    }
+    expect(demand("pull-request.state", "app:github:observer:pull-request", "", 10)).toHaveLength(1);
+    expect(trackAppTaskConditionEvent(config, changed)).toEqual([]);
+
+    const next = { ...changed, fingerprint: "revision-2", state: "updated" };
+    expect(trackAppTaskConditionEvent(config, next).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
+    for (const taskIntent of intents) {
+      const resumed = declareAndClaimTask(config, {
+        intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+      });
+      if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
+      completeAppTask(config, resumed, { summary: "updated state handled" });
+    }
+
+    const terminal = { ...next, fingerprint: "revision-3", state: "closed", closed: true };
+    expect(trackAppTaskConditionEvent(config, terminal).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
+    for (const taskIntent of intents) {
+      const resumed = declareAndClaimTask(config, {
+        intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+      });
+      if (resumed.kind !== "claimed") throw new Error("expected terminal claim");
+      expect(resumed.events.at(-1)?.event).toMatchObject({ closed: true });
+      completeAppTask(config, resumed, { summary: "terminal state handled" });
+    }
+    expect(demand("pull-request.state", "app:github:observer:pull-request", "", 10)).toEqual([]);
+  });
+
+  it("removes cancelled and owner-closed Tasks from observation demand", () => {
+    const { config, store } = fixture();
+    const demand = observationDemandReader(store.db);
+    const addWatch = (id: string) => {
+      const taskIntent = { ...intent("monitor"), id };
+      const claim = declareAndClaimTask(config, {
+        intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+      });
+      if (claim.kind !== "claimed") throw new Error("expected claim");
+      deferAppTask(config, claim, {
+        disposition: "waiting", summary: "watching",
+        conditions: [{
+          id: `watch:${id}`, type: "sample.state", subject: `resource:${id}`,
+          expected: { source: "app:sample:observer:state" }, mode: "continuous",
+        }],
+      });
+      return taskIntent;
+    };
+    const cancelled = addWatch("cancelled-watch");
+    const cancelledResource = store.readTask(cancelled.id)!;
+    cancelAppTask(config, {
+      appId: "sample", taskId: cancelled.id,
+      expectedGeneration: cancelledResource.metadata.generation,
+      expectedResourceVersion: cancelledResource.metadata.resourceVersion,
+      reason: "stop watching",
+    });
+
+    const closed = addWatch("closed-watch");
+    trackAppTaskConditionEvent(config, {
+      type: "sample.state", source: "app:sample:observer:state", resource: closed.id,
+      fingerprint: "initial", state: "ready",
+    });
+    const resumed = declareAndClaimTask(config, {
+      intent: closed, appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
+    completeAppTask(config, resumed, { summary: "current state handled" });
+    const closedResource = store.readTask(closed.id)!;
+    expect(closeAppTask(config, {
+      appId: "sample", taskId: closed.id,
+      expectedGeneration: closedResource.metadata.generation,
+      expectedResourceVersion: closedResource.metadata.resourceVersion,
+      afterResult: resumed.attemptId,
+      reason: "watch complete",
+    }).applied).toBe(true);
+
+    expect(demand("sample.state", "app:sample:observer:state", "", 10)).toEqual([]);
+  });
+
+  it("preserves one-shot Condition compatibility", () => {
+    const { config } = fixture();
+    const taskIntent = { ...intent("monitor"), id: "one-shot-watch" };
+    const claim = declareAndClaimTask(config, {
+      intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferAppTask(config, claim, {
+      disposition: "waiting", summary: "waiting once",
+      conditions: [{ id: "once", type: "sample.state", subject: "resource:sample", expected: "ready" }],
+    });
+    expect(trackAppTaskConditionEvent(config, { type: "sample.state", resource: "sample", state: "ready" }))
+      .toEqual([{ conditionId: "once", taskId: "one-shot-watch" }]);
+    expect(readTaskSnapshot(config).conditions?.once?.status.state).toBe("true");
   });
 
   it("rejects changing a shared Condition specification", () => {

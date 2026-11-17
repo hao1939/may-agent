@@ -59,6 +59,8 @@ export type Condition = {
   type: string;
   subject: string;
   expected: unknown;
+  /** One-shot remains the compatibility default. Continuous observations stay open until the resource or Task closes. */
+  mode?: "one-shot" | "continuous";
   /** Plain-language action shown when this Condition explicitly belongs to a human. */
   requestedAction?: string;
   /** Required on newly admitted waits; optional here so historical Conditions remain readable. */

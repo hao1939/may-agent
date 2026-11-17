@@ -865,6 +865,12 @@ function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
   return taskConditionEntries(tree, taskId).some(([, condition]) => isSatisfiedCondition(condition));
 }
 
+function hasBlockingOpenTaskCondition(tree: TaskTree, taskId: string): boolean {
+  return taskConditionEntries(tree, taskId).some(
+    ([, condition]) => isOpenCondition(condition) && condition.spec.mode !== "continuous",
+  );
+}
+
 function pruneUnlinkedConditions(tree: TaskTree): void {
   const linked = new Set<string>();
   for (const resource of Object.values(tree.resources ?? {})) {
@@ -921,6 +927,7 @@ function materializeWaitingConditions(
       type: raw.type.trim(),
       subject: raw.subject.trim(),
       expected: raw.expected,
+      ...(raw.mode === "continuous" ? { mode: raw.mode } : {}),
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       owner: raw.owner!.trim(),
       ...((raw.progress ?? current?.spec.progress) === undefined ? {} : { progress: raw.progress ?? current?.spec.progress }),
@@ -3599,6 +3606,9 @@ function validateConditions(
     if (!("expected" in condition)) {
       throw new Error(`Handler result Condition ${identity} requires an expected value`);
     }
+    if (condition.mode !== undefined && condition.mode !== "one-shot" && condition.mode !== "continuous") {
+      throw new Error(`Handler result Condition ${identity} mode must be one-shot or continuous`);
+    }
     if (condition.progress !== undefined &&
         (type !== "app.dependency.updated" || !identity.startsWith("app-request:") ||
          (condition.progress !== "immediate" && condition.progress !== "next-wake"))) {
@@ -3981,7 +3991,7 @@ export function completeAppTask(
   touchResource(resource, {
     phase: pendingWork
       ? "pending"
-      : resource.status.conditionIds?.length || remainingReviewAt !== undefined
+      : hasBlockingOpenTaskCondition(tree, claim.taskId) || remainingReviewAt !== undefined
         ? "waiting"
         : "converged",
     reviewAt: remainingReviewAt,

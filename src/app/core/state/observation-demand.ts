@@ -14,7 +14,8 @@ const openDemand = `
   FROM app_task_conditions c
   JOIN app_task_condition_routes r ON r.app_id=c.app_id AND r.condition_id=c.condition_id
   JOIN app_tasks t ON t.app_id=r.app_id AND t.task_id=r.task_id
-  WHERE c.state<>'true' AND t.phase IN ('waiting','running','pending')
+  WHERE c.state<>'true' AND (t.phase IN ('waiting','running','pending')
+    OR (t.phase='converged' AND json_extract(c.condition_json, '$.spec.mode')='continuous'))
     AND NOT EXISTS (SELECT 1 FROM app_task_cancellations x WHERE x.app_id=t.app_id AND x.task_id=t.task_id)`;
 
 /** Indexed projection of existing Conditions. No separate registrations or cached wait identities. */

@@ -108,7 +108,9 @@ export function bindResourceObserver(options: {
           throw new Error("Detector must return a JSON object");
         status.checkedAt = status.lastSuccessAt = now();
         event = { type: definition.type, source, owner, data: { ...value, resource } };
-        signature = fingerprint({ value });
+        signature = typeof value.fingerprint === "string" && value.fingerprint
+          ? value.fingerprint
+          : fingerprint({ value });
       } catch (error) {
         signal.throwIfAborted();
         status.checkedAt = now();

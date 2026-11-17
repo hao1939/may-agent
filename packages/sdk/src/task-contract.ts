@@ -71,6 +71,7 @@ export const conditionSchema = Type.Object(
     }),
     subject: typedConditionSubjectSchema,
     expected: Type.Unknown(),
+    mode: Type.Optional(Type.Union([Type.Literal("one-shot"), Type.Literal("continuous")])),
     progress: Type.Optional(progressInterestSchema),
     requestedAction: Type.Optional(
       Type.String({ minLength: 1, description: "Action needed; contact the owner separately to deliver the ask." }),
@@ -329,6 +330,9 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     return `conditions[${index}].subject must be a typed subject`;
   }
   if (!("expected" in value)) return `conditions[${index}].expected is required`;
+  if (value.mode !== undefined && value.mode !== "one-shot" && value.mode !== "continuous") {
+    return `conditions[${index}].mode must be one-shot or continuous`;
+  }
   const requestedAction = optionalString(value, "requestedAction");
   if (!requestedAction.ok) {
     return `conditions[${index}].requestedAction must be a non-empty string when present`;
@@ -349,6 +353,7 @@ function normalizeCondition(value: unknown, index: number): Condition | string {
     type,
     subject,
     expected: structuredClone(value.expected),
+    ...(value.mode === "continuous" ? { mode: value.mode } : {}),
     ...(requestedAction.value ? { requestedAction: requestedAction.value } : {}),
     owner,
     ...(value.progress === undefined ? {} : { progress: value.progress as "immediate" | "next-wake" }),
