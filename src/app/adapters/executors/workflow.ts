@@ -210,7 +210,7 @@ async function executeTaskWorkflow(
       ...taskContext,
       taskContext,
       trace,
-      workflowInput: taskDetail.input ?? {},
+      workflowInput: { prompt: task, data: taskDetail.input ?? {} },
       executionTimeoutMs: input.executionTimeoutMs,
       executionTimeoutLimitMs: input.executionTimeoutLimitMs,
       signal: attempt.signal,

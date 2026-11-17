@@ -1769,18 +1769,6 @@ export type RunResult<T = unknown> = CallableResult<T>;
 
 export type TargetSummary = CallableDescriptor;
 
-export type StandaloneRunDiagnostics = Readonly<{
-  executionId: string;
-  run: DirectWorkflowRunResult;
-}>;
-
-const standaloneDiagnostics = new Map<string, StandaloneRunDiagnostics>();
-
-/** Read trusted execution diagnostics separately from the canonical callable result. */
-export function getRunDiagnostics(executionId: string): StandaloneRunDiagnostics | undefined {
-  return standaloneDiagnostics.get(executionId);
-}
-
 type StandaloneCatalogSnapshot = Readonly<{
   routes: ReadonlyMap<string, CanonicalStandaloneRoute>;
   catalog: DirectCatalogState;
@@ -1961,30 +1949,59 @@ export async function run<TInput = unknown>(
   const input = (isPositional ? maybeInput : targetOrOptions.input) as TInput;
   const rawTarget = isPositional ? targetOrOptions : (options.target ?? "");
 
+  const startedAt = Date.now();
   const cwd = resolve(options.cwd ?? process.cwd());
   const projectRoot = resolve(options.projectRoot ?? inferWorkspaceRoot(cwd));
   const workRoot = resolve(options.workRoot ?? cwd);
   const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
   const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
+  if (options.timeoutMs !== undefined && (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0)) {
+    return Object.freeze({ status: "error", summary: "Callable timeoutMs must be a positive finite number" });
+  }
+  const timeoutDeadline = options.timeoutMs === undefined ? undefined : startedAt + options.timeoutMs;
+  const deadlineAt = options.deadlineAt === undefined
+    ? timeoutDeadline
+    : timeoutDeadline === undefined
+      ? options.deadlineAt
+      : Math.min(options.deadlineAt, timeoutDeadline);
+  const preStartError = (error: unknown): RunResult => Object.freeze({
+    status: "error",
+    summary: error instanceof Error ? error.message : String(error),
+  });
 
   if (!rawTarget || rawTarget !== rawTarget.trim()) {
-    throw new Error(`Callable target not found: ${rawTarget}`);
+    return preStartError(`Callable target not found: ${rawTarget}`);
   }
-  const descriptors = await listTargets({
-    cwd,
-    projectRoot,
-    projectsRoot,
-    globalAgentsRoot: options.agentsRoot ?? globalAgentsRoot,
-    ...(options.app ? { app: options.app } : {}),
-    ...(options.signal ? { signal: options.signal } : {}),
-  });
+  if (deadlineAt !== undefined && deadlineAt <= startedAt) {
+    return preStartError("Callable deadline expired before catalog preparation");
+  }
+  let descriptors: TargetSummary[];
+  try {
+    descriptors = await listTargets({
+      cwd,
+      projectRoot,
+      projectsRoot,
+      globalAgentsRoot: options.agentsRoot ?? globalAgentsRoot,
+      timeoutMs: deadlineAt === undefined
+        ? DEFAULT_STANDALONE_LIST_TIMEOUT_MS
+        : Math.max(1, Math.min(DEFAULT_STANDALONE_LIST_TIMEOUT_MS, deadlineAt - Date.now())),
+      ...(options.signal ? { signal: options.signal } : {}),
+    });
+  } catch (error) {
+    if (options.signal?.aborted) throw error;
+    return preStartError(error);
+  }
   const descriptor = descriptors.find((candidate) => candidate.name === rawTarget);
   const captured = standaloneCatalogSnapshots.get(descriptors);
   const canonicalRoute = captured?.routes.get(rawTarget);
   if (!descriptor || !canonicalRoute || !captured) {
-    throw new Error(`Callable target not found: ${rawTarget}`);
+    return preStartError(`Callable target not found: ${rawTarget}`);
   }
-  validateCallableInput(descriptor.inputSchema, input);
+  try {
+    validateCallableInput(descriptor.inputSchema, input);
+  } catch (error) {
+    return preStartError(error);
+  }
 
   // Discovery and dispatch share the exact canonical address and the same complete
   // workspace catalog. Selecting one App-owned root must not narrow child discovery.
@@ -2002,6 +2019,7 @@ export async function run<TInput = unknown>(
       ...options,
       ...(normalizedTarget ? { target: normalizedTarget } : {}),
       input,
+      deadlineAt,
       projectRoot,
       workRoot,
       agentsRoot,
@@ -2018,13 +2036,6 @@ export async function run<TInput = unknown>(
       ...(options.tools ? { tools: options.tools } : {}),
     });
     cleanupConfirmed = res.report.cleanup.confirmed === true;
-    const diagnosticsRun = (!ownsTempOutputRoot || Boolean(options.traceDir) || !cleanupConfirmed)
-      ? { ...res, outputRoot }
-      : res;
-    standaloneDiagnostics.set(res.report.executionId, Object.freeze({
-      executionId: res.report.executionId,
-      run: diagnosticsRun,
-    }));
     const contribution = res.result;
     const summary = contribution
       ? contribution.type === "done"

@@ -79,12 +79,16 @@ test("settles the actual public run() result from a pure code procedure", async 
       `export const name = "finite";
 export const description = "Truthful finite fixture";
 export async function execute(ctx) {
-  return ctx.done("fixture complete", { state: "domain-data", value: ctx.input.value });
+  return ctx.done("fixture complete", { state: "domain-data", value: ctx.input.data.value });
 }
 `,
     );
-    const publicResult = await run("owner/finite", { value: 42 }, { projectRoot: root, models: {} });
-    expect(publicResult.ok).toBe(true);
+    const publicResult = await run(
+      "sample/finite",
+      { prompt: "Finish the fixture", data: { value: 42 } },
+      { projectRoot: root, models: {} },
+    );
+    expect(publicResult.status).toBe("done");
     expect(translateHostedExecutionResult(publicResult, input())).toMatchObject({
       hostCompletion: "finite-done",
       handlerResult: {
@@ -117,9 +121,13 @@ export async function execute(ctx) {
 }
 `,
     );
-    const publicResult = await run("owner/blocked", {}, { projectRoot: root, models: {} });
+    const publicResult = await run(
+      "sample/blocked",
+      { prompt: "Return the retained partial evidence" },
+      { projectRoot: root, models: {} },
+    );
     const facts = { payload: "x".repeat(9000) };
-    expect(publicResult.ok).toBe(true);
+    expect(publicResult.status).toBe("blocked");
     expect(translateHostedExecutionResult(publicResult, input())).toMatchObject({
       handlerBlocked: true,
       handlerResult: {

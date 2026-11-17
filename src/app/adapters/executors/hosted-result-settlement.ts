@@ -1,9 +1,10 @@
 import type { AppTaskBlockedSettlement } from "@may-agent/sdk/app";
-import type { RunResult } from "@may-agent/sdk/standalone";
+import type { DirectWorkflowRunResult, RunResult as CallableResult } from "@may-agent/sdk/standalone";
 import type { TaskAgentInput, TaskWorkflowInput } from "../../core/tasks/execution.js";
 import { normalizeTaskHandlerResult, type NormalizedTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
 
 type HostedTaskInput = TaskAgentInput | TaskWorkflowInput;
+type HostedExecutionResult = CallableResult | DirectWorkflowRunResult;
 
 type TranslationOptions = {
   now?: () => number;
@@ -47,17 +48,28 @@ function factStrings(facts: unknown, diagnosticFacts: readonly string[] = []): s
   return [serializedFact(facts), ...diagnosticFacts];
 }
 
-function resultRunId(result: RunResult): string | null {
+function isDirectWorkflowResult(result: HostedExecutionResult): result is DirectWorkflowRunResult {
+  return "report" in result;
+}
+
+function resultRunId(result: HostedExecutionResult): string | null {
+  if (!isDirectWorkflowResult(result)) return result.id ?? null;
   return result.report.executionId ?? result.childSessions[0]?.sessionId ?? null;
 }
 
-function executionFailure(result: RunResult, summary?: string): TaskCapabilityRun {
+function executionFailure(result: HostedExecutionResult, summary?: string): TaskCapabilityRun {
   const runId = resultRunId(result);
-  const reportError = result.report.error?.message;
-  const error = result.error instanceof Error ? result.error.message : result.error ? String(result.error) : undefined;
-  const cleanup = result.report.cleanup.confirmed
-    ? []
-    : [`execution-cleanup-unconfirmed:${result.report.cleanup.unconfirmed?.join(",") ?? "unknown"}`];
+  const reportError = isDirectWorkflowResult(result) ? result.report.error?.message : undefined;
+  const error = isDirectWorkflowResult(result)
+    ? result.error instanceof Error
+      ? result.error.message
+      : result.error
+        ? String(result.error)
+        : undefined
+    : result.summary;
+  const cleanup = isDirectWorkflowResult(result) && !result.report.cleanup.confirmed
+    ? [`execution-cleanup-unconfirmed:${result.report.cleanup.unconfirmed?.join(",") ?? "unknown"}`]
+    : [];
   return {
     handlerResult: {
       state: "error",
@@ -215,26 +227,48 @@ export function translateHostedBlockedContribution(
 
 /** Translate the public Task-blind run result at the Host settlement boundary. */
 export function translateHostedExecutionResult(
-  result: RunResult,
+  result: HostedExecutionResult,
   input: HostedTaskInput,
   options: TranslationOptions = {},
 ): TaskCapabilityRun {
-  if (
-    !result.ok ||
-    result.status === "error" ||
-    result.status === "interrupted" ||
-    !result.result ||
-    result.report.cleanup.confirmed !== true
-  ) {
-    return executionFailure(result);
+  let status: "done" | "blocked";
+  let summary: string;
+  let output: unknown;
+  let facts: unknown;
+
+  if (isDirectWorkflowResult(result)) {
+    if (
+      !result.ok ||
+      result.status === "error" ||
+      result.status === "interrupted" ||
+      !result.result ||
+      result.report.cleanup.confirmed !== true
+    ) {
+      return executionFailure(result);
+    }
+    if (result.result.type === "done") {
+      status = "done";
+      summary = result.result.summary;
+    } else if (result.result.type === "blocked") {
+      status = "blocked";
+      summary = result.result.reason;
+    } else {
+      return executionFailure(result);
+    }
+    output = result.result.output;
+    facts = result.result.facts;
+  } else {
+    if (result.status === "error" || result.status === "interrupted") return executionFailure(result);
+    status = result.status;
+    summary = result.summary;
+    output = result.output;
+    facts = result.facts;
   }
-  const contribution = result.result;
-  if (contribution.type !== "done" && contribution.type !== "blocked") return executionFailure(result);
-  const summary = contribution.type === "done" ? contribution.summary : contribution.reason;
-  if (contribution.type === "blocked") {
+
+  if (status === "blocked") {
     return translateHostedBlockedContribution(
       input,
-      { summary, output: contribution.output, facts: contribution.facts, runId: resultRunId(result) },
+      { summary, output, facts, runId: resultRunId(result) },
       options,
     );
   }
@@ -244,9 +278,9 @@ export function translateHostedExecutionResult(
     {
       state: "converged",
       summary,
-      facts: factStrings(contribution.facts),
+      facts: factStrings(facts),
       actions: [],
-      ...outputResult(contribution.output),
+      ...outputResult(output),
     },
     { type: "done", summary, runId },
     {

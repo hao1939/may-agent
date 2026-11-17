@@ -6,7 +6,6 @@ import { join, resolve } from "node:path";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
-  WorkflowValidationError,
 } from "@may-agent/sdk/testing";
 import { Type } from "typebox";
 import { fakeModel } from "../../../../../test/fixtures/model.js";
@@ -1518,8 +1517,8 @@ export async function execute(ctx) {
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
       agentFixtures: {
-        reviewer: async ({ task, options: stepOpts }) => {
-          seenToolsPolicy = stepOpts?.tools;
+        reviewer: async ({ task, tools }) => {
+          seenToolsPolicy = tools;
           return {
             id: "s_direct_readonly_prompt",
             kind: "agent",
@@ -1541,7 +1540,7 @@ export async function execute(ctx) {
     expect(listed.map((descriptor) => descriptor.name)).not.toContain("global/codex");
     await expect(
       run("codex", { prompt: "Inspect package.json" }, { projectRoot: env.projectRoot, models: {} }),
-    ).rejects.toThrow("Callable target not found: codex");
+    ).resolves.toEqual({ status: "error", summary: "Callable target not found: codex" });
   });
 
   test.each(["timeout", "cancel"] as const)(
@@ -1800,9 +1799,9 @@ export async function execute(ctx) {
         models: { test: fakeModel() as any },
       },
     );
-    expect(autoRun.ok).toBe(true);
-    expect(autoRun.result).toEqual({
-      type: "done",
+    expect(autoRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "scored",
       output: { score: 95 },
     });
@@ -1817,8 +1816,11 @@ export async function execute(ctx) {
         outputSchema: Type.Object({ score: Type.Number({ minimum: 90 }) }),
       },
     );
-    expect(stricterCallerSchemaFail.ok).toBe(false);
-    expect(stricterCallerSchemaFail.error).toBeInstanceOf(WorkflowValidationError);
+    expect(stricterCallerSchemaFail).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: expect.stringContaining("Invalid caller output schema"),
+    });
 
     // 3. The listed App procedure named "codex" is invoked instead of a native CLI alias:
     const localCodexProc = await run(
@@ -1833,9 +1835,9 @@ export async function execute(ctx) {
         },
       },
     );
-    expect(localCodexProc.ok).toBe(true);
-    expect(localCodexProc.result).toEqual({
-      type: "done",
+    expect(localCodexProc).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "local-codex-procedure",
       output: { received: { prompt: "Run local codex", data: { customObject: true } } },
     });
@@ -1854,9 +1856,9 @@ export async function execute(ctx) {
         }),
       },
     });
-    expect(barePrompt.ok).toBe(true);
-    expect(barePrompt.result).toMatchObject({
-      type: "done",
+    expect(barePrompt).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "fast:Fast canonical prompt",
     });
   });
@@ -1945,9 +1947,9 @@ export async function execute(ctx) {
         };
       },
     });
-    expect(bareAppPrompt.ok).toBe(true);
-    expect(bareAppPrompt.result).toMatchObject({
-      type: "done",
+    expect(bareAppPrompt).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "ran:alpha-lead:Run bare App prompt",
     });
     // 2. workRoot defaults to cwd (nestedCwd) rather than inferred projectRoot:
@@ -1974,13 +1976,13 @@ export async function execute(ctx) {
         }),
       },
     );
-    expect(appCallsGlobal.ok).toBe(true);
-    expect(appCallsGlobal.result).toEqual({
-      type: "done",
+    expect(appCallsGlobal).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "alpha->global:global-reviewer",
     });
 
-    // 4. Explicit App scope (--app or <app>.app/<target>) rejects sibling App procedures:
+    // 4. Retired App selection does not narrow the complete captured catalog.
     await expect(
       run(
         "beta/beta-probe",
@@ -1991,7 +1993,11 @@ export async function execute(ctx) {
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("beta/beta-probe");
+    ).resolves.toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "beta-ran",
+    });
 
     await expect(
       run(
@@ -2002,7 +2008,10 @@ export async function execute(ctx) {
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("beta-owner/beta-probe");
+    ).resolves.toEqual({
+      status: "error",
+      summary: "Callable target not found: alpha.app/beta-owner/beta-probe",
+    });
 
     // 5. Catalog preparation rejects an ambiguous canonical workflow instead of silently omitting it.
     writeFileSync(
@@ -2075,9 +2084,9 @@ export async function execute(ctx) {
         models: { test: fakeModel() as any },
       },
     );
-    expect(betaCwdRun.ok).toBe(true);
-    expect(betaCwdRun.result).toEqual({
-      type: "done",
+    expect(betaCwdRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "beta",
     });
     await expect(
@@ -2085,9 +2094,12 @@ export async function execute(ctx) {
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
       }),
-    ).rejects.toThrow("Callable target not found: shared-owner/which-app");
+    ).resolves.toEqual({
+      status: "error",
+      summary: "Callable target not found: shared-owner/which-app",
+    });
 
-    // 7. Explicit App scope filters the catalog and rejects a sibling App's canonical route.
+    // 7. App and agentsRoot compatibility options do not filter project App discovery.
     await expect(
       run(
         "beta/beta-probe",
@@ -2099,7 +2111,11 @@ export async function execute(ctx) {
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("Callable target not found: beta/beta-probe");
+    ).resolves.toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "beta-ran",
+    });
 
     // 10. listStandaloneTargets bounds stalled top-level await imports via timeoutMs/signal:
     const gate = await controlledWorkflowImport(env.root);
@@ -2165,9 +2181,9 @@ export async function execute(ctx) {
       projectRoot: env.projectRoot,
       models: { test: fakeModel() as any },
     });
-    expect(domainRun.ok).toBe(true);
-    expect(domainRun.result).toEqual({
-      type: "done",
+    expect(domainRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "domain input retained",
       output: { input: domainInput, reconciliation: null },
     });
@@ -2197,8 +2213,12 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
       models: {},
       timeoutMs: 1_000,
     });
-    expect(result.ok).toBe(true);
-    expect(result.result).toEqual({ type: "done", summary: "echoed", output: input });
+    expect(result).toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "echoed",
+      output: input,
+    });
 
     const reviewer = descriptors.find((descriptor) => descriptor.name === "global/reviewer");
     expect(reviewer).toBeDefined();
@@ -2216,9 +2236,9 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
         }),
       },
     });
-    expect(promptRun.ok).toBe(true);
-    expect(promptRun.result).toMatchObject({
-      type: "done",
+    expect(promptRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: 'inspect\n\nInput data:\n{\n  "ref": "HEAD"\n}',
     });
 
@@ -2229,12 +2249,17 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
       [echo!.name, { prompt: "echo this", task: "retired alias" }, "Invalid callable input"],
       ["owner/echo", { prompt: "echo this" }, "Callable target not found"],
     ] as const) {
-      await expect(run(target, invalidInput, {
+      const rejected = await run(target, invalidInput, {
         projectRoot: env.projectRoot,
         cwd: env.projectRoot,
         models: {},
         timeoutMs: 1_000,
-      })).rejects.toThrow(expected);
+      });
+      expect(rejected).toMatchObject({
+        status: "error",
+        summary: expect.stringContaining(expected),
+      });
+      expect(rejected).not.toHaveProperty("id");
     }
   });
 
