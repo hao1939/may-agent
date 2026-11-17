@@ -1333,3 +1333,45 @@ Evidence under the trial directory: `0e6-independent-standalone.log`,
 `0e6-independent-check-ci.log`, `56e-185-independent-owning.log`,
 `56e-185-design-check.log`, `bda-185-independent-owning.log` and
 `configured-legacy-schema-1794948446858.json`.
+
+## Bounded traversal and May workflow adapters
+
+Native Host `a0b1e625f7328c007d3db325f58d0f1eac459459` bounds the recursive
+workflow CTE with a 65th-row sentinel, selects at most 64 workflow IDs and
+reports `diagnostics.omitted.workflows` before bounded session enumeration.
+Root independently ran 22 execution-read tests plus 46 JSONL/CLI tests;
+exact-clean `check:ci` passes. Eight production-reader probes pass, adding
+1,000 sessionless wide descendants and a 1,000-node chain to the original six
+receipt/provenance/omission probes. The traversal review discussion is resolved
+from this evidence and the exact checkpoint is published on PR #589.
+
+Native App `a41a21e976c9191b9a315dccb97d833170eb38d0` migrates the four May
+workflow execute adapters to unwrap `input.data`. All 44 May workflow tests and
+the repository's `typecheck` command pass independently against immutable Host
+185. The design check reveals three new private-helper context type errors in
+addition to the four known Scout errors. Spreading an envelope-typed context
+into a domain-typed helper changes `input` but leaves its generic reconciliation
+type incompatible. The correction must preserve the independent raw Task input;
+it must not wrap or replace `ctx.reconciliation.input` to satisfy the helper.
+Root returned these exact errors to May for the existing contribution workflow.
+
+The default App test command fails its first affected eight-file chunk with
+120 pass and three standalone-stage failures; later chunks are not executed.
+Source review identifies an actual consumer migration: standalone-stage still
+reads the retired public `run` wrapper's `report`, `ok` and `result.type` fields.
+Migrate its diagnostics/evidence consumption and retain cleanup/cancellation
+assertions rather than only changing fixture expectations.
+
+App a41 is published on its retained branch. At true 32/32 exhaustion and a
+terminal workflow boundary, May revised the same App Task once to cumulative
+limit 48, retaining all 32 consumed rounds, exact source/provider and evidence.
+The Host Task remains on its existing generation and allowance. Source fixture
+migration and the paired trial remain open; no unified runtime is activated.
+
+Evidence under the trial directory: `a0b-independent-receipts.log`,
+`a0b-independent-check-ci.log`, `execution-receipts-1794948550844.json`,
+`a0b-traversal-review-resolution.json`, `a41-185-independent-may-workflows.log`,
+`a41-185-independent-typecheck.log`, `a41-185-independent-design.log`,
+`a41-185-independent-full-test.log`,
+`checkpoint-app-finite-continuation-receipt.json` and
+`a41-type-and-stage-review-receipt.json`.

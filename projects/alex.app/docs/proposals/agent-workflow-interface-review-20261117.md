@@ -4,11 +4,12 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`0e6806c95b`. Independent exact-clean `check:ci` and all 36 standalone tests
-pass, including real prompt finish admission for blocked outputless reports and
-rejection of successful reports missing schema-required output. Earlier exact
-`5d8a8f31ac` verification passes 67 receipt/persistence/CLI tests and all six
-production receipt probes; `ffbd59ecbc` passes 44 owning tests. Shared callable
+`a0b1e625f7`. Independent exact-clean `check:ci` and 68 receipt/persistence/CLI
+tests pass; all eight production receipt probes pass, including sessionless
+wide/deep workflow omission. Parent `0e6806c95b` passes 36 standalone tests,
+including real prompt finish admission for blocked outputless reports and
+rejection of successful reports missing schema-required output.
+Earlier `ffbd59ecbc` passes 44 owning tests. Shared callable
 cancellation settles within the existing finite cleanup grace.
 The original explicit-module timeout/abort probe now reports unconfirmed cleanup
 while a native import remains pending; both cleanup defects are repaired.
@@ -19,19 +20,22 @@ Task workflow ingress with raw reconciliation input. The metadata, naming,
 schema, timeout and import review discussions are resolved from independent
 evidence. These checks establish source behavior, not installed availability.
 
-App checkpoint `bda965c421` is published on its retained review branch. Its parent
+App checkpoint `a41a21e976` is published on its retained review branch. Its earlier
 `56e58c00f0`, paired with Host `185ffeb1ce`, passes 101 owning tests including all
 four repaired owner-handoff cases; three standalone-stage cases still fail.
 The fixture fix declares its helper `appLocal: true` and preserves the original
 request-ID Conditions, restart and cancellation assertions. Raw Task-input
-mapping is repaired. The canonical App check at that parent still reports four
-Scout input/optional-ID errors; integrity and design examples pass. Full
-configured-target bodies, callers, guidance and result consumers remain unfinished.
+mapping is repaired. The four May workflow adapters added in `a41a21e976` pass
+all 44 May workflow tests. Independent `typecheck` passes, but the canonical App
+check reports seven errors: three new private-helper context type mismatches and
+the four known Scout input/optional-ID errors. Integrity and design examples pass.
+The default App test command fails its first affected chunk with the same three
+standalone-stage failures; it does not run later chunks. Full configured-target
+bodies, callers, guidance and result consumers remain unfinished.
 
 Trusted execution reads now project nested workflow CLI receipts and expose
-message/byte/receipt truncation. One source defect remains: the recursive workflow
-query bounds returned sessions but still expands every descendant workflow.
-Bound traversal itself and report omitted subtrees. Actual development/Gym
+message/byte/receipt truncation. Workflow traversal and session selection are
+both bounded, with omitted workflow subtrees reported explicitly. Actual development/Gym
 consumers, meaningful Host/CLI fixture migration and complete current-head CI
 also remain required.
 
@@ -43,7 +47,7 @@ reach their bodies. In the isolated standalone probe, the first reports missing
 without those capabilities. Discovery and admission do not prove live effects.
 No unified candidate is activated; connected native-trial and Telegram review-link
 notification acceptance are unproved. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#prompt-admission-and-app-envelope-checkpoint)
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#bounded-traversal-and-may-workflow-adapters)
 records exact revisions and remaining verification boundaries.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
