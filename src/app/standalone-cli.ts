@@ -317,8 +317,7 @@ export async function runStandaloneCli(
         writeOut("No callable targets discovered.");
       } else {
         for (const item of targets) {
-          const scope = item.app ? ` [${item.app}]` : "";
-          writeOut(`${item.target.padEnd(32)} (${item.kind})${scope} — ${item.description}`);
+          writeOut(`${item.name.padEnd(32)} — ${item.description}`);
         }
       }
       return { exitCode: 0, targets };

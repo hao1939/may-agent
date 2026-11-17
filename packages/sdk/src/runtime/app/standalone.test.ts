@@ -2220,12 +2220,13 @@ export async function execute(ctx) { return ctx.done("b"); }
       ),
     ).rejects.toThrow("beta-owner/beta-probe");
 
-    // 5. listStandaloneTargets advertises exported `name` ("alpha-lead/aliased-proc", not "alpha-lead/z-aliased") and excludes ambiguous duplicates:
+    // 5. listStandaloneTargets uses exact App/global canonical names, exported workflow names, and excludes ambiguous duplicates:
     const listed = await listStandaloneTargets({ projectRoot: env.projectRoot });
-    const targetNames = listed.map((item) => item.target);
-    expect(targetNames).toContain("alpha-lead/aliased-proc");
-    expect(targetNames).not.toContain("alpha-lead/z-aliased");
-    expect(targetNames).not.toContain("beta-owner/dup-proc");
+    const targetNames = listed.map((item) => item.name);
+    expect(targetNames).toContain("alpha/aliased-proc");
+    expect(targetNames).not.toContain("alpha/z-aliased");
+    expect(targetNames).not.toContain("beta/dup-proc");
+    expect(listed.every((item) => !("kind" in item) && !("target" in item))).toBe(true);
 
     // 6. Array outputSchema through the real runCliAgent runner + scratch outputRoot retention when drainProcessGroup returns false:
     const arraySchema = Type.Array(Type.String());

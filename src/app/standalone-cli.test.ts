@@ -112,19 +112,17 @@ describe("may run / may list standalone CLI", () => {
       },
       stdout: (line) => out.push(line),
       listTargets: () => [
-        { target: "alex", kind: "prompt", owner: "alex", app: "alex.app", description: "Alex lead" },
+        { name: "alex/alex", description: "Alex lead", inputSchema: {} as any },
         {
-          target: "tech-lead/verified-coder",
-          kind: "code",
-          owner: "tech-lead",
-          app: "alex.app",
+          name: "alex/verified-coder",
           description: "Code procedure (verified-coder.ts)",
+          inputSchema: {} as any,
         },
       ],
     });
     expect(listRes.exitCode).toBe(0);
-    expect(out.some((l) => l.includes("alex") && l.includes("[alex.app]"))).toBe(true);
-    expect(out.some((l) => l.includes("tech-lead/verified-coder"))).toBe(true);
+    expect(out.some((l) => l.includes("alex/alex") && l.includes("Alex lead"))).toBe(true);
+    expect(out.some((l) => l.includes("alex/verified-coder"))).toBe(true);
   });
 
   test("invokes run(target, input, options) and formats human & JSON output", async () => {

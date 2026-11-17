@@ -43,6 +43,7 @@ import { agentExecutionResult, enforceStructuredWorkflowResult, generateId } fro
 import type { ModelWithApiKey, TaskResult } from "../lib/manager-utils.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/runtime-import.js";
 import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
+import { CallableCatalog, type CallableDefinition, type CallableDescriptor } from "../../callable.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
 import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/path-utils.js";
@@ -1758,13 +1759,7 @@ export type RunOptions<TInput = unknown> = Omit<
 
 export type RunResult = DirectWorkflowRunResult;
 
-export type TargetSummary = {
-  target: string;
-  kind: "prompt" | "code" | "cli";
-  owner: string;
-  app?: string;
-  description: string;
-};
+export type TargetSummary = CallableDescriptor;
 
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
 
@@ -1841,42 +1836,41 @@ export async function listTargets(
       ownersByScope.set(scopeKey, list);
     }
 
-    const items: TargetSummary[] = [];
+    const definitions: CallableDefinition[] = [];
+    const unavailable = async () => ({ status: "error" as const, summary: "Discovery descriptor is not executable" });
     for (const [, entries] of ownersByScope) {
       listController.signal.throwIfAborted();
-      // Skip ambiguous owner definitions within the same scope.
       if (entries.length !== 1) continue;
       const { dir, config } = entries[0]!;
-      const app = dir.projectId ? `${dir.projectId}.app` : undefined;
-      items.push({
-        target: config.name,
-        kind: "prompt",
-        owner: config.name,
-        ...(app ? { app } : {}),
+      definitions.push({
+        ...(dir.projectId ? { appId: dir.projectId } : {}),
+        declaredName: config.name,
         description: config.description,
+        invoke: unavailable,
       });
       const wfDir = join(dir.dir, "workflows");
       if (existsSync(wfDir)) {
         const catalog = await buildWorkflowCatalog(wfDir, listController.signal);
         listController.signal.throwIfAborted();
         for (const wf of catalog.workflows.values()) {
-          items.push({
-            target: `${config.name}/${wf.name}`,
-            kind: "code",
-            owner: config.name,
-            ...(app ? { app } : {}),
+          definitions.push({
+            ...(dir.projectId ? { appId: dir.projectId } : {}),
+            declaredName: wf.name,
             description: wf.description,
+            ...(wf.inputSchema ? { dataSchema: wf.inputSchema } : {}),
+            ...(wf.outputSchema ? { outputSchema: wf.outputSchema } : {}),
+            invoke: unavailable,
           });
         }
       }
     }
     if (!appFilter) {
-      items.push(
-        { target: "codex", kind: "cli", owner: "codex", description: "Built-in Codex CLI executor" },
-        { target: "claude", kind: "cli", owner: "claude", description: "Built-in Claude CLI executor" },
+      definitions.push(
+        { declaredName: "codex", description: "Built-in Codex CLI executor", invoke: unavailable },
+        { declaredName: "claude", description: "Built-in Claude CLI executor", invoke: unavailable },
       );
     }
-    return items.sort((a, b) => a.target.localeCompare(b.target));
+    return [...new CallableCatalog(definitions).list()];
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener("abort", onParentAbort);
