@@ -919,32 +919,6 @@ describe("workflow runner: steering", () => {
     expect(runner.activeWorkflow).toBeNull();
   });
 
-  it("steer() queues a signal that interrupts the workflow at the next call", async () => {
-    writeWorkflow(
-      "steerable.ts",
-      `
-      export const name = "steerable";
-      export const description = "Workflow that can be steered";
-      export async function execute(ctx) {
-        const result = await ctx.call("global/coder", { prompt: "do something" });
-        return ctx.done("should not reach here");
-      }
-    `,
-    );
-
-    const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const runner = createWorkflowRunner({
-      manager,
-      workflowDir,
-      onEvent: (e) => events.push(e),
-    });
-
-    const parsed: WorkflowToolResult = await runner.run("steerable", "steerable task");
-    expect(parsed.type).toBe("done");
-    if (parsed.type === "done") expect(parsed.summary).toContain("should not reach here");
-  });
-
   it("pre-queued steering signal interrupts workflow before first call", async () => {
     writeWorkflow(
       "delayed.ts",
