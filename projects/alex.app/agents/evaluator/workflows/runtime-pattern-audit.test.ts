@@ -192,8 +192,8 @@ test("runtime-pattern-audit compares latest and preceding windows deterministica
       },
       requests: [
         {
-          localKey: expect.stringMatching(/^workflow-audit:[0-9a-f]{16}$/),
-          target: { appId: "alex" },
+          id: expect.stringMatching(/^workflow-audit:[0-9a-f]{16}$/),
+          appId: "alex",
           input: {
             kind: "message",
             data: {
