@@ -240,8 +240,8 @@ transfer for withdrawn monitoring; local readiness alone does neither.
 | **Intent** | *"Wake me **once** when this exact expected state is reached."* | *"Keep notifying me of **any meaningful change** (`fingerprint` change) to this resource while it is open."* |
 | **Examples** | • Wait for child Task / App request to finish (`app.dependency.updated` `status: "done"`).<br>• Wait for human approval (`project.approval.submitted`).<br>• Wait only for `credential.state` `state: "ready"`. | • Watch an open PR (`github:hao1939/may-agent#587`) for any CI completion, new Copilot/human review comment, review decision, head push, or merge/close.<br>• Watch a live deployment or incident resource until resolved. |
 | **When does it wake the Task?** | **Once**, when the incoming event matches `expected`. | **Every time** the resource's `fingerprint` changes (and matches optional filter criteria), even if the Task is currently `converged` / `idle` waiting for human review! |
-| **What happens after it wakes the Task?** | Transitions to `state = "true"` (satisfied) and **unsubscribes immediately**. | Updates `status.observed` (recording the latest `fingerprint`), wakes the Task, and **stays subscribed (`state = "false"`)** while the resource remains open! |
-| **When does it unsubscribe?** | 1. As soon as `expected` matches (`state = "true"`), **OR**<br>2. When the **Task closes** (`closed` / `cancelled`), **OR**<br>3. When the **Resource closes** (`closed: true` / `state: "closed"`). | 1. When the **Resource closes** (`closed: true` / `state === "closed"` / `merged === true` — after delivering that final terminal event once!), **OR**<br>2. When the **Task closes** (`closed` / `cancelled`). |
+| **What happens after it wakes the Task?** | Satisfies the exact prerequisite and releases its observation demand. | Retains interest and saves delivery independently for each Task. Input handling and attempt convergence do not remove interest or force a prerequisite to remain false. |
+| **When does it unsubscribe?** | After the expected fact, authorized withdrawal, Task closure/cancellation, or a terminal resource observation delivered for reconsideration. A false success predicate remains false. | After an observer-declared terminal fact is saved for every interested Task, Task closure/cancellation, or authorized withdrawal/transfer of monitoring. |
 
 ---
 
@@ -267,11 +267,20 @@ When a durable event is emitted:
    - **App `subscriptions`:** Each matching subscription runs its pure `toInput(event)` translator and admits the resulting `AppInput` into `app_inbox`.
    - **Open Task `Conditions` (`kind: "event"`):** Any open Task waiting on an event Condition matching `event.type` (and optional `source` / `filter`) records the matched observation and wakes the Task reconciler.
    - **App `observations`:** Declared observation streams remain readable via `ctx.read.observations(type)` without needing a hacky `INTENTIONAL_OBSERVATION_EVENT_TYPES` whitelist.
-3. **Clear & Loud Delivery Status:**
+3. **Per-consumer delivery:**
+   - Retain each required destination and its admission outcome through the
+     existing route/inbox records. A successful subscriber does not acknowledge
+     another subscriber's failed translation or delivery. Retry the failed
+     obligation without duplicating already accepted input.
+   - Exact addressing selects a destination; it grants no authority. Validate
+     trusted ingress provenance, App input and current Task fences through the
+     owning admission API. An observer fact is evidence for owner judgment.
    - Because `events` only contains real domain facts (no heartbeats, timer ticks, or `skill.loaded` noise), every event has a transparent outcome:
      - `matched` (admitted to ≥1 exact Task, App subscription, Task Condition, or declared App observation)
      - `unmatched` (diagnostic when delivery was required; a legitimate record-only fact may have no consumer).
      - `failed` (loud signal: a matching subscription's `toInput` or admission threw an error, triggering recovery and `app.input.admission.failed`).
+   - These aggregate labels summarize delivery. They cannot replace saved
+     obligations, establish semantic completion, or erase partial failures.
 
 ### 4. Separate Ephemeral Wake & Stream Bus (`LiveStreamBus`)
 - Live UI notifications (`conversation.updated`, `app.task.updated`) and live session token/tool streams (`text`, `tool_call`, `tool_result`, `turn_end`, `info`) flow through a lightweight in-memory emitter directly to WebSocket `/ws` subscribers and Console.

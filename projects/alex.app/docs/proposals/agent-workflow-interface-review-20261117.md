@@ -7,8 +7,8 @@ is merged into main `0606e2df16d0a44016bbef1c6294dac4c4c11d94`; its shared
 tool name still fronts incompatible inputs, results, discovery and permission
 handling. Source merge and installed-runtime activation are separate facts.
 Draft [#589](https://github.com/hao1939/may-agent/pull/589) publishes the partial
-catalog/discovery checkpoint `a3a0f2fe6a`. Later local commits add standalone
-dispatch and SDK discovery wiring; production model/SDK parity, removal of old
+catalog, standalone dispatch and SDK discovery checkpoint `79240eb435`.
+Production model/SDK parity, removal of old
 interfaces and paired App migration remain incomplete. No candidate is activated.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).

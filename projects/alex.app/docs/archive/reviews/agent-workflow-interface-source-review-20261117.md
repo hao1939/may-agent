@@ -181,3 +181,75 @@ new development allowance, requires full creator revisions to preserve current
 fields, and describes scoped dependency fulfillment. The event proposal retains
 shared continuous observation as a later source gap. Its fan-out/retirement trial
 is separate from proving ordinary Condition rearming on the current coding PR.
+
+## Revision admission blocker
+
+At 15:38 UTC, May's supported `revise-assignment` workflow
+`wr_1794929931222_2yuk` rejected the authorized total-twenty-four continuation:
+`task-revision:["alex","input/appdep_03133108de69b2c8ee101309",11]` had already
+been used for different desired work. The original Task remains generation
+eleven with sixteen rounds consumed; its checkout and source are retained.
+
+Read-only inspection found that the generation-eleven admission was saved at
+15:12:13 with the same request hash and effective requirements as the preceding
+generation-ten revision. It recorded generation eleven again. Source
+`task-revision.ts` compares raw intent for its early no-op guard, then keys
+admission by expected generation alone. Alex's mapper includes top-level
+`constraints` that `resourceSpec`/`resourceIntent` do not retain. That extra
+metadata lets an effective no-op miss the guard and occupy the current key.
+
+At 15:43:30, Root reproduced the defect with the production baseline revision
+API, generic App fixtures and fresh temporary SQLite: a no-op returns
+`{generation: 1, changed: false}`, then an actual alpha-to-beta revision at the
+same expected generation rejects as conflicting desired work. The fixture
+includes mapper-only metadata; it needs no live state or credentials.
+
+Root assigned a distinct three-round repair through May, Alex Task ref
+`b974966a` (`input/appdep_87ebc66b5873aee2e8fcc2ae`), using a clean Host worktree
+at `0606e2df16`. This owns the newly demonstrated Host defect and compatible
+local activation, not replacement of the exhausted callable Task. The intended
+fix compares effective persisted desired state and scopes revision identity to
+the actual change while retaining old receipts and authority/freshness checks.
+No live receipt deletion, artificial generation bump, usage reset or new ledger
+is authorized. May will retry the original creator revision after the source
+repair and supported local activation.
+
+At 15:48:35, Root ran the same independent production-API probe against clean
+hotfix `075947e6a048598c2e44771a20deddb2b82d2f84`: the unchanged revision kept
+generation one, and the real change advanced to generation two. The candidate
+exports the existing desired-spec projection for the no-op comparison and keys
+new revisions by expected generation plus desired-spec hash, preserving old
+receipts. Source proof does not repair the running installation.
+
+Root found that the candidate's new test accepted a `constraints` input field
+but its App mapper did not actually return mapper-only metadata. Root returned
+that regression gap through May before publication. Full local CI also exposed
+a missing Docker CLI prerequisite. At 15:54 UTC, Root installed official,
+checksum-verified Docker CLI 29.10.0 and Compose v5.8.0; the six configuration
+tests then passed without a daemon. This was environment setup, not an
+implementation round or permission to weaken CI. Final clean-candidate CI,
+focused PR publication, supported activation and actual creator revision remain
+open.
+
+## Task, ingress and event assessment
+
+The current path already has durable exact admission, generation fencing,
+replay, PR observation and same-Task reconsideration. It has not yet demonstrated
+the complete promised delivery. Prioritize observed failures before replacing
+those mechanisms:
+
+| Priority | Observed gap | Next evidence |
+| --- | --- | --- |
+| 1 | An effective no-op can block the creator's real revision. | Focused hotfix, current-head CI and supported activation; then same Alex Task at total twenty-four with all sixteen consumed rounds retained. |
+| 2 | Coordinators repeatedly retain answered setup/escalation inputs as waits; revising work has been treated as answering its callers. | Exact scoped return delivered to its saved caller while broader work and unrelated Scout obligations remain retained. A blocker on one input must not become an invented prerequisite for another. |
+| 3 | The unified callable change remains partial and needed manual repair directions. | Coherent Host/SDK/App candidate, owning tests and all four invocation directions through production adapters. |
+| 4 | A watcher saw real CI/comment changes, but readiness notification and subsequent repair are unproved. | Current-head green CI, provider-backed Telegram link, then a late review comment causing the same Task/workflow to repair and reverify. Preserve ordinary Condition demand throughout this trial. |
+| Later | Continuous observation and journal/transport simplification remain proposed. | Independent per-Task delivery, missed-wake recovery and terminal observation before retirement; migrate each cleanup boundary with its actual consumers. |
+
+The design correction keeps continuing observation separate from prerequisite
+truth; a continuous interest must not force a Condition permanently false.
+Aggregate event delivery labels cannot replace per-consumer admission receipts.
+The ingress proposal also removes automatic Task closure from its transport
+cutover: notification, idle state and closure have different owning decisions.
+These are clarified requirements and review findings, not claims of installed
+support or new implementation assignments.

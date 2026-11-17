@@ -156,6 +156,18 @@ retry pacing and an App workflow's development allowance bound different costs;
 neither silently renews the other. Already authorized continuation can use the
 owner path without another human confirmation.
 
+A revision that leaves persisted desired state unchanged is a no-op: preserve
+the generation and active attempt, and leave later changes at that generation
+admissible. Compare the effective stored requirements rather than App-only mapper
+metadata. Bind a revision's identity to its expected generation and intended
+change; a saved unchanged request must not reserve every later change. Preserve
+old receipts and reject stale/foreign controls through the same authority checks.
+**Installed gap:** the [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#revision-admission-blocker)
+reproduces a generation-only admission-key collision in installed `43fc420a` and
+baseline source. Focused candidate `075947e6a0` passes an independent production
+API probe; final regression coverage, publication and activation remain pending.
+Do not delete live receipts as a workaround.
+
 ## Workspace ownership and cleanup
 
 Keep accepted work usable, and remove disposable execution artifacts without

@@ -110,6 +110,14 @@ Real-world cooperation between an external agent (or human reviewer) and a runni
    - Feedback, generation changes, timeout, retry and restart preserve consumed development rounds. Admission can wake reconsideration without granting another coding round.
    - When more execution is needed, the authorized creator raises the saved total on the same Task and retains usage and evidence. An already authorized bounded continuation needs no repeated human approval. A comment or duplicate wake alone never resets the total. See [scoped returns and revision](../2a-design/task-attempts.md#answer-a-dependency-without-ending-the-wider-work).
 
+For example, correcting a test on an existing coding Task is feedback. Raising
+its saved round total is a creator revision. Answering its earlier allowance
+question is a scoped result through that question's caller link. Those operations
+can support one continuation, but none substitutes for the other. Read back the
+saved assignment and exact input outcome before reporting the handoff complete.
+When several independent inputs share an owner, a blocker on one does not make
+it a prerequisite for all the others.
+
 ### Real-Time Push Stream (`WS /ws`)
 
 A client (Browser, `may-console`, or an Agent watcher) opens a WebSocket to `/ws` and sends a subscription frame:
@@ -175,5 +183,9 @@ The 2-Mode mental model, human-surface helpers, `ref`-first Task endpoints, keyw
    - Run the HTTP + `/ws` control routes (`src/app/http/server.ts`) directly against the daemon's in-process `HumanTaskService`, `EventInterface`, and `EventBus` rather than proxying every browser/agent request through a second Unix domain socket (`sendDaemonFrameWithRetry`, `sendAppInputWithRetry`, `proxyWebSocket`).
 2. **Migrate `may-console` (`packages/terminal/bin/may-console.cjs`) to HTTP + WebSocket:**
    - Replace the 6 manual socket FIFO correlation queues (`pendingTaskListReads`, `pendingTaskReads`, `pendingConversationReads`, etc.) with standard `fetch()` calls + 1 WebSocket subscription for push wakes.
-3. **Auto-Close Converged `close`-Disposition One-Shot Assignments:**
-   - Ensure converged one-shot assignments with `taskDisposition: { kind: "close" }` are closed promptly so completed Tasks do not linger in `idle`.
+
+Task closure remains governed by the [Task lifecycle](../2a-design/task-resource-engine.md#state-and-continuing-responsibility).
+It is a separate concern from replacing the transport. An idle Task may still
+own PR follow-up, and neither idle state nor a successful notification authorizes
+closing it. Do not introduce a new result-disposition field as part of this
+transport cutover.
