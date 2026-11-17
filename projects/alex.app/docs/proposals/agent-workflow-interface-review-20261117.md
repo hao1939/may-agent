@@ -4,17 +4,20 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`185ffeb1ce`. Independent exact-clean `check:ci` and 44 owning tests pass.
-The real public `run()` snapshot probe now retains model, identity text and
-descriptors after edits. Both catalog paths share the same capture helper, and
+`5cdc43973c`. This checkpoint preserves exact targets supplied to the `agents` tool; independent
+exact-clean `check:ci` and all 34 standalone tests pass. At preceding `185ffeb1ce`,
+44 owning tests and the public snapshot checks passed. The real public `run()`
+snapshot probe retains model, identity text and descriptors after edits. Both catalog paths share the same capture helper, and
 owning regressions cover missing identity/shared prompt files plus fresh later
-invocations. Current-head production probes also pass all four call directions,
+invocations. Production probes at `185ffeb1ce` also pass all four call directions,
 canonical name/error checks, schema/report validation and Task workflow ingress,
 including unchanged raw reconciliation input. The reviewer resolved the metadata,
 naming and schema discussions from that evidence.
 
 Shared callable cancellation settlement is finite and retains cooperative
-cleanup joins. Explicit-module pending-import reporting remains open. The
+cleanup joins. An exact `5cdc43973c` probe still shows explicit-module imports
+pending after timeout/cancel while cleanup is incorrectly reported confirmed.
+Reuse caller-owned catalog state; do not add another cancellation mechanism. The
 existing execution read projects bounded trusted CLI receipts for sessions/direct
 children, but nested workflow coverage and visible truncation remain open.
 The preceding `b6f153b5ec` fixes prompt blocked reports without unavailable
@@ -41,7 +44,7 @@ current-head CI. Pending-import cleanup reporting, durable
 prompt partial-report coverage and substantive reviews also remain open. No
 unified candidate is activated; connected native-trial and readiness-notification
 acceptance are unproved. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#published-configuration-and-execution-read-checkpoint)
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#exact-model-target-names-published)
 records exact revisions and remaining verification boundaries.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).

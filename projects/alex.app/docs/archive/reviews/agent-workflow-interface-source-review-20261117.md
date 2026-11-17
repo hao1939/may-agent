@@ -1159,3 +1159,35 @@ Evidence under the trial directory: `185-independent-owning.log`,
 `four-directions-1794946615460.json`, `schema-report-1794946615493.json`,
 `task-workflow-envelope-1794946615505.json`,
 `185-verified-review-resolutions.json` and `runtime-current-1794946465496.json`.
+
+
+## Exact model target names published
+
+Root independently reviewed and pushed native Host
+`5cdc43973cea4d4bc2b3b42be8589f3422585b2c` to PR #589. The model agents tool
+now preserves the supplied target string for the common exact-name validator.
+The owning regression calls a whitespace-padded target, observes useful failure,
+and then successfully calls the canonical prompt and procedure targets.
+All 34 standalone tests and exact-clean `check:ci` pass.
+
+The explicit-module pending-import defect remains reproduced on this exact
+commit: timeout and parent abort each return with the import still pending,
+body unstarted and `cleanup.confirmed: true`. The execute wrapper builds a
+catalog with private default state; passing caller-owned state, as the root
+preparation path does, is the narrow correction. This is separate from the
+already-repaired finite shared callable settlement. Existing native Task
+acceptance covers it; Root returned the evidence through May without editing
+implementation source.
+
+May corrected the same App Task to generation nine with the actual immutable
+185 provider root. The saved source identity is now correct, but live ignored
+SDK links still resolve to historical 485 while another native workflow is
+active. Actual quiescent rebinding and read-back remain required before using
+that checkout for candidate verification. No unified runtime was activated.
+
+Evidence under the trial directory: `5cdc-independent-standalone.log`,
+`5cdc-independent-check-ci.log`, `pair-no-apps-5cdc43973c.json`,
+`module-import-cleanup-1794947018362.json` and
+`next-source-obligations-receipt.json`. Earlier snapshot and App evidence retain
+their exact original revisions; this checkpoint does not certify full CI or
+complete App migration.
