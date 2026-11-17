@@ -233,7 +233,9 @@ changed. Host type/boundary/lint checks and all five new process/receipt tests
 passed. The local full gate finished with 3,491 passing tests, two skips and one
 unchanged browser-test failure (`Node is detached from document` during a
 refreshing-panel click). A single targeted diagnostic run passed; that does not
-replace the failed full run. PR checks and independent review remain required.
+replace the failed full run. Hosted Quality and Container subsequently passed
+on PR #584 at `9747fc880e36c3c766eb0686d14eb8c5fbaa20ac` ([run](https://github.com/hao1939/may-agent/actions/runs/44031798394)).
+Independent review remains required; the source has not been activated.
 
 Remaining gaps are explicit: command ownership is in memory, this candidate does
 not persist a process sidecar for Host crash recovery, and group cleanup does not
