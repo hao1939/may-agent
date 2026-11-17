@@ -10,6 +10,7 @@ import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -91,6 +92,79 @@ describe("canonical agents list/call", () => {
     manager.register({ ...captured, description: "replacement" });
     expect(await callTool(tool, { action: "call", agent: "global/reviewer", input: { prompt: "Review" } })).toMatchObject({ id: "s_snapshot", status: "done" });
     expect(invoked).toBe(captured);
+  });
+
+  it("keeps one pinned catalog per execution tree when a loaded tool serves later callers", async () => {
+    let caller = "first";
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
+    const first = { name: "reviewer", description: "First snapshot", domain: "fixture", model: mockModel(), tools: [] };
+    const second = { name: "reviewer", description: "Second snapshot", domain: "fixture", model: mockModel(), tools: [] };
+    manager.activeSessions.set("first", { taskContext: { agentDefinitions: new Map([["reviewer", first]]) } } as any);
+    manager.activeSessions.set("second", { taskContext: { agentDefinitions: new Map([["reviewer", second]]) } } as any);
+    const invoked: unknown[] = [];
+    manager.callAgentDefinition = async (definition) => {
+      invoked.push(definition);
+      return { sessionId: `s_${invoked.length}`, status: "done", lastAssistantText: "done", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: definition.description } };
+    };
+
+    expect((await callTool(tool, { action: "list" }))[0].description).toBe("First snapshot");
+    caller = "second";
+    expect((await callTool(tool, { action: "list" }))[0].description).toBe("Second snapshot");
+    expect(await callTool(tool, { action: "call", agent: "global/reviewer", input: { prompt: "second" } })).toMatchObject({ summary: "Second snapshot" });
+    caller = "first";
+    expect(await callTool(tool, { action: "call", agent: "global/reviewer", input: { prompt: "first" } })).toMatchObject({ summary: "First snapshot" });
+    expect(invoked).toEqual([second, first]);
+  });
+
+  it("shares pinned preparation while binding a child call to the child's live session", async () => {
+    const captured = { name: "reviewer", description: "Shared snapshot", domain: "fixture", model: mockModel(), tools: [] };
+    const taskContext = { agentDefinitions: new Map([["reviewer", captured]]) };
+    manager.activeSessions.set("parent", { taskContext } as any);
+    manager.activeSessions.set("child", { taskContext } as any);
+    const parentTool = manager.createAgentsTool({ getCallerSessionId: () => "parent" });
+    const childTool = manager.createAgentsTool({ getCallerSessionId: () => "child" });
+    const calls: Array<{ definition: unknown; parentSessionId?: string }> = [];
+    manager.callAgentDefinition = async (definition, _task, options) => {
+      calls.push({ definition, parentSessionId: options?.parentSessionId });
+      return { sessionId: "grandchild", status: "done", lastAssistantText: "done", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: "done" } };
+    };
+
+    const parentDescriptors = await callTool(parentTool, { action: "list" });
+    expect(await callTool(childTool, { action: "list" })).toEqual(parentDescriptors);
+    expect(await callTool(childTool, { action: "call", agent: "global/reviewer", input: { prompt: "Review" } })).toMatchObject({ id: "grandchild", status: "done" });
+    expect(calls).toEqual([{ definition: captured, parentSessionId: "child" }]);
+  });
+
+  it.each(["timeout", "cancel"] as const)("bounds complete catalog preparation on %s", async (mode) => {
+    const gate = await controlledWorkflowImport(persistDir);
+    const agentDir = join(persistDir, `stalled-${mode}`);
+    mkdirSync(join(agentDir, "workflows"), { recursive: true });
+    writeFileSync(join(agentDir, "workflows", "stalled.ts"), gate.source);
+    manager.register({ name: "owner", description: "Owner", domain: "fixture", model: mockModel(), tools: [], agentDir });
+    const parent = new AbortController();
+    manager.activeSessions.set("caller", {
+      taskContext: { agentDefinitions: new Map([["owner", manager.getAgentDefinition("owner")]]) },
+      executionScope: {
+        signal: parent.signal,
+        workSignal: parent.signal,
+        deadlineAt: Infinity,
+        workDeadlineAt: Infinity,
+      },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+    const run = callTool(tool, {
+      action: "call",
+      agent: "global/owner",
+      input: { prompt: "bounded preparation" },
+      ...(mode === "timeout" ? { options: { timeoutMs: 20 } } : {}),
+    });
+    await gate.started;
+    if (mode === "cancel") parent.abort(new Error("parent stopped"));
+    const observed = await observeBoundedResult(run);
+    expect(observed).toBeDefined();
+    expect(observed!.result).toMatchObject({ status: "error" });
+    gate.release();
+    await gate.completed;
   });
 });
 

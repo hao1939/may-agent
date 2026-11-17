@@ -19,6 +19,8 @@ import {
   type CallableOptions,
   type ExecutionInput,
   type ExecutionScope,
+  type WorkflowCatalog,
+  type WorkflowModule,
 } from "@may-agent/sdk/runtime";
 import type { RuntimeCtx } from "./runtime-ctx.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
@@ -116,11 +118,25 @@ function callableReport(result: ReturnType<typeof agentExecutionResult> | NonNul
   };
 }
 
+// Tool instances are loaded with agent definitions, but catalog snapshots belong
+// to one live execution tree. A Task context is shared by every descendant in
+// that tree; direct callers fall back to their live execution scope/session.
+type PreparedCallable =
+  | { kind: "agent"; appId?: string; definition: SubagentDefinition }
+  | { kind: "workflow"; appId?: string; owner: SubagentDefinition; workflowDir: string; workflows: WorkflowCatalog; workflow: WorkflowModule };
+
+const preparedCatalogs = new WeakMap<object, WeakMap<object, Promise<readonly PreparedCallable[]>>>();
+
+function catalogCache(manager: AgentsToolManagerDeps): WeakMap<object, Promise<readonly PreparedCallable[]>> {
+  let cache = preparedCatalogs.get(manager);
+  if (!cache) {
+    cache = new WeakMap();
+    preparedCatalogs.set(manager, cache);
+  }
+  return cache;
+}
+
 function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAgentsToolOptions): AgentTool {
-  // Capture at the first active execution boundary, after configuration has
-  // published its generation. Preparation then pins this complete snapshot so
-  // list, call, and every descendant use the same definitions.
-  let prepared: Promise<CallableCatalog> | undefined;
 
   const lineage = (sessionId: string) => {
     const active = manager.activeSessions.get(sessionId);
@@ -158,24 +174,62 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     return { executionId: result.sessionId, report: callableReport(agentExecutionResult(result)) };
   };
 
-  const prepare = (signal: AbortSignal) => {
-    prepared ??= (async () => {
-      const parentSessionId = opts?.getCallerSessionId?.();
-      const taskDefinitions = parentSessionId
-        ? manager.activeSessions.get(parentSessionId)?.taskContext?.agentDefinitions
-        : undefined;
-      const capturedAgents = taskDefinitions
-        ? [...taskDefinitions.values()]
-        : [...manager.agents.values()].map((registered) => registered.definition);
-      const definitions: CallableDefinition[] = [];
+  const invokeWorkflow = async (
+    entry: Extract<PreparedCallable, { kind: "workflow" }>,
+    input: ExecutionInput,
+    context: CallableInvocationContext,
+  ) => {
+    const parentSessionId = opts?.getCallerSessionId?.();
+    if (!parentSessionId || !manager.activeSessions.has(parentSessionId)) {
+      throw new Error("Callable workflow invocation requires its live caller session");
+    }
+    const session = manager.activeSessions.get(parentSessionId);
+    if (session?.taskBinding && !session.taskContext) {
+      throw new Error("Current Task execution context is unavailable");
+    }
+    const parent = lineage(parentSessionId);
+    const runner = createWorkflowRunner({
+      manager: manager as any,
+      workflowDir: entry.workflowDir,
+      persistDir: manager.registry.persistDir,
+      agentName: entry.owner.name,
+      runtimeCtx: opts?.runtimeCtx,
+      ...session?.taskContext,
+      taskContext: session?.taskContext,
+      read: opts?.createRead ? opts.createRead(session?.taskContext) : undefined,
+      callerSessionId: parentSessionId,
+      projectId: parent.projectId,
+      trace: parent.trace,
+      onEvent: opts?.onWorkflowEvent,
+      signal: session?.executionScope
+        ? AbortSignal.any([context.signal, session.executionScope.signal])
+        : context.signal,
+      executionTimeoutMs: context.timeoutMs,
+      workflowInput: input,
+    });
+    const raw = await runner.run(entry.workflow.name, input.prompt, entry.workflows);
+    const result = workflowExecutionResult(raw);
+    if (!result) {
+      throw new Error(`Workflow callable ${canonicalCallableName(entry.appId, entry.workflow.name)} returned no execution result`);
+    }
+    return { executionId: result.id, report: callableReport(result) };
+  };
+
+  const prepare = (
+    cacheKey: object,
+    capturedAgents: readonly SubagentDefinition[],
+    signal: AbortSignal,
+  ): Promise<readonly PreparedCallable[]> => {
+    const cache = catalogCache(manager);
+    const existing = cache.get(cacheKey);
+    if (existing) return existing;
+    const pending = (async () => {
+      const entries: PreparedCallable[] = [];
       for (const definition of capturedAgents) {
-        definitions.push({
-          appId: definition.appLocal ? definition.projectId : undefined,
-          declaredName: definition.name,
-          description: definition.description,
-          async invoke(input, context) {
-            return invokeAgent(definition, input, context);
-          },
+        entries.push({
+          kind: "agent",
+          ...(definition.appLocal ? { appId: definition.projectId } : {}),
+          definition,
         });
       }
       for (const owner of capturedAgents) {
@@ -184,56 +238,43 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
         const workflows = await buildWorkflowCatalog(workflowDir, signal);
         signal.throwIfAborted();
         for (const workflow of workflows.workflows.values()) {
-          const appId = owner.appLocal ? owner.projectId : undefined;
-          definitions.push({
-            appId,
-            declaredName: workflow.name,
-            description: workflow.description,
-            ...(workflow.inputSchema ? { inputSchema: workflow.inputSchema } : {}),
-            ...(workflow.outputSchema ? { outputSchema: workflow.outputSchema } : {}),
-            async invoke(input, context) {
-              const parentSessionId = opts?.getCallerSessionId?.();
-              if (!parentSessionId || !manager.activeSessions.has(parentSessionId)) {
-                throw new Error("Callable workflow invocation requires its live caller session");
-              }
-              const session = manager.activeSessions.get(parentSessionId);
-              if (session?.taskBinding && !session.taskContext) {
-                throw new Error("Current Task execution context is unavailable");
-              }
-              const parent = lineage(parentSessionId);
-              const runner = createWorkflowRunner({
-                manager: manager as any,
-                workflowDir,
-                persistDir: manager.registry.persistDir,
-                agentName: owner.name,
-                runtimeCtx: opts?.runtimeCtx,
-                ...session?.taskContext,
-                taskContext: session?.taskContext,
-                read: opts?.createRead ? opts.createRead(session?.taskContext) : undefined,
-                callerSessionId: parentSessionId,
-                projectId: parent.projectId,
-                trace: parent.trace,
-                onEvent: opts?.onWorkflowEvent,
-                signal: session?.executionScope
-                  ? AbortSignal.any([context.signal, session.executionScope.signal])
-                  : context.signal,
-                executionTimeoutMs: context.timeoutMs,
-                workflowInput: input,
-              });
-              const raw = await runner.run(workflow.name, input.prompt, workflows);
-              const result = workflowExecutionResult(raw);
-              if (!result) {
-                throw new Error(`Workflow callable ${canonicalCallableName(appId, workflow.name)} returned no execution result`);
-              }
-              return { executionId: result.id, report: callableReport(result) };
-            },
+          entries.push({
+            kind: "workflow",
+            ...(owner.appLocal ? { appId: owner.projectId } : {}),
+            owner,
+            workflowDir,
+            workflows,
+            workflow,
           });
         }
       }
-      return new CallableCatalog(definitions);
+      return entries;
     })();
-    return prepared;
+    cache.set(cacheKey, pending);
+    void pending.catch(() => {
+      if (cache.get(cacheKey) === pending) cache.delete(cacheKey);
+    });
+    return pending;
   };
+
+  const bindCatalog = (entries: readonly PreparedCallable[]) => new CallableCatalog(entries.map((entry): CallableDefinition => {
+    if (entry.kind === "agent") {
+      return {
+        appId: entry.appId,
+        declaredName: entry.definition.name,
+        description: entry.definition.description,
+        invoke: (input, context) => invokeAgent(entry.definition, input, context),
+      };
+    }
+    return {
+      appId: entry.appId,
+      declaredName: entry.workflow.name,
+      description: entry.workflow.description,
+      ...(entry.workflow.inputSchema ? { inputSchema: entry.workflow.inputSchema } : {}),
+      ...(entry.workflow.outputSchema ? { outputSchema: entry.workflow.outputSchema } : {}),
+      invoke: (input, context) => invokeWorkflow(entry, input, context),
+    };
+  }));
 
   return {
     name: "agents",
@@ -242,15 +283,53 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     parameters: CanonicalAgentsToolParams,
     execute: async (_toolCallId, rawParams, signal) => {
       const params = rawParams as CanonicalAgentsToolParamsType;
-      const executionSignal = signal ?? new AbortController().signal;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        const catalog = await prepare(executionSignal);
+        const parentSessionId = opts?.getCallerSessionId?.();
+        const session = parentSessionId ? manager.activeSessions.get(parentSessionId) : undefined;
+        if (!parentSessionId || !session) {
+          throw new Error("Callable catalog preparation requires its live caller session");
+        }
+        const requestedTimeout = params.action === "call" ? params.options?.timeoutMs : undefined;
+        if (requestedTimeout !== undefined && (!Number.isFinite(requestedTimeout) || requestedTimeout <= 0)) {
+          throw new Error("Call timeoutMs must be a positive finite number");
+        }
+        const deadlineAt = Math.min(
+          requestedTimeout === undefined ? Infinity : Date.now() + requestedTimeout,
+          session.executionScope?.workDeadlineAt ?? Infinity,
+        );
+        const timeoutController = Number.isFinite(deadlineAt) ? new AbortController() : undefined;
+        if (timeoutController) {
+          const remaining = Math.max(0, deadlineAt - Date.now());
+          timeout = setTimeout(
+            () => timeoutController.abort(new Error(`Callable catalog preparation timed out after ${remaining}ms`)),
+            remaining,
+          );
+          timeout.unref?.();
+        }
+        const inheritedSignal = session.executionScope?.workSignal;
+        const signals = [signal, inheritedSignal, timeoutController?.signal].filter(
+          (candidate): candidate is AbortSignal => candidate !== undefined,
+        );
+        if (signals.length === 0) {
+          throw new Error("Callable catalog preparation requires a bounded execution signal");
+        }
+        const executionSignal = signals.length === 1 ? signals[0]! : AbortSignal.any(signals);
+        executionSignal.throwIfAborted();
+        const taskDefinitions = session.taskContext?.agentDefinitions;
+        const capturedAgents = taskDefinitions
+          ? [...taskDefinitions.values()]
+          : [...manager.agents.values()].map((registered) => registered.definition);
+        const cacheKey = session.taskContext ?? session.executionScope ?? session;
+        const catalog = bindCatalog(await prepare(cacheKey, capturedAgents, executionSignal));
+        executionSignal.throwIfAborted();
         if (params.action === "list") return textResult(JSON.stringify(catalog.list(), null, 2));
+        const remainingTimeout = Number.isFinite(deadlineAt) ? Math.max(1, deadlineAt - Date.now()) : undefined;
         return textResult(JSON.stringify(await catalog.call(
           params.agent,
           params.input,
           params.options as CallableOptions | undefined,
-          { signal: executionSignal },
+          { signal: executionSignal, ...(remainingTimeout !== undefined ? { timeoutMs: remainingTimeout } : {}) },
         ), null, 2));
       } catch (error) {
         if (error instanceof ExecutionDeferredError) {
@@ -260,6 +339,8 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
           status: "error",
           summary: error instanceof Error ? error.message : String(error),
         }));
+      } finally {
+        if (timeout) clearTimeout(timeout);
       }
     },
   };
