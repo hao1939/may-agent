@@ -20,24 +20,25 @@ test.each(cases)("retains contribution output and facts: $status / $route", asyn
 export const name = "child";
 export const description = "A bounded contribution with evidence";
 export async function execute(ctx) {
-  return { ...ctx.done("narrow contribution"), status: ctx.input.status,
+  return { ...ctx.done("narrow contribution"), status: ctx.input.data.status,
     output: { draft: "retained.md" }, facts: { checked: true } };
 }`);
   writeFileSync(join(workflowDir, "parent.ts"), `
 export const name = "parent";
 export const description = "Caller retains the contribution";
-export async function execute(ctx) { return ctx.call("child", ctx.input); }
+export async function execute(ctx) { return ctx.call("global/child", ctx.input); }
 `);
   try {
+    const input = { prompt: "Produce a bounded contribution", data: { status } };
     let result;
     if (route === "system") {
       try {
         const completed = await runWorkflowDirect({
           manager: {} as never, runtimeCtx: { emit: () => {}, log: () => {} } as unknown as RuntimeCtx, agentName: "owner",
-          workflowDir, persistDir: root, workflowName: "child", task: "contribution", workflowInput: { status },
+          workflowDir, persistDir: root, workflowName: "child", task: "contribution", workflowInput: input,
         });
         expect(["done", "blocked"]).toContain(status);
-        result = { ...completed.result, id: completed.runId, kind: "workflow", status: completed.result.type,
+        result = { ...completed.result, id: completed.runId, status: completed.result.type,
           summary: completed.result.type === "done" ? completed.result.summary : completed.result.reason };
       } catch (error) {
         expect(["error", "interrupted"]).toContain(status);
@@ -47,12 +48,12 @@ export async function execute(ctx) { return ctx.call("child", ctx.input); }
         expect(error.message).toContain(`workflow-run:${result.id}`);
       }
     } else {
-      const runner = createWorkflowRunner({ manager: {} as never, workflowDir, persistDir: root, workflowInput: { status } });
-      const raw = await runner.run(nested ? "parent" : "child", JSON.stringify({ status }));
+      const runner = createWorkflowRunner({ manager: {} as never, workflowDir, persistDir: root, workflowInput: input });
+      const raw = await runner.run(nested ? "parent" : "child", JSON.stringify(input));
       result = { ...raw, ...workflowExecutionResult(raw) };
     }
     const payload = { output: { draft: "retained.md" }, facts: { checked: true } };
-    expect(result).toMatchObject({ kind: "workflow", status, summary: "narrow contribution", ...payload });
+    expect(result).toMatchObject({ status, summary: "narrow contribution", ...payload });
     closeDb(root);
     const evidence = readWorkflowFacts(root, result.id)!;
     expect(evidence.run).toMatchObject({ status, result_payload: { kind: "result", state: "available", value: payload } });
