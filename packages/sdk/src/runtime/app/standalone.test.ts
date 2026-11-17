@@ -2444,6 +2444,34 @@ export async function execute(ctx) {
     });
   });
 
+  test("invokes the exact canonical workflow name returned by standalone discovery", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "echo.ts"),
+      `
+export const name = "echo";
+export const description = "Echo the canonical envelope";
+export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
+`,
+    );
+
+    const descriptors = await listStandaloneTargets({ projectRoot: env.projectRoot });
+    const echo = descriptors.find((descriptor) => descriptor.name === "global/echo");
+    expect(echo).toBeDefined();
+    expect(descriptors.map((descriptor) => descriptor.name)).not.toContain("global/codex");
+    expect(descriptors.map((descriptor) => descriptor.name)).not.toContain("global/claude");
+
+    const input = { prompt: "echo this", data: { marker: "preserved" } };
+    const result = await run(echo!.name, input, {
+      projectRoot: env.projectRoot,
+      cwd: env.projectRoot,
+      models: {},
+      timeoutMs: 1_000,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.result).toEqual({ type: "done", summary: "echoed", output: input });
+  });
+
   test("activates skills, passes domain context, and reports explicit missing-service errors", async () => {
     const env = setupDirectLayout();
     const skillDir = join(env.agentsRoot, "reviewer", "skills", "careful-audit");

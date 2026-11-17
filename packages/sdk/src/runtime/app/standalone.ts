@@ -1872,17 +1872,80 @@ export async function listTargets(
         }
       }
     }
-    if (!appFilter) {
-      definitions.push(
-        { declaredName: "codex", description: "Built-in Codex CLI executor", invoke: unavailable },
-        { declaredName: "claude", description: "Built-in Claude CLI executor", invoke: unavailable },
-      );
-    }
     return [...new CallableCatalog(definitions).list()];
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener("abort", onParentAbort);
   }
+}
+
+type CanonicalStandaloneRoute = {
+  target: string;
+  agentsRoot: string;
+  app?: string;
+};
+
+async function resolveCanonicalStandaloneRoute(options: {
+  target: string;
+  globalAgentsRoot: string;
+  projectsRoot: string;
+  explicitAgentsRoot?: string;
+  explicitApp?: string;
+  signal?: AbortSignal;
+}): Promise<CanonicalStandaloneRoute | null> {
+  const parts = options.target.split("/");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const [namespace, declaredName] = parts as [string, string];
+  if (options.explicitApp) {
+    const targetScope = namespace === "global" ? "global" : `${namespace}.app`;
+    if (namespace === "global" || normalizeAppDirName(options.explicitApp) !== targetScope) {
+      throw new Error(
+        `Conflicting App scope: target "${options.target}" specifies "${targetScope}" while --app specifies "${options.explicitApp}"`,
+      );
+    }
+  }
+
+  const matches: CanonicalStandaloneRoute[] = [];
+  const scannedAgentsRoot = resolve(options.explicitAgentsRoot ?? options.globalAgentsRoot);
+  const dirs = listRuntimeAgentDirectories(
+    scannedAgentsRoot,
+    options.explicitAgentsRoot ? undefined : options.projectsRoot,
+    options.projectsRoot,
+    namespace === "global" ? undefined : [`${namespace}.app`],
+  );
+  for (const dir of dirs) {
+    options.signal?.throwIfAborted();
+    const effectiveNamespace = dir.projectId ?? (options.explicitAgentsRoot && options.explicitApp ? namespace : "global");
+    if (effectiveNamespace !== namespace) continue;
+    let config: AgentConfig | null;
+    try {
+      config = readAgentConfigFile(dir.dir);
+    } catch {
+      continue;
+    }
+    if (!config) continue;
+    const app = dir.projectId ? `${dir.projectId}.app` : undefined;
+    if (config.name === declaredName) {
+      matches.push({ target: config.name, agentsRoot: dir.agentsRoot, ...(app ? { app } : {}) });
+    }
+    const workflowDir = join(dir.dir, "workflows");
+    if (!existsSync(workflowDir)) continue;
+    const catalog = await buildWorkflowCatalog(workflowDir, options.signal);
+    const ambiguity = catalog.diagnostics.find((diagnostic) => diagnostic.includes("Ambiguous agent workflow name"));
+    if (ambiguity) throw new Error(`Callable catalog preparation failed: ${ambiguity}`);
+    if (catalog.workflows.has(declaredName)) {
+      matches.push({
+        target: `${config.name}/${declaredName}`,
+        agentsRoot: dir.agentsRoot,
+        ...(app ? { app } : {}),
+      });
+    }
+  }
+
+  if (matches.length > 1) {
+    throw new Error(`Duplicate callable canonical name: ${options.target}`);
+  }
+  return matches[0] ?? null;
 }
 
 function normalizeAppDirName(app: string): string {
@@ -2001,14 +2064,26 @@ export async function run<TInput = unknown>(
   const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
   const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
 
-  const { target: normalizedTarget, app: resolvedApp } = rawTarget
-    ? parseTargetAndOptionalAppPrefix(rawTarget, options.app)
-    : {
-        target: "",
-        ...(options.app?.trim() ? { app: normalizeAppDirName(options.app) } : {}),
-      };
+  const canonicalRoute = rawTarget
+    ? await resolveCanonicalStandaloneRoute({
+        target: rawTarget.trim(),
+        globalAgentsRoot,
+        projectsRoot,
+        explicitAgentsRoot: options.agentsRoot,
+        explicitApp: options.app,
+        signal: options.signal,
+      })
+    : null;
+  const { target: normalizedTarget, app: resolvedApp } = canonicalRoute
+    ? { target: canonicalRoute.target, ...(canonicalRoute.app ? { app: canonicalRoute.app } : {}) }
+    : rawTarget
+      ? parseTargetAndOptionalAppPrefix(rawTarget, options.app)
+      : {
+          target: "",
+          ...(options.app?.trim() ? { app: normalizeAppDirName(options.app) } : {}),
+        };
 
-  const agentsRoot = discoverAgentsRootForTarget({
+  const agentsRoot = canonicalRoute?.agentsRoot ?? discoverAgentsRootForTarget({
     target: normalizedTarget,
     explicitApp: resolvedApp,
     explicitAgentsRoot: options.agentsRoot,
