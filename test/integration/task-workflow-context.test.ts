@@ -458,11 +458,30 @@ export async function execute(ctx) {
         ...runner,
         streamFn: (_model, context) => {
           step++;
-          const messages = JSON.stringify(context.messages);
+          let procedureResult: { marker: string; correction: string; condition: string } | undefined;
           if (step === 2) {
-            expect(messages).toContain("accepted");
-            expect(messages).toContain("keep-this-input");
-            expect(messages).toContain("publication-approval");
+            const reply = context.messages.findLast(
+              (message) =>
+                message.role === "toolResult" &&
+                message.toolName === "agents" &&
+                message.toolCallId === "inspect",
+            );
+            if (!reply || reply.role !== "toolResult") throw new Error("Missing agents.call result");
+            expect(reply.isError).toBe(false);
+            const text = reply.content.find((part) => part.type === "text");
+            if (text?.type !== "text") throw new Error("Missing agents.call result text");
+            const returned = JSON.parse(text.text);
+            expect(returned).toMatchObject({
+              kind: "workflow",
+              status: "done",
+              output: {
+                marker: "accepted",
+                correction: "keep-this-input",
+                condition: "publication-approval",
+              },
+            });
+            expect(returned.error).toBeUndefined();
+            procedureResult = returned.output;
           }
           const content: AssistantMessage["content"] =
             step === 1
@@ -487,7 +506,7 @@ export async function execute(ctx) {
                         state: "waiting",
                         summary: "Procedure result settled; publication approval remains independent",
                         facts: ["procedure:inspect"],
-                        result: { marker: "accepted" },
+                        result: procedureResult,
                       },
                     },
                   },
@@ -589,7 +608,11 @@ export async function execute(ctx) {
     });
     expect(run.handlerResult).toMatchObject({
       state: "waiting",
-      result: { marker: "accepted" },
+      result: {
+        marker: "accepted",
+        correction: "keep-this-input",
+        condition: "publication-approval",
+      },
     });
     deferAppTask(config, claim, {
       ...run.handlerResult,
@@ -600,7 +623,11 @@ export async function execute(ctx) {
       acceptedEvidence: { limit: 8 },
     });
     expect(current?.input).toEqual({ correction: "keep-this-input" });
-    expect(current?.result).toEqual({ marker: "accepted" });
+    expect(current?.result).toEqual({
+      marker: "accepted",
+      correction: "keep-this-input",
+      condition: "publication-approval",
+    });
     expect(current?.conditions).toEqual([
       expect.objectContaining({
         id: "publication-approval",
@@ -609,7 +636,11 @@ export async function execute(ctx) {
     ]);
     expect(
       current?.acceptedEvidence.page?.items.find((item) => item.attemptId === claim.attemptId)?.acceptedResult.result,
-    ).toEqual({ marker: "accepted" });
+    ).toEqual({
+      marker: "accepted",
+      correction: "keep-this-input",
+      condition: "publication-approval",
+    });
   } finally {
     closeDb(persistDir);
     rmSync(root, { recursive: true, force: true });
