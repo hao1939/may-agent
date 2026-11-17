@@ -147,7 +147,10 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
     digest({ appId: rec.appId, taskId: rec.taskId }),
   );
   const archive = new EvidenceStore(
-    join(ctx.workspace.output, taskArchive),
+    // The execution checkout/output is disposable after Task convergence.
+    // Keep immutable evidence and allowance receipts in the App's configured
+    // project workspace so the caller can still read the accepted result.
+    join(ctx.workspace.projectRoot, taskArchive),
   );
   const rounds = new DevelopmentRounds(archive);
   let roundLimit = developmentRoundLimit;

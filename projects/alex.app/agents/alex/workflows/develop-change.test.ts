@@ -454,6 +454,23 @@ describe("development workflow using real Git and verification", () => {
     expect(t.current.acceptance).toEqual(["The function returns 1"]);
   });
 
+  test("accepted development evidence survives producer worktree cleanup", async () => {
+    const t = trial();
+    expect((await t.run()).state).toBe("converged");
+    const delivery = t.current.result!.development as any;
+    const saved = t.evidence();
+    t.git(t.repo, "worktree", "remove", "--force", t.worktree);
+    const store = new EvidenceStore(dirname(delivery.evidence.path));
+    expect(JSON.parse(await store.read(delivery.evidence))).toEqual(saved);
+    expect(await store.read(delivery.report)).toContain("Cumulative rounds reserved: 1/3");
+    for (const report of saved.reports) {
+      expect(await store.read(report.record)).toBeTruthy();
+      expect(await store.read(report.report)).toBeTruthy();
+    }
+    expect(JSON.parse(readFileSync(join(store.directory, "round-1.reserved.json"), "utf8")))
+      .toMatchObject({ round: 1, kind: "round-reservation" });
+  });
+
   test("a new execution output retains pinned evidence and consumed rounds across a creator revision", async () => {
     const t = trial();
     expect((await t.run()).state).toBe("converged");
@@ -467,8 +484,8 @@ describe("development workflow using real Git and verification", () => {
     expect(t.evidence().roundsUsed).toBe(original.roundsUsed);
     expect(t.evidence().review).toEqual(original.review);
     for (const report of t.evidence().reports) {
-      expect(report.record.path).toStartWith(ctx.workspace!.output);
-      expect(report.report.path).toStartWith(ctx.workspace!.output);
+      expect(report.record.path).toStartWith(ctx.workspace!.projectRoot);
+      expect(report.report.path).toStartWith(ctx.workspace!.projectRoot);
     }
     // The copied references must also survive ordinary reentry in this output.
     expect((await t.run(ctx)).state).toBe("converged");
@@ -1306,7 +1323,7 @@ describe("development workflow using real Git and verification", () => {
 
   test("archive failures cannot produce a completion claim", async () => {
     const t = trial();
-    writeFileSync(join(t.worktree, ".state"), "output unavailable");
+    writeFileSync(join(t.repo, ".state"), "archive unavailable");
     const result = await t.run();
     expect(result.state).toBe("incomplete");
     expect(result.result).toBeUndefined();

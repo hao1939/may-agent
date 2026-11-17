@@ -277,15 +277,16 @@ those paths. May explicitly recorded that she could not reread them and relied
 on Alex's admitted result and hosted checks. Independent trial receipts were
 preserved before cleanup; that operator archive is not the normal return path.
 
-Make returned evidence readable after producer settlement, using the existing
-output/retention contracts. Keep source-worktree disposal separate from the
-lifetime of published result files. Do not have generic Host cleanup interpret
-Alex's `result.development` shape. A focused reproduction must cover a producer
-with no source changes in its allocated worktree, development in an authorized
-target checkout, convergence and caller readback of every referenced artifact
-with its original checksum. Preserve cumulative rounds and failed verification
-receipts on later same-Task input. This is the highest-value demonstrated gap;
-it precedes wider runtime parity and Conversation ownership changes.
+The #585 trial reproduced deletion at convergence, after the CI observer had
+woken Alex and its result had returned. A focused regression also reproduced
+`ENOENT` after actual `git worktree remove`. The App repair stores the Task-local
+archive under the configured `workspace.projectRoot` rather than disposable
+execution output; it retains evidence and cumulative receipts without teaching
+Host cleanup Alex's result shape. The regression now reads every canonical and
+stage artifact with its original checksum after removing the producer worktree.
+All 78 workflow/evidence tests pass, including cancellation, extension and
+corrupt-history coverage. Legacy #585 references still require verified recovery
+from the pre-cleanup operator archive before normal caller reread can be claimed.
 
 ### Keep one model-facing invocation tool
 

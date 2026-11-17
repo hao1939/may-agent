@@ -146,6 +146,8 @@ For a bounded persisted request where supplied context is sufficient, return
   and `reviewAt`. This answers that input through its saved caller; other inputs,
   human promises and their waits remain outstanding. Use `response` only for an
   intended human message, not as the transport for an App answer.
+  Runtime retains independent inputs and Conditions: do not return `waiting`
+  for an answered subset just to preserve another obligation's wait.
 - **Delegating or following up:** Use `state: "waiting"`, typed
   `requests: [{id, appId, taskId?, input:{kind,data}}]`, and
   `conditions: [{requestId: "<same request id>"}]`. Describe the desired outcome,

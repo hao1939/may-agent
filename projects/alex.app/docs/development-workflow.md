@@ -188,12 +188,15 @@ reuse completed work without spending another round. Host acceptance still owns 
 New Task input keeps previous reports visible while prompting fresh judgment.
 Matching verification receipts may be reused for the same candidate and checks;
 changed requirements reset validity, not access to the evidence.
-An execution's output root can change after a creator revision. The procedure
-reads the explicitly pinned prior archive for the same App and Task, verifies
-its checksums, and copies retained reports into the current output before
-reusing them. It inherits consumed rounds before reserving work. A moved output
-directory does not invalidate sound evidence or provide a fresh allowance;
-missing or corrupt prior usage remains conservatively exhausted.
+The archive lives under the App's configured `workspace.projectRoot`, outside
+the disposable execution checkout/output. Convergence may remove that checkout;
+the caller must still read every referenced report with its original checksum.
+The procedure can import an explicitly pinned legacy archive for the same App
+and Task, verify its checksums and copy retained reports into the durable archive.
+It inherits consumed rounds before reserving work. A moved execution output does
+not invalidate sound evidence or provide a fresh allowance; missing or corrupt
+prior usage remains conservatively exhausted. A lost legacy file requires
+verified recovery or an explicit evidence limitation, never a fresh allowance.
 
 An explicitly Task-addressed `message` is follow-up input for that Task, even
 though an unaddressed message normally enters May's Conversation. During a
@@ -658,7 +661,8 @@ feedback cannot grant an extension. Invalid totals stop before development work.
 There is no automatic renewal or separate grant ledger. Preserve the full
 assignment, caller, checkout and evidence when revising it.
 
-Usage stays in its Task-local `.state/alex-development/<task-digest>/` archive. Each
+Usage stays in the App project workspace's Task-local
+`.state/alex-development/<task-digest>/` archive. Each
 `round-N.reserved.json` is an atomic link to a complete immutable receipt,
 written before specialist or verification work. Live workflow reentry,
 cancellation, concurrent calls, changed verification argv, new feedback,
