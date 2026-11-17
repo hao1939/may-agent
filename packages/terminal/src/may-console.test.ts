@@ -557,7 +557,7 @@ describe("May Console", () => {
         },
       },
     });
-    expect(input.event.data.metadata.topicId).toBe("topic_0df0c0edbf95b5bbc5c87598");
+    expect(input.event.data.metadata.topicId).toBeUndefined();
     expect(
       frames.some(
         (frame) =>
@@ -566,7 +566,7 @@ describe("May Console", () => {
           frame.event?.data?.metadata?.taskRefs?.[0]?.taskId === "review/docs",
       ),
     ).toBe(true);
-    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90 · 0df0c0ed]> "));
+    await waitFor(() => output.includes("\nmay> May response 1\n\nyou[evaluation:8f12ac90]> "));
     expect(output).not.toContain("unrelated worker output");
     expect(output).not.toContain("[accepted");
     expect(frames.some((frame) => frame.type === "channel.delivery.completed")).toBe(false);

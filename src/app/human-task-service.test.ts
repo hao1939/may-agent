@@ -579,6 +579,34 @@ test("shows every live Task regardless of descriptive category", () => {
   });
 });
 
+test("searches Tasks case-insensitively by ref, task id, outcome, and summary before pagination", () => {
+  const db = database();
+  insertTask(db, { appId: "may", taskId: "alpha-key", phase: "waiting", updatedAt: 3 });
+  insertTask(db, { appId: "may", taskId: "beta-key", phase: "waiting", updatedAt: 2 });
+  insertTask(db, { appId: "may", taskId: "gamma-key", phase: "waiting", updatedAt: 1 });
+  const rewrite = (taskId: string, outcome: string, summary: string) => {
+    const row = db
+      .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'may' AND task_id = ?")
+      .get(taskId) as { resource_json: string };
+    const resource = JSON.parse(row.resource_json);
+    resource.spec.outcome = outcome;
+    resource.status.summary = summary;
+    db.prepare("UPDATE app_tasks SET resource_json = ? WHERE app_id = 'may' AND task_id = ?").run(
+      JSON.stringify(resource),
+      taskId,
+    );
+  };
+  rewrite("alpha-key", "Ship PR 581", "ready for review");
+  rewrite("beta-key", "Inspect runtime", "Heartbeat investigation");
+  const service = new HumanTaskService(db, registry("may"));
+  const ids = (q: string, limit?: number) => service.listTasks({ appId: "may", q, limit }).items.map((task) => task.taskId);
+
+  expect(ids("pr 581", 1)).toEqual(["alpha-key"]);
+  expect(ids("HEARTBEAT")).toEqual(["beta-key"]);
+  expect(ids("GAMMA-KEY")).toEqual(["gamma-key"]);
+  expect(ids(taskReferenceDigest("may", "gamma-key").slice(0, 8).toUpperCase())).toEqual(["gamma-key"]);
+});
+
 test("shows reconciled work as open and idle, excluding it from active counts", () => {
   const db = database();
   insertTask(db, {
