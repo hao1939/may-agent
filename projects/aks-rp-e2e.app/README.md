@@ -2,7 +2,7 @@
 
 UI source follows the shared [App UI convention](../alex.app/docs/2a-design/webui.md#app-ui-convention):
 pages live under `ui/`, and general Task status views belong to the Host.
-On MLVM, `/projects/aks-rp-e2e.app/ui/` shows the four workstreams' canonical
+On MLVM, `/projects/aks-rp-e2e.app/ui/` shows five Tasks’ canonical
 status, latest report, update time and any input request or prerequisite.
 It refreshes every 20 seconds while visible using exact, read-only `/api/task`
 requests. Busy means running, not proof of useful progress; failed reads show

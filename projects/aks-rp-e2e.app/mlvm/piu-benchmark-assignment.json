@@ -1,0 +1,62 @@
+{
+  "outcome": "Build a repeatable, knowledge-model-linked verification benchmark for platform-initiated upgrades (PIU), grounded in design PR17802081: detect upgrade regressions and unsafe customer impact, verify autonomous campaign progress/recovery and preserved customer settings, and expose exact unverified release gates.",
+  "acceptance": [
+    "Read the retained handoff and pinned nine-document design packet; review production intent separately from the POC implementation, existing draft tests and historical runs. Recheck relevant source heads before delivery and qualify changed snapshots.",
+    "Retain stable design requirement and case IDs. Connect source -> actual model/definition -> scenario and independent assertion -> source/build/target -> evidence. Explicitly label source-derived proposals absent from accepted knowledge; never fabricate a model link or promote new semantics without review.",
+    "Reconcile all current design RP requirements and campaign cases, including exclusions/known limitations. Implement a useful prioritized benchmark in existing model/spec/script owners. Reuse existing scripts after scope review; repair obsolete expectations and add missing discriminating cases. A coverage matrix must show implemented, locally checked, live-proven, blocked and not-run separately.",
+    "Cover the primary two-minor C-02 campaign, one notice/full lead, pool catch-up before control-plane advance, cool-down, dynamic catalog/tier, duplicate/stale dispatch and restart recovery, refused-request retry, failed-resource repair pacing, stop controls, customer-channel exclusion/restoration, settings preservation and owned cleanup. Keep C-10 real-SQL/concurrency and fleet gates explicit where a local substitute cannot decide them.",
+    "Cover RP marker/toggle/request scope and neighboring customer controls; VMSS and VirtualMachines PDB drain/fallback; customer maxUnavailable, BlueGreen/Rolling, version stepping/alias and customer upgrade profile; no PIU VMSS rollback with diagnostic readiness retained. Include >10 pools/pagination and relevant addon/old-version boundaries. Honor supported exclusions; do not broaden PIU to unsupported pool types or resize fallback.",
+    "Start with known drift: draft spec PR17721905 at f5683aed1ded66731bc67dbfcf276bfc795dbe07 still has hard-one assertions for pools configured maxUnavailable=2, diagnostic request-time reservation rejection, and the POC-only extra stepping toggle. Compare current source before editing; preserve historical expectations and exact provenance instead of copying an obsolete oracle.",
+    "Measure independent traffic success/error/latency and longest outage, observation gaps, workload availability and recovery, per-step timing and waits, unexpected settings drift and manual interventions. Require no ad-hoc human repair for the primary autonomous success path. Missing samples remain unknown; short test lead/cooldown and historical POC runs do not establish production guarantees. The user chose measure first and agree thresholds from the baseline. Deliver measured results and evidence; do not invent a numerical availability/recovery release threshold or stop benchmark setup waiting for one.",
+    "Implement actual runner-connected benchmark scripts and locally validate meaningful behavior, parsing, binding, assessment and dispatch. Challenge them with discriminating counterexamples (skipped upgrade, duplicate/stale pass, wrong campaign/resource, missing observation, early start or drift) as appropriate. Do not satisfy the task with a report, new counter, synthetic evaluator or generated wrapper alone. Label offline versus live evidence.",
+    "Use only the declared isolated spec-runner worktree for source repairs and its existing branch. Keep RP/POC and the existing draft spec branch read-only; do not edit another task/worktree, force-push, merge, or post review comments. Retain all original source/receipts. One benchmark PR may be prepared/published from the dedicated branch after appropriate local checks; check for existing same-task delivery before creating another.",
+    "This assignment authorizes read-only provider/source inspection, local benchmark/model proposal authoring and offline validation. It does not authorize cluster provisioning/deployment/upgrades, Azure/shared-or-remote-SQL/toggle/catalog mutations, running a live standalone/campaign, production changes, live fault injection, access expansion, or additional tasks/subagents. Prepare exact build/environment/caller/ownership/cleanup and execution prerequisites; continue independent offline work while live authority or SLO decisions remain open.",
+    "Reuse the existing Host Task state and normal Conditions. Keep one concise current progress record and source-owned benchmark artifacts. Do not add a scheduler, polling agent, parallel task/status system, generic framework or policy exceptions. Continue useful work autonomously until the finite benchmark deliverable is complete or an exact external requirement genuinely blocks dependent work.",
+    "Before completion, present readable design findings and fixes, the runnable benchmark entry/commands, current evidence/coverage and exact remaining release gates. Benchmark setup/validation complete is not PIU production readiness or a zero-downtime guarantee. Human owns accepted knowledge changes, release decisions and merge."
+  ],
+  "workspace": "/app/worktrees/aks-rp-e2e/piu-benchmark-20261117",
+  "branch": "task/piu-benchmark-20261117",
+  "sources": {
+    "design": {
+      "repository": "aks-rp",
+      "pullRequestId": 17802081,
+      "commit": "7e5cefddb79a82d11ddac4313041e1ed677cee54",
+      "path": "resourceprovider/docs/platform-initiated-upgrades/implementation.md"
+    },
+    "poc": {
+      "repository": "aks-rp",
+      "pullRequestId": 16654648,
+      "commit": "0dc648eb6b4c8ff64caf66190d28552678d6c392",
+      "mode": "read-only-reference"
+    },
+    "knowledge": {
+      "repository": "aks-e2e-spec-runner",
+      "commit": "d63c44636c621f6b8f1200d93fa9dfa8fab35a5b",
+      "ref": "main"
+    },
+    "draftSpecs": {
+      "repository": "aks-e2e-spec-runner",
+      "pullRequestId": 17721905,
+      "commit": "f5683aed1ded66731bc67dbfcf276bfc795dbe07",
+      "mode": "read-only-reference-not-accepted-oracle"
+    }
+  },
+  "effects": {
+    "sourceRepair": "isolated-spec-worktree-only",
+    "localValidation": true,
+    "prepareBenchmarkPullRequest": true,
+    "cloudMutation": false,
+    "merge": false,
+    "publishReviewComments": false,
+    "modifyOtherTasks": false,
+    "subagents": false
+  },
+  "handoffPath": "/app/artifacts/mlvm-platform-upgrade-benchmark-20261117/assignment.md",
+  "evidenceRoot": "/app/artifacts/mlvm-platform-upgrade-benchmark-20261117/task-evidence",
+  "progressPath": "/app/artifacts/mlvm-platform-upgrade-benchmark-20261117/progress.json",
+  "availabilityDecision": {
+    "authority": "User selected Measure first; agree thresholds from the baseline on 2026-11-17",
+    "mode": "measure-first",
+    "releaseThresholds": "unselected-until-baseline-reviewed"
+  }
+}

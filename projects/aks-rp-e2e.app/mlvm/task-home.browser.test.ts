@@ -13,6 +13,7 @@ test.skipIf(!existsSync(chrome))(
       "workstream/spec-fixer",
       "workstream/knowledge",
       "domain/kubernetes-version-support/1.38",
+      "domain/platform-initiated-upgrade/verification-benchmark",
     ];
     const task = (taskId: string, status: string, extra = {}) => ({
       appId: "aks-rp-e2e",
@@ -53,6 +54,7 @@ test.skipIf(!existsSync(chrome))(
         }),
       ],
     ]);
+    fixtures.set(ids[4], task(ids[4], "running", { summary: "Building the PIU benchmark" }));
     const reads: string[] = [],
       writes: string[] = [],
       errors: string[] = [];
@@ -136,6 +138,7 @@ test.skipIf(!existsSync(chrome))(
         "Idle",
         "Waiting",
         "Needs attention",
+        "Busy · running",
       ]);
       expect(await page.$eval(".latest", (node) => node.textContent)).toBe(
         "Compiling selected inputs",
@@ -158,6 +161,7 @@ test.skipIf(!existsSync(chrome))(
           text: expect.stringContaining("Supply a focused question"),
         },
         { hidden: false, text: expect.stringContaining("gallery-access") },
+        { hidden: true },
       ]);
       const links = await page.$$eval("a[data-task-id]", (nodes) =>
         nodes.map((node) => ({
@@ -184,6 +188,7 @@ test.skipIf(!existsSync(chrome))(
         "Status unavailable",
         "future-status",
         "constructor",
+        "Busy · running",
       ]);
       expect(await page.$$(".task-state img")).toHaveLength(0);
       expect(
@@ -215,8 +220,8 @@ test.skipIf(!existsSync(chrome))(
           (document.querySelector("#refresh") as HTMLButtonElement).disabled,
       );
       await wait(); // The real fetch abort path must clear previous Busy labels.
-      expect(reads.length - before).toBe(4);
-      expect(await badges()).toEqual(Array(4).fill("Status unavailable"));
+      expect(reads.length - before).toBe(ids.length);
+      expect(await badges()).toEqual(Array(ids.length).fill("Status unavailable"));
       release();
       gate = undefined;
       await refresh();
@@ -253,7 +258,7 @@ test.skipIf(!existsSync(chrome))(
       for (const route of [home.slice(0, -1), home + "index.html"]) {
         await page.goto(base + route, { waitUntil: "networkidle0" });
         await wait();
-        expect(await badges()).toHaveLength(4);
+        expect(await badges()).toHaveLength(ids.length);
         expect((await badges())[0]).toBe("Waiting");
       }
       expect(writes).toEqual([]);

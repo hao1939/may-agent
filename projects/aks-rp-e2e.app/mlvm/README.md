@@ -3,7 +3,7 @@
 ## Task overview
 
 The App home at `/projects/aks-rp-e2e.app/ui/` is the task entry page, with
-direct links to Compiler, Spec repair, Knowledge and Kubernetes 1.38. Each opens
+direct links to Compiler, Spec repair, Knowledge, Kubernetes 1.38 and PIU benchmark. Each opens
 its existing dedicated task/progress/conversation page. Each card reads its exact
 identity through the Host's `/api/task` and shows current status, latest report,
 update time and input request/prerequisites. Busy labels the canonical `running`
@@ -100,3 +100,40 @@ normal `/reload` route, which captures and atomically publishes its immutable
 source release. Verify that no other source changes are present first. Preserve
 the previous files/release for rollback; never restore a database over newer
 inputs. App source must not be pushed to the public Host repository.
+
+## PIU verification benchmark
+
+One finite Task, `domain/platform-initiated-upgrade/verification-benchmark`,
+reviews design PR17802081 and prepares a repeatable, model-linked benchmark in
+its own spec-runner worktree. It measures workload availability and recovery
+first; numerical release thresholds remain open until the baseline is reviewed.
+Benchmark setup is separate from live execution and production readiness.
+
+The operational overlay adds the typed human input
+`{"kind":"platform-initiated-upgrade-benchmark","data":{}}`. Its assignment is
+App-owned in [piu-benchmark-assignment.json](piu-benchmark-assignment.json);
+callers cannot replace its scope, effects or paths. The dedicated task page
+uses `owner-review` feedback with the exact Task ID and expected generation;
+feedback attaches to the existing Task without replacing its requirements.
+The existing `aks-explorer` configuration executes it. No schedule, subscription,
+new agent configuration or Task state store is added.
+
+Allowed work is read-only source/provider inspection, isolated benchmark/model
+proposals, offline validation and one benchmark PR. Live cloud campaigns,
+shared SQL/toggle/catalog changes, accepted knowledge promotion and merges are
+outside this assignment. Keep progressing on independent offline deliverables
+while those release prerequisites remain open.
+
+[stage-piu-benchmark.py](stage-piu-benchmark.py) copies the reviewed active
+operational definitions and integrates the finite admission contract. It does
+not change the UI-only local App or activate anything. Validate the candidate
+with [piu-benchmark-task.test.ts](piu-benchmark-task.test.ts) and existing profile
+checks, then use normal source capture/reload. Preserve reviewed mutable UI
+updates and reject any other unreviewed drift before activation. Never replace
+Task state or interrupt existing attempts. Deployment evidence and design
+handoff are retained at
+`/app/artifacts/mlvm-platform-upgrade-benchmark-20261117/assignment.md` on MLVM.
+
+```sh
+bun test projects/aks-rp-e2e.app/mlvm/piu-benchmark-task.test.ts
+```
