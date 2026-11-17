@@ -859,9 +859,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         };
       };
 
-      const catalogSignal = parentSignal ?? new AbortController().signal;
-      await prepareCallableCatalog(catalogSignal);
-      const listedTargets: readonly CallableDescriptor[] = targetCatalog.callableCatalog!.list();
+      let listedTargets: readonly CallableDescriptor[] = Object.freeze([]);
 
       const bindings: WorkflowKernelBindings = {
         executionId: runId,
@@ -925,6 +923,9 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
       const outcome = await runWorkflowInvocation({
         ...workflow,
         async execute(ctx) {
+          ctx.signal.throwIfAborted();
+          await prepareCallableCatalog(ctx.signal);
+          listedTargets = targetCatalog.callableCatalog!.list();
           ctx.signal.throwIfAborted();
           return workflow.execute(ctx);
         },

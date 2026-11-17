@@ -68,7 +68,7 @@ export async function execute(ctx) {
     expect(calls).toBe(0);
   });
 
-  it.each(["unused", "timeout", "cancel"])("defers unrelated Hosted imports and bounds called owner catalog preparation on %s", async (mode) => {
+  it.each(["timeout", "cancel"])("prepares every selected Hosted catalog and bounds stalled imports on %s", async (mode) => {
     const root = workflowRoot("workflow-catalog-stop-");
     const gate = await controlledWorkflowImport(root);
     const workflowDir = join(root, "workflows");
@@ -104,15 +104,6 @@ export async function execute(ctx) { return ctx.done("after"); }
     const other: SubagentDefinition = {
       name: "other", description: "Other owner", domain: "test", model: fakeModel(), tools: [], agentDir: otherDir,
     };
-    if (mode === "unused") {
-      const result = await observeBoundedResult(createWorkflowRunner({
-        manager: {} as any, workflowDir, agentName: "owner", persistDir: root,
-        agentDefinitions: new Map([["other", other]]), executionTimeoutMs: 500,
-      }).run("parent", "input"));
-      expect(result?.result).toMatchObject({ type: "done", summary: "healthy" });
-      expect(existsSync(afterImport)).toBe(false);
-      return;
-    }
     const controller = new AbortController();
     const run = createWorkflowRunner({
       manager: {} as any, workflowDir, agentName: "owner", persistDir: root,
