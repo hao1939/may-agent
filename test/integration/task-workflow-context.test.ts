@@ -75,7 +75,8 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       persistDir,
       agentRunFactory: (config) => {
         let step = 0;
-        const owner = config.initialState!.tools!.some((tool) => tool.name === "agents");
+        const ownerTool = config.initialState!.tools!.find((tool) => tool.name === "agents" || tool.name === "workflows");
+        const owner = Boolean(ownerTool);
         return createAgentRun({
           ...config,
           streamFn: (_model, context) => {
@@ -93,7 +94,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
                     {
                       type: "toolCall",
                       id: "operation",
-                      name: owner ? "agents" : "hold",
+                      name: owner ? ownerTool!.name : "hold",
                       arguments: owner
                         ? route === "agent"
                           ? { action: "call", agent: "worker", task: marker }
@@ -141,7 +142,9 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       },
     });
     const bus = new EventBus();
-    const tools = await buildTools({ name: "owner", tools: ["agents", "finish"] } as never, {
+    const tools = await buildTools(
+      { name: "owner", tools: route === "agent" ? ["agents", "finish"] : ["finish"] } as never,
+      {
       manager,
       bus,
       agentDir,
@@ -151,7 +154,8 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       projectRoot: root,
       persistDir,
       getAgentSessionId: () => "wrong-same-name-session",
-    });
+      },
+    );
     manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools, agentDir });
     manager.register({
       name: "worker",
@@ -336,7 +340,8 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           const result = results[i];
           if (result.status !== "fulfilled") throw result.reason;
           const reply = result.value.messages.find(
-            (message) => message.role === "toolResult" && message.toolName === "agents",
+            (message) =>
+              message.role === "toolResult" && message.toolName === (route === "agent" ? "agents" : "workflows"),
           );
           if (!reply || reply.role !== "toolResult") throw new Error("Missing handoff result");
           const text = reply.content.find((part) => part.type === "text");
