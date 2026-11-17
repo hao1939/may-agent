@@ -1118,3 +1118,44 @@ Evidence under the local trial directory: `45-independent-focused.log`,
 `5a-fc03-workload-diagnostic.log`. The earlier unconfirmed b9 process-launch logs
 ended with their parent and are not passing-check evidence. No unified candidate
 activation or readiness notification is established.
+
+## Public snapshot repair verified and reviewed
+
+Root published native Host `185ffeb1ce99d58e1b55b6fca224105465031591` after exact
+clean `check:ci` and 44 owning tests passed. The same real public-root snapshot
+reproducer that failed at fc03 now passes: the child keeps original model,
+identity and descriptors after source edits. One capture helper now serves both
+constructors, with explicit empty-text absence. Committed public-entry tests
+cover missing identity/shared files; the earlier direct regression proves a
+later invocation sees new configuration/text.
+
+Current-head production probes additionally pass all ten discovery/four-direction
+checks, all seven exact-name/common-error checks, all eight schema/report checks
+and all five real Task-ingress assertions. Stored Task input and reconciliation
+input remain raw; only the execution adapter supplies the common envelope. This
+confirms the Host boundary and does not excuse the pending App workload mapping.
+
+The reviewer replied and resolved three actual discussions from this evidence:
+[metadata](https://github.com/hao1939/may-agent/pull/589#discussion_r4605221467),
+[names](https://github.com/hao1939/may-agent/pull/589#discussion_r4605222114) and
+[schema](https://github.com/hao1939/may-agent/pull/589#discussion_r4605222626).
+Implementation remained with May's native Task/workflow; these are independent
+review dispositions, not a claim of autonomous readiness or final acceptance.
+Timeout/import, trusted-receipt, full CI and connected-trial obligations remain.
+
+Root also revalidated the installed runtime rather than inferring it from a
+source checkout: binary version/source is `0606e2df`, SHA-256 matches its
+provenance and SDK link, and live daemon readiness is true. No unified candidate
+is active. The paired local trial must retain the Task-revision repair and exact
+compatible App source; the historical 590 activation is not current identity.
+May was asked to update the same App Task's stale 485 provider only after its
+active workflow is quiescent, with both SDK paths bound consistently and all
+usage/checkouts retained. Latest-source independent probes expose behavior the
+old provider cannot certify.
+
+Evidence under the trial directory: `185-independent-owning.log`,
+`185-independent-check-ci.log`, `standalone-config-snapshot-1794946488361.json`,
+`standalone-call-surface-1794946615313.json`,
+`four-directions-1794946615460.json`, `schema-report-1794946615493.json`,
+`task-workflow-envelope-1794946615505.json`,
+`185-verified-review-resolutions.json` and `runtime-current-1794946465496.json`.

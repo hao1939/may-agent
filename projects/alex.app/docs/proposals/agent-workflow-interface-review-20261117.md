@@ -4,16 +4,17 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`b9ce2d7dc3`. Independent exact-clean `check:ci` and all ten owning
-callable-contract tests pass. Preceding `45d339756e` passes 124 affected tests
-and the real shared-catalog timeout/parent-cancel probe; `b9ce2d7dc3` repairs its
-TypeScript narrowing. Uncooperative callable settlement is now finite, retaining
-cooperative cleanup joins and reporting unconfirmed cleanup.
+`185ffeb1ce`. Independent exact-clean `check:ci` and 44 owning tests pass.
+The real public `run()` snapshot probe now retains model, identity text and
+descriptors after edits. Both catalog paths share the same capture helper, and
+owning regressions cover missing identity/shared prompt files plus fresh later
+invocations. Current-head production probes also pass all four call directions,
+canonical name/error checks, schema/report validation and Task workflow ingress,
+including unchanged raw reconciliation input. The reviewer resolved the metadata,
+naming and schema discussions from that evidence.
 
-Standalone agent configuration is captured, and the direct adapter captures
-identity/shared prompt text. The real public `run()` probe still catches live
-rereading of `AGENTS.md`: its separate discovery catalog omits text snapshots.
-Missing files must freeze absence rather than permit later live reads. The
+Shared callable cancellation settlement is finite and retains cooperative
+cleanup joins. Explicit-module pending-import reporting remains open. The
 existing execution read projects bounded trusted CLI receipts for sessions/direct
 children, but nested workflow coverage and visible truncation remain open.
 The preceding `b6f153b5ec` fixes prompt blocked reports without unavailable
