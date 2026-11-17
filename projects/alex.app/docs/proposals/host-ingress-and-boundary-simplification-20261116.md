@@ -311,12 +311,31 @@ before work. Feedback or invocation arguments cannot grant an extension. Unknown
 prior usage conservatively exhausts the applicable total. There is no grant
 ledger, reset, replacement Task or direct implementation exception.
 
-Focused workflow/evidence checks pass, including continuation at round four,
-immutable earlier receipts, lower/removed totals, invalid grants, stale caller
-context and concurrent reservation. Local adoption and the real #585 continuation
-still need runtime evidence. The original request remains pending; old-head green
-CI does not establish readiness for the rejected design. Both existing review
-discussions still need actual resolution.
+All 77 focused workflow/evidence checks pass, including continuation at round
+four, immutable earlier receipts, lower/removed totals, invalid grants, stale
+caller context, concurrent reservation and corrupt/unknown history under an
+extended total. Typecheck and design integrity passed. Local reload event 6734124
+confirmed App revision `cd53b65f07` active. This changes App policy, with no Host
+binary change.
+
+The recorded May creator used `revise-assignment` run `wr_1794910736360_0jq5` to
+save generation 5 of the same Alex Task with total six. Native `develop-change`
+retained three consumed rounds and reserved round four under that total. The
+workflow's independent reviewer rejected incomplete scope/settlement coverage
+and sent repair through rounds five and six on the same checkout/branch. The
+final local candidate `199d10f9f08` passed independent review and 32 focused Host
+tests, including production Task admission and retained independent state.
+Alex pushed that exact head, updated PR metadata, replied to both discussions
+and verified them resolved. It yielded for hosted CI, and observer event 6734176
+woke the same Task on the new-head snapshot; Alex rearmed its Condition against
+fingerprint `064966b7…`.
+
+An operator review found the new public body had dropped its routing owner block
+and included a local artifact path. Feedback event 6734188 returned this concrete
+metadata defect to the same owner; guidance now requires preserving the block and
+keeping local evidence paths in Task results. This intervention is distinct from
+routine CI-stage relay. The original delivery request remains pending until the
+observer/caller path and addressed Telegram review notification are verified.
 
 ### Connect shared execution and settlement
 

@@ -512,6 +512,9 @@ For Alex-owned delivery, preserve one visible owner block in the PR body:
 - Task ID: <exact existing Task ID>
 ```
 
+Keep local evidence and worktree paths in saved Task results. Public PR text
+should cite candidate commits, checks and review findings that readers can inspect.
+
 This supplies live routing in the configured repository `hao1939/may-agent`,
 author `hao1939`, owner App `alex`. It grants no publication/merge/deployment
 permission. A May-owned delivery uses its genuine May Task and published
@@ -716,7 +719,7 @@ establish live activation or a new interrupted PR-delivery run.
 ### November 13 command-duration correction
 
 Apps source `0862215c6d` removes only the command helper's `120_000` ms timer;
-the fixed stages, three-round repair bound, exact-candidate checks, evidence
+the fixed stages, saved total repair bound (default three), exact-candidate checks, evidence
 reuse and independent review remain. The focused suite passed all 36 tests.
 `bun run check:may-design` passed with only the existing root-layout warning
 about the `reports` directory.
