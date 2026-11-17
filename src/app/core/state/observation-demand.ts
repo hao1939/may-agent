@@ -19,7 +19,7 @@ const openDemand = `
     AND NOT (COALESCE(json_extract(c.condition_json, '$.status.observed.closed'), 0)=1
       AND EXISTS (SELECT 1 FROM json_each(json_extract(c.condition_json, '$.status.deliveredFingerprints')) delivered
         WHERE delivered.key=r.task_id
-          AND delivered.value=json_extract(c.condition_json, '$.status.observed.fingerprint')))
+          AND delivered.value=(CAST(json_extract(c.condition_json, '$.status.observed.fingerprint') AS TEXT) || ':1')))
     AND NOT EXISTS (SELECT 1 FROM app_task_cancellations x WHERE x.app_id=t.app_id AND x.task_id=t.task_id)`;
 
 /** Indexed projection of existing Conditions. No separate registrations or cached wait identities. */

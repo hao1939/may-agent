@@ -5640,6 +5640,7 @@ describe("App task reconciler state", () => {
     }
     expect(demand("pull-request.state", "app:github:observer:pull-request", "", 10)).toHaveLength(1);
     expect(trackAppTaskConditionEvent(config, changed)).toEqual([]);
+    expect(matchingAppTaskConditionTaskIds(config, changed)).toEqual([]);
 
     const next = { ...changed, fingerprint: "revision-2", state: "updated" };
     expect(trackAppTaskConditionEvent(config, next).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
@@ -5650,10 +5651,21 @@ describe("App task reconciler state", () => {
       if (resumed.kind !== "claimed") throw new Error("expected resumed claim");
       completeAppTask(config, resumed, { summary: "updated state handled" });
     }
+    expect(matchingAppTaskConditionTaskIds(config, next)).toEqual([]);
 
-    const terminal = { ...next, fingerprint: "revision-3", state: "closed", closed: true };
+    const terminal = { ...next, state: "closed", closed: true };
     expect(trackAppTaskConditionEvent(config, { ...terminal, source: "app:other:observer:pull-request" })).toEqual([]);
-    expect(trackAppTaskConditionEvent(config, terminal).map((wake) => wake.taskId)).toEqual(["watch-a", "watch-b"]);
+    expect(trackAppTaskConditionEventForTasks(config, terminal, ["watch-a"]).map((wake) => wake.taskId)).toEqual(["watch-a"]);
+    expect(readTaskSnapshot(config).conditions?.["pull-request:shared"]?.status.state).toBe("false");
+    expect(demand("pull-request.state", "app:github:observer:pull-request", "", 10)).toEqual([
+      { subject: "resource:repo#42" },
+    ]);
+    expect(matchingAppTaskConditionTaskIds(config, terminal)).toEqual(["watch-a", "watch-b"]);
+    expect(trackAppTaskConditionEventForTasks(config, terminal, ["watch-a"])).toEqual([]);
+    expect(trackAppTaskConditionEventForTasks(config, terminal, ["watch-b"]).map((wake) => wake.taskId)).toEqual(["watch-b"]);
+    expect(readTaskSnapshot(config).conditions?.["pull-request:shared"]?.status.state).toBe("true");
+    expect(matchingAppTaskConditionTaskIds(config, terminal)).toEqual([]);
+
     for (const taskIntent of intents) {
       const resumed = declareAndClaimTask(config, {
         intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",

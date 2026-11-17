@@ -91,8 +91,7 @@ test("terminal fact without a provider fingerprint fans out, stays unsatisfied, 
   expect(f.runnable("peer")).toEqual(["b"]);
   expect(f.view("a").conditions[0]?.observation).toMatchObject({ state: "false" });
   expect(f.view("b", "peer").conditions[0]?.observation).toMatchObject({ state: "false" });
-  const event = JSON.parse(f.events()[0]!.data) as { fingerprint?: unknown };
-  expect(event.fingerprint).toEqual(expect.any(String));
+  expect(f.view("a").conditions[0]?.observation.observed?.fingerprint).toEqual(expect.any(String));
 
   await f.scan();
   expect(reads).toBe(1);
@@ -339,7 +338,7 @@ test("recreating an identical wait receives unchanged data and preserves the pro
   const delivered = f.claim("a").events.at(-1)!;
   expect(delivered.event.eventId).toBe(f.events().at(-1)!.id);
   expect(delivered.event.data).toEqual({
-    state: "passed", revision: 1, observedAt, resource: "42", fingerprint: expect.any(String),
+    state: "passed", revision: 1, observedAt, resource: "42",
   });
 });
 
