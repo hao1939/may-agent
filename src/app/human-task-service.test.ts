@@ -132,6 +132,7 @@ test("accepted evidence remains opt-in, bounded, and navigable past later waits"
     .get() as { resource_json: string };
   const resource = JSON.parse(resourceRow.resource_json);
   resource.metadata.creator = { appId: "creator-app", taskId: "creator-task" };
+  resource.spec.owner = "ordinary-worker";
   resource.spec.input = { kind: "goal", data: { context: { exact: true } } };
   resource.spec.dependsOn = ["independent"];
   resource.status.reviewAt = 900;
@@ -215,6 +216,7 @@ test("accepted evidence remains opt-in, bounded, and navigable past later waits"
     result: { current: true },
     input: { kind: "goal", data: { context: { exact: true } } },
     creator: { appId: "creator-app", taskId: "creator-task" },
+    agent: "ordinary-worker",
     currentObligations: {
       available: true,
       reviewAt: 900,

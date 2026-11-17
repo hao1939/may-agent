@@ -106,6 +106,8 @@ export type HumanTaskView = {
   /** Canonical saved Task input and provenance metadata. Detail reads only. */
   input?: TaskDetail["input"];
   creator?: TaskDetail["creator"];
+  /** Recorded responsible worker identity; distinct from creator and requestedBy. */
+  agent?: TaskDetail["agent"];
   currentObligations?: TaskDetail["currentObligations"];
   activeAttempt?: TaskDetail["activeAttempt"];
   pendingEvents?: TaskDetail["pendingEvents"];
@@ -1303,6 +1305,21 @@ export class HumanTaskService {
   }
 
   getTask(input: { ref?: string; appId?: string; taskId?: string } & TaskReadOptions): HumanTaskView | null {
+    this.db.exec("SAVEPOINT human_task_detail_read");
+    try {
+      const result = this.getTaskFromSnapshot(input);
+      this.db.exec("RELEASE human_task_detail_read");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK TO human_task_detail_read");
+      this.db.exec("RELEASE human_task_detail_read");
+      throw error;
+    }
+  }
+
+  private getTaskFromSnapshot(
+    input: { ref?: string; appId?: string; taskId?: string } & TaskReadOptions,
+  ): HumanTaskView | null {
     let identity: ResolvedTaskReference;
     if (input.ref) {
       const resolved = resolveTaskReference(this.db, input.ref);
@@ -1339,6 +1356,7 @@ export class HumanTaskService {
           input: canonical.input,
           currentObligations: canonical.currentObligations,
           ...(canonical.creator ? { creator: canonical.creator } : {}),
+          ...(canonical.agent ? { agent: canonical.agent } : {}),
           ...(canonical.activeAttempt ? { activeAttempt: canonical.activeAttempt } : {}),
           ...(canonical.pendingEvents ? { pendingEvents: canonical.pendingEvents } : {}),
           ...(canonical.inputEvents ? { inputEvents: canonical.inputEvents } : {}),
