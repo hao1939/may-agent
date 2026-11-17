@@ -731,6 +731,28 @@ have 98 passes and one failure from a legacy root input. May received the clean
 provider identity and setup receipt to resume the same App contribution without
 waiting for the wider Host outcome to settle.
 
+The later clean App checkpoint `009d038e578a736009c68c21be5ad71cd1dd87c2`
+fixes the exported development schema and removes its raw-input fallback.
+Independent checks against the same frozen Host provider now pass all 100 tests
+in the two selected suites. Real discovery returns 33 registered descriptors;
+actual shared validation accepts the proper development envelope and rejects
+legacy input and blank prompts. Root pushed the retained App branch
+`task/input-appdep_a5ef480a7c34b965ca935397-6485222407` to the Apps backup remote
+for review, without integrating it into primary Apps. Six active May/Scout
+migration errors remain in broader checks. The retained dirty standalone test
+migration also now passes 32 tests, but it is not a clean committed checkpoint.
+
+Two root adapters need correction before the paired trial. Public standalone
+`run()` performs discovery with a separate default 15-second bound; a real
+controlled import remains pending beyond a 1500ms watchdog despite a 100ms
+requested timeout. Task-bound workflow ingress still supplies raw domain input
+instead of the complete envelope. The
+[production-boundary review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5944781227)
+identifies those owning call sites and required regressions. Root assigned both
+through May. At the actual 56-round boundary, the same Host Task was revised to
+generation 18 with cumulative total 64, preserving all 56 consumed rounds and
+retained source rather than resetting its allowance.
+
 Probe receipts, logs and the full dependency-resolution receipt
 `paired-frozen-host-sdk-binding-1794941652292.json` are under the existing local
 trial directory `/app/.state/pr585-agents-convergence-e2e-20261117/`. These are

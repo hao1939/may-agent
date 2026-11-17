@@ -8,9 +8,11 @@ The interfaces below define the requested cutover.
 cooperation, common child results, shared call options, invalid child-input
 admission and inherited read-only Task context have focused verification.
 The newer local `eb77e74da6` checkpoint also passes all four call directions and
-the common public `run()` result probe, but its owning standalone suite has four
-unmigrated failures. Remaining implementation work is listed below. Full
-current-head CI, paired App migration and the connected local trial remain open;
+the common public `run()` result probe. Its retained test migration passes 32
+tests but is still uncommitted. Paired App checkpoint `009d038e57` now passes 100
+focused tests and real development-envelope admission; broader active App
+migration remains open. Remaining implementation work is listed below. Full
+current-head CI and the connected local trial remain open;
 no unified candidate is activated. The
 [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#published-child-admission-and-paired-source-checkpoint)
 records exact revisions, failed checks and the actual installed-runtime boundary.
