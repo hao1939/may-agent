@@ -1,5 +1,6 @@
 import type { Static, TSchema } from "typebox";
 import type { AppContract, AppResult } from "./app.js";
+import type { CallableDescriptor } from "./callable.js";
 import type { AppEvent } from "./event.js";
 import type {
   Condition,
@@ -816,6 +817,8 @@ export type AgentContext<TInput = unknown> = {
    * Does not preempt arbitrary JavaScript or undo completed external effects.
    */
   signal: AbortSignal;
+  /** Immutable descriptors from the same captured catalog used by call(). */
+  list(): readonly CallableDescriptor[];
   /**
    * Canonical bounded invocation API for both prompt-backed and code-backed targets.
    * Production calls pass string target names resolved against the captured catalog snapshot.

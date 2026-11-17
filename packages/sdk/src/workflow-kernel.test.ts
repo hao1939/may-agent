@@ -54,6 +54,31 @@ const reviewWorkflow = {
 };
 
 describe("portable workflow kernel & runTargetTest", () => {
+  test("ctx.list returns the immutable descriptors from the captured call catalog", async () => {
+    const descriptors = Object.freeze([
+      Object.freeze({
+        name: "alex/review",
+        description: "Review a candidate",
+        inputSchema: Type.Object({ prompt: Type.String({ minLength: 1 }) }),
+      }),
+    ]);
+    const outcome = await runWorkflowInvocation(
+      {
+        name: "catalog-reader",
+        description: "Reads the captured catalog",
+        async execute(ctx) {
+          expect(ctx.list()).toBe(descriptors);
+          expect(Object.isFrozen(ctx.list())).toBe(true);
+          return ctx.done("listed", ctx.list().map((item) => item.name));
+        },
+      },
+      { input: {}, listTargets: () => descriptors },
+    );
+
+    expect(outcome.ok).toBe(true);
+    if (outcome.ok) expect(outcome.result).toMatchObject({ output: ["alex/review"] });
+  });
+
   test("executes readable module, preserves schema-valid partial output, and checks fixture consumption", async () => {
     const run = await runTargetTest(reviewWorkflow, {
       input: { subjectRef: "HEAD~1..HEAD" },

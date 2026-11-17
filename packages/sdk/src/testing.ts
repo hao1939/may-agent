@@ -132,6 +132,7 @@ export type TestAppWorkflowContextOptions<TInput> = {
   closeTask?: WorkflowContext["closeTask"];
   read?: AppRead;
   log?: Logger;
+  list?: WorkflowContext["list"];
   call?: WorkflowContext["call"];
   emit?: WorkflowContext["events"]["emit"];
   readEvent?: WorkflowContext["events"]["read"];
@@ -168,6 +169,7 @@ export function createTestAppWorkflowContext<TInput>(
     ...(options.reviseTask ? { reviseTask: options.reviseTask } : {}),
     ...(options.closeTask ? { closeTask: options.closeTask } : {}),
     read: options.read ?? createTestAppRead(),
+    list: options.list ?? (() => Object.freeze([])),
     call,
     events: {
       emit: options.emit ?? fn(async () => undefined),

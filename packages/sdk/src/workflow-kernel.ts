@@ -10,6 +10,7 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
+import type { CallableDescriptor } from "./callable.js";
 import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
@@ -317,6 +318,8 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   allowance?: WorkflowExecutionAllowance;
   /** Optional caller-side output schema enforced in addition to module.outputSchema when status === "done". */
   outputSchema?: TSchema;
+  /** Immutable descriptors for the same captured catalog used by resolveTarget. */
+  listTargets?: () => readonly CallableDescriptor[];
   /** Resolve and capture one callable for this ctx.call invocation. */
   resolveTarget?(target: string, input: unknown): WorkflowKernelResolvedTarget | Promise<WorkflowKernelResolvedTarget>;
   /** Compatibility fallback for bindings that have not adopted single-pass resolution. */
@@ -1049,6 +1052,10 @@ export async function runWorkflowInvocation<TInput = unknown>(
   const ctx: WorkflowContext<TInput> = {
     input: bindings.input as WorkflowContext<TInput>["input"],
     signal: controller.signal,
+    list: () => {
+      assertActive();
+      return bindings.listTargets?.() ?? Object.freeze([]);
+    },
     ...(bindings.reconciliation ? { reconciliation: bindings.reconciliation } : {}),
     read: rawRead,
     log: logger,
