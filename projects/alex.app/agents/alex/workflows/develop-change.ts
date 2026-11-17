@@ -101,6 +101,7 @@ const savedSchema = Type.Object(
     taskId: text,
     requirementKey: text,
     inputKey: text,
+    assignmentKey: Type.Optional(text),
     roundsUsed: Type.Optional(
       Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
     ),
@@ -292,6 +293,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       verify: input.verify,
     });
     const inputKey = digest(rec.events.items);
+    const assignmentKey = digest(ctx.input.prompt);
     // Task-local output must be excluded from source acceptance when stored inside
     // the worktree. Do not edit ignore rules or quietly hide candidate files.
     await inspectCandidate(true);
@@ -314,6 +316,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       taskId: rec.taskId,
       requirementKey,
       inputKey,
+      assignmentKey,
       roundsUsed: 0,
       reports: [],
     });
@@ -378,10 +381,21 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           reports,
         };
         if (recovered.requirementKey === requirementKey) {
-          saved = { ...structuredClone(recovered), inputKey, reports };
-          if (rec.events.items.length > 0 && recovered.inputKey !== inputKey) {
-            // Keep receipts visible. New input needs judgment, not automatic
-            // deletion of earlier work or blind replay of an old approval.
+          saved = {
+            ...structuredClone(recovered),
+            inputKey,
+            assignmentKey,
+            reports,
+          };
+          const changedAssignment =
+            recovered.assignmentKey === undefined ||
+            recovered.assignmentKey !== assignmentKey;
+          const changedTaskInput =
+            rec.events.items.length > 0 && recovered.inputKey !== inputKey;
+          if (changedAssignment || changedTaskInput) {
+            // Keep implementation, verification, reports, and allowance usage
+            // visible. A changed invocation assignment or newly delivered Task
+            // input needs fresh judgment, even when the other source is empty.
             delete saved.design;
             delete saved.review;
           }
@@ -434,6 +448,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       const source = await describeCandidate(root, value, ctx.signal);
       const prompt = [
         `Development step: ${stage}. Worktree: ${root}.`,
+        `Current invocation assignment: ${ctx.input.prompt}`,
         `Current requirement: ${current.outcome}`,
         `Acceptance: ${JSON.stringify(current.acceptance)}`,
         `Constraints: ${JSON.stringify(constraints)}`,

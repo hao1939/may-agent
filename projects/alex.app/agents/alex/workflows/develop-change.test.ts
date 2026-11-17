@@ -389,7 +389,7 @@ describe("development workflow using real Git and verification", () => {
     );
   });
 
-  test("design → direct implementation → real checks → review with configured tools, then quiet replay", async () => {
+  test("identical invocation assignments quiet-replay while changed assignments get fresh judgment without repeating valid work", async () => {
     const t = trial();
     expect((await t.run()).state).toBe("converged");
     expect(t.calls).toEqual([
@@ -397,10 +397,49 @@ describe("development workflow using real Git and verification", () => {
       { agent: "alex/tech-lead", stage: "implementation", tools: undefined },
       { agent: "alex/bob", stage: "review", tools: undefined },
     ]);
+    expect(t.prompts[0]).toContain(
+      "Current invocation assignment: Run the selected development procedure",
+    );
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
-    const ctx = t.context(); // A fresh invocation; only Task result and repository survive.
-    expect((await t.run(ctx)).state).toBe("converged");
-    expect(t.calls).toHaveLength(3);
+    expect(t.evidence().roundsUsed).toBe(1);
+
+    t.setJudgment((stage) =>
+      stage === "design"
+        ? {
+            decision: "review",
+            reason: "The changed assignment needs fresh judgment of the retained candidate",
+            design: "Reuse the exact verified implementation and review it against the current assignment",
+          }
+        : {
+            decision: "pass",
+            reason: "The retained candidate satisfies the current assignment",
+            commit: t.git(t.worktree, "rev-parse", "HEAD"),
+            findings: [],
+          },
+    );
+    const changed = t.context();
+    changed.input = {
+      prompt: "Assess the retained candidate against the revised invocation assignment",
+      data: { verify: (t.current.input as any).data.verify },
+    };
+    expect(changed.reconciliation.events.items).toEqual([]);
+    expect((await t.run(changed)).state).toBe("converged");
+    expect(t.calls.slice(3)).toEqual([
+      { agent: "alex/bob", stage: "design", tools: undefined },
+      { agent: "alex/bob", stage: "review", tools: undefined },
+    ]);
+    for (const prompt of t.prompts.slice(3))
+      expect(prompt).toContain(
+        "Current invocation assignment: Assess the retained candidate against the revised invocation assignment",
+      );
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+    expect(t.evidence().roundsUsed).toBe(2);
+
+    const identical = t.context();
+    identical.input = structuredClone(changed.input);
+    expect((await t.run(identical)).state).toBe("converged");
+    expect(t.calls).toHaveLength(5);
+    expect(t.evidence().roundsUsed).toBe(2);
     expect(readFileSync(join(t.repo, "answer.cjs"), "utf8")).toContain("=> 0");
   });
 
