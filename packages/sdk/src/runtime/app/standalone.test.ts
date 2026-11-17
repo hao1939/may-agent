@@ -433,8 +433,8 @@ export async function execute(ctx) {
     expect(run.ok).toBeTrue();
     expect(run.result).toMatchObject({ type: "done", summary: "parent handled both helpers" });
     expect(visibleResults).toEqual([
-      expect.objectContaining({ kind: "agent", status: "done", summary: "prompt helper done", output: { reviewed: true } }),
-      expect.objectContaining({ kind: "workflow", status: "done", summary: "code helper done", output: { echoed: 7 } }),
+      expect.objectContaining({ status: "done", summary: "prompt helper done", output: { reviewed: true } }),
+      expect.objectContaining({ status: "done", summary: "code helper done", output: { echoed: 7 } }),
     ]);
     expect((visibleResults[0] as { id?: string }).id).toBeString();
     expect((visibleResults[1] as { id?: string }).id).toBeString();
@@ -539,9 +539,9 @@ export async function execute(ctx) { return ctx.done("primed"); }
     expect(result.ok).toBeTrue();
     expect(globalUtilityExecutions).toBe(0);
     expect(visibleResults).toEqual([
-      expect.objectContaining({ kind: "workflow", summary: "reviewer utility", output: { received: "before" } }),
-      expect.objectContaining({ kind: "workflow", summary: "primed" }),
-      expect.objectContaining({ kind: "workflow", summary: "reviewer utility", output: { received: "after" } }),
+      expect.objectContaining({ status: "done", summary: "reviewer utility", output: { received: "before" } }),
+      expect.objectContaining({ status: "done", summary: "primed" }),
+      expect.objectContaining({ status: "done", summary: "reviewer utility", output: { received: "after" } }),
     ]);
   });
 
@@ -794,7 +794,7 @@ export async function execute(ctx) {
     expect(readFileSync(enteredMarker, "utf8")).toBe("entered");
     expect(readFileSync(cancelledMarker, "utf8")).toContain('Workflow step "global/long-helper" timed out after 20ms');
     expect(visibleResults).toEqual([
-      expect.objectContaining({ kind: "workflow", status: "done", summary: "catalog ready" }),
+      expect.objectContaining({ status: "done", summary: "catalog ready" }),
     ]);
     expect(helperErrors).toEqual([
       expect.stringContaining('Workflow step "global/long-helper" timed out after 20ms'),
@@ -1118,7 +1118,7 @@ export const description = "Runs two nested workflows and returns their IDs";
 export async function execute(ctx) {
   const first = await ctx.call("global/review-change", { prompt: "Review A", data: { subjectRef: "A" } });
   const second = await ctx.call("global/review-change", { prompt: "Review B", data: { subjectRef: "B" } });
-  return ctx.done("pair", { parentId: ctx.done("probe").id, firstId: first.id, secondId: second.id });
+  return ctx.done("pair", { producerId: ctx.done("probe").id, firstId: first.id, secondId: second.id });
 }
 `,
     );
@@ -1147,8 +1147,8 @@ export async function execute(ctx) {
     });
     expect(distinctIds.ok).toBe(true);
     expect(distinctIds.report.executionId).toBe("wr_explicit_root");
-    const idsOut = distinctIds.result?.output as { parentId: string; firstId: string; secondId: string };
-    expect(idsOut.parentId).toBe("wr_explicit_root");
+    const idsOut = distinctIds.result?.output as { producerId?: string; firstId: string; secondId: string };
+    expect(idsOut.producerId).toBeUndefined();
     expect(idsOut.firstId).not.toBe("wr_explicit_root");
     expect(idsOut.secondId).not.toBe("wr_explicit_root");
     expect(idsOut.firstId).not.toBe(idsOut.secondId);

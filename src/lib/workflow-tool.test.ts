@@ -274,7 +274,8 @@ export async function execute(ctx) { return ctx.blocked("Specification missing",
       const raw = await runner.run(name, "{}");
       const result = { ...raw, ...workflowExecutionResult(raw) } as Record<string, unknown>;
       if (name === "review") {
-        expect(result).toMatchObject({ kind: "workflow", status: "blocked", summary: "Specification missing", facts: { report: "review.md" } });
+        expect(result).toMatchObject({ status: "blocked", summary: "Specification missing", facts: { report: "review.md" } });
+        expect(result).not.toHaveProperty("kind");
         expect(result.id).toBe(result.workflowRunId);
         expect(result.id).toBeTruthy();
       } else {
@@ -1111,11 +1112,9 @@ export async function execute(ctx) {
       type: "done",
       output: {
         id: "s_app_step",
-        kind: "agent",
         status: "done",
         summary: "bounded move complete",
         output: { ok: true },
-        cliCalls: [cliCall],
       },
     });
     expect(agentSessionSource).toBe("heartbeat");
@@ -1402,7 +1401,6 @@ export async function execute(ctx) {
     expect(result).toMatchObject({
       type: "done",
       output: {
-        kind: "workflow",
         status: "done",
         summary: "child complete",
         output: { prompt: "Run child", data: { probe: "kept-structured" } },

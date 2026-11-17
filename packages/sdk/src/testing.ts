@@ -147,10 +147,8 @@ export function createTestAppWorkflowContext<TInput>(
   options: TestAppWorkflowContextOptions<TInput>,
 ): WorkflowContext<TInput> {
   const fn = mockFn();
-  const executionId = options.executionId ?? "wf_test";
-  const terminal = (kind: "agent" | "workflow", id: string): ExecutionResult => ({
+  const terminal = (id: string): ExecutionResult => ({
     id,
-    kind,
     status: "done",
     summary: "ok",
   });
@@ -158,9 +156,9 @@ export function createTestAppWorkflowContext<TInput>(
     options.call ??
     (fn(async (target: string, input: unknown) => {
       if (typeof target === "string" && !target.includes("/") && typeof input === "string") {
-        return terminal("agent", `s_test_${target}`);
+        return terminal(`s_test_${target}`);
       }
-      return terminal("workflow", `wf_test_${target}`);
+      return terminal(`wf_test_${target}`);
     }) as WorkflowContext["call"]);
   return {
     input: options.input,
@@ -185,15 +183,11 @@ export function createTestAppWorkflowContext<TInput>(
     ...(options.workspace ? { workspace: options.workspace } : {}),
     log: options.log ?? createTestAppLogger(),
     done: <T>(summary: string, output?: T) => ({
-      id: executionId,
-      kind: "workflow",
       status: "done",
       summary,
       ...(output !== undefined ? { output } : {}),
     }),
     blocked: (reason: string, facts?: unknown) => ({
-      id: executionId,
-      kind: "workflow",
       status: "blocked",
       summary: reason,
       ...(facts !== undefined ? { facts } : {}),

@@ -138,6 +138,8 @@ export type NormalizedWorkflowContribution = (
 ) & { output?: unknown; facts?: unknown };
 
 export type WorkflowStepInvocationResult<TOutput = unknown> = ExecutionResult<TOutput> & {
+  /** Executor classification is retained only for step diagnostics. */
+  kind?: "agent" | "workflow";
   sessionId?: string;
   transcriptPath?: string;
   cleanupConfirmed?: boolean;
@@ -410,11 +412,14 @@ export function normalizeWorkflowContribution(
     return { type: "done", summary: value.summary, output: value };
   }
   const isExecutionResult =
-    (value.kind === "agent" || value.kind === "workflow") &&
-    typeof value.id === "string" &&
-    typeof value.summary === "string";
+    (value.status === "done" || value.status === "blocked" || value.status === "error" || value.status === "interrupted") &&
+    typeof value.summary === "string" &&
+    value.summary.trim().length > 0;
   if (!isExecutionResult) {
     throw new Error("Workflow returned an invalid terminal execution result");
+  }
+  if (value.kind !== undefined || value.cliCalls !== undefined) {
+    throw new Error("Workflow returned retired executor or diagnostic result fields");
   }
   const payload = {
     ...(value.output !== undefined ? { output: value.output } : {}),
@@ -920,7 +925,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
         const promptTruncated = promptText.length > MAX_PROMPT_CHARS;
         const formatted = formatError(stepErr);
         const identity = lateRaw
-          ? { id: lateRaw.id, ...(lateRaw.sessionId ? { sessionId: lateRaw.sessionId } : {}) }
+          ? { id: lateRaw.id ?? null, ...(lateRaw.sessionId ? { sessionId: lateRaw.sessionId } : {}) }
           : extractErrorExecutionIdentity(stepErr);
         const failureStatus: ExecutionResult["status"] =
           abortedExternally && !timedOut && !stepTimedOut ? "interrupted" : "error";
@@ -992,14 +997,14 @@ export async function runWorkflowInvocation<TInput = unknown>(
         durationMs: stepEndedAt - stepStartedAt,
         startedAt: stepStartedAt,
         endedAt: stepEndedAt,
-        id: raw.id,
+        id: raw.id ?? null,
         ...(raw.sessionId ? { sessionId: raw.sessionId } : {}),
         ...(raw.transcriptPath ? { transcriptPath: raw.transcriptPath } : {}),
         cleanupConfirmed,
       });
 
       assertActive();
-      const { sessionId: _sid, transcriptPath: _tp, cleanupConfirmed: _cc, ...publicResult } = raw;
+      const { kind: _kind, sessionId: _sid, transcriptPath: _tp, cleanupConfirmed: _cc, ...publicResult } = raw;
       return publicResult;
     } finally {
       clearTimeout(stepTimer);
@@ -1162,15 +1167,11 @@ export async function runWorkflowInvocation<TInput = unknown>(
       },
     },
     done: <T>(summary: string, output?: T): ExecutionResult<T> => ({
-      id: executionId,
-      kind: "workflow",
       status: "done",
       summary,
       ...(output !== undefined ? { output } : {}),
     }),
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
-      id: executionId,
-      kind: "workflow",
       status: "blocked",
       summary: reason,
       ...(facts !== undefined ? { facts } : {}),

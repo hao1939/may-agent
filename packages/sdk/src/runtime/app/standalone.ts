@@ -1499,6 +1499,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     const mapped = agentExecutionResult(taskResult);
     return {
       ...mapped,
+      kind: "agent",
       sessionId: directRun.sessionId,
       transcriptPath,
       cleanupConfirmed: directRun.cleanupConfirmed,

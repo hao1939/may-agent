@@ -267,7 +267,6 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
         : "done";
   return {
     id: result.sessionId,
-    kind: "agent",
     status,
     summary:
       (result.status === "error" ? result.error?.trim() || result.errorMessage?.trim() : undefined) ||
@@ -277,7 +276,6 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
       ? { output: result.structuredResult }
       : finish?.output !== undefined ? { output: finish.output } : {}),
     ...(finish?.facts !== undefined ? { facts: finish.facts } : {}),
-    cliCalls: cliCallFacts(result.sessionId, result.messages),
   };
 }
 
@@ -286,7 +284,6 @@ export function workflowExecutionResult(result: WorkflowToolResult): ExecutionRe
   if (result.type === "list" || !result.workflowRunId) return undefined;
   return {
     id: result.workflowRunId,
-    kind: "workflow",
     status: result.type,
     summary: result.type === "done" ? result.summary
       : result.type === "blocked" ? result.reason

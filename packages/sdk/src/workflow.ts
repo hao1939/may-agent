@@ -1,6 +1,6 @@
 import type { Static, TSchema } from "typebox";
 import type { AppContract, AppResult } from "./app.js";
-import type { CallableDescriptor } from "./callable.js";
+import type { CallableDescriptor, CallableResult } from "./callable.js";
 import type { AppEvent } from "./event.js";
 import type {
   Condition,
@@ -510,20 +510,11 @@ export type CliCallFacts = {
 };
 
 /** One terminal result vocabulary for bounded Agent and workflow contributions.
- * Done is a contribution claim, not accepted Task completion. Explicit partial
- * agent work is blocked with its output/facts retained. Setup/cancellation or
- * infrastructure failures may throw before a terminal result is available. */
-export type ExecutionResult<T = unknown> = {
-  id: string;
-  kind: "agent" | "workflow";
-  status: "done" | "blocked" | "error" | "interrupted";
-  summary: string;
-  output?: T;
-  facts?: unknown;
-  /** Up to 64 CLI results from this session's retained transcript tail. Positive
-   * facts only: absence does not prove a call never ran. Old Hosts omit it. */
-  cliCalls?: CliCallFacts[];
-};
+ * Done is a contribution claim, not accepted Task completion. The runtime may
+ * attach the actual child execution id; producers return status/summary and
+ * optional output/facts only. Executor kind and trusted receipts remain in
+ * execution diagnostics rather than the contribution payload. */
+export type ExecutionResult<T = unknown> = CallableResult<T>;
 
 /** A requested managed execution was not started. The caller retains its work. */
 export type ExecutionDeferral = {

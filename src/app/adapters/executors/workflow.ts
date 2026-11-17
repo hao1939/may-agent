@@ -296,7 +296,7 @@ async function executeTaskWorkflow(
     if (error instanceof ExecutionDeferredError) throw error;
     const summary = error instanceof Error ? error.message : String(error);
     const unavailable = error instanceof WorkflowHandlerUnavailable;
-    const runId = error instanceof WorkflowExecutionFailure ? error.execution.id : null;
+    const runId = error instanceof WorkflowExecutionFailure ? error.execution.id ?? null : null;
     bus.emit({
       [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",
