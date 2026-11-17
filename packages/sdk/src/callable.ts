@@ -1,6 +1,9 @@
 import { Type, type Static, type TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 
+const INVOCATION_SETTLEMENT_GRACE_MS = 2_000;
+const UNCONFIRMED_INVOCATION_SETTLEMENT = Symbol("unconfirmed-invocation-settlement");
+
 export const ExecutionInputSchema = Type.Object(
   {
     prompt: Type.String({ minLength: 1 }),
@@ -272,18 +275,45 @@ export class CallableCatalog {
         }, timeoutMs);
     timer?.unref?.();
     let raw: unknown;
+    let settlementTimer: ReturnType<typeof setTimeout> | undefined;
     try {
-      // Invocation owns ordinary descendant cleanup. Abort requests cancellation,
-      // but the caller remains joined until the invocation settles.
-      raw = await entry.definition.invoke(input, {
-        signal: controller.signal,
-        ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+      // Invocation owns ordinary descendant cleanup. Once cancellation is requested,
+      // join cooperative cleanup but do not let an uncooperative provider retain the
+      // caller forever.
+      const invocation = Promise.resolve()
+        .then(() => entry.definition.invoke(input, {
+          signal: controller.signal,
+          ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+        }))
+        .then(
+          (value) => ({ settled: true as const, value }),
+          (error) => ({ settled: true as const, error }),
+        );
+      const unconfirmed = new Promise<typeof UNCONFIRMED_INVOCATION_SETTLEMENT>((resolve) => {
+        const startSettlementBound = () => {
+          settlementTimer = setTimeout(() => resolve(UNCONFIRMED_INVOCATION_SETTLEMENT), INVOCATION_SETTLEMENT_GRACE_MS);
+          settlementTimer.unref?.();
+        };
+        if (controller.signal.aborted) startSettlementBound();
+        else controller.signal.addEventListener("abort", startSettlementBound, { once: true });
       });
+      const outcome = await Promise.race([invocation, unconfirmed]);
+      if (outcome === UNCONFIRMED_INVOCATION_SETTLEMENT) {
+        const cause = controller.signal.reason instanceof Error
+          ? controller.signal.reason.message
+          : String(controller.signal.reason ?? `Callable "${name}" interrupted`);
+        throw new Error(
+          `Callable "${name}" cleanup remained unconfirmed after ${INVOCATION_SETTLEMENT_GRACE_MS}ms; originating failure: ${cause}`,
+        );
+      }
+      if (Object.hasOwn(outcome, "error")) throw outcome.error;
+      raw = outcome.value;
       if (controller.signal.aborted) {
         throw controller.signal.reason ?? new Error(`Callable "${name}" interrupted`);
       }
     } finally {
       if (timer) clearTimeout(timer);
+      if (settlementTimer) clearTimeout(settlementTimer);
       context.signal.removeEventListener("abort", abortFromParent);
     }
     if (timedOut) throw new Error(`Callable "${name}" timed out after ${timeoutMs}ms`);

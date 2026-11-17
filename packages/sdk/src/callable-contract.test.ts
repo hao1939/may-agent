@@ -198,6 +198,33 @@ describe("shared callable input and result contract", () => {
     ).resolves.toEqual({ id: "s_partial", status: "blocked", summary: "needs fixture", facts: ["kept"] });
   });
 
+  test("bounds never-settling cleanup after timeout and parent cancellation", async () => {
+    for (const mode of ["timeout", "cancel"] as const) {
+      const parent = new AbortController();
+      const stuck = new CallableCatalog([
+        definition(`stuck-${mode}`, "alex", {
+          async invoke(): Promise<never> {
+            return new Promise<never>(() => {});
+          },
+        }),
+      ]);
+      const startedAt = Date.now();
+      const call = stuck.call(
+        `alex/stuck-${mode}`,
+        { prompt: "wait" },
+        mode === "timeout" ? { timeoutMs: 5 } : undefined,
+        { signal: parent.signal },
+      );
+      if (mode === "cancel") setTimeout(() => parent.abort(new Error("parent stopped")), 5);
+      await expect(call).rejects.toThrow(
+        mode === "timeout"
+          ? 'cleanup remained unconfirmed after 2000ms; originating failure: Callable "alex/stuck-timeout" timed out after 5ms'
+          : "cleanup remained unconfirmed after 2000ms; originating failure: parent stopped",
+      );
+      expect(Date.now() - startedAt).toBeLessThan(3_000);
+    }
+  });
+
   test("shortens inherited timeouts and stays joined through cancellation cleanup", async () => {
     const order: string[] = [];
     let observedTimeout: number | undefined;
