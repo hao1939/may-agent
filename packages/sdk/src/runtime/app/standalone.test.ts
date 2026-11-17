@@ -445,6 +445,96 @@ export async function execute(ctx) {
     ]);
   });
 
+  test("pins prompt identity and model for one callable tree while a later invocation captures updated configuration", async () => {
+    const env = setupDirectLayout();
+    const reviewerConfigPath = join(env.agentsRoot, "reviewer", "agent.json");
+    const observed: Array<{ agentName: string; model: string; description: string | undefined }> = [];
+    const models = {
+      test: { id: "original-model" } as any,
+      updated: { id: "updated-model" } as any,
+    };
+    const runAgent = async (opts: Parameters<typeof prepareDirectAgentExecution>[0]): Promise<DirectAgentRunResult> => {
+      const prep = await prepareDirectAgentExecution(opts);
+      try {
+        observed.push({
+          agentName: opts.agentName,
+          model: prep.model,
+          description: opts.agentConfig?.description,
+        });
+        return {
+          sessionId: prep.sessionId,
+          sessionPath: prep.sessionPath,
+          systemPrompt: prep.prepared.systemPrompt,
+          model: prep.model,
+          executionManifest: prep.executionManifest,
+          status: "done",
+          lastAssistantText: "configured",
+          messages: [],
+          durationMs: 1,
+          finishResult: { status: "done", summary: "configured" },
+          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+          cleanupConfirmed: await prep.cleanupAsync(),
+        };
+      } finally {
+        prep.cleanup();
+      }
+    };
+
+    const first = await runDirectWorkflow({
+      module: {
+        name: "mutate-after-capture",
+        description: "Mutates the source configuration after this tree captures its catalog",
+        async execute(ctx) {
+          writeFileSync(reviewerConfigPath, JSON.stringify({
+            name: "reviewer-v2",
+            description: "updated reviewer",
+            domain: "test",
+            model: "updated",
+            tools: ["finish"],
+          }));
+          const child = await ctx.call("global/reviewer", { prompt: "Use the captured configuration" });
+          return ctx.done("first tree complete", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "Run the first tree" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models,
+      runAgent,
+    });
+
+    const second = await runDirectWorkflow({
+      module: {
+        name: "capture-updated-config",
+        description: "Uses a fresh independently prepared catalog",
+        async execute(ctx) {
+          const child = await ctx.call("global/reviewer-v2", { prompt: "Use the updated configuration" });
+          return ctx.done("second tree complete", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "Run the second tree" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models,
+      runAgent,
+    });
+
+    expect(first.ok).toBeTrue();
+    expect(second.ok).toBeTrue();
+    expect(observed).toEqual([
+      { agentName: "reviewer", model: "test", description: "reviewer agent" },
+      { agentName: "reviewer-v2", model: "updated", description: "updated reviewer" },
+    ]);
+  });
+
   test("uses exact canonical workflow names before and after another catalog call", async () => {
     const env = setupDirectLayout();
     const utilityDir = join(env.agentsRoot, "utility");
