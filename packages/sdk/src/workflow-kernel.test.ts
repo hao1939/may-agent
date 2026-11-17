@@ -323,6 +323,37 @@ describe("portable workflow kernel & runTargetTest", () => {
     expect((outFail.report.result?.facts as any)?.invalidOutput).toEqual({ count: "not-a-number" });
   });
 
+  test.each(["blocked", "error", "interrupted"] as const)(
+    "validates schema-invalid %s root output and retains the rejected material in diagnostics",
+    async (status) => {
+      const outputSchema = Type.Object({ count: Type.Number() });
+      const outcome = await runWorkflowInvocation(
+        {
+          name: `invalid-${status}-root`,
+          description: "Returns invalid partial root output",
+          outputSchema,
+          async execute() {
+            return {
+              status,
+              summary: `${status} with partial evidence`,
+              output: { count: "not-a-number" },
+              facts: { source: "root" },
+            } as any;
+          },
+        },
+        { input: {}, outputSchema },
+      );
+
+      expect(outcome.ok).toBe(false);
+      expect(outcome.error).toBeInstanceOf(WorkflowValidationError);
+      expect(outcome.report.result).toEqual({
+        type: "error",
+        reason: expect.stringContaining("Invalid workflow output"),
+        facts: { invalidOutput: { count: "not-a-number" } },
+      });
+    },
+  );
+
   test("aborts and joins active sibling calls on throw/abort and fences late floating calls", async () => {
     let siblingAborted = false;
     let siblingSettled = false;
@@ -782,11 +813,11 @@ describe("portable workflow kernel & runTargetTest", () => {
   });
 
   test.each(["blocked", "error", "interrupted"] as const)(
-    "preserves %s code contribution evidence even when it does not satisfy the completion schema",
+    "rejects schema-invalid %s child output while preserving it as diagnostics",
     async (status) => {
       const run = await runTargetTest({
         name: "caller",
-        description: "Preserves partial child evidence",
+        description: "Preserves invalid partial child evidence as diagnostics",
         async execute(ctx: WorkflowContext) {
           const child = await ctx.call("owner/child", {}, {
             schema: Type.Object({ completed: Type.Boolean() }),
@@ -799,9 +830,19 @@ describe("portable workflow kernel & runTargetTest", () => {
       });
       expect(run.ok).toBe(true);
       expect(run.result).toMatchObject({ output: {
-        status, output: { partial: true }, facts: { evidence: "retained" },
+        status: "error",
+        summary: expect.stringContaining("output failed step schema"),
+        facts: {
+          evidence: "retained",
+          invalidOutput: { partial: true },
+          validationError: expect.any(String),
+        },
       } });
-      expect(run.steps[0]).toMatchObject({ status, output: { partial: true } });
+      expect(run.steps[0]).toMatchObject({
+        status: "error",
+        facts: { invalidOutput: { partial: true } },
+      });
+      expect(run.steps[0]).not.toHaveProperty("output");
     },
   );
 

@@ -330,7 +330,7 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   deadlineAt?: number;
   maxConcurrentCalls?: number;
   allowance?: WorkflowExecutionAllowance;
-  /** Optional caller-side output schema enforced in addition to module.outputSchema when status === "done". */
+  /** Optional caller-side output schema enforced in addition to module.outputSchema for every supplied output. */
   outputSchema?: TSchema;
   /** Immutable descriptors for the same captured catalog used by resolveTarget. */
   listTargets?: () => readonly CallableDescriptor[];
@@ -913,24 +913,23 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
       const actualKind = raw.kind ?? kind;
       const cleanupConfirmed = raw.cleanupConfirmed !== false;
-      if (raw.status === "done" && effectiveOptions?.schema) {
+      if (effectiveOptions?.schema) {
         const kindLabel = actualKind === "agent" ? "Agent" : "Workflow";
-        if (raw.output !== undefined) {
-          if (!Check(effectiveOptions.schema, raw.output)) {
-            const detail = schemaDiagnostic(effectiveOptions.schema, raw.output);
-            raw = {
-              ...raw,
-              status: "error",
-              summary: `${kindLabel} "${target}" output failed step schema: ${detail}`,
-              output: undefined,
-              facts: {
-                ...(isRecord(raw.facts) ? raw.facts : raw.facts !== undefined ? { priorFacts: raw.facts } : {}),
-                invalidOutput: raw.output,
-                validationError: detail,
-              },
-            };
-          }
-        } else if (raw.status === "done") {
+        if (raw.output !== undefined && !Check(effectiveOptions.schema, raw.output)) {
+          const invalidOutput = raw.output;
+          const detail = schemaDiagnostic(effectiveOptions.schema, invalidOutput);
+          raw = {
+            ...raw,
+            status: "error",
+            summary: `${kindLabel} "${target}" output failed step schema: ${detail}`,
+            output: undefined,
+            facts: {
+              ...(isRecord(raw.facts) ? raw.facts : raw.facts !== undefined ? { priorFacts: raw.facts } : {}),
+              invalidOutput,
+              validationError: detail,
+            },
+          };
+        } else if (raw.status === "done" && raw.output === undefined) {
           raw = {
             ...raw,
             status: "error",
@@ -1193,21 +1192,20 @@ export async function runWorkflowInvocation<TInput = unknown>(
       const authored = await module.execute(ctx);
       assertActive();
       const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
-      if (normalized.type === "done") {
-        if (module.outputSchema && !Check(module.outputSchema, normalized.output)) {
-          throw new WorkflowValidationError(
-            "output",
-            `Invalid workflow output for "${module.name}": ${schemaDiagnostic(module.outputSchema, normalized.output)}`,
-            normalized.output,
-          );
-        }
-        if (bindings.outputSchema && !Check(bindings.outputSchema, normalized.output)) {
-          throw new WorkflowValidationError(
-            "output",
-            `Invalid caller output schema for "${module.name}": ${schemaDiagnostic(bindings.outputSchema, normalized.output)}`,
-            normalized.output,
-          );
-        }
+      const shouldValidateOutput = normalized.type === "done" || normalized.output !== undefined;
+      if (shouldValidateOutput && module.outputSchema && !Check(module.outputSchema, normalized.output)) {
+        throw new WorkflowValidationError(
+          "output",
+          `Invalid workflow output for "${module.name}": ${schemaDiagnostic(module.outputSchema, normalized.output)}`,
+          normalized.output,
+        );
+      }
+      if (shouldValidateOutput && bindings.outputSchema && !Check(bindings.outputSchema, normalized.output)) {
+        throw new WorkflowValidationError(
+          "output",
+          `Invalid caller output schema for "${module.name}": ${schemaDiagnostic(bindings.outputSchema, normalized.output)}`,
+          normalized.output,
+        );
       }
       return normalized;
     })();

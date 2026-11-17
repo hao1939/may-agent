@@ -2043,7 +2043,7 @@ export async function run<TInput = unknown>(
       ...(options.tools ? { tools: options.tools } : {}),
     });
     cleanupConfirmed = res.report.cleanup.confirmed === true;
-    const contribution = res.result;
+    const contribution = res.result ?? (res.report.result?.type === "error" ? res.report.result : undefined);
     const summary = contribution
       ? contribution.type === "done"
         ? contribution.summary

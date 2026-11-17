@@ -1777,6 +1777,28 @@ export async function execute(ctx) {
 }
 `,
     );
+    writeFileSync(
+      join(alphaAgentDir, "workflows", "partial-alpha.ts"),
+      `
+export const name = "partial-alpha";
+export const description = "Returns partial output for root schema validation";
+export const inputSchema = {
+  type: "object",
+  properties: { prompt: { type: "string", minLength: 1 } },
+  required: ["prompt"],
+  additionalProperties: false,
+};
+export const outputSchema = {
+  type: "object",
+  properties: { score: { type: "number" } },
+  required: ["score"],
+  additionalProperties: false,
+};
+export async function execute() {
+  return { status: "blocked", summary: "partial score", output: { score: "invalid" }, facts: { source: "fixture" } };
+}
+`,
+    );
     // Local procedure named "codex" must take precedence over built-in codex CLI executor:
     writeFileSync(
       join(alphaAgentDir, "workflows", "codex.ts"),
@@ -1821,7 +1843,47 @@ export async function execute(ctx) {
       summary: expect.stringContaining("Invalid caller output schema"),
     });
 
-    // 3. The listed App procedure named "codex" is invoked instead of a native CLI alias:
+    // 3. Root partial output is checked against the module schema before run() exposes it.
+    const invalidPartialRoot = await run(
+      "alpha/partial-alpha",
+      { prompt: "Return partial score" },
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+      },
+    );
+    expect(invalidPartialRoot).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: expect.stringContaining("Invalid workflow output"),
+      facts: { invalidOutput: { score: "invalid" } },
+    });
+    expect(invalidPartialRoot).not.toHaveProperty("output");
+
+    // 4. Root partial output is also checked against the caller schema.
+    writeFileSync(
+      join(alphaAgentDir, "workflows", "partial-alpha.ts"),
+      readFileSync(join(alphaAgentDir, "workflows", "partial-alpha.ts"), "utf8")
+        .replace('{ score: "invalid" }', "{ score: 50 }"),
+    );
+    const invalidPartialForCaller = await run(
+      "alpha/partial-alpha",
+      { prompt: "Return partial score" },
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+        outputSchema: Type.Object({ score: Type.Number({ minimum: 90 }) }),
+      },
+    );
+    expect(invalidPartialForCaller).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: expect.stringContaining("Invalid caller output schema"),
+      facts: { invalidOutput: { score: 50 } },
+    });
+    expect(invalidPartialForCaller).not.toHaveProperty("output");
+
+    // 5. The listed App procedure named "codex" is invoked instead of a native CLI alias:
     const localCodexProc = await run(
       "alpha/codex",
       { prompt: "Run local codex", data: { customObject: true } },
