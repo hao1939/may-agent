@@ -191,9 +191,10 @@ The useful acceptance target is an ordinary interrupted development pass whose
 awaited commands stop, followed by a fresh invocation on the same Task/PR that
 retains consumed rounds and reaches the review notice or clear owner escalation.
 
-### Command cancellation implementation candidate — 17 November
+### Command cancellation merged — 17 November
 
-Host [PR #584](https://github.com/hao1939/may-agent/pull/584) supplies public
+Host [PR #584](https://github.com/hao1939/may-agent/pull/584) merged as
+`8a795c12d9c9cdcec6a55601dacd5d96ff817d1f` and supplies public
 `@may-agent/sdk/command`; paired Apps source
 `cd2ab50ff68711f51694c9bc5f8b566ffeed57dd` reexports it for Alex's existing
 Git/verification calls. Await the helper and pass `ctx.signal`. It runs argv
@@ -214,15 +215,25 @@ cancellation and failure receipts. Alex's retained-edit regression checks that
 fresh execution converges on the same Task with two consumed rounds. These tests
 use real processes and scripted judgments; they do not establish model quality.
 
-The simplified Host source is `5f77535d1aa252863fea06daa8f4fffb7fd10319`.
-Host/SDK type, boundary and lint checks passed, together with 26 command/kernel,
-98 runtime/export and 64 paired App workflow/evidence tests. Restoring the former
-50 ms grace makes the nested awaited-command cancellation regression fail.
-Current-head Quality and Container passed in [run 44037991588](https://github.com/hao1939/may-agent/actions/runs/44037991588).
-Two Host workflow-boundary deadline tests also passed, and the design check
-passed for 27 workflows and 9 agents. PR #584 is ready for independent review.
-Install the matching Host/SDK before adopting Alex's import. Source verification
-and release remain separate; no new live PR-to-Telegram run is claimed here.
+The final reviewed Host source is `6d230d71b4987efef3e5bd531fae84c5bb80cb45`.
+Review fixes snapshot launched arguments, close stdin for EOF-reading commands,
+and kill a TERM-ignoring leader on output-buffer overflow so existing group
+cleanup can finish. Each regression failed before its fix and passed afterward;
+all review discussions were resolved before merge.
+
+Host/SDK type, boundary and lint checks passed, together with 30 command/kernel/
+export tests and 64 paired App workflow/evidence tests. The full portable suite
+passed 3,494 tests with zero failures and two expected installed-App configuration
+skips. Final-head Quality and Container passed in
+[run 44041497485](https://github.com/hao1939/may-agent/actions/runs/44041497485).
+Earlier verification showed that restoring the former 50 ms grace fails the
+nested awaited-command cancellation regression; two Host workflow-boundary
+deadline tests and the design check for 27 workflows and 9 agents also passed.
+
+Local adoption remains: install the matching Host/SDK before adopting Alex's
+import, then verify an interrupted pass through the real Task execution and
+existing retry path. Source merge and portable retained-edit tests do not prove
+that activation or a new live interrupted PR-to-Telegram run.
 
 ### Connect shared execution and settlement
 
@@ -433,16 +444,16 @@ ordinary cancellation milestone above.
 | Paired adoption | Exact Host/App/Gym revisions pass contract/type checks and a blocked → real producer event → fresh-input → done scenario across restart and background pause, with the same Task and retained evidence. | Local 25-workflow compatibility, activation and the native PR-delivery loop pass. Shared-worker blocked/resumed/finished and restart evidence remain. |
 | Single domain Task | One delegated outcome creates one target Task; Conversation needs no wrapper Task; Request-scoped result delivery survives retry, Stop and restart. | Current Conversation still uses a stable execution Task; Hook cutover is unimplemented. |
 
-The next implementation priority is reasonable cancellation of ordinary
-awaited work, followed by redo under the existing fixed three-round allowance.
+The next integration priority is adopting the merged ordinary command
+cancellation helper and proving redo under the existing fixed three-round allowance.
 A timed-out invocation receives cancellation and a short cleanup grace; a later
 eligible invocation can repeat useful work on the same Task/PR. Do not add remaining-time prediction,
 exact step restoration or special allowance refunds. The next acceptance target
 is one fresh, narrow assignment that reaches the notification boundary without
 diagnostic relays or a direct-repair exception, including an interrupted pass.
 Clear owner escalation is the expected outcome if its allowance is exhausted.
-The completed #574 run supplies the live baseline. The command cancellation
-candidate above supplies portable source evidence for one boundary, not proof
+The completed #574 run supplies the live baseline. The merged command cancellation
+implementation above supplies portable source evidence for one boundary, not proof
 of a new live interrupted delivery. Creator closure, restart delivery and shared-worker parity remain
 separate obligations. Supporting #582 still needs independent review and
 separate deployment authority.
