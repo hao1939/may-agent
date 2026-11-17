@@ -4,8 +4,10 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`ffbd59ecbc`. Independent exact-clean `check:ci` and 44 owning tests pass.
-Shared callable cancellation settles within the existing finite cleanup grace.
+`5d8a8f31ac`. Independent exact-clean `check:ci` and 67 receipt/persistence/CLI
+owning tests pass; all six production receipt probes now pass. Earlier exact
+`ffbd59ecbc` cleanup verification passes 44 owning tests. Shared callable
+cancellation settles within the existing finite cleanup grace.
 The original explicit-module timeout/abort probe now reports unconfirmed cleanup
 while a native import remains pending; both cleanup defects are repaired.
 
@@ -25,13 +27,23 @@ reports four Scout input/optional-ID errors; integrity and design examples pass.
 Full configured-target bodies, callers, guidance and result consumers remain
 unfinished.
 
-Trusted execution reads project real CLI receipts for sessions/direct children,
-but nested workflow coverage, visible truncation and actual development/Gym
-consumers remain open. A durable real-prompt partial-report regression, meaningful
-Host/CLI fixture migration and complete current-head CI also remain required.
+Trusted execution reads now project nested workflow CLI receipts and expose
+message/byte/receipt truncation. One source defect remains: the recursive workflow
+query bounds returned sessions but still expands every descendant workflow.
+Bound traversal itself and report omitted subtrees. Actual development/Gym
+consumers, the real-prompt blocked-without-output regression, meaningful Host/CLI
+fixture migration and complete current-head CI also remain required.
+
+Production discovery enumerates all 33 configured targets, but canonical calls
+to `alex/pull-request-wait` and `may/revise-assignment` fail before execution:
+their legacy schemas require top-level domain fields forbidden by the common
+envelope. Discovery alone does not establish a callable migration. For the four
+App handoff cases, an isolated variation adding the missing `appLocal: true` to
+the current scripted helper definition passes every original assertion. May
+still needs to commit and verify that fixture correction on the retained branch.
 No unified candidate is activated; connected native-trial and Telegram review-link
 notification acceptance are unproved. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#import-cleanup-repair-and-paired-app-mapping)
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#nested-receipt-coverage-and-remaining-read-bound)
 records exact revisions and remaining verification boundaries.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).

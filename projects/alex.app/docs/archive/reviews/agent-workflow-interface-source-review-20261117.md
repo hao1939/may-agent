@@ -1245,3 +1245,56 @@ Evidence under the trial directory: `ffbd-independent-owning.log`,
 `paired-frozen-host-sdk-binding-1794947175354.json` and
 `execution-receipts-1794947207795.json`. The pinned full Host run is still in
 progress at this checkpoint; it is not included in the passing-test claim.
+
+
+## Nested receipt coverage and remaining read bound
+
+Root independently verified and published native Host
+`5d8a8f31acc597f27178d4a53ca06d1f910e3806`. All 67 owning execution-read,
+JSONL and CLI tests pass, as does exact-clean `check:ci`. All six independent
+production receipt probes pass, including nested workflow sessions, the 65th
+CLI receipt sentinel and message-tail omission. The coverage-aware reader keeps
+the existing array API for other consumers. Host-authored receipts remain
+separate from common contributor output and producer-authored facts.
+
+One source defect remains in the new recursive query: the final session limit
+does not bound workflow-tree expansion. A large tree with no sessions still
+expands all descendants. The
+[current review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5946224422)
+asks May to bound expanded workflow nodes and expose omitted subtree coverage,
+using existing bounded lineage queries or an expansion sentinel. This checkpoint
+is shared for parallel review, with the gap explicit; it is not ready to activate.
+
+Read-only production catalog construction from immutable App 725/Host 185 lists
+all 33 configured targets. Real canonical calls to `alex/pull-request-wait` and
+`may/revise-assignment` fail before execution because their legacy required
+top-level fields conflict with the common full envelope. Several registered May
+and Scout bodies also still consume top-level input without an envelope adapter.
+These are concrete App migration defects despite successful discovery.
+
+The workload fixture root cause is now isolated further. Root copied the native
+in-progress fixture into the independent 725/185 pair and added only the missing
+`appLocal: true` declaration to its scripted helper definition. All four original
+owner-handoff modes pass, with 58 assertions, helper invocation and exact
+`requestId` Conditions preserved. The transient copy was removed; Root changed
+no native implementation. May received the result to apply and verify through
+the existing contribution workflow. Project identity alone does not select an
+App-local definition; this is namespace metadata, not invocation permission.
+
+The pinned full ffbd local run remains failed and incomplete. Three shards
+finished with 790 pass/8 skip/17 fail, 721 pass/4 skip/51 fail and 970 pass/9 fail.
+Shard one stayed CPU-active with no new output and was stopped after ten minutes;
+it required SIGKILL after forwarded SIGTERM did not settle. The log contains 92
+unique failure titles including the unfinished shard, not an overall total of
+77 failures. The live temporary path and stale nested helper calls in
+`graceful-finish.test.ts` identify a fixture migration lead; preserve meaningful
+cancellation coverage and bound scripted corrective turns. Browser execution was
+explicitly disabled for this local run. Complete hosted CI remains required.
+
+Evidence under the trial directory: `5d8-independent-receipts.log`,
+`5d8-independent-check-ci.log`, `execution-receipts-1794947860409.json`,
+`5d8-bounded-traversal-review.json`, `configured-catalog-1794947552025.json`,
+`configured-legacy-schema-1794947624505.json`,
+`725-app-local-fixture-probe-input.json`,
+`725-185-app-local-fixture-diagnostic.log`, `ffbd-independent-broad.log`,
+`ffbd-broad-progress-summary.json` and `ffbd-broad-cancellation.json`.
