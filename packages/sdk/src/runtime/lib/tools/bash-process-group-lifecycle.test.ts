@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 import {
   BASH_PROCESS_GROUP_TERM_GRACE_MS,
   addSessionBashProcessGroup,
+  bashSessionProcessGroups,
   createBashTool,
   createLocalBashOperations,
   drainBashProcessGroup,
@@ -362,6 +363,47 @@ describe("exact-session bash process-group lifecycle", () => {
     writeFileSync(release, "release\n");
     await Bun.sleep(100);
     expect(existsSync(mutation)).toBe(false);
+  });
+
+  it("bounds proc stat reads while persisted recovery polls a TERM-resistant nested group", () => {
+    const f = fixture();
+    const sessionPgid = 424_240;
+    const nestedPgid = 424_241;
+    const entries = Array.from({ length: 64 }, (_, index) => String(500_000 + index));
+    const nestedEntry = entries[17]!;
+    let nestedAlive = true;
+    let procStatReads = 0;
+    let groupProbes = 0;
+    let termProbes = 0;
+    const signals: string[] = [];
+    addSessionBashProcessGroup(f.persistDir, "persisted-proc-bound", sessionPgid);
+
+    const confirmedDrained = drainPersistedSessionBashProcessGroups(f.persistDir, "persisted-proc-bound", {
+      isAlive: () => true,
+      signal: (pgid, signal) => {
+        signals.push(`${pgid}:${signal}`);
+        if (signal === "SIGKILL") nestedAlive = false;
+      },
+      wait: () => undefined,
+      discoverGroups: (sessionId) => bashSessionProcessGroups(sessionId, entries, (pid) => {
+        procStatReads += 1;
+        if (pid === nestedEntry && nestedAlive) return `${pid} (nested) S 1 ${nestedPgid} ${sessionPgid} 0`;
+        return `${pid} (other) S 1 ${pid} 999999 0`;
+      }),
+      groupExists: (pgid) => {
+        groupProbes += 1;
+        if (pgid !== nestedPgid || !nestedAlive) return false;
+        // Exercise many 20 ms-equivalent polls without making the regression slow.
+        termProbes += 1;
+        return termProbes <= 50;
+      },
+    });
+
+    expect(confirmedDrained).toBe(true);
+    expect(groupProbes).toBeGreaterThan(50);
+    expect(procStatReads).toBe(entries.length * 3);
+    expect(signals).toEqual([`${nestedPgid}:SIGTERM`, `${nestedPgid}:SIGKILL`]);
+    expect(readSessionBashProcessGroups(f.persistDir, "persisted-proc-bound")).toEqual([]);
   });
 
   it("returns an explicit undrained result and preserves a persisted PGID after both signal phases", () => {

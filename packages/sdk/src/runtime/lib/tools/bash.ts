@@ -182,12 +182,16 @@ function processGroupAlive(pgid: number): boolean {
 
 /** GNU timeout and job-control shells may create new groups in our setsid
  * session. The original leader can exit while those groups still own work. */
-function bashSessionProcessGroups(sessionId: number): number[] {
+export function bashSessionProcessGroups(
+	sessionId: number,
+	entries: Iterable<string> = readdirSync("/proc"),
+	readStat: (pid: string) => string = (pid) => readFileSync(`/proc/${pid}/stat`, "utf8"),
+): number[] {
 	const groups = new Set<number>();
-	for (const entry of readdirSync("/proc")) {
+	for (const entry of entries) {
 		if (!/^\d+$/.test(entry)) continue;
 		try {
-			const stat = readFileSync(`/proc/${entry}/stat`, "utf8");
+			const stat = readStat(entry);
 			const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
 			if (Number(fields[3]) === sessionId && fields[0] !== "Z")
 				groups.add(Number(fields[2]));
@@ -197,25 +201,6 @@ function bashSessionProcessGroups(sessionId: number): number[] {
 		}
 	}
 	return [...groups];
-}
-
-function bashScopeAlive(pgid: number): boolean {
-	if (processGroupAlive(pgid)) return true;
-	try {
-		return bashSessionProcessGroups(pgid).length > 0;
-	} catch {
-		// Unconfirmed ownership must survive recovery.
-		return true;
-	}
-}
-
-function signalBashScope(pgid: number, signal: "SIGTERM" | "SIGKILL"): void {
-	signalProcessGroup(pgid, signal);
-	try {
-		for (const group of bashSessionProcessGroups(pgid)) signalProcessGroup(group, signal);
-	} catch {
-		// The subsequent liveness check fails closed and retains the sidecar.
-	}
 }
 
 async function waitForProcessGroupFormation(pgid: number, timeoutMs: number): Promise<boolean> {
@@ -308,16 +293,55 @@ export interface PersistedBashProcessGroupDrainOperations {
 	isAlive: (pgid: number) => boolean;
 	signal: (pgid: number, signal: "SIGTERM" | "SIGKILL") => void;
 	wait: (milliseconds: number) => void;
+	/** Discover live groups in the persisted setsid session at signal boundaries. */
+	discoverGroups?: (sessionId: number) => number[];
+	/** Cheap kernel existence probe used between membership scans. */
+	groupExists?: (pgid: number) => boolean;
 }
 
 const persistedBashProcessGroupDrainOperations: PersistedBashProcessGroupDrainOperations = {
-	isAlive: bashScopeAlive,
-	signal: signalBashScope,
+	isAlive: processGroupAlive,
+	signal: signalProcessGroup,
+	discoverGroups: bashSessionProcessGroups,
+	groupExists: processGroupExists,
 	wait: (milliseconds) => {
 		const sleeper = new Int32Array(new SharedArrayBuffer(4));
 		Atomics.wait(sleeper, 0, 0, milliseconds);
 	},
 };
+
+function waitForPersistedGroups(
+	groups: readonly number[],
+	timeoutMs: number,
+	operations: PersistedBashProcessGroupDrainOperations,
+): void {
+	const deadline = Date.now() + timeoutMs;
+	while (groups.some((group) => operations.groupExists!(group)) && Date.now() < deadline)
+		operations.wait(PROCESS_GROUP_POLL_MS);
+}
+
+function drainPersistedBashSession(
+	pgid: number,
+	operations: PersistedBashProcessGroupDrainOperations,
+): boolean {
+	try {
+		let groups = operations.discoverGroups!(pgid);
+		for (const group of groups) operations.signal(group, "SIGTERM");
+		waitForPersistedGroups(groups, BASH_PROCESS_GROUP_TERM_GRACE_MS, operations);
+
+		// Refresh at the signal boundary: the leader may have exited after
+		// creating another group, and zombie-only cached groups need no SIGKILL.
+		groups = operations.discoverGroups!(pgid);
+		for (const group of groups) operations.signal(group, "SIGKILL");
+		waitForPersistedGroups(groups, BASH_PROCESS_GROUP_KILL_GRACE_MS, operations);
+
+		// A final session-membership scan is required before deleting evidence.
+		return operations.discoverGroups!(pgid).length === 0;
+	} catch {
+		// Unconfirmed ownership must survive recovery.
+		return false;
+	}
+}
 
 export function drainPersistedSessionBashProcessGroups(
 	persistDir: string,
@@ -326,15 +350,24 @@ export function drainPersistedSessionBashProcessGroups(
 ): boolean {
 	let confirmedDrained = true;
 	for (const pgid of readSessionBashProcessGroups(persistDir, sessionId)) {
-		if (operations.isAlive(pgid)) operations.signal(pgid, "SIGTERM");
-		let deadline = Date.now() + BASH_PROCESS_GROUP_TERM_GRACE_MS;
-		while (operations.isAlive(pgid) && Date.now() < deadline) operations.wait(PROCESS_GROUP_POLL_MS);
-		if (operations.isAlive(pgid)) operations.signal(pgid, "SIGKILL");
-		deadline = Date.now() + BASH_PROCESS_GROUP_KILL_GRACE_MS;
-		while (operations.isAlive(pgid) && Date.now() < deadline) operations.wait(PROCESS_GROUP_POLL_MS);
-		if (operations.isAlive(pgid)) {
-			confirmedDrained = false;
-			continue;
+		if (operations.discoverGroups && operations.groupExists) {
+			if (!drainPersistedBashSession(pgid, operations)) {
+				confirmedDrained = false;
+				continue;
+			}
+		} else {
+			// Preserve the public test seam and compatibility for callers that
+			// provide the original exact-group operations.
+			if (operations.isAlive(pgid)) operations.signal(pgid, "SIGTERM");
+			let deadline = Date.now() + BASH_PROCESS_GROUP_TERM_GRACE_MS;
+			while (operations.isAlive(pgid) && Date.now() < deadline) operations.wait(PROCESS_GROUP_POLL_MS);
+			if (operations.isAlive(pgid)) operations.signal(pgid, "SIGKILL");
+			deadline = Date.now() + BASH_PROCESS_GROUP_KILL_GRACE_MS;
+			while (operations.isAlive(pgid) && Date.now() < deadline) operations.wait(PROCESS_GROUP_POLL_MS);
+			if (operations.isAlive(pgid)) {
+				confirmedDrained = false;
+				continue;
+			}
 		}
 		removeSessionBashProcessGroup(persistDir, sessionId, pgid);
 	}
