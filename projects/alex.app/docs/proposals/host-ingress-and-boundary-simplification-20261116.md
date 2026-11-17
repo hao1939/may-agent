@@ -214,12 +214,15 @@ cancellation and failure receipts. Alex's retained-edit regression checks that
 fresh execution converges on the same Task with two consumed rounds. These tests
 use real processes and scripted judgments; they do not establish model quality.
 
-The earlier source `9747fc880e36c3c766eb0686d14eb8c5fbaa20ac` passed hosted
-Quality and Container, and 64 paired App workflow/evidence tests passed. Those
-results describe the superseded candidate; the simplification needs fresh checks
-on its own head. Exact current validation is recorded in PR #584. Install the
-matching Host/SDK before adopting Alex's import. Source verification and release
-remain separate; no new live PR-to-Telegram run is claimed here.
+The simplified Host source is `5f77535d1aa252863fea06daa8f4fffb7fd10319`.
+Host/SDK type, boundary and lint checks passed, together with 26 command/kernel,
+98 runtime/export and 64 paired App workflow/evidence tests. Restoring the former
+50 ms grace makes the nested awaited-command cancellation regression fail.
+Current-head hosted checks are pending in PR #584. The earlier, superseded source
+`9747fc880e36c3c766eb0686d14eb8c5fbaa20ac` had green hosted checks; those results
+are not substituted for this revision. Install the matching Host/SDK before
+adopting Alex's import. Source verification and release remain separate; no new
+live PR-to-Telegram run is claimed here.
 
 ### Connect shared execution and settlement
 
