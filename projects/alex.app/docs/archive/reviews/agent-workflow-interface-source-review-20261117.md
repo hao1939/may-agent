@@ -658,3 +658,27 @@ that assertion cannot close this finding. The original workflow has ended at
 its actual cumulative 48/48 boundary; subsequent repair must preserve all usage
 and continue through the same Task and workflow path. Full hosted CI, common SDK
 results, paired App migration, activation and connected delivery remain open.
+
+
+## Common child result checkpoint
+
+Root pushed native `6515fe0465b3283ed3fed66c0389e77f37b8a5af` promptly to the
+same draft. The SDK aliases `ExecutionResult` to the common result type, removes
+executor/CLI fields from public producers, and removes producer-selected IDs
+from workflow completion helpers. Its native five-suite verification reports
+112 pass and no failures; `check:ci` passes. Independent checks at the clean
+commit pass common child result shapes through all four real standalone call
+directions, matching complete discovery and built-in prompt cooperation. Public
+`run()` still returns the legacy wrapper, so the complete probe remains red.
+
+The schema probe now reaches literal common reports and exposes another
+admission gap: output checks run only for `done`, allowing a blocked report's
+schema-invalid supplied output through. Missing unavailable partial output is
+valid; supplied output still requires the target and caller checks. CLI receipt
+extraction remains available internally, but the owning `read.execution`
+projection and its active consumers still need migration. The
+[result review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5944491441)
+records both gaps. Earlier exact-name, metadata, import-cleanup and bounded-call
+findings remain open. The same Task is now generation seventeen with all 48
+prior consumed rounds retained in a finite total of 56; its native development
+workflow continues without a replacement Task or ledger.

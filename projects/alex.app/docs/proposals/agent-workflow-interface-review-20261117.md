@@ -19,6 +19,10 @@ matching descriptor lists, but common-result assertions still fail. Fixed prompt
 metadata, exact component-name dispatch, explicit-module import-cleanup tracking,
 common SDK results and paired App migration remain open. These checks do not
 establish full CI or cutover readiness. No callable candidate is activated.
+Published `6515fe0465` then converges SDK result types and child result shapes:
+independent production checks pass all four child call directions. Public
+standalone `run()`, report validation across statuses, trusted receipt reads and
+their consumers remain unfinished, so result convergence is still partial.
 The focused Task-revision fix #590 has an earlier successful local trial, but
 a later executable readback reports baseline `0606e2df`; carry the fix into the
 paired candidate and reverify the actual running artifact before activation. The [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
