@@ -476,7 +476,7 @@ function taskSpecHash(intent: AppTaskIntent, effectiveAgent?: string, legacyMode
     .digest("hex");
 }
 
-function resourceSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
+export function appTaskDesiredSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
   return {
     parentId: intent.parentId,
     outcome: intent.outcome,
@@ -1369,7 +1369,7 @@ export function observeAppTaskIntent(
   const existingAgent = existingIntent ? resolvedAgent(tree, existingIntent, input.appAgent) : null;
   const sameSpec = existingIntent ? appTaskSpecHash(existingIntent, existingAgent ?? undefined) === specHash : false;
   const generation = sameSpec ? previousGeneration : Math.max(1, previousGeneration + 1);
-  const nextSpec = resourceSpec(input.intent);
+  const nextSpec = appTaskDesiredSpec(input.intent);
   const desiredStateChanged =
     !existingResource || JSON.stringify(stableValue(existingResource.spec)) !== JSON.stringify(stableValue(nextSpec));
   const creator = existingResource?.metadata.creator ?? input.creator ?? { appId: config.resourceStore.appId };
@@ -2214,7 +2214,7 @@ export function reopenAppTask(
     if (input.intent) {
       const intent = normalizeTaskAgent({ ...input.intent, id: input.taskId, parentId: resource.spec.parentId });
       validateIntent(intent);
-      resource.spec = resourceSpec(intent);
+      resource.spec = appTaskDesiredSpec(intent);
     }
     const now = new Date().toISOString();
     const eventRow = config.resourceStore.db.prepare("SELECT MAX(id) AS id FROM events").get() as {

@@ -43,7 +43,13 @@ const worker = defineApp({
   inputSchema: Type.Object(
     {
       kind: Type.Literal("measure"),
-      data: Type.Object({ source: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+      data: Type.Object(
+        {
+          source: Type.String({ minLength: 1 }),
+          constraints: Type.Optional(Type.Array(Type.String())),
+        },
+        { additionalProperties: false },
+      ),
     },
     { additionalProperties: false },
   ),
@@ -530,4 +536,52 @@ test("unchanged input does not interrupt the current worker or advance its gener
   });
   expect(result).toMatchObject({ generation: 1, changed: false });
   expect(f.context("worker").resourceStore.readTask("child")?.status.currentAttemptId).toBe(old.attemptId);
+});
+
+test("an effective no-op and legacy receipt do not consume a later real revision at the same generation", () => {
+  const f = fixture();
+  const target = f.context("worker");
+  const old = f.claim("worker", "child");
+  recordAppTaskAttemptSession(target, old, "old-session");
+  const legacyKey = `task-revision:${JSON.stringify(["worker", "child", 1])}`;
+  const currentIntent = readAppTaskIntent(target, "child")!;
+  expect(
+    admitTaskInput(target, {
+      appId: "worker",
+      creator: { appId: "creator", taskId: "parent" },
+      creatorRevision: true,
+      attachment: { kind: "desired", intent: currentIntent },
+      idempotencyKey: legacyKey,
+      inputContext: {
+        id: legacyKey,
+        source: { kind: "app", id: "creator" },
+        input: { kind: "measure", data: { source: "alpha", constraints: ["retain usage"] } },
+      },
+    }),
+  ).toMatchObject({ generation: 1, changed: false });
+
+  expect(
+    reviseAppTask({
+      source: f.context("creator"),
+      target,
+      app: worker,
+      actor: f.actor,
+      change: {
+        ...f.change,
+        input: { kind: "measure", data: { source: "alpha", constraints: ["mapper-only"] } },
+      },
+    }),
+  ).toMatchObject({ generation: 1, changed: false });
+  expect(target.resourceStore.readTask("child")?.status.currentAttemptId).toBe(old.attemptId);
+  expect(target.resourceStore.readTrigger("child")?.events).toHaveLength(1);
+
+  expect(f.revise()).toMatchObject({ generation: 2, changed: true });
+  expect(target.resourceStore.readTask("child")?.spec).toMatchObject({
+    input: { source: "beta" },
+    executor: "secondary",
+  });
+  expect(target.resourceStore.readTrigger("child")?.events).toHaveLength(2);
+  f.reopen();
+  expect(() => f.revise()).toThrow("requirements changed");
+  expect(f.context("worker").resourceStore.readTask("child")?.metadata.generation).toBe(2);
 });

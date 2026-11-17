@@ -1,12 +1,13 @@
 import { assertValidAppInput } from "../apps/definition-validation.js";
 import type { AppDefinition, TaskIntent, TaskRevision } from "@may-agent/sdk/app";
+import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { stateTransaction, inStateTransaction } from "../../../lib/db/transaction.js";
 import { assertResourceCreator } from "../state/resource-creator.js";
 import { admitTaskInput } from "../state/inbox.js";
 import type { AppTaskContext } from "./app-task-store.js";
 import {
-  readAppTaskIntent,
+  appTaskDesiredSpec,
   validateIntent,
 } from "./app-task-reconciler.js";
 import { normalizeTaskAgent } from "../../app-agent-selection.js";
@@ -64,12 +65,19 @@ export function reviseAppTask(input: {
     parentId: before.spec.parentId,
   });
   validateIntent(intent);
+  const desiredSpec = appTaskDesiredSpec(intent);
   recheck();
-  if (isDeepStrictEqual(readAppTaskIntent(target, change.taskId), intent))
+  if (isDeepStrictEqual(before.spec, desiredSpec))
     return { kind: "observed" as const, taskId: change.taskId, generation: before.metadata.generation, changed: false };
   return stateTransaction(db, () => {
     recheck();
-    const key = `task-revision:${JSON.stringify([change.appId, change.taskId, change.expectedGeneration])}`;
+    const desiredHash = createHash("sha256").update(JSON.stringify(desiredSpec)).digest("hex");
+    const key = `task-revision:${JSON.stringify([
+      change.appId,
+      change.taskId,
+      change.expectedGeneration,
+      desiredHash,
+    ])}`;
     return admitTaskInput(target, {
       appId: change.appId,
       creator: { appId: actor.appId, taskId: actor.taskId },
