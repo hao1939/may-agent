@@ -3,60 +3,43 @@
 **Design status:** Accepted direction; implementation and verification are active.
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
-[#589](https://github.com/hao1939/may-agent/pull/589), published through
-`a0b1e625f7`. Independent exact-clean `check:ci` and 68 receipt/persistence/CLI
-tests pass; all eight production receipt probes pass, including sessionless
-wide/deep workflow omission. Parent `0e6806c95b` passes 36 standalone tests,
-including real prompt finish admission for blocked outputless reports and
-rejection of successful reports missing schema-required output.
-Earlier `ffbd59ecbc` passes 44 owning tests. Shared callable
-cancellation settles within the existing finite cleanup grace.
-The original explicit-module timeout/abort probe now reports unconfirmed cleanup
-while a native import remains pending; both cleanup defects are repaired.
+[#589](https://github.com/hao1939/may-agent/pull/589), published through Host
+`bb8958cbf9` and App `0bee25cb23`. The installed runtime has not changed.
 
-At `185ffeb1ce`, production probes pass all four call directions, canonical
-names/discovery, schema/report validation, immutable prompt/config snapshots and
-Task workflow ingress with raw reconciliation input. The metadata, naming,
-schema, timeout and import review discussions are resolved from independent
-evidence. These checks establish source behavior, not installed availability.
+Independent production probes establish all four call directions, canonical
+names, common admission/results, immutable prompt/config snapshots, bounded
+cancellation and Task ingress. Host bb895 separates callable-input typing from
+raw reconciliation-input typing; its exact `check:ci` passes. Earlier owning
+checks establish bounded nested receipt reads and real prompt partial-result
+admission. These are source checkpoints, not full CI or installed availability.
 
-App checkpoint `bf6f92e9a0` is published on its retained review branch. Its earlier
-`56e58c00f0`, paired with Host `185ffeb1ce`, passes 101 owning tests including all
-four repaired owner-handoff cases; three standalone-stage cases still fail.
-The fixture fix declares its helper `appLocal: true` and preserves the original
-request-ID Conditions, restart and cancellation assertions. Raw Task-input
-mapping is repaired. At bf6, all 197 owning May/Scout tests pass and the canonical
-App type check reports zero errors. The full design command still fails its model
-surface step: Alex exceeds its prompt budget and May's verification skill is
-omitted. Integrity and design examples pass. The earlier a41 `typecheck` passes.
-The default App test command fails its first affected chunk with the same three
-standalone-stage failures; it does not run later chunks. Full configured-target
-bodies, callers, guidance and result consumers remain unfinished.
+App 0bee repairs actual Scout Task admission: its exported attachment, schema and
+body agree on the raw saved domain input within the single outer call envelope.
+A real Host admission probe reaches the body. The exact App0bee/Hostbb895 pair
+passes App typechecking and 67 targeted tests. Design integrity, checked examples
+and canonical App typing pass; model-surface checking exceeds Alex's prompt
+budget at the long snapshot path. The unchanged App source passes that checker
+from a shorter physical path. Final configured-location validation remains
+required; changing evidence-directory length does not establish runtime readiness.
 
-A production Task-admission probe finds that bf6's new scout-assess-source schema
-rejects the raw `{ kind, data }` input produced by its actual App attachment.
-Align its declared single data shape, body and callers; test the actual adapter
-and a nested call with independent inherited Task input. SDK callable-input and
-raw reconciliation-input types also remain incorrectly coupled; the
-[current review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5946468448)
-requests their separation without changing runtime behavior.
+The remaining high-value gaps are:
 
-Trusted execution reads now project nested workflow CLI receipts and expose
-message/byte/receipt truncation. Workflow traversal and session selection are
-both bounded, with omitted workflow subtrees reported explicitly. Actual development/Gym
-consumers, meaningful Host/CLI fixture migration and complete current-head CI
-also remain required.
+- Repair root workflow discovery under canonical owner keys and verify the real
+  Task-worker boundary. Same-source double registration currently rejects a
+  valid root; distinct duplicate canonical targets must still reject.
+- Finish development/Gym receipt consumers, standalone-stage diagnostics and the
+  complete configured-target body/caller/guidance migration. Discovery enumerates
+  all 33 targets; discovery alone does not establish execution or live effects.
+- Complete meaningful Host/CLI fixture migration, preserving real cancellation,
+  steering and SIGINT child-drain assertions. SDK export snapshots and full
+  current-head Host/App checks remain required.
+- Verify and activate one exact compatible local pair, preserving legitimate
+  operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
+  GitHub review-link delivery. Approval happens on GitHub.
 
-Production discovery enumerates all 33 configured targets. App `bda965c421`
-repairs the incompatible schemas and bodies of `alex/pull-request-wait` and
-`may/revise-assignment`: all six owning tests pass and real canonical calls now
-reach their bodies. In the isolated standalone probe, the first reports missing
-`read.contract` and the second reports unavailable Task revision, as expected
-without those capabilities. Discovery and admission do not prove live effects.
-No unified candidate is activated; connected native-trial and Telegram review-link
-notification acceptance are unproved. The
-[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#actual-task-admission-and-review-observation)
-records exact revisions and remaining verification boundaries.
+The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#verified-task-admission-and-independent-input-typing)
+records exact revisions, checks and limitations. May continues implementation
+through the retained native Tasks/workflows; no unified candidate is activated.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,

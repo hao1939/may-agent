@@ -1408,3 +1408,57 @@ Evidence under the trial directory: `bf6-185-independent-owning.log`,
 `scout-root-admission-bf6-probe.ts`, `scout-root-admission-review-receipt.json`,
 `a0b-raw-context-type-review.json` and
 `native-raw-context-review-observation.json`.
+
+
+## Verified Task admission and independent input typing
+
+Native App `0bee25cb2365b7f2d65e0122234c16404a551a72` repairs Scout's actual
+Task-root admission. Its exported attachment retains raw `{ kind, data }` domain
+input. Its full-envelope schema validates that exact object under outer `data`,
+and its registered body unwraps the domain payload. Root's independent real Host
+f607 runner probe, using the actual attachment and exported schema with a marker
+body, reaches execution. Both affected suites pass all 46 tests. A committed test
+labelled Host call envelope invokes `execute(ctx)` directly; the separate probe,
+rather than that test label, establishes production adapter coverage.
+
+Native Host `bb8958cbf933a356aa002f8a84aee5bb9b67c463` implements the
+[observed GitHub type review](https://github.com/hao1939/may-agent/pull/589#pullrequestreview-5946468448).
+Callable input and raw reconciliation input now have independent generic types,
+including the SDK test helper. The positive/negative type regression and exact
+`check:ci` pass. SDK kernel/export tests report 26 passes and one export-snapshot
+failure; that failure remains an explicit checkpoint gap. Both source checkpoints
+are published for review.
+
+An exact separate App0bee/Hostbb895 pair passes App typechecking and 67 targeted
+Task-disposition, Scout-assessment and recovery-contract tests. Design integrity,
+checked examples and canonical App typing pass. The model-surface step reports
+Alex's prompt length as 36,110 against its 36,000 budget at that snapshot location.
+At the longer earlier location it reports 36,362 and omits May's verification
+skill. Root archives the exact unchanged App0bee source to a shorter physical
+root, retaining the immutable Host185 provider: model-surface checking passes
+with zero errors across the same ten agents. Absolute skill paths contribute to
+the budget. This is a path-dependent limitation, not evidence for changing the
+unified call contract or claiming final configured-location readiness.
+
+The real Task-worker probe still rejects duplicate `sample/probe`. Root's
+fixture-only diagnostic first registers the probe solely for the selected agent
+and unwraps `ctx.input.data.wait`; the duplicate failure persists. Source tracing
+finds root procedures seeded under bare `owner` while prompt definitions use
+`sample/owner`, causing the same files to be imported and registered a second
+time. May is repairing canonical owner seeding and typed routes on the retained
+Task. No source-path deduplication should hide distinct conflicting targets.
+
+Development/Gym receipt consumers and standalone-stage migration are in progress.
+Full Host/App tests, current-head CI and configured-target execution inventory
+remain open. No unified candidate is activated; connected trial and Telegram
+review-link delivery remain unproved. Root has not revised or rebound either
+live implementation workflow.
+
+Evidence under the trial directory: `scout-root-admission-1794949411973.json`,
+`0bee-185-independent-owning.log`, `bb895-independent-check-ci.log`,
+`bb895-independent-sdk.log`, `f607-independent-real-worker.log`,
+`f607-worker-envelope-diagnostic.log`, `0bee-short-root-model-check.json`,
+`0bee-short-root-model-check.log`, and
+`0bee-checkpoint-and-path-budget-receipt.json`. The separate pair's
+`0bee-bb895-independent-typecheck.log`, `0bee-bb895-independent-owning.log`
+and `0bee-bb895-independent-design.log` are under the unified-589 pair directory.
