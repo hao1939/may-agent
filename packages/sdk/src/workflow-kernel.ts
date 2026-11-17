@@ -71,6 +71,16 @@ export function resolveCallable<TPromptDef = unknown>(
     if (!owner || !procName || procName.includes("/")) {
       throw new Error(`Invalid qualified callable target "${name}" (expected "<owner>/<name>")`);
     }
+    const promptEntry = snapshot.prompts?.get(normalizedTarget);
+    if (promptEntry) {
+      return {
+        kind: "prompt",
+        name: normalizedTarget,
+        owner: promptEntry.owner ?? owner,
+        definition: promptEntry.definition,
+        ...(promptEntry.outputSchema ? { outputSchema: promptEntry.outputSchema } : {}),
+      };
+    }
     const ownerProcedures = snapshot.proceduresByOwner?.get(owner);
     const mod = ownerProcedures?.get(procName);
     if (!mod) {
@@ -78,7 +88,7 @@ export function resolveCallable<TPromptDef = unknown>(
         snapshot.diagnostics && snapshot.diagnostics.length > 0
           ? ` Catalog diagnostics:\n  ${snapshot.diagnostics.join("\n  ")}`
           : "";
-      throw new Error(`Callable procedure "${owner}/${procName}" not found.${diag}`);
+      throw new Error(`Callable target "${owner}/${procName}" not found.${diag}`);
     }
     return {
       kind: "code",

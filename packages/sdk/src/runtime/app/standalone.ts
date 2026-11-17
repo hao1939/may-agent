@@ -817,74 +817,61 @@ type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
 
 async function buildDirectPromptCatalog(
   options: DirectWorkflowRunOptions<any>,
-  callerOwner: string,
-  explicitWorkflowDir?: string,
+  _callerOwner: string,
+  _explicitWorkflowDir?: string,
   signal?: AbortSignal,
 ): Promise<DirectCatalogState> {
   signal?.throwIfAborted();
-  const explicitApp = options.appScope?.trim()
-    ? options.appScope.trim().endsWith(".app")
-      ? options.appScope.trim()
-      : `${options.appScope.trim()}.app`
-    : undefined;
-  const explicitProjectId = explicitApp ? explicitApp.slice(0, -".app".length) : undefined;
-
-  // Include both globalAgentsRoot and agentsRoot + unfiltered projectsRoot before
-  // deduplicating so every directory retains its true projectId metadata before App filtering.
-  const { dirs, byPath: dedupedByPath } = collectDeduplicatedRuntimeAgentDirs(options);
-  if (explicitProjectId) {
-    validateExplicitAppScopeAlignment(explicitProjectId, options, dedupedByPath, explicitWorkflowDir);
-  }
-
-  const rawCallerSource =
-    (explicitWorkflowDir
-      ? dirs.find((dir) => resolve(dir.dir, "workflows") === resolve(explicitWorkflowDir))
-      : undefined) ??
-    resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner) ??
-    (explicitApp ? undefined : resolveRuntimeAgentDirectory(options.agentsRoot, callerOwner, options.projectsRoot));
-  const callerSource = rawCallerSource
-    ? (dedupedByPath.get(resolve(rawCallerSource.dir)) ?? rawCallerSource)
-    : undefined;
-  const callerProjectId = explicitProjectId ?? callerSource?.projectId;
-
+  const { dirs } = collectDeduplicatedRuntimeAgentDirs(options);
   const prompts = new Map<string, { owner: string; definition: DirectPromptDefinition }>();
   const proceduresByOwner = new Map<string, ReadonlyMap<string, WorkflowExecutableModule>>();
   const diagnostics: string[] = [];
+  const state: DirectCatalogState = { prompts, proceduresByOwner, diagnostics, pendingImports: 0 };
 
   for (const agentDir of dirs) {
     signal?.throwIfAborted();
-    // Enforce App-local boundary isolation: only include global agents or agents in the same App projectId.
-    if (agentDir.projectId && agentDir.projectId !== callerProjectId) {
-      continue;
-    }
     let config: ReturnType<typeof readAgentConfigFile>;
     try {
       config = readAgentConfigFile(agentDir.dir);
     } catch (error) {
-      diagnostics.push(
-        `${join(agentDir.dir, "agent.json")}: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      diagnostics.push(`${join(agentDir.dir, "agent.json")}: ${error instanceof Error ? error.message : String(error)}`);
       continue;
     }
     if (!config) continue;
-    const existing = prompts.get(config.name);
-    // Prompt and procedure definitions must come from the same admitted owner.
-    if (existing?.definition.source.projectId && !agentDir.projectId) continue;
-    if (existing && existing.definition.source.projectId === agentDir.projectId) {
-      throw new Error(`Ambiguous callable owner "${config.name}": ${existing.definition.source.dir}, ${agentDir.dir}`);
+    const namespace = agentDir.projectId ?? "global";
+    const canonicalName = canonicalCallableName(agentDir.projectId, config.name);
+    if (prompts.has(canonicalName)) {
+      throw new Error(`Duplicate callable canonical name: ${canonicalName}`);
     }
-    prompts.set(config.name, {
-      owner: config.name,
-      definition: {
-        source: agentDir,
-      },
+    const promptEntry = { owner: namespace, definition: { source: agentDir } };
+    prompts.set(canonicalName, promptEntry);
+    // Keep direct-module compatibility internal to runDirectWorkflow; public run/list use canonical names.
+    if (!prompts.has(config.name)) prompts.set(config.name, promptEntry);
+
+    const workflowDir = join(agentDir.dir, "workflows");
+    if (!existsSync(workflowDir)) continue;
+    const loaded = await buildWorkflowCatalog(workflowDir, signal, {
+      onImportStart: () => { state.pendingImports += 1; },
+      onImportSettled: () => { state.pendingImports -= 1; },
     });
+    const merged = new Map(proceduresByOwner.get(namespace) ?? []);
+    for (const workflow of loaded.workflows.values()) {
+      const canonicalWorkflowName = canonicalCallableName(agentDir.projectId, workflow.name);
+      if (prompts.has(canonicalWorkflowName) || merged.has(workflow.name)) {
+        throw new Error(`Duplicate callable canonical name: ${canonicalWorkflowName}`);
+      }
+      merged.set(workflow.name, workflow);
+    }
+    proceduresByOwner.set(namespace, merged);
+    if (!proceduresByOwner.has(config.name)) proceduresByOwner.set(config.name, merged);
+    diagnostics.push(...loaded.diagnostics);
   }
 
   for (const fixtureAgent of Object.keys(options.agentFixtures ?? {})) {
-    if (!prompts.has(fixtureAgent)) {
-      prompts.set(fixtureAgent, {
-        owner: fixtureAgent,
+    const canonicalName = canonicalCallableName(undefined, fixtureAgent);
+    if (!prompts.has(canonicalName)) {
+      prompts.set(canonicalName, {
+        owner: "global",
         definition: {
           source: {
             name: fixtureAgent,
@@ -897,12 +884,7 @@ async function buildDirectPromptCatalog(
     }
   }
 
-  return {
-    prompts,
-    proceduresByOwner,
-    diagnostics,
-    pendingImports: 0,
-  };
+  return state;
 }
 
 function buildPreStartFailureResult(params: {
@@ -1412,10 +1394,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult> => {
     const operationAllowance = validateOperationAllowance(callOpts?.operationAllowance);
-    const fixture = options.agentFixtures?.[agent];
-    if (fixture) {
-      return fixture({ agent, task: prompt, options: callOpts, ...stepControl });
-    }
     const promptDef = preparedCatalog.prompts?.get(agent)?.definition;
     if (!promptDef) {
       throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
@@ -1423,6 +1401,10 @@ export async function runDirectWorkflow<TInput = unknown>(
     const config = readAgentConfigFile(promptDef.source.dir);
     if (!config) {
       throw new Error(`Agent "${agent}" is disabled or has no agent.json`);
+    }
+    const fixture = options.agentFixtures?.[agent] ?? options.agentFixtures?.[config.name];
+    if (fixture) {
+      return fixture({ agent: config.name, task: prompt, options: callOpts, ...stepControl });
     }
     const explicitAgentsProvider = options.capabilityProviders?.agents;
     const configuredDenials = options.resolveToolDenials?.(agent, config.tools);
@@ -1446,7 +1428,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         : options.capabilityProviders;
 
     const directRun = await executeAgent({
-      agentName: agent,
+      agentName: config.name,
       agentSource: promptDef.source,
       ...(callOpts?.skill !== undefined ? { skill: callOpts.skill } : {}),
       task: prompt,
@@ -1677,6 +1659,33 @@ export async function runDirectWorkflow<TInput = unknown>(
       // Native imports cannot be forcibly stopped. Keep uncertainty visible if
       // preparation outlives this invocation, and fence its late continuation.
       confirmCleanup: () => preparedCatalog.pendingImports === 0,
+      listTargets: () => {
+        const definitions: CallableDefinition[] = [];
+        for (const [name, entry] of preparedCatalog.prompts) {
+          const slash = name.indexOf("/");
+          if (slash === -1) continue;
+          definitions.push({
+            ...(name.slice(0, slash) !== "global" ? { appId: name.slice(0, slash) } : {}),
+            declaredName: name.slice(slash + 1),
+            description: readAgentConfigFile(entry.definition.source.dir)?.description ?? name,
+            async invoke() { return { status: "error", summary: "descriptor only" }; },
+          });
+        }
+        for (const [namespace, workflows] of preparedCatalog.proceduresByOwner) {
+          if (namespace !== "global" && ![...preparedCatalog.prompts.keys()].some((name) => name.startsWith(`${namespace}/`))) continue;
+          for (const workflow of workflows.values()) {
+            definitions.push({
+              ...(namespace !== "global" ? { appId: namespace } : {}),
+              declaredName: workflow.name,
+              description: workflow.description,
+              ...(workflow.inputSchema ? { inputSchema: workflow.inputSchema } : {}),
+              ...(workflow.outputSchema ? { outputSchema: workflow.outputSchema } : {}),
+              async invoke() { return { status: "error", summary: "descriptor only" }; },
+            });
+          }
+        }
+        return new CallableCatalog(definitions).list();
+      },
       resolveTarget: async (target, input) => {
         // The synthetic root prompt wrapper was already resolved during preparation;
         // do not import its procedure catalog merely to start that prompt.
@@ -2020,21 +2029,10 @@ export async function run<TInput = unknown>(
   }
   validateCallableInput(descriptor.inputSchema, input);
 
-  const { target: normalizedTarget, app: resolvedApp } = {
-    target: canonicalRoute.target,
-    ...(canonicalRoute.app ? { app: canonicalRoute.app } : {}),
-  };
-
-  const agentsRoot = canonicalRoute?.agentsRoot ?? discoverAgentsRootForTarget({
-    target: normalizedTarget,
-    explicitApp: resolvedApp,
-    explicitAgentsRoot: options.agentsRoot,
-    agentName: options.agentName,
-    cwd,
-    projectsRoot,
-    globalAgentsRoot,
-    agentFixtures: options.agentFixtures,
-  });
+  // Discovery and dispatch share the exact canonical address and the same complete
+  // workspace catalog. Selecting one App-owned root must not narrow child discovery.
+  const normalizedTarget = rawTarget;
+  const agentsRoot = resolve(options.agentsRoot ?? globalAgentsRoot);
 
   const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
   const ownsTempOutputRoot = !options.outputRoot;
@@ -2053,7 +2051,6 @@ export async function run<TInput = unknown>(
       sharedRoot,
       projectsRoot,
       globalAgentsRoot,
-      ...(resolvedApp ? { appScope: resolvedApp } : {}),
       outputRoot,
       models,
     });
