@@ -124,6 +124,7 @@ interface WatchedTaskTarget {
   ref: string;
   chatId: string;
   topicId?: number;
+  conversationTopicId?: string;
 }
 
 /** Unified per-surface session state (one per `chatId:topicId` coordinate). */
@@ -445,7 +446,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const displayedAction = task.humanAction
       ? { key: todoTaskKey(task), signature: todoActionSignature(task) }
       : null;
-    const conversationTopicId = undefined;
+    const conversationTopicId = watched.conversationTopicId;
     const delivered = await sendMessage(watched.chatId, rendered, undefined, {
       eventType: "task.watch",
       agent: opts.interfaceAgent,
@@ -1204,6 +1205,7 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
           ref: task.ref,
           chatId: chatIdStr,
           ...(topicId === undefined ? {} : { topicId }),
+          ...(linked?.topicId ? { conversationTopicId: linked.topicId } : {}),
         };
         session.watchedTask = watched;
         deliverCommandView(

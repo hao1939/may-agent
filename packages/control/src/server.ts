@@ -49,6 +49,7 @@ export interface AttachControlSocketOptions {
     includeDone?: boolean;
     humanActionOnly?: boolean;
     status?: string[];
+    q?: string;
     limit?: number;
     cursor?: string;
   }) => unknown;
