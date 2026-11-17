@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-11-16"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-16, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-11-17"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-17, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-17
 
+- [A timeout is not cancellation: late agent calls need mutation-time fences](./findings/2026-11-17-timeout-is-not-cancellation-for-agent-evidence.md) — pinned Tightbeam source and a producer-authored forced-interleaving test show an abandoned synchronous call can remain queued and later strengthen shared evidence; the implementation carries and rechecks a deadline immediately before mutation, while Scout did not run the project or reproduce the timing behavior.
 - [Agent authentication needs origin-bound authority, not bearer secrets](./findings/2026-11-17-agent-authentication-needs-origin-bound-authority.md) — an individual version `-00` Internet-Draft proposes RP-scoped hardware-backed agent keys, connection-derived origin binding, human-signed mandates, exact-action step-up, and signed action records; it reports no known implementation, depends on a trusted runtime and exclusive credential path, and does not stop misuse within an allowed mandate or prove local-action completeness.
 
 ### 2026-11-16
