@@ -41,6 +41,15 @@ export const sourceAssessmentInputSchema = Type.Object(
   { additionalProperties: true },
 );
 
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+    data: sourceAssessmentInputSchema,
+  },
+  { additionalProperties: false },
+);
+type EnvelopeInput = Static<typeof inputSchema>;
+
 const draftSchema = Type.Object(
   {
     title: Type.String({ minLength: 1, maxLength: 300 }),
@@ -53,7 +62,7 @@ const draftSchema = Type.Object(
 );
 
 export async function executeSourceAssessment(
-  ctx: AppWorkflowContext,
+  ctx: AppWorkflowContext<EnvelopeInput>,
   read: (
     url: string,
     signal?: AbortSignal,
@@ -371,6 +380,6 @@ ${JSON.stringify(packet ?? accessFailure)}
   }
 }
 
-export async function execute(ctx: AppWorkflowContext) {
+export async function execute(ctx: AppWorkflowContext<EnvelopeInput>) {
   return executeSourceAssessment(ctx);
 }

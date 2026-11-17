@@ -35,6 +35,7 @@ export const inputSchema = Type.Object({
   data: evaluationReportIntakeDataSchema,
 }, { additionalProperties: false });
 type EnvelopeInput = Static<typeof inputSchema>;
+type DomainContext = Omit<AppWorkflowContext<EnvelopeInput>, "input"> & { input: Input };
 type SubjectReader = (subject: {
   appId: string;
   taskId: string;
@@ -73,7 +74,7 @@ function checkedReportSummary(
   };
 }
 function finish(
-  ctx: AppWorkflowContext<Input>,
+  ctx: DomainContext,
   disposition: string,
   detail: string,
   result: Record<string, unknown> = {},
@@ -119,7 +120,7 @@ function finish(
 }
 
 async function readPriorIntake(
-  ctx: AppWorkflowContext<Input>,
+  ctx: DomainContext,
   readLinked = readMetricLinkedTask,
 ) {
   const publication = ctx.input;
@@ -202,7 +203,7 @@ async function readPriorIntake(
 }
 
 export async function intakeEvaluationReport(
-  ctx: AppWorkflowContext<Input>,
+  ctx: DomainContext,
   reportRoot?: string,
   subjectReader: SubjectReader = readSubjectTask,
   metricReader: MetricReader = readMetricEvidence,

@@ -35,6 +35,7 @@ export const inputSchema = Type.Object({
   data: activationFollowUpDataSchema,
 }, { additionalProperties: false });
 type EnvelopeInput = Static<typeof inputSchema>;
+type DomainContext = Omit<AppWorkflowContext<EnvelopeInput>, "input"> & { input: Input };
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -130,7 +131,7 @@ type SelectedFollowUp = {
 };
 
 async function acceptedFollowUpSelection(
-  ctx: AppWorkflowContext<Input>,
+  ctx: DomainContext,
   taskId: string,
   packetHash: string,
 ): Promise<SelectedFollowUp | null> {
@@ -181,7 +182,7 @@ async function acceptedFollowUpSelection(
 }
 
 export async function runActivationFollowUp(
-  ctx: AppWorkflowContext<Input>,
+  ctx: DomainContext,
   suppliedProvider?: EvidenceProvider,
   publicRead: PublicRead = sendPublicReadCommand,
 ): Promise<ExecutionResult> {

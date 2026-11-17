@@ -1161,11 +1161,12 @@ run Git publication or edit the canonical library in this call.`;
   const result = await ctx.call(`scout-knowledge-lib/${agent}`, { prompt: agentTask }, {
     schema: ExploreAgentResultSchema,
   });
+  const executionId = result.id;
   ctx.signal.throwIfAborted();
 
   if (result.status !== "done") {
     return ctx.blocked("Scout exploration session failed", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       status: result.status,
       summary: result.summary,
       ...candidateFailureDetails(),
@@ -1181,7 +1182,7 @@ run Git publication or edit the canonical library in this call.`;
     finish.status === "partial"
   ) {
     return ctx.blocked("Scout exploration is incomplete, not a no-op", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       summary: result.summary,
       finish,
       ...candidateFailureDetails(),
@@ -1192,7 +1193,7 @@ run Git publication or edit the canonical library in this call.`;
     return ctx.blocked(
       "Scout exploration did not return a structured source result",
       {
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1211,7 +1212,7 @@ run Git publication or edit the canonical library in this call.`;
         source,
         invalidField: observationAdmission.invalidField,
         reason: observationAdmission.reason,
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1234,7 +1235,7 @@ run Git publication or edit the canonical library in this call.`;
     return ctx.blocked(
       "Scout draft preserved; library integration is incomplete",
       {
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         summary: structured.summary,
         source: observation,
         outputs,
@@ -1248,7 +1249,7 @@ run Git publication or edit the canonical library in this call.`;
       "Scout exploration removed primary sources from an existing output",
       {
         replacements,
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1263,7 +1264,7 @@ run Git publication or edit the canonical library in this call.`;
       "Scout exploration created a finding with duplicate source references",
       {
         duplicates: duplicateReferences,
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1274,7 +1275,7 @@ run Git publication or edit the canonical library in this call.`;
   );
   if (omittedOutputs.length > 0) {
     return ctx.blocked("Scout exploration omitted changed durable outputs", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       outputs,
       uncommittedChanges: durableChanges,
       omittedOutputs,
@@ -1286,12 +1287,18 @@ run Git publication or edit the canonical library in this call.`;
     return ctx.blocked(
       "Scout exploration created a finding without exactly one resolving INDEX link",
       {
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         outputs,
         indexIssues,
         uncommittedChanges: durableChanges,
         candidateFacts: retainedCandidateFacts(beforePublication),
       },
+    );
+  }
+  if (!executionId) {
+    return ctx.blocked(
+      "Scout exploration returned without an execution reference; publication was not attempted",
+      { source: observation, outputs, summary: structured.summary, ...candidateFailureDetails() },
     );
   }
   let publication;
@@ -1303,7 +1310,7 @@ run Git publication or edit the canonical library in this call.`;
   ctx.signal.throwIfAborted();
   try {
     publication = publishKnowledgeChanges(beforePublication, {
-      executionId: result.id,
+      executionId,
       summary: structured.summary,
       reportedOutputs: outputs.filter((path) => !scratchOutputs.includes(path)),
     });
@@ -1317,12 +1324,12 @@ run Git publication or edit the canonical library in this call.`;
           observation,
           source === "xhs" ? "workflow" : "agent-result+workflow-time",
         ),
-        `execution:${result.id}`,
+        `execution:${executionId}`,
       ],
     });
     if (retained) return ctx.done(retained.summary, retained);
     return ctx.blocked("Scout exploration was accepted but not published", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       outputs,
       ...candidateFailureDetails(),
       error: error instanceof Error ? error.message : String(error),
@@ -1346,7 +1353,7 @@ run Git publication or edit the canonical library in this call.`;
       ),
       ...publicationFacts(publication),
       ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
-      `execution:${result.id}`,
+      `execution:${executionId}`,
     ]),
   ];
   try {

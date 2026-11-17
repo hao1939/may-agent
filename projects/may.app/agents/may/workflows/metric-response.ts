@@ -44,6 +44,7 @@ export const inputSchema = Type.Object({
   data: metricResponseDataSchema,
 }, { additionalProperties: false });
 type EnvelopeInput = Static<typeof inputSchema>;
+type DomainContext = Omit<AppWorkflowContext<EnvelopeInput>, "input"> & { input: Input };
 type TaskReader = (
   appId: string,
   taskId: string,
@@ -191,7 +192,7 @@ export function metricDecisionFact(
 }
 
 export async function respondToMetric(
-  ctx: AppWorkflowContext<Input>,
+  ctx: DomainContext,
   reader: MetricReader = readMetricEvidence,
   readTask: TaskReader = readMetricLinkedTask,
 ): Promise<ExecutionResult> {
