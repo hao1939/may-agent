@@ -25,9 +25,10 @@ export function workloadReviewTask(admitted: AppTaskInput, enabled: boolean) {
       "Preserve business obligations under every load; recommend methods and priorities without count-based closure.",
       "Use bounded scoped evidence, skip unchanged or empty reviews, and distinguish recommendations from applied decisions.",
     ],
-    input: {
-      prompt: "Review the current Alex workload and retain bounded advice.",
-      data: admitted.input.data,
-    }, priority: "P2" as const,
+    // Persist only the App's raw workload-review domain input. The Host Task
+    // execution adapter constructs the single canonical { prompt, data }
+    // callable envelope when it invokes the workflow.
+    input: admitted.input.data,
+    priority: "P2" as const,
   } };
 }
