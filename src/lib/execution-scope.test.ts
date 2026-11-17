@@ -119,9 +119,7 @@ describe("shared execution scope", () => {
       executionRoot: roots.at(-1),
       taskBinding: { appId: "sample", taskId: "work", generation: 2, attemptId: "attempt-2" },
     });
-    const fork = manager.createAgentsTool({ getCallerSessionId: () => parentId });
-    const reply = await fork.execute("fork-child", { action: "fork", agent: "worker", task: "child" });
-    childId = JSON.parse((reply.content[0] as { text: string }).text).sessionId;
+    childId = manager.run("worker", "child", { parentSessionId: parentId, kind: "call" });
     await childStarted.promise;
     const parent = manager.activeSessions.get(parentId)!;
     const child = manager.activeSessions.get(childId)!;
