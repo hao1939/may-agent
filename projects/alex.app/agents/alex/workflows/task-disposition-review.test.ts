@@ -60,10 +60,13 @@ function fixture(count = 1) {
       command: input.type,
       appId: input.appId,
       taskId: input.taskId,
-      task:
-        input.type === "app.task.get"
-          ? structuredClone(tasks[index])
-          : { ...human[index], appId: input.appId },
+      task: {
+        ...structuredClone(tasks[index]),
+        ...human[index],
+        id: input.taskId,
+        taskId: input.taskId,
+        appId: input.appId,
+      },
     };
   };
   return {
@@ -102,7 +105,7 @@ describe("bounded Task disposition review", () => {
     expect(seen).toEqual(f.tasks.map(({ id }) => id));
     expect(new Set(seen).size).toBe(528);
     expect(new Set(f.calls.map(({ type }) => type))).toEqual(
-      new Set(["app.tasks.list", "app.task.get", "task.get"]),
+      new Set(["app.tasks.list", "task.get"]),
     );
     expect(f.tasks.every(({ status }) => status === "idle")).toBe(true);
   });
@@ -178,7 +181,7 @@ describe("bounded Task disposition review", () => {
     f.tasks[2].currentObligations.inputWaits.truncated = true;
     f.tasks[3].pendingEvents.truncated = true;
     const provider = createPublicTaskEvidenceProvider(async (input) => {
-      if (input.type === "app.task.get" && input.taskId === f.tasks[1].id)
+      if (input.type === "task.get" && input.taskId === f.tasks[1].id)
         throw new Error("Read unavailable");
       return f.command(input);
     });
