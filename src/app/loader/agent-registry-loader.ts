@@ -5,6 +5,7 @@ import {
   agentProjectRoot,
   agentsRootForAgentDir,
   buildAgentDefinition,
+  canonicalCallableName,
   listRuntimeAgentDirectories,
   readFileWritePolicy,
 } from "@may-agent/sdk/runtime";
@@ -117,22 +118,17 @@ export async function prepareAgents(
     if (requestedNames && !requestedNames.has(config.name)) continue;
     allErrors.push(...validateAgentConfig(config, models, agentsRoot));
 
-    const prior = selected.get(config.name);
+    const canonicalName = canonicalCallableName(source.projectId, config.name);
+    const prior = selected.get(canonicalName);
     if (prior) {
-      const priorIsGlobal = !prior.source.projectId;
-      const currentIsAppLocal = Boolean(source.projectId);
-      if (priorIsGlobal && currentIsAppLocal) {
-        selected.set(config.name, { config, source });
-      } else {
-        allErrors.push({
-          agent: config.name,
-          field: "name",
-          message: `Duplicate agent name. Already loaded from ${prior.source.relativeDir}; duplicate at ${source.relativeDir}`,
-        });
-      }
+      allErrors.push({
+        agent: canonicalName,
+        field: "name",
+        message: `Duplicate agent canonical name. Already loaded from ${prior.source.relativeDir}; duplicate at ${source.relativeDir}`,
+      });
       continue;
     }
-    selected.set(config.name, { config, source });
+    selected.set(canonicalName, { config, source });
   }
 
   if (allErrors.length > 0) {
@@ -185,7 +181,7 @@ export async function prepareAgents(
     throw new Error(`Agent generation preparation failed:\n${validationReport(allErrors)}`);
   }
 
-  const names = definitions.map((definition) => definition.name);
+  const names = definitions.map((definition) => canonicalCallableName(definition.projectId, definition.name));
   return {
     definitions: Object.freeze(definitions),
     added: names.filter((name) => !manager.hasAgent(name)),
@@ -214,7 +210,9 @@ export function publishAgentGeneration(
       .map((name) => [name, manager.getAgentDefinition?.(name)] as const)
       .filter((entry): entry is readonly [string, SubagentDefinition] => Boolean(entry[1])),
   );
-  const nextNames = new Set(generation.definitions.map((definition) => definition.name));
+  const nextNames = new Set(
+    generation.definitions.map((definition) => canonicalCallableName(definition.projectId, definition.name)),
+  );
   try {
     for (const name of agentNames()) {
       if (!nextNames.has(name)) unregister(name);

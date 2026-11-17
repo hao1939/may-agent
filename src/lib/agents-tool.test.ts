@@ -42,8 +42,9 @@ describe("canonical agents list/call", () => {
 
   it("exposes only list/call and invokes the exact listed canonical agent with one envelope", async () => {
     manager.register({ name: "reviewer", description: "Global reviewer", domain: "review", model: mockModel(), tools: [] });
-    manager.register({ name: "alpha-reviewer", description: "Alpha reviewer", domain: "review", model: mockModel(), tools: [], appLocal: true, projectId: "alpha" });
-    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("reviewer") } as any);
+    manager.register({ name: "reviewer", description: "Alpha reviewer", domain: "review", model: mockModel(), tools: [], appLocal: true, projectId: "alpha" });
+    manager.register({ name: "reviewer", description: "Beta reviewer", domain: "review", model: mockModel(), tools: [], appLocal: true, projectId: "beta" });
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("global/reviewer") } as any);
     let dispatched: unknown;
     manager.callAgentDefinition = async (definition, task) => {
       dispatched = { name: definition.name, task };
@@ -53,10 +54,10 @@ describe("canonical agents list/call", () => {
     const schema = JSON.stringify(tool.parameters);
     for (const retired of ["fork", "peek", "follow-up", "cancel", "context", "sessions", "context_files", "success_criteria"]) expect(schema).not.toContain(`\"${retired}\"`);
     const listed = await callTool(tool, { action: "list" });
-    expect(listed.map((item: any) => item.name)).toEqual(["alpha/alpha-reviewer", "global/reviewer"]);
+    expect(listed.map((item: any) => item.name)).toEqual(["alpha/reviewer", "beta/reviewer", "global/reviewer"]);
     const result = await callTool(tool, { action: "call", agent: listed[0].name, input: { prompt: "Review", data: { ref: "HEAD" } } });
     expect(result).toEqual({ id: "s_child", status: "done", summary: "reviewed", output: { verdict: "accept" } });
-    expect(dispatched).toEqual({ name: "alpha-reviewer", task: 'Review\n\nAssignment data (JSON):\n{\n  "ref": "HEAD"\n}' });
+    expect(dispatched).toEqual({ name: "reviewer", task: 'Review\n\nAssignment data (JSON):\n{\n  "ref": "HEAD"\n}' });
     expect((await callTool(tool, { action: "call", agent: "alpha-reviewer", input: { prompt: "legacy alias" } })).id).toBeUndefined();
   });
 
