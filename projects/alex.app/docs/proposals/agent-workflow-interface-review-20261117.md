@@ -260,6 +260,17 @@ items within the owned outcome, not additional Tasks for each code layer.
 | E — Execution | Keep joined workflow concurrency and inherited cancellation; preserve normal Task/Condition continuation and evidence on safe redo. | Stop/timeout through a mixed tree cleans up ordinary children, starts no further children, and preserves evidence; helper completion cannot settle its Task. |
 | F — Local trial | Build and run the paired candidate Host/SDK/Apps before PR merge. Assign bounded coding work through May, observe workflow/PR/CI/comment follow-up, and verify Telegram review-link delivery. | Record exact candidate SHAs, executable identity, native Task/workflow references, current PR head/checks, addressed comment and notification receipt. Record failures as open gaps. |
 
+For D, the live trial also exposed two concrete consumer-context defects in
+Alex's `develop-change.ts` specialist prompt. State the bounded local-candidate
+scope beside the wider Task acceptance, so Bob does not require PR publication
+or deployment before returning source evidence. Allow the existing `clarify`
+decision to name a missing setup dependency, instead of requiring an unchanged
+candidate to cycle through implementation after a prerequisite failure. Preserve
+the owning Task's delivery requirements, actual failed receipts and consumed
+rounds. These are App prompt/return corrections within migration, with no new
+Host phase, classifier or allowance rule. See the
+[observed boundary failure](../archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment).
+
 May should implement from current Host main in the retained Task-owned worktree,
 with the saved cross-repository selector and cumulative development allowance
 revised by its creator. Preserve the seven consumed #585 rounds and their
