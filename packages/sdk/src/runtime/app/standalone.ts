@@ -820,13 +820,16 @@ async function buildDirectPromptCatalog(
   _callerOwner: string,
   _explicitWorkflowDir?: string,
   signal?: AbortSignal,
+  state: DirectCatalogState = {
+    prompts: new Map(),
+    proceduresByOwner: new Map(),
+    diagnostics: [],
+    pendingImports: 0,
+  },
 ): Promise<DirectCatalogState> {
   signal?.throwIfAborted();
   const { dirs } = collectDeduplicatedRuntimeAgentDirs(options);
-  const prompts = new Map<string, { owner: string; definition: DirectPromptDefinition }>();
-  const proceduresByOwner = new Map<string, ReadonlyMap<string, WorkflowExecutableModule>>();
-  const diagnostics: string[] = [];
-  const state: DirectCatalogState = { prompts, proceduresByOwner, diagnostics, pendingImports: 0 };
+  const { prompts, proceduresByOwner, diagnostics } = state;
 
   for (const agentDir of dirs) {
     signal?.throwIfAborted();
@@ -845,7 +848,7 @@ async function buildDirectPromptCatalog(
     }
     const promptEntry = { owner: namespace, definition: { source: agentDir } };
     prompts.set(canonicalName, promptEntry);
-    // Keep direct-module compatibility internal to runDirectWorkflow; public run/list use canonical names.
+    // Compatibility aliases remain internal until the fixture migration removes bare calls.
     if (!prompts.has(config.name)) prompts.set(config.name, promptEntry);
 
     const workflowDir = join(agentDir.dir, "workflows");
@@ -1142,6 +1145,7 @@ export async function runDirectWorkflow<TInput = unknown>(
             callerOwner,
             workflowDir,
             prepController.signal,
+            preparedCatalog,
           );
           catalogCapturedAtRoot = true;
         }
