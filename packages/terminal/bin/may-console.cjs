@@ -26,7 +26,6 @@ let debug = false;
 let selectedApp = conversationAppId;
 let activeTurn = null;
 let completionVisible = false;
-let selectedTopic = null;
 let watchedTask = null;
 let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
@@ -60,12 +59,10 @@ const pendingTaskListReads = [];
 const pendingTaskReads = [];
 let nextTaskPage = null;
 let nextTodoPage = null;
-let nextTopicPage = null;
 const pendingRuntimeControls = new Map();
 const pendingPublishReceipts = [];
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
-const knownTopicRefs = new Set();
 const shownTaskRevisions = new Map();
 let shownTodoActions = new Map();
 const pendingCommandLines = [];
@@ -78,8 +75,6 @@ function rememberCompletion(set, value, limit) {
 
 const ordinaryCommands = [
   "/apps",
-  "/topics",
-  "/topic",
   "/tasks",
   "/todo",
   "/task",
@@ -120,10 +115,6 @@ function completeInput(line) {
   const choices =
     command === "/apps"
       ? [...knownAppIds]
-      : command === "/topics"
-        ? ["more"]
-      : command === "/topic"
-        ? ["clear", ...knownTopicRefs]
       : command === "/tasks"
         ? ["all", "history", "more"]
         : command === "/todo"
@@ -151,9 +142,8 @@ function shortSessionId(sessionId) {
 
 function promptText() {
   if (!connected) return "you[disconnected]> ";
-  const topic = selectedTopic ? ` · ${topicRef(selectedTopic)}` : "";
-  if (watchedTask) return `you[${watchedTask.appId}:${watchedTask.ref}${topic}]> `;
-  return `you[${selectedApp}${topic}${todoCount > 0 ? ` · ${todoCount} todo` : ""}]> `;
+  if (watchedTask) return `you[${watchedTask.appId}:${watchedTask.ref}]> `;
+  return `you[${selectedApp}${todoCount > 0 ? ` · ${todoCount} todo` : ""}]> `;
 }
 
 function refreshPrompt() {
@@ -371,7 +361,6 @@ function conversationInputFrame(message, reply) {
         metadata: {
           channel: source,
           channelThreadId: "local-terminal",
-          ...(selectedTopic ? { topicId: selectedTopic.id } : {}),
         },
       },
       idempotencyKey: messageId,
@@ -401,10 +390,6 @@ function sendConversationRead(pending = {}) {
       appId: conversationAppId,
       conversationId,
       limit: 30,
-      topicLimit: 12,
-      ...(pending.kind === "topic" && pending.ref ? { topicId: pending.ref } : {}),
-      ...(pending.kind === "topic" && pending.current && selectedTopic ? { topicId: selectedTopic.id } : {}),
-      ...(pending.kind === "topics" && pending.cursor ? { topicCursor: pending.cursor } : {}),
     },
     { silent: true },
   );
@@ -549,108 +534,6 @@ function presentView(command, text, options = {}) {
     ...(typeof options.idempotencyKey === "string" && options.idempotencyKey
       ? { idempotencyKey: options.idempotencyKey }
       : {}),
-  });
-}
-
-function topicRef(topic) {
-  const id = typeof topic?.id === "string" ? topic.id.trim() : "";
-  const value = id.startsWith("topic_") ? id.slice("topic_".length) : id;
-  return value.slice(0, 8) || "????????";
-}
-
-function topicTaskIdentities(topic) {
-  return Array.isArray(topic?.taskRefs)
-    ? topic.taskRefs.flatMap((task) =>
-        task && typeof task.appId === "string" && typeof task.taskId === "string"
-          ? [{ appId: task.appId, taskId: task.taskId }]
-          : [],
-      )
-    : [];
-}
-
-function resolveTopic(topics, ref) {
-  const normalized = String(ref || "").trim().toLowerCase();
-  if (!normalized) return null;
-  const matches = topics.filter((topic) => {
-    const id = typeof topic?.id === "string" ? topic.id.toLowerCase() : "";
-    return id === normalized || id === `topic_${normalized}` || topicRef(topic).toLowerCase() === normalized;
-  });
-  return matches.length === 1 ? matches[0] : null;
-}
-
-function topicMessageLine(message) {
-  const kind = message?.author?.kind;
-  const speaker = kind === "human" ? "you" : kind === "agent" ? daemonAgent : kind || "event";
-  const text = typeof message?.text === "string" ? message.text.trim().replace(/\s+/g, " ") : "";
-  return text ? `  ${speaker}: ${text.length > 180 ? `${text.slice(0, 177)}...` : text}` : "";
-}
-
-function renderTopics(conversation, pending) {
-  const topics = Array.isArray(conversation?.topics) ? conversation.topics : [];
-  const lines = ["", pending?.cursor ? "Older Topics:" : "Recent Topics:"];
-  if (topics.length === 0) lines.push("  Nothing found.");
-  for (const topic of topics) {
-    const ref = topicRef(topic);
-    rememberCompletion(knownTopicRefs, ref, 128);
-    const marker = selectedTopic?.id === topic.id ? "*" : " ";
-    const tasks = Array.isArray(topic.taskRefs) ? topic.taskRefs : [];
-    lines.push(` ${marker} ${ref}  ${String(topic.title || "Topic")}${tasks.length ? ` · ${tasks.length} Task${tasks.length === 1 ? "" : "s"}` : ""}`);
-  }
-  nextTopicPage = conversation?.nextTopicCursor
-    ? { kind: "topics", cursor: conversation.nextTopicCursor, command: "/topics more" }
-    : null;
-  if (nextTopicPage) lines.push("  More Topics are available; run /topics more.");
-  lines.push("", "Use /topic <ref> to continue one Topic. Task progress remains under /task and /watch.", "");
-  presentView(pending?.command || "/topics", lines.join("\n"));
-}
-
-function renderTopic(conversation, pending) {
-  const topics = Array.isArray(conversation?.topics) ? conversation.topics : [];
-  const topic = pending?.current
-    ? topics.find((candidate) => candidate.id === selectedTopic?.id)
-    : resolveTopic(topics, pending?.ref);
-  if (!topic) {
-    presentView(
-      pending?.command || "/topic",
-      selectedTopic && pending?.current
-        ? `Current Topic ${topicRef(selectedTopic)} is no longer available.`
-        : `Topic ${pending?.ref || ""} was not found. Run /topics to list Topics.`,
-    );
-    return;
-  }
-  let stoppedWatch = null;
-  if (pending?.select) {
-    const linked = topicTaskIdentities(topic);
-    if (
-      watchedTask &&
-      !linked.some((task) => task.appId === watchedTask.appId && task.taskId === watchedTask.taskId)
-    ) {
-      stoppedWatch = watchedTask.ref;
-      setWatchedTask(null);
-    }
-    selectedTopic = topic;
-    refreshPrompt();
-  }
-  rememberCompletion(knownTopicRefs, topicRef(topic), 128);
-  const taskLines = (Array.isArray(topic.taskRefs) ? topic.taskRefs : []).map(
-    (task) => `  ${task.ref || "????????"} · ${task.appId}`,
-  );
-  const recent = (Array.isArray(conversation?.messages) ? conversation.messages : [])
-    .filter((message) => message?.metadata?.topicId === topic.id)
-    .slice(-8)
-    .map(topicMessageLine)
-    .filter(Boolean);
-  const lines = [
-    "",
-    `${pending?.select ? "Following" : "Topic"} ${topicRef(topic)}: ${topic.title}`,
-    ...(taskLines.length ? ["Tasks:", ...taskLines] : ["Tasks: none"]),
-    ...(recent.length ? ["Recent conversation:", ...recent] : []),
-    ...(stoppedWatch ? [`Stopped watching Task ${stoppedWatch}; the Task continues unchanged.`] : []),
-    "",
-  ];
-  presentView(pending?.command || "/topic", lines.join("\n"), {
-    topicId: topic.id,
-    taskRefs: topicTaskIdentities(topic),
   });
 }
 
@@ -1307,10 +1190,6 @@ function handleEvent(event) {
           renderConversation(event.conversation?.messages);
         } else if (pending?.kind === "sync") {
           renderConversation(event.conversation?.messages, { autoFollow: true });
-        } else if (pending?.kind === "topics") {
-          renderTopics(event.conversation, pending);
-        } else if (pending?.kind === "topic") {
-          renderTopic(event.conversation, pending);
         }
         if (conversationSyncDirty) requestConversation("sync");
       }
@@ -1568,8 +1447,6 @@ function printHelp() {
       "Conversation and Tasks:",
       "  Esc                        Stop this turn; background Tasks continue",
       "  /apps [app]                 List or select an App",
-      "  /topics, /topics more       List Topics",
-      "  /topic [ref|clear]          Show, follow, or leave a Topic",
       "  /tasks [all] [history], /tasks more",
       "  /todo [all], /todo more     Show Tasks that need your action",
       "  /task <ref>",
@@ -1621,47 +1498,6 @@ function handleCommand(input) {
       } else {
         requestApps(null, input, false);
       }
-      return;
-    case "topics":
-      if (restParts.length > 1 || (restParts.length === 1 && restParts[0].toLowerCase() !== "more")) {
-        printLine("Usage: /topics, or /topics more");
-        return;
-      }
-      if (restParts[0]?.toLowerCase() === "more") {
-        if (!nextTopicPage) {
-          printLine("[topics] No next page. Run /topics first.");
-          return;
-        }
-        requestConversation("topics", nextTopicPage);
-        return;
-      }
-      nextTopicPage = null;
-      requestConversation("topics", { command: input });
-      return;
-    case "topic":
-      if (restParts.length > 1) {
-        printLine("Usage: /topic [ref|clear]");
-        return;
-      }
-      if (rest.toLowerCase() === "clear") {
-        if (!selectedTopic) {
-          printLine("No Topic is currently followed.");
-          return;
-        }
-        const prior = topicRef(selectedTopic);
-        selectedTopic = null;
-        refreshPrompt();
-        presentView(input, `Stopped following Topic ${prior}. Its Tasks continue unchanged.`);
-        return;
-      }
-      if (!rest && !selectedTopic) {
-        printLine("No Topic is currently followed. Run /topics to choose one.");
-        return;
-      }
-      requestConversation("topic", {
-        command: input,
-        ...(rest ? { ref: rest, select: true } : { current: true }),
-      });
       return;
     case "tasks": {
       if (restParts.length === 1 && restParts[0].toLowerCase() === "more") {

@@ -432,8 +432,6 @@ export const TELEGRAM_HELP_MARKDOWN =
   "Background work continues when you close Telegram.\n\n" +
   "*Optional shortcuts:*\n" +
   "/apps \[app\] — List or select an App\n" +
-  "/topics — List Topics; use /topics more for older pages\n" +
-  "/topic \[ref\|clear\] — Show, follow, or leave a Topic\n" +
   "/tasks \[all\] \[history\], /tasks more — Show Tasks\n" +
   "/todo \[all\], /todo more — Show Tasks that need your action\n" +
   "/task <ref> — Show one Task\n" +

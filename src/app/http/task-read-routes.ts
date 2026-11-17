@@ -106,6 +106,7 @@ export function createTaskReadHandlers(options: {
         ...(appId ? { appId } : {}),
         includeDone: includeDone === "true",
         ...(url.searchParams.has("status") ? { status: url.searchParams.getAll("status") } : {}),
+        ...(url.searchParams.has("q") ? { q: url.searchParams.get("q") } : {}),
         ...(url.searchParams.has("limit") ? { limit: Number(url.searchParams.get("limit")) } : {}),
         ...(url.searchParams.has("cursor") ? { cursor: url.searchParams.get("cursor") } : {}),
       });

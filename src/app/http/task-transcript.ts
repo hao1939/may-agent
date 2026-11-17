@@ -217,15 +217,17 @@ export function createTaskTranscriptHandler(options: {
     const candidate = Object.hasOwn(bindings, key) ? bindings[key] : undefined;
     return matchingBinding(candidate, identity) ? candidate : null;
   }
-  async function readTask(appId: string, taskId: string): Promise<JsonRecord | null> {
-    const response = await daemonRead({ type: "task.get", appId, taskId });
+  async function readTask(input: { ref?: string; appId?: string; taskId?: string }): Promise<JsonRecord | null> {
+    const response = await daemonRead({ type: "task.get", ...input });
     if (response.type !== "ok" || !("task" in response)) throw new Error("Task read unavailable");
     if (response.task === null) return null;
     const task = record(response.task);
     if (
       !task ||
-      task.appId !== appId ||
-      task.taskId !== taskId ||
+      typeof task.appId !== "string" ||
+      typeof task.taskId !== "string" ||
+      (input.appId && task.appId !== input.appId) ||
+      (input.taskId && task.taskId !== input.taskId) ||
       !Number.isSafeInteger(task.generation) ||
       (task.generation as number) < 1
     ) {
@@ -234,11 +236,18 @@ export function createTaskTranscriptHandler(options: {
     return task;
   }
   return async (url) => {
-    const appId = url.searchParams.get("appId")?.trim();
-    const taskId = url.searchParams.get("taskId")?.trim();
-    if (!appId || !taskId || appId.length > 512 || taskId.length > 512)
-      return json({ error: "appId and taskId required (maximum 512 characters each)" }, 400);
-    const allowed = new Set(["appId", "taskId", "cursor", "limit"]);
+    const ref = url.searchParams.get("ref")?.trim();
+    const requestedAppId = url.searchParams.get("appId")?.trim();
+    const requestedTaskId = url.searchParams.get("taskId")?.trim();
+    if (
+      (!ref && (!requestedAppId || !requestedTaskId)) ||
+      (ref && (requestedAppId || requestedTaskId)) ||
+      (ref?.length ?? 0) > 64 ||
+      (requestedAppId?.length ?? 0) > 512 ||
+      (requestedTaskId?.length ?? 0) > 512
+    )
+      return json({ error: "ref or appId and taskId required" }, 400);
+    const allowed = new Set(["ref", "appId", "taskId", "cursor", "limit"]);
     if ([...url.searchParams.keys()].some((key) => !allowed.has(key) || url.searchParams.getAll(key).length !== 1))
       return json({ error: "Unsupported or repeated transcript query parameter" }, 400);
     const limitText = url.searchParams.get("limit");
@@ -255,11 +264,13 @@ export function createTaskTranscriptHandler(options: {
     }
     let task: JsonRecord | null;
     try {
-      task = await readTask(appId, taskId);
+      task = await readTask(ref ? { ref } : { appId: requestedAppId, taskId: requestedTaskId });
     } catch {
       return json({ error: "Current Task could not be read" }, 503);
     }
     if (!task) return json({ error: "Task not found" }, 404);
+    const appId = task.appId as string;
+    const taskId = task.taskId as string;
     const identity: TaskIdentity = { appId, taskId, generation: task.generation as number };
     const unavailable = (message: string, session: JsonRecord | null = null, code = 200) =>
       json({ ...identity, session, items: [], unavailable: message }, code);
@@ -342,7 +353,7 @@ export function createTaskTranscriptHandler(options: {
         nextCursor = encodeCursor({ ...identity, v: 1, threadId: binding.threadId, itemCursor });
       }
       // A reopened Task or replaced binding must not receive the older execution's bytes.
-      const currentTask = await readTask(appId, taskId);
+      const currentTask = await readTask({ appId, taskId });
       const currentBinding = currentTask?.generation === identity.generation ? readBinding(identity) : null;
       if (
         !currentTask ||

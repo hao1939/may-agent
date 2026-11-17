@@ -356,12 +356,23 @@ export function readAppConversationResource(
           left.createdAt - right.createdAt || left.sequence - right.sequence || left.id.localeCompare(right.id),
       )
     : recentMessages;
+  const requests = listConversationRequests(db, appId, conversationId, options.topicId);
+  const requestRefs = displayTaskReferences(
+    db,
+    requests.flatMap((request) => request.taskRefs ?? []),
+  );
   return {
     id: conversationId,
     owner: appId,
     version: messages.reduce((latest, message) => Math.max(latest, message.sequence), 0),
     activeTurn: readActiveAppTurn(db, appId, conversationId),
-    requests: listConversationRequests(db, appId, conversationId, options.topicId),
+    requests: requests.map((request) => ({
+      ...request,
+      taskRefs: request.taskRefs.map((task) => ({
+        ...task,
+        ref: requestRefs.get(`${task.appId}\0${task.taskId}`),
+      })),
+    })),
     topics,
     ...(page.nextCursor ? { nextTopicCursor: page.nextCursor } : {}),
     messages,
