@@ -541,6 +541,7 @@ function recordedWorkerIds(task: Record<string, unknown>): string[] {
     task.agent,
     assignment.agent,
     diagnostics.agent,
+    diagnostics.owner,
     acceptedAttempt.agent,
   ]
     .map(text)

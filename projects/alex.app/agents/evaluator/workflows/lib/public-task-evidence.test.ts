@@ -518,6 +518,25 @@ describe("public Task evidence", () => {
     }
   });
 
+  test("excludes Evaluation workers recorded only by the supported task.get diagnostics projection", async () => {
+    const delegated = await readSubjectTask(
+      { appId: "sample", taskId: "goal/one" },
+      fixture(
+        { ...appTask, agent: undefined },
+        {
+          ...taskDetail,
+          agent: undefined,
+          diagnostics: { owner: "evaluator", attemptCount: 1 },
+        },
+      ),
+    );
+    expect(delegated).toMatchObject({
+      disposition: "insufficient-evidence",
+      reason: expect.stringContaining("Evaluation worker execution"),
+    });
+    expect(delegated.evidenceHash).toBeUndefined();
+  });
+
   test("retains verified Scout ownership without inventing optional creator provenance", async () => {
     const { creator, ...withoutCreator } = appTask;
     const view = {
