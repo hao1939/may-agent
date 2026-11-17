@@ -413,20 +413,6 @@ export default defineApp({
   inputSchema: scoutInputSchema,
   task: taskForScoutInput,
   subscriptions: [
-    ...[
-      ["explore", "scout.explore"],
-      ["digest", "scout.digest"],
-      ["library-health", "project.library_health.tick"],
-    ].map(([kind, type]) => ({
-      id: `scheduled-${kind}`,
-      event: { type, project: projectId },
-      toInput(event: AppEvent<Record<string, unknown>>) {
-        const details = eventDetails(event as unknown as Record<string, unknown>);
-        return scoutInput(kind, kind === "explore"
-          ? { source: details.researchSource ?? details.source, ...(event.source ? { triggerSource: event.source } : {}) }
-          : details);
-      },
-    })),
     {
       id: "project-comment",
       event: { type: "project.comment.created", project: projectId },
@@ -491,43 +477,43 @@ export default defineApp({
       id: "scout-explore-arxiv",
       enabled: true,
       intervalMs: 14_400_000, // 4h
-      event: scoutEvent("scout.explore", { source: "arxiv" }),
+      input: scoutInput("explore", { source: "arxiv" }),
     },
     {
       id: "scout-explore-hn",
       enabled: true,
       intervalMs: 7_200_000, // 2h
-      event: scoutEvent("scout.explore", { source: "hn" }),
+      input: scoutInput("explore", { source: "hn" }),
     },
     {
       id: "scout-explore-xhs",
       enabled: true,
       intervalMs: 14_400_000, // 4h
-      event: scoutEvent("scout.explore", { source: "xhs" }),
+      input: scoutInput("explore", { source: "xhs" }),
     },
     {
       id: "scout-explore-github",
       enabled: true,
       intervalMs: 7_200_000, // 2h
-      event: scoutEvent("scout.explore", { source: "github" }),
+      input: scoutInput("explore", { source: "github" }),
     },
     {
       id: "scout-explore-reddit",
       enabled: true,
       intervalMs: 14_400_000, // 4h
-      event: scoutEvent("scout.explore", { source: "reddit" }),
+      input: scoutInput("explore", { source: "reddit" }),
     },
     {
       id: "scout-daily-digest",
       enabled: true,
       intervalMs: 86_400_000, // 24h
-      event: scoutEvent("scout.digest"),
+      input: scoutInput("digest", {}),
     },
     {
       id: "library-health",
       enabled: true,
       intervalMs: 21_600_000, // 6h
-      event: scoutEvent("project.library_health.tick"),
+      input: scoutInput("library-health", {}),
     },
   ],
 
