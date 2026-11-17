@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { Type, type AgentContext, type Static, type WorkflowContext } from "./index.js";
 import { taskReconcileResultSchema } from "./app.js";
-import { listTargets, run as sdkRun } from "./standalone.js";
+import { listTargets } from "./standalone.js";
 import { createTestAppWorkflowContext, resolveCallable, runTargetTest } from "./testing.js";
 import {
   WorkflowAllowanceExhaustedError,
@@ -1035,24 +1035,6 @@ describe("portable workflow kernel & runTargetTest", () => {
       summary: "mock:review:2",
     });
     expect(overlappingRun.steps[0]?.kind).toBe("agent");
-
-    const sdkStandaloneRun = await sdkRun("reviewer", "Audit via @may-agent/sdk/standalone", {
-      tools: "readonly",
-      models: {},
-      agentFixtures: {
-        reviewer: async (call) => ({
-          id: "sdk_run_1",
-          kind: "agent",
-          status: "done",
-          summary: `SDK run: ${call.task} (${call.options?.tools ?? "full"})`,
-        }),
-      },
-    });
-    expect(sdkStandaloneRun.ok).toBe(true);
-    expect(sdkStandaloneRun.result).toEqual({
-      type: "done",
-      summary: "SDK run: Audit via @may-agent/sdk/standalone (readonly)",
-    });
 
     let observedStepStatus: string | undefined;
     const schemaOnlyWorkflow = await runTargetTest(

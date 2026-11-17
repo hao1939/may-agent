@@ -18,7 +18,6 @@ import {
   listTargets as listStandaloneTargets,
   prepareDirectAgentExecution,
   run,
-  runCliAgent,
   runDirectWorkflow,
   runDirectWorkflow as runDirect,
   type DirectAgentRunResult,
@@ -1621,14 +1620,13 @@ export async function execute(ctx) {
       summary: "Reviewed HEAD~1..HEAD",
     });
 
-    // Regression: when agentName="owner" calls prompt target="reviewer", and reviewer also owns
-    // a procedure named "reviewer", runDirect must invoke the resolved prompt (not the procedure),
-    // and must forward tools: "readonly" without failing readonly module checks.
+    // A distinct reviewer-owned procedure must not interfere with prompt dispatch, and the
+    // prompt call must forward tools: "readonly" without failing readonly module checks.
     writeFileSync(
-      join(env.agentsRoot, "reviewer", "workflows", "reviewer.ts"),
+      join(env.agentsRoot, "reviewer", "workflows", "reviewer-procedure.ts"),
       `
-export const name = "reviewer";
-export const description = "Procedure with same name as owning prompt agent";
+export const name = "reviewer-procedure";
+export const description = "Distinct procedure owned by the reviewer prompt agent";
 export const readonly = true;
 export async function execute(ctx) {
   return ctx.done("wrong-procedure-invoked");
@@ -1666,84 +1664,12 @@ export async function execute(ctx) {
       summary: "prompt:Readonly prompt check",
     });
 
-    // Exercise the real executeCliStep adapter (not agentFixtures.codex):
-    let seenCliProjectRoot: string | undefined;
-    const codexSchema = Type.Object({ ok: Type.Boolean(), files: Type.Number() });
-    const codexRun = await run("codex", "Inspect package.json", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      outputSchema: codexSchema,
-      models: { test: fakeModel() as any },
-      runCli: async (cliInput, cliOpts) => {
-        seenCliProjectRoot = cliOpts.projectRoot;
-        expect(cliInput.tool).toBe("codex");
-        expect(cliInput.expectedOutput).toEqual({ format: "json" });
-        return {
-          taskId: "cli_codex_real",
-          tool: "codex",
-          status: "completed",
-          summary: "Inspected JSON",
-          outputText: JSON.stringify({ ok: true, files: 4 }),
-          cleanupConfirmed: true,
-          resultPath: "/tmp/result.md",
-          structuredResultPath: "/tmp/result.json",
-          eventsPath: "/tmp/events.jsonl",
-          factsRefs: [],
-          effectiveSandbox: "danger-full-access",
-        };
-      },
-    });
-    expect(codexRun.ok).toBe(true);
-    expect(seenCliProjectRoot).toBe(env.workRoot);
-    expect(codexRun.result).toEqual({
-      type: "done",
-      summary: "Inspected JSON",
-      output: { ok: true, files: 4 },
-      facts: {
-        tool: "codex",
-        resultPath: "/tmp/result.md",
-        eventsPath: "/tmp/events.jsonl",
-      },
-    });
-
-    // Reject readonly native CLI calls before spawning:
-    let spawnedOnReadonly = false;
-    const readonlyCliRejected = await run("codex", "Must not run", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      tools: "readonly",
-      models: {},
-      runCli: async () => {
-        spawnedOnReadonly = true;
-        throw new Error("unreachable");
-      },
-    });
-    expect(readonlyCliRejected.ok).toBe(false);
-    expect(spawnedOnReadonly).toBe(false);
-    expect(String(readonlyCliRejected.error)).toContain('cannot enforce tools: "readonly"');
-
-    // Propagate unconfirmed CLI process-group drain:
-    const failedDrainCli = await run("codex", "Spawn leaky child", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      models: {},
-      runCli: async () => ({
-        taskId: "cli_leaky",
-        tool: "codex",
-        status: "failed",
-        summary: "CLI process group did not drain",
-        error: "CLI process group did not drain",
-        cleanupConfirmed: false,
-        resultPath: "/tmp/result.md",
-        structuredResultPath: "/tmp/result.json",
-        eventsPath: "/tmp/events.jsonl",
-        factsRefs: [],
-        effectiveSandbox: "danger-full-access",
-      }),
-    });
-    expect(failedDrainCli.ok).toBe(false);
-    expect(failedDrainCli.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
-    expect(failedDrainCli.report.cleanup.confirmed).toBe(false);
+    // Native CLI backends are execution setup, not unconditional standalone callables.
+    const listed = await listStandaloneTargets({ projectRoot: env.projectRoot });
+    expect(listed.map((descriptor) => descriptor.name)).not.toContain("global/codex");
+    await expect(
+      run("codex", { prompt: "Inspect package.json" }, { projectRoot: env.projectRoot, models: {} }),
+    ).rejects.toThrow("Callable target not found: codex");
   });
 
   test.each(["timeout", "cancel"] as const)(
@@ -1956,6 +1882,20 @@ export async function execute(ctx) {
       `
 export const name = "verify-alpha";
 export const description = "Module with loose outputSchema";
+export const inputSchema = {
+  type: "object",
+  properties: {
+    prompt: { type: "string", minLength: 1 },
+    data: {
+      type: "object",
+      properties: { score: { type: "number" } },
+      required: ["score"],
+      additionalProperties: false,
+    },
+  },
+  required: ["prompt", "data"],
+  additionalProperties: false,
+};
 export const outputSchema = {
   type: "object",
   properties: { score: { type: "number" } },
@@ -1963,7 +1903,7 @@ export const outputSchema = {
   additionalProperties: false,
 };
 export async function execute(ctx) {
-  return ctx.done("scored", { score: ctx.input.score });
+  return ctx.done("scored", { score: ctx.input.data.score });
 }
 `,
     );
@@ -1979,10 +1919,10 @@ export async function execute(ctx) {
 `,
     );
 
-    // 1. Auto-discovers alpha-lead/verify-alpha in projects/alpha.app without `app` option:
+    // 1. Auto-discovers the exact canonical alpha/verify-alpha name without `app` option:
     const autoRun = await run(
-      "alpha-lead/verify-alpha",
-      { score: 95 },
+      "alpha/verify-alpha",
+      { prompt: "Score alpha", data: { score: 95 } },
       {
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
@@ -1997,8 +1937,8 @@ export async function execute(ctx) {
 
     // 2. Caller outputSchema is enforced in addition to module.outputSchema:
     const stricterCallerSchemaFail = await run(
-      "alpha-lead/verify-alpha",
-      { score: 50 }, // passes module.outputSchema (Number), fails caller outputSchema (minimum: 90)
+      "alpha/verify-alpha",
+      { prompt: "Score alpha", data: { score: 50 } }, // passes module.outputSchema, fails caller minimum
       {
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
@@ -2008,10 +1948,10 @@ export async function execute(ctx) {
     expect(stricterCallerSchemaFail.ok).toBe(false);
     expect(stricterCallerSchemaFail.error).toBeInstanceOf(WorkflowValidationError);
 
-    // 3. Local procedure named "codex" wins over native CLI executor when agentName="alpha-lead":
+    // 3. The listed App procedure named "codex" is invoked instead of a native CLI alias:
     const localCodexProc = await run(
-      "codex",
-      { customObject: true },
+      "alpha/codex",
+      { prompt: "Run local codex", data: { customObject: true } },
       {
         projectRoot: env.projectRoot,
         agentName: "alpha-lead",
@@ -2025,36 +1965,28 @@ export async function execute(ctx) {
     expect(localCodexProc.result).toEqual({
       type: "done",
       summary: "local-codex-procedure",
-      output: { received: { customObject: true } },
+      output: { received: { prompt: "Run local codex", data: { customObject: true } } },
     });
 
-    // 4. Bare root prompt target `run("reviewer", ...)` does not import reviewer/workflows/*.ts:
-    const gate = await controlledWorkflowImport(env.root);
-    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "stalled-unused.ts"), gate.source);
-    try {
-      const barePrompt = await observeBoundedResult(
-        run("reviewer", "Fast prompt without importing workflows", {
-          projectRoot: env.projectRoot,
-          timeoutMs: 500,
-          models: { test: fakeModel() as any },
-          agentFixtures: {
-            reviewer: async ({ task }) => ({
-              id: "s_fast_prompt",
-              kind: "agent",
-              status: "done",
-              summary: `fast:${task}`,
-            }),
-          },
+    // 4. Canonical global prompt dispatch uses the same prepared catalog as discovery.
+    const barePrompt = await run("global/reviewer", { prompt: "Fast canonical prompt" }, {
+      projectRoot: env.projectRoot,
+      timeoutMs: 500,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async ({ task }) => ({
+          id: "s_fast_prompt",
+          kind: "agent",
+          status: "done",
+          summary: `fast:${task}`,
         }),
-      );
-      expect(barePrompt?.result.ok).toBe(true);
-      expect(barePrompt?.result.result).toMatchObject({
-        type: "done",
-        summary: "fast:Fast prompt without importing workflows",
-      });
-    } finally {
-      gate.release();
-    }
+      },
+    });
+    expect(barePrompt.ok).toBe(true);
+    expect(barePrompt.result).toMatchObject({
+      type: "done",
+      summary: "fast:Fast canonical prompt",
+    });
   });
 
   test("recovers App-local prompt callerProjectId without agentFixtures, admits global agents from App procedures, enforces explicit App scope, defaults workRoot to cwd, retains scratch outputRoot on unconfirmed cleanup, supports array outputSchema on CLI runner, and lists exported procedure names", async () => {
@@ -2116,63 +2048,43 @@ export async function execute(ctx) {
 }
 `,
     );
-    // Duplicate exported name in another file to verify ambiguity exclusion in listStandaloneTargets:
-    writeFileSync(
-      join(betaOwnerDir, "workflows", "dup-a.ts"),
-      `
-export const name = "dup-proc";
-export const description = "Duplicate A";
-export async function execute(ctx) { return ctx.done("a"); }
-`,
-    );
-    writeFileSync(
-      join(betaOwnerDir, "workflows", "dup-b.ts"),
-      `
-export const name = "dup-proc";
-export const description = "Duplicate B";
-export async function execute(ctx) { return ctx.done("b"); }
-`,
-    );
-
-    // 1. Bare App-local prompt target AND App-prefixed prompt target WITHOUT agentFixtures:
+    // 1. Invoke the exact canonical App-local prompt name without agentFixtures:
     const seenRunAgentWorkRoots: string[] = [];
     const nestedCwd = join(env.workRoot, "nested-repo");
     mkdirSync(nestedCwd, { recursive: true });
 
-    for (const promptTarget of ["alpha-lead", "alpha.app/alpha-lead"] as const) {
-      const bareAppPrompt = await run(promptTarget, "Run bare App prompt", {
-        cwd: nestedCwd,
-        projectRoot: env.projectRoot,
-        models: { test: fakeModel() as any },
-        runAgent: async (agentOpts) => {
-          seenRunAgentWorkRoots.push(agentOpts.workRoot);
-          return {
-            sessionId: "s_alpha_prompt",
-            sessionPath: join(agentOpts.outputRoot, "s_alpha_prompt"),
-            status: "completed",
-            lastAssistantText: "done",
-            messages: [],
-            durationMs: 5,
-            finishResult: {
-              status: "done",
-              summary: `ran:${agentOpts.agentName}:${agentOpts.task}`,
-            },
-          };
-        },
-      });
-      expect(bareAppPrompt.ok).toBe(true);
-      expect(bareAppPrompt.result).toMatchObject({
-        type: "done",
-        summary: "ran:alpha-lead:Run bare App prompt",
-      });
-    }
+    const bareAppPrompt = await run("alpha/alpha-lead", { prompt: "Run bare App prompt" }, {
+      cwd: nestedCwd,
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (agentOpts) => {
+        seenRunAgentWorkRoots.push(agentOpts.workRoot);
+        return {
+          sessionId: "s_alpha_prompt",
+          sessionPath: join(agentOpts.outputRoot, "s_alpha_prompt"),
+          status: "completed",
+          lastAssistantText: "done",
+          messages: [],
+          durationMs: 5,
+          finishResult: {
+            status: "done",
+            summary: `ran:${agentOpts.agentName}:${agentOpts.task}`,
+          },
+        };
+      },
+    });
+    expect(bareAppPrompt.ok).toBe(true);
+    expect(bareAppPrompt.result).toMatchObject({
+      type: "done",
+      summary: "ran:alpha-lead:Run bare App prompt",
+    });
     // 2. workRoot defaults to cwd (nestedCwd) rather than inferred projectRoot:
-    expect(seenRunAgentWorkRoots).toEqual([nestedCwd, nestedCwd]);
+    expect(seenRunAgentWorkRoots).toEqual([nestedCwd]);
 
     // 3. Auto-discovered App procedure can call a global agent ("reviewer") without agentFixtures:
     const appCallsGlobal = await run(
-      "alpha-lead/aliased-proc",
-      {},
+      "alpha/aliased-proc",
+      { prompt: "Call the global reviewer" },
       {
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
@@ -2199,20 +2111,20 @@ export async function execute(ctx) { return ctx.done("b"); }
     // 4. Explicit App scope (--app or <app>.app/<target>) rejects sibling App procedures:
     await expect(
       run(
-        "beta-owner/beta-probe",
-        {},
+        "beta/beta-probe",
+        { prompt: "Probe beta" },
         {
           projectRoot: env.projectRoot,
           app: "alpha",
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("beta-owner/beta-probe");
+    ).rejects.toThrow("beta/beta-probe");
 
     await expect(
       run(
         "alpha.app/beta-owner/beta-probe",
-        {},
+        { prompt: "Rejected legacy target" },
         {
           projectRoot: env.projectRoot,
           models: { test: fakeModel() as any },
@@ -2221,6 +2133,22 @@ export async function execute(ctx) { return ctx.done("b"); }
     ).rejects.toThrow("beta-owner/beta-probe");
 
     // 5. Catalog preparation rejects an ambiguous canonical workflow instead of silently omitting it.
+    writeFileSync(
+      join(betaOwnerDir, "workflows", "dup-a.ts"),
+      `
+export const name = "dup-proc";
+export const description = "Duplicate A";
+export async function execute(ctx) { return ctx.done("a"); }
+`,
+    );
+    writeFileSync(
+      join(betaOwnerDir, "workflows", "dup-b.ts"),
+      `
+export const name = "dup-proc";
+export const description = "Duplicate B";
+export async function execute(ctx) { return ctx.done("b"); }
+`,
+    );
     await expect(listStandaloneTargets({ projectRoot: env.projectRoot })).rejects.toThrow(
       'Ambiguous agent workflow name "dup-proc"',
     );
@@ -2234,95 +2162,7 @@ export async function execute(ctx) { return ctx.done("b"); }
     expect(targetNames).toContain("beta/dup-proc");
     expect(listed.every((item) => !("kind" in item) && !("target" in item))).toBe(true);
 
-    // 6. Array outputSchema through the real runCliAgent runner + scratch outputRoot retention when drainProcessGroup returns false:
-    const arraySchema = Type.Array(Type.String());
-    const arrayCliRun = await run("codex", "Return JSON array", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      outputSchema: arraySchema,
-      models: {},
-      runCli: (cliInput, cliOpts) =>
-        runCliAgent(cliInput, {
-          ...cliOpts,
-          spawnCommand: (() => {
-            const { EventEmitter } = require("node:events");
-            const { PassThrough } = require("node:stream");
-            const child = new EventEmitter();
-            child.pid = 42424;
-            child.stdout = new PassThrough();
-            child.stderr = new PassThrough();
-            child.kill = () => true;
-            setImmediate(() => {
-              const outIdx = cliInput.tool === "codex" ? 9 : -1;
-              void outIdx;
-              // Write JSON array to resultPath via finalText in codex stream:
-              child.stdout.write(
-                `${JSON.stringify({
-                  type: "item.completed",
-                  item: { type: "agent_message", text: '["alpha","beta"]' },
-                })}\n${JSON.stringify({ type: "turn.completed" })}\n`,
-              );
-              child.stdout.end();
-              child.stderr.end();
-              child.emit("exit", 0, null);
-              child.emit("close", 0, null);
-            });
-            return child;
-          }) as any,
-          drainProcessGroup: async () => true,
-        }),
-    });
-    expect(arrayCliRun.ok).toBe(true);
-    expect(arrayCliRun.result).toMatchObject({
-      type: "done",
-      output: ["alpha", "beta"],
-    });
-
-    // 7. Scratch outputRoot is retained when drainProcessGroup returns false (unconfirmed cleanup) and outputRoot was omitted:
-    const unconfirmedScratchRun = await run("codex", "Leaky process group", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      models: {},
-      drainProcessGroup: async () => false,
-      runCli: (cliInput, cliOpts) =>
-        runCliAgent(cliInput, {
-          ...cliOpts,
-          spawnCommand: (() => {
-            const { EventEmitter } = require("node:events");
-            const { PassThrough } = require("node:stream");
-            const child = new EventEmitter();
-            child.pid = 52525;
-            child.stdout = new PassThrough();
-            child.stderr = new PassThrough();
-            child.kill = () => true;
-            setImmediate(() => {
-              child.stdout.write(
-                `${JSON.stringify({
-                  type: "item.completed",
-                  item: { type: "agent_message", text: "ok" },
-                })}\n${JSON.stringify({ type: "turn.completed" })}\n`,
-              );
-              child.stdout.end();
-              child.stderr.end();
-              child.emit("exit", 0, null);
-              child.emit("close", 0, null);
-            });
-            return child;
-          }) as any,
-        }),
-    });
-    expect(unconfirmedScratchRun.ok).toBe(false);
-    expect(unconfirmedScratchRun.report.cleanup.confirmed).toBe(false);
-    expect(unconfirmedScratchRun.outputRoot).toBeDefined();
-    roots.push(unconfirmedScratchRun.outputRoot!);
-    expect(existsSync(unconfirmedScratchRun.outputRoot!)).toBe(true);
-    const stepSessionId = unconfirmedScratchRun.report.steps[0]?.sessionId;
-    expect(stepSessionId).toBeDefined();
-    expect(
-      existsSync(join(unconfirmedScratchRun.outputRoot!, "sessions", stepSessionId!, "bash-process-groups.json")),
-    ).toBe(true);
-
-    // 8. Duplicate owner in alpha.app and beta.app with cwd inside beta.app executes beta's procedure (not alpha's):
+    // 6. Same owner names in different Apps remain distinct exact canonical routes.
     const alphaSharedDir = join(alphaAppDir, "agents", "shared-owner");
     const betaSharedDir = join(betaAppDir, "agents", "shared-owner");
     mkdirSync(join(alphaSharedDir, "workflows"), { recursive: true });
@@ -2355,8 +2195,8 @@ export async function execute(ctx) {
     }
 
     const betaCwdRun = await run(
-      "shared-owner/which-app",
-      {},
+      "beta/which-app",
+      { prompt: "Report the owning App" },
       {
         cwd: betaAppDir,
         projectRoot: env.projectRoot,
@@ -2368,20 +2208,26 @@ export async function execute(ctx) {
       type: "done",
       summary: "beta",
     });
+    await expect(
+      run("shared-owner/which-app", { prompt: "Reject legacy owner alias" }, {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+      }),
+    ).rejects.toThrow("Callable target not found: shared-owner/which-app");
 
-    // 9. Explicit app scope ("alpha") combined with sibling agentsRoot ("beta.app/agents") is rejected before importing beta procedures:
+    // 7. Explicit App scope filters the catalog and rejects a sibling App's canonical route.
     await expect(
       run(
-        "beta-owner/beta-probe",
-        {},
+        "beta/beta-probe",
+        { prompt: "Probe beta" },
         {
           projectRoot: env.projectRoot,
           app: "alpha",
-          agentsRoot: join(betaAppDir, "agents"),
+          agentsRoot: join(alphaAppDir, "agents"),
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("Conflicting App scope");
+    ).rejects.toThrow("Callable target not found: beta/beta-probe");
 
     // 10. listStandaloneTargets bounds stalled top-level await imports via timeoutMs/signal:
     const gate = await controlledWorkflowImport(env.root);
@@ -2408,13 +2254,21 @@ export const description = "Reports ordinary domain input without Task synthesis
 export const inputSchema = {
   type: "object",
   properties: {
-    task: { type: "string" },
-    outcome: { type: "string" },
-    acceptance: { type: "array", items: { type: "string" } },
-    constraints: { type: "array", items: { type: "string" } },
-    verify: { type: "array", items: { type: "string" } },
+    prompt: { type: "string", minLength: 1 },
+    data: {
+      type: "object",
+      properties: {
+        task: { type: "string" },
+        outcome: { type: "string" },
+        acceptance: { type: "array", items: { type: "string" } },
+        constraints: { type: "array", items: { type: "string" } },
+        verify: { type: "array", items: { type: "string" } },
+      },
+      required: ["task", "outcome", "acceptance", "constraints", "verify"],
+      additionalProperties: false,
+    },
   },
-  required: ["task", "outcome", "acceptance", "constraints", "verify"],
+  required: ["prompt", "data"],
   additionalProperties: false,
 };
 export async function execute(ctx) {
@@ -2426,13 +2280,16 @@ export async function execute(ctx) {
 `,
     );
     const domainInput = {
-      task: "Domain field, not orchestration",
-      outcome: "Return unchanged input",
-      acceptance: ["No fake TaskDetail"],
-      constraints: ["No reconciliation envelope"],
-      verify: ["bun", "test"],
+      prompt: "Run the domain input probe",
+      data: {
+        task: "Domain field, not orchestration",
+        outcome: "Return unchanged input",
+        acceptance: ["No fake TaskDetail"],
+        constraints: ["No reconciliation envelope"],
+        verify: ["bun", "test"],
+      },
     };
-    const domainRun = await run("alpha-lead/domain-input-probe", domainInput, {
+    const domainRun = await run("alpha/domain-input-probe", domainInput, {
       projectRoot: env.projectRoot,
       models: { test: fakeModel() as any },
     });
