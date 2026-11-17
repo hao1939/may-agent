@@ -4,6 +4,7 @@ import type {
   ObservationContract,
   ObserverHealth,
   TaskAcceptedEvidenceNavigation,
+  TaskDetail,
   TaskReadOptions,
 } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../lib/db.js";
@@ -16,6 +17,7 @@ import {
   readTaskAcceptedEvidence,
 } from "./core/reads/app-task-evidence.js";
 import { taskStatusFromPhase } from "./core/reads/task-status.js";
+import { readStoredRuntimeTaskView } from "./core/reads/app-read.js";
 import { readAppConversationResource, readConversationTopic } from "./core/state/conversations.js";
 import { storedResultFacts } from "./core/state/result-facts.js";
 import {
@@ -101,6 +103,13 @@ export type HumanTaskView = {
   outcome: string;
   /** Exact completion criteria. Detail reads only; compact lists omit them. */
   acceptance?: string[];
+  /** Canonical saved Task input and provenance metadata. Detail reads only. */
+  input?: TaskDetail["input"];
+  creator?: TaskDetail["creator"];
+  currentObligations?: TaskDetail["currentObligations"];
+  activeAttempt?: TaskDetail["activeAttempt"];
+  pendingEvents?: TaskDetail["pendingEvents"];
+  inputEvents?: TaskDetail["inputEvents"];
   /** Plain explanation of the current lifecycle state. */
   statusDetail?: string;
   summary?: string;
@@ -1323,6 +1332,18 @@ export class HumanTaskService {
     );
     if (!view) return null;
     const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
+    const canonical = readStoredRuntimeTaskView(this.db, identity.appId, identity.taskId,
+      input.inputKeys === undefined ? undefined : { inputKeys: input.inputKeys });
+    const canonicalMetadata = canonical
+      ? {
+          input: canonical.input,
+          currentObligations: canonical.currentObligations,
+          ...(canonical.creator ? { creator: canonical.creator } : {}),
+          ...(canonical.activeAttempt ? { activeAttempt: canonical.activeAttempt } : {}),
+          ...(canonical.pendingEvents ? { pendingEvents: canonical.pendingEvents } : {}),
+          ...(canonical.inputEvents ? { inputEvents: canonical.inputEvents } : {}),
+        }
+      : {};
     const acceptedEvidence: TaskAcceptedEvidenceNavigation = {
       available: hasTaskAcceptedEvidence(this.db, identity.appId, identity.taskId),
       maxPageSize: TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
@@ -1332,6 +1353,7 @@ export class HumanTaskService {
     };
     const linkedView = {
       ...view,
+      ...canonicalMetadata,
       acceptedEvidence,
       ...(requestedBy ? { requestedBy } : {}),
       ...taskHistory(this.db, identity.appId, identity.taskId),

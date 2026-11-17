@@ -9,6 +9,7 @@ import type {
 } from "@may-agent/sdk/app";
 import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskCancellation } from "../tasks/app-task-state.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -102,6 +103,39 @@ function currentTaskObligations(
       }),
     },
   };
+}
+
+export function readStoredRuntimeTaskView(
+  db: SqliteDb,
+  appId: string,
+  taskId: string,
+  options?: TaskReadOptions,
+): TaskDetail | null {
+  const store = AppTaskResourceStore.fromDb(db, appId);
+  store.db.exec("SAVEPOINT stored_task_detail_read");
+  try {
+    const result = readTaskDetail(store, taskId, options);
+    if (options?.inputKeys !== undefined) {
+      const keys = options.inputKeys;
+      if (!Array.isArray(keys) || keys.length > 8 || keys.some((key) => typeof key !== "string" || !key.trim()))
+        throw new Error("inputKeys must contain at most 8 non-empty exact keys");
+      if (result) {
+        const admissions = store.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
+        result.inputEvents = [...new Set(keys)].map((key) => {
+          const admission = admissions?.[key];
+          if (admission?.taskId !== taskId || admission.taskGeneration > result.generation || !admission.inputEvent)
+            throw new Error(`Original input unavailable on this Task: ${key}`);
+          return { key, observedAt: admission.admittedAt, event: canonicalAppEvent(admission.inputEvent as AgentEvent) };
+        });
+      }
+    }
+    store.db.exec("RELEASE stored_task_detail_read");
+    return result;
+  } catch (error) {
+    store.db.exec("ROLLBACK TO stored_task_detail_read");
+    store.db.exec("RELEASE stored_task_detail_read");
+    throw error;
+  }
 }
 
 export function readRuntimeTaskView(
