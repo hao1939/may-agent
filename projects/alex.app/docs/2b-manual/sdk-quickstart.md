@@ -13,7 +13,7 @@ walkthrough; the examples import it rather than maintain a second App.
 The SDK root/App split is merged, but the current sample and other Apps have not
 completed that migration. New domain workers use root `AgentContext`; App
 declarations and Task/coordinator contracts use `@may-agent/sdk/app`. Follow
-[paired adoption gaps](../proposals/host-ingress-and-boundary-simplification-20261116.md#establish-a-compatible-host-and-app-pair)
+[paired adoption gaps](../archive/implementation/host-ingress-and-boundary-simplification-20261116.md#establish-a-compatible-host-and-app-pair)
 before using this walkthrough with the newer Host. A passing check against an
 older local SDK does not establish compatibility with merged Host `main`.
 
@@ -328,6 +328,6 @@ Reading them does not acknowledge or fulfill them. Unavailable evidence differs
 from an empty successful read. Follow exact detail links when omitted information
 matters to the decision; no mandatory sequence of tool calls is required.
 
-The [Task resource proposal](../proposals/task-resource-layout-20260929.md) records
+The [Task resource proposal](../archive/reviews/task-resource-layout-20260929.md) records
 the missed-review case and remaining usability comparison. The current
 [Task read contract](../2a-design/task-resource-read-interface.md) owns the API.

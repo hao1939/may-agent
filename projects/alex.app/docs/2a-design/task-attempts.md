@@ -126,6 +126,36 @@ its selected set. The [PoC record](../archive/reviews/burst-input-progress-20261
 records portable checks and limits; source validation does not establish live
 adoption, agent judgment or token savings.
 
+### Answer a dependency without ending the wider work
+
+A fulfilled setup question or escalation returns `converged` for its exact
+`inputKeys`, even when the owner still owes implementation. Existing independent
+input, Requests and Conditions retain that work. Returning `waiting` for an
+answered question can strand its caller; saving the answer only in `summary`
+or `result` does not deliver it. Creator revision updates the same assignment
+and schedules reconsideration; it is not itself the answer to every older
+caller input. Return that scoped answer through its saved relationship.
+
+Revision is necessary when saved requirements, checkout or allowance change.
+Ordinary feedback adds information and cannot rewrite those fields. Construct a
+complete revision from the current saved assignment, not the original handoff
+or an earlier report. Change the intended requirements and retain current
+checkout, caller/evidence references and consumed allowance. A matching generation
+fence prevents a racing write; it cannot detect stale content copied into an
+otherwise current revision. Inspect the saved receipt against the intended
+change before continuing. A revision wake is
+sufficient to reconsider current work; send another addressed input only when
+it conveys a distinct fact or resolves an outstanding return. Reuse an
+idempotency key only for retry of the identical uncertain operation.
+
+New input permits reconsideration; it does not replenish development rounds.
+Keep one cumulative total and consumed count across attempts, generations,
+timeout and restart. An authorized creator can raise that total on the same
+Task for a bounded continuation, preserving all usage and evidence. Host attempt
+retry pacing and an App workflow's development allowance bound different costs;
+neither silently renews the other. Already authorized continuation can use the
+owner path without another human confirmation.
+
 ## Workspace ownership and cleanup
 
 Keep accepted work usable, and remove disposable execution artifacts without

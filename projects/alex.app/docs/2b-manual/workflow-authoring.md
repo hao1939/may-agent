@@ -13,6 +13,12 @@ For standalone/Host execution semantics, use
 fixture and standalone runners, use [SDK execution and testing](../2a-design/sdk.md#standalone-execution-and-testing).
 Historical extraction examples are not current API instructions.
 
+The [unified-call cutover](../proposals/agent-workflow-interface-review-20261117.md)
+is accepted and being implemented. Its required `{ prompt, data? }` envelope,
+canonical names and `ctx.list()` are target APIs, not yet available in the
+installed runtime. Existing examples remain current until the paired Host/SDK/App
+cutover; migrate them with that implementation.
+
 For SDK #566 and later, author domain procedures against root `AgentContext`:
 explicit `input`, `signal`, `call`, workspace, logging, `done` and `blocked`.
 Root `WorkflowContext` is its deprecated alias. Task coordinators and legacy
@@ -82,7 +88,7 @@ with the new root context and does not establish standalone/Gym parity.
 The domain-worker prototype instead takes explicit requirements, acceptance,
 constraints, verification, feedback and prior evidence. Host input construction,
 blocked translation and fresh resumed input remain integration work. The
-[active follow-up](../proposals/host-ingress-and-boundary-simplification-20261116.md)
+[active follow-up](../archive/implementation/host-ingress-and-boundary-simplification-20261116.md)
 tracks this distinction. Neither interface grants broader authority than the
 assignment. The execution SDK validates and carries domain input; it no longer
 constructs a synthetic reconciliation envelope or extracts a hidden Task brief.

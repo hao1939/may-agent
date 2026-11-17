@@ -6,6 +6,10 @@ The interfaces below define the requested cutover.
 is merged into main `0606e2df16d0a44016bbef1c6294dac4c4c11d94`; its shared
 tool name still fronts incompatible inputs, results, discovery and permission
 handling. Source merge and installed-runtime activation are separate facts.
+Draft [#589](https://github.com/hao1939/may-agent/pull/589) publishes the partial
+catalog/discovery checkpoint `a3a0f2fe6a`. Later local commits add standalone
+dispatch and SDK discovery wiring; production model/SDK parity, removal of old
+interfaces and paired App migration remain incomplete. No candidate is activated.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -141,6 +145,14 @@ alone is not a successful finish. Code returns the equivalent report through the
 SDK. Backend kind, session/workflow aliases, transcripts and output directories
 stay in execution diagnostics, outside the common result payload.
 
+Migrate diagnostic consumers as well as result producers. In particular,
+`ExecutionResult.cliCalls` currently supplies Host-recorded evidence to development
+and Gym. Preserve its provenance through the existing execution diagnostics or
+configured diagnostic observer, addressed by the actual execution reference.
+Extend that owning read/projection only where a real consumer needs it; do not
+retain a second result alias or treat producer-authored `facts` as trusted tool
+receipts. Candidate verification must include those consumers.
+
 Existing supervisor stop, capacity deferral and persistence-failure handling keep
 their control meaning. They apply equally to either executor and cannot be
 converted into a successful contribution. Runtime-generated failure diagnostics
@@ -179,6 +191,11 @@ arbitrary module paths. All registered callables are listed and callable; there
 are no per-caller, per-App or per-kind invocation permission checks. App names
 identify ownership. Existing tool provisioning and Task mutation/fencing remain
 with their owning APIs.
+
+Native CLI backends remain execution setup/tool capabilities unless explicitly
+registered as contributions. A registered CLI-backed contribution follows the
+same catalog, envelope and result rules; do not append unconditional standalone-
+only pseudo-targets to shared discovery or retain their bare-name call aliases.
 
 Bind `agents` as a built-in cooperation tool for prompt execution, independent
 of a delegation preset or the existence of a workflows directory. Code uses
@@ -221,6 +238,9 @@ observe; Conditions wake an eligible attempt. The caller retains its assignment
 and judges the contribution. A helper's completion never settles that Task.
 
 ## Implementation and migration
+
+The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
+records the exact pre-cutover gaps, installed baseline and validation limits.
 
 This is a paired Host/SDK/App change. Apply the interface in one coherent source
 cutover, preserving #585's valid test repair. The broader Host shared-`run()` and

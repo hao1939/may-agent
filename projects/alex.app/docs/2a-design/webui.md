@@ -295,7 +295,7 @@ or Task evidence.
 ## Overview, Metrics and Run Inspection
 
 Refine the existing routes, not a second monitoring UI. The
-[workflow health proposal](../proposals/workflow-tracing-and-health-metrics.md#3-present-health-with-a-path-back-to-evidence)
+[workflow health proposal](../archive/implementation/workflow-tracing-and-health-metrics.md#3-present-health-with-a-path-back-to-evidence)
 tracks implementation; [Metrics](metrics.md#metric-semantics-and-persistence)
 owns calculation and persistence semantics.
 

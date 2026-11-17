@@ -8,7 +8,10 @@
 **Implementation status:** Scoped helper calls, common terminal results,
 evidence retention and Task-backed waiting are implemented. Cancellation requires
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
-The sections below state specific coverage limits. Full standalone/Host agent
+The unified call envelope, canonical discovery and reduced cooperation tool are
+accepted requirements pending implementation; the examples under Invocation
+and Result admission describe that target. The sections below state specific
+coverage limits. Full standalone/Host agent
 parity is not established; [Shared Agent Runtime](agent-runtime.md) owns its
 accepted semantics and current convergence gaps.
 
@@ -66,7 +69,7 @@ schema activation are recorded in the [October 17 rollout](../archive/reviews/ju
 [Host #374](https://github.com/hao1939/may-agent/pull/374) checks original reports before conversion.
 Its [dated activation record](../archive/reviews/recovery-contract-20261017.md#host-374-and-activation-boundary)
 identifies the installation verified then; broader App adoption remains App-owned. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
+[implementation proposal](../archive/reviews/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
 owns that work and the comparison trials; these rules do not establish rollout.
 
 ### A valid report can describe incomplete work
@@ -177,6 +180,12 @@ They return the same target descriptors, without implementation-kind collections
 or active-session lists. Static workflow code can call known canonical names
 without listing first; discovery is available when it needs runtime inspection.
 The SDK `ctx.list()` binding remains implementation work, not an available API.
+
+A native CLI backend or utility is not automatically a registered contribution.
+If configuration exposes it as a callable, include its canonical descriptor and
+apply the same envelope/result contract in every adapter. Otherwise keep it in
+its owning execution/tool API and out of shared discovery. Do not append
+standalone-only pseudo-targets to a catalog claimed to match model/SDK listing.
 
 Replacing an implementation keeps the same canonical name, input and result
 contract. It does not register both implementations under that name at once.
@@ -421,7 +430,7 @@ effects and exact input identity while using the existing retry path.
 Workflow runs retain step timing/status, input summaries, source errors and
 bounded result evidence. Optional observations cannot veto a successful result;
 required execution-state persistence remains required. The
-[workflow tracing record](../proposals/workflow-tracing-and-health-metrics.md)
+[workflow tracing record](../archive/implementation/workflow-tracing-and-health-metrics.md)
 and [stability trials](../archive/reviews/workflow-stability-poc-20260912.md)
 retain the original evidence. Current source supplies these contracts:
 
@@ -736,7 +745,7 @@ The pinned model tool validator can coerce values before ordinary App checks
 run. Merged Host #374 uses its supported pre-validation hook for
 structured finish reports. The linked dated rollout records identify the
 installation verified then; they do not identify today's active binary. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
+[implementation proposal](../archive/reviews/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
 specifies the remaining questions; callers must verify support in their installed
 Host. Optional report fields are already supported by the schema surface.
 

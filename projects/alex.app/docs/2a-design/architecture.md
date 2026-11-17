@@ -282,7 +282,7 @@ No dedicated adapter service, supervisor lifecycle or database is needed.
 A discovery query's result limit does not bound its synchronous historical work;
 the [dated responsiveness investigation](../archive/reviews/responsive-host-recovery-20261002.md)
 records the earlier query and background-execution findings. Current performance
-questions remain in the [Host follow-up](../proposals/host-contract-improvements-20261016.md#query-cost-and-control-responsiveness).
+questions remain in the [Host follow-up](../archive/reviews/host-contract-improvements-20261016.md#query-cost-and-control-responsiveness).
 Generic Task mechanics remain independent of conversational policy. The
 [unification review](../archive/reviews/conversation-input-unification.md)
 records the code changes and retirement of the former separate consumer.
@@ -318,7 +318,7 @@ merge [#141](https://github.com/hao1939/may-agent/pull/141) (`48254267`) and
 the adapter merge [#142](https://github.com/hao1939/may-agent/pull/142) (`427d4ea1`).
 The moves preserve existing transitions and transaction boundaries;
 its review and validation are tracked in the
-[simplification proposal](../proposals/authority-boundary-simplification.md#directory-organization-for-code-review).
+[simplification proposal](../archive/reviews/authority-boundary-simplification.md#directory-organization-for-code-review).
 
 ```text
 src/app/
@@ -351,11 +351,11 @@ packages/webui/          browser client
 projects/<id>.app/       App-owned policy, agents and workflows (workspace)
 ```
 
-The [storage proposal](../proposals/storage-state-service.md#code-organization)
+The [storage proposal](../archive/decisions/storage-state-service.md#code-organization)
 owns meaningful operations in `core/state/`; it does not require a separate API
 server. Task snapshot/mutation helpers stay beside the Task runtime; canonical
 SQLite persistence lives in `core/state/app-task-resource-store.ts`.
-Its [conversation slice](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
+Its [conversation slice](../archive/decisions/storage-state-service.md#conversation-state-and-handler-extraction)
 landed in #129 and separates core state operations from replaceable frontend
 handling. ESLint prevents core imports of concrete conversational handlers.
 

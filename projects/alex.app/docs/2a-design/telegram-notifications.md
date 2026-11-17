@@ -34,7 +34,7 @@ provider HTTP/receipt persistence (`telegram-client.ts`), and unified per-surfac
 session state (`telegram.ts`) over `HumanTaskService` and `getAppConversation`,
 with ESLint forbidding direct core state or raw DB imports in `transport/`.
 Source checks and merge state are not a deployment claim.
-The [conversation experience record](../proposals/telegram-conversation-experience.md)
+The [conversation experience record](../archive/implementation/telegram-conversation-experience.md)
 retains the acknowledgment, contextual-button and compact-update trials.
 Current source includes those mechanisms; a live bot's behavior depends on its
 binary, App definitions, permissions and provider state.

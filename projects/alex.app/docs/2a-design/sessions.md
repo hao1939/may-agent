@@ -15,7 +15,7 @@ retains its original scope and limits; source status does not establish the
 deployed artifact.
 The finish tool's separate lesson-file write was retired in merged
 [#473](https://github.com/hao1939/may-agent/pull/473); see
-[the selected reduction](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes)
+[the selected reduction](../archive/implementation/external-components-simplification.md#retire-automatic-lesson-file-writes)
 for its source and verification record. Installed adoption remains unverified.
 
 ## The Model
@@ -231,11 +231,11 @@ a counter.
 
 The automatically written per-agent latest copy was retired in merged
 [#478](https://github.com/hao1939/may-agent/pull/478); see
-[the selected reduction](../proposals/external-components-simplification.md#retire-per-agent-latest-checkpoint-writes)
+[the selected reduction](../archive/implementation/external-components-simplification.md#retire-per-agent-latest-checkpoint-writes)
 for its source and verification record. Checkpoint saves append to the session
 log and preserve historical latest files. Installed adoption remains unverified.
 
-The [tool cleanup](../proposals/authority-boundary-simplification.md#independent-tool-cleanup),
+The [tool cleanup](../archive/reviews/authority-boundary-simplification.md#independent-tool-cleanup),
 merged in Host #198 as `28670dd2`, implements this by reading the highest saved
 step before each synchronous append. It accepts reading the coarse-progress log instead of maintaining
 another cache/lifecycle. Execution has one writer per session; this does not

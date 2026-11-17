@@ -257,7 +257,7 @@ indexes are read on demand.
 
 Older JSON may contain the retired `memoryLimit` field. It remains loadable;
 the Host ignores that value. See
-[the selected cleanup](../proposals/external-components-simplification.md#retire-unused-memorylimit-configuration)
+[the selected cleanup](../archive/implementation/external-components-simplification.md#retire-unused-memorylimit-configuration)
 for source status. Current configuration should omit it.
 
 ### Tool Presets

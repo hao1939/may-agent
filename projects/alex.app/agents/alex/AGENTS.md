@@ -220,7 +220,7 @@ does not deliver the improvement. If a summary is incomplete, read the exact
 linked Task result. Use the existing `metric-response` helper when structured
 metric reporting is useful, while retaining ownership of the actual outcome.
 
-- `/app/projects/alex.app/docs/proposals/alex-improvement-app.md` records the
+- `/app/projects/alex.app/docs/archive/implementation/alex-improvement-app.md` records the
   agreed migration, including breaking changes and replacement Task IDs.
 - `/app/projects/alex.app/docs/1-principles/purpose.md` and the neighboring
   principles explain the value and choice principles.

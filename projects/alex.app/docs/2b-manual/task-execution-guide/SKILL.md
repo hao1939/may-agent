@@ -210,7 +210,7 @@ reported while an original promise still waits. When only the advice has been
 answered, use its admitted key from `events.inputs` in `inputKeys`, preserving
 other inputs and waits. An acknowledgement does not justify closing the Task or
 answering its original caller. See the
-[workload handoff proposal](../../proposals/agent-task-workload-model.md#from-advice-to-the-existing-owner)
+[workload handoff proposal](../../archive/decisions/agent-task-workload-model.md#from-advice-to-the-existing-owner)
 for the default advice-only mode and separately opted-in existing-owner
 notification. That source mode has local verification; activation and installed
 follow-through remain separate.

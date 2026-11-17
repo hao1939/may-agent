@@ -11,7 +11,7 @@ Task claim and settlement lifecycle. Accepted outcomes, explicit closure and
 caller correlation have separate retained records. Source status does not
 establish the deployed artifact; see the [source review](../archive/reviews/design-doc-hygiene-20260927.md).
 
-The [storage extraction review](../proposals/storage-state-service.md#candidate-review-and-landing-order)
+The [storage extraction review](../archive/decisions/storage-state-service.md#candidate-review-and-landing-order)
 retains the earlier boundary work. The
 [one-lifecycle baseline](../archive/reviews/conversation-input-unification.md)
 records the shared authority decision. Active-Turn reads use current Task
@@ -106,7 +106,7 @@ remain evidence. Completed inputs, child inputs, Task state/results, Topic links
 and accepted Requests remain intact; finishing an obsolete input never closes
 an accepted ask. Reopening the upgraded database does not repeat the transition.
 The historical conversion is recorded in the
-[simplification proposal](../proposals/authority-boundary-simplification.md#1-one-durable-delegation-path);
+[simplification proposal](../archive/reviews/authority-boundary-simplification.md#1-one-durable-delegation-path);
 rollout remains separate.
 
 Host #175, merged as `e38d2861`, retains compact per-Task event
@@ -204,7 +204,7 @@ Recovery batches yield between items; several short waits must not accumulate
 into one long blocking callback. Startup and isolated workers may have different
 budgets. The [October 16 source candidate and trial](../archive/reviews/host-contention-fix-20261016.md)
 remove extra serving sleeps while preserving those separate budgets; review and
-rollout remain outstanding. The [Host improvement plan](../proposals/host-contract-improvements-20261016.md)
+rollout remain outstanding. The [Host improvement plan](../archive/reviews/host-contract-improvements-20261016.md)
 tracks the other gaps.
 
 [App admission recovery](events.md#recovering-app-admission) describes Host PR
@@ -405,7 +405,7 @@ Keep page sizes and payloads bounded and inspect query plans for common reads.
 A response limit alone does not prove bounded query cost. Reuse current evidence
 and projections; do not copy Task status into Requests or introduce a second chat
 history. [Architecture](architecture.md#conversation-core-and-capability-boundary)
-owns placement; the [storage proposal](../proposals/storage-state-service.md#conversation-state-and-handler-extraction)
+owns placement; the [storage proposal](../archive/decisions/storage-state-service.md#conversation-state-and-handler-extraction)
 records the current helpers, extraction order and proof required.
 
 Conversation recovery filters out closed conversations and self-returns before

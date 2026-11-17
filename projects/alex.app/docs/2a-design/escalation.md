@@ -19,7 +19,7 @@ to the caller. The Task owner tries useful authorized recovery, then asks the
 App's owner agent for help within that scope. That agent coordinates its App's
 capabilities and, if still blocked, asks May. May acts or asks Hao. An agent
 without an App has no App step; durable standalone admission remains a
-[follow-up](../proposals/standalone-agent-tasks.md).
+[follow-up](../archive/decisions/standalone-agent-tasks.md).
 
 The App is an extension of its owner agent, not another decision-maker or a
 mandatory escalation Task. Its address selects shared scope and routes the ask
@@ -66,7 +66,7 @@ or a declared operational route. That executes configured policy without choosin
 a repair strategy or changing the Task's executor. A usable recipient must be
 able to run despite the failed setup. This is a requirement with incomplete
 installed coverage, not a promise that every failure already escalates. The
-[hierarchical recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+[hierarchical recovery proposal](../archive/reviews/unified-agent-recovery-20261017.md)
 owns the remaining route/execution trials; a missing route stays a visible gap.
 
 Work admitted from a failure event has no implicit caller relationship. Carry

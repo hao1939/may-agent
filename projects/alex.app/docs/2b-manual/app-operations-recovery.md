@@ -184,7 +184,7 @@ that alone does not prove its owner was notified or acted. Inspect the reason
 and existing declared owner/parent route, then repair the prerequisite or obtain
 an authorized decision for that same Task. Do not create a replacement Task or
 invent an owner-inbox event merely because it is waiting for attention. The
-[connected recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+[connected recovery proposal](../archive/reviews/unified-agent-recovery-20261017.md)
 tracks the remaining end-to-end decision-route proof.
 
 If the worker fails before it claims an attempt, inspect the controller's

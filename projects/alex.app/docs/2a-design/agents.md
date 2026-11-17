@@ -11,7 +11,7 @@ cancellation. Ended Host sessions cannot resume; unfinished work starts a fresh
 Task attempt. Supported native CLI thread continuation remains separate. The
 [execution review](../archive/reviews/execution-consolidation-poc-20260914.md)
 retains the trials and their limits. The refined cooperation design below removes
-invocation permissions, unifies input/result/discovery, and recommends retiring
+invocation permissions, unifies input/result/discovery, and retires
 `fork`; those source changes are not yet implemented.
 
 Agent registration has two scopes:
@@ -90,7 +90,7 @@ routing, workspace/knowledge discovery and assignment controls are retained.
 **Accepted direction, not yet implemented:** an agent can own durable Tasks
 without an App. Global agents already support bounded calls, but durable
 admission, identity and recovery still require an App scope. The
-[standalone Task follow-up](../proposals/standalone-agent-tasks.md) owns that
+[standalone Task follow-up](../archive/decisions/standalone-agent-tasks.md) owns that
 remaining change. Do not invent an App wrapper or a callable standalone API
 in agent instructions. Use current declared App routes until that path exists.
 
@@ -107,13 +107,13 @@ Resource limits continue to constrain execution and spending. Empty execution
 places do not imply usable capacity when workspace, disk or access prerequisites
 are blocked. The intended feedback distinguishes runnable demand, blocked
 obligations and results awaiting creator review within the agent's read scope.
-The [workload proposal](../proposals/agent-task-workload-model.md) owns the detailed
+The [workload proposal](../archive/decisions/agent-task-workload-model.md) owns the detailed
 decision guidance, shared-accounting choices and behavioral verification cases.
-Its [bounded decision pass](../proposals/agent-task-workload-model.md#one-bounded-decision-pass)
+Its [bounded decision pass](../archive/decisions/agent-task-workload-model.md#one-bounded-decision-pass)
 connects feedback to useful next actions and makes consequential deferral visible
 through existing Task and caller paths. Workload situations guide judgment;
 they introduce no new Task states or automatic admission and closure thresholds.
-The [lifecycle integration](../proposals/agent-task-workload-model.md#integrate-with-the-existing-lifecycle)
+The [lifecycle integration](../archive/decisions/agent-task-workload-model.md#integrate-with-the-existing-lifecycle)
 places accounting and feedback at shared admission, execution start,
 settlement/cleanup and agent decision context, preserving the existing engine.
 Protected coordination lets explicitly eligible agents make bounded decisions
@@ -121,7 +121,7 @@ under resource stress. Host #443 integrated that support; the
 [completion audit](../archive/reviews/workload-completion-audit-20261109.md)
 records its supported paths and remaining acceptance. Source integration does
 not establish installed funding, activation or improved judgment.
-The [implementation approach](../proposals/agent-task-workload-implementation.md)
+The [implementation approach](../archive/implementation/agent-task-workload-implementation.md)
 maps these changes to current Host owners and staged verification; current App
 admission can support that work without waiting for standalone Task addressing.
 
@@ -172,7 +172,7 @@ see [common invocation](execution-contributions.md#invocation-and-ownership).
 | `list` | List one catalog of registered callables and their contracts | Discover an exact canonical name |
 | `call` | Await a bounded contribution with `{ prompt, data? }` input and the common result | Current invocation needs the result |
 
-The recommendation is to retire `fork` and the session-management actions from
+The accepted direction is to retire `fork` and the session-management actions from
 this cooperation tool. A fork's distinct value is letting a model start a helper,
 continue its own work and later collect the result. It also requires session
 handles, inspection, live steering, result collection and cleanup semantics.

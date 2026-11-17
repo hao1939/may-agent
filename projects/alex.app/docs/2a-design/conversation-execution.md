@@ -10,7 +10,7 @@ The later [ingress/SDK source record](../archive/implementation/host-ingress-sdk
 records removal of parallel Conversation change discovery and the remaining
 retained-delivery gaps. Stable Conversation execution Tasks still exist.
 Replacing them with ingress-managed bounded turns and completion Hooks remains
-[follow-up](../proposals/host-ingress-and-boundary-simplification-20261116.md#single-task-conversation-ownership),
+[follow-up](../archive/implementation/host-ingress-and-boundary-simplification-20261116.md#single-task-conversation-ownership),
 not an implemented cutover.
 
 [Message Lifecycle](message-lifecycle.md) owns what an accepted human ask means.

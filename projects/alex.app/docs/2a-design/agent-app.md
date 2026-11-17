@@ -580,6 +580,11 @@ periodic observation; the queue is disposable, not another authority.
 
 ### Two watch modes: `one-shot` vs. `continuous` (and M:N fan-out)
 
+**Target, not implemented:** Host main `0606e2df16` still selects unsatisfied
+Conditions on pending/running/waiting Tasks; it has no continuous-watch mode.
+Current Apps must retain/rearm an ordinary fingerprint Condition while follow-up
+remains owed. The behavior below requires Host/SDK/App implementation and trial.
+
 Resource watches and Task Conditions operate in one of two explicit modes (see
 [Event System Refinement](../proposals/event-system-refinement-20261117.md#2-extensible-resource-watcher-architecture-pluggable-per-resource-watchers--two-watch-modes-one-shot-vs-continuous)):
 
@@ -599,6 +604,18 @@ Resource watches and Task Conditions operate in one of two explicit modes (see
      1. The **Resource closes** (`closed: true` / `state === "closed"` / `merged === true`),
         after delivering that final terminal fact once to all subscribed Tasks; or
      2. The **Task closes** (`closed` / `cancelled`).
+
+Read sharing stays within the same trusted observer source/type and resource;
+separate App definitions or credential scopes do not become one observation
+merely because their observer IDs match. Each interested Task retains its own
+delivery and consumed fingerprint. One Task processing a fact cannot consume
+another Task's interest.
+
+The observer/App declares resource termination; the Host does not interpret
+GitHub fields. Retain the terminal fact and its interested destinations before
+stopping reads. Deliver it for owner reconsideration even if an expected success
+predicate remains false. Stopping observation does not satisfy that predicate,
+claim fulfillment or close the Task. A provider failure is not a terminal resource.
 
 Publication suppression yields to the existing Condition matcher: unchanged
 data is published when a current open wait needs it. This covers both new Tasks

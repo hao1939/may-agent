@@ -8,37 +8,26 @@
 
 ---
 
-## 1. Problem Statement: Why the Event System Feels Muddy Today
+## 1. What needs improvement
 
-An audit of `src/app/core/events/bus.ts`, `src/app/core/events/interface.ts`, `src/lib/db-writer.ts`, and the live `/app/.state/may.db` (`23,280` rows in `events`) reveals why our event system has grown hard to reason about:
+Current EventBus traffic mixes durable facts, input/control commands, internal
+timers, execution telemetry and live UI notifications. Some store writes are
+hidden in the journal subscriber. This makes ownership, admission and later
+completion harder to follow. The [dated audit](../archive/reviews/event-system-refinement-review-20261117.md)
+retains observed row counts and the PR #587 late-comment case; those measurements
+are not enduring API requirements.
 
-**We currently overload one `EventBus` and one SQLite `events` table for 5 completely different mechanisms:**
+**Implementation status:** These are proposed changes. Host main `0606e2df16`
+still uses Event-based control/input admission and unsatisfied Condition routes;
+continuous observation after convergence is not implemented. Existing durable
+admission and caller recovery remain the supported local-trial path.
 
-1. **High-Frequency Internal Timers & Heartbeats (66.3% of all rows in `events`!):**
-   - `runtime.daemon.heartbeat`: **7,025 rows** (written every 30s).
-   - `trigger.metrics-evaluate`: **6,988 rows** (written every 60s via a `may.app` schedule).
-   - `trigger.metrics-snapshot`: **1,468 rows** (written every 5m via a `may.app` schedule).
-   - `conversation.supervision.review`: **482 rows** (written every 15m via a `may.app` schedule).
-   - *Total:* **15,963 rows** of timer noise in the durable `events` journal!
-2. **Synchronous Commands / RPC Controls Disguised as Events:**
-   - Task lifecycle mutations (`app.task.cancel.requested`, `app.task.retry.requested`, `app.task.reopen.requested`, `app.task.close.requested`), Conversation stop (`conversation.turn.stop.requested`), and Host lifecycle controls (`runtime.reload.requested`, `runtime.restart.requested`, `runtime.shutdown.requested`) are synchronous, fenced RPC commands. Routing them through pub/sub `EventBus` adds indirection without decoupled fan-out.
-3. **Hidden SQLite Table Mutations Inside `DbWriter` Event Persistence:**
-   - Emitting `session.start`, `session.end`, or `session.idle` on `EventBus` secretly mutates the `sessions` table inside `DbWriter.handler` (`src/lib/db-writer.ts:288`).
-   - Emitting `metric.threshold_changed` or `metric.alert_resolved` secretly mutates metric definitions/alerts inside `DbWriter`.
-4. **Duplicated Execution & Step Telemetry (21.6% of all rows in `events`):**
-   - `session.start` (`1,184`), `session.end` (`994`), `project.task.reconcile.started` (`748`), `skill.loaded` (`578`), `workflow.started` (`234`), `workflow.completed` (`228`), `handler.workflow_dispatched` (`204`), `workflow.step_started` (`101`), `workflow.step_completed` (`100`).
-   - Dedicated tables (`sessions`, `app_task_attempts`, `workflow_runs`, `execution_usage`) *already* record these executions with proper schemas.
-5. **Ephemeral UI Wakes & Live Output Streams Mixed with Durable Facts:**
-   - In-memory stream chunks (`text`, `tool_call`, `tool_result`, `turn_end`, `info`, `prompt`) and UI push notifications (`conversation.updated`, `app.task.updated`) flow through the same `EventBus` as durable domain facts.
-
-### The Accidental Complexity This Created
-Because all 5 categories share one bus and table, the runtime had to invent layers of defensive bookkeeping:
-- Three internal symbol flags on events (`EVENT_RECORD_ONLY`, `EVENT_INTERFACE_INPUT`, `EVENT_APP_ADMISSION_REDELIVERY_REQUIRED`).
-- Three overlapping delivery state columns in `events` (`delivery_status = 'pending' | 'accepted' | 'unhandled'`, `delivery_route = 'direct' | 'noop'`, `app_admission_pending = 0 | 1`).
-- A hardcoded whitelist `INTENTIONAL_OBSERVATION_EVENT_TYPES` in `src/app/metric-source-measurement.ts` (`project.approval.resolved`, `evaluation.task_report_published`, `evaluation.metric_report_published`, `scout.research.qualified`) just to stop `record`-mode facts from triggering false `unhandled_events` alerts!
-- Self-subscribed schedules in `scout-knowledge-lib.app` (`schedule -> emit scout.explore -> subscribe to scout.explore -> toInput`) even though `AppSchedule` already supports direct `input: { kind, data }`.
-
----
+The first integration priority is keeping the exact PR follow-up responsibility
+alive after a readiness notice. Journal cleanup and HTTP transport consolidation
+follow independently; neither is a prerequisite for testing the unified callable
+candidate. Root owns design/review, May owns implementation through the existing
+workflow. New source findings should be assigned to their exact owner, with a
+bounded regression and return evidence.
 
 ## 2. Core Principle: What Is an Event?
 
@@ -46,7 +35,7 @@ To make events **clear and loud**, we establish one strict rule across the 3-Lay
 
 > **An Event is a durable, immutable Fact (`past_tense`) about a meaningful state change that independent consumers (App `subscriptions` or Task `Conditions`) react to.**
 >
-> - **Commands & Inputs are direct calls, NOT Events.**
+> - **Commands and inputs request effects from an owning API; facts report committed observations.**
 > - **Timers & Heartbeats are internal clocks, NOT Events.**
 > - **Table mutations belong to the owning store, NOT `DbWriter` event side-effects.**
 > - **Live UI/WebSocket notifications are Ephemeral Wakes, NOT durable Events.**
@@ -92,7 +81,7 @@ To make events **clear and loud**, we establish one strict rule across the 3-Lay
 
 ### A. KEEP as Durable Domain Events (Loud, High-Signal Facts in `events`)
 
-These are the **only** events that belong in the durable `events` journal. Every single one is a past-tense fact that wakes a Task `Condition`, triggers an App `subscription`, or records a primary cross-boundary transition:
+These are candidate durable fact families. A fact can have zero current consumers; that alone is not a failure. Required delivery applies to an addressed obligation or declared consumer, and must remain visible until its own admission succeeds:
 
 | Category | Event Types | Producer | Consumer (`subscriptions` / `Conditions`) |
 | --- | --- | --- | --- |
@@ -122,7 +111,12 @@ These are the **only** events that belong in the durable `events` journal. Every
 
 ### C. RETIRE Dead & Legacy Event Types
 
-These legacy event types are remnants of earlier architectures (`projects`, v2 inter-agent messaging, direct Pi session chat, and manual metric threshold edits) and should be deleted from `bus.ts`, `interface.ts`, `command-router.ts`, and `db-writer.ts`:
+These names are retirement candidates, not a verified list of dead producers.
+Check current writers, subscriptions, control clients, startup and recovery before
+removing each one from `bus.ts`, `interface.ts`, `command-router.ts` or `db-writer.ts`.
+A retained operator cancellation/diagnostic capability still needs its owning API;
+removing public helper-session actions does not remove Host supervision. Record
+an exact replacement or proof of no supported consumer for each removal:
 
 - `project.comment.created`, `project.owner.requested`, `project.status_changed`, `project.nudge`
 - `chat.start.requested`, `session.steer.requested`, `session.cancel.requested`, `session.cancel_all.requested`
@@ -219,6 +213,28 @@ export type ResourceObserver = {
 
 When a Task subscribes to an event or resource, it chooses one of **two watch modes** depending on its intent:
 
+Continuous observation is a retained interest, not a forever-unfulfilled business
+prerequisite. A changed fact must be durably associated with every interested
+Task and make eligible work runnable even while interest remains active. Keep
+interest, last delivered fingerprint, input acceptance and attempt convergence
+independent. Unchanged observations need no repeated model call. Reuse existing
+Condition routes and event/inbox recovery rather than adding a second watch
+registry or relying on an in-memory subscriber.
+
+Share a resource read only within the same trusted observer source/type and
+resource. Equal observer IDs under different App definitions or credentials do
+not establish equivalent visibility. Each interested Task keeps its own durable
+delivery/consumed fingerprint; processing one subscriber must not advance another.
+
+The observer/App defines what terminal means for its resource; generic Host code
+must not infer it from GitHub-specific fields. Retain the final observation and
+its consumer routes before retiring demand, so a failed wake can recover. A
+closed/cancelled Task must not be resurrected. Offer the terminal observation to
+each interested Task even when its expected success predicate remains false;
+retiring demand must not leave the owner asleep forever or fabricate success.
+A failed provider read is not resource termination. Define explicit removal or owner
+transfer for withdrawn monitoring; local readiness alone does neither.
+
 | Dimension | Mode 1: `one-shot` Watch (Default for exact target state) | Mode 2: `continuous` Watch (Consistent watch while resource is open) |
 | --- | --- | --- |
 | **Intent** | *"Wake me **once** when this exact expected state is reached."* | *"Keep notifying me of **any meaningful change** (`fingerprint` change) to this resource while it is open."* |
@@ -229,7 +245,7 @@ When a Task subscribes to an event or resource, it chooses one of **two watch mo
 
 ---
 
-#### C. Why This Solves Every Case Cleanly
+#### C. Intended PR follow-through behavior
 
 1. **Solves the PR #587 Late Review Comment Bug Automatically:**
    - When `alex · e462ebfe` opens PR #587, it attaches a **`mode: "continuous"`** watch on `resource:github:hao1939/may-agent#587`.
@@ -254,7 +270,7 @@ When a durable event is emitted:
 3. **Clear & Loud Delivery Status:**
    - Because `events` only contains real domain facts (no heartbeats, timer ticks, or `skill.loaded` noise), every event has a transparent outcome:
      - `matched` (admitted to ≥1 exact Task, App subscription, Task Condition, or declared App observation)
-     - `unmatched` (loud signal: a domain fact was emitted that no consumer matched!)
+     - `unmatched` (diagnostic when delivery was required; a legitimate record-only fact may have no consumer).
      - `failed` (loud signal: a matching subscription's `toInput` or admission threw an error, triggering recovery and `app.input.admission.failed`).
 
 ### 4. Separate Ephemeral Wake & Stream Bus (`LiveStreamBus`)
@@ -267,11 +283,11 @@ When a durable event is emitted:
 
 1. **Slice 1 — Unified M:N Resource Watcher Lifecycle (Subscribe Until Resource Closes or Task Closes):**
    - Update `ResourceObserver` demand and condition routing (`src/app/core/state/observation-demand.ts`, `src/app/adapters/producers/resource-observer.ts`, and `src/app/core/tasks/app-task-runtime.ts`) so a Task's subscription to a resource (`resource:github:hao1939/may-agent#587`) stays active across multiple updates (`fingerprint` changes) and across `converged` (`idle`) phases while the PR is still open.
-   - Support true **M:N (`Task ↔ Resource`)** fan-out: poll each unique `(type, resource)` once per interval and fan out changed resource facts to **all** subscribed open Tasks (`app_task_condition_routes`).
+   - Support **M:N (`Task ↔ Resource`)** fan-out: share reads for an equal trusted observer source/type/resource and fan out changed facts to all interested open Tasks (`app_task_condition_routes`), with each route's delivery retained independently.
    - Enforce the **Two Unsubscribe Rules**:
      1. Unsubscribe automatically when the **Task closes** (`closed` / `cancelled` in `app_task_cancellations`).
-     2. Unsubscribe automatically when the **Resource closes** (e.g., `state === "closed"` or `merged === true` on a PR), after delivering the terminal fact once to all subscribed Tasks.
-   - Retire the duplicate `github-pull-request-live` PR-body-scraping observer in `shared/tools/github-pull-request.ts` so `ResourceObserver` is the single authority for watching PRs.
+     2. Retire demand on an observer/App-declared terminal observation, after retaining delivery to every interested Task. Generic Host code does not interpret GitHub-specific fields. Provider errors retain interest; terminal facts wake reconsideration even when the expected success state is false.
+   - Retire `github-pull-request-live` PR-body discovery only after existing owned PRs have equivalent retained demand, missed-change recovery and routing. A new demand path for newly published PRs alone is insufficient migration evidence.
 
 2. **Slice 2 — Stop the 66% Timer & Heartbeat Flood in `events`:**
    - Replace `trigger.metrics-snapshot` and `trigger.metrics-evaluate` schedules in `may.app` with a direct Host timer in `daemon-events.ts` / `reporting.ts`.
@@ -287,3 +303,54 @@ When a durable event is emitted:
 4. **Slice 4 — Separate Direct Control Commands & Ephemeral Wakes from Durable Domain Events:**
    - Route Task controls (`retry`, `cancel`, `reopen`, `close`), Conversation `stopTurn`, and Host `reload`/`restart`/`shutdown` directly through their owning services and HTTP endpoints rather than `EventBus`.
    - Separate ephemeral UI wakes (`conversation.updated`, `app.task.updated`, live session stream) from durable domain events, and retire dead legacy event types (`project.comment.created`, `project.nudge`, `chat.start.requested`, `session.steer.requested`, `cli.task.*`, etc.).
+
+
+## Cutover constraints for later cleanup
+
+Do not infer safety from lower journal row counts. Before moving a session or
+metric write out of `DbWriter`, inspect its producer, writer priority, subsequent
+subscribers and startup recovery together. The owning store commits before its
+fact/wake is offered; failure must not emit a successful transition. Remove the
+old writer in the same source cutover so one operation does not mutate twice.
+Use existing transactions/receipts and recovery, rather than a second outbox or
+parallel authority without demonstrated need.
+
+A direct command API must preserve identity, authority/generation fences, durable
+admission and replay of the original receipt. Swapping NDJSON for HTTP alone
+establishes none of those. Move one owned boundary at a time with its production
+caller and contrasting retry/restart path. A lost ephemeral wake must be
+recoverable from retained work. New timing/liveness storage must remain readable
+by existing health/recovery consumers before retiring its event producer.
+
+## Connected acceptance using the May coding trial
+
+Use the existing candidate PR and retained owning Task; no artificial Task per
+stage or new feedback loop is needed. The current callable trial uses ordinary
+Conditions and rearming for steps 1–3. Shared continuous demand and its terminal
+retirement in steps 4–5 are acceptance for the later watcher slice; do not report
+them as installed or block the current trial on that separate implementation.
+
+1. Submit once through supported public ingress. Retry the identical submission
+   with the same key and verify the same receipt and destination. Changed input
+   gets a fresh key; stale generation and conflicting replay must fail clearly.
+2. Revise saved requirements/checkout through the creator. Verify actual saved
+   generation, retained caller/usage/evidence and a scheduled reconsideration.
+   New feedback and a new generation do not reset cumulative development usage.
+   Fulfill the exact older setup escalation separately; do not make a new
+   request solely to manufacture a wake.
+3. Run the workflow, publish a PR, consume real current-head CI and send its
+   review link. Then add one substantive reviewer comment through the normal
+   review channel after readiness; verify observation, same-Task wake, workflow
+   repair and new-head CI. Record any manual relay as intervention.
+4. Check two interested Tasks share a resource read and both receive meaningful
+   changes; processing one route must not consume the other's interest. Repeat
+   an unchanged observation and confirm no duplicate work. Recover a missed
+   ephemeral wake from retained input rather than republishing a new obligation.
+5. Close/merge the fixture resource or withdraw its interest through its owner.
+   Confirm final observation is retained, no further polls/models run for it,
+   closed Tasks stay closed, and unrelated work/Conditions survive. This fixture
+   action does not authorize merging the implementation PR.
+
+A successful notification is a provider receipt, not GitHub approval. Record exact
+Host/SDK/App revisions and the supported transport used. Source tests establish
+portable mechanics; this trial establishes their connected use and its limits.

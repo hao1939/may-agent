@@ -15,7 +15,7 @@ experience require separate behavioral evidence.
 [message-lifecycle.md](message-lifecycle.md), [may-console.md](may-console.md),
 and [telegram-notifications.md](telegram-notifications.md).
 
-The [Telegram experience record](../proposals/telegram-conversation-experience.md)
+The [Telegram experience record](../archive/implementation/telegram-conversation-experience.md)
 retains the design and trials. Source-aware turns and contextual controls retain
 exact identity and revision checks; their availability depends on the installed release.
 

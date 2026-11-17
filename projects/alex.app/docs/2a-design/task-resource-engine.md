@@ -50,9 +50,9 @@ flag. Attempt judgments (`converged`, `waiting`, `incomplete`), App input status
 `done`, and fulfillment of a Conversation Request are separate
 facts; see [Task, Request, input and human action](message-lifecycle.md#task-request-input-and-human-action).
 
-An idle Task needs no model polling merely because it remains open.
-Possible later input is not itself a reason to watch. Retain the Task for a
-specific continuing responsibility, for example:
+An idle Task needs no model polling merely because it remains open. Possible
+later input is not itself a reason to watch. Retain a specific continuing
+responsibility, for example:
 
 - An awaited result: record the exact Condition, its provider, the result that
   matters and the action it enables. Prefer the actual result over a separate
@@ -109,7 +109,7 @@ work or restart the whole scan. Re-read full evidence and current fences before
 any effect; a live traversal is not an atomic population snapshot.
 
 Apply and verify justified endings as review finishes; a recommendation does not settle responsibility.
-Prioritize [backlog and finite-result disposition](../proposals/agent-task-workload-model.md#first-milestone-resolve-idle-work-and-complete-the-result-path) before new budget/feedback mechanisms.
+Prioritize [backlog and finite-result disposition](../archive/decisions/agent-task-workload-model.md#first-milestone-resolve-idle-work-and-complete-the-result-path) before new budget/feedback mechanisms.
 
 An independent snapshot review owes its assessment, not fulfillment of the
 subject's entire outcome. A report intake owes its declared disposition and any
@@ -128,13 +128,13 @@ assesses feedback, repairs or responds, and updates the same PR.
 
 For coding delivery, the agent assesses current-head CI and feedback, then sends a Telegram PR link for human review and approval on GitHub.
 If approval is required, retain the exact PR observation and verify the current-head GitHub review; Telegram delivery establishes no approval.
-Retain PR identity/head, evidence, needed Conditions and caller links in existing
-Task state. A `continuous` resource watch on the open PR (`resource:github:<owner>/<repo>#<number>`)
-stays active across multiple `fingerprint` changes (including while the Task is
-`converged`/`idle` awaiting human review on GitHub) and unsubscribes automatically
-only when the PR closes/merges or the Task closes. Local convergence,
-stale CI/approvals, silence and partial reads do not prove delivery success or
-grant merge, deployment or closure authority.
+Retain PR identity/head, evidence, Conditions and caller links in existing Task state.
+The [continuous-watch target](agent-app.md#two-watch-modes-one-shot-vs-continuous-and-mn-fan-out)
+keeps observing after local readiness until resource or Task closure. It is not
+implemented in Host main `0606e2df16`: current Apps must retain/rearm an ordinary
+fingerprint Condition while PR follow-up remains owed. A readiness notification
+must not discard that responsibility. Local convergence, stale CI/approvals,
+silence and partial reads grant no merge, deployment or closure authority.
 
 See the [Alex delivery recipe and source/installation limits](../development-workflow.md#publishing-and-waiting-for-github-pull-request-facts)
 and [Task-driven watcher contract](agent-app.md#task-driven-resource-observation).
@@ -835,7 +835,7 @@ Retained legacy attention marked `previous-runtime-attempt-not-recoverable`
 is repaired into eligibility for the same Task and generation. This known
 mechanical repair does not require an App `owner-review` input or an LLM
 instruction. Other attention reasons retain their existing handling. The
-[core policy cleanup](../proposals/authority-boundary-simplification.md#core-policy-cleanup)
+[core policy cleanup](../archive/reviews/authority-boundary-simplification.md#core-policy-cleanup)
 removes the obsolete fallback that followed this repair; old notification
 metadata needs no migration.
 
@@ -890,12 +890,10 @@ Tests and audits must prove:
 
 ## Task and task view
 
-A Task's stable identity and canonical state drive scheduling. A tree of parent
-and dependency links is only a view. Task reads expose progress and evidence;
+A Task's stable identity and canonical state drive scheduling; parent and dependency
+links are a view. Reads expose progress and evidence;
 input handling remains distinct from [Request fulfillment](message-lifecycle.md#requests-acceptance-and-closure).
 
 ## Resource read interface
 
-[Task resource read interface](task-resource-read-interface.md) defines
-`tasks.list/get/outcomes`, scoping, pagination, human actions and write boundaries.
-Reads derive from canonical Task state.
+[Task resource read interface](task-resource-read-interface.md) defines bounded reads, scoping, pagination, human actions and write boundaries from canonical Task state.

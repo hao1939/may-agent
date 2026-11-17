@@ -120,7 +120,7 @@ Owning designs: [agents](agents.md), [shared agent runtime](agent-runtime.md),
 [SDK](sdk.md), [workflows](workflows.md),
 [skills](skills.md), [native workers](native-coding-workers.md), and
 [Host/App boundary](system-boundary.md). The
-[capability guidance proposal](../proposals/task-execution-capabilities-20261002.md)
+[capability guidance proposal](../archive/decisions/task-execution-capabilities-20261002.md)
 refines this responsibility and its connections to continued work; its proposed
 interfaces remain separate from installed behavior.
 

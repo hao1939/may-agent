@@ -206,7 +206,7 @@ observation, and the read-only upgrade fence. Tests use local subprocess
 fixtures, never model credentials. Image smoke and portable tests do not
 certify a live provider or an installed App's complete behavior.
 
-The companion Gym correction consumes `ExecutionResult.cliCalls`: compact
+**Current source:** The companion Gym correction consumes `ExecutionResult.cliCalls`: compact
 Host-recorded tool results bound to the calling session and tool-call ID. It
 does not query `read.execution` with a CLI ID or derive observations from the
 agent's reflection. It compares the reflection to observed outcomes and named
@@ -215,6 +215,12 @@ retries. Expected failures (for example timeout practice) remain assessable;
 unexpected runtime failures, interrupted callers, and missing evidence mark
 the attempt invalid, not an agent behavior failure. Invalid attempts do not
 automatically repeat live practice.
+
+The accepted [unified-call cutover](../proposals/agent-workflow-interface-review-20261117.md)
+removes backend result aliases, including this field. Its consumer migration
+must preserve Host provenance through execution diagnostics/configured observers;
+agent-authored `facts` alone cannot replace observed tool results. The new
+interface and that evidence projection are not yet implemented.
 
 This projection uses at most 64 records from the retained session transcript
 tail, including replay. Missing records, old Hosts, and pre-upgrade transcripts

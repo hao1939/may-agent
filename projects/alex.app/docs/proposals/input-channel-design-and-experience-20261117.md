@@ -4,7 +4,7 @@
 
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource) and [simple first](../1-principles/core-principles.md#simple-first).
 
-**Design status:** Accepted Direction — PR 1 (Merged in [#581](https://github.com/hao1939/may-agent/pull/581)) and PR 2 (Ready in [#587](https://github.com/hao1939/may-agent/pull/587)) promoted into [Human Control Surfaces](../2a-design/human-control-surfaces.md), [HTTP Boundary](../2a-design/http-boundary.md), [Web UI](../2a-design/webui.md), and [May Console](../2a-design/may-console.md). Remaining cutover: **PR 3 (In-Process Daemon HTTP + WebSocket Unification)**.
+**Design status:** Accepted Direction — PR 1 (Merged in [#581](https://github.com/hao1939/may-agent/pull/581)) and PR 2 (Merged in [#587](https://github.com/hao1939/may-agent/pull/587)) promoted into [Human Control Surfaces](../2a-design/human-control-surfaces.md), [HTTP Boundary](../2a-design/http-boundary.md), [Web UI](../2a-design/webui.md), and [May Console](../2a-design/may-console.md). Remaining cutover: **PR 3 (In-Process Daemon HTTP + WebSocket Unification)**.
 
 ---
 
@@ -54,6 +54,11 @@ Every interaction with `may-agent` — whether by a **human** (in WebUI, Telegra
 
 ## 2. The Transport Foundation: HTTP + WebSocket (`/ws`)
 
+**Implementation gap:** The in-process HTTP/WebSocket foundation and removal of
+the NDJSON proxy remain proposed. Current local agent assignments use the public
+control SDK and durable event admission. Verify semantics through that supported
+path now; do not make a transport rewrite a prerequisite for the candidate trial.
+
 Instead of maintaining **two** competing transport stacks — a custom NDJSON Unix Socket protocol (`packages/control`) **and** an HTTP server (`src/app/http/server.ts`) that proxies back into the Unix socket — **HTTP + WebSocket (`/ws`) is the single fundamental channel protocol for all clients.**
 
 ### Why HTTP + WebSocket Is Strictly Better Than Custom NDJSON Socket + Proxy
@@ -98,12 +103,12 @@ Real-world cooperation between an external agent (or human reviewer) and a runni
    - Agents and humans should never need raw SQLite queries or full internal `input/appdep_...` Task IDs to locate work.
    - `GET /api/task?ref=d98bb682` resolves the 8-char Task `ref` directly.
    - `GET /api/tasks?q=581&includeDone=true` searches across `ref`, `taskId`, `outcome`, and `summary` so an agent can locate the Task for `"PR 581"` in one HTTP call.
-2. **Authoritative Steering (`POST /api/task/input` Refines Work Without Contradicting `spec.acceptance`):**
-   - Initial Task `outcome` and `acceptance` must express the **durable goal**, not freeze a brittle 1,500-word implementation script.
-   - When new caller/human feedback arrives via `POST /api/task/input`, it is authoritative steering for the current Task rather than a "contradiction" that forces the worker to refuse action until the parent Task rewrites `spec.acceptance`.
-3. **Round Limits Cap Autonomous Loops, Not New Human/Caller Feedback:**
-   - Execution round caps (such as `develop-change` round limits) exist to prevent an agent from looping autonomously without progress during a single unguided attempt/generation.
-   - Admitting new human or caller review feedback (`POST /api/task/input` or a revised Task `generation`) represents newly requested work and must replenish or grant a fresh execution pass rather than deadlocking on prior autonomous rounds.
+2. **Steering and Saved Requirements Have Different Effects:**
+   - Initial Task `outcome` and `acceptance` express the durable goal. An admitted correction or review comment is input for owner judgment; it does not gain authority from being addressed to a Task.
+   - The agent can act on feedback within the current assignment and allowance. Changes to saved requirements, checkout or allowance use the existing creator revision. Build that revision from the current assignment, preserve unrelated fields and read back the saved result. A fresh generation cannot detect stale content copied into the revision.
+3. **One Cumulative Development Allowance:**
+   - Feedback, generation changes, timeout, retry and restart preserve consumed development rounds. Admission can wake reconsideration without granting another coding round.
+   - When more execution is needed, the authorized creator raises the saved total on the same Task and retains usage and evidence. An already authorized bounded continuation needs no repeated human approval. A comment or duplicate wake alone never resets the total. See [scoped returns and revision](../2a-design/task-attempts.md#answer-a-dependency-without-ending-the-wider-work).
 
 ### Real-Time Push Stream (`WS /ws`)
 
@@ -157,7 +162,7 @@ The 2-Mode mental model, human-surface helpers, `ref`-first Task endpoints, keyw
   - Shared human-surface primitives in `@may-agent/control` (`buildHumanConversationMessageEvent`, `humanTaskStatusLabel`, `humanCurrentTaskText`, `representedTaskIdentities`, `primaryConversationId`).
   - WebUI **Conversation Mode** (`conversation.js`): pinned `Open asks` bar (`#conversation-context-bar`) + clickable `Task <appId> · <ref>` chips that open **Task-Focused Mode** (with no human Topic UI or competing in-chat Task focus bar).
   - Direct `GET /api/task?ref=<ref>` support in `src/app/http/task-read-routes.ts`.
-- **Done in PR #587 (`2bd331265f`, open & CI green):**
+- **Merged in PR #587 (included in inspected main `0606e2df16`; installed adoption unverified):**
   - Enriched `conversation.requests[].taskRefs` with 8-char `ref` in `readAppConversationResource` (`src/app/core/state/conversations.ts`).
   - Consistent `ref` support across `GET /api/task/transcript?ref=<ref>` (`src/app/http/task-transcript.ts`) and `POST /api/task/input` `{ ref }` (`src/app/http/task-input.ts`).
   - Case-insensitive keyword search `GET /api/tasks?q=<query>` across `ref`, `taskId`, `outcome`, and `summary` (`src/app/human-task-service.ts`).
