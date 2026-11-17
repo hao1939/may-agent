@@ -944,7 +944,6 @@ const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read"]);
 
 const SEQUENTIAL_TOOL_NAMES = new Set([
   "agents",
-  "workflows",
   "background_exec",
   "bash",
   "cron",

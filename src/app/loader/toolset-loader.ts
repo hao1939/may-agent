@@ -155,7 +155,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         getCallerSessionId: () => currentAgentSessionId(config.name),
         getCallerAgentName: () => config.name,
         runtimeCtx,
-        localWorkflowsOnly: true,
+        localProceduresOnly: true,
         createRead: (context) =>
           createRuntimeAppRead({
             readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),

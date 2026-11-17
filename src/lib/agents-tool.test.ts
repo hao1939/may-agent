@@ -472,7 +472,7 @@ describe("agents tool", () => {
     );
   });
 
-  it("restricts the local workflows tool to the caller's workflow owner", async () => {
+  it("restricts a procedure-only agents tool to the caller's granted local procedures", async () => {
     const ownerDir = join(persistDir, "owner");
     const siblingDir = join(persistDir, "sibling");
     for (const [dir, name] of [[ownerDir, "own"], [siblingDir, "foreign"]] as const) {
@@ -509,15 +509,16 @@ describe("agents tool", () => {
     const tool = manager.createAgentsTool({
       getCallerAgentName: () => "owner",
       getCallerSessionId: () => "s_owner",
-      localWorkflowsOnly: true,
+      localProceduresOnly: true,
     });
 
     const parameters = tool.parameters as any;
-    expect(Object.keys(parameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
-    expect(parameters.properties.action.enum).toEqual(["call", "list"]);
+    expect(tool.name).toBe("agents");
+    expect(parameters.properties.action.enum).toContain("call");
+    expect(parameters.properties.action.enum).toContain("list");
 
     expect((await callTool(tool, { action: "call", agent: "sibling/foreign", task: "run" })).error).toContain(
-      'only workflows owned by "owner"',
+      'only procedures owned by "owner"',
     );
     expect((await callTool(tool, { action: "call", agent: "owner/own", task: "run" })).error).toContain(
       "Local workflows are available only during a Task attempt",
@@ -526,7 +527,7 @@ describe("agents tool", () => {
       'Local workflow "missing" not found',
     );
     expect((await callTool(tool, { action: "fork", agent: "owner/own", task: "run" })).error).toContain(
-      'Workflows tool does not support action "fork"',
+      'Procedure-only agents tool does not support action "fork"',
     );
   });
 

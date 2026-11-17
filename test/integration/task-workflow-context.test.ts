@@ -75,7 +75,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
       persistDir,
       agentRunFactory: (config) => {
         let step = 0;
-        const ownerTool = config.initialState!.tools!.find((tool) => tool.name === "agents" || tool.name === "workflows");
+        const ownerTool = config.initialState!.tools!.find((tool) => tool.name === "agents");
         const owner = Boolean(ownerTool);
         return createAgentRun({
           ...config,
@@ -341,7 +341,7 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
           if (result.status !== "fulfilled") throw result.reason;
           const reply = result.value.messages.find(
             (message) =>
-              message.role === "toolResult" && message.toolName === (route === "agent" ? "agents" : "workflows"),
+              message.role === "toolResult" && message.toolName === "agents",
           );
           if (!reply || reply.role !== "toolResult") throw new Error("Missing handoff result");
           const text = reply.content.find((part) => part.type === "text");
