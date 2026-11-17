@@ -342,3 +342,39 @@ dependencies, and retain failed receipts and consumed rounds. It changes no
 Host source or existing Task identity/allowance. This is separate from the
 original callable Task and the Host revision incident; Root will review the
 App candidate before May's authorized local integration and definition activation.
+
+## Canonical App integration and activation checks
+
+The focused App source contribution completed at `302dc3c39f`, with 79 focused
+tests and independent review. Root approved its two-file scope, and May
+integrated it into canonical Apps main as `bd4bc11483`. Canonical verification
+ran 76 workflow tests (518 assertions) and the full design check successfully;
+the earlier 79-test receipt has a broader focused scope. Definitions release
+`bd4bc1148392ac379ec0dcc5a72e7ba9de17887c-definitions-v6` is selected locally.
+This establishes source integration and selected release identity, not live
+model improvement or unified-call migration.
+
+The failed worktree design check remains evidence. Root's diagnostic using the
+unchanged checker measured 35,935 prompt characters in `/app` and 36,703 in the
+long checkout. The difference is exactly 768 characters in twelve absolute
+skill paths; common instructions and Alex instructions have equal character
+counts. Both runs omit execution instructions because the checker points to
+the removed `projects/may-agent/src/lib/execution-instructions.md`, rather than
+the SDK runtime location. Canonical passing checks therefore have this fidelity
+limitation. No budget or catalog was weakened to accept the App correction.
+
+At 16:26 UTC, PR #590 head `9e9c215a5c` passed hosted Quality and Container;
+the code review thread is resolved. Native observer event `6736445` later
+reported that exact green head, satisfied the saved fingerprint Condition and
+woke Alex. Root independently verified source probes, current checks and review,
+then approved this focused candidate for supported local activation.
+
+May's first deployment omitted the canonical deployment root. It staged the
+candidate under the isolated checkout, leaving receipt
+`may-goal-appdep1504-pr590-9e9c215` at `requested`; the installed restarter read
+the canonical bundle and restarted baseline `43fc420a`. Root caught the mismatch
+through receipt, installed-version and supervisor read-back, and returned the
+explicit-root correction to May. A healthy process and a successful build did
+not prove activation. Preserve the first receipt and use one coordinated owner
+for the corrected supported operation. The original Task revision, paired
+callable cutover and connected notification trial remain outstanding.

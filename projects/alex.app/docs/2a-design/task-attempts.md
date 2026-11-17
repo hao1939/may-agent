@@ -169,7 +169,8 @@ reproduces a generation-only admission-key collision in installed `43fc420a` and
 baseline source. Focused [PR #590](https://github.com/hao1939/may-agent/pull/590)
 at `54528704a9` fixes the original no-op case but has a reviewer-found metadata
 round-trip defect. Candidate `9e9c215a5c` passes independent production-API probes
-for both cases. Current-head CI, review resolution and activation remain pending.
+for both cases, both hosted checks and resolved code review. Local activation
+and the original Task's successful creator revision still need read-back.
 Do not delete live receipts as a workaround.
 
 ## Workspace ownership and cleanup
