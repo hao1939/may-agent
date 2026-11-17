@@ -9,9 +9,14 @@
 evidence retention and Task-backed waiting are implemented. Cancellation requires
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
-accepted requirements pending implementation; the examples under Invocation
-and Result admission describe that target. The sections below state specific
-coverage limits. Full standalone/Host agent
+accepted requirements with partial source implementation in draft Host #589.
+Focused checks cover the model adapter, standalone child calls, inherited
+Task context and real prompt partial-result admission. The paired App source
+contribution is reviewed; full Host CI, final pair verification and local
+activation remain open in the
+[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
+The examples under Invocation and Result admission describe the accepted target,
+not the installed API. The sections below state specific coverage limits. Full standalone/Host agent
 parity is not established; [Shared Agent Runtime](agent-runtime.md) owns its
 accepted semantics and current convergence gaps.
 
@@ -152,6 +157,41 @@ third argument. Executor-specific skill, operation-count and tool-profile
 options are outside this contract. The input envelope contains only `prompt`
 and optional `data`; reject old or conflicting authoring fields explicitly.
 
+Task/App ingress keeps its own domain-input contract. Its execution adapter builds
+the meaningful prompt from the current assignment and places domain input under
+`data`, so root workflows and child calls receive the same `ctx.input` envelope.
+This does not wrap stored Task input or `ctx.reconciliation.input`: those remain
+the Task's domain input. Migrate workflow body reads alongside schemas and
+callers; a common descriptor alone cannot make top-level domain reads correct.
+
+A Task-bound root's `data` contains its saved domain input, including an App's
+`{ kind, data }` shape when that is what the Task stores. The target's full input
+schema must admit that shape through the actual execution adapter. An inner
+domain object is not another prompt envelope. Keep callable-input typing separate
+from raw reconciliation-input typing; the runtime supplies different values.
+
+For a nested call, inherited Task input supplies ownership and context; the call
+envelope supplies the assigned contribution. A target may explicitly require
+Task context, but context presence must not silently change its declared input
+schema or substitute the parent's domain input for a supplied assignment.
+
+A procedure that delegates must carry the current invocation assignment to its
+helpers alongside the Task's durable requirements. The assignment may clarify
+or narrow the contribution within Task scope; it cannot expand that authority.
+Reusing earlier work must still answer the current assignment. If only `prompt`
+changes, an earlier approval cannot silently stand in for fresh agent judgment,
+even when the Task, candidate and pending events are unchanged. Use the existing
+input-change/review path, retaining valid evidence and consumed allowance;
+identical assignments may reuse their retained result. This requires neither
+another Task lifecycle nor a Host judgment of domain sufficiency.
+
+**Source coverage:** App `27acebb375` forwards the invocation assignment and
+requires fresh judgment when it changes. Independent real-Git verification
+confirms identical-assignment replay, retained receipts and cumulative usage.
+This source repair is not activated; the
+[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
+tracks the remaining paired migration and trial.
+
 ### Discovery and callable names
 
 Use one catalog and one address rule for agents and workflows:
@@ -161,7 +201,10 @@ Use one catalog and one address rule for agents and workflows:
   contain `/`. Directory ownership is metadata, not another address component.
 - Agents and workflows share the namespace. Duplicate canonical names reject
   registration or reload; neither kind shadows the other. Keep the prior valid
-  definition active after a rejected reload.
+  definition active after a rejected reload. Equal declared names in different
+  namespaces coexist: `global/reviewer`, `alpha/reviewer` and `beta/reviewer`
+  are distinct. Preserve that identity while loading and storing definitions;
+  a bare-name registry must not discard an entry before catalog preparation.
 - List every registered callable in the selected runtime catalog with `name`,
   `description`, complete `inputSchema` and any declared `outputSchema`. The
   input schema includes the required prompt even without extra data requirements.
@@ -179,7 +222,22 @@ Model `agents({ action: "list" })`, the proposed SDK `ctx.list()`, and standalon
 They return the same target descriptors, without implementation-kind collections
 or active-session lists. Static workflow code can call known canonical names
 without listing first; discovery is available when it needs runtime inspection.
-The SDK `ctx.list()` binding remains implementation work, not an available API.
+Candidate SDK source exposes `ctx.list()`; complete production binding and
+installed availability still need verification. Use the actual installed API.
+
+Prepare and validate the complete selected catalog within the enclosing finite
+execution and cancellation bound, including asynchronous imports. Expose one
+fixed snapshot to discovery and child calls; a later call cannot grow its list
+or resolve a missing entry through another registry. A stalled selected module
+can fail bounded preparation even when that module would not have been called.
+Selecting a canonical root target does not narrow its children to that App;
+the tree keeps the originally configured catalog and cross-namespace callability.
+The snapshot fixes target names, schemas and loaded implementations, not the
+caller. Bind each call to its actual current parent, Task context, cancellation
+scope and trace. Reusing the snapshot cannot execute a child call as the first
+caller that prepared it.
+Reload can supply a new snapshot to a later invocation. This keeps completeness,
+duplicate rejection and cancellation understandable without another loader mode.
 
 A native CLI backend or utility is not automatically a registered contribution.
 If configuration exposes it as a callable, include its canonical descriptor and
@@ -194,9 +252,14 @@ The model-facing cooperation surface is `list` and awaited `call`. The
 specifies retirement of `fork` and its session controls. Parallel joined calls
 remain ordinary workflow code; durable independently owned work uses Tasks.
 
-**Current gap:** this envelope, discovery rule, permission removal and reduced
-tool surface are the refined target design. Host #585 and existing App call
-sites still need migration; sharing the `agents` tool name does not implement it.
+**Source coverage and rollout gap:** draft Host #589 has independently verified
+common envelopes/results, all four call directions, exact canonical discovery,
+immutable prompt/config snapshots and finite cancellation. Pending native imports
+remain explicitly unconfirmed on timeout/abort. This promotes verified source
+behavior; the installed API still requires the paired cutover. App targets,
+callers, fixtures and trusted-result consumers remain under migration, with full
+CI and the connected local trial open. See the
+[cutover status](../proposals/agent-workflow-interface-review-20261117.md).
 
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.
@@ -220,10 +283,10 @@ Each call has two distinct inputs:
   contracts, not a requirement to construct a Task envelope. An input path or
   agent name cannot establish authority or broaden access. Resolve the exact
   current caller session, never the latest session sharing an agent name.
-- **Assigned contribution:** the requested outcome, constraints, relevant
-  references and expected evidence. The caller supplies ordinary task text or
-  private workflow parameters. There is no public schema per scenario and no
-  requirement to copy the whole Task or transcript into each call.
+- **Assigned contribution:** the common `{ prompt, data? }` envelope carries
+  the requested outcome, constraints, references and expected evidence. A target
+  can constrain its domain data through the listed input schema. Neither executor
+  needs a different handoff form or the whole Task/transcript copied into it.
 
 `TASK.md` describes the overall Task. The specific call describes the receiver's
 role. Receiving the shared brief never assigns the receiver the entire Task.
@@ -629,30 +692,33 @@ Backend kind, `sessionId`, `workflowRunId`, output directories, workflow steps,
 raw `lastAssistantText`, `structuredResult` and `finishResult` belong in execution
 diagnostics rather than alternative public result shapes or payload aliases.
 Useful output and facts must remain JSON-compatible and available through the
-same envelope for either implementation. This migration remains outstanding in
-Host #585; the current SDK still exposes a required diagnostic `kind` field.
+same envelope for either implementation. Draft Host #589 passes its source/CI
+checks, and the compatible local candidate uses this interface. The
+[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
+tracks the remaining full-suite, compatible activation and connected trial work.
 An explicit partial agent result is `blocked` with its partial output retained,
 not `done`. Both optional `output` and `facts` survive every authored terminal
 status and nested workflow boundary. A workflow may return an error or
 interrupted contribution with useful evidence; actual caller cancellation and
-failed persistence still follow the execution fences and failure path. Retain
-both fields in the existing bounded run artifact, including explicit unavailable
-markers when evidence exceeds retention limits. Prose-only calls may return a
-summary when no structured result was requested; this does not manufacture
-verified domain data. Both still return the common envelope; unstructured
-assistant text alone is not a successful finish report.
+failed persistence still follow the execution fences and failure path. Ordinary
+exceptions after a child workflow starts return the same error report with its
+actual child identity. Typed deferral, allowance exhaustion and unconfirmed
+cleanup retain their existing supervision paths rather than becoming ordinary
+child reports. Retain both fields in the existing bounded run artifact, including explicit unavailable
+markers when evidence exceeds retention limits. A call without an output schema
+may return a valid report containing only status and summary. Prompt execution
+still requires `finish()`; unstructured assistant text alone is not a successful
+finish report. Use the existing bounded corrective prompt and failure path when
+the required report is missing. This requirement applies equally to model-tool
+calls and calls made from workflows.
 
-Invocation/setup failure can occur before a child exists, and cancelled scopes
-or infrastructure failures may throw. Do not fabricate a terminal execution ID
-to make those paths look like completed calls. Existing control errors or thrown
-failures describe the failed operation; available diagnostic references remain
-discoverable. The shared contract does not require every tool response or
-exception to be an `ExecutionResult`. The system-facing workflow adapter keeps
-its failure contract: when a terminal result is available, its typed exception
-carries the normalized `execution` and includes the run reference in its message.
-The Task adapter retains that reference while preserving `state: error` and the
-existing recovery path. Evidence preservation must not turn failure into an
-accepted result or require a new Task lifecycle.
+Setup can fail before a child exists; cancelled scopes and infrastructure failures
+may throw. Preserve available diagnostics without fabricating a terminal child ID.
+Control errors and setup failures need not be an `ExecutionResult`. The system-facing
+workflow adapter retains its failure contract: when a terminal result exists, its
+typed exception carries normalized `execution` and the run reference in its message.
+The Task adapter retains that reference, `state: error` and the existing recovery
+path. Preserving evidence neither accepts failed work nor creates a new Task lifecycle.
 
 When a caller requires structured output, the App owns a TypeBox or equivalent
 schema and pure checks for admission. Use those same checks for newly proposed

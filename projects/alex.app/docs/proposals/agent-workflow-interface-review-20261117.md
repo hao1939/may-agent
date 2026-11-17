@@ -1,15 +1,71 @@
 # Unified agent and workflow calls
 
-**Design status:** Accepted direction; implementation and verification are active.
-The interfaces below define the requested cutover.
-**Implementation status:** Follow-up required. Host [#585](https://github.com/hao1939/may-agent/pull/585)
-is merged into main `0606e2df16d0a44016bbef1c6294dac4c4c11d94`; its shared
-tool name still fronts incompatible inputs, results, discovery and permission
-handling. Source merge and installed-runtime activation are separate facts.
-Draft [#589](https://github.com/hao1939/may-agent/pull/589) publishes the partial
-catalog, standalone dispatch and SDK discovery checkpoint `79240eb435`.
-Production model/SDK parity, removal of old
-interfaces and paired App migration remain incomplete. No candidate is activated.
+**Design status:** Accepted; the [owning contract](../2a-design/execution-contributions.md)
+defines the enduring behavior. This proposal tracks the remaining cutover work.
+**Implementation status:** Host source is published through `04c544c104` in draft
+[#589](https://github.com/hao1939/may-agent/pull/589). The paired App contribution
+at `b7d6b41b7a` is reviewed and verified for its scoped compatibility checks.
+The authorized local candidate is active: Host/SDK `3f48a1e2cd` includes the
+required #590 repair; App `054e64b4f1` includes canonical ef7 and reviewed Appb7.
+The deployment receipt and independent binary/SDK/App read-back match and report healthy.
+
+The source provides one canonical catalog, mandatory `{prompt,data?}`
+input, common validated results and awaited calls for agents and workflows.
+Invocation permissions and public fork/session actions are removed. Independent
+production probes cover all four call directions, immutable definition snapshots,
+bounded cancellation and Task ingress. Canonical model calls require `finish()`;
+a real-manager regression proves that missing reports fail after one correction
+without fabricating output or execution identity.
+
+The installed trial exposes two additional integration gaps: real Task workers
+still filter loaded profiles to the caller App, and Scout's workflow body reads
+inherited Task input instead of the current call. May's scoped Scout repair
+`5a386d2952` is independently verified and pushed for review; the Host worker
+repair is running through the retained Task. The remaining work, in order, is:
+
+1. Finish Task-worker catalog loading and its actual-process regression, then
+   pass CI on the resulting Host revision. Preserve scoped Task runtime registration
+   and actor fences while discovering/calling all registered contributions.
+2. Verify and activate the repaired pair, then finish the native integration trial
+   and remaining configured App
+   compatibility disposition. Exact active App054e/Host3f48 passes184 revision/
+   reconciliation tests, Host static checks, App type/design and complete Gym
+   checks (405 tests,1,488 review checks). The full App scan reports1,140 passes
+   and six periodic-event failures; each also fails on canonical main with the
+   preceding installed SDK. May's creator reopens the retained App Task at
+   generation12 within its existing64 limit for those exact fixtures. Keep that
+   scoped compatibility work distinct from the user's Task/ingress/event redesign.
+3. Prove native workflow → PR push → CI/comment repair → Telegram review-link
+   delivery, including a late review comment. Human approval stays on GitHub.
+
+Host04c5 passes complete hosted Quality and Container:3,494 tests, zero failures,
+two skips. All316 owning tests and static checks pass independently, including
+shared concurrency limits, typed deferral and cancellation. Hosted/standalone
+probes consume ordinary child error reports with real IDs. This completes the
+earlier Host source/fixture step. The subsequently observed worker-catalog gap
+reopens source work despite those passing checks.
+
+The reviewed Appcdc/Host3e1 pair passes all 1,146 configured App tests across
+81 files, typechecking, design checks and complete private Gym checks (405 Bun
+tests and 1,488 review checks). Installation markers/evidence are explicit
+prerequisites. The 33-target disposition index maps definitions, bodies, callers,
+guidance and owning checks; it does not prove every target's external effects.
+
+May implements through the retained Task/workflow path; Root owns design,
+review, independent verification and publication assistance. The finite cumulative
+limits remain 128 Host and 64 App rounds, preserving all prior usage and effects.
+Host's retained112 entries include102 ordinary reservations and ten conservative
+retained-allowance entries, rather than112 demonstrated coding executions.
+Task, ingress and event redesign belongs to the user's separate work.
+
+Exact revisions, focused checks, prior failures and operational findings are in
+the [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
+Appb7d adds compatibility coverage for scoped specialist guidance, assignment
+forwarding, retained bindings and quiet replay; all77 owning tests, typecheck
+and design checks pass independently, with native review acceptance. The prior
+full App/Gym receipts remain specific to Appcdc/Host3e1.
+
+The local candidate is active; final native trial and readiness notification remain unproved.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -90,6 +146,9 @@ Validate the common envelope and any target input schema against the same value.
 A target schema can constrain `data` but cannot weaken the prompt requirement.
 Discovery exposes the complete effective schema, including the common envelope.
 Executable capabilities, Task coordinates and cancellation remain runtime context.
+Author target requirements with one full-envelope `inputSchema`; remove the
+temporary `dataSchema` compatibility surface rather than keeping two authoring
+contracts after the cutover.
 
 The model call accepts `options` beside `input`; the SDK accepts the same options
 as its third argument. A supplied timeout is positive and can only shorten the
@@ -168,7 +227,9 @@ Use one rule for every registered agent or workflow:
 2. Agents and workflows share the namespace. Source directory and owning agent
    are metadata, not address components or lookup priority. Duplicate canonical
    names reject catalog preparation/reload. A rejected reload preserves the prior
-   valid catalog. No kind can shadow another.
+   valid catalog. No kind can shadow another. Equal declared names in different
+   namespaces coexist; loading and registration must preserve them before the
+   catalog is built, rather than shadowing or rejecting them by bare name.
 3. Discovery returns one list of descriptors, sorted by canonical name:
    `name`, `description`, complete
    `inputSchema`, and optional `outputSchema`. Include the required-prompt base
@@ -184,6 +245,10 @@ return the same descriptor list for equivalent runtime configuration. `ctx.list(
 is a proposed SDK binding. Listing is optional for statically authored workflows.
 Calls and discovery within an invocation use the same prepared definition/catalog
 snapshot; a reload does not silently redirect an active call tree.
+Prepare the complete selected catalog within that invocation's finite timeout
+and cancellation lifetime. Do not grow discovery by importing another owner on
+its first call. A selected stalled import can fail bounded preparation; old
+fixtures requiring unused imports to remain lazy must migrate to this rule.
 
 The runtime catalog consists of configured agent definitions and workflow
 entrypoints discovered by the existing loader. Invocation input cannot request
@@ -250,6 +315,11 @@ Root owns this design, task breakdown, independent review and trial assessment.
 May owns implementation through Alex's existing development workflow, publication,
 CI/comment follow-up and return evidence. The following are ordered checklist
 items within the owned outcome, not additional Tasks for each code layer.
+The existing local-candidate workflow binds evidence to one checkout. If the
+paired App migration needs its own checkout and continuation, use a finite App
+source contribution with its own exact revision and return through the existing
+Task/Condition path. Retain the original delivery Task, its usage and the final
+paired-activation obligation; a passing Host commit cannot certify App edits.
 
 | Item | Implementation work | Completion evidence |
 | --- | --- | --- |
@@ -260,23 +330,66 @@ items within the owned outcome, not additional Tasks for each code layer.
 | E — Execution | Keep joined workflow concurrency and inherited cancellation; preserve normal Task/Condition continuation and evidence on safe redo. | Stop/timeout through a mixed tree cleans up ordinary children, starts no further children, and preserves evidence; helper completion cannot settle its Task. |
 | F — Local trial | Build and run the paired candidate Host/SDK/Apps before PR merge. Assign bounded coding work through May, observe workflow/PR/CI/comment follow-up, and verify Telegram review-link delivery. | Record exact candidate SHAs, executable identity, native Task/workflow references, current PR head/checks, addressed comment and notification receipt. Record failures as open gaps. |
 
-For D, the live trial also exposed two concrete consumer-context defects in
-Alex's `develop-change.ts` specialist prompt. State the bounded local-candidate
-scope beside the wider Task acceptance, so Bob does not require PR publication
-or deployment before returning source evidence. Allow the existing `clarify`
-decision to name a missing setup dependency, instead of requiring an unchanged
-candidate to cycle through implementation after a prerequisite failure. Preserve
-the owning Task's delivery requirements, actual failed receipts and consumed
-rounds. These are App prompt/return corrections within migration, with no new
-Host phase, classifier or allowance rule. See the
-[observed boundary failure](../archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment).
+Catalog, common admission/results, removed invocation controls and bounded
+cancellation have independently checked source checkpoints, including real prompt
+partial results and nested CLI receipt projection. Preserve those behaviors while
+finishing D and F; selected checks do not establish full cutover readiness.
+The [dated review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
+retains the earlier findings and exact repair evidence.
 
-May should implement from current Host main in the retained Task-owned worktree,
-with the saved cross-repository selector and cumulative development allowance
-revised by its creator. Preserve the seven consumed #585 rounds and their
-receipts; do not renew them through a replacement Task. Because #585 is merged,
-publish the correction as a follow-up PR, excluding unrelated changes. Coordinate
-any App companion changes explicitly rather than mixing unrelated workspace edits.
+The remaining implementation order is:
+
+1. **Finish Host migration.** Preserve required finish reports, the committed
+   real-manager negative regression, valid output/facts, actual identity and
+   bounded correction. Continue from exact current-head CI artifacts, preserving real
+   cancellation, steering, lineage and SIGINT child-drain assertions. The steering
+   coverage review is resolved; retain its actual interruption tests. Retired
+   fork/session controls, aliases and bare strings must not return to satisfy old
+   fixtures. Run owning tests and `check:ci` for each coherent checkpoint, then
+   full current-head Quality.
+2. **Preserve the reviewed App candidate.** Retain invocation-assignment forwarding
+   and fresh judgment with retained receipts, usage and identical replay.
+   Preserve the verified native Gym temporary-workspace binding and actual CLI
+   protocol coverage and corrected source/configuration inventory fixtures.
+   Keep the completed 33-target body/caller/guidance disposition and its explicit
+   remaining effects. Final pairing and installed behavior still need verification;
+   a Host-only checkpoint cannot certify a different App revision.
+3. **Verify and trial the pair.** Bind App imports and TypeScript aliases to one
+   exact clean Host/SDK provider; keep the native development provider unchanged
+   until a verified replacement is ready at a quiescent boundary. Supply any
+   installation configuration/evidence explicitly and distinguish configured
+   checks from clean-checkout checks. Resolve substantive review, activate a
+   compatible local candidate while preserving legitimate installation changes
+   and the required Task-revision repair, then prove native coding, PR push,
+   CI/comment follow-up and Telegram review-link delivery. Record the running
+   executable/SDK/App identities and rollback revision.
+
+These are checkpoints within the saved outcome, not new Tasks or Host phases.
+May implements through the retained development workflows; Root reviews, checks
+and helps publish coherent commits promptly for parallel review. Keep current
+Task requirements, execution guidance, exact checkout/provider bindings, bounded
+local procedure scope and trusted receipt diagnostics available to specialists.
+An exact setup dependency can return through the existing `clarify` decision;
+it must not cause unchanged coding rounds merely to repeat a missing prerequisite.
+Preserve wider delivery obligations without requiring publication or activation
+before a local source contribution can return.
+
+Guidance must follow the common contract too. Preserve the repaired Tech-lead
+scope and truthful structured judgments without canned phrases or a universal
+public May Task block. Delivery ownership remains in retained Task/caller state;
+existing exact PR Conditions provide observation. Keep one registered address
+for shared implementations, including `alex/evaluation-report-reader`. Historical
+metadata and receipts remain evidence, without restoring a second authoring route.
+
+Continue from the retained Host #589 and paired App branches, preserving their
+complete histories, saved cross-repository selectors and every actual cumulative
+reservation, including the original seven #585 rounds. Their creator owns saved
+finite allowance revisions; no replacement Task resets usage. Keep unrelated work
+separate. Push coherent committed checkpoints to the existing draft PR and App
+review branch while implementation continues, stating actual checks and gaps. Full cutover readiness
+is required for its readiness claim, not for sharing unfinished work for review.
+The user owns the separate ingress/input and event-system proposals; this
+implementation remains focused on the unified callable interface.
 
 Review and local verification do not wait for merge. First run portable candidate
 checks; then build the exact candidate and activate compatible components for the

@@ -225,6 +225,13 @@ Task changes may produce useful Conversation updates under
 [Message Lifecycle](message-lifecycle.md). Telegram renders those messages;
 an agent label or provider send is not evidence of Task completion.
 
+For PR delivery, the Task owner assesses the current pushed head, required
+checks and outstanding review feedback, then sends a GitHub review link through
+the saved human route. Record the provider receipt for a claimed successful
+notification. Approval happens on GitHub. Sending the link does not end the
+Task's owed PR observation or discharge later review comments; see the
+[PR follow-through contract](task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review).
+
 ## Proactive Human Attention
 
 When a domain App/task genuinely requires human judgment, it either keeps one

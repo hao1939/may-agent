@@ -107,6 +107,12 @@ read; treat missing scope as unknown, not as zero or all inputs. Read originals
 using the Task read's `inputKeys` option, up to eight keys per call when needed.
 An earlier implementation may satisfy several requests without another edit,
 while an added test or review requirement can still need real work.
+
+After a creator revision, compare the changed acceptance with the actual retained
+candidate. An older accepted conclusion applies to its considered scope; it
+cannot prove a newly required file or behavior changed. Reuse valid work, make
+the remaining correction, and report the new candidate or exact remaining gap.
+
 The [Task context contract](../../2a-design/task-attempts.md#result-contract)
 defines the previous-result scope and unfinished-work view. Use the context
 actually supplied by the installed Host; a source merge does not update it.
@@ -579,7 +585,11 @@ required scope change to the creator.
 Include the original outstanding input in the result's considered scope when
 you have resolved it; accepting only the new evidence update does not answer
 the original caller. Use the original caller return, and let that caller judge
-its remaining work. See [repair feedback](../../2a-design/execution-feedback.md#return-repair-evidence-to-the-original-work).
+its remaining work. For a Task request, include the answer in the scoped
+result's `response`/`result`; infra returns it to that caller. Use `communication`
+only when the admitted input has saved human reply context. See
+[scoped returns](../../2a-design/task-attempts.md#answer-a-dependency-without-ending-the-wider-work)
+and [repair feedback](../../2a-design/execution-feedback.md#return-repair-evidence-to-the-original-work).
 
 Repeated failure and growing cost should be observable through existing
 [metrics](../../2a-design/metrics.md) and [failure feedback](../../2a-design/execution-feedback.md).

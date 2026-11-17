@@ -512,6 +512,13 @@ These are commit points in existing records, not new status fields. An accepted
 request or frozen routing plan can precede Task attachment. A client reads the
 linked request/Task to follow coordination and completion.
 
+Follow the result through its saved caller link when an answer is owed. Accepted
+settlement and caller delivery are separate evidence; human communication adds
+its own saved reply context and provider receipt. A revision or wake does not
+answer an older dependency, and a completed caller return does not prove a human
+received a message. The [runtime audit](../2b-manual/event-runtime-audit.md#semantic-trace-health)
+shows the connected trace and recovery checks without adding another work store.
+
 The durable acknowledgement point depends on the route:
 
 | Route                       | Durable admission boundary                                     |

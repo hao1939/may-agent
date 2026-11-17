@@ -10,9 +10,13 @@ dependencies are implemented. Helpers retain their live caller's scope and
 cancellation. Ended Host sessions cannot resume; unfinished work starts a fresh
 Task attempt. Supported native CLI thread continuation remains separate. The
 [execution review](../archive/reviews/execution-consolidation-poc-20260914.md)
-retains the trials and their limits. The refined cooperation design below removes
-invocation permissions, unifies input/result/discovery, and retires
-`fork`; those source changes are not yet implemented.
+retains the trials and their limits. The accepted cooperation design below
+removes invocation permissions, unifies input/result/discovery, and retires
+public `fork`. Draft Host #589 implements the model list/call and canonical
+registration boundaries; SDK/App migration and paired verification remain open.
+The installed runtime still exposes the earlier interface. The
+[source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
+records exact published checkpoints and verification limits.
 
 Agent registration has two scopes:
 
@@ -185,11 +189,12 @@ forking gives up ad hoc model-controlled background helper execution; it does
 not remove workflow concurrency, Host observation or cancellation.
 
 Required children settle or stop before their caller completes. Caller timeout
-or Stop propagates cancellation through the entire child tree. Current Host
-code still exposes `fork`, `peek`, `follow-up`, `cancel`, `context` and `sessions`;
-their public cooperation-tool retirement remains implementation work. Existing
-execution records, Task feedback, diagnostic reads and operator/Host controls
-remain the places for supervision, feedback and cancellation.
+or Stop propagates cancellation through the entire child tree. The installed
+Host still exposes `fork`, `peek`, `follow-up`, `cancel`, `context` and `sessions`.
+Their removal from the model cooperation tool is published in draft #589;
+complete SDK/App adoption and activation remain open. Execution records, Task
+feedback, diagnostic reads and operator/Host controls retain supervision,
+feedback and cancellation.
 
 ## Workflow capability
 

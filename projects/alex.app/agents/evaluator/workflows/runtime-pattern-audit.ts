@@ -201,7 +201,7 @@ export async function execute(
     attentionSignals.length > 0
       ? [
           {
-            localKey: `workflow-audit:${createHash("sha256")
+            id: `workflow-audit:${createHash("sha256")
               .update(
                 JSON.stringify(
                   attentionSignals.map((s) => ({
@@ -214,7 +214,7 @@ export async function execute(
               )
               .digest("hex")
               .slice(0, 16)}`,
-            target: { appId: "alex" },
+            appId: "alex",
             input: {
               kind: "message",
               data: {

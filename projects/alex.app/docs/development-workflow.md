@@ -89,6 +89,17 @@ who revises that same Task through the SDK creator capability (May uses her
 not a substitute. Retain the checkout, prior work, caller and consumed allowance
 across that correction.
 
+The candidate identity covers one selected checkout. Its passing receipt cannot
+certify another repository's edits or an installed release. For paired Host/App
+work, retain exact source and verification for each half through the existing
+contribution/Task return path; the delivery owner combines them and proves the
+pair before activation. A separate finite source contribution is useful when it
+needs its own checkout and continuation, without replacing the delivery Task or
+renewing that Task's consumed allowance. In ordinary shell tools, use supported
+working-directory arguments or explicitly change directory; a saved checkout
+selector does not change an unrelated tool's default directory. Read back the
+actual repository, branch and head before publication.
+
 ## Responsibilities and graph
 
 ```mermaid

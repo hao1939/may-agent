@@ -268,6 +268,14 @@ without confirming that `/proc/<pid>/cmdline` is the running daemon.
 
 ## Runtime deployment target
 
+When building from an isolated checkout, set `MAY_AGENT_DEPLOY_ROOT` to the
+installation's canonical Host directory. The source checkout identifies what
+to build; the deployment root identifies where the installed restarter reads
+artifacts, SDK/UI markers and receipts. Check both before launch. A healthy
+restart can reload the previous binary if staging used the wrong root; it does
+not establish candidate activation. Keep one accountable deployment owner
+while another Task supplies source or review evidence.
+
 Host source containing [PR #220](https://github.com/hao1939/may-agent/pull/220)
 makes Runtime deployment standalone: it requires neither an App/Task target nor
 Task-database access. Give each operation a stable
