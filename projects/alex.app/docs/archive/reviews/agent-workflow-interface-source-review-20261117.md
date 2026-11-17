@@ -1068,3 +1068,53 @@ with a cumulative total of 32 and 16 consumed, superseding Root's requested
 24-round batch without resetting prior usage.
 The published source remains a partial checkpoint, with no unified activation
 or readiness notification established.
+
+## Finite callable settlement and remaining paired-input gap
+
+Native Host `45d339756eec92d763d629b9fe8d7ac26e8fec4b` adds the existing two-second
+cleanup grace to shared callable settlement. Independent exact-clean verification
+passes 124 tests across six affected suites; a controlled real-catalog probe
+confirms timeout and parent cancellation settle before the ignored invocation is
+released. Its first type check fails because `Object.hasOwn` does not narrow the
+settled union. Native `b9ce2d7dc3f800ae80c95e270b45e87f3115ab7e` corrects that with
+a discriminant. Independent exact-clean `check:ci` and all ten callable-contract
+tests then pass, including finite uncooperative settlement and cooperative join.
+Root published b9 to the existing PR branch. Public-root identity, explicit-module
+pending-import reporting, diagnostics coverage and full CI remain open.
+
+Root also published native Apps `f9e6a982a18c57eb601624c324c33f72ec2755f5`.
+Its clean pair with exact Host `fc03d87609` passes 112 tests across six affected
+suites and the root typecheck. Unlike an installation-linked dependency,
+`@may-agent/gym/comparison` also resolves to the exact candidate workspace;
+both SDK entrypoints use the same frozen Host. The broader canonical App check
+still finds four Scout input/optional-result-ID errors, returned through May.
+
+Local Apps `5a1d5c89e6d9d680187ec8d7c549a43ea3b8c9f3` passes 150 selected tests
+but the real recovery scope remains three passes and four workload failures.
+A diagnostic-only copy of the unchanged assertions identifies the exact failure:
+the App saves `{prompt,data}` as Task input and the Host correctly wraps that
+again. The workflow rejects `/data/prompt` and `/data/data` before handoff logic.
+Root returned this source correction through May. Keep authoritative saved Task
+input/`ctx.reconciliation.input` as raw domain data and let the existing Host
+adapter construct one common envelope. Do not add an already-wrapped fallback,
+weaken schemas or change waiting/pending expectations to hide this integration
+gap. Root withheld this local checkpoint pending that aligned correction.
+
+The Host follow-up also exposed a saved-assignment setup error: creator revision
+had selected an Apps Task checkout instead of the retained Host tree. Root traced
+the actual `developmentCheckout` consumed by the development workflow; May
+corrected the same Task to generation twenty-one, preserving the retained Host
+branch, cumulative total 80 and consumed floor 74. No replacement Task, Git reset
+or unrelated Task-system change was required. Actual reservation files retain
+any later usage. The App Task remains independent at generation seven/total 32.
+
+Evidence under the local trial directory: `45-independent-focused.log`,
+`45-independent-check-ci.log` (the type failure),
+`callable-finite-settlement-1794945917969.json`,
+`b9-independent-callable-confirmed.log`, `b9-independent-check-ci-confirmed.log`,
+`f9-fc03-independent-apps.log`, `f9-fc03-resolutions.json`,
+`f9-fc03-typecheck.log`, `f9-fc03-design-check.log`,
+`5a-fc03-independent-apps.log`, `5a-fc03-recovery.log` and
+`5a-fc03-workload-diagnostic.log`. The earlier unconfirmed b9 process-launch logs
+ended with their parent and are not passing-check evidence. No unified candidate
+activation or readiness notification is established.

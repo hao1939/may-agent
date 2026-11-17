@@ -4,33 +4,39 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`fc03d87609`. Independent exact-clean checks pass 123 affected tests and
-`check:ci`. Standalone agent configuration is captured, and the direct adapter
-now captures identity/shared prompt text. The real public `run()` probe still
-catches live rereading of `AGENTS.md`: its separate discovery catalog omits the
-text snapshots. Missing files must also freeze absence rather than permit a
-later live read. The existing execution read projects bounded trusted CLI
-receipts for sessions/direct children, but nested workflow coverage and visible
-receipt/transcript truncation remain open.
+`b9ce2d7dc3`. Independent exact-clean `check:ci` and all ten owning
+callable-contract tests pass. Preceding `45d339756e` passes 124 affected tests
+and the real shared-catalog timeout/parent-cancel probe; `b9ce2d7dc3` repairs its
+TypeScript narrowing. Uncooperative callable settlement is now finite, retaining
+cooperative cleanup joins and reporting unconfirmed cleanup.
+
+Standalone agent configuration is captured, and the direct adapter captures
+identity/shared prompt text. The real public `run()` probe still catches live
+rereading of `AGENTS.md`: its separate discovery catalog omits text snapshots.
+Missing files must freeze absence rather than permit later live reads. The
+existing execution read projects bounded trusted CLI receipts for sessions/direct
+children, but nested workflow coverage and visible truncation remain open.
 The preceding `b6f153b5ec` fixes prompt blocked reports without unavailable
 output and removes legacy `dataSchema` authoring. Earlier production probes
 cover all four call directions, exact canonical dispatch, common root results,
 invalid root/child input, enclosing discovery timeout and full-envelope Task
 workflow ingress. These are bounded source checks, not complete cutover proof.
 
-Paired App checkpoint `149e30bf0a` is published on its retained review branch.
-It includes the four entry-point migrations from `bc0b80b9bb` and repairs the
-current public Task-read/common-envelope fixtures. Against exact Host
-`0a52518cd1`, five affected suites pass all 88 tests, retaining cancellation and
-evidence checks. Three retained-report recovery cases passed at preceding App
-`ff6edba21a` / Host `2f6aaaf1`; four workload handoff cases remain open. Full
-active-App bodies, callers, fixtures, guidance and trusted-receipt consumers are
-unfinished. May continues the same App Task after its actual 16-round boundary.
+Paired App checkpoint `f9e6a982a1` is published on its retained review branch.
+Against exact Host `fc03d87609`, six affected suites pass all 112 tests and the
+root typecheck passes; both SDK entrypoints and the Gym workspace resolve to
+candidate source. The broader canonical App check still reports four Scout
+input/optional-ID errors. Local `5a1d5c89e6` passes 150 more selected tests but
+is not certified: all four workload handoff cases still fail, now exposing an
+App-saved callable envelope wrapped again by the Host Task adapter. Exactly one
+adapter must construct the envelope; saved Task input remains domain input.
+Three retained-report recovery cases pass. Full active-App bodies, callers,
+fixtures, guidance and trusted-receipt consumers remain unfinished.
 
 Complete CI remains open. The superseded `2f6aaaf1` hosted Quality run had three
 completed shards with 968/8, 800/15 and 722/52 pass/fail counts (plus two skips),
 and another shard was cancelled unfinished. Narrow green checks do not replace
-current-head CI. Pending-import cleanup, finite cancellation settlement, durable
+current-head CI. Pending-import cleanup reporting, durable
 prompt partial-report coverage and substantive reviews also remain open. No
 unified candidate is activated; connected native-trial and readiness-notification
 acceptance are unproved. The
