@@ -40,7 +40,7 @@ describe("canonical callable catalog", () => {
     expect(Object.isFrozen(catalog.list()[0])).toBe(true);
     expect(catalog.list()[0]?.inputSchema).toMatchObject({
       type: "object",
-      required: ["prompt"],
+      required: ["prompt", "data"],
       additionalProperties: false,
     });
   });
@@ -127,9 +127,12 @@ describe("shared callable input and result contract", () => {
         },
       }),
     ]);
-    await expect(invalid.call("alex/invalid", { prompt: "run" }, undefined, { signal })).rejects.toThrow(
-      "failed schema validation",
-    );
+    await expect(invalid.call("alex/invalid", { prompt: "run" }, undefined, { signal })).resolves.toMatchObject({
+      id: "s_invalid",
+      status: "error",
+      summary: expect.stringContaining("failed schema validation"),
+      facts: { phase: "output", invalidEvidence: { verdict: 42 } },
+    });
   });
 
   test("rejects producer-selected ids, malformed reports, missing successful output, and retired result fields", async () => {
@@ -143,7 +146,11 @@ describe("shared callable input and result contract", () => {
       const broken = new CallableCatalog([
         definition(name, "alex", { outputSchema, async invoke() { return { executionId: `s_${name}`, report }; } }),
       ]);
-      await expect(broken.call(`alex/${name}`, { prompt: "run" }, undefined, { signal })).rejects.toThrow(message);
+      await expect(broken.call(`alex/${name}`, { prompt: "run" }, undefined, { signal })).resolves.toMatchObject({
+        id: `s_${name}`,
+        status: "error",
+        summary: expect.stringContaining(message),
+      });
     }
   });
 
@@ -161,24 +168,31 @@ describe("shared callable input and result contract", () => {
     ).resolves.toEqual({ id: "s_partial", status: "blocked", summary: "needs fixture", facts: ["kept"] });
   });
 
-  test("bounds calls with inherited cancellation and timeout", async () => {
-    let observedAbort = false;
+  test("shortens inherited timeouts and stays joined through cancellation cleanup", async () => {
+    const order: string[] = [];
+    let observedTimeout: number | undefined;
     const slow = new CallableCatalog([
       definition("slow", "alex", {
         async invoke(_input, context) {
+          observedTimeout = context.timeoutMs;
           await new Promise<void>((resolve) => {
             context.signal.addEventListener("abort", () => {
-              observedAbort = true;
-              resolve();
+              order.push("aborted");
+              setTimeout(() => {
+                order.push("cleanup-settled");
+                resolve();
+              }, 5);
             }, { once: true });
           });
           return { status: "interrupted", summary: "stopped" };
         },
       }),
     ]);
-    await expect(slow.call("alex/slow", { prompt: "wait" }, { timeoutMs: 5 }, { signal })).rejects.toThrow(
-      'Callable "alex/slow" timed out',
-    );
-    expect(observedAbort).toBe(true);
+    await expect(
+      slow.call("alex/slow", { prompt: "wait" }, { timeoutMs: 50 }, { signal, timeoutMs: 5 }),
+    ).rejects.toThrow('Callable "alex/slow" timed out after 5ms');
+    order.push("caller-released");
+    expect(observedTimeout).toBe(5);
+    expect(order).toEqual(["aborted", "cleanup-settled", "caller-released"]);
   });
 });

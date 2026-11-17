@@ -91,10 +91,15 @@ export function canonicalCallableName(appId: string | undefined, declaredName: s
 
 export function effectiveInputSchema(dataSchema?: TSchema): TSchema {
   return Type.Object(
-    {
-      prompt: Type.String({ minLength: 1 }),
-      data: Type.Optional(dataSchema ?? Type.Unknown()),
-    },
+    dataSchema
+      ? {
+          prompt: Type.String({ minLength: 1 }),
+          data: dataSchema,
+        }
+      : {
+          prompt: Type.String({ minLength: 1 }),
+          data: Type.Optional(Type.Unknown()),
+        },
     { additionalProperties: false },
   );
 }
@@ -241,31 +246,38 @@ export class CallableCatalog {
     }
     validateInput(entry.descriptor.inputSchema, input);
     context.signal.throwIfAborted();
-    const timeoutMs = options?.timeoutMs ?? context.timeoutMs;
+    const timeoutMs = options?.timeoutMs === undefined
+      ? context.timeoutMs
+      : context.timeoutMs === undefined
+        ? options.timeoutMs
+        : Math.min(options.timeoutMs, context.timeoutMs);
     const controller = new AbortController();
     const abortFromParent = () => controller.abort(context.signal.reason);
     context.signal.addEventListener("abort", abortFromParent, { once: true });
+    let timedOut = false;
     const timer = timeoutMs === undefined
       ? undefined
-      : setTimeout(() => controller.abort(new Error(`Callable "${name}" timed out after ${timeoutMs}ms`)), timeoutMs);
+      : setTimeout(() => {
+          timedOut = true;
+          controller.abort(new Error(`Callable "${name}" timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
     timer?.unref?.();
     let raw: unknown;
     try {
-      raw = await Promise.race([
-        entry.definition.invoke(input, {
-          signal: controller.signal,
-          ...(timeoutMs !== undefined ? { timeoutMs } : {}),
-        }),
-        new Promise<never>((_, reject) => {
-          const rejectOnAbort = () => reject(controller.signal.reason ?? new Error(`Callable "${name}" interrupted`));
-          controller.signal.addEventListener("abort", rejectOnAbort, { once: true });
-          if (controller.signal.aborted) rejectOnAbort();
-        }),
-      ]);
+      // Invocation owns ordinary descendant cleanup. Abort requests cancellation,
+      // but the caller remains joined until the invocation settles.
+      raw = await entry.definition.invoke(input, {
+        signal: controller.signal,
+        ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+      });
+      if (controller.signal.aborted) {
+        throw controller.signal.reason ?? new Error(`Callable "${name}" interrupted`);
+      }
     } finally {
       if (timer) clearTimeout(timer);
       context.signal.removeEventListener("abort", abortFromParent);
     }
+    if (timedOut) throw new Error(`Callable "${name}" timed out after ${timeoutMs}ms`);
     const childId =
       raw && typeof raw === "object" && !Array.isArray(raw) && typeof (raw as { executionId?: unknown }).executionId === "string"
         ? (raw as { executionId: string }).executionId
@@ -274,7 +286,20 @@ export class CallableCatalog {
       raw && typeof raw === "object" && !Array.isArray(raw) && Object.hasOwn(raw, "report")
         ? (raw as { report: unknown }).report
         : raw;
-    return normalizeResult(report, childId, entry.descriptor.outputSchema, options?.schema);
+    try {
+      return normalizeResult(report, childId, entry.descriptor.outputSchema, options?.schema);
+    } catch (error) {
+      if (!(error instanceof CallableValidationError)) throw error;
+      return deepFreeze({
+        ...(childId ? { id: childId } : {}),
+        status: "error",
+        summary: error.message,
+        facts: {
+          phase: error.phase,
+          invalidEvidence: isJsonCompatible(error.rawValue) ? error.rawValue : String(error.rawValue),
+        },
+      });
+    }
   }
 }
 
