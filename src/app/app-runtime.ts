@@ -517,12 +517,16 @@ export async function runAppRuntime(opts: {
     listTasks,
     getTask,
   });
-  const daemonHttpEnabled = backgroundEnabled || WEB_ENABLED;
+  // A daemon only claims a TCP listener when its endpoint was explicitly
+  // configured. This keeps fixture and multi-instance daemons headless while
+  // the packaged service opts into its stable Console/browser endpoint.
+  const daemonHttpPort = process.env.DAEMON_HTTP_PORT ?? (WEB_ENABLED ? process.env.WEB_PORT : undefined);
+  const daemonHttpEnabled = WEB_ENABLED || Boolean(daemonHttpPort);
   if (daemonHttpEnabled) {
     const { port } = await startWebMode({
       interface: humanInterface,
       stateDir: opts.persistDir,
-      port: parseWebPort(process.env.DAEMON_HTTP_PORT ?? process.env.WEB_PORT),
+      port: parseWebPort(daemonHttpPort),
       services: { events, getStatus, getAppConversation, listApps, listTasks, getTask },
     });
     bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
