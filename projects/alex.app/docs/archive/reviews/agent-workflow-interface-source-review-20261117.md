@@ -457,10 +457,13 @@ snapshot: the new requirements were present, so this was an incorrect agent
 judgment rather than lost ingress or stale Host context. Root rejected the
 conclusion through May; the same Task entered native `develop-change` and produced
 `bb41c0b365`, actually changing the required guidance file. Its focused check
-passed 79 tests; independent workflow review and activation were still pending
-at this checkpoint. The long-worktree model-surface failure remains recorded.
-Root's exact source review approved the bounded correction, without treating it
-as evidence of later production-model improvement.
+passed 79 tests and independent exact-candidate workflow review. May integrated
+only that new commit as `abd19b4d81` and ran canonical checks successfully.
+Reload events `6736783`/`6736784` establish successful local activation; Root
+independently matched the active release's guidance bytes to canonical source.
+The long-worktree model-surface failure remains recorded. These establish the
+bounded source correction and its activation, not later production-model
+improvement; already-running invocations retain their earlier snapshot.
 
 May also briefly saved the finite guidance Task's checkout as the original
 #589 Task's paired-App migration checkout. Root caught the overlapping ownership
@@ -478,3 +481,10 @@ requirements. They do not justify a Host semantic acceptance gate, replacement
 Tasks, a new allowance ledger or another event lifecycle. The event audit now
 distinguishes retained historical pair diagnostics from the authoritative
 Task/request records used for current work.
+
+Later local Host checkpoint `779f9a443f` migrates standalone fixtures and passes
+65 selected tests. It changes tests only: production model/workflow adapter gaps
+remain. The removed native-CLI alias tests must not be used as evidence that the
+replacement callable route or mixed-tree cleanup has been verified. The proposal
+now orders the next production-adapter checkpoints explicitly, before further
+standalone-only work.

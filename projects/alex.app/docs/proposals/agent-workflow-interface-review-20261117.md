@@ -268,6 +268,31 @@ paired-activation obligation; a passing Host commit cannot certify App edits.
 | E — Execution | Keep joined workflow concurrency and inherited cancellation; preserve normal Task/Condition continuation and evidence on safe redo. | Stop/timeout through a mixed tree cleans up ordinary children, starts no further children, and preserves evidence; helper completion cannot settle its Task. |
 | F — Local trial | Build and run the paired candidate Host/SDK/Apps before PR merge. Assign bounded coding work through May, observe workflow/PR/CI/comment follow-up, and verify Telegram review-link delivery. | Record exact candidate SHAs, executable identity, native Task/workflow references, current PR head/checks, addressed comment and notification receipt. Record failures as open gaps. |
 
+For the next Host continuation, finish A–C at the production boundary before
+spending the remaining rounds on standalone fixtures alone:
+
+1. Prepare the shared catalog from captured agent definitions and workflow
+   modules. `manager-agents-tool.ts` and `workflow-tool.ts` currently prepare
+   incompatible lookups; use the SDK `CallableCatalog` as the common authority,
+   including `ctx.list()` bindings. Capture definitions before asynchronous
+   imports; a missing target in that snapshot must not fall through to a newer
+   live registry. Check duplicates across all selected workflow directories.
+2. Reduce the model tool to list/call with mandatory structured input and common
+   options. Remove the procedure-only/deny branches and corresponding loader and
+   configuration fields. Internal runtime cancellation and diagnostics remain
+   usable by their owning Host APIs without public helper-session actions.
+3. Route workflow child calls through that captured catalog and common report
+   validation. Migrate Task adapters and required production fixtures in the same
+   branch. A focused production test should list then invoke the exact listed
+   agent and workflow names, preserving prompt/data and the result envelope.
+4. Bind the separate App contribution to the resulting candidate SDK, migrate
+   active registrations and consumers, then run broader checks and paired trials.
+
+These are source checkpoints within the saved outcome, not new approval gates or
+renewed allowances. Record coherent partial progress when a bounded round ends;
+do not preserve a retired API just to keep its old fixtures green, or claim the
+whole cutover from a passing standalone test.
+
 For D, the live trial also exposed two concrete consumer-context defects in
 Alex's `develop-change.ts` specialist prompt. State the bounded local-candidate
 scope beside the wider Task acceptance, so Bob does not require PR publication
