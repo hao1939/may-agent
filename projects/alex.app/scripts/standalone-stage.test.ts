@@ -53,7 +53,7 @@ function trial(kind: "done" | "blocked" | "cancel" = "done") {
     : `async () => ({id:'fixture',kind:'agent',status:${JSON.stringify(kind === "blocked" ? "error" : "done")},summary:'Fixture result',output:${JSON.stringify(output)},cleanupConfirmed:true})`;
   writeFileSync(fixtureFile, `export const agentFixtures = { gym: ${handler} };\n`);
   const config = {
-    target: "alex/diagnose-improvement", input: { baselineDir },
+    target: "alex/diagnose-improvement", input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } },
     task: { outcome: "Diagnose the captured execution failure", acceptance: ["Preserve insufficient evidence"] },
     cwd, projectRoot: cwd, outputRoot, timeoutMs: 10_000, fixtureFile,
   };

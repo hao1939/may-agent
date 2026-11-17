@@ -3,7 +3,9 @@ import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
+import { Check } from "typebox/value";
 import {
+  inputSchema,
   readEvaluationReports,
   readPublishedEvaluationReport,
 } from "./evaluation-report-reader.ts";
@@ -79,6 +81,18 @@ function publishFixture(
 }
 
 describe("evaluation report reader", () => {
+  test("admits canonical list/read/publication envelopes and rejects legacy top-level payloads", () => {
+    const publication = {
+      appId: "may", taskId: "goal/one", evidenceHash: "abc", executionId: "s_1",
+      report: "report.md", facts: "facts.json", jsonHash: "json", markdownHash: "markdown",
+    };
+    expect(Check(inputSchema, { prompt: "List retained reports" })).toBe(true);
+    expect(Check(inputSchema, { prompt: "Read a report", data: { operation: "read", path: "report.md" } })).toBe(true);
+    expect(Check(inputSchema, { prompt: "Read a publication", data: { operation: "read-publication", publication } })).toBe(true);
+    expect(Check(inputSchema, { operation: "list" })).toBe(false);
+    expect(Check(inputSchema, { prompt: "List retained reports", operation: "list" })).toBe(false);
+  });
+
   test("checks exact publication identity in code and returns bounded evidence without another evaluation", async () => {
     const root = mkdtempSync(join(tmpdir(), "report-reader-publication-"));
     try {
@@ -98,7 +112,7 @@ describe("evaluation report reader", () => {
       };
       const run = (value: typeof publication) => readEvaluationReports(
         createTestAppWorkflowContext({
-          input: { operation: "read-publication", publication: value },
+          input: { prompt: "Read the accepted publication", data: { operation: "read-publication", publication: value } },
         }),
         root,
       );
@@ -314,7 +328,7 @@ describe("evaluation report reader", () => {
     );
     const read = await readEvaluationReports(
       createTestAppWorkflowContext({
-        input: { operation: "read", path: paths.markdownPath },
+        input: { prompt: "Read the retained report", data: { operation: "read", path: paths.markdownPath } },
       }),
       root,
     );
@@ -367,7 +381,7 @@ describe("evaluation report reader", () => {
     );
 
     const listed = await readEvaluationReports(
-      createTestAppWorkflowContext({ input: { operation: "list", limit: 3 } }),
+      createTestAppWorkflowContext({ input: { prompt: "List retained reports", data: { operation: "list", limit: 3 } } }),
       root,
     );
     const reports = (
@@ -392,7 +406,7 @@ describe("evaluation report reader", () => {
     const paths = publishFixture(root);
     const listed = await readEvaluationReports(
       createTestAppWorkflowContext({
-        input: { operation: "list", limit: 5 },
+        input: { prompt: "List retained reports", data: { operation: "list", limit: 5 } },
         call: async () => {
           throw new Error("must not call");
         },
@@ -412,7 +426,7 @@ describe("evaluation report reader", () => {
     );
     const read = await readEvaluationReports(
       createTestAppWorkflowContext({
-        input: { operation: "read", path: paths.markdownPath },
+        input: { prompt: "Read the retained report", data: { operation: "read", path: paths.markdownPath } },
       }),
       root,
     );
@@ -429,7 +443,7 @@ describe("evaluation report reader", () => {
       const paths = publishFixture(root);
       appendFileSync(resolveTaskReportPath(root, paths[target]), "tampered");
       const listed = await readEvaluationReports(
-        createTestAppWorkflowContext({ input: { operation: "list" } }),
+        createTestAppWorkflowContext({ input: { prompt: "List retained reports", data: { operation: "list" } } }),
         root,
       );
       expect(
@@ -443,7 +457,7 @@ describe("evaluation report reader", () => {
     const paths = publishFixture(root, "x".repeat(20_000));
     const result = await readEvaluationReports(
       createTestAppWorkflowContext({
-        input: { operation: "read", path: paths.markdownPath },
+        input: { prompt: "Read the retained report", data: { operation: "read", path: paths.markdownPath } },
       }),
       root,
     );
@@ -471,7 +485,7 @@ describe("evaluation report reader", () => {
     const root = mkdtempSync(join(tmpdir(), "report-reader-safe-"));
     const outside = await readEvaluationReports(
       createTestAppWorkflowContext({
-        input: { operation: "read", path: "../secret" },
+        input: { prompt: "Read the retained report", data: { operation: "read", path: "../secret" } },
       }),
       root,
     );
@@ -481,7 +495,7 @@ describe("evaluation report reader", () => {
     writeImmutable(resolveTaskReportPath(root, paths.markdownPath), "staged");
     const staged = await readEvaluationReports(
       createTestAppWorkflowContext({
-        input: { operation: "read", path: paths.markdownPath },
+        input: { prompt: "Read the retained report", data: { operation: "read", path: paths.markdownPath } },
       }),
       root,
     );

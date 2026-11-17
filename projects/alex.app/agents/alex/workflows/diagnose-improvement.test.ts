@@ -11,6 +11,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runWorkflowTest } from "@may-agent/sdk/testing";
+import { Check } from "typebox/value";
 import * as diagnoseImprovementWorkflow from "./diagnose-improvement.js";
 
 interface TrialFixture {
@@ -122,7 +123,23 @@ function output(run: Awaited<ReturnType<typeof runWorkflowTest>>) {
   return (run.report.result?.output as any)?.output;
 }
 
+function callPrompt(step: { task: string }) {
+  return (JSON.parse(step.task) as { prompt: string }).prompt;
+}
+
 describe("diagnose-improvement workflow", () => {
+  test("admits the canonical callable envelope and rejects legacy top-level domain fields", () => {
+    expect(Check(diagnoseImprovementWorkflow.inputSchema, {
+      prompt: "Diagnose the frozen baseline",
+      data: { baselineDir: "/tmp/baseline", candidateName: "candidate", outputFile: "result.json" },
+    })).toBe(true);
+    expect(Check(diagnoseImprovementWorkflow.inputSchema, { baselineDir: "/tmp/baseline" })).toBe(false);
+    expect(Check(diagnoseImprovementWorkflow.inputSchema, {
+      prompt: "Diagnose the frozen baseline",
+      baselineDir: "/tmp/baseline",
+    })).toBe(false);
+  });
+
   test("resolves an App-local canonical source but rejects an invented actionable path", async () => {
     const baselineDir = makeBaseline("alex", [{ scenario: "scored", verdict: "fail" }]);
     addAgent(baselineDir, "alex", "app");
@@ -132,17 +149,17 @@ describe("diagnose-improvement workflow", () => {
     let techLeadCalls = 0;
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "preserve" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "preserve" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
         mocks: {
-          gym: (step) => {
-            expect(step.task).toContain("Current canonical source identity: `projects/fixture.app/agents/alex`");
-            expect(step.task).toContain("Historical executed source identity");
+          "alex/gym": (step) => {
+            expect(callPrompt(step)).toContain("Current canonical source identity: `projects/fixture.app/agents/alex`");
+            expect(callPrompt(step)).toContain("Historical executed source identity");
             return { status: "done", output: proposal("agents/alex/AGENTS.md", {
               requirement: ["scored#1:requirement"], output: ["scored#1:output"],
             }) };
           },
-          "tech-lead": () => { techLeadCalls += 1; throw new Error("must not prepare"); },
+          "alex/tech-lead": () => { techLeadCalls += 1; throw new Error("must not prepare"); },
         },
       });
       expect(output(run).disposition).toBe("insufficient_evidence");
@@ -161,9 +178,9 @@ describe("diagnose-improvement workflow", () => {
     let gymCalls = 0;
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "never" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "never" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: () => { gymCalls += 1; return { status: "done", output: { target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"], root_cause_summary: "Boundary retained.", proposed_changes: [] } }; } },
+        mocks: { "alex/gym": () => { gymCalls += 1; return { status: "done", output: { target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"], root_cause_summary: "Boundary retained.", proposed_changes: [] } }; } },
       });
       expect(output(run).disposition).toBe("insufficient_evidence");
       expect(output(run).root_cause_summary.toLowerCase()).toContain(kind === "missing" ? "no canonical" : "ambiguous");
@@ -179,10 +196,10 @@ describe("diagnose-improvement workflow", () => {
     addAgent(baselineDir, "alex");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir }, workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: (step) => {
-          expect(step.task).toContain("scoring signal, not a confirmed agent defect");
-          expect(step.task).toContain("claimed approval do not establish genuine human adjudication");
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } }, workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: { "alex/gym": (step) => {
+          expect(callPrompt(step)).toContain("scoring signal, not a confirmed agent defect");
+          expect(callPrompt(step)).toContain("claimed approval do not establish genuine human adjudication");
           return { status: "done", output: {
             target: "ignored", disposition: "no_change", detected_regimes: ["ignored"],
             root_cause_summary: "A score alone does not establish root cause.", proposed_changes: [],
@@ -201,9 +218,9 @@ describe("diagnose-improvement workflow", () => {
     let gymCalls = 0;
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "usage-only" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "usage-only" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: () => { gymCalls += 1; throw new Error("usage must not authorize diagnosis"); } },
+        mocks: { "alex/gym": () => { gymCalls += 1; throw new Error("usage must not authorize diagnosis"); } },
       });
       expect(output(run).disposition).toBe("no_change");
       expect((run.report.result?.output as any)?.facts.aggregateUsage).toEqual({
@@ -226,9 +243,9 @@ describe("diagnose-improvement workflow", () => {
     let gymCalls = 0;
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "preserve-evidence" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "preserve-evidence" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: () => { gymCalls += 1; return { status: "done", output: { target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"], root_cause_summary: "Boundary retained.", proposed_changes: [] } }; } },
+        mocks: { "alex/gym": () => { gymCalls += 1; return { status: "done", output: { target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"], root_cause_summary: "Boundary retained.", proposed_changes: [] } }; } },
       });
       expect(output(run).disposition).toBe("insufficient_evidence");
       expect(gymCalls).toBe(1);
@@ -251,10 +268,10 @@ describe("diagnose-improvement workflow", () => {
     writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "prior-preserve" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "prior-preserve" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: (step) => {
-          expect(step.task).toContain(expectedIssue);
+        mocks: { "alex/gym": (step) => {
+          expect(callPrompt(step)).toContain(expectedIssue);
           return { status: "done", output: {
             target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
             root_cause_summary: "Boundary retained.", proposed_changes: [],
@@ -271,9 +288,9 @@ describe("diagnose-improvement workflow", () => {
     addAgent(baselineDir, "alex");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "empty" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "empty" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: () => ({ status: "done", output: {
+        mocks: { "alex/gym": () => ({ status: "done", output: {
           target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
           root_cause_summary: "Empty baseline.", proposed_changes: [],
         } }) },
@@ -303,10 +320,10 @@ describe("diagnose-improvement workflow", () => {
     writeFileSync(manifestPath, JSON.stringify(manifest));
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "escaped" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "escaped" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: (step) => {
-          expect(step.task).toContain("real path escapes baseline");
+        mocks: { "alex/gym": (step) => {
+          expect(callPrompt(step)).toContain("real path escapes baseline");
           return { status: "done", output: {
             target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
             root_cause_summary: "Escaped evidence rejected.", proposed_changes: [],
@@ -331,13 +348,13 @@ describe("diagnose-improvement workflow", () => {
     addAgent(baselineDir, "alex");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir }, workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: (step) => {
-          expect(step.task).toContain('"truncated": true');
-          expect(step.task).toContain("retained failure");
-          expect(step.task).toContain(`Retained baseline directory: ${baselineDir}`);
-          expect(step.task).toContain(`Current canonical source directory: ${join(baselineDir, "projects/fixture.app/agents/alex")}`);
-          expect(step.task).not.toContain("Do NOT call tools");
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } }, workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: { "alex/gym": (step) => {
+          expect(callPrompt(step)).toContain('"truncated": true');
+          expect(callPrompt(step)).toContain("retained failure");
+          expect(callPrompt(step)).toContain(`Retained baseline directory: ${baselineDir}`);
+          expect(callPrompt(step)).toContain(`Current canonical source directory: ${join(baselineDir, "projects/fixture.app/agents/alex")}`);
+          expect(callPrompt(step)).not.toContain("Do NOT call tools");
           return { status: "done", output: proposal(
             "projects/fixture.app/agents/alex/AGENTS.md",
             { requirement: ["large-result#1:requirement"], output: ["large-result#1:output"] },
@@ -353,8 +370,8 @@ describe("diagnose-improvement workflow", () => {
     addAgent(baselineDir, "alex");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir }, workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: () => ({ status: "done", output: proposal(
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } }, workspace: { projectRoot: baselineDir, workRoot: baselineDir },
+        mocks: { "alex/gym": () => ({ status: "done", output: proposal(
           "projects/fixture.app/agents/alex/AGENTS.md",
           { requirement: ["invented:requirement"], output: ["scored#1:output"] },
         ) }) },
@@ -377,18 +394,18 @@ describe("diagnose-improvement workflow", () => {
     let techLeadCalls = 0;
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "supported" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "supported" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
         mocks: {
-          gym: (step) => {
-            expect(step.task).toContain("SYNTHETIC POSITIVE CONTROL");
-            expect(step.task).toContain("matching is structural support only");
+          "alex/gym": (step) => {
+            expect(callPrompt(step)).toContain("SYNTHETIC POSITIVE CONTROL");
+            expect(callPrompt(step)).toContain("matching is structural support only");
             return { status: "done", output: proposal("projects/fixture.app/agents/alex/AGENTS.md") };
           },
-          "tech-lead": (step) => {
+          "alex/tech-lead": (step) => {
             techLeadCalls += 1;
-            expect(step.task).toContain("synthetic-explicit-contradiction#1:requirement");
-            expect(step.task).toContain("Historical executed source identity");
+            expect(callPrompt(step)).toContain("synthetic-explicit-contradiction#1:requirement");
+            expect(callPrompt(step)).toContain("Historical executed source identity");
             return { status: "done", output: { modified_files: ["AGENTS.md"], summary: "Prepared cited rule." } };
           },
         },
@@ -412,19 +429,19 @@ describe("diagnose-improvement workflow", () => {
     writeFileSync(join(appRoot, "agents", "alex", "agent.json"), "{}\n");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "hosted-candidate" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "hosted-candidate" } },
         workspace: { appRoot, projectRoot: appRoot, root: repo, output: repo },
         mocks: {
-          gym: (step) => {
-            expect(step.task).toContain(`Current canonical source directory: ${canonicalDir}`);
-            expect(step.task).toContain("Current canonical source identity: `projects/fixture.app/agents/scout`");
+          "alex/gym": (step) => {
+            expect(callPrompt(step)).toContain(`Current canonical source directory: ${canonicalDir}`);
+            expect(callPrompt(step)).toContain("Current canonical source identity: `projects/fixture.app/agents/scout`");
             return { status: "done", output: proposal(
               "projects/fixture.app/agents/scout/AGENTS.md",
               { requirement: ["hosted#1:requirement"], output: ["hosted#1:output"] },
             ) };
           },
-          "tech-lead": (step) => {
-            expect(step.task).toContain(join(repo, "agents", ".lab", "hosted-candidate"));
+          "alex/tech-lead": (step) => {
+            expect(callPrompt(step)).toContain(join(repo, "agents", ".lab", "hosted-candidate"));
             return { status: "done", output: { modified_files: ["AGENTS.md"], summary: "Prepared hosted candidate." } };
           },
         },
@@ -450,8 +467,8 @@ describe("diagnose-improvement workflow", () => {
     addAgent(source, "alex");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir }, workspace: { appRoot: source, projectRoot: source, root: scratch, output: scratch },
-        mocks: { gym: () => ({ status: "done", output: proposal(
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } }, workspace: { appRoot: source, projectRoot: source, root: scratch, output: scratch },
+        mocks: { "alex/gym": () => ({ status: "done", output: proposal(
           "projects/fixture.app/agents/alex/AGENTS.md",
           { requirement: ["separate#1:requirement"], output: ["separate#1:output"] },
         ) }) },
@@ -474,10 +491,10 @@ describe("diagnose-improvement workflow", () => {
     addAgent(otherSource, "scout");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir }, workspace: { projectRoot: otherSource, root: isolated },
-        mocks: { gym: (step) => {
-          expect(step.task).toContain(`Current canonical source directory: ${isolatedCanonical}`);
-          expect(step.task).not.toContain(`Current canonical source directory: ${join(otherSource, "projects/fixture.app/agents/scout")}`);
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } }, workspace: { projectRoot: otherSource, root: isolated },
+        mocks: { "alex/gym": (step) => {
+          expect(callPrompt(step)).toContain(`Current canonical source directory: ${isolatedCanonical}`);
+          expect(callPrompt(step)).not.toContain(`Current canonical source directory: ${join(otherSource, "projects/fixture.app/agents/scout")}`);
           return { status: "done", output: proposal(
             "projects/fixture.app/agents/scout/AGENTS.md",
             { requirement: ["competing#1:requirement"], output: ["competing#1:output"] },
@@ -503,9 +520,9 @@ describe("diagnose-improvement workflow", () => {
     symlinkSync(outsideAgent, join(isolated, "agents", "scout"), "dir");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir }, workspace: { projectRoot: isolated, root: isolated },
-        mocks: { gym: (step) => {
-          expect(step.task).toContain("ambiguous or escape the selected source root");
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } }, workspace: { projectRoot: isolated, root: isolated },
+        mocks: { "alex/gym": (step) => {
+          expect(callPrompt(step)).toContain("ambiguous or escape the selected source root");
           return { status: "done", output: {
             target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
             root_cause_summary: "Boundary retained.", proposed_changes: [],
@@ -531,8 +548,8 @@ describe("diagnose-improvement workflow", () => {
     addAgent(otherSource, "scout");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir }, workspace: { projectRoot: otherSource, root: isolated },
-        mocks: { gym: () => ({ status: "done", output: {
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir } }, workspace: { projectRoot: otherSource, root: isolated },
+        mocks: { "alex/gym": () => ({ status: "done", output: {
           target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"],
           root_cause_summary: "Boundary retained.", proposed_changes: [],
         } }) },
@@ -559,9 +576,9 @@ describe("diagnose-improvement workflow", () => {
     writeFileSync(join(candidateDir, "sentinel.txt"), "unchanged");
     try {
       const run = await runWorkflowTest(diagnoseImprovementWorkflow, {
-        input: { baselineDir, candidateName: "blocked-preserve" },
+        input: { prompt: "Diagnose the frozen baseline", data: { baselineDir, candidateName: "blocked-preserve" } },
         workspace: { projectRoot: baselineDir, workRoot: baselineDir },
-        mocks: { gym: () => ({ status: "done", output: { target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"], root_cause_summary: "Blocked execution.", proposed_changes: [] } }) },
+        mocks: { "alex/gym": () => ({ status: "done", output: { target: "ignored", disposition: "insufficient_evidence", detected_regimes: ["ignored"], root_cause_summary: "Blocked execution.", proposed_changes: [] } }) },
       });
       expect(output(run).disposition).toBe("insufficient_evidence");
       expect(output(run).detected_regimes).toContain("execution_failure");

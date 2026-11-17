@@ -361,8 +361,8 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
           replies === 1
             ? {
                 action: "call",
-                agent: "read-report",
-                input: { operation: "read-publication", publication },
+                agent: "alex/read-report",
+                input: { prompt: "Read the accepted publication", data: { operation: "read-publication", publication } },
               }
             : {
                 status: "done",
@@ -457,7 +457,7 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
       mkdirSync(workflowDir);
       writeFileSync(
         join(workflowDir, "read-report.ts"),
-        `import { readEvaluationReports } from ${JSON.stringify(join(import.meta.dir, "agents/evaluator/workflows/evaluation-report-reader.ts"))};\nexport const name="read-report"; export const description="Read original evidence"; export const execute=ctx=>readEvaluationReports(ctx, ${JSON.stringify(f.root)});\n`,
+        `import { inputSchema, readEvaluationReports } from ${JSON.stringify(join(import.meta.dir, "agents/evaluator/workflows/evaluation-report-reader.ts"))};\nexport { inputSchema }; export const name="read-report"; export const description="Read original evidence"; export const execute=ctx=>readEvaluationReports(ctx, ${JSON.stringify(f.root)});\n`,
       );
       const item = f.admit("interpret", {
         kind: "message",
