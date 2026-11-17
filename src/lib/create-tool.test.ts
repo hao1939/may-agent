@@ -63,7 +63,24 @@ describe("createAgentsTool()", () => {
         state,
         prompt: async (text: unknown) => {
           if (text === "hold caller") await stopped.promise;
-          state.messages.push({ role: "assistant", content: [{ type: "text", text: "Fixture result" }] });
+          state.messages.push(
+            {
+              role: "assistant",
+              content: [{
+                type: "toolCall",
+                id: "finish-fixture",
+                name: "finish",
+                arguments: { status: "done", summary: "Fixture result" },
+              }],
+            },
+            {
+              role: "toolResult",
+              toolCallId: "finish-fixture",
+              toolName: "finish",
+              content: [{ type: "text", text: "✅ SUCCESS: Fixture result" }],
+              isError: false,
+            },
+          );
         },
         cancel: () => stopped.resolve(), waitForIdle: async () => undefined,
         followUp: () => undefined, continue: async () => undefined, steer: () => undefined,

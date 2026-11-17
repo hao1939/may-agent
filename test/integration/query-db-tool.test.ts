@@ -116,6 +116,13 @@ describe("query_db tool", () => {
         register: (config: { name: string; tools: Array<{ name: string }> }) => {
           registered.push(config);
         },
+        createAgentsTool: () => ({
+          name: "agents",
+          label: "Agents",
+          description: "test callable boundary",
+          parameters: {} as any,
+          execute: async () => ({ content: [{ type: "text" as const, text: "[]" }] }),
+        }),
       };
 
       await loadAgents({
