@@ -682,3 +682,59 @@ records both gaps. Earlier exact-name, metadata, import-cleanup and bounded-call
 findings remain open. The same Task is now generation seventeen with all 48
 prior consumed rounds retained in a finite total of 56; its native development
 workflow continues without a replacement Task or ledger.
+
+
+## Published child admission and paired source checkpoint
+
+At 18:59 UTC, Root pushed May's native commit
+`eedf54fac4c07f7e191d59e2580596a99f71aa9d` to draft #589 for parallel review.
+It follows `485856afa7`, which restricts shared call options to timeout/schema.
+Against an exact clean detached snapshot, independent checks pass all 75 tests
+across the five owning callable/model/workflow/kernel suites and `check:ci`.
+The child-input probe rejects all fourteen invalid prompt/workflow calls before
+execution and returns common errors without child IDs. The read-only-context
+probe confirms a child cannot regain its parent's unavailable Task mutation
+binding. This preserves existing runtime context without restoring invocation
+permission options. GitHub Quality and Container were still running on this
+head; focused checks do not establish full CI or readiness. Root's administrative
+push is also distinct from autonomous May publication.
+
+New native local commit `eb77e74da657c9332a41f6ff59595c2bc90da9db` converges the
+public standalone result. An independent clean-snapshot probe passes all ten
+checks, including all four child call directions, matching complete discovery
+and the common root result. Its standalone owning suite has 28 passes and four
+failures from remaining wrapper expectations. Other production probes still
+reproduce invalid supplied partial output, thrown pre-start errors, accepted
+component-whitespace names, live rereading of prompt metadata, and confirmed
+cleanup while an explicit-module import remains pending. Root returned these
+findings through the same May Task. The new process-global diagnostics map is
+also unnecessary retained state; use the existing execution read/observer for
+trusted receipts and migrate consumers with it.
+
+The paired App Task produced clean partial source
+`e3c383371e88735643fa79ba82a27172104b7a78`, including canonical Alex calls,
+current Task-input forwarding and one registration of the shared report reader.
+It remains isolated and unactivated. Its `develop-change` exported schema still
+requires bare top-level `verify`, while execution uses a new
+`ctx.input.data ?? ctx.input` fallback. The proper envelope fails real shared
+schema admission. Migrate the full schema and fixtures and remove that fallback;
+a passing adapter test cannot establish production admission.
+
+Dependency setup initially mixed Host versions: Apps TypeScript paths resolve
+`@may-agent/sdk/app` through `projects/may-agent`, while runtime imports could
+fall through to the private candidate `node_modules` binding. Root reversibly
+bound both ignored links in the isolated App checkout to clean full Host source
+`485856afa716ab8c2545485f3d3459b376a55792`. Actual resolution of both SDK entrypoints
+now identifies that one snapshot. Canonical workspace dependencies remain on the
+installed baseline. Against this exact provider, the two selected App suites
+have 98 passes and one failure from a legacy root input. May received the clean
+provider identity and setup receipt to resume the same App contribution without
+waiting for the wider Host outcome to settle.
+
+Probe receipts, logs and the full dependency-resolution receipt
+`paired-frozen-host-sdk-binding-1794941652292.json` are under the existing local
+trial directory `/app/.state/pr585-agents-convergence-e2e-20261117/`. These are
+synthetic production-boundary checks, not external-model, paired-activation or
+Telegram delivery proof. No unified candidate has been activated. The most recent
+executable readback still identifies baseline `0606e2df`; the earlier #590 local
+receipt must be re-established in the final compatible candidate.

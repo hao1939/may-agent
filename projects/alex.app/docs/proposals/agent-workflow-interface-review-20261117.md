@@ -2,31 +2,18 @@
 
 **Design status:** Accepted direction; implementation and verification are active.
 The interfaces below define the requested cutover.
-**Implementation status:** Follow-up required. Host [#585](https://github.com/hao1939/may-agent/pull/585)
-is merged into main `0606e2df16d0a44016bbef1c6294dac4c4c11d94`; its shared
-tool name still fronts incompatible inputs, results, discovery and permission
-handling. Source merge and installed-runtime activation are separate facts.
-Draft [#589](https://github.com/hao1939/may-agent/pull/589) is published for
-parallel review. Checkpoint `a6d46285aa` includes canonical model list/call,
-removal of its public permissions/session actions, bounded complete preparation,
-and fixed target snapshots with current-caller bindings. Checkpoint `73f89ae9a4`
-also preserves canonical namespaces through the real loader/manager and rejects
-same-address duplicates. At `c1348034f9`, standalone workflows share complete discovery and cross-App
-calls, and prompt agents configured only with `finish` receive built-in
-cooperation. Native checks report 112 focused tests passing and `check:ci`
-passing. Independent production probes now reach all four call directions and
-matching descriptor lists, but common-result assertions still fail. Fixed prompt
-metadata, exact component-name dispatch, explicit-module import-cleanup tracking,
-common SDK results and paired App migration remain open. These checks do not
-establish full CI or cutover readiness. No callable candidate is activated.
-Published `6515fe0465` then converges SDK result types and child result shapes:
-independent production checks pass all four child call directions. Public
-standalone `run()`, report validation across statuses, trusted receipt reads and
-their consumers remain unfinished, so result convergence is still partial.
-The focused Task-revision fix #590 has an earlier successful local trial, but
-a later executable readback reports baseline `0606e2df`; carry the fix into the
-paired candidate and reverify the actual running artifact before activation. The [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
-records later local checkpoints, failed checks and the remaining connected proof.
+**Implementation status:** Partial source implementation in draft
+[#589](https://github.com/hao1939/may-agent/pull/589), published through
+`eedf54fac4`. Canonical model list/call, loader namespace preservation, standalone
+cooperation, common child results, shared call options, invalid child-input
+admission and inherited read-only Task context have focused verification.
+The newer local `eb77e74da6` checkpoint also passes all four call directions and
+the common public `run()` result probe, but its owning standalone suite has four
+unmigrated failures. Remaining implementation work is listed below. Full
+current-head CI, paired App migration and the connected local trial remain open;
+no unified candidate is activated. The
+[live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#published-child-admission-and-paired-source-checkpoint)
+records exact revisions, failed checks and the actual installed-runtime boundary.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -288,24 +275,29 @@ paired-activation obligation; a passing Host commit cannot certify App edits.
 | E — Execution | Keep joined workflow concurrency and inherited cancellation; preserve normal Task/Condition continuation and evidence on safe redo. | Stop/timeout through a mixed tree cleans up ordinary children, starts no further children, and preserves evidence; helper completion cannot settle its Task. |
 | F — Local trial | Build and run the paired candidate Host/SDK/Apps before PR merge. Assign bounded coding work through May, observe workflow/PR/CI/comment follow-up, and verify Telegram review-link delivery. | Record exact candidate SHAs, executable identity, native Task/workflow references, current PR head/checks, addressed comment and notification receipt. Record failures as open gaps. |
 
-The model list/call adapter is implemented at the published checkpoint; preserve
-its verified snapshot and actual-caller behavior. Finish the remaining production
-boundaries in this order:
+Preserve the verified model snapshot/current-caller bindings, complete standalone
+catalog and canonical loader identities. Finish the remaining boundaries in
+this order, returning source evidence after each coherent checkpoint:
 
-1. Retain the verified loader/manager namespace repair. Complete the remaining
-   catalog bindings without reintroducing bare-name shadowing or lookup aliases;
-   cover agent/workflow collisions and failed-reload retention.
-2. Bind standalone prompt cooperation and workflow `ctx.list()`/`ctx.call()` to
-   the original complete catalog. An agent configured only with `finish` still
-   receives built-in list/call. Selecting an `alpha/*` root cannot hide or block
-   a registered `beta/*` child. Share the mandatory envelope and common options;
-   remove standalone task aliases and executor-specific call fields.
-3. Converge SDK result producers and consumers: workflow completion helpers,
-   public `run()`, Task adapters, output validation and trusted execution
-   diagnostics. Prove all four directions through actual production adapters,
-   retaining useful partial results and bounded cancellation.
-4. Bind the paired App contribution to the resulting candidate SDK, migrate
-   active registrations and consumers, then run broader checks and paired trials.
+1. **Finish common admission/results.** Make public standalone pre-start errors
+   use the common error result; validate supplied output across every status.
+   Remove the standalone test suite's legacy wrapper expectations. Expose trusted
+   CLI receipts through the existing execution read/observer and migrate actual
+   consumers; avoid a second result alias or an unbounded process-local run store.
+2. **Close captured-catalog gaps.** Reject whitespace inside either name component,
+   capture prompt config/metadata once per invocation tree, retain pending imports
+   through explicit-module cancellation, and bound settlement when a child ignores
+   cancellation. Preserve the existing finite cancellation/cleanup policy.
+3. **Complete the paired App contribution.** Migrate all active definitions,
+   full-envelope schemas, callers, result/diagnostic consumers and guidance.
+   Bind both SDK imports and TypeScript path aliases to one exact clean provider
+   snapshot; private `node_modules` alone is insufficient in this repository.
+   Remove raw-input compatibility fallbacks and verify the actual exported schema
+   against `{ prompt, data }` through production admission.
+4. **Verify and trial the pair.** Pass current-head portable and hosted checks,
+   resolve substantive comments, then activate the exact compatible local pair
+   and prove native workflow/PR/CI/comment/notification follow-through. Carry the
+   Task-revision source repair and recheck the actual running binary identity.
 
 These are source checkpoints within the saved outcome, not new approval gates or
 renewed allowances. Record coherent partial progress when a bounded round ends;

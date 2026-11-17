@@ -9,9 +9,12 @@
 evidence retention and Task-backed waiting are implemented. Cancellation requires
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
-accepted requirements pending implementation; the examples under Invocation
-and Result admission describe that target. The sections below state specific
-coverage limits. Full standalone/Host agent
+accepted requirements with partial source implementation in draft Host #589.
+Focused checks cover the model adapter, standalone child calls and inherited
+Task context; full result admission, paired App migration and local activation
+remain open in the [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
+The examples under Invocation and Result admission describe the accepted target,
+not the installed API. The sections below state specific coverage limits. Full standalone/Host agent
 parity is not established; [Shared Agent Runtime](agent-runtime.md) owns its
 accepted semantics and current convergence gaps.
 
