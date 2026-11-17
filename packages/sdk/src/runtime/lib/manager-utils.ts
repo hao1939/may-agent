@@ -209,7 +209,7 @@ export function log(level: LogLevel, message: string): void {
 import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk/app";
 import type { CliCallFacts } from "@may-agent/sdk/app";
 
-export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCallFacts[] {
+export function cliCallFacts(sessionId: string, messages: AgentMessage[], limit = 64): CliCallFacts[] {
   const calls = new Map<string, CliCallFacts>();
   for (const message of messages) {
     if (message.role !== "toolResult" || message.toolName !== "run_cli_agent") continue;
@@ -220,7 +220,8 @@ export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCa
     if (!call.resultPath || !call.structuredResultPath || !call.eventsPath) continue;
     calls.set(call.taskId, call);
   }
-  return [...calls.values()].slice(-64);
+  const normalizedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 0;
+  return normalizedLimit === 0 ? [] : [...calls.values()].slice(-normalizedLimit);
 }
 
 export type WorkflowToolResult = (

@@ -1,6 +1,5 @@
 import type {
   AppRead,
-  CliCallFacts,
   ExecutionView,
   TaskReadOptions,
   TaskDetail,
@@ -12,7 +11,7 @@ import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskCancellation } from "../tasks/app-task-state.js";
 import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
-import { readSessionMessagesTail } from "../../../lib/persistence.js";
+import { readSessionMessagesTailWithCoverage } from "../../../lib/persistence.js";
 import { cliCallFacts } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
@@ -370,24 +369,41 @@ const EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT = 512;
 const EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION = 1024 * 1024;
 
 function readExecutionCliCalls(opts: Pick<RuntimeAppReadOptions, "getDb" | "persistDir">, id: string, kind: "session" | "workflow"):
-  { cliCalls: CliCallFacts[]; truncated?: true } | undefined {
+  NonNullable<ExecutionView["diagnostics"]> | undefined {
   if (!opts.persistDir) return undefined;
   const db = opts.getDb();
   const rows = kind === "session"
     ? [{ sessionId: id }]
     : db.prepare(
-      `SELECT sessionId FROM sessions WHERE workflowRunId = ? ORDER BY startedAt, sessionId LIMIT ?`,
+      `WITH RECURSIVE workflow_tree(runId) AS (
+         SELECT ?
+         UNION
+         SELECT child.runId FROM workflow_runs child
+         JOIN workflow_tree parent ON child.parentWorkflowRunId = parent.runId
+       )
+       SELECT session.sessionId FROM sessions session
+       JOIN workflow_tree workflow ON session.workflowRunId = workflow.runId
+       ORDER BY session.startedAt, session.sessionId LIMIT ?`,
     ).all(id, EXECUTION_DIAGNOSTIC_SESSION_LIMIT + 1) as Array<{ sessionId: string }>;
   const selected = rows.slice(0, EXECUTION_DIAGNOSTIC_SESSION_LIMIT);
-  const calls = selected.flatMap(({ sessionId }) => cliCallFacts(
-    sessionId,
-    readSessionMessagesTail(opts.persistDir!, sessionId, EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT, EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION),
-  ));
+  const omitted: NonNullable<ExecutionView["diagnostics"]>["omitted"] = {
+    ...(rows.length > EXECUTION_DIAGNOSTIC_SESSION_LIMIT ? { sessions: true } : {}),
+  };
+  const calls = selected.flatMap(({ sessionId }) => {
+    const tail = readSessionMessagesTailWithCoverage(
+      opts.persistDir!, sessionId, EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT, EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION,
+    );
+    if (tail.omitted?.messages) omitted.messages = true;
+    if (tail.omitted?.bytes) omitted.bytes = true;
+    return cliCallFacts(sessionId, tail.messages, 65);
+  });
   const bounded = calls.slice(-64);
-  if (bounded.length === 0 && rows.length <= EXECUTION_DIAGNOSTIC_SESSION_LIMIT) return undefined;
+  if (calls.length > bounded.length) omitted.cliCalls = true;
+  const truncated = Object.values(omitted).some(Boolean);
+  if (bounded.length === 0 && !truncated) return undefined;
   return {
     cliCalls: bounded,
-    ...(rows.length > EXECUTION_DIAGNOSTIC_SESSION_LIMIT || calls.length > bounded.length ? { truncated: true as const } : {}),
+    ...(truncated ? { omitted, truncated: true as const } : {}),
   };
 }
 

@@ -234,7 +234,9 @@ export type ExecutionView = {
   /** Bounded Host-retained evidence. Contributors cannot author these receipts. */
   diagnostics?: {
     cliCalls: CliCallFacts[];
-    /** More matching sessions or receipts exist beyond this projection's bounds. */
+    /** Exact bounded source whose older evidence was omitted. */
+    omitted?: { sessions?: true; cliCalls?: true; messages?: true; bytes?: true };
+    /** More matching sessions, transcript messages/bytes, or receipts exist beyond this projection's bounds. */
     truncated?: true;
   };
 };
