@@ -1,4 +1,15 @@
 import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
+import { createRuntimeAppRead } from "../../src/app/core/reads/app-read.js";
+import { createTaskAgentRunner } from "../../src/app/adapters/executors/managed-agent.js";
+import { runTaskAgent, runTaskExecutorAttempt } from "../../src/app/core/tasks/attempt-execution.js";
+import { appTaskTestContext } from "../../src/app/core/tasks/app-task-test-support.js";
+import {
+  claimObservedAppTask,
+  deferAppTask,
+  observeAppTaskIntent,
+} from "../../src/app/core/tasks/app-task-reconciler.js";
+import type { AppTaskRuntimeDescriptor } from "../../src/app/core/tasks/runtime-definition.js";
+import type { AppTaskRuntimeOptions } from "../../src/app/core/tasks/runtime-options.js";
 import { getDb } from "../../src/lib/db/connection.js";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import type { AppEvent, TaskDetail } from "@may-agent/sdk/app";
@@ -399,3 +410,208 @@ export async function execute(ctx) { return ctx.call("delegate", ctx.input); }
   },
   20_000,
 );
+
+test("scoped agents.call settles through Task admission without replacing retained input or Conditions", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-task-workflow-settlement-"));
+  const appDir = join(root, "sample.app");
+  const persistDir = join(root, ".state");
+  const agentDir = join(root, "agents", "owner");
+  mkdirSync(appDir, { recursive: true });
+  mkdirSync(join(agentDir, "workflows"), { recursive: true });
+  writeFileSync(
+    join(agentDir, "workflows", "inspect.ts"),
+    `
+export const name = "inspect";
+export const description = "Inspect retained Task state";
+export async function execute(ctx) {
+  const current = await ctx.read.tasks.get(ctx.reconciliation.taskId);
+  return ctx.done("inspected", {
+    marker: ctx.input.marker,
+    correction: current.input.correction,
+    condition: current.conditions[0].id,
+  });
+}
+`,
+  );
+  const store = AppTaskResourceStore.fromDb(getDb(persistDir), "sample");
+  const config = appTaskTestContext({
+    appDir,
+    agent: "owner",
+    maxConcurrent: 1,
+    resourceStore: store,
+    tree: {
+      project: "sample",
+      project_lifecycle: "active",
+      root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null } },
+      tasks: {},
+    },
+  });
+  const taskId = "work/inspect";
+  const bus = new EventBus();
+  const model = fakeModel();
+  const manager = new SubagentManager({
+    persistDir,
+    agentRunFactory: (runner) => {
+      let step = 0;
+      return createAgentRun({
+        ...runner,
+        streamFn: (_model, context) => {
+          step++;
+          const messages = JSON.stringify(context.messages);
+          if (step === 2) {
+            expect(messages).toContain("accepted");
+            expect(messages).toContain("keep-this-input");
+            expect(messages).toContain("publication-approval");
+          }
+          const content: AssistantMessage["content"] =
+            step === 1
+              ? [
+                  {
+                    type: "toolCall",
+                    id: "inspect",
+                    name: "agents",
+                    arguments: { action: "call", agent: "inspect", input: { marker: "accepted" } },
+                  },
+                ]
+              : [
+                  {
+                    type: "toolCall",
+                    id: "finish",
+                    name: "finish",
+                    arguments: {
+                      status: "done",
+                      summary: "Procedure result accepted",
+                      facts: ["agents.call returned retained Task state"],
+                      output: {
+                        state: "waiting",
+                        summary: "Procedure result settled; publication approval remains independent",
+                        facts: ["procedure:inspect"],
+                        result: { marker: "accepted" },
+                      },
+                    },
+                  },
+                ];
+          const message: AssistantMessage = {
+            role: "assistant",
+            api: model.api,
+            provider: model.provider,
+            model: model.id,
+            content,
+            stopReason: "toolUse",
+            timestamp: Date.now(),
+            usage: {
+              input: 0,
+              output: 0,
+              totalTokens: 0,
+              cacheRead: 0,
+              cacheWrite: 0,
+              cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+            },
+          };
+          const stream = createAssistantMessageEventStream();
+          stream.push({ type: "done", reason: "toolUse", message });
+          return stream;
+        },
+      });
+    },
+  });
+  const tools = await buildTools({ name: "owner", tools: [] } as never, {
+    manager,
+    bus,
+    agentDir,
+    agentsRoot: join(root, "agents"),
+    projectsRoot: root,
+    sharedRoot: root,
+    projectRoot: root,
+    persistDir,
+  });
+  manager.register({ name: "owner", description: "Owner", domain: "fixture", model, tools, agentDir });
+  const descriptor = {
+    id: "sample",
+    appDir,
+    projectDir: root,
+    agent: "owner",
+    resourceStore: store,
+    app: { id: "sample", version: 1, agent: "owner", tasks: { maxConcurrent: 1 } },
+  } as AppTaskRuntimeDescriptor;
+  const opts: AppTaskRuntimeOptions = {
+    bus,
+    projectRoot: root,
+    projectsRoot: root,
+    agentsRoot: join(root, "agents"),
+    sharedRoot: root,
+    persistDir,
+    agents: createTaskAgentRunner({ manager }),
+  };
+  try {
+    observeAppTaskIntent(config, {
+      appAgent: "owner",
+      intent: {
+        id: taskId,
+        parentId: "root",
+        agent: "owner",
+        outcome: "Inspect a granted local procedure",
+        acceptance: ["Settle the procedure result while retaining independent state"],
+        input: { correction: "keep-this-input" },
+      },
+    });
+    const initial = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent:owner" });
+    if (initial.kind !== "claimed") throw new Error(`Initial claim failed: ${initial.kind}`);
+    deferAppTask(config, initial, {
+      disposition: "waiting",
+      continue: true,
+      summary: "Prepared for procedure inspection",
+      conditions: [
+        {
+          id: "publication-approval",
+          type: "approval.observed",
+          subject: "publication:draft",
+          expected: true,
+          owner: "human:reviewer",
+        },
+      ],
+    });
+    const claim = claimObservedAppTask(config, { taskId, appAgent: "owner", handler: "agent:owner" });
+    if (claim.kind !== "claimed") throw new Error(`Execution claim failed: ${claim.kind}`);
+    const execution = {
+      opts,
+      descriptor,
+      claim,
+      executionPaths: { appDir, projectDir: root, workspaceDir: root },
+      childContext: { live: [], completed: [] },
+      taskSnapshot: { live: [], truncated: false },
+    };
+    const run = await runTaskExecutorAttempt({
+      ...execution,
+      execute: (attempt, taskEvents, acceptedLiveEventIds) =>
+        runTaskAgent({ ...execution, attempt, taskEvents, acceptedLiveEventIds }),
+    });
+    expect(run.handlerResult).toMatchObject({
+      state: "waiting",
+      result: { marker: "accepted" },
+    });
+    deferAppTask(config, claim, {
+      ...run.handlerResult,
+      disposition: "waiting",
+      acceptedLiveEventIds: run.acceptedLiveEventIds,
+    });
+    const current = await createRuntimeAppRead({ getDb: () => store.db, taskStateConfig: config }).tasks.get(taskId, {
+      acceptedEvidence: { limit: 8 },
+    });
+    expect(current?.input).toEqual({ correction: "keep-this-input" });
+    expect(current?.result).toEqual({ marker: "accepted" });
+    expect(current?.conditions).toEqual([
+      expect.objectContaining({
+        id: "publication-approval",
+        observation: expect.objectContaining({ state: "unknown" }),
+      }),
+    ]);
+    expect(
+      current?.acceptedEvidence.page?.items.find((item) => item.attemptId === claim.attemptId)?.acceptedResult.result,
+    ).toEqual({ marker: "accepted" });
+  } finally {
+    closeDb(persistDir);
+    rmSync(root, { recursive: true, force: true });
+  }
+}, 15_000);
