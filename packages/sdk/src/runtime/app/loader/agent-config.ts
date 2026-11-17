@@ -38,8 +38,6 @@ export interface AgentConfig {
   compaction?: boolean;
   /** @experimental Agent-local synchronous preparer module. Omit for the full brief. */
   contextPreparation?: string;
-  /** Block direct delegation to specific agents via agents tool. */
-  delegateDeny?: { agents: string[]; hint: string };
 }
 
 export interface ValidationError {

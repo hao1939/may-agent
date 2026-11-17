@@ -1,5 +1,4 @@
 import type { AgentTool } from "@earendil-works/pi-agent-core";
-import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import type { SubagentManager } from "../../lib/manager.js";
 import { buildRuntimeCtx } from "../../lib/runtime-ctx.js";
@@ -64,7 +63,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         if (tools.some((t) => t.name === "agents")) {
           break;
         }
-        const denyConfig = config.delegateDeny;
         const runtimeCtx = buildRuntimeCtx({
           bus,
           persistDir,
@@ -78,7 +76,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
           manager.createAgentsTool({
             getCallerSessionId: () => currentAgentSessionId(config.name),
             getCallerAgentName: () => config.name,
-            callDeny: denyConfig ? { agents: denyConfig.agents, hint: denyConfig.hint } : undefined,
             runtimeCtx,
             createRead: (context) =>
               createRuntimeAppRead({
@@ -140,7 +137,9 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
     if (tools.length < start) throw new Error("Tool construction removed an earlier tool");
   }
 
-  if (!tools.some((tool) => tool.name === "agents") && existsSync(resolve(agentDir, "workflows"))) {
+  // Agent cooperation is a built-in callable boundary, independent of presets
+  // and whether this agent happens to own a workflows directory.
+  if (!tools.some((tool) => tool.name === "agents")) {
     const runtimeCtx = buildRuntimeCtx({
       bus,
       persistDir,
@@ -155,7 +154,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         getCallerSessionId: () => currentAgentSessionId(config.name),
         getCallerAgentName: () => config.name,
         runtimeCtx,
-        localProceduresOnly: true,
         createRead: (context) =>
           createRuntimeAppRead({
             readContract: async (appId) => getLoadedAppInputContract({ bus, appId }),
@@ -177,7 +175,7 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         },
       }),
     );
-    sources.push(`local workflows for "${config.name}"`);
+    sources.push(`built-in cooperation for "${config.name}"`);
   }
 
   const localTools = await loadLocalTools(config.name, agentDir, opts);
