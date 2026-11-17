@@ -31,7 +31,12 @@ describe("canonical callable catalog", () => {
   test("uses exact app/global names and returns one immutable sorted descriptor list", () => {
     const catalog = new CallableCatalog([
       definition("zeta"),
-      definition("review", "alex", { dataSchema: Type.Object({ ref: Type.String() }) }),
+      definition("review", "alex", {
+        inputSchema: Type.Object({
+          prompt: Type.String({ minLength: 1 }),
+          data: Type.Object({ ref: Type.String() }),
+        }, { additionalProperties: false }),
+      }),
     ]);
 
     expect(catalog.list().map((item) => item.name)).toEqual(["alex/review", "global/zeta"]);
@@ -39,11 +44,8 @@ describe("canonical callable catalog", () => {
     expect(catalog.has("alex/review")).toBe(true);
     expect(Object.isFrozen(catalog.list())).toBe(true);
     expect(Object.isFrozen(catalog.list()[0])).toBe(true);
-    expect(catalog.list()[0]?.inputSchema).toMatchObject({
-      type: "object",
-      required: ["prompt", "data"],
-      additionalProperties: false,
-    });
+    expect(Check(catalog.list()[0]!.inputSchema, { prompt: "review", data: { ref: "HEAD" } })).toBe(true);
+    expect(Check(catalog.list()[0]!.inputSchema, { prompt: "review" })).toBe(false);
   });
 
   test("uses full-envelope target schemas without wrapping them under data", async () => {
@@ -63,8 +65,8 @@ describe("canonical callable catalog", () => {
       catalog.call("alex/full", { prompt: "review", data: { ref: "HEAD" } }, undefined, { signal }),
     ).resolves.toMatchObject({ status: "done", output: { ref: "HEAD" } });
     expect(
-      () => new CallableCatalog([definition("mixed", "alex", { inputSchema: fullEnvelope, dataSchema: Type.Unknown() })]),
-    ).toThrow("full-envelope inputSchema or compatibility dataSchema");
+      () => new CallableCatalog([definition("legacy", "alex", { dataSchema: Type.Unknown() } as unknown as Partial<CallableDefinition>)]),
+    ).toThrow("no longer accept dataSchema or effectiveInputSchema");
   });
 
   test("rejects duplicate exact names and reserved or ambiguous components", () => {
@@ -106,7 +108,10 @@ describe("shared callable input and result contract", () => {
   const outputSchema = Type.Object({ verdict: Type.String() });
   const catalog = new CallableCatalog([
     definition("review", "alex", {
-      dataSchema: Type.Object({ ref: Type.String() }),
+      inputSchema: Type.Object({
+        prompt: Type.String({ minLength: 1 }),
+        data: Type.Object({ ref: Type.String() }),
+      }, { additionalProperties: false }),
       outputSchema,
       async invoke(input) {
         return {

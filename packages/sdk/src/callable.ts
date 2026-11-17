@@ -47,8 +47,6 @@ export type CallableDefinition = Readonly<{
   description: string;
   /** Complete target schema for the canonical { prompt, data? } envelope. */
   inputSchema?: TSchema;
-  /** Compatibility-only data constraint while definitions migrate to inputSchema. */
-  dataSchema?: TSchema;
   outputSchema?: TSchema;
   invoke(input: ExecutionInput, context: CallableInvocationContext): Promise<unknown>;
 }>;
@@ -92,28 +90,8 @@ export function canonicalCallableName(appId: string | undefined, declaredName: s
   return `${namespace}/${assertNameComponent(declaredName, "declaredName")}`;
 }
 
-export function effectiveInputSchema(dataSchema?: TSchema, inputSchema?: TSchema): TSchema {
-  if (dataSchema && inputSchema) {
-    throw new CallableValidationError(
-      "catalog",
-      "Callable definitions must choose full-envelope inputSchema or compatibility dataSchema, not both",
-    );
-  }
-  if (inputSchema) {
-    return Type.Intersect([ExecutionInputSchema, inputSchema]);
-  }
-  return Type.Object(
-    dataSchema
-      ? {
-          prompt: Type.String({ minLength: 1 }),
-          data: dataSchema,
-        }
-      : {
-          prompt: Type.String({ minLength: 1 }),
-          data: Type.Optional(Type.Unknown()),
-        },
-    { additionalProperties: false },
-  );
+function callableInputSchema(inputSchema?: TSchema): TSchema {
+  return inputSchema ? Type.Intersect([ExecutionInputSchema, inputSchema]) : ExecutionInputSchema;
 }
 
 function deepFreeze<T>(value: T, seen = new Set<object>()): T {
@@ -229,6 +207,13 @@ export class CallableCatalog {
   constructor(definitions: Iterable<CallableDefinition>) {
     const entries = new Map<string, PreparedCallable>();
     for (const definition of definitions) {
+      if (Object.hasOwn(definition as object, "dataSchema") || Object.hasOwn(definition as object, "effectiveInputSchema")) {
+        throw new CallableValidationError(
+          "catalog",
+          "Callable definitions no longer accept dataSchema or effectiveInputSchema; provide one full-envelope inputSchema",
+          definition,
+        );
+      }
       const name = canonicalCallableName(definition.appId, definition.declaredName);
       if (entries.has(name)) {
         throw new CallableValidationError("catalog", `Duplicate callable canonical name: ${name}`);
@@ -236,7 +221,7 @@ export class CallableCatalog {
       const descriptor = deepFreeze({
         name,
         description: definition.description,
-        inputSchema: effectiveInputSchema(definition.dataSchema, definition.inputSchema),
+        inputSchema: callableInputSchema(definition.inputSchema),
         ...(definition.outputSchema ? { outputSchema: definition.outputSchema } : {}),
       });
       entries.set(name, deepFreeze({ descriptor, definition: deepFreeze({ ...definition }) }));

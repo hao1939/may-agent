@@ -244,7 +244,12 @@ export function enforceStructuredWorkflowResult(result: TaskResult, expectsPaylo
       error: "Workflow agent step completed without the required finish() result",
     };
   }
-  if (expectsPayload && result.structuredResult === undefined && result.finishResult.output === undefined) {
+  if (
+    expectsPayload &&
+    result.finishResult.status === "done" &&
+    result.structuredResult === undefined &&
+    result.finishResult.output === undefined
+  ) {
     return {
       ...result,
       status: "error",
