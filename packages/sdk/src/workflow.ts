@@ -845,9 +845,9 @@ export type AgentContext<TInput = unknown> = {
  * domain input and results. It is intentionally absent from the root authoring
  * surface; App orchestration owns these Task-scoped capabilities.
  */
-export type AppWorkflowContext<TInput = unknown> = AgentContext<TInput> & {
-  /** Present only when a durable App task owns this workflow attempt. */
-  reconciliation?: TaskReconciliationContext<TInput>;
+export type AppWorkflowContext<TInput = unknown, TReconciliationInput = unknown> = AgentContext<TInput> & {
+  /** Present only when a durable App task owns this workflow attempt. Its input is the raw admitted Task domain input. */
+  reconciliation?: TaskReconciliationContext<TReconciliationInput>;
   /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
   reviseTask?: TaskAttempt["reviseTask"];
   /** End an assignment created by this Task after reviewing its exact accepted result. */

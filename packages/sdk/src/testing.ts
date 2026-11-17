@@ -124,10 +124,10 @@ export function createTestObserverContext(
   };
 }
 
-export type TestAppWorkflowContextOptions<TInput> = {
+export type TestAppWorkflowContextOptions<TInput, TReconciliationInput = unknown> = {
   input: TInput;
   signal?: AbortSignal;
-  reconciliation?: WorkflowContext<TInput>["reconciliation"];
+  reconciliation?: import("./workflow.js").TaskReconciliationContext<TReconciliationInput>;
   reviseTask?: WorkflowContext["reviseTask"];
   closeTask?: WorkflowContext["closeTask"];
   read?: AppRead;
@@ -143,9 +143,9 @@ export type TestAppWorkflowContextOptions<TInput> = {
 };
 
 /** Small fake with no database, queue, or global runtime paths. */
-export function createTestAppWorkflowContext<TInput>(
-  options: TestAppWorkflowContextOptions<TInput>,
-): WorkflowContext<TInput> {
+export function createTestAppWorkflowContext<TInput, TReconciliationInput = unknown>(
+  options: TestAppWorkflowContextOptions<TInput, TReconciliationInput>,
+): import("./workflow.js").AppWorkflowContext<TInput, TReconciliationInput> {
   const fn = mockFn();
   const terminal = (id: string): ExecutionResult => ({
     id,
