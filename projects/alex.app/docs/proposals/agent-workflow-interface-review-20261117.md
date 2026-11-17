@@ -337,6 +337,14 @@ the scope; require truthful bounded evidence without mandatory answer phrases.
 The trial's repeated unchanged implementation reports motivate this correction,
 but its behavioral effect still needs a fresh native run.
 
+When migrating `develop-change`, pass the current Task's relevant input context
+to its specialists in the common envelope. That context includes the candidate
+checkout/SDK binding and execution guidance. The current prompt includes outcome,
+acceptance and separate constraints, then a truncated event preview; it omits
+current input context. A revised assignment must not depend on a specialist
+finding its instructions in older events or inspecting private decision files.
+Keep event history as evidence alongside the authoritative current assignment.
+
 Current App source also re-exports `evaluation-report-reader` from both Alex's
 and Evaluator's workflow directories. Under the agreed App namespace these are
 two registrations for `alex/evaluation-report-reader`, so preparation must
