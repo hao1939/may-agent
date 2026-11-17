@@ -1110,6 +1110,62 @@ describe("development workflow using real Git and verification", () => {
     expect(t.calls).toHaveLength(1);
   });
 
+  test("an exact setup clarification stops unchanged repair rounds while retaining the failed local check", async () => {
+    const t = trial();
+    t.current.acceptance.push(
+      "Publish the eventual candidate and activate it after this local procedure",
+    );
+    t.setImplementation(() => {});
+    t.setJudgment((stage) => {
+      if (stage === "design")
+        return {
+          decision: "implement",
+          reason: "First assess the local source candidate",
+          design: "Keep the source requirement and run the selected local check",
+        };
+      if (
+        stage === "implementation" &&
+        t.calls.filter((call) => call.stage === "implementation").length === 1
+      )
+        return {
+          decision: "ready",
+          reason: "Candidate is ready for the required check",
+        };
+      return {
+        decision: "clarify",
+        reason:
+          "SETUP dependency: Docker daemon access; owner: workspace operator; resume when docker info exits 0, then rerun the selected verification on this candidate",
+      };
+    });
+
+    const result = await t.run();
+    expect(result).toMatchObject({ state: "incomplete", report: true });
+    expect(result.summary).toContain("SETUP dependency: Docker daemon access");
+    expect(t.calls.map((call) => call.stage)).toEqual([
+      "design",
+      "implementation",
+      "implementation",
+    ]);
+    expect(t.prompts[0]).toContain(
+      "Keep the owning Task's wider acceptance visible as context",
+    );
+    expect(t.prompts[0]).toContain(
+      "Publish the eventual candidate and activate it after this local procedure",
+    );
+    expect(t.prompts[2]).toContain("exact SETUP dependency");
+    expect(t.prompts[2]).toContain("accountable owner");
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+    const evidence = t.evidence();
+    expect(evidence.roundsUsed).toBe(2);
+    const verification = evidence.reports.find(
+      (report: any) => report.stage === "verification",
+    );
+    expect(JSON.parse(readFileSync(verification.record.path, "utf8"))).toMatchObject({
+      passed: false,
+      receipt: { exitCode: 1 },
+    });
+  });
+
   test("invalid structured judgments fail closed and exhaust across invocations", async () => {
     const t = trial();
     t.setJudgment(() => ({ decision: "finished" }));

@@ -429,6 +429,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         `Current requirement: ${current.outcome}`,
         `Acceptance: ${JSON.stringify(current.acceptance)}`,
         `Constraints: ${JSON.stringify(constraints)}`,
+        "Procedure scope: assess and return the local source candidate plus the selected local verification. Keep the owning Task's wider acceptance visible as context, but do not require PR publication, hosted checks, activation, integration, deployment, or caller delivery before this local procedure can return. Do not drop source requirements, and do not treat missing required local verification as ready.",
         `Verification argv: ${JSON.stringify(input.verify)}`,
         `Candidate: ${JSON.stringify(value)}`,
         `Previous judgments (previews; read reports for full explanations): ${JSON.stringify(
@@ -450,7 +451,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         "Read the relevant retained reports before judging. Verification receipts include actual argv, directory, exit status, stdout/stderr and candidate readback. An agent's claim alone is not verification. Do not request a new implementation merely to repeat receipts already supplied here.",
         `Current input facts (not new authority): ${JSON.stringify(rec.events.items).slice(0, 16_000)}`,
         source,
-        "Return the supplied structured decision. Clarify only for a requirement or authority decision.",
+        "Return the supplied structured decision. Clarify for a requirement or authority decision, or when verification exposes an exact SETUP dependency and no source repair is warranted. For SETUP, name the dependency, accountable owner, and exact resumption check in reason; do not spend another coding round on an unchanged candidate solely to rerun the missing prerequisite.",
       ].join("\n\n");
       const response = await ctx.call(agent, prompt, {
         schema,
@@ -524,7 +525,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         saved.implementation = undefined;
       }
       if (saved.design.decision === "clarify")
-        return finish(`Creator decision needed: ${saved.design.reason}`);
+        return finish(`Development clarification: ${saved.design.reason}`);
       if (
         value.dirty ||
         saved.feedback ||
@@ -541,7 +542,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
         saved.verified = undefined;
         saved.review = undefined;
         if (decision.decision === "clarify")
-          return finish(`Creator decision needed: ${decision.reason}`);
+          return finish(`Development clarification: ${decision.reason}`);
         if (decision.decision === "redesign") {
           saved.design = undefined;
           saved.feedback = decision.reason;
@@ -610,7 +611,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           true,
         );
       if (review.decision === "clarify")
-        return finish(`Creator decision needed: ${review.reason}`);
+        return finish(`Development clarification: ${review.reason}`);
       saved.feedback = [review.reason, ...review.findings].join("\n");
       saved.implementation = undefined;
       if (review.decision === "redesign") saved.design = undefined;
