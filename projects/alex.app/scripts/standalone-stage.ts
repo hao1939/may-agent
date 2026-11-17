@@ -5,7 +5,12 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { runDirectWorkflow, type DirectWorkflowRunOptions } from "@may-agent/sdk/standalone";
+import {
+  createModelRegistry,
+  runDirectWorkflow,
+  type DirectWorkflowRunOptions,
+  type ModelRegistry,
+} from "@may-agent/sdk/standalone";
 
 export interface StageConfig {
   target: string;
@@ -33,6 +38,10 @@ function git(root: string, ...args: string[]) {
 
 function sourceIdentity(root: string) {
   return { root, commit: git(root, "rev-parse", "HEAD"), status: git(root, "status", "--short") };
+}
+
+export function stageModelRegistry(hasAgentFixtures: boolean): ModelRegistry {
+  return hasAgentFixtures ? {} : createModelRegistry();
 }
 
 function treeHash(root: string): string {
@@ -133,7 +142,7 @@ export async function runStage(configFile: string, signal?: AbortSignal) {
       appScope: config.target.slice(0, config.target.indexOf("/")),
       outputRoot: config.outputRoot,
       traceDir: join(config.outputRoot, "trace"),
-      models: {},
+      models: stageModelRegistry(Boolean(agentFixtures)),
       timeoutMs: config.timeoutMs,
       signal,
       tools: config.tools ?? "full",

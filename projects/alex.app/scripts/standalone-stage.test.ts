@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runStage } from "./standalone-stage.ts";
+import { runStage, stageModelRegistry } from "./standalone-stage.ts";
 
 const roots: string[] = [];
 afterAll(() => { for (const root of roots) rmSync(root, { recursive: true, force: true }); });
@@ -63,6 +63,14 @@ function trial(kind: "done" | "blocked" | "cancel" = "done") {
   writeFileSync(configFile, JSON.stringify(config));
   return { root, cwd, outputRoot, config, configFile, read: (file: string) => JSON.parse(readFileSync(join(outputRoot, file), "utf8")) };
 }
+
+test("live mode configures the registered model without making a request", () => {
+  expect(stageModelRegistry(false)["gpt-5.6-sol"]).toMatchObject({
+    id: "gpt-5.6-sol",
+  });
+  expect(stageModelRegistry(false)["gpt-5.6-sol"]?.baseUrl).toBeTruthy();
+  expect(stageModelRegistry(true)).toEqual({});
+});
 
 test("real standalone diagnosis retains authoritative status, hold decision and provenance", async () => {
   const t = trial();
