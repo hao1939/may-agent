@@ -1921,3 +1921,29 @@ review, retaining Appcdc and all usage/effects.
 Evidence: `f871-independent-owning.log`, `f871-independent-check-ci.log`,
 `9c86-independent-owning.log`, `9c86-independent-check-ci.log` and
 `3e1-hosted-source-triage.md` under the trial directory.
+
+
+## Canonical lineage checkpoint published
+
+Root independently reviewed and pushed Host
+`22863262670acb41d53fae92f0a2c2ea0fbb46cf`. All17 session-graph tests and
+`check:ci` pass. Canonical nested workflow calls preserve actual linked
+parent/child workflow and session records, nesting-depth limits and caller
+App/project identity. The fixture uses declared App identity rather than a
+retired slash-based project string.
+
+The latest completed Quality baseline remains Host3e1, with34 failures/18files.
+Host2286/run44191401441 is still running Quality at this read-back. Its Container
+build succeeds but smoke exits141; the log alone does not identify which
+pipeline failed. This requires diagnosis before readiness. All11 review threads
+are resolved at this snapshot; that does not establish passing CI.
+
+May continues the same finite Host Task, recovering retained dirty fixture work.
+Root supplied the exact publication facts plus source leads for the metric
+workflow's raw-input fixture and retired detached-control test action. These
+are implementation guidance, not evidence that either group is repaired.
+No unified runtime is activated.
+
+Evidence under the trial directory: `2286-independent-owning.log`,
+`2286-independent-check-ci.log`, `2286-container.log`, `pr589-current.json`,
+`2286-publication-source-feedback.json` and its accepted delivery receipt.

@@ -1,87 +1,49 @@
 # Unified agent and workflow calls
 
-**Design status:** Accepted direction; implementation and verification are active.
-The interfaces below define the requested cutover.
-**Implementation status:** Partial source implementation in draft
-[#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`9c864a5159` and App `cdc1f01926`. The installed runtime has not changed.
+**Design status:** Accepted; the [owning contract](../2a-design/execution-contributions.md)
+defines the enduring behavior. This proposal tracks the remaining cutover work.
+**Implementation status:** Host source is published through `2286326267` in draft
+[#589](https://github.com/hao1939/may-agent/pull/589). The paired App contribution
+at `cdc1f01926` is reviewed and verified. The installed runtime has not changed.
 
-Independent production probes establish all four call directions, canonical
-names, common admission/results, immutable prompt/config snapshots, bounded
-cancellation and Task ingress. Host 63f repairs canonical root-owner discovery
-and captured Task-handler dispatch. All 35 real worker/process tests, 48 owning
-tests and exact `check:ci` pass. The raw Task-input SDK typing, export snapshots,
-Scout root admission and bounded nested receipt reads have verified source
-repairs. These checkpoints do not establish full Host CI or installed availability.
+The implemented source uses one canonical catalog, mandatory `{prompt,data?}`
+input, common validated results and awaited calls for agents and workflows.
+Invocation permissions and public fork/session actions are removed. Independent
+production probes cover all four call directions, immutable definition snapshots,
+bounded cancellation and Task ingress. Canonical model calls require `finish()`;
+a real-manager regression proves that missing reports fail after one correction
+without fabricating output or execution identity.
 
-App 2c5 preserves development receipts, restores standalone-stage's live model
-registry and migrates the primary Gym workflow adapter. Its exact pair with Host
-63f passes 93 consumer tests, App typechecking and the full design check. With the
-installation's existing App-disable markers supplied as explicit isolated
-configuration, the default App command passes all 1,143 tests across 81 files.
-Long snapshot paths can still overflow model prompt/skill budgets; the final
-configured runtime location needs validation.
+The remaining work, in order, is:
 
-The remaining high-value gaps are:
+1. Finish Host/CLI fixture migration while preserving real cancellation, steering,
+   child-drain, lineage and Task-fence coverage. Pass full current-head Quality
+   and Container checks. The latest completed Quality baseline is Host3e1:
+   3,491 tests, 34 failures across 18 files, two skips. Later focused repairs pass,
+   but do not establish a new whole-suite total. At Host2286, Quality is running
+   and Container failed in its smoke script with exit141; diagnosis is pending.
+2. Verify one exact compatible final Host/SDK/App pair and activate it locally,
+   preserving legitimate installation changes and the required Task-revision
+   repair. Validate the final runtime path as well as the isolated source pair.
+3. Prove native workflow → PR push → CI/comment repair → Telegram review-link
+   delivery, including a late review comment. Human approval stays on GitHub.
 
-- Complete meaningful Host/CLI fixture migration, preserving real cancellation,
-  steering and SIGINT child-drain assertions. Host3fb additionally migrates
-  dispatch/result-handoff fixtures; all 17 owning tests and `check:ci` pass.
-  Hostd8 also passes 23 tool/cancellation tests and `check:ci`, including explicit
-  rejection of retired actions. Hoste764 resolves the steering coverage review;
-  all 31 workflow-tool tests and `check:ci` pass. Host3e1 also migrates lifecycle
-  fixtures and requires finish in canonical model-tool prompt calls; its 26
-  owning tests and `check:ci` pass. Hostad5 passes all 55 agent-execution tests;
-  Hostf386 commits the real-manager missing-report regression and passes all 19
-  lifecycle tests. Hostf871 passes all 31 context tests; Host9c86 passes all seven
-  Task handoff tests, preserving real feedback, cancellation, input and Conditions.
-  All four exact checkpoints pass `check:ci`. Host3e1's completed hosted run
-  reports 34 failures across 18 files (3,491 tests, two skips); Container passes.
-  This supersedes Hoste764's 42-failure baseline. Full current-head Quality
-  remains required; that baseline predates these fixture checkpoints.
-- Verify and activate one exact compatible local pair, preserving legitimate
-  operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
-  GitHub review-link delivery. Approval happens on GitHub.
+The reviewed Appcdc/Host3e1 pair passes all 1,146 configured App tests across
+81 files, typechecking, design checks and complete private Gym checks (405 Bun
+tests and 1,488 review checks). Installation markers/evidence are explicit
+prerequisites. The 33-target disposition index maps definitions, bodies, callers,
+guidance and owning checks; it does not prove every target's external effects.
 
-The paired App source contribution is reviewed and verified at `cdc1f01926`.
-Explicit fixtures prove all 33 source targets and disabled-App omission; the
-disposition index maps bodies, callers, guidance and owning checks. All six audit
-tests, typechecking and design checks pass independently against Host3e1. The
-same exact configured pair passes all 1,146 default App tests across 81 files
-and the complete private Gym check: 405 Bun tests and 1,488 review checks.
-Native independent review also accepts the exact App source contribution.
-Installation configuration/evidence is supplied explicitly. The index supports
-source review; these checks do not prove execution of every target or activation.
+May implements through the retained Task/workflow path; Root owns design,
+review, independent verification and publication assistance. The finite cumulative
+limits remain 128 Host and 64 App rounds, preserving all prior usage and effects.
+Host's retained112 entries include102 ordinary reservations and ten conservative
+retained-allowance entries, rather than112 demonstrated coding executions.
+Task, ingress and event redesign belongs to the user's separate work.
 
-App27a repairs current-assignment forwarding and retained approval reuse. All
-77 owning tests, typechecking and design checks pass independently. A production
-probe changes only the prompt with empty Task events: fresh judges receive the
-assignment, existing verification/evidence survives, and identical replay spends
-no additional round. This closes that source gap, without activating the pair.
-
-App38d closes the native Gym workspace gap. Both actual CLI backend paths pass
-controlled local protocol cases in their external `/tmp` workspaces. The complete
-private Gym check passes 405 tests and all 1,488 review checks with two genuine
-installation evidence files supplied read-only. This is configured verification;
-external model behavior and portable clean-checkout setup remain separate limits.
-The complete configured Gym check also passes at App5fd/Hostcb4.
-
-Host3e1 closes the model-tool report defect found at local Hostcb4. An independent
-real-manager matrix checks five cases: absent finish fails after one corrective
-prompt; valid finish retains output/facts and actual identity; summary-only and
-outputless blocked reports succeed in their respective states; a corrective
-finish succeeds. This closes adapter parity at source level, not full CI or
-installed availability. Hostf386 now commits the real-manager negative regression
-as well: exactly one corrective prompt, an error with the actual child identity,
-and no fabricated finish or output.
-
-The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#actual-gym-cli-verification-and-configured-inventory-regression)
-records exact revisions, checks and limitations. May continues implementation
-through the retained native Tasks/workflows. Their creator saved finite cumulative
-limits of 128 Host and 64 App rounds at generations26/11, preserving all prior
-reservations and identities. Host's retained 112 entries include 102 ordinary
-round reservations and ten conservative retained-allowance entries; they are
-not evidence of 112 implementation executions. No unified candidate is activated.
+Exact revisions, focused checks, prior failures and operational findings are in
+the [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
+No unified candidate is activated and readiness notification remains unproved.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
