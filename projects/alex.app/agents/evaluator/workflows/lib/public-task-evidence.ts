@@ -506,6 +506,7 @@ export function createPublicTaskEvidenceProvider(
 
 function creatorAppIds(task: Record<string, unknown>): string[] {
   const creator = object(task.creator);
+  const requestedBy = object(task.requestedBy);
   const source = object(creator.source);
   return [
     creator.appId,
@@ -514,6 +515,7 @@ function creatorAppIds(task: Record<string, unknown>): string[] {
     source.appId,
     source.app,
     source.owner,
+    requestedBy.appId,
   ]
     .map(text)
     .filter(Boolean);

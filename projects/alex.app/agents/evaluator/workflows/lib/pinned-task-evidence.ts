@@ -254,7 +254,9 @@ export async function readPinnedTaskEvidence(
     // the same identity must still be followed if a result/dependency cites it.
     const creatorProvenance =
       source === "subject.appTask.creator" ||
-      source.startsWith("subject.appTask.creator.");
+      source.startsWith("subject.appTask.creator.") ||
+      source === "subject.appTask.requestedBy" ||
+      source.startsWith("subject.appTask.requestedBy.");
     if (
       !creatorProvenance &&
       !provenance &&
