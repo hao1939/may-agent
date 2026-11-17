@@ -19,7 +19,45 @@ import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 import { EVENT_RECORD_ONLY, childEventTrace, type AgentEvent, type EventBus } from "../../core/events/bus.js";
 import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/tasks/result.js";
 import type { TaskDefinitionSource, TaskWorkflowInput, TaskWorkflowRunner } from "../../core/tasks/execution.js";
+import { getWorkflowRun } from "../../../lib/db/workflows.js";
 import { localAgentDir } from "../discovery/local-agents.js";
+import { translateHostedBlockedContribution } from "./hosted-result-settlement.js";
+
+const MAX_INLINE_WORKFLOW_FACT_BYTES = 8192;
+
+type WorkflowFactsStorage = { facts: unknown; projected: boolean };
+
+function workflowFactsForTaskStorage(facts: unknown, runId: string): WorkflowFactsStorage {
+  let bytes: number;
+  if (
+    Array.isArray(facts)
+    && facts.length < 32
+    && facts.every((fact) => typeof fact === "string" && fact.trim().length > 0)
+  ) {
+    bytes = facts.reduce((total, fact) => total + Buffer.byteLength(fact, "utf8"), 0);
+  } else {
+    try {
+      bytes = Buffer.byteLength(JSON.stringify(facts), "utf8");
+    } catch {
+      bytes = Buffer.byteLength("[unserializable]", "utf8");
+    }
+  }
+  if (bytes <= MAX_INLINE_WORKFLOW_FACT_BYTES) return { facts, projected: false };
+  return {
+    facts: [`workflow-contribution-facts:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`],
+    projected: true,
+  };
+}
+
+function workflowRunRetainsFacts(persistDir: string, runId: string): boolean {
+  const payload = getWorkflowRun(persistDir, runId)?.result_payload;
+  if (!payload || payload.state !== "available") return false;
+  if (payload.kind === "facts") return true;
+  return payload.kind === "result"
+    && payload.value !== null
+    && typeof payload.value === "object"
+    && Object.hasOwn(payload.value, "facts");
+}
 
 /** Composition selects the built-in runner. Core does not load workflows. */
 export function createTaskWorkflowRunner(
@@ -179,29 +217,48 @@ async function executeTaskWorkflow(
     });
     const done = result.type === "done";
     const summary = done ? result.summary : result.reason;
-    const handlerResult = normalizeTaskHandlerResult(
-      done ? result.output : undefined,
-      {
-        type: done ? "done" : "blocked",
-        summary,
-        runId,
-      },
-      {
-        validateAction: input.descriptor.app.tasks?.validateAction,
-        validateCondition: input.descriptor.app.tasks?.validateCondition,
-      },
-    );
+    const storedWorkflowFacts = workflowFactsForTaskStorage(result.facts, runId);
+    const missingProjectedFacts = !done
+      && storedWorkflowFacts.projected
+      && !workflowRunRetainsFacts(runtime.persistDir, runId);
+    let diagnosticFacts: string[] = [];
     // A deliberate blocker is not a transport retry, but its diagnostic
-    // context must remain visible to the same Task and its caller. Keep one
-    // bounded facts entry; the full context remains on the workflow run.
+    // context must remain visible to the same Task and its caller. The shared
+    // settlement boundary admits this evidence with the contribution facts.
     if (result.type === "blocked" && result.context !== undefined) {
       const context = JSON.stringify(result.context);
-      handlerResult.facts.push(
+      diagnosticFacts = [
         Buffer.byteLength(context, "utf8") <= 8192
           ? `workflow-blocker-context:${context}`
           : `workflow-blocker-context:see workflow-run:${runId} (exceeds 8192-byte Task facts bound)`,
-      );
+      ];
     }
+    const handlerResult = done
+      ? normalizeTaskHandlerResult(
+          result.output,
+          { type: "done", summary, runId },
+          {
+            validateAction: input.descriptor.app.tasks?.validateAction,
+            validateCondition: input.descriptor.app.tasks?.validateCondition,
+          },
+        )
+      : missingProjectedFacts
+        ? {
+            state: "error" as const,
+            resultRejected: true as const,
+            summary:
+              "Blocked workflow facts exceed the inline Task bound, but the combined workflow output/facts payload was not retained; return a durable artifact reference instead of oversized inline facts",
+            facts: [`workflow-run:${runId}`],
+            actions: [],
+          }
+        : translateHostedBlockedContribution(
+            input,
+            { summary, output: result.output, facts: result.facts, runId },
+            {
+              diagnosticFacts,
+              storageFacts: storedWorkflowFacts.facts,
+            },
+          ).handlerResult;
     bus.emit({
       [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",

@@ -1,5 +1,11 @@
 import type { TaskAttempt } from "@may-agent/sdk/app";
-import { taskAgentResultSchema as appTaskAgentResultSchema } from "@may-agent/sdk/app";
+import {
+  admitTaskResultForSchema,
+  taskAgentResultSchema as appTaskAgentResultSchema,
+} from "@may-agent/sdk/app";
+import type { AgentTool } from "@earendil-works/pi-agent-core";
+import { Type } from "typebox";
+import { createFinishTool } from "@may-agent/sdk/runtime";
 import { existsSync, readFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { resolvedExecutionRecipient } from "../../../lib/execution-recipient.js";
@@ -12,6 +18,7 @@ import { normalizeTaskHandlerResult, type TaskCapabilityRun } from "../../core/t
 import { APP_TASK_RECOVERY_OWNER } from "../../core/tasks/session-binding.js";
 import { localAgentDir } from "../discovery/local-agents.js";
 import { captureAgentDefinitions } from "./agent-definitions.js";
+import { translateHostedBlockedContribution } from "./hosted-result-settlement.js";
 import {
   applyCanonicalAgentResidueCleanup,
   beginCanonicalAgentResidueGuard,
@@ -70,6 +77,69 @@ function taskAttemptRole(
     instructions = `${instructions.slice(0, MAX_TASK_ROLE_INSTRUCTIONS_BYTES)}\n\n[Selected agent instructions truncated by Runtime.]`;
   }
   return { agent, instructions };
+}
+
+function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
+  const base = createFinishTool({ projectRoot: input.executionPaths.workspaceDir });
+  const managedOutputSchema = Type.Union([
+    Type.Unsafe({
+      ...structuredClone(appTaskAgentResultSchema),
+      description: "Required when status is done: the canonical Task attempt result.",
+    }),
+    Type.Unknown({
+      description: "When status is blocked, unrestricted domain checkpoint output; it is not a Task decision.",
+    }),
+  ], {
+    description:
+      "For status=done, return the canonical Task attempt result. For status=blocked, any domain checkpoint output is allowed.",
+  });
+  const parameters = Type.Object(
+    {
+      status: Type.Union([Type.Literal("done"), Type.Literal("blocked")], {
+        description: "done requires canonical Task output; blocked retains unrestricted checkpoint output.",
+      }),
+      summary: Type.String({ pattern: "\\S" }),
+      output: Type.Optional(managedOutputSchema),
+      facts: Type.Optional(Type.Unknown()),
+    },
+    { additionalProperties: false },
+  );
+  return {
+    ...base,
+    description:
+      `${base.description} Done output must satisfy the Task result contract; blocked output remains domain checkpoint data.`,
+    parameters,
+    execute: async (toolCallId, params, signal, onUpdate) => {
+      const report = params as { status?: unknown; output?: unknown };
+      if (report.status === "done") {
+        const schemaAdmission = admitTaskResultForSchema(appTaskAgentResultSchema, report.output);
+        if (!schemaAdmission?.ok) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: `finish() error: ${schemaAdmission?.error ?? "Done output must satisfy the Task result contract"}`,
+            }],
+            details: undefined,
+          };
+        }
+        const admitted = normalizeTaskHandlerResult(
+          schemaAdmission.result,
+          { type: "done", summary: "", runId: null },
+          {
+            validateAction: input.descriptor.app.tasks?.validateAction,
+            validateCondition: input.descriptor.app.tasks?.validateCondition,
+          },
+        );
+        const problem = admitted.resultRejected
+          ? admitted.summary
+          : (input.validateResult?.(admitted as import("@may-agent/sdk/app").TaskReconcileResult) ?? null);
+        if (problem) {
+          return { content: [{ type: "text" as const, text: `finish() error: ${problem}` }], details: undefined };
+        }
+      }
+      return base.execute(toolCallId, params, signal, onUpdate);
+    },
+  };
 }
 
 async function executeTaskAgent(
@@ -141,13 +211,7 @@ async function executeTaskAgent(
     recoveryOwner: APP_TASK_RECOVERY_OWNER,
     trace,
     requireFinish: true,
-    outputSchema: appTaskAgentResultSchema,
-    validateOutput: (output: unknown) => {
-      const admitted = normalizeTaskHandlerResult(output, { type: "done", summary: "", runId: null }, admissionOptions);
-      return admitted.resultRejected
-        ? admitted.summary
-        : (input.validateResult?.(admitted as import("@may-agent/sdk/app").TaskReconcileResult) ?? null);
-    },
+    createFinish: () => createManagedTaskFinish(input),
     toolPolicy: "full" as const,
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,
@@ -166,6 +230,16 @@ async function executeTaskAgent(
     restoredAgentResidue = await applyCanonicalAgentResidueCleanup(cleanupPlan);
   }
   const done = result.status === "done";
+  if (done && result.finishResult?.status === "blocked") {
+    return translateHostedBlockedContribution(input, {
+      summary:
+        firstNonEmptyString(result.finishResult.summary, result.lastAssistantText, result.error) ??
+        `Agent session ${result.sessionId || "unknown"} returned no blocker summary`,
+      output: result.finishResult.output,
+      facts: result.finishResult.facts,
+      runId: result.sessionId || null,
+    });
+  }
   const handlerResult = rejectConvergedDirectAgentResidue(
     normalizeTaskHandlerResult(
       done ? result.structuredResult : undefined,

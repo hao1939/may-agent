@@ -21,6 +21,7 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
       state: "waiting", continue: true, summary: "Patch written; verification remains.",
       facts: ["Patch saved"], result: { changes: ["parser.ts"] },
     };
+    const blockedFacts = { payload: "x".repeat(9000) };
     let calls = 0;
     const runner = createTaskAgentRunner({ manager: {
       callAgent: async (_agent: string, task: string, options: CallAgentOptions) => {
@@ -35,7 +36,12 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
           const stream = createAssistantMessageEventStream();
           stream.push({ type: "done", reason: "toolUse", message: usageReply({
             stopReason: "toolUse", content: [{ type: "toolCall", id: "report", name: "finish",
-              arguments: { status, summary: report.summary, output: report } }],
+              arguments: {
+                status,
+                summary: report.summary,
+                output: report,
+                ...(status === "blocked" ? { facts: blockedFacts } : {}),
+              } }],
           }) });
           return stream;
         };
@@ -53,8 +59,21 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
     } as unknown as TaskAgentInput);
     expect(calls).toBe(1);
     expect(result.executionFailed).toBeUndefined();
-    expect(result.handlerResult).toMatchObject(report);
-    expect(result.handlerResult.result).not.toHaveProperty("testResults");
+    if (status === "done") {
+      expect(result.handlerResult).toMatchObject(report);
+      expect(result.handlerResult.result).not.toHaveProperty("testResults");
+    } else {
+      expect(result).toMatchObject({
+        handlerBlocked: true,
+        handlerResult: {
+          state: "waiting",
+          summary: report.summary,
+          result: report,
+          facts: [`execution-facts:${JSON.stringify(blockedFacts)}`],
+        },
+      });
+      expect(result.handlerResult.facts[0]).not.toContain("workflow-run:");
+    }
     expect(result.handlerResult.actions).toEqual([]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -120,13 +139,35 @@ test.each(["event", "continued-input"])("generic agent execution carries %s fact
     let prompt = "";
     const runner = createTaskAgentRunner({
       manager: {
-        callAgent: async (_agent: string, text: string, options: { validateOutput: (value: unknown) => string | null }) => {
-          expect(options.validateOutput({ state: "waiting", summary: "Pending", facts: [], conditions: [{
-            id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: {},
-          }] })).toContain("expected.state must be ready");
-          expect(options.validateOutput({ state: "waiting", summary: "Pending", facts: [], conditions: [{
-            id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: { state: "ready" },
-          }] })).toBeNull();
+        callAgent: async (_agent: string, text: string, options: CallAgentOptions) => {
+          const prepared = prepareAgentExecution({
+            ...options,
+            task: text,
+            projectRoot: root,
+            sessionId: "model-facing-finish",
+            definition: { name: "worker", description: "fixture", domain: "test", tools: [],
+              model: { api: "openai-responses", provider: "fixture", id: "model-a" } as SubagentDefinition["model"] },
+          });
+          const finish = prepared.tools.find((tool) => tool.name === "finish")!;
+          const parameters = finish.parameters as any;
+          expect(parameters.type).toBe("object");
+          expect(parameters.properties.output.anyOf[0].properties.state).toBeDefined();
+          expect(parameters.properties.output.description).toContain("canonical Task attempt result");
+          expect(parameters.properties.output.description).toContain("blocked");
+          const missingDoneOutput = await finish.execute("missing-done", { status: "done", summary: "Missing output" }, undefined, undefined);
+          expect(missingDoneOutput.content).toEqual([{ type: "text", text: expect.stringContaining("expected an object") }]);
+          const invalid = await finish.execute("invalid", { status: "done", summary: "Pending", output: {
+            state: "waiting", summary: "Pending", facts: [], conditions: [{
+              id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: {},
+            }],
+          } });
+          expect(invalid.content).toEqual([{ type: "text", text: expect.stringContaining("expected.state must be ready") }]);
+          const valid = await finish.execute("valid", { status: "done", summary: "Pending", output: {
+            state: "waiting", summary: "Pending", facts: [], conditions: [{
+              id: "sample", type: "sample.state", subject: "sample:1", owner: "app:example", expected: { state: "ready" },
+            }],
+          } });
+          expect(valid.terminate).toBe(true);
           prompt = text;
           return {
             status: "done",

@@ -75,6 +75,13 @@ const partial = {
   status: "blocked",
   summary: progress.summary,
   output: progress,
+  facts: progress.facts,
+};
+const managedCheckpoint = {
+  status: "blocked",
+  summary: progress.summary,
+  output: { checkpoint: "retained-draft", reviewed: false },
+  facts: progress.facts,
 };
 
 function stalledTool(onStopped: () => void = () => {}): AgentTool {
@@ -302,6 +309,14 @@ test("a managed Task accepts progress after helper cancellation and continues fr
       const owner = config.initialState?.model?.id === "owner";
       const attempt = owner ? ++ownerRuns : 0;
       if (!owner) helperRuns++;
+      if (owner) {
+        const finish = config.initialState?.tools?.find((tool) => tool.name === "finish");
+        expect(finish).toBeDefined();
+        const parameters = finish!.parameters as Record<string, unknown>;
+        expect(parameters.type).toBe("object");
+        expect(parameters.anyOf).toBeUndefined();
+        expect(parameters.oneOf).toBeUndefined();
+      }
       let replies = 0;
       return createAgentRun({
         ...config,
@@ -314,6 +329,32 @@ test("a managed Task accepts progress after helper cancellation and continues fr
           }
           if (attempt === 2) {
             continuationContext = JSON.stringify(context);
+            if (replies === 1) {
+              return call("finish", {
+                status: "done",
+                summary: "Missing Task result",
+              }, "missing-done-output");
+            }
+            expect(continuationContext).toContain("finish() error");
+            if (replies === 2) {
+              return call("finish", {
+                status: "done",
+                summary: "Extra Task result field",
+                output: {
+                  state: "converged",
+                  summary: "Not yet admissible",
+                  facts: [],
+                  unexpected: true,
+                },
+              }, "extra-done-field");
+            }
+            if (replies === 3) {
+              return call("finish", {
+                status: "done",
+                summary: "Invalid domain checkpoint cannot complete the Task",
+                output: { checkpoint: "reviewed" },
+              }, "invalid-done");
+            }
             return call("finish", {
               status: "done",
               summary: "Reviewed retained draft",
@@ -327,7 +368,7 @@ test("a managed Task accepts progress after helper cancellation and continues fr
           const text = JSON.stringify(context);
           expect(text).toContain("interrupted");
           expect(text).toContain("sessionId");
-          return call("finish", partial);
+          return call("finish", managedCheckpoint);
         },
       });
     },
@@ -387,7 +428,9 @@ test("a managed Task accepts progress after helper cancellation and continues fr
               agent: "owner",
               inputSchema: Type.Object({}),
               workspace: { kind: "local", localPath: "." },
-              tasks: {},
+              tasks: {
+                translateBlockedResult: () => ({ continue: true, report: true }),
+              },
             }),
           },
         ],
@@ -423,13 +466,21 @@ test("a managed Task accepts progress after helper cancellation and continues fr
     expect(task.status.phase).toBe("pending");
     expect(task.status.inputWaits).toMatchObject({ "task:review": { pending: true } });
     const attempt = store.readAttempt(task.status.observedAttemptId!);
-    expect(attempt?.acceptedResult, task.status.summary).toMatchObject(progress);
+    expect(attempt?.acceptedResult, task.status.summary).toMatchObject({
+      state: "waiting",
+      continue: true,
+      report: true,
+      summary: progress.summary,
+      facts: progress.facts,
+      result: managedCheckpoint.output,
+    });
     expect(task.status.executionFailures ?? 0).toBe(0);
     expect(manager.status()).toEqual([]);
     await run();
     expect(ownerRuns).toBe(2);
     expect(helperRuns).toBe(1);
     expect(continuationContext).toContain("Draft retained; review remains");
+    expect(continuationContext).toContain("retained-draft");
     expect(continuationContext).toContain("draft:retained");
     expect(store.readTask("work/review")?.status.phase).toBe("converged");
     expect(store.readTask("work/review")?.status.inputWaits ?? {}).toEqual({});

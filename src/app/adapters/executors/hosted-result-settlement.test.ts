@@ -97,6 +97,42 @@ export async function execute(ctx) {
   }
 });
 
+test("settles oversized facts from the actual public run() without inventing a workflow reference", async () => {
+  const root = mkdtempSync(join(tmpdir(), "hosted-result-large-facts-"));
+  try {
+    const workflowDir = join(root, "projects", "sample.app", "agents", "owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(join(root, "projects", "sample.app", "app.ts"), "export default {};\n");
+    writeFileSync(
+      join(root, "projects", "sample.app", "agents", "owner", "agent.json"),
+      JSON.stringify({ name: "owner", description: "Fixture owner", domain: "test", model: "test", tools: ["finish"] }),
+    );
+    writeFileSync(join(root, "projects", "sample.app", "agents", "owner", "AGENTS.md"), "# Fixture owner\n");
+    writeFileSync(
+      join(workflowDir, "blocked.ts"),
+      `export const name = "blocked";
+export const description = "Oversized public evidence fixture";
+export async function execute(ctx) {
+  return { ...ctx.blocked("fixture blocked", { payload: "x".repeat(9000) }), output: false };
+}
+`,
+    );
+    const publicResult = await run("owner/blocked", {}, { projectRoot: root, models: {} });
+    const facts = { payload: "x".repeat(9000) };
+    expect(publicResult.ok).toBe(true);
+    expect(translateHostedExecutionResult(publicResult, input())).toMatchObject({
+      handlerBlocked: true,
+      handlerResult: {
+        state: "waiting",
+        result: { value: false },
+        facts: [`execution-facts:${JSON.stringify(facts)}`],
+      },
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test.each([
   [false, { value: false }],
   [null, { value: null }],
@@ -184,6 +220,18 @@ test("large public fact arrays retain exact evidence through the Task-compatible
   ).toEqual(direct);
 });
 
+test.each(["done", "blocked"] as const)("oversized public %s facts remain inline and lossless", (type) => {
+  const facts = { payload: "x".repeat(9000) };
+  const translated = translateHostedExecutionResult(
+    runResult(type === "done"
+      ? { type, summary: "Evidence complete", facts }
+      : { type, reason: "Await external review", facts }),
+    input(),
+  );
+  expect(translated.handlerResult.facts).toEqual([`execution-facts:${JSON.stringify(facts)}`]);
+  expect(translated.handlerResult.facts[0]).not.toContain("workflow-run:");
+});
+
 test.each([
   ["done", "empty", ["", "observed"]],
   ["done", "spaces", ["  "]],
@@ -229,6 +277,13 @@ test("blocked uses the App translator and controlled clock for continuation, Con
             { requestId: "review" },
           ],
           requests: [{ id: "review", appId: "evaluation", input: { kind: "review", data: {} } }],
+          actions: [{
+            kind: "retire-condition",
+            conditionId: "obsolete-review",
+            expectedConditionGeneration: 1,
+            reason: "The new review supersedes the old wait",
+          }],
+          report: true,
         }),
       },
     }),
@@ -240,8 +295,30 @@ test("blocked uses the App translator and controlled clock for continuation, Con
       state: "waiting",
       reviewAt: 1_250,
       result: { value: false },
+      report: true,
       conditions: [{ id: "approval" }, { requestId: "review" }],
       requests: [{ id: "review", appId: "evaluation" }],
+      actions: [{ kind: "retire-condition", conditionId: "obsolete-review" }],
+    },
+  });
+});
+
+test.each([
+  [false, { value: false }],
+  [null, { value: null }],
+  [{ checkpoint: "partial" }, { checkpoint: "partial" }],
+] as const)("blocked preserves non-Task checkpoint data %p", (output, expected) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Checkpoint retained", output, facts: ["checkpoint:saved"] }),
+    input({ tasks: { translateBlockedResult: () => ({ continue: true }) } }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "waiting",
+      continue: true,
+      result: expected,
+      facts: ["checkpoint:saved"],
     },
   });
 });
@@ -334,6 +411,191 @@ test("bad hints and rejected App validation are contract failures, not empty suc
     state: "error",
     resultRejected: true,
     summary: expect.stringContaining("observer is unavailable"),
+  });
+});
+
+test.each([
+  ["actions null", { actions: null }],
+  ["actions object", { actions: {} }],
+  ["actions string", { actions: "retire" }],
+  ["report false", { report: false }],
+  ["report null", { report: null }],
+  ["report string", { report: "true" }],
+  ["report number", { report: 1 }],
+  ["continue false", { continue: false }],
+  ["continue null", { continue: null }],
+  ["continue string", { continue: "true" }],
+  ["continue number", { continue: 1 }],
+] as const)("blocked translator rejects supplied invalid descriptor value: %s", (_label, descriptor) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Malformed descriptor", facts: ["checkpoint:saved"] }),
+    input({ tasks: { translateBlockedResult: () => descriptor as unknown as AppTaskBlockedSettlement } }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: { state: "error", resultRejected: true, actions: [] },
+  });
+  expect(translated.handlerResult.reviewAt).toBeUndefined();
+  expect(translated.handlerResult.conditions).toBeUndefined();
+  expect(translated.handlerResult.requests).toBeUndefined();
+});
+
+test.each([
+  ["absent", {}],
+  ["actions undefined", { actions: undefined }],
+  ["report undefined", { report: undefined }],
+  ["continue undefined", { continue: undefined }],
+  ["all optional controls undefined", { actions: undefined, report: undefined, continue: undefined }],
+] as const)("blocked translator treats optional undefined controls as omitted: %s", (_label, descriptor) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Checkpoint retained", facts: ["checkpoint:saved"] }),
+    input({ tasks: { translateBlockedResult: () => descriptor } }),
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: { state: "waiting", facts: ["checkpoint:saved"], actions: [] },
+  });
+  expect(translated.handlerResult.report).toBeUndefined();
+  expect(translated.handlerResult.continue).toBeUndefined();
+  expect(translated.handlerResult.resultRejected).toBeUndefined();
+});
+
+test.each([
+  ["report", { report: true }],
+  ["continue", { continue: true }],
+  ["report and continue", { report: true, continue: true }],
+  ["actions", { actions: [{ kind: "retire-condition", conditionId: "resolved", expectedConditionGeneration: 1, reason: "Verified" }] }],
+] as const)("Host diagnostics cannot provide contribution evidence for %s", (_label, settlement) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "No agent evidence", facts: [] }),
+    input({ tasks: { translateBlockedResult: () => settlement } }),
+    { diagnosticFacts: ["workflow-blocker-context:[]"] },
+  );
+  expect(translated).toMatchObject({
+    handlerBlocked: true,
+    handlerResult: {
+      state: "error",
+      resultRejected: true,
+      summary: expect.stringContaining("Host diagnostics are not agent evidence"),
+      facts: ["execution-run:run-1"],
+      actions: [],
+    },
+  });
+});
+
+test.each(["", "   ", "\t\n"])("blank scalar facts remain lossless for an ordinary wait: %p", (facts) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Wait without progress claim", facts }),
+    input({ tasks: { translateBlockedResult: () => null } }),
+  );
+  expect(translated.handlerResult).toMatchObject({
+    state: "waiting",
+    facts: [`execution-facts:${JSON.stringify(facts)}`],
+  });
+  expect(translated.handlerResult.resultRejected).toBeUndefined();
+});
+
+test.each([
+  ["report", { report: true }],
+  ["continue", { continue: true }],
+  ["report and continue", { report: true, continue: true }],
+  ["actions", { actions: [{ kind: "retire-condition", conditionId: "resolved", expectedConditionGeneration: 1, reason: "Verified" }] }],
+] as const)("blank scalar facts cannot support %s", (_label, settlement) => {
+  for (const facts of ["", "   ", "\t\n"]) {
+    const translated = translateHostedExecutionResult(
+      runResult({ type: "blocked", reason: "No progress", facts }),
+      input({ tasks: { translateBlockedResult: () => settlement } }),
+    );
+    expect(translated.handlerResult).toMatchObject({ state: "error", resultRejected: true });
+  }
+});
+
+test.each([
+  [false, "execution-facts:false"],
+  [null, "execution-facts:null"],
+  [{ inspected: false }, 'execution-facts:{"inspected":false}'],
+  ["observed", "execution-facts:\"observed\""],
+  [["", false, "  ", "observed"], 'execution-facts:["",false,"  ","observed"]'],
+] as const)("valid domain progress facts remain eligible: %p", (facts, storedFact) => {
+  const translated = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Domain progress", facts }),
+    input({ tasks: { translateBlockedResult: () => ({ report: true, continue: true }) } }),
+  );
+  expect(translated.handlerResult).toMatchObject({
+    state: "waiting",
+    report: true,
+    continue: true,
+    facts: [storedFact],
+  });
+});
+
+test("domain facts remain eligible while a real Condition can wait without facts", () => {
+  const progress = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Domain progress", facts: { inspected: false } }),
+    input({ tasks: { translateBlockedResult: () => ({ report: true, continue: true }) } }),
+  );
+  expect(progress.handlerResult).toMatchObject({
+    state: "waiting",
+    report: true,
+    continue: true,
+    facts: ['execution-facts:{"inspected":false}'],
+  });
+
+  const wait = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Await review" }),
+    input({ tasks: { translateBlockedResult: () => ({
+      retryAfterMs: 25,
+      conditions: [{ requestId: "review" }],
+    }) } }),
+    { now: () => 100 },
+  );
+  expect(wait.handlerResult).toMatchObject({
+    state: "waiting",
+    reviewAt: 125,
+    conditions: [{ requestId: "review" }],
+    facts: [],
+  });
+  expect(wait.handlerResult.resultRejected).toBeUndefined();
+});
+
+test("blocked translator actions and reports use ordinary Task admission", () => {
+  const action = {
+    kind: "retire-condition" as const,
+    conditionId: "resolved",
+    expectedConditionGeneration: 1,
+    reason: "Resolution was verified",
+  };
+  const denied = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Another wait remains", facts: ["review:resolved"] }),
+    input({ tasks: {
+      translateBlockedResult: () => ({ actions: [action], report: true }),
+      validateAction: () => "retirement denied by App policy",
+    } }),
+  );
+  expect(denied.handlerResult).toMatchObject({
+    state: "error",
+    resultRejected: true,
+    summary: expect.stringContaining("retirement denied by App policy"),
+  });
+
+  const malformedReport = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "No evidence supplied" }),
+    input({ tasks: { translateBlockedResult: () => ({ report: true }) } }),
+  );
+  expect(malformedReport.handlerResult).toMatchObject({
+    state: "error",
+    resultRejected: true,
+    summary: expect.stringContaining("require non-empty contribution facts"),
+  });
+
+  const malformedAction = translateHostedExecutionResult(
+    runResult({ type: "blocked", reason: "Malformed retirement", facts: ["review:resolved"] }),
+    input({ tasks: { translateBlockedResult: () => ({ actions: [{ kind: "retire-condition" }] }) as AppTaskBlockedSettlement } }),
+  );
+  expect(malformedAction.handlerResult).toMatchObject({
+    state: "error",
+    resultRejected: true,
+    summary: expect.stringContaining("actions[0].conditionId must be a non-empty string"),
   });
 });
 

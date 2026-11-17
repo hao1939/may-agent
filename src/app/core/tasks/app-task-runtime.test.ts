@@ -51,7 +51,6 @@ import {
   readLoadedAppTaskInputResult,
   reconcileLoadedAppTaskOnce,
   recoverInstalledAppTasks,
-  retryLoadedFailedAppTask,
   reopenLoadedAppTask,
 } from "./app-task-runtime.js";
 import { createTaskAttemptProcessExecutor } from "../../composition/workers/task-attempt-process.js";
@@ -8160,9 +8159,9 @@ describe("canonical App task runtime", () => {
     expect(attempts[0]?.failureReason).toBe("HandlerResultInvalid");
   });
 
-  it("retains an explicit workflow blocker across recovery and rechecks the same Task after corrected input", async () => {
+  it("persists an actual blocked workflow checkpoint across DB reopen and resumes it on fresh input", async () => {
     const f = fixture();
-    const bus = eventBus();
+    let bus = eventBus();
     const agentsRoot = join(f.root, "agents");
     const workflowDir = join(agentsRoot, "sample-owner", "workflows");
     mkdirSync(workflowDir, { recursive: true });
@@ -8170,28 +8169,43 @@ describe("canonical App task runtime", () => {
       join(workflowDir, "claim-check.ts"),
       `
       export const name = "claim-check";
-      export const description = "Recheck a previously blocked claim from current input";
+      export const description = "Resume a blocked claim from its retained checkpoint";
       export async function execute(ctx) {
         if (ctx.reconciliation.input.confirmed !== true)
-          return ctx.blocked("Current facts do not confirm the requirement", { finding: "exact assertion missing", runId: "123" });
+          return { ...ctx.blocked("Current facts do not confirm the requirement", { finding: "exact assertion missing" }),
+            output: { checkpoint: "reviewed-partial-source", sourceState: false } };
+        const checkpoint = ctx.reconciliation.previousAttempt?.acceptedResult?.result?.checkpoint;
+        if (checkpoint !== "reviewed-partial-source") throw new Error("retained checkpoint was not supplied");
         return ctx.done("Fresh facts confirmed the requirement", {
           state: "converged", summary: "Fresh facts confirmed the requirement",
-          facts: ["verified:current-input"]
+          facts: ["verified:current-input", "checkpoint:resumed"],
+          actions: [{ kind: "retire-condition", conditionId: "fresh-facts", expectedConditionGeneration: 1,
+            reason: "Fresh input now confirms the requirement" }]
         });
       }
     `,
     );
-    const runtimeOptions = {
+    const app = definition();
+    const runtimeOptions = () => ({
       ...options(f, bus),
       agentsRoot,
       sharedRoot: join(f.root, "shared"),
       appRegistrySnapshot: {
         id: "boot:explicit-workflow-blocker",
         generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
+        entries: [{ appDir: f.appDir, definition: {
+          ...app,
+          tasks: {
+            ...app.tasks,
+            translateBlockedResult: () => ({ conditions: [{
+              id: "fresh-facts", type: "sample.facts.updated", subject: "sample:claim-check",
+              expected: { confirmed: true }, owner: "app:sample",
+            }] }),
+          },
+        } }],
       },
-    };
-    await installAppTaskRuntimes(runtimeOptions);
+    });
+    await installAppTaskRuntimes(runtimeOptions());
     const taskId = "work/claim-check";
     const attach = (confirmed: boolean) =>
       attachLoadedAppTask({
@@ -8206,7 +8220,7 @@ describe("canonical App task runtime", () => {
             agent: "sample-owner",
             workflow: "claim-check",
             outcome: "Confirm the requirement from current facts",
-            acceptance: ["Fresh verified facts, not a previous failed judgment, decide completion"],
+            acceptance: ["Fresh verified facts and the retained checkpoint decide completion"],
             input: { confirmed },
           },
         },
@@ -8220,64 +8234,145 @@ describe("canonical App task runtime", () => {
     await attach(false);
     const config = loadedTaskConfig(f);
     const deadline = performance.now() + 1500;
-    while (!config.resourceStore.readTask(taskId)?.status.executionRetryAt && performance.now() < deadline) await Bun.sleep(5);
-    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
-      id: taskId,
-      status: "pending",
-      generation: 1,
-      summary: "Current facts do not confirm the requirement",
-      conditions: [],
-      facts: expect.arrayContaining([
-        'workflow-blocker-context:{"finding":"exact assertion missing","runId":"123"}',
-      ]),
-    });
-    const attemptsBefore = Object.values(readTaskSnapshot(config).attempts ?? {});
-    expect(attemptsBefore).toHaveLength(1);
-    expect(attemptsBefore[0]).toMatchObject({ state: "failed", failureReason: "handler-blocked" });
-    for (let index = 0; index < 3; index++) await recoverInstalledAppTasks(bus);
-    await closeInstalledAppTaskRuntimes(bus);
-    await installAppTaskRuntimes(runtimeOptions);
-    await recoverInstalledAppTasks(bus);
-    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status).toBe("pending");
-    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(1);
-    const humanTasks = new HumanTaskService(getDb(join(f.root, "state")), {
-      snapshot: () => runtimeOptions.appRegistrySnapshot,
-    });
-    const blocked = humanTasks.getTask({ appId: "sample", taskId });
-    if (!blocked) throw new Error("expected blocked Task");
-    retryLoadedFailedAppTask({
-      bus,
-      appId: "sample",
-      taskId,
-      expectedGeneration: blocked.generation,
-      expectedResourceVersion: blocked.resourceVersion,
-    });
-    const retryDeadline = performance.now() + 1500;
-    while (
-      (Object.values(readTaskSnapshot(config).attempts ?? {}).length < 2 ||
-        !config.resourceStore.readTask(taskId)?.status.executionRetryAt) &&
-      performance.now() < retryDeadline
-    )
+    while (config.resourceStore.readTask(taskId)?.status.phase !== "waiting" && performance.now() < deadline)
       await Bun.sleep(5);
-    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
-      status: "pending",
-      generation: 1,
-      conditions: [],
+    const first = readAcceptedRuntimeAttempt(config, taskId);
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: ["fresh-facts"],
+      result: { checkpoint: "reviewed-partial-source", sourceState: false },
+      facts: [
+        'execution-facts:{"finding":"exact assertion missing"}',
+        'workflow-blocker-context:{"finding":"exact assertion missing"}',
+      ],
     });
-    expect(Object.values(readTaskSnapshot(config).attempts ?? {})).toHaveLength(2);
+    expect(first?.acceptedResult).toMatchObject({
+      state: "waiting",
+      result: { checkpoint: "reviewed-partial-source", sourceState: false },
+    });
+    expect(config.resourceStore.isCancelled(taskId)).toBe(false);
+
+    await closeInstalledAppTaskRuntimes(bus);
+    closeDb(join(f.root, "state"));
+    bus = eventBus();
+    await installAppTaskRuntimes(runtimeOptions());
+    const reopened = loadedTaskConfig(f);
+    expect(reopened.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: ["fresh-facts"],
+      result: { checkpoint: "reviewed-partial-source", sourceState: false },
+    });
+    expect(reopened.resourceStore.readAttempt(first!.metadata.id)?.acceptedResult).toEqual(first!.acceptedResult);
+
     await attach(true);
     const completionDeadline = performance.now() + 1500;
-    while (
-      readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })?.status !== "idle" &&
-      performance.now() < completionDeadline
-    )
+    while (reopened.resourceStore.readTask(taskId)?.status.phase !== "converged" && performance.now() < completionDeadline)
       await Bun.sleep(5);
-    expect(readLoadedAppTaskView({ bus, appDir: f.appDir, taskId })).toMatchObject({
-      id: taskId,
-      status: "idle",
-      generation: 2,
-      facts: ["verified:current-input"],
+    expect(reopened.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "converged",
+      facts: ["verified:current-input", "checkpoint:resumed"],
     });
+    const attempts = Object.values(readTaskSnapshot(reopened).attempts ?? {});
+    expect(attempts).toHaveLength(2);
+    expect(attempts.find((attempt) => attempt.metadata.id === first!.metadata.id)?.acceptedResult).toMatchObject({
+      state: "waiting",
+      result: { checkpoint: "reviewed-partial-source", sourceState: false },
+    });
+    expect(reopened.resourceStore.isCancelled(taskId)).toBe(false);
+  });
+
+  it("applies trusted blocked translator retirement and progress report while retaining another wait", async () => {
+    const f = fixture();
+    let bus = eventBus();
+    const agentsRoot = join(f.root, "agents");
+    const workflowDir = join(agentsRoot, "sample-owner", "workflows");
+    mkdirSync(workflowDir, { recursive: true });
+    writeFileSync(
+      join(workflowDir, "translated-wait.ts"),
+      `
+      export const name = "translated-wait";
+      export const description = "Resolve one wait and retain another";
+      export async function execute(ctx) {
+        await ctx.applyTaskChanges({ conditions: [
+          { id: "resolved", type: "review.done", subject: "review:resolved", expected: true, owner: "app:sample" },
+          { id: "remaining", type: "review.done", subject: "review:remaining", expected: true, owner: "app:sample" },
+        ] });
+        return { ...ctx.blocked("One independent review remains", { resolved: "review" }),
+          output: { checkpoint: "partial-review" } };
+      }
+    `,
+    );
+    const app = definition();
+    const snapshot = {
+      id: "boot:translated-blocked-actions",
+      generation: 1,
+      entries: [{
+        appDir: f.appDir,
+        definition: {
+          ...app,
+          tasks: {
+            ...app.tasks,
+            translateBlockedResult: () => ({
+              actions: [{
+                kind: "retire-condition" as const,
+                conditionId: "resolved",
+                expectedConditionGeneration: 1,
+                reason: "The workflow verified this review",
+              }],
+              report: true as const,
+            }),
+          },
+        },
+      }],
+    };
+    await installAppTaskRuntimes({
+      ...options(f, bus), agentsRoot, sharedRoot: join(f.root, "shared"), installControllers: false,
+      appRegistrySnapshot: snapshot,
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/translated-wait";
+    observeAppTaskIntent(config, { appAgent: "sample-owner", intent: {
+      id: taskId, parentId: "operations", workflow: "translated-wait",
+      outcome: "Resolve reviewed waits", acceptance: ["Retain only unresolved work"],
+    } });
+    await reconcileLoadedAppTaskOnce({
+      bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    const accepted = readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult;
+    expect(config.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: ["remaining"],
+      result: { checkpoint: "partial-review" },
+      facts: [
+        'execution-facts:{"resolved":"review"}',
+        'workflow-blocker-context:{"resolved":"review"}',
+      ],
+    });
+    expect(accepted).toMatchObject({
+      state: "waiting",
+      report: true,
+      result: { checkpoint: "partial-review" },
+      facts: [
+        'execution-facts:{"resolved":"review"}',
+        'workflow-blocker-context:{"resolved":"review"}',
+      ],
+    });
+
+    await closeInstalledAppTaskRuntimes(bus);
+    closeDb(join(f.root, "state"));
+    bus = eventBus();
+    await installAppTaskRuntimes({
+      ...options(f, bus), agentsRoot, sharedRoot: join(f.root, "shared"), installControllers: false,
+      appRegistrySnapshot: snapshot,
+    });
+    const reopened = loadedTaskConfig(f);
+    expect(reopened.resourceStore.readTask(taskId)?.status).toMatchObject({
+      phase: "waiting",
+      conditionIds: ["remaining"],
+      result: { checkpoint: "partial-review" },
+    });
+    expect(readAcceptedRuntimeAttempt(reopened, taskId)?.acceptedResult).toEqual(accepted);
   });
 
   it.each([false, true])(

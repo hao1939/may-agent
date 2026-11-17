@@ -132,6 +132,8 @@ export interface RunOptions {
   outputSchema?: TSchema;
   /** Pure current-invocation validation; never serialized as session state. */
   validateOutput?: (result: unknown) => string | null;
+  /** Current-invocation finish binding supplied by a trusted caller; never serialized. */
+  createFinish?: () => AgentTool;
   /** Restrict the supplied capabilities for this session. */
   toolPolicy?: ToolPolicy;
   /** Effective filesystem root supplied by an enclosing workflow/task. */
@@ -156,6 +158,7 @@ export type CallAgentOptions = Pick<
   | "operationAllowance"
   | "outputSchema"
   | "validateOutput"
+  | "createFinish"
   | "toolPolicy"
   | "executionRoot"
   | "deadlineAt"
@@ -437,10 +440,10 @@ export class SubagentManager {
               chatContext: () => this.buildChatContextPacket(sessionId, def.name),
             }
           : {}),
-        createFinish: () =>
+        createFinish: opts?.createFinish ?? (() =>
           createFinishTool({
             projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
-          }),
+          })),
         bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
         onCompact: (info, messages) => {
           log(
@@ -840,6 +843,7 @@ export class SubagentManager {
       operationAllowance: opts?.operationAllowance,
       outputSchema: opts?.outputSchema,
       validateOutput: opts?.validateOutput,
+      createFinish: opts?.createFinish,
       toolPolicy: opts?.toolPolicy,
       executionRoot: opts?.executionRoot,
     });

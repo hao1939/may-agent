@@ -7,20 +7,44 @@ type HostedTaskInput = TaskAgentInput | TaskWorkflowInput;
 
 type TranslationOptions = {
   now?: () => number;
+  diagnosticFacts?: readonly string[];
+  storageFacts?: unknown;
 };
 
-function factStrings(facts: unknown): string[] {
+function serializedFact(facts: unknown): string {
+  try {
+    return `execution-facts:${JSON.stringify(facts)}`;
+  } catch {
+    return "execution-facts:[unserializable]";
+  }
+}
+
+function hasDomainProgressFacts(facts: unknown): boolean {
+  if (facts === undefined) return false;
+  if (typeof facts === "string") return facts.trim().length > 0;
+  if (Array.isArray(facts)) {
+    return (
+      facts.length > 0
+      && facts.some((fact) => (typeof fact === "string" ? fact.trim().length > 0 : fact !== undefined))
+    );
+  }
+  return true;
+}
+
+function directFactStrings(facts: unknown): string[] {
   if (facts === undefined) return [];
   if (
     Array.isArray(facts)
     && facts.length <= 32
     && facts.every((fact) => typeof fact === "string" && fact.trim().length > 0)
   ) return facts;
-  try {
-    return [`execution-facts:${JSON.stringify(facts)}`];
-  } catch {
-    return ["execution-facts:[unserializable]"];
-  }
+  return [serializedFact(facts)];
+}
+
+function factStrings(facts: unknown, diagnosticFacts: readonly string[] = []): string[] {
+  const directFacts = directFactStrings(facts);
+  if (directFacts.length + diagnosticFacts.length <= 32) return [...directFacts, ...diagnosticFacts];
+  return [serializedFact(facts), ...diagnosticFacts];
 }
 
 function resultRunId(result: RunResult): string | null {
@@ -55,7 +79,8 @@ function outputResult(output: unknown): Pick<NormalizedTaskHandlerResult, "resul
   };
 }
 
-const WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
+const DEFAULT_WAIT_HINT_KEYS = new Set(["retryAfterMs", "conditions", "requests"]);
+const TRANSLATED_WAIT_HINT_KEYS = new Set([...DEFAULT_WAIT_HINT_KEYS, "actions", "report", "continue"]);
 
 function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlement {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -66,8 +91,8 @@ function isPlainWaitDescriptor(value: unknown): value is AppTaskBlockedSettlemen
 function fallbackWaitHint(facts: unknown): AppTaskBlockedSettlement | null | undefined {
   if (!isPlainWaitDescriptor(facts)) return undefined;
   const keys = Object.keys(facts);
-  if (!keys.some((key) => WAIT_HINT_KEYS.has(key))) return undefined;
-  if (keys.some((key) => !WAIT_HINT_KEYS.has(key))) return null;
+  if (!keys.some((key) => DEFAULT_WAIT_HINT_KEYS.has(key))) return undefined;
+  if (keys.some((key) => !DEFAULT_WAIT_HINT_KEYS.has(key))) return null;
   return facts;
 }
 
@@ -85,15 +110,12 @@ function rejectedBlockedResult(summary: string, runId: string | null): TaskCapab
   };
 }
 
-function blockedSettlement(
-  result: RunResult,
+export function translateHostedBlockedContribution(
   input: HostedTaskInput,
-  summary: string,
-  output: unknown,
-  facts: unknown,
-  options: TranslationOptions,
+  contribution: { summary: string; output?: unknown; facts?: unknown; runId: string | null },
+  options: TranslationOptions = {},
 ): TaskCapabilityRun {
-  const runId = resultRunId(result);
+  const { summary, output, facts, runId } = contribution;
   const translator = input.descriptor.app.tasks?.translateBlockedResult;
   let translatedHint: unknown;
   try {
@@ -116,11 +138,42 @@ function blockedSettlement(
     if (!isPlainWaitDescriptor(translatedHint)) {
       return rejectedBlockedResult("Blocked result translator must return null or a plain wait descriptor", runId);
     }
-    if (Object.keys(translatedHint).some((key) => !WAIT_HINT_KEYS.has(key))) {
+    const allowedKeys = translator ? TRANSLATED_WAIT_HINT_KEYS : DEFAULT_WAIT_HINT_KEYS;
+    if (Object.keys(translatedHint).some((key) => !allowedKeys.has(key))) {
       return rejectedBlockedResult("Blocked result translator wait descriptor contains unsupported fields", runId);
     }
   }
   const hint = translatedHint as AppTaskBlockedSettlement | null | undefined;
+  if (hint && hint.actions !== undefined && !Array.isArray(hint.actions)) {
+    return rejectedBlockedResult("Blocked result actions must be an array when supplied", runId);
+  }
+  if (
+    (hint?.report === true || hint?.continue === true || (hint?.actions?.length ?? 0) > 0)
+    && !hasDomainProgressFacts(facts)
+  ) {
+    return rejectedBlockedResult(
+      "Blocked result report, continuation, or actions require non-empty contribution facts; Host diagnostics are not agent evidence",
+      runId,
+    );
+  }
+  if (hint && hint.report !== undefined && hint.report !== true) {
+    return rejectedBlockedResult("Blocked result report must be true when supplied", runId);
+  }
+  if (hint && hint.continue !== undefined && hint.continue !== true) {
+    return rejectedBlockedResult("Blocked result continue must be true when supplied", runId);
+  }
+  if (hint?.report === true && !hasDomainProgressFacts(facts)) {
+    return rejectedBlockedResult(
+      "Handler result was rejected: report requires waiting or incomplete, true, and non-empty facts",
+      runId,
+    );
+  }
+  if (hint?.continue === true && !hasDomainProgressFacts(facts)) {
+    return rejectedBlockedResult(
+      "Handler result was rejected: continue requires waiting and progress facts",
+      runId,
+    );
+  }
 
   let reviewAt: number | undefined;
   if (hint?.retryAfterMs !== undefined) {
@@ -138,8 +191,10 @@ function blockedSettlement(
     {
       state: "waiting",
       summary,
-      facts: factStrings(facts),
-      actions: [],
+      facts: factStrings(options.storageFacts === undefined ? facts : options.storageFacts, options.diagnosticFacts),
+      actions: hint?.actions === undefined ? [] : hint.actions,
+      ...(hint?.report === true ? { report: true as const } : {}),
+      ...(hint?.continue === true ? { continue: true as const } : {}),
       ...(reviewAt !== undefined ? { reviewAt } : {}),
       ...(hint?.conditions !== undefined ? { conditions: hint.conditions } : {}),
       ...(hint?.requests !== undefined ? { requests: hint.requests } : {}),
@@ -177,7 +232,11 @@ export function translateHostedExecutionResult(
   if (contribution.type !== "done" && contribution.type !== "blocked") return executionFailure(result);
   const summary = contribution.type === "done" ? contribution.summary : contribution.reason;
   if (contribution.type === "blocked") {
-    return blockedSettlement(result, input, summary, contribution.output, contribution.facts, options);
+    return translateHostedBlockedContribution(
+      input,
+      { summary, output: contribution.output, facts: contribution.facts, runId: resultRunId(result) },
+      options,
+    );
   }
 
   const runId = resultRunId(result);
