@@ -1826,6 +1826,77 @@ export async function execute(ctx) {
     });
   });
 
+  test("public run pins edited and missing prompt sources before controller ctx.call dispatch", async () => {
+    const runCase = async (mode: "missing-identity" | "missing-shared") => {
+      const env = setupDirectLayout();
+      const identityPath = join(env.agentsRoot, "reviewer", "AGENTS.md");
+      const sharedPath = join(env.sharedRoot, "common-sense.md");
+      const originalIdentity = "ORIGINAL WORKER IDENTITY";
+      const originalShared = "ORIGINAL SHARED PROMPT";
+      if (mode === "missing-identity") {
+        unlinkSync(identityPath);
+        writeFileSync(sharedPath, originalShared);
+      } else {
+        writeFileSync(identityPath, originalIdentity);
+      }
+      writeFileSync(
+        join(env.agentsRoot, "owner", "workflows", "controller.ts"),
+        `
+import { writeFileSync } from "node:fs";
+export const name = "controller";
+export const description = "Mutate prompt sources after public catalog capture";
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(identityPath)}, "CHANGED WORKER IDENTITY");
+  writeFileSync(${JSON.stringify(sharedPath)}, "CHANGED SHARED PROMPT");
+  const child = await ctx.call("global/reviewer", { prompt: "Use captured prompt sources" });
+  return ctx.done("controller complete", child);
+}
+`,
+      );
+
+      let systemPrompt = "";
+      const result = await run("global/controller", { prompt: "Run controller" }, {
+        projectRoot: env.projectRoot,
+        cwd: env.projectRoot,
+        models: { test: fakeModel() as any },
+        runAgent: async (opts): Promise<DirectAgentRunResult> => {
+          const prep = await prepareDirectAgentExecution(opts);
+          try {
+            systemPrompt = prep.prepared.systemPrompt;
+            return {
+              sessionId: prep.sessionId,
+              sessionPath: prep.sessionPath,
+              systemPrompt,
+              model: prep.model,
+              executionManifest: prep.executionManifest,
+              status: "done",
+              lastAssistantText: "captured",
+              messages: [],
+              durationMs: 1,
+              finishResult: { status: "done", summary: "captured" },
+              usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+              cleanupConfirmed: await prep.cleanupAsync(),
+            };
+          } finally {
+            prep.cleanup();
+          }
+        },
+      });
+      expect(result).toMatchObject({ status: "done", summary: "controller complete" });
+      return systemPrompt;
+    };
+
+    const missingIdentity = await runCase("missing-identity");
+    expect(missingIdentity).toContain("ORIGINAL SHARED PROMPT");
+    expect(missingIdentity).not.toContain("CHANGED SHARED PROMPT");
+    expect(missingIdentity).not.toContain("CHANGED WORKER IDENTITY");
+
+    const missingShared = await runCase("missing-shared");
+    expect(missingShared).toContain("ORIGINAL WORKER IDENTITY");
+    expect(missingShared).not.toContain("CHANGED WORKER IDENTITY");
+    expect(missingShared).not.toContain("CHANGED SHARED PROMPT");
+  });
+
   test("auto-discovers App-local owners in run(target, input) without --app, enforces dual outputSchema, prefers local procedures named codex, and skips prompt owner procedure imports", async () => {
     const env = setupDirectLayout();
     const projectsRoot = join(env.projectRoot, "projects");

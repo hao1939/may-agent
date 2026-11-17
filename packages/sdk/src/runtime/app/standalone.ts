@@ -826,12 +826,25 @@ function resolveWorkflowDir(options: DirectWorkflowRunOptions<any>): string | un
 type DirectPromptDefinition = {
   source: AgentDirectory;
   config: Readonly<AgentConfig>;
-  identityText?: string;
-  sharedPromptText?: string;
+  identityText: string;
+  sharedPromptText: string;
 };
 
-function readPromptSnapshot(path: string): string | undefined {
-  return existsSync(path) ? readFileSync(path, "utf8") : undefined;
+function readPromptSnapshot(path: string): string {
+  return existsSync(path) ? readFileSync(path, "utf8") : "";
+}
+
+function captureDirectPromptDefinition(
+  source: AgentDirectory,
+  config: AgentConfig,
+  sharedRoot: string,
+): DirectPromptDefinition {
+  return Object.freeze({
+    source: Object.freeze(structuredClone(source)),
+    config: Object.freeze(structuredClone(config)),
+    identityText: readPromptSnapshot(join(source.dir, "AGENTS.md")),
+    sharedPromptText: readPromptSnapshot(join(sharedRoot, "common-sense.md")),
+  });
 }
 
 type DirectCatalogState = PreparedCatalog<DirectPromptDefinition> & {
@@ -874,12 +887,7 @@ async function buildDirectPromptCatalog(
     }
     const promptEntry = {
       owner: namespace,
-      definition: {
-        source: agentDir,
-        config: Object.freeze(structuredClone(config)),
-        identityText: readPromptSnapshot(join(agentDir.dir, "AGENTS.md")),
-        sharedPromptText: readPromptSnapshot(join(options.sharedRoot, "common-sense.md")),
-      },
+      definition: captureDirectPromptDefinition(agentDir, config, options.sharedRoot),
     };
     prompts.set(canonicalName, promptEntry);
 
@@ -904,23 +912,21 @@ async function buildDirectPromptCatalog(
   for (const fixtureAgent of Object.keys(options.agentFixtures ?? {})) {
     const canonicalName = canonicalCallableName(undefined, fixtureAgent);
     if (!prompts.has(canonicalName)) {
+      const source = {
+        name: fixtureAgent,
+        dir: join(options.agentsRoot, fixtureAgent),
+        agentsRoot: options.agentsRoot,
+        relativeDir: `agents/${fixtureAgent}`,
+      };
       prompts.set(canonicalName, {
         owner: "global",
-        definition: {
-          source: {
-            name: fixtureAgent,
-            dir: join(options.agentsRoot, fixtureAgent),
-            agentsRoot: options.agentsRoot,
-            relativeDir: `agents/${fixtureAgent}`,
-          },
-          config: Object.freeze({
-            name: fixtureAgent,
-            description: fixtureAgent,
-            domain: "fixture",
-            model: "fixture",
-            tools: [],
-          }),
-        },
+        definition: captureDirectPromptDefinition(source, {
+          name: fixtureAgent,
+          description: fixtureAgent,
+          domain: "fixture",
+          model: "fixture",
+          tools: [],
+        }, options.sharedRoot),
       });
     }
   }
@@ -1821,6 +1827,7 @@ export async function listTargets(
     projectRoot?: string;
     projectsRoot?: string;
     globalAgentsRoot?: string;
+    sharedRoot?: string;
     app?: string;
     timeoutMs?: number;
     signal?: AbortSignal;
@@ -1847,6 +1854,7 @@ export async function listTargets(
     const projectRoot = resolve(options.projectRoot ?? inferWorkspaceRoot(cwd));
     const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
     const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
+    const sharedRoot = resolve(options.sharedRoot ?? join(projectRoot, "shared"));
     const appFilter = options.app?.trim()
       ? options.app.trim().endsWith(".app")
         ? options.app.trim()
@@ -1915,7 +1923,7 @@ export async function listTargets(
       const promptName = canonicalCallableName(dir.projectId, config.name);
       capturedCatalog.prompts.set(promptName, {
         owner: namespace,
-        definition: { source: dir, config: Object.freeze(structuredClone(config)) },
+        definition: captureDirectPromptDefinition(dir, config, sharedRoot),
       });
       const app = dir.projectId ? `${dir.projectId}.app` : undefined;
       routes.set(promptName, {
@@ -2022,6 +2030,7 @@ export async function run<TInput = unknown>(
       projectRoot,
       projectsRoot,
       globalAgentsRoot: options.agentsRoot ?? globalAgentsRoot,
+      sharedRoot: options.sharedRoot ?? join(projectRoot, "shared"),
       timeoutMs: deadlineAt === undefined
         ? DEFAULT_STANDALONE_LIST_TIMEOUT_MS
         : Math.max(1, Math.min(DEFAULT_STANDALONE_LIST_TIMEOUT_MS, deadlineAt - Date.now())),
