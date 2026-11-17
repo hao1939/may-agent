@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { AgentCallOptions, AppRead, CallOptions, WorkflowContext } from "@may-agent/sdk/app";
 import {
+  WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
   createWorkflowAllowance,
   resolveCallable,
@@ -29,6 +30,7 @@ import {
   type WorkflowStepInvocationResult,
   type WorkflowStepTrace,
 } from "../../workflow-kernel.js";
+import { ExecutionDeferredError } from "../../workflow.js";
 import {
   assertUniqueToolNames,
   executePreparedAgent,
@@ -1570,6 +1572,13 @@ export async function runDirectWorkflow<TInput = unknown>(
       const thrown = sub.error instanceof Error ? sub.error : new Error(String(sub.error ?? sub.report.error?.message));
       if (sub.started) {
         (thrown as Error & { executionId?: string }).executionId = sub.report.executionId;
+      }
+      if (
+        thrown instanceof WorkflowAllowanceExhaustedError ||
+        thrown instanceof ExecutionDeferredError ||
+        thrown instanceof WorkflowUnconfirmedCleanupError
+      ) {
+        throw thrown;
       }
       if (sub.started && sub.report.status === "error" && sub.report.cleanup.confirmed) {
         return {

@@ -3,6 +3,7 @@ import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { ExecutionDeferredError } from "@may-agent/sdk/app";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
@@ -653,6 +654,91 @@ export async function execute(ctx) { return ctx.done("primed"); }
       expect.objectContaining({ status: "done", summary: "primed" }),
       expect.objectContaining({ status: "done", summary: "reviewer utility", output: { received: "after" } }),
     ]);
+  });
+
+  test("returns an ordinary nested workflow failure to its standalone parent with the real child trace", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(join(env.agentsRoot, "owner", "workflows", "ordinary-failure.ts"), `
+export const name = "ordinary-failure";
+export const description = "Fails after the child execution starts";
+export async function execute() { throw new Error("ordinary child failure"); }
+`);
+    const result = await runDirectWorkflow({
+      module: {
+        name: "recover-ordinary-failure",
+        description: "Consumes an ordinary child error report without catch",
+        async execute(ctx) {
+          const child = await ctx.call("global/ordinary-failure", { prompt: "fail normally" });
+          return ctx.done("parent recovered", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "recover" },
+      executionId: "wr_parent_recovers_child",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+
+    expect(result.ok).toBeTrue();
+    expect(result.result).toMatchObject({ type: "done", summary: "parent recovered" });
+    const child = result.result?.output as { id: string; status: string; summary: string };
+    expect(child).toEqual({
+      id: expect.stringMatching(/^wr_/),
+      status: "error",
+      summary: "ordinary child failure",
+    });
+    expect(child.id).not.toBe(result.report.executionId);
+    expect(result.report.steps).toContainEqual(expect.objectContaining({
+      id: child.id,
+      kind: "workflow",
+      target: "global/ordinary-failure",
+      status: "error",
+      summary: "ordinary child failure",
+    }));
+  });
+
+  test("keeps a nested standalone execution deferral on the typed control path", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(join(env.agentsRoot, "owner", "workflows", "deferred-child.ts"), `
+import { ExecutionDeferredError } from ${JSON.stringify(join(process.cwd(), "packages/sdk/src/app.ts"))};
+export const name = "deferred-child";
+export const description = "Defers before useful child work";
+export async function execute() {
+  throw new ExecutionDeferredError({
+    resource: "execution-capacity",
+    reason: "fixture capacity retained",
+    retryAt: null,
+    task: { appId: "fixture", taskId: "child" },
+    root: { appId: "fixture", taskId: "root" },
+  });
+}
+`);
+    const result = await runDirectWorkflow({
+      module: {
+        name: "propagate-deferral",
+        description: "Must not normalize control outcomes into ordinary errors",
+        async execute(ctx) {
+          const child = await ctx.call("global/deferred-child", { prompt: "defer" });
+          return ctx.done("must not finish", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "preserve typed deferral" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+
+    expect(result.ok).toBeFalse();
+    expect(result.error).toBeInstanceOf(ExecutionDeferredError);
+    expect((result.error as ExecutionDeferredError).deferral.reason).toBe("fixture capacity retained");
   });
 
   test("records the resolved workflow kind and child identity when an enveloped model-visible code helper fails", async () => {

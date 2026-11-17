@@ -233,21 +233,35 @@ describe("shared execution scope", () => {
   });
 
   it("generic call forwards tool cancellation and rejects a missing caller", async () => {
-    const manager = fixture(async (_text, stopped) => {
+    const childStarted = Promise.withResolvers<void>();
+    const childStopped = Promise.withResolvers<void>();
+    const manager = fixture(async (text, stopped) => {
+      if (text === "child") childStarted.resolve();
       await stopped;
+      if (text === "child") childStopped.resolve();
       return "partial";
     });
     const parentId = manager.run("worker", "parent", { timeoutMs: 5_000 });
     const tool = manager.createAgentsTool({ getCallerSessionId: () => parentId });
     const controller = new AbortController();
-    const result = tool.execute("helper", { action: "call", agent: "worker", task: "child" }, controller.signal);
-    controller.abort();
-    expect(JSON.stringify(await result)).toContain("abort");
+    const result = tool.execute(
+      "helper",
+      { action: "call", agent: "global/worker", input: { prompt: "child" } },
+      controller.signal,
+    );
+    await childStarted.promise;
+    const childId = manager.status().find((session) => session.parentSessionId === parentId)?.sessionId;
+    expect(childId).toBeString();
+    controller.abort(new Error("abort child call"));
+    expect(JSON.stringify(await result)).toContain("abort child call");
+    await childStopped.promise;
+    expect(manager.result(childId!)?.status).toBe("interrupted");
     manager.cancel(parentId);
     await manager.waitFor(parentId);
-    expect(JSON.stringify(await tool.execute("late", { action: "call", agent: "worker", task: "child" }))).toContain(
-      "live caller",
-    );
+    expect(JSON.stringify(await tool.execute(
+      "late",
+      { action: "call", agent: "global/worker", input: { prompt: "child" } },
+    ))).toContain("live caller");
     expect(() => manager.runAgent("worker", "orphan")).toThrow("live caller");
   });
 

@@ -4,6 +4,7 @@ import { assertCurrentTaskActor } from "../app/core/tasks/task-actor.js";
 import { ExecutionDeferredError } from "@may-agent/sdk/app";
 import {
   CallableCatalog,
+  WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
   canonicalCallableName,
   resolveCallable,
@@ -855,6 +856,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           if (
             error instanceof WorkflowInterrupted ||
             error instanceof ExecutionDeferredError ||
+            error instanceof WorkflowAllowanceExhaustedError ||
             error instanceof WorkflowUnconfirmedCleanupError ||
             stepControl.signal.aborted
           ) {
