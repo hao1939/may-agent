@@ -25,6 +25,9 @@ export function workloadReviewTask(admitted: AppTaskInput, enabled: boolean) {
       "Preserve business obligations under every load; recommend methods and priorities without count-based closure.",
       "Use bounded scoped evidence, skip unchanged or empty reviews, and distinguish recommendations from applied decisions.",
     ],
-    input: admitted.input, priority: "P2" as const,
+    input: {
+      prompt: "Review the current Alex workload and retain bounded advice.",
+      data: admitted.input.data,
+    }, priority: "P2" as const,
   } };
 }

@@ -8,6 +8,12 @@ export const name = WORKLOAD_REVIEW_WORKFLOW;
 export const description = "Review one bounded page of changed Alex commitments and workload; retain advice and optionally notify an existing owner under installed policy, with no Task creation, repriority or closure.";
 export const workspace = "shared";
 export const executionTimeoutMs = 90_000;
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1 }),
+  data: Type.Optional(Type.Object({
+    reason: Type.Optional(Type.String({ minLength: 1 })),
+  }, { additionalProperties: false })),
+}, { additionalProperties: false });
 const LIMIT = 20;
 const EXACT_LIMIT = 3;
 const RECENT_BATCHES = 64;

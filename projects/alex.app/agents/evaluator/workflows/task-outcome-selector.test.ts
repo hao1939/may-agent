@@ -768,7 +768,7 @@ describe("automatic task outcome selector", () => {
           ],
         };
       const response = await base(request);
-      if (request.type !== "app.task.get" || request.appId !== "delegated")
+      if (request.type !== "task.get" || request.appId !== "delegated")
         return response;
       return {
         ...response,
@@ -1711,32 +1711,19 @@ describe("automatic task outcome selector", () => {
     const listed = task("may", "goal/subject");
     const base = catalogCommand({ may: [listed] });
     const command: PublicCommand = async (request) => {
-      if (request.type === "app.task.get" && request.taskId === "goal/subject")
+      if (request.type === "task.get" && request.taskId === "goal/subject")
         return {
           type: "ok",
-          command: "app.task.get",
-          appId: "may",
-          taskId: request.taskId,
+          command: "task.get",
           task: {
+            appId: "may",
+            taskId: request.taskId,
             id: request.taskId,
             generation: 1,
             creator: { appId: "may" },
             agent: "worker",
             outcome: "Review linked evidence",
             dependsOn: [linkedTaskId],
-          },
-        };
-      if (request.type === "app.task.get" && request.taskId === linkedTaskId)
-        return {
-          type: "ok",
-          command: "app.task.get",
-          appId: "may",
-          taskId: request.taskId,
-          task: {
-            id: request.taskId,
-            generation: 1,
-            creator: { appId: "may" },
-            result: { padding },
           },
         };
       if (request.type === "task.get" && request.taskId === linkedTaskId)
@@ -1746,8 +1733,11 @@ describe("automatic task outcome selector", () => {
           task: {
             appId: "may",
             taskId: request.taskId,
+            id: request.taskId,
             generation: 1,
+            creator: { appId: "may" },
             outcome: "Large linked evidence",
+            result: { padding },
             facts: [padding],
           },
         };
@@ -1804,7 +1794,7 @@ describe("automatic task outcome selector", () => {
     const base = catalogCommand({ may: [task("may", "goal/subject")] });
     const command: PublicCommand = async (request) => {
       const response = await base(request);
-      if (request.type === "app.task.get" && request.taskId === "goal/subject") {
+      if (request.type === "task.get" && request.taskId === "goal/subject") {
         response.task = {
           ...(response.task as Record<string, unknown>), dependsOn,
           input: { kind: "message", data: { context: { publishedFact: {
@@ -1814,13 +1804,10 @@ describe("automatic task outcome selector", () => {
           } } } },
         };
       }
-      if (request.taskId === "producer") {
-        if (request.type === "app.task.get")
-          return { type: "ok", command: request.type, appId: "may", taskId: "producer",
-            task: { id: "producer", generation: 1, result: { fact: producerFact } } };
+      if (request.type === "task.get" && request.taskId === "producer")
         return { type: "ok", command: request.type,
-          task: { appId: "may", taskId: "producer", generation: 1 } };
-      }
+          task: { appId: "may", taskId: "producer", id: "producer", generation: 1,
+            creator: { appId: "may" }, result: { fact: producerFact } } };
       return response;
     };
     const read = () => readSubjectTask({ appId: "may", taskId: "goal/subject" }, command);

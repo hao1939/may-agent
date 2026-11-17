@@ -222,16 +222,16 @@ test("effort review publishes evidence and reaches an accepted May decision with
       }) as any;
     const published: any[] = [];
     const ctx = createTestAppWorkflowContext({
-      input: input.data,
+      input: { prompt: "Review the pinned effort metric", data: input.data },
       workspace: {
         appRoot: fileURLToPath(new URL("../alex.app/", import.meta.url)),
         root,
         projectRoot: root,
         output: root,
       },
-      call: (async (_agent: string, prompt: unknown) => {
-        expect(prompt).toContain("not proof of waste");
-        expect(prompt).toContain("implementation");
+      call: (async (_agent: string, callInput: { prompt: string }) => {
+        expect(callInput.prompt).toContain("not proof of waste");
+        expect(callInput.prompt).toContain("implementation");
         return {
           id: "scripted-review",
           kind: "agent",

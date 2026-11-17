@@ -249,15 +249,16 @@ test("Host acceptance retains optional scope and current Task reads permit reuse
     ...f.get(taskId),
     appId,
   });
+  const reuseReadAt = Date.now() + 1;
   expect(
-    await checkMetricDecisionReuse(observed, reader, readTask),
+    await checkMetricDecisionReuse(observed, reader, readTask, reuseReadAt),
   ).toMatchObject({
     reusable: true,
     decision: { appId: "may", attemptId: f.decisions()[0].attempt_id },
   });
   await f.restart();
   expect(
-    await checkMetricDecisionReuse(observed, reader, readTask),
+    await checkMetricDecisionReuse(observed, reader, readTask, reuseReadAt),
   ).toMatchObject({ reusable: true });
   expect(f.attempts).toHaveLength(0);
 });
