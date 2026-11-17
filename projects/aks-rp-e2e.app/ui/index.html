@@ -1,2 +1,59 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AKS Kubernetes support</title><meta http-equiv="refresh" content="0;url=./k8s-version-upgrade/?appId=aks-rp-e2e&amp;taskId=domain%2Fkubernetes-version-support%2F1.38&amp;version=1.38&amp;progressProject=projects%2Fkubernetes-version-progress&amp;progressFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Fprogress.md&amp;overviewProject=projects%2Fkubernetes-version-progress&amp;overviewFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Foverview.json&amp;apiBase=%2Fk8s-upgrade&amp;readOnly=0"></head><body><p><a href="./k8s-version-upgrade/?appId=aks-rp-e2e&amp;taskId=domain%2Fkubernetes-version-support%2F1.38&amp;version=1.38&amp;progressProject=projects%2Fkubernetes-version-progress&amp;progressFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Fprogress.md&amp;overviewProject=projects%2Fkubernetes-version-progress&amp;overviewFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Foverview.json&amp;apiBase=%2Fk8s-upgrade&amp;readOnly=0">Open Kubernetes 1.38 support</a></p></body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AKS tasks</title>
+    <style>
+      :root { color-scheme: light; font: 16px/1.6 system-ui, sans-serif; color: #17233a; background: #f4f6fa; }
+      * { box-sizing: border-box; }
+      body { max-width: 1100px; margin: auto; padding: 28px 20px; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 1px solid #dce1eb; padding-bottom: 16px; }
+      a { color: #1854b9; text-underline-offset: 3px; }
+      a:focus-visible { outline: 3px solid #1854b9; outline-offset: 4px; }
+      h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.2; margin: 32px 0 12px; }
+      h2 { font-size: 1.3rem; margin: 0; }
+      .intro, article p { color: #526079; }
+      .tasks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; margin: 28px 0; }
+      article { display: flex; flex-direction: column; padding: 24px; background: white; border: 1px solid #dce1eb; border-radius: 12px; }
+      article p { flex: 1; }
+      article a { font-weight: 600; }
+      footer { border-top: 1px solid #dce1eb; padding-top: 16px; color: #526079; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>AKS · Spec runner</strong>
+      <nav aria-label="Project">
+        <a href="/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e">Task status board</a>
+      </nav>
+    </header>
+    <main>
+      <h1>AKS tasks</h1>
+      <p class="intro">Open a task for its progress, evidence and conversation. Use the status board to review current work and waits across all tasks.</p>
+      <section class="tasks" aria-label="Workstreams">
+        <article>
+          <h2>Compiler</h2>
+          <p>Compile adopted expressions into complete deterministic scripts.</p>
+          <a data-task-id="workstream/compiler" href="/projects/aks-rp-e2e.app/ui/task/?appId=aks-rp-e2e&amp;taskId=workstream%2Fcompiler&amp;label=Compiler&amp;inputKind=message&amp;readOnly=0">Open Compiler task →</a>
+        </article>
+        <article>
+          <h2>Spec repair</h2>
+          <p>Repair authored spec expressions while preserving their original test meaning.</p>
+          <a data-task-id="workstream/spec-fixer" href="/projects/aks-rp-e2e.app/ui/task/?appId=aks-rp-e2e&amp;taskId=workstream%2Fspec-fixer&amp;label=Spec+repair&amp;inputKind=message&amp;readOnly=0">Open Spec repair task →</a>
+        </article>
+        <article>
+          <h2>Knowledge</h2>
+          <p>Answer focused source questions with traceable knowledge and evidence.</p>
+          <a data-task-id="workstream/knowledge" href="/projects/aks-rp-e2e.app/ui/task/?appId=aks-rp-e2e&amp;taskId=workstream%2Fknowledge&amp;label=Knowledge&amp;inputKind=message&amp;readOnly=0">Open Knowledge task →</a>
+        </article>
+        <article>
+          <h2>Kubernetes 1.38</h2>
+          <p>Review version support, validation evidence and readiness decisions.</p>
+          <a data-task-id="domain/kubernetes-version-support/1.38" href="/projects/aks-rp-e2e.app/ui/k8s-version-upgrade/?appId=aks-rp-e2e&amp;taskId=domain%2Fkubernetes-version-support%2F1.38&amp;version=1.38&amp;progressProject=projects%2Fkubernetes-version-progress&amp;progressFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Fprogress.md&amp;overviewProject=projects%2Fkubernetes-version-progress&amp;overviewFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Foverview.json&amp;readOnly=0">Open Kubernetes 1.38 task →</a>
+        </article>
+      </section>
+    </main>
+    <footer>Opening a page does not start or resume work. Send input from the selected task’s page.</footer>
+  </body>
+</html>

@@ -2,6 +2,12 @@
 
 ## Task overview
 
+The App home at `/projects/aks-rp-e2e.app/ui/` is the task entry page, with
+direct links to Compiler, Spec repair, Knowledge and Kubernetes 1.38. Each opens
+its existing dedicated task/progress/conversation page. The home also links to
+the Host's status board for current states and waits; it keeps no separate Task
+snapshot or status logic. Its source is [../ui/index.html](../ui/index.html).
+
 The operational installation's existing `/projects/aks-rp-e2e.app/ui/kanban/`
 entry delegates to the Host's `/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e`
 page. Its source follows the normal App layout at
@@ -14,8 +20,8 @@ is needed. Opening the page only reads existing Tasks.
 The previous App board rejected the current `idle` state as invalid, hiding the
 entire list when a Task had no runnable work. Reusing the Host page removes that
 duplicated contract. The existing per-task App pages and conversations remain
-available at their original URLs. The MLVM App home links directly to the Host
-Task page, and the existing per-task page links back to it. Its domain pages
+available at their original URLs. The MLVM App home links to both those pages
+and the Host Task board. The dedicated pages link back to App home. Domain pages
 remain under the same App's `ui/` directory. The older local UI-only installation
 is separate; its selected Kubernetes session entry is preserved.
 

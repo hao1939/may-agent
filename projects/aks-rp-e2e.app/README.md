@@ -1,14 +1,18 @@
 # AKS App UI
 
 UI source follows the shared [App UI convention](../alex.app/docs/2a-design/webui.md#app-ui-convention):
-domain pages live under `ui/`, and general Task views belong to the Host.
-On MLVM, use `/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e` for the Task
-overview. `ui/kanban/` is only a compatibility entry for older bookmarks.
+pages live under `ui/`, and general Task status views belong to the Host.
+On MLVM, `/projects/aks-rp-e2e.app/ui/` opens the task entry page. It links to
+each dedicated task/progress/conversation page and to
+`/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e` for current status and waits.
+`ui/kanban/` is only a compatibility entry for older status-board bookmarks.
 See [MLVM integration](mlvm/README.md) for the separate operational installation.
 
 ## Local UI with a scoped Kubernetes session
 
-Open http://127.0.0.1:8080/projects/aks-rp-e2e.app/ui/.
+The older local UI-only installation has no operational AKS Tasks in main state.
+Its selected Kubernetes session remains at
+[the scoped support page](ui/k8s-version-upgrade/?appId=aks-rp-e2e&taskId=domain%2Fkubernetes-version-support%2F1.38&version=1.38&progressProject=projects%2Fkubernetes-version-progress&progressFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Fprogress.md&overviewProject=projects%2Fkubernetes-version-progress&overviewFile=design%2Fexecution%2Fkubernetes-version-update%2Fversions%2F1.38%2Foverview.json&apiBase=%2Fk8s-upgrade&readOnly=0).
 
 This main-instance installation declares no task handler, Task policy,
 Conversation handler, agent implementation, subscription, schedule, observer,
