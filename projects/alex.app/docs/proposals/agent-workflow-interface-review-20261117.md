@@ -325,94 +325,62 @@ paired-activation obligation; a passing Host commit cannot certify App edits.
 | E — Execution | Keep joined workflow concurrency and inherited cancellation; preserve normal Task/Condition continuation and evidence on safe redo. | Stop/timeout through a mixed tree cleans up ordinary children, starts no further children, and preserves evidence; helper completion cannot settle its Task. |
 | F — Local trial | Build and run the paired candidate Host/SDK/Apps before PR merge. Assign bounded coding work through May, observe workflow/PR/CI/comment follow-up, and verify Telegram review-link delivery. | Record exact candidate SHAs, executable identity, native Task/workflow references, current PR head/checks, addressed comment and notification receipt. Record failures as open gaps. |
 
-Preserve the verified model snapshot/current-caller bindings, complete standalone
-catalog and canonical loader identities. Finish the remaining boundaries in
-this order, returning source evidence after each coherent checkpoint:
+Catalog, common admission/results, removed invocation controls and bounded
+cancellation have independently checked source checkpoints, including real prompt
+partial results and nested CLI receipt projection. Preserve those behaviors while
+finishing D and F; selected checks do not establish full cutover readiness.
+The [dated review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
+retains the earlier findings and exact repair evidence.
 
-1. **Finish common admission/results.** Preserve verified common pre-start
-   errors, all-status output checks and prompt partial-result admission. Commit
-   the real prompt-execution regression for omitted unavailable output. Expose trusted
-   CLI receipts through the existing execution read/observer and migrate actual
-   consumers; avoid a second result alias or an unbounded process-local run store.
-2. **Retain verified catalog and cancellation behavior.** Preserve exact-name
-   admission, immutable prompt/config snapshots and explicit missing-file absence.
-   Keep pending imports visible through cancellation and finite settlement for
-   uncooperative children. These repairs are verified source behavior; remaining
-   fixture migration must exercise their actual production paths.
-3. **Complete the paired App contribution.** Migrate all active definitions,
-   full-envelope schemas, callers, result/diagnostic consumers and guidance.
-   Bind both SDK imports and TypeScript path aliases to one exact clean provider
-   snapshot; private `node_modules` alone is insufficient in this repository.
-   Remove raw-input compatibility fallbacks and verify the actual exported schema
-   against `{ prompt, data }` through production admission. Inventory domain
-   reads in workflow bodies as well: most legacy bodies still read top-level
-   fields even when discovery supplies the common schema. Read those fields from
-   `ctx.input.data`; preserve intentionally authoritative Task domain input in
-   `ctx.reconciliation.input`. Scope includes all configured Apps, not only
-   files already changed or errors caught by TypeScript.
-4. **Verify and trial the pair.** Pass current-head portable and hosted checks,
-   resolve substantive comments, then activate the exact compatible local pair
-   and prove native workflow/PR/CI/comment/notification follow-through. Carry the
-   Task-revision source repair and recheck the actual running binary identity.
+The remaining implementation order is:
 
-These are source checkpoints within the saved outcome, not new approval gates or
-renewed allowances. Record coherent partial progress when a bounded round ends;
-do not preserve a retired API just to keep its old fixtures green, or claim the
-whole cutover from a passing standalone test.
+1. **Finish App consumers.** Carry `ctx.input.prompt` to development helpers beside
+   authoritative Task scope. Include the current assignment in the existing
+   fresh-input judgment path; preserve quiet replay for identical assignments,
+   valid receipts and all actual allowance usage. Regress prompt-only changes
+   with empty Task events. Correct the native Gym adapter's external temporary
+   workspace binding through the existing capability and regress the real caller
+   topology. Complete the 33-target body/caller/guidance disposition: discovery
+   enumeration and private helper tests cannot establish registered entrypoints.
+2. **Finish Host fixture and source migration.** Work from the exact current-head
+   CI artifacts, preserving real cancellation, steering, lineage and SIGINT
+   child-drain assertions. Fix the open steering review without turning it into
+   an ordinary completion test. Retired fork/session controls, aliases and bare
+   strings must not return to satisfy old fixtures. Run owning tests and
+   `check:ci` for each coherent checkpoint, then full current-head Quality.
+3. **Verify and trial the pair.** Bind App imports and TypeScript aliases to one
+   exact clean Host/SDK provider; keep the native development provider unchanged
+   until a verified replacement is ready at a quiescent boundary. Supply any
+   installation configuration/evidence explicitly and distinguish configured
+   checks from clean-checkout checks. Resolve substantive review, activate a
+   compatible local candidate while preserving legitimate installation changes
+   and the required Task-revision repair, then prove native coding, PR push,
+   CI/comment follow-up and Telegram review-link delivery. Record the running
+   executable/SDK/App identities and rollback revision.
 
-For D, the live trial also exposed two concrete consumer-context defects in
-Alex's `develop-change.ts` specialist prompt. State the bounded local-candidate
-scope beside the wider Task acceptance, so Bob does not require PR publication
-or deployment before returning source evidence. Allow the existing `clarify`
-decision to name a missing setup dependency, instead of requiring an unchanged
-candidate to cycle through implementation after a prerequisite failure. Preserve
-the owning Task's delivery requirements, actual failed receipts and consumed
-rounds. These are App prompt/return corrections within migration, with no new
-Host phase, classifier or allowance rule. See the
-[observed boundary failure](../archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment).
+These are checkpoints within the saved outcome, not new Tasks or Host phases.
+May implements through the retained development workflows; Root reviews, checks
+and helps publish coherent commits promptly for parallel review. Keep current
+Task requirements, execution guidance, exact checkout/provider bindings, bounded
+local procedure scope and trusted receipt diagnostics available to specialists.
+An exact setup dependency can return through the existing `clarify` decision;
+it must not cause unchanged coding rounds merely to repeat a missing prerequisite.
+Preserve wider delivery obligations without requiring publication or activation
+before a local source contribution can return.
 
-Migrate guidance and tests that prescribe the retired interface as well. Preserve
-the creator's acceptance and meaningful regressions; update fixtures and calls
-that encode old names, envelopes or built-in CLI assumptions. Preserving an old
-test's literal input cannot require retaining the interface being removed.
-Tech-lead's instructions also currently make publication depend on an embedded
-May Task block. Keep delivery ownership and caller links in retained Task state;
-do not make that public block or a separate May delivery Task a universal
-publication prerequisite. The existing exact PR Condition provides observation
-without the block, as the focused #590 trial demonstrated. Historical body
-metadata may retain its current optional routing meaning. These are consumer
-corrections within D, not a new watcher registry or source of publication authority.
-Its implementation guidance also prescribes canned judgment phrases and says to
-inspect only referenced files while asking the same contributor to implement a
-change. Make the current implementation assignment and relevant investigation
-the scope; require truthful bounded evidence without mandatory answer phrases.
-The trial's repeated unchanged implementation reports motivate this correction,
-but its behavioral effect still needs a fresh native run.
+Guidance must follow the common contract too. Preserve the repaired Tech-lead
+scope and truthful structured judgments without canned phrases or a universal
+public May Task block. Delivery ownership remains in retained Task/caller state;
+existing exact PR Conditions provide observation. Keep one registered address
+for shared implementations, including `alex/evaluation-report-reader`. Historical
+metadata and receipts remain evidence, without restoring a second authoring route.
 
-When migrating `develop-change`, pass the current Task's relevant input context
-to its specialists in the common envelope. That context includes the candidate
-checkout/SDK binding and execution guidance. The current prompt includes outcome,
-acceptance and separate constraints, then a truncated event preview; it omits
-current input context. A revised assignment must not depend on a specialist
-finding its instructions in older events or inspecting private decision files.
-Keep event history as evidence alongside the authoritative current assignment.
-
-Current App source also re-exports `evaluation-report-reader` from both Alex's
-and Evaluator's workflow directories. Under the agreed App namespace these are
-two registrations for `alex/evaluation-report-reader`, so preparation must
-reject them. Register the shared implementation once and migrate consumers to
-its canonical address; agent-local forwarding files are unnecessary when all
-callers share the catalog. Inventory similar registrations before paired
-activation. Do not silently skip a duplicate because its implementation matches.
-
-May should implement from current Host main in the retained Task-owned worktree,
-with the saved cross-repository selector and cumulative development allowance
-revised by its creator. Preserve the seven consumed #585 rounds and their
-receipts; do not renew them through a replacement Task. Because #585 is merged,
-publish the correction as a follow-up PR, excluding unrelated changes. Coordinate
-any App companion changes explicitly rather than mixing unrelated workspace edits.
-Push coherent committed checkpoints to that draft PR while implementation
-continues, stating the actual checks and remaining gaps. Full cutover readiness
+Continue from the retained Host #589 and paired App branches, preserving their
+complete histories, saved cross-repository selectors and every actual cumulative
+reservation, including the original seven #585 rounds. Their creator owns saved
+finite allowance revisions; no replacement Task resets usage. Keep unrelated work
+separate. Push coherent committed checkpoints to the existing draft PR and App
+review branch while implementation continues, stating actual checks and gaps. Full cutover readiness
 is required for its readiness claim, not for sharing unfinished work for review.
 The user owns the separate ingress/input and event-system proposals; this
 implementation remains focused on the unified callable interface.
