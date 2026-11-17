@@ -703,6 +703,20 @@ describe("App read projections", () => {
     expect(afterRun.acceptedAttempt?.id).toBe(running.attemptId);
   });
 
+  it("bounds workflow traversal and reports omitted sessionless descendants", () => {
+    db.run(`INSERT INTO workflow_runs(runId, workflow, task, status, startedAt, endedAt, result_summary)
+      VALUES ('wr_wide_root', 'root', 'run', 'done', 1, 2, 'done')`);
+    const insert = db.prepare(`INSERT INTO workflow_runs(
+      runId, workflow, task, status, startedAt, endedAt, parentWorkflowRunId
+    ) VALUES (?, 'child', 'run', 'done', ?, ?, 'wr_wide_root')`);
+    for (let index = 0; index < 65; index += 1) {
+      insert.run(`wr_wide_child_${index}`, index + 2, index + 3);
+    }
+
+    expect(readRuntimeExecutionView({ getDb: () => db, persistDir: root }, "wr_wide_root")?.diagnostics)
+      .toEqual({ cliCalls: [], truncated: true, omitted: { workflows: true } });
+  });
+
   it("reads nested workflow CLI receipts and reports receipt and transcript tail omissions", () => {
     db.run(`INSERT INTO workflow_runs(runId, workflow, task, status, startedAt, endedAt, result_summary)
       VALUES ('wr_root', 'root', 'run', 'done', 1, 2, 'done')`);

@@ -364,6 +364,7 @@ export function listRuntimeTaskViews(
   };
 }
 
+const EXECUTION_DIAGNOSTIC_WORKFLOW_LIMIT = 64;
 const EXECUTION_DIAGNOSTIC_SESSION_LIMIT = 64;
 const EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT = 512;
 const EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION = 1024 * 1024;
@@ -372,23 +373,30 @@ function readExecutionCliCalls(opts: Pick<RuntimeAppReadOptions, "getDb" | "pers
   NonNullable<ExecutionView["diagnostics"]> | undefined {
   if (!opts.persistDir) return undefined;
   const db = opts.getDb();
-  const rows = kind === "session"
-    ? [{ sessionId: id }]
-    : db.prepare(
+  const omitted: NonNullable<ExecutionView["diagnostics"]>["omitted"] = {};
+  let rows: Array<{ sessionId: string }>;
+  if (kind === "session") {
+    rows = [{ sessionId: id }];
+  } else {
+    const workflowRows = db.prepare(
       `WITH RECURSIVE workflow_tree(runId) AS (
          SELECT ?
          UNION
          SELECT child.runId FROM workflow_runs child
          JOIN workflow_tree parent ON child.parentWorkflowRunId = parent.runId
+         LIMIT ?
        )
-       SELECT session.sessionId FROM sessions session
-       JOIN workflow_tree workflow ON session.workflowRunId = workflow.runId
-       ORDER BY session.startedAt, session.sessionId LIMIT ?`,
-    ).all(id, EXECUTION_DIAGNOSTIC_SESSION_LIMIT + 1) as Array<{ sessionId: string }>;
+       SELECT runId FROM workflow_tree`,
+    ).all(id, EXECUTION_DIAGNOSTIC_WORKFLOW_LIMIT + 1) as Array<{ runId: string }>;
+    const workflowIds = workflowRows.slice(0, EXECUTION_DIAGNOSTIC_WORKFLOW_LIMIT).map(({ runId }) => runId);
+    if (workflowRows.length > workflowIds.length) omitted.workflows = true;
+    rows = db.prepare(
+      `SELECT sessionId FROM sessions WHERE workflowRunId IN (${workflowIds.map(() => "?").join(", ")})
+       ORDER BY startedAt, sessionId LIMIT ?`,
+    ).all(...workflowIds, EXECUTION_DIAGNOSTIC_SESSION_LIMIT + 1) as Array<{ sessionId: string }>;
+  }
   const selected = rows.slice(0, EXECUTION_DIAGNOSTIC_SESSION_LIMIT);
-  const omitted: NonNullable<ExecutionView["diagnostics"]>["omitted"] = {
-    ...(rows.length > EXECUTION_DIAGNOSTIC_SESSION_LIMIT ? { sessions: true } : {}),
-  };
+  if (rows.length > selected.length) omitted.sessions = true;
   const calls = selected.flatMap(({ sessionId }) => {
     const tail = readSessionMessagesTailWithCoverage(
       opts.persistDir!, sessionId, EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT, EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION,

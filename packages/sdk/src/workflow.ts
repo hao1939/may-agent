@@ -235,8 +235,8 @@ export type ExecutionView = {
   diagnostics?: {
     cliCalls: CliCallFacts[];
     /** Exact bounded source whose older evidence was omitted. */
-    omitted?: { sessions?: true; cliCalls?: true; messages?: true; bytes?: true };
-    /** More matching sessions, transcript messages/bytes, or receipts exist beyond this projection's bounds. */
+    omitted?: { workflows?: true; sessions?: true; cliCalls?: true; messages?: true; bytes?: true };
+    /** More matching workflows/sessions, transcript messages/bytes, or receipts exist beyond this projection's bounds. */
     truncated?: true;
   };
 };
