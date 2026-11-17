@@ -1162,13 +1162,8 @@ export async function runDirectWorkflow<TInput = unknown>(
             ...(options.tools === "readonly" ? { readonly: true } : {}),
             async execute(ctx) {
               return options.outputSchema
-                ? ctx.call(requestedTarget, ctx.input, {
-                    schema: options.outputSchema,
-                    ...(options.tools ? { tools: options.tools } : {}),
-                  })
-                : ctx.call(requestedTarget, ctx.input, {
-                    ...(options.tools ? { tools: options.tools } : {}),
-                  });
+                ? ctx.call(requestedTarget, ctx.input, { schema: options.outputSchema })
+                : ctx.call(requestedTarget, ctx.input);
             },
           };
         } else {
@@ -1183,16 +1178,9 @@ export async function runDirectWorkflow<TInput = unknown>(
               description: `Direct prompt invocation for ${resolved.name}`,
               ...(options.tools === "readonly" ? { readonly: true } : {}),
               async execute(ctx) {
-                const baseOpts = {
-                  ...(options.tools ? { tools: options.tools } : {}),
-                  ...(options.skill ? { skill: options.skill } : {}),
-                  ...(options.operationAllowance !== undefined
-                    ? { operationAllowance: options.operationAllowance }
-                    : {}),
-                };
                 return options.outputSchema
-                  ? ctx.call(resolved.name, ctx.input, { ...baseOpts, schema: options.outputSchema })
-                  : ctx.call(resolved.name, ctx.input, baseOpts);
+                  ? ctx.call(resolved.name, ctx.input, { schema: options.outputSchema })
+                  : ctx.call(resolved.name, ctx.input);
               },
             };
           }
@@ -1323,11 +1311,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: { signal: AbortSignal; timeoutMs: number; deadlineAt: number; stepIndex: number },
   ): Promise<WorkflowStepInvocationResult> => {
-    if (callOpts?.tools === "readonly") {
-      throw new Error(
-        `Native CLI executor "${tool}" cannot enforce tools: "readonly" because native CLI runners execute with unrestricted sandbox permissions`,
-      );
-    }
     const cliSessionId = `direct_cli_${Date.now()}_${stepControl.stepIndex}`;
     const executionRoot = resolve(options.workRoot);
     const isObjectSchema =
@@ -1428,7 +1411,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult> => {
-    const operationAllowance = validateOperationAllowance(callOpts?.operationAllowance);
+    const operationAllowance = undefined;
     const promptDef = preparedCatalog.prompts?.get(agent)?.definition;
     if (!promptDef) {
       throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
@@ -1464,7 +1447,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     const directRun = await executeAgent({
       agentName: config.name,
       agentSource: promptDef.source,
-      ...(callOpts?.skill !== undefined ? { skill: callOpts.skill } : {}),
       task: prompt,
       projectRoot: options.projectRoot,
       workRoot: options.workRoot,
@@ -1476,7 +1458,7 @@ export async function runDirectWorkflow<TInput = unknown>(
       models: options.models,
       requireFinish: true,
       outputSchema: callOpts?.schema,
-      toolPolicy: callOpts?.tools,
+      toolPolicy: options.tools,
       operationAllowance,
       toolDenials: denials,
       capabilityProviders,
@@ -1512,7 +1494,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     targetOwner: string,
     wfInput: unknown,
     stepControl: WorkflowKernelStepControl,
-    callOpts?: CallOptions<TSchema> & { schema?: TSchema },
+    _callOpts?: CallOptions<TSchema> & { schema?: TSchema },
   ): Promise<WorkflowStepInvocationResult> => {
     if (depth + 1 > maxDepth) {
       throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
@@ -1537,7 +1519,7 @@ export async function runDirectWorkflow<TInput = unknown>(
         allowance: stepControl.allowance,
         catalog: preparedCatalog,
         callerOwner: targetOwner,
-        tools: callOpts?.tools,
+        tools: options.tools,
       },
     );
     for (const session of sub.childSessions) {

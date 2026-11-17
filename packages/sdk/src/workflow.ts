@@ -311,16 +311,9 @@ export type CallOptions<S extends TSchema | undefined = undefined> = {
   schema?: S;
   /** Clamped to the enclosing invocation's remaining deadlineAt. */
   timeoutMs?: number;
-  /** Tool restriction inherited by descendants. Caller restrictions cannot be widened by callees. */
-  tools?: "full" | "readonly";
-  /** Prompt-target skill selection; rejected if passed directly to a code target. */
-  skill?: string;
-  /** Prompt-target finite positive tool-operation allowance; rejected on code targets. */
-  operationAllowance?: number;
-  /** Exact source classification persisted on prompt sessions. */
-  source?: string;
 };
 
+/** @deprecated Use `CallOptions`; every callable uses the same options contract. */
 export type AgentCallOptions = Omit<CallOptions, "schema">;
 
 /** Shared read contract. Task lists and evidence are paginated; storage stays private. */

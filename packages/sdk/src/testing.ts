@@ -330,16 +330,9 @@ export async function runTargetTest<TInput = unknown>(
             description: `Standalone SDK test invocation for ${targetName ?? ""}`,
             ...(options.tools === "readonly" ? { readonly: true } : {}),
             async execute(ctx) {
-              const callOptions = {
-                ...(options.tools ? { tools: options.tools } : {}),
-                ...(options.skill ? { skill: options.skill } : {}),
-              };
               return options.outputSchema
-                ? ctx.call(targetName ?? "", ctx.input, {
-                    ...callOptions,
-                    schema: options.outputSchema,
-                  })
-                : ctx.call(targetName ?? "", ctx.input, callOptions);
+                ? ctx.call(targetName ?? "", ctx.input, { schema: options.outputSchema })
+                : ctx.call(targetName ?? "", ctx.input);
             },
           };
   type NormalizedFixtureEntry = {
@@ -401,13 +394,13 @@ export async function runTargetTest<TInput = unknown>(
     nestedModule: WorkflowExecutableModule,
     wfInput: unknown,
     stepControl: WorkflowKernelStepControl,
-    callOpts?: CallOptions<TSchema> & { schema?: TSchema },
+    _callOpts?: CallOptions<TSchema> & { schema?: TSchema },
   ): Promise<WorkflowStepInvocationResult> => {
     const sub = await runWorkflowInvocation(
       nestedModule,
       buildBindings(wfInput, {
         ...stepControl,
-        tools: callOpts?.tools,
+        tools: options.tools,
       }),
     );
     if (!sub.ok) {

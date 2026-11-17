@@ -149,8 +149,20 @@ export function validateCallableInput(schema: TSchema, input: unknown): asserts 
   }
 }
 
-function validateOptions(options: CallableOptions | undefined): void {
-  if (options?.timeoutMs !== undefined && (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0)) {
+export function validateCallableOptions(options: CallableOptions | undefined): void {
+  if (options === undefined) return;
+  if (!options || typeof options !== "object" || Array.isArray(options)) {
+    throw new CallableValidationError("options", "Callable options must be an object", options);
+  }
+  const retired = Object.keys(options).filter((key) => key !== "timeoutMs" && key !== "schema");
+  if (retired.length > 0) {
+    throw new CallableValidationError(
+      "options",
+      `Unsupported callable option${retired.length === 1 ? "" : "s"}: ${retired.join(", ")}; use only timeoutMs and schema`,
+      options,
+    );
+  }
+  if (options.timeoutMs !== undefined && (!Number.isFinite(options.timeoutMs) || options.timeoutMs <= 0)) {
     throw new CallableValidationError("options", "Call timeoutMs must be a positive finite number", options.timeoutMs);
   }
 }
@@ -251,7 +263,7 @@ export class CallableCatalog {
     options: CallableOptions | undefined,
     context: CallableInvocationContext,
   ): Promise<CallableResult> {
-    validateOptions(options);
+    validateCallableOptions(options);
     const entry = this.#entries.get(name);
     if (!entry) {
       return deepFreeze({ status: "error", summary: `Callable target not found: ${name}` });

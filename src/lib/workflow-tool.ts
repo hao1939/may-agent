@@ -45,7 +45,6 @@ import {
   executionTimeout,
   findWorkflow,
   inspectWorkflowDefinition,
-  validateOperationAllowance,
   workflowExecutionResult,
   type WorkflowCatalog,
   type WorkflowExecutionEnvironment,
@@ -710,7 +709,6 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         stepOpts: (AgentCallOptions & { schema?: TSchema }) | undefined,
         stepControl: WorkflowKernelStepControl,
       ): Promise<WorkflowStepInvocationResult> => {
-        validateOperationAllowance(stepOpts?.operationAllowance);
         const steering = steeringQueue.shift();
         if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
 
@@ -735,7 +733,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         });
         const stepCallOptions = {
           parentSessionId,
-          source: stepOpts?.source ?? opts.sessionSource ?? `workflow:${workflow.name}`,
+          source: opts.sessionSource ?? `workflow:${workflow.name}`,
           workflowRunId: runId,
           projectId: effectiveProjectId,
           taskBinding: opts.taskBinding,
@@ -745,12 +743,9 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           timeout: stepControl.timeoutMs,
           signal: stepControl.signal,
           deadlineAt: stepControl.deadlineAt,
-          operationAllowance: stepOpts?.operationAllowance,
           trace: resolveTrace(),
-          skill: stepOpts?.skill,
           requireFinish: true,
           outputSchema: stepOpts?.schema,
-          toolPolicy: stepOpts?.tools,
           executionRoot: opts.executionPaths?.workspaceDir,
         };
         let taskResult = definition
@@ -812,16 +807,12 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         stepOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
         stepControl: WorkflowKernelStepControl,
       ): Promise<WorkflowStepInvocationResult> => {
-        const wfName = resolved.name;
         const steering = steeringQueue.shift();
         if (steering) throw new WorkflowInterrupted(steering, completedSteps, runId);
         if (depth + 1 > maxDepth) {
           throw new Error(`Maximum workflow nesting depth (${maxDepth}) exceeded`);
         }
         const subWorkflow = resolved.module;
-        if (stepOpts?.tools === "readonly" && !resolved.readonly) {
-          throw new Error(`Workflow "${wfName}" cannot run with tools: "readonly" unless the module declares readonly: true`);
-        }
         const nestedTask =
           typeof workflowInput === "string" ? workflowInput : JSON.stringify(workflowInput ?? null);
         onEvent?.({ type: "workflow.started", workflow: subWorkflow.name, task: nestedTask });
@@ -838,7 +829,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           undefined,
           stepControl.signal,
           stepControl.allowance,
-          stepOpts?.tools,
+          inheritedTools,
           resolved.owner,
         );
         stepControl.signal.throwIfAborted();

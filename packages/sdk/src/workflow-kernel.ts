@@ -10,7 +10,7 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
-import type { CallableDescriptor } from "./callable.js";
+import { validateCallableOptions, type CallableDescriptor } from "./callable.js";
 import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
@@ -750,36 +750,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
   const enclosingReadonly = bindings.tools === "readonly" || Boolean(module.readonly);
 
-  const normalizeEffectiveCallOptions = (
-    kind: "agent" | "workflow",
-    target: string,
-    callOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
-  ): (CallOptions<TSchema> & { schema?: TSchema }) | undefined => {
-    if (enclosingReadonly && callOptions?.tools === "full") {
-      throw new Error(
-        `Cannot widen tool policy to "full" for "${target}" inside a readonly execution scope`,
-      );
-    }
-    if (kind === "workflow") {
-      if (callOptions?.skill !== undefined) {
-        throw new Error(
-          `Call option "skill" is only supported for prompt targets, not code procedure "${target}"`,
-        );
-      }
-      if (callOptions?.operationAllowance !== undefined) {
-        throw new Error(
-          `Call option "operationAllowance" is only supported for prompt targets, not code procedure "${target}"`,
-        );
-      }
-    }
-    const effectiveTools = enclosingReadonly ? "readonly" : callOptions?.tools;
-    if (!callOptions && !effectiveTools) return undefined;
-    return {
-      ...callOptions,
-      ...(effectiveTools ? { tools: effectiveTools } : {}),
-    };
-  };
-
   const runBoundStep = async (
     kind: "agent" | "workflow",
     target: string,
@@ -803,7 +773,8 @@ export async function runWorkflowInvocation<TInput = unknown>(
     }
     scope?.signal?.throwIfAborted();
     const currentKind = () => resolvedKind?.current ?? kind;
-    const effectiveOptions = normalizeEffectiveCallOptions(kind, target, callOptions);
+    validateCallableOptions(callOptions);
+    const effectiveOptions = callOptions;
     const effectiveDeadlineAt = Math.min(allowance.deadlineAt, scope?.deadlineAt ?? allowance.deadlineAt);
     const remainingMs = effectiveDeadlineAt - Date.now();
     if (remainingMs <= 0) {
@@ -882,12 +853,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
                 async (nestedControl, nestedEffectiveOptions) => {
                   const resolved = await resolveNestedTarget(nestedControl);
                   resolvedKind.current = resolved.kind;
-                  const effective = normalizeEffectiveCallOptions(
-                    resolved.kind,
-                    nestedTarget,
-                    nestedEffectiveOptions,
-                  );
-                  return resolved.invoke(effective, nestedControl);
+                  return resolved.invoke(nestedEffectiveOptions, nestedControl);
                 },
                 { signal: nestedSignal, deadlineAt: stepDeadlineAt },
                 resolvedKind,
