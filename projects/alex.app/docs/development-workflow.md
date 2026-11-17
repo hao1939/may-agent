@@ -654,6 +654,23 @@ actual temporary Git repositories, isolated worktrees, subprocess verification,
 SDK result admission and scripted agent decisions. They test process mechanics,
 not model quality or full daemon recovery.
 
+### November 17 command-cleanup candidate
+
+The paired source candidate reexports `commandReceipt` from public
+`@may-agent/sdk/command`. Commands keep the enclosing `ctx.signal`, with no
+additional execution timer. The helper joins its owned Linux process group and
+output before returning; the kernel joins commands associated with its signal
+even when authored code omits an await. Cancellation cannot certify a candidate,
+and cleanup uncertainty remains an execution error even when authored code
+catches it. Install the matching Host/SDK before integrating this import.
+
+Safe redo uses the current workflow and Task-local reservations. The interrupted
+edit regression starts a fresh invocation, retains the edit, repeats design
+judgment and converges after two consumed rounds on the same Task. There is no
+new resume cursor, reset, refund or stage allowance. Command ownership across a
+Host crash, durable blocking on uncertain cleanup, and containment of separate
+sessions remain gaps; portable tests do not establish live activation.
+
 ### November 13 command-duration correction
 
 Apps source `0862215c6d` removes only the command helper's `120_000` ms timer;

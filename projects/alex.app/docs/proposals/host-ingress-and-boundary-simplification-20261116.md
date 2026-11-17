@@ -5,7 +5,7 @@
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource), [simple first](../1-principles/core-principles.md#simple-first), and [apps own meaning](../1-principles/core-principles.md#apps-own-meaning-the-host-owns-mechanics). Share execution and existing caller records rather than adding another lifecycle.
 
 **Design status:** Partially promoted. Established contracts now live in their owning design documents. This record owns remaining integration choices and acceptance gaps.
-**Implementation status:** Host `main` at `0b164bec75c54b75f4960a35f840b5311f69bee0` includes #576 and #577: transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The authorized local installation runs Host source `81c3720dd3` with Apps definitions last activated at `b6075771dd`; binary activation is distinct from App reload and current `main`. PR #574 reached green current-head CI and addressed Telegram readiness delivery through the native May/Alex path, with explicit diagnostic interventions and a direct-repair exception after workflow exhaustion. An unattended workflow implementation is not established. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete.
+**Implementation status:** Host `main` at `082a63977d` includes merged #574, #576 and #577: PR-delivery repairs, transactional Task-input fencing, retained caller returns, fair recovery, and parent heartbeat supervision are merged. The last verified local installation ran Host source `81c3720dd3` with Apps definitions activated at `b6075771dd`; binary activation is distinct from App reload and current `main`. PR #574 reached green current-head CI and addressed Telegram readiness delivery through the native May/Alex path, with explicit diagnostic interventions and a direct-repair exception after workflow exhaustion. An unattended workflow implementation is not established. Shared hosted execution, a domain-only development worker with automatic continuation, and single-Task Conversation ownership remain incomplete.
 
 The [source and verification record](../archive/implementation/host-ingress-sdk-source-review-20261116.md) retains exact revisions, historical measurements, repaired findings and verification limits. It replaces the original assumption that every slice was still future work.
 
@@ -196,6 +196,55 @@ is unresolved. Then time out a real development pass and verify that a fresh
 invocation can redo work on the same Task/PR, preserve consumed rounds and reach
 the Telegram notice, or escalate clearly when the fixed allowance is exhausted.
 No exact-step restoration or recovery of an unaccepted worker result is required.
+
+### Command cancellation implementation candidate — 17 November
+
+Host [PR #584](https://github.com/hao1939/may-agent/pull/584), source
+`9747fc880e36c3c766eb0686d14eb8c5fbaa20ac`, and paired Apps source
+`cd2ab50ff68711f51694c9bc5f8b566ffeed57dd` move Alex's Git/verification
+command helper to public `@may-agent/sdk/command`. It runs argv without shell interpolation in an owned
+Linux process group. On cancellation or leader exit it uses the SDK's existing
+bounded TERM/KILL drain and waits for output closure before returning a receipt.
+A cancelled command cannot supply passing verification evidence. There is no
+new command deadline or remaining-time estimate.
+
+The shared workflow kernel joins commands started with its exact `ctx.signal`,
+including a command the authored body did not await. Ownership travels on that
+signal so a compiled Host and a separately loaded SDK helper share the same
+scope. Cleanup uncertainty survives an authored catch and nested workflow
+failure; the kernel reports unconfirmed cleanup rather than a successful run.
+Alex keeps its existing Task-local three-round reservations. A fresh invocation
+repairs retained edits and repeats useful judgment; an interrupted round still
+counts and no exact step cursor is added.
+
+Portable regressions use real processes to cover cancellation, natural leader
+exit, a TERM-ignoring child, an unrelated surviving process, nested cancellation
+across separately bundled modules, and an escaped process retaining output pipes.
+The original command helper fails both command regressions; removing the kernel
+join fails the connected nested cancellation regression. Alex's retained-edit
+regression verifies successful fresh invocation with two consumed rounds on the
+same Task. These are execution-mechanics checks with scripted judgments.
+
+Validation on the paired source: 64 App workflow/evidence tests passed. The
+design/contract check passed for 27 workflows and 10 agents from a short temporary
+checkout; the prompt-budget checker includes absolute skill paths, so the same
+source exceeded its budget under the longer worktree path. No prompt budget was
+changed. Host type/boundary/lint checks and all five new process/receipt tests
+passed. The local full gate finished with 3,491 passing tests, two skips and one
+unchanged browser-test failure (`Node is detached from document` during a
+refreshing-panel click). A single targeted diagnostic run passed; that does not
+replace the failed full run. PR checks and independent review remain required.
+
+Remaining gaps are explicit: command ownership is in memory, this candidate does
+not persist a process sidecar for Host crash recovery, and group cleanup does not
+contain descendants creating new sessions. An escaped process that retains an
+output pipe produces bounded, unconfirmed cleanup; other escaping descendants
+are outside this guarantee. The hosted wrapper/Task recovery path still needs
+connected proof that uncertainty remains a durable blocker before replacement.
+#582 extends the drain to nested groups in the owned session; it does not close
+these remaining ownership gaps. The paired Host/SDK must be installed before
+integrating Alex's new import. Source verification does not establish activation
+or another live PR-to-Telegram run.
 
 ### Connect shared execution and settlement
 
@@ -410,8 +459,9 @@ exact step restoration or special allowance refunds. The next acceptance target
 is one fresh, narrow assignment that reaches the notification boundary without
 diagnostic relays or a direct-repair exception, including an interrupted pass.
 Clear owner escalation is the expected outcome if its allowance is exhausted.
-The completed #574 run supplies the baseline, not proof this refinement is
-implemented. Creator closure, restart delivery and shared-worker parity remain
+The completed #574 run supplies the live baseline. The command cancellation
+candidate above supplies portable source evidence for one boundary, not proof
+of the full recovery refinement. Creator closure, restart delivery and shared-worker parity remain
 separate obligations. Supporting #582 still needs independent review and
 separate deployment authority.
 
