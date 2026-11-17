@@ -60,6 +60,7 @@ const worker = defineApp({
       parentId: "root",
       outcome: `Measure ${input.data.source}`,
       acceptance: [`Verify ${input.data.source}`],
+      ...(input.data.constraints ? { constraints: [...input.data.constraints] } : {}),
       input: { source: input.data.source },
       executor: input.data.source === "beta" ? "secondary" : "primary",
     },
@@ -560,6 +561,13 @@ test("an effective no-op and legacy receipt do not consume a later real revision
     }),
   ).toMatchObject({ generation: 1, changed: false });
 
+  const beforeNoop = target.resourceStore.readTask("child")!;
+  const beforeAttempt = target.resourceStore.readAttempt(old.attemptId);
+  const beforeAdmissionCount = (
+    f.db.prepare("SELECT COUNT(*) AS count FROM app_task_admissions WHERE app_id = ?").get("worker") as {
+      count: number;
+    }
+  ).count;
   expect(
     reviseAppTask({
       source: f.context("creator"),
@@ -572,7 +580,15 @@ test("an effective no-op and legacy receipt do not consume a later real revision
       },
     }),
   ).toMatchObject({ generation: 1, changed: false });
-  expect(target.resourceStore.readTask("child")?.status.currentAttemptId).toBe(old.attemptId);
+  expect(target.resourceStore.readTask("child")).toEqual(beforeNoop);
+  expect(target.resourceStore.readAttempt(old.attemptId)).toEqual(beforeAttempt);
+  expect(
+    (
+      f.db.prepare("SELECT COUNT(*) AS count FROM app_task_admissions WHERE app_id = ?").get("worker") as {
+        count: number;
+      }
+    ).count,
+  ).toBe(beforeAdmissionCount);
   expect(target.resourceStore.readTrigger("child")?.events).toHaveLength(1);
 
   expect(f.revise()).toMatchObject({ generation: 2, changed: true });
