@@ -122,7 +122,7 @@ test.each(["cancel", "leader-exit", "nested-cancel"] as const)(
   12_000,
 );
 
-test("command receipts retain literal argv, nonzero status, and bounded output failures", async () => {
+test("command receipts retain literal argv and nonzero status", async () => {
   const argv = [process.execPath, "-e", "console.log(process.argv[1]); console.error('diagnostic'); process.exit(7)", "$(not-a-shell-command)"];
   const receipt = await runCommand(tmpdir(), argv, new AbortController().signal);
   expect(receipt.argv).toEqual(argv);
@@ -130,7 +130,63 @@ test("command receipts retain literal argv, nonzero status, and bounded output f
   expect(receipt.stdout.trim()).toBe("$(not-a-shell-command)");
   expect(receipt.stderr.trim()).toBe("diagnostic");
   expect(receipt.error).toBeDefined();
-  const overflow = await runCommand(tmpdir(), [process.execPath, "-e", "process.stdout.write('x'.repeat(3 * 1024 * 1024)); setInterval(() => {}, 1000)"], new AbortController().signal);
-  expect(overflow.error).toBeDefined();
-  expect(overflow.stdout.length).toBeLessThanOrEqual(2 * 1024 * 1024);
+});
+
+test("overflow stops a TERM-ignoring writer without external cancellation", async () => {
+  const root = mkdtempSync(join(tmpdir(), "sdk-command-overflow-"));
+  const guarded = join(root, "guarded");
+  const controller = new AbortController();
+  const script = `
+    process.on('SIGTERM', () => {});
+    process.stdout.on('error', () => {});
+    setTimeout(() => {
+      require('node:fs').writeFileSync(${JSON.stringify(guarded)}, 'guarded');
+      process.exit(72);
+    }, 2000);
+    process.stdout.write('x'.repeat(3 * 1024 * 1024));
+  `;
+  const execution = runCommand(root, [process.execPath, "-e", script], controller.signal);
+  try {
+    const receipt = await execution;
+    expect(existsSync(guarded)).toBe(false);
+    expect(controller.signal.aborted).toBe(false);
+    expect(receipt.error).toContain("maxBuffer");
+    expect(receipt.stdout.length).toBeLessThanOrEqual(2 * 1024 * 1024);
+  } finally {
+    controller.abort();
+    await execution.catch(() => undefined);
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("receipt argv describes the launched command despite caller mutation", async () => {
+  const argv = [process.execPath, "-e", "console.log(process.argv[1])", "original"];
+  const expected = [...argv];
+  const execution = runCommand(tmpdir(), argv, new AbortController().signal);
+  argv[3] = "mutated";
+  argv.push("never launched");
+  const receipt = await execution;
+  expect(receipt.exitCode).toBe(0);
+  expect(receipt.stdout.trim()).toBe("original");
+  expect(receipt.argv).toEqual(expected);
+});
+
+test("commands reading stdin receive EOF without cancellation", async () => {
+  const controller = new AbortController();
+  const guard = setTimeout(() => controller.abort(new Error("EOF guard elapsed")), 2_000);
+  const execution = runCommand(tmpdir(), [process.execPath, "-e", `
+    process.stdin.on('end', () => console.log('stdin EOF'));
+    process.stdin.resume();
+  `], controller.signal);
+  try {
+    const receipt = await execution;
+    expect(controller.signal.aborted).toBe(false);
+    expect(receipt.exitCode).toBe(0);
+    expect(receipt.error).toBeUndefined();
+    expect(receipt.stdout.trim()).toBe("stdin EOF");
+  } finally {
+    clearTimeout(guard);
+    controller.abort();
+    await execution.catch(() => undefined);
+  }
 });

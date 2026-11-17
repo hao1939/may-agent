@@ -22,7 +22,8 @@ export function runCommand(
   signal: AbortSignal,
 ): Promise<CommandReceipt> {
   signal.throwIfAborted();
-  if (!argv.length || !argv[0]) throw new Error("Command argv must not be empty");
+  const args = [...argv];
+  if (!args.length || !args[0]) throw new Error("Command argv must not be empty");
   const startedAt = new Date().toISOString();
   return new Promise((resolve, reject) => {
     let cleanup: Promise<boolean> | undefined;
@@ -38,15 +39,15 @@ export function runCommand(
     // Handle cancellation ourselves and wait for the existing SDK group cleanup.
     const child = execFile(
       "/usr/bin/setsid",
-      ["--", ...argv],
-      { cwd: root, maxBuffer: 2 * 1024 * 1024, encoding: "utf8" },
+      ["--", ...args],
+      { cwd: root, maxBuffer: 2 * 1024 * 1024, encoding: "utf8", killSignal: "SIGKILL" },
       (error, stdout, stderr) => {
         signal.removeEventListener("abort", beginCleanup);
         void drain().then((stopped) => {
           if (!stopped) throw new Error("Command process group did not stop");
           const cancelled = signal.aborted;
           resolve({
-            argv: [...argv],
+            argv: args,
             cwd: root,
             startedAt,
             endedAt: new Date().toISOString(),
@@ -63,6 +64,7 @@ export function runCommand(
         }).catch(reject);
       },
     );
+    child.stdin?.end();
     child.once("exit", beginCleanup);
     signal.addEventListener("abort", beginCleanup, { once: true });
     if (signal.aborted) beginCleanup();
