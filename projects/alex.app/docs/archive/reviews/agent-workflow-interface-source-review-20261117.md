@@ -1869,3 +1869,27 @@ Evidence under the trial directory: `cdc-3e1-independent-app-full.log`,
 `3e1-hosted-failures.json`, `3e1-hosted-failure-file-map.json`,
 `112-host-reservation-readback.json`, `128-host-creator-readback.json`,
 `128-host-explicit-retry-receipt.json` and `current-host-3e1-ci-receipt.json`.
+
+## Retained finish fixtures and production regression published
+
+May committed the retained interrupted fixture repair as Host
+`ad5f39daa04581f5561765c8bfccdf811e2688ab`. Root independently passes all55
+agent-execution tests and `check:ci`, then pushes the checkpoint. The tests retain
+invalid-output rejection while accepting useful blocked reports without output
+and inspecting the effective union-shaped finish schema.
+
+May then commits Host `f386446c048fb623638b1e059a92e987c3e6272e`. Its new
+production-manager regression calls the canonical tool with a provider that
+deliberately never invokes finish. The actual child makes exactly two provider
+requests, receives one corrective prompt and returns error with its real ID,
+no finish and no structured output. Root independently passes all19 lifecycle
+tests and `check:ci` before pushing. This closes the missing committed regression;
+the earlier five-case independent matrix remains additional evidence.
+
+The latest complete hosted baseline is still Host3e1's34 failures/18files.
+Full current-head Quality and the compatible local trial remain open. The same
+finite Host Task/workflow continues; Appcdc's reviewed source is retained.
+
+Evidence: `ad5-independent-owning.log`, `ad5-independent-check-ci.log`,
+`f386-independent-lifecycle.log` and `f386-independent-check-ci.log` under the
+trial directory.

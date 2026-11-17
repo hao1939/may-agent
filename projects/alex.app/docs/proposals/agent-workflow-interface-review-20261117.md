@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`3e1ff5d142` and App `cdc1f01926`. The installed runtime has not changed.
+`f386446c04` and App `cdc1f01926`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -31,11 +31,12 @@ The remaining high-value gaps are:
   rejection of retired actions. Hoste764 resolves the steering coverage review;
   all 31 workflow-tool tests and `check:ci` pass. Host3e1 also migrates lifecycle
   fixtures and requires finish in canonical model-tool prompt calls; its 26
-  owning tests and `check:ci` pass. Retain a committed real-manager missing-report
-  regression beside the successful report cases. Host3e1's completed hosted run
+  owning tests and `check:ci` pass. Hostad5 passes all 55 agent-execution tests;
+  Hostf386 commits the real-manager missing-report regression and passes all 19
+  lifecycle tests. Both exact checkpoints pass `check:ci`. Host3e1's completed hosted run
   reports 34 failures across 18 files (3,491 tests, two skips); Container passes.
   This supersedes Hoste764's 42-failure baseline. Full current-head Quality
-  remains required.
+  remains required; that baseline predates the two latest fixture checkpoints.
 - Verify and activate one exact compatible local pair, preserving legitimate
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
@@ -68,7 +69,9 @@ real-manager matrix checks five cases: absent finish fails after one corrective
 prompt; valid finish retains output/facts and actual identity; summary-only and
 outputless blocked reports succeed in their respective states; a corrective
 finish succeeds. This closes adapter parity at source level, not full CI or
-installed availability.
+installed availability. Hostf386 now commits the real-manager negative regression
+as well: exactly one corrective prompt, an error with the actual child identity,
+and no fabricated finish or output.
 
 The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#actual-gym-cli-verification-and-configured-inventory-regression)
 records exact revisions, checks and limitations. May continues implementation
@@ -350,10 +353,9 @@ retains the earlier findings and exact repair evidence.
 
 The remaining implementation order is:
 
-1. **Finish Host report admission and migration.** Require finish reports in the
-   canonical model-tool prompt adapter and prove that plain assistant text cannot
-   return `done`. Preserve valid output/facts, actual identity and bounded
-   correction. Continue from exact current-head CI artifacts, preserving real
+1. **Finish Host migration.** Preserve required finish reports, the committed
+   real-manager negative regression, valid output/facts, actual identity and
+   bounded correction. Continue from exact current-head CI artifacts, preserving real
    cancellation, steering, lineage and SIGINT child-drain assertions. The steering
    coverage review is resolved; retain its actual interruption tests. Retired
    fork/session controls, aliases and bare strings must not return to satisfy old
