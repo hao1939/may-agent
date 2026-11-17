@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import {
   attachDaemonEventSubscribers,
@@ -26,13 +26,32 @@ describe("daemon event subscribers", () => {
       return timer;
     }) as unknown as typeof globalThis.setInterval;
     const clearInterval = ((timer: unknown) => cleared.push(timer)) as typeof globalThis.clearInterval;
+    const pendingTimeouts: Array<() => void> = [];
+    const realSetTimeout = globalThis.setTimeout;
+    const timeoutSpy = spyOn(globalThis, "setTimeout").mockImplementation(((callback: TimerHandler, delay?: number, ...args: any[]) => {
+      if (delay === 0) {
+        pendingTimeouts.push(() => typeof callback === "function" && callback(...args));
+        return { unref() { return this; } } as unknown as ReturnType<typeof setTimeout>;
+      }
+      return realSetTimeout(callback, delay, ...args);
+    }) as typeof globalThis.setTimeout);
+    let runtime: ReturnType<typeof attachDaemonMetricTimers> | undefined;
+    let idle: Promise<void> | undefined;
+    const flushPendingTimeouts = async () => {
+      for (let attempts = 0; attempts < 1_000; attempts++) {
+        pendingTimeouts.shift()?.();
+        await Promise.resolve();
+        await Promise.resolve();
+        if (pendingTimeouts.length === 0) await Promise.resolve();
+      }
+    };
     try {
       attachEventPersistence({ bus, persistDir: root });
       const metrics = createMetricService({ getDb: () => getDb(root) });
       metrics.define({ id: "timer.collection", sourceQuery: "SELECT 7 AS value" });
       metrics.define({ id: "timer.evaluation", threshold: 1, alertOp: ">" });
       metrics.record("timer.evaluation", 2);
-      const runtime = attachDaemonMetricTimers({ bus, persistDir: root, setInterval, clearInterval });
+      runtime = attachDaemonMetricTimers({ bus, persistDir: root, setInterval, clearInterval });
 
       expect(METRIC_SOURCE_COLLECTION_INTERVAL_MS).toBe(300_000);
       expect(METRIC_EVALUATION_INTERVAL_MS).toBe(60_000);
@@ -40,8 +59,19 @@ describe("daemon event subscribers", () => {
       expect(scheduled.map(({ unrefCount }) => unrefCount)).toEqual([1, 1]);
       scheduled[0]!.callback();
       scheduled[1]!.callback();
-      await runtime.idle();
-      expect(metrics.get("timer.collection")?.observation?.value).toBe(7);
+      runtime.close();
+      let valueWhenIdleResolved: number | undefined;
+      idle = runtime.idle().then(() => {
+        valueWhenIdleResolved = metrics.get("timer.collection")?.observation?.value;
+      });
+      await Promise.resolve();
+      expect(cleared).toEqual(scheduled);
+      expect(valueWhenIdleResolved).toBeUndefined();
+      expect(metrics.get("timer.collection")?.observation).toBeNull();
+
+      await flushPendingTimeouts();
+      await idle;
+      expect(valueWhenIdleResolved).toBe(7);
       expect(getDb(root).prepare("SELECT COUNT(*) AS n FROM metric_alerts WHERE metric_id = ?").get("timer.evaluation"))
         .toEqual({ n: 1 });
       expect(getDb(root).prepare(
@@ -49,6 +79,10 @@ describe("daemon event subscribers", () => {
       ).get()).toEqual({ n: 0 });
 
     } finally {
+      runtime?.close();
+      await flushPendingTimeouts();
+      await idle;
+      timeoutSpy.mockRestore();
       closeDb(root);
       rmSync(root, { recursive: true, force: true });
     }
