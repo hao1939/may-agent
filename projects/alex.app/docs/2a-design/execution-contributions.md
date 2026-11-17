@@ -174,6 +174,21 @@ envelope supplies the assigned contribution. A target may explicitly require
 Task context, but context presence must not silently change its declared input
 schema or substitute the parent's domain input for a supplied assignment.
 
+A procedure that delegates must carry the current invocation assignment to its
+helpers alongside the Task's durable requirements. The assignment may clarify
+or narrow the contribution within Task scope; it cannot expand that authority.
+Reusing earlier work must still answer the current assignment. If only `prompt`
+changes, an earlier approval cannot silently stand in for fresh agent judgment,
+even when the Task, candidate and pending events are unchanged. Use the existing
+input-change/review path, retaining valid evidence and consumed allowance;
+identical assignments may reuse their retained result. This requires neither
+another Task lifecycle nor a Host judgment of domain sufficiency.
+
+**Migration gap:** the current App development workflow drops this invocation
+prompt from helper assignments and its replay key. The
+[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
+tracks the consumer repair and regression.
+
 ### Discovery and callable names
 
 Use one catalog and one address rule for agents and workflows:

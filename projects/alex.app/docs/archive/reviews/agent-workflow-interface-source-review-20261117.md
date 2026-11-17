@@ -1580,3 +1580,58 @@ Evidence under the trial directory: `920-63f-independent-gym-check.log`,
 `63f-hosted-failures.json`, `63f-hosted-failure-file-map.json`,
 `63f-hosted-quality.log`, `current-63f-ci-total-receipt.json` and
 `native-steering-review-observation.json`.
+
+## Current assignment and published CLI repairs
+
+Root independently reviewed and published native Host
+`6b50f08842fe7447af133b1f37765b7f6c085060` to draft #589 and App
+`63ec3f10d218a28a6ae3698da547b605e607fa73` to the retained App backup branch.
+Host migrates nested workflow names, envelopes and missing-target handling;
+all fourteen owning tests and `check:ci` pass. App supplies Gym's canonical
+diagnosis target and replaces its implicit CLI pseudo-target with the existing
+`runCliAgent` capability. All nine adapter tests, App typechecking and full
+design checks pass. These exact new snapshots use source-default App selection;
+they do not inherit the earlier isolated installation configuration/evidence.
+An actual `gym diagnose` invocation now reaches the workflow's missing-baseline
+manifest error instead of failing empty-target resolution. A separate probe runs
+both native backend adapters through the real SDK primitive and real child
+processes, supplying deterministic local Codex/Claude protocol executables.
+Both return their native session, parsed Task result, durable raw receipts and
+confirmed cleanup. This covers the adapter/protocol boundary without an injected
+`runCli` stub; it does not exercise external models.
+The last complete hosted baseline remains Host63f's 84 failures; the newer
+native broad run is red and its truncated single-shard count is not a full total.
+
+A production `develop-change.execute()` probe at App920 exposes a different
+consumer gap. With the same Task, generation, candidate, verification and empty
+Task events, the first invocation makes three helper calls. Changing only the
+mandatory invocation prompt makes zero additional calls and returns the earlier
+converged result. Neither assignment reaches any helper. The procedure reads
+Task requirements but drops the current invocation prompt; its retained approval
+key covers events alone. This is diagnostic evidence, not a shipped regression.
+
+The owning contribution contract now clarifies that helpers receive the current
+assignment alongside durable Task requirements, and a changed assignment needs
+fresh judgment through the existing input-change path. Task scope remains
+authoritative; no new lifecycle or Host domain judgment is introduced. May
+received the minimal repair and two-invocation regression requirement in
+event6740829. Identical assignments should retain quiet replay, valid evidence
+and all actual consumed allowance.
+
+Both native development batches reached their finite limits: Host96/96 and
+Apps48/48. May's creator chose stop-and-disposition, preserving unfinished
+candidates. Under the user's continuing unified-interface implementation and
+prompt-publication instruction, Root requested another bounded creator decision
+on the same Tasks (112 Host and64 App total), preserving all usage, bindings and
+evidence. Event6740990 records delivery of that request, not saved revision or
+new implementation. No unified candidate is activated or ready for notification.
+
+Evidence under the trial directory: `6b-63ec-independent-host-owning.log`,
+`6b-63ec-independent-host-check-ci.log`,
+`6b-63ec-independent-app-owning.log`, `6b-63ec-independent-app-checks.log`,
+`920-current-assignment-observation.json`,
+`920-current-assignment-observation.test.ts`,
+`current-assignment-review-receipt.json` and
+`current-finite-continuation-receipt.json`, plus
+`63ec-gym-diagnose-real-cli.log`, `63ec-native-protocol-probe.ts`,
+`63ec-native-protocol-observation.json` and `63ec-assignment-root-docs-check.log`.

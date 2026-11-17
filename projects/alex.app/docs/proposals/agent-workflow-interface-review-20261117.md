@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`63fda1a435` and App `92003fbb90`. The installed runtime has not changed.
+`6b50f08842` and App `63ec3f10d2`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -24,15 +24,24 @@ configured runtime location needs validation.
 
 The remaining high-value gaps are:
 
-- Finish two real Gym CLI callers. `diagnose` still omits its canonical target;
-  the native backend adapter still passes a bare backend name and string input
-  to public `run`. Both production probes fail before execution. App 920 fixes
-  the twelve private-package type errors; its complete private check passes
+- Preserve the current invocation assignment in the development workflow.
+  Its helper prompts omit `ctx.input.prompt`, and changing only that prompt
+  silently reuses an earlier approval with no fresh judgment. Forward the
+  assignment beside authoritative Task requirements and include it in the
+  existing input-change path. Add a two-invocation regression with empty Task
+  events, preserving valid receipts and all consumed allowance; identical
+  assignments must still replay quietly.
+- Finish configured-target verification after the Gym CLI repairs in App63ec.
+  Diagnosis now reaches baseline validation through its canonical target; both
+  backend adapters pass through real SDK child processes with deterministic
+  local protocol fixtures. Nine adapter tests, App typechecking and design
+  checks also pass independently. The earlier complete private check at App920 passes
   403 tests and 1,488 benchmark-review checks with two existing installation
-  evidence files supplied as explicit read-only prerequisites. Those checks
-  do not exercise the two failing entrypoints.
+  evidence files supplied as explicit read-only prerequisites; this does not
+  prove external model behavior or a portable clean checkout.
 - Complete meaningful Host/CLI fixture migration, preserving real cancellation,
-  steering and SIGINT child-drain assertions. Current Host 63f's completed hosted
+  steering and SIGINT child-drain assertions. Host 6b migrates nested workflow
+  fixtures; all 14 owning tests and `check:ci` pass. Host 63f's completed hosted
   run reports 84 failures across 25 files; Container passes. The earlier
   107-failure baseline is superseded. Full current-head Quality remains required.
 - Finish the configured-target body/caller/guidance disposition. Discovery
@@ -43,9 +52,11 @@ The remaining high-value gaps are:
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
 
-The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#remaining-cli-callers-and-current-host-ci)
+The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#current-assignment-and-published-cli-repairs)
 records exact revisions, checks and limitations. May continues implementation
-through the retained native Tasks/workflows; no unified candidate is activated.
+through the retained native Tasks/workflows. Their last finite batches exhausted
+96 Host and 48 App rounds; a bounded continuation is requested from their existing
+creator, preserving all usage and identities. No unified candidate is activated.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
