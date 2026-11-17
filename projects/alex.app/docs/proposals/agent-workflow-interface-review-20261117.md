@@ -291,6 +291,9 @@ spending the remaining rounds on standalone fixtures alone:
    the real loader/manager. Selecting a canonical root cannot silently narrow
    its child catalog: standalone `ctx.list()` must expose the same configured
    descriptors, and an `alpha/*` workflow can call a registered `beta/*` target.
+   Keep prepared target definitions separate from each call's runtime bindings:
+   when a parent lists and a child calls through their shared snapshot, the
+   grandchild's actual parent is the child, with that call's scope and trace.
 2. Reduce the model tool to list/call with mandatory structured input and common
    options. Remove the procedure-only/deny branches and corresponding loader and
    configuration fields. Internal runtime cancellation and diagnostics remain

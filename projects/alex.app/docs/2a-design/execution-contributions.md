@@ -192,6 +192,10 @@ or resolve a missing entry through another registry. A stalled selected module
 can fail bounded preparation even when that module would not have been called.
 Selecting a canonical root target does not narrow its children to that App;
 the tree keeps the originally configured catalog and cross-namespace callability.
+The snapshot fixes target names, schemas and loaded implementations, not the
+caller. Bind each call to its actual current parent, Task context, cancellation
+scope and trace. Reusing the snapshot cannot execute a child call as the first
+caller that prepared it.
 Reload can supply a new snapshot to a later invocation. This keeps completeness,
 duplicate rejection and cancellation understandable without another loader mode.
 
