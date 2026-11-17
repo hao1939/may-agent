@@ -1689,3 +1689,49 @@ Evidence under the trial directory: `3fb-independent-owning.log`,
 `current-6b-ci-receipt.json`, `27a-3fb-independent-owning.log`,
 `27a-3fb-independent-design.log`, `27a-current-assignment-observation.test.ts`,
 `27a-current-assignment-observation.json` and `current-27a-verified-receipt.json`.
+
+## Actual Gym CLI verification and configured inventory regression
+
+Root reviewed and published App `38de5ef5327aefc31b8224d3767fd024ab39f078`.
+It binds native execution to the isolated Gym root while preserving the shared
+SDK path checks. Independent actual CLI commands for both Codex and Claude now
+pass controlled local cases: each creates its real external `/tmp/gym-run-*`
+workspace, spawns the deterministic local protocol executable through the SDK,
+and retains the parsed Task result, native session, raw receipts and confirmed
+cleanup. These probes exercise the production CLI caller and scorer, not an
+injected adapter. They do not invoke external models or establish domain quality.
+
+The complete private Gym check at exact App38d/Host3fb passes **405 Bun tests
+across29files**, subsequent Node tests, case/scenario validation and **1,488/1,488**
+benchmark-review checks. The two genuine prior installation evidence files were
+copied read-only with their recorded hashes unchanged. This closes the actual
+CLI workspace source defect; it is configured verification rather than a
+portable-clean-checkout claim.
+
+Root also reviewed/published Host `d8ca9ce75c7537fe7e6a9e03b738fef77b7e7cb2`:
+all23 tool/cancellation tests and `check:ci` pass. The model adapter now explicitly
+rejects retired actions before dispatch; fixtures use canonical envelopes and
+retain actual caller lineage. The latest completed hosted baseline is Host3fb,
+run44183963165: **3,503 tests,59failures across21files,two skips**. Container
+passes. The recurring registry-loader failure is retained, rather than treating
+its one passing Host6b run as proof of repair.
+
+New local App `b6e08e0af3a9e3b369b3dd68cd14c64da5500e85` adds an exact
+33-target discovery/envelope test. Independent source-default audit passes4/4.
+Supplying only the existing installation's two App-disable markers then produces
+3passes/1failure: the catalog correctly omits `sample/sample-reviewer`, while the
+test still expects it. This is a new test source defect beside the older missing
+installation-setup failure. Supplying markers alone cannot make both checks pass.
+May received the exact reproduction in event6741095, with a request to isolate
+the all-source fixture from installation selection and preserve disabled-target
+omission. Discovery and negative schema tests still do not establish all target
+bodies, callers, guidance or external effects.
+
+Evidence under the trial directory: `38d-real-gym-cli-observation.json`,
+`38d-real-gym-cli-codex.log`, `38d-real-gym-cli-claude.log`,
+`38d-gym-existing-plan-evidence.json`, `38d-3fb-independent-gym-check.log`,
+`d8-independent-owning.log`, `d8-independent-check-ci.log`,
+`3fb-hosted-failures.json`, `3fb-hosted-failure-file-map.json`,
+`3fb-hosted-quality.log`, `b6e-d8-source-default-audit.log`,
+`b6e-d8-configured-audit.log`, `b6e-d8-configured-audit-observation.json`,
+`b6e-installed-config.json` and `current-app-inventory-config-review-receipt.json`.

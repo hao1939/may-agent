@@ -4,7 +4,7 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through Host
-`3fb1f3ef6d` and App `27acebb375`. The installed runtime has not changed.
+`d8ca9ce75c` and App `38de5ef532`. The installed runtime has not changed.
 
 Independent production probes establish all four call directions, canonical
 names, common admission/results, immutable prompt/config snapshots, bounded
@@ -24,28 +24,20 @@ configured runtime location needs validation.
 
 The remaining high-value gaps are:
 
-- Finish the native Gym caller's workspace binding after the App63ec repairs.
-  Diagnosis now reaches baseline validation through its canonical target; both
-  backend adapters pass through real SDK child processes with deterministic
-  local protocol fixtures. Nine adapter tests, App typechecking and design
-  checks also pass independently. However, the actual CLI creates its workspace
-  under `/tmp`; passing the repository as the capability root rejects that
-  directory before spawn. Bind execution to the existing isolated Gym workspace
-  and regress this actual caller layout. Do not weaken the shared path check.
-  The earlier complete private check at App920 passes
-  403 tests and 1,488 benchmark-review checks with two existing installation
-  evidence files supplied as explicit read-only prerequisites; this does not
-  prove external model behavior or a portable clean checkout.
 - Complete meaningful Host/CLI fixture migration, preserving real cancellation,
   steering and SIGINT child-drain assertions. Host3fb additionally migrates
   dispatch/result-handoff fixtures; all 17 owning tests and `check:ci` pass.
-  Host6b's completed hosted run reports 70 failures across 22 files; Container
-  passes. The earlier 84-failure baseline is superseded. Full current-head
-  Quality remains required.
+  Hostd8 also passes 23 tool/cancellation tests and `check:ci`, including explicit
+  rejection of retired actions. Host3fb's completed hosted run reports 59 failures
+  across 21 files; Container passes. The earlier 70-failure baseline is superseded.
+  Full current-head Quality remains required.
 - Finish the configured-target body/caller/guidance disposition. Discovery
   enumerates all 33 targets in the source snapshot; enumeration alone does not
   establish execution or live effects. Installation configuration selects its
-  enabled Apps independently of source availability.
+  enabled Apps independently of source availability. May's new local inventory
+  test passes in source-default configuration but incorrectly requires the
+  disabled sample target in the installed selection; correct its fixture/config
+  boundary while retaining the discovery rule.
 - Verify and activate one exact compatible local pair, preserving legitimate
   operator changes, then prove native coding/PR/CI/comment follow-up and Telegram
   GitHub review-link delivery. Approval happens on GitHub.
@@ -56,7 +48,13 @@ probe changes only the prompt with empty Task events: fresh judges receive the
 assignment, existing verification/evidence survives, and identical replay spends
 no additional round. This closes that source gap, without activating the pair.
 
-The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#invocation-assignment-repair-and-current-source-checkpoints)
+App38d closes the native Gym workspace gap. Both actual CLI backend paths pass
+controlled local protocol cases in their external `/tmp` workspaces. The complete
+private Gym check passes 405 tests and all 1,488 review checks with two genuine
+installation evidence files supplied read-only. This is configured verification;
+external model behavior and portable clean-checkout setup remain separate limits.
+
+The [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#actual-gym-cli-verification-and-configured-inventory-regression)
 records exact revisions, checks and limitations. May continues implementation
 through the retained native Tasks/workflows. Their creator saved finite cumulative
 limits of 112 Host and 64 App rounds at generations25/11, preserving all prior
@@ -336,9 +334,9 @@ The remaining implementation order is:
 
 1. **Finish App consumers.** Preserve the verified invocation-assignment forwarding
    and fresh judgment with retained receipts, usage and identical replay.
-   Correct the native Gym adapter's external temporary
-   workspace binding through the existing capability and regress the real caller
-   topology. Complete the 33-target body/caller/guidance disposition: discovery
+   Preserve the verified native Gym temporary-workspace binding and actual CLI
+   protocol coverage. Complete the 33-target body/caller/guidance disposition and
+   correct the inventory test's installation-configuration boundary: discovery
    enumeration and private helper tests cannot establish registered entrypoints.
 2. **Finish Host fixture and source migration.** Work from the exact current-head
    CI artifacts, preserving real cancellation, steering, lineage and SIGINT
