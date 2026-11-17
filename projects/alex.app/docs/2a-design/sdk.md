@@ -549,6 +549,14 @@ the explicit Host-bound `AppWorkflowContext`; they are not root worker fields:
 | Read this App's Tasks                          | `tasks` list/get             | `ctx.read.tasks.list/get`  |
 | Finish this bounded execution                  | finish/result                | `ctx.done` / `ctx.blocked` |
 
+A caller granted only its own local procedures still uses `agents`. Scope its
+advertised actions and discovered targets to that grant, and enforce the same
+scope during invocation. Local procedure access does not imply prompt-agent
+delegation, foreign-owner procedures or helper/session control. Preserve the
+common tool's serialization, cancellation and result behavior for the granted
+calls; a separate model-facing `workflow` or `workflows` tool is not the scope
+boundary.
+
 Background forks, session steering, cancellation, process control and human
 delivery require explicitly supplied tools/backends; they are not generic
 workflow SDK methods. The same provided tool must honor the same contract in

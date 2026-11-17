@@ -287,6 +287,29 @@ with its original checksum. Preserve cumulative rounds and failed verification
 receipts on later same-Task input. This is the highest-value demonstrated gap;
 it precedes wider runtime parity and Conversation ownership changes.
 
+### Keep one model-facing invocation tool
+
+Review of [#585](https://github.com/hao1939/may-agent/pull/585) at `085d619f12`
+confirmed a design mismatch: its restricted constructor shares implementation
+with `agents`, but publishes a second `workflows` name and parameter schema.
+The [SDK tool contract](../2a-design/sdk.md#agent-tools-and-sdk) uses `agents.call`
+for both prompt agents and code procedures. Keep that surface and scope its
+actions/catalog to granted capabilities. Preserve the legitimate local-owner
+restriction without granting broad delegation or statically binding a standing
+Task to its procedure. Production loader/Task tests must prove actual scoped
+invocation, denial of ungranted operations, and common serialization/context.
+
+The new human correction was admitted by event 6733764 and returned through the
+existing May coordinator. The existing Alex Task is generation 4 with three
+consumed rounds; its prior checksummed evidence was retained. The native owner
+confirmed that the fixed allowance cannot express an additional bounded workflow
+repair. No source was changed, rounds reset, replacement Task created or direct
+implementation exception exercised. The original request remains pending on an
+explicit human allowance disposition; old-head green CI does not establish
+readiness for the rejected design. An owner-set total allowance preserving prior
+usage is a proposed remedy, awaiting the user's decision, not an implemented or
+approved policy. Both existing review discussions still need actual resolution.
+
 ### Connect shared execution and settlement
 
 Have Host agent/procedure adapters invoke `run(target, input, options)` with the
