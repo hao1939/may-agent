@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { publicTaskFixture } from "./public-task-read.test-support.ts";
 import { createServer, type Socket } from "node:net";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -75,7 +76,7 @@ function fixture(
     return {
       type: "ok",
       command: "task.get",
-      task: { ...appView, ...detailView },
+      task: publicTaskFixture(appView, detailView),
     };
   };
 }
@@ -309,7 +310,7 @@ describe("public Task evidence", () => {
     });
   });
 
-  test("combines real public envelopes without losing creator or original input", async () => {
+  test("reads unified public detail without losing creator or original input", async () => {
     const subject = await readSubjectTask(
       { appId: "sample", taskId: "goal/one" },
       fixture(),
@@ -320,7 +321,7 @@ describe("public Task evidence", () => {
       taskId: "goal/one",
       task: {
         appTask: {
-          id: "goal/one",
+          taskId: "goal/one",
           creator: { appId: "sample" },
           input: {
             data: { constraints: ["Preserve the original request"] },
@@ -389,7 +390,7 @@ describe("public Task evidence", () => {
     const second = await readSubjectTask(subject, fixture(appTask, refreshed));
     expect(first.disposition).toBe("eligible");
     expect(second.evidenceHash).toBe(first.evidenceHash);
-    expect(second.task?.detail).toEqual({ ...appTask, ...refreshed });
+    expect(second.task?.detail).toEqual(publicTaskFixture(appTask, refreshed));
   });
 
   for (const key of ["ref", "progress", "updatedAt", "resourceVersion"]) {
@@ -511,7 +512,7 @@ describe("public Task evidence", () => {
         disposition: "insufficient-evidence",
         reason: expect.stringContaining("Evaluation worker execution"),
         task: {
-          appTask: { agent: worker, creator: { appId: "external-owner" } },
+          appTask: { diagnostics: { owner: worker }, creator: { appId: "external-owner" } },
         },
       });
       expect(delegated.evidenceHash).toBeUndefined();
@@ -583,7 +584,10 @@ describe("public Task evidence", () => {
       disposition: "eligible",
       appId: "scout",
       taskId: "explore-github",
-      task: { appTask: view, detail },
+      task: {
+        appTask: publicTaskFixture(view, detail),
+        detail: publicTaskFixture(view, detail),
+      },
     });
     expect(subject.task!.appTask).not.toHaveProperty("creator");
     expect(subject.task!.readBack).toMatchObject({

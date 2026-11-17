@@ -80,29 +80,13 @@ test("recovered work reaches population review, preserves its cut through admiss
             : [{ ...example, status: "idle", updatedAt: end }],
         },
       };
-    if (cmd.type === "app.task.get")
-      return {
-        command: cmd.type,
-        appId: "sample",
-        taskId: "chat",
-        task: {
-          id: "chat",
-          generation: 1,
-          status: "done",
-          outcome: "Answer input",
-          creator: { appId: "sample" },
-          facts: ["Latest input recovered"],
-        },
-      };
     if (cmd.type === "task.get")
       return {
         command: cmd.type,
         task: {
-          appId: "sample",
-          taskId: "chat",
-          generation: 1,
-          status: "idle",
-          history: [],
+          appId: "sample", taskId: "chat", generation: 1,
+          creator: { appId: "sample" }, status: "idle", history: [],
+          summary: "Recovered conversation", facts: ["Latest input recovered"],
           acceptedEvidence: { page: { items: [] } },
         },
       };

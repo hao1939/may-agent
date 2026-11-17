@@ -1,3 +1,4 @@
+import { publicTaskFixture } from "./lib/public-task-read.test-support.ts";
 import { describe, expect, test } from "bun:test";
 import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
@@ -233,31 +234,13 @@ function catalogCommand(
     const listed = (tasks[appId] ?? []).find(
       (item) => item.taskId === exactTaskId,
     );
-    if (request.type === "app.task.get")
-      return {
-        type: "ok",
-        command: "app.task.get",
-        appId,
-        taskId: exactTaskId,
-        task: {
-          id: exactTaskId,
-          generation: 1,
-          creator: { appId },
-          agent: listed?.agent ?? "worker",
-          outcome: `Review ${exactTaskId}`,
-          result: { status: listed?.status },
-        },
-      };
     if (request.type === "task.get")
       return {
-        type: "ok",
-        command: "task.get",
-        task: {
-          ...listed,
-          appId,
-          taskId: exactTaskId,
-          generation: 1,
-        },
+        type: "ok", command: "task.get",
+        task: publicTaskFixture({
+          generation: 1, creator: { appId }, agent: listed?.agent ?? "worker",
+          outcome: `Review ${exactTaskId}`, result: { status: listed?.status },
+        }, { ...listed, appId, taskId: exactTaskId, generation: 1 }),
       };
     throw new Error("unexpected");
   };
@@ -768,13 +751,13 @@ describe("automatic task outcome selector", () => {
           ],
         };
       const response = await base(request);
-      if (request.type !== "app.task.get" || request.appId !== "delegated")
+      if (request.type !== "task.get" || request.appId !== "delegated")
         return response;
       return {
         ...response,
         task: {
           ...(response.task as Record<string, unknown>),
-          creator: { source: { appId: "Evaluation.app" } },
+          creator: { appId: "evaluation" },
         },
       };
     };
@@ -1337,7 +1320,7 @@ describe("automatic task outcome selector", () => {
     const command: PublicCommand = async (request) => {
       if (
         !readable &&
-        (request.type === "app.task.get" || request.type === "task.get")
+        request.type === "task.get"
       )
         throw new Error("temporary subject read failure");
       return base(request);
@@ -1711,44 +1694,27 @@ describe("automatic task outcome selector", () => {
     const listed = task("may", "goal/subject");
     const base = catalogCommand({ may: [listed] });
     const command: PublicCommand = async (request) => {
-      if (request.type === "app.task.get" && request.taskId === "goal/subject")
+      if (request.type === "task.get" && request.taskId === "goal/subject")
         return {
           type: "ok",
-          command: "app.task.get",
+          command: "task.get",
           appId: "may",
           taskId: request.taskId,
           task: {
-            id: request.taskId,
+            appId: "may", taskId: request.taskId,
             generation: 1,
             creator: { appId: "may" },
-            agent: "worker",
             outcome: "Review linked evidence",
-            dependsOn: [linkedTaskId],
-          },
-        };
-      if (request.type === "app.task.get" && request.taskId === linkedTaskId)
-        return {
-          type: "ok",
-          command: "app.task.get",
-          appId: "may",
-          taskId: request.taskId,
-          task: {
-            id: request.taskId,
-            generation: 1,
-            creator: { appId: "may" },
-            result: { padding },
+            diagnostics: { owner: "worker", dependencies: [{ id: linkedTaskId, status: "idle" }] },
           },
         };
       if (request.type === "task.get" && request.taskId === linkedTaskId)
         return {
-          type: "ok",
-          command: "task.get",
+          type: "ok", command: "task.get",
           task: {
-            appId: "may",
-            taskId: request.taskId,
-            generation: 1,
-            outcome: "Large linked evidence",
-            facts: [padding],
+            appId: "may", taskId: request.taskId, generation: 1,
+            creator: { appId: "may" }, outcome: "Large linked evidence",
+            result: { padding }, facts: [padding],
           },
         };
       return base(request);
@@ -1804,9 +1770,11 @@ describe("automatic task outcome selector", () => {
     const base = catalogCommand({ may: [task("may", "goal/subject")] });
     const command: PublicCommand = async (request) => {
       const response = await base(request);
-      if (request.type === "app.task.get" && request.taskId === "goal/subject") {
+      if (request.type === "task.get" && request.taskId === "goal/subject") {
         response.task = {
-          ...(response.task as Record<string, unknown>), dependsOn,
+          ...(response.task as Record<string, unknown>),
+          diagnostics: { ...((response.task as any).diagnostics ?? {}),
+            dependencies: dependsOn.map((id) => ({ id, status: "idle" })) },
           input: { kind: "message", data: { context: { publishedFact: {
             claim: "Review the pinned finding",
             emission: { appId: "may", taskId: "producer", generation: 1, localKey: "finding" },
@@ -1815,9 +1783,9 @@ describe("automatic task outcome selector", () => {
         };
       }
       if (request.taskId === "producer") {
-        if (request.type === "app.task.get")
+        if (request.type === "task.get")
           return { type: "ok", command: request.type, appId: "may", taskId: "producer",
-            task: { id: "producer", generation: 1, result: { fact: producerFact } } };
+            task: { appId: "may", taskId: "producer", generation: 1, result: { fact: producerFact } } };
         return { type: "ok", command: request.type,
           task: { appId: "may", taskId: "producer", generation: 1 } };
       }

@@ -249,14 +249,17 @@ export async function readPinnedTaskEvidence(
       } else gaps.add(`unpinned path not read: ${item.path}`);
     }
     // Exact structured cross-App helper references; no guesses from session IDs.
-    // Creator and emission provenance remain in the snapshot, but a producer's
-    // mutable Task is not itself outcome evidence. Do not mark it visited:
+    // Creator, requester and emission links remain in the snapshot, but their
+    // mutable Tasks are not themselves outcome evidence. Do not mark them visited:
     // the same identity must still be followed if a result/dependency cites it.
-    const creatorProvenance =
-      source === "subject.appTask.creator" ||
-      source.startsWith("subject.appTask.creator.");
+    const navigationProvenance = ["appTask", "detail"].some((view) =>
+      ["creator", "requestedBy"].some((field) => {
+        const path = `subject.${view}.${field}`;
+        return source === path || source.startsWith(`${path}.`);
+      }),
+    );
     if (
-      !creatorProvenance &&
+      !navigationProvenance &&
       !provenance &&
       typeof item.appId === "string" &&
       typeof item.taskId === "string"

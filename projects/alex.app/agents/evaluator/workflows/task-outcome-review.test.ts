@@ -1,3 +1,4 @@
+import { publicTaskFixture } from "./lib/public-task-read.test-support.ts";
 import { readNewJudgment, evaluationJudgmentSchema } from "./lib/evaluation-judgment.js";
 import { describe, expect, setSystemTime, test } from "bun:test";
 import { admitTaskReconcileResult } from "@may-agent/sdk/app";
@@ -162,15 +163,8 @@ function reader(
         appId,
         tasks: [{ id: taskId }],
       };
-    if (command.type === "app.task.get")
-      return {
-        type: "ok",
-        command: "app.task.get",
-        appId,
-        taskId: command.taskId,
-        task: currentAppTask(),
-      };
-    return { type: "ok", command: "task.get", task: currentDetail() };
+    if (command.type !== "task.get") throw Error(`Unexpected ${command.type}`);
+    return { type: "ok", command: "task.get", task: publicTaskFixture(currentAppTask(), currentDetail()) };
   };
 }
 
@@ -552,8 +546,6 @@ describe("Task outcome review", () => {
       reader(
         () => ({
           ...detail,
-          // Human task.get lookalikes are not authoritative scheduling fields.
-          currentObligations: { available: true, reviewAt: 1 },
           diagnostics: {
             ...detail.diagnostics,
             conditions: [
@@ -905,25 +897,14 @@ describe("Task outcome review", () => {
         return { type: "ok", command: "apps.list", apps: [{ id: appId, owner: "worker" }] };
       if (request.type === "app.tasks.list")
         return { type: "ok", command: "app.tasks.list", appId, tasks: [{ id: taskId }] };
-      if (request.type === "app.task.get") {
-        const linked = request.taskId === "linked";
-        return {
-          type: "ok",
-          command: "app.task.get",
-          appId,
-          taskId: request.taskId,
-          task: linked
-            ? { ...linkedAppTask, result: { padding: linkedPadding } }
-            : { ...appTask, dependsOn: ["linked"] },
-        };
-      }
       const linked = request.taskId === "linked";
       return {
         type: "ok",
         command: "task.get",
-        task: linked
-          ? { ...linkedDetail, facts: [linkedPadding] }
-          : detail,
+        task: publicTaskFixture(
+          linked ? { ...linkedAppTask, result: { padding: linkedPadding } } : { ...appTask, dependsOn: ["linked"] },
+          linked ? { ...linkedDetail, facts: [linkedPadding] } : detail,
+        ),
       };
     };
     const read = createTestAppRead({
@@ -986,9 +967,8 @@ describe("Task outcome review", () => {
         return {
           type: "ok", command: request.type,
           appId: request.appId, taskId: request.taskId,
-          task: request.type === "app.task.get"
-            ? { id: request.taskId, generation: 1, result: { fact: producer ? producerFact : helperFact } }
-            : { appId: request.appId, taskId: request.taskId, generation: 1 },
+          task: { appId: request.appId, taskId: request.taskId, generation: 1,
+            result: { fact: producer ? producerFact : helperFact } },
         };
       }
       return base(request);
@@ -1520,13 +1500,13 @@ describe("Task outcome review", () => {
     const base = reader();
     const command: PublicCommand = async (request) => {
       const response = await base(request);
-      if (request.type !== "app.task.get") return response;
+      if (request.type !== "task.get") return response;
       return {
         ...response,
         task: {
-          ...appTask,
+          ...(response.task as Record<string, unknown>),
           creator: { appId: "external-owner" },
-          agent: "evaluator-deepseek",
+          diagnostics: { ...((response.task as any).diagnostics ?? {}), owner: "evaluator-deepseek" },
         },
       };
     };

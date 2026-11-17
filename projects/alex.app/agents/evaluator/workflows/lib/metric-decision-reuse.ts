@@ -14,8 +14,8 @@ export const readMetricOwnerTask: MetricOwnerTaskReader = async (
   appId,
   taskId,
 ) => {
-  // app.task.get exposes complete current obligations and Condition observations;
-  // the human-facing task.get projection can omit those fields.
+  // Supported task.get detail exposes current obligations and Condition observations;
+  // keep this reader on the same public evidence projection as Task outcome review.
   const task = await createPublicTaskEvidenceProvider().getAppTask(
     appId,
     taskId,
