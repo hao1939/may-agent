@@ -215,10 +215,15 @@ function isTerminalResourceEvent(event: Record<string, unknown>): boolean {
   return eventField(event, "closed") === true;
 }
 
-function matchesTerminalResourceRoute(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
-  if (!isTerminalResourceEvent(event)) return false;
+function isResourceObservationCondition(condition: AppTaskCondition): boolean {
   const expected = condition.spec.expected;
-  if (!isRecord(expected)) return true;
+  return isRecord(expected) && typeof expected.source === "string" &&
+    expected.source.startsWith("app:") && expected.source.includes(":observer:");
+}
+
+function matchesTerminalResourceRoute(condition: AppTaskCondition, event: Record<string, unknown>): boolean {
+  if (!isTerminalResourceEvent(event) || !isResourceObservationCondition(condition)) return false;
+  const expected = condition.spec.expected as Record<string, unknown>;
   const correlation = Object.fromEntries(
     ["source", "timestamp"]
       .filter((field) => field in expected)
@@ -381,7 +386,8 @@ function applyConditionEvent(
     const predicateMatched = report
       ? matchesAppTaskCondition(condition, event, store)
       : matches(condition, event, false);
-    const terminal = !report && isTerminalResourceEvent(event) && matches(condition, event);
+    const terminal = !report && isResourceObservationCondition(condition) &&
+      isTerminalResourceEvent(event) && matches(condition, event);
     if (!predicateMatched && !terminal) continue;
     const kind = report ? reportKind(event, store) : undefined;
     const observed = { ...observation(event), ...(kind === "progress" ? { state: "progress" } : {}) };

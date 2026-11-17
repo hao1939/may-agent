@@ -5782,6 +5782,32 @@ describe("App task reconciler state", () => {
     expect(readTaskSnapshot(config).conditions?.once?.status.state).toBe("true");
   });
 
+  it("does not treat closed fields on ordinary events as terminal resource observations", () => {
+    const { config } = fixture();
+    const taskIntent = { ...intent("monitor"), id: "ordinary-event-watch" };
+    const claim = declareAndClaimTask(config, {
+      intent: taskIntent, appAgent: "app-owner", handler: "workflow:known-workflow",
+    });
+    if (claim.kind !== "claimed") throw new Error("expected claim");
+    deferAppTask(config, claim, {
+      disposition: "waiting", summary: "waiting for the ordinary event predicate",
+      conditions: [{
+        id: "ordinary", type: "sample.state", subject: "resource:sample",
+        expected: { field: "state", equals: "ready", source: "system:test" },
+      }],
+    });
+
+    expect(trackAppTaskConditionEvent(config, {
+      type: "sample.state", source: "system:test", resource: "sample", state: "failed", closed: true,
+    })).toEqual([]);
+    expect(readTaskSnapshot(config).conditions?.ordinary?.status).toMatchObject({ state: "unknown" });
+
+    expect(trackAppTaskConditionEvent(config, {
+      type: "sample.state", source: "system:test", resource: "sample", state: "ready", closed: true,
+    })).toEqual([{ conditionId: "ordinary", taskId: taskIntent.id }]);
+    expect(readTaskSnapshot(config).conditions?.ordinary?.status).toMatchObject({ state: "true" });
+  });
+
   it("rejects changing a shared Condition specification", () => {
     const { config } = fixture();
     const firstIntent = { ...intent("monitor"), id: "pipeline-a" };
