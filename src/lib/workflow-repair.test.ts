@@ -52,10 +52,10 @@ describe("explicit authored workflow repair and completion guards share bounded 
 export const name = "bounded";
 export const description = "One bounded attempt with explicit authored repair check";
 export async function execute(ctx) {
-  await ctx.call("worker", "Do the work");
-  await ctx.call("repairer", "Verify the work");
+  await ctx.call("global/worker", { prompt: "Do the work" });
+  await ctx.call("global/repairer", { prompt: "Verify the work" });
   if (${Boolean(options.extraStep)}) {
-    await ctx.call("second-repairer", "Must not run after steering or cancellation");
+    await ctx.call("global/second-repairer", { prompt: "Must not run after steering or cancellation" });
   }
   return ctx.done("Workflow finished");
 }
