@@ -538,6 +538,28 @@ describe("control socket protocol", () => {
     expect(core.emitted).toEqual([]);
   });
 
+  it("preserves bounded exact input keys through public Task reads", async () => {
+    const inputKeys = ["input:original", " input:exact "];
+    const core = createCore({ getTask: (input) => {
+      expect(input).toEqual({ ref: "8f12ac90", inputKeys });
+      return { inputEvents: inputKeys.map((key) => ({ key })) };
+    } });
+    await expect(sendSocketCommand(core.endpoint, { type: "task.get", ref: "8f12ac90", inputKeys }))
+      .resolves.toMatchObject({ type: "ok", task: { inputEvents: [{ key: "input:original" }, { key: " input:exact " }] } });
+    expect(core.emitted).toEqual([]);
+  });
+
+  it.each([null, "input:key", [""], [" "], [42], Array.from({ length: 9 }, (_, i) => `input:${i}`)].map((inputKeys) => [inputKeys] as const))(
+    "rejects malformed or oversized exact-input selections: %j", async (inputKeys) => {
+      let calls = 0;
+      const core = createCore({ getTask: () => { calls++; return {}; } });
+      await expect(sendSocketCommand(core.endpoint, { type: "task.get", ref: "8f12ac90", inputKeys }))
+        .rejects.toThrow();
+      expect(calls).toBe(0);
+      expect(core.emitted).toEqual([]);
+    },
+  );
+
   it("serves status locally without emitting a daemon event", async () => {
     const core = createCore({
       getStatus: () => [

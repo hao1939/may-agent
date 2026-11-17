@@ -134,11 +134,19 @@ export function readStoredRuntimeTaskView(
   appId: string,
   taskId: string,
   options?: TaskReadOptions,
+  defaultAgent?: string,
 ): TaskDetail | null {
   const store = AppTaskResourceStore.inspectFromDb(db, appId);
   store.db.exec("SAVEPOINT stored_task_detail_read");
   try {
     const result = readTaskDetail(store, taskId, options);
+    if (result && !result.agent && defaultAgent) {
+      const agent = readAppTaskAgent({ resourceStore: store, agent: defaultAgent }, taskId);
+      if (agent) {
+        result.agent = agent;
+        result.owner = agent;
+      }
+    }
     addRequestedInputEvents(store, taskId, result, options?.inputKeys);
     store.db.exec("RELEASE stored_task_detail_read");
     return result;

@@ -19,7 +19,8 @@ afterEach(() => {
   while (directories.length) rmSync(directories.pop()!, { recursive: true, force: true });
 });
 
-function fixture(worker = "worker", fileBacked = false) {
+function fixture(worker = "worker", fileBacked = false, assignment: "explicit" | "inherited" | "app-default" = "explicit") {
+  const appAgent = assignment === "inherited" ? "app-lead" : worker;
   const directory = fileBacked ? mkdtempSync(join(tmpdir(), "public-task-metadata-")) : undefined;
   if (directory) directories.push(directory);
   const path = directory ? join(directory, "fixture.sqlite") : ":memory:";
@@ -30,24 +31,28 @@ function fixture(worker = "worker", fileBacked = false) {
   const appId = "sample", taskId = "review/metadata";
   const store = AppTaskResourceStore.fromDb(db, appId);
   const config = appTaskTestContext({
-    appDir: "/unused", appId, agent: worker, maxConcurrent: 1, resourceStore: store,
+    appDir: "/unused", appId, agent: appAgent, maxConcurrent: 1, resourceStore: store,
     tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
   });
   const service = new HumanTaskService(db, {
     snapshot: () => ({ id: "fixture:1", generation: 1, entries: [{
       appDir: "/unused/sample.app",
-      definition: { id: appId, version: 1 as const, agent: worker, inputSchema: {} as never },
+      definition: { id: appId, version: 1 as const, agent: appAgent, inputSchema: {} as never },
     }] }),
   });
+  if (assignment === "inherited") observeAppTaskIntent(config, {
+    appAgent, intent: { id: "parent", parentId: "root", agent: worker,
+      outcome: "Own child review", acceptance: ["Preserve worker assignment"] },
+  });
   observeAppTaskIntent(config, {
-    appAgent: worker, creator: { appId: "requester", taskId: "commission" },
+    appAgent, creator: { appId: "requester", taskId: "commission" },
     intent: {
-      id: taskId, parentId: "root", outcome: "Retain exact review evidence",
-      acceptance: ["Preserve independent waits and provenance"], agent: worker,
+      id: taskId, parentId: assignment === "inherited" ? "parent" : "root", outcome: "Retain exact review evidence",
+      acceptance: ["Preserve independent waits and provenance"], ...(assignment === "explicit" ? { agent: worker } : {}),
       input: { kind: "goal", data: { context: { version: "original" } } },
     },
   });
-  const claim = claimObservedAppTask(config, { taskId, appAgent: worker, handler: "agent" });
+  const claim = claimObservedAppTask(config, { taskId, appAgent, handler: "agent" });
   if (claim.kind !== "claimed") throw Error(`Expected claim, got ${claim.kind}`);
   const read = () => service.getTask({ appId, taskId })!;
   const wait = () => {
@@ -149,4 +154,22 @@ test.each(["reviewer", "builder"])("closed and open detail retain recorded %s wo
     reason: "Fixture responsibility ended",
   }).applied).toBe(true);
   expect(f.read()).toMatchObject({ terminal: true, agent: worker });
+});
+
+
+test.each(["inherited", "app-default"] as const)("public detail resolves %s worker identity before and after closure", (assignment) => {
+  const f = fixture("specialist", false, assignment);
+  expect(f.store.readTask(f.taskId)?.spec.owner).toBeUndefined();
+  expect(readRuntimeTaskView({ taskStateConfig: f.config }, f.taskId)?.agent).toBe("specialist");
+  expect(f.read().agent).toBe("specialist");
+  f.wait();
+  const current = f.store.readTask(f.taskId)!;
+  expect(cancelAppTask(f.config, {
+    appId: f.appId, taskId: f.taskId,
+    expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
+    reason: "Fixture responsibility ended",
+  }).applied).toBe(true);
+  f.db.exec("PRAGMA query_only = ON");
+  expect(readRuntimeTaskView({ taskStateConfig: f.config }, f.taskId)?.agent).toBe("specialist");
+  expect(f.read()).toMatchObject({ terminal: true, agent: "specialist" });
 });

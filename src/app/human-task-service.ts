@@ -1349,8 +1349,15 @@ export class HumanTaskService {
     );
     if (!view) return null;
     const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
-    const canonical = readStoredRuntimeTaskView(this.db, identity.appId, identity.taskId,
-      input.inputKeys === undefined ? undefined : { inputKeys: input.inputKeys });
+    const defaultAgent = this.registry.snapshot().entries
+      .find((entry) => entry.definition.id === identity.appId)?.definition.agent;
+    const canonical = readStoredRuntimeTaskView(
+      this.db,
+      identity.appId,
+      identity.taskId,
+      input.inputKeys === undefined ? undefined : { inputKeys: input.inputKeys },
+      defaultAgent,
+    );
     const canonicalMetadata = canonical
       ? {
           input: canonical.input,

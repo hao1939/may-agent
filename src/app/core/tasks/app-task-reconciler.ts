@@ -1499,7 +1499,11 @@ export function readAppTaskIntent(config: AppTaskContext, taskId: string): AppTa
 }
 
 /** Resolve the exact Task's agent, including inheritance, before worker loading. */
-export function readAppTaskAgent(config: AppTaskContext, taskId: string, snapshot?: TaskTree): string | null {
+export function readAppTaskAgent(
+  config: Pick<AppTaskContext, "resourceStore" | "agent">,
+  taskId: string,
+  snapshot?: TaskTree,
+): string | null {
   const tree = snapshot ?? config.resourceStore.readTaskContext(
     { taskIds: [taskId] },
     { includeHistory: false, childLimit: 0 },
