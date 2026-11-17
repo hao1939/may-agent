@@ -25,16 +25,23 @@ import {
 
 export const name = "develop-change";
 export const description =
-  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires a finite development Task with concrete outcome/acceptance and its worktree; a standing improvement review must delegate one incident assignment first. Input: { verify: [executable, ...arguments] }. Requirements come from that Task, not call-site task prose. Returns evidence for Alex to judge; preserve its result.development field in every owning TaskReconcileResult, including waits; a later workflow result supersedes the current receipt after a repair. Does not merge or deploy.";
+  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires a finite development Task with concrete outcome/acceptance and its worktree; a standing improvement review must delegate one incident assignment first. Input: { prompt, data: { verify: [executable, ...arguments] } }. Requirements come from that Task, not call-site task prose. Returns evidence for Alex to judge; preserve its result.development field in every owning TaskReconcileResult, including waits; a later workflow result supersedes the current receipt after a repair. Does not merge or deploy.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
-// Private procedure options; the owning Task supplies requirements.
-export const inputSchema = Type.Object(
+// Canonical callable envelope; the owning Task supplies requirements.
+const procedureDataSchema = Type.Object(
   {
     verify: Type.Array(Type.String({ minLength: 1 }), {
       minItems: 1,
       maxItems: 32,
     }),
+  },
+  { additionalProperties: false },
+);
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1 }),
+    data: procedureDataSchema,
   },
   { additionalProperties: false },
 );
@@ -128,8 +135,8 @@ const deliverySchema = Type.Object({
   report: artifactSchema,
 });
 
-type DevelopChangeData = Static<typeof inputSchema>;
-type DevelopChangeInput = { prompt: string; data: DevelopChangeData };
+type DevelopChangeData = Static<typeof procedureDataSchema>;
+type DevelopChangeInput = Static<typeof inputSchema>;
 
 /** One bounded workflow; Runtime owns admission, persistence, wakes and recovery. */
 export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
@@ -273,8 +280,8 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           /(?:^|\/)improvement-review$/.test(context.audit.identity ?? ""))) {
       return finish("Standing improvement review is not a development assignment. Retain its incident and cumulative counts; create or reuse one finite incident Task with concrete outcome, acceptance and constraints only within the existing allowance. Call-site task prose cannot replace Task requirements. An exhausted incident requires owner disposition, not a new Task or allowance.");
     }
-    // The invocation kernel validates the procedure's one input contract.
-    const input = (ctx.input as { data?: DevelopChangeData }).data ?? (ctx.input as unknown as DevelopChangeData);
+    // The invocation kernel validates the full canonical callable envelope.
+    const input: DevelopChangeData = ctx.input.data;
     const constraints =
       (current.input as { data?: { constraints?: string[] } })?.data
         ?.constraints ?? [];
@@ -450,7 +457,8 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
             feedback: saved?.feedback?.slice(0, 2000),
           },
         )}`,
-        `Retained reports and raw execution/command receipts: ${JSON.stringify(currentReports(saved!.reports))}`,
+        `Retained reports, local verification receipts, and bounded child execution projections: ${JSON.stringify(currentReports(saved!.reports))}`,
+        "Receipt projection limitation: the frozen SDK ExecutionView exposes only child id, kind, status and summary. It does not project trusted child command/CLI receipts; do not claim those receipts are present in read.execution evidence.",
         "Read the relevant retained reports before judging. Verification receipts include actual argv, directory, exit status, stdout/stderr and candidate readback. An agent's claim alone is not verification. Do not request a new implementation merely to repeat receipts already supplied here.",
         `Current input facts (not new authority): ${JSON.stringify(rec.events.items).slice(0, 16_000)}`,
         source,
@@ -467,6 +475,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           candidate: value,
           response,
           execution,
+          receiptProjection: "ExecutionView omits trusted child command/CLI receipts; only its bounded execution projection is retained",
         },
         `# ${stage}\nExecution: ${response.id}\nStatus: ${response.status}\nCandidate: ${JSON.stringify(value)}\n\n${response.summary}\n\n${Object.entries(
           response.output ?? {},
@@ -477,7 +486,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           )
           .join(
             "\n\n",
-          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, execution }, null, 2)}`,
+          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, execution, receiptProjection: "ExecutionView omits trusted child command/CLI receipts; only its bounded execution projection is retained" }, null, 2)}`,
       );
       saved!.reports.push({ stage, executionId: response.id, ...evidence });
       ctx.signal.throwIfAborted();

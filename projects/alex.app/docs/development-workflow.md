@@ -647,7 +647,7 @@ records the connected checks and remaining proof obligations.
 May retains the same Request/Task link for follow-up and uses the existing
 creator update capability for corrections. Ordinary Alex `goal` input selects Alex,
 who chooses the method. When the team procedure fits, Alex uses the scoped
-`agents` call to `develop-change` with `input: { verify: ["node", "verify.cjs"] }`.
+`agents` call to `develop-change` with `input: { prompt: "Implement", data: { verify: ["node", "verify.cjs"] } }`.
 The separate model-facing `workflow` tool is retired. Development
 can produce a locally committed design/audit document as well as code. Its
 verification must be executable argv, not English instructions. Bob still judges

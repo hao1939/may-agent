@@ -317,6 +317,7 @@ describe("development workflow using real Git and verification", () => {
       "retired Task envelope",
       { kind: "development", data: { verify: ["node", "verify.cjs"] } },
     ],
+    ["legacy bare procedure input", { verify: ["node", "verify.cjs"] }],
     ["missing verification", {}],
     ["shell command string", { verify: "node verify.cjs" }],
     [
@@ -354,7 +355,7 @@ describe("development workflow using real Git and verification", () => {
     // bounded execution test runner deliberately supplies no Task envelope.
     const result = await execute({
       ...ctx,
-      input: { verify: ["node", "-e", "process.exit(7)"] },
+      input: { prompt: "Implement", data: { verify: ["node", "-e", "process.exit(7)"] } },
     });
     expect(result.output).toMatchObject({ state: "incomplete" });
     expect(
@@ -443,7 +444,7 @@ describe("development workflow using real Git and verification", () => {
     );
 
     const third = t.context();
-    third.input = { verify: ["node", "./verify.cjs", "1"] };
+    third.input = { prompt: "Implement", data: { verify: ["node", "./verify.cjs", "1"] } };
     const count = t.calls.length;
     const result = await t.run(third);
     expect(result.state).toBe("incomplete");
@@ -518,7 +519,7 @@ describe("development workflow using real Git and verification", () => {
     expect((await t.run()).state).toBe("incomplete");
     const calls = t.calls.length;
     const ctx = t.context();
-    ctx.input = { verify: ["node", "./verify.cjs", "1"] };
+    ctx.input = { prompt: "Implement", data: { verify: ["node", "./verify.cjs", "1"] } };
     expect((await t.run(ctx)).state).toBe("incomplete");
     expect(t.calls).toHaveLength(calls);
     expect(t.evidence().roundsUsed).toBe(3);
@@ -678,7 +679,7 @@ describe("development workflow using real Git and verification", () => {
       }
       const count = t.calls.length;
       const ctx = t.context();
-      ctx.input = { verify: ["node", "./verify.cjs", "1"] };
+      ctx.input = { prompt: "Implement", data: { verify: ["node", "./verify.cjs", "1"] } };
       expect((await t.run(ctx)).state).toBe("incomplete");
       expect(t.calls).toHaveLength(count);
       expect(t.evidence().roundsUsed).toBe(3);
@@ -952,7 +953,8 @@ describe("development workflow using real Git and verification", () => {
     const port = (server.address() as AddressInfo).port;
     const ctx = t.context(controller.signal);
     ctx.input = {
-      verify: [
+      prompt: "Implement",
+      data: { verify: [
         "node",
         "-e",
         `
@@ -964,7 +966,7 @@ describe("development workflow using real Git and verification", () => {
           socket.on("connect", () => socket.write("ready"));
           socket.on("close", () => clearTimeout(guard));
         `,
-      ],
+      ] },
     };
     try {
       await expect(t.run(ctx)).rejects.toThrow("Verification cancelled");
@@ -1094,7 +1096,7 @@ describe("development workflow using real Git and verification", () => {
     await t.run();
     const reports = t.evidence().reports.map((r: any) => r.report.path);
     const ctx = t.context();
-    ctx.input = { verify: ["node", "-e", "process.exit(1)"] };
+    ctx.input = { prompt: "Implement", data: { verify: ["node", "-e", "process.exit(1)"] } };
     const before = t.prompts.length;
     expect((await t.run(ctx)).state).toBe("incomplete");
     for (const report of reports) expect(t.prompts[before]).toContain(report);
@@ -1504,7 +1506,7 @@ describe("development workflow using real Git and verification", () => {
     roots.push(root);
     const result = await run(
       "alex/develop-change",
-      { verify: ["node", "-e", "process.exit(0)"] },
+      { prompt: "Implement", data: { verify: ["node", "-e", "process.exit(0)"] } },
       {
         cwd: root,
         projectRoot: resolve(import.meta.dirname, "../../../../.."),

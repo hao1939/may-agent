@@ -47,7 +47,7 @@ recovery; only an authorized creator may raise saved
 Follow the
 [handoff and setup recipe](../../docs/development-workflow.md#from-a-standing-review-to-a-concrete-incident).
 For finite code/document changes, call `develop-change` with
-`input: { verify: [executable, ...args] }`, including retained candidates and
+`input: { prompt: "Implement", data: { verify: [executable, ...args] } }`, including retained candidates and
 cross-repository targets in saved `data.context.developmentCheckout`. Ask the creator
 to correct missing target setup on the same Task, preserving edits, caller,
 evidence and consumed allowance. Judge the workflow's local candidate against
