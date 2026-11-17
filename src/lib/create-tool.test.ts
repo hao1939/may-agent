@@ -9,7 +9,6 @@ import { tmpdir } from "node:os";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import { upsertSession } from "./db/sessions.js";
-import { loadAllSessionMetas } from "./persistence.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 
 function registerTestAgents(manager: SubagentManager) {
@@ -252,54 +251,6 @@ describe("createAgentsTool()", () => {
       const parsed = parseResult(result);
       expect(parsed.error).toContain("not known");
       expect(parsed.cancelled).toBeUndefined();
-    });
-  });
-
-  describe("callDeny", () => {
-    it.each(["call", "fork"] as const)("blocks %s before starting a denied helper", async (action) => {
-      const caller = startCaller();
-      const before = structuredClone(loadAllSessionMetas(persistDir));
-      const tool = manager.createAgentsTool({
-        getCallerSessionId: () => caller,
-        callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
-      });
-      const result = await tool.execute("tc1", {
-        action,
-        agent: "researcher",
-        task: "find papers",
-      });
-      const parsed = parseResult(result);
-      expect(parsed.error).toContain(`Cannot ${action}`);
-      expect(parsed.error).toContain("researcher");
-      expect(parsed.error).toContain("Use workflow instead.");
-      expect(parsed.sessionId).toBeUndefined();
-      expect(manager.status().map((session) => session.sessionId)).toEqual([caller]);
-      expect(loadAllSessionMetas(persistDir)).toEqual(before);
-    });
-
-    it("allows call to non-denied agent", async () => {
-      const caller = startCaller();
-      const tool = manager.createAgentsTool({
-        getCallerSessionId: () => caller,
-        callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
-      });
-      const result = await tool.execute("tc1", {
-        action: "call",
-        agent: "writer",
-        task: "write something",
-      });
-      const parsed = parseResult(result);
-      expect(parsed.sessionId).toBeDefined();
-      expect(parsed.status).toBe("done");
-    });
-
-    it("list still works with callDeny", async () => {
-      const tool = manager.createAgentsTool({
-        callDeny: { agents: ["researcher"], hint: "Use workflow instead." },
-      });
-      const result = await tool.execute("tc1", { action: "list" });
-      const parsed = parseResult(result);
-      expect(parsed.agents).toHaveLength(2);
     });
   });
 

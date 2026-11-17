@@ -40,7 +40,7 @@ import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from 
 import { existsSync, mkdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { ownsBoundedHelper, validateSessionControl } from "../app/adapters/executors/session-control.js";
+import { ownsBoundedHelper } from "../app/adapters/executors/session-control.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
 import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
@@ -1008,11 +1008,7 @@ export class SubagentManager {
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    return createAgentsToolFn(this, {
-      ...opts,
-      validateControl: (sessionId, callerSessionId) =>
-        validateSessionControl(this, "session.cancel.requested", sessionId, { callerSessionId, remote: true }),
-    });
+    return createAgentsToolFn(this, opts);
   }
 
   // ── Path helpers ──

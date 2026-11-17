@@ -75,7 +75,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
         tools.push(
           manager.createAgentsTool({
             getCallerSessionId: () => currentAgentSessionId(config.name),
-            getCallerAgentName: () => config.name,
             runtimeCtx,
             createRead: (context) =>
               createRuntimeAppRead({
@@ -152,7 +151,6 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
     tools.push(
       manager.createAgentsTool({
         getCallerSessionId: () => currentAgentSessionId(config.name),
-        getCallerAgentName: () => config.name,
         runtimeCtx,
         createRead: (context) =>
           createRuntimeAppRead({

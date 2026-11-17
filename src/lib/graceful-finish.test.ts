@@ -240,7 +240,6 @@ test.each(["work-stop", "cancel"] as const)("nested helper calls preserve the %s
           : [
               manager.createAgentsTool({
                 getCallerSessionId: () => currentAgentSessionId(name),
-                getCallerAgentName: () => name,
               }),
             ],
     });
@@ -382,7 +381,6 @@ test("a managed Task accepts progress after helper cancellation and continues fr
     tools: [
       manager.createAgentsTool({
         getCallerSessionId: () => currentAgentSessionId("owner"),
-        getCallerAgentName: () => "owner",
       }),
     ],
   });

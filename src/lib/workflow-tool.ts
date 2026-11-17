@@ -447,7 +447,6 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         return definition ? [[name, definition] as const] : [];
       }),
     );
-    const projectId = opts.projectId ?? getCallerSessionMeta(parentSessionId).projectId ?? opts.taskBinding?.appId;
     const prompts = new Map<string, { owner: string; definition: SubagentDefinition }>();
     const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>([
       [opts.agentName ?? "workflow", catalog.workflows],
