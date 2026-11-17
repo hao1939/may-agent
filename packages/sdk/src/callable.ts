@@ -133,7 +133,7 @@ function isJsonCompatible(value: unknown, seen = new Set<object>()): boolean {
   return Object.values(value as Record<string, unknown>).every((item) => isJsonCompatible(item, seen));
 }
 
-function validateInput(schema: TSchema, input: unknown): asserts input is ExecutionInput {
+export function validateCallableInput(schema: TSchema, input: unknown): asserts input is ExecutionInput {
   if (!Check(schema, input)) {
     throw new CallableValidationError(
       "input",
@@ -256,7 +256,7 @@ export class CallableCatalog {
     if (!entry) {
       return deepFreeze({ status: "error", summary: `Callable target not found: ${name}` });
     }
-    validateInput(entry.descriptor.inputSchema, input);
+    validateCallableInput(entry.descriptor.inputSchema, input);
     context.signal.throwIfAborted();
     const timeoutMs = options?.timeoutMs === undefined
       ? context.timeoutMs

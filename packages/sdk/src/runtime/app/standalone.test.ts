@@ -2470,6 +2470,21 @@ export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
     });
     expect(result.ok).toBe(true);
     expect(result.result).toEqual({ type: "done", summary: "echoed", output: input });
+
+    for (const [target, invalidInput, expected] of [
+      [echo!.name, { data: { marker: "preserved" } }, "Invalid callable input"],
+      [echo!.name, { prompt: "   ", data: { marker: "preserved" } }, "non-whitespace"],
+      [echo!.name, "echo this", "Invalid callable input"],
+      [echo!.name, { prompt: "echo this", task: "retired alias" }, "Invalid callable input"],
+      ["owner/echo", { prompt: "echo this" }, "Callable target not found"],
+    ] as const) {
+      await expect(run(target, invalidInput, {
+        projectRoot: env.projectRoot,
+        cwd: env.projectRoot,
+        models: {},
+        timeoutMs: 1_000,
+      })).rejects.toThrow(expected);
+    }
   });
 
   test("activates skills, passes domain context, and reports explicit missing-service errors", async () => {

@@ -43,7 +43,13 @@ import { agentExecutionResult, enforceStructuredWorkflowResult, generateId } fro
 import type { ModelWithApiKey, TaskResult } from "../lib/manager-utils.js";
 import { buildWorkflowCatalog, findWorkflow } from "../lib/runtime-import.js";
 import { drainSessionBashProcessGroups } from "../lib/tools/bash.js";
-import { CallableCatalog, type CallableDefinition, type CallableDescriptor } from "../../callable.js";
+import {
+  CallableCatalog,
+  canonicalCallableName,
+  validateCallableInput,
+  type CallableDefinition,
+  type CallableDescriptor,
+} from "../../callable.js";
 import { createCodingTools } from "../lib/tools/edit.js";
 import { createFinishTool } from "../lib/tools/lifecycle.js";
 import { readFileWritePolicy, type FileWritePolicy } from "../lib/tools/path-utils.js";
@@ -1761,6 +1767,11 @@ export type RunResult = DirectWorkflowRunResult;
 
 export type TargetSummary = CallableDescriptor;
 
+const standaloneRoutes = new WeakMap<
+  readonly TargetSummary[],
+  ReadonlyMap<string, CanonicalStandaloneRoute>
+>();
+
 export const DEFAULT_STANDALONE_LIST_TIMEOUT_MS = 15_000;
 
 export async function listTargets(
@@ -1837,6 +1848,7 @@ export async function listTargets(
     }
 
     const definitions: CallableDefinition[] = [];
+    const routes = new Map<string, CanonicalStandaloneRoute>();
     const unavailable = async () => ({ status: "error" as const, summary: "Discovery descriptor is not executable" });
     for (const [scopeKey, entries] of ownersByScope) {
       listController.signal.throwIfAborted();
@@ -1851,6 +1863,12 @@ export async function listTargets(
         declaredName: config.name,
         description: config.description,
         invoke: unavailable,
+      });
+      const app = dir.projectId ? `${dir.projectId}.app` : undefined;
+      routes.set(canonicalCallableName(dir.projectId, config.name), {
+        target: config.name,
+        agentsRoot: dir.agentsRoot,
+        ...(app ? { app } : {}),
       });
       const wfDir = join(dir.dir, "workflows");
       if (existsSync(wfDir)) {
@@ -1869,10 +1887,17 @@ export async function listTargets(
             ...(wf.outputSchema ? { outputSchema: wf.outputSchema } : {}),
             invoke: unavailable,
           });
+          routes.set(canonicalCallableName(dir.projectId, wf.name), {
+            target: `${config.name}/${wf.name}`,
+            agentsRoot: dir.agentsRoot,
+            ...(app ? { app } : {}),
+          });
         }
       }
     }
-    return [...new CallableCatalog(definitions).list()];
+    const descriptors = [...new CallableCatalog(definitions).list()];
+    standaloneRoutes.set(descriptors, routes);
+    return descriptors;
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener("abort", onParentAbort);
@@ -1885,97 +1910,9 @@ type CanonicalStandaloneRoute = {
   app?: string;
 };
 
-async function resolveCanonicalStandaloneRoute(options: {
-  target: string;
-  globalAgentsRoot: string;
-  projectsRoot: string;
-  explicitAgentsRoot?: string;
-  explicitApp?: string;
-  signal?: AbortSignal;
-}): Promise<CanonicalStandaloneRoute | null> {
-  const parts = options.target.split("/");
-  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
-  const [namespace, declaredName] = parts as [string, string];
-  if (options.explicitApp) {
-    const targetScope = namespace === "global" ? "global" : `${namespace}.app`;
-    if (namespace === "global" || normalizeAppDirName(options.explicitApp) !== targetScope) {
-      throw new Error(
-        `Conflicting App scope: target "${options.target}" specifies "${targetScope}" while --app specifies "${options.explicitApp}"`,
-      );
-    }
-  }
-
-  const matches: CanonicalStandaloneRoute[] = [];
-  const scannedAgentsRoot = resolve(options.explicitAgentsRoot ?? options.globalAgentsRoot);
-  const dirs = listRuntimeAgentDirectories(
-    scannedAgentsRoot,
-    options.explicitAgentsRoot ? undefined : options.projectsRoot,
-    options.projectsRoot,
-    namespace === "global" ? undefined : [`${namespace}.app`],
-  );
-  for (const dir of dirs) {
-    options.signal?.throwIfAborted();
-    const effectiveNamespace = dir.projectId ?? (options.explicitAgentsRoot && options.explicitApp ? namespace : "global");
-    if (effectiveNamespace !== namespace) continue;
-    let config: AgentConfig | null;
-    try {
-      config = readAgentConfigFile(dir.dir);
-    } catch {
-      continue;
-    }
-    if (!config) continue;
-    const app = dir.projectId ? `${dir.projectId}.app` : undefined;
-    if (config.name === declaredName) {
-      matches.push({ target: config.name, agentsRoot: dir.agentsRoot, ...(app ? { app } : {}) });
-    }
-    const workflowDir = join(dir.dir, "workflows");
-    if (!existsSync(workflowDir)) continue;
-    const catalog = await buildWorkflowCatalog(workflowDir, options.signal);
-    const ambiguity = catalog.diagnostics.find((diagnostic) => diagnostic.includes("Ambiguous agent workflow name"));
-    if (ambiguity) throw new Error(`Callable catalog preparation failed: ${ambiguity}`);
-    if (catalog.workflows.has(declaredName)) {
-      matches.push({
-        target: `${config.name}/${declaredName}`,
-        agentsRoot: dir.agentsRoot,
-        ...(app ? { app } : {}),
-      });
-    }
-  }
-
-  if (matches.length > 1) {
-    throw new Error(`Duplicate callable canonical name: ${options.target}`);
-  }
-  return matches[0] ?? null;
-}
-
 function normalizeAppDirName(app: string): string {
   const trimmed = app.trim();
   return trimmed.endsWith(".app") ? trimmed : `${trimmed}.app`;
-}
-
-function parseTargetAndOptionalAppPrefix(rawTarget: string, explicitApp?: string): { target: string; app?: string } {
-  const trimmed = rawTarget.trim();
-  const parts = trimmed.split("/").map((p) => p.trim());
-  if (parts.length === 3 && parts[0]?.endsWith(".app") && parts[1] && parts[2]) {
-    if (explicitApp && normalizeAppDirName(explicitApp) !== parts[0]) {
-      throw new Error(
-        `Conflicting App scope: target "${rawTarget}" specifies "${parts[0]}" while --app specifies "${explicitApp}"`,
-      );
-    }
-    return { target: `${parts[1]}/${parts[2]}`, app: parts[0] };
-  }
-  if (parts.length === 2 && parts[0]?.endsWith(".app") && parts[1]) {
-    if (explicitApp && normalizeAppDirName(explicitApp) !== parts[0]) {
-      throw new Error(
-        `Conflicting App scope: target "${rawTarget}" specifies "${parts[0]}" while --app specifies "${explicitApp}"`,
-      );
-    }
-    return { target: parts[1], app: parts[0] };
-  }
-  return {
-    target: trimmed,
-    ...(explicitApp?.trim() ? { app: normalizeAppDirName(explicitApp) } : {}),
-  };
 }
 
 function discoverAgentsRootForTarget(params: {
@@ -2064,24 +2001,28 @@ export async function run<TInput = unknown>(
   const projectsRoot = resolve(options.projectsRoot ?? join(projectRoot, "projects"));
   const globalAgentsRoot = resolve(options.globalAgentsRoot ?? join(projectRoot, "agents"));
 
-  const canonicalRoute = rawTarget
-    ? await resolveCanonicalStandaloneRoute({
-        target: rawTarget.trim(),
-        globalAgentsRoot,
-        projectsRoot,
-        explicitAgentsRoot: options.agentsRoot,
-        explicitApp: options.app,
-        signal: options.signal,
-      })
-    : null;
-  const { target: normalizedTarget, app: resolvedApp } = canonicalRoute
-    ? { target: canonicalRoute.target, ...(canonicalRoute.app ? { app: canonicalRoute.app } : {}) }
-    : rawTarget
-      ? parseTargetAndOptionalAppPrefix(rawTarget, options.app)
-      : {
-          target: "",
-          ...(options.app?.trim() ? { app: normalizeAppDirName(options.app) } : {}),
-        };
+  if (!rawTarget || rawTarget !== rawTarget.trim()) {
+    throw new Error(`Callable target not found: ${rawTarget}`);
+  }
+  const descriptors = await listTargets({
+    cwd,
+    projectRoot,
+    projectsRoot,
+    globalAgentsRoot: options.agentsRoot ?? globalAgentsRoot,
+    ...(options.app ? { app: options.app } : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
+  });
+  const descriptor = descriptors.find((candidate) => candidate.name === rawTarget);
+  const canonicalRoute = standaloneRoutes.get(descriptors)?.get(rawTarget);
+  if (!descriptor || !canonicalRoute) {
+    throw new Error(`Callable target not found: ${rawTarget}`);
+  }
+  validateCallableInput(descriptor.inputSchema, input);
+
+  const { target: normalizedTarget, app: resolvedApp } = {
+    target: canonicalRoute.target,
+    ...(canonicalRoute.app ? { app: canonicalRoute.app } : {}),
+  };
 
   const agentsRoot = canonicalRoute?.agentsRoot ?? discoverAgentsRootForTarget({
     target: normalizedTarget,
