@@ -831,3 +831,41 @@ current snapshot.
 Exact receipts and logs are retained under the existing local trial directory.
 No unified Host/SDK/App pair has been activated, no native readiness Telegram
 has been proved, and late-comment follow-up remains unverified.
+
+## Exact child dispatch and common pre-start results
+
+Root pushed native Host `aac9bd6e21828e6b7ceab8bcadb7a752c7356d70` to draft
+#589 for parallel review. Independent verification on a clean source snapshot
+passes all 103 tests across standalone, workflow-kernel, model agents and
+workflow-tool suites. The production child-call probe now passes all seven
+checks: canonical invocation works, invalid aliases/case/whitespace/empty
+components reject, and every pre-start miss returns the common error without a
+child execution ID. This closes the dispatch defect that remained after the
+registration-only fix at `50050`.
+
+The same exact-source probes retain three failures: malformed supplied partial
+output passes, prompt descriptors reread live metadata within an invocation,
+and explicit-module timeout/cancellation claims confirmed cleanup while its
+controlled import remains pending. Native implementation of the output repair
+is in progress; it is not included in this published checkpoint. Trusted CLI
+receipt projection/consumers, finite cancellation settlement, the real CLI
+cancellation regression and complete current-head CI remain unfinished.
+
+Native App `d9b0e57c972f691ae9efffa8479543213a900989` adds partial bounded-cleanup
+and Scout migration. Full configured-target migration remains open: active
+Evaluator metric/Task/runtime-audit workflows and Gym comparison still read raw
+domain input at that revision. Removing per-call `tools` must also preserve
+intended read-only model-child context through existing module/definition setup,
+without restoring invocation permissions. Root prepared another independent
+frozen App/Host pair for verification; the running App workflow's provider was
+left unchanged.
+
+Receipts are `aac-independent-focused.log`,
+`standalone-call-surface-1794943786034.json`,
+`schema-report-1794943786017.json`,
+`standalone-snapshot-1794943786029.json`,
+`module-import-cleanup-1794943786521.json` and `d9-host500-binding.json` under
+the existing local trial directory. Root returned these findings through the
+existing May coordinator. Separate ingress, event and Task-system proposals
+remain with the user. No candidate activation or connected readiness proof is
+claimed.
