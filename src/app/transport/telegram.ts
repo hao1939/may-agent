@@ -977,7 +977,11 @@ export function attachTelegramBot(opts: TelegramBotOptions): TelegramBot {
     const command = cmd.split("@")[0];
     const { key: surface, chatId: chatIdStr, topicId } = session;
 
-    const taskTopicId = (_task: { appId: string; taskId: string }): string | undefined => linked?.topicId;
+    const taskTopicId = (task: { appId: string; taskId: string }): string | undefined =>
+      linked?.topicId ??
+      (session.watchedTask?.appId === task.appId && session.watchedTask.taskId === task.taskId
+        ? session.watchedTask.conversationTopicId
+        : undefined);
 
     const deliverCommandView = (
       rendered: string,

@@ -7,6 +7,7 @@ import { conversationTaskContext } from "../../../test/fixtures/conversation-tas
 import { DbWriter } from "../../lib/db-writer.js";
 import { storeNotificationMessage } from "../../lib/db/notifications.js";
 import { closeDb, getDb } from "../../lib/db/connection.js";
+import { attachCommandRouter } from "../command-router.js";
 import { EVENT_ROW_ID, EventBus } from "../core/events/bus.js";
 import { createEventInterface } from "../core/events/interface.js";
 import { createAppInboxItem, getAppInboxItem } from "../core/state/app-inbox-store.js";
@@ -431,7 +432,8 @@ describe("Telegram durable input and natural follow-up", () => {
       f.activity({ type: "conversation.message.created", target: { appId: "may" }, data: {
         conversationId: "may:primary", author: { kind: "tool", id: "runtime" }, text: "Accepted durable work: Review first",
         metadata: { command: "task-admitted", channel: "telegram", channelTargetId: "123", channelThreadId: "7",
-          taskRefs: [{ appId: "may", taskId: "first" }], followTask: { appId: "may", taskId: "first" } },
+          topicId: "topic_aaaaaaaa", taskRefs: [{ appId: "may", taskId: "first" }],
+          followTask: { appId: "may", taskId: "first" } },
       } });
       await waitFor(() => f.sends().some((c) => c.body.text.startsWith("Background work accepted")));
       const notice = f.sends().find((c) => c.body.text.startsWith("Background work accepted"))!;
@@ -444,7 +446,11 @@ describe("Telegram durable input and natural follow-up", () => {
       await waitFor(() => f.calls.some((c) => c.method === "answerCallbackQuery" && c.body.text === "Unauthorized."));
       f.send([{ update_id: 101, callback_query: callback }]);
       await waitFor(() => f.sends().some((c) => c.body.text.includes("Following updates")));
-      f.message(102, "What's the status?", { message_thread_id: 7 });
+      f.message(102, "/watch", { message_thread_id: 7 });
+      await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/watch"));
+      expect(f.published.find((e) => e.data.metadata?.command === "/watch")!.data.metadata.topicId)
+        .toBe("topic_aaaaaaaa");
+      f.message(103, "What's the status?", { message_thread_id: 7 });
       await waitFor(() => f.inputs().length === 1);
       expect(f.inputs()[0].data.context).toMatchObject({ focusedTask: { appId: "may", taskId: "first" } });
       expect(f.sends().filter((c) => c.body.text.startsWith("Background work accepted"))).toHaveLength(1);
@@ -502,6 +508,75 @@ describe("Telegram durable input and natural follow-up", () => {
       else process.env.TELEGRAM_APPROVER_ID = previous;
     }
   });
+
+  for (const { state, completed, loseAcceptance, ok } of [
+    { state: "not yet admitted", completed: false, loseAcceptance: false, ok: true },
+    { state: "accepted without completion", completed: false, loseAcceptance: false, ok: true },
+    { state: "already completed", completed: true, loseAcceptance: false, ok: true },
+    { state: "completed with lost acceptance", completed: true, loseAcceptance: true, ok: true },
+    { state: "failed with lost acceptance", completed: true, loseAcceptance: true, ok: false },
+  ]) {
+    it(`returns the exact reload result after restart (${state})`, async () => {
+      const f = durableTelegramFixture();
+      let router: ReturnType<typeof attachCommandRouter> | undefined;
+      let interruptedRoute: (() => void) | undefined;
+      const interrupted = state === "accepted without completion";
+      let reloads = 0;
+      const summary = ok ? "Fixture definitions reloaded" : "Fixture definitions rejected; previous definitions kept";
+      const attach = () => attachCommandRouter({ bus: f.bus, manager: {} as never, projectRoot: f.root,
+        reload: () => { reloads++; return { ok, summary }; },
+        restart() {}, shutdown() {},
+      });
+      try {
+        if (completed) router = attach();
+        if (interrupted) {
+          // Model the crash boundary: acceptance is durable, but the queued
+          // asynchronous reload never executes or records a completion.
+          interruptedRoute = f.bus.subscribeDurableRoute((event) => event.type === "runtime.reload.requested"
+            ? { accepted: true, by: "command-router:runtime-reload", route: "direct" } : undefined);
+        }
+        if (loseAcceptance) {
+          // Exercise the real writer's swallowed acceptance failure. This
+          // connection-local fault disappears when the fixture reopens storage.
+          f.db.exec(`CREATE TEMP TRIGGER reject_reload_acceptance
+            BEFORE UPDATE OF delivery_status ON events
+            WHEN OLD.event_type = 'runtime.reload.requested'
+            BEGIN SELECT RAISE(ABORT, 'fixture reload acceptance unavailable'); END`);
+        }
+        f.afterRecord((input) => {
+          if (input.type === "runtime.reload.requested") throw new Error("fixture lost receipt");
+        });
+        f.message(100, "/reload", { chat: { id: 456 }, message_thread_id: 7 });
+        await waitFor(() => f.published.some((e) => e.type === "runtime.reload.requested"));
+        if (completed) {
+          await waitFor(() => f.published.some((e) => e.data.metadata?.command === "/reload"));
+          expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
+            .toEqual({ count: 1 });
+        } else {
+          expect(reloads).toBe(0);
+          expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
+            .toEqual({ count: 0 });
+          interruptedRoute?.();
+          interruptedRoute = undefined;
+          router = attach();
+        }
+        expect(f.db.prepare("SELECT delivery_status FROM events WHERE event_type = 'runtime.reload.requested'").get())
+          .toEqual({ delivery_status: (completed && !loseAcceptance) || interrupted ? "accepted" : "pending" });
+        const priorSends = f.sends().length;
+        await f.restart();
+        await waitFor(() => f.polls().includes(101));
+        await waitFor(() => f.sends().slice(priorSends).some((c) => c.body.text === summary));
+        expect(reloads).toBe(1);
+        const replies = f.sends().slice(priorSends).filter((c) => c.body.text === summary);
+        expect(replies).toHaveLength(1);
+        expect(replies[0].body).toMatchObject({ chat_id: "456", message_thread_id: 7 });
+        expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.requested'").get())
+          .toEqual({ count: 1 });
+        expect(f.db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.reload.finished'").get())
+          .toEqual({ count: 1 });
+      } finally { interruptedRoute?.(); router?.close(); await f.close(); }
+    });
+  }
 
   it("maps one Telegram turn to one durable May request with exact reply identity", () => {
     expect(
