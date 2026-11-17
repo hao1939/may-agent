@@ -4,8 +4,9 @@
 The interfaces below define the requested cutover.
 **Implementation status:** Partial source implementation in draft
 [#589](https://github.com/hao1939/may-agent/pull/589), published through
-`aac9bd6e21`. Independent checks at this exact head pass 103 affected tests and
-the production exact-child-dispatch/common-error probe. Checks at preceding
+`2f6aaaf15c`. Independent checks at this exact head pass 115 affected tests and
+all eight workflow schema/report checks. The preceding `aac9bd6e21` passes the
+production exact-child-dispatch/common-error probe. Checks at preceding
 `28512c1971` pass 194 focused tests and `check:ci`. Production probes cover all four directions, the common root result, invalid root/child
 input, the enclosing discovery timeout and full-envelope Task workflow ingress.
 Complete CI remains open: a superseded head's completed shard recorded 47
@@ -13,9 +14,12 @@ failures, and current local integration/export checks still fail. Paired App
 checkpoint `a8181ba582` repairs development, diagnosis and report-reader envelopes
 and passes 40 additional focused tests; full active-App migration is unfinished.
 The same App Task continues that remaining work through its workflow; newer
-partial `d9b0e57c97` migrates bounded cleanup and Scout consumers. Supplied partial
-output validation, captured metadata, pending-import cleanup, trusted diagnostics
-and complete consumer/CI migration remain open. No unified candidate is activated. The
+partial `d9b0e57c97` migrates bounded cleanup and Scout consumers and is published
+on the retained App branch. A clean pair with Host `50050` passes 145 selected
+tests with eight failures. Prompt finish admission still incorrectly requires
+unavailable output for a blocked report; captured metadata, pending-import
+cleanup, trusted diagnostics and complete consumer/CI migration also remain open.
+No unified candidate is activated. The
 [live source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md#root-adapters-and-full-migration-boundary)
 records exact revisions, failed checks and the runtime boundary.
 
@@ -283,9 +287,10 @@ Preserve the verified model snapshot/current-caller bindings, complete standalon
 catalog and canonical loader identities. Finish the remaining boundaries in
 this order, returning source evidence after each coherent checkpoint:
 
-1. **Finish common admission/results.** Preserve the verified common pre-start
-   errors and standalone result migration; validate supplied output across every
-   status. Expose trusted
+1. **Finish common admission/results.** Preserve verified common pre-start
+   errors and all-status workflow output checks. Allow prompt agents to return a
+   blocked report without unavailable output, while validating any supplied
+   output. Expose trusted
    CLI receipts through the existing execution read/observer and migrate actual
    consumers; avoid a second result alias or an unbounded process-local run store.
 2. **Close captured-catalog gaps.** Preserve verified exact child-name admission;

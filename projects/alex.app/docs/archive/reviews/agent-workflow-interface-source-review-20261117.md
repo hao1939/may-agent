@@ -869,3 +869,38 @@ the existing local trial directory. Root returned these findings through the
 existing May coordinator. Separate ingress, event and Task-system proposals
 remain with the user. No candidate activation or connected readiness proof is
 claimed.
+
+## Workflow output repair and prompt partial-result mismatch
+
+Root published native `2f6aaaf15ca01086d4c43a159281e1246e2cb7ca` to #589.
+Independent exact-source verification passes 115 tests across five affected
+suites, and all eight workflow schema/report probe assertions now pass. Supplied
+malformed workflow output is rejected for incomplete reports as well as `done`;
+an incomplete workflow may still omit unavailable output.
+
+The corresponding real prompt-executor probe exposes a remaining mismatch:
+`createWorkflowFinishTool` always requires output when a schema is supplied.
+A valid blocked finish without unavailable output is rejected and requests
+another model reply. The workflow path accepts its equivalent. The existing
+result contract already requires both paths to agree; migrate prompt finish
+admission and add its owning regression without weakening supplied-output
+validation or correction feedback. Root returned the deterministic reproducer
+through the same May coordinator.
+
+App `d9b0e57c97` is now published as a partial checkpoint on its retained backup
+branch. Independent frozen App `d9` / Host `50050` verification has 145 passes
+and eight failures across six suites. Additional diagnostic fixtures preserve
+the source and reveal concrete failures: the retained-report loop's canonical
+`alex/read-report` call is missing from its fixture catalog, while the workload
+cases return a waiting result without an exact Condition. The Host retains
+these failed attempts as pending. Migrate real canonical fixture setup and
+preserve the original read, evidence, owner-handoff and restart assertions;
+do not weaken Task settlement to make migration tests pass. The eighth failure
+is a retired public-result wrapper expectation. All active body/schema/guidance
+migration and final compatible-pair verification remain required.
+
+Evidence is `2f-independent-focused.log`, `schema-report-1794943973481.json`,
+`partial-prompt-report-1794944046856.json`, `d9-host500-independent-apps.log`,
+`d9-host500-agent-diagnostic.log` and `d9-host500-recovery-diagnostic.log` under
+the existing local trial directory. These checks do not establish activation,
+full CI or readiness notification.
