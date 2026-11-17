@@ -136,7 +136,7 @@ export async function execute(ctx) { return ctx.done("after"); }
     writeFileSync(join(workflowDir, "parent.ts"), `
 export const name = "parent";
 export const description = "Calls a cross-owner readonly procedure";
-export async function execute(ctx) { return ctx.call("reviewer/deep", {}, { tools: "readonly" }); }
+export async function execute(ctx) { return ctx.call("sample/deep", { prompt: "Run the deep review" }); }
 `);
     writeFileSync(join(workflowDir, "local.ts"), `
 export const name = "local";
@@ -145,16 +145,16 @@ export async function execute(ctx) { throw new Error("Wrong owner's procedure");
 `);
     writeFileSync(join(reviewerDir, "workflows", "deep.ts"), `
 export const name = "deep";
-export const description = "Uses the callee lexical catalog";
+export const description = "Uses exact canonical routes from the captured catalog";
 export const readonly = true;
 export async function execute(ctx) {
-  const local = await ctx.call("local", {});
-  const prompt = await ctx.call("reviewer", "Review HEAD", { skill: "review" });
+  const local = await ctx.call("sample/reviewer-local", { prompt: "Read Task ownership" });
+  const prompt = await ctx.call("sample/reviewer", { prompt: "Review HEAD" });
   return ctx.done(prompt.summary, { local: local.summary });
 }
 `);
     writeFileSync(join(reviewerDir, "workflows", "local.ts"), `
-export const name = "local";
+export const name = "reviewer-local";
 export const description = "Reports the unchanged responsible Task agent";
 export const readonly = true;
 export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); }
@@ -166,9 +166,11 @@ export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); 
     let promptCalls = 0;
     const runner = createWorkflowRunner({
       manager: {
-        callAgentDefinition: async (definition: SubagentDefinition, _task: string, options: { toolPolicy?: string; skill?: string }) => {
+        callAgentDefinition: async (definition: SubagentDefinition, task: string, options: { toolPolicy?: string; skill?: string }) => {
           expect(definition).toBe(reviewer);
-          expect(options).toMatchObject({ toolPolicy: "readonly", skill: "review" });
+          expect(task).toBe("Review HEAD");
+          expect(options.toolPolicy).toBe("readonly");
+          expect(options.skill).toBeUndefined();
           promptCalls++;
           return { sessionId: "s_captured", status: "done", messages: [],
             finishResult: { status: "done", summary: "captured prompt" } };
@@ -184,7 +186,7 @@ export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); 
     expect(promptCalls).toBe(1);
   });
 
-  it.each([undefined, "sample"])("does not resolve another App's procedures or prompt agents from project %j", async (projectId) => {
+  it.each([undefined, "sample"])("resolves another App's exact canonical procedures and prompt agents from project %j", async (projectId) => {
     const root = workflowRoot("workflow-app-isolation-");
     const foreignDir = join(root, "foreign");
     mkdirSync(join(foreignDir, "workflows"), { recursive: true });
@@ -198,13 +200,13 @@ export async function execute(ctx) { return ctx.done("must not execute"); }
 `);
     writeFileSync(join(root, "parent.ts"), `
 export const name = "parent";
-export const description = "Attempts cross-App delegation";
-export async function execute(ctx) { return ctx.call("foreign/secret", {}); }
+export const description = "Uses exact cross-App workflow delegation";
+export async function execute(ctx) { return ctx.call("other-app/secret", { prompt: "Run the foreign procedure" }); }
 `);
     writeFileSync(join(root, "parent-prompt.ts"), `
 export const name = "parent-prompt";
-export const description = "Attempts cross-App prompt delegation";
-export async function execute(ctx) { return ctx.call("foreign", "do secret work"); }
+export const description = "Uses exact cross-App prompt delegation";
+export async function execute(ctx) { return ctx.call("other-app/foreign", { prompt: "Do secret work" }); }
 `);
     const foreign: SubagentDefinition = {
       name: "foreign", description: "Foreign", domain: "test", model: fakeModel(), tools: [],
@@ -212,22 +214,31 @@ export async function execute(ctx) { return ctx.call("foreign", "do secret work"
     };
     let foreignPromptCalls = 0;
     const manager = {
-      callAgent: async () => { foreignPromptCalls++; throw new Error("must not call foreign prompt"); },
-      callAgentDefinition: async () => { foreignPromptCalls++; throw new Error("must not call foreign prompt"); },
+      callAgentDefinition: async (definition: SubagentDefinition, task: string) => {
+        expect(definition).toBe(foreign);
+        expect(task).toBe("Do secret work");
+        foreignPromptCalls++;
+        return {
+          sessionId: "s_foreign",
+          status: "done",
+          messages: [],
+          finishResult: { status: "done", summary: "foreign prompt complete" },
+        };
+      },
     } as any;
     const result = await createWorkflowRunner({
       manager, workflowDir: root, agentName: "owner", projectId,
       agentDefinitions: new Map([["foreign", foreign]]),
     }).run("parent", "input");
-    expect(result).toMatchObject({ type: "error", error: expect.stringContaining('Callable procedure "foreign/secret" not found') });
-    expect(existsSync(marker)).toBe(false);
+    expect(result).toMatchObject({ type: "done", summary: "must not execute" });
+    expect(existsSync(marker)).toBe(true);
 
     const promptResult = await createWorkflowRunner({
       manager, workflowDir: root, agentName: "owner", projectId,
       agentDefinitions: new Map([["foreign", foreign]]),
     }).run("parent-prompt", "input");
-    expect(promptResult).toMatchObject({ type: "error", error: expect.stringContaining('Callable target "foreign" not found') });
-    expect(foreignPromptCalls).toBe(0);
+    expect(promptResult).toMatchObject({ type: "done", summary: "foreign prompt complete" });
+    expect(foreignPromptCalls).toBe(1);
   });
 
   it("lets the caller recover from an unavailable nested workflow without inventing a child execution", async () => {
@@ -1394,7 +1405,7 @@ export async function execute(ctx) {
         kind: "workflow",
         status: "done",
         summary: "child complete",
-        output: { probe: "kept-structured" },
+        output: { prompt: "Run child", data: { probe: "kept-structured" } },
       },
     });
   });
@@ -1641,7 +1652,7 @@ export async function execute(ctx) {
     },
   );
 
-  it.each(["legacy", "qualified", "cross-owner"] as const)("%s nested calls reuse their Task attempt and recheck canonical authority before start", async (mode) => {
+  it("canonical nested calls reuse their Task attempt and recheck authority before start", async () => {
     const root = workflowRoot("workflow-nested-fenced-");
     const marker = join(root, "executed.txt");
     writeFileSync(
@@ -1663,7 +1674,7 @@ export async function execute(ctx) {
         export const description = "Run a nested method in the same attempt";
         export async function execute(ctx) {
           ctx.log.info("Before nested");
-          const result = await ${mode === "legacy" ? 'ctx.call("inspect", {})' : mode === "qualified" ? 'ctx.call("owner/inspect", {})' : 'ctx.call("reviewer/inspect", {})'};
+          const result = await ctx.call("sample/inspect", { prompt: "Inspect the current Task" });
           return ctx.done(result.summary);
         }
       `,
@@ -1694,12 +1705,7 @@ export async function execute(ctx) {
       attemptId: claim.attemptId,
     };
 
-    const reviewerDir = join(root, "reviewer");
-    mkdirSync(join(reviewerDir, "workflows"), { recursive: true });
-    writeFileSync(join(reviewerDir, "workflows", "inspect.ts"), readFileSync(join(root, "inspect.ts")));
-    const agentDefinitions = new Map<string, any>([["reviewer", {
-      name: "reviewer", agentDir: reviewerDir,
-    }]]);
+    const agentDefinitions = new Map<string, any>();
 
     // 1. Valid parent + nested execution succeeds and creates 2 workflow_runs rows
     const okResult = await createWorkflowRunner({

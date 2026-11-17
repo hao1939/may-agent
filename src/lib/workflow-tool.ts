@@ -454,7 +454,6 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     ]);
     const diagnostics = [...catalog.diagnostics];
     for (const [name, definition] of definitions) {
-      if (definition.appLocal && (!projectId || definition.projectId !== projectId)) continue;
       prompts.set(name, { owner: name, definition });
     }
     return { prompts, proceduresByOwner, diagnostics, pendingImports: 0 };
@@ -545,7 +544,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     };
     const localSteps: CompletedStep[] = [];
     const callerMeta = getCallerSessionMeta(parentSessionId);
-    const effectiveProjectId = opts.projectId ?? callerMeta.projectId;
+    const effectiveProjectId = opts.projectId ?? callerMeta.projectId ?? opts.taskBinding?.appId;
 
     const run: WorkflowRun = {
       runId,
