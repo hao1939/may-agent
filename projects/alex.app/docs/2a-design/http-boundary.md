@@ -5,8 +5,8 @@
 **Choice basis:** [Core Principles](../1-principles/core-principles.md#one-authority-for-each-resource).
 
 **Design status:** Accepted.
-**Implementation status:** Controls use shared event publication. Conversation,
-human Task and App-ID Task reads forward through the daemon's shared read
+**Implementation status:** Controls use shared event publication. Conversation
+and human Task reads forward through the daemon's shared read
 capabilities. The default Task board uses paged human Task reads. Source entry:
 `src/app/http/task-read-routes.ts` and the HTTP source guide.
 Session review notes are read-only; HTTP generation and comment-write routes
@@ -66,9 +66,10 @@ contracts rather than private runtime storage.
 
 ## Read boundary
 
-The [SDK read types](../../../may-agent/packages/sdk/src/workflow.ts) define
-public Task responses. The internal stored resource's `metadata/spec/status`
-shape is not that response contract.
+The [human Task service](../../../may-agent/src/app/human-task-service.ts)
+defines the browser's Task responses. The internal stored resource's
+`metadata/spec/status` shape is not that response contract. In-process SDK
+readers retain their own scoped types; they are not another browser API.
 
 GET endpoints return bounded explicit API models, never database rows or
 filesystem layout as a public contract. A read model:
@@ -134,25 +135,18 @@ checks remain; the daemon owns validation and admission of the addressed target.
 See the [reader consolidation record](../archive/reviews/shared-project-metadata-20261112.md)
 for compatibility and verification limits.
 
-Canonical App task reads use stable identities rather than filesystem-like
-project paths:
-
-```text
-GET /api/apps/:appId/tasks
-GET /api/apps/:appId/tasks/:taskId
-```
-
-These are the App SDK's bounded `TaskView`/`TaskDetail` contracts, forwarded
-through `app.tasks.list` and `app.task.get`; they are not persisted resource
-rows (`kind`, `metadata`, `spec`, `status`). They do not include a timeline.
-
-Human Task reads use the same `tasks.list` and `task.get` service as Console
-and Telegram:
+All browser Task reads use the same `tasks.list` and `task.get` service as
+Console and Telegram, addressed by stable App and Task identities:
 
 ```text
 GET /api/tasks?appId=<app>&limit=30&cursor=<opaque-cursor>
 GET /api/task?appId=<app>&taskId=<exact-task-id>
 ```
+
+The duplicate `/api/apps/:appId/tasks` family and its `app.tasks.list` /
+`app.task.get` socket commands are retired. App domain pages use the same human
+Task contract; they do not reconstruct an SDK projection in the browser. See
+the [App UI convention](webui.md#app-ui-convention).
 
 The board shows one page at a time, newest changes first, with a server-side
 state filter and an option to include retained finished/cancelled Tasks.
@@ -175,11 +169,11 @@ events. Read failures remain failures, never empty boards or fabricated
 completion. Browser selection is local; late responses cannot replace a
 newer Task selection, closed drawer, or changed project.
 
-The new board retires `/api/projects/tasks` and `/api/projects/task`; audited
-current callers are confined to the shipped board. Upgrade the Host and its
-generated UI together. App SDK routes remain unchanged. No read route permits
-Task mutation; steering still publishes an exact `project.owner.requested`
-event through `/api/events`.
+The old `/api/projects/tasks` and `/api/projects/task` routes are also retired.
+Upgrade the Host and its generated UI together. No read route permits Task
+mutation. The shared board's owner-directed steering uses the existing exact
+`project.owner.requested` event through `/api/events`; Task feedback uses the
+generation-fenced input endpoint described below.
 
 Resource APIs share `get`/`list`, identity, pagination, and error conventions,
 but they remain typed by resource kind. The out-of-process HTTP adapter asks
@@ -192,16 +186,23 @@ browser cannot write inferred state back or become a reconciler.
 
 ## Write boundary
 
-Every state-changing request enters one operation:
+State-changing requests enter the existing durable admission path. The generic
+event adapter is:
 
 ```text
 POST /api/events -> publish(event) -> EventReceipt
 ```
 
-The admitted event type retains the existing meaning: App input, reported fact,
-declared App action translated to input, exact control, or Host lifecycle
-control. The transport does not implement separate queues or receipts for
-those meanings.
+Specialized endpoints construct the same canonical requests. In particular,
+`POST /api/task/input` validates an exact App/Task identity, `expectedGeneration`,
+message, App input kind and idempotency key before admitting
+`app.input.requested`. The Host rechecks generation at admission. This endpoint
+cannot create replacement work, reopen a closed Task or steer its native thread
+directly. A schema-valid request must still be accepted by the owning App.
+
+The admitted event retains its existing meaning: App input, reported fact,
+exact control or Host lifecycle control. Transport adapters do not introduce
+another queue or work lifecycle.
 
 Examples:
 
@@ -210,7 +211,7 @@ Examples:
 | May conversation adapter        | Publish human `conversation.message.created` for `Conversation may:primary`                 |
 | Explicitly steer/cancel session | Publish an exact required session event                                                     |
 | Comment on project              | Publish `app.input.requested` (`publish` on the control socket; or `project.comment.created` for legacy markdown projects) |
-| Invoke App action               | Discover schema, validate, call `toInput`, admit input and its linked request/task           |
+| Give Task feedback              | `POST /api/task/input` admits fenced input to the exact existing Task                       |
 | Submit approval                 | Update exact owning task/Condition through typed control                                    |
 | Reload/restart/shutdown         | Publish a required Host-control event                                                       |
 | Publish provider/lifecycle fact | Publish a record-only event                                                                 |
@@ -219,7 +220,7 @@ Examples:
 types with type-specific schemas. Callers supply `type`, `target`, `data`, and
 an optional idempotency key. HTTP assigns trusted provenance; callers cannot
 assert `source`, `owner`, or trace ancestry. The endpoint is not permission to
-invent a domain type, address an owner by fallback, or bypass App actions.
+invent a domain type, address an owner by fallback, or bypass App input admission.
 
 The receipt always includes the event ID, `recorded` or `accepted`, and linked
 request/task/session/operation identities when present. HTTP returns `202` for
@@ -228,19 +229,22 @@ convergence, adapter display, or domain completion.
 
 ## App and project boundary
 
-Project comments and actions are different:
+An App domain page follows the [App UI convention](webui.md#app-ui-convention).
+Domain intent enters the owning App's declared input contract. A fact uses a
+declared subscription when it should become actionable:
 
 ```text
-comment -> fact -> declared subscription -> App input
-action  -> validate declared schema -> App input
+fact     -> declared subscription -> App input
+UI intent -> supported ingress -> validated App input
 ```
 
 A deterministic changed fact may instead wake an exact task or Condition. This
 classification belongs to the loaded App and must have one actionable path.
 
-Actions never emit an actionable semantic event as a shortcut. The Host admits
-the translated input, resolves its task, and returns the linked request and
-task identities.
+SDK `app.actions` declarations do not expose a generic browser command route.
+Raw-JSON action discovery/invocation and the former Functions page are retired.
+A UI uses an installed supported ingress, not a new action router or a
+command-like semantic event. The Host owns admission and linked identities.
 
 Generic project pages consume shared read models. Domain panels may present
 deeper facts/artifacts but cannot query private SQL, read task files, or infer

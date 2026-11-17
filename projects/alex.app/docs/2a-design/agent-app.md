@@ -489,14 +489,13 @@ an application event-name catalog.
 
 ## Request entrypoints, schedules, and observers
 
-The SDK property is named `actions` for compatibility. Each entry is a
-discoverable typed request entrypoint. The Host validates its input, translates
-it through `toInput`, and publishes `app.input.requested`. It returns the
-created or deduplicated request identity. An action cannot invent another
-actionable event as a shortcut around correlated admission.
-
-Human interfaces render actions as plain App commands such as “Review App” or
-“Explore now,” not as a separate resource list or event emitter.
+The SDK retains the `actions` property and pure schema/`toInput` declarations
+for compatibility. Their presence does not install a browser discovery or
+invocation route: the raw-JSON project action surface and Functions page are
+retired. Human intent uses an installed supported ingress and the App's declared
+input contract. See the [App UI convention](webui.md#app-ui-convention).
+An action declaration cannot introduce another work lifecycle or bypass
+correlated input admission by emitting a command-like semantic event.
 
 A schedule declares exactly one destination:
 

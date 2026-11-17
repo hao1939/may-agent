@@ -12,7 +12,7 @@
       </a>
     </p>
     <script>
-      // Keep old App bookmarks; the Host owns the current Task view and states.
+      // Compatibility entry only. New links go directly to the Host Task page.
       const target = new URL(document.getElementById("tasks").href);
       const selectedTask = new URLSearchParams(location.search).get("task");
       if (selectedTask) target.searchParams.set("task", selectedTask);

@@ -4,20 +4,23 @@
 
 The operational installation's existing `/projects/aks-rp-e2e.app/ui/kanban/`
 entry delegates to the Host's `/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e`
-page. Install [ui/kanban/index.html](ui/kanban/index.html) at that existing App
-static entry. Old `?task=` bookmarks keep their selection. The Host provides the
-App-scoped list, current statuses, filters, pagination, requirements, Conditions,
+page. Its source follows the normal App layout at
+[../ui/kanban/index.html](../ui/kanban/index.html). New navigation links point
+directly to the Host page; this entry preserves old `?task=` bookmarks. The Host
+provides the App-scoped list, current statuses, filters, pagination, requirements, Conditions,
 results and history. No App-owned Task collector, status vocabulary or counter
 is needed. Opening the page only reads existing Tasks.
 
 The previous App board rejected the current `idle` state as invalid, hiding the
 entire list when a Task had no runnable work. Reusing the Host page removes that
 duplicated contract. The existing per-task App pages and conversations remain
-available at their original URLs. This static entry is for MLVM, whose Host
-supports the current Task page; the older local UI-only installation is separate.
+available at their original URLs. The MLVM App home links directly to the Host
+Task page, and the existing per-task page links back to it. Its domain pages
+remain under the same App's `ui/` directory. The older local UI-only installation
+is separate; its selected Kubernetes session entry is preserved.
 
-This changes only the editable static entry, with a backup and an exact-source
-check before replacement. It needs no runtime reload. Do not edit an immutable
+These navigation changes affect only editable App static pages, with backups
+and exact-source checks before replacement. They need no runtime reload. Do not edit an immutable
 definition release or replace Task state to publish this page.
 
 ## Resource observer

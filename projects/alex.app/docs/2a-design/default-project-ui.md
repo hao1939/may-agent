@@ -192,6 +192,10 @@ not imply every control already has a button.
 The shared UI owns the frame and generic read models. A project may add a
 domain panel without changing shared task semantics.
 
+The [App UI convention](webui.md#app-ui-convention) defines its source layout,
+shared navigation, read and input boundaries. Link to shared Task review instead
+of maintaining another App-owned board.
+
 Examples include AKS feature/test evidence, Evaluation calibration reports,
 and Scout source findings. Extensions use stable project artifact, event,
 readout, and action APIs; they do not read private runtime storage directly.

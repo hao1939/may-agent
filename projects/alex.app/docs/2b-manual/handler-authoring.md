@@ -116,9 +116,13 @@ example on rejection. The Host can reuse them while a direct Task agent calls
 `finish`, then repeat them at settlement; do not perform effects in validation.
 See [completion admission](../2a-design/execution-contributions.md).
 
-App UI actions declare an input schema and a pure `toInput` translation in
-`app.actions`. Infrastructure validates the action and durably admits the
-resulting App input. Do not add another action lifecycle or event router.
+App pages follow the [App UI convention](../2a-design/webui.md#app-ui-convention).
+Use the shared Task page for ordinary work and existing typed ingress for user
+intent. Task feedback requires exact identity, observed generation and a stable
+idempotency key. The App must accept its declared input kind. SDK `app.actions`
+may retain pure schema/`toInput` declarations, but they do not establish browser
+action discovery or invocation; that raw-JSON surface is retired. Do not add
+another action lifecycle or event router.
 
 Validate with the app's `bun run check` and runtime reconciliation tests.
 

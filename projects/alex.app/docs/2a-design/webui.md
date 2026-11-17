@@ -87,6 +87,55 @@ Project-specific `.app/ui/` directories are independent domain surfaces, not
 copies of the default platform UI. See
 [default-project-ui.md](default-project-ui.md).
 
+## App UI convention
+
+Use the Host's shared pages for Task lists and review, sessions, events and
+metrics. An App adds a page when its domain needs a distinct presentation, such
+as a support matrix, spec coverage or test evidence. Link between those views;
+do not copy the shared Task board, maintain another Task status vocabulary or
+derive execution state from a session transcript.
+
+App-owned static pages follow the existing directory convention:
+
+```text
+projects/<app-id>.app/
+  app.ts
+  ui/
+    index.html
+    app.js
+    styles.css
+    <domain-page>/index.html
+```
+
+Only the files the App needs are required. The Host serves `ui/` at
+`/projects/<app-id>.app/ui/`; no UI manifest, framework or separate web server
+is required. Built front-end assets can use the same served directory. Keep
+reviewable source and deployment explicit; installation scripts are not another
+home for UI source. Opening a page reads existing work and does not start it.
+
+An App home links directly to its shared Task page at
+`/projects/<app-id>.app/tasks?appId=<app-id>` and to its domain pages. Select a
+Task with the additional `task=<exact-task-id>` query parameter. Encode identity
+values when constructing URLs. Old App-owned Task URLs may delegate to this
+page to preserve bookmarks; new navigation uses the shared route directly.
+
+Domain pages use the same bounded `/api/tasks` and `/api/task` reads as other
+human surfaces, with exact App/Task identities and opaque pagination cursors.
+Preserve freshness, unknowns, read failures and truncation. Domain-specific
+evidence comes from supported artifact/read APIs rather than private SQL or
+runtime files. Keep work state in the Host and domain decisions in the App.
+
+Submit intent through an existing supported ingress. Task feedback uses
+`POST /api/task/input` with the exact identity, observed generation and a stable
+idempotency key; the App must accept its declared input kind. Other controls use
+their existing Host contracts. A saved input receipt confirms admission, not
+completion. SDK action declarations do not establish browser action discovery
+or invocation routes; the old raw-JSON action surface is retired.
+
+Validate navigation, exact selection, unavailable reads and the relevant browser
+layout against the intended Host release. Serve shared Host assets and APIs from
+matching releases. Verify the served App assets after explicit deployment.
+
 ## Routes
 
 The platform uses real browser paths and `history.pushState`:
@@ -97,7 +146,6 @@ The platform uses real browser paths and `history.pushState`:
 | `/agents` and `/agents/:name`    | Agent identity, context, projects, sessions, chat               |
 | `/projects` and `/projects/:id`  | Project readout and steering                                    |
 | `/projects/:id/tasks`            | Task list, optional relationship tree, and selected-task detail |
-| `/projects/:id/functions`        | Declared App commands that create requests                      |
 | `/metrics` and `/metrics/:id`    | Metric/alert detail and evidence                                |
 | `/sessions/:id`                  | Transcript, result, recorded parent/child links, tools, and steering                |
 | `/events` and `/events/:eventId` | Event list, admission health, exact event inspector, and loop trace |

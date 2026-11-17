@@ -1,4 +1,12 @@
-# AKS app: local UI with a scoped Kubernetes session
+# AKS App UI
+
+UI source follows the shared [App UI convention](../alex.app/docs/2a-design/webui.md#app-ui-convention):
+domain pages live under `ui/`, and general Task views belong to the Host.
+On MLVM, use `/projects/aks-rp-e2e.app/tasks?appId=aks-rp-e2e` for the Task
+overview. `ui/kanban/` is only a compatibility entry for older bookmarks.
+See [MLVM integration](mlvm/README.md) for the separate operational installation.
+
+## Local UI with a scoped Kubernetes session
 
 Open http://127.0.0.1:8080/projects/aks-rp-e2e.app/ui/.
 
