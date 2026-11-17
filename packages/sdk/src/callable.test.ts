@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Type } from "typebox";
+import { Check } from "typebox/value";
 import {
   CallableCatalog,
   CallableCatalogStore,
@@ -43,6 +44,27 @@ describe("canonical callable catalog", () => {
       required: ["prompt", "data"],
       additionalProperties: false,
     });
+  });
+
+  test("uses full-envelope target schemas without wrapping them under data", async () => {
+    const fullEnvelope = Type.Object(
+      {
+        prompt: Type.String({ minLength: 1 }),
+        data: Type.Object({ ref: Type.String() }),
+      },
+      { additionalProperties: false },
+    );
+    const catalog = new CallableCatalog([definition("full", "alex", { inputSchema: fullEnvelope })]);
+
+    const descriptorSchema = catalog.list()[0]!.inputSchema;
+    expect(Check(descriptorSchema, { prompt: "review", data: { wrong: true } })).toBe(false);
+    expect(descriptorSchema).toMatchObject({ allOf: expect.any(Array) });
+    await expect(
+      catalog.call("alex/full", { prompt: "review", data: { ref: "HEAD" } }, undefined, { signal }),
+    ).resolves.toMatchObject({ status: "done", output: { ref: "HEAD" } });
+    expect(
+      () => new CallableCatalog([definition("mixed", "alex", { inputSchema: fullEnvelope, dataSchema: Type.Unknown() })]),
+    ).toThrow("full-envelope inputSchema or compatibility dataSchema");
   });
 
   test("rejects duplicate exact names and reserved or ambiguous components", () => {

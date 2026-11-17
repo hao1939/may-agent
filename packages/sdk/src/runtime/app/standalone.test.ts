@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
@@ -2220,12 +2220,18 @@ export async function execute(ctx) { return ctx.done("b"); }
       ),
     ).rejects.toThrow("beta-owner/beta-probe");
 
-    // 5. listStandaloneTargets uses exact App/global canonical names, exported workflow names, and excludes ambiguous duplicates:
+    // 5. Catalog preparation rejects an ambiguous canonical workflow instead of silently omitting it.
+    await expect(listStandaloneTargets({ projectRoot: env.projectRoot })).rejects.toThrow(
+      'Ambiguous agent workflow name "dup-proc"',
+    );
+    unlinkSync(join(betaOwnerDir, "workflows", "dup-b.ts"));
+
+    // The repaired catalog uses exact App/global canonical names and exported workflow names.
     const listed = await listStandaloneTargets({ projectRoot: env.projectRoot });
     const targetNames = listed.map((item) => item.name);
     expect(targetNames).toContain("alpha/aliased-proc");
     expect(targetNames).not.toContain("alpha/z-aliased");
-    expect(targetNames).not.toContain("beta/dup-proc");
+    expect(targetNames).toContain("beta/dup-proc");
     expect(listed.every((item) => !("kind" in item) && !("target" in item))).toBe(true);
 
     // 6. Array outputSchema through the real runCliAgent runner + scratch outputRoot retention when drainProcessGroup returns false:

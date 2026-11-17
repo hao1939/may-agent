@@ -45,6 +45,9 @@ export type CallableDefinition = Readonly<{
   appId?: string;
   declaredName: string;
   description: string;
+  /** Complete target schema for the canonical { prompt, data? } envelope. */
+  inputSchema?: TSchema;
+  /** Compatibility-only data constraint while definitions migrate to inputSchema. */
   dataSchema?: TSchema;
   outputSchema?: TSchema;
   invoke(input: ExecutionInput, context: CallableInvocationContext): Promise<unknown>;
@@ -89,7 +92,16 @@ export function canonicalCallableName(appId: string | undefined, declaredName: s
   return `${namespace}/${assertNameComponent(declaredName, "declaredName")}`;
 }
 
-export function effectiveInputSchema(dataSchema?: TSchema): TSchema {
+export function effectiveInputSchema(dataSchema?: TSchema, inputSchema?: TSchema): TSchema {
+  if (dataSchema && inputSchema) {
+    throw new CallableValidationError(
+      "catalog",
+      "Callable definitions must choose full-envelope inputSchema or compatibility dataSchema, not both",
+    );
+  }
+  if (inputSchema) {
+    return Type.Intersect([ExecutionInputSchema, inputSchema]);
+  }
   return Type.Object(
     dataSchema
       ? {
@@ -212,7 +224,7 @@ export class CallableCatalog {
       const descriptor = deepFreeze({
         name,
         description: definition.description,
-        inputSchema: effectiveInputSchema(definition.dataSchema),
+        inputSchema: effectiveInputSchema(definition.dataSchema, definition.inputSchema),
         ...(definition.outputSchema ? { outputSchema: definition.outputSchema } : {}),
       });
       entries.set(name, deepFreeze({ descriptor, definition: deepFreeze({ ...definition }) }));

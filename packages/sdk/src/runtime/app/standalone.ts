@@ -1838,9 +1838,13 @@ export async function listTargets(
 
     const definitions: CallableDefinition[] = [];
     const unavailable = async () => ({ status: "error" as const, summary: "Discovery descriptor is not executable" });
-    for (const [, entries] of ownersByScope) {
+    for (const [scopeKey, entries] of ownersByScope) {
       listController.signal.throwIfAborted();
-      if (entries.length !== 1) continue;
+      if (entries.length !== 1) {
+        throw new Error(
+          `Ambiguous callable owner "${scopeKey}": ${entries.map(({ dir }) => dir.dir).sort().join(", ")}`,
+        );
+      }
       const { dir, config } = entries[0]!;
       definitions.push({
         ...(dir.projectId ? { appId: dir.projectId } : {}),
@@ -1852,12 +1856,16 @@ export async function listTargets(
       if (existsSync(wfDir)) {
         const catalog = await buildWorkflowCatalog(wfDir, listController.signal);
         listController.signal.throwIfAborted();
+        const ambiguity = catalog.diagnostics.find((diagnostic) => diagnostic.includes("Ambiguous agent workflow name"));
+        if (ambiguity) {
+          throw new Error(`Callable catalog preparation failed: ${ambiguity}`);
+        }
         for (const wf of catalog.workflows.values()) {
           definitions.push({
             ...(dir.projectId ? { appId: dir.projectId } : {}),
             declaredName: wf.name,
             description: wf.description,
-            ...(wf.inputSchema ? { dataSchema: wf.inputSchema } : {}),
+            ...(wf.inputSchema ? { inputSchema: wf.inputSchema } : {}),
             ...(wf.outputSchema ? { outputSchema: wf.outputSchema } : {}),
             invoke: unavailable,
           });
