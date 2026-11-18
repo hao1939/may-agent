@@ -386,6 +386,38 @@ describe("shared callable input and result contract", () => {
     });
   });
 
+  test("does not coerce an invalid recursively shared result status before admission", async () => {
+    let coercions = 0;
+    const leaf = {
+      toString() {
+        coercions++;
+        return "invalid";
+      },
+    };
+    let sharedStatus: unknown = leaf;
+    for (let depth = 0; depth < 19; depth++) sharedStatus = [sharedStatus, sharedStatus];
+    const bounded = new CallableCatalog([
+      definition("invalid-status", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_invalid_status",
+            report: { status: sharedStatus, summary: "invalid status" } as never,
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call("alex/invalid-status", { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: "s_invalid_status",
+      status: "error",
+      summary: "Invalid callable result status; expected done, blocked, error, or interrupted",
+      facts: { phase: "result", invalidEvidence: "[omitted: incompatible]" },
+    });
+    expect(coercions).toBe(0);
+  });
+
   test("rejects cycles in callable output and facts", async () => {
     for (const field of ["output", "facts"] as const) {
       const cycle: Record<string, unknown> = {};

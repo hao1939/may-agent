@@ -298,7 +298,11 @@ function normalizeResult(
     throw new CallableValidationError("result", "Callable producers must not choose the child execution id", raw);
   }
   if (!(["done", "blocked", "error", "interrupted"] as unknown[]).includes(value.status)) {
-    throw new CallableValidationError("result", `Invalid callable result status: ${String(value.status)}`, raw);
+    throw new CallableValidationError(
+      "result",
+      "Invalid callable result status; expected done, blocked, error, or interrupted",
+      raw,
+    );
   }
   if (typeof value.summary !== "string" || !value.summary.trim()) {
     throw new CallableValidationError("result", "Callable result summary must contain non-whitespace text", raw);
