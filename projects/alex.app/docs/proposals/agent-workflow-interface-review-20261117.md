@@ -205,10 +205,10 @@ alone is not a successful finish. Code returns the equivalent report through the
 SDK. Backend kind, session/workflow aliases, transcripts and output directories
 stay in execution diagnostics, outside the common result payload.
 
-Migrate diagnostic consumers as well as result producers. In particular,
-`ExecutionResult.cliCalls` currently supplies Host-recorded evidence to development
-and Gym. Preserve its provenance through the existing execution diagnostics or
-configured diagnostic observer, addressed by the actual execution reference.
+Migrate diagnostic consumers as well as result producers. The legacy
+`ExecutionResult.cliCalls` field supplied Host-recorded evidence to development
+and Gym. The reviewed migration preserves its provenance through execution
+diagnostics or the configured diagnostic observer, addressed by the actual execution reference.
 Extend that owning read/projection only where a real consumer needs it; do not
 retain a second result alias or treat producer-authored `facts` as trusted tool
 receipts. Candidate verification must include those consumers.
@@ -242,8 +242,8 @@ Use one rule for every registered agent or workflow:
    that address in a catalog version.
 
 Model `agents({ action: "list" })`, SDK `ctx.list()`, and standalone `listTargets`
-return the same descriptor list for equivalent runtime configuration. `ctx.list()`
-is a proposed SDK binding. Listing is optional for statically authored workflows.
+return the same descriptor list for equivalent runtime configuration. These SDK
+bindings are implemented. Listing is optional for statically authored workflows.
 Calls and discovery within an invocation use the same prepared definition/catalog
 snapshot; a reload does not silently redirect an active call tree.
 Prepare the complete selected catalog within that invocation's finite timeout
@@ -349,8 +349,10 @@ Preserve these completed checkpoints during integration:
 3. Exact Host/SDK/App binding and supported receipt-backed activation. Keep the
    native provider immutable, retain legitimate installed changes and #590, and
    preserve known baseline failures until their separate owner repairs them.
-   The active local trial is4a9e/241c; f85 and staged alternative a1bdf remain
-   separate source/evidence and require no replay or activation after fulfillment.
+   The verified local trial used4a9e/241c. The subsequent canonical reload and
+   reviewed-entrypoint bootstrap994f are integration checkpoints, not replacement
+   full-trial evidence. Keep f85's fixture changes explicit during reconciliation;
+   the superseded staged alternative a1bdf requires no replay or activation.
 
 These are checkpoints within the saved outcome, not new Tasks or Host phases.
 May implements through the retained development workflows; Root reviews, checks
@@ -373,7 +375,7 @@ Continue from the retained Host #589 and paired App branches, preserving their
 complete histories, saved cross-repository selectors and every actual cumulative
 reservation, including the original seven #585 rounds. Their creator owns saved
 finite allowance revisions; no replacement Task resets usage. Keep unrelated work
-separate. Push coherent committed checkpoints to the existing draft PR and App
+separate. Push coherent committed checkpoints to the existing PR and App
 review branch while implementation continues, stating actual checks and gaps. Full cutover readiness
 is required for its readiness claim, not for sharing unfinished work for review.
 The user owns the separate ingress/input and event-system proposals; this

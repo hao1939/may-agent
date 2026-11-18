@@ -187,9 +187,10 @@ another Task lifecycle nor a Host judgment of domain sufficiency.
 **Source coverage:** App `27acebb375` forwards the invocation assignment and
 requires fresh judgment when it changes. Independent real-Git verification
 confirms identical-assignment replay, retained receipts and cumulative usage.
-This source repair is not activated; the
+The verified local trial included this repair; checkpoint `994f7f7e07` restores
+the exact reviewed development module after a later canonical reload. The
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
-tracks the remaining paired migration and trial.
+tracks the remaining App integration and current installation verification.
 
 ### Discovery and callable names
 
@@ -216,13 +217,13 @@ Use one catalog and one address rule for agents and workflows:
   ownership; they are not invocation ACLs. Actual tool provisioning and Host
   Task mutation contracts belong to their existing APIs.
 
-Model `agents({ action: "list" })`, the proposed SDK `ctx.list()`, and standalone
+Model `agents({ action: "list" })`, SDK `ctx.list()`, and standalone
 `listTargets` enumerate the same prepared catalog for equivalent runtime inputs.
 They return the same target descriptors, without implementation-kind collections
 or active-session lists. Static workflow code can call known canonical names
 without listing first; discovery is available when it needs runtime inspection.
-Candidate SDK source exposes `ctx.list()`; complete production binding and
-installed availability still need verification. Use the actual installed API.
+Host #589 implements these bindings; the paired local trial verifies the actual
+Task-worker catalog and cross-App calls. Check the installed source identities.
 
 Prepare and validate the complete selected catalog within the enclosing finite
 execution and cancellation bound, including asynchronous imports. Expose one
@@ -251,13 +252,13 @@ The model-facing cooperation surface is `list` and awaited `call`. The
 specifies retirement of `fork` and its session controls. Parallel joined calls
 remain ordinary workflow code; durable independently owned work uses Tasks.
 
-**Source coverage and rollout gap:** draft Host #589 has independently verified
+**Source coverage and rollout gap:** review-ready Host #589 has independently verified
 common envelopes/results, all four call directions, exact canonical discovery,
 immutable prompt/config snapshots and finite cancellation. Pending native imports
-remain explicitly unconfirmed on timeout/abort. This promotes verified source
-behavior; the installed API still requires the paired cutover. App targets,
-callers, fixtures and trusted-result consumers remain under migration, with full
-CI and the connected local trial open. See the
+remain explicitly unconfirmed on timeout/abort. Hosted checks and the connected
+local trial pass on the recorded pair. A subsequent canonical App reload exposed
+an integration gap: retain the reviewed consumer migrations alongside newer App
+fixes, then verify the current installation. See the
 [cutover status](../proposals/agent-workflow-interface-review-20261117.md).
 
 An App schedule, subscription or observer first enters through a declared App
