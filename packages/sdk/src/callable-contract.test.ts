@@ -369,6 +369,49 @@ describe("shared callable input and result contract", () => {
     ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
   });
 
+  test("rejects oversized report summaries before trimming the string", async () => {
+    let rope = "x";
+    for (let depth = 0; depth < 26; depth++) rope += rope;
+    expect(rope.length).toBe(67_108_864);
+
+    const bounded = new CallableCatalog([
+      definition("bounded-summary", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_bounded_summary",
+            report: { status: "done", summary: rope },
+          };
+        },
+      }),
+    ]);
+    let oversizedSummaryTrims = 0;
+    const originalTrim = String.prototype.trim;
+    const result = await (async () => {
+      try {
+        String.prototype.trim = function () {
+          const value = String.prototype.valueOf.call(this);
+          if (value.length > 1_048_576) {
+            oversizedSummaryTrims++;
+            throw new Error("test stopped oversized summary trim before flattening");
+          }
+          return originalTrim.call(this);
+        };
+        return await bounded.call("alex/bounded-summary", { prompt: "Inspect" }, undefined, { signal });
+      } finally {
+        String.prototype.trim = originalTrim;
+      }
+    })();
+
+    expect(oversizedSummaryTrims).toBe(0);
+    expect(result).toMatchObject({
+      id: "s_bounded_summary",
+      status: "error",
+      summary: "Callable result summary exceeds maximum expanded JSON size of 1048576 bytes",
+      facts: { phase: "result", invalidEvidence: "[omitted: size]" },
+    });
+    expect(JSON.stringify(result).length).toBeLessThan(1_048_576);
+  });
+
   test("bounds repeated long schema paths and the resulting error envelope", async () => {
     const longKey = "k".repeat(220_000);
     const bounded = new CallableCatalog([

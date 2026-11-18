@@ -316,7 +316,11 @@ function normalizeResult(
       raw,
     );
   }
-  if (typeof value.summary !== "string" || !value.summary.trim()) {
+  if (typeof value.summary !== "string") {
+    throw new CallableValidationError("result", "Callable result summary must contain non-whitespace text", raw);
+  }
+  assertBoundedJson(value.summary, "result", "Callable result summary");
+  if (!value.summary.trim()) {
     throw new CallableValidationError("result", "Callable result summary must contain non-whitespace text", raw);
   }
   if (value.output !== undefined) assertBoundedJson(value.output, "output", "Callable result output");
@@ -489,7 +493,7 @@ export class CallableCatalog {
         failure = {
           ...(childId ? { id: childId } : {}),
           status: "error",
-          summary: error.message,
+          summary,
           facts: { phase: error.phase, invalidEvidence: omittedEvidence },
         };
       }
