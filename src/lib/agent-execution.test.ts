@@ -213,6 +213,55 @@ describe("environment-agnostic SDK execution preparation", () => {
     expect(mutations).toBe(0);
   });
 
+  test("normalizes root anyOf tool parameter schemas to type: object for Gemini provider compatibility", async () => {
+    const geminiModel = {
+      ...streamTestModel,
+      id: "gemini-4-argon",
+      baseUrl: "http://127.0.0.1:9",
+      input: ["text"],
+    };
+    const prepared = prepareSdkAgentExecution({
+      definition: definition({ model: geminiModel }),
+      projectRoot: "/tmp",
+      sessionId: "gemini-root-object",
+      task: "Return structured output",
+      outputSchema: Type.Object({ verdict: Type.String() }),
+      createFinish: () => createFinishTool({ projectRoot: "/tmp" }),
+    });
+    const finishTool = prepared.tools.find((candidate) => candidate.name === "finish")!;
+    expect((finishTool.parameters as { anyOf?: unknown[] }).anyOf).toHaveLength(2);
+    let capturedTools: Array<{ name: string; parameters: Record<string, unknown> }> | undefined;
+    const stream = prepared.runner.streamFn!(
+      geminiModel,
+      {
+        messages: [
+          {
+            role: "system",
+            content: "System",
+            toolsAdded: [{ name: finishTool.name, description: finishTool.description, parameters: finishTool.parameters }],
+            timestamp: 0,
+          } as unknown as AgentMessage,
+          { role: "user", content: [{ type: "text", text: "Go" }], timestamp: 1 },
+        ],
+      } as unknown as TranscriptContext,
+      {
+        apiKey: "synthetic-unused",
+        onPayload(payload) {
+          capturedTools = (payload as { tools?: Array<{ name: string; parameters: Record<string, unknown> }> }).tools;
+          throw new Error("captured");
+        },
+      },
+    );
+    for await (const _ of stream) {
+      // drain
+    }
+    expect(capturedTools?.[0]?.parameters).toMatchObject({
+      type: "object",
+      required: ["status", "summary"],
+    });
+    expect(capturedTools?.[0]?.parameters).not.toHaveProperty("anyOf");
+  });
+
   test("maps sourceRoot explicitly and rejects stale implicit execution mappings", () => {
     const executionRoot = "/tmp/sdk-execution";
     const policy = { root: "/tmp/source", protectedPaths: [], grants: [] };

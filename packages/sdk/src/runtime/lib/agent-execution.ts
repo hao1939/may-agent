@@ -2,7 +2,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference -- This ambient declaration is not an importable module.
 /// <reference path="../../text-assets.d.ts" />
 
-import type { TSchema } from "typebox";
+import { Type, type TSchema } from "typebox";
 import {
   Agent,
   type AgentMessage,
@@ -995,8 +995,82 @@ export function withGithubCopilotIdeTokenRecovery(stream: SimpleStreamFunction):
   };
 }
 
+function normalizeProviderRootToolParameters(parameters: TSchema): TSchema {
+  const raw = parameters as {
+    type?: unknown;
+    anyOf?: Array<{
+      type?: unknown;
+      properties?: Record<string, TSchema>;
+      required?: unknown;
+      additionalProperties?: unknown;
+    }>;
+  };
+  if (raw.type !== undefined || !Array.isArray(raw.anyOf) || raw.anyOf.length === 0) return parameters;
+  if (!raw.anyOf.every((branch) => branch && branch.type === "object" && branch.properties && typeof branch.properties === "object")) {
+    return parameters;
+  }
+  const properties: Record<string, TSchema> = {};
+  const requiredSets: Array<Set<string>> = [];
+  for (const branch of raw.anyOf) {
+    const req = new Set(
+      Array.isArray(branch.required) ? branch.required.filter((k): k is string => typeof k === "string") : [],
+    );
+    requiredSets.push(req);
+    for (const [key, propSchema] of Object.entries(branch.properties!)) {
+      if (!(key in properties)) {
+        properties[key] = propSchema;
+      } else if (JSON.stringify(properties[key]) !== JSON.stringify(propSchema)) {
+        properties[key] = Type.Union([properties[key], propSchema]);
+      }
+    }
+  }
+  const firstReq = requiredSets[0] ?? new Set<string>();
+  const commonRequired = [...firstReq].filter((key) => requiredSets.every((set) => set.has(key)));
+  return {
+    type: "object",
+    properties,
+    ...(commonRequired.length > 0 ? { required: commonRequired } : {}),
+    ...(raw.anyOf.every((branch) => branch.additionalProperties === false) ? { additionalProperties: false } : {}),
+  } as unknown as TSchema;
+}
+
+function normalizeContextForModel(model: Model<Api>, context: Parameters<SimpleStreamFunction>[1]): Parameters<SimpleStreamFunction>[1] {
+  if (!model.id.startsWith("gemini-")) return context;
+  const normalizeList = (list: Array<{ name: string; description: string; parameters: TSchema }> | undefined) => {
+    if (!list?.length) return list;
+    let listChanged = false;
+    const next = list.map((tool) => {
+      const normalized = normalizeProviderRootToolParameters(tool.parameters);
+      if (normalized === tool.parameters) return tool;
+      listChanged = true;
+      return { ...tool, parameters: normalized };
+    });
+    return listChanged ? next : list;
+  };
+  let changed = false;
+  const rawContext = context as {
+    tools?: Array<{ name: string; description: string; parameters: TSchema }>;
+    messages?: Array<Record<string, unknown>>;
+  };
+  const nextTools = normalizeList(rawContext.tools);
+  if (nextTools !== rawContext.tools) changed = true;
+  const nextMessages = rawContext.messages?.map((msg) => {
+    if (msg.role !== "system" || !Array.isArray(msg.toolsAdded)) return msg;
+    const normalizedAdded = normalizeList(msg.toolsAdded as Array<{ name: string; description: string; parameters: TSchema }>);
+    if (normalizedAdded === msg.toolsAdded) return msg;
+    changed = true;
+    return { ...msg, toolsAdded: normalizedAdded };
+  });
+  if (!changed) return context;
+  return {
+    ...context,
+    ...(nextTools !== undefined ? { tools: nextTools } : {}),
+    ...(nextMessages !== undefined ? { messages: nextMessages } : {}),
+  } as Parameters<SimpleStreamFunction>[1];
+}
+
 const boundedStreamSimple = withGithubCopilotIdeTokenRecovery((model, context, options) =>
-  streamSimple(model, context, {
+  streamSimple(model, normalizeContextForModel(model, context), {
     ...options,
     signal: options?.signal
       ? AbortSignal.any([options.signal, AbortSignal.timeout(DEFAULT_MODEL_REQUEST_TIMEOUT_MS)])
