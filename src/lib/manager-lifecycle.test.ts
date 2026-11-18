@@ -13,7 +13,10 @@ import { join } from "node:path";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { markStaleSession } from "../../test/fixtures/stale-session.js";
 import { EventBus } from "../app/core/events/bus.js";
-import { createAgentRun } from "@may-agent/sdk/runtime";
+import { createAgentRun, createExecutionUsage } from "@may-agent/sdk/runtime";
+import { observeReply, preparationFixture, usageReply } from "../../test/fixtures/execution-usage.js";
+import { saveExecutionUsage } from "./db/execution-usage.js";
+import type { AgentEvent } from "../app/core/events/bus.js";
 import historicalTranscripts from "../../test/fixtures/pre-migration-finish-transcripts.json";
 import { agentExecutionResult } from "./agent-execution.js";
 import { closeDb, getDb } from "./db/connection.js";
@@ -249,6 +252,56 @@ describe("manager session lifecycle", () => {
     expect(JSON.stringify(manager.progress(helperId!))).toContain(correction);
     expect(() => manager.followUpHelper(helperId!, "Too late", caller)).toThrow("live helper");
     expect(requests).toHaveLength(3);
+  });
+
+  it("delivers traced live Task feedback and ends the same session with its updated trace", async () => {
+    const context = taskContext(persistDir, new Map());
+    let listener: Parameters<TaskExecutionContext["observeEvents"]>[0] | undefined;
+    let unsubscribed = 0;
+    context.observeEvents = (receive) => {
+      listener = receive;
+      return () => { listener = undefined; unsubscribed++; };
+    };
+    const events: AgentEvent[] = [];
+    const unsubscribe = bus.subscribe((event) => { events.push(event); });
+    try {
+      holdReplies = true;
+      // A nonterminal first reply lets queued feedback reach the next request
+      // before finish can settle the invocation.
+      neverFinish.add("old");
+      const sessionId = manager.run("worker", "Review the candidate", {
+        taskContext: context, trace: { traceId: "initial-turn" },
+      });
+      await started.promise;
+      expect(listener).toBeFunction();
+      const correction = "Preserve the candidate and inspect the new evidence";
+      listener!({
+        id: 42, type: "candidate.feedback", source: "fixture", owner: "fixture",
+        target: { project: "sample", taskId: "review" },
+        data: { message: correction }, trace: { traceId: "feedback-turn", parentEventId: 7 },
+      } as Parameters<NonNullable<typeof listener>>[0]);
+      expect(manager.status().map((session) => session.sessionId)).toEqual([sessionId]);
+      holdReplies = false;
+      requests[0].reply();
+      neverFinish.delete("old");
+      const result = await manager.waitFor(sessionId);
+      expect(result).toMatchObject({ sessionId, status: "done" });
+      expect(requests).toHaveLength(2);
+      expect(requests[1].prompt).toContain(correction);
+      const starts = events.filter((event) => event.type === "session.start");
+      const ends = events.filter((event) => event.type === "session.end");
+      expect(starts).toHaveLength(1);
+      expect(starts[0]).toMatchObject({ data: { sessionId }, trace: { traceId: "initial-turn" } });
+      expect(ends).toHaveLength(1);
+      expect(ends[0]).toMatchObject({
+        data: { sessionId, status: "done" },
+        trace: { traceId: "feedback-turn", parentEventId: 42 },
+      });
+      expect(unsubscribed).toBe(1);
+      expect(listener).toBeUndefined();
+    } finally {
+      unsubscribe();
+    }
   });
 
   it("keeps an active execution's model and instructions when the registered definition changes", async () => {
@@ -509,11 +562,37 @@ describe("manager session lifecycle", () => {
     getDb(persistDir).prepare(
       "INSERT INTO sessions (sessionId, agent, task, kind, status, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
     ).run(sessionId, history.agent, history.task, history.kind, history.status, history.startedAt);
-    markStaleSession(persistDir, sessionId);
-    closeDb(persistDir);
-    const recovered = new SubagentManager({ persistDir });
+    const runningId = "stale-running";
+    const running = { agent: "worker", task: "Unfinished job", kind: "job", status: "running", startedAt: 1 } as const;
+    manager.registry.saveSession(runningId, running);
+    const db = getDb(persistDir);
+    db.prepare(
+      "INSERT INTO sessions (sessionId, agent, task, kind, status, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(runningId, running.agent, running.task, running.kind, running.status, running.startedAt);
+    const collector = createExecutionUsage(preparationFixture);
+    observeReply(collector, usageReply());
+    for (const id of [sessionId, runningId]) {
+      saveExecutionUsage(db, {
+        id, sessionId: id, agent: "worker", configuredModel: "fixture/model-a", startedAt: 1,
+      }, collector.snapshot(), null, 2);
+      markStaleSession(persistDir, id);
+    }
+    const idleUsage = db.prepare("SELECT * FROM execution_usage WHERE session_id = ?").get(sessionId);
+    expect(idleUsage).toMatchObject({ outcome: null, duration_ms: null });
+    const runningUsage = db.prepare("SELECT * FROM execution_usage WHERE session_id = ?").get(runningId);
     for (let replay = 0; replay < 2; replay++) {
-      expect(recovered.cleanupStaleSessions().interrupted).toEqual([]);
+      closeDb(persistDir);
+      const recovered = new SubagentManager({ persistDir });
+      expect(recovered.cleanupStaleSessions().interrupted.map((session) => session.sessionId))
+        .toEqual(replay === 0 ? [runningId] : []);
+      expect(getDb(persistDir).prepare("SELECT * FROM execution_usage WHERE session_id = ?").get(sessionId))
+        .toEqual(idleUsage);
+      expect(getDb(persistDir).prepare("SELECT * FROM execution_usage WHERE session_id = ?").get(runningId))
+        .toEqual({ ...runningUsage!, outcome: "interrupted" });
+      expect(recovered.registry.getSession(runningId)).toMatchObject({ status: "interrupted" });
+      expect(getDb(persistDir).prepare("SELECT status FROM sessions WHERE sessionId = ?").get(runningId))
+        .toEqual({ status: "interrupted" });
+      expect(readActiveSessionProcessId(persistDir, runningId)).toBeNull();
       expect(recovered.registry.getSession(sessionId)).toMatchObject(history);
       expect(getDb(persistDir).prepare("SELECT kind, status, endedAt FROM sessions WHERE sessionId = ?").get(sessionId))
         .toEqual({ kind: "chat", status: "idle", endedAt: null });
