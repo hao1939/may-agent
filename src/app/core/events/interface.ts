@@ -268,8 +268,17 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
   },
 };
 
+/** Retired ingress stays forbidden while saved rows retain their delivery meaning. */
+const RETIRED_EVENT_DELIVERY = new Map<string, EventDefinition["delivery"]>([
+  ["chat.start.requested", "required"],
+  ["session.steer.requested", "required"],
+  ["session.cancel.requested", "required"],
+  ["session.cancel_all.requested", "required"],
+  ["project.comment.created", "record"],
+]);
+
 export function eventDeliveryContract(type: string): "record" | "required" {
-  return EVENT_DEFINITIONS[type]?.delivery ?? "record";
+  return EVENT_DEFINITIONS[type]?.delivery ?? RETIRED_EVENT_DELIVERY.get(type) ?? "record";
 }
 
 /** Types accepted by the new generic socket/HTTP publish operation. */
@@ -762,7 +771,7 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
         throw new Error(`Event type '${input.type}' is live-only and cannot be durably published`);
       }
       const definition = EVENT_DEFINITIONS[input.type];
-      if (!definition && !context.allowUnregisteredFact) {
+      if (RETIRED_EVENT_DELIVERY.has(input.type) || (!definition && !context.allowUnregisteredFact)) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);
       }
       if (input.type === "app.task.reopen.requested" && context.source !== "control-socket")

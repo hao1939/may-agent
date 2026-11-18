@@ -45,10 +45,37 @@ function fixture() {
 describe("simple event interface", () => {
   it.each(["chat.start.requested", "session.steer.requested", "session.cancel.requested",
     "session.cancel_all.requested", "project.comment.created"])("rejects retired %s before persistence or dispatch", (type) => {
+    const { bus, events, db } = fixture();
+    const dispatched: string[] = [];
+    const unsubscribe = bus.subscribeDurableRoute((event) => {
+      dispatched.push(event.type);
+      return { accepted: true, by: "retained-app-subscriber", route: "direct" };
+    });
+    try {
+      for (const context of [{ source: "web-ui" }, { source: "control-socket", allowUnregisteredFact: true }]) {
+        expect(() => events.publish({ type, target: { sessionId: "s_known" }, data: { agent: "may", message: "hello" } },
+          context)).toThrow("not admitted");
+      }
+      expect(dispatched).toEqual([]);
+      expect(db.prepare("SELECT 1 FROM events WHERE event_type = ?").get(type)).toBeNull();
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it.each(["chat.start.requested", "session.steer.requested", "session.cancel.requested",
+    "session.cancel_all.requested"])("preserves accepted delivery evidence for a retained %s row", (type) => {
     const { events, db } = fixture();
-    expect(() => events.publish({ type, target: { sessionId: "s_known" }, data: { agent: "may", message: "hello" } },
-      { source: "web-ui" })).toThrow("not admitted");
-    expect(db.prepare("SELECT 1 FROM events WHERE event_type = ?").get(type)).toBeNull();
+    const data = { sessionId: "s_retained", reason: "Saved operator request" };
+    const row = db.prepare(`INSERT INTO events
+      (event_type, source, owner, data, timestamp, delivery_status, accepted_by, delivery_note)
+      VALUES (?, 'control-socket', 'agent:worker', ?, 123, 'accepted', 'command-router:legacy-session', 'Saved delivery note')`)
+      .run(type, JSON.stringify(data));
+    const eventId = Number(row.lastInsertRowid);
+    expect(events.get(eventId)).toMatchObject({
+      event: { id: eventId, type, source: "control-socket", owner: "agent:worker", data, timestamp: 123 },
+      delivery: { state: "accepted", acceptedBy: "command-router:legacy-session", note: "Saved delivery note" },
+    });
   });
 
   it.each([
