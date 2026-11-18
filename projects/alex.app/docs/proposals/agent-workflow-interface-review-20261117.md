@@ -60,8 +60,9 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Complete the six post-merge fixes, verify the compatible local candidate,
-   and publish a new reviewable PR. Retain the successful source/receipt identities.
+1. Complete verification and CI for the six post-merge fixes in draft
+   [#594](https://github.com/hao1939/may-agent/pull/594), then trial the compatible
+   local candidate. Retain the successful source/receipt identities.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -120,10 +121,18 @@ Its subsequent commits repair the captured-owner/global-caller edge and remove
 the foreign bare-Task fallback, with actual tool/Task/result coverage. Fix the
 two namespace defects first, then inherited tools and report/JSON admission.
 The sixth schema-forwarding finding is independently proved by identical
-scripted invalid-then-valid replies: model calls fail after1 reply while workflow
-calls correct and finish after2. May's generation3 goal adds this requirement;
-its creator must revise the same Alex contribution at a quiescent boundary,
-preserving all actual usage and the total12 limit. No new public option is needed.
+scripted invalid-then-valid replies: merged code fails after one model reply while
+the workflow call corrects and finishes after two. May's generation3 revision
+preserves the same Alex contribution, actual usage and total12 limit. Its
+`06629fae7a` checkpoint forwards the existing schema through an invocation-local
+binding. Root's independent production probe now gets `done` and valid output
+after two replies through both adapters; 31 owning tests pass across three files.
+Earlier exact-head probes also pass for the original five findings. These scoped
+checks do not establish full readiness: the preceding hosted head's Quality check
+fails on 13 Task namespace fixtures, and fixture migration, independent final
+review, current-head CI and compatible local activation remain open. Container
+passed on that preceding head. Keep genuine App-local definitions in migrated
+fixtures; a canonical map key alone does not make a global profile App-local.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 

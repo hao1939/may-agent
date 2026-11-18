@@ -10,8 +10,8 @@ evidence retention and Task-backed waiting are implemented. Cancellation require
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
 implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
-at `e489ff32b6`; its Quality and Container checks pass. The compatible local
-Host/SDK `4a9e0f9300` and App `90cc281b65` pass the current live interface checks.
+at `e489ff32b6`; its Quality and Container checks pass. The earlier compatible
+Host/SDK `4a9e0f9300` and App `90cc281b65` passed the recorded live interface checks.
 The reviewed App migration is integrated with canonical source, preserving newer
 fixes and publications. The exact candidate passes 1,149 configured App tests,
 type/design checks and independent review. Source identities and the remaining
