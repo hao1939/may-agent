@@ -261,7 +261,7 @@ async function observationDelivery(consumer: "none" | "accept" | "fail") {
   assert.deepEqual(observed.map(({ event }) => event.type), types);
   assert.equal(observed[1]!.id, undefined);
   assert.deepEqual(observed[1]!.event.data?.emission, {
-    appId: "sample", taskId: "work/one", generation: 1, localKey: "progress",
+    appId: "sample", taskId: "work/one", generation: 1, localKey: "progress", attemptId: accepted.metadata.id,
   });
   assert.equal(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'project.task.executor.progress'").get()?.n, 0);
   assert.deepEqual(
