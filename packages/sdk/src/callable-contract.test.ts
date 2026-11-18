@@ -307,6 +307,41 @@ describe("shared callable input and result contract", () => {
     });
   });
 
+  test("bounds adversarial escaped strings and property names without materializing JSON", async () => {
+    const bounded = new CallableCatalog([definition("bounded-strings", "alex")]);
+    const escaped = "\\".repeat(600_000);
+    await expect(
+      bounded.call("alex/bounded-strings", { prompt: "Inspect", data: escaped }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+    await expect(
+      bounded.call("alex/bounded-strings", { prompt: "Inspect", data: { [escaped]: true } }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+  });
+
+  test("returns bounded diagnostics without coercing rejected evidence", async () => {
+    const hostile = Object.create(null) as { toString?: () => string };
+    hostile.toString = () => { throw new Error("must not coerce rejected evidence"); };
+    const bounded = new CallableCatalog([
+      definition("hostile-evidence", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_hostile_evidence",
+            report: { status: "done", summary: "hostile", output: [hostile] },
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call("alex/hostile-evidence", { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: "s_hostile_evidence",
+      status: "error",
+      summary: expect.stringContaining("JSON-compatible"),
+      facts: { phase: "output", invalidEvidence: "[omitted: incompatible]" },
+    });
+  });
+
   test("rejects cycles in callable output and facts", async () => {
     for (const field of ["output", "facts"] as const) {
       const cycle: Record<string, unknown> = {};
