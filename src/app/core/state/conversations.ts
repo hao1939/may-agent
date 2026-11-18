@@ -215,7 +215,7 @@ export function listAppConversationMessages(
     // Explicit Task communication owns publication independently of input settlement.
     if (explicitlyCommunicatedInputs.has(item.id)) continue;
     const resultText =
-      item.continuesRequestId || item.executionTaskId
+      item.taskAdmissionKey || item.continuesRequestId || item.executionTaskId
         ? item.result?.response?.trim()
         : item.result?.response?.trim() || item.result?.summary?.trim();
     if (!resultText) continue;

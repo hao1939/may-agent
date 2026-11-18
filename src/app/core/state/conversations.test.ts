@@ -1,10 +1,16 @@
 import { wakeAppInboxItemsWaitingOn } from "../../../../test/fixtures/legacy-inbox.js";
+import { completeCommunicationTask } from "../../../../test/fixtures/communication.js";
+import { conversationTaskContext } from "../../../../test/fixtures/conversation-task.js";
+import { claimObservedAppTask, completeAppTask } from "../tasks/app-task-reconciler.js";
+import { admitTaskInput, completeTaskInput } from "./inbox.js";
+import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
+import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { createAppInboxItem, getAppInboxItem } from "./app-inbox-store.js";
 import { applyConversationRequestUpdates } from "./conversation-requests.js";
 import { taskReferenceDigest } from "./task-reference-index.js";
@@ -344,6 +350,81 @@ describe("Conversation store", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it.each(["summary", "response", "communication"] as const)(
+    "projects only explicit replies for ordinary Task-admitted system input (%s)",
+    (mode) => {
+      const root = mkdtempSync(join(tmpdir(), "conversation-task-result-"));
+      const taskDb = getDb(root);
+      try {
+        const config = conversationTaskContext(taskDb, root, "example");
+        const taskId = "work/review";
+        const item = createAppInboxItem(taskDb, {
+          id: "system-review",
+          appId: "example",
+          targetTaskId: taskId,
+          conversationId: "chat",
+          conversationSequence: 1,
+          source: { kind: "system", id: "review-signal" },
+          input: { kind: "review", data: { subject: "sample" } },
+        }).item;
+        admitTaskInput(config, {
+          appId: "example",
+          attachment: {
+            kind: "desired",
+            intent: {
+              id: taskId,
+              parentId: "root",
+              outcome: "Review the sample",
+              acceptance: ["Record the review"],
+              executor: "agent",
+            },
+          },
+          idempotencyKey: `task:${item.id}`,
+          inboxInputId: item.id,
+          inputContext: { id: item.id, source: item.source, input: item.input },
+        });
+        const claim = claimObservedAppTask(config, { taskId, appAgent: "example", handler: "agent:example" });
+        if (claim.kind !== "claimed") throw new Error(`Expected claim, got ${claim.kind}`);
+        const result = {
+          summary: "Internal review completed",
+          ...(mode !== "summary" ? { response: "The sample is ready." } : {}),
+        };
+        const completed =
+          mode === "communication"
+            ? completeCommunicationTask(config, claim, result)
+            : completeAppTask(config, claim, { ...result, facts: [] });
+        expect(completed.status).toBe("applied");
+        expect(completeTaskInput(taskDb, getAppInboxItem(taskDb, item.id)!, result, Date.now())).toBe(true);
+        const retained = getAppInboxItem(taskDb, item.id)!;
+        expect(retained.status).toBe("done");
+        expect(retained.taskAdmissionKey).toBe(`task:${item.id}`);
+        expect(retained.executionTaskId).toBeUndefined();
+        expect(retained.continuesRequestId).toBeUndefined();
+        expect(retained.result?.summary).toBe(result.summary);
+
+        const messages = readAppConversationResource(taskDb, "example", "chat").messages;
+        if (mode === "summary") {
+          expect(messages).toEqual([]);
+        } else {
+          const identity = createHash("sha256")
+            .update(JSON.stringify(["example", taskId, claim.generation, claim.attemptId]))
+            .digest("hex");
+          expect(messages).toEqual([
+            expect.objectContaining({
+              id: mode === "communication" ? `task-message:${identity}` : `result:${item.id}`,
+              author: { kind: "agent", id: "example" },
+              text: result.response,
+            }),
+          ]);
+          expect(readAppConversationResource(taskDb, "example", "chat").messages).toEqual(messages);
+        }
+      } finally {
+        closeDb(root);
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
 
   it("projects one Task result for several human turns targeting that Task", () => {
     const taskId = "conversation/request-1";
