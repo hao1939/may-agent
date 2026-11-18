@@ -7,17 +7,24 @@ an authorized local trial. Host `d7fe07f80e` is merged as `e489ff32b6` in
 on that exact head (3,494 tests, zero failures, two skips). The paired App review
 branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b65`.
 The human merged the PR; broader release is separate. Five late review findings
-are assigned to May as the bounded post-merge follow-up below.
+and a separately demonstrated schema-forwarding gap are assigned to May below.
 
-The active local pair is Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
+The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
 preserves the reviewed unified migration, Scout current-input repair, newer audit
 and planner fixes, and canonical knowledge publications. Its App/shared/Gym source
 closures are identical to the independently reviewed `8fb96e4819` candidate.
 That exact candidate passes 1,149 configured App tests across 81 files with
 17,274 expectations, type/design checks and the current-input production probe.
-The supported reload and independent binary/App/readiness read-back match this pair.
+The supported reload and independent binary/App/readiness read-back matched that pair.
 Normal canonical reloads now retain the migration in source; the post-trial
 reload gap is repaired.
+
+The separate owner has since activated merged Host/SDK `e489ff32b6` and App
+`ab3936b71b`, including continuous observations and concurrency6. Current readiness
+is true. The matching-source baseline passes type/current-input checks; its App
+scan stops at the older concurrency3 assertion. A model-surface warning in a long
+temporary snapshot is path-budget dependent; the actual working check passes.
+These observations stay distinct from final follow-up candidate verification.
 
 The implemented contract provides one canonical catalog, mandatory
 `{prompt,data?}`, common validated results and awaited calls. Invocation
@@ -53,7 +60,7 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Complete the five post-merge fixes, verify the compatible local candidate,
+1. Complete the six post-merge fixes, verify the compatible local candidate,
    and publish a new reviewable PR. Retain the successful source/receipt identities.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
@@ -61,9 +68,9 @@ The remaining handoff is:
    has metric subscribers while canonical ae40 removed May's schedules. The final
    scoped candidate includes f85's fixture migration, which does not prove a
    replacement cadence runs. Its generation13 acceptance explicitly leaves that
-   functionality to the separate owner. Host main now includes the user's #593
-   direct metric producer; installed4a still predates that change. Candidate
-   activation must preserve it and record actual integration evidence. A green
+   functionality to the separate owner. Merged/installed main now includes the
+   user's #593 direct metric producer. Follow-up activation must preserve it and
+   record actual integration evidence. A green
    configured suite alone is not cadence proof.
 
 Exact revisions, source reviews, failed trials, scoped check totals and provider
@@ -90,10 +97,12 @@ interface contract stays the same.
 | Readonly helper loses inherited tool policy | Preserve the workflow's internal tool restrictions in hosted prompt helpers, including an unrestricted or absent parent. Inspect actual effective helper tools. No public invocation permission option returns. |
 | Shared JSON references treated as cycles | Reusing an acyclic object in input, output or facts succeeds; actual cycles still fail. Root's production input/result probe reproduces both false rejections. |
 | Managed settlement rejects an output-free blocker | A schema-backed prompt helper can return `blocked` without output. Successful completion still requires schema-valid output; supplied output validates across statuses. |
+| Model tool drops the requested output schema | Bind the existing caller schema to the prompt helper's finish validation/correction. Identical invalid-then-valid replies must correct within the same child through both model and workflow adapters; parallel calls keep independent schemas. |
 
 May owns one new finite post-merge outcome,
 `may/goal/app_c3b29e84-3807-4fb0-8ce5-7bad04a05c70`, with an Alex source
-contribution limited to 12 rounds. The earlier Scout-owned coordination Task
+contribution limited to 12 rounds, now retained as
+`alex/input/appdep_973835fb69362841b2e57ccd`. The earlier Scout-owned coordination Task
 remains fulfilled; its creator boundary is preserved. Original Host128/128 and
 App64/64 usage remain historical, without reset or replacement. This new work
 has a new source checkout/PR based on merged main `e489ff32b6`, preserving #590
@@ -104,8 +113,17 @@ rejected; the ordinary new-goal route admits this separate outcome.
 
 Exact findings and reproduction are retained as
 `postmerge-review-589-findings.json` and
-`postmerge-shared-reference-reproduction.json` in the trial directory. Fix the
+`postmerge-shared-reference-reproduction.json` in the trial directory. Root also
+reproduces actual wrong-code dispatch, inherited write-tool exposure and managed
+blocker failure. The first checkpoint is [draft #594](https://github.com/hao1939/may-agent/pull/594).
+Its subsequent commits repair the captured-owner/global-caller edge and remove
+the foreign bare-Task fallback, with actual tool/Task/result coverage. Fix the
 two namespace defects first, then inherited tools and report/JSON admission.
+The sixth schema-forwarding finding is independently proved by identical
+scripted invalid-then-valid replies: model calls fail after1 reply while workflow
+calls correct and finish after2. May's generation3 goal adds this requirement;
+its creator must revise the same Alex contribution at a quiescent boundary,
+preserving all actual usage and the total12 limit. No new public option is needed.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 

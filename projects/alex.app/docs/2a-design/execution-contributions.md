@@ -253,14 +253,8 @@ The model-facing cooperation surface is `list` and awaited `call`. The
 specifies retirement of `fork` and its session controls. Parallel joined calls
 remain ordinary workflow code; durable independently owned work uses Tasks.
 
-**Source coverage and rollout gap:** merged Host #589 has independently verified
-common envelopes/results, all four call directions, exact canonical discovery,
-immutable prompt/config snapshots and finite cancellation. Pending native imports
-remain explicitly unconfirmed on timeout/abort. Hosted checks and the connected
-local trial pass on the recorded pair. The canonical App reload gap is repaired.
-Five late findings in owner resolution, inherited tools and report/JSON admission
-remain assigned to the bounded follow-up in the
-[cutover status](../proposals/agent-workflow-interface-review-20261117.md).
+**Coverage:** the [cutover status](../proposals/agent-workflow-interface-review-20261117.md)
+records exact source/local proof and the bounded post-merge fixes.
 
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.
@@ -712,6 +706,10 @@ still requires `finish()`; unstructured assistant text alone is not a successful
 finish report. Use the existing bounded corrective prompt and failure path when
 the required report is missing. This requirement applies equally to model-tool
 calls and calls made from workflows.
+Pass the caller's requested output schema into a prompt helper's existing finish
+validation/correction path through either adapter. Post-return rejection alone
+does not provide that same admission behavior. Bind it per invocation so parallel
+calls with different schemas cannot change each other's requirements.
 
 Setup can fail before a child exists; cancelled scopes and infrastructure failures
 may throw. Preserve available diagnostics without fabricating a terminal child ID.
