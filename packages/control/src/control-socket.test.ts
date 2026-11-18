@@ -213,16 +213,16 @@ describe("control socket protocol", () => {
     });
 
     const ack = await sendSocketCommand(core.endpoint, {
-      type: "project.nudge",
+      type: "sample.review.requested",
       source: "test",
       owner: "agent:may",
       data: { projectPath: "agents/shared/projects/x" },
     });
 
-    expect(ack).toEqual({ type: "ok", command: "project.nudge", eventId: 42 });
+    expect(ack).toEqual({ type: "ok", command: "sample.review.requested", eventId: 42 });
     expect(core.emitted).toMatchObject([
       {
-        type: "project.nudge",
+        type: "sample.review.requested",
         source: "test",
         owner: "agent:may",
         data: { projectPath: "agents/shared/projects/x" },
@@ -358,7 +358,7 @@ describe("control socket protocol", () => {
 
     await expect(
       sendSocketCommand(core.endpoint, {
-        type: "project.nudge",
+        type: "sample.review.requested",
         source: "test",
         owner: "agent:may",
         data: {},
@@ -371,7 +371,7 @@ describe("control socket protocol", () => {
 
     await expect(
       sendSocketCommand(core.endpoint, {
-        type: "project.nudge",
+        type: "sample.review.requested",
         source: "test",
         owner: "agent:may",
         data: {},

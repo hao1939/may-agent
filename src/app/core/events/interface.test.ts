@@ -47,6 +47,42 @@ function fixture(conversationAppId?: string) {
 }
 
 describe("simple event interface", () => {
+  it.each([
+    "conversation.updated", "skill.loaded", "workflow.step_started", "workflow.step_completed",
+    "handler.workflow_dispatched", "project.task.reconcile.started", "project.task.reconcile.profiled",
+    "project.task.executor.progress",
+  ])("rejects durable operator publication of %s before dispatch on every retry", async (type) => {
+    const { bus, db, events } = fixture();
+    const routed: string[] = [];
+    const observed: string[] = [];
+    const seen = Promise.withResolvers<void>();
+    const stops = [
+      bus.subscribeDurableRoute((event) => { routed.push(`durable:${event.type}`); }),
+      bus.subscribe((event) => { routed.push(`first:${event.type}`); }, { priority: "first" }),
+      bus.subscribe((event) => { routed.push(`normal:${event.type}`); }),
+      events.subscribe({}, (event) => {
+        observed.push(event.type);
+        if (event.type === "sample.barrier") seen.resolve();
+      }),
+    ];
+    try {
+      for (let retry = 0; retry < 2; retry++) {
+        expect(() => events.publish(
+          { type, data: {}, idempotencyKey: "same-observation" },
+          { source: "control-socket", allowUnregisteredFact: true },
+        )).toThrow("live-only and cannot be durably published");
+      }
+      expect(routed).toEqual([]);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
+      events.publish({ type: "sample.barrier", data: {} }, { source: "control-socket", allowUnregisteredFact: true });
+      await seen.promise;
+      expect(routed).toEqual(["durable:sample.barrier", "first:sample.barrier", "normal:sample.barrier"]);
+      expect(observed).toEqual(["sample.barrier"]);
+    } finally {
+      stops.forEach((stop) => stop());
+    }
+  });
+
   for (const type of ["app.input.requested", "conversation.message.created"] as const) {
     it(`reuses an exact ${type} publication after App configuration changes`, () => {
       const { bus, db } = fixture();
@@ -454,13 +490,14 @@ describe("simple event interface", () => {
         } as never);
       }
       await seen.promise;
-      for (const event of observed) {
-        const view = events.get(event.id!);
-        expect(view?.event.type).toBe(event.type);
-        expect(view?.event.data).toMatchObject(event.data);
-        expect(view?.delivery.state).toBe("recorded");
-        expect(view?.links).toEqual([]);
-      }
+      expect(observed.map((event) => event.type)).toEqual(["project.task.reconciled", "project.task.reconcile.profiled"]);
+      const durable = observed[0];
+      const view = events.get(durable.id!);
+      expect(view?.event.type).toBe(durable.type);
+      expect(view?.event.data).toMatchObject(durable.data);
+      expect(view?.delivery.state).toBe("recorded");
+      expect(view?.links).toEqual([]);
+      expect(observed[1].id).toBeUndefined();
     } finally {
       stop();
     }

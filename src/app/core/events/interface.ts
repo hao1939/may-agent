@@ -17,6 +17,7 @@ import {
   validateCurrentApproval,
   type ApprovalIngressAuthorization,
 } from "./approval.js";
+import { isLiveOnlyEventType } from "./persistence-policy.js";
 import { readEventTaskTarget } from "./task-target.js";
 import { readPersistedEventEnvelope } from "./persisted.js";
 import { getAppEventAdmissionPlan } from "../state/app-event-admission-store.js";
@@ -813,6 +814,9 @@ export function createEventInterface(options: CreateEventInterfaceOptions): Even
   return {
     publish(rawInput, context) {
       const input = publicationInput(rawInput, context);
+      if (isLiveOnlyEventType(input.type)) {
+        throw new Error(`Event type '${input.type}' is live-only and cannot be durably published`);
+      }
       const definition = EVENT_DEFINITIONS[input.type];
       if (!definition && !context.allowUnregisteredFact) {
         throw new Error(`Event type '${input.type}' is not admitted by this interface`);

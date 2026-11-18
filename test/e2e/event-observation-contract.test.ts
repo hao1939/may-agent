@@ -12,7 +12,7 @@ test("HTTP and socket expose operator diagnostics without turning their payloads
     await sandbox.waitForWeb!(15000);
     const origin = `http://127.0.0.1:${sandbox.webPort}`;
     const fact = {
-      type: "project.task.reconcile.profiled",
+      type: "sample.diagnostic",
       data: { project: "sample", taskId: "work/main", providerMs: 12 },
     };
     // Direct operator frames may record diagnostics; normal public publication

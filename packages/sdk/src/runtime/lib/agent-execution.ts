@@ -5,7 +5,22 @@ import {
   type AgentTool,
   type BeforeToolCallContext as PiBeforeToolCallContext,
 } from "@earendil-works/pi-agent-core";
-import { createAssistantMessageEventStream, createInitialSystemMessage, getCurrentSystemMessage, toToolDeclaration, validateToolArguments, type Api, type AssistantMessage, type AssistantMessageEvent, type Message, type Model, type StreamFunction, type SimpleStreamOptions, type ToolCall, type ToolResultMessage } from "@earendil-works/pi-ai";
+import {
+  createAssistantMessageEventStream,
+  createInitialSystemMessage,
+  getCurrentSystemMessage,
+  toToolDeclaration,
+  validateToolArguments,
+  type Api,
+  type AssistantMessage,
+  type AssistantMessageEvent,
+  type Message,
+  type Model,
+  type StreamFunction,
+  type SimpleStreamOptions,
+  type ToolCall,
+  type ToolResultMessage,
+} from "@earendil-works/pi-ai";
 import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -93,14 +108,18 @@ function estimateTranscriptTokens(messages: AgentMessage[]): number {
 
 function estimateTokens(messages: AgentMessage[]): number {
   const isModelMessage = (message: AgentMessage): message is Message =>
-    message.role === "system" || message.role === "user" || message.role === "assistant" || message.role === "toolResult";
+    message.role === "system" ||
+    message.role === "user" ||
+    message.role === "assistant" ||
+    message.role === "toolResult";
   const modelMessages = messages.filter(isModelMessage);
   const estimate = estimateContextTokens(modelMessages);
   // The provider estimate excludes coding-agent custom messages. Add those
   // after its last usage record so they cannot disappear behind a larger billed prefix.
   const usageMessage = estimate.lastUsageIndex === null ? undefined : modelMessages[estimate.lastUsageIndex];
   const usageIndex = usageMessage ? messages.indexOf(usageMessage) : -1;
-  const customTrailingTokens = messages.slice(usageIndex + 1)
+  const customTrailingTokens = messages
+    .slice(usageIndex + 1)
     .filter((message) => !isModelMessage(message))
     .reduce((sum, message) => sum + estimateMessageTokens(message), 0);
   return Math.max(estimateTranscriptTokens(messages), estimate.tokens + customTrailingTokens);
@@ -384,12 +403,12 @@ import {
 import executionInstructions from "./execution-instructions.md" with { type: "text" };
 export const RESPONSES_STREAM_TERMINAL_ERROR = "OpenAI Responses stream ended before a terminal response event";
 
-export function validateOperationAllowance(value: number | undefined): number | undefined {
-  if (value === undefined) return undefined;
-  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
-    throw new TypeError("operationAllowance must be a finite positive integer");
+/** Retired finish-guidance option. Keep a hard rejection for older callers. */
+export function validateOperationAllowance(value: number | undefined): undefined {
+  if (value !== undefined) {
+    throw new TypeError("operationAllowance is retired; use timeoutMs or deadlineAt for a real execution limit");
   }
-  return value;
+  return undefined;
 }
 
 export function shouldAttemptWorkflowFinishRecovery(reason: string | undefined): boolean {
@@ -398,30 +417,6 @@ export function shouldAttemptWorkflowFinishRecovery(reason: string | undefined):
     reason === RESPONSES_STREAM_TERMINAL_ERROR ||
     isRetryableEmptyAssistantFailure(reason) ||
     classifyError(reason) === "infra"
-  );
-}
-
-export function shouldRequestBoundedWorkflowFinish(
-  requireFinish: boolean,
-  toolCalls: number,
-  alreadyRequested: boolean,
-  timing?: { admittedTimeoutMs?: number; elapsedMs?: number; operationAllowance?: number },
-): boolean {
-  const operationAllowance = validateOperationAllowance(timing?.operationAllowance);
-  return (
-    requireFinish &&
-    !alreadyRequested &&
-    operationAllowance !== undefined &&
-    toolCalls >= operationAllowance
-  );
-}
-
-export function boundedWorkflowFinishPrompt(outputSchema?: TSchema): string {
-  return (
-    "Bounded completion guardrail: stop expanding the investigation. Use only facts already gathered and call finish() now with the smallest facts-honest payload" +
-    (outputSchema ? ", including every required schema-validated output field." : ".") +
-    " Report confirmed progress, unfinished work and uncertain effects honestly through that contract. " +
-    "Interrupted helpers or tools do not establish completion. Do not start further work; the remaining allowance is for submitting and correcting your result."
   );
 }
 
@@ -734,16 +729,7 @@ export function restoreAgentMessages(agent: AgentRun, messages: AgentMessage[]):
 /** One invocation's limits. No storage, Task lifecycle, provider or retry policy. */
 export const DEFAULT_EXECUTION_TIMEOUT_MS = 30 * 60_000;
 
-/** A work stop leaves the model alive to judge and submit its existing result. */
-export class ExecutionWorkEnded extends Error {
-  constructor() {
-    super(
-      "Execution work allowance ended. Use retained evidence and call finish(); unfinished or interrupted work remains incomplete.",
-    );
-    this.name = "ExecutionWorkEnded";
-  }
-}
-
+/** One invocation is bounded only by its actual cancellation/deadline scope. */
 export function executionTimeout(timeoutMs = DEFAULT_EXECUTION_TIMEOUT_MS, deadlineAt?: number): number {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > 2_147_483_647) {
     throw new Error("Execution timeout must be a positive bounded timer duration");
@@ -756,15 +742,11 @@ export function executionTimeout(timeoutMs = DEFAULT_EXECUTION_TIMEOUT_MS, deadl
 
 export class ExecutionScope {
   private readonly controller = new AbortController();
-  private readonly workController = new AbortController();
   readonly signal = this.controller.signal;
-  readonly workSignal = this.workController.signal;
   readonly timeoutMs: number;
   readonly deadlineAt: number;
-  readonly workDeadlineAt: number;
   timedOut = false;
   private readonly timer: ReturnType<typeof setTimeout>;
-  private readonly workTimer?: ReturnType<typeof setTimeout>;
   private readonly parentAbort: () => void;
 
   constructor(
@@ -772,22 +754,13 @@ export class ExecutionScope {
     private readonly parentSignal?: AbortSignal,
     deadlineAt?: number,
     private readonly onStop?: (reason: Error) => void,
-    onFinishRequested?: () => void,
   ) {
     parentSignal?.throwIfAborted();
     this.timeoutMs = executionTimeout(timeoutMs, deadlineAt);
     this.deadlineAt = Date.now() + this.timeoutMs;
-    // Reserve at most one minute, or one fifth of a short invocation. This is
-    // part of the existing allowance, never a timeout extension.
-    const finishMs = onFinishRequested ? Math.min(60_000, Math.floor(this.timeoutMs / 5)) : 0;
-    this.workDeadlineAt = this.deadlineAt - finishMs;
     this.parentAbort = () => {
       const reason = parentSignal?.reason;
-      // Preserve the work-stop distinction at every depth so joined helper
-      // evidence can return while ordinary cancellation still interrupts.
-      this.stop(
-        reason instanceof ExecutionWorkEnded ? reason : new Error("Caller execution stopped", { cause: reason }),
-      );
+      this.stop(new Error("Caller execution stopped", { cause: reason }));
     };
     parentSignal?.addEventListener("abort", this.parentAbort, { once: true });
     this.timer = setTimeout(() => {
@@ -795,31 +768,18 @@ export class ExecutionScope {
       this.stop(new Error(`Agent timed out after ${this.timeoutMs}ms`));
     }, this.timeoutMs);
     this.timer.unref?.();
-    if (finishMs > 0) {
-      this.workTimer = setTimeout(() => {
-        if (this.signal.aborted) return;
-        this.workController.abort(new ExecutionWorkEnded());
-        onFinishRequested?.();
-      }, this.timeoutMs - finishMs);
-      this.workTimer.unref?.();
-    }
   }
 
   stop(reason = new Error("Execution cancelled")): void {
     if (this.signal.aborted) return;
     this.controller.abort(reason);
-    this.workController.abort(reason);
     this.onStop?.(reason);
   }
 
   close(): void {
     clearTimeout(this.timer);
-    clearTimeout(this.workTimer);
     this.parentSignal?.removeEventListener("abort", this.parentAbort);
-    // Remaining scoped children stop too; completing this invocation is not
-    // cancellation of its already accepted result.
     this.controller.abort(new Error("Caller execution finished"));
-    this.workController.abort(this.signal.reason);
   }
 }
 
@@ -1266,14 +1226,13 @@ function bindToolsToSession(tools: AgentTool[], agentName: string, sessionId: st
   });
 }
 
-/** Stop cooperative work without cancelling the model's opportunity to finish. */
+/** Bind every tool to the invocation's one actual cancellation/deadline scope. */
 export function bindToolsToExecutionScope(tools: AgentTool[], getScope: () => ExecutionScope | undefined): AgentTool[] {
   return tools.map((tool) => ({
     ...tool,
     execute: (id, params, signal, onUpdate) => {
-      const scope = getScope();
-      const limit = tool.name === "finish" ? scope?.signal : scope?.workSignal;
-      const combined = limit && signal ? AbortSignal.any([signal, limit]) : limit ?? signal;
+      const limit = getScope()?.signal;
+      const combined = limit && signal ? AbortSignal.any([signal, limit]) : (limit ?? signal);
       combined?.throwIfAborted();
       return tool.execute(id, params, combined, onUpdate);
     },
@@ -1334,9 +1293,8 @@ export function prepareAgentExecution(options: AgentPreparationOptions): Prepare
   const source = options.definition.contextPreparationSource;
   const measurement: PreparationMeasurement = {
     preparer:
-      options.preparerLabel ??
-      (options.definition.contextPreparation ? source?.path ?? "unidentified" : "full"),
-    entryHash: options.definition.contextPreparation ? source?.entryHash ?? null : null,
+      options.preparerLabel ?? (options.definition.contextPreparation ? (source?.path ?? "unidentified") : "full"),
+    entryHash: options.definition.contextPreparation ? (source?.entryHash ?? null) : null,
     durationMs: 0,
     taskBytes: Buffer.byteLength(options.task),
     promptBytes: null,
@@ -1370,7 +1328,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
   // and apply skill instructions afterwards so an adapter cannot discard them.
   const contextTask: unknown = options.definition.contextPreparation
     ? options.definition.contextPreparation({ task })
-    : options.contextPrompt ?? task;
+    : (options.contextPrompt ?? task);
   if (typeof contextTask !== "string" || (task.trim() && !contextTask.trim())) {
     // Reject async adapters under the synchronous contract, but consume their
     // rejection so it cannot escape the caller's ordinary failure handling.
@@ -1381,7 +1339,8 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
     ? invokeCatalogSkill(options.definition.skillCatalog, skillName, contextTask)
     : undefined;
   const outputSchema = normalizeExecutionSchema(options.outputSchema);
-  const requireFinish = options.requireFinish === true || outputSchema !== undefined || options.validateOutput !== undefined;
+  const requireFinish =
+    options.requireFinish === true || outputSchema !== undefined || options.validateOutput !== undefined;
   const normalizedOptions = { ...options, outputSchema };
   const tools = bindToolsToSession(
     resolveTools(normalizedOptions, requireFinish),
@@ -1415,9 +1374,7 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
           if (compactInfo) options.onCompact?.(compactInfo, messages);
           // A disposable provider view: fresh context is rebuilt after compaction
           // and does not accumulate in the durable conversation transcript.
-          return options.contextMessages
-            ? [...messages, ...(await options.contextMessages())]
-            : messages;
+          return options.contextMessages ? [...messages, ...(await options.contextMessages())] : messages;
         }
       : undefined;
   const systemPrompt =
@@ -1466,7 +1423,7 @@ export async function executePreparedAgent(
   prepared: PreparedAgentExecution,
   options: DirectAgentExecutionOptions = {},
 ): Promise<DirectAgentExecutionResult> {
-  const operationAllowance = validateOperationAllowance(options.operationAllowance);
+  validateOperationAllowance(options.operationAllowance);
   const startedAt = Date.now();
   let scope: ExecutionScope | undefined;
   const tools = bindToolsToExecutionScope(prepared.tools, () => scope);
@@ -1478,31 +1435,6 @@ export async function executePreparedAgent(
   const unsubscribeUsage = agent.subscribe(usage.observe);
   if (options.initialMessages) restoreAgentMessages(agent, options.initialMessages);
   const unsubscribe = options.onObservation ? agent.subscribe(options.onObservation) : undefined;
-  let boundedFinishRequested = false;
-  const requestFinish = () => {
-    if (boundedFinishRequested || extractFinishParams(agent.state.messages as any[])) return;
-    boundedFinishRequested = true;
-    agent.steer({
-      role: "user",
-      content: [{ type: "text", text: boundedWorkflowFinishPrompt(prepared.outputSchema) }],
-    } as any);
-  };
-  let toolCalls = 0;
-  const unsubscribeBoundedFinish = prepared.requireFinish
-    ? agent.subscribe((event) => {
-        if (event.type !== "tool_execution_start") return;
-        toolCalls++;
-        if (
-          !shouldRequestBoundedWorkflowFinish(true, toolCalls, boundedFinishRequested, {
-            admittedTimeoutMs: options.timeoutMs,
-            elapsedMs: Date.now() - startedAt,
-            operationAllowance,
-          })
-        )
-          return;
-        requestFinish();
-      })
-    : undefined;
   let timedOut = false;
   let interrupted = false;
   let error: string | undefined;
@@ -1515,7 +1447,6 @@ export async function executePreparedAgent(
       interrupted = true;
       agent.cancel();
     },
-    prepared.requireFinish ? requestFinish : undefined,
   );
 
   try {
@@ -1587,7 +1518,6 @@ export async function executePreparedAgent(
     scope.close();
     unsubscribeUsage();
     if (typeof unsubscribe === "function") unsubscribe();
-    if (typeof unsubscribeBoundedFinish === "function") unsubscribeBoundedFinish();
   }
 
   const messages = agent.state.messages as AgentMessage[];

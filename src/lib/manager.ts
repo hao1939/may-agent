@@ -20,8 +20,6 @@ import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
 import { bindToolsToExecutionScope, prepareAgentExecution, type ToolPolicy } from "./agent-execution.js";
 import {
   ExecutionScope,
-  ExecutionWorkEnded,
-  boundedWorkflowFinishPrompt,
   classifyError,
   executionTimeout,
   extractFinishParams,
@@ -29,7 +27,6 @@ import {
   parseExplicitSkill,
   recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
-  shouldRequestBoundedWorkflowFinish,
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
   type MaySkill,
@@ -84,11 +81,7 @@ import type { SessionInfo, SubagentDefinition, TaskResult } from "@may-agent/sdk
 
 // Re-export utilities that other modules import from manager
 export { classifyError, extractFinishParams };
-export {
-  formatDuration,
-  generateId,
-  truncateForPrompt,
-} from "@may-agent/sdk/runtime";
+export { formatDuration, generateId, truncateForPrompt } from "@may-agent/sdk/runtime";
 export type { RegisteredAgent } from "@may-agent/sdk/runtime";
 export type { SessionInfo, SubagentDefinition, TaskResult } from "@may-agent/sdk/runtime";
 
@@ -127,7 +120,7 @@ export interface RunOptions {
   parseSkillCommand?: boolean;
   /** Require the agent to terminate through finish(); used by workflow steps. */
   requireFinish?: boolean;
-  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  /** Retired. Supplying this option throws; use timeoutMs or deadlineAt. */
   operationAllowance?: number;
   /** Caller-defined schema for the required finish().output payload. */
   outputSchema?: TSchema;
@@ -196,7 +189,6 @@ interface ActiveSession {
   admittedTimeoutMs?: number;
   toolCalls: number;
   modelStepCount: number;
-  boundedFinishRequested?: boolean;
   requestId?: string;
   conversationId?: string;
   channelMessageId?: number;
@@ -310,10 +302,16 @@ export class SubagentManager {
   /** Resolve the same definition for helper authorization and execution. */
   getAgentDefinition(name: string, callerSessionId?: string): SubagentDefinition | undefined {
     const captured = callerSessionId ? this._sessions.get(callerSessionId)?.taskContext?.agentDefinitions : undefined;
-    const exact = captured?.get(name) ?? captured?.get(`global/${name}`) ?? this.agents.get(name)?.definition ?? this.agents.get(`global/${name}`)?.definition;
+    const exact =
+      captured?.get(name) ??
+      captured?.get(`global/${name}`) ??
+      this.agents.get(name)?.definition ??
+      this.agents.get(`global/${name}`)?.definition;
     if (exact) return exact;
-    const matches = [...(captured?.values() ?? []), ...[...this.agents.values()].map((entry) => entry.definition)]
-      .filter((definition, index, all) => definition.name === name && all.indexOf(definition) === index);
+    const matches = [
+      ...(captured?.values() ?? []),
+      ...[...this.agents.values()].map((entry) => entry.definition),
+    ].filter((definition, index, all) => definition.name === name && all.indexOf(definition) === index);
     return matches.length === 1 ? matches[0] : undefined;
   }
 
@@ -330,17 +328,12 @@ export class SubagentManager {
     return this.startDefinition(def, task, opts);
   }
 
-  private startDefinition(
-    def: SubagentDefinition,
-    task: string,
-    opts?: RunOptions,
-    onAdmitted?: () => void,
-  ): string {
+  private startDefinition(def: SubagentDefinition, task: string, opts?: RunOptions, onAdmitted?: () => void): string {
     const recipient = resolvedExecutionRecipient(def);
     const parent = opts?.parentSessionId ? this._sessions.get(opts.parentSessionId) : undefined;
     if (parent) {
       if (parent.status !== "running" || !parent.executionScope) throw new Error("Caller is not executing");
-      parent.executionScope.workSignal.throwIfAborted();
+      parent.executionScope.signal.throwIfAborted();
       if (opts?.toolPolicy && parent.toolPolicy !== "full" && opts.toolPolicy !== parent.toolPolicy) {
         throw new Error("Helper tool policy must retain the caller restriction");
       }
@@ -352,9 +345,12 @@ export class SubagentManager {
         executionRoot: parent.executionRoot ?? opts?.executionRoot,
         toolPolicy: opts?.toolPolicy ?? parent.toolPolicy,
         signal: opts?.signal
-          ? AbortSignal.any([opts.signal, parent.executionScope.workSignal])
-          : parent.executionScope.workSignal,
-        deadlineAt: Math.min(opts?.deadlineAt ?? Infinity, parent.executionScope.workDeadlineAt),
+          ? AbortSignal.any([opts.signal, parent.executionScope.signal])
+          : parent.executionScope.signal,
+        deadlineAt: Math.min(
+          opts?.deadlineAt ?? Infinity,
+          parent.executionScope.deadlineAt ?? Infinity,
+        ),
       };
     }
     opts?.signal?.throwIfAborted();
@@ -382,7 +378,7 @@ export class SubagentManager {
         ].join("\n");
     const requestedStructuredCompletion =
       opts?.requireFinish === true || opts?.outputSchema !== undefined || opts?.validateOutput !== undefined;
-    const operationAllowance = validateOperationAllowance(opts?.operationAllowance);
+    validateOperationAllowance(opts?.operationAllowance);
     const toolPolicy = opts?.toolPolicy ?? "full";
     if (requestedStructuredCompletion && persistentChat) {
       throw new Error("Structured workflow completion is not supported for persistent chat sessions");
@@ -399,7 +395,9 @@ export class SubagentManager {
       assertCurrentTaskActor({ resourceStore: store }, opts.taskBinding, "managed start");
       const attempt = store.readAttempt(opts.taskBinding.attemptId);
       if (attempt) {
-        const nextIds = [...new Set([...(attempt.sessionIds ?? []), ...(attempt.sessionId ? [attempt.sessionId] : []), sessionId])];
+        const nextIds = [
+          ...new Set([...(attempt.sessionIds ?? []), ...(attempt.sessionId ? [attempt.sessionId] : []), sessionId]),
+        ];
         if (nextIds.length !== (attempt.sessionIds?.length ?? 0)) {
           attempt.sessionIds = nextIds;
           db.prepare("UPDATE app_task_attempts SET attempt_json = ? WHERE app_id = ? AND attempt_id = ?").run(
@@ -450,10 +448,12 @@ export class SubagentManager {
               chatContext: () => this.buildChatContextPacket(sessionId, def.name),
             }
           : {}),
-        createFinish: opts?.createFinish ?? (() =>
-          createFinishTool({
-            projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
-          })),
+        createFinish:
+          opts?.createFinish ??
+          (() =>
+            createFinishTool({
+              projectRoot: opts?.executionRoot ?? def.projectRoot ?? this._projectRoot,
+            })),
         bashProcessGroupOwner: { persistDir: this._persistDir, sessionId },
         onCompact: (info, messages) => {
           log(
@@ -531,7 +531,6 @@ export class SubagentManager {
         promptTask: prepared.prompt,
         loadedSkillHashes: new Set(activation ? [activation.contentHash] : []),
         requireFinish,
-        operationAllowance,
         outputSchema,
         tools,
         toolPolicy,
@@ -560,7 +559,6 @@ export class SubagentManager {
         kind,
         autoClose,
         requireFinish,
-        operationAllowance: operationAllowance,
         outputSchema: outputSchema,
         toolPolicy,
         executionRoot: opts?.executionRoot,
@@ -603,12 +601,9 @@ export class SubagentManager {
       // task/call sessions complete by emitting session.end and leaving memory.
       executionDispatched = true;
       if (this.isPersistentChat(session)) {
-        this.startChatTurn(
-          session,
-          async () => {
-            await agent.prompt(prepared.prompt);
-          },
-        );
+        this.startChatTurn(session, async () => {
+          await agent.prompt(prepared.prompt);
+        });
       } else {
         this.startManagedExecution(session);
       }
@@ -677,15 +672,12 @@ export class SubagentManager {
       session.agent.steer(msg as any);
     } else {
       if (this.isPersistentChat(session)) {
-        this.startChatTurn(
-          session,
-          async () => {
-            // prompt() starts a new run. followUp() only extends an existing
-            // one — if the agent is idle, followUp queues forever because
-            // nobody starts a run to drain it.
-            await session.agent.prompt(msg as any);
-          },
-        );
+        this.startChatTurn(session, async () => {
+          // prompt() starts a new run. followUp() only extends an existing
+          // one — if the agent is idle, followUp queues forever because
+          // nobody starts a run to drain it.
+          await session.agent.prompt(msg as any);
+        });
       } else {
         session.status = "running";
         session.agent.followUp(msg as any);
@@ -702,12 +694,14 @@ export class SubagentManager {
     const caller = this._sessions.get(callerSessionId!)!;
     const helper = this._sessions.get(sessionId)!;
     if (caller.status !== "running" || helper.status !== "running") {
-      throw new Error("Caller and helper must still be running; inspect the helper result before deciding the next step");
+      throw new Error(
+        "Caller and helper must still be running; inspect the helper result before deciding the next step",
+      );
     }
     this.assertSessionContinuation(caller);
     this.assertSessionContinuation(helper);
-    caller.executionScope?.workSignal.throwIfAborted();
-    helper.executionScope?.workSignal.throwIfAborted();
+    caller.executionScope?.signal.throwIfAborted();
+    helper.executionScope?.signal.throwIfAborted();
     // Literal caller input, not a skill command or a new Task requirement.
     helper.agent.steer({ role: "user", content: [{ type: "text", text }] } as AgentMessage);
   }
@@ -722,23 +716,22 @@ export class SubagentManager {
   // ── Query ──
 
   status(): SessionInfo[] {
-    return [...this._sessions.values()]
-      .map((s) => ({
-        sessionId: s.sessionId,
-        agent: s.agentName,
-        task: s.task,
-        status: s.status === "idle" || s.status === "paused" ? ("idle" as const) : ("running" as const),
-        startedAt: s.startedAt,
-        runtime: formatDuration(Date.now() - s.startedAt),
-        outputDir: sessionOutputDir(this._persistDir, s.sessionId),
-        parentSessionId: s.parentSessionId,
-        workflowRunId: s.workflowRunId,
-        stepLabel: s.stepLabel,
-        kind: s.kind,
-        autoClose: s.autoClose,
-        turnCount: s.modelStepCount,
-        error: s.lastError,
-      }));
+    return [...this._sessions.values()].map((s) => ({
+      sessionId: s.sessionId,
+      agent: s.agentName,
+      task: s.task,
+      status: s.status === "idle" || s.status === "paused" ? ("idle" as const) : ("running" as const),
+      startedAt: s.startedAt,
+      runtime: formatDuration(Date.now() - s.startedAt),
+      outputDir: sessionOutputDir(this._persistDir, s.sessionId),
+      parentSessionId: s.parentSessionId,
+      workflowRunId: s.workflowRunId,
+      stepLabel: s.stepLabel,
+      kind: s.kind,
+      autoClose: s.autoClose,
+      turnCount: s.modelStepCount,
+      error: s.lastError,
+    }));
   }
 
   hasActiveSession(sessionId: string): boolean {
@@ -780,13 +773,15 @@ export class SubagentManager {
     if (normalizedLimit === 0) return [];
 
     const session = this._sessions.get(sessionId);
-    if (session) return session.agent.state.messages.filter((message) => message.role !== "system").slice(-normalizedLimit);
+    if (session)
+      return session.agent.state.messages.filter((message) => message.role !== "system").slice(-normalizedLimit);
 
     const persisted = this._registry.getSession(sessionId);
     if (!persisted) throw new Error(`Session "${sessionId}" not found`);
 
-    return readSessionMessagesTail(this._persistDir, sessionId, normalizedLimit, MAX_TRANSCRIPT_TAIL_BYTES)
-      .filter((message) => message.role !== "system");
+    return readSessionMessagesTail(this._persistDir, sessionId, normalizedLimit, MAX_TRANSCRIPT_TAIL_BYTES).filter(
+      (message) => message.role !== "system",
+    );
   }
 
   // ── Await ──
@@ -891,9 +886,7 @@ export class SubagentManager {
       throw error;
     }
     const result = await this.waitFor(sessionId);
-    // A graceful work stop must return the joined helper's evidence to the
-    // parent. Explicit cancellation still interrupts the caller normally.
-    if (!(opts?.signal?.reason instanceof ExecutionWorkEnded)) opts?.signal?.throwIfAborted();
+    opts?.signal?.throwIfAborted();
     return { ...result, messages: this.progress(sessionId, 1000) };
   }
 
@@ -1225,9 +1218,12 @@ export class SubagentManager {
     const siblings = parent?.scopedChildren;
     if (siblings) {
       siblings.add(promise);
-      promise.then(() => siblings.delete(promise), () => {
-        if (session.executionCleanupConfirmed) siblings.delete(promise);
-      });
+      promise.then(
+        () => siblings.delete(promise),
+        () => {
+          if (session.executionCleanupConfirmed) siblings.delete(promise);
+        },
+      );
     }
     this.results.set(session.sessionId, promise);
     // Managed executions usually gain a waiter immediately, but task owners
@@ -1249,7 +1245,6 @@ export class SubagentManager {
         session.interruptionKind = scope.timedOut ? "execution-timeout" : "cancelled";
         session.agent.cancel();
       },
-      session.requireFinish ? () => this.requestBoundedFinish(session) : undefined,
     );
     session.executionScope = scope;
     session.executionCleanupConfirmed = false;
@@ -1266,15 +1261,6 @@ export class SubagentManager {
     }
   }
 
-  private requestBoundedFinish(session: ActiveSession): void {
-    if (session.boundedFinishRequested || extractFinishParams(session.agent.state.messages as any[])) return;
-    session.boundedFinishRequested = true;
-    session.agent.steer({
-      role: "user",
-      content: [{ type: "text", text: boundedWorkflowFinishPrompt(session.outputSchema) }],
-    } as any);
-  }
-
   private async closeExecutionScope(session: ActiveSession, scope = session.executionScope): Promise<void> {
     scope?.close();
     // An idle listener may already have started another turn on this session.
@@ -1282,11 +1268,12 @@ export class SubagentManager {
     // Joining is necessary: an accepted cancellation is not completed cleanup.
     const children = [...this._sessions.values()].filter((child) => child.parentSessionId === session.sessionId);
     const results = await Promise.allSettled([
-      ...(session.scopedChildren ?? []), ...children.map(child => this.waitFor(child.sessionId)),
+      ...(session.scopedChildren ?? []),
+      ...children.map((child) => this.waitFor(child.sessionId)),
     ]);
     const failed = results.find((result) => result.status === "rejected");
     if (failed?.status === "rejected") throw failed.reason;
-    if (!await drainSessionBashProcessGroups(this._persistDir, session.sessionId))
+    if (!(await drainSessionBashProcessGroups(this._persistDir, session.sessionId)))
       throw new Error(`Managed execution cleanup is unconfirmed for ${session.sessionId}`);
     session.executionCleanupConfirmed = true;
   }
@@ -1877,20 +1864,6 @@ export class SubagentManager {
           break;
         case "tool_execution_start":
           session.toolCalls++;
-          if (
-            shouldRequestBoundedWorkflowFinish(
-              session.requireFinish,
-              session.toolCalls,
-              session.boundedFinishRequested === true,
-              {
-                admittedTimeoutMs: session.admittedTimeoutMs,
-                elapsedMs: Date.now() - session.startedAt,
-                operationAllowance: session.operationAllowance,
-              },
-            )
-          ) {
-            this.requestBoundedFinish(session);
-          }
           persistProgress();
           bus?.emit({
             type: "tool_call",

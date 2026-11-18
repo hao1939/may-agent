@@ -1,3 +1,4 @@
+import { isLiveOnlyEventType } from "../events/persistence-policy.js";
 import { readEventTaskTarget } from "../events/task-target.js";
 import {
   childEventTrace,
@@ -22,14 +23,14 @@ export type AppTaskEmission = {
 };
 
 export type AppTaskEmitter = {
-  emit(localKey: string, event: AppTaskEmission): number;
+  emit(localKey: string, event: AppTaskEmission): number | undefined;
 };
 
 export type AppTaskEvents = {
   /** Read the original published fact before redoing work with external effects. */
   read(type: string, localKey: string): { eventId: number; data: Record<string, unknown> } | null;
-  /** Publish one durable fact from the current fenced attempt. */
-  publish(localKey: string, event: AppTaskEmission): number;
+  /** Publish a fenced fact, returning its journal ID; live-only observations return undefined and are not replayable. */
+  publish(localKey: string, event: AppTaskEmission): number | undefined;
   /**
    * Observe new durable events addressed to this Task while the attempt is
    * live. The Task's persisted event batch remains the recovery authority.
@@ -127,8 +128,9 @@ export function createAppTaskEvents(input: {
 
 /**
  * An execution-scoped event capability. DbWriter checks the hidden fence in
- * the same transaction that appends the event. The stable key is scoped to the
- * task generation, so a replacement attempt receives the original receipt.
+ * the same transaction that appends a durable event, or before live fan-out.
+ * Durable keys are scoped to the task generation; live observations have no
+ * retained receipt or retry deduplication.
  */
 export function createAppTaskEmitter(input: {
   bus: EventBus;
@@ -157,8 +159,10 @@ export function createAppTaskEmitter(input: {
         throw new Error("Cross-App result work must use a typed Task dependency, not events.emit");
       }
       const scope = { appId, ...input.claim };
+      const liveOnly = isLiveOnlyEventType(emitted.type);
       const idempotencyKey =
-        findTaskEmission(input.db, scope, emitted.type, key)?.idempotencyKey ?? taskEmissionIdentity(scope, key);
+        (liveOnly ? undefined : findTaskEmission(input.db, scope, emitted.type, key)?.idempotencyKey) ??
+        taskEmissionIdentity(scope, key);
       const event = {
         type: emitted.type,
         source: `app-task:${appId}`,
@@ -175,6 +179,7 @@ export function createAppTaskEmitter(input: {
             taskId: input.claim.taskId,
             generation: input.claim.generation,
             localKey: key,
+            ...(emitted.type === "project.task.executor.progress" ? { attemptId: input.claim.attemptId } : {}),
           },
         },
         ...(childEventTrace(input.parentEvent) ? { trace: childEventTrace(input.parentEvent) } : {}),
@@ -188,6 +193,7 @@ export function createAppTaskEmitter(input: {
       };
       Object.defineProperty(event, EVENT_TASK_EMISSION_FENCE, { value: Object.freeze(fence) });
       const accepted = input.bus.emit(event);
+      if (liveOnly) return undefined;
       const eventId = Number(accepted[EVENT_ROW_ID]);
       if (!Number.isSafeInteger(eventId) || eventId <= 0) {
         throw new Error(`Task emission ${key} did not receive a durable event identity`);

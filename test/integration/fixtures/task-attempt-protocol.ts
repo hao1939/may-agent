@@ -182,7 +182,7 @@ const scenarios: Record<string, () => void | Promise<void>> = {
         scriptedWorker(`
 
           process.send({kind:"event",eventId:41,event:{type:"info",message:"working"}});
-          process.send({kind:"wake",event:{type:"conversation.updated",source:"app-task-reconciler",
+          process.send({kind:"event",event:{type:"conversation.updated",source:"app-task-reconciler",
             owner:"app:may",data:{appId:"may",conversationId:"may:primary"}}});
           process.send({kind:"result",dependentTaskIds:["work/one","work/two"],
             taskChecks:{counts:{waiting:1},examples:[{appId:"sample",taskId:"work/one",outcome:"waiting"}]}});

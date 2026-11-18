@@ -212,6 +212,30 @@ describe("served workflow and metric health pages", () => {
     db.prepare(
       "INSERT INTO metric_alerts(id, metric_id, alert_type, message, created_at) VALUES (42, 'workflow.error-count-24h', 'threshold', 'Repeated failures', ?)",
     ).run(now - 100);
+    // Historical rows remain readable even though this type has no current producer.
+    const legacyJudgment = (alertId: number | null, timestamp: number, verdict: string) => Number(db.prepare(
+      `INSERT INTO events(event_type, source, owner, metric_id, alert_id, timestamp, data)
+       VALUES ('metric.alert_judged', 'fixture', 'app:legacy', 'workflow.error-count-24h', ?, ?, ?)`,
+    ).run(alertId === null ? null : String(alertId), timestamp, JSON.stringify({ verdict })).lastInsertRowid);
+    legacyJudgment(42, now - 101, "before-alert");
+    legacyJudgment(43, now, "different-alert");
+    expect((await read("/api/metrics")).alerts.find((alert: { alertId: number }) => alert.alertId === 42)?.latestJudgment)
+      .toBeNull();
+    const fallbackId = legacyJudgment(null, now - 99, "historical-metric-fallback");
+    let historicalAlerts = await read("/api/metrics");
+    expect(historicalAlerts.alerts.find((alert: { alertId: number }) => alert.alertId === 42)?.latestJudgment).toEqual({
+      eventId: fallbackId, owner: "app:legacy", timestamp: now - 99, verdict: "historical-metric-fallback",
+    });
+    legacyJudgment(42, now - 95, "superseded");
+    const latestId = legacyJudgment(42, now - 95, "latest-exact-alert");
+    const expectedHistorical = { eventId: latestId, owner: "app:legacy", timestamp: now - 95, verdict: "latest-exact-alert" };
+    historicalAlerts = await read("/api/metrics");
+    expect(historicalAlerts.alerts.find((alert: { alertId: number }) => alert.alertId === 42)?.latestJudgment)
+      .toEqual(expectedHistorical);
+    expect(historicalAlerts.metrics.find((metric: { id: string }) => metric.id === "workflow.error-count-24h")?.latestJudgment)
+      .toEqual(expectedHistorical);
+    expect((await read("/api/liveness")).alerts.find((alert: { alertId: number }) => alert.alertId === 42)?.latestJudgment)
+      .toEqual(expectedHistorical);
     const decision = {
       version: 1,
       metricId: "workflow.error-count-24h",
@@ -233,6 +257,7 @@ describe("served workflow and metric health pages", () => {
     );
     const breach = await read("/api/metrics/workflow.error-count-24h/evidence?alertId=42");
     expect(breach.dispositions[0]).toMatchObject({ appId: "platform", taskId: "owner-review", decision });
+    legacyJudgment(42, now + 1, "newer-legacy-row-cannot-replace-accepted-disposition");
     const alerts = await read("/api/metrics");
     expect(alerts.alerts.find((alert: { alertId: number }) => alert.alertId === 42)?.latestJudgment).toMatchObject({
       disposition: "investigate",

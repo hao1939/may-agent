@@ -2,12 +2,14 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { stateTransaction } from "../../../lib/db/transaction.js";
+import { taskUpdateIdentity } from "../../../../packages/control/src/task-wake.js";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
 import { DbWriter } from "../../../lib/db-writer.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { createAppTaskEmitter, createAppTaskEvents, subscribeAppTaskPublications } from "./app-task-emitter.js";
 import { renewAppTaskAttemptLease } from "./app-task-reconciler.js";
-import { EVENT_ROW_ID, EVENT_TASK_EMISSION_FENCE, EventBus } from "../events/bus.js";
+import { EVENT_ROW_ID, EVENT_TASK_EMISSION_FENCE, EventBus, type AgentEvent } from "../events/bus.js";
 import { loadPersistedEvent } from "../events/persisted.js";
 import { getEventView } from "../events/interface.js";
 import type { AppTaskAttempt, AppTaskResource } from "./app-task-state.js";
@@ -354,31 +356,97 @@ describe("AppTaskEmitter", () => {
     });
   });
 
-  it("correlates a passive progress event without waking its own Task", () => {
-    const { db, emitter } = harness();
+  it("publishes fenced progress live after commit without a journal receipt or waking its own Task", async () => {
+    const { db, bus, events } = harness();
     const before = db
       .prepare("SELECT changed, ready, trigger_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
       .get("sample", "task-1");
-
-    const eventId = emitter.emit("executor-progress", {
+    const routed: AgentEvent[] = [];
+    const observed: AgentEvent[] = [];
+    const receipts: number[] = [];
+    const seen = Promise.withResolvers<void>();
+    const stops = [
+      bus.subscribe((event) => { routed.push(event); }),
+      bus.listen((event) => { observed.push(event); seen.resolve(); }),
+      subscribeAppTaskPublications(bus, {
+        appId: "sample", taskId: "task-1", generation: 3, attemptId: "attempt-1",
+      }, (_event, eventId) => { receipts.push(eventId); }),
+    ];
+    const progress = {
       type: "project.task.executor.progress",
       data: { executor: "codex-goal", stage: "intermediate", message: "Inspecting facts" },
-    });
+    };
+    try {
+      expect(() => stateTransaction(db, () => {
+        expect(events().publish("executor-progress", progress)).toBeUndefined();
+        expect(routed).toEqual([]);
+        throw new Error("rollback progress");
+      })).toThrow("rollback progress");
+      expect(routed).toEqual([]);
+      expect(observed).toEqual([]);
+      stateTransaction(db, () => {
+        expect(events().publish("executor-progress", progress)).toBeUndefined();
+        expect(routed).toEqual([]);
+      });
+      await seen.promise;
+      expect(routed).toHaveLength(1);
+      expect(observed).toEqual(routed);
+      expect(observed[0][EVENT_ROW_ID]).toBeUndefined();
+      expect(taskUpdateIdentity(observed[0])).toEqual({ appId: "sample", taskId: "task-1" });
+      expect(observed[0].data).toMatchObject({
+        ...progress.data, emission: { appId: "sample", taskId: "task-1", generation: 3 },
+      });
+      expect(events().read(progress.type, "executor-progress")).toBeNull();
+      expect(receipts).toEqual([]);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
+      expect(db.prepare("SELECT changed, ready, trigger_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
+        .get("sample", "task-1")).toEqual(before);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM app_task_events").get()).toEqual({ count: 0 });
+    } finally {
+      stops.forEach((stop) => stop());
+    }
+  });
 
-    expect(db.prepare("SELECT task_id, attempt_id FROM events WHERE id = ?").get(eventId)).toEqual({
-      task_id: "task-1",
-      attempt_id: "attempt-1",
-    });
-    expect(
-      db
-        .prepare("SELECT changed, ready, trigger_json FROM app_tasks WHERE app_id = ? AND task_id = ?")
-        .get("sample", "task-1"),
-    ).toEqual(before);
-    expect(
-      db
-        .prepare("SELECT COUNT(*) AS count FROM app_task_events WHERE app_id = ? AND task_id = ?")
-        .get("sample", "task-1"),
-    ).toEqual({ count: 0 });
+  it.each([
+    ["unowned", "DELETE FROM app_tasks WHERE task_id = 'task-1'"],
+    ["replaced", "UPDATE app_tasks SET current_attempt_id = NULL"],
+    ["task generation changed", "UPDATE app_tasks SET generation = 4"],
+    ["attempt generation changed", "UPDATE app_task_attempts SET task_generation = 2"],
+    ["completed", "UPDATE app_task_attempts SET state = 'completed'"],
+    ["expired", "UPDATE app_task_attempts SET lease_until = 1"],
+    ["authority changed", "DELETE FROM app_task_store_meta WHERE key = 'authority'"],
+  ])("rejects %s progress before any fan-out, including a reused local key", async (_reason, mutation) => {
+    const { db, bus, events } = harness();
+    const routed: string[] = [];
+    const observed: string[] = [];
+    const done = Promise.withResolvers<void>();
+    const stops = [
+      bus.subscribeDurableRoute((event) => { routed.push(`durable:${event.type}`); }),
+      bus.subscribe((event) => { routed.push(`first:${event.type}`); }, { priority: "first" }),
+      bus.subscribe((event) => { routed.push(`normal:${event.type}`); }),
+      bus.listen((event) => {
+        observed.push(event.type);
+        if (event.type === "sample.barrier") done.resolve();
+      }),
+    ];
+    const progress = { type: "project.task.executor.progress", data: { message: "Inspecting facts" } };
+    try {
+      events().publish("progress", progress);
+      db.exec(mutation);
+      for (const key of ["progress", "new-progress"])
+        expect(() => events().publish(key, progress)).toThrow("rejected stale attempt");
+      bus.emit({ type: "sample.barrier", source: "fixture", owner: "app:sample", data: {} });
+      await done.promise;
+      expect(routed).toEqual([
+        "durable:project.task.executor.progress", "first:project.task.executor.progress", "normal:project.task.executor.progress",
+        "durable:sample.barrier", "first:sample.barrier", "normal:sample.barrier",
+      ]);
+      expect(observed).toEqual([progress.type, "sample.barrier"]);
+      expect(db.prepare("SELECT COUNT(*) AS count FROM events WHERE event_type = ?").get(progress.type))
+        .toEqual({ count: 0 });
+    } finally {
+      stops.forEach((stop) => stop());
+    }
   });
 
   it("records an exact target wake in the event transaction before subscribers run", () => {

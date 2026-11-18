@@ -36,6 +36,7 @@ import type {
   AppTaskResource,
 } from "./core/tasks/app-task-state.js";
 import { isHumanActionOwner } from "./core/tasks/human-condition.js";
+import { readTaskProgress } from "./core/tasks/task-progress-observations.js";
 import { getDb } from "../lib/db/connection.js";
 import type { AppConversationResource, AppConversationTopic } from "@may-agent/sdk/app";
 
@@ -262,9 +263,10 @@ function latestTaskProgress(
   attemptId: string | undefined,
 ): HumanTaskProgress | null {
   if (!attemptId) return null;
-  let row: TaskProgressRow | null;
+  const live = readTaskProgress(db, appId, taskId, attemptId);
+  let row: TaskProgressRow | null = null;
   try {
-    row = db
+    if (!live) row = db
       .prepare(
         `SELECT data, timestamp
          FROM events
@@ -280,9 +282,9 @@ function latestTaskProgress(
     // must not break the authoritative Task read or cancellation path.
     return null;
   }
-  const data = parseJson<Record<string, unknown>>(row?.data);
+  const data = live?.data ?? parseJson<Record<string, unknown>>(row?.data);
   const rawStage = typeof data?.stage === "string" ? data.stage.trim() : "";
-  const updatedAt = Number(row?.timestamp);
+  const updatedAt = Number(live?.timestamp ?? row?.timestamp);
   if (!rawStage || !Number.isSafeInteger(updatedAt)) return null;
   const message = typeof data?.message === "string" ? data.message.trim() : "";
   const status = typeof data?.status === "string" ? data.status.trim() : "";
