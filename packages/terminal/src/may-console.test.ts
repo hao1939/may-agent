@@ -1295,7 +1295,7 @@ describe("May Console", () => {
           if (frame.type === "app.conversation.get") {
             conversationReads++;
             if (conversationReads === 1) {
-              socket.write(`${JSON.stringify({ type: "error", command: frame.type, message: "daemon unavailable" })}\n`);
+              socket.write(`${JSON.stringify({ type: "error", command: frame.type, message: "Temporary read failure" })}\n`);
             } else {
               socket.write(`${JSON.stringify({
                 type: "ok",

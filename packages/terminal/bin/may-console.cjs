@@ -317,7 +317,11 @@ async function httpJson(pathname, options = {}) {
     headers: { ...(options.body ? { "content-type": "application/json" } : {}), ...(options.headers || {}) },
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body?.error || `HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(body?.error || `HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
   return body;
 }
 
@@ -415,7 +419,8 @@ function requestConversation(kind = "startup", options = {}) {
 
 function readFailedTransiently(error) {
   const message = error instanceof Error ? error.message : String(error);
-  const transient = !connected || !subscriptionReady || /fetch failed|daemon unavailable|HTTP 5\d\d/i.test(message);
+  const status = error && typeof error === "object" ? error.status : undefined;
+  const transient = !connected || !subscriptionReady || (Number.isInteger(status) && status >= 500) || /fetch failed|daemon unavailable|HTTP 5\d\d/i.test(message);
   if (transient && (!connected || !subscriptionReady)) scheduleReconnect();
   return transient;
 }
