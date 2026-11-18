@@ -1,7 +1,7 @@
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { getDb } from "./db/connection.js";
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "./manager.js";
@@ -220,10 +220,12 @@ describe("shared execution scope", () => {
       expect(manager.hasActiveSession(parent)).toBe(false);
       expect(manager.hasActiveSession(child)).toBe(false);
       const result = manager.result(parent);
+      const artifact = readFileSync(join(directory, "result.json"), "utf8");
+      expect(JSON.parse(artifact)).toMatchObject({ sessionId: parent, status: "interrupted" });
       const completions = [...ended];
       expect(recovery.interrupt(parent, "Recover after cleanup", "work", binding)).toBe(true);
       expect(manager.result(parent)).toEqual(result);
-      expect(existsSync(join(directory, "result.json"))).toBe(false);
+      expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(artifact);
       expect(ended).toEqual(completions);
     } finally {
       releaseCleanup.resolve();

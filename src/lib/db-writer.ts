@@ -25,17 +25,15 @@ import {
   type DeferredEventDelivery,
 } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
-import { upsertSession, updateSessionDb } from "./db/sessions.js";
 import type { SqliteDb } from "./db.js";
 import { isCanonicalEventEnvelope, isRecord } from "../../packages/control/src/event-envelope.js";
 import { withSqliteBusyRetry } from "./db/busy-retry.js";
 import { afterStateCommit, inStateTransaction, stateTransaction } from "./db/transaction.js";
 import { persistEventTrace, readEventTraceMetadata } from "./db/event-traces.js";
 import { advanceTaskResourceRevision } from "./db/task-resource-schema.js";
-import { describeText, writeContentAddressedJson, writeSessionResult, type ArtifactDescriptor } from "./artifacts.js";
+import { describeText, writeContentAddressedJson, type ArtifactDescriptor } from "./artifacts.js";
 import { log } from "@may-agent/sdk/runtime";
 import { applyMetricMutation } from "./db/metric-mutation.js";
-import type { TaskBinding } from "./persistence.js";
 
 /** Keep coordination rows small; full large bodies live in event-bodies/. */
 const INLINE_EVENT_DATA_BYTES = 4_096;
@@ -63,18 +61,6 @@ function eventOwner(event: Record<string, unknown>, fallback?: unknown): string 
 function eventUrgency(event: Record<string, unknown>): string {
   const urgency = isCanonicalEventEnvelope(event) ? event.urgency : eventPayload(event).urgency;
   return typeof urgency === "string" ? urgency : "normal";
-}
-
-function taskBinding(value: unknown): TaskBinding | undefined {
-  if (!isRecord(value)) return undefined;
-  const appId = typeof value.appId === "string" ? value.appId.trim() : "";
-  const taskId = typeof value.taskId === "string" ? value.taskId.trim() : "";
-  const attemptId = typeof value.attemptId === "string" ? value.attemptId.trim() : "";
-  const generation = value.generation;
-  if (!appId || !taskId || !attemptId || !Number.isInteger(generation) || Number(generation) < 1) {
-    return undefined;
-  }
-  return { appId, taskId, attemptId, generation: Number(generation) };
 }
 
 function eventTtlMs(event: Record<string, unknown>): number | null {
@@ -304,69 +290,12 @@ export class DbWriter {
   /** Subscribe this writer to an EventBus. */
   handler = (event: AgentEvent): DeferredEventDelivery | void => {
     switch (event.type) {
-      case "session.start": {
-        const ev = event as any;
-        if (!isCanonicalEventEnvelope(ev)) break;
-        const payload = eventPayload(ev);
-        upsertSession(this.persistDir, {
-          sessionId: payload.sessionId as string,
-          agent: payload.agent as string,
-          task: (payload.task as string | undefined) ?? "",
-          status: "running",
-          kind: payload.kind as string | undefined,
-          source: (payload.source as string | undefined) ?? eventSource(ev) ?? undefined,
-          parentSessionId: payload.parentSessionId as string | undefined,
-          workflowRunId: payload.workflowRunId as string | undefined,
-          projectId: payload.projectId as string | undefined,
-          taskBinding: taskBinding(payload.taskBinding),
-          requestId: payload.requestId as string | undefined,
-          stepLabel: payload.stepLabel as string | undefined,
-          startedAt: Date.now(),
-        });
-        this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
-        break;
-      }
-
-      case "session.end": {
-        const ev = event as any;
-        if (!isCanonicalEventEnvelope(ev)) break;
-        const payload = eventPayload(ev);
-        const endedAt = Date.now();
-        const resultArtifact = writeSessionResult(this.persistDir, payload.sessionId as string, {
-          status: payload.status,
-          outcome: payload.outcome,
-          error: payload.error,
-          summary: payload.summary,
-          opCount: payload.opCount,
-          turnCount: payload.turnCount,
-          finishParams: payload.finishParams,
-          endedAt,
-        });
-        updateSessionDb(this.persistDir, payload.sessionId as string, {
-          status: payload.status as any,
-          error: payload.error as string | undefined,
-          outcome: payload.outcome as string | undefined,
-          opCount: payload.opCount as number | undefined,
-          lastActivityAt: endedAt,
-          endedAt,
-          resultArtifact,
-        });
-        this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
-        break;
-      }
-
+      case "session.start":
+      case "session.end":
       case "session.idle": {
-        const ev = event as any;
-        if (!isCanonicalEventEnvelope(ev)) break;
-        const payload = eventPayload(ev);
-        updateSessionDb(this.persistDir, payload.sessionId as string, {
-          status: "idle",
-          error: payload.error as string | undefined,
-          outcome: payload.summary as string | undefined,
-          opCount: payload.opCount as number | undefined,
-          lastActivityAt: Date.now(),
-        });
-        this.insertEventRow(event, payload, eventSource(ev, payload.agent), eventOwner(ev, payload.agent));
+        if (!isCanonicalEventEnvelope(event)) break;
+        const payload = eventPayload(event);
+        this.insertEventRow(event, payload, eventSource(event, payload.agent), eventOwner(event, payload.agent));
         break;
       }
 
