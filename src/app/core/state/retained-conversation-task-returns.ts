@@ -25,8 +25,8 @@ export type ConversationTaskChangeRef = {
 } & ConversationTaskChange;
 
 const returnedWithoutSelectionSql = `(
-  json_extract(attempt.attempt_json, '$.acceptedResult.state') = 'converged'
-  OR (json_extract(attempt.attempt_json, '$.acceptedResult.state') IN ('incomplete', 'stopped')
+  attempt.accepted_result_state = 'converged'
+  OR (attempt.accepted_result_state IN ('incomplete', 'stopped')
     AND NOT EXISTS (SELECT 1 FROM app_task_admissions admission
       WHERE admission.app_id = attempt.app_id
         AND CAST(json_extract(admission.admission_json, '$.taskId') AS TEXT) = attempt.task_id
