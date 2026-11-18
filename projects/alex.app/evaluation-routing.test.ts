@@ -75,7 +75,7 @@ test("published diagnoses execute in Alex while May Conversation remains broken"
         throw new Error("May Conversation handling is broken");
       }
       expect(descriptor.id).toBe("alex");
-      expect(attempt.role.agent).toBe("alex");
+      expect(attempt.role.agent).toBe("alex/alex");
       const reports = attempt.events.items.filter(
         ({ event }) => event.type === "app.task.requested",
       );
