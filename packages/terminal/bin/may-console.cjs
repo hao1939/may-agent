@@ -34,13 +34,13 @@ let completionVisible = false;
 let watchedTask = null;
 let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
+let watchedTaskSelectionVersion = 0;
 let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
 const displayedTaskReplies = new Map();
 let appSelectionVersion = 0;
 let todoCount = 0;
-let todoReadInFlight = false;
-let todoReadDirty = false;
+const todoReadDirtyApps = new Set();
 const pendingInputFrames = [];
 const maxPendingInputFrames = 100;
 
@@ -163,7 +163,10 @@ function selectAppContext(appId) {
   todoCount = 0;
   shownTodoActions = new Map();
   nextTodoPage = null;
-  if (connected) subscribe();
+  if (connected) {
+    subscribe();
+    requestTodoRefresh();
+  }
   refreshPrompt();
   return true;
 }
@@ -529,25 +532,24 @@ function sendTaskListRead(pending) {
 
 function requestTodoRefresh() {
   if (!connected) return false;
-  if (todoReadInFlight) {
-    todoReadDirty = true;
+  const appId = selectedApp;
+  if (pendingTaskListReads.some((pending) => pending.kind === "todo-refresh" && pending.appId === appId)) {
+    todoReadDirtyApps.add(appId);
     return true;
   }
-  todoReadInFlight = true;
-  const sent = requestTasks({
+  return requestTasks({
     kind: "todo-refresh",
-    appId: selectedApp,
+    appId,
     humanActionOnly: true,
     limit: todoPageSize,
     command: "automatic todo refresh",
   });
-  if (!sent) todoReadInFlight = false;
-  return sent;
 }
 
 function requestTask(input) {
   const pending = {
     kind: input.kind || "detail",
+    ...(input.kind === "watch-refresh" ? { watchSelectionVersion: watchedTaskSelectionVersion } : {}),
     command: input.command || `/task ${input.ref || ""}`.trim(),
     ...(input.appId ? { appId: input.appId } : {}),
     ...(input.taskId ? { taskId: input.taskId } : {}),
@@ -995,6 +997,7 @@ function renderWatchSnapshot(task, options = {}) {
 }
 
 function setWatchedTask(task) {
+  watchedTaskSelectionVersion += 1;
   watchedTask = task && !task.terminal ? { appId: task.appId, taskId: task.taskId, ref: task.ref } : null;
   if (watchedTask) conversationResultsByTask.delete(taskPresentationKey(watchedTask));
   const appChanged = watchedTask ? selectAppContext(watchedTask.appId) : false;
@@ -1319,12 +1322,9 @@ function handleEvent(event) {
         const pending = event.__pending || pendingTaskListReads[0];
         removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
-          todoReadInFlight = false;
-          applyTodoRefresh(event.tasks);
-          if (todoReadDirty) {
-            todoReadDirty = false;
-            requestTodoRefresh();
-          }
+          if (pending.appId === selectedApp) applyTodoRefresh(event.tasks);
+          const dirty = todoReadDirtyApps.delete(pending.appId);
+          if (dirty && pending.appId === selectedApp) requestTodoRefresh();
         } else if (pending?.kind === "todo-command") {
           renderTodos(event.tasks, pending);
         } else {
@@ -1371,18 +1371,24 @@ function handleEvent(event) {
           requestDesiredAutoFollow();
         } else if (pending?.kind === "watch-refresh") {
           watchedTaskReadInFlight = false;
-          const taskKey = taskPresentationKey(task);
-          const conversationAlreadyPresentedResult = Boolean(task?.terminal && conversationResultsByTask.has(taskKey));
-          if (task && !conversationAlreadyPresentedResult) renderWatchSnapshot(task);
-          else if (task && conversationAlreadyPresentedResult) {
-            rememberTaskRevision(taskKey, taskPresentationRevision(task));
-            conversationResultsByTask.delete(taskKey);
-          }
-          if (!task || task.terminal) {
-            setWatchedTask(null);
-            if (task?.terminal) printNotice(`[watch] ${task.ref} finished; watch ended.`);
-          } else if (watchedTask) {
-            watchedTask.ref = task.ref;
+          const pendingWatchKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
+          const currentWatchKey = autoFollowKey(watchedTask);
+          const currentSelection =
+            pending.watchSelectionVersion === watchedTaskSelectionVersion && pendingWatchKey === currentWatchKey;
+          if (currentSelection) {
+            const taskKey = taskPresentationKey(task);
+            const conversationAlreadyPresentedResult = Boolean(task?.terminal && conversationResultsByTask.has(taskKey));
+            if (task && !conversationAlreadyPresentedResult) renderWatchSnapshot(task);
+            else if (task && conversationAlreadyPresentedResult) {
+              rememberTaskRevision(taskKey, taskPresentationRevision(task));
+              conversationResultsByTask.delete(taskKey);
+            }
+            if (!task || task.terminal) {
+              setWatchedTask(null);
+              if (task?.terminal) printNotice(`[watch] ${task.ref} finished; watch ended.`);
+            } else if (watchedTask) {
+              watchedTask.ref = task.ref;
+            }
           }
           if (watchedTaskDirty) {
             watchedTaskDirty = false;
@@ -1421,11 +1427,8 @@ function handleEvent(event) {
         const pending = event.__pending || pendingTaskListReads[0];
         removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
-          todoReadInFlight = false;
-          if (todoReadDirty) {
-            todoReadDirty = false;
-            requestTodoRefresh();
-          }
+          const dirty = todoReadDirtyApps.delete(pending.appId);
+          if (dirty && pending.appId === selectedApp) requestTodoRefresh();
         }
       }
       if (event.command === "task.get") {
