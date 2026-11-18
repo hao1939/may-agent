@@ -77,3 +77,41 @@ test("missing, stopped, and unreadable detection remain explicit without invalid
     }),
   ).toBeUndefined();
 });
+
+test("reads public Condition resources and skips satisfied observer waits", async () => {
+  const calls: unknown[] = [];
+  const publicTask = {
+    appTask: {
+      diagnostics: {
+        conditions: task.appTask.conditions.map(({ observation, ...spec }, index) => ({
+          id: spec.id,
+          condition: {
+            metadata: { id: spec.id, generation: 1, resourceVersion: 2 },
+            spec,
+            status: { ...observation, state: index === 0 ? "unknown" : "true" },
+          },
+        })),
+      },
+    },
+  };
+  const result = await readObserverEvidence(publicTask, async (input) => {
+    calls.push(input);
+    return {
+      command: "apps.list",
+      apps: [{
+        id: "builds",
+        observations: [{ id: "status", type: "build.state" }],
+        observerHealth: [{
+          id: "status", available: true,
+          resources: [{ resource: "42", lastSuccessAt: 100 }],
+        }],
+      }],
+    };
+  });
+  expect(calls).toEqual([{ type: "apps.list", appId: "builds" }]);
+  expect(result?.items).toHaveLength(1);
+  expect(result?.items[0]).toMatchObject({
+    conditionId: "build-42", available: true,
+    resource: { resource: "42", lastSuccessAt: 100 },
+  });
+});
