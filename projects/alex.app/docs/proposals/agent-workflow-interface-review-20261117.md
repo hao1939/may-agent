@@ -159,8 +159,11 @@ targets and awaits workflow `wr_1794967373546_9djl`, corrected prompt helper
 confirms exactly two finish attempts within the corrected child, the common
 results and exact caller Task/generation/attempt lineage. No domain work repeats.
 All five late #589 threads have actual fix/check replies and are resolved.
-PR #594 is ready for human review; May's existing Conversation route owns the
-single GitHub review-link delivery. Approval stays on GitHub.
+PR #594 is ready for human review. May's existing Conversation route publishes
+one GitHub review-link notice as Telegram message50742, independently confirmed
+with zero duplicates. The first system input omitted Conversation context and
+was correctly rejected; the corrected input uses the existing saved route.
+May's finite generation4 Goal converges. Approval stays on GitHub.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 

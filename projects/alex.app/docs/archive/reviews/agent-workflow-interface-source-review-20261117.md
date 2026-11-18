@@ -2401,3 +2401,38 @@ the Host12/12 and original completed App64/64 stay unchanged. Only the canonical
 role assertion is in that new source scope. Current App type/current-input checks
 pass. Exact logs, per-chunk JUnit and `5dd-configured-app-scan.json` are retained in
 the post-merge evidence directory. Paired activation and final delivery remain open.
+
+## Verified post-merge delivery — 18 November
+
+Exact Host5dd Quality and Container both pass:3,529 total tests, zero failures,
+two skips. All five late #589 review threads receive source/test/check replies
+and are resolved. May's new App contribution completes native workflow
+`wr_1794967113936_il21` with genuine review in one of its three reserved rounds,
+producing the one-line role assertion fix4e05b0b6cd. Root independently reviews
+and verifies it, pushes its branch, and normally merges it onto newer canonical
+docs as51141b0b76. The complete81-file paired scan now records1148 pass/one failure:
+only the separate user-owned concurrency3/6 fixture mismatch. App type/current-
+input checks and the working model-surface check pass. Neither production
+concurrency nor the separate owner's test is changed to manufacture green.
+
+Supported deployment receipt `unified-interface-postmerge-local-20261118-5dd896025a`
+succeeds with binarySHA25692d14d7bc43a4e2f744f326e82f13b0de7aa19302f263f4ee47fb5c6034e4deb,
+matching SDK5dd and healthy readiness. App reload6743850/6743851 succeeds at51141.
+Fresh May parent `s_1794967357888_89e0ad60-e4d3-452b-b229-d082ce4e794b` discovers32
+canonical targets and awaits one workflow and two prompt helpers. Independent
+extraction confirms the actual IDs/results, two finish attempts correcting a
+schema in the same child, an output-free schema-backed blocker, and exact caller
+Task/generation/attempt lineage. `5dd-live-proof-independent.json` retains details.
+No source or protected domain effect is repeated by those diagnostic calls.
+
+Root marks #594 ready at exact5dd. The first delivery input omits Conversation
+context and communication admission correctly rejects it; claiming it later does
+not create that context. Corrected input app_90ddffb1-d574-470e-a399-c200601faa75
+carries existing may:primary context. May publishes stable communication
+`pr594-ready-5dd896025a` in event6743943 and converges its generation4 Goal.
+Independent provider read-back confirms Telegram message50742, the GitHub review
+link and zero duplicates. `594-review-notification-provider-proof.json` preserves
+the actual publication/provider records;50734 remains the earlier #589 notice.
+Human approval/merge stay on GitHub. The scoped six-finding implementation,
+paired local verification and review-link delivery are complete; the known App
+concurrency fixture and user-owned Task/ingress/event work remain separate.
