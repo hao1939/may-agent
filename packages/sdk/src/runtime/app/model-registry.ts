@@ -166,8 +166,9 @@ export const LEGACY_ENDPOINT_MODELS = {
 // explicit so catalog changes cannot silently delay compaction.
 const ENDPOINT_CONTEXT_WINDOWS = {
   "gpt-6-astra": 400_000,
-  "gemini-4-argon": 400_000,
+  "gemini-4-argon": 200_000,
   "gpt-6.1-sol": 400_000,
+  "gpt-6.2-sol": 400_000,
   "claude-opus-4-6": 72_000,
   "gpt-5.4": 400_000,
   "gpt-5.5": 400_000,
@@ -211,6 +212,9 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
     },
     "gemini-4-argon": {
       ...getBuiltinModel("github-copilot", "gemini-4-argon"),
+      // This gateway serves Argon tool calls through Responses, not the
+      // catalog's Chat Completions protocol, and advertises a 200k input cap.
+      api: "openai-responses",
       contextWindow: ENDPOINT_CONTEXT_WINDOWS["gemini-4-argon"],
       baseUrl,
       apiKey,
@@ -221,6 +225,22 @@ export function createModelRegistry(env: NodeJS.ProcessEnv = process.env): Model
       baseUrl,
       apiKey,
       fallbackModel: claudeOpus5,
+    },
+    "gpt-6.2-sol": {
+      // Explicit gateway route pending upstream catalog support. Keep the
+      // requested identity intact; 400k is an operational cap, not full-window proof.
+      id: "gpt-6.2-sol",
+      name: "GPT-6.2 Sol",
+      api: "openai-responses",
+      provider: "github-copilot",
+      reasoning: true,
+      input: ["text", "image"],
+      contextWindow: ENDPOINT_CONTEXT_WINDOWS["gpt-6.2-sol"],
+      maxTokens: 128_000,
+      cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5 },
+      headers: getBuiltinModel("github-copilot", "gpt-6.1-sol").headers,
+      baseUrl,
+      apiKey,
     },
     "claude-opus-4-6": {
       ...getBuiltinModel("anthropic", "claude-opus-4-6"),
