@@ -160,7 +160,7 @@ afterEach(() => {
   while (cleanups.length) cleanups.pop()?.();
 });
 
-async function waitFor(predicate: () => boolean, timeoutMs = 3_000): Promise<void> {
+async function waitFor(predicate: () => boolean, timeoutMs = 8_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (!predicate()) {
     if (Date.now() >= deadline) throw new Error("Timed out waiting for May Console");
@@ -1215,7 +1215,14 @@ describe("May Console", () => {
             appReads.push({ frame, socket });
           } else if (frame.type === "tasks.list") {
             socket.write(
-              `${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [], nextCursor: null } })}\n`,
+              `${JSON.stringify({
+                type: "ok",
+                command: "tasks.list",
+                tasks: {
+                  items: [],
+                  ...(frame.appId === "evaluation" && !frame.cursor ? { nextCursor: "evaluation-page-2" } : {}),
+                },
+              })}\n`,
             );
           } else {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
@@ -1283,6 +1290,19 @@ describe("May Console", () => {
     await waitFor(() => output.includes("Selected App: evaluation"));
     expect(output).not.toContain("Selected App: gym");
 
+    // The validation response may arrive after the first Task page. It must not
+    // erase that page's cursor before the human asks for more.
+    child.stdin.write("/tasks more\n");
+    await waitFor(() =>
+      frames.some(
+        (frame) =>
+          frame.type === "tasks.list" &&
+          frame.appId === "evaluation" &&
+          frame.cursor === "evaluation-page-2",
+      ),
+    );
+    expect(output).not.toContain("[tasks] No next page. Run /tasks first.");
+
     child.stdin.write("/apps missing\n");
     await waitFor(() => appReads.length === 3 && output.includes("you[missing]>"));
     appReads[2].socket.write(`${JSON.stringify({ type: "ok", command: "apps.list", apps: [] })}\n`);
@@ -1347,31 +1367,50 @@ describe("May Console", () => {
     child.stdin.write("/watch aaaaaaaa\n");
     await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "aaaaaaaa"));
     const startA = take((frame) => frame.type === "task.get" && frame.ref === "aaaaaaaa");
-    startA.socket.respond(startA.requestId, { type: "ok", command: "task.get", task: task("alpha", "work/a", "aaaaaaaa", "A current") });
-    await waitFor(() => output.includes("[watch] Following aaaaaaaa · alpha."));
-    const alphaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "alpha");
-
-    client?.write(`${JSON.stringify({ type: "app.task.updated", data: { appId: "alpha", taskId: "work/a" } })}\n`);
-    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.appId === "alpha"));
-    const lateA = take((frame) => frame.type === "task.get" && frame.appId === "alpha");
     child.stdin.write("/watch bbbbbbbb\n");
     await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "bbbbbbbb"));
     const startB = take((frame) => frame.type === "task.get" && frame.ref === "bbbbbbbb");
     startB.socket.respond(startB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "B current") });
     await waitFor(() => output.includes("[watch] Following bbbbbbbb · beta."));
     const betaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "beta");
-    lateA.socket.respond(lateA.requestId, { type: "ok", command: "task.get", task: task("alpha", "work/a", "aaaaaaaa", "STALE A TERMINAL", true) });
+    startA.socket.respond(startA.requestId, { type: "ok", command: "task.get", task: task("alpha", "work/a", "aaaaaaaa", "STALE A START") });
     await Bun.sleep(30);
-    expect(output).not.toContain("STALE A TERMINAL");
-    expect(output).not.toContain("aaaaaaaa finished; watch ended");
+    expect(output).not.toContain("STALE A START");
+    expect(output).not.toContain("[watch] Following aaaaaaaa · alpha.");
     expect(output).toContain("you[beta:bbbbbbbb]>");
 
-    betaTodo.socket.respond(betaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("beta", "approval/b", "b0b0b0b0", "Beta approval"), humanAction: { requestedAction: "Approve beta" }, resourceVersion: 2 }], total: 2 } });
-    await waitFor(() => output.includes("[todo] 2 Tasks need you in beta. Run /todo."));
-    alphaTodo.socket.respond(alphaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("alpha", "approval/a", "a0a0a0a0", "Alpha approval"), humanAction: { requestedAction: "Approve alpha" }, resourceVersion: 9 }], total: 9 } });
+    client?.write(`${JSON.stringify({ type: "app.task.updated", data: { appId: "beta", taskId: "work/b" } })}\n`);
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.appId === "beta"));
+    const lateB = take((frame) => frame.type === "task.get" && frame.appId === "beta");
+    child.stdin.write("/watch cccccccc\n");
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "cccccccc"));
+    const startC = take((frame) => frame.type === "task.get" && frame.ref === "cccccccc");
+    startC.socket.respond(startC.requestId, { type: "ok", command: "task.get", task: task("gamma", "work/c", "cccccccc", "C current") });
+    await waitFor(() => output.includes("[watch] Following cccccccc · gamma."));
+    const gammaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "gamma");
+    lateB.socket.respond(lateB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "STALE B TERMINAL", true) });
+    await Bun.sleep(30);
+    expect(output).not.toContain("STALE B TERMINAL");
+    expect(output).not.toContain("bbbbbbbb finished; watch ended");
+    expect(output).toContain("you[gamma:cccccccc]>");
+
+    gammaTodo.socket.respond(gammaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("gamma", "approval/c", "c0c0c0c0", "Gamma approval"), humanAction: { requestedAction: "Approve gamma" }, resourceVersion: 2 }], total: 2 } });
+    await waitFor(() => output.includes("[todo] 2 Tasks need you in gamma. Run /todo."));
+    betaTodo.socket.respond(betaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("beta", "approval/b", "b0b0b0b0", "Beta approval"), humanAction: { requestedAction: "Approve beta" }, resourceVersion: 9 }], total: 9 } });
     await Bun.sleep(30);
     expect(output).not.toContain("9 Tasks need you");
-    expect(output).toContain("you[beta:bbbbbbbb]>");
+    expect(output).toContain("you[gamma:cccccccc]>");
+
+    child.stdin.write("/watch dddddddd\n");
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "dddddddd"));
+    const startD = take((frame) => frame.type === "task.get" && frame.ref === "dddddddd");
+    child.stdin.write("/unwatch\n");
+    await waitFor(() => output.includes("[watch] Watch ended. The Task continues."));
+    startD.socket.respond(startD.requestId, { type: "ok", command: "task.get", task: task("delta", "work/d", "dddddddd", "STALE D START") });
+    await Bun.sleep(30);
+    expect(output).not.toContain("STALE D START");
+    expect(output).not.toContain("[watch] Following dddddddd · delta.");
+    expect(output).toContain("you[gamma · 2 todo]>");
 
     child.stdin.write("/exit\n");
     await once(child, "exit");

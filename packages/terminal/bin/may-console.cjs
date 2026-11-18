@@ -549,7 +549,11 @@ function requestTodoRefresh() {
 function requestTask(input) {
   const pending = {
     kind: input.kind || "detail",
-    ...(input.kind === "watch-refresh" ? { watchSelectionVersion: watchedTaskSelectionVersion } : {}),
+    ...(input.kind === "watch-refresh"
+      ? { watchSelectionVersion: watchedTaskSelectionVersion }
+      : input.kind === "watch-start" && Number.isSafeInteger(input.watchSelectionVersion)
+        ? { watchSelectionVersion: input.watchSelectionVersion }
+        : {}),
     command: input.command || `/task ${input.ref || ""}`.trim(),
     ...(input.appId ? { appId: input.appId } : {}),
     ...(input.taskId ? { taskId: input.taskId } : {}),
@@ -656,7 +660,6 @@ function renderApps(apps, pending) {
   if (selected) {
     const nextApp = apps[0].id.trim();
     selectAppContext(nextApp);
-    nextTaskPage = null;
   } else if (pending?.select) {
     selectAppContext(pending.previousAppId);
   }
@@ -1336,7 +1339,9 @@ function handleEvent(event) {
         removePending(pendingTaskReads, pending);
         const task = event.task;
         if (pending?.kind === "watch-start") {
-          if (task?.terminal) {
+          if (pending.watchSelectionVersion !== watchedTaskSelectionVersion) {
+            // A newer human watch, unwatch, or App selection superseded this read.
+          } else if (task?.terminal) {
             renderWatchSnapshot(task, { catchUp: true });
             setWatchedTask(null);
             printNotice("[watch] Task is already terminal.");
@@ -1563,12 +1568,14 @@ function handleCommand(input) {
         let stoppedWatch = null;
         if (rest !== selectedApp) {
           desiredAutoFollow = null;
+          watchedTaskSelectionVersion += 1;
           if (watchedTask) {
             stoppedWatch = watchedTask.ref;
             setWatchedTask(null);
           }
           selectAppContext(rest);
         }
+        nextTaskPage = null;
         const selectionVersion = ++appSelectionVersion;
         printNotice(`[apps] Selecting ${rest}…`);
         requestApps(rest, input, true, { previousAppId, selectionVersion, stoppedWatch });
@@ -1657,7 +1664,13 @@ function handleCommand(input) {
         return;
       }
       desiredAutoFollow = null;
-      requestTask({ kind: "watch-start", ref: rest, command: input });
+      watchedTaskSelectionVersion += 1;
+      requestTask({
+        kind: "watch-start",
+        watchSelectionVersion: watchedTaskSelectionVersion,
+        ref: rest,
+        command: input,
+      });
       return;
     }
     case "unwatch":
@@ -1665,11 +1678,13 @@ function handleCommand(input) {
         printLine("Usage: /unwatch");
         return;
       }
-      if (!watchedTask && !desiredAutoFollow) {
+      const pendingWatchStart = pendingTaskReads.some((pending) => pending.kind === "watch-start");
+      if (!watchedTask && !desiredAutoFollow && !pendingWatchStart) {
         printNotice("[watch] No Task is watched.");
         return;
       }
       desiredAutoFollow = null;
+      watchedTaskSelectionVersion += 1;
       if (watchedTask) setWatchedTask(null);
       printNotice("[watch] Watch ended. The Task continues.");
       return;
