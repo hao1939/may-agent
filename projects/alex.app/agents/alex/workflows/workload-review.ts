@@ -8,6 +8,12 @@ export const name = WORKLOAD_REVIEW_WORKFLOW;
 export const description = "Review one bounded page of changed Alex commitments and workload; retain advice and optionally notify an existing owner under installed policy, with no Task creation, repriority or closure.";
 export const workspace = "shared";
 export const executionTimeoutMs = 90_000;
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1 }),
+  data: Type.Optional(Type.Object({
+    reason: Type.Optional(Type.String({ minLength: 1 })),
+  }, { additionalProperties: false })),
+}, { additionalProperties: false });
 const LIMIT = 20;
 const EXACT_LIMIT = 3;
 const RECENT_BATCHES = 64;
@@ -259,8 +265,7 @@ export async function execute(ctx: AppWorkflowContext): Promise<ExecutionResult>
       ...(exact.length ? { taskId: Type.Optional(Type.Union(exact.map(task => Type.Literal(task.id)))) } : {}),
       ...(inputs.items.length ? { inputId: Type.Optional(Type.Union(inputs.items.map(input => Type.Literal(input.id)))) } : {}),
     }, { additionalProperties: false, not: { required: ["taskId", "inputId"] } });
-    const response = await ctx.call("alex", prompt, { tools: "readonly", timeoutMs: 60_000,
-      operationAllowance: 8, schema, source: "workload-review" });
+    const response = await ctx.call("alex/alex", { prompt }, { timeoutMs: 60_000, schema });
     ctx.signal.throwIfAborted();
     if (response.status !== "done" || !Check(decisionSchema, response.output) ||
         (response.output.taskId && !exact.some(task => task.id === response.output?.taskId)) ||

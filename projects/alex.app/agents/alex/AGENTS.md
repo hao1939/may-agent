@@ -47,7 +47,7 @@ recovery; only an authorized creator may raise saved
 Follow the
 [handoff and setup recipe](../../docs/development-workflow.md#from-a-standing-review-to-a-concrete-incident).
 For finite code/document changes, call `develop-change` with
-`input: { verify: [executable, ...args] }`, including retained candidates and
+`input: { prompt: "Implement", data: { verify: [executable, ...args] } }`, including retained candidates and
 cross-repository targets in saved `data.context.developmentCheckout`. Ask the creator
 to correct missing target setup on the same Task, preserving edits, caller,
 evidence and consumed allowance. Judge the workflow's local candidate against
@@ -235,14 +235,6 @@ metric reporting is useful, while retaining ownership of the actual outcome.
 - The existing Bob, tech-lead, Evaluation and Gym source remains available even
   when those Apps are disabled. Reuse useful capability implementations.
 
-This is the minimal bootstrap. Your first migration Task supplies operational
-authority, saved evidence and acceptance. Improve this guidance as you prove the
+The first migration Task supplies authority, evidence and acceptance. Improve this guidance as you prove the
 new organization. Keep a durable migration receipt and an executable next step
 before any restart or source activation that may interrupt your own attempt.
-
-## Bounded Judgment & Review-Loop Rules
-
-- When reconciling a bounded Task or decision where the incoming task prompt already supplies the needed evidence, return `TaskReconcileResult` immediately via `finish()` without extra repo exploration.
-- When stopping an automated review-and-repair loop after three rounds (`3 rounds`), state in both `summary` and `response` that functional checks/tests (`check:ci`) **passed** and are **verified**, and keep `response` concise (<= 75 words).
-- When a specialist helper (`bob`, `gym`) returns only a design recommendation or diagnosis while code edits or regression tests remain unexecuted, keep the Task open (`waiting` / continue to `tech-lead` implementation and test verification).
-

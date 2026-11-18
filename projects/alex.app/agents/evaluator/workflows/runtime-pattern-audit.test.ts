@@ -69,6 +69,7 @@ test("runtime-pattern-audit resolves the installed sibling-App inventory from an
     mkdirSync(projectRoot, { recursive: true });
     const ctx = createTestAppWorkflowContext({
       workflow: "runtime-pattern-audit",
+      input: { prompt: "Audit runtime patterns" },
       workspace: {
         appRoot,
         projectRoot,
@@ -178,12 +179,15 @@ test("runtime-pattern-audit keeps requests idempotent for stable attention evide
         createTestAppWorkflowContext({
           workflow: "runtime-pattern-audit",
           input: {
-            rootDir: root,
-            dbPath,
-            now,
-            latestWindowMs: windowMs,
-            compareWindowMs: windowMs,
-            persistSnapshot: false,
+            prompt: "Audit stable runtime attention evidence",
+            data: {
+              rootDir: root,
+              dbPath,
+              now,
+              latestWindowMs: windowMs,
+              compareWindowMs: windowMs,
+              persistSnapshot: false,
+            },
           },
         }),
       );
@@ -297,14 +301,14 @@ test("runtime-pattern-audit compares latest and preceding windows deterministica
 
     const ctx = createTestAppWorkflowContext({
       workflow: "runtime-pattern-audit",
-      input: {
+      input: { prompt: "Audit runtime patterns", data: {
         rootDir: root,
         dbPath,
         now,
         latestWindowMs: windowMs,
         compareWindowMs: windowMs,
         persistSnapshot: true,
-      },
+      } },
     });
     const res = await execute(ctx);
     expect(res.status).toBe("done");

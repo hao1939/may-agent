@@ -47,9 +47,12 @@ function fixture(heavy = false, notifyOwners = false) {
         get: async (id: string) => { reads.push(id); return structuredClone(tasks.find(task => task.id === id) ?? null); },
         list: async () => ({ items: structuredClone(tasks) }) },
     },
-    call: async (_agent: string, prompt: string, options: Record<string, unknown>) => {
-      prompts.push(prompt);
-      expect(options).toMatchObject({ tools: "readonly", timeoutMs: 60_000, operationAllowance: 8 });
+    call: async (agent: string, input: { prompt: string }, options: Record<string, unknown>) => {
+      expect(agent).toBe("alex/alex");
+      prompts.push(input.prompt);
+      expect(options).toMatchObject({ timeoutMs: 60_000 });
+      expect(options).not.toHaveProperty("tools");
+      expect(options).not.toHaveProperty("operationAllowance");
       return response;
     },
     done: (summary: string, output: unknown) => ({ status: "done", summary, output }),

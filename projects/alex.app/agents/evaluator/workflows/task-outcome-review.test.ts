@@ -50,8 +50,10 @@ function createTestAppWorkflowContext(
     existsSync(join(supplied.appRoot, "criteria", "criteria.md"))
       ? supplied.appRoot
       : TEST_APP_ROOT;
+  const rawInput = options.input ?? {};
   return createSdkTestAppWorkflowContext({
     ...options,
+    input: { prompt: "Review task outcome", data: rawInput },
     workspace: supplied
       ? { ...supplied, appRoot }
       : {
@@ -162,15 +164,11 @@ function reader(
         appId,
         tasks: [{ id: taskId }],
       };
-    if (command.type === "app.task.get")
-      return {
-        type: "ok",
-        command: "app.task.get",
-        appId,
-        taskId: command.taskId,
-        task: currentAppTask(),
-      };
-    return { type: "ok", command: "task.get", task: currentDetail() };
+    return {
+      type: "ok",
+      command: "task.get",
+      task: { ...currentAppTask(), ...currentDetail(), appId, taskId: command.taskId },
+    };
   };
 }
 
@@ -221,7 +219,7 @@ describe("Task outcome review", () => {
       let publications = 0;
       const read = reader();
       const ctx = createSdkTestAppWorkflowContext({
-        input: { appId, taskId, automatic: true as const },
+        input: { prompt: "Review task outcome", data: { appId, taskId, automatic: true as const } },
         workspace: {
           root: TEST_APP_ROOT,
           appRoot: TEST_APP_ROOT,
@@ -379,7 +377,7 @@ describe("Task outcome review", () => {
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId, assessmentPurpose: "ongoing" },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         checkedAt = 200; // A healthy check while the reviewer works is not a Task change.
         return {
           id: "s_judge",
@@ -489,7 +487,7 @@ describe("Task outcome review", () => {
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId, assessmentPurpose: "ongoing" },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         toolOutput = "changed after inspection";
         return {
           id: "s_judge",
@@ -552,8 +550,6 @@ describe("Task outcome review", () => {
       reader(
         () => ({
           ...detail,
-          // Human task.get lookalikes are not authoritative scheduling fields.
-          currentObligations: { available: true, reviewAt: 1 },
           diagnostics: {
             ...detail.diagnostics,
             conditions: [
@@ -661,7 +657,7 @@ describe("Task outcome review", () => {
         input: { appId, taskId, assessmentPurpose: "ongoing" },
         reconciliation: reconciliation(),
         call: async (_agent, value) => {
-          prompt = String(value);
+          prompt = value.prompt;
           return {
             id: "s_ongoing",
             kind: "agent",
@@ -732,7 +728,7 @@ describe("Task outcome review", () => {
       reconciliation: reconciliation(),
       workspace: { root, appRoot: root, projectRoot: root, output: root },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         return {
           id: "s_judge",
           kind: "agent",
@@ -805,8 +801,9 @@ describe("Task outcome review", () => {
       input: { appId, taskId, reviewer: "evaluator-deepseek" },
       reconciliation: reconciliation(),
       workspace: { root, appRoot, projectRoot: appRoot, output: root },
-      call: async (agent, prompt) => {
+      call: async (agent, input) => {
         calledAgent = agent;
+        const prompt = input.prompt;
         suppliedPrompt = prompt;
         return {
           id: "s_deepseek",
@@ -820,7 +817,7 @@ describe("Task outcome review", () => {
 
     const result = await reviewTaskOutcome(ctx, reader(), root);
     const facts = factsOf(result);
-    expect(calledAgent).toBe("evaluator-deepseek");
+    expect(calledAgent).toBe("alex/evaluator-deepseek");
     expect(suppliedPrompt).toContain("UNIQUE APP ROOT RUBRIC");
     expect(suppliedPrompt).toContain(
       "assessed and insufficient-evidence are both successful evaluator judgments",
@@ -984,11 +981,15 @@ describe("Task outcome review", () => {
         const producer = request.taskId === emission.taskId;
         if (producer) producerReads++;
         return {
-          type: "ok", command: request.type,
-          appId: request.appId, taskId: request.taskId,
-          task: request.type === "app.task.get"
-            ? { id: request.taskId, generation: 1, result: { fact: producer ? producerFact : helperFact } }
-            : { appId: request.appId, taskId: request.taskId, generation: 1 },
+          type: "ok",
+          command: "task.get",
+          task: {
+            id: request.taskId,
+            appId: request.appId,
+            taskId: request.taskId,
+            generation: 1,
+            result: { fact: producer ? producerFact : helperFact },
+          },
         };
       }
       return base(request);
@@ -1179,7 +1180,7 @@ describe("Task outcome review", () => {
     const ctx = createTestAppWorkflowContext({
       input: { appId, taskId },
       call: async (_agent, value) => {
-        prompt = String(value);
+        prompt = value.prompt;
         return {
           id: "s_judge",
           kind: "agent",
@@ -1520,11 +1521,11 @@ describe("Task outcome review", () => {
     const base = reader();
     const command: PublicCommand = async (request) => {
       const response = await base(request);
-      if (request.type !== "app.task.get") return response;
+      if (request.type !== "task.get") return response;
       return {
         ...response,
         task: {
-          ...appTask,
+          ...response.task,
           creator: { appId: "external-owner" },
           agent: "evaluator-deepseek",
         },

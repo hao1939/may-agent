@@ -167,9 +167,15 @@ function meaningfulLinkedTask(link: unknown): Record<string, unknown> {
           Object.entries(value).filter(([key]) => key !== "bytes"),
         )
       : value;
-  return semantic.detail
-    ? { ...semantic, detail: meaningfulTaskDetail(object(semantic.detail)) }
-    : semantic;
+  return {
+    ...semantic,
+    ...(semantic.appTask
+      ? { appTask: meaningfulTaskDetail(object(semantic.appTask)) }
+      : {}),
+    ...(semantic.detail
+      ? { detail: meaningfulTaskDetail(object(semantic.detail)) }
+      : {}),
+  };
 }
 
 export function taskEvidenceHash(

@@ -171,27 +171,30 @@ test("execute returns a canonically admitted wait bound to the exact proposal", 
   const result = await execute(
     createTestAppWorkflowContext({
       input: {
-        files: f.files,
-        proposalPath: join(f.root, "proposal.json"),
-        revision: 3,
-        owner: "human:Hao",
-        finding: {
-          disposition: "improve",
-          userImpact: "A bounded fixture demonstrates the approval handoff.",
-          recurrenceOrRisk: "The wrong candidate must never be applied.",
-          evidenceAndConfidence:
-            "The production workflow inspects real Git evidence.",
-          doNothingOrSimplerAlternative: "Reuse the existing human Condition.",
-        },
-        candidate: {
-          disposition: "present-for-approval",
-          verifiedBenefit: "The exact candidate is pinned.",
-          regressionRisk: "Fixture only.",
-          implementationCost: "Small.",
-          ongoingCost: "None.",
-          scopeAndLimitations: "Admission mechanics only.",
-          simplerAlternative: "Reuse the existing gate.",
-          worthApplying: "Yes, for this isolated fixture.",
+        prompt: "Prepare the exact improvement approval proposal",
+        data: {
+          files: f.files,
+          proposalPath: join(f.root, "proposal.json"),
+          revision: 3,
+          owner: "human:Hao",
+          finding: {
+            disposition: "improve",
+            userImpact: "A bounded fixture demonstrates the approval handoff.",
+            recurrenceOrRisk: "The wrong candidate must never be applied.",
+            evidenceAndConfidence:
+              "The production workflow inspects real Git evidence.",
+            doNothingOrSimplerAlternative: "Reuse the existing human Condition.",
+          },
+          candidate: {
+            disposition: "present-for-approval",
+            verifiedBenefit: "The exact candidate is pinned.",
+            regressionRisk: "Fixture only.",
+            implementationCost: "Small.",
+            ongoingCost: "None.",
+            scopeAndLimitations: "Admission mechanics only.",
+            simplerAlternative: "Reuse the existing gate.",
+            worthApplying: "Yes, for this isolated fixture.",
+          },
         },
       },
       reconciliation: {

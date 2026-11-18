@@ -5,7 +5,12 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, lstatSync, mkdirSync, readFileSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { run, type RunOptions } from "@may-agent/sdk/standalone";
+import {
+  createModelRegistry,
+  runDirectWorkflow,
+  type DirectWorkflowRunOptions,
+  type ModelRegistry,
+} from "@may-agent/sdk/standalone";
 
 export interface StageConfig {
   target: string;
@@ -33,6 +38,10 @@ function git(root: string, ...args: string[]) {
 
 function sourceIdentity(root: string) {
   return { root, commit: git(root, "rev-parse", "HEAD"), status: git(root, "status", "--short") };
+}
+
+export function stageModelRegistry(hasAgentFixtures: boolean): ModelRegistry {
+  return hasAgentFixtures ? {} : createModelRegistry();
 }
 
 function treeHash(root: string): string {
@@ -121,12 +130,19 @@ export async function runStage(configFile: string, signal?: AbortSignal) {
     const agentFixtures = config.fixtureFile ? (await import(pathToFileURL(config.fixtureFile).href)).agentFixtures : undefined;
     if (config.fixtureFile && (!agentFixtures || typeof agentFixtures !== "object")) throw new Error("fixtureFile must export agentFixtures");
     record("started", { invocationId, target: config.target, outputRoot: config.outputRoot });
-    const result = await run(config.target, config.input, {
-      cwd: config.cwd,
+    const result = await runDirectWorkflow({
+      target: config.target,
+      input: config.input,
       projectRoot: config.projectRoot,
-      task: config.task,
+      workRoot: config.cwd,
+      agentsRoot: join(config.projectRoot, "agents"),
+      projectsRoot: join(config.projectRoot, "projects"),
+      globalAgentsRoot: join(config.projectRoot, "agents"),
+      sharedRoot: join(config.projectRoot, "shared"),
+      appScope: config.target.slice(0, config.target.indexOf("/")),
       outputRoot: config.outputRoot,
       traceDir: join(config.outputRoot, "trace"),
+      models: stageModelRegistry(Boolean(agentFixtures)),
       timeoutMs: config.timeoutMs,
       signal,
       tools: config.tools ?? "full",
@@ -135,7 +151,7 @@ export async function runStage(configFile: string, signal?: AbortSignal) {
       onStep: (step) => record("step", step),
       onLog: (entry) => record("log", entry),
       onNotice: (message) => record("notice", message),
-    } satisfies RunOptions);
+    } satisfies DirectWorkflowRunOptions);
     save("result.json", { ...result, ...(result.error ? { error: errorRecord(result.error) } : {}) });
     const sdkHashAfter = treeHash(sdkRoot);
     const sourceAfter = { source: sourceIdentity(config.projectRoot), working: sourceIdentity(config.cwd) };

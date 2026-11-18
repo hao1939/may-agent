@@ -76,8 +76,12 @@ const judgment = {
     "Recommend owner investigation and next-day reconsideration; recovery is unverified",
 };
 function context(options: any = {}) {
+  const raw = options.input ?? { metricId: "sample.failures", end };
+  const input = raw && typeof raw === "object" && "metricId" in raw && !("report" in raw)
+    ? { prompt: "Review metric", data: raw }
+    : raw;
   return createTestAppWorkflowContext({
-    input: { metricId: "sample.failures", end },
+    input,
     workspace: {
       root: appRoot,
       appRoot,
@@ -85,6 +89,7 @@ function context(options: any = {}) {
       output: appRoot,
     },
     ...options,
+    input,
   });
 }
 
@@ -350,7 +355,8 @@ test.each([
   const events: any[] = [];
   let calls = 0;
   const ctx = context({
-    call: async (_agent: string, prompt: string) => {
+    call: async (_agent: string, input: { prompt: string }) => {
+      const prompt = input.prompt;
       calls++;
       expect(prompt).toContain("Choose followUp explicitly");
       return { id: "followup-review", kind: "agent", status: "done", summary: "reviewed", output: { ...judgment, followUp } };
@@ -393,7 +399,8 @@ test("pre-Task evidence uses the existing report, publication reader and May int
   const events: any[] = [];
   let calls = 0;
   const ctx = context({
-    call: async (_agent: string, prompt: string) => {
+    call: async (_agent: string, input: { prompt: string }) => {
+      const prompt = input.prompt;
       calls++;
       expect(prompt).toContain("A Task is not required");
       expect(prompt).toContain("not verified recovery");

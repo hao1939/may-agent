@@ -16,7 +16,7 @@ export const name = "diagnose-improvement";
 export const description =
   "Analyze a frozen Gym baseline using verified source and retained trial evidence, then optionally prepare a .lab candidate.";
 
-export const diagnoseImprovementInputSchema = Type.Object(
+const diagnoseImprovementDataSchema = Type.Object(
   {
     baselineDir: Type.String({ minLength: 1 }),
     outputFile: Type.Optional(Type.String({ minLength: 1 })),
@@ -24,6 +24,15 @@ export const diagnoseImprovementInputSchema = Type.Object(
   },
   { additionalProperties: false },
 );
+
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1 }),
+    data: Type.Optional(diagnoseImprovementDataSchema),
+  },
+  { additionalProperties: false },
+);
+export const diagnoseImprovementInputSchema = inputSchema;
 
 const evidenceCitationSchema = Type.Object(
   {
@@ -87,7 +96,7 @@ const candidateImplResultSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export type DiagnoseImprovementInput = Static<typeof diagnoseImprovementInputSchema>;
+export type DiagnoseImprovementInput = Static<typeof inputSchema>;
 export type ImprovementProposal = Static<typeof improvementProposalSchema>;
 
 type RetainedEvidence = {
@@ -489,6 +498,8 @@ function insufficientProposal(target: string, regimes: string[], reason: string)
 }
 
 export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
+  const input = ctx.input.data;
+  if (!input) return ctx.blocked("diagnose-improvement requires baseline data");
   const explicitWorkRoot = ctx.workspace?.root ?? ctx.workspace?.projectRoot;
   const explicitProjectRoot = ctx.workspace?.projectRoot ?? ctx.workspace?.root;
   if (!explicitWorkRoot || !explicitProjectRoot) {
@@ -496,7 +507,7 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
   }
   const workRoot = realpathSync(explicitWorkRoot);
   const projectRoot = realpathSync(explicitProjectRoot);
-  const baselineDir = resolve(workRoot, ctx.input.baselineDir);
+  const baselineDir = resolve(workRoot, input.baselineDir);
   const diag = extractBaselineDiagnostics(baselineDir);
   const sourceRoot = selectSourceRoot(workRoot, projectRoot);
   const canonical: CanonicalResolution = sourceRoot.status === "selected"
@@ -521,8 +532,7 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
       JSON.stringify(diag.trials, null, 2),
       "The deterministic disposition is insufficient_evidence. Do not propose changes. A score or label is not human adjudication.",
     ].join("\n");
-    const boundaryStep = await ctx.call("gym", boundaryPrompt, {
-      tools: "readonly",
+    const boundaryStep = await ctx.call("alex/gym", { prompt: boundaryPrompt }, {
       schema: improvementProposalSchema,
     });
     if (boundaryStep.status !== "done") {
@@ -573,7 +583,7 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
       "- Finish with the structured proposal after the bounded evidence inspection.",
     ].join("\n");
 
-    const step = await ctx.call("gym", prompt, { tools: "readonly", schema: improvementProposalSchema });
+    const step = await ctx.call("alex/gym", { prompt }, { schema: improvementProposalSchema });
     if (step.status !== "done" || !step.output) {
       return ctx.blocked(step.summary || "gym failed to produce an improvement proposal");
     }
@@ -628,11 +638,11 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
   let preparedLabDir: string | undefined;
   let candidateSummary: string | undefined;
   if (
-    ctx.input.candidateName?.trim() &&
+    input.candidateName?.trim() &&
     proposal.disposition === "actionable" &&
     canonical.status === "resolved"
   ) {
-    const candidateName = ctx.input.candidateName.trim();
+    const candidateName = input.candidateName.trim();
     const labRoot = join(sourceRoot.status === "selected" ? sourceRoot.root : projectRoot, "agents", ".lab");
     const candidateDir = resolve(labRoot, candidateName);
     if (candidateDir === resolve(labRoot) || !containedPath(labRoot, candidateDir)) {
@@ -655,15 +665,15 @@ export async function execute(ctx: AgentContext<DiagnoseImprovementInput>) {
       JSON.stringify(diag.trials, null, 2),
       "Apply only the cited smallest generalizable update and call finish.",
     ].join("\n");
-    const implStep = await ctx.call("tech-lead", implPrompt, { schema: candidateImplResultSchema });
+    const implStep = await ctx.call("alex/tech-lead", { prompt: implPrompt }, { schema: candidateImplResultSchema });
     if (implStep.status !== "done" || !implStep.output) {
       return ctx.blocked(implStep.summary || "tech-lead failed to prepare the .lab candidate");
     }
     candidateSummary = (implStep.output as Static<typeof candidateImplResultSchema>).summary;
   }
 
-  if (ctx.input.outputFile) {
-    const outPath = resolve(workRoot, ctx.input.outputFile);
+  if (input.outputFile) {
+    const outPath = resolve(workRoot, input.outputFile);
     writeFileSync(
       outPath,
       `${JSON.stringify({ proposal, preparedLabDir, candidateSummary }, null, 2)}\n`,

@@ -1,9 +1,13 @@
 import { describe, expect, test } from "bun:test";
+import { Check } from "typebox/value";
 import {
   createPublicTaskEvidenceProvider,
   type PublicCommand,
 } from "../../evaluator/workflows/lib/public-task-evidence.js";
-import { reviewTaskDispositionBatch } from "./task-disposition-review.js";
+import {
+  inputSchema,
+  reviewTaskDispositionBatch,
+} from "./task-disposition-review.js";
 import { taskForInput, taskInputForEvent } from "../../../app.js";
 
 function fixture(count = 1) {
@@ -60,10 +64,13 @@ function fixture(count = 1) {
       command: input.type,
       appId: input.appId,
       taskId: input.taskId,
-      task:
-        input.type === "app.task.get"
-          ? structuredClone(tasks[index])
-          : { ...human[index], appId: input.appId },
+      task: {
+        ...structuredClone(tasks[index]),
+        ...human[index],
+        id: input.taskId,
+        taskId: input.taskId,
+        appId: input.appId,
+      },
     };
   };
   return {
@@ -76,6 +83,22 @@ function fixture(count = 1) {
 }
 
 describe("bounded Task disposition review", () => {
+  test("admits only the canonical callable envelope", () => {
+    expect(
+      Check(inputSchema, {
+        prompt: "Review this bounded Task page",
+        data: { appId: "alex", limit: 10 },
+      }),
+    ).toBe(true);
+    expect(Check(inputSchema, { appId: "alex", limit: 10 })).toBe(false);
+    expect(
+      Check(inputSchema, {
+        prompt: "Review this bounded Task page",
+        appId: "alex",
+      }),
+    ).toBe(false);
+  });
+
   test("traverses 528 existing assignments in bounded resumable pages without creating or closing work", async () => {
     const f = fixture(528);
     const seen: string[] = [];
@@ -102,7 +125,7 @@ describe("bounded Task disposition review", () => {
     expect(seen).toEqual(f.tasks.map(({ id }) => id));
     expect(new Set(seen).size).toBe(528);
     expect(new Set(f.calls.map(({ type }) => type))).toEqual(
-      new Set(["app.tasks.list", "app.task.get", "task.get"]),
+      new Set(["app.tasks.list", "task.get"]),
     );
     expect(f.tasks.every(({ status }) => status === "idle")).toBe(true);
   });
@@ -178,7 +201,7 @@ describe("bounded Task disposition review", () => {
     f.tasks[2].currentObligations.inputWaits.truncated = true;
     f.tasks[3].pendingEvents.truncated = true;
     const provider = createPublicTaskEvidenceProvider(async (input) => {
-      if (input.type === "app.task.get" && input.taskId === f.tasks[1].id)
+      if (input.type === "task.get" && input.taskId === f.tasks[1].id)
         throw new Error("Read unavailable");
       return f.command(input);
     });

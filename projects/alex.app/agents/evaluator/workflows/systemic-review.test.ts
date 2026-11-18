@@ -155,12 +155,12 @@ test("recovered work reaches population review, preserves its cut through admiss
     let calls = 0;
     const publications: any[] = [];
     const ctx = createTestAppWorkflowContext({
-      input: admitted,
+      input: { prompt: "Review the recovered Task outcome", data: admitted },
       workspace,
-      call: (async (_agent: string, prompt: unknown) => {
+      call: (async (_agent: string, callInput: { prompt: string }) => {
         calls++;
-        expect(String(prompt)).toContain("Assess this exact Task AND");
-        expect(String(prompt)).toContain(
+        expect(callInput.prompt).toContain("Assess this exact Task AND");
+        expect(callInput.prompt).toContain(
           "| current | App | 10 | 3 | 0 | 30 | 1000 |",
         );
         return {

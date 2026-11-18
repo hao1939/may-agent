@@ -103,7 +103,7 @@ describe("Task-bound process evidence", () => {
       taskEvidenceHash("may", "goal/one", {
         readBack: { process: await f.run() },
       }),
-    ).toBe("7c76952a826c554dbcea8e503f04a0c5257d8c2582496a42eecde3975ae9b672");
+    ).toBe("4ac3d96860be9c29753d8ca5932a384626b139353b35433145cacc6c850d3b89");
     expect(f.reads).toEqual(["s_0:false", "s_0:true", "s_0:false"]);
   });
   test("retains partial error output and the clipped diagnostic through an exact raw read", async () => {
@@ -449,29 +449,20 @@ describe("Task-bound process evidence", () => {
           command: cmd.type,
           event: await f.provider.getEvent(Number(cmd.eventId)),
         };
-      if (cmd.type === "app.task.get")
-        return {
-          command: cmd.type,
-          appId: "may",
-          taskId: "goal/one",
-          task: {
-            id: "goal/one",
-            generation: 2,
-            creator: { appId: "may" },
-            result: {
-              artifact: {
-                path: ".state/hygiene/saved.json",
-                sha256: "a".repeat(64),
-              },
-            },
-          },
-        };
       return {
         command: cmd.type,
         task: {
           ...f.detail,
           appId: "may",
           taskId: "goal/one",
+          id: "goal/one",
+          creator: { appId: "may" },
+          result: {
+            artifact: {
+              path: ".state/hygiene/saved.json",
+              sha256: "a".repeat(64),
+            },
+          },
           acceptedEvidence: { page: { items: [] } },
         },
       };

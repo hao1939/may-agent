@@ -239,17 +239,17 @@ describe("canonical May conversation App", () => {
       id: "old-bob-route", source: { kind: "human", id: "operator" },
       input: { kind: "goal", data: { outcome: "Review design", acceptance: ["Return advice"], assignment: { agent: "may-bob" } } },
     })).toThrow("specialists are owned by App alex");
-    expect(app.schedules.find(({ id }) => id === "research-adoption-archive-review")).toBeUndefined();
+    expect(app.schedules?.find(({ id }) => id === "research-adoption-archive-review")).toBeUndefined();
   });
 
   test("leaves the hygiene cadence to its Task reviewAt without a duplicate App timer", () => {
     expect(
-      app.schedules.find(({ id }) => id === "task-hygiene-review"),
+      app.schedules?.find(({ id }) => id === "task-hygiene-review"),
     ).toBeUndefined();
   });
 
   test("does not keep the migrated weekly research schedule", () => {
-    expect(app.schedules.find(({ id }) => id === "research-adoption-archive-review")).toBeUndefined();
+    expect(app.schedules?.find(({ id }) => id === "research-adoption-archive-review")).toBeUndefined();
   });
 
   test("method selection does not add a development input or bound workflow", () => {

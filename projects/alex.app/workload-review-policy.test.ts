@@ -23,7 +23,7 @@ test.each([[false, false], [false, true], [true, false], [true, true]])("the act
     expect(result.denied).toBe(false);
     expect(result.coordination).toEqual({ taskId: "runtime/workload-review", workflow: "workload-review", maxAttemptMs: 90_000 });
     expect(result.schedule).toMatchObject({ intervalMs: 900_000, catchUp: "latest", input: { kind: "workload-review" } });
-    expect(result.intent).toMatchObject({ id: result.coordination.taskId, workflow: result.coordination.workflow, agent: "alex" });
+    expect(result.intent).toMatchObject({ id: result.coordination.taskId, workflow: "workload-review", agent: "alex" });
   } else {
     expect(result).toMatchObject({ schedule: null, coordination: null, intent: null, denied: true });
   }

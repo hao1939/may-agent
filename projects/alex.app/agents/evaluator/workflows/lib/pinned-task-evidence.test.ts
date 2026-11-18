@@ -28,24 +28,15 @@ function publicReader(
     if (command.type === "apps.list")
       return { command: "apps.list", apps: [{ id: "may" }] };
     const id = String(command.taskId);
-    if (command.type === "app.task.get")
-      return {
-        command: "app.task.get",
-        appId: command.appId,
-        taskId: id,
-        task: {
-          id,
-          creator: { appId: "may" },
-          generation: 1,
-          result: id === "goal/one" ? result : helperResult,
-        },
-      };
     return {
       command: "task.get",
       task: {
+        id,
         appId: command.appId,
         taskId: id,
+        creator: { appId: "may" },
         generation: 1,
+        result: id === "goal/one" ? result : helperResult,
         ...(command.acceptedEvidence
           ? { acceptedEvidence: { page: { items: [] } } }
           : {}),
@@ -323,14 +314,12 @@ describe("pinned Task evidence read-back", () => {
       const response = await base(request);
       if (request.taskId === "helper/one") {
         const task = response.task as Record<string, unknown>;
-        if (request.type === "app.task.get") task.facts = [helperFact];
-        else {
-          task.resourceVersion = resourceVersion;
-          task.history = [
-            { eventId: resourceVersion, timestamp: resourceVersion, eventType: "project.task.reconcile.skipped" },
-            { eventId: resourceVersion + 1, timestamp: resourceVersion, eventType: "project.task.reconcile.profiled" },
-          ];
-        }
+        task.facts = [helperFact];
+        task.resourceVersion = resourceVersion;
+        task.history = [
+          { eventId: resourceVersion, timestamp: resourceVersion, eventType: "project.task.reconcile.skipped" },
+          { eventId: resourceVersion + 1, timestamp: resourceVersion, eventType: "project.task.reconcile.profiled" },
+        ];
       }
       return response;
     };
@@ -358,11 +347,11 @@ describe("pinned Task evidence read-back", () => {
     const command: PublicCommand = async (request) => {
       const response = await base(request);
       const task = response.task as Record<string, unknown>;
-      if (request.taskId === "goal/one" && request.type === "app.task.get")
+      if (request.taskId === "goal/one" && request.type === "task.get")
         task.creator = { appId: "may", taskId: "conversation/one" };
       if (
         request.taskId === "conversation/one" &&
-        request.type === "app.task.get"
+        request.type === "task.get"
       )
         task.facts = [creatorFact];
       return response;
@@ -392,11 +381,11 @@ describe("pinned Task evidence read-back", () => {
     const command: PublicCommand = async (request) => {
       const response = await base(request);
       const task = response.task as Record<string, unknown>;
-      if (request.taskId === "goal/one" && request.type === "app.task.get")
+      if (request.taskId === "goal/one" && request.type === "task.get")
         task.creator = { appId: "may", taskId: "conversation/one" };
       if (
         request.taskId === "conversation/one" &&
-        request.type === "app.task.get"
+        request.type === "task.get"
       )
         task.facts = [helperFact];
       return response;
@@ -444,11 +433,11 @@ describe("pinned Task evidence read-back", () => {
       const command: PublicCommand = async (request) => {
         const response = await base(request);
         const task = response.task as Record<string, unknown>;
-        if (request.type === "app.task.get" && request.taskId === "goal/one")
+        if (request.type === "task.get" && request.taskId === "goal/one")
           task.input = { kind: "message", data: { context: { researchHandoff: handoff } } };
         if (request.taskId === emission.taskId) {
           producerReads++;
-          if (request.type === "app.task.get") task.facts = [producerFact];
+          if (request.type === "task.get") task.facts = [producerFact];
         }
         return response;
       };

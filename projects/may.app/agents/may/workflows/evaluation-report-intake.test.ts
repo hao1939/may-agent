@@ -169,9 +169,9 @@ function reader(data: ReturnType<typeof fixture>, evidenceHash?: string) {
 }
 
 describe("May Evaluation report intake procedure", () => {
-  test("shows the exact flat workflow call and rejects a wrapped publication actionably", async () => {
+  test("shows the canonical workflow call and rejects a wrapped publication actionably", async () => {
     expect(description).toContain(
-      'agents({action:"call",agent:"evaluation-report-intake",input:message.context.publication})',
+      "Call may/evaluation-report-intake with {prompt,data:message.context.publication}",
     );
     expect(description).toContain("preserve the complete publication object");
 
@@ -183,10 +183,10 @@ describe("May Evaluation report intake procedure", () => {
     expect(execution).toMatchObject({ status: "blocked" });
     const blocked = JSON.stringify(execution);
     expect(blocked).toContain(
-      'agents({action:\\"call\\",agent:\\"evaluation-report-intake\\",input:message.context.publication})',
+      "Call may/evaluation-report-intake with {prompt,data:message.context.publication}",
     );
     expect(blocked).toContain("all publication fields must be preserved");
-    expect(blocked).toContain("input.publication is not accepted");
+    expect(blocked).toContain("data.publication is not accepted");
   });
 
   test("preserves producer reviewer identity through May normalization and shared report intake", async () => {

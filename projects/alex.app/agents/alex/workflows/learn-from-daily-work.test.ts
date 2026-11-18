@@ -128,15 +128,18 @@ describe("alex/learn-from-daily-work multi-root harvester & synthesizer", () => 
 
       const run = await runWorkflowTest(learnFromDailyWork, {
         input: {
-          roots: [sandbox],
-          cursorPath,
-          outputFile,
-          stageDraftCases: true,
-          gymBenchmarksRoot,
+          prompt: "Synthesize daily work signals",
+          data: {
+            roots: [sandbox],
+            cursorPath,
+            outputFile,
+            stageDraftCases: true,
+            gymBenchmarksRoot,
+          },
         },
         workspace: { projectRoot: sandbox, workRoot: sandbox },
         mocks: {
-          bob: {
+          "alex/bob": {
             status: "done",
             summary: "Extracted 2 lessons (1 valid, 1 leaky)",
             output: {

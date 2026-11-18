@@ -586,44 +586,30 @@ describe("Scout task reconciliation", () => {
     }
   });
 
-  it("translates scheduled events through the single typed input mapper", () => {
+  it("routes scheduled work through direct typed App inputs", () => {
     expect(app.tasks).not.toHaveProperty("subscriptions");
     expect(app.tasks).not.toHaveProperty("resolve");
-    for (const [type, source] of [
-      ["scout.explore", "hn"],
-      ["scout.explore", "reddit"],
-      ["scout.digest", undefined],
-      ["project.library_health.tick", undefined],
-    ]) {
-      const event = {
-        type: type!,
-        source: `app:scout-knowledge-lib:schedule:scout-explore-${source}`,
-        target: { project: "scout-knowledge-lib" },
-        data: { project: "scout-knowledge-lib", ...(source ? { source } : {}) },
-      };
-      const subscriptions = app.subscriptions!.filter(({ event: selector }) =>
-        matchesEventSelector(selector, event),
-      );
-      expect(subscriptions).toHaveLength(1);
-      const input = subscriptions[0]!.toInput(event)!;
+    for (const [scheduleId, expectedInput, expectedTaskId] of [
+      ["scout-explore-hn", { kind: "explore", data: { source: "hn" } }, "explore-hn"],
+      ["scout-explore-reddit", { kind: "explore", data: { source: "reddit" } }, "explore-reddit"],
+      ["scout-daily-digest", { kind: "digest", data: {} }, "daily-digest"],
+      ["library-health", { kind: "library-health", data: {} }, "runtime/library-health-observer"],
+    ] as const) {
+      const schedule = app.schedules?.find(({ id }) => id === scheduleId);
+      expect(schedule).toBeDefined();
+      expect(schedule).toHaveProperty("input", expectedInput);
+      expect(schedule).not.toHaveProperty("event");
+      const input = schedule && "input" in schedule ? schedule.input : undefined;
       expect(Check(app.inputSchema, input)).toBe(true);
       expect(
         taskForScoutInput({
-          id: "scheduled-event",
-          source: { kind: "system", id: "event:1" },
-          input,
+          id: `schedule:${scheduleId}:1`,
+          source: { kind: "system", id: `schedule:scout-knowledge-lib:${scheduleId}` },
+          input: input!,
         }),
-      ).toEqual({ kind: "desired", intent: resolveScoutTask(event) });
-      expect(
-        app.subscriptions!.filter(({ event: selector }) =>
-          matchesEventSelector(selector, {
-            ...event,
-            target: { project: "other" },
-            data: { project: "other" },
-          }),
-        ),
-      ).toHaveLength(0);
+      ).toMatchObject({ kind: "desired", intent: { id: expectedTaskId } });
     }
+    expect(app.subscriptions?.some(({ id }) => id.startsWith("scheduled-"))).toBe(false);
     expect(app.agent).toBe("scout");
     expect(app.observers).toContainEqual(
       expect.objectContaining({ id: "xhs-credential", intervalMs: 300_000 }),
