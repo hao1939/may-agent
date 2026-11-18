@@ -2372,3 +2372,32 @@ the legitimate prior Host changes. The previous missing-metric-producer finding
 describes the older installed4a pair; it is not a claim that current main lacks
 the newly merged producer. Root retains design/review/independent verification
 and publication assistance; May owns source implementation through the workflow.
+
+## Six-finding candidate and complete App scan — 18 November
+
+May's retained Host contribution reaches `5dd896025aa6c247d7b2c00b3fd1a49cd39d803b`,
+including the six post-merge fixes, genuine App-scoped Task fixture migrations
+and a normal merge of main946453cff0/#592. Root publishes the same durable branch
+to draft #594 and independently reviews its source. Seven variant probes cover
+the six defects; all pass, as does the current-input production probe. The exact
+eight-file owning suite passes118 tests/995 expectations. Types/boundary/lint
+pass; Container passes while Quality remains in progress at this checkpoint.
+`5dd-root-independent-source-review.json` records actual Root review with no
+remaining source finding in this slice. It does not invent an internal Bob pass.
+
+Native workflow `wr_1794966182747_a52b` finishes with an incomplete delivery and
+all12/12 reservations retained. Full local CI receives SIGTERM and is not green.
+Its final internal review is absent. Root supplies the real independent review
+and verification in events6743706/6743707; outer hosted CI and delivery stay with
+May/Root. No additional Host round or replacement Host Task is authorized.
+
+The separate frozen Appf358/Host5dd scan continues past failing chunks without
+changing tests, running all81 configured files. It records1147 pass/two failures:
+the existing concurrency3/6 fixture mismatch and one diagnosis-routing fixture
+expecting the old bare executed-role name. The latter passes on mergede489/Appab,
+so it must be reported as a new compatibility migration. Event6743695 revises the
+same May Goal to commission one separate, three-round App fixture contribution;
+the Host12/12 and original completed App64/64 stay unchanged. Only the canonical
+role assertion is in that new source scope. Current App type/current-input checks
+pass. Exact logs, per-chunk JUnit and `5dd-configured-app-scan.json` are retained in
+the post-merge evidence directory. Paired activation and final delivery remain open.

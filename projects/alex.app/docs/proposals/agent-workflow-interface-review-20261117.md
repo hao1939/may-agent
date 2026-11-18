@@ -118,8 +118,7 @@ Exact findings and reproduction are retained as
 reproduces actual wrong-code dispatch, inherited write-tool exposure and managed
 blocker failure. The first checkpoint is [draft #594](https://github.com/hao1939/may-agent/pull/594).
 Its subsequent commits repair the captured-owner/global-caller edge and remove
-the foreign bare-Task fallback, with actual tool/Task/result coverage. Fix the
-two namespace defects first, then inherited tools and report/JSON admission.
+the foreign bare-Task fallback, with actual tool/Task/result coverage.
 The sixth schema-forwarding finding is independently proved by identical
 scripted invalid-then-valid replies: merged code fails after one model reply while
 the workflow call corrects and finishes after two. May's generation3 revision
@@ -128,11 +127,25 @@ preserves the same Alex contribution, actual usage and total12 limit. Its
 binding. Root's independent production probe now gets `done` and valid output
 after two replies through both adapters; 31 owning tests pass across three files.
 Earlier exact-head probes also pass for the original five findings. These scoped
-checks do not establish full readiness: the preceding hosted head's Quality check
-fails on 13 Task namespace fixtures, and fixture migration, independent final
-review, current-head CI and compatible local activation remain open. Container
-passed on that preceding head. Keep genuine App-local definitions in migrated
-fixtures; a canonical map key alone does not make a global profile App-local.
+checks do not establish full readiness. The integrated `5dd896025a` checkpoint
+repairs all 13 hosted Task namespace fixtures, retains main's #592, and passes
+Root's eight-file owning suite: 118 tests, zero failures, 995 expectations. All
+six behavior probes, including caller/tool variants, pass on that exact head;
+Root's source review finds no remaining defect in this slice. Host/SDK type,
+boundary and lint checks pass. Container passes; current-head Quality remains
+in progress. The native workflow retains its honest partial delivery at 12/12:
+its full local CI was interrupted and its internal final review did not finish.
+Root's actual review is separate evidence, not a relabeled native workflow pass.
+
+The compatible App `f358f18f4e` scan runs all 81 configured files: 1,147 pass and
+two fail. The concurrency3/6 assertion remains a user-owned baseline mismatch.
+The other failure is an App fixture expecting bare `alex` instead of executed
+`alex/alex`; it passes against merged e489, so it is a new fixture migration.
+May's generation4 assignment commissions one narrow App contribution with a
+three-round bound for that assertion. This separate repository deliverable does
+not renew the Host's 12/12 or the completed original App's 64/64. It preserves
+the actual diagnosis-routing assertions and leaves concurrency policy untouched.
+Final paired verification, local activation and review-link delivery remain open.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 
