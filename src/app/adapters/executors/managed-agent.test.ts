@@ -7,7 +7,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTaskAgentRunner } from "./managed-agent.js";
 import { runTaskAgent } from "../../core/tasks/attempt-execution.js";
-import type { SubagentManager } from "../../../lib/manager.js";
 import type { TaskAgentInput } from "../../core/tasks/execution.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../../core/tasks/app-task-output-paths.js";
 import { executePreparedAgent, prepareAgentExecution } from "../../../lib/agent-execution.js";
