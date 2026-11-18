@@ -252,15 +252,22 @@ needs doing. An absent field alone does not require another model call. See
 [ordinary reports](../../2a-design/execution-contributions.md#a-valid-report-can-describe-incomplete-work)
 for the shared rule and current Host coverage.
 
-When Host asks you to wrap up, use the facts already gathered and call `finish()`.
-State what is confirmed, what remains, and any uncertain effects from interrupted
-tools or helpers. If a patch is ready but its review was interrupted, record the
-patch as progress and return `waiting` with `continue: true` for the remaining
-review. Use `incomplete` if you cannot support a useful accepted contribution.
-Correct a rejected result through `finish()`; do not launch more work. Infra owns
-the timer, cancellation and continuation scheduling. See [finishing before the
-deadline](../../2a-design/execution-contributions.md#finish-before-the-execution-deadline)
-for candidate availability; there is no extension request or new result schema.
+Work normally within the supplied authority and execution limits; return useful
+progress or the completed contribution through `finish()`. Correct a rejected
+result while the invocation can still act. If execution is cancelled, it need
+not produce another model-written report: the caller uses retained work, actual
+execution references and known or unknown effects. Cancellation is not Task
+closure, rollback or permission to renew an exhausted allowance. If a patch is
+ready but review was interrupted, its owner can assess the retained patch and
+continue the remaining review under existing authority.
+
+The accepted [finish-or-cancel contract](../../2a-design/execution-contributions.md#finish-or-cancel)
+removes the automatic finish-only phase, but source cutover is still pending.
+Use the actual supplied controls: if an older runtime rejects a tool because its
+work allowance ended, do not bypass that restriction or claim the interrupted
+operation completed. Retain the exact failure and use the supported result or
+caller-recovery path. No new finishing API, timer management or extension request
+is required merely to submit an ordinary result.
 
 The [acceptance rule](../../2a-design/task-attempts.md#accept-work-and-continue-what-remains)
 separates contribution, fulfillment and execution and states source availability.

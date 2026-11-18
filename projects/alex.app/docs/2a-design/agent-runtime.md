@@ -167,7 +167,12 @@ Required persistence failures stay visible; optional observation failure must
 not replace the result. Cancellation does not undo committed external effects.
 
 An accepted finish ends this invocation and fences remaining effects. Rejected
-output remains correctable within its existing allowance. Preserve useful
+output remains correctable within its existing allowance. Requiring a structured
+result does not create an earlier work deadline or an automatic finish-only
+phase. Cancellation ends the invocation without requiring another model report;
+retain available evidence and report interruption and cleanup honestly. The
+[finish-or-cancel contract](execution-contributions.md#finish-or-cancel) owns this
+accepted simplification and its current implementation gap. Preserve useful
 partial output and failures. A successful invocation does not by itself mean
 that a durable Task or human promise is fulfilled.
 

@@ -647,10 +647,12 @@ do not extend an invocation's allowance. Code supplies and enforces these limits
 agents judge continuation or steering without managing timeout counters. The
 allowance bounds active work, not an idle chat's lifetime or a durable Task's life.
 Unconfirmed cleanup is a visible failure, not permission to overlap executions.
-Structured Host agent invocations reserve part of that allowance for returning
-their result. Helpers share the work deadline so their caller can finish before
-the hard stop. See [graceful finishing](execution-contributions.md#finish-before-the-execution-deadline)
-for the contract, source availability and executor limits.
+Structured output does not imply an early tool cutoff or another execution
+phase. Under the accepted [finish-or-cancel contract](execution-contributions.md#finish-or-cancel),
+normal work remains available until finish, cancellation or an admitted limit;
+children inherit the remaining bound without nested finishing reserves. Source
+removal of the older finish-only guard is still pending. Cancellation retains
+available evidence without requiring a final model report or implying rollback.
 
 For a native Codex continuation, fresh canonical Task/attempt/input/settlement
 feedback must precede the next model request. The adapter first persists the
