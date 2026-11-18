@@ -269,23 +269,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * file. A partial first line is discarded; corrupted complete lines are
  * skipped with the same warning behavior as readSessionMessages().
  */
-export function readSessionMessagesTail(
+export type SessionMessagesTail = {
+  messages: AgentMessage[];
+  omitted?: { messages?: true; bytes?: true };
+};
+
+/** Read a bounded transcript tail and report which bound omitted older evidence. */
+export function readSessionMessagesTailWithCoverage(
   persistDir: string,
   sessionId: string,
   limit: number,
   maxBytes = 8 * 1024 * 1024,
-): AgentMessage[] {
+): SessionMessagesTail {
   const normalizedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 0;
   const normalizedMaxBytes = Number.isFinite(maxBytes) ? Math.max(0, Math.floor(maxBytes)) : 0;
-  if (normalizedLimit === 0 || normalizedMaxBytes === 0) return [];
+  if (normalizedLimit === 0 || normalizedMaxBytes === 0) return { messages: [] };
 
   const filePath = sessionJsonlPath(persistDir, sessionId);
-  if (!existsSync(filePath)) return [];
+  if (!existsSync(filePath)) return { messages: [] };
 
   const descriptor = openSync(filePath, "r");
   try {
     const size = fstatSync(descriptor).size;
-    if (size === 0) return [];
+    if (size === 0) return { messages: [] };
 
     const boundedStart = Math.max(0, size - normalizedMaxBytes);
     const readStart = boundedStart > 0 ? boundedStart - 1 : 0;
@@ -303,27 +309,43 @@ export function readSessionMessagesTail(
       raw = raw.subarray(1);
       if (!startedAtLineBoundary) {
         const firstCompleteLine = raw.indexOf(0x0a) + 1;
-        if (firstCompleteLine === 0) return [];
+        if (firstCompleteLine === 0) return { messages: [], omitted: { bytes: true } };
         raw = raw.subarray(firstCompleteLine);
       }
     }
 
     const messages: AgentMessage[] = [];
+    let completeMessages = 0;
     const lines = raw.toString("utf8").split("\n");
-    for (let index = lines.length - 1; index >= 0 && messages.length < normalizedLimit; index--) {
+    for (let index = lines.length - 1; index >= 0; index--) {
       const line = lines[index]?.trim();
       if (!line) continue;
       try {
-        messages.push(JSON.parse(line) as AgentMessage);
+        const message = JSON.parse(line) as AgentMessage;
+        completeMessages += 1;
+        if (messages.length < normalizedLimit) messages.push(message);
       } catch {
         log("warn", `[persistence:jsonl] Skipping corrupted JSONL line in ${filePath}`);
       }
     }
     messages.reverse();
-    return messages;
+    const omitted = {
+      ...(completeMessages > normalizedLimit ? { messages: true as const } : {}),
+      ...(boundedStart > 0 ? { bytes: true as const } : {}),
+    };
+    return { messages, ...(Object.keys(omitted).length > 0 ? { omitted } : {}) };
   } finally {
     closeSync(descriptor);
   }
+}
+
+export function readSessionMessagesTail(
+  persistDir: string,
+  sessionId: string,
+  limit: number,
+  maxBytes = 8 * 1024 * 1024,
+): AgentMessage[] {
+  return readSessionMessagesTailWithCoverage(persistDir, sessionId, limit, maxBytes).messages;
 }
 
 // ── Session meta.json helpers ─────────────────────────────────────────

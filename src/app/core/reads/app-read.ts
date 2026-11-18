@@ -12,6 +12,8 @@ import type { AppTaskCancellation } from "../tasks/app-task-state.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
+import { readSessionMessagesTailWithCoverage } from "../../../lib/persistence.js";
+import { cliCallFacts } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "../../../lib/db.js";
 import { getAppInboxItem } from "../state/app-inbox-store.js";
 import { canonicalAppEvent } from "../../canonical-app-event.js";
@@ -28,6 +30,8 @@ import {
 export type RuntimeAppReadOptions = {
   readContract?: AppRead["contract"];
   getDb(): SqliteDb;
+  /** Retained session artifacts used only for bounded Host-authored diagnostics. */
+  persistDir?: string;
   /** Optional reporting; absence is explicit, not an empty or zero-valued report. */
   readMetric?: AppRead["metric"];
   /** Canonical loaded-App Task reader. Installed Runtime contexts supply it or resource authority. */
@@ -397,15 +401,68 @@ export function listRuntimeTaskViews(
   };
 }
 
-export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb">, id: string): ExecutionView | null {
+const EXECUTION_DIAGNOSTIC_WORKFLOW_LIMIT = 64;
+const EXECUTION_DIAGNOSTIC_SESSION_LIMIT = 64;
+const EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT = 512;
+const EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION = 1024 * 1024;
+
+function readExecutionCliCalls(opts: Pick<RuntimeAppReadOptions, "getDb" | "persistDir">, id: string, kind: "session" | "workflow"):
+  NonNullable<ExecutionView["diagnostics"]> | undefined {
+  if (!opts.persistDir) return undefined;
+  const db = opts.getDb();
+  const omitted: NonNullable<ExecutionView["diagnostics"]>["omitted"] = {};
+  let rows: Array<{ sessionId: string }>;
+  if (kind === "session") {
+    rows = [{ sessionId: id }];
+  } else {
+    const workflowRows = db.prepare(
+      `WITH RECURSIVE workflow_tree(runId) AS (
+         SELECT ?
+         UNION
+         SELECT child.runId FROM workflow_runs child
+         JOIN workflow_tree parent ON child.parentWorkflowRunId = parent.runId
+         LIMIT ?
+       )
+       SELECT runId FROM workflow_tree`,
+    ).all(id, EXECUTION_DIAGNOSTIC_WORKFLOW_LIMIT + 1) as Array<{ runId: string }>;
+    const workflowIds = workflowRows.slice(0, EXECUTION_DIAGNOSTIC_WORKFLOW_LIMIT).map(({ runId }) => runId);
+    if (workflowRows.length > workflowIds.length) omitted.workflows = true;
+    rows = db.prepare(
+      `SELECT sessionId FROM sessions WHERE workflowRunId IN (${workflowIds.map(() => "?").join(", ")})
+       ORDER BY startedAt, sessionId LIMIT ?`,
+    ).all(...workflowIds, EXECUTION_DIAGNOSTIC_SESSION_LIMIT + 1) as Array<{ sessionId: string }>;
+  }
+  const selected = rows.slice(0, EXECUTION_DIAGNOSTIC_SESSION_LIMIT);
+  if (rows.length > selected.length) omitted.sessions = true;
+  const calls = selected.flatMap(({ sessionId }) => {
+    const tail = readSessionMessagesTailWithCoverage(
+      opts.persistDir!, sessionId, EXECUTION_DIAGNOSTIC_MESSAGE_LIMIT, EXECUTION_DIAGNOSTIC_BYTES_PER_SESSION,
+    );
+    if (tail.omitted?.messages) omitted.messages = true;
+    if (tail.omitted?.bytes) omitted.bytes = true;
+    return cliCallFacts(sessionId, tail.messages, 65);
+  });
+  const bounded = calls.slice(-64);
+  if (calls.length > bounded.length) omitted.cliCalls = true;
+  const truncated = Object.values(omitted).some(Boolean);
+  if (bounded.length === 0 && !truncated) return undefined;
+  return {
+    cliCalls: bounded,
+    ...(truncated ? { omitted, truncated: true as const } : {}),
+  };
+}
+
+export function readRuntimeExecutionView(opts: Pick<RuntimeAppReadOptions, "getDb" | "persistDir">, id: string): ExecutionView | null {
   const result = getExecutionResultFromDb(opts.getDb(), id);
   if (!result) return null;
   const status = result.status === "escalated" ? "blocked" : result.status;
+  const diagnostics = readExecutionCliCalls(opts, id, result.kind);
   return {
     id: result.id,
     kind: result.kind === "session" ? "agent" : "workflow",
     status,
     summary: result.summary,
+    ...(diagnostics ? { diagnostics } : {}),
   };
 }
 

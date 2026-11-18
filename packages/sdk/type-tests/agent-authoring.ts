@@ -13,6 +13,7 @@ declare const call: AgentContext<Input>["call"];
 const minimalContext: AgentContext<Input> = {
   input: { value: "measure me" },
   signal: new AbortController().signal,
+  list: () => [],
   call,
   log: {
     debug() {},

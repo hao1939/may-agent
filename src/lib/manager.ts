@@ -40,7 +40,7 @@ import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from 
 import { existsSync, mkdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { ownsBoundedHelper, validateSessionControl } from "../app/adapters/executors/session-control.js";
+import { ownsBoundedHelper } from "../app/adapters/executors/session-control.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
 import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
@@ -232,6 +232,12 @@ const MAX_TRANSCRIPT_TAIL_BYTES = 8 * 1024 * 1024;
 
 // ── SubagentManager (v2 implementation) ──────────────────────────────
 
+function registeredAgentName(definition: SubagentDefinition): string {
+  return definition.appLocal && definition.projectId
+    ? `${definition.projectId}/${definition.name}`
+    : `global/${definition.name}`;
+}
+
 export class SubagentManager {
   // Public maps for AgentsToolManagerDeps compatibility
   agents = new Map<string, { definition: SubagentDefinition }>();
@@ -277,15 +283,16 @@ export class SubagentManager {
 
   register(def: SubagentDefinition): void {
     resolvedExecutionRecipient(def);
-    this.agents.set(def.name, { definition: def });
+    this.agents.set(registeredAgentName(def), { definition: def });
   }
 
   unregister(name: string): void {
     this.agents.delete(name);
+    this.agents.delete(`global/${name}`);
   }
 
   hasAgent(name: string): boolean {
-    return this.agents.has(name);
+    return this.agents.has(name) || this.agents.has(`global/${name}`);
   }
   agentNames(): string[] {
     return [...this.agents.keys()];
@@ -301,18 +308,20 @@ export class SubagentManager {
 
   /** Resolve the same definition for helper authorization and execution. */
   getAgentDefinition(name: string, callerSessionId?: string): SubagentDefinition | undefined {
-    return (
-      (callerSessionId ? this._sessions.get(callerSessionId)?.taskContext?.agentDefinitions?.get(name) : undefined) ??
-      this.agents.get(name)?.definition
-    );
+    const captured = callerSessionId ? this._sessions.get(callerSessionId)?.taskContext?.agentDefinitions : undefined;
+    const exact = captured?.get(name) ?? captured?.get(`global/${name}`) ?? this.agents.get(name)?.definition ?? this.agents.get(`global/${name}`)?.definition;
+    if (exact) return exact;
+    const matches = [...(captured?.values() ?? []), ...[...this.agents.values()].map((entry) => entry.definition)]
+      .filter((definition, index, all) => definition.name === name && all.indexOf(definition) === index);
+    return matches.length === 1 ? matches[0] : undefined;
   }
 
   // ── Session lifecycle ──
 
   run(name: string, task: string, opts?: RunOptions): string {
-    const registered = this.agents.get(name);
-    if (!registered) throw new Error(`Agent "${name}" not registered`);
-    return this.runDefinition(registered.definition, task, opts);
+    const definition = this.getAgentDefinition(name);
+    if (!definition) throw new Error(`Agent "${name}" not registered`);
+    return this.runDefinition(definition, task, opts);
   }
 
   /** Start from an immutable definition captured by the caller. */
@@ -1008,11 +1017,7 @@ export class SubagentManager {
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    return createAgentsToolFn(this, {
-      ...opts,
-      validateControl: (sessionId, callerSessionId) =>
-        validateSessionControl(this, "session.cancel.requested", sessionId, { callerSessionId, remote: true }),
-    });
+    return createAgentsToolFn(this, opts);
   }
 
   // ── Path helpers ──

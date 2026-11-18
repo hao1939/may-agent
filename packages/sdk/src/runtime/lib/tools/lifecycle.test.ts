@@ -91,12 +91,20 @@ describe("provider-compatible workflow finish schema", () => {
   it("unifies taskReconcileResultSchema and taskAgentResultSchema as one canonical schema without JSON Schema not keywords", () => {
     expect(taskAgentResultSchema).toBe(taskReconcileResultSchema);
     const tool = createWorkflowFinishTool(createFinishTool({ projectRoot }), taskReconcileResultSchema);
-    const serialized = JSON.stringify(tool.parameters.properties.output);
+    const parameters = tool.parameters as { anyOf: Array<{ properties: Record<string, unknown> }> };
+    const serialized = JSON.stringify(parameters);
 
     expect(serialized).not.toContain('"not":');
     expect(taskReconcileResultSchema).not.toHaveProperty("anyOf");
-    expect(tool.parameters.properties.output).toBe(taskReconcileResultSchema);
-    expect(Object.keys(tool.parameters.properties).sort()).toEqual(["facts", "output", "status", "summary"]);
+    expect(parameters.anyOf).toHaveLength(2);
+    expect(parameters.anyOf.map((branch) => branch.properties.output)).toEqual([
+      taskReconcileResultSchema,
+      taskReconcileResultSchema,
+    ]);
+    expect(parameters.anyOf.map((branch) => Object.keys(branch.properties).sort())).toEqual([
+      ["facts", "output", "status", "summary"],
+      ["facts", "output", "status", "summary"],
+    ]);
   });
 
   it.each([

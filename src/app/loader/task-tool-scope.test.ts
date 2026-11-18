@@ -18,7 +18,16 @@ function fixtureOptions(root: string): ToolsetLoaderOptions {
     projectsRoot: root,
     projectRoot: root,
     persistDir: root,
-    manager: { activeSessions: new Map() },
+    manager: {
+      activeSessions: new Map(),
+      createAgentsTool: () => ({
+        name: "agents",
+        label: "Agents",
+        description: "test callable boundary",
+        parameters: {} as any,
+        execute: async () => ({ content: [{ type: "text" as const, text: "[]" }] }),
+      }),
+    },
     bus: new EventBus(),
     getAgentSessionId: () => undefined,
   } as unknown as ToolsetLoaderOptions;
@@ -40,12 +49,12 @@ test("rejects duplicate concrete names from overlapping presets with both source
 test("does not inject a built-in tasks tool and allows agent-local tools", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-tool-local-"));
   roots.push(root);
-  expect(await buildTools({ name: "worker", tools: [] } as unknown as AgentConfig, fixtureOptions(root))).toEqual([]);
+  expect((await buildTools({ name: "worker", tools: [] } as unknown as AgentConfig, fixtureOptions(root))).map((tool) => tool.name)).toEqual(["agents"]);
 
   const toolsDir = join(root, "worker", "tools");
   mkdirSync(toolsDir, { recursive: true });
   writeFileSync(join(toolsDir, "tasks.ts"), 'export default () => ({ name: "tasks" });');
 
   const tools = await buildTools({ name: "worker", tools: [] } as unknown as AgentConfig, fixtureOptions(root));
-  expect(tools.map((tool) => tool.name)).toEqual(["tasks"]);
+  expect(tools.map((tool) => tool.name)).toEqual(["agents", "tasks"]);
 });

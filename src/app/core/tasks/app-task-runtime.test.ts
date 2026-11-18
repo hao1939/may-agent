@@ -8095,7 +8095,11 @@ describe("canonical App task runtime", () => {
       export const name = "direct";
       export const description = "One Task outcome";
       export async function execute(ctx) {
-        return { state: ctx.input.state, summary: "Source unavailable", facts: ["HTTP:503"] };
+        return ctx.done("Task decision produced", {
+          state: ctx.input.data.state,
+          summary: "Source unavailable",
+          facts: ["HTTP:503"],
+        });
       }
     `,
     );

@@ -84,7 +84,7 @@ export function createFinishTool(_options: FinishToolOptions = {}): AgentTool<TS
   };
 }
 
-function addRequiredOutput(base: TSchema, output: TSchema): TSchema {
+function addValidatedOutput(base: TSchema, output: TSchema): TSchema {
   const objectSchema = base as {
     type?: unknown;
     properties?: Record<string, TSchema>;
@@ -96,11 +96,16 @@ function addRequiredOutput(base: TSchema, output: TSchema): TSchema {
   const required = Array.isArray(objectSchema.required)
     ? objectSchema.required.filter((name): name is string => typeof name === "string")
     : [];
-  return {
+  const branch = (status: "done" | "blocked", requireOutput: boolean): TSchema => ({
     ...base,
-    properties: { ...objectSchema.properties, output },
-    required: [...new Set([...required, "output"])],
-  } as TSchema;
+    properties: {
+      ...objectSchema.properties,
+      status: Type.Literal(status),
+      output: requireOutput ? output : Type.Optional(output),
+    },
+    required: requireOutput ? [...new Set([...required, "output"])] : required,
+  } as TSchema);
+  return Type.Union([branch("done", true), branch("blocked", false)]);
 }
 
 /** Apply the caller's TypeBox output contract to the terminal tool. */
@@ -109,9 +114,16 @@ export function createWorkflowFinishTool(
   outputSchema?: TSchema,
   validateOutput?: (output: unknown) => string | null,
 ): AgentTool {
-  const parameters = outputSchema ? addRequiredOutput(baseFinish.parameters, outputSchema) : baseFinish.parameters;
+  const parameters = outputSchema ? addValidatedOutput(baseFinish.parameters, outputSchema) : baseFinish.parameters;
   const validator = Compile(parameters);
   const validateReport = (params: unknown) => {
+    if (outputSchema && (params as { status?: unknown; output?: unknown })?.status === "done" &&
+      (params as { output?: unknown }).output === undefined) {
+      throw new Error(
+        "finish() error: status done requires the schema-validated output payload. " +
+        "Use status blocked when an external prerequisite prevents producing it.",
+      );
+    }
     if (!validator.Check(params)) {
       const problems = validator.Errors(params).slice(0, 8).map((error) =>
         `  - ${(error.instancePath || "/").slice(0, 200)}: ${error.message.slice(0, 200)}`,
