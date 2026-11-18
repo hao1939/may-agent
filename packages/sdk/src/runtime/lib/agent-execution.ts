@@ -1,3 +1,7 @@
+// Make the asset type reachable by external consumers without a runtime import.
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference -- This ambient declaration is not an importable module.
+/// <reference path="../../text-assets.d.ts" />
+
 import type { TSchema } from "typebox";
 import {
   Agent,
