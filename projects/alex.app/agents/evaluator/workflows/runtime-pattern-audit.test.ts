@@ -117,7 +117,6 @@ test("runtime-pattern-audit keeps requests idempotent for stable attention evide
       );
       writeFileSync(join(wfDir, `${workflow}.test.ts`), "// paired test\n");
     }
-    rmSync(join(wfDir, "unrelated-flow.test.ts"));
 
     const dbPath = join(root, "may.db");
     const db = new Database(dbPath);
@@ -204,6 +203,7 @@ test("runtime-pattern-audit keeps requests idempotent for stable attention evide
       result: RuntimePatternAuditPacket;
     };
     expect(firstOutput.result.generatedAt).not.toBe(secondOutput.result.generatedAt);
+    expect(firstOutput.result.regressions).not.toEqual(secondOutput.result.regressions);
     expect(secondOutput.requests[0]).toEqual(firstOutput.requests[0]);
     expect(JSON.stringify(secondOutput.requests[0])).toBe(JSON.stringify(firstOutput.requests[0]));
 
