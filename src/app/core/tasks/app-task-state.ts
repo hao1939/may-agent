@@ -36,6 +36,8 @@ export type AppTaskCondition = {
     /** When the current Condition specification first began waiting. */
     createdAt?: string;
     observed?: unknown;
+    /** Last continuous resource fingerprint delivered to each linked Task. */
+    deliveredFingerprints?: Record<string, unknown>;
     /** Independently observed caller feedback; progress does not resolve a failure. */
     reports?: Partial<Record<"progress" | "failure" | "unknown", Record<string, unknown>>>;
     observedAt?: string;

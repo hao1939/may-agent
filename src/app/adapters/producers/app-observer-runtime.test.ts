@@ -165,6 +165,70 @@ describe("canonical App observers", () => {
     runtime.close();
   });
 
+  it("polls duplicate resource demand once and emits only fingerprint changes", async () => {
+    let currentTime = 1;
+    let fingerprint = "revision-1";
+    let inspections = 0;
+    let eventId = 0;
+    const events: Array<Record<string, unknown>> = [];
+    const bus = new EventBus();
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: ++eventId, configurable: true });
+    });
+    bus.subscribe((event) => {
+      if (event.type === "pull-request.state") events.push(event.data as Record<string, unknown>);
+    });
+    const runtime = createAppObserverRuntime({
+      bus,
+      now: () => currentTime,
+      readDemand: () => [{ subject: "resource:repo#42" }],
+      needsFact: () => false,
+      context: () => ({ read: {} as never, log: {} as never, workspace: { appRoot: "/app", projectRoot: "/project" } }),
+    });
+    runtime.replace([entry({
+      id: "github",
+      version: 1,
+      agent: "worker",
+      inputSchema: { type: "object" },
+      observers: [{
+        id: "pull-request",
+        type: "pull-request.state",
+        intervalMs: 100,
+        timeoutMs: 1_000,
+        async inspect() {
+          inspections++;
+          return { fingerprint, state: "open" };
+        },
+      }],
+    })]);
+    try {
+      runtime.scanNow();
+      await Bun.sleep(5);
+      expect(inspections).toBe(1);
+      expect(events.map((event) => event.fingerprint)).toEqual(["revision-1"]);
+
+      const duplicateDemand = {
+        source: "app:github:observer:pull-request",
+        type: "pull-request.state",
+        subject: "resource:repo#42",
+      };
+      runtime.requestCheck([duplicateDemand, duplicateDemand]);
+      runtime.scanNow();
+      await Bun.sleep(5);
+      expect(inspections).toBe(2);
+      expect(events).toHaveLength(1);
+
+      fingerprint = "revision-2";
+      currentTime = 101;
+      runtime.scanNow();
+      await Bun.sleep(5);
+      expect(inspections).toBe(3);
+      expect(events.map((event) => event.fingerprint)).toEqual(["revision-1", "revision-2"]);
+    } finally {
+      runtime.close();
+    }
+  });
+
   it("drops a late result from a replaced generation", async () => {
     let release!: (facts: Array<{ type: string; data: unknown }>) => void;
     const pending = new Promise<Array<{ type: string; data: unknown }>>((resolve) => {

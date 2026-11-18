@@ -1,5 +1,23 @@
 import { describe, expect, test } from "bun:test";
-import { observeDurableDaemonHeartbeat, observeRuntimeLiveness } from "./maintenance.js";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { closeDb } from "../../lib/db/connection.js";
+import { currentProcessInstance } from "../../lib/process-identity.js";
+import { spawnFixtureProcess } from "../../../test/fixtures/owned-process.js";
+import type { DaemonHeartbeatRecord } from "../daemon-loops.js";
+import { observeDaemonLiveness, observeDurableDaemonHeartbeat, observeRuntimeLiveness } from "./maintenance.js";
+
+function heartbeat(recordedAt: number): DaemonHeartbeatRecord {
+  return {
+    version: 1,
+    recordedAt,
+    ...currentProcessInstance(),
+    interfaceAgent: "may",
+    socketEnabled: true,
+    sql: { since: 1, calls: 2, errors: 0, totalMs: 3, untrackedCalls: 0 },
+  };
+}
 
 describe("runtime liveness maintenance", () => {
   test("requires consecutive failures before requesting recovery", () => {
@@ -91,17 +109,82 @@ describe("runtime liveness maintenance", () => {
     expect(observed.protectedActiveWork).toBe(false);
   });
 
-  test("fresh durable heartbeat protects work when the control socket is unavailable", () => {
-    expect(observeDurableDaemonHeartbeat(900, 3, 1_000, 200)).toEqual({
+  test("fresh current-process heartbeat protects work when the control socket is unavailable", () => {
+    const now = Date.now();
+    expect(observeDurableDaemonHeartbeat(heartbeat(now - 100), process.pid, 3, now, 200)).toEqual({
       responsive: true,
       activeWork: true,
     });
   });
 
-  test("stale durable heartbeat still permits recovery", () => {
-    expect(observeDurableDaemonHeartbeat(700, 0, 1_000, 200)).toEqual({
-      responsive: false,
-      activeWork: false,
+  test("stale, absent, malformed, future, and mismatched process heartbeats permit recovery", () => {
+    const now = Date.now();
+    const observations = [
+      observeDurableDaemonHeartbeat(heartbeat(700), process.pid, 0, now, 200),
+      observeDurableDaemonHeartbeat(undefined, process.pid, 0, now, 200),
+      observeDurableDaemonHeartbeat({ version: 1, pid: process.pid, recordedAt: now }, process.pid, 0, now, 200),
+      observeDurableDaemonHeartbeat({ ...heartbeat(now), processIdentity: "" }, process.pid, 0, now, 200),
+      observeDurableDaemonHeartbeat({ ...heartbeat(now), processStartedAt: undefined }, process.pid, 0, now, 200),
+      observeDurableDaemonHeartbeat(heartbeat(now + 5_001), process.pid, 0, now, 200),
+      observeDurableDaemonHeartbeat(heartbeat(now), process.pid + 1, 0, now, 200),
+      observeDurableDaemonHeartbeat({ ...heartbeat(now), processIdentity: "previous-daemon" }, process.pid, 0, now, 200),
+      observeDurableDaemonHeartbeat({ ...heartbeat(now), processStartedAt: 1 }, process.pid, 0, now, 200),
+    ];
+    expect(observations).toEqual(observations.map(() => ({ responsive: false, activeWork: false })));
+  });
+
+  test("socket failure validates the live daemon process instance across a real process boundary", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-maintenance-heartbeat-"));
+    const instanceDir = join(root, "instances", "test");
+    const socketPath = join(instanceDir, "may.sock");
+    const childRecordPath = join(root, "child-process.json");
+    const processIdentityModule = new URL("../../lib/process-identity.ts", import.meta.url).href;
+    mkdirSync(instanceDir, { recursive: true });
+    const child = spawnFixtureProcess([
+      "-e",
+      `import { writeFileSync } from "node:fs";
+       import { currentProcessInstance } from ${JSON.stringify(processIdentityModule)};
+       writeFileSync(${JSON.stringify(childRecordPath)}, JSON.stringify(currentProcessInstance()));
+       setInterval(() => {}, 1_000);`,
+    ]);
+    const exited = new Promise<void>((resolve, reject) => {
+      child.once("error", reject);
+      child.once("exit", () => resolve());
     });
+    try {
+      for (let attempt = 0; attempt < 100 && !existsSync(childRecordPath); attempt += 1) await Bun.sleep(10);
+      expect(existsSync(childRecordPath)).toBe(true);
+      const childInstance = JSON.parse(readFileSync(childRecordPath, "utf8")) as {
+        pid: number;
+        processIdentity: string;
+        processStartedAt?: number;
+      };
+      expect(childInstance.pid).toBe(child.pid);
+      expect(childInstance.processIdentity.length).toBeGreaterThan(0);
+      expect(childInstance.processStartedAt).toBeGreaterThan(0);
+
+      const liveHeartbeat: DaemonHeartbeatRecord = {
+        version: 1,
+        recordedAt: Date.now(),
+        ...childInstance,
+        interfaceAgent: "may",
+        socketEnabled: true,
+        sql: { since: 1, calls: 2, errors: 0, totalMs: 3, untrackedCalls: 0 },
+      };
+      writeFileSync(join(instanceDir, "may.pid"), String(child.pid));
+      writeFileSync(join(instanceDir, "may.heartbeat.json"), JSON.stringify(liveHeartbeat));
+      expect(await observeDaemonLiveness(root, socketPath)).toEqual({ responsive: true, activeWork: false });
+
+      writeFileSync(
+        join(instanceDir, "may.heartbeat.json"),
+        JSON.stringify({ ...liveHeartbeat, processStartedAt: Number(liveHeartbeat.processStartedAt) + 1 }),
+      );
+      expect(await observeDaemonLiveness(root, socketPath)).toEqual({ responsive: false, activeWork: false });
+    } finally {
+      child.kill();
+      await exited;
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

@@ -26,6 +26,7 @@ import { readAppConversationResource } from "./core/state/conversations.js";
 import { createAppTaskCapability } from "./core/tasks/app-task-capability.js";
 import {
   attachDaemonEventSubscribers,
+  attachDaemonMetricTimers,
   attachEventPersistence,
   createDaemonLifecycle,
   prepareDaemonAgents,
@@ -172,6 +173,7 @@ export async function runAppRuntime(opts: {
   });
 
   let appInboxRuntime: AppInboxRuntime | null = null;
+  let daemonMetricTimers: { close(): void; idle(): Promise<void> } | null = null;
   const appSources = new DefinitionSourceReleaseStore(opts.projectRoot, opts.persistDir);
   const activeAppSource = appSources.ensureCurrent();
   const activeAppDirectories = listAppDefinitionFiles(activeAppSource.projectsRoot, opts.projectsRoot).map((file) =>
@@ -382,6 +384,8 @@ export async function runAppRuntime(opts: {
       activeRL = null;
     },
     beforeShutdown: () => {
+      daemonMetricTimers?.close();
+      daemonMetricTimers = null;
       void appTasks.close();
       appInboxRuntime?.close();
     },
@@ -534,6 +538,7 @@ export async function runAppRuntime(opts: {
 
   if (backgroundEnabled) {
     await appInboxRuntime.start();
+    daemonMetricTimers = attachDaemonMetricTimers({ bus, persistDir: opts.persistDir });
     startBackgroundRuntime({
       manager,
       bus,
@@ -578,6 +583,12 @@ export async function runAppRuntime(opts: {
       emitPrompt,
     });
   } else {
-    await runDaemonKeepalive({ bus, interfaceAgent, socketEnabled: SOCKET_ENABLED });
+    await runDaemonKeepalive({
+      bus,
+      persistDir: opts.persistDir,
+      instanceLabel: opts.instanceLabel,
+      interfaceAgent,
+      socketEnabled: SOCKET_ENABLED,
+    });
   }
 }

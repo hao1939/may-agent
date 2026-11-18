@@ -1,4 +1,6 @@
 import { expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { getEvent, sendSocketCommand } from "../../packages/control/src/client.js";
 import { buildSandbox } from "./lib/sandbox.js";
 import { openSandboxDb } from "./lib/live-daemon.js";
@@ -32,12 +34,24 @@ test("HTTP and socket expose operator diagnostics without turning their payloads
     expect(sql.queries.topByTotalTime.length).toBeLessThanOrEqual(10);
     const db = openSandboxDb(sandbox.dbPath);
     try {
-      const heartbeat = db.query("SELECT data FROM events WHERE event_type = 'runtime.daemon.heartbeat' ORDER BY timestamp DESC LIMIT 1")
-        .get() as { data: string };
-      const counters = JSON.parse(heartbeat.data).sql;
-      expect(counters.calls).toBeGreaterThan(0);
-      expect(counters.totalMs).toBeGreaterThanOrEqual(0);
-      expect(counters).not.toHaveProperty("topByTotalTime");
+      const heartbeatEvents = db.query(
+        "SELECT COUNT(*) AS count FROM events WHERE event_type = 'runtime.daemon.heartbeat'",
+      ).get() as { count: number };
+      expect(heartbeatEvents.count).toBe(0);
+      const heartbeat = JSON.parse(
+        readFileSync(join(sandbox.stateDir, "instances", sandbox.instance, "may.heartbeat.json"), "utf8"),
+      );
+      expect(heartbeat).toMatchObject({
+        version: 1,
+        pid: sandbox.daemonPid,
+        interfaceAgent: "may",
+        socketEnabled: true,
+      });
+      expect(heartbeat.recordedAt).toBeGreaterThan(0);
+      expect(heartbeat.processIdentity).toEqual(expect.any(String));
+      expect(heartbeat.sql.calls).toBeGreaterThan(0);
+      expect(heartbeat.sql.totalMs).toBeGreaterThanOrEqual(0);
+      expect(heartbeat.sql).not.toHaveProperty("topByTotalTime");
     } finally { db.close(); }
     const rejected = await fetch(`${origin}/api/events`, {
       method: "POST",
