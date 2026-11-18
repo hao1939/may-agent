@@ -170,7 +170,7 @@ async function reviewPublicationFailure(
   try {
     review = await ctx.call(
       scoutCallable,
-      `Publication failed after your writer call.
+      { prompt: `Publication failed after your writer call.
 Review this failure against the original Task and return an ordinary Task result.
 This call is read-only: inspect the exact archive and candidate before judging.
 Do not repeat publication or edit the canonical library in this diagnosis call.
@@ -183,7 +183,7 @@ canonical publication evidence and will still pass the workflow verifier.
 ${facts.join("\n")}
 
 ## Current Task
-${JSON.stringify(ctx.reconciliation, null, 2)}`,
+${JSON.stringify(ctx.reconciliation, null, 2)}` },
       {
         timeoutMs: 1_800_000,
         schema: taskAgentResultSchema,
@@ -475,7 +475,7 @@ ${experienceContext}
 ## Canonical reconciliation context (authoritative requirement)
 ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
-  const result = await ctx.call(scoutCallable, prompt, {
+  const result = await ctx.call(scoutCallable, { prompt }, {
     timeoutMs: 1_800_000,
     schema: taskAgentResultSchema,
   });
