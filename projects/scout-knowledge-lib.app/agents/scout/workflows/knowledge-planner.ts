@@ -21,6 +21,8 @@ import {
 
 type AgentResult = TaskReconcileResult;
 
+const scoutCallable = "scout-knowledge-lib/scout";
+
 export function admitExperienceReviewResult(
   value: unknown,
 ): { ok: true; result: AgentResult } | { ok: false; error: string } {
@@ -167,7 +169,7 @@ async function reviewPublicationFailure(
   let review: ExecutionResult;
   try {
     review = await ctx.call(
-      "scout",
+      scoutCallable,
       `Publication failed after your writer call.
 Review this failure against the original Task and return an ordinary Task result.
 This call is read-only: inspect the exact archive and candidate before judging.
@@ -473,7 +475,7 @@ ${experienceContext}
 ## Canonical reconciliation context (authoritative requirement)
 ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
-  const result = await ctx.call("scout", prompt, {
+  const result = await ctx.call(scoutCallable, prompt, {
     timeoutMs: 1_800_000,
     schema: taskAgentResultSchema,
   });

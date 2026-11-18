@@ -88,6 +88,7 @@ describe("Scout owner reconciliation boundary", () => {
             },
             workspace: fixture.workspace,
             call: (async (_agent, value) => {
+              expect(_agent).toBe("scout-knowledge-lib/scout");
               prompt = value;
               // Agent decisions are fixtures, not evidence of live model behavior.
               return {
