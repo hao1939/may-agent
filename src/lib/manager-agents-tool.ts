@@ -199,6 +199,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     entry: Extract<PreparedCallable, { kind: "workflow" }>,
     input: ExecutionInput,
     context: CallableInvocationContext,
+    workflowCatalogsByOwner: ReadonlyMap<string, WorkflowCatalog>,
     callableCatalogScope: object,
   ) => {
     const parentSessionId = opts?.getCallerSessionId?.();
@@ -220,6 +221,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       ...session?.taskContext,
       taskContext: session?.taskContext,
       agentDefinitions: session?.taskContext?.agentDefinitions ?? entry.agentDefinitions,
+      workflowCatalogsByOwner,
       callableCatalogScope: session?.taskContext ?? callableCatalogScope,
       read: opts?.createRead ? opts.createRead(session?.taskContext) : undefined,
       callerSessionId: parentSessionId,
@@ -291,6 +293,12 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     const agentDefinitions = new Map(entries.flatMap((entry) => entry.kind === "agent"
       ? [[canonicalCallableName(entry.appId, entry.definition.name), entry.definition] as const]
       : []));
+    const workflowCatalogsByOwner = new Map<string, WorkflowCatalog>();
+    for (const entry of entries) {
+      if (entry.kind === "workflow") {
+        workflowCatalogsByOwner.set(canonicalCallableName(entry.appId, entry.owner.name), entry.workflows);
+      }
+    }
     return new CallableCatalog(entries.map((entry): CallableDefinition => {
       if (entry.kind === "agent") {
         return {
@@ -313,7 +321,13 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
         description: entry.workflow.description,
         ...(entry.workflow.inputSchema ? { inputSchema: entry.workflow.inputSchema } : {}),
         ...(entry.workflow.outputSchema ? { outputSchema: entry.workflow.outputSchema } : {}),
-        invoke: (input, context) => invokeWorkflow(entry, input, context, callableCatalogScope),
+        invoke: (input, context) => invokeWorkflow(
+          entry,
+          input,
+          context,
+          workflowCatalogsByOwner,
+          callableCatalogScope,
+        ),
       };
     }));
   };

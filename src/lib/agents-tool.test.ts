@@ -232,8 +232,9 @@ export async function execute(ctx) {
 export const name = "route";
 export const description = "Route through a real captured prompt helper";
 export async function execute(ctx) {
+  const peer = await ctx.call("global/echo", { prompt: "Use the captured peer workflow" });
   const helper = await ctx.call("global/reviewer", { prompt: "Use the captured helper" });
-  return ctx.done("Route complete", { helper });
+  return ctx.done("Route complete", { peer, helper });
 }
 `);
     for (const [definition, version] of [[peerV1, "v1"], [peerV2, "v2"]] as const) {
@@ -267,6 +268,7 @@ export async function execute(ctx) { return ctx.done("${version}", { version: "$
         status: "done",
         summary: "Route complete",
         output: {
+          peer: { status: "done", summary: "v1", output: { version: "v1" } },
           helper: {
             status: "done",
             summary: "Actual nested tool returned",
@@ -281,8 +283,15 @@ export async function execute(ctx) { return ctx.done("${version}", { version: "$
       });
     };
 
+    const capturedPeerWorkflow = join(peerV1.agentDir, "workflows", "echo.ts");
+    writeFileSync(capturedPeerWorkflow, `
+export const name = "echo";
+export const description = "replacement implementation";
+export async function execute(ctx) { return ctx.done("replacement", { version: "replacement" }); }
+`);
     manager.register(peerV2);
     await assertCapturedCalls("replacement");
+    rmSync(capturedPeerWorkflow);
     manager.unregister("reviewer");
     manager.unregister("owner");
     await assertCapturedCalls("removal");
