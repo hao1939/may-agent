@@ -9,7 +9,7 @@ export type ApprovalProposal = {
 
 export type HostApprovalStamp = {
   version: 1;
-  ingressSource: "telegram" | "control-socket";
+  ingressSource: "telegram" | "control-socket" | "web-ui";
   actor: { kind: "human" | "operator"; id: string };
   authorization: { reference: string; evidence: Record<string, unknown> };
 };
@@ -36,8 +36,10 @@ export function readVerifiedApprovalDecision(event: {
   source?: string;
   data: Record<string, unknown>;
 }): VerifiedApprovalDecision | null {
-  if (event.type !== "project.approval.submitted" || (event.source !== "telegram" && event.source !== "control-socket"))
-    return null;
+  if (
+    event.type !== "project.approval.submitted" ||
+    (event.source !== "telegram" && event.source !== "control-socket" && event.source !== "web-ui")
+  ) return null;
   if (!record(event.data)) return null;
   const stamp = event.data.hostApproval;
   const proposal = event.data.proposal;

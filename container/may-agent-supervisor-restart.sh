@@ -28,7 +28,7 @@ deployed=0
 finalized=0
 receipt_accepted=0
 activation_started=0
-runtime_services="may-agent may-agent-web"
+runtime_services="may-agent"
 receipt=""
 sdk_release=""
 ui_release=""
@@ -70,7 +70,6 @@ wait_for_health() {
   i=1
   while [ "$i" -le "$health_attempts" ]; do
     if supervisorctl status $runtime_services | grep -q "^may-agent[[:space:]].*RUNNING" \
-      && supervisorctl status $runtime_services | grep -q "^may-agent-web[[:space:]].*RUNNING" \
       && supervisorctl status $runtime_services | grep -q "^may-agent-maintenance[[:space:]].*RUNNING" \
       && curl -fsS --max-time 6 "http://127.0.0.1:${WEB_PORT:-8080}/api/readiness" >/dev/null 2>&1 \
       && probe_control_socket; then

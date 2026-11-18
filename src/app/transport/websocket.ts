@@ -1,8 +1,10 @@
 import type { PublicEvent } from "@may-agent/control/events";
+import { isTaskDerivedViewWake, taskUpdateIdentity } from "../../../packages/control/src/task-wake.js";
 import type { EventInterface } from "../core/events/interface.js";
 
 export type DaemonWebSocketPeer = {
   bufferedAmount?: number;
+  getBufferedAmount?(): number;
   send(data: string): unknown;
 };
 
@@ -22,9 +24,11 @@ export type DaemonWebSocketTransport = {
 };
 
 function eventMatchesSubscription(event: PublicEvent, state: Subscription): boolean {
+  if (event.type === "runtime.reload.finished") return true;
   const data = event.data ?? {};
   const sessionId = typeof data.sessionId === "string" ? data.sessionId : undefined;
   if (state.sessions === null || (sessionId && state.sessions.has(sessionId))) return true;
+  if (taskUpdateIdentity(event)) return false;
   const appId = event.target?.appId ?? (typeof data.appId === "string" ? data.appId : undefined);
   const taskId = event.target?.taskId ?? (typeof data.taskId === "string" ? data.taskId : undefined);
   const conversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
@@ -57,9 +61,11 @@ export function createDaemonWebSocketTransport(options: {
       overflowed: false,
       unsubscribe: () => {},
     };
-    state.unsubscribe = options.events.subscribe({}, (event) => {
-      if (!eventMatchesSubscription(event, state)) return;
-      if (Number(ws.bufferedAmount ?? 0) > maxBufferedBytes) {
+    const sendWake = (frame: PublicEvent | { type: "app.task.updated"; data: { appId: string; taskId: string } }) => {
+      const bufferedAmount = typeof ws.getBufferedAmount === "function"
+        ? ws.getBufferedAmount()
+        : Number(ws.bufferedAmount ?? 0);
+      if (bufferedAmount > maxBufferedBytes) {
         if (!state.overflowed) {
           state.overflowed = true;
           try {
@@ -70,8 +76,21 @@ export function createDaemonWebSocketTransport(options: {
       }
       state.overflowed = false;
       try {
-        ws.send(JSON.stringify(event));
+        ws.send(JSON.stringify(frame));
       } catch {}
+    };
+    state.unsubscribe = options.events.subscribe({}, (event) => {
+      if (eventMatchesSubscription(event, state)) sendWake(event);
+      const wake = taskUpdateIdentity(event);
+      if (
+        wake &&
+        (
+          (state.task?.appId === wake.appId && state.task.taskId === wake.taskId) ||
+          (isTaskDerivedViewWake(event) && state.taskApps.has(wake.appId))
+        )
+      ) {
+        sendWake({ type: "app.task.updated", data: wake });
+      }
     });
     subscriptions.set(ws, state);
     ws.send(JSON.stringify({ type: "connected", agent: options.agent, instance: options.instance }));

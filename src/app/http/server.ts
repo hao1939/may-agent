@@ -515,8 +515,22 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
             };
           case "tasks.list":
             return { type: "ok", command: frame.type, tasks: services.listTasks(frame) };
-          case "task.get":
-            return { type: "ok", command: frame.type, task: services.getTask(frame) };
+          case "task.get": {
+            const acceptedEvidence = frame.acceptedEvidence === true
+              ? {
+                  ...(typeof frame.evidenceLimit === "number" ? { limit: frame.evidenceLimit } : {}),
+                  ...(typeof frame.evidenceCursor === "string" ? { cursor: frame.evidenceCursor } : {}),
+                }
+              : undefined;
+            return {
+              type: "ok",
+              command: frame.type,
+              task: services.getTask({
+                ...frame,
+                ...(acceptedEvidence ? { acceptedEvidence } : {}),
+              }),
+            };
+          }
           default:
             return { type: "error", command: String(frame.type ?? "read"), message: "Unsupported direct read" };
         }

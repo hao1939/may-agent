@@ -53,7 +53,7 @@ describe("Herdr web terminal", () => {
     expect(nginx).toContain("proxy_set_header Upgrade $http_upgrade;");
     expect(supervisor).toContain("--interface /tmp/may-agent-ttyd.sock");
     expect(supervisor).not.toContain("--port 7681");
-    expect(supervisor).toContain('WEB_PORT="8081"');
+    expect(supervisor).toContain('DAEMON_HTTP_PORT="8081"');
     expect(compose).not.toContain("TERMINAL_PORT");
     expect(compose).not.toContain(":7681");
     expect(dockerfile).not.toContain("EXPOSE 7681");

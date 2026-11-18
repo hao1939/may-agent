@@ -113,11 +113,88 @@ describe("daemon WebSocket wakes", () => {
     expect(fixture.listeners.size).toBe(0);
   });
 
-  test("reports one overflow hint per congestion interval and resumes filtered wakes after reread", async () => {
+  test("forwards correlated reload results and derives Task wakes for ordinary Console filters", async () => {
     const fixture = eventFixture();
     const sent: Record<string, unknown>[] = [];
     const peer: DaemonWebSocketPeer = {
-      bufferedAmount: 0,
+      getBufferedAmount: () => 0,
+      send(data) {
+        sent.push(JSON.parse(data));
+      },
+    };
+    const transport = createDaemonWebSocketTransport({ events: fixture.events, agent: "may", instance: "fixture" });
+    transport.open(peer);
+    transport.message(peer, JSON.stringify({
+      type: "subscribe",
+      sessions: [],
+      conversations: ["may:primary"],
+      taskApps: ["alex"],
+      task: { appId: "gym", taskId: "run/1" },
+    }));
+
+    await fixture.emit({
+      id: 2,
+      type: "runtime.reload.finished",
+      data: { requestId: "reload-1", summary: "Reloaded" },
+      timestamp: Date.now(),
+    } as PublicEvent);
+    await fixture.emit({
+      id: 3,
+      type: "project.task.executor.progress",
+      target: { appId: "gym", taskId: "run/1" },
+      data: { message: "Working" },
+      timestamp: Date.now(),
+    } as PublicEvent);
+    await fixture.emit({
+      id: 4,
+      type: "project.task.reconciled",
+      target: { appId: "alex", taskId: "work/1" },
+      data: {},
+      timestamp: Date.now(),
+    } as PublicEvent);
+
+    expect(sent.filter((message) => message.type === "runtime.reload.finished")).toHaveLength(1);
+    expect(sent.filter((message) => message.type === "project.task.executor.progress")).toHaveLength(0);
+    expect(sent.filter((message) => message.type === "project.task.reconciled")).toHaveLength(0);
+    expect(sent.filter((message) => message.type === "app.task.updated")).toEqual([
+      { type: "app.task.updated", data: { appId: "gym", taskId: "run/1" } },
+      { type: "app.task.updated", data: { appId: "alex", taskId: "work/1" } },
+    ]);
+
+    transport.close(peer);
+    expect(fixture.listeners.size).toBe(0);
+  });
+
+  test("retains raw owner events for diagnostic wildcard subscriptions", async () => {
+    const fixture = eventFixture();
+    const sent: Record<string, unknown>[] = [];
+    const peer: DaemonWebSocketPeer = {
+      getBufferedAmount: () => 0,
+      send(data) {
+        sent.push(JSON.parse(data));
+      },
+    };
+    const transport = createDaemonWebSocketTransport({ events: fixture.events, agent: "may", instance: "fixture" });
+    transport.open(peer);
+    transport.message(peer, JSON.stringify({ type: "subscribe", sessions: ["*"] }));
+    await fixture.emit({
+      id: 5,
+      type: "project.task.reconciled",
+      target: { appId: "alex", taskId: "work/1" },
+      data: {},
+      timestamp: Date.now(),
+    } as PublicEvent);
+
+    expect(sent.filter((message) => message.type === "project.task.reconciled")).toHaveLength(1);
+    transport.close(peer);
+  });
+
+  test("reports one overflow hint per congestion interval and resumes filtered wakes after reread", async () => {
+    const fixture = eventFixture();
+    const sent: Record<string, unknown>[] = [];
+    let bufferedAmount = 0;
+    const peer: DaemonWebSocketPeer = {
+      getBufferedAmount: () => bufferedAmount,
       send(data) {
         sent.push(JSON.parse(data));
       },
@@ -131,14 +208,14 @@ describe("daemon WebSocket wakes", () => {
     transport.open(peer);
     transport.message(peer, JSON.stringify({ type: "subscribe", taskApps: ["alex"] }));
 
-    peer.bufferedAmount = 11;
+    bufferedAmount = 11;
     await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/1" }));
     await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/2" }));
     expect(sent.filter((message) => message.type === "overflow")).toEqual([{ type: "overflow", action: "reread" }]);
 
-    peer.bufferedAmount = 0;
+    bufferedAmount = 0;
     await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/3" }));
-    peer.bufferedAmount = 11;
+    bufferedAmount = 11;
     await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/4" }));
     expect(sent.filter((message) => message.type === "overflow")).toHaveLength(2);
     expect(sent.some((message) => message.type === "app.task.updated")).toBe(true);
