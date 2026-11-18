@@ -3,26 +3,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SqliteDb } from "./read-model/state-db.js";
 
-export type SessionDaemonFrameResult = {
-  ok: boolean;
-  error?: string;
-};
-
 export function createSessionRouteHandlers(options: {
   stateDir: string;
   getDb: () => SqliteDb;
   json: (data: unknown, status?: number) => Response;
-  sendDaemonFrame: (frame: Record<string, unknown>) => Promise<SessionDaemonFrameResult>;
-  buildPublishFrame: (
-    type: string,
-    data: Record<string, unknown>,
-    options?: {
-      target?: { appId?: string; taskId?: string; sessionId?: string };
-      idempotencyKey?: string;
-    },
-  ) => Record<string, unknown>;
 }) {
-  const { stateDir: STATE_DIR, getDb: _db, json, sendDaemonFrame, buildPublishFrame } = options;
+  const { stateDir: STATE_DIR, getDb: _db, json } = options;
 
   function handleSession(sessionId: string): Response {
     const session = _db().prepare("SELECT * FROM sessions WHERE sessionId = ?").get(sessionId);
@@ -149,37 +135,9 @@ export function createSessionRouteHandlers(options: {
     return json({ sessionId, source: resolved.source, line: lineNo, raw, parsed });
   }
 
-  async function handleSessionCancel(sessionId: string): Promise<Response> {
-    if (!sessionId) return json({ error: "sessionId required" }, 400);
-    const result = await sendDaemonFrame(buildPublishFrame("session.cancel.requested", {}, { target: { sessionId } }));
-    if (!result.ok) return json({ error: result.error }, 503);
-    return json({ ok: true, sessionId });
-  }
-
-  async function handleSessionMessage(req: Request, sessionId: string): Promise<Response> {
-    if (!sessionId) return json({ error: "sessionId required" }, 400);
-    let body: { content?: string };
-    try {
-      body = (await req.json()) as { content?: string };
-    } catch {
-      return json({ error: "invalid json" }, 400);
-    }
-    const content = (body.content ?? "").trim();
-    if (!content) return json({ error: "content required" }, 400);
-    // The daemon validates ownership and steers only live sessions.
-    // New work for an ended execution must go through its owning Task.
-    const result = await sendDaemonFrame(
-      buildPublishFrame("session.steer.requested", { message: content, channel: "web-ui" }, { target: { sessionId } }),
-    );
-    if (!result.ok) return json({ error: result.error }, 503);
-    return json({ ok: true, sessionId, deliveredAt: Date.now() });
-  }
-
   return {
     handleSession,
     handleTranscript,
     handleRawLog,
-    handleSessionCancel,
-    handleSessionMessage,
   };
 }

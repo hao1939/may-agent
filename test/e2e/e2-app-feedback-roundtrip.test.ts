@@ -1,9 +1,7 @@
 /**
- * E2 — A declared App subscription owns a project comment end-to-end.
+ * E2 — Canonical App input owns feedback end-to-end.
  * The real daemon admits a Task and runs an isolated workflow (no model).
  * Retained Markdown is history, not an alternative dispatch or status store.
- * E8 covers the browser/HTTP journey through ordinary App message input.
- * Explicit event subscribers remain supported independently of that UI route.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
@@ -12,7 +10,7 @@ import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource
 import { openSandboxDb, pollUntil, queryEvents, socketEmit } from "./lib/live-daemon.js";
 import { buildSandbox, type Sandbox } from "./lib/sandbox.js";
 
-describe("E2: project comment roundtrip", () => {
+describe("E2: App feedback roundtrip", () => {
   let sb: Sandbox;
   const legacyPath = "projects/e2e-comment-sandbox";
 
@@ -30,18 +28,17 @@ describe("E2: project comment roundtrip", () => {
     if (sb) await sb.close();
   });
 
-  test("a declared subscription owns the comment without legacy Markdown dispatch", async () => {
+  test("declared App input owns feedback without legacy Markdown dispatch", async () => {
     const projectFile = join(sb.root, legacyPath, "project.md");
     const before = readFileSync(projectFile, "utf8");
     const comment = "Review the retained project";
-    const data = { project: "comment", projectPath: legacyPath, comment, author: "e2e" };
     // Project history can be referenced without becoming the execution owner.
     const published = await socketEmit(sb.socketPath, "publish", {
       event: {
-        type: "project.comment.created",
+        type: "app.input.requested",
         target: { appId: "comment" },
         idempotencyKey: "comment-1",
-        data,
+        data: { input: { kind: "owner-review", data: { message: comment } } },
       },
     });
     expect(published).toMatchObject({ type: "ok" });
@@ -59,9 +56,8 @@ describe("E2: project comment roundtrip", () => {
       expect(attempt).toMatchObject({ taskId: "work/comment", taskGeneration: 1, state: "completed" });
       expect(store.readTask("work/comment")?.spec.outcome).toBe(comment);
       expect(store.isCancelled("work/comment")).toBe(false);
-      const events = queryEvents(db, { types: ["project.comment.created"] });
-      expect(events).toHaveLength(1);
-      expect(JSON.parse(events[0].data!)).toEqual({ ...data, idempotencyKey: "comment-1" });
+      expect(queryEvents(db, { types: ["app.input.requested"] })).toHaveLength(1);
+      expect(queryEvents(db, { types: ["project.comment.created"] })).toEqual([]);
       expect(queryEvents(db, { types: ["e2e.workflow_ran"] })).toHaveLength(1);
       expect(queryEvents(db, { types: ["project.nudge"] })).toEqual([]);
       expect(readFileSync(projectFile, "utf8")).toBe(before);

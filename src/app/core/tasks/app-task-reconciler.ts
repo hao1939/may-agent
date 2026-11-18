@@ -53,11 +53,11 @@ function managedAgentHandler(agent: string): string {
   return `agent:${agent}`;
 }
 
-/** Accept retained attempts written before the handler vocabulary migration. */
+/** Persisted attempts are normalized at the schema boundary. */
 function isManagedAgentHandler(handler: string, agent?: string): boolean {
   return agent
-    ? handler === managedAgentHandler(agent) || handler === `owner:${agent}`
-    : handler.startsWith("agent:") || handler.startsWith("owner:");
+    ? handler === managedAgentHandler(agent)
+    : handler.startsWith("agent:");
 }
 
 export type AppTaskClaim = {
@@ -227,7 +227,7 @@ function taskTriggerPriority(event: Record<string, unknown>, taskAgent: string):
   const source = String(event.source ?? data.source ?? "");
   const type = String(event.type ?? "");
   const reason = String(event.reason ?? data.reason ?? params.reason ?? "");
-  if (triggerHasDirectProjectComment(event)) return 4;
+  if (triggerHasDirectMessage(event)) return 4;
   if (
     type === "project.approval.submitted" ||
     source === "human" ||
@@ -250,7 +250,7 @@ function preferredTaskTrigger(
   // A direct human instruction is an unresolved commitment until the owner
   // consumes it. Automated owner requests may wake the same inbox, but must
   // not obscure the instruction that the owner still owes the human.
-  if (triggerHasDirectProjectComment(previous) && !triggerHasDirectProjectComment(incoming)) {
+  if (triggerHasDirectMessage(previous) && !triggerHasDirectMessage(incoming)) {
     return previous;
   }
   return taskTriggerPriority(incoming, taskAgent) >= taskTriggerPriority(previous, taskAgent) ? incoming : previous;
@@ -1917,8 +1917,8 @@ function acknowledgeIndexedRecoveryWait(
   });
 }
 
-function triggerHasDirectProjectComment(event: Record<string, unknown> | undefined): boolean {
-  return event?.type === "project.comment.created" || event?.type === "message.created";
+function triggerHasDirectMessage(event: Record<string, unknown> | undefined): boolean {
+  return event?.type === "message.created";
 }
 
 function taskTriggerLane(event: Record<string, unknown> | undefined): "human" | "normal" {
@@ -1964,12 +1964,12 @@ export function listRunnableAppTaskQueueEntries(config: AppTaskContext): AppTask
   const tree = config.resourceStore.readTaskContext({ taskIds: candidateIds });
   const nowMs = Date.now();
   const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3 } as const;
-  const hasDirectProjectComment = (resource: AppTaskResource): boolean =>
-    triggerHasDirectProjectComment(tree.taskTriggers?.[resource.metadata.id]?.event);
+  const hasDirectMessage = (resource: AppTaskResource): boolean =>
+    triggerHasDirectMessage(tree.taskTriggers?.[resource.metadata.id]?.event);
   const hasPersistedTrigger = (resource: AppTaskResource): boolean =>
     Boolean(tree.taskTriggers?.[resource.metadata.id]?.event);
   const effectivePriority = (resource: AppTaskResource) =>
-    hasDirectProjectComment(resource) || hasSatisfiedConditionReconciliation(tree, resource)
+    hasDirectMessage(resource) || hasSatisfiedConditionReconciliation(tree, resource)
       ? "P0"
       : effectiveAppTaskPriority(resource, nowMs, tree.taskTriggers?.[resource.metadata.id]?.observedAt);
   const recoveryOrder = new Map(candidateIds.map((taskId, index) => [taskId, index]));
@@ -2019,7 +2019,7 @@ export function appTaskQueueEntries(config: AppTaskContext, taskIds: Iterable<st
         taskId,
         options: {
           priority:
-            triggerHasDirectProjectComment(trigger?.event) || hasSatisfiedConditionReconciliation(tree, resource)
+            triggerHasDirectMessage(trigger?.event) || hasSatisfiedConditionReconciliation(tree, resource)
               ? "P0"
               : effectiveAppTaskPriority(resource, nowMs, trigger?.observedAt),
           lane: resource.status.lane ?? taskTriggerLane(trigger?.event),

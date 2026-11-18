@@ -3993,8 +3993,6 @@ describe("canonical App task runtime", () => {
         db: getDb(persistDir),
         hasApp: (id) => inbox.host.hasApp(id),
         validateAppInput: (id, input) => inbox.host.assertAcceptsInput(id, input),
-        hasAgent: () => false,
-        hasSession: () => false,
       });
       const admit = (input: {
         appId: string;

@@ -34,49 +34,9 @@ export interface EventEnvelope {
 /** Typed commands accepted by the runtime. */
 export type AgentCommand =
   | { type: "conversation.turn.stop.requested"; source: string; owner: string;
-      data: { appId: string; conversationId: string; turnId: string; expectedRevision: number } }
-  | {
-      type: "chat.start.requested";
-      source: string;
-      owner: string;
-      data: {
-        agent?: string;
-        message: string;
-        channel?: string;
-        channelTargetId?: string;
-        channelThreadId?: string;
-        channelMessageId?: number;
-        replyToSourceId?: string;
-        conversationId?: string;
-        forceNew?: boolean;
-        requestId?: string;
-        context?: Record<string, unknown>;
-      };
-    }
-  | {
-      type: "session.steer.requested";
-      source: string;
-      owner: string;
-      target: { sessionId: string };
-      data: { message: string; context?: Record<string, unknown> };
-    }
-  | {
-      type: "session.cancel.requested";
-      source: string;
-      owner: string;
-      urgency?: string;
-      target: { sessionId: string };
-      data: { reason?: string };
-    }
-  | { type: "session.cancel_all.requested"; source: string; owner: string; urgency?: string; data: { reason?: string } }
-  | {
-      type: "project.comment.created";
-      source?: string;
-      owner: string;
-      data: { projectPath: string; comment: string; author?: string };
-    };
+      data: { appId: string; conversationId: string; turnId: string; expectedRevision: number } };
 
-/** Management commands (to core / supervisord) */
+/** Host lifecycle controls. */
 export type ManagementCommand =
   | {
       type: "runtime.reload.requested";

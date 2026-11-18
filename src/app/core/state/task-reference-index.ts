@@ -75,7 +75,7 @@ export type TaskReferenceResolution =
   | { kind: "missing" };
 
 /** Invalid human reference, distinct from a failed storage read. */
-export class TaskReferenceError extends Error {}
+export class TaskReferenceError extends RangeError {}
 
 export function resolveTaskReference(db: SqliteDb, input: string): TaskReferenceResolution {
   const reference = input.trim().toLowerCase();

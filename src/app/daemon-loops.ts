@@ -1,8 +1,6 @@
-import { createInterface } from "node:readline";
 import { mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { EventBus } from "./core/events/bus.js";
-import type { SubagentManager } from "../lib/manager.js";
 import { readSqlPerformance } from "../lib/db/query-performance.js";
 import { currentProcessInstance, type ProcessInstance } from "../lib/process-identity.js";
 
@@ -35,82 +33,6 @@ export function writeDaemonHeartbeat(path: string, record: DaemonHeartbeatRecord
   }
 }
 
-export async function runInteractiveLoop(opts: {
-  bus: EventBus;
-  manager: SubagentManager;
-  handleInput: (input: string, source: string) => void;
-  gracefulShutdown: () => void;
-  socketUI: { close: () => void };
-  telegramBot: { close: () => void };
-  setActiveReadline: (rl: ReturnType<typeof createInterface> | null) => void;
-  isCancelLatched: () => boolean;
-  latchCancel: () => void;
-  emitPrompt: () => void;
-}): Promise<void> {
-  opts.emitPrompt();
-
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  opts.setActiveReadline(rl);
-
-  rl.on("SIGINT", () => {
-    const running = opts.manager.status().filter((session) => session.status === "running");
-    if (running.length > 0 && !opts.isCancelLatched()) {
-      opts.latchCancel();
-      opts.bus.emit({ type: "info", message: "\n[ctrl+c] Cancelling active sessions... (press again to force quit)" });
-      for (const session of running) opts.manager.cancel(session.sessionId);
-      opts.emitPrompt();
-    } else {
-      opts.gracefulShutdown();
-    }
-  });
-
-  let pasteBuffer: string[] = [];
-  let pasteTimer: ReturnType<typeof setTimeout> | null = null;
-  const pasteWindowMs = 50;
-
-  const flushPaste = () => {
-    pasteTimer = null;
-    const joined = pasteBuffer.join("\n").trim();
-    pasteBuffer = [];
-    if (!joined) {
-      opts.emitPrompt();
-      return;
-    }
-    if (joined === "exit" || joined === "quit") {
-      rl.close();
-      return;
-    }
-    try {
-      opts.handleInput(joined, "console");
-    } catch (error) {
-      // Input rejection must not escape the readline timer and stop background
-      // work. Report directly: persistence may be the failing boundary, and
-      // quiet-console mode hides ordinary info events.
-      console.error(`[console] Input failed: ${error instanceof Error ? error.message : String(error)}`);
-      opts.emitPrompt();
-    }
-  };
-
-  rl.on("line", (line: string) => {
-    pasteBuffer.push(line);
-    if (pasteTimer) clearTimeout(pasteTimer);
-    pasteTimer = setTimeout(flushPaste, pasteWindowMs);
-  });
-
-  await new Promise<void>((resolve) => {
-    rl.on("close", () => {
-      if (pasteTimer) {
-        clearTimeout(pasteTimer);
-        flushPaste();
-      }
-      opts.socketUI.close();
-      opts.telegramBot.close();
-      opts.setActiveReadline(null);
-      resolve();
-    });
-  });
-}
-
 export async function runDaemonKeepalive(opts: {
   bus: EventBus;
   persistDir: string;
@@ -141,7 +63,7 @@ export async function runDaemonKeepalive(opts: {
 
   opts.bus.emit({
     type: "info",
-    message: `[daemon] Running with the console disabled. Interface agent: ${opts.interfaceAgent}.${opts.socketEnabled ? " Use socket for control." : " Socket disabled — no external control available."}`,
+    message: `[daemon] Running. Interface agent: ${opts.interfaceAgent}.${opts.socketEnabled ? " Use socket for control." : " Socket disabled — no external control available."}`,
   });
 
   emitHeartbeat();

@@ -266,10 +266,23 @@ function fmtTime(epoch) {
          d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-async function loadSessionDetail(sessionId) {
-  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
-  if (chatTranscript?.sessionId !== sessionId) return switchSession(sessionId);
-  return refreshChatTranscript();
+let sessionDetailRead = null;
+function loadSessionDetail(sessionId) {
+  if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return Promise.resolve();
+  if (sessionDetailRead?.id === sessionId) {
+    sessionDetailRead.dirty = true;
+    return sessionDetailRead.promise;
+  }
+  const view = { id: sessionId, dirty: false, promise: null };
+  sessionDetailRead = view;
+  view.promise = (async () => {
+    do {
+      view.dirty = false;
+      await readSessionDetail(sessionId, { preserveScroll: true,
+        isCurrent: () => sessionDetailRead === view && !view.dirty });
+    } while (view.dirty && sessionDetailRead === view && currentTab === 'sessions' && currentRouteParams.id === sessionId);
+  })().finally(() => { if (sessionDetailRead === view) sessionDetailRead = null; });
+  return view.promise;
 }
 
 async function readSessionDetail(sessionId, opts = {}) {
@@ -278,7 +291,6 @@ async function readSessionDetail(sessionId, opts = {}) {
   currentInspectedSession = sessionId;
   const panel = getSessionDetailPanel();
   if (changed || !panel.querySelector('.session-inspector')) {
-    restoreChatComposer();
     panel.innerHTML = '<div class="panel">Loading...</div>';
   }
 
@@ -348,7 +360,6 @@ async function readSessionDetail(sessionId, opts = {}) {
     if (s.requestId) html += `<dt>Request</dt><dd>${esc(s.requestId)}</dd>`;
     html += `</dl></div>`;
 
-    html += `<div id="session-followup-anchor" class="session-followup-anchor"></div>`;
 
     // C. Unified enriched session chat surface.
     html += unavailableTranscript || renderSessionConversation(transData);
@@ -377,9 +388,7 @@ async function readSessionDetail(sessionId, opts = {}) {
     }
 
     html += '</div>';
-    restoreChatComposer();
     panel.innerHTML = html;
-    if (isSessionPageMode()) placeSessionComposer();
 
     // Store full outcome for expand/collapse
     if (s.outcome && s.outcome.length > 500) {
@@ -391,8 +400,18 @@ async function readSessionDetail(sessionId, opts = {}) {
   } catch(e) {
     if (currentTab !== 'sessions' || currentRouteParams.id !== sessionId) return;
     if (opts.isCurrent && !opts.isCurrent()) return;
-    document.getElementById('chat-status').textContent = e.message;
     if (!panel.querySelector('.session-inspector')) panel.innerHTML = `<div class="panel">Error loading session: ${esc(e.message)}</div>`;
+    else {
+      let notice = panel.querySelector('[data-session-read-error]');
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.dataset.sessionReadError = '';
+        notice.className = 'section';
+        notice.setAttribute('role', 'status');
+        panel.prepend(notice);
+      }
+      notice.textContent = `Session refresh unavailable: ${e.message}`;
+    }
   }
 }
 

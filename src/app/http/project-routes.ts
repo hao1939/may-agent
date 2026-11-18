@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { randomUUID } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import type { SocketResponse } from "@may-agent/control/client";
 import { metricThresholdBreached } from "../../lib/metrics.js";
 import {
   normalizeProjectPathForCompare,
@@ -11,11 +9,6 @@ import {
   readProjectMetadata,
 } from "./project-metadata.js";
 import type { SqliteDb } from "./read-model/state-db.js";
-
-export type DurableControlReceipt = { eventId: number; eventType: string };
-export type ConfirmDurableControl = (
-  idempotencyKey: string,
-) => DurableControlReceipt | undefined | Promise<DurableControlReceipt | undefined>;
 
 export function extractMarkdownSection(body: string, headings: string | string[]): string | null {
   const wanted = new Set((Array.isArray(headings) ? headings : [headings]).map((h) => h.trim().toLowerCase()));
@@ -55,59 +48,6 @@ export function projectEventTargetForPath(path: string, fallbackProjectId: strin
   return projectName.endsWith(".app") ? projectName.slice(0, -".app".length) : fallbackProjectId;
 }
 
-export type AppAdmissionPublishCommand = {
-  type: "publish";
-  event: {
-    type: "app.input.requested";
-    target: { appId: string };
-    data: {
-      input: {
-        kind: "message";
-        data: {
-          message: string;
-          context: { intent: "project-comment"; projectId: string; projectPath: string };
-        };
-      };
-      source: { kind: "human"; id: string };
-      conversationId: string;
-      channel: "web-ui";
-    };
-    idempotencyKey: string;
-  };
-};
-
-export function buildAppAdmissionCommand(input: {
-  projectPath: string;
-  projectId: string;
-  comment: string;
-  idempotencyKey: string;
-}): AppAdmissionPublishCommand {
-  return {
-    type: "publish",
-    event: {
-      type: "app.input.requested",
-      target: { appId: input.projectId },
-      data: {
-        input: {
-          kind: "message",
-          data: {
-            message: input.comment,
-            context: {
-              intent: "project-comment",
-              projectId: input.projectId,
-              projectPath: input.projectPath,
-            },
-          },
-        },
-        source: { kind: "human", id: `web-ui:${input.idempotencyKey}` },
-        conversationId: `web-ui:project:${input.projectId}`,
-        channel: "web-ui",
-      },
-      idempotencyKey: input.idempotencyKey,
-    },
-  };
-}
-
 export function createProjectRouteHandlers(options: {
   projectRoot: string;
   agentsRoot: string;
@@ -115,7 +55,6 @@ export function createProjectRouteHandlers(options: {
   getDb: () => SqliteDb;
   json: (data: unknown, status?: number) => Response;
   platformUiContentTypeFor: (path: string) => string;
-  admitAppInput: (command: AppAdmissionPublishCommand) => Promise<SocketResponse>;
 }) {
   const {
     projectRoot: PROJECT_ROOT,
@@ -124,7 +63,6 @@ export function createProjectRouteHandlers(options: {
     getDb: _db,
     json,
     platformUiContentTypeFor,
-    admitAppInput,
   } = options;
 
   function projectNameFromPath(path: string): string {
@@ -526,46 +464,6 @@ export function createProjectRouteHandlers(options: {
     return json(sessions);
   }
 
-  async function handleProjectComment(req: Request): Promise<Response> {
-    try {
-      const body = (await req.json()) as {
-        path?: string;
-        projectId?: string;
-        comment?: string;
-        idempotencyKey?: string;
-      };
-      const path = body.path ?? (body.projectId ? `projects/${body.projectId.replace(/\.app$/, "")}` : undefined);
-      const { comment } = body;
-      if (!path || !comment) return json({ error: "path and comment required" }, 400);
-      if (!isAllowedProjectPath(path)) return json({ error: "Access denied" }, 403);
-
-      const projectFile = resolveProjectFile(path);
-      if (!existsSync(projectFile)) return json({ error: "Project not found" }, 404);
-      const identity = readProjectIngressIdentity(path, projectFile);
-      const projectId = projectEventTargetForPath(path, identity.projectId);
-      const idempotencyKey = body.idempotencyKey?.trim() || `web-project-${randomUUID()}`;
-      const command = buildAppAdmissionCommand({ projectPath: path, projectId, comment, idempotencyKey });
-      try {
-        const admitted = await admitAppInput(command);
-        return json(
-          {
-            ok: true,
-            triggered: true,
-            eventType: String(admitted.eventType ?? "app.input.requested"),
-            eventId: Number(admitted.eventId) || undefined,
-            projectId,
-          },
-          202,
-        );
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        return json({ ok: false, triggered: false, error: message }, 503);
-      }
-    } catch (e: any) {
-      return json({ error: e.message }, 500);
-    }
-  }
-
   return {
     isAllowedProjectPath,
     resolveProjectFile,
@@ -575,6 +473,5 @@ export function createProjectRouteHandlers(options: {
     handleProjectContent,
     handleProjectDetail,
     handleProjectSessions,
-    handleProjectComment,
   };
 }

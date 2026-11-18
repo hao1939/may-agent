@@ -47,8 +47,6 @@ describe("runtime generation reload", () => {
       writeIdentity: () => {},
       processStartTime: Date.now(),
       getTelegramBot: () => undefined,
-      getActiveReadline: () => null,
-      clearActiveReadline: () => {},
       ...overrides,
     } as any;
   }

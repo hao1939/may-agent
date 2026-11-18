@@ -13,17 +13,16 @@ export interface BackgroundRuntimeOptions {
 }
 
 /** Process role, not optional schedules, determines ownership of background work. */
-export function runsBackgroundWork(args: AppArgs, interactiveConsole: boolean): boolean {
+export function runsBackgroundWork(args: AppArgs): boolean {
   if (
     args.statusMode ||
     args.emitMode ||
-    args.webOnlyMode ||
     args.taskWorkerRequest ||
     args.taskRecoveryWorker ||
     args.taskAdmissionWorker
   )
     return false;
-  return interactiveConsole || args.socketEnabled || args.telegramEnabled || args.cronEnabled || args.webEnabled;
+  return args.socketEnabled || args.telegramEnabled || args.cronEnabled || args.webEnabled;
 }
 
 export function startBackgroundRuntime(options: BackgroundRuntimeOptions): void {

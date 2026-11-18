@@ -1,14 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { spawn } from "node:child_process";
-import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
-import { createServer, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sendSocketCommand } from "@may-agent/control/client";
-import { validateSessionControl } from "../../src/app/adapters/executors/session-control.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { createIdentityWriter, readIdentity } from "../../src/lib/instance-identity.js";
 import { appendSessionMessage } from "../../src/lib/persistence.js";
 import { closeAllDbs } from "../../src/lib/db/connection.js";
 
@@ -22,109 +16,6 @@ describe("retained detached instance control", () => {
   afterEach(() => {
     closeAllDbs();
     rmSync(root, { recursive: true, force: true });
-  });
-
-  async function cancelFromOwner(sessionId: string) {
-    validateSessionControl(manager, "session.cancel.requested", sessionId, { remote: true });
-    const session = manager.registry.getSession(sessionId);
-    const identity = session?.detached && session.instance ? readIdentity(root, session.instance) : null;
-    if (!identity?.socket) throw new Error("No reachable execution owner for this session");
-    const receipt = await sendSocketCommand(identity.socket, {
-      type: "publish",
-      event: {
-        type: "session.cancel.requested",
-        target: { sessionId },
-        data: { reason: "owner requested cancellation" },
-        idempotencyKey: `owner-session-cancel:${sessionId}`,
-      },
-    });
-    return { accepted: true, sessionId, method: "socket", receipt };
-  }
-
-  it("still publishes cancellation to an existing instance's exact session", async () => {
-    const socketPath = join(root, "instance.sock");
-    const frames: unknown[] = [];
-    const sockets = new Set<Socket>();
-    const server = createServer((socket) => {
-      sockets.add(socket);
-      socket.on("close", () => sockets.delete(socket));
-      socket.write(JSON.stringify({ type: "connected" }) + "\n");
-      let pending = "";
-      socket.on("data", (chunk) => {
-        pending += chunk.toString();
-        const lines = pending.split("\n");
-        pending = lines.pop()!;
-        for (const line of lines.filter(Boolean)) {
-          frames.push(JSON.parse(line));
-          socket.write(JSON.stringify({ type: "ok", command: "publish" }) + "\n");
-        }
-      });
-    });
-    try {
-      server.listen(socketPath);
-      await once(server, "listening");
-      manager.registry.saveSession("legacy", {
-        agent: "worker",
-        task: "retained work",
-        status: "running",
-        startedAt: Date.now(),
-        detached: true,
-        instance: "job-legacy",
-      });
-      createIdentityWriter({ persistDir: root, instanceLabel: "job-legacy" })({
-        status: "running",
-        socket: socketPath,
-        sessionId: "legacy",
-      });
-
-      expect(await cancelFromOwner("legacy")).toMatchObject({ accepted: true, sessionId: "legacy", method: "socket" });
-      expect(frames).toEqual([
-        {
-          type: "publish",
-          event: {
-            type: "session.cancel.requested",
-            target: { sessionId: "legacy" },
-            data: { reason: "owner requested cancellation" },
-            idempotencyKey: "owner-session-cancel:legacy",
-          },
-        },
-      ]);
-      expect(manager.registry.getSession("legacy")?.status).toBe("running");
-    } finally {
-      for (const socket of sockets) socket.destroy();
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-    }
-  });
-
-  it("leaves unreachable execution alive and reports the socket failure", async () => {
-    const child = spawn(process.execPath, ["-e", "process.stdout.write('ready'); setInterval(() => {}, 1000)"], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    const exited = once(child, "exit");
-    try {
-      await once(child.stdout!, "data");
-      manager.registry.saveSession("legacy", {
-        agent: "worker",
-        task: "retained work",
-        status: "running",
-        startedAt: Date.now(),
-        detached: true,
-        instance: "job-legacy",
-        pid: child.pid,
-      });
-      createIdentityWriter({ persistDir: root, instanceLabel: "job-legacy" })({
-        status: "running",
-        socket: join(root, "absent.sock"),
-        sessionId: "legacy",
-      });
-      await expect(cancelFromOwner("legacy")).rejects.toThrow("ENOENT");
-      expect(child.exitCode).toBeNull();
-      expect(child.signalCode).toBeNull();
-      expect(manager.registry.getSession("legacy")?.status).toBe("running");
-    } finally {
-      if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
-      await exited;
-    }
   });
 
   for (const status of ["done", "error", "interrupted"] as const) {

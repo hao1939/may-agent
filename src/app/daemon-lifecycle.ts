@@ -60,8 +60,6 @@ export function createDaemonLifecycle(opts: {
   writeIdentity: (data: Partial<InstanceIdentity>) => void;
   processStartTime: number;
   getTelegramBot: () => { close: () => void } | undefined;
-  getActiveReadline: () => { close: () => void } | null;
-  clearActiveReadline: () => void;
   beforeShutdown?: () => void;
   prepareAgents?: (
     loaderOpts: AgentLoaderOptions,
@@ -85,12 +83,6 @@ export function createDaemonLifecycle(opts: {
     opts.beforeShutdown?.();
 
     opts.getTelegramBot()?.close();
-
-    const activeRL = opts.getActiveReadline();
-    if (activeRL) {
-      activeRL.close();
-      opts.clearActiveReadline();
-    }
 
     if (shutdownOpts.preserveSessions) {
       opts.bus.emit({ type: "info", message: "[shutdown] Preserving running sessions for restart/resume" });
@@ -168,9 +160,7 @@ export function createDaemonLifecycle(opts: {
         ? `[reload] ${appGeneration.taskApps} task-enabled App(s), ${appGeneration.appIds.length} durable App address(es)`
         : "[reload] No changes";
     }
-    // info events are forwarded to stdout by attachConsoleUI (chat/console
-    // mode) or attachDaemonInfoLog (default daemon mode). See
-    // src/app/transport/daemon-info-log.ts.
+    // The daemon info logger forwards this summary to stdout.
     opts.bus.emit({ type: "info", message: summary });
     const ok = errors.length === 0;
     if (reloadOptions.throwOnError && !ok) {

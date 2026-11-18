@@ -6,7 +6,7 @@ import { discoverAppDefinitions, listAppDefinitionFiles } from "./adapters/disco
 import { prepareAgentGeneration, publishPreparedAgentGeneration } from "./agent-loader.js";
 import type { AppArgs } from "./app-args.js";
 import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "./app-source-release.js";
-import { attachCommandRouter, validateSessionControl } from "./command-router.js";
+import { attachCommandRouter } from "./command-router.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "./composition/app-inbox-runtime.js";
 import { runsBackgroundWork, startBackgroundRuntime } from "./composition/background-startup.js";
 import type { AppReporting } from "./composition/reporting.js";
@@ -31,7 +31,6 @@ import {
   createDaemonLifecycle,
   prepareDaemonAgents,
   runDaemonKeepalive,
-  runInteractiveLoop,
   type InstanceIdentity,
 } from "./daemon.js";
 import { HumanTaskService } from "./human-task-service.js";
@@ -40,7 +39,6 @@ import type { ModelRegistry } from "@may-agent/sdk/runtime";
 import { parseWebPort, startWebMode } from "./modes/web.js";
 import { runRequestedExitMode } from "./runtime-exit-modes.js";
 import { attachTaskControlEventRoute } from "./task-control-events.js";
-import { attachConsoleUI } from "./transport/console.js";
 import { attachDaemonInfoLog } from "./transport/daemon-info-log.js";
 import { attachTelegramBot } from "./transport/telegram.js";
 
@@ -123,45 +121,29 @@ export async function runAppRuntime(opts: {
   const {
     cronEnabled: CRON_ENABLED,
     telegramEnabled: TELEGRAM_ENABLED,
-    consoleEnabled: CONSOLE_ENABLED,
     socketEnabled: SOCKET_ENABLED,
     webEnabled: WEB_ENABLED,
-    quietConsole: QUIET_CONSOLE,
     humanInterface,
   } = opts.appArgs;
   const interfaceAgent = humanInterface.agent;
-  const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
   const explicitDaemonHttp = Boolean(process.env.DAEMON_HTTP_PORT);
   const backgroundEnabled =
-    runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole)) ||
+    runsBackgroundWork(opts.appArgs) ||
     (explicitDaemonHttp &&
       !opts.appArgs.statusMode &&
       !opts.appArgs.emitMode &&
-      !opts.appArgs.webOnlyMode &&
       !opts.appArgs.taskWorkerRequest &&
       !opts.appArgs.taskRecoveryWorker &&
       !opts.appArgs.taskAdmissionWorker);
 
   const bus = new EventBus();
+  if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
   const requestedHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
   const configuredHostConcurrency =
     Number.isInteger(requestedHostConcurrency) && requestedHostConcurrency > 0 ? requestedHostConcurrency : 4;
   const hostCapacity = new HostCapacity(configuredHostConcurrency);
   attachEventPersistence({ bus, persistDir: opts.persistDir });
   markStartupPhase("database");
-
-  let activeRL: { close: () => void } | null = null;
-
-  if (interactiveConsole) {
-    attachConsoleUI(
-      bus,
-      () => null,
-      QUIET_CONSOLE,
-      () => {
-        if (activeRL) emitPrompt();
-      },
-    );
-  } else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
 
   bus.emit({
     type: "info",
@@ -278,21 +260,15 @@ export async function runAppRuntime(opts: {
   });
   const conversationAppId = humanInterface.appId;
   const events = createEventInterface({
-    conversationAgent: interfaceAgent,
     bus,
     db: getDb(opts.persistDir),
-    conversationAppId,
     validateAppInput: (appId, input) => {
       if (!appInboxRuntime) throw new Error("App input admission is unavailable");
       appInboxRuntime.host.assertAcceptsInput(appId, input);
     },
     hasApp: (appId) =>
       appRegistry.snapshot().entries.some((entry) => entry.definition.id === appId.trim().replace(/\.app$/, "")),
-    hasAgent: (agent) => manager.hasAgent(agent),
-    validateSessionControl: (type, sessionId) => validateSessionControl(manager, type, sessionId),
-    hasSession: (sessionId) =>
-      manager.getSessionSummary(sessionId).status !== "unknown" ||
-      Boolean(getDb(opts.persistDir).prepare("SELECT 1 FROM sessions WHERE sessionId = ? LIMIT 1").get(sessionId)),
+
   });
   // Reporting observes the committed generation; it cannot reject publication.
   const refreshReporting = () => {
@@ -372,7 +348,6 @@ export async function runAppRuntime(opts: {
 
   let telegramBot: { close: () => void } = { close: () => {} };
   let daemonHttpServer: { port: number; stop(closeActiveConnections?: boolean): void } | undefined;
-  let cancelledOnce = false;
   const preparedSources = new WeakMap<
     Awaited<ReturnType<typeof prepareAgentGeneration>>,
     DefinitionSourceRelease & { appDirectories: string[] }
@@ -386,10 +361,6 @@ export async function runAppRuntime(opts: {
     writeIdentity: opts.writeIdentity,
     processStartTime: opts.processStartTime,
     getTelegramBot: () => telegramBot,
-    getActiveReadline: () => activeRL,
-    clearActiveReadline: () => {
-      activeRL = null;
-    },
     beforeShutdown: () => {
       daemonMetricTimers?.close();
       daemonMetricTimers = null;
@@ -469,24 +440,12 @@ export async function runAppRuntime(opts: {
   });
   installProcessHandlers();
 
-  const commandRouter = attachCommandRouter({
-    interfaceAgent,
-    conversationAppId,
-    conversationId: humanInterface.conversationId,
+  attachCommandRouter({
     bus,
-    manager,
-    projectRoot: opts.projectRoot,
     reload: handleReload,
     restart: gracefulRestart,
     shutdown: gracefulShutdown,
   });
-  const handleInput = commandRouter.handleInput;
-
-  if (interactiveConsole && !manager.hasAgent(interfaceAgent)) {
-    console.error(`Agent "${interfaceAgent}" is not registered. Available: ${manager.agentNames().join(", ")}`);
-    process.exit(1);
-  }
-
   // Open the Conversation adapter before external ingress or cron work so it
   // can observe every later shared Conversation update. Its writes use the
   // same semantic event boundary as Console and HTTP.
@@ -519,8 +478,7 @@ export async function runAppRuntime(opts: {
     humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]);
   const getTask = (input: Record<string, unknown>) => humanTasks.getTask(input);
   const getStatus = () => readExecutionStatus(opts.persistDir);
-  const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
-    conversationAppId,
+  const { socketPath: SOCKET_PATH } = await startInterfaceRuntime({
     socketEnabled: SOCKET_ENABLED,
     persistDir: opts.persistDir,
     instanceLabel: opts.instanceLabel,
@@ -528,10 +486,6 @@ export async function runAppRuntime(opts: {
     events,
     getStatus,
     reportInfo: (message) => bus.emit({ type: "info", message }),
-    getAppConversation,
-    listApps,
-    listTasks,
-    getTask,
   });
   // A daemon only claims a TCP listener when its endpoint was explicitly
   // configured. This keeps fixture and multi-instance daemons headless while
@@ -552,14 +506,6 @@ export async function runAppRuntime(opts: {
     type: "info",
     message: `[startup] Ready in ${Math.round(performance.now() - startupStartedAt)}ms (${startupPhases.join(", ")})`,
   });
-  function emitPrompt(): void {
-    bus.emit({ type: "prompt", message: interfaceAgent, channel: "chat" });
-    if (process.stdin.isTTY) {
-      const prefix = opts.instance ? `[${opts.instance}] ` : "";
-      process.stdout.write(`\n${prefix}you> `);
-    }
-  }
-
   await runRequestedExitMode({
     appArgs: opts.appArgs,
   });
@@ -581,45 +527,16 @@ export async function runAppRuntime(opts: {
     instance: opts.instanceLabel,
     socket: SOCKET_ENABLED ? SOCKET_PATH : "",
     startedAt: new Date().toISOString(),
-    startedBy: interactiveConsole
-      ? "human"
-      : opts.instance.startsWith("job-")
-        ? "cron:" + opts.instance.replace("job-", "")
-        : "task",
+    startedBy: opts.instance.startsWith("job-") ? "cron:" + opts.instance.replace("job-", "") : "task",
     task: null,
     status: "running",
   });
 
-  if (!interactiveConsole && !CRON_ENABLED && !daemonHttpEnabled && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
-    bus.emit({
-      type: "info",
-      message: "[console] Non-TTY console invocation has no active daemon interfaces. Exiting.",
-    });
-    process.exit(0);
-  } else if (interactiveConsole) {
-    await runInteractiveLoop({
-      bus,
-      manager,
-      handleInput,
-      gracefulShutdown,
-      socketUI,
-      telegramBot,
-      setActiveReadline: (rl) => {
-        activeRL = rl;
-      },
-      isCancelLatched: () => cancelledOnce,
-      latchCancel: () => {
-        cancelledOnce = true;
-      },
-      emitPrompt,
-    });
-  } else {
-    await runDaemonKeepalive({
-      bus,
-      persistDir: opts.persistDir,
-      instanceLabel: opts.instanceLabel,
-      interfaceAgent,
-      socketEnabled: SOCKET_ENABLED,
-    });
-  }
+  await runDaemonKeepalive({
+    bus,
+    persistDir: opts.persistDir,
+    instanceLabel: opts.instanceLabel,
+    interfaceAgent,
+    socketEnabled: SOCKET_ENABLED,
+  });
 }

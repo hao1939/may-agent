@@ -85,8 +85,6 @@ function fixture(additionalExpected: Record<string, unknown> = {}) {
     db,
     validateAppInput: () => {},
     hasApp: (id) => id === "sample",
-    hasAgent: () => false,
-    hasSession: () => false,
   });
   const proposal = {
     taskGeneration: 1,

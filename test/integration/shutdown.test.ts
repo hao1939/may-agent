@@ -40,8 +40,6 @@ describe("daemon shutdown", () => {
         writeIdentity: (identity: { status: string }) => calls.push("identity:" + identity.status),
         processStartTime: Date.now(),
         getTelegramBot: () => ({ close: () => calls.push("telegram:close") }),
-        getActiveReadline: () => ({ close: () => calls.push("console:close") }),
-        clearActiveReadline: () => calls.push("console:clear"),
         beforeShutdown: () => calls.push("tasks:close"),
       } as Parameters<typeof createDaemonLifecycle>[0]);
       lifecycle.installProcessHandlers();
@@ -49,8 +47,6 @@ describe("daemon shutdown", () => {
       expect(calls).toEqual([
         "tasks:close",
         "telegram:close",
-        "console:close",
-        "console:clear",
         ...(signal === "SIGINT" ? ["cancel:running"] : []),
       ]);
       expect(timers.map((t) => t.delay)).toEqual([2000, 5000]);

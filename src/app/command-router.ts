@@ -1,7 +1,5 @@
-import { isRecord, normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import type { SubagentManager } from "../lib/manager.js";
+import { isRecord } from "../../packages/control/src/event-envelope.js";
 import { log } from "@may-agent/sdk/runtime";
-import { validateSessionControl } from "./adapters/executors/session-control.js";
 import {
   EVENT_RECORD_ONLY,
   EVENT_ROW_ID,
@@ -10,22 +8,15 @@ import {
   type EventBus,
 } from "./core/events/bus.js";
 import type { RuntimeReloadResult } from "./daemon-lifecycle.js";
-export { validateSessionControl } from "./adapters/executors/session-control.js";
 
 export interface CommandRouterOptions {
-  interfaceAgent?: string;
-  conversationAppId?: string;
-  conversationId?: string;
   bus: EventBus;
-  manager: SubagentManager;
-  projectRoot: string;
   reload: (options?: { expectedSourceCommit?: string }) => RuntimeReloadResult | Promise<RuntimeReloadResult>;
   restart: () => void;
   shutdown: () => void;
 }
 
 export interface CommandRouter {
-  handleInput: (message: string, source?: string) => void;
   close: () => void;
 }
 
@@ -34,25 +25,13 @@ function eventData(event: unknown): Record<string, unknown> {
   return isRecord(event.data) ? event.data : event;
 }
 
-function eventSource(event: unknown, fallback = "human"): string {
-  if (!isRecord(event)) return fallback;
-  return typeof event.source === "string" && event.source.trim() ? event.source.trim() : fallback;
-}
-
 function nonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function integerField(value: unknown, key: string): number | null {
-  if (!isRecord(value)) return null;
-  const next = value[key];
-  return typeof next === "number" && Number.isInteger(next) ? next : null;
-}
-
-
-/** Normalize external input, apply deterministic controls, and admit semantic work to an App. */
+/** Route durable Host lifecycle controls to their owning service. */
 export function attachCommandRouter(options: CommandRouterOptions): CommandRouter {
-  const { bus, manager } = options;
+  const { bus } = options;
 
   const accepted = (control: string, note = "input handled by an explicit runtime route"): DeliveryResult => ({
     accepted: true,
@@ -104,163 +83,8 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
       });
   }
 
-  function handleSteer(sessionId: unknown, message: unknown, _source?: string, event?: unknown): boolean {
-    const id = nonEmptyString(sessionId);
-    const text = nonEmptyString(message);
-    if (!id || !text) return false;
-    try {
-      validateSessionControl(manager, "session.steer.requested", id);
-      if (!manager.status().some((session) => session.sessionId === id)) {
-        throw new Error("This session has ended. Send input to the owning App or Task to start a new attempt.");
-      }
-      manager.send(id, text, { trace: childEventTrace(event) });
-    } catch (error) {
-      log("warn", `[steer] ${error instanceof Error ? error.message : String(error)}`);
-      throw error;
-    }
-    return true;
-  }
-
-  function handleChatStart(event: unknown): DeliveryResult | void {
-    if (isRecord(event) && isRecord(event.target) && event.target.appId)
-      throw new Error("App input must use app.input.requested");
-    const data = eventData(event);
-    const message = nonEmptyString(data.message);
-    if (!message) return;
-    const agent = nonEmptyString(data.agent) ?? options.interfaceAgent ?? "host";
-    const source = eventSource(event, nonEmptyString(data.channel) ?? "human");
-    if (agent === options.interfaceAgent) {
-      admitInterfaceInput(message, source, {
-        requestId: nonEmptyString(data.requestId) ?? undefined,
-        conversationId: nonEmptyString(data.conversationId) ?? undefined,
-        channel: nonEmptyString(data.channel) ?? source,
-        channelTargetId: nonEmptyString(data.channelTargetId) ?? undefined,
-        channelThreadId: nonEmptyString(data.channelThreadId) ?? undefined,
-        channelMessageId: integerField(data, "channelMessageId") ?? undefined,
-        context: isRecord(data.context) ? data.context : undefined,
-      });
-      return accepted("interface-input-admitted");
-    }
-    const openingEventId = eventRowId(event);
-    const sessionPrefix = manager.getAgentDefinition?.(agent)?.sessionIdPrefix?.trim() || "s";
-    const sessionId = openingEventId ? `${sessionPrefix}_event_${openingEventId}` : undefined;
-    const existingSession = sessionId ? manager.getSessionSummary?.(sessionId) : undefined;
-    if (sessionId && existingSession && existingSession.status !== "unknown") {
-      return accepted(`agent:${agent}`, `direct chat already correlated to ${sessionId}`);
-    }
-    bus.emit({
-      type: "message.created",
-      source,
-      owner: normalizeEventOwner(agent),
-      data: { from: source, to: agent, content: message, intent: "chat.start", priority: "P0" },
-    } as any);
-    const startedSessionId = manager.run(agent, message, {
-      ...(sessionId ? { sessionId } : {}),
-      kind: "chat",
-      autoClose: "never",
-      source,
-      requestId: nonEmptyString(data.requestId) ?? (openingEventId ? `event:${openingEventId}` : undefined),
-      conversationId: nonEmptyString(data.conversationId) ?? undefined,
-      channelMessageId: integerField(data, "channelMessageId") ?? undefined,
-      trace: childEventTrace(event),
-    });
-    log("info", `[chat.start] Started ${agent} chat session: ${startedSessionId}`);
-    return accepted(`agent:${agent}`);
-  }
-
-  function admitInterfaceInput(
-    message: string,
-    source: string,
-    metadata: {
-      requestId?: string;
-      conversationId?: string;
-      channel?: string;
-      channelTargetId?: string;
-      channelThreadId?: string;
-      channelMessageId?: number;
-      context?: Record<string, unknown>;
-    } = {},
-  ): void {
-    if (!options.conversationAppId) throw new Error("No Conversation App is configured");
-    bus.emit({
-      type: "app.input.requested",
-      source,
-      owner: `app:${options.conversationAppId}`,
-      data: {
-        appId: options.conversationAppId,
-        input: {
-          kind: "message",
-          data: { message, ...(metadata.context ? { context: metadata.context } : {}) },
-        },
-        source: { kind: "human", id: metadata.requestId ?? source },
-        conversationId: metadata.conversationId ?? options.conversationId,
-        conversationSequence: metadata.channelMessageId,
-        channel: metadata.channel ?? source,
-        channelTargetId: metadata.channelTargetId,
-        channelThreadId: metadata.channelThreadId,
-        channelMessageId: metadata.channelMessageId,
-        idempotencyKey: metadata.requestId,
-      },
-    } as any);
-  }
-
-  function handleInput(message: string, source?: string): void {
-    const text = message.trim();
-    if (!text) return;
-    const channel = source ?? "human";
-    const lower = text.toLowerCase();
-    if (lower === "/cancel all") {
-      bus.emit({
-        type: "session.cancel_all.requested",
-        source: channel,
-        owner: "system:host",
-        data: { reason: "human requested cancel all" },
-      });
-      return;
-    }
-    if (lower === "/reload" || lower === "/restart" || lower === "/close") {
-      const type =
-        lower === "/reload"
-          ? "runtime.reload.requested"
-          : lower === "/restart"
-            ? "runtime.restart.requested"
-            : "runtime.shutdown.requested";
-      bus.emit({
-        type,
-        source: channel,
-        owner: "system:host",
-        data: { reason: `human requested ${lower.slice(1)}` },
-      } as any);
-      return;
-    }
-    admitInterfaceInput(text, channel);
-  }
-
   const unsubscribeRequiredControls = bus.subscribeDurableRoute((event) => {
     switch (event.type) {
-      case "chat.start.requested":
-        return handleChatStart(event);
-      case "session.steer.requested": {
-        const data = eventData(event);
-        const target: Record<string, unknown> = isRecord(event) && isRecord(event.target) ? event.target : {};
-        return handleSteer(target.sessionId, data.message, eventSource(event), event)
-          ? accepted("session-steer")
-          : undefined;
-      }
-      case "session.cancel.requested": {
-        const target: Record<string, unknown> = isRecord(event) && isRecord(event.target) ? event.target : {};
-        const sessionId = nonEmptyString(target.sessionId);
-        if (!sessionId) return;
-        validateSessionControl(manager, "session.cancel.requested", sessionId);
-        manager.cancel(sessionId);
-        return accepted("session-cancel");
-      }
-      case "session.cancel_all.requested": {
-        validateSessionControl(manager, "session.cancel_all.requested");
-        const local = manager.status().filter((session) => session.status === "running");
-        for (const session of local) manager.cancel(session.sessionId);
-        return accepted("session-cancel-all");
-      }
       case "runtime.reload.requested":
         finishReload(event);
         return accepted("runtime-reload");
@@ -274,7 +98,6 @@ export function attachCommandRouter(options: CommandRouterOptions): CommandRoute
   });
 
   return {
-    handleInput,
     close: () => {
       unsubscribeRequiredControls();
     },

@@ -4,15 +4,12 @@ import { parseEmitMode } from "./modes/emit.js";
 export interface AppArgs {
   cronEnabled: boolean;
   telegramEnabled: boolean;
-  consoleEnabled: boolean;
   socketEnabled: boolean;
   webEnabled: boolean;
-  quietConsole: boolean;
   statusMode: boolean;
   emitMode: ReturnType<typeof parseEmitMode>;
   dryRun: boolean;
   humanInterface: InterfaceBinding;
-  webOnlyMode: boolean;
   notify: boolean;
   /** Private parent-to-child payload for one isolated Task attempt. */
   taskWorkerRequest?: string;
@@ -37,16 +34,23 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
       `${flagName} has been retired; use \`may run <target> [input]\` for standalone execution or \`may-agent --emit <event-type> <json>\` for daemon events`,
     );
   }
+  const retiredConsoleFlag = argv.find((arg) =>
+    ["--chat", "--console"].some((flag) => arg === flag || arg.startsWith(`${flag}=`)),
+  );
+  if (retiredConsoleFlag) {
+    throw new Error(`${retiredConsoleFlag.split("=")[0]} has been retired; run may-console to connect to the daemon over HTTP and /ws`);
+  }
   const cronEnabled = argv.includes("--cron");
   const telegramEnabled = argv.includes("--telegram");
-  const consoleEnabled = argv.includes("--console") || argv.includes("--chat");
   const socketEnabled = argv.includes("--socket");
   const webEnabled = argv.includes("--web");
-  const quietConsole = argv.includes("--chat");
   const statusMode = argv.includes("--status");
   const emitMode = parseEmitMode(argv);
   const dryRun = argv.includes("--dry-run");
   const humanInterface = interfaceBinding(env, parseInterfaceAgent(argv));
+  if (webEnabled && !cronEnabled && !socketEnabled && !telegramEnabled) {
+    throw new Error("Standalone --web has been retired; use the existing daemon HTTP endpoint, or start a daemon with may-agent --socket --web");
+  }
   const taskWorkerIndex = argv.indexOf("--task-worker-once");
   const taskWorkerRequest = taskWorkerIndex >= 0 ? argv[taskWorkerIndex + 1] : undefined;
   const taskRecoveryWorker = argv.includes("--task-recovery-once");
@@ -63,21 +67,12 @@ export function parseAppArgs(argv: string[] = process.argv, env: NodeJS.ProcessE
   return {
     cronEnabled,
     telegramEnabled,
-    consoleEnabled,
     socketEnabled,
     webEnabled,
-    quietConsole,
     statusMode,
     emitMode,
     dryRun,
     humanInterface,
-    webOnlyMode:
-      webEnabled &&
-      !consoleEnabled &&
-      !cronEnabled &&
-      !socketEnabled &&
-      !telegramEnabled &&
-      !statusMode,
     notify: argv.includes("--notify"),
     ...(taskWorkerRequest ? { taskWorkerRequest } : {}),
     taskRecoveryWorker,

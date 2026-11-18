@@ -12,7 +12,6 @@ import type { EventInterface } from "../core/events/interface.js";
 export type { SocketFrame } from "@may-agent/control/protocol";
 
 export interface SocketUIOptions {
-  conversationAppId?: string;
   socketPath: string;
   events: Pick<EventInterface, "get" | "subscribe">;
   publishEvent: AttachControlSocketOptions["publishEvent"];
@@ -24,10 +23,6 @@ export interface SocketUIOptions {
   agentName: string;
   /** Daemon instance label. */
   instance: string;
-  getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  listApps?: AttachControlSocketOptions["listApps"];
-  listTasks?: AttachControlSocketOptions["listTasks"];
-  getTask?: AttachControlSocketOptions["getTask"];
 }
 
 export type SocketUI = ControlSocket;
@@ -75,13 +70,8 @@ export async function attachSocketUI(opts: SocketUIOptions): Promise<SocketUI> {
     emitEvent: (event) => opts.publishOperatorEvent(operatorEventInput(event)),
     publishEvent: opts.publishEvent,
     getEvent: events.get,
-    getAppConversation: opts.getAppConversation,
-    listApps: opts.listApps,
-    listTasks: opts.listTasks,
-    getTask: opts.getTask,
     subscribeEvents: (handler) => events.subscribe({}, handler),
     onInfo: opts.reportInfo,
-    conversationAppId: opts.conversationAppId,
     agentName,
     instance,
   });

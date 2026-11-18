@@ -10,8 +10,6 @@ import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-
 import { createQueryService } from "../../src/lib/query-service.js";
 import { closeDb } from "../../src/lib/db/connection.js";
 import { upsertSession } from "../../src/lib/db/sessions.js";
-import { attachControlSocket, type ControlSocket } from "../../packages/control/src/server.js";
-import { daemonSocketPath } from "../../packages/control/src/client.js";
 
 describe("HTTP event reads", () => {
   let root: string;
@@ -19,7 +17,6 @@ describe("HTTP event reads", () => {
   let child: ChildProcess;
   let stopped: Promise<void>;
   let baseUrl: string;
-  let control: ControlSocket | undefined;
 
   beforeEach(async () => {
     root = mkdtempSync(join(tmpdir(), "may-http-events-"));
@@ -33,7 +30,7 @@ describe("HTTP event reads", () => {
     child = spawnFixtureProcess(
       [
         ...(disappearMetadata ? ["--preload", resolve(import.meta.dir, "../fixtures/http-project-metadata-disappear.ts")] : []),
-        resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0",
+        resolve(import.meta.dir, "../fixtures/http-server.ts"), "--state-dir", root, "--port", "0",
       ],
       {
         cwd: root,
@@ -69,8 +66,6 @@ describe("HTTP event reads", () => {
   afterEach(async () => {
     child?.kill("SIGKILL");
     await stopped;
-    control?.close();
-    control = undefined;
     db?.close();
     if (root) closeDb(root);
     if (root) rmSync(root, { recursive: true, force: true });
@@ -102,73 +97,6 @@ describe("HTTP event reads", () => {
     writeFileSync(join(dir, file), content);
     return dir;
   }
-
-  async function ingressControl() {
-    const admissions: unknown[] = [];
-    const publications: unknown[] = [];
-    control = await attachControlSocket({
-      socketPath: daemonSocketPath(root, { instance: "http-events", interfaceAgent: "helper" }),
-      agentName: "helper", getStatus: () => [],
-      emitEvent: () => {}, subscribeEvents: () => () => {},
-      publishEvent: (event) => {
-        if (event.type === "app.input.requested") {
-          admissions.push({
-            appId: event.target?.appId,
-            ...event.data,
-            idempotencyKey: event.idempotencyKey,
-          });
-          return { eventId: 71, eventType: "app.input.requested", delivery: "accepted" };
-        }
-        publications.push(event);
-        return { eventId: 72, eventType: event.type, delivery: "accepted" };
-      },
-    });
-    return { admissions, publications };
-  }
-
-  it("keeps malformed metadata from blocking project comment admission", async () => {
-    const source = "{ damaged";
-    const dir = metadata("sample.app", "project.json", source);
-    const { admissions, publications } = await ingressControl();
-    const response = await fetch(baseUrl + "/api/projects/comment", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ path: "projects/sample.app", comment: "Inspect the result", idempotencyKey: "comment-71" }),
-      signal: AbortSignal.timeout(5_000),
-    });
-    expect(response.status).toBe(202);
-    expect(await response.json()).toMatchObject({ ok: true, triggered: true, projectId: "sample", eventId: 71 });
-    expect(admissions).toEqual([{
-      appId: "sample", input: { kind: "message", data: { message: "Inspect the result",
-        context: { intent: "project-comment", projectId: "sample", projectPath: "projects/sample.app" } } },
-      source: { kind: "human", id: "web-ui:comment-71" },
-      conversationId: "web-ui:project:sample", channel: "web-ui", idempotencyKey: "comment-71",
-    }]);
-    expect(publications).toEqual([]);
-    expect((await fetch(baseUrl + "/api/projects/detail?path=projects/sample.app")).status).toBe(500);
-    expect(readFileSync(join(dir, "project.json"), "utf8")).toBe(source);
-  });
-
-  it("keeps malformed metadata from blocking an explicitly targeted event", async () => {
-    const source = "{ damaged";
-    const dir = metadata("sample.app", "project.json", source);
-    const { admissions, publications } = await ingressControl();
-    const input = {
-      type: "project.owner.requested", target: { appId: "actual-app", taskId: "work" },
-      data: { projectPath: "projects/sample.app", projectId: "already-supplied", reason: "Inspect the result" },
-      idempotencyKey: "event-72",
-    };
-    const response = await fetch(baseUrl + "/api/events", {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input),
-      signal: AbortSignal.timeout(5_000),
-    });
-    expect(response.status).toBe(201);
-    expect(await response.json()).toMatchObject({ ok: true, triggered: true, eventId: 72, projectId: "already-supplied" });
-    expect(publications).toHaveLength(1);
-    expect(publications[0]).toMatchObject(input);
-    expect(admissions).toEqual([]);
-    expect(await read("/api/projects")).toEqual([]);
-    expect(readFileSync(join(dir, "project.json"), "utf8")).toBe(source);
-  });
 
   it("isolates a disappearing metadata file without losing other projects", async () => {
     const gone = metadata("vanishing.app", "project.json", JSON.stringify({ id: "vanishing", owner: "worker", status: "active" }));

@@ -6,7 +6,6 @@ import {
   emitDaemonEventWithRetry,
   getEvent,
   publishEvent,
-  sendAgentMessage,
   sendDaemonEvent,
   sendDaemonInput,
   sendSocketCommand,
@@ -191,11 +190,11 @@ describe("sendDaemonEvent", () => {
         fragmentedEndpoint([
           { type: "connected" },
           { type: "info", message: "Not an acknowledgement" },
-          { type: "ok", command: "task.get", task: { summary: message } },
+          { type: "ok", command: "event.get", event: { summary: message } },
         ]),
-        { type: "task.get", ref: "fixture" },
+        { type: "event.get", eventId: 1 },
       ),
-    ).resolves.toMatchObject({ task: { summary: message } });
+    ).resolves.toMatchObject({ event: { summary: message } });
   });
 
   it("returns the daemon transport ack", async () => {
@@ -482,60 +481,15 @@ describe("emitDaemonEvent", () => {
       source: "control",
     });
   });
+});
 
-  it("rejects headless interface input before connecting while allowing other agents", async () => {
+describe("canonical App input client", () => {
+  it("publishes to an exact App and retained Conversation without choosing a session", async () => {
     const writes: string[] = [];
-    const endpoint = captureEndpoint(writes);
-    expect(() => sendAgentMessage(endpoint, "helper", "hello", "cli", { interface: { agent: "helper" } }))
-      .toThrow("No Conversation App is configured");
-    expect(writes).toEqual([]);
-    await sendAgentMessage(endpoint, "worker", "review", "cli", { interface: { agent: "helper" } });
-    expect(JSON.parse(writes[0]!)).toMatchObject({
-      event: { type: "chat.start.requested", data: { agent: "worker", message: "review" } },
-    });
-  });
-
-  it("preserves an independent App and retained Conversation and keeps direct agent chat direct", async () => {
-    const writes: string[] = [];
-
-    await expect(sendDaemonInput(captureEndpoint(writes), "hello helper", "cli", { appId: "support", conversationId: "retained-room" })).resolves.toMatchObject({
-      type: "ok",
-      command: "publish",
-    });
-    await expect(sendAgentMessage(captureEndpoint(writes), "helper", "review this", "cli", { interface: { agent: "helper", appId: "support", conversationId: "retained-room" } })).resolves.toMatchObject({
-      type: "ok",
-      command: "publish",
-    });
-    await expect(sendAgentMessage(captureEndpoint(writes), "dev", "fix it", "cli")).resolves.toMatchObject({
-      type: "ok",
-      command: "publish",
-    });
-
-    expect(JSON.parse(writes[0] ?? "")).toMatchObject({
-      type: "publish",
-      event: {
-        type: "app.input.requested",
-        target: { appId: "support" },
-        data: { input: { kind: "message", data: { message: "hello helper" } }, channel: "cli", conversationId: "retained-room" },
-        idempotencyKey: expect.stringMatching(/^control-input-/),
-      },
-    });
-    expect(JSON.parse(writes[1] ?? "")).toMatchObject({
-      type: "publish",
-      event: {
-        type: "app.input.requested",
-        target: { appId: "support" },
-        data: { input: { kind: "message", data: { message: "review this" } }, channel: "cli", conversationId: "retained-room" },
-        idempotencyKey: expect.stringMatching(/^control-input-/),
-      },
-    });
-    expect(JSON.parse(writes[2] ?? "")).toMatchObject({
-      type: "publish",
-      event: {
-        type: "chat.start.requested",
-        data: { agent: "dev", message: "fix it", channel: "cli" },
-        idempotencyKey: expect.stringMatching(/^control-chat-/),
-      },
-    });
+    await sendDaemonInput(captureEndpoint(writes), "hello", "cli", { appId: "support", conversationId: "retained-room" });
+    expect(JSON.parse(writes[0]!)).toMatchObject({ type: "publish", event: {
+      type: "app.input.requested", target: { appId: "support" },
+      data: { input: { kind: "message", data: { message: "hello" } }, channel: "cli", conversationId: "retained-room" },
+    } });
   });
 });

@@ -8,6 +8,6 @@
   ],
   "scripts": {
     "build": "bun ../../scripts/build-webui.ts",
-    "dev": "MAY_AGENT_UI_DIR=./static bun ../../src/app/may.ts --web"
+    "dev": "MAY_AGENT_UI_DIR=./static bun ../../src/app/may.ts --socket --web"
   }
 }

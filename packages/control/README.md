@@ -99,23 +99,23 @@ receive their scoped publishing capability through the SDK.
 
 ## Observe facts; read results
 
-Read exact Task detail with the supported `task.get` socket command:
+The NDJSON socket supports `publish`, `event.get`, `status` (including optional
+`diagnostics: true`), and raw diagnostic `subscribe` with `sessions: string[]`.
+Conversation and Task reads, cancellation shortcuts, and human watch filters
+belong to daemon HTTP and `/ws`.
+
+Read exact Task detail over HTTP:
 
 ```ts
-const response = await sendSocketCommand(socketPath, {
-  type: "task.get", appId: "sample", taskId: "work/review",
-  inputKeys: ["request:original"],
-});
+const query = new URLSearchParams({ appId: "sample", taskId: "work/review" });
+const response = await fetch(`${daemonHttpUrl}/api/task?${query}`);
 ```
 
-Import `sendSocketCommand` from `@may-agent/control/client`. Omit `inputKeys`
-for an ordinary read. Explicit reads accept at most eight non-empty exact keys,
-preserve their bytes, and fail if an original input is unavailable or belongs to
-another Task. They do not consume input. Saved worker inheritance remains
-readable without a loaded App; genuinely unknown identity stays absent.
-Use `acceptedEvidence: true` with optional `evidenceLimit`/`evidenceCursor` for
-accepted-history bodies. List cards keep metadata and evidence bodies omitted.
-The retired `app.task.get` command is not an alternate read route.
+HTTP supports optional accepted-evidence pagination. Exact original-input reads
+remain available through the scoped SDK Task reader with `inputKeys`; neither
+kind of read consumes input. Use a generation-fenced `app.task.cancel.requested`
+publication for cancellation. Human watches use HTTP `/ws` and reread canonical
+state after an identity-only wake.
 
 | Surface | Meaning and consumer rule |
 | --- | --- |

@@ -6,4 +6,4 @@ export {
   formatDurationMs,
   type InstanceIdentity,
 } from "./daemon-lifecycle.js";
-export { runDaemonKeepalive, runInteractiveLoop } from "./daemon-loops.js";
+export { runDaemonKeepalive } from "./daemon-loops.js";

@@ -122,7 +122,7 @@ describe("served workflow and metric health pages", () => {
     );
 
     child = spawnFixtureProcess(
-      [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
+      [resolve(import.meta.dir, "../fixtures/http-server.ts"), "--state-dir", root, "--port", "0"],
       {
         cwd: root,
         env: {
@@ -284,7 +284,7 @@ describe("served workflow and metric health pages", () => {
 
   test("steering rejects invalid and missing targets without touching installed state", async () => {
     for (const [path, body, status] of [
-      ["/api/sessions/missing/message", {}, 400],
+
       ["/api/alerts/0/resolve", { reason: "fixture" }, 404],
       ["/api/alerts/notanumber/resolve", { reason: "fixture" }, 400],
     ] as const) {
@@ -558,27 +558,27 @@ describe("served workflow and metric health pages", () => {
         await page.click("#liveness-panel .heartbeat-dot.error");
         await page.waitForSelector("#session-detail-panel .session-inspector");
         expect(new URL(page.url()).pathname).toBe("/sessions/step-upload");
-        expect(await page.evaluate("currentSessionId")).toBe("step-upload");
-        expect(await page.$eval("#chat", el => el.classList.contains("hidden"))).toBe(false);
-        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        expect(await page.evaluate("currentInspectedSession")).toBe("step-upload");
+        expect(await page.$eval("#chat", el => el.classList.contains("hidden"))).toBe(true);
+        expect(await page.$("#session-followup-anchor")).toBeNull();
         await page.click('#session-detail-panel .meta-grid a[href="/sessions/retained-parent"]');
         await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "retained-parent");
         expect(new URL(page.url()).pathname).toBe("/sessions/retained-parent");
-        expect(await page.evaluate("currentSessionId")).toBe("retained-parent");
-        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        expect(await page.evaluate("currentInspectedSession")).toBe("retained-parent");
+        expect(await page.$("#session-followup-anchor")).toBeNull();
         await page.click('#session-detail-panel a[href="/agents/worker"]');
         await page.waitForSelector("#agents-content #agent-subtab-body");
         expect(new URL(page.url()).pathname).toBe("/agents/worker");
-        expect(await page.$("#chat-composer-host .chat-container")).not.toBeNull();
+        expect(await page.$eval("#chat", el => el.classList.contains("hidden"))).toBe(true);
         await page.click('#agents-content button[onclick="switchAgentSubTab(\'overview\')"]');
         await page.waitForSelector('#agent-subtab-body [onclick*="step-upload"]');
         await page.click('#agent-subtab-body [onclick*="step-upload"]');
         await page.waitForFunction(() => document.querySelector("#session-detail-panel h3")?.textContent === "step-upload");
         expect(new URL(page.url()).pathname).toBe("/sessions/step-upload");
-        expect(await page.evaluate("currentSessionId")).toBe("step-upload");
-        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        expect(await page.evaluate("currentInspectedSession")).toBe("step-upload");
+        expect(await page.$("#session-followup-anchor")).toBeNull();
         await page.evaluate("loadSessionDetail('step-upload')");
-        expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+        expect(await page.$("#session-followup-anchor")).toBeNull();
         await page.goBack();
         await page.waitForSelector('#agent-subtab-body [onclick*="step-upload"]');
         expect(new URL(page.url()).pathname).toBe("/agents/worker");
@@ -588,13 +588,13 @@ describe("served workflow and metric health pages", () => {
     }, 30000,
   );
 
-  test.skipIf(skipBrowser)("an inspector background read keeps its content and composer visible until replacement", async () => {
+  test.skipIf(skipBrowser)("an inspector background read keeps its content visible until replacement", async () => {
     const browser = await puppeteer.launch({ executablePath: chrome!, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     try {
       const page = await browser.newPage();
       await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
       await page.waitForSelector("#session-detail-panel .session-inspector");
-      await page.evaluate("chatTranscript.read");
+      await page.evaluate("sessionDetailRead?.promise");
       getDb(root).prepare("UPDATE sessions SET outcome=? WHERE sessionId=?").run("Obsolete buffered outcome", "step-upload");
       const staleSnapshot = await (await fetch(base + "/api/sessions/step-upload")).json();
       await page.evaluate(() => {
@@ -618,24 +618,24 @@ describe("served workflow and metric health pages", () => {
       void pending.catch(() => {}); // Teardown may close the page after a failed assertion.
       const held = await intercepted;
       expect(await page.$eval("#session-detail-panel h3", el => el.textContent)).toBe("step-upload");
-      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      expect(await page.$("#session-followup-anchor")).toBeNull();
       getDb(root).prepare("UPDATE sessions SET outcome=? WHERE sessionId=?").run("Newest saved outcome", "step-upload");
-      await page.evaluate("scheduleSessionConversationRefresh(0)");
+      await page.evaluate("void loadSessionDetail('step-upload')");
       await held.respond({ status: 200, contentType: "application/json", body: JSON.stringify(staleSnapshot) });
       await pending;
-      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+      expect(await page.$("#session-followup-anchor")).toBeNull();
       expect(await page.$eval("#session-detail-panel", el => el.textContent)).toContain("Newest saved outcome");
       expect(await page.evaluate("window.inspectorSnapshots.join('\\n')")).not.toContain("Obsolete buffered outcome");
       rejectTranscript = true;
       await page.evaluate("loadSessionDetail('step-upload')");
       expect(await page.$eval("#session-detail-panel h3", el => el.textContent)).toBe("step-upload");
-      expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
-      expect(await page.$eval("#chat-status", el => el.textContent)).toContain("Fixture transcript unavailable");
+      expect(await page.$("#session-followup-anchor")).toBeNull();
+      expect(await page.$eval("[data-session-read-error]", el => el.textContent)).toContain("Fixture transcript unavailable");
     } finally { await browser.close(); }
   }, 30000);
 
   test.skipIf(skipBrowser)(
-    "queued session refreshes are cancelled on navigation and late callbacks cannot reopen a session",
+    "late diagnostic wakes cannot reopen a session after navigation",
     async () => {
       getDb(root).prepare(`INSERT INTO sessions(sessionId, agent, task, status, startedAt, endedAt)
         VALUES ('other-session', 'worker', 'Another report', 'done', ?, ?)`)
@@ -648,52 +648,23 @@ describe("served workflow and metric health pages", () => {
         for (const route of ["/", "/metrics", "/agents", "/sessions/other-session"]) {
           await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
           await page.waitForSelector("#session-detail-panel .session-inspector");
-          await page.evaluate("chatTranscript.read");
+          await page.evaluate("sessionDetailRead?.promise");
           const result = await page.evaluate(async route => {
-            const ui = window as unknown as {
-              scheduleSessionConversationRefresh(delay: number): void;
-              routeTo(route: string): void;
-              isSessionPageMode(): boolean;
-              loadSessionDetail(id: string): Promise<void>;
-            };
-            const set = window.setTimeout;
-            const clear = window.clearTimeout;
-            let timer: number | undefined;
-            let callback: (() => void) | undefined;
-            let cancelled = false;
-            window.setTimeout = ((fn: () => void, delay: number) => {
-              callback = fn;
-              timer = set(fn, delay);
-              return timer;
-            }) as typeof window.setTimeout;
-            window.clearTimeout = id => { if (id === timer) cancelled = true; clear(id); };
-            try {
-              ui.scheduleSessionConversationRefresh(300);
-              window.setTimeout = set;
-              if (!callback) throw new Error("Active session did not queue its refresh");
-              ui.routeTo(route);
-              const sessionMode = ui.isSessionPageMode();
-              // Exercise an already-queued callback too: cancelling a timer alone
-              // must not give a background read permission to navigate.
-              callback();
-              await ui.loadSessionDetail("step-upload");
-              return { cancelled, sessionMode, path: location.pathname };
-            } finally {
-              window.setTimeout = set;
-              window.clearTimeout = clear;
-              clear(timer);
-            }
+            const ui = window as unknown as { routeTo(route: string): void; loadSessionDetail(id: string): Promise<void> };
+            ui.routeTo(route);
+            await ui.loadSessionDetail("step-upload");
+            return location.pathname;
           }, route);
-          expect(result).toEqual({ cancelled: true, sessionMode: route.startsWith("/sessions/"), path: route });
+          expect(result).toBe(route);
         }
         await page.goto(base + "/sessions/step-upload", { waitUntil: "domcontentloaded" });
         await page.waitForSelector("#session-detail-panel .session-inspector");
         const [response] = await Promise.all([
           page.waitForResponse(response => new URL(response.url()).pathname === "/api/sessions/step-upload"),
-          page.evaluate("scheduleSessionConversationRefresh(0)"),
+          page.evaluate("loadSessionDetail('step-upload')"),
         ]);
         expect(response.status()).toBe(200);
-        await page.waitForSelector("#session-followup-anchor .chat-container");
+        expect(await page.$("#session-followup-anchor")).toBeNull();
         expect(new URL(page.url()).pathname).toBe("/sessions/step-upload");
       } finally { await browser.close(); }
     }, 30000,
@@ -775,8 +746,8 @@ describe("served workflow and metric health pages", () => {
           expect(await page.$eval("#session-detail-panel", el => el.querySelector("h3")?.textContent ?? null)).toBe(previous);
           expect(await page.$eval("#session-detail-panel", el => el.textContent)).not.toContain("late session read failure");
           if (!fail) {
-            expect(await page.evaluate("currentSessionId")).toBe("other-session");
-            expect(await page.$("#session-followup-anchor .chat-container")).not.toBeNull();
+            expect(await page.evaluate("currentInspectedSession")).toBe("other-session");
+            expect(await page.$("#session-followup-anchor")).toBeNull();
           }
         }
         expect(errors).toEqual([]);

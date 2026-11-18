@@ -110,6 +110,26 @@ function open() {
 }
 
 describe("AppTaskResourceStore", () => {
+  it("normalizes retained snapshot imports after the database upgrade without changing evidence", () => {
+    const store = open();
+    const snapshot = fixture();
+    snapshot.attempts!["attempt-1"]!.handler = "owner:may";
+    Object.assign(snapshot.resources!.active!.spec, { mode: "maintain" });
+    snapshot.conditions = { approval: {
+      metadata: { id: "approval", generation: 1, resourceVersion: 1 },
+      spec: { type: "project.approval.submitted", subject: "change:1", expected: true, owner: "Hao" },
+      status: { state: "unknown", observedGeneration: 0, updatedAt: "2026-08-21T00:00:00.000Z" },
+    } };
+    const original = structuredClone(snapshot);
+    try {
+      store.bootstrapSnapshot(snapshot, "retained");
+      expect(store.readAttempt("attempt-1")).toEqual({ ...original.attempts!["attempt-1"], handler: "agent:may" });
+      expect(store.readTask("active")!.metadata).toEqual(original.resources!.active!.metadata);
+      expect(store.readTask("active")!.spec).not.toHaveProperty("mode");
+      expect(store.readTaskContext({ taskIds: [], conditionIds: ["approval"] }).conditions!.approval!.spec.owner).toBe("human:Hao");
+      expect(snapshot).toEqual(original);
+    } finally { store.close(); }
+  });
   it.each([false, true])("recovers exact workspace beyond recent execution history and restart (legacy=%s)", (legacy) => {
     const root = mkdtempSync(join(tmpdir(), "may-workspace-reference-"));
     roots.push(root);
@@ -775,6 +795,7 @@ describe("AppTaskResourceStore", () => {
          VALUES ('example', 'converted-task', 'project', 10, ?)`,
       )
       .run(JSON.stringify({ metadata: { id: "converted-task", generation: 1, resourceVersion: 1 }, specHash: "hash-converted" }));
+    store.db.exec("DELETE FROM host_schema_migrations");
     store.close();
 
     // Reopening a database whose receipts were all converted prunes the legacy table and preserves results.

@@ -36,24 +36,18 @@
   <div id="agents" class="hidden">
     <div id="agents-content"></div>
   </div>
+  <div id="session-detail-panel" class="hidden"></div>
   <div id="chat" class="hidden">
-    <div id="session-detail-panel"></div>
     <div id="chat-composer-host">
     <div class="chat-container">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="chat-status" id="chat-status">Disconnected</div>
         <button id="scroll-toggle" onclick="toggleChatScroll()" title="Auto-scroll to bottom on new messages">⬇ Auto-scroll</button>
       </div>
-      <div id="chat-agent-banner" style="display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:1px solid var(--accent);border-radius:8px;margin:4px 0;font-size:13px">
-        <span style="color:var(--fg2)">Chatting with</span>
-        <b class="banner-name" style="color:var(--accent)"></b>
-        <span class="banner-session" style="color:var(--fg2);font-size:11px;margin-left:auto;font-family:monospace">session: —</span>
-      </div>
-      <div id="session-picker" style="display:flex;gap:4px;flex-wrap:wrap;padding:4px 0;font-size:12px"></div>
       <div id="conversation-context-bar" hidden style="flex-direction:column;gap:6px;padding:6px 0;font-size:12px"></div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-row">
-        <input id="chat-input" type="text" placeholder="Type a message... (sends to selected session)" autocomplete="off">
+        <input id="chat-input" type="text" placeholder="Talk with May…" autocomplete="off">
         <button id="chat-send">Send</button>
         <button id="chat-stop" hidden disabled>Stop this turn</button>
       </div>

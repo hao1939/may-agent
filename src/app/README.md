@@ -32,9 +32,9 @@ app-runtime.ts                              startup, reload, shutdown
 Input handling ends independently of an accepted Request or background Task.
 A Task attempt proposes a result; only fenced state admission accepts it.
 See [Conversation handling](conversations/README.md) for the interactive path.
-The console loop reports input failures locally and remains available for the
-next input; a rejected admission must not terminate unrelated background work.
-Reporting does not retry the input or claim it was accepted.
+Interactive terminal input belongs to `may-console`, which connects over HTTP
+and `/ws`. The daemon runs headless and forwards info events through its logger.
+Retired `--chat` and `--console` flags fail before runtime startup.
 CLI argument parsing captures one human-interface binding before choosing a
 mode. Runtime, web, send and maintenance wiring carry that selection forward;
 the [control guide](../../packages/control/README.md#selecting-a-human-interface)

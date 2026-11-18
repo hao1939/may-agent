@@ -7,10 +7,10 @@ They prove Host mechanics, not the quality of model-generated work.
 
 ```bash
 bun run test:e2e
-bun test test/e2e/e2-project-comment-roundtrip.test.ts
+bun test test/e2e/e2-app-feedback-roundtrip.test.ts
 
 # Preserve only this test's sandbox for debugging.
-E2E_KEEP=1 bun test test/e2e/e1-handler-loop-liveness.test.ts
+E2E_KEEP=1 bun test test/e2e/e2-app-feedback-roundtrip.test.ts
 ```
 
 `control-routing-e2e` and `telegram-reply-e2e` exercise in-process components
@@ -20,7 +20,7 @@ subprocess, use its Unix socket/HTTP interface, and inspect its stored results.
 Each daemon gets a temporary directory with its own `.state`, agents, projects,
 and shared files. Tests do not operate the developer's `/app` installation.
 Scheduled fixtures use an explicit startup offset to avoid random initial
-waiting. E1 retains real recurring timers; E4 advances metric phases through
+waiting. E4 advances metric phases through
 the existing operator event ingress once its handler subscription is ready.
 It tests the metric lifecycle without waiting for repeated scheduler intervals.
 
@@ -28,20 +28,18 @@ It tests the metric lifecycle without waiting for repeated scheduler intervals.
 
 | Case | What it actually checks |
 | --- | --- |
-| `e1-handler-loop-liveness` | At least two real cron/handler cycles with start, completion, and domain events. |
-| `e2-project-comment-roundtrip` | Declared App comment subscription → Task → accepted workflow result, without modifying retained Markdown or inventing an owner/nudge. |
+| `e2-app-feedback-roundtrip` | Canonical App input → Task → accepted workflow result, without modifying retained Markdown or inventing an owner/nudge. |
 | `e3b-workflow-discovery` | Configured workflow discovery, execution, and terminal `workflow_runs` persistence. |
 | `e4-metric-lifecycle` | Operator event triggers real handler phases: definition, healthy baseline without an alert, breach with an open alert, then recovery resolving that same alert. |
 | `e5-agent-reload` | A newly written agent definition becomes visible after explicit reload. |
-| `e6-host-maintenance` | Host file handlers cannot launch agents, workflows, or escalations; no worker session starts. |
-| `e7-escalation-roundtrip` | One escalation moves from `needs_human` to terminal resolution; the FIFO listener produces exactly one resume attempt and failure for a synthetic session. Not successful model execution. |
-| `e8-project-comment-ui` | Real browser reads legacy history, preserves rejected comments and retries after an App gains a message handler, distinguishes editing from retrying, and executes shipped chat rendering: Markdown/raw streaming, knowledge links and escaped fallback. |
-| `project-comment-recovery` | Real daemon/socket timeouts confirm the exact App input; schema-only and subscription-only Apps are rejected without fallback, and different input using the same key cannot report acceptance. |
-| `e9-session-auto-resume` | Explicit steering resumes a stored interrupted session under the same identity. Not autonomous retry/backoff or successful model execution. |
+| `e5-source-activation` | Source activation has a correlated result; an invalid candidate preserves the active source. |
+| `task-startup-no-schedules` | Real daemon restart recovers accepted work even when recurring schedules are disabled. |
 | `control-routing-e2e` | Event admission/rejection, persistence, and retained control compatibility. |
 | `telegram-reply-e2e` | Telegram routing and control behavior with a mocked Telegram service. |
 
-E8 uses this repository's pinned browser driver. Install Chrome/Chromium or set
+The browser scenarios in `test/integration/http-health-pages.test.ts` and
+`test/integration/http-human-tasks.test.ts` use the pinned browser driver.
+Install Chrome/Chromium or set
 `CHROME_PATH`. Missing prerequisites are an explicit local skip; `E2E_NO_UI=1`
 also skips locally. Both conditions fail under `CI=true`, where the browser
 scenario must execute.

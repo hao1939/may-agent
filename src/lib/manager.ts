@@ -37,7 +37,7 @@ import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from 
 import { existsSync, mkdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { ownsBoundedHelper } from "../app/adapters/executors/session-control.js";
+import { ownsBoundedHelper } from "./session-helper-ownership.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
 import { readSessionTaskAttempt, upsertSession, updateSessionDb, updateSessionProgress } from "./db/sessions.js";

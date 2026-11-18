@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { daemonSocketPath, sendSocketCommand } from "../../../packages/control/src/client.js";
 import { attachControlSocket } from "../../../packages/control/src/server.js";
 import { discoverAppDefinitions } from "../../../src/app/adapters/discovery/app-definitions.js";
-import { attachCommandRouter, validateSessionControl } from "../../../src/app/command-router.js";
+import { attachCommandRouter } from "../../../src/app/command-router.js";
 import { startAppInboxRuntime, type AppInboxRuntime } from "../../../src/app/composition/app-inbox-runtime.js";
 import { AppRegistry } from "../../../src/app/core/apps/registry.js";
 import { EventBus, type AgentEvent } from "../../../src/app/core/events/bus.js";
@@ -172,8 +172,6 @@ async function conversation() {
         const manager = new SubagentManager({ persistDir: f.persistDir });
         const router = attachCommandRouter({
           bus: f.bus,
-          manager,
-          projectRoot: f.root,
           reload: () => ({ ok: true, summary: "fixture" }),
           restart: () => {},
           shutdown: () => {},
@@ -183,9 +181,6 @@ async function conversation() {
           db: f.db,
           validateAppInput: () => { throw new Error("invalid App input"); },
           hasApp: () => true,
-          hasAgent: () => true,
-          hasSession: (id) => manager.registryStore.getSession(id) !== null,
-          validateSessionControl: (type, id) => validateSessionControl(manager, type, id),
         });
         const sessionId = sessions[0]!.sessionId;
         const binding = manager.registryStore.getSession(sessionId)!.taskBinding;
@@ -202,7 +197,7 @@ async function conversation() {
                   },
                   { source: "fixture" },
                 ),
-              (error) => error instanceof Error && error.message.includes(binding.taskId),
+              (error) => error instanceof Error && error.message.includes("not admitted"),
             );
           }
           assert.deepEqual(manager.registryStore.getSession(sessionId)!.taskBinding, binding);

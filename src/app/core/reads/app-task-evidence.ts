@@ -28,11 +28,11 @@ function decodeCursor(value: string): EvidenceCursor {
       !parsed.attemptId ||
       encodeCursor(parsed as EvidenceCursor) !== value
     ) {
-      throw new Error("invalid cursor");
+      throw new RangeError("invalid cursor");
     }
     return parsed as EvidenceCursor;
   } catch {
-    throw new Error("Invalid accepted evidence cursor");
+    throw new RangeError("Invalid accepted evidence cursor");
   }
 }
 
@@ -126,7 +126,7 @@ export function readTaskAcceptedEvidence(
 ): TaskAcceptedEvidencePage {
   const limit = options.limit ?? DEFAULT_LIMIT;
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE) {
-    throw new Error(`Accepted evidence limit must be an integer between 1 and ${TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE}`);
+    throw new RangeError(`Accepted evidence limit must be an integer between 1 and ${TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE}`);
   }
   const cursor = options.cursor ? decodeCursor(options.cursor) : null;
   const rows = db

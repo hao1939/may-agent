@@ -37,7 +37,6 @@ const actualTaskWorkers = { ...taskWorkers };
 const root = mkdtempSync(join(tmpdir(), "may-startup-"));
 const mode = process.argv[2];
 const tty = mode === "tty";
-const nonTtyConsoleOnly = mode === "non-tty-console-only";
 const headlessHttp = mode === "headless-http";
 const noInterfaces = mode === "no-interfaces" || headlessHttp;
 const schedulesEnabled = mode === "headless" || noInterfaces;
@@ -132,7 +131,7 @@ const activation = spyOn(DefinitionSourceReleaseStore.prototype, "activate").moc
 mock.module("../../src/app/daemon.js", () => ({
   ...actualDaemon,
   prepareDaemonAgents: async (options: Parameters<typeof daemon.prepareDaemonAgents>[0]) => {
-    assert.equal(options.taskRuntimeMode, nonTtyConsoleOnly ? "none" : "controllers");
+    assert.equal(options.taskRuntimeMode, "controllers");
     sharedCapacity = options.hostCapacity;
     preparedOptions = options;
     return actualDaemon.prepareDaemonAgents(
@@ -158,14 +157,6 @@ mock.module("../../src/app/daemon.js", () => ({
   },
   runDaemonKeepalive: async () => {
     order.push("keepalive");
-  },
-  runInteractiveLoop: async () => {
-    order.push("interactive");
-  },
-}));
-mock.module("../../src/app/transport/console.js", () => ({
-  attachConsoleUI: () => {
-    order.push("console");
   },
 }));
 mock.module("../../src/app/transport/telegram.js", () => ({
@@ -206,8 +197,8 @@ mock.module("../../src/app/interface-startup.js", () => ({
   startInterfaceRuntime: async (options: interfaces.InterfaceStartupOptions) => {
     assert.ok(runtime?.host.hasApp("fixture"));
     assert.deepEqual(
-      order.filter((step) => step !== "console"),
-      ["routes", ...(noInterfaces || nonTtyConsoleOnly ? [] : ["telegram"])],
+      order,
+      ["routes", ...(noInterfaces ? [] : ["telegram"])],
     );
     socket = await actualInterfaces.startInterfaceRuntime(options);
     order.push("ingress");
@@ -270,36 +261,6 @@ export async function execute(ctx) {
   };`;
   writeFileSync(appPath, appSource("before"));
   const { runAppRuntime } = await import("../../src/app/app-runtime.js");
-  if (nonTtyConsoleOnly) {
-    let exitedCode: number | undefined;
-    const exitSpy = spyOn(process, "exit").mockImplementation(((code?: number) => {
-      exitedCode = code ?? 0;
-      throw new Error(`process.exit(${exitedCode})`);
-    }) as never);
-    try {
-      await assert.rejects(
-        runAppRuntime({
-          appArgs: parseAppArgs(["bun", "may", "--chat"], { AGENT: "may" }),
-          models: { fixture: fakeModel() },
-          projectRoot: root,
-          agentsRoot: join(root, "agents"),
-          sharedRoot: join(root, "shared"),
-          projectsRoot: join(root, "projects"),
-          persistDir: join(root, "state"),
-          instance: "fixture",
-          instanceLabel: "fixture",
-          processStartTime: Date.now(),
-          writeIdentity() {},
-        }),
-        /process\.exit\(0\)/,
-      );
-      assert.equal(exitedCode, 0);
-      assert.equal(order.includes("keepalive"), false);
-      assert.equal(order.includes("interactive"), false);
-    } finally {
-      exitSpy.mockRestore();
-    }
-  } else {
   await runAppRuntime({
     ...(reportingFailure
       ? {
@@ -318,7 +279,7 @@ export async function execute(ctx) {
       [
         "bun",
         "may",
-        ...(noInterfaces ? [] : ["--console", "--socket", "--telegram"]),
+        ...(noInterfaces ? [] : ["--socket", "--telegram"]),
         ...(schedulesEnabled ? ["--cron"] : []),
       ],
       { AGENT: "may" },
@@ -342,16 +303,14 @@ export async function execute(ctx) {
   }
   assert.deepEqual(
     order,
-    tty
-      ? ["console", "routes", "telegram", "ingress", "recovered-work", "background", "interactive"]
-      : [
-          "routes",
-          ...(noInterfaces ? [] : ["telegram"]),
-          "ingress",
-          "recovered-work",
-          "background",
-          "keepalive",
-        ],
+    [
+      "routes",
+      ...(noInterfaces ? [] : ["telegram"]),
+      "ingress",
+      "recovered-work",
+      "background",
+      "keepalive",
+    ],
   );
 
   // The caller's actual reload callback, not a source-string assertion. The
@@ -551,7 +510,6 @@ export async function execute(ctx) {
       assert.equal(acceptedState(previousTask.taskId), "converged", "accepted work survives rollback");
       await runTask("work/after");
     }
-  }
   }
   console.log("startup-contract-ok");
 } finally {

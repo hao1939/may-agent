@@ -148,13 +148,15 @@ function projectPathOf(id) {
 }
 
 function render() {
-  chatSelectionVersion++;
   const previousTab = currentTab;
   const { tab, params } = parseRoute();
-  if (tab !== currentTab || params.name !== currentRouteParams.name || params.id !== currentRouteParams.id) chatPendingInput = null;
+  if (tab !== currentTab || params.id !== currentRouteParams.id) {
+    sessionDetailRead = null;
+    currentInspectedSession = null;
+    document.getElementById('session-detail-panel').innerHTML = '';
+  }
   currentTab = tab;
   currentRouteParams = params;
-  setSessionPageMode(tab === 'sessions' && !!params.id);
   // Pane visibility — design's 5 surfaces map onto existing panes:
   //   live  → #dashboard
   //   projects → #projects (with optional :id deep-link via params.id)
@@ -168,7 +170,8 @@ function render() {
   document.getElementById('dashboard').classList.toggle('hidden', tab !== 'live');
   document.getElementById('projects').classList.toggle('hidden', tab !== 'projects');
   document.getElementById('agents').classList.toggle('hidden', tab !== 'agents');
-  document.getElementById('chat').classList.toggle('hidden', tab !== 'sessions' && !(inAgentChat && currentAgentSubTab === 'chat'));
+  document.getElementById('session-detail-panel').classList.toggle('hidden', tab !== 'sessions');
+  document.getElementById('chat').classList.toggle('hidden', !(inAgentChat && params.name === humanInterface.agent));
   document.getElementById('knowledge').classList.toggle('hidden', tab !== 'knowledge');
   // #metrics pane now serves the dedicated Metrics tab. System tab no longer renders it.
   document.getElementById('metrics').classList.toggle('hidden', tab !== 'metrics');
@@ -183,7 +186,8 @@ function render() {
     loadWorkflowOverview();
     loadOverviewTasks();
   }
-  if (tab === 'sessions') initChat(params.id || null);
+  if (tab === 'sessions' && params.id) void loadSessionDetail(params.id);
+  else if (tab === 'sessions') document.getElementById('session-detail-panel').textContent = 'Open an execution from an App or Task to inspect its retained evidence.';
   if (tab !== 'agents' || !inAgentChat) currentAgentChat = null;
   updateConversationStop();
   if (tab === 'agents') {
@@ -351,14 +355,7 @@ async function verbResolveAlert(alertId, ev) {
   scheduleLivenessRefresh();
 }
 
-async function verbCancelSession(sessionId, ev) {
-  stopEv(ev);
-  await steer('POST', `/api/sessions/${encodeURIComponent(sessionId)}/cancel`, {}, {
-    confirm: `Cancel session ${sessionId.slice(0, 12)}?`,
-    label: `cancel ${sessionId.slice(0, 8)}`,
-  });
-  scheduleLivenessRefresh();
-}
+
 
 // Apply initial route from URL/hash. Each surface initializes its own data.
 humanInterfaceReady.then(() => render()).catch(error => {

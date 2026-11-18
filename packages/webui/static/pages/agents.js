@@ -1,7 +1,6 @@
-// Agent detail and agent-chat surfaces.
+// Agent detail; only the configured interface agent exposes Conversation.
 let currentAgentSubTab = 'chat';
 let currentAgentChat = null;
-let forceNewAgentChat = false;
 
 async function loadAgentsTab() {
   const el = document.getElementById('agents-content');
@@ -14,7 +13,7 @@ async function loadAgentsTab() {
 
     let html = `<div style="margin-bottom:16px">
       <h2 style="margin:0 0 4px;font-size:18px">Agents <span style="color:var(--fg2);font-weight:normal;font-size:13px">(${agents.length})</span></h2>
-      <div style="font-size:12px;color:var(--fg2)">Each agent owns a domain. Click a card to talk to them, see their projects, metrics, and recent work.</div>
+      <div style="font-size:12px;color:var(--fg2)">Each agent owns a domain. Click a card to see projects, metrics, and recent work.</div>
     </div>`;
 
     html += `<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));gap:12px">`;
@@ -61,57 +60,12 @@ function isAgentChatActive(name) {
     && currentAgentChat === name && currentAgentSubTab === 'chat';
 }
 
-function setAgentChatSessionId(sessionId) {
-  const el = document.querySelector('#chat-agent-banner .banner-session');
-  if (!el) return;
-  if (!sessionId) {
-    el.textContent = 'session: —';
-    el.removeAttribute('title');
-    return;
-  }
-  el.title = sessionId;
-  el.innerHTML = `session: <a href="#/sessions/${encodeURIComponent(sessionId)}" style="color:var(--accent);text-decoration:none">${esc(sessionId)}</a>`;
-}
-
-/**
- * May uses the shared Conversation read/event contract. Other agents retain
- * direct session chat:
- * Telegram-style chat with a specific agent. Reuses the #chat pane:
- *   1. Fetch /api/agents/:name/default-session to find the agent's persistent
- *      thread (most-recent non-throwaway session, any status).
- *   2. switchSession() loads transcript and binds compose box.
- *   3. If no session exists yet, show an empty chat; first message will
- *      spawn one via /api/agents/:name/message (handled in chat-input).
- *
- * Header banner shows which agent we're talking to so the user can tell
- * agent-chat from arbitrary-session view.
- */
 async function initAgentChat(name) {
-  const selection = chatSelectionVersion;
-  if (!chatInitialized) {
-    chatInitialized = true;
-  }
   currentAgentChat = name;
-  currentSessionId = null;
-  agentChatRequestId = null;
-  forceNewAgentChat = false;
-  updateConversationStop();
-  // Update the chat header to show the agent name.
-  const header = document.getElementById('chat-agent-banner');
-  if (header) {
-    header.style.display = name ? 'flex' : 'none';
-    header.querySelector('.banner-name').textContent = name || '';
-    setAgentChatSessionId(null);
-  }
-  if (!name) { switchSession(null); return; }
-  // Render agent detail header + sub-tab nav into #agents-content (above the
-  // chat pane). The agent detail uses sub-tabs: Chat (default), About,
-  // Metrics, Projects, Sessions. Switching sub-tab toggles whether the
-  // #chat pane is visible vs. the detail body in #agents-content.
+  currentAgentSubTab = name === humanInterface.agent ? 'chat' : 'overview';
   await renderAgentDetail(name);
-  if (selection !== chatSelectionVersion || currentTab !== 'agents' || currentRouteParams.name !== name) return;
-  // Default sub-tab is chat; load the thread.
-  switchAgentSubTab(currentAgentSubTab || 'chat');
+  if (currentTab !== 'agents' || currentRouteParams.name !== name) return;
+  switchAgentSubTab(currentAgentSubTab);
 }
 
 async function renderAgentDetail(name) {
@@ -136,7 +90,6 @@ async function renderAgentDetail(name) {
     <span style="color:${dotColor};font-size:14px">●</span>
     <h2 style="margin:0;font-size:18px">${esc(name)}</h2>
     ${summary && summary.model ? `<span class="model-chip">${esc(summary.model)}</span>` : ''}
-    ${name === humanInterface.agent ? '' : `<button onclick="resetAgentChat('${attrEsc(name)}')" title="Clear chat and start fresh" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;color:var(--fg);cursor:pointer;font-size:12px">↻ Reset</button>`}
   </div>`;
   if (summary && summary.description) {
     html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px">${esc(summary.description)}</div>`;
@@ -146,7 +99,7 @@ async function renderAgentDetail(name) {
   // About (identity files). Overview merges what was previously three
   // separate sub-tabs because they're all 'what does this agent own?' —
   // shown side-by-side they tell the story faster.
-  const subTabs = ['chat', 'overview', 'about'];
+  const subTabs = name === humanInterface.agent ? ['chat', 'overview', 'about'] : ['overview', 'about'];
   html += `<div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:12px">`;
   for (const t of subTabs) {
     const active = t === currentAgentSubTab;
@@ -159,8 +112,7 @@ async function renderAgentDetail(name) {
 }
 
 function switchAgentSubTab(tab) {
-  chatSelectionVersion++;
-  clearChatTranscript();
+  if (tab === 'chat' && currentAgentChat !== humanInterface.agent) tab = 'overview';
   currentAgentSubTab = tab;
   // Update sub-tab nav highlight.
   const nav = document.querySelector('#agents-content > div:nth-child(3)');
@@ -179,10 +131,7 @@ function switchAgentSubTab(tab) {
   if (tab === 'chat') {
     if (chatPane) chatPane.classList.remove('hidden');
     if (body) body.innerHTML = '';
-    // Resolve & load the chat thread (same as before).
-    applyChatAdmission();
-    if (currentSessionId || agentChatRequestId) void switchSession(currentSessionId, agentChatRequestId);
-    else void loadAgentChatThread(currentAgentChat);
+    void refreshMayConversation();
   } else {
     if (chatPane) chatPane.classList.add('hidden');
     if (body) body.innerHTML = '<div style="color:var(--fg2);padding:24px">Loading…</div>';
@@ -193,40 +142,6 @@ function switchAgentSubTab(tab) {
   if (agentsPane) agentsPane.classList.remove('hidden');
   setRealtimeEnabled(tab === 'chat');
   updateConversationStop();
-}
-
-async function loadAgentChatThread(name) {
-  if (!name || !isAgentChatActive(name) || forceNewAgentChat) return;
-  if (chatPendingInput?.target === `agent:${name}`) return;
-  if (agentChatRequestId) return refreshChatTranscript();
-  const selection = ++chatSelectionVersion;
-  if (name === humanInterface.agent) {
-    currentSessionId = null;
-    renderSessionPicker();
-    syncRealtimeSubscriptions();
-    updateConversationStop();
-    return refreshMayConversation();
-  }
-  try {
-    const r = await fetch(`/api/agents/${encodeURIComponent(name)}/default-session`);
-    const d = await r.json();
-    if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
-    if (!r.ok) throw new Error(d.error || 'Default thread unavailable');
-    if (d.sessionId) {
-      setAgentChatSessionId(d.sessionId);
-      await switchSession(d.sessionId);
-    } else {
-      currentSessionId = null;
-      clearChatTranscript();
-      setAgentChatSessionId(null);
-      syncRealtimeSubscriptions();
-      const messages = document.getElementById('chat-messages');
-      if (messages) messages.innerHTML = '<div style="color:var(--fg2);font-size:13px;padding:24px;text-align:center">No conversation with <b>' + esc(name) + '</b> yet. Send a message to start one.</div>';
-    }
-  } catch (e) {
-    if (selection !== chatSelectionVersion || !isAgentChatActive(name)) return;
-    document.getElementById('chat-status').textContent = 'Default thread unavailable: ' + e.message;
-  }
 }
 
 async function loadAgentAbout(name) {
