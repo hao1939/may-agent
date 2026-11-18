@@ -47,6 +47,35 @@ const boundedExecutionPatterns = [
   },
 ];
 
+const localPlugin = {
+  rules: {
+    "no-duplicate-import-bindings": {
+      meta: {
+        type: "problem",
+        schema: [],
+        messages: {
+          duplicate: "Import binding '{{name}}' is already declared in this module.",
+        },
+      },
+      create(context) {
+        const bindings = new Set();
+        return {
+          ImportDeclaration(node) {
+            for (const specifier of node.specifiers) {
+              const name = specifier.local.name;
+              if (bindings.has(name)) {
+                context.report({ node: specifier.local, messageId: "duplicate", data: { name } });
+              } else {
+                bindings.add(name);
+              }
+            }
+          },
+        };
+      },
+    },
+  },
+};
+
 export default [
   // Global ignores
   {
@@ -82,6 +111,18 @@ export default [
       ],
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/no-require-imports": "off",
+    },
+  },
+
+  // TypeScript permits a type-only and value import to declare the same local
+  // name in the syntax tree, but the compiler rejects that duplicate binding.
+  {
+    files: ["**/*.test.ts"],
+    plugins: {
+      local: localPlugin,
+    },
+    rules: {
+      "local/no-duplicate-import-bindings": "error",
     },
   },
 

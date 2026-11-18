@@ -1,5 +1,4 @@
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
-import { getDb } from "./db/connection.js";
 import {
   createAssistantMessageEventStream,
   getCurrentSystemPrompt,

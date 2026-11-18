@@ -2,6 +2,57 @@ import { expect, it } from "bun:test";
 import { ESLint } from "eslint";
 import { fileURLToPath } from "node:url";
 
+it("rejects duplicate import bindings without blocking valid TypeScript namespace uses", async () => {
+  const eslint = new ESLint({ cwd: fileURLToPath(new URL("../", import.meta.url)) });
+  const filePath = "src/app/adapters/executors/managed-agent.test.ts";
+  const cases = [
+    {
+      source: [
+        'import type { SubagentManager } from "../../../lib/manager.js";',
+        'import { SubagentManager } from "../../../lib/manager.js";',
+        "export function create(): SubagentManager { return new SubagentManager({ persistDir: \"fixture\" }); }",
+      ].join("\n"),
+      messages: [["local/no-duplicate-import-bindings", 2, 2]],
+    },
+    {
+      source: [
+        'import type { SubagentManager as SubagentManagerType } from "../../../lib/manager.js";',
+        'import { SubagentManager } from "../../../lib/manager.js";',
+        "export type Manager = SubagentManagerType;",
+        "export const ManagerClass = SubagentManager;",
+      ].join("\n"),
+      messages: [],
+    },
+    {
+      source: [
+        'import { SubagentManager } from "../../../lib/manager.js";',
+        "export type Manager = SubagentManager;",
+        "export const ManagerClass = SubagentManager;",
+      ].join("\n"),
+      messages: [],
+    },
+    {
+      source: [
+        "export type Codec = { value: string };",
+        'export const Codec: Codec = { value: "ok" };',
+      ].join("\n"),
+      messages: [],
+    },
+    {
+      source: [
+        "export interface Service { value: string; }",
+        "export interface Service { count: number; }",
+      ].join("\n"),
+      messages: [],
+    },
+  ];
+
+  for (const { source, messages } of cases) {
+    const [result] = await eslint.lintText(source, { filePath });
+    expect(result.messages.map(({ ruleId, line, severity }) => [ruleId, line, severity])).toEqual(messages);
+  }
+});
+
 it("enforces bounded imports with and without extensions, but allows neutral helpers", async () => {
   const eslint = new ESLint({ cwd: fileURLToPath(new URL("../", import.meta.url)) });
   for (const filePath of [
