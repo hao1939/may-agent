@@ -45,6 +45,10 @@ test("canonical boundary recognizes import-type expressions and preserves allowe
     );
   }
 
+  const nestedCheckout = join(appDir, "agents", "worker", ".worktrees", "sample-host", "packages", "sdk", "src");
+  mkdirSync(nestedCheckout, { recursive: true });
+  writeFileSync(join(nestedCheckout, "runtime-import.ts"), 'import "@may-agent/sdk/runtime";\n');
+
   const allowed = await runBoundary(runtimeRoot, appsRoot);
   expect(allowed.stdout).toContain("Canonical App boundary: 0 error(s); Runtime + Apps");
 
@@ -61,6 +65,16 @@ test("canonical boundary recognizes import-type expressions and preserves allowe
     stderr: expect.stringContaining("Apps cannot import Host-internal @may-agent/sdk/runtime"),
   });
   unlinkSync(runtimeImport);
+
+  const hiddenDir = join(appDir, ".hidden");
+  mkdirSync(hiddenDir);
+  const hiddenImport = join(hiddenDir, "runtime-import.ts");
+  writeFileSync(hiddenImport, 'import "@may-agent/sdk/runtime";\n');
+  await expect(runBoundary(runtimeRoot, appsRoot)).rejects.toMatchObject({
+    stdout: expect.stringContaining("Canonical App boundary: 1 error(s); Runtime + Apps"),
+    stderr: expect.stringContaining("sample.app/.hidden/runtime-import.ts: Apps cannot import Host-internal"),
+  });
+  unlinkSync(hiddenImport);
 
   const shallowBlocked = join(workflowDir, "blocked.ts");
   writeFileSync(shallowBlocked, 'type Runner = import("@may-agent/sdk/standalone").DirectRunOptions;\n');

@@ -15,6 +15,7 @@ const errors: string[] = [];
 const ignoredDirectories = new Set([
   ".git",
   ".state",
+  ".worktrees",
   "archive",
   "artifacts",
   "bundle",
