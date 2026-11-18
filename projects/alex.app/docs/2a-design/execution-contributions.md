@@ -13,13 +13,13 @@ implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
 at `e489ff32b6`; post-merge [#594](https://github.com/hao1939/may-agent/pull/594)
 is merged as `c91083a1fd`, including shared-JSON resource bounds. Remaining
 preparation/capture edge repairs and bounded diagnostic handling are implemented
-in [#596](https://github.com/hao1939/may-agent/pull/596) through `3ab40ff8d5`.
-Exact-head CI and local trial pass; current-head automated review remains pending.
+in [#596](https://github.com/hao1939/may-agent/pull/596) through `7d4d55ea2c`.
+Review reproduces one remaining empty-owner capture gap; current-head CI and
+local trial remain unproved. Current-main integration is also pending.
 The App migration is integrated with canonical source, preserving newer fixes and
-publications. One separate App concurrency-fixture mismatch remains. Evidence is in the
+publications. The App concurrency-fixture mismatch is tracked in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
-Check paired source identities before relying on installation coverage.
-[Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
+Check paired source identities before relying on coverage. [Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
 
 An agent or workflow can ask another agent or workflow for a bounded contribution.
 The caller retains its assignment and judges the contribution. Task-level
@@ -226,8 +226,9 @@ Task-worker catalog and cross-App calls. Check the installed source identities.
 Prepare and validate the complete selected catalog within the enclosing finite
 execution and cancellation bound, including asynchronous imports. Expose one
 fixed snapshot to discovery and child calls; a later call cannot grow its list
-or resolve a missing entry through another registry. A stalled selected module
-can fail bounded preparation even when that module would not have been called.
+or resolve a missing entry through another registry, including owners with no
+workflows at preparation. A stalled selected module can fail bounded preparation
+even when that module would not have been called.
 Selecting a canonical root target does not narrow its children to that App;
 the tree keeps the originally configured catalog and cross-namespace callability.
 The snapshot fixes target names, schemas and loaded implementations, not the
@@ -235,8 +236,7 @@ caller. Bind each call to its actual current parent, Task context, cancellation
 scope and trace. Reusing the snapshot cannot execute a child call as the first
 caller that prepared it.
 Callee ownership selects definitions; caller App/Task identity retains lineage.
-Resolve a Task's declared root executor in its own App namespace during
-preparation, availability, instructions and dispatch; keep filesystem names local.
+Resolve a Task's root executor in its App namespace during preparation, availability, instructions and dispatch; keep filesystem names local.
 Equal names cannot redirect execution or narrow the shared child catalog.
 Reload can supply a new snapshot to a later invocation. This keeps completeness,
 duplicate rejection and cancellation understandable without another loader mode.

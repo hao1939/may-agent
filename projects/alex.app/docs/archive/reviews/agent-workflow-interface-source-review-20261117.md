@@ -2576,3 +2576,34 @@ in `3ab4-copilot-review-request.json`; a new reviewer check starts on exact 3ab 
 03:51. The empty maintainer COMMENTED record on 3ab belongs to the old-thread
 reply and is not an independent Copilot judgment. May retains its existing
 review-change Condition; no new observation Task or repeated notice is created.
+
+
+## Remaining empty-owner capture case and current-main integration
+
+The actual 3ab Copilot review5950584255 finds peer files reloaded after discovery.
+Root independently reproduces same-path edit and deletion in
+`3ab4-peer-file-snapshot-reproduction.json`: direct calls retain v1, nested calls
+run v2 or lose the target. May uses authorized round9 and pushes7d4d55ea2c;
+its real edit/delete regression,73 owning tests and check:ci pass. The original
+3ab source/CI/live passes remain historical scoped evidence.
+
+Fresh review5950760653 on exact7d4d identifies empty catalogs omitted from the
+per-owner map. Root's `7d4d-empty-peer-snapshot-reproduction.json` confirms a new
+workflow file added after canonical discovery is absent from direct callability
+but appears in nested ctx.list and executes through ctx.call. No new inline
+thread was created; a successful review check and resolved old threads do not
+erase this review-body finding. `7d4d-readiness-disposition.json` records not-ready.
+
+The native observer correctly records a partial outer result at9/9, unresolved
+source finding, missing exact-head Quality/Container and conflicting main. Under
+the human's latest continue instruction, Root independently commissions two
+additional scoped rounds, cumulative11 preserving9, in
+`pr596-empty-peer-owner-authorization.json` (SHA256
+a75a6037c10bdcc352622891e915438ec538202618777bab9cb9336eb84b5551).
+Ordinary revision event6745703 saves May generation9; the creator must revise
+Alex generation4 before execution. Preserve the same durable Task/branch/PR;
+retain empty catalogs in existing preparation, add a real late-file regression,
+and merge legitimate current main0821722a preserving #597/#598. No reset, refund,
+new public invocation option, duplicate notice or autonomous merge is authorized.
+The old source15/15 and original128/64 allowances remain untouched. Outer gates
+must be collected on the actual repaired head before claiming completion.

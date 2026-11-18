@@ -13,8 +13,10 @@ resource-bounding repairs through `1d24a0cfe4`. The four-case follow-up reaches
 `c630b215e8` in [#596](https://github.com/hao1939/may-agent/pull/596).
 Exact-head checks, supported local activation and the native call trial pass,
 but completed automated review finds a deeper non-Task helper snapshot gap.
-May repairs it at `3ab40ff8d5`; exact-head CI and the local trial pass, with final
-automated review pending. The single review-link notice
+May repairs it at `3ab40ff8d5`; CI and the local trial pass. Further review finds
+peer-file reload, repaired at `7d4d55ea2c`, then an initially-empty-owner capture
+gap, independently reproduced and assigned back to May. Current-main integration
+and new-head verification remain pending. The single review-link notice
 is delivered; its premature readiness claim is retained with a correction.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
@@ -68,9 +70,10 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Consume actual current-head automated review of the repaired
-   [#596](https://github.com/hao1939/may-agent/pull/596) at `3ab40ff8d5`, then
-   reconcile the existing notice. Preserve merged source and prior evidence.
+1. May retains empty peer catalogs and integrates current `main` in existing
+   [#596](https://github.com/hao1939/may-agent/pull/596), preserving nine consumed
+   rounds under an explicit cumulative11 owner revision. Verify the repaired head
+   with actual CI/review/local execution; retain the existing notice without resend.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -344,6 +347,30 @@ Making the repaired PR ready does not start another review automatically. Root
 explicitly requests Copilot again through the existing GitHub review API; the
 request is accepted and a new check starts on 3ab. The owner waits for that actual
 review, rather than a provider fingerprint that has no outstanding producer.
+
+Completed review on 3ab then exposes peer workflow files being reloaded after
+canonical discovery. Root independently reproduces edited v2 and missing-target
+results through nested workflows while direct calls retain v1. May uses the
+ninth authorized round and pushes `7d4d55ea2c`, carrying prepared workflow catalogs
+into the runner; the real edit/delete regression and 73 owning tests pass.
+
+Fresh exact-head review 5950760653 identifies an initially-empty-owner case.
+Root reproduces it: after canonical listing, adding `late.ts` to a peer's empty
+workflow directory leaves direct calls rejecting the target, but nested
+`ctx.list()` exposes it and `ctx.call()` executes it. Captured absence must be
+retained alongside loaded implementations. Save complete per-owner catalogs in
+the existing prepared state, including empty catalogs; do not infer completeness
+from workflow entries alone or add a new public mode or registry.
+
+Under the human's renewed instruction to continue, Root explicitly commissions
+two narrow rounds, cumulative11 preserving all9 consumed, on the same source
+Task/branch/PR. Ordinary event6745703 revises May generation9; May must use the
+creator revision for the source before execution. Integrate legitimate current
+main0821722a (#597/#598) with a normal merge, preserving the user's event and
+cancellation changes. Historical source15/15, original128/64 and notice50755
+remain untouched. Current-head Quality/Container, source review, compatible
+frozen App trial and supported activation/readback are still required; none of
+the historical3ab receipts certify7d4d or its successor.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
