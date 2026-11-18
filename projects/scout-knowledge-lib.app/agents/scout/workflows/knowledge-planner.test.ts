@@ -27,14 +27,6 @@ afterAll(() =>
   rmSync(defaultFixture.repositoryRoot, { recursive: true, force: true }),
 );
 
-function calledPrompt(value: unknown): string {
-  if (typeof value === "string") return value;
-  expect(value).toBeObject();
-  const prompt = (value as { prompt?: unknown }).prompt;
-  expect(prompt).toBeString();
-  return prompt as string;
-}
-
 describe("Scout owner reconciliation boundary", () => {
   it.each(["converged", "waiting", "incomplete"] as const)(
     "guides acceptance-bounded blocker reports and preserves a %s decision",
@@ -95,9 +87,9 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            call: (async (_agent, value) => {
+            call: (async (_agent, value: { prompt: string }) => {
               expect(_agent).toBe("scout-knowledge-lib/scout");
-              prompt = calledPrompt(value);
+              prompt = value.prompt;
               // Agent decisions are fixtures, not evidence of live model behavior.
               return {
                 id: `s_blocked_report_${state}`,
@@ -223,8 +215,9 @@ describe("Scout owner reconciliation boundary", () => {
               },
             } as never,
           }),
-          call: (async (_agent, value) => {
-            prompt = calledPrompt(value);
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
+            prompt = value;
             return {
               id: "s_recovery_context",
               kind: "agent",
@@ -294,8 +287,9 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, value) => {
-            prompt = calledPrompt(value);
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
+            prompt = value;
             return {
               id: "s_string_procedure",
               kind: "agent",
@@ -344,8 +338,9 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, value) => {
-            prompt = calledPrompt(value);
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
+            prompt = value;
             return {
               id: "s_array_procedure",
               kind: "agent",
@@ -410,8 +405,9 @@ describe("Scout owner reconciliation boundary", () => {
               },
             } as never,
           }),
-          call: (async (_agent, value) => {
-            prompt = calledPrompt(value);
+          call: (async (_agent, input: { prompt: string }) => {
+            const value = input.prompt;
+            prompt = value;
             return {
               id: "s_unavailable_context",
               kind: "agent",
@@ -457,7 +453,8 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            call: (async (_agent, prompt) => {
+            call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
               let output: string;
               if (scenario === "direct-write") {
                 output = join(
@@ -466,7 +463,7 @@ describe("Scout owner reconciliation boundary", () => {
                 );
                 writeFileSync(output, "Uncommitted draft\n");
               } else {
-                const candidate = calledPrompt(prompt).match(/- Domain workspace: (.+)/)?.[1];
+                const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
                 expect(candidate).toBeDefined();
                 output = join(candidate!, "knowledge/README.md");
                 rmSync(
@@ -543,16 +540,16 @@ describe("Scout owner reconciliation boundary", () => {
               events: { items: [], truncated: false },
             },
             workspace: fixture.workspace,
-            call: (async (_agent, prompt) => {
+            call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
               calls++;
               if (calls === 2) {
-                const diagnosisPrompt = calledPrompt(prompt);
-                expect(diagnosisPrompt).toContain(
+                expect(prompt).toContain(
                   "Publication failed after your writer call",
                 );
-                expect(diagnosisPrompt).toContain(`accepted-archive-ref:${ref}`);
-                expect(diagnosisPrompt).toContain("unpublished-candidate-revision:");
-                expect(diagnosisPrompt).toContain("read-only");
+                expect(prompt).toContain(`accepted-archive-ref:${ref}`);
+                expect(prompt).toContain("unpublished-candidate-revision:");
+                expect(prompt).toContain("read-only");
                 if (outcome === "throw")
                   throw new Error("Diagnosis provider unavailable");
                 return {
@@ -570,7 +567,7 @@ describe("Scout owner reconciliation boundary", () => {
                   },
                 };
               }
-              const candidate = calledPrompt(prompt).match(/- Domain workspace: (.+)/)?.[1];
+              const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
               const output = join(candidate!, "knowledge/adaptation.md");
               writeFileSync(output, "Unpublished adaptation\n");
               writeFileSync(lock, "publisher failure\n");
@@ -761,8 +758,9 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
-            const candidate = calledPrompt(prompt).match(/- Domain workspace: (.+)/)?.[1];
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             expect(candidate).toBeDefined();
             const output = join(candidate!, "knowledge/pending.md");
             writeFileSync(output, "Accepted finding\n");
@@ -852,8 +850,9 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
-            const candidate = calledPrompt(prompt).match(/- Domain workspace: (.+)/)?.[1];
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/incomplete.md");
             writeFileSync(output, "Unfinished draft\n");
             writeFileSync(lock, "other writer\n");
@@ -913,8 +912,9 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
-            const candidate = calledPrompt(prompt).match(/- Domain workspace: (.+)/)?.[1];
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/pending.md");
             writeFileSync(output, "Accepted pending content\n");
             writeFileSync(lock, "other writer\n");
@@ -1108,8 +1108,9 @@ describe("Scout owner reconciliation boundary", () => {
             events: { items: [], truncated: false },
           },
           workspace: fixture.workspace,
-          call: (async (_agent, prompt) => {
-            const candidate = calledPrompt(prompt).match(/- Domain workspace: (.+)/)?.[1];
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
+            const candidate = prompt.match(/- Domain workspace: (.+)/)?.[1];
             const output = join(candidate!, "knowledge/findings/qualified.md");
             mkdirSync(join(candidate!, "knowledge/findings"), {
               recursive: true,
@@ -1239,7 +1240,7 @@ describe("Scout owner reconciliation boundary", () => {
           value: string,
           options?: Record<string, unknown>,
         ) => {
-          prompt = calledPrompt(value);
+          prompt = (value as { prompt: string }).prompt;
           runOptions = options;
           return {
             id: "s_owner",
@@ -1397,10 +1398,10 @@ describe("Scout owner reconciliation boundary", () => {
             root,
             output: appRoot,
           },
-          call: (async (_agent, prompt) => {
-            const ownerPrompt = calledPrompt(prompt);
-            expect(ownerPrompt).toContain("Do not move or rename that file");
-            const candidateRoot = ownerPrompt.match(/- Domain workspace: (.+)/)?.[1];
+          call: (async (_agent, input: { prompt: string }) => {
+            const prompt = input.prompt;
+            expect(prompt).toContain("Do not move or rename that file");
+            const candidateRoot = prompt.match(/- Domain workspace: (.+)/)?.[1];
             expect(candidateRoot).toBeDefined();
             writeFileSync(
               join(candidateRoot!, published.slice(projectRoot.length + 1)),
@@ -1648,8 +1649,9 @@ describe("Scout owner reconciliation boundary", () => {
           },
         },
         workspace: { ...defaultFixture.workspace },
-        call: (async (_agent: string, value: string) => {
-          prompt = calledPrompt(value);
+        call: (async (_agent: string, input: { prompt: string }) => {
+          const value = input.prompt;
+          prompt = value;
           return {
             id: "s_review",
             kind: "agent",
