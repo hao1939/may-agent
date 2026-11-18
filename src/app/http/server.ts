@@ -579,11 +579,20 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     confirm: confirmTaskInput,
     admit: async (command) => {
       if (services) {
-        const receipt = services.events.publish(command.event, {
-          source: "web-ui",
-          inputSource: command.event.data.source,
-        });
-        return { type: "ok", command: "publish", ...receipt };
+        try {
+          const receipt = services.events.publish(command.event, {
+            source: "web-ui",
+            inputSource: command.event.data.source,
+          });
+          return { type: "ok", command: "publish", ...receipt };
+        } catch (error) {
+          // In-process publication has no ambiguous transport state. Validation,
+          // fencing, and idempotency failures are definitive rejections, just as
+          // the compatibility socket reports them to this handler.
+          const rejection = error instanceof Error ? error : new Error(String(error));
+          Object.assign(rejection, { kind: "definitive" });
+          throw rejection;
+        }
       }
       return (await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, () =>
         confirmTaskInput(command),

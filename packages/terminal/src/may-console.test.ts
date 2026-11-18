@@ -1279,6 +1279,71 @@ describe("May Console", () => {
     expect(new Set(humanIds).size).toBe(2);
   });
 
+  test("rereads canonical state after WebSocket overflow without replaying human input", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-overflow-"));
+    const frames: Array<Record<string, any>> = [];
+    let conversationReads = 0;
+    let client: Socket | null = null;
+    const server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance: "test" })}\n`);
+      socket.on("data", (chunk) => {
+        for (const line of chunk.toString().split("\n")) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          frames.push(frame);
+          if (frame.type === "subscribe") {
+            socket.write(`${JSON.stringify({ type: "ok", command: "subscribe" })}\n`);
+          } else if (frame.type === "app.conversation.get") {
+            conversationReads++;
+            socket.write(`${JSON.stringify({
+              type: "ok",
+              command: frame.type,
+              conversation: { id: "may:primary", owner: "may", version: conversationReads, messages: [] },
+            })}\n`);
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } })}\n`);
+          } else if (frame.type === "publish") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 90, delivery: "accepted" })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(join(root, "unused.sock"));
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: {
+        ...process.env,
+        CONVERSATION_APP: "may",
+        CONVERSATION_ID: "may:primary",
+        DAEMON_INSTANCE: "test",
+        DAEMON_AGENT: "may",
+        MAY_ENDPOINT: consoleEndpoint(server),
+      },
+      stdio: "pipe",
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => conversationReads >= 1);
+    child.stdin.write("one durable input\n");
+    const humanInputs = () =>
+      frames.filter(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "one durable input",
+      );
+    await waitFor(() => humanInputs().length === 1);
+    const beforeOverflow = conversationReads;
+    client!.write(`${JSON.stringify({ type: "overflow", action: "reread" })}\n`);
+    await waitFor(() => conversationReads > beforeOverflow);
+    await Bun.sleep(50);
+    expect(humanInputs()).toHaveLength(1);
+  });
+
   test("exits cleanly when stdin closes", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-eof-"));
     const instance = "test";
