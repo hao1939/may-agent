@@ -5,7 +5,9 @@ export function parseWebPort(value: string | undefined): number {
   return Number.isFinite(port) ? port : 8080;
 }
 
-export async function startWebMode(opts: WebUIOptions): Promise<{ port: number }> {
+export async function startWebMode(
+  opts: WebUIOptions,
+): Promise<{ port: number; stop(closeActiveConnections?: boolean): void }> {
   const { startWebUI } = await import("../http/server.js");
   return startWebUI({ ...opts, hostname: opts.hostname?.trim() || process.env.WEB_HOST?.trim() || undefined });
 }

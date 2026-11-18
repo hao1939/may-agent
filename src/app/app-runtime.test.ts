@@ -8,6 +8,7 @@ import { createAppInputAdmission } from "./app-runtime.js";
 describe("app runtime startup", () => {
   it.each([
     "headless",
+    "headless-http",
     "tty",
     "non-tty-console-only",
     "no-schedules",

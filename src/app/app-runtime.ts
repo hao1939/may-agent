@@ -359,6 +359,7 @@ export async function runAppRuntime(opts: {
   }
 
   let telegramBot: { close: () => void } = { close: () => {} };
+  let daemonHttpServer: { port: number; stop(closeActiveConnections?: boolean): void } | undefined;
   let cancelledOnce = false;
   const preparedSources = new WeakMap<
     Awaited<ReturnType<typeof prepareAgentGeneration>>,
@@ -378,6 +379,7 @@ export async function runAppRuntime(opts: {
       activeRL = null;
     },
     beforeShutdown: () => {
+      daemonHttpServer?.stop(true);
       void appTasks.close();
       appInboxRuntime?.close();
     },
@@ -523,13 +525,13 @@ export async function runAppRuntime(opts: {
   const daemonHttpPort = process.env.DAEMON_HTTP_PORT ?? (WEB_ENABLED ? process.env.WEB_PORT : undefined);
   const daemonHttpEnabled = WEB_ENABLED || Boolean(daemonHttpPort);
   if (daemonHttpEnabled) {
-    const { port } = await startWebMode({
+    daemonHttpServer = await startWebMode({
       interface: humanInterface,
       stateDir: opts.persistDir,
       port: parseWebPort(daemonHttpPort),
       services: { events, getStatus, getAppConversation, listApps, listTasks, getTask },
     });
-    bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
+    bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${daemonHttpServer.port}` });
   }
   markStartupPhase("interfaces");
   bus.emit({
