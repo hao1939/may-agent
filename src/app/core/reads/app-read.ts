@@ -243,9 +243,9 @@ function terminalTaskView(terminal: AppTaskCancellation): TaskView {
     generation: terminal.generation,
     outcome: terminal.outcome,
     summary: terminal.summary,
-    response: terminal.response,
-    result: terminal.result ? structuredClone(terminal.result) : undefined,
-    facts: terminal.facts ? [...terminal.facts] : undefined,
+    ...(terminal.response !== undefined ? { response: terminal.response } : {}),
+    ...(terminal.result !== undefined ? { result: structuredClone(terminal.result) } : {}),
+    ...(terminal.facts !== undefined ? { facts: [...terminal.facts] } : {}),
   };
 }
 
@@ -276,11 +276,11 @@ function resourceTaskView(
     status: taskStatusFromPhase(phase, closure),
     generation: resource.metadata.generation,
     outcome: resource.spec.outcome,
-    summary: resource.status.summary,
+    ...(resource.status.summary !== undefined ? { summary: resource.status.summary } : {}),
     ...(resource.status.retryExhausted ? { retryExhausted: structuredClone(resource.status.retryExhausted) } : {}),
-    response: resource.status.response,
-    result: resource.status.result ? structuredClone(resource.status.result) : undefined,
-    facts: resource.status.facts ? [...resource.status.facts] : undefined,
+    ...(resource.status.response !== undefined ? { response: resource.status.response } : {}),
+    ...(resource.status.result !== undefined ? { result: structuredClone(resource.status.result) } : {}),
+    ...(resource.status.facts !== undefined ? { facts: [...resource.status.facts] } : {}),
   };
 }
 

@@ -2,11 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CallableCatalog } from "@may-agent/sdk";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { createRuntimeAppRead, createRuntimeTaskRead, listRuntimeTaskViews, readRuntimeExecutionView, readRuntimeTaskView } from "./app-read.js";
+import { createRuntimeAppRead, createRuntimeTaskRead, listRuntimeTaskViews, readRuntimeExecutionView, readRuntimeTaskView, readStoredRuntimeTaskView } from "./app-read.js";
 import { ensureSessionDir, sessionJsonlPath } from "../../../lib/persistence.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
@@ -64,6 +65,87 @@ describe("App read projections", () => {
       resourceStore: store,
     });
   }
+
+  async function expectCallableTaskDetail(appId: string, taskId: string) {
+    const detail = readStoredRuntimeTaskView(db, appId, taskId);
+    expect(detail).not.toBeNull();
+    const catalog = new CallableCatalog([{
+      declaredName: "task-detail",
+      description: "Return the Host Task detail through the common result boundary",
+      invoke: async () => ({ status: "done", summary: "Task detail", output: detail }),
+    }]);
+    const result = await catalog.call(catalog.list()[0]!.name, { prompt: "Read Task detail" }, undefined, {
+      signal: new AbortController().signal,
+    });
+    // Check the real output boundary before checking individual optional keys.
+    expect(result).toMatchObject({ status: "done", output: detail });
+    return detail!;
+  }
+
+  it("returns JSON-compatible Task detail before any result has been accepted", async () => {
+    const config = resourceConfig();
+    observeAppTaskIntent(config, { appAgent: "evaluation", intent: {
+      id: "pending", parentId: "review", outcome: "Prepare evidence", acceptance: ["Checked"],
+    } });
+    const detail = await expectCallableTaskDetail("evaluation", "pending");
+    for (const key of ["summary", "response", "result", "facts"]) {
+      expect(Object.hasOwn(detail, key)).toBe(false);
+    }
+    expect(detail).toEqual(readRuntimeTaskView({ taskStateConfig: config }, "pending"));
+    expect(detail).toMatchObject({ id: "pending", outcome: "Prepare evidence", acceptance: ["Checked"],
+      parentId: "review", input: {}, conditions: [], currentObligations: { available: true } });
+  });
+
+  it.each([
+    {},
+    { response: "Retained answer", result: { nested: { values: [0, false, null, ""] } }, facts: ["evidence:one"] },
+    { response: "", result: {}, facts: [] },
+  ])("preserves present result data in JSON-compatible current and closed Task detail: %j", async (values) => {
+    const config = resourceConfig();
+    observeAppTaskIntent(config, { appAgent: "evaluation", intent: {
+      id: "result", parentId: "review", outcome: "Measure", acceptance: ["Measured"],
+    } });
+    const claim = claimObservedAppTask(config, { taskId: "result", appAgent: "evaluation", handler: "agent:evaluation" });
+    if (claim.kind !== "claimed") throw new Error("Expected claim");
+    expect(completeAppTask(config, claim, { summary: "", ...values }).status).toBe("applied");
+    for (const closed of [false, true]) {
+      if (closed) {
+        const resource = config.resourceStore.readTask("result")!;
+        expect(closeAppTask(config, { appId: "evaluation", taskId: "result",
+          expectedGeneration: resource.metadata.generation, expectedResourceVersion: resource.metadata.resourceVersion,
+          reason: "Consumed result", afterResult: claim.attemptId,
+        }).applied).toBe(true);
+      }
+      const detail = await expectCallableTaskDetail("evaluation", "result");
+      // Accepted results normalize absent facts to an empty evidence list.
+      const retained = { facts: [], ...values };
+      expect(detail).toMatchObject({ summary: "", ...retained });
+      for (const key of ["response", "result", "facts"] as const) {
+        expect(Object.hasOwn(detail, key)).toBe(Object.hasOwn(retained, key));
+      }
+      expect(detail).toEqual(readRuntimeTaskView({ taskStateConfig: config }, "result"));
+    }
+  });
+
+  it.each([
+    {},
+    { response: "Retained answer", result: { nested: { values: [0, false, null, ""] } }, facts: ["evidence:one"] },
+    { response: "", result: {}, facts: [] },
+  ])("returns JSON-compatible resource-free terminal Task detail: %j", async (values) => {
+    const store = AppTaskResourceStore.fromDb(db, "history");
+    store.bootstrapSnapshot({ cancellations: { ended: {
+      appId: "history", taskId: "ended", generation: 1, resourceVersion: 3,
+      outcome: "Retain disposition", reason: "Owner ended assignment", summary: "", ...values,
+      cancelledAt: new Date(3).toISOString(),
+    } } }, "seed:terminal-json");
+    const detail = await expectCallableTaskDetail("history", "ended");
+    expect(detail).toMatchObject({ id: "ended", status: "cancelled", closed: true,
+      generation: 1, resourceVersion: 3, outcome: "Retain disposition", summary: "", ...values,
+      parentId: "", acceptance: [], input: {}, conditions: [], currentObligations: { available: false } });
+    for (const key of ["response", "result", "facts"] as const) {
+      expect(Object.hasOwn(detail, key)).toBe(Object.hasOwn(values, key));
+    }
+  });
 
   it("reads the same responsible agent that execution selects, without confusing creator or input with ownership", () => {
     const config = resourceConfig();
