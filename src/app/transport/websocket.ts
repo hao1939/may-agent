@@ -15,6 +15,7 @@ type Subscription = {
   taskApps: Set<string>;
   task?: { appId: string; taskId: string };
   overflowed: boolean;
+  deferredReloads: Map<string, PublicEvent>;
   overflowRecovery?: ReturnType<typeof setTimeout>;
   unsubscribe: () => void;
 };
@@ -79,6 +80,7 @@ export function createDaemonWebSocketTransport(options: {
       conversations: new Set(),
       taskApps: new Set(),
       overflowed: false,
+      deferredReloads: new Map(),
       unsubscribe: () => {},
     };
     const bufferedBytes = () => typeof ws.getBufferedAmount === "function"
@@ -88,6 +90,18 @@ export function createDaemonWebSocketTransport(options: {
       try {
         ws.send(JSON.stringify({ type: "overflow", action: "reread" }));
       } catch {}
+    };
+    const deferReload = (event: PublicEvent) => {
+      const requestId = typeof event.data?.requestId === "string" ? event.data.requestId : `event:${event.id}`;
+      state.deferredReloads.delete(requestId);
+      state.deferredReloads.set(requestId, event);
+      while (state.deferredReloads.size > 64) state.deferredReloads.delete(state.deferredReloads.keys().next().value!);
+    };
+    const flushDeferredReloads = () => {
+      for (const event of state.deferredReloads.values()) {
+        try { ws.send(JSON.stringify(event)); } catch { break; }
+        state.deferredReloads.delete(typeof event.data?.requestId === "string" ? event.data.requestId : `event:${event.id}`);
+      }
     };
     const scheduleOverflowRecovery = () => {
       if (state.overflowRecovery) return;
@@ -103,6 +117,7 @@ export function createDaemonWebSocketTransport(options: {
         // drains. Emit a second hint after drain so the final dropped wake is
         // always covered even when no later owner event arrives.
         state.overflowed = false;
+        flushDeferredReloads();
         sendOverflow();
       };
       state.overflowRecovery = setTimeout(checkDrain, 25);
@@ -110,6 +125,7 @@ export function createDaemonWebSocketTransport(options: {
     };
     const sendWake = (frame: PublicEvent | { type: "app.task.updated"; data: { appId: string; taskId: string } }) => {
       if (bufferedBytes() > maxBufferedBytes) {
+        if (frame.type === "runtime.reload.finished") deferReload(frame);
         if (!state.overflowed) {
           state.overflowed = true;
           sendOverflow();
@@ -124,6 +140,7 @@ export function createDaemonWebSocketTransport(options: {
         state.overflowed = false;
         if (state.overflowRecovery) clearTimeout(state.overflowRecovery);
         state.overflowRecovery = undefined;
+        flushDeferredReloads();
         sendOverflow();
       }
       try {

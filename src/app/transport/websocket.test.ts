@@ -286,6 +286,31 @@ describe("daemon WebSocket wakes", () => {
     expect(fixture.listeners.size).toBe(0);
   });
 
+  test("delivers a correlated reload result after congestion drains", async () => {
+    const fixture = eventFixture();
+    const sent: Record<string, unknown>[] = [];
+    let bufferedAmount = 11;
+    const peer: DaemonWebSocketPeer = {
+      getBufferedAmount: () => bufferedAmount,
+      send(data) { sent.push(JSON.parse(data)); },
+    };
+    const transport = createDaemonWebSocketTransport({
+      events: fixture.events, getStatus: () => ({ sessions: [], activeWork: false }),
+      agent: "may", instance: "fixture", maxBufferedBytes: 10,
+    });
+    transport.open(peer);
+    transport.message(peer, JSON.stringify({ type: "subscribe", conversations: ["may:primary"] }));
+    await fixture.emit({ id: 8, type: "runtime.reload.finished", data: { requestId: "reload-congested", summary: "Reloaded" }, timestamp: Date.now() } as PublicEvent);
+    expect(sent.filter((message) => message.type === "runtime.reload.finished")).toHaveLength(0);
+    bufferedAmount = 0;
+    const deadline = Date.now() + 2_000;
+    while (sent.filter((message) => message.type === "runtime.reload.finished").length < 1 && Date.now() < deadline) await Bun.sleep(10);
+    expect(sent.filter((message) => message.type === "runtime.reload.finished")).toEqual([
+      expect.objectContaining({ data: expect.objectContaining({ requestId: "reload-congested" }) }),
+    ]);
+    transport.close(peer);
+  });
+
   test("preserves overflow recovery when an unrelated wake arrives after drain", async () => {
     const fixture = eventFixture();
     const sent: Record<string, unknown>[] = [];

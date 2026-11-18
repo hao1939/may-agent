@@ -849,7 +849,13 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
       const eventViewMatch = url.pathname.match(/^\/api\/events\/(\d+)$/);
       if (eventViewMatch && req.method === "GET") return handleEventView(eventViewMatch[1]);
-      if (url.pathname === "/api/events" && req.method === "POST") return handleEventIngress(req);
+      if (url.pathname === "/api/events" && req.method === "POST") {
+        const contentType = req.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+        if (contentType !== "application/json") return json({ error: "application/json required" }, 415);
+        const origin = req.headers.get("origin");
+        if (origin && origin !== url.origin) return json({ error: "Same-origin request required" }, 403);
+        return handleEventIngress(req);
+      }
       if (url.pathname === "/api/events") return handleEvents(url);
       const metricEvidenceMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/evidence$/);
       if (metricEvidenceMatch) {

@@ -1167,7 +1167,7 @@ function rereadCanonicalState() {
   for (const pending of pendingAppReads) sendAppRead(pending);
   for (const pending of pendingTaskListReads) sendTaskListRead(pending);
   for (const pending of pendingTaskReads) sendTaskRead(pending);
-  if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh")) requestTodoRefresh();
+  if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh" && pending.appId === selectedApp)) requestTodoRefresh();
   if (watchedTask && !pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) {
     watchedTaskReadInFlight = false;
     refreshWatchedTask();

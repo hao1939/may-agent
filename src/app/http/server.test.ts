@@ -193,6 +193,38 @@ function taskInput(endpoint: string, input: { message: string; key: string; gene
 }
 
 describe("daemon-owned HTTP services", () => {
+  test("rejects cross-origin and non-JSON event ingress before trusted approval publication", async () => {
+    const fixture = startFixture();
+    const body = JSON.stringify({
+      type: "project.approval.submitted",
+      target: { appId: "sample", taskId: "release" },
+      idempotencyKey: "forged-browser-approval",
+      operatorId: "forged-operator",
+      data: { decision: "approve" },
+    });
+    const crossOrigin = await fetch(`${fixture.endpoint}/api/events`, {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://attacker.example" },
+      body,
+    });
+    expect(crossOrigin.status).toBe(403);
+    const simpleForm = await fetch(`${fixture.endpoint}/api/events`, {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body,
+    });
+    expect(simpleForm.status).toBe(415);
+    expect(fixture.published).toHaveLength(0);
+
+    const sameOrigin = await fetch(`${fixture.endpoint}/api/events`, {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=utf-8", origin: fixture.endpoint },
+      body,
+    });
+    expect(sameOrigin.status).toBe(201);
+    expect(fixture.published).toHaveLength(1);
+  });
+
   test("requires a real operator identity before journaling a formal web-ui approval", async () => {
     const fixture = approvalFixture();
     const input = {

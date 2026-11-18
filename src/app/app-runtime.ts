@@ -131,7 +131,16 @@ export async function runAppRuntime(opts: {
   } = opts.appArgs;
   const interfaceAgent = humanInterface.agent;
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
-  const backgroundEnabled = runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole));
+  const explicitDaemonHttp = Boolean(process.env.DAEMON_HTTP_PORT);
+  const backgroundEnabled =
+    runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole)) ||
+    (explicitDaemonHttp &&
+      !opts.appArgs.statusMode &&
+      !opts.appArgs.emitMode &&
+      !opts.appArgs.webOnlyMode &&
+      !opts.appArgs.taskWorkerRequest &&
+      !opts.appArgs.taskRecoveryWorker &&
+      !opts.appArgs.taskAdmissionWorker);
 
   const bus = new EventBus();
   const requestedHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
