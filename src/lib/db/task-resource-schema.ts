@@ -1,6 +1,7 @@
 import { normalizeLegacyTaskFormats } from "./legacy-task-formats.js";
 import type { SqliteDb } from "../db.js";
 import { APP_INBOX_SCHEMA } from "./app-inbox-schema.js";
+import { withSqliteInitializationRetry } from "./busy-retry.js";
 
 /** Invalidate cached canonical snapshots after an in-transaction Task resource change. */
 export function advanceTaskResourceRevision(db: SqliteDb, appId: string): void {
@@ -60,13 +61,31 @@ CREATE INDEX IF NOT EXISTS idx_app_task_relations_target
 CREATE TABLE IF NOT EXISTS app_task_attempts (
   app_id TEXT NOT NULL, attempt_id TEXT NOT NULL, task_id TEXT NOT NULL,
   task_generation INTEGER NOT NULL, state TEXT NOT NULL, lease_until INTEGER,
-  started_at INTEGER NOT NULL, attempt_json TEXT NOT NULL,
+  started_at INTEGER NOT NULL, accepted_result_state TEXT, attempt_json TEXT NOT NULL,
   PRIMARY KEY(app_id, attempt_id)
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_task
   ON app_task_attempts(app_id, task_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_started
   ON app_task_attempts(started_at DESC, app_id, attempt_id);
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_return_covering
+  ON app_task_attempts(app_id, task_id, attempt_id, task_generation, started_at, accepted_result_state);
+CREATE TRIGGER IF NOT EXISTS trg_app_task_attempts_accepted_result_state_insert
+AFTER INSERT ON app_task_attempts
+WHEN COALESCE(NEW.accepted_result_state, '') IS NOT COALESCE(json_extract(NEW.attempt_json, '$.acceptedResult.state'), '')
+BEGIN
+  UPDATE app_task_attempts
+  SET accepted_result_state = json_extract(NEW.attempt_json, '$.acceptedResult.state')
+  WHERE app_id = NEW.app_id AND attempt_id = NEW.attempt_id;
+END;
+CREATE TRIGGER IF NOT EXISTS trg_app_task_attempts_accepted_result_state_update
+AFTER UPDATE OF attempt_json ON app_task_attempts
+WHEN COALESCE(NEW.accepted_result_state, '') IS NOT COALESCE(json_extract(NEW.attempt_json, '$.acceptedResult.state'), '')
+BEGIN
+  UPDATE app_task_attempts
+  SET accepted_result_state = json_extract(NEW.attempt_json, '$.acceptedResult.state')
+  WHERE app_id = NEW.app_id AND attempt_id = NEW.attempt_id;
+END;
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_failover
   ON app_task_attempts(started_at)
   WHERE json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL;
@@ -176,14 +195,202 @@ export function backfillTaskEventReceipts(db: SqliteDb, appId: string): void {
   db.prepare("UPDATE app_task_events SET event_json = '{}' WHERE app_id = ? AND event_json <> '{}'").run(appId);
 }
 
+const REQUIRED_TASK_RESOURCE_TABLES = [
+  "app_inbox_items",
+  "app_task_store_meta",
+  "app_tasks",
+  "app_task_events",
+  "app_task_relations",
+  "app_task_attempts",
+  "app_task_conditions",
+  "app_task_condition_routes",
+  "app_task_refs",
+  "app_task_cancellations",
+  "app_task_control_receipts",
+  "app_task_communication_receipts",
+  "app_task_groups",
+  "app_task_admissions",
+] as const;
+
+const REQUIRED_TASK_RESOURCE_INDEXES = [
+  "idx_app_inbox_ready",
+  "idx_app_inbox_admission_read",
+  "idx_app_inbox_unadmitted",
+  "idx_app_inbox_available",
+  "idx_app_inbox_expired",
+  "idx_app_inbox_waiting",
+  "idx_app_inbox_task_wait_recovery",
+  "idx_app_inbox_parent",
+  "idx_app_inbox_continues",
+  "idx_app_inbox_origin_event",
+  "idx_app_inbox_conversation",
+  "idx_app_inbox_conversation_recent",
+  "idx_app_inbox_topic_recent",
+  "idx_app_inbox_execution_task",
+  "idx_app_inbox_task_admission",
+  "idx_app_inbox_pending_human_task",
+  "idx_app_inbox_conversation_change",
+  "idx_app_inbox_idempotency",
+  "idx_app_inbox_conversation_sequence",
+  "idx_app_inbox_rejected_feedback",
+  "idx_app_tasks_ready",
+  "idx_app_tasks_changed",
+  "idx_app_tasks_phase",
+  "idx_app_tasks_global_phase",
+  "idx_app_tasks_creator",
+  "idx_app_tasks_due",
+  "idx_app_tasks_expired",
+  "idx_app_task_events_task_time",
+  "idx_app_task_relations_target",
+  "idx_app_task_attempts_task",
+  "idx_app_task_attempts_started",
+  "idx_app_task_attempts_return_covering",
+  "idx_app_task_attempts_failover",
+  "idx_app_task_attempts_expired",
+  "idx_app_task_conditions_event_type",
+  "idx_app_task_conditions_type_app",
+  "idx_app_task_conditions_open_human_owner",
+  "idx_app_task_condition_routes_task",
+  "idx_app_task_condition_routes_condition",
+  "idx_app_task_refs_prefix8",
+  "idx_app_task_refs_prefix16",
+  "idx_app_task_cancellations_time",
+  "idx_app_task_control_receipts_task",
+  "idx_app_task_admissions_target_text",
+  "idx_app_task_admissions_input",
+] as const;
+
+const REQUIRED_TASK_RESOURCE_TRIGGERS = [
+  "trg_app_task_attempts_accepted_result_state_insert",
+  "trg_app_task_attempts_accepted_result_state_update",
+] as const;
+
+function isTaskResourceSchemaCurrent(db: SqliteDb): boolean {
+  const objects = db
+    .prepare("SELECT type, name FROM sqlite_master WHERE type IN ('table', 'index', 'trigger')")
+    .all() as Array<{ type?: unknown; name?: unknown }>;
+  const tables = new Set<string>();
+  const indexes = new Set<string>();
+  const triggers = new Set<string>();
+  for (const obj of objects) {
+    if (typeof obj.name !== "string") continue;
+    if (obj.type === "table") tables.add(obj.name);
+    else if (obj.type === "index") indexes.add(obj.name);
+    else if (obj.type === "trigger") triggers.add(obj.name);
+  }
+  if (tables.has("app_task_receipts")) return false;
+  if (indexes.has("idx_app_task_attempts_execution_failure") || indexes.has("idx_app_task_admissions_target")) {
+    return false;
+  }
+  if (
+    !REQUIRED_TASK_RESOURCE_TABLES.every((name) => tables.has(name)) ||
+    !REQUIRED_TASK_RESOURCE_INDEXES.every((name) => indexes.has(name)) ||
+    !REQUIRED_TASK_RESOURCE_TRIGGERS.every((name) => triggers.has(name))
+  ) {
+    return false;
+  }
+  const columns = db.prepare("PRAGMA table_info(app_task_attempts)").all() as Array<{ name?: unknown }>;
+  if (!columns.some((item) => item.name === "accepted_result_state")) return false;
+  if (!tables.has("host_schema_migrations")) return false;
+  return Boolean(db.prepare("SELECT 1 FROM host_schema_migrations WHERE id = 'task-formats-20261118'").get());
+}
+
+function acquireImmediateOrSavepoint(db: SqliteDb): { commit(): void; rollback(): void } {
+  let startedImmediate = false;
+  try {
+    db.exec("BEGIN IMMEDIATE");
+    startedImmediate = true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/within a transaction/i.test(message)) throw error;
+  }
+  if (startedImmediate) {
+    return {
+      commit() {
+        db.exec("COMMIT");
+      },
+      rollback() {
+        db.exec("ROLLBACK");
+      },
+    };
+  }
+  const savepoint = `task_resource_schema_${Math.random().toString(36).slice(2, 10)}`;
+  db.exec(`SAVEPOINT ${savepoint}`);
+  return {
+    commit() {
+      db.exec(`RELEASE SAVEPOINT ${savepoint}`);
+    },
+    rollback() {
+      db.exec(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+      db.exec(`RELEASE SAVEPOINT ${savepoint}`);
+    },
+  };
+}
+
+function ensureExistingAppTaskAttemptColumns(db: SqliteDb): {
+  hadAttemptsTable: boolean;
+  needsAcceptedResultStateBackfill: boolean;
+} {
+  const hasAttemptsTable = Boolean(
+    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_attempts' LIMIT 1").get(),
+  );
+  if (!hasAttemptsTable) return { hadAttemptsTable: false, needsAcceptedResultStateBackfill: false };
+  const columns = db.prepare("PRAGMA table_info(app_task_attempts)").all() as Array<{ name?: unknown }>;
+  const hasAcceptedResultState = columns.some((item) => item.name === "accepted_result_state");
+  if (!hasAcceptedResultState) {
+    db.exec("ALTER TABLE app_task_attempts ADD COLUMN accepted_result_state TEXT");
+  }
+  const hasTriggers =
+    Number(
+      (
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count FROM sqlite_master
+             WHERE type = 'trigger'
+               AND name IN (
+                 'trg_app_task_attempts_accepted_result_state_insert',
+                 'trg_app_task_attempts_accepted_result_state_update'
+               )`,
+          )
+          .get() as { count?: unknown } | undefined
+      )?.count ?? 0,
+    ) === 2;
+  return {
+    hadAttemptsTable: true,
+    needsAcceptedResultStateBackfill: !hasAcceptedResultState || !hasTriggers,
+  };
+}
+
 /** Create the canonical Task resource and App inbox schema. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
-  db.exec(APP_INBOX_SCHEMA);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
-    WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
-      AND json_extract(handling, '$.phase') = 'failed'
-      AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
-      AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
-  db.exec(TASK_RESOURCE_SCHEMA);
-  normalizeLegacyTaskFormats(db);
+  if (isTaskResourceSchemaCurrent(db)) return;
+  withSqliteInitializationRetry("initialize task resource schema", () => {
+    const tx = acquireImmediateOrSavepoint(db);
+    try {
+      db.exec(APP_INBOX_SCHEMA);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
+        WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
+          AND json_extract(handling, '$.phase') = 'failed'
+          AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
+          AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
+      const { hadAttemptsTable, needsAcceptedResultStateBackfill } = ensureExistingAppTaskAttemptColumns(db);
+      db.exec(TASK_RESOURCE_SCHEMA);
+      if (hadAttemptsTable && needsAcceptedResultStateBackfill) {
+        db.exec(`
+          UPDATE app_task_attempts
+          SET accepted_result_state = json_extract(attempt_json, '$.acceptedResult.state')
+          WHERE COALESCE(accepted_result_state, '') IS NOT COALESCE(json_extract(attempt_json, '$.acceptedResult.state'), '')
+        `);
+      }
+      normalizeLegacyTaskFormats(db);
+      tx.commit();
+    } catch (error) {
+      try {
+        tx.rollback();
+      } catch {
+        // Preserve the original migration error.
+      }
+      throw error;
+    }
+  });
 }

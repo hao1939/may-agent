@@ -6,6 +6,9 @@ import { join } from "node:path";
 import { completeCommunicationTask, readCommunicationInputs } from "../../../../test/fixtures/communication.js";
 import { claimAppInboxItem } from "../../../../test/fixtures/legacy-inbox.js";
 import { closeDb, getDb } from "../../../lib/db/connection.js";
+import { openDatabase } from "../../../lib/db.js";
+import { ensureTaskResourceSchema } from "../../../lib/db/task-resource-schema.js";
+import { ensureTaskReferenceIndex } from "./task-reference-index.js";
 import { AppInboxHost } from "../inbox/app-inbox-host.js";
 import {
   appTaskContext,
@@ -100,6 +103,7 @@ function fixture() {
     return claimed;
   };
   return {
+    root,
     get db() {
       return db;
     },
@@ -717,6 +721,78 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
       app_id, json_extract(admission_json, '$.taskId'), json_extract(admission_json, '$.taskGeneration'))`);
   f.reopen();
   expect(f.db.prepare("SELECT name FROM sqlite_master WHERE name = 'idx_app_task_admissions_target'").get()).toBeNull();
+  f.db.exec(`DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_insert;
+    DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_update;
+    DROP INDEX IF EXISTS idx_app_task_attempts_return_covering;
+    ALTER TABLE app_task_attempts DROP COLUMN accepted_result_state`);
+  const standaloneA = AppTaskResourceStore.openStandalone(join(f.root, "may.db"), app.id);
+  const standaloneB = AppTaskResourceStore.openStandalone(join(f.root, "may.db"), app.id);
+  f.db.exec("BEGIN IMMEDIATE");
+  try {
+    ensureTaskReferenceIndex(standaloneA.db);
+  } finally {
+    f.db.exec("ROLLBACK");
+  }
+  standaloneB.close();
+  standaloneA.close();
+  f.db.exec(`DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_insert;
+    DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_update;
+    DROP INDEX IF EXISTS idx_app_task_attempts_return_covering;
+    ALTER TABLE app_task_attempts DROP COLUMN accepted_result_state`);
+  const firstOpener = openDatabase(join(f.root, "may.db"));
+  const secondOpener = openDatabase(join(f.root, "may.db"));
+  try {
+    firstOpener.exec("PRAGMA busy_timeout = 10");
+    secondOpener.exec("PRAGMA busy_timeout = 10");
+    let interleaved = false;
+    const origExec = firstOpener.exec.bind(firstOpener);
+    const execSpy = spyOn(firstOpener, "exec").mockImplementation((sql: string) => {
+      if (!interleaved && sql.includes("CREATE TABLE IF NOT EXISTS app_inbox_items")) {
+        interleaved = true;
+        // Because ensureTaskResourceSchema starts with BEGIN IMMEDIATE before APP_INBOX_SCHEMA,
+        // firstOpener already owns the write lock here and a competing writer cannot interleave.
+        expect(() =>
+          secondOpener.exec("INSERT OR REPLACE INTO app_task_store_meta(app_id, key, value) VALUES ('interleaved', 'k', 'v')"),
+        ).toThrow(/locked|BUSY/i);
+      }
+      return origExec(sql);
+    });
+    try {
+      ensureTaskResourceSchema(firstOpener);
+    } finally {
+      execSpy.mockRestore();
+    }
+    expect(interleaved).toBe(true);
+    ensureTaskResourceSchema(secondOpener);
+  } finally {
+    secondOpener.close();
+    firstOpener.close();
+  }
+  expect(
+    f.db.prepare("SELECT accepted_result_state FROM app_task_attempts WHERE app_id = ? AND task_id = 'closed-only'", { cache: false })
+      .get(app.id),
+  ).toEqual({ accepted_result_state: "converged" });
+  f.db.exec(`UPDATE app_task_attempts SET accepted_result_state = NULL WHERE app_id = '${app.id}' AND task_id = 'closed-only';
+    UPDATE app_task_attempts SET attempt_json = json_set(attempt_json, '$.acceptedResult.state', 'converged')
+    WHERE app_id = '${app.id}' AND task_id = 'closed-only'`);
+  expect(
+    f.db.prepare("SELECT accepted_result_state FROM app_task_attempts WHERE app_id = ? AND task_id = 'closed-only'", { cache: false })
+      .get(app.id),
+  ).toEqual({ accepted_result_state: "converged" });
+  f.db.exec(`DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_update;
+    UPDATE app_task_attempts SET accepted_result_state = NULL WHERE app_id = '${app.id}'`);
+  f.reopen();
+  expect(
+    f.db.prepare("SELECT accepted_result_state FROM app_task_attempts WHERE app_id = ? AND task_id = 'closed-only'")
+      .get(app.id),
+  ).toEqual({ accepted_result_state: "converged" });
+  f.db.exec(`UPDATE app_task_attempts SET accepted_result_state = 'sentinel' WHERE app_id = '${app.id}' AND task_id = 'closed-only'`);
+  f.reopen();
+  expect(
+    f.db.prepare("SELECT accepted_result_state FROM app_task_attempts WHERE app_id = ? AND task_id = 'closed-only'")
+      .get(app.id),
+  ).toEqual({ accepted_result_state: "sentinel" });
+  f.db.exec(`UPDATE app_task_attempts SET accepted_result_state = 'converged' WHERE app_id = '${app.id}' AND task_id = 'closed-only'`);
   expect(f.db.prepare("SELECT admission_json FROM app_task_admissions WHERE app_id = ? AND task_id = ?")
     .get(app.id, admission.task_id)?.admission_json).toBe(admission.admission_json);
   f.db.exec("BEGIN");
@@ -787,6 +863,9 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
     }
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_tasks"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_attempts"))).toHaveLength(1);
+    expect(plan.some((step) =>
+      String(step.detail).includes("COVERING INDEX idx_app_task_attempts_return_covering"),
+    )).toBe(true);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
     const ctes = recoverySql.slice(0, recoverySql.lastIndexOf("    SELECT appId, conversationId, topicId"));
