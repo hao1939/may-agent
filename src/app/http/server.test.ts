@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import type { EventInput, EventReceipt, PublicEvent } from "@may-agent/control/events";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnFixtureProcess } from "../../../test/fixtures/owned-process.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/db/connection.js";
 import { EventBus } from "../core/events/bus.js";
@@ -54,14 +55,27 @@ function servicesFixture(events: EventInterface): DaemonHttpServices {
 
 function startFixture() {
   const root = mkdtempSync(join(tmpdir(), "may-http-direct-"));
+  const stateDir = join(root, ".state");
+  const projectDir = join(root, "projects", "sample.app");
+  mkdirSync(stateDir, { recursive: true });
+  mkdirSync(projectDir, { recursive: true });
+  writeFileSync(join(projectDir, "project.md"), "---\nproject: sample\n---\n# Sample\n");
   const eventState = eventFixture();
+  const previousProjectRoot = process.env.PROJECT_ROOT;
+  const previousProjectsRoot = process.env.PROJECTS_ROOT;
+  process.env.PROJECT_ROOT = root;
+  process.env.PROJECTS_ROOT = join(root, "projects");
   const server = startWebUI({
-    stateDir: root,
+    stateDir,
     hostname: "127.0.0.1",
     port: 0,
     services: servicesFixture(eventState.events),
   });
-  cleanups.push(() => server.stop(true), () => rmSync(root, { recursive: true, force: true }));
+  if (previousProjectRoot === undefined) delete process.env.PROJECT_ROOT;
+  else process.env.PROJECT_ROOT = previousProjectRoot;
+  if (previousProjectsRoot === undefined) delete process.env.PROJECTS_ROOT;
+  else process.env.PROJECTS_ROOT = previousProjectsRoot;
+  cleanups.push(() => rmSync(root, { recursive: true, force: true }), () => server.stop(true));
   return { ...eventState, endpoint: `http://127.0.0.1:${server.port}` };
 }
 
@@ -104,15 +118,21 @@ function startRealOwnerFixture() {
       messages: Array.from({ length: 2_000 }, (_, index) => ({ id: `history-${index}`, text: "x".repeat(1_024) })),
       limit: options?.limit,
     }) as never;
-  const server = startWebUI({ stateDir: root, hostname: "127.0.0.1", port: 0, services });
+  let server = startWebUI({ stateDir: root, hostname: "127.0.0.1", port: 0, services });
   cleanups.push(
-    () => server.stop(true),
-    unsubscribe,
-    () => closeDb(root),
     () => rmSync(root, { recursive: true, force: true }),
+    () => closeDb(root),
+    unsubscribe,
+    () => server.stop(true),
   );
   return {
-    endpoint: `http://127.0.0.1:${server.port}`,
+    get endpoint() {
+      return `http://127.0.0.1:${server.port}`;
+    },
+    restart() {
+      server.stop(true);
+      server = startWebUI({ stateDir: root, hostname: "127.0.0.1", port: 0, services });
+    },
     task,
     admissions: () => admissions,
   };
@@ -133,6 +153,42 @@ function taskInput(endpoint: string, input: { message: string; key: string; gene
 }
 
 describe("daemon-owned HTTP services", () => {
+  test("starts a headless HTTP owner in a parent-owned process without a compatibility socket", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-http-headless-process-"));
+    const script = join(root, "headless.mjs");
+    writeFileSync(
+      script,
+      `import { startWebUI } from ${JSON.stringify(new URL("./server.ts", import.meta.url).href)};
+const events = { publish(event) { return { eventId: 1, eventType: event.type, delivery: "accepted", links: [] }; }, get() {}, subscribe() { return () => {}; } };
+const server = startWebUI({ stateDir: process.env.STATE_DIR, hostname: "127.0.0.1", port: 0, services: { events, getStatus: () => ({ status: "running" }), getAppConversation: () => ({ messages: [] }), listApps: () => [], listTasks: () => ({ items: [] }), getTask: () => null } });
+console.log(JSON.stringify({ port: server.port }));
+process.stdin.resume();
+process.stdin.on("end", () => { server.stop(true); process.exit(0); });
+`,
+    );
+    const child = spawnFixtureProcess([script], { env: { ...process.env, STATE_DIR: join(root, ".state") } });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }), () => child.kill("SIGKILL"));
+    const startup = await new Promise<{ port: number }>((resolve, reject) => {
+      let stdout = "";
+      let stderr = "";
+      child.stderr.on("data", (chunk) => (stderr += chunk.toString()));
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString();
+        const line = stdout.split("\n")[0];
+        if (line) resolve(JSON.parse(line));
+      });
+      child.once("exit", (code) => reject(new Error(`headless fixture exited ${code}: ${stderr}`)));
+    });
+
+    expect(await fetch(`http://127.0.0.1:${startup.port}/api/readiness`).then((response) => response.json())).toMatchObject({
+      ready: true,
+      transport: "in-process",
+    });
+    expect(existsSync(join(root, ".state", "instances"))).toBe(false);
+    child.stdin.end();
+    await new Promise<void>((resolve) => child.once("exit", () => resolve()));
+  });
+
   test("serve bounded reads and readiness without a compatibility socket or dashboard process", async () => {
     const fixture = startFixture();
     const [readiness, conversation, apps, tasks, task] = await Promise.all([
@@ -190,6 +246,21 @@ describe("daemon-owned HTTP services", () => {
     expect(await closed.json()).toMatchObject({ error: "Task is closed; input cannot reopen it" });
   });
 
+  test("replays a lost HTTP acknowledgement after the daemon listener restarts", async () => {
+    const fixture = startRealOwnerFixture();
+    const first = await taskInput(fixture.endpoint, { message: "Retain this", key: "feedback-lost-ack" });
+    expect(first.status).toBe(202);
+    // Treat the response body as lost, then restart the transport around the
+    // same durable owner and retry the exact input identity.
+    await first.body?.cancel();
+    fixture.restart();
+
+    const replay = await taskInput(fixture.endpoint, { message: "Retain this", key: "feedback-lost-ack" });
+    expect(replay.status).toBe(202);
+    expect(await replay.json()).toMatchObject({ accepted: true, generation: 2, replayed: true });
+    expect(fixture.admissions()).toBe(1);
+  });
+
   test("a slow history client does not serialize Stop or unrelated durable admission", async () => {
     const fixture = startRealOwnerFixture();
     const history = await fetch(`${fixture.endpoint}/api/conversation?appId=may&conversationId=may%3Aprimary&limit=30`);
@@ -215,6 +286,32 @@ describe("daemon-owned HTTP services", () => {
     expect(await input.json()).toMatchObject({ accepted: true });
     expect(fixture.admissions()).toBe(1);
     await history.body?.cancel();
+  });
+
+  test("binds project comments to the same in-process App admission owner", async () => {
+    const fixture = startFixture();
+    const response = await fetch(`${fixture.endpoint}/api/projects/comment`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        path: "projects/sample.app",
+        comment: "Review the direct binding.",
+        idempotencyKey: "project-comment-direct-1",
+      }),
+    });
+
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ ok: true, eventType: "app.input.requested", projectId: "sample" });
+    expect(fixture.published).toHaveLength(1);
+    expect(fixture.published[0]).toMatchObject({
+      context: { source: "web-ui", inputSource: { kind: "human", id: "web-ui:project-comment-direct-1" } },
+      event: {
+        type: "app.input.requested",
+        target: { appId: "sample" },
+        idempotencyKey: "project-comment-direct-1",
+        data: { input: { kind: "message", data: { message: "Review the direct binding." } } },
+      },
+    });
   });
 
   test("admits ordinary HTTP events through EventInterface with trusted adapter provenance", async () => {

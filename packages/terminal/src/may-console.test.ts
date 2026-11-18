@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { EventEmitter, once } from "node:events";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,9 +10,10 @@ import { join, resolve } from "node:path";
 class Socket extends EventEmitter {
   ws: { send(data: string): void; close(): void } | null = null;
   subscriptionAcknowledged = false;
-  pending = new Map<
+  private readonly requestContext = new AsyncLocalStorage<string>();
+  private readonly pending = new Map<
     string,
-    Array<{ resolve(value: Record<string, any>): void; reject(error: Error): void }>
+    { command: string; resolve(value: Record<string, any>): void; reject(error: Error): void }
   >();
 
   write(data: string): boolean {
@@ -24,11 +27,12 @@ class Socket extends EventEmitter {
         }
         continue;
       }
-      const command = message.command === "status" ? "status" : message.command;
-      const waiter = command ? this.pending.get(command)?.shift() : undefined;
+      const requestId = this.requestContext.getStore();
+      const waiter = requestId ? this.pending.get(requestId) : undefined;
       if (waiter && (message.type === "ok" || message.type === "error" || message.type === "status")) {
+        this.pending.delete(requestId!);
         waiter.resolve(message);
-      } else if (!(command && (message.type === "ok" || message.type === "error" || message.type === "status"))) {
+      } else {
         this.ws?.send(JSON.stringify(message));
       }
     }
@@ -37,17 +41,15 @@ class Socket extends EventEmitter {
 
   request(frame: Record<string, any>): Promise<Record<string, any>> {
     return new Promise((resolve, reject) => {
-      const command = String(frame.type);
-      const queue = this.pending.get(command) ?? [];
-      queue.push({ resolve, reject });
-      this.pending.set(command, queue);
-      this.emit("data", Buffer.from(`${JSON.stringify(frame)}\n`));
+      const requestId = randomUUID();
+      this.pending.set(requestId, { command: String(frame.type), resolve, reject });
+      this.requestContext.run(requestId, () => this.emit("data", Buffer.from(`${JSON.stringify(frame)}\n`)));
     });
   }
 
   destroy(): void {
-    for (const [command, queue] of this.pending) {
-      for (const waiter of queue) waiter.resolve({ type: "error", command, message: "daemon connection closed" });
+    for (const waiter of this.pending.values()) {
+      waiter.resolve({ type: "error", command: waiter.command, message: "daemon connection closed" });
     }
     this.pending.clear();
     this.ws?.close();

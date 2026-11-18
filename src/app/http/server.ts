@@ -24,7 +24,11 @@ import { randomUUID } from "node:crypto";
 import { createAgentRouteHandlers } from "./agent-routes.js";
 import { createEventRouteHandlers } from "./event-routes.js";
 import { createMetricAndKnowledgeRouteHandlers } from "./metric-knowledge-routes.js";
-import { createProjectRouteHandlers, type ConfirmDurableControl } from "./project-routes.js";
+import {
+  createProjectRouteHandlers,
+  type AppAdmissionPublishCommand,
+  type ConfirmDurableControl,
+} from "./project-routes.js";
 import { createSessionRouteHandlers } from "./session-routes.js";
 import { createTaskReadHandlers } from "./task-read-routes.js";
 import { createTaskInputHandler, type TaskInputCommand } from "./task-input.js";
@@ -607,6 +611,33 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       sendDaemonFrame,
       buildPublishFrame,
     });
+  const admitProjectInput = async (command: AppAdmissionPublishCommand): Promise<SocketResponse> => {
+    if (services) {
+      try {
+        const receipt = services.events.publish(command.event, {
+          source: "web-ui",
+          inputSource: command.event.data.source,
+        });
+        return { type: "ok", command: "publish", ...receipt };
+      } catch (error) {
+        const rejection = error instanceof Error ? error : new Error(String(error));
+        Object.assign(rejection, { kind: "definitive" });
+        throw rejection;
+      }
+    }
+    return sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, (key) =>
+      confirmAcceptedAppInput(
+        command.event.target.appId,
+        key,
+        {
+          input: command.event.data.input,
+          conversationId: command.event.data.conversationId,
+          channel: command.event.data.channel,
+        },
+        command.event.data.source,
+      ),
+    );
+  };
   const {
     isAllowedProjectPath,
     resolveProjectFile,
@@ -623,10 +654,8 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     projectsRoot: PROJECTS_ROOT,
     getDb: _db,
     json,
-    conventionSocketPath,
     platformUiContentTypeFor,
-    sendAppInputWithRetry,
-    confirmAcceptedAppInput,
+    admitAppInput: admitProjectInput,
   });
   const { handleAgents, handleAgentAbout, handleAgentDefaultSession, handleAgentMessage } = createAgentRouteHandlers({
     stateDir: STATE_DIR,
