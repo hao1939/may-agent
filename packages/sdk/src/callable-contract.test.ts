@@ -360,6 +360,45 @@ describe("shared callable input and result contract", () => {
     await expect(
       bounded.call("alex/bounded-strings", { prompt: "Inspect", data: { [escaped]: true } }, undefined, { signal }),
     ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+
+    let rope = "x";
+    for (let depth = 0; depth < 26; depth++) rope += rope;
+    expect(rope.length).toBe(67_108_864);
+    await expect(
+      bounded.call("alex/bounded-strings", { prompt: "Inspect", data: rope }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+  });
+
+  test("bounds repeated long schema paths and the resulting error envelope", async () => {
+    const longKey = "k".repeat(220_000);
+    const bounded = new CallableCatalog([
+      definition("bounded-diagnostic", "alex", {
+        outputSchema: Type.Object({
+          [longKey]: Type.Tuple([
+            Type.String(), Type.String(), Type.String(), Type.String(), Type.String(),
+          ]),
+        }),
+        async invoke() {
+          return {
+            executionId: "s_bounded_diagnostic",
+            report: {
+              status: "done",
+              summary: "invalid output",
+              output: { [longKey]: [1, 2, 3, 4, 5] },
+            },
+          };
+        },
+      }),
+    ]);
+
+    const result = await bounded.call("alex/bounded-diagnostic", { prompt: "Inspect" }, undefined, { signal });
+    expect(result.id).toBe("s_bounded_diagnostic");
+    expect(result.status).toBe("error");
+    expect(result.facts).toMatchObject({ phase: "output" });
+    expect(result.summary).toStartWith("Callable result output failed schema validation");
+    expect(result.summary).toContain("…[truncated]");
+    expect(result.summary.length).toBeLessThan(10_000);
+    expect(JSON.stringify(result).length).toBeLessThan(1_048_576);
   });
 
   test("returns bounded diagnostics without coercing rejected evidence", async () => {

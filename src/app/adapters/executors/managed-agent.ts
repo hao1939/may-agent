@@ -61,10 +61,8 @@ export function createTaskAgentRunner(
       if (input.manager.hasAgent(executor)) return true;
       const localName = agent.includes("/") ? agent.slice(agent.indexOf("/") + 1) : agent;
       const dir = localAgentDir(join(source.projectsRoot, basename(appDir)), localName);
-      return (
-        (input.registerLocalAgent ? await input.registerLocalAgent(localName, appDir, dir) : false) ||
-        input.manager.hasAgent(executor)
-      );
+      if (input.registerLocalAgent) await input.registerLocalAgent(localName, appDir, dir);
+      return input.manager.hasAgent(executor);
     },
     role: (agent) => taskAttemptRole(definitions, agent),
     execute: (attempt) => executeTaskAgent(attempt, input.manager, definitions),

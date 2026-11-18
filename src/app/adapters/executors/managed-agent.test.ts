@@ -315,6 +315,42 @@ test("App installation prepares and publishes a local Task agent despite a loade
   }
 });
 
+test("explicit global Task executors require the declared global definition after local fallback registration", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-managed-explicit-global-"));
+  try {
+    const projectsRoot = join(root, "projects");
+    const appDir = join(projectsRoot, "alpha.app");
+    const agentDir = join(appDir, "agents", "worker-profile");
+    mkdirSync(agentDir, { recursive: true });
+    writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ name: "worker" }));
+
+    const available = new Set<string>();
+    const registrations: Array<{ agent: string; appDir: string; agentDir?: string }> = [];
+    const runner = createTaskAgentRunner({
+      manager: {
+        hasAgent: (agent: string) => available.has(agent),
+      } as unknown as SubagentManager,
+      registerLocalAgent: async (agent, selectedAppDir, resolvedDir) => {
+        registrations.push({ agent, appDir: selectedAppDir, agentDir: resolvedDir });
+        available.add("alpha/worker");
+        return true;
+      },
+    });
+    const preparation = { source: { projectsRoot }, appId: "alpha", appDir, agent: "global/worker" } as any;
+
+    await expect(runner.prepare(preparation)).resolves.toBe(false);
+    expect(registrations).toEqual([{ agent: "worker", appDir, agentDir }]);
+    expect(available.has("alpha/worker")).toBe(true);
+    expect(available.has("global/worker")).toBe(false);
+
+    available.add("global/worker");
+    await expect(runner.prepare(preparation)).resolves.toBe(true);
+    expect(registrations).toHaveLength(1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("Task roots reject a foreign same-name agent when the owning App profile is missing", async () => {
   const foreign: SubagentDefinition = {
     name: "worker", description: "Beta worker", domain: "test", model: fakeModel(), tools: [],

@@ -5,6 +5,8 @@ const INVOCATION_SETTLEMENT_GRACE_MS = 2_000;
 const MAX_JSON_DEPTH = 100;
 const MAX_JSON_TRAVERSAL_VALUES = 100_000;
 const MAX_EXPANDED_JSON_BYTES = 1_048_576;
+const MAX_SCHEMA_DIAGNOSTIC_PART_LENGTH = 512;
+const MAX_ERROR_SUMMARY_LENGTH = 4_096;
 const UNCONFIRMED_INVOCATION_SETTLEMENT = Symbol("unconfirmed-invocation-settlement");
 
 export const ExecutionInputSchema = Type.Object(
@@ -68,10 +70,17 @@ export class CallableValidationError extends Error {
   }
 }
 
+function boundedDiagnosticText(value: string, maxLength: number): string {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, maxLength)}…[truncated]`;
+}
+
 function schemaDiagnostic(schema: TSchema, value: unknown): string {
   const details: string[] = [];
   for (const error of Errors(schema, value)) {
-    details.push(`${error.instancePath || "/"} ${error.message}`.trim());
+    const path = boundedDiagnosticText(error.instancePath || "/", MAX_SCHEMA_DIAGNOSTIC_PART_LENGTH);
+    const message = boundedDiagnosticText(error.message, MAX_SCHEMA_DIAGNOSTIC_PART_LENGTH);
+    details.push(`${path} ${message}`.trim());
     if (details.length === 5) break;
   }
   return details.join("; ") || "value failed schema check";
@@ -114,6 +123,9 @@ type JsonInspection =
 type CompletedJsonInspection = Readonly<{ expandedBytes: number; maxObjectDepth: number }>;
 
 function jsonStringBytes(value: string): number | undefined {
+  // Every UTF-16 code unit requires at least one JSON byte. Reject impossible
+  // values before indexing them so large ropes are not flattened just to fail.
+  if (value.length > MAX_EXPANDED_JSON_BYTES - 2) return undefined;
   let bytes = 2;
   for (let index = 0; index < value.length; index++) {
     const code = value.charCodeAt(index);
@@ -466,10 +478,11 @@ export class CallableCatalog {
       if (!(error instanceof CallableValidationError)) throw error;
       const rawInspection = inspectJson(error.rawValue);
       const omittedEvidence = `[omitted: ${rawInspection.ok ? "error envelope exceeds JSON resource limits" : rawInspection.reason}]`;
+      const summary = boundedDiagnosticText(error.message, MAX_ERROR_SUMMARY_LENGTH);
       let failure: CallableResult = {
         ...(childId ? { id: childId } : {}),
         status: "error",
-        summary: error.message,
+        summary,
         facts: { phase: error.phase, invalidEvidence: rawInspection.ok ? error.rawValue : omittedEvidence },
       };
       if (!inspectJson(failure).ok) {
