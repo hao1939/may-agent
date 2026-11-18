@@ -3,7 +3,14 @@ import { fixture, until } from "../fixtures/resource-observer.js";
 import { defineObserver } from "@may-agent/sdk/app";
 import { claimObservedAppTask, recordAppTaskTrigger } from "../../src/app/core/tasks/app-task-reconciler.js";
 
-function buildDetector(read: (resource: string, signal: AbortSignal) => Promise<{ state: string; revision: number }>) {
+function buildDetector(read: (resource: string, signal: AbortSignal) => Promise<{
+  state: string;
+  revision: number;
+  closed?: boolean;
+  merged?: boolean;
+  status?: string;
+  fingerprint?: string;
+}>) {
   return defineObserver({
     id: "build-status",
     type: "build.state",
@@ -65,6 +72,29 @@ test("one source read serves two Apps; quiet polls use no Task attempts; unrelat
   await f.scan();
   expect(reads).toBe(6);
   expect(f.events()).toHaveLength(2);
+});
+
+test("terminal fact without a provider fingerprint fans out, stays unsatisfied, and retires shared demand", async () => {
+  let reads = 0;
+  const f = await setup(async () => {
+    reads++;
+    return { state: "closed", revision: 1, closed: true };
+  });
+  const wait = f.capability.waitFor("build", "42", { field: "state", equals: "passed" }, "continuous");
+  f.add("a", [wait]);
+  f.add("b", [wait], "peer");
+
+  await f.scan();
+
+  expect(reads).toBe(1);
+  expect(f.runnable()).toEqual(["a"]);
+  expect(f.runnable("peer")).toEqual(["b"]);
+  expect(f.view("a").conditions[0]?.observation).toMatchObject({ state: "false" });
+  expect(f.view("b", "peer").conditions[0]?.observation).toMatchObject({ state: "false" });
+  expect(f.view("a").conditions[0]?.observation.observed?.fingerprint).toEqual(expect.any(String));
+
+  await f.scan();
+  expect(reads).toBe(1);
 });
 
 test("installed detector needs no authored event routes; exact App reads distinguish quiet success from failure", async () => {
@@ -307,7 +337,9 @@ test("recreating an identical wait receives unchanged data and preserves the pro
   expect(f.events()).toHaveLength(2);
   const delivered = f.claim("a").events.at(-1)!;
   expect(delivered.event.eventId).toBe(f.events().at(-1)!.id);
-  expect(delivered.event.data).toEqual({ state: "passed", revision: 1, observedAt, resource: "42" });
+  expect(delivered.event.data).toEqual({
+    state: "passed", revision: 1, observedAt, resource: "42",
+  });
 });
 
 test("committed interests request a coalesced prompt read without polling unrelated or cancelled waits", async () => {

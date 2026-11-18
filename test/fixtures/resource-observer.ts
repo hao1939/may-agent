@@ -207,10 +207,10 @@ export async function fixture(detector: ResourceObserver) {
       return observers.health("builds")[0]!;
     },
     capability: {
-      waitFor(id: string, resource: string, expected: Record<string, unknown>) {
+      waitFor(id: string, resource: string, expected: Record<string, unknown>, mode?: "one-shot" | "continuous") {
         return observationCondition(
           { ...detector, appId: "builds" },
-          { observerId: detector.id, id, resource, expected },
+          { observerId: detector.id, id, resource, expected, ...(mode ? { mode } : {}) },
         );
       },
     },

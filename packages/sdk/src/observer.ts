@@ -1,6 +1,13 @@
 import type { Condition } from "./task.js";
 
 /** App-owned source semantics; the Host supplies demand, identity and delivery. */
+export type ResourceObservation = Record<string, unknown> & {
+  /** Provider-owned identity for meaningful state. When absent, the Host fingerprints the complete observation. */
+  fingerprint?: string;
+  /** The resource reached a terminal state; the Host delivers this fact before retiring continuous watches. */
+  closed?: boolean;
+};
+
 export type ResourceObserver = {
   id: string;
   type: string;
@@ -8,7 +15,7 @@ export type ResourceObserver = {
   intervalMs: number;
   timeoutMs: number;
   /** Return provider fields unchanged in meaning; `resource` is reserved for Host correlation. */
-  inspect(resource: string, context: { signal: AbortSignal }): Promise<Record<string, unknown>>;
+  inspect(resource: string, context: { signal: AbortSignal }): Promise<ResourceObservation>;
 };
 
 export type ObservationContract = Omit<ResourceObserver, "inspect"> & { appId: string };
@@ -17,6 +24,8 @@ export type ObservationInterest = {
   id: string;
   resource: string;
   expected: Record<string, unknown>;
+  /** Defaults to one-shot for compatibility. */
+  mode?: "one-shot" | "continuous";
 };
 
 /** Current runtime evidence, not proof that a Task consumed the observation. */
@@ -53,6 +62,7 @@ export function observationCondition(capability: ObservationContract, interest: 
       ...interest.expected,
       source: `app:${capability.appId}:observer:${capability.id}`,
     },
+    ...(interest.mode && interest.mode !== "one-shot" ? { mode: interest.mode } : {}),
     owner: `app:${capability.appId}`,
   };
 }
