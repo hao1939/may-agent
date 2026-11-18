@@ -56,16 +56,16 @@ describe("socket frame normalization", () => {
 
     expect(
       normalizeSocketFrame({
-        type: "project.nudge",
+        type: "sample.review.requested",
         source: "web-ui",
         owner: "agent:may",
         data: { projectPath: "projects/x" },
       }),
     ).toEqual({
       kind: "event",
-      command: "project.nudge",
+      command: "sample.review.requested",
       event: {
-        type: "project.nudge",
+        type: "sample.review.requested",
         source: "web-ui",
         owner: "agent:may",
         data: { projectPath: "projects/x" },
@@ -122,10 +122,10 @@ describe("socket frame normalization", () => {
       command: "message.created",
       message: "Canonical event 'message.created' requires object field 'data'",
     });
-    expect(normalizeSocketFrame({ type: "project.nudge", projectPath: "projects/x", source: "web-ui" })).toEqual({
+    expect(normalizeSocketFrame({ type: "sample.review.requested", projectPath: "projects/x", source: "web-ui" })).toEqual({
       kind: "error",
-      command: "project.nudge",
-      message: "Canonical event 'project.nudge' requires object field 'data'",
+      command: "sample.review.requested",
+      message: "Canonical event 'sample.review.requested' requires object field 'data'",
     });
     expect(
       normalizeSocketFrame({

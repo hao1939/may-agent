@@ -229,7 +229,6 @@ type MetricEventData = {
 
 /** System events */
 export type SystemEvent =
-  | { type: "heartbeat"; agent: string; entry: string }
   | {
       /** Wake-only resource notification. Consumers re-read Conversation truth. */
       type: "conversation.updated";
@@ -319,24 +318,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "channel.delivery.completed" | "channel.delivery.failed";
-      source: string;
-      owner: string;
-      target: { human: true } | { agent: string };
-      data: {
-        channel: string;
-        sessionId?: string;
-        resultEventType?: string;
-        operationId?: string;
-        appInboxItemId?: string;
-        appInboxRequestId?: string;
-        externalMessageId?: string | number;
-        certainty?: "not-delivered" | "uncertain";
-        reason?: string;
-        [key: string]: unknown;
-      };
-    }
-  | {
       type: "runtime.daemon.heartbeat";
       source: "daemon";
       owner: string;
@@ -382,12 +363,6 @@ export type SystemEvent =
       };
     }
   | {
-      type: "project.status_changed";
-      source?: string;
-      owner: string;
-      data: { from: string; to: string; project?: string; projectId?: string; projectPath?: string };
-    }
-  | {
       type: "project.owner.requested";
       source?: string;
       owner: string;
@@ -398,12 +373,6 @@ export type SystemEvent =
         reason: string;
         [key: string]: unknown;
       };
-    }
-  | {
-      type: "project.nudge";
-      source: string;
-      owner: string;
-      data: { projectPath: string; comment?: boolean; commentText?: string };
     }
   | {
       type: "message.created";
@@ -630,21 +599,6 @@ export type SystemEvent =
       data: { metricId: string; reason: string; triggerEventId?: number };
     }
   | {
-      type: "metric.feedback.routed";
-      source?: string;
-      owner: string;
-      timestamp?: number;
-      data: {
-        metricId: string;
-        alertId?: string | number | null;
-        project?: string | null;
-        appId: string;
-        appPath?: string;
-        route: "owner-app";
-        eventType?: string;
-      };
-    }
-  | {
       type: "metric.threshold_changed";
       source?: string;
       owner: string;
@@ -657,18 +611,6 @@ export type SystemEvent =
       owner: string;
       timestamp?: number;
       data: { metricId: string; alertId: number; reason?: string | null };
-    }
-  | {
-      type: "metric.alert_judged";
-      source?: string;
-      owner: string;
-      data: {
-        metricId: string;
-        alertId: string | number;
-        verdict?: string;
-        reason?: string;
-        facts?: Record<string, unknown>;
-      };
     }
   | {
       type: "guard.triggered";
@@ -721,18 +663,6 @@ export type SystemEvent =
         context?: unknown;
         [key: string]: unknown;
       };
-    }
-  | {
-      type: "workflow";
-      agent: string;
-      workflow: string;
-      sessionId?: string;
-      event: "start" | "step_start" | "step_done" | "done" | "escalated";
-      step?: string;
-      status?: string;
-      duration?: string;
-      reason?: string;
-      task?: string;
     }
   | {
       type: "subscriber.failed";
@@ -865,7 +795,7 @@ function inheritedEventTrace(event: AgentEvent, parent: AgentEvent | undefined):
  * Subscriber priority semantics:
  *   - The required persistence subscriber runs first and fails closed.
  *   - "first" subscribers then run before "normal" subscribers, in registration order.
- * This guarantees that if a handler triggers work, the originating event is already on disk.
+ * Journaled events are on disk before a handler triggers work; live observations skip the journal.
  */
 export class EventBus {
   private persistenceSubscriber: PersistenceSubscriber | undefined;
@@ -898,7 +828,7 @@ export class EventBus {
   }
 
   /**
-   * Listen to persisted events after the synchronous persistence and routing
+   * Listen to events after the synchronous persistence policy and routing
    * boundary. Listeners are non-authoritative: they cannot accept delivery,
    * and their independent FIFO work never extends emit() latency or another
    * listener's await chain. Like a Node.js event-loop callback, a listener must

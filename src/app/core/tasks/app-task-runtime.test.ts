@@ -15,6 +15,7 @@ import {
   type TaskExecutor,
 } from "@may-agent/sdk/app";
 import { addLogSubscriber } from "@may-agent/sdk/runtime";
+import { CodexGoalProgressPublisher } from "../../adapters/executors/codex/codex-goal-progress.js";
 import { readTaskChecks } from "./task-check-observations.js";
 import { UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY } from "../../metric-source-measurement.js";
 import { DbWriter } from "../../../lib/db-writer.js";
@@ -154,14 +155,75 @@ it.each(["none", "accept", "fail"] as const)("records attempt facts independentl
   const db = getDb(persistDir);
   const receipts = () => db.prepare(`SELECT event_type, delivery_status, accepted_by FROM events
     WHERE event_type IN ('project.task.reconcile.started', 'project.task.reconciled') ORDER BY id`).all();
-  expect(receipts()).toEqual([...types].map((event_type) => ({
+  expect(receipts()).toEqual(["project.task.reconciled"].map((event_type) => ({
     event_type,
     delivery_status: consumer === "fail" ? "pending" : "accepted",
     accepted_by: consumer === "fail" ? null : consumer === "accept" ? "fixture:consumer" : "event-interface:record",
   })));
   writer.runHousekeeping(Date.now() + 120_001);
-  expect(receipts().map((row) => row.delivery_status)).toEqual(consumer === "fail" ? ["unhandled", "unhandled"] : ["accepted", "accepted"]);
-  expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: consumer === "fail" ? 2 : 0 });
+  expect(receipts().map((row) => row.delivery_status)).toEqual(consumer === "fail" ? ["unhandled"] : ["accepted"]);
+  expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: consumer === "fail" ? 1 : 0 });
+});
+
+it("counts Codex progress published through a real Task attempt as live success without a journal ID", async () => {
+  const f = fixture();
+  const bus = eventBus();
+  const persistDir = join(f.root, "state");
+  const writer = new DbWriter(persistDir);
+  bus.setPersistenceSubscriber(writer.handler);
+  bus.setDeliveryRecorder(writer.recordDelivery);
+  const observed: AgentEvent[] = [];
+  const seen = Promise.withResolvers<void>();
+  const stop = bus.listen((event) => { observed.push(event); seen.resolve(); }, { types: ["project.task.executor.progress"] });
+  try {
+    await installCoreTaskRuntimes({
+      ...options(f, bus), installControllers: false,
+      executors: {
+        fixture: async (attempt) => {
+          const publisher = new CodexGoalProgressPublisher({
+            async publish(key, event) {
+              const receipt = await attempt.publish(key, event);
+              expect(receipt.eventId).toBeUndefined();
+              return receipt;
+            },
+          });
+          publisher.observe({
+            method: "item/completed",
+            params: { threadId: "thread-1", turnId: "turn-1", item: {
+              id: "progress-1", type: "agentMessage", phase: "commentary", text: "Inspecting fixture facts",
+            } },
+          });
+          expect(await publisher.flush()).toEqual({ queued: 1, published: 1, failed: 0, dropped: 0 });
+          return { state: "converged", summary: "Work completed", facts: [] };
+        },
+      },
+      appRegistrySnapshot: {
+        id: "codex-progress", generation: 1,
+        entries: [{ appDir: f.appDir, definition: definition() }],
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const taskId = "work/progress";
+    observeAppTaskIntent(config, {
+      appAgent: "sample-owner",
+      intent: { id: taskId, parentId: "operations", outcome: "Verify", acceptance: ["Verified"], executor: "fixture" },
+    });
+    await reconcileLoadedAppTaskOnce({
+      bus, appId: "sample", taskId,
+      dispatch: { enqueuedAt: 1, startedAt: 2, readyWaitMs: 1, lane: "normal" },
+    });
+    await seen.promise;
+    expect(observed).toHaveLength(1);
+    expect(observed[0][EVENT_ROW_ID]).toBeUndefined();
+    expect(observed[0].data).toMatchObject({
+      message: "Inspecting fixture facts", emission: { appId: "sample", taskId },
+    });
+    expect(getDb(persistDir).prepare("SELECT count(*) AS n FROM events WHERE event_type = 'project.task.executor.progress'").get())
+      .toEqual({ n: 0 });
+    expect(readAcceptedRuntimeAttempt(config, taskId)?.acceptedResult?.summary).toBe("Work completed");
+  } finally {
+    stop();
+  }
 });
 
 it("publishes one reopening fact despite a lost publication and operator replay across restart", async () => {

@@ -49,7 +49,7 @@ cross-component and process boundaries.
 | Responsibility | Contract and implementation | Wiring and owning tests |
 | --- | --- | --- |
 | App registration | `core/apps/registry.ts`: `AppDefinitionSource`; validation in `core/apps/definition-validation.ts`; file discovery in `adapters/discovery/app-definitions.ts` | `app-runtime.ts`; `core/apps/registry.test.ts` covers rejected/serialized publication |
-| Events | `core/events/interface.ts` for ingress/reads; `core/events/bus.ts` for persisted admission and bounded observation | `app-runtime.ts` creates the interface; `daemon-events.ts` attaches persistence/subscribers; colocated interface/bus tests and `event-delivery.test.ts` |
+| Events | `core/events/interface.ts` for ingress/reads; `core/events/bus.ts` for admission and bounded observation; `core/events/persistence-policy.ts` classifies live-only observations | `app-runtime.ts` creates the interface; `daemon-events.ts` attaches persistence/subscribers; colocated interface/bus tests and `event-delivery.test.ts` |
 | Input admission | `core/inbox/app-inbox-host.ts`, `core/state/app-inbox-store.ts`, `core/state/app-event-admission-store.ts`; frozen routes and durable input identities | `composition/app-inbox-runtime.ts`; inbox admission, routing and failure tests |
 | Conversation | `core/tasks/task-communication.ts`, `core/reads/conversation-context.ts` | Common Task attempts and communication tests |
 | Conversation state | `core/state/conversations.ts`, `core/state/conversation-requests.ts`, `core/state/conversation-task-turns.ts`, `core/state/conversation-outcomes.ts` | Shared database; colocated state tests plus inbox integration tests |

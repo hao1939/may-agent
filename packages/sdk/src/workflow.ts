@@ -624,7 +624,10 @@ export type TaskReconciliationEvents = {
   truncated: boolean;
 };
 
-export type TaskEventReceipt = { eventId: number };
+export type TaskEventReceipt = {
+  /** Journal identity for durable facts; absent for live-only Host observations, which are not replayed or deduplicated. */
+  eventId?: number;
+};
 
 /** The complete bounded contract shared by every Task executor adapter. */
 export type TaskAttempt = {
@@ -753,7 +756,7 @@ export type TaskAttempt = {
   validateResult?(result: TaskReconcileResult): string | null;
   /** Admit requests, Conditions and actions now; this does not end the attempt. */
   apply(changes: TaskChanges): Promise<TaskChangeReceipt>;
-  /** Publish a durable Task-scoped progress, finding, request, or other fact with a retry-stable local key. */
+  /** Publish a fenced Task fact with a retry-stable key. Live-only Host observations return no journal identity. */
   publish(localKey: string, event: AppEvent<Record<string, unknown>>): Promise<TaskEventReceipt>;
   /** Save revised requirements through the same creator capability used by agent tools. */
   reviseTask(change: TaskRevision): Promise<TaskDetail>;

@@ -447,17 +447,17 @@ describe("emitDaemonEvent", () => {
     const writes: string[] = [];
 
     await expect(
-      emitDaemonEvent(captureEndpoint(writes), "project.status_changed", {
+      emitDaemonEvent(captureEndpoint(writes), "sample.status_changed", {
         data: {
           projectId: "p1",
           from: "open",
           to: "active",
         },
       }),
-    ).resolves.toMatchObject({ type: "ok", command: "project.status_changed" });
+    ).resolves.toMatchObject({ type: "ok", command: "sample.status_changed" });
 
     expect(JSON.parse(writes[0] ?? "")).toEqual({
-      type: "project.status_changed",
+      type: "sample.status_changed",
       source: "control",
       owner: "system:host",
       data: {

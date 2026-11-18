@@ -7,6 +7,7 @@
  */
 
 import { createHash } from "node:crypto";
+import { isLiveOnlyEventType } from "../app/core/events/persistence-policy.js";
 import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import { readPersistedEventEnvelope } from "../app/core/events/persisted.js";
 import {
@@ -289,6 +290,18 @@ export class DbWriter {
 
   /** Subscribe this writer to an EventBus. */
   handler = (event: AgentEvent): DeferredEventDelivery | void => {
+    // Keep transaction ordering for live observations too: rolled-back state
+    // must not wake readers. All fan-out still runs through the EventBus.
+    if (isLiveOnlyEventType(event.type)) {
+      this.validateTaskEmissionFence(
+        (event as AgentEvent & { [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence })[EVENT_TASK_EMISSION_FENCE],
+        Date.now(),
+      );
+      if (inStateTransaction(this.db)) {
+        return { afterCommit: (deliver) => afterStateCommit(this.db, deliver) };
+      }
+      return;
+    }
     switch (event.type) {
       case "session.start":
       case "session.end":
@@ -332,11 +345,6 @@ export class DbWriter {
           applyMetricMutation(this.db, event.type, payload, event.timestamp ?? Date.now()));
         break;
       }
-
-      case "conversation.updated":
-        // Replaceable view wake hint; skip SQLite event journal insertion,
-        // while still deferring live fanout until outer transaction commit.
-        break;
 
       default:
         if (event.type.startsWith("trigger.")) {
@@ -419,6 +427,47 @@ export class DbWriter {
       );
     }
   };
+
+  /** Live observations and journaled facts share the same attempt authority. */
+  private validateTaskEmissionFence(emissionFence: EventTaskEmissionFence | undefined, timestamp: number): void {
+    if (!emissionFence) return;
+    const ownership = this.db
+      .prepare(
+        `SELECT t.generation, t.current_attempt_id, a.task_generation, a.state, a.lease_until,
+                m.value AS authority
+         FROM app_tasks t
+         JOIN app_task_attempts a
+           ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
+         JOIN app_task_store_meta m
+           ON m.app_id = t.app_id AND m.key = 'authority'
+         WHERE t.app_id = ? AND t.task_id = ? AND a.attempt_id = ?`,
+      )
+      .get(emissionFence.appId, emissionFence.taskId, emissionFence.attemptId) as
+      | {
+          generation?: number;
+          current_attempt_id?: string;
+          task_generation?: number;
+          state?: string;
+          lease_until?: number | null;
+          authority?: string;
+        }
+      | null;
+    const leaseUntil = Number(ownership?.lease_until);
+    if (
+      ownership?.authority !== "resources" ||
+      ownership?.generation !== emissionFence.taskGeneration ||
+      ownership?.task_generation !== emissionFence.taskGeneration ||
+      ownership?.current_attempt_id !== emissionFence.attemptId ||
+      ownership?.state !== "running" ||
+      !Number.isFinite(leaseUntil) ||
+      leaseUntil <= timestamp
+    ) {
+      throw new Error(
+        `Task emission fence rejected stale attempt ${emissionFence.attemptId} for ` +
+          `${emissionFence.appId}/${emissionFence.taskId}@${emissionFence.taskGeneration}`,
+      );
+    }
+  }
 
   private insertEventRow(
     event: AgentEvent,
@@ -561,44 +610,7 @@ export class DbWriter {
           return existingId;
         }
       }
-      if (emissionFence) {
-        const ownership = this.db
-          .prepare(
-            `SELECT t.generation, t.current_attempt_id, a.task_generation, a.state, a.lease_until,
-                    m.value AS authority
-             FROM app_tasks t
-             JOIN app_task_attempts a
-               ON a.app_id = t.app_id AND a.attempt_id = t.current_attempt_id
-             JOIN app_task_store_meta m
-               ON m.app_id = t.app_id AND m.key = 'authority'
-             WHERE t.app_id = ? AND t.task_id = ? AND a.attempt_id = ?`,
-          )
-          .get(emissionFence.appId, emissionFence.taskId, emissionFence.attemptId) as
-          | {
-              generation?: number;
-              current_attempt_id?: string;
-              task_generation?: number;
-              state?: string;
-              lease_until?: number | null;
-              authority?: string;
-            }
-          | null;
-        const leaseUntil = Number(ownership?.lease_until);
-        if (
-          ownership?.authority !== "resources" ||
-          ownership?.generation !== emissionFence.taskGeneration ||
-          ownership?.task_generation !== emissionFence.taskGeneration ||
-          ownership?.current_attempt_id !== emissionFence.attemptId ||
-          ownership?.state !== "running" ||
-          !Number.isFinite(leaseUntil) ||
-          leaseUntil <= timestamp
-        ) {
-          throw new Error(
-            `Task emission fence rejected stale attempt ${emissionFence.attemptId} for ` +
-              `${emissionFence.appId}/${emissionFence.taskId}@${emissionFence.taskGeneration}`,
-          );
-        }
-      }
+      this.validateTaskEmissionFence(emissionFence, timestamp);
       // A duplicate returns its receipt without new artifact I/O.
       const body = prepareEventBody(this.persistDir, persistedPayload);
       // Preserve envelope extensions without a column per field. Payload and

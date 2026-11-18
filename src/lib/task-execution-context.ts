@@ -27,7 +27,7 @@ export type TaskAttemptEmission = {
 
 export type TaskAttemptEventInterface = {
   read(type: string, localKey: string): { eventId: number; data: Record<string, unknown> } | null;
-  publish(localKey: string, event: TaskAttemptEmission): number;
+  publish(localKey: string, event: TaskAttemptEmission): number | undefined;
   onEvent(listener: (event: any) => void): () => void;
 };
 

@@ -51,14 +51,14 @@ describe("QueryService", () => {
     const { db, query } = harness();
 
     db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
-      "project.nudge",
+      "sample.review.requested",
       "test",
       "agent:may",
       JSON.stringify({ canonical: true }),
       2,
     ]);
     db.run("INSERT INTO events (event_type, source, owner, data, timestamp) VALUES (?, ?, ?, ?, ?)", [
-      "project.nudge",
+      "sample.review.requested",
       "test",
       "may",
       JSON.stringify({ legacy: true }),

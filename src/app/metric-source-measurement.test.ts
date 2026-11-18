@@ -7,7 +7,7 @@ import { applyDbSchema } from "../lib/db/schema.js";
 import { closeDb, getDb } from "../lib/db/connection.js";
 import { createMetricService } from "../lib/metrics.js";
 import { attachEventPersistence } from "./daemon-events.js";
-import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY } from "./core/events/bus.js";
+import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY, EVENT_DELIVERY_RESULT } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
@@ -401,30 +401,25 @@ describe("source-query metric measurement", () => {
     expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 4 });
   });
 
-  it("records optional observations as accepted facts while preserving real subscriber acceptance", () => {
+  it("records durable optional facts while live observations retain subscriber acceptance", () => {
     const db = getDb(persistDir);
-    for (const type of ["runtime.daemon.heartbeat", "handler.workflow_dispatched", "skill.loaded"]) {
-      bus.emit({ type, [EVENT_RECORD_ONLY]: true, source: "fixture", owner: "agent:may", data: {} } as any);
-    }
-    bus.subscribe((event) =>
+    bus.emit({ type: "runtime.daemon.heartbeat", [EVENT_RECORD_ONLY]: true, source: "fixture", owner: "agent:may", data: {} } as any);
+    bus.emit({ type: "handler.workflow_dispatched", [EVENT_RECORD_ONLY]: true, source: "fixture", owner: "agent:may", data: {} } as any);
+    const unsubscribe = bus.subscribe((event) =>
       event.type === "skill.loaded" ? { accepted: true, by: "fixture-consumer", route: "direct" } : undefined,
     );
-    bus.emit({
-      type: "skill.loaded",
-      [EVENT_RECORD_ONLY]: true,
-      source: "fixture",
-      owner: "agent:may",
-      data: {
-        name: "example", agent: "may", sessionId: "example", activation: "explicit",
-        scope: "shared", filePath: "example/SKILL.md", contentHash: "example",
-      },
-    });
-    const rows = db.prepare(`SELECT delivery_status, delivery_route, accepted_by FROM events
-      WHERE event_type IN ('runtime.daemon.heartbeat', 'handler.workflow_dispatched', 'skill.loaded') ORDER BY id`).all();
-    expect(rows).toHaveLength(4);
-    expect(rows.slice(0, 3).every((row) => row.delivery_status === "accepted" && row.delivery_route === "noop")).toBe(true);
-    expect(rows[3]).toMatchObject({ delivery_status: "accepted", accepted_by: "fixture-consumer", delivery_route: "direct" });
-    expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 0 });
+    try {
+      const skill = bus.emit({
+        type: "skill.loaded", [EVENT_RECORD_ONLY]: true, source: "fixture", owner: "agent:may",
+        data: { name: "example", agent: "may", sessionId: "example", activation: "explicit",
+          scope: "shared", filePath: "example/SKILL.md", contentHash: "example" },
+      });
+      expect(skill[EVENT_DELIVERY_RESULT]).toMatchObject({ accepted: true, by: "fixture-consumer", route: "direct" });
+      expect(db.prepare("SELECT event_type, delivery_status, delivery_route FROM events ORDER BY id").all()).toEqual([
+        { event_type: "runtime.daemon.heartbeat", delivery_status: "accepted", delivery_route: "noop" },
+      ]);
+      expect(db.prepare(UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY).get()).toEqual({ value: 0 });
+    } finally { unsubscribe(); }
   });
 
   it("registers source measurement as passive observation, not synchronous acceptance", () => {
@@ -532,7 +527,7 @@ describe("source-query metric measurement", () => {
       [
         `SELECT count(*) AS value FROM events
          WHERE delivery_status = 'unhandled'
-           AND event_type != 'channel.delivery.completed'`,
+           AND event_type != 'sample.delivery.completed'`,
         Date.now() - 60_000,
         UNEXPECTED_UNHANDLED_SIGNAL_METRIC_ID,
       ],
@@ -543,7 +538,7 @@ describe("source-query metric measurement", () => {
     );
 
     bus.emit({
-      type: "channel.delivery.completed",
+      type: "sample.delivery.completed",
       source: "test",
       owner: "agent:may",
       data: { channel: "test" },

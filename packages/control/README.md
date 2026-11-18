@@ -197,6 +197,28 @@ wakes and use canonical Task reads, which retain result/cancellation fences.
 Profiling, handler health, and subscriber-failure events remain observable to
 their diagnostic readers, not promoted into new work APIs.
 
+`skill.loaded`, `workflow.step_started`, `workflow.step_completed`,
+`handler.workflow_dispatched`, `project.task.reconcile.started`,
+`project.task.reconcile.profiled`, and `project.task.executor.progress` are live
+observations. They retain EventBus subscribers, raw diagnostic notifications and
+Task wake behavior, including across worker IPC, but create no SQLite Event row
+or replayable Event identity. Like `conversation.updated`, notifications emitted
+inside a state transaction are released only after commit and dropped on rollback.
+Existing historical rows remain readable; optional Task progress reads from old
+Event rows do not acquire a new persistence store.
+The durable operator publication interface rejects live-only types before
+dispatch. Task attempts may publish them without a journal ID or a retained
+idempotency receipt. Meaningful lifecycle/domain facts such as `workflow.started`, `workflow.completed`, `project.task.reconciled`
+and `guard.triggered` remain journaled.
+
+Retired Host Event variants are `project.nudge`, `project.status_changed`,
+`channel.delivery.completed`, `channel.delivery.failed`,
+`metric.feedback.routed`, `metric.alert_judged`, and flat `workflow`/`heartbeat`.
+Console prompt completion uses its local callback. Metric alert judgments come
+from accepted Task dispositions, with compatibility reads for historical
+`metric.alert_judged` rows. Telegram still produces durable `message.delivery_failed`
+diagnostics. Generic operator/App fact transport still carries caller-owned types; this does not restore retired Host semantics.
+
 `handler.failed` identifies its actual source (`cron`, `app-task-controller`,
 `app-inbox`, or `runtime:restart-recovery`). Known App, Task, input request, Conversation and claim revision
 are separate fields, alongside stage, error and disposition. `requestId` here
