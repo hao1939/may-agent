@@ -1918,7 +1918,9 @@ function acknowledgeIndexedRecoveryWait(
 }
 
 function triggerHasDirectMessage(event: Record<string, unknown> | undefined): boolean {
-  return event?.type === "message.created";
+  // Retained pre-cutover comments remain commitments until consumed. New
+  // comment ingress stays forbidden by EventInterface.
+  return event?.type === "message.created" || event?.type === "project.comment.created";
 }
 
 function taskTriggerLane(event: Record<string, unknown> | undefined): "human" | "normal" {
