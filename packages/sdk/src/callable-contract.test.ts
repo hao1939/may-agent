@@ -221,6 +221,114 @@ describe("shared callable input and result contract", () => {
     await expect(
       sharing.call("alex/sharing", { prompt: "Compare", data: cycle }, undefined, { signal }),
     ).rejects.toThrow("JSON-compatible");
+    for (const nonJson of [undefined, 1n, () => "nope", new Date(0)]) {
+      await expect(
+        sharing.call("alex/sharing", { prompt: "Compare", data: { nonJson } }, undefined, { signal }),
+      ).rejects.toThrow("JSON-compatible");
+    }
+  });
+
+  test("bounds compact shared DAG validation before expanded serialization", async () => {
+    let getterReads = 0;
+    let shared: unknown = { value: "leaf" };
+    for (let depth = 0; depth < 19; depth++) {
+      const child = shared;
+      shared = Object.defineProperties({}, {
+        left: { enumerable: true, get: () => { getterReads++; return child; } },
+        right: { enumerable: true, get: () => { getterReads++; return child; } },
+      });
+    }
+    const bounded = new CallableCatalog([definition("bounded", "alex")]);
+
+    await expect(
+      bounded.call("alex/bounded", { prompt: "Inspect", data: shared }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+    expect(getterReads).toBeLessThanOrEqual(38);
+  });
+
+  test("enforces deterministic JSON depth and traversal limits", async () => {
+    const bounded = new CallableCatalog([definition("bounded", "alex")]);
+    let deep: Record<string, unknown> = {};
+    for (let depth = 0; depth < 101; depth++) deep = { child: deep };
+    await expect(
+      bounded.call("alex/bounded", { prompt: "Inspect", data: deep }, undefined, { signal }),
+    ).rejects.toThrow("maximum JSON nesting depth of 100");
+
+    const sparse = new Array(100_001);
+    await expect(
+      bounded.call("alex/bounded", { prompt: "Inspect", data: sparse }, undefined, { signal }),
+    ).rejects.toThrow("maximum JSON traversal of 100000 values");
+  });
+
+  test.each(["output", "facts"] as const)("bounds expanded callable result %s", async (field) => {
+    let shared: unknown = { value: "leaf" };
+    for (let depth = 0; depth < 19; depth++) shared = { left: shared, right: shared };
+    const bounded = new CallableCatalog([
+      definition(`bounded-${field}`, "alex", {
+        async invoke() {
+          return {
+            executionId: `s_bounded_${field}`,
+            report: { status: "done", summary: "bounded", [field]: shared },
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call(`alex/bounded-${field}`, { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: `s_bounded_${field}`,
+      status: "error",
+      summary: expect.stringContaining("maximum expanded JSON size of 1048576 bytes"),
+      facts: { phase: field === "output" ? "output" : "result" },
+    });
+  });
+
+  test("bounds the combined expanded result and counts UTF-8 bytes", async () => {
+    const largeUtf8 = "é".repeat(300_000);
+    const bounded = new CallableCatalog([
+      definition("combined", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_combined",
+            report: { status: "done", summary: "bounded", output: largeUtf8, facts: largeUtf8 },
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call("alex/combined", { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: "s_combined",
+      status: "error",
+      summary: expect.stringContaining("Callable result exceeds maximum expanded JSON size of 1048576 bytes"),
+      facts: { phase: "result" },
+    });
+  });
+
+  test("rejects cycles in callable output and facts", async () => {
+    for (const field of ["output", "facts"] as const) {
+      const cycle: Record<string, unknown> = {};
+      cycle.self = cycle;
+      const cyclic = new CallableCatalog([
+        definition(`cyclic-${field}`, "alex", {
+          async invoke() {
+            return {
+              executionId: `s_cyclic_${field}`,
+              report: { status: "done", summary: "cyclic", [field]: cycle },
+            };
+          },
+        }),
+      ]);
+      await expect(
+        cyclic.call(`alex/cyclic-${field}`, { prompt: "Inspect" }, undefined, { signal }),
+      ).resolves.toMatchObject({
+        id: `s_cyclic_${field}`,
+        status: "error",
+        summary: expect.stringContaining("JSON-compatible"),
+      });
+    }
   });
 
   test("accepts useful partial reports without output when a schema was requested", async () => {
