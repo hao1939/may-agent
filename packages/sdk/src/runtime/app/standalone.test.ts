@@ -1034,17 +1034,25 @@ export async function execute(ctx) {
       models: { test: fakeModel() as any },
       runAgent: async (opts): Promise<DirectAgentRunResult> => {
         const prep = await prepareDirectAgentExecution(opts);
-        prep.prepared.runner.streamFn = () => {
+        prep.prepared.runner.streamFn = (_model, _context, options) => {
           const stream = createAssistantMessageEventStream();
-          turn += 1;
-          const content = turn === 1
-            ? [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
+          if (turn === 0) {
+            turn += 1;
+            stream.push({ type: "done", reason: "toolUse", message: usageReply({
+              stopReason: "toolUse",
+              content: [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
                 action: "call", agent: "global/work-stop-helper", input: { prompt: "work" },
-              } }]
-            : [{ type: "toolCall" as const, id: "finish_in_reserve", name: "finish", arguments: {
-                status: "done", summary: "finished in reserved interval",
-              } }];
-          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+              } }],
+            }) });
+            return stream;
+          }
+          const abort = () => stream.push({
+            type: "error",
+            reason: "aborted",
+            error: usageReply({ stopReason: "aborted", errorMessage: "Aborted" }),
+          });
+          if (options?.signal?.aborted) abort();
+          else options?.signal?.addEventListener("abort", abort, { once: true });
           return stream;
         };
         try {
