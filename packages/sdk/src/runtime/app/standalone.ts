@@ -140,7 +140,7 @@ export type DirectAgentRunOptions = {
   requireFinish?: boolean;
   /** Per-call capability restriction (for example "readonly"), applied after tool expansion. */
   toolPolicy?: ToolPolicy;
-  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  /** Retired. Supplying this option throws; use timeoutMs or deadlineAt. */
   operationAllowance?: number;
   toolDenials?: ToolDenial[];
   /** Bind services for explicitly declared capabilities that the portable SDK does not implement. */
@@ -674,7 +674,7 @@ export type DirectWorkflowRunOptions<TInput = unknown> = WorkflowExecutionEnviro
   outputSchema?: TSchema;
   /** Optional prompt-target skill selection when root target resolves to a prompt agent. */
   skill?: string;
-  /** Optional prompt-target finite tool-operation allowance when root target resolves to a prompt agent. */
+  /** Retired. Supplying this option throws; use timeoutMs or deadlineAt. */
   operationAllowance?: number;
   drainProcessGroup?: (pgid: number) => Promise<boolean>;
   timeoutMs?: number;
@@ -1010,6 +1010,7 @@ export async function runDirectWorkflow<TInput = unknown>(
     root?: boolean;
   },
 ): Promise<DirectWorkflowRunResult> {
+  validateOperationAllowance(options.operationAllowance);
   const nested = internal !== undefined && internal.root !== true;
   const depth = internal?.depth ?? 1;
   const maxDepth = options.maxDepth ?? DEFAULT_DIRECT_WORKFLOW_MAX_DEPTH;
@@ -1454,7 +1455,6 @@ export async function runDirectWorkflow<TInput = unknown>(
     callOpts: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
     stepControl: WorkflowKernelStepControl,
   ): Promise<WorkflowStepInvocationResult> => {
-    const operationAllowance = undefined;
     const promptDef = preparedCatalog.prompts?.get(agent)?.definition;
     if (!promptDef) {
       throw new Error(`Agent "${agent}" was not found under ${options.agentsRoot}`);
@@ -1502,7 +1502,6 @@ export async function runDirectWorkflow<TInput = unknown>(
       requireFinish: true,
       outputSchema: callOpts?.schema,
       toolPolicy: stepControl.tools,
-      operationAllowance,
       toolDenials: denials,
       capabilityProviders,
       onSessionStarted: options.onSessionStarted,

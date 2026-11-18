@@ -1034,17 +1034,25 @@ export async function execute(ctx) {
       models: { test: fakeModel() as any },
       runAgent: async (opts): Promise<DirectAgentRunResult> => {
         const prep = await prepareDirectAgentExecution(opts);
-        prep.prepared.runner.streamFn = () => {
+        prep.prepared.runner.streamFn = (_model, _context, options) => {
           const stream = createAssistantMessageEventStream();
-          turn += 1;
-          const content = turn === 1
-            ? [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
+          if (turn === 0) {
+            turn += 1;
+            stream.push({ type: "done", reason: "toolUse", message: usageReply({
+              stopReason: "toolUse",
+              content: [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
                 action: "call", agent: "global/work-stop-helper", input: { prompt: "work" },
-              } }]
-            : [{ type: "toolCall" as const, id: "finish_in_reserve", name: "finish", arguments: {
-                status: "done", summary: "finished in reserved interval",
-              } }];
-          stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
+              } }],
+            }) });
+            return stream;
+          }
+          const abort = () => stream.push({
+            type: "error",
+            reason: "aborted",
+            error: usageReply({ stopReason: "aborted", errorMessage: "Aborted" }),
+          });
+          if (options?.signal?.aborted) abort();
+          else options?.signal?.addEventListener("abort", abort, { once: true });
           return stream;
         };
         try {
@@ -1070,12 +1078,28 @@ export async function execute(ctx) {
       },
     });
 
-    expect(run.ok).toBeTrue();
-    expect(run.result).toMatchObject({ type: "done", summary: "finished in reserved interval" });
-    expect(run.report.durationMs).toBeLessThan(300);
+    expect(run.ok).toBeFalse();
+    expect(run.result).toBeUndefined();
+    expect(turn).toBe(1);
+    expect(run.report.durationMs).toBeLessThan(600);
     expect(run.report.steps).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "workflow", target: "global/work-stop-helper", status: "error", cleanupConfirmed: true }),
     ]));
+  });
+
+  test("rejects the retired root operationAllowance instead of accepting and ignoring it", async () => {
+    const env = setupDirectLayout();
+    await expect(runDirectWorkflow({
+      target: "global/owner",
+      input: { prompt: "retired option" },
+      operationAllowance: 2,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    })).rejects.toThrow("operationAllowance is retired");
   });
 
   test("keeps model-visible helper cleanup uncertainty after the parent handles the tool result and finishes", async () => {
