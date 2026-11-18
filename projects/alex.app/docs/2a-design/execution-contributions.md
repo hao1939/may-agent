@@ -13,7 +13,8 @@ implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
 at `e489ff32b6`; post-merge [#594](https://github.com/hao1939/may-agent/pull/594)
 is merged as `c91083a1fd`, including shared-JSON resource bounds. Remaining
 preparation/capture edge repairs and bounded diagnostic handling are implemented
-in [#596](https://github.com/hao1939/may-agent/pull/596) at `c630b215e8`.
+in [#596](https://github.com/hao1939/may-agent/pull/596) at `c630b215e8`, with
+remaining non-Task prompt-helper snapshot propagation under repair.
 The App migration is integrated with canonical source, preserving newer fixes and
 publications. One separate App concurrency-fixture mismatch remains. Evidence is in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).

@@ -2439,45 +2439,45 @@ concurrency fixture and user-owned Task/ingress/event work remain separate.
 
 ## Four-case follow-up after #594 — 18 November
 
-PR #596 starts at mergedc910, retaining #595 and the prior status-coercion patch
-through transparent cherry-pick216c. Source Task
+PR #596 starts at merged c910, retaining #595 and the prior status-coercion patch
+through transparent cherry-pick 216c. Source Task
 `alex/input/appdep_6b53ccfc13f4edfe52e3d69b` retains its durable branch and checkout.
 Its four-case scope covers canonical App-local preparation, captured non-Task
 workflow definitions, early raw string/key admission and bounded schema-error
-fallbacks. Earlier resource source15/15 remains partial after adversarial review;
+fallbacks. Earlier resource source 15/15 remains partial after adversarial review;
 its original pass receipt is preserved with a superseding disposition.
 
 Final owner-authorized round raises this same contribution from six consumed to
-total7, saved by May's creator revision at generation3. It fixes the remaining
+total 7, saved by May's creator revision at generation 3. It fixes the remaining
 summary-before-trim path in c630; native development and Bob review genuinely
-complete at7/7. No historical allowance is reset or refunded.
+complete at 7/7. No historical allowance is reset or refunded.
 
 Exact candidate `c630b215e8c401118e3838f0976bd359d12850a3` passes Root's unchanged
-fallback-publication, non-Task snapshot and43 JSON-boundary probes. The separate
-resource probe observes zero oversized character/trim accesses for a134M-character
+fallback-publication, non-Task snapshot and 43 JSON-boundary probes. The separate
+resource probe observes zero oversized character/trim accesses for a 134M-character
 rope. Actual repeated-schema validation returns status:error with its real child
-ID and a222,903-byte envelope; an oversized summary returns a194-byte envelope.
+ID and a 222,903-byte envelope; an oversized summary returns a 194-byte envelope.
 The owning suite passes 47 tests/193 expectations across three files. `check:ci`
 passes. Independent exact-head Codex source review finds no blocking issue and
-also passes138 focused/adjacent tests. These source results do not replace CI.
+also passes 138 focused/adjacent tests. These source results do not replace CI.
 
-Hosted run44228766996 passes Quality and Container on exactc630. All four JUnit
-shards total3,561 tests, zero failures and two skips. The supported deployment
+Hosted run 44228766996 passes Quality and Container on exact c630. All four JUnit
+shards total 3,561 tests, zero failures and two skips. The supported deployment
 receipt `callable-followup-local-20261118-c630b215e8` reports succeeded/healthy,
 loadedArtifactSha equal to artifactSha and duplicateDeploy:false. Root independently
-matches binarySHA256fdc3f24138f2a6ade44ca687db8378b409661a70375ff963b3f9c0face884bd2,
-SDKc630, unchanged App78fd and ready:true. Deployment is not repeated after restart.
+matches binary SHA256 `fdc3f24138f2a6ade44ca687db8378b409661a70375ff963b3f9c0face884bd2`,
+SDK c630, unchanged App 78fd and ready:true. Deployment is not repeated after restart.
 Evidence uses the existing post-merge directory's `c630-*` receipts and logs;
 final automated review and provider delivery remain separate.
 
-The final frozen App78/c630 scan covers all 81 files and 1,152 tests: 1,151 pass,
+The final frozen App 78/c630 scan covers all 81 files and 1,152 tests: 1,151 pass,
 one fails solely at the unchanged concurrency3/6 assertion. App types/current-input
-checks pass. Design integrity/examples pass; the long frozen path creates two
-model-surface budget errors, so actual working-path validation is recorded
-separately rather than relaxing the budgets.
+checks pass. Design integrity/examples and the actual working-path model-surface
+check pass. The long frozen path creates two model-surface budget errors; these
+remain recorded without relaxing the budgets.
 
 Actual May parent `s_1794971883179_ceac0a1d-190f-461a-a17e-39e7a00b1bee` at
-generation7 lists 32 sorted canonical targets. It awaits workflow
+generation 7 lists 32 sorted canonical targets. It awaits workflow
 `wr_1794971937181_6ezj`, corrected prompt helper
 `s_1794971942198_a498dcec-7dec-4525-8efc-10a4229a27e3` and output-free blocker
 `s_1794971953892_476ab483-9937-4e18-bc7e-8058566ca6ba`. Root's independent extractor
@@ -2487,3 +2487,33 @@ rejected deliberately-invalid nonce, then accepted unified596c630. The blocker
 omits output despite the requested schema. Caller Task/generation/attempt and
 the active workflow source match. `c630-live-proof-independent.json` preserves
 these actual calls; none repeats source work or domain publication.
+
+May's saved Conversation route publishes event6744931 with communication key
+`pr596-ready-c630b215e8`; Root independently confirms Telegram50755 and zero
+duplicate notices in `596-review-notification-provider-proof.json`. Its delivery
+is real, but its automated-review claim is premature: at03:23:11 the exact-head
+Copilot check remains in progress and no review has been submitted. The
+observer's reviewsComplete:true describes complete collection, not review-job
+completion. Root retains the original converged result and records
+`c630-readiness-disposition-update.json`, then returns the correction through
+addressed input6744945 to the same May generation7. Source/CI/local proofs remain
+passed; source7/7 is not reopened and the notice must not be sent again. Actual
+completed automatic review and the corrected final disposition remain pending.
+
+At03:24:24 actual Copilot review5950358488 reports thread
+`PRRT_kwDORdj3Ac64w6ia`, comment4608817258. The review check completes successfully
+but its source judgment requests a repair: non-Task workflow definitions stop at
+the prompt-helper session boundary. Root independently reproduces real
+workflow -> prompt -> helper agents -> workflow execution at c630, observing v2
+after replacement and a missing-target error after removal. Earlier tests stub
+the prompt dispatcher and cannot establish this behavior. The exact c630 source
+pass is now partial; original receipts are retained unchanged.
+
+`pr596-helper-owner-authorization.json` explicitly authorizes two further narrow
+rounds on the same source Task, preserving seven consumed and raising cumulative
+limit to9. SHA256 is22ecd501b924d49f58d6487edecad02214410e1315d585fed1529b96ceacb44a.
+Ordinary parent revision6744975 saves May generation8; the creator must save a
+complete corrected source input before execution. Repair covers both canonical
+direct-prompt and workflow-prompt routes, keeping captured definitions independent
+of Task context and testing actual helper tools. No source/history reset,
+replacement Task, public option, observer redesign or duplicate notice is allowed.

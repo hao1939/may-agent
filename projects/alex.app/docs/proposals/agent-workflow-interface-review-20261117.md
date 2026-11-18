@@ -9,10 +9,12 @@ branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b6
 The human merged the PR; broader release is separate. May's six post-merge repairs
 passed review and the local trial at `5dd896025a`. The human subsequently merges
 [#594](https://github.com/hao1939/may-agent/pull/594) as `c91083a1fd`, including
-resource-bounding repairs through `1d24a0cfe4`. The four-case follow-up is implemented
-at `c630b215e8` in [#596](https://github.com/hao1939/may-agent/pull/596).
-Exact-head checks, supported local activation and the native call trial pass;
-automated review and the final review-link notice remain delivery checks below.
+resource-bounding repairs through `1d24a0cfe4`. The four-case follow-up reaches
+`c630b215e8` in [#596](https://github.com/hao1939/may-agent/pull/596).
+Exact-head checks, supported local activation and the native call trial pass,
+but completed automated review finds a deeper non-Task helper snapshot gap.
+Repair and new-head verification continue below. The single review-link notice
+is delivered; its premature readiness claim is retained with a correction.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
 preserves the reviewed unified migration, Scout current-input repair, newer audit
@@ -65,9 +67,9 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Consume final automated review and send one new GitHub review-link notice for
-   [#596](https://github.com/hao1939/may-agent/pull/596). Source review, exact-head
-   CI and paired local verification pass. Preserve merged source and prior evidence.
+1. Repair mixed prompt-helper snapshot inheritance in
+   [#596](https://github.com/hao1939/may-agent/pull/596), then verify the new head
+   and reconcile the existing notice. Preserve merged source and prior evidence.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -253,18 +255,18 @@ merge remain human-owned. Task/ingress/event implementation remains outside this
 Checkpoint `9801495b9e` repairs the raw-string/key and schema-diagnostic cases.
 Independent review then catches a related oversized-summary path reaching
 `.trim()` before admission. Root explicitly authorizes one final narrow round:
-May revises the same source Task to generation3, cumulative7 with all six earlier
+May revises the same source Task to generation 3, cumulative 7 with all six earlier
 reservations retained. The final candidate `c630b215e8` fixes that path and reuses
 the bounded summary in both fallback branches. The native source contribution
-converges at7/7 with actual workflow and Bob review evidence; it is not renewed.
-The older15/15 contribution remains honestly partial.
+converges at 7/7 with actual workflow and Bob review evidence; it is not renewed.
+The older 15/15 contribution remains honestly partial.
 
 Root's unchanged production probes pass for canonical fallback publication and
-non-Task snapshot retention. The resource probe rejects a134-million-character
+non-Task snapshot retention. The resource probe rejects a 134-million-character
 rope before character access or summary trimming and returns a bounded real-child
-error for repeated oversized schema paths. All43 JSON boundary cases pass;
+error for repeated oversized schema paths. All 43 JSON boundary cases pass;
 47 owning tests pass across three files. Host/SDK types, boundary and lint pass.
-Exact-head Quality and Container pass in run44228766996:3,561 tests, zero failures,
+Exact-head Quality and Container pass in run 44228766996: 3,561 tests, zero failures,
 two skips. Independent exact-head source review finds no blocking issue.
 
 Supported local activation `callable-followup-local-20261118-c630b215e8` succeeds.
@@ -272,13 +274,41 @@ Independent binary hash/SDK/readiness read-back matches c630, preserving active
 App `78fdcb0d9f` and its evaluator repair. The complete paired App scan runs all
 81 files: 1,151 pass and one unchanged concurrency3/6 fixture fails.
 
-Native May generation7 discovers the same 32 sorted canonical targets and awaits
+Native May generation 7 discovers the same 32 sorted canonical targets and awaits
 one workflow and two prompt helpers. Independent extraction checks the exact
 installed SDK, real child IDs, two finish attempts correcting the schema within
 one child, output-free blocked settlement and caller Task/generation/attempt
-lineage. No source changes or protected publication repeat. Automatic review
-and one new GitHub review-link notice remain delivery work; earlier50742 does
+lineage. No source changes or protected publication repeat. Earlier 50742 does
 not certify this candidate.
+
+May's existing Conversation route delivers one new notice as Telegram50755,
+event6744931, with zero duplicates. Independent audit finds a premature claim:
+May treats the provider's `reviewsComplete:true` and empty review list as a
+completed automated review while the actual Copilot check is still running.
+That field establishes review-list completeness, not reviewer completion; the
+observer design explicitly requires separate reads of CI and unresolved threads.
+Root retains the original result, records a superseding disposition, and returns
+the correction to the same May Task. Consume actual completed review evidence
+before final readiness; preserve the notice without resending or renewing source
+allowance. This is an App judgment gap, not new Host result-acceptance authority.
+
+Completed Copilot review5950358488 at03:24:24 adds a real source finding:
+workflow `agentDefinitions` do not reach a non-Task prompt helper's session.
+Root's production probe executes the helper's actual canonical `agents` tool:
+after replacement it runs v2, and after removal it reports a missing target.
+The earlier regression stubbed `callAgentDefinition` and did not cross this
+boundary. Its passing source review is retained as historical, not final proof.
+
+The same captured definitions must flow through every mixed child call,
+independently of Task context. This includes direct prompt-helper calls as well
+as workflow-to-prompt calls. Keep the existing Task snapshot authoritative;
+do not fabricate a Task for standalone execution or add a public call option.
+Root explicitly commissions two bounded repair rounds after reproducing this
+new finding. May Goal generation8 must save the same source Task's cumulative9,
+retaining seven consumed; this is a reviewed owner revision, not worker renewal.
+The old7/7 result, all c630 proofs and notice50755 remain retained. New owning
+tests must execute real helper tools through replacement and removal. Observer
+implementation remains with the separate owner; no notice is resent.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
