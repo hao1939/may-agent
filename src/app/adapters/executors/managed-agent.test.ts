@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { Type } from "typebox";
+import { defineApp } from "@may-agent/sdk/app";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTaskAgentRunner } from "./managed-agent.js";
@@ -15,6 +18,11 @@ import type { CallAgentOptions } from "../../../lib/manager.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { createWriteTool } from "@may-agent/sdk/runtime";
 import { createFinishTool } from "@may-agent/sdk/runtime";
+import { SubagentManager } from "../../../lib/manager.js";
+import { EventBus } from "../../core/events/bus.js";
+import { AppRegistry } from "../../core/apps/registry.js";
+import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../../core/tasks/app-task-runtime.js";
+import { closeDb } from "../../../lib/db/connection.js";
 
 test.each(["done", "blocked"])("a valid %s report retains useful work and the Task's continuation decision", async (status) => {
   const root = mkdtempSync(join(tmpdir(), "may-task-report-"));
@@ -128,6 +136,183 @@ test("Task roots resolve and dispatch same-name agents only inside the owning Ap
     expect(runner.role("alpha/worker")).toEqual({ agent: "alpha/worker", instructions: "You are Alpha worker." });
     expect(runner.role("beta/worker")).toEqual({ agent: "beta/worker", instructions: "You are Beta worker." });
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("App installation prepares and publishes a local Task agent despite a loaded global namesake", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-managed-app-fallback-"));
+  const projectsRoot = join(root, "projects");
+  const appDir = join(projectsRoot, "alpha.app");
+  const agentDir = join(appDir, "agents", "worker-profile");
+  const persistDir = join(root, "state");
+  const bus = new EventBus();
+  let manager: SubagentManager | undefined;
+  try {
+    mkdirSync(agentDir, { recursive: true });
+    mkdirSync(join(appDir, "tasks"), { recursive: true });
+    writeFileSync(join(agentDir, "agent.json"), JSON.stringify({ name: "worker" }));
+    writeFileSync(join(appDir, "tasks", "seed.json"), JSON.stringify({
+      root_task_id: "root",
+      groups: { root: { id: "root", parent_id: null } },
+    }));
+
+    manager = new SubagentManager({
+      persistDir,
+      bus,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: (model) => {
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: usageReply({
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              stopReason: "toolUse",
+              content: [{
+                type: "toolCall",
+                id: "finish-alpha",
+                name: "finish",
+                arguments: {
+                  status: "done",
+                  summary: "Alpha Task complete",
+                  output: {
+                    state: "converged",
+                    summary: "Alpha Task complete",
+                    facts: ["agent:alpha"],
+                    result: { owner: model.id },
+                  },
+                },
+              }],
+            }),
+          });
+          return stream;
+        },
+      }),
+    });
+    const common = {
+      name: "worker", description: "Worker", domain: "fixture", tools: [], projectRoot: root,
+    };
+    manager.register({
+      ...common, model: { ...fakeModel(), id: "global" }, systemPrompt: "Global instructions",
+    });
+    const registrations: Array<{ agent: string; appDir: string; agentDir?: string }> = [];
+    const runner = createTaskAgentRunner({
+      manager,
+      registerLocalAgent: async (agent, selectedAppDir, resolvedDir) => {
+        registrations.push({ agent, appDir: selectedAppDir, agentDir: resolvedDir });
+        if (agent !== "worker" || selectedAppDir !== appDir || resolvedDir !== agentDir) return false;
+        manager!.register({
+          ...common,
+          appLocal: true,
+          projectId: "alpha",
+          agentDir,
+          model: { ...fakeModel(), id: "alpha" },
+          systemPrompt: "Alpha instructions",
+        });
+        return true;
+      },
+    });
+    const app = defineApp({
+      id: "alpha",
+      agent: "worker",
+      version: 1,
+      inputSchema: Type.Object({ kind: Type.String(), data: Type.Unknown() }),
+      task: () => ({
+        kind: "desired",
+        intent: {
+          id: "work",
+          parentId: "root",
+          agent: "worker",
+          outcome: "Prove local fallback",
+          acceptance: ["Alpha executes"],
+        },
+      }),
+      tasks: { maxConcurrent: 1 },
+    });
+    const registry = new AppRegistry(async () => [{ appDir, definition: app }]);
+    await registry.reload();
+    await installAppTaskRuntimes({
+      projectRoot: root,
+      projectsRoot,
+      agentsRoot: join(root, "agents"),
+      sharedRoot: root,
+      persistDir,
+      bus,
+      appRegistrySnapshot: registry.snapshot(),
+      agents: runner,
+    }, { deferRecovery: true });
+
+    const published = runner.snapshot();
+    expect(registrations).toEqual([{ agent: "worker", appDir, agentDir }]);
+    expect(published.available("alpha/worker")).toBe(true);
+    expect(published.available("global/worker")).toBe(true);
+    expect(published.role("alpha/worker")).toEqual({
+      agent: "alpha/worker",
+      instructions: "Alpha instructions",
+    });
+    let dispatched: SubagentDefinition | undefined;
+    manager.callAgentDefinition = async (definition, _task, options) => {
+      dispatched = definition;
+      expect(options?.taskContext?.agentDefinitions.get("alpha/worker")).toBe(definition);
+      return {
+        status: "done",
+        sessionId: "s_alpha",
+        messages: [],
+        duration: "0s",
+        outputDir: root,
+        finishResult: { status: "done", summary: "Alpha Task complete" },
+        structuredResult: {
+          state: "converged",
+          summary: "Alpha Task complete",
+          facts: ["agent:alpha"],
+          result: { owner: definition.model.id },
+        },
+      };
+    };
+
+    const execution = await runTaskAgent({
+      opts: { agents: published },
+      descriptor: { id: "alpha", appDir, projectDir: root, app: {} },
+      claim: { agent: "worker" },
+      attempt: {
+        maxAttemptMs: 1_000,
+        read: { tasks: {} },
+        task: { id: "work", generation: 1, outcome: "Run Alpha", acceptance: [] },
+        role: published.role("alpha/worker"),
+        events: { items: [] },
+        waits: {},
+      },
+      executionPaths: { appDir, projectDir: root, workspaceDir: root },
+      childContext: { live: [], completed: [] },
+      taskSnapshot: { live: [], truncated: false },
+      taskEvents: {} as never,
+      acceptedLiveEventIds: () => [],
+      sessionStarted: () => {},
+    } as any);
+    expect(execution.handlerResult).toMatchObject({
+      state: "converged",
+      summary: "Alpha Task complete",
+      result: { owner: "alpha" },
+    });
+    expect(dispatched).toBe(manager.getAgentDefinition("alpha/worker"));
+    expect(dispatched).toMatchObject({
+      name: "worker",
+      projectId: "alpha",
+      agentDir,
+      systemPrompt: "Alpha instructions",
+    });
+  } finally {
+    await closeInstalledAppTaskRuntimes(bus);
+    if (manager) {
+      const sessions = manager.status();
+      for (const session of sessions) manager.cancel(session.sessionId);
+      await Promise.allSettled(sessions.map((session) => manager!.waitFor(session.sessionId)));
+    }
+    closeDb(persistDir);
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("Task roots reject a foreign same-name agent when the owning App profile is missing", async () => {

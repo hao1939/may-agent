@@ -132,6 +132,123 @@ export async function execute(ctx) {
     });
   });
 
+  it("keeps listed non-Task workflows on captured owners and child definitions after registry mutation", async () => {
+    let releaseParent: (() => void) | undefined;
+    const parentStarted = Promise.withResolvers<void>();
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: (model) => {
+          const stream = createAssistantMessageEventStream();
+          releaseParent = () => stream.push({
+            type: "done",
+            reason: "stop",
+            message: {
+              role: "assistant",
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              content: [{ type: "text", text: "Caller complete" }],
+              stopReason: "stop",
+              timestamp: Date.now(),
+              usage: {
+                input: 1, output: 1, totalTokens: 2, cacheRead: 0, cacheWrite: 0,
+                cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+              },
+            },
+          });
+          parentStarted.resolve();
+          return stream;
+        },
+      }),
+    });
+    const profile = (name: string, version: string) => {
+      const agentDir = join(persistDir, version, name);
+      mkdirSync(join(agentDir, "workflows"), { recursive: true });
+      return {
+        name,
+        description: `${name} ${version}`,
+        domain: "fixture",
+        tools: [],
+        agentDir,
+        model: mockModel(),
+      };
+    };
+    const caller = profile("caller", "v1");
+    const owner = profile("owner", "v1");
+    const peerV1 = profile("reviewer", "v1");
+    const peerV2 = profile("reviewer", "v2");
+    writeFileSync(join(owner.agentDir, "workflows", "route.ts"), `
+export const name = "route";
+export const description = "Route with captured peer";
+export async function execute(ctx) {
+  const child = await ctx.call("global/echo", { prompt: "Use captured original peer" });
+  const prompt = await ctx.call("global/reviewer", { prompt: "Use captured prompt definition" });
+  return ctx.done("Route complete", { child, prompt });
+}
+`);
+    for (const [definition, version] of [[peerV1, "v1"], [peerV2, "v2"]] as const) {
+      writeFileSync(join(definition.agentDir, "workflows", "echo.ts"), `
+export const name = "echo";
+export const description = "${version} implementation";
+export async function execute(ctx) { return ctx.done("${version}", { version: "${version}" }); }
+`);
+    }
+    for (const definition of [caller, owner, peerV1]) manager.register(definition);
+    const parentSessionId = manager.run("global/caller", "Hold non-Task parent");
+    await parentStarted.promise;
+    const invoked: SubagentDefinition[] = [];
+    manager.callAgentDefinition = async (definition) => {
+      invoked.push(definition);
+      return {
+        sessionId: `s_prompt_${invoked.length}`,
+        status: "done",
+        lastAssistantText: "done",
+        messages: [],
+        duration: "0s",
+        outputDir: "",
+        finishResult: {
+          status: "done",
+          summary: definition.description,
+          output: { version: definition.description.endsWith("v1") ? "v1" : "v2" },
+        },
+      };
+    };
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => parentSessionId });
+    const listed = await callTool(tool, { action: "list" });
+    for (const name of ["global/owner", "global/reviewer", "global/route", "global/echo"]) {
+      expect(listed.map((entry: any) => entry.name)).toContain(name);
+    }
+
+    manager.register(peerV2);
+    const afterReplacement = await callTool(tool, {
+      action: "call",
+      agent: "global/route",
+      input: { prompt: "Captured peer survives replacement" },
+    });
+    manager.unregister("owner");
+    const afterOwnerRemoval = await callTool(tool, {
+      action: "call",
+      agent: "global/route",
+      input: { prompt: "Captured owner survives removal" },
+    });
+
+    for (const result of [afterReplacement, afterOwnerRemoval]) {
+      expect(result).toMatchObject({
+        status: "done",
+        summary: "Route complete",
+        output: {
+          child: { status: "done", summary: "v1", output: { version: "v1" } },
+          prompt: { status: "done", summary: "reviewer v1", output: { version: "v1" } },
+        },
+      });
+    }
+    expect(invoked).toEqual([peerV1, peerV1]);
+    releaseParent();
+    await manager.waitFor(parentSessionId);
+  });
+
   it("preserves a real schema-backed prompt blocker's child ID and blocked status", async () => {
     manager = new SubagentManager({
       persistDir,
