@@ -10,12 +10,12 @@ evidence retention and Task-backed waiting are implemented. Cancellation require
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
 implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
-at `e489ff32b6`; its Quality and Container checks pass. The earlier compatible
-Host/SDK `4a9e0f9300` and App `90cc281b65` passed the recorded live interface checks.
-The reviewed App migration is integrated with canonical source, preserving newer
-fixes and publications. The exact candidate passes 1,149 configured App tests,
-type/design checks and independent review. Source identities and the remaining
-post-merge fixes and verification handoff are recorded in the
+at `e489ff32b6`. Six post-merge edge fixes are ready for review in
+[#594](https://github.com/hao1939/may-agent/pull/594) at `5dd896025a`, with passing
+Quality/Container checks and independent local verification against App `51141b0b76`.
+The App migration is integrated with canonical source, preserving newer fixes and
+publications. The latest full App scan retains one separate concurrency-fixture
+mismatch. Exact revisions, historical passing totals and current evidence are in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
 Check paired source identities before relying on installation coverage.
 [Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.

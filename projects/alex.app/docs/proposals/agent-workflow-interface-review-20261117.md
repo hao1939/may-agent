@@ -6,8 +6,9 @@ an authorized local trial. Host `d7fe07f80e` is merged as `e489ff32b6` in
 [#589](https://github.com/hao1939/may-agent/pull/589); Quality and Container pass
 on that exact head (3,494 tests, zero failures, two skips). The paired App review
 branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b65`.
-The human merged the PR; broader release is separate. Five late review findings
-and a separately demonstrated schema-forwarding gap are assigned to May below.
+The human merged the PR; broader release is separate. May's six post-merge repairs
+are ready for review in [#594](https://github.com/hao1939/may-agent/pull/594) at
+`5dd896025a`, with both checks passing and the paired local trial verified below.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
 preserves the reviewed unified migration, Scout current-input repair, newer audit
@@ -60,9 +61,9 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Complete verification and CI for the six post-merge fixes in draft
-   [#594](https://github.com/hao1939/may-agent/pull/594), then trial the compatible
-   local candidate. Retain the successful source/receipt identities.
+1. Human GitHub review and merge of the verified six-fix follow-up
+   [#594](https://github.com/hao1939/may-agent/pull/594). Local activation and
+   compatible interface verification are complete; broader release is separate.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -116,7 +117,7 @@ Exact findings and reproduction are retained as
 `postmerge-review-589-findings.json` and
 `postmerge-shared-reference-reproduction.json` in the trial directory. Root also
 reproduces actual wrong-code dispatch, inherited write-tool exposure and managed
-blocker failure. The first checkpoint is [draft #594](https://github.com/hao1939/may-agent/pull/594).
+blocker failure. The follow-up is [#594](https://github.com/hao1939/may-agent/pull/594).
 Its subsequent commits repair the captured-owner/global-caller edge and remove
 the foreign bare-Task fallback, with actual tool/Task/result coverage.
 The sixth schema-forwarding finding is independently proved by identical
@@ -132,8 +133,8 @@ repairs all 13 hosted Task namespace fixtures, retains main's #592, and passes
 Root's eight-file owning suite: 118 tests, zero failures, 995 expectations. All
 six behavior probes, including caller/tool variants, pass on that exact head;
 Root's source review finds no remaining defect in this slice. Host/SDK type,
-boundary and lint checks pass. Container passes; current-head Quality remains
-in progress. The native workflow retains its honest partial delivery at 12/12:
+boundary and lint checks pass. Quality and Container pass on the current head:
+3,529 tests, zero failures, two skips. The native workflow retains its honest partial delivery at 12/12:
 its full local CI was interrupted and its internal final review did not finish.
 Root's actual review is separate evidence, not a relabeled native workflow pass.
 
@@ -142,10 +143,24 @@ two fail. The concurrency3/6 assertion remains a user-owned baseline mismatch.
 The other failure is an App fixture expecting bare `alex` instead of executed
 `alex/alex`; it passes against merged e489, so it is a new fixture migration.
 May's generation4 assignment commissions one narrow App contribution with a
-three-round bound for that assertion. This separate repository deliverable does
-not renew the Host's 12/12 or the completed original App's 64/64. It preserves
-the actual diagnosis-routing assertions and leaves concurrency policy untouched.
-Final paired verification, local activation and review-link delivery remain open.
+three-round bound for that assertion. Its genuine workflow/review completes in
+one round at `4e05b0b6cd`, integrated into canonical `51141b0b76`. The new full
+81-file scan records 1,148 pass and only the separate concurrency-fixture failure.
+App type/current-input checks and the installed model-surface check pass. This
+repository deliverable does not renew the Host's 12/12 or the original App's64/64.
+Both finite source Tasks converge with actual source/review/check evidence.
+
+Supported deployment activates exact Host/SDK `5dd896025a`, then supported App
+reload6743850/6743851 activates `51141b0b76`; readiness is healthy. Fresh May
+parent `s_1794967357888_89e0ad60-e4d3-452b-b229-d082ce4e794b` discovers32 canonical
+targets and awaits workflow `wr_1794967373546_9djl`, corrected prompt helper
+`s_1794967373872_997133d8-ae27-450f-a742-dcf7c1f173f6`, and output-free blocker
+`s_1794967380546_8677daa9-f871-489f-aa38-a2e7de303b07`. Independent extraction
+confirms exactly two finish attempts within the corrected child, the common
+results and exact caller Task/generation/attempt lineage. No domain work repeats.
+All five late #589 threads have actual fix/check replies and are resolved.
+PR #594 is ready for human review; May's existing Conversation route owns the
+single GitHub review-link delivery. Approval stays on GitHub.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 
