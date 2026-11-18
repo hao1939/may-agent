@@ -8,10 +8,16 @@ on that exact head (3,494 tests, zero failures, two skips). The paired App revie
 branch contains `5a386d2952`; its later scoped fixture candidate is `f85c46df6c`.
 No GitHub merge or broad release is included.
 
-The active local pair is Host/SDK `4a9e0f9300` and App `241ce00ec6`. It preserves
+The verified local trial used Host/SDK `4a9e0f9300` and App `241ce00ec6`. It preserves
 required #590 and legitimate canonical changes, includes the Scout current-input
 repair, and retains the original periodic-event tests. The standard deployment
-receipt and independent binary/SDK/App read-back are healthy and match this pair.
+receipt and independent binary/SDK/App read-back were healthy and matched this pair.
+After that trial, another Task reloaded canonical App definitions, most recently
+`74bb785bec`. That source does not contain the reviewed unified App migrations.
+Host/SDK remains `4a9e0f9300`; the current installation therefore needs App source
+reconciliation and a fresh paired read-back before completion can be claimed.
+The retained generation-13 App Task is handling that integration, preserving the
+newer audit and planner fixes, knowledge publications, and all consumed allowance.
 
 The implemented contract provides one canonical catalog, mandatory
 `{prompt,data?}`, common validated results and awaited calls. Invocation
@@ -25,7 +31,7 @@ The local trial found and repaired two gaps that source inventory alone missed:
 Task workers filtered profiles by caller App, and Scout's body ignored the current
 assignment. New actual-worker tests invoke cross-App workflow and prompt targets;
 36 owning/control tests and static checks pass independently. Live May and Scout
-Task roots now expose the same sorted32-target catalog. A cross-App prompt helper
+Task roots in that trial expose the same sorted32-target catalog. A cross-App prompt helper
 returns its real ID while retaining the caller's Task. The corrected original
 Scout Task publishes prepared arXiv2611.19700v1 through the protected workflow at
 `3cdda11f96`, with exact draft/hash, INDEX and digest read-back. Reentry inspects
@@ -40,16 +46,18 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Review and integrate the paired source with its compatible SDK, then decide
+1. Reconcile the reviewed App source with canonical changes, push it for parallel
+   review, and verify/activate the exact compatible local pair. Review and integrate
+   the paired source with its compatible SDK, then decide
    broader rollout separately. Retain the successful local source/receipt identities.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
-   active App's full configured scan reports1,141 passes and six existing periodic-
+   source-only trial App's full configured scan reports1,141 passes and six existing periodic-
    event failures; every failure also reproduces on preceding canonical source.
    The metric recurrence failure reveals a real missing producer: this Host pair
    has metric subscribers while canonical ae40 removed May's schedules. Appf85's
    fixture migration passes all1,147 tests, but absence assertions do not prove a
    replacement cadence runs. Its generation13 acceptance explicitly leaves that
-   functionality to the separate owner. The active trial retains the original
+   functionality to the separate owner. The source-only trial retains the original
    failing tests and does not activate those fixture rewrites or claim cadence repair.
 
 Exact revisions, source reviews, failed trials, scoped check totals and provider

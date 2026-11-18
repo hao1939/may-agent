@@ -2257,3 +2257,23 @@ Exact evidence under the trial directory: `d7fe-hosted-failures.json`,
 `projects/may-agent/.state/deploy-receipts/unified-interface-local-trial-20261117-4a9e-241c.json`.
 Source review/integration and the separate periodic functionality remain explicit
 handoffs; no GitHub merge or broad release is part of this result.
+
+## Post-trial canonical reload — 18 November
+
+The completion audit found that other Tasks subsequently reloaded canonical App
+source through `4f15b5eea0` and `74bb785bec`. The installed Host remains the verified
+`4a9e0f9300` binary, but the selected App definitions lack the reviewed unified
+consumer migrations. The successful `241c` trial remains historical evidence;
+it does not establish current installation compatibility.
+
+Root returned the concrete integration gap to the same generation-13 App Task
+in event `6742786`. The task must preserve the reviewed unified source and Scout
+current-input repair while incorporating the newer audit idempotency, single
+reader registration, canonical planner target, documentation and publications.
+Read-only merge preparation found two conflicts, both in the planner source/test;
+other changes merge automatically. Preserve canonical names and structured
+arguments together. Allowance remains `61/64`, with no reset or renewal.
+
+Host PR #589 remains open and ready for review at `d7fe07f80e`, both hosted checks
+pass, and all 11 inline threads are resolved. App reconciliation, publication and
+fresh local pair verification remain required before this goal is complete.

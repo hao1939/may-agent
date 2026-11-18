@@ -9,16 +9,15 @@
 evidence retention and Task-backed waiting are implemented. Cancellation requires
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
-accepted requirements with partial source implementation in draft Host #589.
-Focused checks cover the model adapter, standalone child calls, inherited
-Task context and real prompt partial-result admission. The paired App source
-contribution is reviewed; full Host CI, final pair verification and local
-activation remain open in the
+implemented in review-ready Host [#589](https://github.com/hao1939/may-agent/pull/589)
+at `d7fe07f80e`; its Quality and Container checks pass. The compatible local
+Host/SDK `4a9e0f9300` and App `241ce00ec6` passed the connected interface trial.
+A subsequent reload selected canonical App source without those migrations.
+Reconciliation of the reviewed App branch with newer canonical fixes, followed
+by verification of the currently installed pair, remains open in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
-The examples under Invocation and Result admission describe the accepted target,
-not the installed API. The sections below state specific coverage limits. Full standalone/Host agent
-parity is not established; [Shared Agent Runtime](agent-runtime.md) owns its
-accepted semantics and current convergence gaps.
+Check paired source identities before relying on installation coverage.
+[Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
 
 An agent or workflow can ask another agent or workflow for a bounded contribution.
 The caller retains its assignment and judges the contribution. Task-level
