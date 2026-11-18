@@ -180,13 +180,15 @@ export class WorkflowExecutionFailure extends Error {
   }
 }
 
-// Both uncaptured Host entries admit the caller's bound before importing.
+// Both uncaptured Host entries fence preparation before importing. The fallback
+// is a provisional discovery watchdog, not a ceiling on a later declaration.
 // Native imports cannot be preempted: stop waiting, fence later imports, and
 // report outstanding import cleanup rather than inventing a started run.
 async function prepareRootWorkflow(
   opts: Pick<WorkflowToolOptions, "workflowDir" | "signal" | "executionTimeoutMs" | "executionTimeoutLimitMs">,
   name: string,
 ): Promise<{ catalog: WorkflowCatalog; allowance: WorkflowExecutionAllowance }> {
+  const startedAt = Date.now();
   opts.signal?.throwIfAborted();
   const timeoutMs = executionTimeout(opts.executionTimeoutMs);
   const ceiling = opts.executionTimeoutLimitMs === undefined
@@ -194,7 +196,7 @@ async function prepareRootWorkflow(
     : executionTimeout(opts.executionTimeoutLimitMs);
   const boundedTimeout = Math.min(timeoutMs, ceiling);
   const deadlineReason = `Workflow "${name}" timed out after ${boundedTimeout}ms`;
-  const allowance = createWorkflowAllowance({ timeoutMs: boundedTimeout, deadlineReason });
+  const allowance = createWorkflowAllowance({ timeoutMs: boundedTimeout, deadlineReason, now: startedAt });
   const controller = new AbortController();
   const onAbort = () => controller.abort(opts.signal?.reason ?? new Error(`Workflow "${name}" cancelled`));
   opts.signal?.addEventListener("abort", onAbort, { once: true });
@@ -221,8 +223,21 @@ async function prepareRootWorkflow(
         pendingImports -= 1;
       },
     });
+    // A stopped discovery must never be revived by a longer declaration.
     check();
-    return { catalog, allowance };
+    const { workflow } = findWorkflow(catalog, name);
+    const declaredTimeout = executionTimeout(workflow?.executionTimeoutMs ?? opts.executionTimeoutMs);
+    const admittedTimeout = opts.executionTimeoutLimitMs === undefined
+      ? declaredTimeout
+      : Math.min(declaredTimeout, ceiling);
+    return {
+      catalog,
+      allowance: createWorkflowAllowance({
+        timeoutMs: admittedTimeout,
+        now: startedAt,
+        deadlineReason: `Workflow "${name}" timed out after ${admittedTimeout}ms`,
+      }),
+    };
   } catch (error) {
     if (pendingImports > 0) {
       throw new WorkflowUnconfirmedCleanupError(name, [`root workflow import (${name})`], error);

@@ -331,7 +331,7 @@ export async function execute(ctx) {
       });
     }
 
-    it(`${adapter}: preparation consumes the caller bound${adapter === "standalone" ? "" : " even with a longer declaration"}`, async () => {
+    it(`${adapter}: preparation consumes the ${adapter === "standalone" ? "fallback" : "hard ceiling even with a longer declaration"}`, async () => {
       const { root, opts } = setup();
       const body = join(root, "body-start");
       const finished = join(root, "body-finished");
@@ -356,6 +356,7 @@ export async function execute(ctx) {
 `,
       );
       opts.executionTimeoutMs = 280;
+      if (adapter !== "standalone") opts.executionTimeoutLimitMs = 280;
       const stopped = await invoke(opts);
       expect(stopped.type).toBe("error");
       expect(stopped.error).toContain("timed out");
@@ -411,6 +412,52 @@ export async function execute(ctx) {
         const stopped = await invoke(opts);
         expect(stopped.type).toBe("error");
         expect(stopped.error).toContain("timed out after 1000ms");
+      });
+    }
+
+    it(`${adapter}: a longer declaration overrides the environment fallback`, async () => {
+      const { opts } = setup();
+      writeFileSync(join(opts.workflowDir!, "root.ts"), `
+export const name = "slow-import";
+export const description = "Declaration overrides fallback";
+export const executionTimeoutMs = 1000;
+export async function execute(ctx) {
+  await new Promise(resolve => setTimeout(resolve, 180));
+  return ctx.done("declared allowance");
+}
+`);
+      opts.executionTimeoutMs = 100;
+      expect((await invoke(opts)).type).toBe("done");
+    });
+
+    for (const exhaustedDuringImport of [false, true]) {
+      it(`${adapter}: declaration is anchored at preparation start (exhausted during import=${exhaustedDuringImport})`, async () => {
+        const { root, opts } = setup();
+        const body = join(root, "body-start");
+        const finished = join(root, "body-finished");
+        writeFileSync(join(opts.workflowDir!, "root.ts"), `
+import { writeFileSync } from "node:fs";
+await new Promise(resolve => setTimeout(resolve, ${exhaustedDuringImport ? 1150 : 700}));
+export const name = "slow-import";
+export const description = "Declaration includes preparation";
+export const executionTimeoutMs = 1000;
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(body)}, "body");
+  await new Promise((resolve, reject) => {
+    const onAbort = () => { clearTimeout(timer); reject(ctx.signal.reason); };
+    const timer = setTimeout(() => { ctx.signal.removeEventListener("abort", onAbort); resolve(); }, 700);
+    ctx.signal.addEventListener("abort", onAbort, { once: true });
+  });
+  writeFileSync(${JSON.stringify(finished)}, "finished");
+  return ctx.done("must not renew");
+}
+`);
+        opts.executionTimeoutMs = 3000;
+        const result = await invoke(opts);
+        expect(result.type).toBe("error");
+        expect(result.error).toContain("timed out");
+        expect(existsSync(body)).toBe(!exhaustedDuringImport);
+        expect(existsSync(finished)).toBe(false);
       });
     }
 

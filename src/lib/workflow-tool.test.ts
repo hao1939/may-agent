@@ -615,7 +615,7 @@ export async function execute(ctx) {
     expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
   });
 
-  it.each([false, true])("only lets a declaration extend a timeout fallback on the captured route (captured=%s)", async (captured) => {
+  it.each([false, true])("lets a declaration extend a timeout fallback (captured=%s)", async (captured) => {
     const root = workflowRoot("workflow-timeout-override-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
@@ -626,7 +626,7 @@ export const name = "slow";
 export const description = "Workflow timeout override test";
 export const executionTimeoutMs = 1000;
 export async function execute(ctx) {
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await new Promise((resolve) => setTimeout(resolve, 180));
   return ctx.done("completed within its own budget");
 }
 `,
@@ -636,16 +636,12 @@ export async function execute(ctx) {
       manager: {} as any,
       workflowDir,
       agentName: "owner",
-      executionTimeoutMs: 10,
+      executionTimeoutMs: 100,
     });
 
-    // A caller-supplied catalog keeps its existing declaration/fallback
-    // semantics. An uncaptured root has already admitted a nonrenewable bound.
     const catalog = captured ? await buildWorkflowCatalog(workflowDir) : undefined;
     const result = await runner.run("slow", "test", catalog);
-    expect(result).toMatchObject(captured ? { type: "done" } : {
-      type: "error", error: 'Workflow "slow" timed out after 10ms',
-    });
+    expect(result).toMatchObject({ type: "done" });
   });
 
   it.each(["caller", "deadline"] as const)(
