@@ -36,11 +36,12 @@ function makeOpts(root: string, agentsRoot: string, projectsRoot: string): Agent
       "test-model": { model: "test-model", apiKey: "test-key" } as any,
     },
     manager: {
-      register: mock((def: any) => registered.set(def.name, def)),
+      register: mock((def: any) => registered.set(def.appLocal && def.projectId ? `${def.projectId}/${def.name}` : `global/${def.name}`, def)),
       unregister: mock((name: string) => registered.delete(name)),
-      hasAgent: (name: string) => registered.has(name),
+      hasAgent: (name: string) => registered.has(name) || registered.has(`global/${name}`),
       agentNames: () => [...registered.keys()],
-      getAgentDefinition: (name: string) => registered.get(name),
+      getAgentDefinition: (name: string) => registered.get(name) ?? registered.get(`global/${name}`),
+      createAgentsTool: () => ({ name: "agents", label: "Agents", description: "fixture", parameters: {}, execute: async () => ({ content: [] }) }),
     } as any,
     bus: {
       emit: mock(() => {}),
@@ -232,7 +233,7 @@ describe("agent registry loader", () => {
     }
   });
 
-  it("App-local agent silently overrides a global stub with the same name", async () => {
+  it("preserves equal declared names in global and App namespaces", async () => {
     const root = tempRoot();
     try {
       // Create global agents/evaluator with agent.json
@@ -253,8 +254,8 @@ describe("agent registry loader", () => {
       const runtime = makeRuntime();
       const result = await loadAgents(opts, runtime);
 
-      // Should register evaluator once (from App-local App, overriding global)
-      expect(result.added).toContain("evaluator");
+      // Both exact canonical definitions coexist.
+      expect(result.added).toEqual(["global/evaluator", "evaluation/evaluator"]);
 
       // Should NOT emit agent.config_invalid event
       const emitCalls = (opts.bus.emit as any).mock.calls;
@@ -265,7 +266,7 @@ describe("agent registry loader", () => {
     }
   });
 
-  it("still errors on duplicate names within the same scope", async () => {
+  it("preserves equal declared names across different Apps", async () => {
     const root = tempRoot();
     try {
       // Create two App-local agents with the same name
@@ -290,14 +291,14 @@ describe("agent registry loader", () => {
 
       const opts = makeOpts(root, globalAgentsRoot, projectsRoot);
       const runtime = makeRuntime();
-      await expect(loadAgents(opts, runtime)).rejects.toThrow("Duplicate agent name");
-      expect(opts.manager.agentNames()).toEqual([]);
+      // Registration follows filesystem discovery; both exact namespaces must survive.
+      expect((await loadAgents(opts, runtime)).added.sort()).toEqual(["alpha/shared-agent", "beta/shared-agent"]);
+      expect(opts.manager.agentNames().sort()).toEqual(["alpha/shared-agent", "beta/shared-agent"]);
 
-      // Should emit agent.config_invalid since both are project-scoped (same scope)
+      // Different App namespaces are not a collision.
       const emitCalls = (opts.bus.emit as any).mock.calls;
       const configInvalidEvents = emitCalls.filter((c: any) => c[0]?.type === "agent.config_invalid");
-      expect(configInvalidEvents).toHaveLength(1);
-      expect(configInvalidEvents[0][0].data.errors[0].message).toContain("Duplicate agent name");
+      expect(configInvalidEvents).toHaveLength(0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -318,7 +319,7 @@ describe("agent registry loader", () => {
       const runtime = makeRuntime();
       const result = await loadAgents(opts, runtime);
 
-      expect(result.added).toContain("solo");
+      expect(result.added).toContain("global/solo");
 
       const emitCalls = (opts.bus.emit as any).mock.calls;
       const configInvalidEvents = emitCalls.filter((c: any) => c[0]?.type === "agent.config_invalid");
@@ -343,8 +344,8 @@ describe("agent registry loader", () => {
 
       const result = await loadAgents(opts, makeRuntime());
 
-      expect(result.added).toEqual(["owner"]);
-      expect(opts.manager.agentNames()).toEqual(["owner"]);
+      expect(result.added).toEqual(["global/owner"]);
+      expect(opts.manager.agentNames()).toEqual(["global/owner"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -366,11 +367,11 @@ describe("agent registry loader", () => {
       const runtime = makeRuntime();
       const generation = await prepareAgents(opts, runtime);
       const publication = publishAgentGeneration(opts, runtime, generation);
-      expect(opts.manager.agentNames()).toEqual(["solo"]);
+      expect(opts.manager.agentNames()).toEqual(["global/solo"]);
 
       publication.rollback();
-      expect(opts.manager.agentNames()).toEqual(["old"]);
-      expect(opts.manager.getAgentDefinition("old")).toBe(previous);
+      expect(opts.manager.agentNames()).toEqual(["global/old"]);
+      expect(opts.manager.getAgentDefinition("global/old")).toBe(previous);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

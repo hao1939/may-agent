@@ -1,7 +1,7 @@
 import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
 import { getDb } from "./db/connection.js";
 import { afterEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { SubagentManager } from "./manager.js";
@@ -119,9 +119,7 @@ describe("shared execution scope", () => {
       executionRoot: roots.at(-1),
       taskBinding: { appId: "sample", taskId: "work", generation: 2, attemptId: "attempt-2" },
     });
-    const fork = manager.createAgentsTool({ getCallerSessionId: () => parentId });
-    const reply = await fork.execute("fork-child", { action: "fork", agent: "worker", task: "child" });
-    childId = JSON.parse((reply.content[0] as { text: string }).text).sessionId;
+    childId = manager.run("worker", "child", { parentSessionId: parentId, kind: "call" });
     await childStarted.promise;
     const parent = manager.activeSessions.get(parentId)!;
     const child = manager.activeSessions.get(childId)!;
@@ -222,10 +220,12 @@ describe("shared execution scope", () => {
       expect(manager.hasActiveSession(parent)).toBe(false);
       expect(manager.hasActiveSession(child)).toBe(false);
       const result = manager.result(parent);
+      const artifact = readFileSync(join(directory, "result.json"), "utf8");
+      expect(JSON.parse(artifact)).toMatchObject({ sessionId: parent, status: "interrupted" });
       const completions = [...ended];
       expect(recovery.interrupt(parent, "Recover after cleanup", "work", binding)).toBe(true);
       expect(manager.result(parent)).toEqual(result);
-      expect(existsSync(join(directory, "result.json"))).toBe(false);
+      expect(readFileSync(join(directory, "result.json"), "utf8")).toBe(artifact);
       expect(ended).toEqual(completions);
     } finally {
       releaseCleanup.resolve();
@@ -235,21 +235,35 @@ describe("shared execution scope", () => {
   });
 
   it("generic call forwards tool cancellation and rejects a missing caller", async () => {
-    const manager = fixture(async (_text, stopped) => {
+    const childStarted = Promise.withResolvers<void>();
+    const childStopped = Promise.withResolvers<void>();
+    const manager = fixture(async (text, stopped) => {
+      if (text === "child") childStarted.resolve();
       await stopped;
+      if (text === "child") childStopped.resolve();
       return "partial";
     });
     const parentId = manager.run("worker", "parent", { timeoutMs: 5_000 });
     const tool = manager.createAgentsTool({ getCallerSessionId: () => parentId });
     const controller = new AbortController();
-    const result = tool.execute("helper", { action: "call", agent: "worker", task: "child" }, controller.signal);
-    controller.abort();
-    expect(JSON.stringify(await result)).toContain("abort");
+    const result = tool.execute(
+      "helper",
+      { action: "call", agent: "global/worker", input: { prompt: "child" } },
+      controller.signal,
+    );
+    await childStarted.promise;
+    const childId = manager.status().find((session) => session.parentSessionId === parentId)?.sessionId;
+    expect(childId).toBeString();
+    controller.abort(new Error("abort child call"));
+    expect(JSON.stringify(await result)).toContain("abort child call");
+    await childStopped.promise;
+    expect(manager.result(childId!)?.status).toBe("interrupted");
     manager.cancel(parentId);
     await manager.waitFor(parentId);
-    expect(JSON.stringify(await tool.execute("late", { action: "call", agent: "worker", task: "child" }))).toContain(
-      "live caller",
-    );
+    expect(JSON.stringify(await tool.execute(
+      "late",
+      { action: "call", agent: "global/worker", input: { prompt: "child" } },
+    ))).toContain("live caller");
     expect(() => manager.runAgent("worker", "orphan")).toThrow("live caller");
   });
 

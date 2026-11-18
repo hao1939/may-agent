@@ -1,4 +1,4 @@
-/** DbWriter persists canonical envelopes, payloads, and session projections. */
+/** DbWriter persists canonical event envelopes and payloads. */
 
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -259,7 +259,7 @@ describe("canonical event persistence", () => {
     expect(data).not.toHaveProperty("source");
   });
 
-  it("updates session rows from canonical session.end envelopes", () => {
+  it("journals canonical session.end envelopes without changing the owned session", () => {
     const writer = new DbWriter(TEST_DIR);
     const db = getDb(TEST_DIR);
 
@@ -285,8 +285,7 @@ describe("canonical event persistence", () => {
     const session = db.prepare(
       "SELECT status, outcome, error, opCount, endedAt FROM sessions WHERE sessionId = ?",
     ).get("s_done") as { status: string; outcome: string; error: string; opCount: number; endedAt: number };
-    expect(session).toMatchObject({ status: "error", outcome: "error", error: "boom", opCount: 2 });
-    expect(session.endedAt).toBeGreaterThan(0);
+    expect(session).toMatchObject({ status: "running", outcome: null, error: null, opCount: 0, endedAt: null });
 
     const eventRow = db.prepare(
       "SELECT source, owner, data FROM events WHERE event_type = ?",

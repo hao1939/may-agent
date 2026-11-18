@@ -864,6 +864,7 @@ export class AppTaskResourceStore {
            ${ids ? `AND linked.task_id IN (${ids.map(() => "?").join(", ")})` : ""}
            AND c.state <> 'true'
            AND (task.phase IN ('waiting', 'running', 'pending')
+             OR (task.phase = 'converged' AND json_extract(c.condition_json, '$.spec.mode') = 'continuous')
              OR (task.phase = 'attention' AND json_extract(task.resource_json, '$.status.retryExhausted') IS NOT NULL))
          ORDER BY c.condition_id, linked.task_id`,
       )
@@ -908,6 +909,7 @@ export class AppTaskResourceStore {
            }
            AND c.state <> 'true'
            AND (task.phase IN ('waiting', 'running', 'pending')
+             OR (task.phase = 'converged' AND json_extract(c.condition_json, '$.spec.mode') = 'continuous')
              OR (task.phase = 'attention' AND json_extract(task.resource_json, '$.status.retryExhausted') IS NOT NULL))
          ORDER BY c.app_id, c.condition_id, linked.task_id`,
       )

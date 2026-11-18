@@ -1,5 +1,3 @@
-import { AppTaskResourceStore } from "../app/core/state/app-task-resource-store.js";
-import { getDb } from "./db/connection.js";
 /**
  * Tests for bounded agent cooperation and execution evidence.
  */
@@ -9,610 +7,348 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "./manager.js";
-import { appendSessionMessage } from "./persistence.js";
 import { closeDb } from "./db/connection.js";
-import { upsertSession } from "./db/sessions.js";
-import { prepareAgentExecution } from "./agent-execution.js";
-import { createReadTool } from "@may-agent/sdk/runtime";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
+import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
-
-function echoTool(): AgentTool {
-  return {
-    name: "echo",
-    label: "Echo",
-    description: "Echoes input",
-    parameters: {},
-    execute: async (_id, params) => ({
-      content: [{ type: "text" as const, text: JSON.stringify(params) }],
-      details: JSON.stringify(params),
-    }),
-  };
-}
 
 function mockModel() {
   return getBuiltinModel("anthropic", "claude-opus-4-6");
 }
 
 async function callTool(tool: AgentTool, params: Record<string, unknown>): Promise<any> {
-  const result = (await tool.execute("tc_1", params)) as AgentToolResult<string>;
+  const result = (await tool.execute("tc_1", params, new AbortController().signal)) as AgentToolResult<string>;
   const text = (result.content as any[])[0]?.text ?? "";
   return JSON.parse(text);
 }
 
 // ── Tests ───────────────────────────────────────────────────────────────
 
-describe("agents tool", () => {
+describe("canonical agents list/call", () => {
   let persistDir: string;
   let manager: SubagentManager;
-
   beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "agents-tool-"));
+    persistDir = mkdtempSync(join(tmpdir(), "canonical-agents-tool-"));
     mkdirSync(join(persistDir, "sessions"), { recursive: true });
     mkdirSync(join(persistDir, "memory"), { recursive: true });
     manager = new SubagentManager({ persistDir });
   });
-
   afterEach(() => {
     closeDb(persistDir);
-    try {
-      rmSync(persistDir, { recursive: true, force: true });
-    } catch {}
+    rmSync(persistDir, { recursive: true, force: true });
   });
 
-  it("exposes persisted execution as sessions without a request lifecycle action", async () => {
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "sessions", filter: "all" });
-    expect(result).toMatchObject({ filter: "all", count: 0, sessions: [] });
-    expect(JSON.stringify(tool.parameters)).toContain("sessions");
-    expect(JSON.stringify(tool.parameters)).not.toContain('"requests"');
-  });
-
-  it("advertises only implemented delegation options", () => {
-    const { properties } = manager.createAgentsTool().parameters;
-    for (const name of ["force", "priority", "message", "skill"]) {
-      expect(properties).not.toHaveProperty(name);
-    }
-    expect(properties).toHaveProperty("task");
-    expect(properties).toHaveProperty("context_files");
-  });
-
-  it("returns exact session IDs that can be used to read their evidence", async () => {
-    const ids = ["s_123456789012345_first", "s_123456789012345_second"];
-    for (const [i, id] of ids.entries()) {
-      const meta = { agent: "worker", task: id, status: "done" as const, startedAt: i + 1 };
-      manager.registryStore.saveSession(id, meta);
-      upsertSession(persistDir, { sessionId: id, ...meta });
-      appendSessionMessage(persistDir, id, { role: "user", content: `Evidence for ${id}`, timestamp: i + 1 });
-    }
-    const tool = manager.createAgentsTool();
-    const result = await callTool(tool, { action: "sessions", filter: "all" });
-    expect(result.sessions.map((s: { id: string }) => s.id)).toEqual([...ids].reverse());
-    for (const { id } of result.sessions) {
-      expect(await callTool(tool, { action: "peek", sessionId: id })).toEqual([
-        { role: "user", content: `Evidence for ${id}` },
-      ]);
-    }
-    expect((await callTool(tool, { action: "sessions", filter: "all", limit: 1 })).sessions).toHaveLength(1);
-  });
-
-  it.each(["call", "fork"] as const)("%s shares a readable guide without selecting the receiver's skill", async (action) => {
-    const projectRoot = join(persistDir, "project");
-    mkdirSync(projectRoot);
-    const skillPath = join(persistDir, "SKILL.md");
-    writeFileSync(skillPath, "Use the current design to review the patch.");
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [createReadTool(projectRoot)],
-    });
-
-    let dispatchedTask = "";
-    let dispatchedOptions: Parameters<SubagentManager["runAgent"]>[2];
-    manager.runAgent = (_agent, task, options) => {
-      dispatchedTask = task;
-      dispatchedOptions = options;
-      return "child";
+  it("exposes only list/call and invokes the exact listed canonical agent with one envelope", async () => {
+    manager.register({ name: "reviewer", description: "Global reviewer", domain: "review", model: mockModel(), tools: [] });
+    manager.register({ name: "reviewer", description: "Alpha reviewer", domain: "review", model: mockModel(), tools: [], appLocal: true, projectId: "alpha" });
+    manager.register({ name: "reviewer", description: "Beta reviewer", domain: "review", model: mockModel(), tools: [], appLocal: true, projectId: "beta" });
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("global/reviewer") } as any);
+    let dispatched: unknown;
+    manager.callAgentDefinition = async (definition, task, options) => {
+      dispatched = { name: definition.name, task, requireFinish: options?.requireFinish };
+      return { sessionId: "s_child", status: "done", lastAssistantText: "reviewed", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: "reviewed", output: { verdict: "accept" }, facts: ["finish committed"] } };
     };
-    manager.callAgent = async (_agent, task, options) => {
-      dispatchedTask = task;
-      dispatchedOptions = options;
-      return { sessionId: "child", status: "done", lastAssistantText: "ok", messages: [], duration: "0s", outputDir: "" };
-    };
-
-    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("coder") } as any);
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
-    const result = await callTool(tool, {
-      action,
-      agent: "coder",
-      task: "Review the patch",
-      context_files: [skillPath],
-      // A stale caller's removed option cannot select a receiving-catalog skill.
-      skill: "caller-only-guide",
-    });
-
-    expect(result.status).toBe(action === "call" ? "done" : "started");
-    expect(result.sessionId).toBe("child");
-    expect(dispatchedOptions).not.toHaveProperty("skill");
-    expect(dispatchedOptions).toMatchObject({ parentSessionId: "caller" });
-    expect(dispatchedTask).toContain("Review the patch");
-    expect(dispatchedTask).toContain("Context files the receiving agent must read before acting:");
-    expect(dispatchedTask).toContain(skillPath);
-
-    const prepared = prepareAgentExecution({
-      ...dispatchedOptions,
-      definition: manager.getAgentDefinition("coder")!, projectRoot, sessionId: "child", task: dispatchedTask,
-    });
-    expect(prepared.activatedSkill).toBeUndefined();
-    expect(prepared.prompt).toContain(skillPath);
-    expect(prepared.prompt).not.toContain("Use the current design to review the patch.");
-    const read = prepared.tools.find((tool) => tool.name === "read")!;
-    const contents = await read.execute("read-guide", { path: skillPath });
-    expect(contents.content).toContainEqual({ type: "text", text: "Use the current design to review the patch." });
-  });
-
-  it.each(["done", "blocked"] as const)("returns truthful handoff status for a completed session reporting %s", async (finishStatus) => {
-    manager.register({ name: "worker", description: "Worker", domain: "fixture", model: mockModel(), tools: [] });
-    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("worker") } as any);
-    const facts = finishStatus === "blocked" ? { review: "pending" } : undefined;
-    manager.callAgent = async () => ({
-      sessionId: "child", status: "done", duration: "1s", outputDir: "evidence/child", messages: [],
-      lastAssistantText: "Session ended",
-      finishResult: {
-        status: finishStatus,
-        summary: "Review needs the missing specification",
-        output: { report: "review.md" },
-        ...(facts ? { facts } : {}),
-      },
-    });
-    const returned = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
-      action: "call", agent: "worker", task: "Review the candidate",
-    });
-    expect(returned).toMatchObject({
-      id: "child", kind: "agent", status: finishStatus,
-      summary: "Review needs the missing specification", output: { report: "review.md" },
-      outputDir: "evidence/child",
-    });
-    if (finishStatus === "blocked") expect(returned.facts).toEqual(facts);
-    else expect(returned).not.toHaveProperty("facts");
-    expect(returned.messages).toBeUndefined();
-    expect(returned.finishResult).toBeUndefined();
-    expect(returned.structuredResult).toBeUndefined();
-    expect(returned.lastAssistantText).toBeUndefined();
-    manager.activeSessions.clear();
-  });
-
-  it("reports a depth rejection without claiming that a child execution exists", async () => {
-    manager = new SubagentManager({ persistDir, maxCallDepth: 0 });
-    manager.register({ name: "worker", description: "Worker", domain: "fixture", model: mockModel(), tools: [] });
-    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("worker") } as any);
-    const result = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
-      action: "call", agent: "worker", task: "Review the candidate",
-    });
-    expect(result.error).toContain("Call depth limit exceeded");
-    expect(result.id).toBeUndefined();
-    manager.activeSessions.clear();
-  });
-
-  it("rejects Task sessions but allows the caller's live bounded helper", async () => {
-    const binding = { appId: "sample", taskId: "work", generation: 1, attemptId: "attempt" };
-    const cancelled: string[] = [];
-    (manager as any).cancel = (id: string) => cancelled.push(id);
-    for (const [id, parentSessionId, taskBinding] of [
-      ["parent", undefined, binding], ["helper", "parent", binding],
-      ["other", "parent", { ...binding, attemptId: "old" }],
-    ] as const) {
-      manager.registryStore.saveSession(id, { agent: "worker", task: "fixture", status: "running", startedAt: 1, taskBinding });
-      manager.activeSessions.set(id, { sessionId: id, parentSessionId, taskBinding } as never);
-    }
-    const tool = manager.createAgentsTool({ getCallerSessionId: () => "parent" });
-    expect((await callTool(tool, { action: "cancel", sessionId: "parent" })).error).toContain("belongs to Task");
-    expect((await callTool(tool, { action: "cancel", sessionId: "other" })).error).toContain("belongs to Task");
-    expect((await callTool(tool, { action: "cancel", sessionId: "helper" })).accepted).toBe(true);
-    expect(cancelled).toEqual(["helper"]);
-    expect(manager.registryStore.getSession("helper")?.status).toBe("running");
-    manager.activeSessions.clear();
-  });
-
-  it("does not kill or rewrite unreachable detached execution", async () => {
-    manager.registryStore.saveSession("detached", { agent: "worker", task: "fixture", status: "running",
-      startedAt: 1, detached: true, pid: process.pid });
-    const result = await callTool(manager.createAgentsTool(), { action: "cancel", sessionId: "detached" });
-    expect(result.error).toContain("No reachable execution owner");
-    expect(result.accepted).toBeUndefined();
-    expect(manager.registryStore.getSession("detached")?.status).toBe("running");
-  });
-
-  it("follow-up reaches only a live owned helper in the same Task attempt", async () => {
-    const binding = { appId: "sample", taskId: "work", generation: 2, attemptId: "current" };
-    AppTaskResourceStore.fromDb(getDb(persistDir), binding.appId).bootstrapSnapshot(
-      {
-        project: binding.appId,
-        resources: {
-          [binding.taskId]: {
-            metadata: { id: binding.taskId, generation: binding.generation, resourceVersion: 1 },
-            spec: { parentId: "root", outcome: "Work", acceptance: ["Done"] },
-            status: { phase: "running", observedGeneration: 1, currentAttemptId: binding.attemptId },
-          },
-        },
-        attempts: {
-          [binding.attemptId]: {
-            metadata: { id: binding.attemptId, resourceVersion: 1 },
-            taskId: binding.taskId,
-            taskGeneration: binding.generation,
-            specHash: "hash",
-            owner: "worker",
-            handler: "agent:worker",
-            runtimeId: "rt",
-            state: "running",
-            reason: "event",
-            startedAt: new Date().toISOString(),
-          },
-        },
-      },
-      "fixture",
-    );
-    const received: Array<{ id: string; message: unknown }> = [];
-    for (const [id, parentSessionId, taskBinding, status] of [
-      ["parent", undefined, binding, "running"],
-      ["helper", "parent", binding, "running"],
-      ["nested", "helper", binding, "running"],
-      ["foreign", undefined, binding, "running"],
-      ["old", "parent", { ...binding, attemptId: "old" }, "running"],
-      ["unbound", "parent", undefined, "running"],
-      ["stopped", "parent", binding, "interrupted"],
-      ["standalone", undefined, undefined, "running"],
-      ["standalone-child", "standalone", undefined, "running"],
-    ] as const) {
-      manager.activeSessions.set(id, {
-        sessionId: id, parentSessionId, taskBinding, status,
-        agent: { steer: (message: unknown) => received.push({ id, message }) },
-      } as never);
-    }
-    const tool = manager.createAgentsTool({ getCallerSessionId: () => "parent" });
-    try {
-      for (const sessionId of ["helper", "nested"]) {
-        expect(await callTool(tool, { action: "follow-up", sessionId, content: "$unknown Keep the existing patch" }))
-          .toMatchObject({ accepted: true, sessionId, delivery: expect.stringContaining("queued") });
-      }
-      for (const sessionId of ["parent", "foreign", "old", "unbound", "stopped", "finished"]) {
-        const rejected = await callTool(tool, { action: "follow-up", sessionId, content: "Correction" });
-        expect(rejected.error).toBeString();
-        expect(rejected.accepted).toBeUndefined();
-      }
-      expect((await callTool(tool, { action: "follow-up", sessionId: "helper", content: " " })).error).toContain("requires");
-      expect((await callTool(manager.createAgentsTool(), { action: "follow-up", sessionId: "helper", content: "Correction" })).error).toContain("owned");
-      const standalone = manager.createAgentsTool({ getCallerSessionId: () => "standalone" });
-      expect((await callTool(standalone, { action: "follow-up", sessionId: "standalone-child", content: "Continue" })).accepted).toBe(true);
-      expect(received).toEqual([
-        ...["helper", "nested"].map((id) => ({ id, message: { role: "user", content: [{ type: "text", text: "$unknown Keep the existing patch" }] } })),
-        { id: "standalone-child", message: { role: "user", content: [{ type: "text", text: "Continue" }] } },
-      ]);
-    } finally { manager.activeSessions.clear(); }
-  });
-
-  it("call rejects when target matches a tool in caller's toolset", async () => {
-    // Register a "bob" agent that has a tool named "checkpoint"
-    const checkpointTool: AgentTool = {
-      name: "checkpoint",
-      label: "Checkpoint",
-      description: "Save checkpoint",
-      parameters: {},
-      execute: async () => ({
-        content: [{ type: "text" as const, text: "ok" }],
-        details: "ok",
-      }),
-    };
-
-    manager.register({
-      name: "bob",
-      description: "Architect",
-      domain: "design",
-      model: mockModel(),
-      tools: [echoTool(), checkpointTool],
-    });
-
-    const tool = manager.createAgentsTool({
-      getCallerAgentName: () => "bob",
-    });
-
-    // "checkpoint" is NOT a registered agent, but IS a tool in bob's toolset
-    const result = await callTool(tool, { action: "call", agent: "checkpoint", task: "save state" });
-    expect(result.error).toContain("is a tool, not an agent");
-    expect(result.error).toContain("checkpoint({ ... })");
-  });
-
-  it("call allows when target is an agent, not a tool", async () => {
-    // Register "coder" agent — its name is not a tool in bob's toolset
-    manager.register({
-      name: "coder",
-      description: "Writes code",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    manager.register({
-      name: "bob",
-      description: "Architect",
-      domain: "design",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-
-    const tool = manager.createAgentsTool({
-      getCallerAgentName: () => "bob",
-    });
-
-    // "coder" is a registered agent and not in bob's tools — should pass the guard
-    // (will fail at actual callAgent since no LLM, but that's past the guard)
-    const result = await callTool(tool, { action: "call", agent: "coder", task: "test" });
-    // Should NOT contain "is a tool" — it should get past the guard
-    expect(result.error ?? "").not.toContain("is a tool");
-  });
-
-  it("blocks an external caller from selecting an app-local agent", async () => {
-    manager.register({
-      name: "may",
-      description: "Deputy",
-      domain: "conversation",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-    manager.register({
-      name: "tech-lead",
-      description: "Platform owner",
-      domain: "platform",
-      model: mockModel(),
-      tools: [echoTool()],
-      appLocal: true,
-      projectId: "may-agent",
-    });
-    const tool = manager.createAgentsTool({ getCallerAgentName: () => "may" });
-    const result = await callTool(tool, { action: "call", agent: "tech-lead", task: "Patch the runtime" });
-    expect(result.error).toContain('app-local to "may-agent"');
-    expect(result.error).toContain("Send the desired outcome and proof to that app");
-  });
-
-  it.each(["call", "fork"])("keeps %s caller ownership after a same-name registry replacement", async (action) => {
-    const target = {
-      name: "dev",
-      description: "Fixture",
-      domain: "test",
-      model: mockModel(),
-      tools: [],
-      appLocal: true,
-      projectId: "sample",
-    };
-    manager.register(target);
-    let dispatched = 0;
-    manager.callAgent = async () => {
-      dispatched++;
-      return {
-        sessionId: "child",
-        status: "done",
-        messages: [],
-        duration: "0s",
-        outputDir: "",
-        lastAssistantText: "ok",
-      };
-    };
-    manager.runAgent = () => {
-      dispatched++;
-      return "child";
-    };
-    for (const originallyLocal of [false, true]) {
-      const original = {
-        ...target,
-        name: "caller",
-        appLocal: originallyLocal,
-        projectId: originallyLocal ? "sample" : undefined,
-      };
-      // Input to the tool boundary is an existing session's accepted definition.
-      // Capturing that definition in a real session is covered by the chat regression.
-      manager.activeSessions.set("caller-session", { definition: original } as any);
-      manager.register({ ...original, appLocal: !originallyLocal, projectId: originallyLocal ? undefined : "sample" });
-      const tool = manager.createAgentsTool({
-        getCallerAgentName: () => "caller",
-        getCallerSessionId: () => "caller-session",
-      });
-      const before = dispatched;
-      const result = await callTool(tool, { action, agent: "dev", task: "fixture" });
-      expect(dispatched - before).toBe(originallyLocal ? 1 : 0);
-      if (!originallyLocal) expect(result.error).toContain("app-local");
-      else expect(result.error).toBeUndefined();
-    }
-    manager.activeSessions.delete("caller-session");
-  });
-
-  it("allows same-app cooperation and a linked May break-glass override", async () => {
-    manager.register({
-      name: "owner",
-      description: "Owner",
-      domain: "platform",
-      model: mockModel(),
-      tools: [echoTool()],
-      appLocal: true,
-      projectId: "may-agent",
-    });
-    manager.register({
-      name: "dev",
-      description: "Developer",
-      domain: "coding",
-      model: mockModel(),
-      tools: [echoTool()],
-      appLocal: true,
-      projectId: "may-agent",
-    });
-    manager.register({
-      name: "may",
-      description: "Deputy",
-      domain: "conversation",
-      model: mockModel(),
-      tools: [echoTool()],
-    });
-    (manager as any).callAgent = async () => ({ sessionId: "child", status: "done", lastAssistantText: "ok", messages: [], duration: "0s", outputDir: "" });
-
-    manager.activeSessions.set("owner-session", { definition: manager.getAgentDefinition("owner") } as any);
-    const sameApp = manager.createAgentsTool({ getCallerAgentName: () => "owner", getCallerSessionId: () => "owner-session" });
-    expect((await callTool(sameApp, { action: "call", agent: "dev", task: "Implement it" })).status).toBe("done");
-
-    (manager as any)._sessions.set("s_break_glass", { requestId: "may-break-glass:42" });
-    const breakGlass = manager.createAgentsTool({
-      getCallerAgentName: () => "may",
-      getCallerSessionId: () => "s_break_glass",
-      callDeny: { agents: ["dev"], hint: "Use the app normally" },
-    });
-    expect((await callTool(breakGlass, { action: "call", agent: "dev", task: "Repair the broken owner path" })).status).toBe(
-      "done",
-    );
-  });
-
-  it("restricts a procedure-only agents tool to the caller's granted local procedures", async () => {
-    const ownerDir = join(persistDir, "owner");
-    const siblingDir = join(persistDir, "sibling");
-    for (const [dir, name] of [[ownerDir, "own"], [siblingDir, "foreign"]] as const) {
-      mkdirSync(join(dir, "workflows"), { recursive: true });
-      writeFileSync(
-        join(dir, "workflows", `${name}.ts`),
-        `export const name = "${name}"; export const description = "fixture"; export async function execute(ctx) { return ctx.done("${name}"); }`,
-      );
-    }
-    manager.register({
-      name: "owner",
-      description: "Owner",
-      domain: "platform",
-      model: mockModel(),
-      tools: [echoTool()],
-      agentDir: ownerDir,
-      appLocal: true,
-      projectId: "sample",
-    });
-    manager.register({
-      name: "sibling",
-      description: "Sibling",
-      domain: "platform",
-      model: mockModel(),
-      tools: [echoTool()],
-      agentDir: siblingDir,
-      appLocal: true,
-      projectId: "sample",
-    });
-    manager.activeSessions.set("s_owner", {
-      sessionId: "s_owner",
-      definition: manager.getAgentDefinition("owner"),
-    } as any);
-    const tool = manager.createAgentsTool({
-      getCallerAgentName: () => "owner",
-      getCallerSessionId: () => "s_owner",
-      localProceduresOnly: true,
-    });
-
-    const parameters = tool.parameters as any;
-    expect(tool.name).toBe("agents");
-    expect(parameters.properties.action.enum).toEqual(["call", "list"]);
-    expect(Object.keys(parameters.properties).sort()).toEqual(["action", "agent", "input", "task"]);
-
-    expect((await callTool(tool, { action: "call", agent: "sibling/foreign", task: "run" })).error).toContain(
-      'only procedures owned by "owner"',
-    );
-    expect((await callTool(tool, { action: "call", agent: "owner/own", task: "run" })).error).toContain(
-      "Local workflows are available only during a Task attempt",
-    );
-    expect((await callTool(tool, { action: "call", agent: "missing", task: "run" })).error).toContain(
-      'Local workflow "missing" not found',
-    );
-    expect((await callTool(tool, { action: "fork", agent: "owner/own", task: "run" })).error).toContain(
-      'Procedure-only agents tool does not support action "fork"',
-    );
-  });
-
-  it("discovers and invokes code procedures via action: 'call' with structured input while rejecting fork/peek/follow-up on procedures", async () => {
-    const ownerDir = join(persistDir, "owner");
-    mkdirSync(join(ownerDir, "workflows"), { recursive: true });
-    writeFileSync(
-      join(ownerDir, "workflows", "intake.ts"),
-      `
-export const name = "intake";
-export const description = "Structured intake procedure";
-export async function execute(ctx) {
-  if (!ctx.input || typeof ctx.input.appId !== "string" || typeof ctx.input.taskId !== "string") {
-    return ctx.blocked("Missing appId or taskId");
-  }
-  return ctx.done("intake:" + ctx.input.appId + "/" + ctx.input.taskId, {
-    checked: true,
-    subject: ctx.input,
-  });
-}
-`,
-    );
-
-    manager.register({
-      name: "owner",
-      description: "Owner",
-      domain: "platform",
-      model: mockModel(),
-      tools: [echoTool()],
-      agentDir: ownerDir,
-    });
-    manager.activeSessions.set("s_owner", {
-      sessionId: "s_owner",
-      agentName: "owner",
-      task: "test",
-      startedAt: Date.now(),
-      status: "running",
-      definition: manager.getAgentDefinition("owner"),
-    } as any);
-
-    const tool = manager.createAgentsTool({
-      getCallerAgentName: () => "owner",
-      getCallerSessionId: () => "s_owner",
-    });
-
+    const schema = JSON.stringify(tool.parameters);
+    for (const retired of ["fork", "peek", "follow-up", "cancel", "context", "sessions", "context_files", "success_criteria"]) expect(schema).not.toContain(`\"${retired}\"`);
     const listed = await callTool(tool, { action: "list" });
-    expect(listed.procedures).toEqual([
-      { name: "intake", owner: "owner", description: "Structured intake procedure" },
-    ]);
+    expect(listed.map((item: any) => item.name)).toEqual(["alpha/reviewer", "beta/reviewer", "global/reviewer"]);
+    const result = await callTool(tool, { action: "call", agent: listed[0].name, input: { prompt: "Review", data: { ref: "HEAD" } } });
+    expect(result).toEqual({ id: "s_child", status: "done", summary: "reviewed", output: { verdict: "accept" }, facts: ["finish committed"] });
+    expect(dispatched).toEqual({
+      name: "reviewer",
+      task: 'Review\n\nAssignment data (JSON):\n{\n  "ref": "HEAD"\n}',
+      requireFinish: true,
+    });
+    expect((await callTool(tool, { action: "call", agent: "alpha-reviewer", input: { prompt: "legacy alias" } })).id).toBeUndefined();
+  });
 
-    const calledLocal = await callTool(tool, {
+  it("lists and invokes cross-App workflows despite retired ACL/profile options", async () => {
+    for (const [appId, ownerName] of [["alpha", "alpha-owner"], ["beta", "beta-owner"]] as const) {
+      const agentDir = join(persistDir, ownerName);
+      mkdirSync(join(agentDir, "workflows"), { recursive: true });
+      writeFileSync(join(agentDir, "workflows", "review.ts"), `export const name="review"; export const description="${appId}"; export async function execute(ctx){ return ctx.done("${appId}", ctx.input.data); }`);
+      manager.register({ name: ownerName, description: ownerName, domain: "fixture", model: mockModel(), tools: [], agentDir, appLocal: true, projectId: appId });
+    }
+    manager.activeSessions.set("caller", { definition: manager.getAgentDefinition("alpha-owner") } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+    expect(JSON.stringify(tool.parameters)).not.toContain("callDeny");
+    expect(JSON.stringify(tool.parameters)).not.toContain("localProceduresOnly");
+    const listed = await callTool(tool, { action: "list" });
+    expect(listed.map((item: any) => item.name)).toEqual(["alpha/alpha-owner", "alpha/review", "beta/beta-owner", "beta/review"]);
+    const result = await callTool(tool, { action: "call", agent: "beta/review", input: { prompt: "Review beta", data: { ref: "HEAD" } } });
+    expect(result).toMatchObject({ status: "done", summary: "beta", output: { ref: "HEAD" } });
+  });
+
+  it.each(["alpha", "global"] as const)("dispatches exact cross-App same-owner workflows from an %s caller", async (callerKind) => {
+    for (const appId of ["alpha", "beta"] as const) {
+      const agentDir = join(persistDir, appId, "worker");
+      mkdirSync(join(agentDir, "workflows"), { recursive: true });
+      writeFileSync(join(agentDir, "workflows", "echo.ts"), `
+export const name = "echo";
+export const description = "${appId} implementation";
+export async function execute(ctx) { return ctx.done("${appId}", { owner: "${appId}" }); }
+`);
+      if (appId === "beta") {
+        writeFileSync(join(agentDir, "workflows", "route.ts"), `
+export const name = "route";
+export const description = "Beta calls the exact Alpha workflow";
+export async function execute(ctx) {
+  const child = await ctx.call("alpha/echo", { prompt: "Run exact alpha implementation" });
+  return ctx.done("Route complete", { child });
+}
+`);
+      }
+      manager.register({
+        name: "worker", description: `${appId} worker`, domain: "fixture", model: mockModel(), tools: [],
+        agentDir, appLocal: true, projectId: appId,
+      });
+    }
+    const signal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: callerKind === "alpha"
+        ? manager.getAgentDefinition("alpha/worker")
+        : { name: "coordinator", description: "Global caller", domain: "fixture", model: mockModel(), tools: [] },
+      ...(callerKind === "alpha" ? { projectId: "alpha" } : {}),
+      status: "running",
+      executionScope: { signal, workSignal: signal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+
+    const result = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
       action: "call",
-      agent: "intake",
-      input: { appId: "alex", taskId: "work/1" },
-    });
-    expect(calledLocal).toMatchObject({
-      type: "done",
-      kind: "workflow",
-      status: "done",
-      summary: "intake:alex/work/1",
-      output: { checked: true, subject: { appId: "alex", taskId: "work/1" } },
+      agent: "beta/route",
+      input: { prompt: "Beta must invoke exact Alpha echo" },
     });
 
-    const calledQualified = await callTool(tool, {
+    expect(result).toMatchObject({
+      status: "done",
+      summary: "Route complete",
+      output: { child: { status: "done", summary: "alpha", output: { owner: "alpha" } } },
+    });
+  });
+
+  it("preserves a real schema-backed prompt blocker's child ID and blocked status", async () => {
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: () => {
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: {
+              role: "assistant",
+              api: "openai-responses",
+              provider: "fixture",
+              model: "blocked-worker",
+              content: [{
+                type: "toolCall", id: "finish-blocked", name: "finish",
+                arguments: { status: "blocked", summary: "Waiting for source evidence" },
+              }],
+              stopReason: "toolUse",
+              timestamp: Date.now(),
+              usage: {
+                input: 1, output: 1, totalTokens: 2, cacheRead: 0, cacheWrite: 0,
+                cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+              },
+            },
+          });
+          return stream;
+        },
+      }),
+    });
+    const worker = {
+      name: "worker", description: "Blocked worker", domain: "fixture", model: mockModel(), tools: [],
+    };
+    manager.register(worker);
+    const callerSignal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: worker,
+      status: "running",
+      toolPolicy: "full",
+      scopedChildren: new Set(),
+      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+
+    const result = await callTool(tool, {
       action: "call",
-      agent: "owner/intake",
-      input: { appId: "scout", taskId: "work/2" },
-    });
-    expect(calledQualified).toMatchObject({
-      type: "done",
-      kind: "workflow",
-      status: "done",
-      summary: "intake:scout/work/2",
+      agent: "global/worker",
+      input: { prompt: "Assess source" },
+      options: { schema: Type.Object({ verdict: Type.Literal("pass") }) },
     });
 
-    expect((await callTool(tool, { action: "fork", agent: "intake", task: "run" })).error).toContain(
-      "use action: 'call' for synchronous code procedures",
-    );
-    expect((await callTool(tool, { action: "peek", sessionId: "owner/intake" })).error).toContain(
-      "use action: 'call' for synchronous code procedures",
-    );
-    expect(
-      (await callTool(tool, { action: "follow-up", sessionId: "owner/intake", content: "steer" })).error,
-    ).toContain("use action: 'call' for synchronous code procedures");
-    manager.activeSessions.delete("s_owner");
+    expect(result.id).toMatch(/^s_/);
+    expect(result).toEqual({
+      id: result.id,
+      status: "blocked",
+      summary: "Waiting for source evidence",
+    });
+  });
+
+  it("forwards each canonical model call schema for same-child correction and concurrent isolation", async () => {
+    const replies = new Map<string, number>();
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: (model) => {
+          const count = (replies.get(model.id) ?? 0) + 1;
+          replies.set(model.id, count);
+          const expected = model.id === "schema-alpha" ? "alpha" : "beta";
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: {
+              role: "assistant",
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              content: [{
+                type: "toolCall", id: `${model.id}-finish-${count}`, name: "finish",
+                arguments: {
+                  status: "done",
+                  summary: `${expected} judgement`,
+                  output: { verdict: count === 1 ? "wrong" : expected },
+                },
+              }],
+              stopReason: "toolUse",
+              timestamp: Date.now(),
+              usage: {
+                input: 1, output: 1, totalTokens: 2, cacheRead: 0, cacheWrite: 0,
+                cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+              },
+            },
+          });
+          return stream;
+        },
+      }),
+    });
+    for (const verdict of ["alpha", "beta"] as const) {
+      manager.register({
+        name: `${verdict}-reviewer`, description: `${verdict} reviewer`, domain: "fixture",
+        model: { ...mockModel(), id: `schema-${verdict}` }, tools: [],
+      });
+    }
+    const callerSignal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: manager.getAgentDefinition("global/alpha-reviewer"),
+      status: "running",
+      scopedChildren: new Set(),
+      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+
+    const [alpha, beta] = await Promise.all((["alpha", "beta"] as const).map((verdict) => callTool(tool, {
+      action: "call",
+      agent: `global/${verdict}-reviewer`,
+      input: { prompt: `Return ${verdict}` },
+      options: { schema: Type.Object({ verdict: Type.Literal(verdict) }) },
+    })));
+
+    expect(alpha).toMatchObject({ status: "done", summary: "alpha judgement", output: { verdict: "alpha" } });
+    expect(beta).toMatchObject({ status: "done", summary: "beta judgement", output: { verdict: "beta" } });
+    expect(alpha.id).toMatch(/^s_/);
+    expect(beta.id).toMatch(/^s_/);
+    expect(alpha.id).not.toBe(beta.id);
+    expect(replies).toEqual(new Map([["schema-alpha", 2], ["schema-beta", 2]]));
+  });
+
+  it("captures the published execution snapshot after tool creation and dispatches that exact definition", async () => {
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+    const captured = { name: "reviewer", description: "Published reviewer", domain: "fixture", model: mockModel(), tools: [] };
+    manager.register({ ...captured, description: "mutable registry copy" });
+    manager.activeSessions.set("caller", { taskContext: { agentDefinitions: new Map([["reviewer", captured]]) } } as any);
+    let invoked: unknown;
+    manager.callAgentDefinition = async (definition) => {
+      invoked = definition;
+      return { sessionId: "s_snapshot", status: "done", lastAssistantText: "done", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: "done" } };
+    };
+
+    expect((await callTool(tool, { action: "list" })).map((item: any) => item.name)).toEqual(["global/reviewer"]);
+    manager.register({ ...captured, description: "replacement" });
+    expect(await callTool(tool, { action: "call", agent: "global/reviewer", input: { prompt: "Review" } })).toMatchObject({ id: "s_snapshot", status: "done" });
+    expect(invoked).toBe(captured);
+  });
+
+  it("keeps one pinned catalog per execution tree when a loaded tool serves later callers", async () => {
+    let caller = "first";
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => caller });
+    const first = { name: "reviewer", description: "First snapshot", domain: "fixture", model: mockModel(), tools: [] };
+    const second = { name: "reviewer", description: "Second snapshot", domain: "fixture", model: mockModel(), tools: [] };
+    manager.activeSessions.set("first", { taskContext: { agentDefinitions: new Map([["reviewer", first]]) } } as any);
+    manager.activeSessions.set("second", { taskContext: { agentDefinitions: new Map([["reviewer", second]]) } } as any);
+    const invoked: unknown[] = [];
+    manager.callAgentDefinition = async (definition) => {
+      invoked.push(definition);
+      return { sessionId: `s_${invoked.length}`, status: "done", lastAssistantText: "done", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: definition.description } };
+    };
+
+    expect((await callTool(tool, { action: "list" }))[0].description).toBe("First snapshot");
+    caller = "second";
+    expect((await callTool(tool, { action: "list" }))[0].description).toBe("Second snapshot");
+    expect(await callTool(tool, { action: "call", agent: "global/reviewer", input: { prompt: "second" } })).toMatchObject({ summary: "Second snapshot" });
+    caller = "first";
+    expect(await callTool(tool, { action: "call", agent: "global/reviewer", input: { prompt: "first" } })).toMatchObject({ summary: "First snapshot" });
+    expect(invoked).toEqual([second, first]);
+  });
+
+  it("shares pinned preparation while binding a child call to the child's live session", async () => {
+    const captured = { name: "reviewer", description: "Shared snapshot", domain: "fixture", model: mockModel(), tools: [] };
+    const taskContext = { agentDefinitions: new Map([["reviewer", captured]]) };
+    manager.activeSessions.set("parent", { taskContext } as any);
+    manager.activeSessions.set("child", { taskContext } as any);
+    const parentTool = manager.createAgentsTool({ getCallerSessionId: () => "parent" });
+    const childTool = manager.createAgentsTool({ getCallerSessionId: () => "child" });
+    const calls: Array<{ definition: unknown; parentSessionId?: string }> = [];
+    manager.callAgentDefinition = async (definition, _task, options) => {
+      calls.push({ definition, parentSessionId: options?.parentSessionId });
+      return { sessionId: "grandchild", status: "done", lastAssistantText: "done", messages: [], duration: "0s", outputDir: "", finishResult: { status: "done", summary: "done" } };
+    };
+
+    const parentDescriptors = await callTool(parentTool, { action: "list" });
+    expect(await callTool(childTool, { action: "list" })).toEqual(parentDescriptors);
+    expect(await callTool(childTool, { action: "call", agent: "global/reviewer", input: { prompt: "Review" } })).toMatchObject({ id: "grandchild", status: "done" });
+    expect(calls).toEqual([{ definition: captured, parentSessionId: "child" }]);
+  });
+
+  it.each(["timeout", "cancel"] as const)("bounds complete catalog preparation on %s", async (mode) => {
+    const gate = await controlledWorkflowImport(persistDir);
+    const agentDir = join(persistDir, `stalled-${mode}`);
+    mkdirSync(join(agentDir, "workflows"), { recursive: true });
+    writeFileSync(join(agentDir, "workflows", "stalled.ts"), gate.source);
+    manager.register({ name: "owner", description: "Owner", domain: "fixture", model: mockModel(), tools: [], agentDir });
+    const parent = new AbortController();
+    manager.activeSessions.set("caller", {
+      taskContext: { agentDefinitions: new Map([["owner", manager.getAgentDefinition("owner")]]) },
+      executionScope: {
+        signal: parent.signal,
+        workSignal: parent.signal,
+        deadlineAt: Infinity,
+        workDeadlineAt: Infinity,
+      },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+    const run = callTool(tool, {
+      action: "call",
+      agent: "global/owner",
+      input: { prompt: "bounded preparation" },
+      ...(mode === "timeout" ? { options: { timeoutMs: 20 } } : {}),
+    });
+    await gate.started;
+    if (mode === "cancel") parent.abort(new Error("parent stopped"));
+    const observed = await observeBoundedResult(run);
+    expect(observed).toBeDefined();
+    expect(observed!.result).toMatchObject({ status: "error" });
+    gate.release();
+    await gate.completed;
   });
 });
 

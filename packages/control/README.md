@@ -99,6 +99,24 @@ receive their scoped publishing capability through the SDK.
 
 ## Observe facts; read results
 
+Read exact Task detail with the supported `task.get` socket command:
+
+```ts
+const response = await sendSocketCommand(socketPath, {
+  type: "task.get", appId: "sample", taskId: "work/review",
+  inputKeys: ["request:original"],
+});
+```
+
+Import `sendSocketCommand` from `@may-agent/control/client`. Omit `inputKeys`
+for an ordinary read. Explicit reads accept at most eight non-empty exact keys,
+preserve their bytes, and fail if an original input is unavailable or belongs to
+another Task. They do not consume input. Saved worker inheritance remains
+readable without a loaded App; genuinely unknown identity stays absent.
+Use `acceptedEvidence: true` with optional `evidenceLimit`/`evidenceCursor` for
+accepted-history bodies. List cards keep metadata and evidence bodies omitted.
+The retired `app.task.get` command is not an alternate read route.
+
 | Surface | Meaning and consumer rule |
 | --- | --- |
 | `publish` receipt | Durable event identity and admission only; follow its request/Task links for the result |
@@ -238,10 +256,24 @@ original read timing excludes that work. Process restart discards these
 diagnostics, and they retain only the current and previous windows. Apps use
 this evidence alongside timing and workload context to judge useful repairs.
 
-Compact cumulative counters also accompany the existing minute
-`runtime.daemon.heartbeat` observation. A consumer can compare samples from the
-same PID and `sql.since`, resetting across restarts. This adds no per-query writes
-or new scheduler. Thresholds, review and remediation remain App policy.
+Compact cumulative counters are also written once per minute to the bounded
+`<persistDir>/instances/<instance>/<interface>.heartbeat.json` record. The daemon
+atomically replaces that file instead of appending `runtime.daemon.heartbeat`
+events. A diagnostic reader can compare successive records with the same `pid`,
+`processIdentity`, and `sql.since`, resetting across restarts. The record also
+contains `recordedAt`, optional `processStartedAt`, interface/socket identity, and
+lifetime `calls`, `errors`, `totalMs`, and `untrackedCalls`; detailed query shapes
+remain available only through the diagnostic status read above. Failed writes are
+logged and retried by the ordinary minute tick without inventing a fresh sample.
+
+Maintenance remains status-socket-first. When the socket is unavailable it reads
+this record beside the socket and accepts it only when it is fresh and matches the
+current PID file and live process instance. Daemon and maintenance source must
+therefore be upgraded together: maintenance using this format no longer consults
+historical heartbeat events, while an older daemon does not write the replacement
+record. Rollout of that paired source boundary is an operator action, not an
+automatic migration; existing event rows remain untouched. This adds no per-query
+writes or new scheduler. Thresholds, review and remediation remain App policy.
 
 ## Selecting a human interface
 

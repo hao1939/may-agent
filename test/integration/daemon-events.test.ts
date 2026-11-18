@@ -1,16 +1,92 @@
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import {
   attachDaemonEventSubscribers,
+  attachDaemonMetricTimers,
   attachEventPersistence,
+  METRIC_EVALUATION_INTERVAL_MS,
+  METRIC_SOURCE_COLLECTION_INTERVAL_MS,
 } from "../../src/app/daemon-events.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 import { createEventInterface } from "../../src/app/core/events/interface.js";
+import { createMetricService } from "../../src/lib/metrics.js";
 
 describe("daemon event subscribers", () => {
+  it("runs metric collection and evaluation from unrefed Host timers without trigger events", async () => {
+    const root = mkdtempSync(join(tmpdir(), "daemon-metric-timers-"));
+    const bus = new EventBus();
+    const scheduled: Array<{ callback: () => void; intervalMs: number; unrefCount: number }> = [];
+    const cleared: unknown[] = [];
+    const setInterval = ((callback: () => void, intervalMs: number) => {
+      const timer = { callback, intervalMs, unrefCount: 0, unref() { timer.unrefCount++; return timer; } };
+      scheduled.push(timer);
+      return timer;
+    }) as unknown as typeof globalThis.setInterval;
+    const clearInterval = ((timer: unknown) => cleared.push(timer)) as typeof globalThis.clearInterval;
+    const pendingTimeouts: Array<() => void> = [];
+    const realSetTimeout = globalThis.setTimeout;
+    const timeoutSpy = spyOn(globalThis, "setTimeout").mockImplementation(((callback: TimerHandler, delay?: number, ...args: any[]) => {
+      if (delay === 0) {
+        pendingTimeouts.push(() => typeof callback === "function" && callback(...args));
+        return { unref() { return this; } } as unknown as ReturnType<typeof setTimeout>;
+      }
+      return realSetTimeout(callback, delay, ...args);
+    }) as typeof globalThis.setTimeout);
+    let runtime: ReturnType<typeof attachDaemonMetricTimers> | undefined;
+    let idle: Promise<void> | undefined;
+    const flushPendingTimeouts = async () => {
+      for (let attempts = 0; attempts < 1_000; attempts++) {
+        pendingTimeouts.shift()?.();
+        await Promise.resolve();
+        await Promise.resolve();
+        if (pendingTimeouts.length === 0) await Promise.resolve();
+      }
+    };
+    try {
+      attachEventPersistence({ bus, persistDir: root });
+      const metrics = createMetricService({ getDb: () => getDb(root) });
+      metrics.define({ id: "timer.collection", sourceQuery: "SELECT 7 AS value" });
+      metrics.define({ id: "timer.evaluation", threshold: 1, alertOp: ">" });
+      metrics.record("timer.evaluation", 2);
+      runtime = attachDaemonMetricTimers({ bus, persistDir: root, setInterval, clearInterval });
+
+      expect(METRIC_SOURCE_COLLECTION_INTERVAL_MS).toBe(300_000);
+      expect(METRIC_EVALUATION_INTERVAL_MS).toBe(60_000);
+      expect(scheduled.map(({ intervalMs }) => intervalMs)).toEqual([300_000, 60_000]);
+      expect(scheduled.map(({ unrefCount }) => unrefCount)).toEqual([1, 1]);
+      scheduled[0]!.callback();
+      scheduled[1]!.callback();
+      runtime.close();
+      let valueWhenIdleResolved: number | undefined;
+      idle = runtime.idle().then(() => {
+        valueWhenIdleResolved = metrics.get("timer.collection")?.observation?.value;
+      });
+      await Promise.resolve();
+      expect(cleared).toEqual(scheduled);
+      expect(valueWhenIdleResolved).toBeUndefined();
+      expect(metrics.get("timer.collection")?.observation).toBeNull();
+
+      await flushPendingTimeouts();
+      await idle;
+      expect(valueWhenIdleResolved).toBe(7);
+      expect(getDb(root).prepare("SELECT COUNT(*) AS n FROM metric_alerts WHERE metric_id = ?").get("timer.evaluation"))
+        .toEqual({ n: 1 });
+      expect(getDb(root).prepare(
+        "SELECT COUNT(*) AS n FROM events WHERE event_type IN ('trigger.metrics-snapshot', 'trigger.metrics-evaluate')",
+      ).get()).toEqual({ n: 0 });
+
+    } finally {
+      runtime?.close();
+      await flushPendingTimeouts();
+      await idle;
+      timeoutSpy.mockRestore();
+      closeDb(root);
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
   it("rejects metric edits for missing resources or a mismatched alert before acknowledging them", () => {
     const root = mkdtempSync(join(tmpdir(), "metric-target-"));
     try {

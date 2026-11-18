@@ -46,8 +46,8 @@ describe("health()", () => {
     const report = manager.health();
 
     expect(report.registeredAgents.count).toBe(2);
-    expect(report.registeredAgents.names).toContain("coder");
-    expect(report.registeredAgents.names).toContain("reviewer");
+    expect(report.registeredAgents.names).toContain("global/coder");
+    expect(report.registeredAgents.names).toContain("global/reviewer");
     expect(report.activeSessions).toEqual([]);
     expect(report.sessionCounts).toEqual({ running: 0, idle: 0, total: 0 });
     expect(report.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);

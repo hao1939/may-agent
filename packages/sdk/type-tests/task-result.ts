@@ -65,3 +65,14 @@ const interest: ObservationInterest = { observerId: "review", id: "review", reso
   // @ts-expect-error Observer interests have no agent-review interval.
   reviewAfterMs: 60_000 };
 void [task, wait, interest];
+
+import type { AppWorkflowContext } from "../src/workflow.js";
+type EnvelopeInput = { prompt: string; data?: { ref: string } };
+type RawTaskInput = { subjectRef: string };
+declare const envelopeWorkflow: AppWorkflowContext<EnvelopeInput, RawTaskInput>;
+const callablePrompt: string = envelopeWorkflow.input.prompt;
+const rawSubjectRef: string | undefined = envelopeWorkflow.reconciliation?.input.subjectRef;
+void callablePrompt;
+void rawSubjectRef;
+// @ts-expect-error Raw reconciliation input is not the callable envelope.
+void envelopeWorkflow.reconciliation?.input.prompt;

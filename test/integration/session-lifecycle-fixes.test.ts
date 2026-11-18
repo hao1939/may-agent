@@ -747,7 +747,7 @@ describe("workflow call empty final turn recovery", () => {
     });
   });
 
-  it.each([false, true])("rejects a committed finish missing the caller's required structured result (cancelled=%s)", async (cancelled) => {
+  it.each([false, true])("accepts an output-free blocked finish despite a requested schema (cancelled=%s)", async (cancelled) => {
     const { session, messages } = makeCallSession(async () => {
       messages.push(finishCall("finish-missing-result", { status: "blocked", summary: "No structured judgment." }));
       messages.push(finishResult("finish-missing-result", "FAILURE: No structured judgment."));
@@ -759,13 +759,14 @@ describe("workflow call empty final turn recovery", () => {
 
     const result = await (manager as any).executeSession(session);
 
-    expect(result.status).toBe("error");
-    expect(result.error).toContain("without the required schema-backed");
+    expect(result.status).toBe("done");
+    expect(result.error).toBeUndefined();
+    expect(result.finishResult).toMatchObject({ status: "blocked", summary: "No structured judgment." });
     expect(result.structuredResult).toBeUndefined();
-    expect(readSessionMeta(persistDir, result.sessionId)?.status).toBe("error");
+    expect(readSessionMeta(persistDir, result.sessionId)?.status).toBe("done");
     const ends = events.filter((event) => event.type === "session.end" && (event as any).data?.sessionId === result.sessionId);
     expect(ends).toHaveLength(1);
-    expect(ends[0]).toMatchObject({ data: { status: "error", error: result.error } });
+    expect(ends[0]).toMatchObject({ data: { status: "done", finishParams: { status: "blocked" } } });
   });
 
   it("keeps cancellation interrupted with its reason when no finish receipt committed", async () => {

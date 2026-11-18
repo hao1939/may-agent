@@ -122,6 +122,12 @@ CREATE TABLE IF NOT EXISTS app_task_control_receipts (
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_control_receipts_task
   ON app_task_control_receipts(app_id, task_id, applied_at DESC);
+-- Per-operation replay evidence, independent of publication and attempt identity.
+CREATE TABLE IF NOT EXISTS app_task_communication_receipts (
+  app_id TEXT NOT NULL, task_id TEXT NOT NULL, task_generation INTEGER NOT NULL,
+  communication_id TEXT NOT NULL, receipt_json TEXT NOT NULL,
+  PRIMARY KEY(app_id, task_id, task_generation, communication_id)
+);
 CREATE TABLE IF NOT EXISTS app_task_groups (
   app_id TEXT NOT NULL, group_id TEXT NOT NULL, group_json TEXT NOT NULL,
   PRIMARY KEY(app_id, group_id)

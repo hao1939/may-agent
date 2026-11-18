@@ -58,6 +58,7 @@ export interface AttachControlSocketOptions {
     appId?: string;
     taskId?: string;
     acceptedEvidence?: { limit?: number; cursor?: string };
+    inputKeys?: string[];
   }) => unknown;
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onInfo?: (message: string) => void;
@@ -124,6 +125,18 @@ function statusFields(status: ControlStatus): Record<string, unknown> {
   return Array.isArray(status)
     ? { activeAgents: activeStatus(status) }
     : { activeAgents: activeStatus(status.sessions), activeWork: status.activeWork };
+}
+
+function inputKeyOptions(frame: Record<string, unknown>): { inputKeys?: string[] } {
+  if (frame.inputKeys === undefined) return {};
+  if (
+    !Array.isArray(frame.inputKeys) ||
+    frame.inputKeys.length > 8 ||
+    frame.inputKeys.some((key) => typeof key !== "string" || !key.trim())
+  ) {
+    throw new Error("inputKeys must contain at most 8 non-empty exact keys");
+  }
+  return { inputKeys: frame.inputKeys as string[] };
 }
 
 function acceptedEvidenceOptions(frame: Record<string, unknown>): {
@@ -424,6 +437,7 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
           ...(typeof frame.taskId === "string" && frame.taskId.trim() ? { taskId: frame.taskId.trim() } : {}),
           ...(typeof frame.reason === "string" && frame.reason.trim() ? { reason: frame.reason.trim() } : {}),
           ...acceptedEvidenceOptions(frame),
+          ...inputKeyOptions(frame),
         }),
       };
     },

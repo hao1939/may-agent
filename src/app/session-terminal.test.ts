@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { attachDaemonEventSubscribers, attachEventPersistence } from "./daemon-events.js";
@@ -84,12 +84,11 @@ describe("canonical session terminal event", () => {
     expect(db.prepare(
       "SELECT COUNT(*) AS count FROM events WHERE event_type IN ('session.completed', 'session.receipt')",
     ).get()).toEqual({ count: 0 });
-    const session = db.prepare(
-      "SELECT result_ref, result_sha256, result_bytes FROM sessions WHERE sessionId = ?",
-    ).get(sessionId) as { result_ref: string; result_sha256: string; result_bytes: number };
-    expect(session.result_sha256).toHaveLength(64);
-    expect(session.result_bytes).toBeGreaterThan(0);
-    expect(existsSync(join(persistDir, session.result_ref))).toBe(true);
+    // Event persistence journals terminal evidence only. SubagentManager owns the
+    // session row and result artifact before publishing this event.
+    expect(db.prepare("SELECT COUNT(*) AS count FROM sessions WHERE sessionId = ?").get(sessionId)).toEqual({
+      count: 0,
+    });
   });
 
   it("keeps one terminal trace row instead of tracing derivative copies", () => {

@@ -1,5 +1,6 @@
 import type { Static, TSchema } from "typebox";
 import type { AppContract, AppResult } from "./app.js";
+import type { CallableDescriptor, CallableResult } from "./callable.js";
 import type { AppEvent } from "./event.js";
 import type {
   Condition,
@@ -230,6 +231,14 @@ export type ExecutionView = {
   kind: "agent" | "workflow";
   status: "running" | "done" | "blocked" | "error" | "interrupted";
   summary?: string;
+  /** Bounded Host-retained evidence. Contributors cannot author these receipts. */
+  diagnostics?: {
+    cliCalls: CliCallFacts[];
+    /** Exact bounded source whose older evidence was omitted. */
+    omitted?: { workflows?: true; sessions?: true; cliCalls?: true; messages?: true; bytes?: true };
+    /** More matching workflows/sessions, transcript messages/bytes, or receipts exist beyond this projection's bounds. */
+    truncated?: true;
+  };
 };
 
 /** Optional calculation over retained samples; omission uses the latest sample. */
@@ -310,16 +319,9 @@ export type CallOptions<S extends TSchema | undefined = undefined> = {
   schema?: S;
   /** Clamped to the enclosing invocation's remaining deadlineAt. */
   timeoutMs?: number;
-  /** Tool restriction inherited by descendants. Caller restrictions cannot be widened by callees. */
-  tools?: "full" | "readonly";
-  /** Prompt-target skill selection; rejected if passed directly to a code target. */
-  skill?: string;
-  /** Prompt-target finite positive tool-operation allowance; rejected on code targets. */
-  operationAllowance?: number;
-  /** Exact source classification persisted on prompt sessions. */
-  source?: string;
 };
 
+/** @deprecated Use `CallOptions`; every callable uses the same options contract. */
 export type AgentCallOptions = Omit<CallOptions, "schema">;
 
 /** Shared read contract. Task lists and evidence are paginated; storage stays private. */
@@ -509,20 +511,11 @@ export type CliCallFacts = {
 };
 
 /** One terminal result vocabulary for bounded Agent and workflow contributions.
- * Done is a contribution claim, not accepted Task completion. Explicit partial
- * agent work is blocked with its output/facts retained. Setup/cancellation or
- * infrastructure failures may throw before a terminal result is available. */
-export type ExecutionResult<T = unknown> = {
-  id: string;
-  kind: "agent" | "workflow";
-  status: "done" | "blocked" | "error" | "interrupted";
-  summary: string;
-  output?: T;
-  facts?: unknown;
-  /** Up to 64 CLI results from this session's retained transcript tail. Positive
-   * facts only: absence does not prove a call never ran. Old Hosts omit it. */
-  cliCalls?: CliCallFacts[];
-};
+ * Done is a contribution claim, not accepted Task completion. The runtime may
+ * attach the actual child execution id; producers return status/summary and
+ * optional output/facts only. Executor kind and trusted receipts remain in
+ * execution diagnostics rather than the contribution payload. */
+export type ExecutionResult<T = unknown> = CallableResult<T>;
 
 /** A requested managed execution was not started. The caller retains its work. */
 export type ExecutionDeferral = {
@@ -816,6 +809,8 @@ export type AgentContext<TInput = unknown> = {
    * Does not preempt arbitrary JavaScript or undo completed external effects.
    */
   signal: AbortSignal;
+  /** Immutable descriptors from the same captured catalog used by call(). */
+  list(): readonly CallableDescriptor[];
   /**
    * Canonical bounded invocation API for both prompt-backed and code-backed targets.
    * Production calls pass string target names resolved against the captured catalog snapshot.
@@ -850,9 +845,9 @@ export type AgentContext<TInput = unknown> = {
  * domain input and results. It is intentionally absent from the root authoring
  * surface; App orchestration owns these Task-scoped capabilities.
  */
-export type AppWorkflowContext<TInput = unknown> = AgentContext<TInput> & {
-  /** Present only when a durable App task owns this workflow attempt. */
-  reconciliation?: TaskReconciliationContext<TInput>;
+export type AppWorkflowContext<TInput = unknown, TReconciliationInput = unknown> = AgentContext<TInput> & {
+  /** Present only when a durable App task owns this workflow attempt. Its input is the raw admitted Task domain input. */
+  reconciliation?: TaskReconciliationContext<TReconciliationInput>;
   /** Task-owned workflows only. Save complete requirements using the recorded creator's authority. */
   reviseTask?: TaskAttempt["reviseTask"];
   /** End an assignment created by this Task after reviewing its exact accepted result. */

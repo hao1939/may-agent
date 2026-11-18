@@ -32,6 +32,16 @@ function firstNonEmptyString(...values: unknown[]): string | null {
   return null;
 }
 
+function capturedAgentDefinition(
+  definitions: ReadonlyMap<string, SubagentDefinition> | undefined,
+  agent: string,
+): SubagentDefinition | undefined {
+  const exact = definitions?.get(agent);
+  if (exact) return exact;
+  const matches = definitions ? [...definitions.values()].filter((definition) => definition.name === agent) : [];
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
 export function createTaskAgentRunner(
   input: {
     manager: SubagentManager;
@@ -41,9 +51,9 @@ export function createTaskAgentRunner(
 ): TaskAgentRunner {
   return {
     ...({ persistDir: input.manager.registryStore?.persistDir } as Record<string, unknown>),
-    available: (agent) => (definitions ? definitions.has(agent) : input.manager.hasAgent(agent)),
+    available: (agent) => (definitions ? capturedAgentDefinition(definitions, agent) !== undefined : input.manager.hasAgent(agent)),
     executionRecipient: (agent) => {
-      const definition = definitions ? definitions.get(agent) : input.manager.getAgentDefinition(agent);
+      const definition = definitions ? capturedAgentDefinition(definitions, agent) : input.manager.getAgentDefinition(agent);
       return definition ? resolvedExecutionRecipient(definition) : null;
     },
     async prepare({ source, appDir, agent }) {
@@ -66,7 +76,7 @@ function taskAttemptRole(
   definitions: ReadonlyMap<string, SubagentDefinition> | undefined,
   agent: string,
 ): TaskAttempt["role"] {
-  const definition = definitions?.get(agent);
+  const definition = capturedAgentDefinition(definitions, agent);
   let instructions = definition?.systemPrompt?.trim() ?? "";
   const identityPath = definition?.agentDir ? join(definition.agentDir, "AGENTS.md") : "";
   if (!instructions && identityPath && existsSync(identityPath)) {
@@ -216,7 +226,7 @@ async function executeTaskAgent(
     timeout: input.executionTimeoutMs,
     executionRoot: input.executionPaths.workspaceDir,
   };
-  const definition = definitions?.get(attempt.role.agent);
+  const definition = capturedAgentDefinition(definitions, attempt.role.agent);
   const dispatchAgent = () => definition
     ? manager.callAgentDefinition(definition, prompt, agentOptions)
     : manager.callAgent(attempt.role.agent, prompt, agentOptions);

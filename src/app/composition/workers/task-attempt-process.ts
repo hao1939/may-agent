@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 import { DbWriter } from "../../../lib/db-writer.js";
-import { closeAllDbs, getDb } from "../../../lib/db/connection.js";
+import { closeAllDbs } from "../../../lib/db/connection.js";
 import { SubagentManager } from "../../../lib/manager.js";
 import { enterTaskWorkerProcess } from "../../../lib/task-worker-context.js";
 import { discoverAppDefinitions } from "../../adapters/discovery/app-definitions.js";
@@ -11,8 +11,6 @@ import { AppRegistry } from "../../core/apps/registry.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../core/events/bus.js";
 import { readEventTaskTarget } from "../../core/events/task-target.js";
 import { HostCapacity } from "../../core/scheduling/host-capacity.js";
-import { AppTaskResourceStore } from "../../core/state/app-task-resource-store.js";
-import { appTaskContext, readAppTaskAgent } from "../../core/tasks/app-task-reconciler.js";
 import {
   closeInstalledAppTaskRuntimes,
   reconcileLoadedAppTaskOnce,
@@ -22,7 +20,7 @@ import type { AppTaskDispatch } from "../../core/tasks/controller.js";
 import type { AppTaskRuntimeOptions } from "../../core/tasks/runtime-options.js";
 import { mergeTaskChecks, readTaskChecks } from "../../core/tasks/task-check-observations.js";
 import { prepareDaemonAgents } from "../../daemon-agents.js";
-import { listConfiguredAgentNames, type ModelRegistry } from "@may-agent/sdk/runtime";
+import type { ModelRegistry } from "@may-agent/sdk/runtime";
 
 const WORKER_FRAME_LIMIT = 8 * 1024 * 1024;
 // Execution adapters own the admitted deadline (including ongoing native goals).
@@ -566,40 +564,9 @@ async function runTaskWorker(input: {
       ),
     );
     await registry.reload();
-    const selectedAppIds = input.appIds ? new Set(input.appIds) : null;
-    const task = input.task;
-    // Workflows may call any helper declared by their App. Load those profiles
-    // from the same pinned source, plus the default and selected executor.
-    // Recovery needs the whole active catalog for retained Tasks.
-    const agentNames = task
-      ? registry
-          .snapshot()
-          .entries.filter(({ definition }) => definition.tasks && (!selectedAppIds || selectedAppIds.has(definition.id)))
-          .flatMap(({ appDir, definition }) => {
-            const configured = definition.agent;
-            const agent = (typeof configured === "string" && configured.trim() ? configured : definition.id).replace(
-              /^agent:/,
-              "",
-            );
-            const resourceStore = AppTaskResourceStore.activeFromDb(getDb(input.roots.persistDir), definition.id);
-            const names = [
-              agent,
-              ...listConfiguredAgentNames(resolve(activeSource.projectsRoot, basename(appDir), "agents")),
-            ];
-            if (!resourceStore) return names;
-            const selected = readAppTaskAgent(
-              appTaskContext({
-                appDir,
-                projectDir: appDir,
-                agent,
-                maxConcurrent: 1,
-                resourceStore,
-              }),
-              task.taskId,
-            );
-            return selected ? [...names, selected] : names;
-          })
-      : undefined;
+    // Task scheduling remains scoped by taskAppIds below. Callable discovery is
+    // the ordinary full active profile/catalog captured from this pinned source,
+    // so the caller's App does not hide registered helpers from another App.
     const hostCapacity = new HostCapacity(1);
     await prepareDaemonAgents({
       agentsRoot: activeSource.agentsRoot,
@@ -617,7 +584,6 @@ async function runTaskWorker(input: {
       hostCapacity,
       taskRuntimeMode: "manual",
       ...(input.appIds ? { taskAppIds: input.appIds } : {}),
-      agentNames,
     });
     // Immutable release paths carry the selected source identity. A recovery
     // child cannot observe a parent reload through its own in-memory registry.

@@ -317,6 +317,13 @@ describe("agent loader boundaries", () => {
       const manager = {
         hasAgent: () => false,
         register: (def: any) => registered.push(def),
+        createAgentsTool: () => ({
+          name: "agents",
+          label: "Agents",
+          description: "test callable boundary",
+          parameters: {} as any,
+          execute: async () => ({ content: [{ type: "text" as const, text: "[]" }] }),
+        }),
       };
 
       const result = await loadAgents({
@@ -330,7 +337,7 @@ describe("agent loader boundaries", () => {
         bus: { emit: () => undefined } as any,
         });
 
-      expect(result.added).toEqual(["aks-explorer"]);
+      expect(result.added).toEqual(["alpha-project/aks-explorer"]);
       expect(registered[0].agentDir).toBe(projectAgentDir);
       expect(registered[0].workspace).toBe(join(projectAgentDir, "workspace"));
       expect(registered[0].projectRoot).toBe(projectDir);

@@ -1,24 +1,23 @@
-import { describe, expect, it, beforeEach } from "bun:test";
-import { mkdirSync, rmSync } from "node:fs";
+import { afterEach, describe, expect, it, beforeEach } from "bun:test";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
 
-const TEST_DIR = join(tmpdir(), "may-agent-db-writer-test");
-
+let testDir: string;
 beforeEach(() => {
-  try {
-    rmSync(TEST_DIR, { recursive: true, force: true });
-  } catch {}
-  mkdirSync(TEST_DIR, { recursive: true });
-  closeDb(TEST_DIR);
+  testDir = mkdtempSync(join(tmpdir(), "may-agent-db-writer-test-"));
+});
+afterEach(() => {
+  closeDb(testDir);
+  rmSync(testDir, { recursive: true, force: true });
 });
 
 describe("DbWriter", () => {
   it("ignores flat session lifecycle events", () => {
-    const writer = new DbWriter(TEST_DIR);
-    const db = getDb(TEST_DIR);
+    const writer = new DbWriter(testDir);
+    const db = getDb(testDir);
 
     writer.handler({
       type: "session.start",
@@ -59,73 +58,25 @@ describe("DbWriter", () => {
     ).toMatchObject({ count: 0 });
   });
 
-  it("does not erase session lineage when a duplicate start event lacks projectId", () => {
-    const writer = new DbWriter(TEST_DIR);
-    const db = getDb(TEST_DIR);
-
-    writer.handler({
-      type: "session.start",
-      source: "workflow:project",
-      owner: "agent:may",
-      data: {
-        sessionId: "s_project",
-        agent: "may",
-        task: "project worker",
-        kind: "call",
-        trigger: "runtime",
-        firedAt: Date.now(),
-        workflowRunId: "wr_project",
-        projectId: "may/alpha-project",
-      },
-    } as any);
-    writer.handler({
-      type: "session.start",
-      source: "workflow:project",
-      owner: "agent:may",
-      data: {
-        sessionId: "s_project",
-        agent: "may",
-        task: "project worker resumed",
-        kind: "call",
-        trigger: "runtime",
-        firedAt: Date.now(),
-        workflowRunId: "wr_project",
-      },
-    } as any);
-
-    const row = db
-      .prepare("SELECT sessionId, projectId, workflowRunId FROM sessions WHERE sessionId = ?")
-      .get("s_project") as any;
-    expect(row).toMatchObject({
-      sessionId: "s_project",
-      projectId: "may/alpha-project",
-      workflowRunId: "wr_project",
-    });
-  });
-
-  it("preserves an existing terminal error when a later projection omits it", () => {
-    const writer = new DbWriter(TEST_DIR);
-    const db = getDb(TEST_DIR);
-    const now = Date.now();
-    db.run("INSERT INTO sessions (sessionId, agent, task, status, startedAt, error) VALUES (?, ?, ?, ?, ?, ?)", [
-      "s_error",
-      "dev",
-      "task",
-      "error",
-      now - 10,
-      "provider failed",
-    ]);
-
-    writer.handler({
-      type: "session.end",
-      source: "runtime",
-      owner: "agent:dev",
-      data: { sessionId: "s_error", agent: "dev", status: "error" },
-    } as any);
-
-    expect(db.prepare("SELECT status, error FROM sessions WHERE sessionId = ?").get("s_error")).toEqual({
-      status: "error",
-      error: "provider failed",
-    });
+  it("only journals canonical session lifecycle events, without projections or result artifacts", () => {
+    const writer = new DbWriter(testDir);
+    const db = getDb(testDir);
+    for (const type of ["session.start", "session.idle", "session.end"]) {
+      writer.handler({
+        type,
+        source: "runtime",
+        owner: "agent:worker",
+        data: { sessionId: "unowned", agent: "worker", task: "work", status: "done", summary: "Reported" },
+      });
+    }
+    expect(db.prepare("SELECT COUNT(*) AS n FROM sessions").get()).toEqual({ n: 0 });
+    expect(existsSync(join(testDir, "sessions/unowned/result.json"))).toBe(false);
+    expect(db.prepare("SELECT event_type, source, owner FROM events ORDER BY id").all()).toEqual(
+      ["session.start", "session.idle", "session.end"].map((event_type) => ({
+        event_type,
+        source: "runtime",
+        owner: "agent:worker",
+      })),
+    );
   });
 });

@@ -1,8 +1,8 @@
 import type { WorkflowContext } from "@may-agent/sdk/app";
 export const name = "e2e-metric-canary";
 export const description = "Record a synthetic metric sample through an ordinary App Task";
-export async function execute(ctx: WorkflowContext<{ phase: string; value: number }>) {
-  const { phase, value } = ctx.input;
+export async function execute(ctx: WorkflowContext<{ prompt: string; data: { phase: string; value: number } }>) {
+  const { phase, value } = ctx.input.data;
   ctx.metrics.define({ id: "e2e.canary", owner: "agent:may", type: "rate", target: 1,
     threshold: 0.8, priority: "P1", alertOp: "lt", direction: "higher-is-better" });
   await ctx.metrics.record("e2e.canary", value, { note: phase });

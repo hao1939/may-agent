@@ -116,9 +116,7 @@ export function updateSessionDb(
   },
 ): void {
   const db = getDb(persistDir);
-  // Use COALESCE for opCount so a later update without opCount doesn't overwrite
-  // a previous write that set it correctly. This prevents the race where manager
-  // sets opCount=15 and then DbWriter overwrites it with 0.
+  // Keep monotonic progress when a later status update omits counters.
   withSqliteBusyRetry(`update session ${sessionId}`, () =>
     db.run(
       `UPDATE sessions SET

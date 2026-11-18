@@ -19,14 +19,15 @@ export declare function createTestObserverContext(options?: {
     log?: Logger;
     workspace?: ObserverContext["workspace"];
 }): ObserverContext;
-export type TestAppWorkflowContextOptions<TInput> = {
+export type TestAppWorkflowContextOptions<TInput, TReconciliationInput = unknown> = {
     input: TInput;
     signal?: AbortSignal;
-    reconciliation?: WorkflowContext<TInput>["reconciliation"];
+    reconciliation?: import("./workflow.js").TaskReconciliationContext<TReconciliationInput>;
     reviseTask?: WorkflowContext["reviseTask"];
     closeTask?: WorkflowContext["closeTask"];
     read?: AppRead;
     log?: Logger;
+    list?: WorkflowContext["list"];
     call?: WorkflowContext["call"];
     emit?: WorkflowContext["events"]["emit"];
     readEvent?: WorkflowContext["events"]["read"];
@@ -36,7 +37,7 @@ export type TestAppWorkflowContextOptions<TInput> = {
     executionId?: string;
 };
 /** Small fake with no database, queue, or global runtime paths. */
-export declare function createTestAppWorkflowContext<TInput>(options: TestAppWorkflowContextOptions<TInput>): WorkflowContext<TInput>;
+export declare function createTestAppWorkflowContext<TInput, TReconciliationInput = unknown>(options: TestAppWorkflowContextOptions<TInput, TReconciliationInput>): import("./workflow.js").AppWorkflowContext<TInput, TReconciliationInput>;
 export type ScriptedStepResponse = {
     id?: string;
     kind?: "agent" | "workflow";

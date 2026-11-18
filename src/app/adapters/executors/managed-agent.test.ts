@@ -3,12 +3,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createTaskAgentRunner } from "./managed-agent.js";
+import { runTaskAgent } from "../../core/tasks/attempt-execution.js";
 import type { SubagentManager } from "../../../lib/manager.js";
 import type { TaskAgentInput } from "../../core/tasks/execution.js";
 import { appTaskExecutionPaths, withAppTaskWorkspace } from "../../core/tasks/app-task-output-paths.js";
 import { executePreparedAgent, prepareAgentExecution } from "../../../lib/agent-execution.js";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
+import { fakeModel } from "../../../../test/fixtures/model.js";
 import type { CallAgentOptions } from "../../../lib/manager.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 import { createWriteTool } from "@may-agent/sdk/runtime";
@@ -80,6 +82,78 @@ test.each(["done", "blocked"])("a valid %s report retains useful work and the Ta
   }
 });
 
+test("Task roots resolve and dispatch same-name agents only inside the owning App namespace", async () => {
+  const root = mkdtempSync(join(tmpdir(), "may-managed-task-namespace-"));
+  try {
+    const selected: string[] = [];
+    const definitions = new Map<string, SubagentDefinition>([
+      ["alpha/worker", {
+        name: "worker", description: "Alpha worker", domain: "test", model: fakeModel(), tools: [],
+        appLocal: true, projectId: "alpha", systemPrompt: "You are Alpha worker.",
+      }],
+      ["beta/worker", {
+        name: "worker", description: "Beta worker", domain: "test", model: fakeModel(), tools: [],
+        appLocal: true, projectId: "beta", systemPrompt: "You are Beta worker.",
+      }],
+    ]);
+    const runner = createTaskAgentRunner({ manager: {
+      callAgentDefinition: async (definition: SubagentDefinition, _task: string, options: CallAgentOptions) => {
+        selected.push(`${definition.projectId}/${definition.name}`);
+        expect(options.taskContext?.agentDefinitions).toBe(definitions);
+        return {
+          status: "done", sessionId: `s_${definition.projectId}`, messages: [], duration: "0s", outputDir: root,
+          finishResult: { status: "done", summary: `${definition.projectId} complete` },
+          structuredResult: { state: "converged", summary: `${definition.projectId} complete`, facts: [] },
+        };
+      },
+    } as unknown as SubagentManager }, definitions);
+
+    for (const appId of ["alpha", "beta"] as const) {
+      const result = await runTaskAgent({
+        opts: { agents: runner },
+        descriptor: { id: appId, appDir: root, projectDir: root, app: {} },
+        claim: { agent: "worker" },
+        attempt: {
+          maxAttemptMs: 1_000,
+          read: { tasks: {} }, task: { id: "root", generation: 1, outcome: "Run", acceptance: [] },
+          role: { agent: "worker", instructions: "unscoped" }, events: { items: [] }, waits: {},
+        },
+        executionPaths: { appDir: root, projectDir: root, workspaceDir: root },
+        childContext: { live: [], completed: [] }, taskSnapshot: { live: [], truncated: false },
+        taskEvents: {} as never, acceptedLiveEventIds: () => [], sessionStarted: () => {},
+      } as any);
+      expect(result.handlerResult).toMatchObject({ state: "converged", summary: `${appId} complete` });
+    }
+    expect(selected).toEqual(["alpha/worker", "beta/worker"]);
+    expect(runner.role("alpha/worker")).toEqual({ agent: "alpha/worker", instructions: "You are Alpha worker." });
+    expect(runner.role("beta/worker")).toEqual({ agent: "beta/worker", instructions: "You are Beta worker." });
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("Task roots reject a foreign same-name agent when the owning App profile is missing", async () => {
+  const foreign: SubagentDefinition = {
+    name: "worker", description: "Beta worker", domain: "test", model: fakeModel(), tools: [],
+    appLocal: true, projectId: "beta",
+  };
+  let dispatched = false;
+  const runner = createTaskAgentRunner({ manager: {
+    callAgentDefinition: async () => { dispatched = true; throw new Error("must not dispatch"); },
+  } as unknown as SubagentManager }, new Map([["beta/worker", foreign]]));
+
+  const result = await runTaskAgent({
+    opts: { agents: runner },
+    descriptor: { id: "alpha", appDir: "/tmp/alpha", projectDir: "/tmp/alpha", app: {} },
+    claim: { agent: "worker" },
+    attempt: { maxAttemptMs: 1_000 },
+  } as any);
+
+  expect(dispatched).toBe(false);
+  expect(result).toMatchObject({
+    unavailable: true,
+    handlerResult: { state: "error", summary: "Task agent alpha/worker is not available" },
+  });
+});
+
 test.each([false, true])("managed Task passes policy scope through real preparation (checkout=%s)", async (checkout) => {
   const root = mkdtempSync(join(tmpdir(), "may-managed-policy-"));
   try {
@@ -105,7 +179,7 @@ test.each([false, true])("managed Task passes policy scope through real preparat
         preparedCount++;
         return { status: "done", sessionId: "fixture", structuredResult: { state: "converged", summary: "Scope checked", facts: [] } };
       },
-    } as unknown as SubagentManager }, new Map([[definition.name, definition]]));
+    } as unknown as SubagentManager }, new Map([[`sample/${definition.name}`, definition]]));
     const input = {
       descriptor: { id: "sample", app: {} },
       attempt: { read: { tasks: {} },

@@ -317,8 +317,7 @@ export async function runStandaloneCli(
         writeOut("No callable targets discovered.");
       } else {
         for (const item of targets) {
-          const scope = item.app ? ` [${item.app}]` : "";
-          writeOut(`${item.target.padEnd(32)} (${item.kind})${scope} — ${item.description}`);
+          writeOut(`${item.name.padEnd(32)} — ${item.description}`);
         }
       }
       return { exitCode: 0, targets };
@@ -340,27 +339,21 @@ export async function runStandaloneCli(
 
     if (parsed.json) {
       writeOut(JSON.stringify(runResult, null, 2));
-    } else if (runResult.ok && runResult.result) {
-      const summary =
-        runResult.result.type === "done" ? runResult.result.summary : runResult.result.reason;
-      writeOut(`[${runResult.status}] ${summary}`);
-      if (runResult.result.output !== undefined) {
+    } else if (runResult.status === "done" || runResult.status === "blocked") {
+      writeOut(`[${runResult.status}] ${runResult.summary}`);
+      if (runResult.output !== undefined) {
         writeOut(
-          typeof runResult.result.output === "string"
-            ? runResult.result.output
-            : JSON.stringify(runResult.result.output, null, 2),
+          typeof runResult.output === "string"
+            ? runResult.output
+            : JSON.stringify(runResult.output, null, 2),
         );
       }
     } else {
-      const msg =
-        runResult.error instanceof Error
-          ? runResult.error.message
-          : (runResult.report.error?.message ?? "Execution failed");
-      writeErr(`[${runResult.status}] ${msg}`);
+      writeErr(`[${runResult.status}] ${runResult.summary}`);
     }
 
     return {
-      exitCode: runResult.ok && runResult.status === "done" ? 0 : 1,
+      exitCode: runResult.status === "done" ? 0 : 1,
       result: runResult,
     };
   } finally {

@@ -91,6 +91,7 @@ describe("one workflow context", () => {
             "done",
             "events",
             "input",
+            "list",
             "log",
             "metrics",
             "read",
@@ -103,15 +104,11 @@ describe("one workflow context", () => {
           activeSignal: true,
           input: "input",
           done: {
-            id: expect.any(String),
-            kind: "workflow",
             status: "done",
             summary: "nested",
             output: { accepted: true },
           },
           blocked: {
-            id: expect.any(String),
-            kind: "workflow",
             status: "blocked",
             summary: "wait",
             facts: { reason: "facts" },
@@ -120,8 +117,8 @@ describe("one workflow context", () => {
       });
       if (result.type === "done") {
         const output = result.output as { done: object; blocked: object };
-        expect(Object.keys(output.done).sort()).toEqual(["id", "kind", "output", "status", "summary"]);
-        expect(Object.keys(output.blocked).sort()).toEqual(["facts", "id", "kind", "status", "summary"]);
+        expect(Object.keys(output.done).sort()).toEqual(["output", "status", "summary"]);
+        expect(Object.keys(output.blocked).sort()).toEqual(["facts", "status", "summary"]);
       }
     });
   }

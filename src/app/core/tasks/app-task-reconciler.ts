@@ -476,7 +476,7 @@ function taskSpecHash(intent: AppTaskIntent, effectiveAgent?: string, legacyMode
     .digest("hex");
 }
 
-function resourceSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
+export function appTaskDesiredSpec(intent: AppTaskIntent): AppTaskResource["spec"] {
   return {
     parentId: intent.parentId,
     outcome: intent.outcome,
@@ -865,6 +865,12 @@ function hasSatisfiedTaskCondition(tree: TaskTree, taskId: string): boolean {
   return taskConditionEntries(tree, taskId).some(([, condition]) => isSatisfiedCondition(condition));
 }
 
+function hasBlockingOpenTaskCondition(tree: TaskTree, taskId: string): boolean {
+  return taskConditionEntries(tree, taskId).some(
+    ([, condition]) => isOpenCondition(condition) && condition.spec.mode !== "continuous",
+  );
+}
+
 function pruneUnlinkedConditions(tree: TaskTree): void {
   const linked = new Set<string>();
   for (const resource of Object.values(tree.resources ?? {})) {
@@ -921,6 +927,7 @@ function materializeWaitingConditions(
       type: raw.type.trim(),
       subject: raw.subject.trim(),
       expected: raw.expected,
+      ...(raw.mode === "continuous" ? { mode: raw.mode } : {}),
       ...(raw.requestedAction?.trim() ? { requestedAction: raw.requestedAction.trim() } : {}),
       owner: raw.owner!.trim(),
       ...((raw.progress ?? current?.spec.progress) === undefined ? {} : { progress: raw.progress ?? current?.spec.progress }),
@@ -1369,7 +1376,7 @@ export function observeAppTaskIntent(
   const existingAgent = existingIntent ? resolvedAgent(tree, existingIntent, input.appAgent) : null;
   const sameSpec = existingIntent ? appTaskSpecHash(existingIntent, existingAgent ?? undefined) === specHash : false;
   const generation = sameSpec ? previousGeneration : Math.max(1, previousGeneration + 1);
-  const nextSpec = resourceSpec(input.intent);
+  const nextSpec = appTaskDesiredSpec(input.intent);
   const desiredStateChanged =
     !existingResource || JSON.stringify(stableValue(existingResource.spec)) !== JSON.stringify(stableValue(nextSpec));
   const creator = existingResource?.metadata.creator ?? input.creator ?? { appId: config.resourceStore.appId };
@@ -1498,14 +1505,18 @@ export function readAppTaskIntent(config: AppTaskContext, taskId: string): AppTa
   return resource ? resourceIntent(resource) : null;
 }
 
-/** Resolve the exact Task's agent, including inheritance, before worker loading. */
-export function readAppTaskAgent(config: AppTaskContext, taskId: string, snapshot?: TaskTree): string | null {
+/** Resolve stored assignment before using an available App default. */
+export function readAppTaskAgent(
+  config: Pick<AppTaskContext, "resourceStore"> & { agent?: string },
+  taskId: string,
+  snapshot?: TaskTree,
+): string | null {
   const tree = snapshot ?? config.resourceStore.readTaskContext(
     { taskIds: [taskId] },
     { includeHistory: false, childLimit: 0 },
   );
   const resource = tree.resources?.[taskId];
-  return resource ? resolvedAgent(tree, resourceIntent(resource), config.agent) : null;
+  return resource ? resolvedAgent(tree, resourceIntent(resource), config.agent ?? "") || null : null;
 }
 
 /**
@@ -2214,7 +2225,7 @@ export function reopenAppTask(
     if (input.intent) {
       const intent = normalizeTaskAgent({ ...input.intent, id: input.taskId, parentId: resource.spec.parentId });
       validateIntent(intent);
-      resource.spec = resourceSpec(intent);
+      resource.spec = appTaskDesiredSpec(intent);
     }
     const now = new Date().toISOString();
     const eventRow = config.resourceStore.db.prepare("SELECT MAX(id) AS id FROM events").get() as {
@@ -3599,6 +3610,9 @@ function validateConditions(
     if (!("expected" in condition)) {
       throw new Error(`Handler result Condition ${identity} requires an expected value`);
     }
+    if (condition.mode !== undefined && condition.mode !== "one-shot" && condition.mode !== "continuous") {
+      throw new Error(`Handler result Condition ${identity} mode must be one-shot or continuous`);
+    }
     if (condition.progress !== undefined &&
         (type !== "app.dependency.updated" || !identity.startsWith("app-request:") ||
          (condition.progress !== "immediate" && condition.progress !== "next-wake"))) {
@@ -3981,7 +3995,7 @@ export function completeAppTask(
   touchResource(resource, {
     phase: pendingWork
       ? "pending"
-      : resource.status.conditionIds?.length || remainingReviewAt !== undefined
+      : hasBlockingOpenTaskCondition(tree, claim.taskId) || remainingReviewAt !== undefined
         ? "waiting"
         : "converged",
     reviewAt: remainingReviewAt,

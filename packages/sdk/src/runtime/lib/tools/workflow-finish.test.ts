@@ -98,7 +98,7 @@ describe("workflow finish contract", () => {
         base,
         Type.Object({ verdict: Type.Union([Type.Literal("pass"), Type.Literal("fail")]) }),
       );
-      expect((tool.parameters as any).type).toBe("object");
+      expect((tool.parameters as any).anyOf).toHaveLength(2);
       const call = toolCall({
         status: "done",
         summary: "Review complete",

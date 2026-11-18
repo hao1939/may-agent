@@ -19,6 +19,34 @@ import { readTaskInputs } from "./app-task-inputs.js";
 import { readTaskChangeInputKeys, type AppTaskClaim } from "./app-task-reconciler.js";
 import type { AppTaskContext } from "./app-task-store.js";
 
+type CommunicationReceipt = NonNullable<TaskChangeReceipt["communication"]>[number];
+type SavedCommunication = {
+  communication: TaskCommunication;
+  receipt: CommunicationReceipt;
+  conversationId: string;
+  /** Only a newly published explanation can be cited by replyId. */
+  messageId?: string;
+};
+
+function readCommunicationReceipt(config: AppTaskContext, claim: AppTaskClaim, id: string): SavedCommunication | null {
+  const row = config.resourceStore.db
+    .prepare(
+      `SELECT receipt_json FROM app_task_communication_receipts
+     WHERE app_id = ? AND task_id = ? AND task_generation = ? AND communication_id = ?`,
+    )
+    .get(config.resourceStore.appId, claim.taskId, claim.generation, id.trimEnd()) as { receipt_json: string } | null;
+  if (!row) return null;
+  const saved = JSON.parse(row.receipt_json) as SavedCommunication | null;
+  if (
+    typeof saved?.communication?.id !== "string" ||
+    saved.communication.id.trimEnd() !== id.trimEnd() ||
+    saved.receipt?.id !== saved.communication.id ||
+    typeof saved.conversationId !== "string"
+  )
+    throw new Error("Saved communication receipt is unavailable");
+  return saved;
+}
+
 /** Authority follows the accepted input, never a copied Conversation or Task reference. */
 export function readTaskCommunicationInput(config: AppTaskContext, claim: AppTaskClaim, inputId: string) {
   const item = getAppInboxItem(config.resourceStore.db, inputId);
@@ -57,13 +85,16 @@ export function applyTaskCommunication(
     if (!change.message && !change.topic && !change.requestUpdates?.length)
       throw new Error("Communication requires a message, Request update or Topic decision");
     const localKey = `communication:${change.id}`;
-    // Both event kinds share the same operation name. Content cannot be changed on replay.
+    // Retain reads of existing journal receipts without producing new receipt Events.
+    // The full operation and its original result survive replacement attempts.
     const saved =
-      events.read("app.task.communication.updated", localKey) ?? events.read("conversation.message.created", localKey);
+      readCommunicationReceipt(config, claim, change.id) ??
+      (events.read("app.task.communication.updated", localKey) ?? events.read("conversation.message.created", localKey))
+        ?.data;
     if (saved) {
-      if (!isDeepStrictEqual(saved.data.communication, change))
+      if (!isDeepStrictEqual(saved.communication, change))
         throw new Error("Communication id was reused for different content");
-      const receipt = saved.data.receipt as NonNullable<TaskChangeReceipt["communication"]>[number] | undefined;
+      const receipt = saved.receipt as CommunicationReceipt | undefined;
       if (receipt?.id !== change.id) throw new Error("Saved communication receipt is unavailable");
       return receipt;
     }
@@ -100,16 +131,18 @@ export function applyTaskCommunication(
       );
     let messageId = change.message ? `task-message:${identity}` : undefined;
     if (change.replyId) {
-      const prior = events.read("conversation.message.created", `communication:${change.replyId}`);
+      const prior =
+        readCommunicationReceipt(config, claim, change.replyId) ??
+        events.read("conversation.message.created", `communication:${change.replyId}`)?.data;
       if (
         !prior ||
-        prior.data.conversationId !== conversationId ||
-        typeof (prior.data.communication as TaskCommunication | undefined)?.inputId !== "string" ||
-        typeof prior.data.messageId !== "string"
+        prior.conversationId !== conversationId ||
+        typeof (prior.communication as TaskCommunication | undefined)?.inputId !== "string" ||
+        typeof prior.messageId !== "string"
       )
         throw new Error("replyId must name a published explanation in this Conversation from this Task generation");
-      readTaskCommunicationInput(config, claim, (prior.data.communication as TaskCommunication).inputId);
-      messageId = prior.data.messageId;
+      readTaskCommunicationInput(config, claim, (prior.communication as TaskCommunication).inputId);
+      messageId = prior.messageId;
     }
     // A known Request belongs to the Task which accepted its originating input.
     // Reviewer taskRefs and a shared Conversation do not transfer that obligation.
@@ -167,19 +200,20 @@ export function applyTaskCommunication(
           }
         : {}),
     };
-    // Keep replay evidence in its own journal fact. Repeating full Request scopes
-    // in the message would overflow the bounded SQL projection used by history.
-    events.publish(localKey, {
-      type: "app.task.communication.updated",
-      target: { appId: item.appId },
-      data: {
-        appId: item.appId,
-        conversationId,
-        communication: structuredClone(change),
-        receipt,
-        ...(messageId ? { messageId } : {}),
-      },
-    });
+    // This joins the Task changes transaction, including preflight rollback.
+    // Full Request scopes belong in the receipt, outside bounded message history.
+    const savedCommunication: SavedCommunication = {
+      conversationId,
+      communication: change,
+      receipt,
+      ...(change.message ? { messageId } : {}),
+    };
+    db.run(
+      `INSERT INTO app_task_communication_receipts
+       (app_id, task_id, task_generation, communication_id, receipt_json) VALUES (?, ?, ?, ?, ?)`,
+      // Match historical communication:<id> emission-key trimming; the saved content stays exact.
+      [item.appId, claim.taskId, claim.generation, change.id.trimEnd(), JSON.stringify(savedCommunication)],
+    );
     if (change.message)
       events.publish(localKey, {
         type: "conversation.message.created",

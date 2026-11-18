@@ -1,8 +1,12 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { basename, dirname, resolve } from "node:path";
 import { describeMaintenanceError, runDbMaintenancePass } from "../../lib/db/maintenance.js";
-import { closeAllDbs, getDb } from "../../lib/db/connection.js";
+import { closeAllDbs } from "../../lib/db/connection.js";
 import { DbWriter, EVENT_DELIVERY_HOUSEKEEPING_INTERVAL_MS } from "../../lib/db-writer.js";
 import { sendSocketCommand } from "@may-agent/control/client";
+import { isProcessInstanceAlive } from "../../lib/process-identity.js";
+import type { DaemonHeartbeatRecord } from "../daemon-loops.js";
 import { readExecutionStatus } from "../core/reads/execution-status.js";
 
 const LIVENESS_INTERVAL_MS = 30_000;
@@ -60,15 +64,44 @@ export function observeRuntimeLiveness(
 }
 
 export function observeDurableDaemonHeartbeat(
-  heartbeatAt: number | undefined,
+  heartbeat: Partial<DaemonHeartbeatRecord> | undefined,
+  expectedPid: number | undefined,
   activeCount: number,
   now: number,
   freshMs = LIVENESS_HEARTBEAT_FRESH_MS,
 ): RuntimeLivenessObservation {
-  return {
-    responsive: Number.isFinite(heartbeatAt) && now - Number(heartbeatAt) <= freshMs,
-    activeWork: activeCount > 0,
-  };
+  const recordedAt = Number(heartbeat?.recordedAt);
+  const processStartedAt = Number(heartbeat?.processStartedAt);
+  const valid =
+    heartbeat?.version === 1 &&
+    Number.isInteger(expectedPid) &&
+    heartbeat.pid === expectedPid &&
+    typeof heartbeat.processIdentity === "string" &&
+    heartbeat.processIdentity.length > 0 &&
+    Number.isFinite(processStartedAt) &&
+    processStartedAt > 0 &&
+    Number.isFinite(recordedAt) &&
+    recordedAt <= now + 5_000 &&
+    now - recordedAt <= freshMs &&
+    isProcessInstanceAlive(heartbeat);
+  return { responsive: valid, activeWork: activeCount > 0 };
+}
+
+function readDurableDaemonHeartbeat(socketPath: string): {
+  heartbeat?: Partial<DaemonHeartbeatRecord>;
+  expectedPid?: number;
+} {
+  const stem = basename(socketPath, ".sock");
+  const directory = dirname(socketPath);
+  let heartbeat: Partial<DaemonHeartbeatRecord> | undefined;
+  let expectedPid: number | undefined;
+  try {
+    heartbeat = JSON.parse(readFileSync(resolve(directory, `${stem}.heartbeat.json`), "utf8")) as Partial<DaemonHeartbeatRecord>;
+  } catch { /* absent or partial writes are unhealthy */ }
+  try {
+    expectedPid = Number(readFileSync(resolve(directory, `${stem}.pid`), "utf8").trim());
+  } catch { /* absent process identity is unhealthy */ }
+  return { heartbeat, expectedPid };
 }
 
 export async function observeDaemonLiveness(persistDir: string, socketPath: string): Promise<RuntimeLivenessObservation> {
@@ -80,18 +113,9 @@ export async function observeDaemonLiveness(persistDir: string, socketPath: stri
         typeof response.activeWork === "boolean" ? response.activeWork : readExecutionStatus(persistDir).activeWork,
     };
   } catch {
-    const db = getDb(persistDir);
-    const heartbeat = db
-      .prepare(
-        `SELECT timestamp
-       FROM events
-       WHERE event_type = 'runtime.daemon.heartbeat'
-       ORDER BY timestamp DESC
-       LIMIT 1`,
-      )
-      .get() as { timestamp?: number } | undefined;
+    const { heartbeat, expectedPid } = readDurableDaemonHeartbeat(socketPath);
     const execution = readExecutionStatus(persistDir);
-    return observeDurableDaemonHeartbeat(heartbeat?.timestamp, execution.activeWork ? 1 : 0, Date.now());
+    return observeDurableDaemonHeartbeat(heartbeat, expectedPid, execution.activeWork ? 1 : 0, Date.now());
   }
 }
 

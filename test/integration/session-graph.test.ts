@@ -308,7 +308,7 @@ describe("workflow nesting depth cap", () => {
       export const name = "outer";
       export const description = "Calls inner";
       export async function execute(ctx) {
-        const inner = await ctx.call("inner", "sub-task");
+        const inner = await ctx.call("global/inner", { prompt: "sub-task" });
         if (inner.status === "done") return ctx.done("outer+inner: " + inner.summary);
         return ctx.blocked("inner failed");
       }
@@ -342,7 +342,7 @@ describe("workflow nesting depth cap", () => {
       export const description = "Calls itself";
       export async function execute(ctx) {
         try {
-          const sub = await ctx.call("recursive", "recurse");
+          const sub = await ctx.call("global/recursive", { prompt: "recurse" });
           if (sub.status === "blocked") return ctx.blocked("hit depth: " + sub.summary);
           return ctx.done("should not get here");
         } catch (error) {
@@ -368,7 +368,7 @@ describe("workflow nesting depth cap", () => {
       export const name = "parent-wf";
       export const description = "Parent";
       export async function execute(ctx) {
-        const sub = await ctx.call("child-wf", "child task");
+        const sub = await ctx.call("global/child-wf", { prompt: "child task" });
         if (sub.status === "done") return ctx.done("parent+child");
         return ctx.blocked("child failed");
       }
@@ -480,7 +480,7 @@ describe("callerSessionId", () => {
       manager,
       workflowDir,
       persistDir,
-      projectId: "scout/scout-second-brain-learning",
+      projectId: "scout",
     });
 
     const parsed: WorkflowToolResult = await runner.run("project-tag-test", "test");
@@ -488,7 +488,7 @@ describe("callerSessionId", () => {
     if (parsed.type !== "done") return;
 
     const run = getWorkflowRun(persistDir, parsed.workflowRunId);
-    expect(run!.projectId).toBe("scout/scout-second-brain-learning");
+    expect(run!.projectId).toBe("scout");
   });
 
   it("workflow launched from a session inherits caller project and workflow lineage", async () => {
@@ -511,7 +511,7 @@ describe("callerSessionId", () => {
       status: "running",
       startedAt: Date.now(),
       workflowRunId: "wr_parent",
-      projectId: "scout/scout-second-brain-learning",
+      projectId: "scout",
     });
     const runner = createWorkflowRunner({
       manager,
@@ -527,6 +527,6 @@ describe("callerSessionId", () => {
     const run = getWorkflowRun(persistDir, parsed.workflowRunId);
     expect(run!.parentSessionId).toBe(callerSid);
     expect(run!.parentWorkflowRunId).toBe("wr_parent");
-    expect(run!.projectId).toBe("scout/scout-second-brain-learning");
+    expect(run!.projectId).toBe("scout");
   });
 });

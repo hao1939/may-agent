@@ -40,10 +40,11 @@ import { observeExecutionUsage, recoverExecutionUsage, type UsageOutcome } from 
 import { existsSync, mkdirSync, realpathSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { normalizeEventOwner } from "../../packages/control/src/event-envelope.js";
-import { ownsBoundedHelper, validateSessionControl } from "../app/adapters/executors/session-control.js";
+import { ownsBoundedHelper } from "../app/adapters/executors/session-control.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
-import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
+import { readSessionTaskAttempt, upsertSession, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
+import { writeSessionResult } from "./artifacts.js";
 import {
   getWorkflowRun,
   getWorkflowStepSessions,
@@ -232,6 +233,12 @@ const MAX_TRANSCRIPT_TAIL_BYTES = 8 * 1024 * 1024;
 
 // ── SubagentManager (v2 implementation) ──────────────────────────────
 
+function registeredAgentName(definition: SubagentDefinition): string {
+  return definition.appLocal && definition.projectId
+    ? `${definition.projectId}/${definition.name}`
+    : `global/${definition.name}`;
+}
+
 export class SubagentManager {
   // Public maps for AgentsToolManagerDeps compatibility
   agents = new Map<string, { definition: SubagentDefinition }>();
@@ -277,15 +284,16 @@ export class SubagentManager {
 
   register(def: SubagentDefinition): void {
     resolvedExecutionRecipient(def);
-    this.agents.set(def.name, { definition: def });
+    this.agents.set(registeredAgentName(def), { definition: def });
   }
 
   unregister(name: string): void {
     this.agents.delete(name);
+    this.agents.delete(`global/${name}`);
   }
 
   hasAgent(name: string): boolean {
-    return this.agents.has(name);
+    return this.agents.has(name) || this.agents.has(`global/${name}`);
   }
   agentNames(): string[] {
     return [...this.agents.keys()];
@@ -301,18 +309,20 @@ export class SubagentManager {
 
   /** Resolve the same definition for helper authorization and execution. */
   getAgentDefinition(name: string, callerSessionId?: string): SubagentDefinition | undefined {
-    return (
-      (callerSessionId ? this._sessions.get(callerSessionId)?.taskContext?.agentDefinitions?.get(name) : undefined) ??
-      this.agents.get(name)?.definition
-    );
+    const captured = callerSessionId ? this._sessions.get(callerSessionId)?.taskContext?.agentDefinitions : undefined;
+    const exact = captured?.get(name) ?? captured?.get(`global/${name}`) ?? this.agents.get(name)?.definition ?? this.agents.get(`global/${name}`)?.definition;
+    if (exact) return exact;
+    const matches = [...(captured?.values() ?? []), ...[...this.agents.values()].map((entry) => entry.definition)]
+      .filter((definition, index, all) => definition.name === name && all.indexOf(definition) === index);
+    return matches.length === 1 ? matches[0] : undefined;
   }
 
   // ── Session lifecycle ──
 
   run(name: string, task: string, opts?: RunOptions): string {
-    const registered = this.agents.get(name);
-    if (!registered) throw new Error(`Agent "${name}" not registered`);
-    return this.runDefinition(registered.definition, task, opts);
+    const definition = this.getAgentDefinition(name);
+    if (!definition) throw new Error(`Agent "${name}" not registered`);
+    return this.runDefinition(definition, task, opts);
   }
 
   /** Start from an immutable definition captured by the caller. */
@@ -564,6 +574,21 @@ export class SubagentManager {
       this.completedResults.delete(sessionId);
       this._sessions.set(sessionId, session);
       try {
+        upsertSession(this._persistDir, {
+          sessionId,
+          agent: session.agentName,
+          task: session.task,
+          status: "running",
+          kind: session.kind,
+          source: session.source ?? "runtime",
+          parentSessionId: session.parentSessionId,
+          workflowRunId: session.workflowRunId,
+          projectId: session.projectId,
+          taskBinding: session.taskBinding,
+          requestId: session.requestId,
+          stepLabel: session.stepLabel,
+          startedAt: session.startedAt,
+        });
         this.bridgeEvents(session);
         if (activation) this.emitSkillLoaded(session, activation, prepared.skillActivation ?? "explicit", opts?.trace);
       } catch (err) {
@@ -1008,11 +1033,7 @@ export class SubagentManager {
   // ── Tool creation ──
 
   createAgentsTool(opts?: CreateAgentsToolOptions): AgentTool {
-    return createAgentsToolFn(this, {
-      ...opts,
-      validateControl: (sessionId, callerSessionId) =>
-        validateSessionControl(this, "session.cancel.requested", sessionId, { callerSessionId, remote: true }),
-    });
+    return createAgentsToolFn(this, opts);
   }
 
   // ── Path helpers ──
@@ -1377,7 +1398,7 @@ export class SubagentManager {
     if (!errorText && session.requireFinish && !finishParams) {
       errorText = "Workflow agent step ended without calling finish() after one corrective prompt";
     }
-    if (!errorText && session.outputSchema && finishParams && finishParams.output === undefined) {
+    if (!errorText && session.outputSchema && finishParams?.status === "done" && finishParams.output === undefined) {
       errorText = "Workflow agent step completed without the required schema-backed finish().output payload";
     }
     if (!errorText && !finishParams && !assistantText) {
@@ -1407,7 +1428,9 @@ export class SubagentManager {
       lastActivityAt: Date.now(),
     });
 
-    // Emit session.end
+    this.persistSessionResult(session, { status, summary: lastText, error: errorText, finishParams });
+
+    // Emit session.end after the result and its SQL descriptor are persisted.
     if (this.bus) {
       const trace = this.terminalTrace(session);
       this.bus.emit({
@@ -1622,6 +1645,7 @@ export class SubagentManager {
       this.rememberCompletedResult(result);
 
       const trace = this.terminalTrace(session);
+      this.persistSessionResult(session, { status, summary: lastText, error: errorText, finishParams });
       this.bus?.emit({
         type: "session.end",
         source: session.source ?? "runtime",
@@ -1761,8 +1785,39 @@ export class SubagentManager {
     });
   }
 
+  /** Required evidence precedes publication; failures retain the earlier terminal status. */
+  private persistSessionResult(
+    session: ActiveSession,
+    result: {
+      status: "done" | "error" | "interrupted";
+      summary: string;
+      error?: string;
+      finishParams: ReturnType<typeof extractFinishParams>;
+    },
+  ): void {
+    const endedAt = Date.now();
+    const resultArtifact = writeSessionResult(this._persistDir, session.sessionId, {
+      status: result.status,
+      outcome: result.status,
+      error: result.error,
+      summary: result.summary,
+      opCount: session.toolCalls,
+      turnCount: session.modelStepCount,
+      finishParams: result.finishParams,
+      endedAt,
+    });
+    updateSessionDb(this._persistDir, session.sessionId, {
+      status: result.status,
+      error: result.error,
+      outcome: result.status,
+      opCount: session.toolCalls,
+      lastActivityAt: endedAt,
+      endedAt,
+      resultArtifact,
+    });
+  }
+
   private bridgeEvents(session: ActiveSession): void {
-    if (!this.bus) return;
     const { agent, sessionId, agentName, task } = session;
     const bus = this.bus;
     const pendingSkillReads = new Map<string, MaySkill>();
@@ -1801,15 +1856,16 @@ export class SubagentManager {
       },
       ...(session.trace ? { trace: session.trace } : {}),
     } as any;
-    const persistedStartEvent = bus.emit(startEvent);
-    const startEventId = persistedStartEvent[EVENT_ROW_ID];
-    if (Number.isInteger(startEventId) && Number(startEventId) > 0) {
+    const persistedStartEvent = bus?.emit(startEvent);
+    const startEventId = persistedStartEvent?.[EVENT_ROW_ID];
+    if (persistedStartEvent && Number.isInteger(startEventId) && Number(startEventId) > 0) {
       session.trace = {
         traceId: persistedStartEvent.trace?.traceId ?? `event:${startEventId}`,
         parentEventId: startEventId,
       };
     }
 
+    // Execution bookkeeping also owns result counts when publication is disabled.
     agent.subscribe((event) => {
       switch (event.type) {
         case "tool_execution_update":
@@ -1836,7 +1892,7 @@ export class SubagentManager {
             this.requestBoundedFinish(session);
           }
           persistProgress();
-          bus.emit({
+          bus?.emit({
             type: "tool_call",
             sessionId,
             agent: agentName,
@@ -1866,7 +1922,7 @@ export class SubagentManager {
           persistProgress();
           const blocks = (event as any).result?.content ?? [];
           const text = blocks.find((b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output"))?.text ?? "";
-          bus.emit({
+          bus?.emit({
             type: "tool_result",
             sessionId,
             agent: agentName,
@@ -1891,12 +1947,12 @@ export class SubagentManager {
             .map((block: any) => block.text)
             .join("\n")
             .trim();
-          if (text) bus.emit({ type: "text", sessionId, agent: agentName, text });
+          if (text) bus?.emit({ type: "text", sessionId, agent: agentName, text });
           break;
         }
         case "turn_end":
           persistProgress();
-          bus.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls: session.toolCalls, durationMs: 0 });
+          bus?.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls: session.toolCalls, durationMs: 0 });
           break;
       }
     });
