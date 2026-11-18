@@ -304,6 +304,7 @@ if [ "\${1-}" = run ] && [ "\${2-}" = bundle ]; then
   printf '#!/bin/sh\\nexit 0\\n' > bundle/may-agent
   printf '#!/bin/sh\\nexit 0\\n' > packages/terminal/bin/may-console.cjs
   printf '#!/bin/sh\\nexit 0\\n' > container/may-agent-supervisor-restart.sh
+  printf '[supervisord]\\n' > container/supervisord.conf
   printf '{}\\n' > packages/sdk/package.json
   printf 'ui\\n' > bundle/platform-ui/index.html
   chmod +x bundle/may-agent packages/terminal/bin/may-console.cjs container/may-agent-supervisor-restart.sh
