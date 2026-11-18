@@ -133,11 +133,26 @@ export function buildEventIngressFrame(body: Record<string, unknown>): Record<st
     (typeof body.idempotencyKey === "string" && body.idempotencyKey.trim()) ||
     (typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()) ||
     undefined;
+  const operatorId = typeof data.operatorId === "string" ? data.operatorId : undefined;
+  const authorizationReference =
+    typeof data.authorizationReference === "string" ? data.authorizationReference : undefined;
+  const authorizationEvidence =
+    data.authorizationEvidence && typeof data.authorizationEvidence === "object" && !Array.isArray(data.authorizationEvidence)
+      ? data.authorizationEvidence
+      : undefined;
   delete data.idempotencyKey;
-  return buildPublishFrame(String(envelope.type), data, {
-    ...(Object.values(target).some(Boolean) ? { target } : {}),
-    ...(idempotencyKey ? { idempotencyKey } : {}),
-  });
+  delete data.operatorId;
+  delete data.authorizationReference;
+  delete data.authorizationEvidence;
+  return {
+    ...buildPublishFrame(String(envelope.type), data, {
+      ...(Object.values(target).some(Boolean) ? { target } : {}),
+      ...(idempotencyKey ? { idempotencyKey } : {}),
+    }),
+    ...(operatorId ? { operatorId } : {}),
+    ...(authorizationReference ? { authorizationReference } : {}),
+    ...(authorizationEvidence ? { authorizationEvidence } : {}),
+  };
 }
 
 export async function sendDaemonFrameWithRetry(

@@ -1,10 +1,145 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { once } from "node:events";
+import { EventEmitter, once } from "node:events";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+
+class Socket extends EventEmitter {
+  ws: { send(data: string): void; close(): void } | null = null;
+  subscriptionAcknowledged = false;
+  pending = new Map<
+    string,
+    Array<{ resolve(value: Record<string, any>): void; reject(error: Error): void }>
+  >();
+
+  write(data: string): boolean {
+    for (const line of data.split("\n")) {
+      if (!line.trim()) continue;
+      const message = JSON.parse(line) as Record<string, any>;
+      if (message.type === "ok" && message.command === "subscribe") {
+        if (!this.subscriptionAcknowledged) {
+          this.subscriptionAcknowledged = true;
+          this.ws?.send(JSON.stringify({ type: "subscribed" }));
+        }
+        continue;
+      }
+      const command = message.command === "status" ? "status" : message.command;
+      const waiter = command ? this.pending.get(command)?.shift() : undefined;
+      if (waiter && (message.type === "ok" || message.type === "error" || message.type === "status")) {
+        waiter.resolve(message);
+      } else if (!(command && (message.type === "ok" || message.type === "error" || message.type === "status"))) {
+        this.ws?.send(JSON.stringify(message));
+      }
+    }
+    return true;
+  }
+
+  request(frame: Record<string, any>): Promise<Record<string, any>> {
+    return new Promise((resolve, reject) => {
+      const command = String(frame.type);
+      const queue = this.pending.get(command) ?? [];
+      queue.push({ resolve, reject });
+      this.pending.set(command, queue);
+      this.emit("data", Buffer.from(`${JSON.stringify(frame)}\n`));
+    });
+  }
+
+  destroy(): void {
+    for (const [command, queue] of this.pending) {
+      for (const waiter of queue) waiter.resolve({ type: "error", command, message: "daemon connection closed" });
+    }
+    this.pending.clear();
+    this.ws?.close();
+    this.emit("close");
+  }
+}
+
+class Server extends EventEmitter {
+  readonly port = 30_000 + Math.floor(Math.random() * 20_000);
+  private server?: ReturnType<typeof Bun.serve>;
+  private readonly sockets = new Set<Socket>();
+
+  constructor(private readonly connection: (socket: Socket) => void) {
+    super();
+  }
+
+  listen(_path: string): void {
+    this.server = Bun.serve({
+      hostname: "127.0.0.1",
+      port: this.port,
+      fetch: async (req, server) => {
+        const url = new URL(req.url);
+        if (url.pathname === "/ws" && server.upgrade(req)) return;
+        const socket = [...this.sockets].at(-1);
+        if (!socket) return Response.json({ error: "daemon unavailable" }, { status: 503 });
+        let frame: Record<string, any>;
+        if (url.pathname === "/api/conversation") {
+          frame = { type: "app.conversation.get", appId: url.searchParams.get("appId"), conversationId: url.searchParams.get("conversationId"), limit: Number(url.searchParams.get("limit") || 30) };
+        } else if (url.pathname === "/api/apps") {
+          frame = { type: "apps.list", ...(url.searchParams.get("appId") ? { appId: url.searchParams.get("appId") } : {}) };
+        } else if (url.pathname === "/api/tasks") {
+          frame = { type: "tasks.list" };
+          for (const key of ["appId", "cursor", "q"]) if (url.searchParams.get(key)) frame[key] = url.searchParams.get(key);
+          for (const key of ["includeDone", "humanActionOnly", "allApps"]) if (url.searchParams.get(key) === "true") frame[key] = true;
+          if (url.searchParams.get("limit")) frame.limit = Number(url.searchParams.get("limit"));
+        } else if (url.pathname === "/api/task") {
+          frame = { type: "task.get" };
+          for (const key of ["ref", "appId", "taskId"]) if (url.searchParams.get(key)) frame[key] = url.searchParams.get(key);
+        } else if (url.pathname === "/api/events" && req.method === "POST") {
+          frame = { type: "publish", event: await req.json() };
+        } else return Response.json({ error: "not found" }, { status: 404 });
+        const result = await socket.request(frame);
+        if (result.type === "error") return Response.json({ error: result.message }, { status: 503 });
+        const body = frame.type === "app.conversation.get" ? result.conversation
+          : frame.type === "apps.list" ? result.apps
+          : frame.type === "tasks.list" ? result.tasks
+          : frame.type === "task.get" ? result.task
+          : result;
+        return Response.json(body ?? {});
+      },
+      websocket: {
+        open: (ws) => {
+          const socket = new Socket();
+          socket.ws = ws;
+          this.sockets.add(socket);
+          this.connection(socket);
+        },
+        message: (ws, message) => {
+          const socket = [...this.sockets].find((item) => item.ws === ws);
+          if (!socket) return;
+          const frame = JSON.parse(String(message));
+          if (frame.type === "subscribe" && !socket.subscriptionAcknowledged) {
+            socket.subscriptionAcknowledged = true;
+            ws.send(JSON.stringify({ type: "subscribed" }));
+          }
+          socket.emit("data", Buffer.from(`${JSON.stringify(frame)}\n`));
+        },
+        close: (ws) => {
+          const socket = [...this.sockets].find((item) => item.ws === ws);
+          if (socket) {
+            this.sockets.delete(socket);
+            socket.emit("close");
+          }
+        },
+      },
+    });
+    queueMicrotask(() => this.emit("listening"));
+  }
+
+  close(): void {
+    this.server?.stop(true);
+    this.server = undefined;
+  }
+}
+
+function createServer(connection: (socket: Socket) => void): Server {
+  return new Server(connection);
+}
+
+function consoleEndpoint(server: Server): string {
+  return `http://127.0.0.1:${server.port}`;
+}
 
 const cleanups: Array<() => void> = [];
 
@@ -313,7 +448,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -414,6 +549,14 @@ describe("May Console", () => {
         output.includes("you[evaluation · 2 todo]>"),
     );
     const todoNoticeCount = output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1;
+    await waitFor(() =>
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.data?.metadata?.command === "/todo notification" &&
+          frame.event?.data?.text?.includes("2 Tasks need you"),
+      ),
+    );
     const automaticTodoView = frames.find(
       (frame) =>
         frame.type === "publish" &&
@@ -788,7 +931,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -894,7 +1037,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -1006,7 +1149,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -1028,17 +1171,15 @@ describe("May Console", () => {
       () =>
         appReads.length === 2 &&
         frames.some((frame) => frame.type === "tasks.list" && frame.appId === "gym" && !frame.humanActionOnly) &&
-        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly),
+        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly) &&
+        frames.some(
+          (frame) =>
+            frame.type === "publish" &&
+            frame.event?.type === "conversation.message.created" &&
+            frame.event?.data?.text === "hello" &&
+            frame.event?.data?.context?.focusedApp === "gym",
+        ),
     );
-    expect(
-      frames.some(
-        (frame) =>
-          frame.type === "publish" &&
-          frame.event?.type === "conversation.message.created" &&
-          frame.event?.data?.text === "hello" &&
-          frame.event?.data?.context?.focusedApp === "gym",
-      ),
-    ).toBe(true);
     expect(output).toContain("[apps] Selecting gym…");
     expect(output).toContain("you[gym]>");
     expect(output).toContain("you[evaluation]>");
@@ -1119,7 +1260,7 @@ describe("May Console", () => {
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const children = [0, 1].map(() =>
       spawn("node", [consolePath], {
-        env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+        env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
         stdio: "pipe",
       }),
     );
@@ -1155,7 +1296,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let stderr = "";
@@ -1226,7 +1367,7 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
   // util-linux script supplies a real terminal without requiring a live daemon.
   const quotedPath = "'" + consolePath.replaceAll("'", "'\\''") + "'";
   const child = spawn("script", ["-qefc", `node ${quotedPath}`, "/dev/null"], {
-    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", TERM: "xterm" },
+    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server), TERM: "xterm" },
     stdio: "pipe",
   });
   let output = "";
@@ -1334,7 +1475,7 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
   server.listen(join(socketDir, "may.sock"));
   await once(server, "listening");
   const child = spawn(process.execPath, [resolve(import.meta.dir, "../bin/may-console.cjs")], {
-    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may" },
+    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
     stdio: "pipe",
   });
   child.stdout.on("data", (chunk) => {
@@ -1372,8 +1513,8 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
     replyTo: command.event.data.messageId,
     approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: shown },
   });
-  expect(human[1].operatorId).toBeTruthy();
-  expect(human[1].authorizationEvidence).toMatchObject({
+  expect(human[1].event.operatorId).toBeTruthy();
+  expect(human[1].event.authorizationEvidence).toMatchObject({
     decisionText: "approve",
     replyTo: command.event.data.messageId,
   });

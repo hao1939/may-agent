@@ -22,6 +22,7 @@ const adapterInstanceId = randomUUID();
 let socket = null;
 let connected = false;
 let subscriptionReady = false;
+let conversationLoaded = false;
 let closing = false;
 let reconnectTimer = null;
 let reconnectDelayMs = 250;
@@ -359,16 +360,16 @@ function conversationInputFrame(message, reply) {
   rememberRenderedConversationMessage(messageId);
   return {
     type: "publish",
-    ...(reply
-      ? {
-          operatorId: userInfo().username,
-          authorizationReference: messageId,
-          authorizationEvidence: { channel: source, replyTo: reply.messageId, decisionText: message },
-        }
-      : {}),
     event: {
       type: "conversation.message.created",
       target: { appId: conversationAppId },
+      ...(reply
+        ? {
+            operatorId: userInfo().username,
+            authorizationReference: messageId,
+            authorizationEvidence: { channel: source, replyTo: reply.messageId, decisionText: message },
+          }
+        : {}),
       data: {
         conversationId,
         author: { kind: "human", id: messageId },
@@ -412,10 +413,21 @@ function requestConversation(kind = "startup", options = {}) {
   return sent || !closing;
 }
 
+function readFailedTransiently(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!connected || !subscriptionReady || /fetch failed|daemon unavailable|HTTP 5\d\d/i.test(message)) {
+    scheduleReconnect();
+    return true;
+  }
+  return false;
+}
+
 function sendConversationRead(pending = {}) {
   void httpJson(`/api/conversation?appId=${encodeURIComponent(conversationAppId)}&conversationId=${encodeURIComponent(conversationId)}&limit=30`)
     .then((conversation) => handleEvent({ type: "ok", command: "app.conversation.get", conversation, __pending: pending }))
-    .catch((error) => handleEvent({ type: "error", command: "app.conversation.get", message: error.message, __pending: pending }));
+    .catch((error) => {
+      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "app.conversation.get", message: error.message, __pending: pending });
+    });
   return true;
 }
 
@@ -438,7 +450,9 @@ function sendAppRead(pending) {
   const query = pending.appId ? `?appId=${encodeURIComponent(pending.appId)}` : "";
   void httpJson(`/api/apps${query}`)
     .then((apps) => handleEvent({ type: "ok", command: "apps.list", apps, __pending: pending }))
-    .catch((error) => handleEvent({ type: "error", command: "apps.list", message: error.message, __pending: pending }));
+    .catch((error) => {
+      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "apps.list", message: error.message, __pending: pending });
+    });
   return true;
 }
 
@@ -467,7 +481,9 @@ function sendTaskListRead(pending) {
   query.set("limit", String(pending.limit));
   void httpJson(`/api/tasks?${query}`)
     .then((tasks) => handleEvent({ type: "ok", command: "tasks.list", tasks, __pending: pending }))
-    .catch((error) => handleEvent({ type: "error", command: "tasks.list", message: error.message, __pending: pending }));
+    .catch((error) => {
+      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "tasks.list", message: error.message, __pending: pending });
+    });
   return true;
 }
 
@@ -514,7 +530,9 @@ function sendTaskRead(pending) {
   else { query.set("appId", pending.appId); query.set("taskId", pending.taskId); }
   void httpJson(`/api/task?${query}`)
     .then((task) => handleEvent({ type: "ok", command: "task.get", task, __pending: pending }))
-    .catch((error) => handleEvent({ type: "error", command: "task.get", message: error.message, __pending: pending }));
+    .catch((error) => {
+      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "task.get", message: error.message, __pending: pending });
+    });
   return true;
 }
 
@@ -1095,11 +1113,17 @@ function subscribe() {
 }
 
 function rereadCanonicalState() {
-  conversationSyncDirty = true;
-  requestConversation("sync");
-  requestTodoRefresh();
-  if (watchedTask) {
-    watchedTaskDirty = true;
+  if (pendingConversationReads.length > 0) {
+    for (const pending of pendingConversationReads) sendConversationRead(pending);
+  } else {
+    requestConversation(conversationLoaded ? "sync" : "startup");
+  }
+  for (const pending of pendingAppReads) sendAppRead(pending);
+  for (const pending of pendingTaskListReads) sendTaskListRead(pending);
+  for (const pending of pendingTaskReads) sendTaskRead(pending);
+  if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh")) requestTodoRefresh();
+  if (watchedTask && !pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) {
+    watchedTaskReadInFlight = false;
     refreshWatchedTask();
   }
   requestDesiredAutoFollow();
@@ -1231,6 +1255,7 @@ function handleEvent(event) {
       if (event.command === "app.conversation.get") {
         const pending = event.__pending || pendingConversationReads[0];
         removePending(pendingConversationReads, pending);
+        conversationLoaded = true;
         if (pending?.kind === "startup" || pending?.kind === "sync") {
           const next = event.conversation?.activeTurn ?? null;
           if (next && (!activeTurn || activeTurn.id !== next.id || activeTurn.revision !== next.revision)) {
