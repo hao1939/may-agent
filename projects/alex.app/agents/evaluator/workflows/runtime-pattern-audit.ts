@@ -192,42 +192,36 @@ export async function execute(
       : `Runtime pattern audit: ${packet.latestSignals.length} signal(s), ${packet.regressions.length} workflow delta(s) across ${packet.latestTotals.workflows} workflows`;
 
   const attentionSignals = packet.latestSignals.filter((s) => s.severity === "attention");
-  const requests =
+  const requestContent =
     attentionSignals.length > 0
-      ? [
-          {
-            id: `workflow-audit:${createHash("sha256")
-              .update(
-                JSON.stringify(
-                  attentionSignals.map((s) => ({
-                    appId: s.appId,
-                    workflow: s.workflow,
-                    code: s.code,
-                    sampleRunIds: s.sampleRunIds ?? [],
-                  })),
-                ),
-              )
-              .digest("hex")
-              .slice(0, 16)}`,
-            appId: "alex",
-            input: {
-              kind: "message",
-              data: {
-                message: `Workflow audit detected ${attentionSignals.length} attention signal(s): ${attentionSignals
-                  .map((s) => s.summary)
-                  .join("; ")}. Inspect the pinned workflow runs and repair or disposition the root cause.`,
-                context: {
-                  workflowAudit: {
-                    generatedAt: packet.generatedAt,
-                    signals: attentionSignals,
-                    regressions: packet.regressions,
-                  },
+      ? {
+          appId: "alex",
+          input: {
+            kind: "message" as const,
+            data: {
+              message: `Workflow audit detected ${attentionSignals.length} attention signal(s): ${attentionSignals
+                .map((s) => s.summary)
+                .join("; ")}. Inspect the pinned workflow runs and repair or disposition the root cause.`,
+              context: {
+                workflowAudit: {
+                  signals: attentionSignals,
                 },
               },
             },
           },
-        ]
-      : [];
+        }
+      : undefined;
+  const requests = requestContent
+    ? [
+        {
+          id: `workflow-audit:${createHash("sha256")
+            .update(JSON.stringify({ version: 2, ...requestContent }))
+            .digest("hex")
+            .slice(0, 16)}`,
+          ...requestContent,
+        },
+      ]
+    : [];
 
   return ctx.done(summary, {
     state: "converged",
