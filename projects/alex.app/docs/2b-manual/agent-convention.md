@@ -120,7 +120,7 @@ context-writing subscriber is retired, and even a written
 `context.md` is not automatically included in a normal prompt. `lessons` is
 retained in the completion report and saved session evidence; finish does not
 write a separate memory file or activate guidance. The
-[merged lesson-write retirement](../proposals/external-components-simplification.md#retire-automatic-lesson-file-writes)
+[merged lesson-write retirement](../archive/implementation/external-components-simplification.md#retire-automatic-lesson-file-writes)
 records the source revision and verification. Existing historical memory files
 remain untouched; installed adoption remains unverified.
 
@@ -128,7 +128,7 @@ For lasting behavior, use an authorized source edit in the owning guidance,
 verify activation, then check a later relevant execution. A saved report or
 file alone does not prove May will use it. Follow the existing
 [learning review boundary](../2a-design/practice-learning-loop.md) and the
-[scoped teaching proposal](../proposals/agent-behavior-and-capability-extension.md);
+[scoped teaching proposal](../archive/reviews/agent-behavior-and-capability-extension.md);
 this does not grant permission to change live guidance. See
 [skill snapshots](../2a-design/skills.md#discovery-lifecycle) for when an updated
 definition takes effect.
@@ -342,7 +342,7 @@ Do not put prose instructions in `agent.json`.
 `memoryLimit` is retired; omit it from configuration. Older JSON remains
 loadable, and the Host ignores the field without carrying it into
 execution definitions or registry metadata. See
-[the selected cleanup](../proposals/external-components-simplification.md#retire-unused-memorylimit-configuration)
+[the selected cleanup](../archive/implementation/external-components-simplification.md#retire-unused-memorylimit-configuration)
 for source status.
 
 Omit retired `context_files` and `skillActivationRules` configuration. Link

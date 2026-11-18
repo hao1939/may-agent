@@ -37,6 +37,16 @@ by its local candidate. The [PR follow-through direction](#pr-follow-through-acr
 below explains how a broader Alex assignment can use this procedure without
 turning it into a permanently running workflow.
 
+A local candidate review uses the owning Task's implementation requirements and
+the procedure's selected verification. It must not require PR publication,
+remote checks, activation or caller delivery before returning that candidate:
+Alex performs those operations after this bounded call returns. Keep those wider
+obligations in the Task and report them as remaining work. Missing verification
+still blocks a readiness claim; it does not by itself require another code edit.
+See the [live review](archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment)
+for the current scope leak in Bob's review. The paired App migration must correct
+that specialist context without weakening the owning Task's acceptance.
+
 ## From a standing review to a concrete incident
 
 A standing improvement review owns problem selection, cumulative incident
@@ -78,6 +88,17 @@ who revises that same Task through the SDK creator capability (May uses her
 `revise-assignment` procedure); a direct specialist call is
 not a substitute. Retain the checkout, prior work, caller and consumed allowance
 across that correction.
+
+The candidate identity covers one selected checkout. Its passing receipt cannot
+certify another repository's edits or an installed release. For paired Host/App
+work, retain exact source and verification for each half through the existing
+contribution/Task return path; the delivery owner combines them and proves the
+pair before activation. A separate finite source contribution is useful when it
+needs its own checkout and continuation, without replacing the delivery Task or
+renewing that Task's consumed allowance. In ordinary shell tools, use supported
+working-directory arguments or explicitly change directory; a saved checkout
+selector does not change an unrelated tool's default directory. Read back the
+actual repository, branch and head before publication.
 
 ## Responsibilities and graph
 
@@ -273,6 +294,19 @@ are left to their own setup. Missing prerequisites return incomplete before a
 development round is reserved, and do not justify weakening the verification
 command or making unrelated source changes. The links restore the existing
 local environment; they do not prove compatibility or reproducibility.
+
+**Refinement gap from the November 17 trial:** repository verification can
+discover a prerequisite missing beyond that limited workspace preflight. The
+current failure loop can then spend further rounds rerunning an unchanged
+candidate. The implementation agent should use its existing `clarify` decision
+to return the exact setup dependency when no source repair is warranted. An
+unchanged candidate is not ready merely because the failure is environmental.
+Retain the failed command and consumed round; after setup is repaired, rerun the
+required check on the same Task. This needs no refund, extra allowance ledger,
+generic Host error classifier or attempt to inventory every possible tool.
+The [live source review](archive/reviews/agent-workflow-interface-source-review-20261117.md#task-ingress-and-event-assessment)
+records the observed repeated Docker prerequisite failure and a separate
+cancellation-test failure; neither is a passing verification receipt.
 
 ## Reconciliation and updates
 
@@ -624,7 +658,7 @@ records the connected checks and remaining proof obligations.
 May retains the same Request/Task link for follow-up and uses the existing
 creator update capability for corrections. Ordinary Alex `goal` input selects Alex,
 who chooses the method. When the team procedure fits, Alex uses the scoped
-`agents` call to `develop-change` with `input: { verify: ["node", "verify.cjs"] }`.
+`agents` call to `develop-change` with `input: { prompt: "Implement", data: { verify: ["node", "verify.cjs"] } }`.
 The separate model-facing `workflow` tool is retired. Development
 can produce a locally committed design/audit document as well as code. Its
 verification must be executable argv, not English instructions. Bob still judges

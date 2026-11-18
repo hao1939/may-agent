@@ -18,15 +18,23 @@ export const name = "bounded-cleanup";
 export const description =
   "Evaluate a bounded project/worktree cleanup request by pre-reading local evidence, enforcing non-empty diff, durable closure, and async-delegation invariants, and returning a production TaskReconcileResult.";
 
-export const boundedCleanupInputSchema = Type.Object(
+const boundedCleanupDataSchema = Type.Object(
   {
     state: Type.Optional(Type.String({ minLength: 1 })),
     stateFile: Type.Optional(Type.String({ minLength: 1 })),
     request: Type.Optional(Type.String({ minLength: 1 })),
     outputFile: Type.Optional(Type.String({ minLength: 1 })),
   },
-  { additionalProperties: true },
+  { additionalProperties: false },
 );
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+    data: Type.Optional(boundedCleanupDataSchema),
+  },
+  { additionalProperties: false },
+);
+export const boundedCleanupInputSchema = inputSchema;
 
 export const alignmentDecisionSchema = Type.Object(
   {
@@ -52,7 +60,8 @@ export const alignmentDecisionSchema = Type.Object(
   { additionalProperties: false },
 );
 
-export type BoundedCleanupInput = Static<typeof boundedCleanupInputSchema>;
+export type BoundedCleanupInput = Static<typeof boundedCleanupDataSchema>;
+type BoundedCleanupEnvelope = Static<typeof inputSchema>;
 export type AlignmentDecision = Static<typeof alignmentDecisionSchema>;
 
 export type CleanupRegime =
@@ -237,14 +246,9 @@ export function toTaskReconcileResult(
   };
 }
 
-export async function execute(ctx: AppWorkflowContext<BoundedCleanupInput | string>) {
+export async function execute(ctx: AppWorkflowContext<BoundedCleanupEnvelope>) {
   const workRoot = ctx.workspace?.root ?? ctx.workspace?.projectRoot ?? process.cwd();
-  const inputObj: BoundedCleanupInput =
-    typeof ctx.input === "string"
-      ? { request: ctx.input }
-      : ctx.input && typeof ctx.input === "object"
-        ? (ctx.input as BoundedCleanupInput)
-        : {};
+  const inputObj: BoundedCleanupInput = ctx.input.data ?? {};
 
   const rawRequestText =
     inputObj.request?.trim() ||
@@ -275,8 +279,7 @@ export async function execute(ctx: AppWorkflowContext<BoundedCleanupInput | stri
     '- Note: The workflow runner will write `task-result.json` for you from your `finish(status: "done", result: ...)` payload. Do NOT call `read` or `write`, and ALWAYS call `finish` with `status: "done"` (never `status: "blocked"`) and the complete structured `result` object.',
   ].join("\n");
 
-  const step = await ctx.call("may", prompt, {
-    tools: "readonly",
+  const step = await ctx.call("may/may", { prompt }, {
     schema: alignmentDecisionSchema,
   });
 

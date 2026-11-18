@@ -19,7 +19,7 @@ export const name = "learn-from-daily-work";
 export const description =
   "Harvest daily user signals (Gemini, Pi, Codex, May DB) across container and localhost roots, extract failure/efficiency/success lessons, draft single-file benchmark cases, and run Gym diagnosis.";
 
-export const learnFromDailyWorkInputSchema = Type.Object(
+const learnFromDailyWorkDataSchema = Type.Object(
   {
     /**
      * Optional explicit root directories to scan for `.gemini`, `.pi`, `.codex`, and `may.db`.
@@ -41,10 +41,20 @@ export const learnFromDailyWorkInputSchema = Type.Object(
     /** Optional override for the Gym benchmarks root directory (defaults to <workspaceRoot>/projects/gym/benchmarks). */
     gymBenchmarksRoot: Type.Optional(Type.String({ minLength: 1 })),
   },
-  { additionalProperties: true },
+  { additionalProperties: false },
 );
 
-export type LearnFromDailyWorkInput = Static<typeof learnFromDailyWorkInputSchema>;
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1 }),
+    data: Type.Optional(learnFromDailyWorkDataSchema),
+  },
+  { additionalProperties: false },
+);
+export const learnFromDailyWorkInputSchema = inputSchema;
+
+export type LearnFromDailyWorkInput = Static<typeof inputSchema>;
+type LearnFromDailyWorkData = Static<typeof learnFromDailyWorkDataSchema>;
 
 export type SignalKind = "failure_correction" | "efficiency_gap" | "success_pattern";
 
@@ -505,8 +515,7 @@ export function stageDraftCasesToGym(
 
 export async function execute(ctx: AgentContext<LearnFromDailyWorkInput>) {
   const projectRoot = ctx.workspace?.projectRoot ?? ctx.workspace?.root ?? process.cwd();
-  const input: LearnFromDailyWorkInput =
-    ctx.input && typeof ctx.input === "object" ? (ctx.input as LearnFromDailyWorkInput) : {};
+  const input: LearnFromDailyWorkData = ctx.input.data ?? {};
 
   const cursorPath =
     input.cursorPath?.trim() || join(projectRoot, ".state", "daily-learning-cursor.json");
@@ -571,7 +580,7 @@ export async function execute(ctx: AgentContext<LearnFromDailyWorkInput>) {
     JSON.stringify(signals, null, 2),
   ].join("\n");
 
-  const synthesisStep = await ctx.call("bob", prompt, {
+  const synthesisStep = await ctx.call("alex/bob", { prompt }, {
     schema: dailyLearningSynthesisSchema,
   });
 

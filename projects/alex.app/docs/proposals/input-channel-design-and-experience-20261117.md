@@ -4,13 +4,17 @@
 
 **Choice basis:** [One authority for each resource](../1-principles/core-principles.md#one-authority-for-each-resource) and [simple first](../1-principles/core-principles.md#simple-first).
 
-**Design status:** Accepted Direction — PR 1 (Merged in [#581](https://github.com/hao1939/may-agent/pull/581)) and PR 2 (Ready in [#587](https://github.com/hao1939/may-agent/pull/587)) promoted into [Human Control Surfaces](../2a-design/human-control-surfaces.md), [HTTP Boundary](../2a-design/http-boundary.md), [Web UI](../2a-design/webui.md), and [May Console](../2a-design/may-console.md). Remaining cutover: **PR 3 (In-Process Daemon HTTP + WebSocket Unification)**.
+**Design status:** Accepted Direction — PR 1 (Merged in [#581](https://github.com/hao1939/may-agent/pull/581)) and PR 2 (Merged in [#587](https://github.com/hao1939/may-agent/pull/587)) promoted into [Human Control Surfaces](../2a-design/human-control-surfaces.md), [HTTP Boundary](../2a-design/http-boundary.md), [Web UI](../2a-design/webui.md), and [May Console](../2a-design/may-console.md). Remaining cutover: **PR 3 (In-Process Daemon HTTP + WebSocket Unification)**.
 
 ---
 
 ## 1. The Mental Model: Two Modes Only
 
-Every interaction with `may-agent` — whether by a **human** (in WebUI, Telegram, or Console) or by an **agent** (`alex`, `gym`, CLI, or an external coding agent) — operates in one of **two modes**:
+Human control surfaces offer **two interaction modes**. Agent clients working
+on an existing durable outcome use its exact Task-focused address rather than
+competing for human Conversation attention. These are interaction modes, not a
+claim that every call needs a Host Task: new-work admission, Task feedback,
+inline helpers and standalone SDK execution retain their distinct contracts.
 
 ```text
 ┌─────────────────────────────────────────────┐       ┌─────────────────────────────────────────────┐
@@ -54,22 +58,49 @@ Every interaction with `may-agent` — whether by a **human** (in WebUI, Telegra
 
 ## 2. The Transport Foundation: HTTP + WebSocket (`/ws`)
 
-Instead of maintaining **two** competing transport stacks — a custom NDJSON Unix Socket protocol (`packages/control`) **and** an HTTP server (`src/app/http/server.ts`) that proxies back into the Unix socket — **HTTP + WebSocket (`/ws`) is the single fundamental channel protocol for all clients.**
+**Implementation gap:** The in-process HTTP/WebSocket foundation and removal of
+the NDJSON proxy remain proposed. Current local agent assignments use the public
+control SDK and durable event admission. Verify semantics through that supported
+path now; do not make a transport rewrite a prerequisite for the candidate trial.
 
-### Why HTTP + WebSocket Is Strictly Better Than Custom NDJSON Socket + Proxy
+**Review refinement, 17 November:** unify the owning services and the normal
+external-client protocol, not every function call or trust level. HTTP handlers,
+Telegram and retained local-control adapters use the same admission/read owners.
+In-process callers invoke those owners directly; no loopback HTTP is required.
+Removing a proxy does not remove durable input, replay or caller-return obligations.
 
-| Dimension | Legacy Dual Stack (Unix Socket + HTTP Proxy) | Unified HTTP + WebSocket Foundation |
+The selected implementation is the remaining **PR 3 normal-surface cutover**:
+serve HTTP + `/ws` against the daemon's owning services and migrate ordinary
+`may-console` interaction. Preserve the existing control SDK and explicitly
+retained operator/compatibility callers until their migration is verified. That
+binding is not another admission authority. Do not claim complete NDJSON
+retirement while it remains. Protocol choice does not require widening network
+exposure or treating browser access as operator authority.
+
+### Expected simplification and its limits
+
+| Dimension | Current coupling | Intended improvement and retained responsibility |
 | --- | --- | --- |
-| **Multi-Agent Concurrency** | Custom line-delimited socket pipe; interleaves push events and command replies unless custom correlation/FIFO queues are maintained. | Native HTTP request/response concurrency. 50 agents can call `GET /api/task` and `POST /api/task/input` simultaneously with zero framing or queue state. |
-| **Server Architecture** | Browser → HTTP Server → Unix Socket → Daemon (`~250 lines` of `sendDaemonFrameWithRetry`, `sendAppInputWithRetry`, `proxyWebSocket`). | Direct in-process HTTP + `/ws` handlers in the daemon. Zero socket proxy hops, zero intermediate socket timeouts. |
-| **Console (`may-console`)** | `2,000 lines` with 6 manual FIFO arrays (`pendingTaskReads`, `pendingConversationReads`, etc.) to match socket replies. | Standard `await fetch(...)` for every command/input + 1 WebSocket for push wakes. Eliminates all 6 FIFO queues (`~600 lines` removed). |
-| **Universal Agent Access** | Requires custom `@may-agent/control` socket client. | Any agent, CLI, test, or `curl` can call `http://127.0.0.1:PORT/api/*` directly. |
+| **Concurrent requests** | Manual reply matching and mixed push/control frames. | HTTP supplies request/response correlation; admission order, capacity and stale-view protection still belong to their existing owners. |
+| **Server** | Browser → HTTP → NDJSON → daemon. | Bind normal HTTP reads/writes directly to daemon services. Preserve replay, generation fences, trusted provenance and recovery instead of acknowledging an in-memory wake. |
+| **Console** | Manual FIFO reply queues tied to the NDJSON client. | Use HTTP for ordinary requests and one filtered WebSocket wake stream. Remove obsolete queues after concurrency, selection-change and reconnect tests prove equivalent behavior. Exact line savings remain unmeasured. |
+| **Client access** | Normal clients depend on the custom socket exchange. | Offer stable HTTP access without forcing internal/SDK callers through a network hop or granting every client privileged controls. |
+
+Headless startup is part of this cutover: ordinary Console control must not
+require the optional dashboard or accidentally start another daemon. Resolve
+one explicit instance/endpoint and preserve its access boundary. Slow clients,
+historical reads and stream overflow must not block Stop, input or unrelated
+work. Subscribe then reread canonical state, and resynchronize after reconnect
+or overflow; WebSocket wakes are lossy hints, not another work queue.
 
 ---
 
 ## 3. Canonical HTTP + WebSocket API Specification
 
-All human surfaces (**WebUI**, **Console**, **Telegram** in-process) and **Agent clients** share one exact API contract organized around the Two Modes:
+External HTTP clients use the following API organized around the two modes.
+In-process adapters share its owning services and semantic checks, not mandatory
+HTTP serialization or equal privileges. Trusted adapter context remains separate
+from caller-supplied payload.
 
 ### Mode 1: Conversation Mode Endpoints (`/api/conversation`)
 
@@ -87,8 +118,8 @@ All human surfaces (**WebUI**, **Console**, **Telegram** in-process) and **Agent
 | `GET /api/tasks` | List or search Tasks (filtered by App, status, `humanActionOnly`, or query `q`) | `?appId=alex&status=running&status=attention&includeDone=false&q=581&limit=30&cursor=...` (or `allApps=true`, `humanActionOnly=true`) | `{ items: HumanTaskView[], nextCursor?, total? }` |
 | `GET /api/task` | Inspect one Task (`HumanTaskView` + `diagnostics` + `acceptedEvidence`) | `?ref=4b91e02a` **or** `?appId=alex&taskId=work/1` (`&acceptedEvidence=true&evidenceLimit=5`) | `HumanTaskView` (`404` if not found) |
 | `GET /api/task/transcript` | Read bounded execution transcript for a Task | `?ref=4b91e02a` **or** `?appId=alex&taskId=work/1` | `{ appId, taskId, attemptId, sessionId, messages }` |
-| `POST /api/task/input` | Send generation-fenced feedback / steering to one Task | `{ appId, taskId, expectedGeneration, message, inputKind?: "message", idempotencyKey }` (or `ref` instead of `appId` + `taskId`) | `202 { accepted: true, appId, taskId, generation, eventId, inboxId, replayed }` (`409` on generation mismatch or closed Task) |
-| `POST /api/events` (`app.task.cancel.requested` / `retry` / `reopen`) | Fenced lifecycle controls for one Task | `{ type: "app.task.cancel.requested" \| "app.task.retry.requested" \| "app.task.reopen.requested", target: { appId, taskId }, data: { generation, resourceVersion, reason, controlKey } }` | `{ ok: true, eventId, delivery: "accepted" }` |
+| `POST /api/task/input` | Send generation-fenced feedback / steering to one Task | `{ appId, taskId, expectedGeneration, message, inputKind?: "message", idempotencyKey }` (or `ref` instead of `appId` + `taskId`) | `202 { accepted: true, appId, taskId, generation, eventId, inboxId, replayed }` (`409` for new stale-generation/closed-Task input; accepted exact-key replay retains its receipt) |
+| `POST /api/events` (`app.task.cancel.requested` / `retry` / `reopen`) | Fenced lifecycle controls for one Task | `{ type: "app.task.cancel.requested" \| "app.task.retry.requested" \| "app.task.reopen.requested", target: { appId, taskId }, data: { expectedGeneration, expectedResourceVersion, reason }, idempotencyKey }` | `{ ok: true, eventId, delivery: "accepted" }` |
 
 ### Agent Cooperation Rules for Task-Focused Mode
 
@@ -98,12 +129,20 @@ Real-world cooperation between an external agent (or human reviewer) and a runni
    - Agents and humans should never need raw SQLite queries or full internal `input/appdep_...` Task IDs to locate work.
    - `GET /api/task?ref=d98bb682` resolves the 8-char Task `ref` directly.
    - `GET /api/tasks?q=581&includeDone=true` searches across `ref`, `taskId`, `outcome`, and `summary` so an agent can locate the Task for `"PR 581"` in one HTTP call.
-2. **Authoritative Steering (`POST /api/task/input` Refines Work Without Contradicting `spec.acceptance`):**
-   - Initial Task `outcome` and `acceptance` must express the **durable goal**, not freeze a brittle 1,500-word implementation script.
-   - When new caller/human feedback arrives via `POST /api/task/input`, it is authoritative steering for the current Task rather than a "contradiction" that forces the worker to refuse action until the parent Task rewrites `spec.acceptance`.
-3. **Round Limits Cap Autonomous Loops, Not New Human/Caller Feedback:**
-   - Execution round caps (such as `develop-change` round limits) exist to prevent an agent from looping autonomously without progress during a single unguided attempt/generation.
-   - Admitting new human or caller review feedback (`POST /api/task/input` or a revised Task `generation`) represents newly requested work and must replenish or grant a fresh execution pass rather than deadlocking on prior autonomous rounds.
+2. **Steering and Saved Requirements Have Different Effects:**
+   - Initial Task `outcome` and `acceptance` express the durable goal. An admitted correction or review comment is input for owner judgment; it does not gain authority from being addressed to a Task.
+   - The agent can act on feedback within the current assignment and allowance. Changes to saved requirements, checkout or allowance use the existing creator revision. Build that revision from the current assignment, preserve unrelated fields and read back the saved result. A fresh generation cannot detect stale content copied into the revision.
+3. **One Cumulative Development Allowance:**
+   - Feedback, generation changes, timeout, retry and restart preserve consumed development rounds. Admission can wake reconsideration without granting another coding round.
+   - When more execution is needed, the authorized creator raises the saved total on the same Task and retains usage and evidence. An already authorized bounded continuation needs no repeated human approval. A comment or duplicate wake alone never resets the total. See [scoped returns and revision](../2a-design/task-attempts.md#answer-a-dependency-without-ending-the-wider-work).
+
+For example, correcting a test on an existing coding Task is feedback. Raising
+its saved round total is a creator revision. Answering its earlier allowance
+question is a scoped result through that question's caller link. Those operations
+can support one continuation, but none substitutes for the other. Read back the
+saved assignment and exact input outcome before reporting the handoff complete.
+When several independent inputs share an owner, a blocker on one does not make
+it a prerequisite for all the others.
 
 ### Real-Time Push Stream (`WS /ws`)
 
@@ -157,7 +196,7 @@ The 2-Mode mental model, human-surface helpers, `ref`-first Task endpoints, keyw
   - Shared human-surface primitives in `@may-agent/control` (`buildHumanConversationMessageEvent`, `humanTaskStatusLabel`, `humanCurrentTaskText`, `representedTaskIdentities`, `primaryConversationId`).
   - WebUI **Conversation Mode** (`conversation.js`): pinned `Open asks` bar (`#conversation-context-bar`) + clickable `Task <appId> · <ref>` chips that open **Task-Focused Mode** (with no human Topic UI or competing in-chat Task focus bar).
   - Direct `GET /api/task?ref=<ref>` support in `src/app/http/task-read-routes.ts`.
-- **Done in PR #587 (`2bd331265f`, open & CI green):**
+- **Merged in PR #587 (included in inspected main `0606e2df16`; installed adoption unverified):**
   - Enriched `conversation.requests[].taskRefs` with 8-char `ref` in `readAppConversationResource` (`src/app/core/state/conversations.ts`).
   - Consistent `ref` support across `GET /api/task/transcript?ref=<ref>` (`src/app/http/task-transcript.ts`) and `POST /api/task/input` `{ ref }` (`src/app/http/task-input.ts`).
   - Case-insensitive keyword search `GET /api/tasks?q=<query>` across `ref`, `taskId`, `outcome`, and `summary` (`src/app/human-task-service.ts`).
@@ -165,10 +204,41 @@ The 2-Mode mental model, human-surface helpers, `ref`-first Task endpoints, keyw
 
 ---
 
-### Remaining Work (PR 3): Unify Daemon HTTP + WebSocket Server & Retire HTTP-to-Socket Proxy
-1. **Direct In-Process HTTP + `/ws` Control Server:**
-   - Run the HTTP + `/ws` control routes (`src/app/http/server.ts`) directly against the daemon's in-process `HumanTaskService`, `EventInterface`, and `EventBus` rather than proxying every browser/agent request through a second Unix domain socket (`sendDaemonFrameWithRetry`, `sendAppInputWithRetry`, `proxyWebSocket`).
-2. **Migrate `may-console` (`packages/terminal/bin/may-console.cjs`) to HTTP + WebSocket:**
-   - Replace the 6 manual socket FIFO correlation queues (`pendingTaskListReads`, `pendingTaskReads`, `pendingConversationReads`, etc.) with standard `fetch()` calls + 1 WebSocket subscription for push wakes.
-3. **Auto-Close Converged `close`-Disposition One-Shot Assignments:**
-   - Ensure converged one-shot assignments with `taskDisposition: { kind: "close" }` are closed promptly so completed Tasks do not linger in `idle`.
+### Remaining Work (PR 3): Direct HTTP/WebSocket binding and Console cutover
+
+Deliver one reviewed, verified Host PR for these connected changes:
+
+1. Bind normal HTTP + `/ws` routes directly to the daemon's existing owning
+   read/admission services. Remove the HTTP-to-NDJSON proxy/retry path from that
+   daemon-served flow. Do not copy policy into another router, replace Task
+   admission or change journal meaning.
+2. Move ordinary Node-based `may-console` requests to HTTP and live wakes to
+   WebSocket; remove obsolete FIFO reply matching. Keep supported operator/SDK
+   compatibility explicit and working. Telegram may call the same owners directly.
+3. Preserve headless startup, explicit instance/endpoint selection, Task aliases,
+   authority and generation controls, same-key replay and conflicting-key rejection.
+   Accepted replay remains readable after generation change or closure. Retain
+   creator revision and caller return; feedback does not update scope or allowance.
+4. Exercise the real service/transport composition in temporary-root process
+   tests: concurrent Console/browser reads with late responses, independent Task
+   inputs, unavailable/restarted daemon, lost acknowledgment, stale generation,
+   closed Task and WebSocket disconnect/overflow. Recover state by rereading;
+   a wake or HTTP 2xx is not completion or delivered human feedback.
+5. Keep existing browser/operator access distinctions. Document the selected
+   binding, readiness, shutdown, slow-client behavior and compatibility boundary.
+   Headless control must not depend on a second proxy process or optional UI.
+6. Publish one PR, retain the exact head, obtain candidate-matched independent
+   review and passing current-head Quality/Container checks, and handle material
+   feedback within the assignment's cumulative allowance. Merge and live rollout
+   require their own authority. Journal cleanup, continuous watching and callable
+   redesign remain separate work, not prerequisites for this transport candidate.
+
+The expected benefit is fewer transport-specific adapters and clearer failures,
+not a claim that HTTP repairs Task scheduling, caller identity or watch lifetime.
+The event-refinement watcher slice already has its own owner; do not duplicate it.
+
+Task closure remains governed by the [Task lifecycle](../2a-design/task-resource-engine.md#state-and-continuing-responsibility).
+It is a separate concern from replacing the transport. An idle Task may still
+own PR follow-up, and neither idle state nor a successful notification authorizes
+closing it. Do not introduce a new result-disposition field as part of this
+transport cutover.

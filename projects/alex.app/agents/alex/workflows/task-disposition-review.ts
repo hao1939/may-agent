@@ -1,4 +1,4 @@
-import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type Static } from "@may-agent/sdk";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import { isAlexOperationalRecoveryTask } from "../../../task-completion.js";
 import {
@@ -11,12 +11,26 @@ export const name = "task-disposition-review";
 export const description =
   "Read at most ten existing Tasks for owner disposition, without model calls or mutations. Input {appId, cursor?, limit?}, or {appId, taskIds} to retry exact records. Returns bounded previews, current result/version references, evidence gaps and the next cursor. Owner judgment and fresh guarded closure remain separate.";
 
-type Input = {
-  appId: string;
-  cursor?: string;
-  limit?: number;
-  taskIds?: string[];
-};
+const dispositionReviewDataSchema = Type.Object(
+  {
+    appId: Type.String({ minLength: 1 }),
+    cursor: Type.Optional(Type.String({ minLength: 1 })),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 10 })),
+    taskIds: Type.Optional(
+      Type.Array(Type.String({ minLength: 1 }), { minItems: 1, maxItems: 10 }),
+    ),
+  },
+  { additionalProperties: false },
+);
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+    data: dispositionReviewDataSchema,
+  },
+  { additionalProperties: false },
+);
+type Input = Static<typeof dispositionReviewDataSchema>;
+type EnvelopeInput = Static<typeof inputSchema>;
 type Route =
   | "owner-review"
   | "retain-standing"
@@ -285,14 +299,14 @@ export async function reviewTaskDispositionBatch(
 }
 
 export async function execute(
-  ctx: AppWorkflowContext<Input>,
+  ctx: AppWorkflowContext<EnvelopeInput>,
 ): Promise<ExecutionResult> {
   try {
     const result = await reviewTaskDispositionBatch(
       createPublicTaskEvidenceProvider((command) =>
         sendPublicReadCommand(command, { signal: ctx.signal }),
       ),
-      ctx.input,
+      ctx.input.data,
       ctx.signal,
     );
     const summary = `Read ${result.items.length} existing Tasks; ${result.items.filter(({ route }) => route === "owner-review").length} need owner disposition, ${result.retryTaskIds.length} need more evidence.`;

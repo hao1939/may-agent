@@ -177,14 +177,22 @@ export const name = "two-step-check";
 export const description = "Runs reviewer twice and returns combined summary";
 export const inputSchema = {
   type: "object",
-  properties: { target: { type: "string", minLength: 1 } },
-  required: ["target"],
+  properties: {
+    prompt: { type: "string", minLength: 1 },
+    data: {
+      type: "object",
+      properties: { target: { type: "string", minLength: 1 } },
+      required: ["target"],
+      additionalProperties: false,
+    },
+  },
+  required: ["prompt", "data"],
   additionalProperties: false,
 };
 export async function execute(ctx) {
-  const first = await ctx.call("reviewer", "Phase 1: " + ctx.input.target, { tools: "readonly" });
-  const second = await ctx.call("reviewer", "Phase 2: " + ctx.input.target);
-  return ctx.done(first.summary + " + " + second.summary, { target: ctx.input.target });
+  const first = await ctx.call("global/reviewer", { prompt: "Phase 1: " + ctx.input.data.target });
+  const second = await ctx.call("global/reviewer", { prompt: "Phase 2: " + ctx.input.data.target });
+  return ctx.done(first.summary + " + " + second.summary, { target: ctx.input.data.target });
 }
 `,
     );
@@ -194,7 +202,10 @@ export async function execute(ctx) {
     const seenSystemPrompts: string[] = [];
 
     const outcome = await runGymWorkflowEntry({
-      entry: { workflow: "two-step-check", input: { target: "src/cli.ts" } },
+      entry: {
+        workflow: "two-step-check",
+        input: { prompt: "Check the CLI change", data: { target: "src/cli.ts" } },
+      },
       defaultAgentName: "owner",
       taskText: "Fallback task text",
       repoRoot,
@@ -239,8 +250,8 @@ export async function execute(ctx) {
 
     expect(outcome.status).toBe("success");
     expect(seenSystemPrompts[0]).toContain("Lab reviewer v3 prompt");
-    // Step 1 used { tools: "readonly" }; Step 2 used full coding tools
-    expect(seenEffectiveTools[0]).toEqual(["read", "finish"]);
+    // Child tool policy comes from the registered definition/module policy, not retired call options.
+    expect(seenEffectiveTools[0]).toContain("bash");
     expect(seenEffectiveTools[1]).toContain("bash");
 
     const runReportPath = join(workDir, "workflow-run.json");
@@ -498,7 +509,7 @@ export async function execute(ctx) { return ctx.done(value); }
 export const name = "verify-review";
 export const description = "Candidate v2 workflow";
 export async function execute(ctx) {
-  const step = await ctx.call("sample-reviewer", "Review " + String(ctx.input), { tools: "readonly" });
+  const step = await ctx.call("global/sample-reviewer", { prompt: "Review " + String(ctx.input) });
   return ctx.done("candidate-v2:" + step.summary, { reviewed: true, stepSummary: step.summary });
 }
 `,
@@ -567,8 +578,8 @@ export async function execute(ctx) {
     const scorer = new Score(workDir);
     expect(scorer.hasWorkflowRun()).toBe(true);
     expect(scorer.workflowStatus()).toBe("done");
-    expect(scorer.hasWorkflowStep("sample-reviewer", "done")).toBe(true);
     expect(scorer.workflowSteps()).toHaveLength(1);
+    expect(scorer.workflowSteps()[0]).toMatchObject({ target: "global/sample-reviewer" });
     expect(scorer.workflowSummary()).toBe("candidate-v2:lgtm");
     expect(
       scorer.workflowOutput<{ reviewed: boolean; stepSummary: string }>(),

@@ -21,6 +21,8 @@ import {
 
 type AgentResult = TaskReconcileResult;
 
+const scoutCallable = "scout-knowledge-lib/scout";
+
 export function admitExperienceReviewResult(
   value: unknown,
 ): { ok: true; result: AgentResult } | { ok: false; error: string } {
@@ -167,8 +169,8 @@ async function reviewPublicationFailure(
   let review: ExecutionResult;
   try {
     review = await ctx.call(
-      "scout",
-      `Publication failed after your writer call.
+      scoutCallable,
+      { prompt: `Publication failed after your writer call.
 Review this failure against the original Task and return an ordinary Task result.
 This call is read-only: inspect the exact archive and candidate before judging.
 Do not repeat publication or edit the canonical library in this diagnosis call.
@@ -181,11 +183,8 @@ canonical publication evidence and will still pass the workflow verifier.
 ${facts.join("\n")}
 
 ## Current Task
-${JSON.stringify(ctx.reconciliation, null, 2)}`,
-      {
-        timeoutMs: 1_800_000,
-        schema: taskAgentResultSchema,
-      },
+${JSON.stringify(ctx.reconciliation, null, 2)}` },
+      { timeoutMs: 1_800_000, schema: taskAgentResultSchema },
     );
   } catch (error) {
     return ctx.blocked("Scout publication diagnosis failed", {
@@ -473,10 +472,11 @@ ${experienceContext}
 ## Canonical reconciliation context (authoritative requirement)
 ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
-  const result = await ctx.call("scout", prompt, {
+  const result = await ctx.call(scoutCallable, { prompt }, {
     timeoutMs: 1_800_000,
     schema: taskAgentResultSchema,
   });
+  const executionId = result.id;
   const admitted = admitTaskReconcileResult(result.output);
   const finish = result.facts;
   const partialFinish =
@@ -494,7 +494,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     admitted.result.state !== "converged";
   if (result.status !== "done" && !partialContribution) {
     return ctx.blocked("Scout owner maintenance session failed", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       status: result.status,
       summary: result.summary,
       ...candidateFailureDetails(),
@@ -503,7 +503,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
 
   if (partialFinish && !partialContribution) {
     return ctx.blocked("Scout owner maintenance is incomplete", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       summary: result.summary,
       finish,
       ...candidateFailureDetails(),
@@ -511,7 +511,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
   }
   if (!admitted.ok) {
     return ctx.blocked("Scout owner maintenance returned an invalid result", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       error: admitted.error,
       ...candidateFailureDetails(),
     });
@@ -522,10 +522,16 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
     if ("error" in reviewed) {
       return ctx.blocked(
         `Scout experience review result was rejected: ${reviewed.error}`,
-        { executionId: result.id, ...candidateFailureDetails() },
+        { ...(executionId ? { executionId } : {}), ...candidateFailureDetails() },
       );
     }
     agentResult = reviewed.result;
+  }
+  if (!executionId) {
+    return ctx.blocked(
+      "Scout owner maintenance returned without an execution reference; publication was not attempted",
+      { contribution: agentResult, ...candidateFailureDetails() },
+    );
   }
   let publication;
   try {
@@ -533,7 +539,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       .filter((fact) => fact.startsWith("output:"))
       .map((fact) => fact.slice("output:".length).trim());
     publication = publishKnowledgeChanges(beforePublication, {
-      executionId: result.id,
+      executionId,
       summary: agentResult.summary,
       reportedOutputs,
     });
@@ -545,7 +551,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
             summary:
               "Scout maintenance was accepted and retained for publication recovery.",
             facts: [
-              `execution:${result.id}`,
+              `execution:${executionId}`,
               ...(agentResult.facts ?? []).filter(
                 (fact) => !fact.startsWith("output:"),
               ),
@@ -559,13 +565,13 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}`.trim();
       return reviewPublicationFailure(
         ctx,
         error,
-        result.id,
+        executionId,
         recovery,
         agentResult,
       );
     }
     return ctx.blocked("Scout maintenance was not published", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       error: error instanceof Error ? error.message : String(error),
       ...candidateFailureDetails(),
     });

@@ -14,10 +14,10 @@ retired after `EXP-216`, the three Host path/read heuristics were retired in
 the remaining `extractHallucinatedRelPath` helper and `memory-sanitizer.ts`
 regex filter were retired in
 [Host PR 479](https://github.com/hao1939/may-agent/pull/479) (`9149a60268`; see
-[the selected reduction](../proposals/external-components-simplification.md#retire-host-path-and-read-heuristics)),
+[the selected reduction](../archive/implementation/external-components-simplification.md#retire-host-path-and-read-heuristics)),
 default finish/commit diagnostics and tool-guard composition were retired in
 [Host PR 471](https://github.com/hao1939/may-agent/pull/471) (`e5f373cc459d`; see
-[the completion reduction](../proposals/external-components-simplification.md#retire-default-tool-completion-diagnostics)),
+[the completion reduction](../archive/implementation/external-components-simplification.md#retire-default-tool-completion-diagnostics)),
 and the unused `WorkflowGuard` / `guardsDir` callback loader (`0` production
 guard files) was retired so Direct, Gym, SDK test, and Hosted workflow runs share
 one execution contract.

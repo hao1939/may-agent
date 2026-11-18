@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
 import { expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -9,20 +9,152 @@ import {
   discoverStaticWorkflows,
   formatWorkflowAuditMarkdown,
 } from "../../scripts/audit-workflows.ts";
+import { listTargets } from "@may-agent/sdk/standalone";
+import { Check } from "typebox/value";
 import * as ts from "typescript";
 
-test("discoverStaticWorkflows finds all 25 canonical and re-exported workflows with zero contract errors", () => {
+test("discoverStaticWorkflows finds all 26 canonical and re-exported workflows with zero contract errors", () => {
   const workflows = discoverStaticWorkflows(process.cwd());
-  expect(workflows.length).toBe(25);
+  expect(workflows.length).toBe(26);
   const canonical = workflows.filter((w) => !w.isReexport);
   const reexports = workflows.filter((w) => w.isReexport);
-  expect(canonical.length).toBe(22);
-  expect(reexports.length).toBe(3);
+  expect(canonical.length).toBe(24);
+  expect(reexports.length).toBe(2);
 
   for (const wf of workflows) {
     expect(wf.hasValidContract, `${wf.path} errors: ${wf.contractErrors.join(", ")}`).toBe(true);
     if (!wf.isReexport) {
       expect(wf.pairedTestPath).toBeTruthy();
+    }
+  }
+});
+
+const configuredCallableTargets = [
+  "alex/alex",
+  "alex/bob",
+  "alex/compare-candidate",
+  "alex/develop-change",
+  "alex/diagnose-improvement",
+  "alex/evaluation-report-reader",
+  "alex/evaluator",
+  "alex/gym",
+  "alex/judge",
+  "alex/learn-from-daily-work",
+  "alex/metric-review",
+  "alex/pull-request-wait",
+  "alex/runtime-pattern-audit",
+  "alex/task-disposition-review",
+  "alex/task-outcome-review",
+  "alex/task-outcome-selector",
+  "alex/tech-lead",
+  "alex/workload-review",
+  "may/bounded-cleanup",
+  "may/evaluation-report-intake",
+  "may/improvement-activation-follow-up",
+  "may/may",
+  "may/metric-follow-through",
+  "may/metric-response",
+  "may/prepare-improvement-approval",
+  "may/revise-assignment",
+  "sample/sample-reviewer",
+  "scout-knowledge-lib/knowledge-planner",
+  "scout-knowledge-lib/library-health",
+  "scout-knowledge-lib/scout",
+  "scout-knowledge-lib/scout-assess-source",
+  "scout-knowledge-lib/scout-daily-digest",
+  "scout-knowledge-lib/scout-explore",
+] as const;
+
+async function callableTargets(projectsRoot: string) {
+  return listTargets({
+    cwd: process.cwd(),
+    projectRoot: process.cwd(),
+    projectsRoot,
+    globalAgentsRoot: join(process.cwd(), "agents"),
+    sharedRoot: join(process.cwd(), "shared"),
+    timeoutMs: 120_000,
+  });
+}
+
+function sourceInventoryFixture(disabledApps: readonly string[] = []) {
+  const root = mkdtempSync(join(tmpdir(), "workflow-source-inventory-"));
+  const projectsRoot = join(root, "projects");
+  mkdirSync(projectsRoot);
+  for (const app of ["alex.app", "may.app", "sample.app", "scout-knowledge-lib.app"]) {
+    const source = join(process.cwd(), "projects", app);
+    const fixture = join(projectsRoot, app);
+    mkdirSync(fixture);
+    symlinkSync(join(source, "app.ts"), join(fixture, "app.ts"));
+    symlinkSync(join(source, "agents"), join(fixture, "agents"), "dir");
+    if (disabledApps.includes(app)) writeFileSync(join(fixture, ".disabled"), "");
+  }
+  return { root, projectsRoot };
+}
+
+test("all 33 source targets expose only canonical names and callable envelopes", async () => {
+  const fixture = sourceInventoryFixture();
+  try {
+    const targets = await callableTargets(fixture.projectsRoot);
+    expect(targets.map((target) => target.name)).toEqual(configuredCallableTargets);
+    for (const target of targets) {
+      expect(target.name.split("/")).toHaveLength(2);
+      expect(target.description.trim().length, target.name).toBeGreaterThan(0);
+      expect(JSON.stringify(target.inputSchema), target.name).toContain('"prompt"');
+      expect(Check(target.inputSchema, { data: {} }), `${target.name} accepted a missing prompt`).toBe(false);
+      expect(Check(target.inputSchema, { task: "legacy" }), `${target.name} accepted a retired task field`).toBe(false);
+    }
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("configured discovery omits targets from explicitly disabled Apps", async () => {
+  const fixture = sourceInventoryFixture(["sample.app"]);
+  try {
+    const targets = await callableTargets(fixture.projectsRoot);
+    expect(targets.map((target) => target.name)).toEqual(
+      configuredCallableTargets.filter((name) => name !== "sample/sample-reviewer"),
+    );
+    expect(targets.some((target) => target.name.startsWith("sample/"))).toBe(false);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true });
+  }
+});
+
+test("all 33 source targets retain an explicit body, caller, guidance, verification, and external-effect disposition", () => {
+  const dispositions = JSON.parse(
+    readFileSync(
+      join(import.meta.dirname, "fixtures/callable-target-dispositions.json"),
+      "utf8",
+    ),
+  ) as Array<Record<string, unknown>>;
+
+  expect(dispositions.map((entry) => entry.target)).toEqual(
+    configuredCallableTargets,
+  );
+  for (const entry of dispositions) {
+    expect(["agent", "workflow"], String(entry.target)).toContain(entry.kind);
+    expect(typeof entry.body, String(entry.target)).toBe("string");
+    expect(existsSync(String(entry.body)), `${entry.target} body`).toBe(true);
+    for (const field of [
+      "callers",
+      "guidance",
+      "owningVerification",
+      "remainingExternalEffects",
+    ] as const) {
+      const values = entry[field];
+      expect(Array.isArray(values), `${entry.target} ${field}`).toBe(true);
+      expect((values as unknown[]).length, `${entry.target} ${field}`).toBeGreaterThan(0);
+      for (const value of values as unknown[]) {
+        expect(typeof value, `${entry.target} ${field}`).toBe("string");
+        expect(String(value).trim().length, `${entry.target} ${field}`).toBeGreaterThan(0);
+      }
+    }
+    for (const path of [
+      ...(entry.guidance as string[]),
+      ...(entry.owningVerification as string[]),
+    ]) {
+      expect(existsSync(path), `${entry.target} disposition path ${path}`).toBe(true);
     }
   }
 });

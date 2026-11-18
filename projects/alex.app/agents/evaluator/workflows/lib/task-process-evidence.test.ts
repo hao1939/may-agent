@@ -449,15 +449,20 @@ describe("Task-bound process evidence", () => {
           command: cmd.type,
           event: await f.provider.getEvent(Number(cmd.eventId)),
         };
-      if (cmd.type !== "task.get") throw Error(`Unexpected ${cmd.type}`);
       return {
         command: cmd.type,
         task: {
           ...f.detail,
           appId: "may",
           taskId: "goal/one",
+          id: "goal/one",
           creator: { appId: "may" },
-          result: { artifact: { path: ".state/hygiene/saved.json", sha256: "a".repeat(64) } },
+          result: {
+            artifact: {
+              path: ".state/hygiene/saved.json",
+              sha256: "a".repeat(64),
+            },
+          },
           acceptedEvidence: { page: { items: [] } },
         },
       };

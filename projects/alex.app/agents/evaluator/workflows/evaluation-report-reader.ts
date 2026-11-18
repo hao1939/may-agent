@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import type { AgentContext, ExecutionResult } from "@may-agent/sdk";
+import { Type, type AgentContext, type ExecutionResult, type Static } from "@may-agent/sdk";
 import {
   configuredTaskReportRoot,
   isPublishedTaskReportPath,
@@ -18,14 +18,52 @@ import {
 
 export const name = "evaluation-report-reader";
 export const description =
-  'Read retained Evaluation evidence without a model call. Input {operation: "read-publication", publication: <saved publication reference>} verifies identity and hashes and returns a bounded Markdown preview. Also supports {operation: "list", limit?} and {operation: "read", path}. Verification establishes accepted bytes, not current truth.';
+  'Read retained Evaluation evidence without a model call. Input uses the canonical {prompt,data?} envelope; data supports {operation: "read-publication", publication: <saved publication reference>}, {operation: "list", limit?}, or {operation: "read", path}. Verification establishes accepted bytes, not current truth.';
 
-type Input = {
-  operation?: string;
-  path?: string;
-  limit?: number;
-  publication?: PublishedReportRequest;
-};
+const publishedReportRequestSchema = Type.Object(
+  {
+    appId: Type.Optional(Type.String({ minLength: 1 })),
+    taskId: Type.Optional(Type.String({ minLength: 1 })),
+    metricId: Type.Optional(Type.String({ minLength: 1 })),
+    alertId: Type.Optional(Type.Integer({ minimum: 1 })),
+    evidenceHash: Type.String({ minLength: 1 }),
+    executionId: Type.String({ minLength: 1 }),
+    reviewer: Type.Optional(Type.Union([Type.Literal("evaluator"), Type.Literal("evaluator-deepseek")])),
+    report: Type.String({ minLength: 1 }),
+    facts: Type.String({ minLength: 1 }),
+    jsonHash: Type.String({ minLength: 1 }),
+    markdownHash: Type.String({ minLength: 1 }),
+    assessmentPurpose: Type.Optional(Type.Union([
+      Type.Literal("outcome"),
+      Type.Literal("ongoing"),
+      Type.Literal("metric"),
+    ])),
+    rubricVersion: Type.Optional(Type.String({ minLength: 1 })),
+    validityIdentity: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+const reportReaderDataSchema = Type.Object(
+  {
+    operation: Type.Optional(Type.Union([
+      Type.Literal("list"),
+      Type.Literal("read"),
+      Type.Literal("read-publication"),
+    ])),
+    path: Type.Optional(Type.String({ minLength: 1 })),
+    limit: Type.Optional(Type.Integer({ minimum: 1 })),
+    publication: Type.Optional(publishedReportRequestSchema),
+  },
+  { additionalProperties: false },
+);
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1 }),
+    data: Type.Optional(reportReaderDataSchema),
+  },
+  { additionalProperties: false },
+);
+type Input = Static<typeof inputSchema>;
 const MAX_LIST_ITEMS = 5;
 const MAX_PREVIEW_BYTES = 8_000;
 const MAX_PREVIEW_JSON_BYTES = 8_000;
@@ -35,22 +73,7 @@ function text(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-export type PublishedReportRequest = {
-  appId?: string;
-  taskId?: string;
-  metricId?: string;
-  alertId?: number;
-  evidenceHash: string;
-  executionId: string;
-  reviewer?: "evaluator" | "evaluator-deepseek";
-  report: string;
-  facts: string;
-  jsonHash: string;
-  markdownHash: string;
-  assessmentPurpose?: AssessmentPurpose;
-  rubricVersion?: string;
-  validityIdentity?: string;
-};
+export type PublishedReportRequest = Static<typeof publishedReportRequestSchema>;
 export type PublishedReportRead =
   | { status: "publication-pending" }
   | { status: "invalid"; reason: string }
@@ -183,9 +206,10 @@ export async function readEvaluationReports(
   ctx: AgentContext<Input>,
   reportRoot = configuredTaskReportRoot(),
 ): Promise<ExecutionResult> {
-  const operation = text(ctx.input?.operation) || "list";
+  const input = ctx.input.data;
+  const operation = text(input?.operation) || "list";
   if (operation === "list") {
-    const requested = Number(ctx.input?.limit) || MAX_LIST_ITEMS;
+    const requested = Number(input?.limit) || MAX_LIST_ITEMS;
     const discovered = listTaskReports(
       reportRoot,
       Math.min(MAX_LIST_ITEMS, requested),
@@ -215,7 +239,7 @@ export async function readEvaluationReports(
   if (operation !== "read" && operation !== "read-publication")
     return ctx.blocked(`Unsupported report operation: ${operation}`);
   try {
-    let path = text(ctx.input?.path);
+    let path = text(input?.path);
     let verification: {
       status: "valid";
       evidenceHash: string;
@@ -224,7 +248,7 @@ export async function readEvaluationReports(
       markdownHash: string;
     } | undefined;
     if (operation === "read-publication") {
-      const publication = ctx.input?.publication;
+      const publication = input?.publication;
       if (!publication)
         return ctx.blocked("publication is required for read-publication.");
       const checked = readPublishedEvaluationReport(publication, reportRoot);

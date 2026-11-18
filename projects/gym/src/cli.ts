@@ -45,6 +45,7 @@ import {
   type ToolDenial,
 } from "@may-agent/sdk/standalone";
 import { createControlledModelRegistry } from "./model-registry";
+import { runNativeCliAdapter } from "./native-cli-adapter";
 
 import {
   listScenarios,
@@ -318,47 +319,20 @@ function createMayAgentAdapter(): Adapter {
 
       if (agentName === "codex" || agentName === "claude") {
         try {
-          const timeoutMs = timeoutMin * 60 * 1000;
-          const traceDir = join(gymState, "cli-trace");
-          const cliRun = await run(agentName, readFileSync(taskFile, "utf8"), {
-            projectRoot: REPO_ROOT,
-            workRoot: workDir,
-            agentsRoot,
-            projectsRoot: join(REPO_ROOT, "projects"),
-            globalAgentsRoot: join(REPO_ROOT, "agents"),
-            sharedRoot: join(REPO_ROOT, "shared"),
-            outputRoot: gymState,
-            traceDir,
-            models: createControlledModelRegistry(),
-            timeoutMs,
-            outputSchema:
-              outputContract === "task-agent-result"
-                ? taskAgentResultSchema
-                : undefined,
-            onNotice: (message) => console.error(`  [${agentName}] ${message}`),
-          });
-          writeFileSync(
-            join(workDir, "workflow-run.json"),
-            `${JSON.stringify(cliRun.report, null, 2)}\n`,
-          );
-          if (
-            outputContract === "task-agent-result" &&
-            cliRun.report.result?.output !== undefined
-          ) {
-            writeFileSync(
-              join(workDir, "task-result.json"),
-              `${JSON.stringify(cliRun.report.result.output, null, 2)}\n`,
-            );
-          }
-
-          return {
-            sessionId: cliRun.report.executionId,
-            status: cliRun.status === "done" ? "success" : cliRun.status,
-            sessionPath: cliRun.report.steps[0]?.transcriptPath || traceDir,
-            ...(cliRun.report.error?.message
-              ? { error: cliRun.report.error.message }
+          return await runNativeCliAdapter({
+            tool: agentName,
+            prompt: readFileSync(taskFile, "utf8"),
+            // Native execution is authorized against this run's isolated Gym
+            // workspace. Repository source remains the caller/adapter source;
+            // it is not the capability root for an external temporary cwd.
+            projectRoot: gymRoot,
+            workDir,
+            persistDir: join(gymState, "cli-trace"),
+            timeoutMs: timeoutMin * 60 * 1000,
+            ...(outputContract === "task-agent-result"
+              ? { outputContract }
               : {}),
-          };
+          });
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
           console.error(`  [${agentName}] ${msg}`);
@@ -2583,17 +2557,11 @@ async function main() {
     const wfState = mkdtempSync(join(tmpdir(), "gym-diagnose-"));
     try {
       const wfRun = await run({
-        agentName: "alex",
-        workflowDir: join(
-          REPO_ROOT,
-          "projects",
-          "alex.app",
-          "agents",
-          "alex",
-          "workflows",
-        ),
-        workflowName: "diagnose-improvement",
-        input: { baselineDir },
+        target: "alex/diagnose-improvement",
+        input: {
+          prompt: "Diagnose the frozen Gym baseline",
+          data: { baselineDir },
+        },
         cwd: wfState,
         projectRoot: REPO_ROOT,
         workRoot: wfState,
@@ -2606,7 +2574,7 @@ async function main() {
         models: createControlledModelRegistry(),
         timeoutMs: 120_000,
       });
-      const rawOut = wfRun.report.result?.output as
+      const rawOut = wfRun.output as
         | { output?: Record<string, any> }
         | Record<string, any>
         | undefined;
@@ -2614,9 +2582,7 @@ async function main() {
         | Record<string, any>
         | undefined;
       if (!proposal || wfRun.status !== "done") {
-        console.error(
-          `Diagnosis failed: ${wfRun.report.result?.type === "done" ? wfRun.report.result.summary : (wfRun.report.result?.reason ?? wfRun.status)}`,
-        );
+        console.error(`Diagnosis failed: ${wfRun.summary}`);
         process.exit(1);
       }
       if (process.argv.includes("--json")) {

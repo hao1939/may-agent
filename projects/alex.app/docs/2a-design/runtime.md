@@ -174,7 +174,7 @@ tradeoff that led to this implementation.
 Capacity is backpressure, not policy. It decides when work may start, never
 which work matters or whether the result is acceptable.
 
-The [workload model](../proposals/agent-task-workload-model.md#coordination-that-can-run-under-stress)
+The [workload model](../archive/decisions/agent-task-workload-model.md#coordination-that-can-run-under-stress)
 describes protected coordination, resource feedback and shared accounting.
 Source support for these mechanisms exists and remains after the Host
 simplification. Coordination eligibility requires the installed policy's exact
@@ -559,7 +559,7 @@ decision is scripted; this does not prove autonomous diagnosis or isolation
 from a broken shared App/module bootstrap.
 This does not install an App investigation policy or prove live agent judgment;
 see the remaining coverage in the
-[connected recovery proposal](../proposals/unified-agent-recovery-20261017.md).
+[connected recovery proposal](../archive/reviews/unified-agent-recovery-20261017.md).
 
 After opening its interfaces, the Host starts an isolated recovery worker that:
 

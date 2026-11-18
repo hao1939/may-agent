@@ -580,6 +580,11 @@ periodic observation; the queue is disposable, not another authority.
 
 ### Two watch modes: `one-shot` vs. `continuous` (and M:N fan-out)
 
+**Target, not implemented:** Host main `0606e2df16` still selects unsatisfied
+Conditions on pending/running/waiting Tasks; it has no continuous-watch mode.
+Current Apps must retain/rearm an ordinary fingerprint Condition while follow-up
+remains owed. The behavior below requires Host/SDK/App implementation and trial.
+
 Resource watches and Task Conditions operate in one of two explicit modes (see
 [Event System Refinement](../proposals/event-system-refinement-20261117.md#2-extensible-resource-watcher-architecture-pluggable-per-resource-watchers--two-watch-modes-one-shot-vs-continuous)):
 
@@ -589,16 +594,30 @@ Resource watches and Task Conditions operate in one of two explicit modes (see
 2. **`continuous` watch (consistent watch while resource is open):**
    - Subscribes a Task to an open external resource (`subject: "resource:..."`,
      such as `resource:github:hao1939/may-agent#587`).
-   - Polls each unique `(observerId, resource)` **once** per interval regardless
+   - Shares one read per trusted observer source/type/resource per interval regardless
      of how many Tasks watch it, and fans out changed `fingerprint` observations
      to **all** subscribed Tasks (`M:N` Task ↔ Resource relationship), including
      Tasks currently in `converged` (`idle`) phase while waiting for human review
      or merge.
-   - Stays active (`state = "false"`) across multiple updates and automatically
-     unsubscribes **only** when:
-     1. The **Resource closes** (`closed: true` / `state === "closed"` / `merged === true`),
-        after delivering that final terminal fact once to all subscribed Tasks; or
-     2. The **Task closes** (`closed` / `cancelled`).
+   - Retains interest across updates and accepted contributions. Interest is
+     separate from a prerequisite's truth and from whether input was handled;
+     keeping a Condition permanently false is not the proposed completion rule.
+   - Stops reads when the observer declares the resource terminal, after saving
+     its final fact and delivery to each interested Task; when the Task closes
+     or is cancelled; or when the authorized owner explicitly withdraws or
+     transfers that monitoring responsibility.
+
+Read sharing stays within the same trusted observer source/type and resource;
+separate App definitions or credential scopes do not become one observation
+merely because their observer IDs match. Each interested Task retains its own
+delivery and consumed fingerprint. One Task processing a fact cannot consume
+another Task's interest.
+
+The observer/App declares resource termination; the Host does not interpret
+GitHub fields. Retain the terminal fact and its interested destinations before
+stopping reads. Deliver it for owner reconsideration even if an expected success
+predicate remains false. Stopping observation does not satisfy that predicate,
+claim fulfillment or close the Task. A provider failure is not a terminal resource.
 
 Publication suppression yields to the existing Condition matcher: unchanged
 data is published when a current open wait needs it. This covers both new Tasks

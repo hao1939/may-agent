@@ -96,8 +96,8 @@ function workflowContext(
       children: { live: [], completed: [] },
     },
     workspace: { ...defaultFixture.workspace },
-    call: (async (agent: string, task: string, options?: unknown) => {
-      const result = (await runAgent(agent, task, options)) as Record<
+    call: (async (agent: string, input: { prompt: string }, options?: unknown) => {
+      const result = (await runAgent(agent, input.prompt, options)) as Record<
         string,
         unknown
       >;
@@ -122,6 +122,47 @@ function workflowContext(
 }
 
 describe("scout-explore workflow prompt", () => {
+  it("forwards a prepared current invocation instead of replacing it with a standing arXiv scan", async () => {
+    let prompt = "";
+    let acquired = false;
+    const ctx = workflowContext(async (_agent, task) => {
+      prompt = task;
+      return { status: "blocked", sessionId: "s_prepared", lastAssistantText: "Publication fixture intentionally stopped" };
+    }, "arxiv");
+    ctx.input = {
+      prompt: "Publish the retained arXiv:2611.19700v1 finding without another source scan",
+      data: {
+        preparedFinding: {
+          draftPath: "/retained/draft.md",
+          draftSha256: "c1030c88f0deea132326cb0421482c378dc4e8d8046036216326887da36b6cb2",
+          sourcePath: "/retained/feed.json",
+          sourceSha256: "4fa961e1d74fec4172b26478670c4fdafe8b4ff3e35848abd4d3d90c0349ff10",
+        },
+      },
+    } as AppWorkflowContext["input"];
+
+    const result = await executeScoutExplore(ctx, {
+      acquireArxiv: async () => {
+        acquired = true;
+        throw new Error("must not fetch a replacement source");
+      },
+    } as any);
+
+    expect(acquired).toBe(false);
+    expect(prompt).toContain("Current invocation assignment (authoritative for this call)");
+    expect(prompt).toContain("arXiv:2611.19700v1");
+    expect(prompt).toContain("/retained/draft.md");
+    expect(prompt).toContain("c1030c88f0deea132326cb0421482c378dc4e8d8046036216326887da36b6cb2");
+    expect(prompt).toContain("do not replace it with a fresh source scan");
+    expect(prompt).toContain("arXiv prepared-finding contract");
+    expect(prompt).not.toContain("missing workflow packet");
+    expect(prompt).not.toContain("already made the cycle's one canonical bounded arXiv request");
+    expect(prompt.indexOf("Current invocation assignment")).toBeLessThan(
+      prompt.indexOf("Standing Task background"),
+    );
+    expect(result).toMatchObject({ status: "blocked", facts: { executionId: "s_prepared" } });
+  });
+
   it("preserves a draft without accepting it as library integration", async () => {
     const root = mkdtempSync(join(tmpdir(), "scout-draft-result-"));
     temporaryRoots.push(root);
@@ -232,7 +273,7 @@ describe("scout-explore workflow prompt", () => {
       },
     });
     expect(result).not.toHaveProperty("output.state", "converged");
-    expect(callOptions).toMatchObject({ operationAllowance: 48 });
+    expect(callOptions).not.toHaveProperty("operationAllowance");
   });
 
   it("does not accept structured output from a blocked agent call", async () => {

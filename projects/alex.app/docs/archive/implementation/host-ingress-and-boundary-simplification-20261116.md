@@ -294,10 +294,41 @@ worktree is removed remains a separate live acceptance check.
 
 ### Keep one model-facing invocation tool
 
+Current disposition, 18 November: the unified interface is implemented and
+independently verified at Host #589 `d7fe07f80e`, merged as `e489ff32b6`, with Quality and
+Container passing (3,494 tests, zero failures, two skips). The active authorized
+local pair is Host/SDK `4a9e0f9300` plus App `90cc281b65`, including required #590
+and reviewed current-assignment repair `5a386d2952`. The reconciled App source
+preserves newer canonical fixes and publications; its verified source candidate
+`8fb96e4819` passes 1,149 configured App tests, type/design checks and independent
+review. Separate May and Scout Task roots expose the same sorted 32-target catalog;
+fresh May calls on the final installation await both `alex/runtime-pattern-audit`
+and `alex/bob` successfully. Actual cross-App prompt and
+workflow calls retain the current caller and real child IDs. The original Scout
+Task publishes the exact prepared finding through the isolated workflow at
+`3cdda11f96`, with matching draft bytes, one INDEX link and one then-current digest link.
+May's existing Conversation route delivers the GitHub review-link notice as
+Telegram message `50734`; approval remains on GitHub. Root assists publication
+and supplies an explicit source-delivery input, so this is not a claim that the
+initial mixed assignment ran unattended. The source review retains those limits.
+
+The remaining periodic metric-cadence gap belongs to the user's separate work:
+canonical ae40 removed May schedules without a demonstrated recurring producer
+in this Host pair. The earlier App241c trial retained six original baseline
+failures. The final scoped source includes f85's fixture migration, which does
+not prove cadence repair. The canonical reload gap is repaired. The human merged
+#589 and authorized a bounded follow-up for five late ownership/tools/report
+findings. Host main also includes the user's direct metric producer #593; the
+installed4a pair predates it. Follow-up fixes and broader rollout remain separate
+from this successful initial trial.
+See the [current proposal](../../proposals/agent-workflow-interface-review-20261117.md)
+and [exact source/trial record](../reviews/agent-workflow-interface-source-review-20261117.md).
+The #585 chronology below is historical and does not describe the current interface.
+
 Review of [#585](https://github.com/hao1939/may-agent/pull/585) at `085d619f12`
 confirmed a design mismatch: its restricted constructor shares implementation
 with `agents`, but publishes a second `workflows` name and parameter schema.
-The [SDK tool contract](../2a-design/sdk.md#agent-tools-and-sdk) uses `agents.call`
+The [SDK tool contract](../../2a-design/sdk.md#agent-tools-and-sdk) uses `agents.call`
 for both prompt agents and code procedures. The earlier repair interpreted local
 procedure access as excluding prompt delegation. The human clarified that either
 implementation must be callable in the same way and may call either kind.
@@ -305,7 +336,7 @@ That clarification supersedes the procedure-only interpretation. The subsequent
 human comments remove invocation permission support entirely, rather than unify
 its checks. App ownership remains descriptive; registered callables are listed
 and called without per-target grants or App-based invocation denials.
-The [unified-call proposal](agent-workflow-interface-review-20261117.md) specifies
+The [unified-call proposal](../../proposals/agent-workflow-interface-review-20261117.md) specifies
 the input/result contracts, exact naming rule, public fork retirement and paired
 Host/SDK/App migration for review. Production loader/Task
 tests must prove the required-prompt input, common result, canonical discovery,

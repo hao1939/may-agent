@@ -1,0 +1,299 @@
+[
+  {
+    "target": "alex/alex",
+    "kind": "agent",
+    "body": "projects/alex.app/agents/alex/agent.json",
+    "callers": ["Alex App Task ingress", "projects/alex.app/agents/alex/workflows/workload-review.ts"],
+    "guidance": ["projects/alex.app/agents/alex/AGENTS.md"],
+    "owningVerification": ["shared/tests/workflow-audit.test.ts", "projects/alex.app/agents/alex/workflows/workload-review.test.ts"],
+    "remainingExternalEffects": ["Exact Host/SDK pairing, activation, and live Task execution remain outer verification obligations."]
+  },
+  {
+    "target": "alex/bob",
+    "kind": "agent",
+    "body": "projects/alex.app/agents/bob/agent.json",
+    "callers": ["projects/alex.app/agents/alex/workflows/develop-change.ts", "projects/alex.app/agents/alex/workflows/learn-from-daily-work.ts"],
+    "guidance": ["projects/alex.app/agents/bob/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/develop-change.test.ts", "projects/alex.app/agents/alex/workflows/learn-from-daily-work.test.ts"],
+    "remainingExternalEffects": ["Native model execution and independent exact-candidate review remain pair/runtime effects."]
+  },
+  {
+    "target": "alex/compare-candidate",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/gym/workflows/compare-candidate.ts",
+    "callers": ["Alex compare-candidate Task intent selected by projects/alex.app/app.ts"],
+    "guidance": ["projects/alex.app/agents/gym/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/gym/workflows/compare-candidate.test.ts"],
+    "remainingExternalEffects": ["A real requested benchmark run and caller disposition remain Task-owned effects."]
+  },
+  {
+    "target": "alex/develop-change",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/alex/workflows/develop-change.ts",
+    "callers": ["Alex selects it for a finite development Task"],
+    "guidance": ["projects/alex.app/docs/development-workflow.md", "projects/alex.app/agents/alex/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/develop-change.test.ts"],
+    "remainingExternalEffects": ["Publication, hosted checks, activation, integration, and caller delivery remain outside this local procedure."]
+  },
+  {
+    "target": "alex/diagnose-improvement",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/alex/workflows/diagnose-improvement.ts",
+    "callers": ["Alex selects it for a retained improvement diagnosis"],
+    "guidance": ["projects/alex.app/agents/alex/skills/gym-capability-improvement/SKILL.md", "projects/alex.app/agents/alex/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/diagnose-improvement.test.ts"],
+    "remainingExternalEffects": ["Adoption of a proposed improvement and any candidate publication remain separate owner decisions."]
+  },
+  {
+    "target": "alex/evaluation-report-reader",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/evaluator/workflows/evaluation-report-reader.ts",
+    "callers": ["Alex follow-through on an Evaluation publication"],
+    "guidance": ["projects/alex.app/agents/evaluator/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/evaluator/workflows/evaluation-report-reader.test.ts"],
+    "remainingExternalEffects": ["Reading a report does not apply its recommendation or close its subject Task."]
+  },
+  {
+    "target": "alex/evaluator",
+    "kind": "agent",
+    "body": "projects/alex.app/agents/evaluator/agent.json",
+    "callers": ["projects/alex.app/agents/evaluator/workflows/metric-review.ts", "projects/alex.app/agents/evaluator/workflows/task-outcome-review.ts"],
+    "guidance": ["projects/alex.app/agents/evaluator/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/evaluator/workflows/metric-review.test.ts", "projects/alex.app/agents/evaluator/workflows/task-outcome-review.test.ts"],
+    "remainingExternalEffects": ["Report publication, owner follow-through, and subject disposition remain separate effects."]
+  },
+  {
+    "target": "alex/gym",
+    "kind": "agent",
+    "body": "projects/alex.app/agents/gym/agent.json",
+    "callers": ["projects/alex.app/agents/alex/workflows/diagnose-improvement.ts"],
+    "guidance": ["projects/alex.app/agents/gym/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/diagnose-improvement.test.ts", "projects/gym/test/workflow-adapter.test.ts"],
+    "remainingExternalEffects": ["External-model quality and domain benchmark conclusions are not established by local deterministic protocol tests."]
+  },
+  {
+    "target": "alex/judge",
+    "kind": "agent",
+    "body": "projects/alex.app/agents/judge/agent.json",
+    "callers": ["Gym scenario scoring through the configured callable catalog"],
+    "guidance": ["projects/alex.app/agents/judge/AGENTS.md", "projects/alex.app/agents/judge/DOMAIN.md"],
+    "owningVerification": ["shared/tests/workflow-audit.test.ts", "projects/gym/test/workflow-adapter.test.ts"],
+    "remainingExternalEffects": ["A live scenario judgment remains a Gym-run effect, not an inventory-test claim."]
+  },
+  {
+    "target": "alex/learn-from-daily-work",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/alex/workflows/learn-from-daily-work.ts",
+    "callers": ["Alex daily-work-learning Task intent selected by projects/alex.app/app.ts"],
+    "guidance": ["projects/alex.app/agents/alex/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/learn-from-daily-work.test.ts"],
+    "remainingExternalEffects": ["Drafted learning material is not adopted into canonical guidance without separate review and authority."]
+  },
+  {
+    "target": "alex/metric-review",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/evaluator/workflows/metric-review.ts",
+    "callers": ["Alex review-metric and automatic-review Task routing in projects/alex.app/app.ts"],
+    "guidance": ["projects/alex.app/agents/evaluator/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/evaluator/workflows/metric-review.test.ts", "projects/alex.app/agents/evaluator/workflows/metric-selection.test.ts"],
+    "remainingExternalEffects": ["Published findings require independent owner follow-through; a metric review does not repair the measured system."]
+  },
+  {
+    "target": "alex/pull-request-wait",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/alex/workflows/pull-request-wait.ts",
+    "callers": ["Alex delivery work that needs an installed GitHub observation Condition"],
+    "guidance": ["projects/alex.app/docs/development-workflow.md", "projects/alex.app/agents/alex/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/pull-request-wait.test.ts"],
+    "remainingExternalEffects": ["Constructing a Condition does not publish a PR, observe GitHub, merge, or deploy."]
+  },
+  {
+    "target": "alex/runtime-pattern-audit",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/evaluator/workflows/runtime-pattern-audit.ts",
+    "callers": ["Alex runtime pattern audit Task routing in projects/alex.app/app.ts"],
+    "guidance": ["projects/alex.app/agents/evaluator/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/evaluator/workflows/runtime-pattern-audit.test.ts"],
+    "remainingExternalEffects": ["An audit finding does not itself create, repair, close, or reprioritize subject work."]
+  },
+  {
+    "target": "alex/task-disposition-review",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/alex/workflows/task-disposition-review.ts",
+    "callers": ["Alex bounded backlog review selected by its owner"],
+    "guidance": ["projects/alex.app/docs/2b-manual/task-execution-guide/SKILL.md", "projects/alex.app/agents/alex/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/task-disposition-review.test.ts"],
+    "remainingExternalEffects": ["Returned recommendations do not close Tasks; guarded creator/operator action remains separate."]
+  },
+  {
+    "target": "alex/task-outcome-review",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/evaluator/workflows/task-outcome-review.ts",
+    "callers": ["Alex review-task-outcome and automatic-review Task routing in projects/alex.app/app.ts"],
+    "guidance": ["projects/alex.app/agents/evaluator/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/evaluator/workflows/task-outcome-review.test.ts"],
+    "remainingExternalEffects": ["The review report does not settle, close, or repair the reviewed Task."]
+  },
+  {
+    "target": "alex/task-outcome-selector",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/evaluator/workflows/task-outcome-selector.ts",
+    "callers": ["Alex automatic-review schedule and Task routing in projects/alex.app/app.ts"],
+    "guidance": ["projects/alex.app/agents/evaluator/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/evaluator/workflows/task-outcome-selector.test.ts", "projects/alex.app/agents/evaluator/workflows/selector-review-disposition.test.ts"],
+    "remainingExternalEffects": ["Selection does not prove a review ran or that its subject received follow-through."]
+  },
+  {
+    "target": "alex/tech-lead",
+    "kind": "agent",
+    "body": "projects/alex.app/agents/tech-lead/agent.json",
+    "callers": ["projects/alex.app/agents/alex/workflows/develop-change.ts", "projects/alex.app/agents/alex/workflows/diagnose-improvement.ts"],
+    "guidance": ["projects/alex.app/agents/tech-lead/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/develop-change.test.ts", "projects/alex.app/agents/alex/workflows/diagnose-improvement.test.ts"],
+    "remainingExternalEffects": ["A locally committed implementation does not publish, activate, merge, or deploy itself."]
+  },
+  {
+    "target": "alex/workload-review",
+    "kind": "workflow",
+    "body": "projects/alex.app/agents/alex/workflows/workload-review.ts",
+    "callers": ["Alex workload-review Task intent selected by projects/alex.app/app.ts"],
+    "guidance": ["projects/alex.app/agents/alex/AGENTS.md"],
+    "owningVerification": ["projects/alex.app/agents/alex/workflows/workload-review.test.ts"],
+    "remainingExternalEffects": ["Advice and optional notification do not create, reprioritize, or close Task work."]
+  },
+  {
+    "target": "may/bounded-cleanup",
+    "kind": "workflow",
+    "body": "projects/may.app/agents/may/workflows/bounded-cleanup.ts",
+    "callers": ["May selects it for bounded cleanup under a May-owned assignment"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["projects/may.app/agents/may/workflows/bounded-cleanup.test.ts"],
+    "remainingExternalEffects": ["Cleanup proposals retain destructive-operation and owner-approval boundaries."]
+  },
+  {
+    "target": "may/evaluation-report-intake",
+    "kind": "workflow",
+    "body": "projects/may.app/agents/may/workflows/evaluation-report-intake.ts",
+    "callers": ["May evaluation-intake Task routing in projects/may.app/app.ts"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["projects/may.app/agents/may/workflows/evaluation-report-intake.test.ts"],
+    "remainingExternalEffects": ["Intake does not establish that requested follow-through completed."]
+  },
+  {
+    "target": "may/improvement-activation-follow-up",
+    "kind": "workflow",
+    "body": "projects/may.app/agents/may/workflows/improvement-activation-follow-up.ts",
+    "callers": ["May selects it after an improvement activation needs bounded follow-up"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["projects/may.app/agents/may/workflows/improvement-activation-follow-up.test.ts"],
+    "remainingExternalEffects": ["Source availability does not prove activation, runtime health, rollback safety, or adoption."]
+  },
+  {
+    "target": "may/may",
+    "kind": "agent",
+    "body": "projects/may.app/agents/may/agent.json",
+    "callers": ["May App Task ingress", "projects/may.app/agents/may/workflows/bounded-cleanup.ts", "projects/may.app/agents/may/workflows/metric-follow-through.ts"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["shared/tests/workflow-audit.test.ts", "projects/may.app/agents/may/workflows/bounded-cleanup.test.ts", "projects/may.app/agents/may/workflows/metric-follow-through.test.ts"],
+    "remainingExternalEffects": ["Human decisions, cross-App returns, publication, and deployment remain separately evidenced effects."]
+  },
+  {
+    "target": "may/metric-follow-through",
+    "kind": "workflow",
+    "body": "projects/may.app/agents/may/workflows/metric-follow-through.ts",
+    "callers": ["May metric goal routing in projects/may.app/app.ts"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["projects/may.app/agents/may/workflows/metric-follow-through.test.ts"],
+    "remainingExternalEffects": ["A metric response does not itself repair the source system or close linked work."]
+  },
+  {
+    "target": "may/metric-response",
+    "kind": "workflow",
+    "body": "projects/may.app/agents/may/workflows/metric-response.ts",
+    "callers": ["May selects it to respond to admitted metric evidence"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["projects/may.app/agents/may/workflows/metric-response.test.ts"],
+    "remainingExternalEffects": ["Response generation does not establish delivery, adoption, or measured recovery."]
+  },
+  {
+    "target": "may/prepare-improvement-approval",
+    "kind": "workflow",
+    "body": "projects/may.app/agents/may/workflows/prepare-improvement-approval.ts",
+    "callers": ["May selects it before requesting an improvement approval"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["projects/may.app/agents/may/workflows/prepare-improvement-approval.test.ts"],
+    "remainingExternalEffects": ["Prepared material is not human approval and grants no activation authority."]
+  },
+  {
+    "target": "may/revise-assignment",
+    "kind": "workflow",
+    "body": "projects/may.app/agents/may/workflows/revise-assignment.ts",
+    "callers": ["May selects it with creator authority for an exact existing Task"],
+    "guidance": ["projects/may.app/agents/may/AGENTS.md"],
+    "owningVerification": ["projects/may.app/agents/may/workflows/revise-assignment.test.ts"],
+    "remainingExternalEffects": ["A proposed revision must still be admitted against the current Task generation and resource version."]
+  },
+  {
+    "target": "sample/sample-reviewer",
+    "kind": "agent",
+    "body": "projects/sample.app/agents/reviewer/agent.json",
+    "callers": ["Sample App review Task ingress in projects/sample.app/app.ts"],
+    "guidance": ["projects/sample.app/agents/reviewer/AGENTS.md", "projects/sample.app/README.md"],
+    "owningVerification": ["shared/tests/workflow-audit.test.ts", "projects/sample.app/observers.test.ts"],
+    "remainingExternalEffects": ["The installed sample App is explicitly disabled in the configured verification environment."]
+  },
+  {
+    "target": "scout-knowledge-lib/knowledge-planner",
+    "kind": "workflow",
+    "body": "projects/scout-knowledge-lib.app/agents/scout/workflows/knowledge-planner.ts",
+    "callers": ["Scout library-maintenance Task routing in projects/scout-knowledge-lib.app/app.ts"],
+    "guidance": ["projects/scout-knowledge-lib.app/agents/scout/AGENTS.md"],
+    "owningVerification": ["projects/scout-knowledge-lib.app/agents/scout/workflows/knowledge-planner.test.ts"],
+    "remainingExternalEffects": ["Protected Scout publication and canonical knowledge changes remain separately authorized effects."]
+  },
+  {
+    "target": "scout-knowledge-lib/library-health",
+    "kind": "workflow",
+    "body": "projects/scout-knowledge-lib.app/agents/scout/workflows/library-health.ts",
+    "callers": ["Scout project.library_health.tick Task routing in projects/scout-knowledge-lib.app/app.ts"],
+    "guidance": ["projects/scout-knowledge-lib.app/agents/scout/AGENTS.md"],
+    "owningVerification": ["projects/scout-knowledge-lib.app/agents/scout/workflows/library-health.test.ts"],
+    "remainingExternalEffects": ["A health packet or owner wake does not perform maintenance or prove repair."]
+  },
+  {
+    "target": "scout-knowledge-lib/scout",
+    "kind": "agent",
+    "body": "projects/scout-knowledge-lib.app/agents/scout/agent.json",
+    "callers": ["Scout App Task ingress", "projects/scout-knowledge-lib.app/agents/scout/workflows/knowledge-planner.ts"],
+    "guidance": ["projects/scout-knowledge-lib.app/agents/scout/AGENTS.md"],
+    "owningVerification": ["shared/tests/workflow-audit.test.ts", "projects/scout-knowledge-lib.app/agents/scout/workflows/knowledge-planner.test.ts"],
+    "remainingExternalEffects": ["Live source access, knowledge integration, handoff, and protected publication require separate evidence."]
+  },
+  {
+    "target": "scout-knowledge-lib/scout-assess-source",
+    "kind": "workflow",
+    "body": "projects/scout-knowledge-lib.app/agents/scout/workflows/scout-assess-source.ts",
+    "callers": ["Scout assess-source App input routing in projects/scout-knowledge-lib.app/app.ts"],
+    "guidance": ["projects/scout-knowledge-lib.app/agents/scout/AGENTS.md"],
+    "owningVerification": ["projects/scout-knowledge-lib.app/agents/scout/workflows/scout-assess-source.test.ts"],
+    "remainingExternalEffects": ["A source assessment does not publish or integrate a finding into canonical knowledge."]
+  },
+  {
+    "target": "scout-knowledge-lib/scout-daily-digest",
+    "kind": "workflow",
+    "body": "projects/scout-knowledge-lib.app/agents/scout/workflows/scout-daily-digest.ts",
+    "callers": ["Scout daily-digest Task routing in projects/scout-knowledge-lib.app/app.ts"],
+    "guidance": ["projects/scout-knowledge-lib.app/agents/scout/AGENTS.md"],
+    "owningVerification": ["projects/scout-knowledge-lib.app/agents/scout/workflows/scout-daily-digest.test.ts"],
+    "remainingExternalEffects": ["A handoff request or local snapshot is not provider delivery or recipient adoption."]
+  },
+  {
+    "target": "scout-knowledge-lib/scout-explore",
+    "kind": "workflow",
+    "body": "projects/scout-knowledge-lib.app/agents/scout/workflows/scout-explore.ts",
+    "callers": ["Scout source exploration Task routing in projects/scout-knowledge-lib.app/app.ts"],
+    "guidance": ["projects/scout-knowledge-lib.app/agents/scout/AGENTS.md"],
+    "owningVerification": ["projects/scout-knowledge-lib.app/agents/scout/workflows/scout-explore.test.ts"],
+    "remainingExternalEffects": ["Live provider access and protected Scout publication are not established by source tests and are forbidden in this contribution."]
+  }
+]

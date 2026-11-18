@@ -6,6 +6,7 @@ import {
 import { existsSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type Static } from "typebox";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   claimSemanticAllowance,
@@ -39,14 +40,18 @@ import {
 export const name = "metric-review";
 export const description =
   "Review a pinned metric observation using the existing Evaluation allowance and report publication.";
-type Input = {
-  metricId: string;
-  end: number;
-  reviewer?: Reviewer;
-  automatic?: boolean;
-  /** Automatic reviews identify a recorded breach or recovery. */
-  alertId?: number;
-};
+const metricReviewDataSchema = Type.Object({
+  metricId: Type.String({ minLength: 1 }),
+  end: Type.Number(),
+  reviewer: Type.Optional(Type.Union([Type.Literal("evaluator"), Type.Literal("evaluator-deepseek")])),
+  automatic: Type.Optional(Type.Boolean()),
+  alertId: Type.Optional(Type.Number()),
+}, { additionalProperties: false });
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1 }),
+  data: metricReviewDataSchema,
+}, { additionalProperties: false });
+type Input = Static<typeof inputSchema>;
 
 export async function reviewMetric(
   ctx: AppWorkflowContext<Input>,
@@ -55,9 +60,10 @@ export async function reviewMetric(
   readOwnerTask: MetricOwnerTaskReader = readMetricOwnerTask,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
-  const { metricId, alertId: requestedAlertId } = ctx.input;
-  const end = Number(ctx.input.end);
-  const profile = reviewerProfile(ctx.input.reviewer);
+  const input = ctx.input.data;
+  const { metricId, alertId: requestedAlertId } = input;
+  const end = Number(input.end);
+  const profile = reviewerProfile(input.reviewer);
   if (
     !metricId ||
     !Number.isSafeInteger(end) ||
@@ -87,7 +93,7 @@ export async function reviewMetric(
   }
   ctx.signal.throwIfAborted();
   const quiet =
-    ctx.input.automatic &&
+    input.automatic &&
     (requestedAlertId === undefined || end <= reviewedThrough);
   const noNewTransition = () => {
     const summary = `Metric ${metricId} has no new automatic transition to review; no assessment was performed.`;
@@ -186,7 +192,7 @@ export async function reviewMetric(
     // An old automatic sample request can settle quietly. If it already has a
     // judgment, finish publishing those exact bytes before settling it instead.
     if (quiet) return noNewTransition();
-    if (ctx.input.automatic) {
+    if (input.automatic) {
       const reuse = await checkMetricDecisionReuse(
         evidence,
         reader,
@@ -247,8 +253,8 @@ export async function reviewMetric(
       });
     }
     const execution = await ctx.call(
-      profile.agent,
-      [
+      `alex/${profile.agent}`,
+      { prompt: [
         "Assess this external App metric observation and its comparison windows. A Task is not required: admission, collection or delivery may fail before execution exists.",
         "For effort observations, read the named Tasks and compare accepted deliverables, intermediate artifacts, remaining requirements, new input and waits. High effort or no newly fulfilled input is a reason to inspect, not proof of waste. Account for unsupported executors and unknown prices. Recommend the smallest worthwhile change, or no change when the work justifies its cost; aging out of a metric is not verified recovery.",
         "Judge persistence, recurrence after recovery, changed workload, and coverage gaps. Read the sample duration, calculation rule and calculated value; the latest raw sample can differ from the smoothed value behind an alert. Rising counts alone do not establish a worsening rate. Read sampleSize and source notes for the cohort and exact evidence references. Routine checks can preserve valid waits or recover state; assess cost and Task progress before calling them wasted work. Metric changes do not establish root cause or fulfillment of any input. Later success, acknowledgment and a proposed patch are not verified recovery.",
@@ -262,7 +268,7 @@ export async function reviewMetric(
           subject: { metricId, evidenceHash, ...(alertId ? { alertId } : {}) },
           evidence,
         }),
-      ].join("\n\n"),
+      ].join("\n\n") },
       { schema: evaluationJudgmentSchema },
     );
     const judgment =
@@ -284,6 +290,11 @@ export async function reviewMetric(
         result: { reviewedThrough, reuseEligibility },
       });
     }
+    const executionId = execution.id?.trim();
+    if (!executionId)
+      return ctx.blocked(
+        "Metric reviewer completed without an execution id; the report cannot be attributed or published truthfully.",
+      );
     payload = {
       version: 1,
       rubricVersion: METRIC_RUBRIC_VERSION,
@@ -298,7 +309,7 @@ export async function reviewMetric(
         reviewer: profile.reviewer,
         configuredModel: profile.configuredModel,
         observedModel: "unknown:not-exposed-to-workflow",
-        executionId: execution.id,
+        executionId,
         cost: "unknown",
       },
       judgment,

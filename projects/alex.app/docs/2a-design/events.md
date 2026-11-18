@@ -39,8 +39,8 @@ implicitly resolve an App or create work. Historical `escalation.*` names do not
 have a special feedback-routing hook. An App may declare an ordinary domain
 subscription; a name alone supplies neither an owner nor a delivery contract.
 
-Request and fact are semantic roles of this same Event interface, not separate
-transport or storage APIs. A caller request additionally creates a correlation
+**Current transport:** request and fact are semantic roles of the same Event
+interface, not separate transport or storage APIs. A caller request additionally creates a correlation
 record because a later result is owed; a fact does not create another resource.
 
 ```text
@@ -59,6 +59,25 @@ Iteration, cooperation or synchronization alone does not require an event for
 every step. Host records and delivers relevant facts; the agent/App interprets
 them and chooses the next useful action. See the
 [workflow/Host boundary](workflows.md#bounded-procedure-versus-durable-coordination).
+
+### Commands, facts and local-trial evidence
+
+A command asks an owning API to do something; a fact reports what happened.
+Sharing today's publish envelope does not make an incoming claim an accepted
+result or grant it control authority. The [event refinement](../proposals/event-system-refinement-20261117.md)
+proposes separating those APIs and removing journal noise; that cutover is not
+implemented. Preserve durable input, exact caller correlation and replay while
+changing transport. A typed direct API must not acknowledge an in-memory wake as
+persisted admission.
+
+For an external assignment, record the admission receipt, exact destination and
+input identity, saved requirements revision, actual attempt/workflow, accepted
+scoped result, caller delivery and human notification separately. A direct
+Task-focused input has no Conversation reply route unless one was saved at
+admission. Missing reply context is correction feedback, not permission to
+invent a recipient. An automatic retry with the same key reuses its receipt;
+changed instructions use a fresh key. The [live-trial review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
+records observed handoff failures and the remaining connected checks.
 
 ## Resource responsibility and reconciliation
 
@@ -449,7 +468,7 @@ back to a generic owner inbox or May.
 Composition selects the conversational App. Its input must use durable App or
 Conversation admission; `chat.start.requested` cannot bypass that boundary.
 This rule follows the selected capability rather than a name hardcoded in core.
-See the [boundary review](../proposals/authority-boundary-simplification.md#core-policy-cleanup).
+See the [boundary review](../archive/reviews/authority-boundary-simplification.md#core-policy-cleanup).
 
 The request persists caller correlation, dependency links, result, and restart
 recovery. It does not execute App policy. The App sees the
@@ -492,6 +511,13 @@ admission recorded -> Task attached -> result accepted
 These are commit points in existing records, not new status fields. An accepted
 request or frozen routing plan can precede Task attachment. A client reads the
 linked request/Task to follow coordination and completion.
+
+Follow the result through its saved caller link when an answer is owed. Accepted
+settlement and caller delivery are separate evidence; human communication adds
+its own saved reply context and provider receipt. A revision or wake does not
+answer an older dependency, and a completed caller return does not prove a human
+received a message. The [runtime audit](../2b-manual/event-runtime-audit.md#semantic-trace-health)
+shows the connected trace and recovery checks without adding another work store.
 
 The durable acknowledgement point depends on the route:
 

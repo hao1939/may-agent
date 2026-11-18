@@ -64,7 +64,7 @@ if (import.meta.main) {
   } else {
     if (!id?.trim()) throw new Error("A Task ID is required");
     const response = await sendSocketCommand(socketPath, {
-      type: "app.task.get", appId: "sample", taskId: id,
+      type: "task.get", appId: "sample", taskId: id,
       acceptedEvidence: true, evidenceLimit: 4,
     });
     result = response.task;

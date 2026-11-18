@@ -204,6 +204,7 @@ export function buildExploreTask(
   xhsPacket?: { query: string; items: XhsSearchItem[]; evidence?: string[] },
   selectedSource?: SourceName,
   arxivPacket?: ArxivPacket,
+  preparedFinding?: unknown,
 ): string {
   const source = selectedSource ?? reconciliationSource(task);
   const sourceContract =
@@ -222,7 +223,19 @@ ${JSON.stringify(xhsPacket ?? { query: "missing", items: [] }, null, 2)}
 \`\`\`
 `
       : source === "arxiv"
-        ? `
+        ? preparedFinding !== undefined
+          ? `
+arXiv prepared-finding contract:
+- The current invocation supplied retained source evidence for one exact prepared finding. Verify those paths, hashes, and source identity before editing or publication.
+- Do not make a fresh arXiv request, retry, fallback, pagination, or query variant, and do not substitute another paper or finding.
+- Return source evidence for the exact prepared identity; another arXiv result cannot fulfill this assignment.
+
+Prepared arXiv evidence:
+\`\`\`json
+${JSON.stringify(preparedFinding, null, 2)}
+\`\`\`
+`
+          : `
 arXiv execution contract:
 - The workflow already made the cycle's one canonical bounded arXiv request. Do not make another arXiv request, retry, fallback, pagination, or query variant in this run.
 - Use the workflow-owned source packet below. Do not substitute another source.
@@ -1011,9 +1024,25 @@ export async function executeScoutExplore(
       });
     }
   }
-  const source = sourceName(ctx.reconciliation.input);
+  const invocation = object(ctx.input);
+  const invocationPrompt =
+    typeof invocation.prompt === "string" ? invocation.prompt.trim() : "";
+  const invocationData = object(invocation.data);
+  const preparedFinding = invocationData.preparedFinding;
+  const hasInvocationSource = Object.prototype.hasOwnProperty.call(
+    invocationData,
+    "source",
+  );
+  const invocationSource = sourceName(invocationData);
+  if (hasInvocationSource && !invocationSource)
+    return ctx.blocked("Scout exploration current source is unsupported");
+  const source = invocationSource ?? sourceName(ctx.reconciliation.input);
   if (!source)
     return ctx.blocked("Scout exploration source is missing or unsupported");
+  if (preparedFinding !== undefined && !invocationPrompt)
+    return ctx.blocked(
+      "A prepared Scout finding requires the current invocation assignment",
+    );
   const now = Date.now();
   let xhsPacket:
     | { query: string; items: XhsSearchItem[]; evidence?: string[] }
@@ -1021,7 +1050,7 @@ export async function executeScoutExplore(
   let arxivPacket: ArxivPacket | undefined;
   let sourceEvidence: string[] = [];
 
-  if (source === "arxiv") {
+  if (source === "arxiv" && preparedFinding === undefined) {
     const acquisition = await (
       dependencies.acquireArxiv ?? acquireArxivSource
     )();
@@ -1099,13 +1128,17 @@ export async function executeScoutExplore(
 
   // Assign the bounded operation before supplying the owner's standing Task packet.
   // The packet remains complete background, but it does not transfer reconciliation.
+  const currentAssignment = invocationPrompt
+    ? `Current invocation assignment (authoritative for this call):\n${invocationPrompt}\n\nCurrent invocation data (evidence and parameters; preserve exactly):\n\`\`\`json\n${JSON.stringify(invocationData, null, 2)}\n\`\`\`\n\n${preparedFinding !== undefined ? "This call supplies a prepared finding. Verify and use its retained evidence through the protected publication boundary; do not replace it with a fresh source scan or a different finding.\n\n" : ""}`
+    : "";
   const task = `Bounded Scout research assignment:
-You are the researcher/writer already running inside scout-explore. The standing
-Task owner selected this ${source} scan. Inspect the current ${source} source,
-search existing Scout knowledge, make only justified edits in the supplied
-candidate, read every changed output back, and return summary, source, and
-outputs. The enclosing workflow owns admission and publication; the native
-standing Task owner owns later reconciliation, waits, and scheduling.
+${currentAssignment}You are the researcher/writer already running inside scout-explore. The standing
+Task owner selected this ${source} responsibility. Follow the current invocation
+assignment when supplied; otherwise inspect the current ${source} source. Search
+existing Scout knowledge, make only justified edits in the supplied candidate,
+read every changed output back, and return summary, source, and outputs. The
+ enclosing workflow owns admission and publication; the native standing Task
+owner owns later reconciliation, waits, and scheduling.
 
 Perform this assigned scan directly. Do not redispatch this same scan through
 scout-explore as a substitute for the research. This same-operation boundary
@@ -1139,6 +1172,7 @@ ${JSON.stringify(ctx.reconciliation, null, 2)}
       xhsPacket,
       source,
       arxivPacket,
+      preparedFinding,
     ) +
     `\n\nPublication boundary: edit durable content only in ${candidateProjectDir}.
 The final library root is ${beforePublication.canonicalProjectRoot}; use that
@@ -1158,18 +1192,15 @@ run Git publication or edit the canonical library in this call.`;
     ),
   );
 
-  const result = await ctx.call(agent, agentTask, {
+  const result = await ctx.call(`scout-knowledge-lib/${agent}`, { prompt: agentTask }, {
     schema: ExploreAgentResultSchema,
-    // Source retrieval, duplicate checks, integration and read-back exceeded
-    // the default 24 operations in a real cycle. Keep one bounded call and
-    // the existing time limit; do not add a workflow-owned continuation loop.
-    operationAllowance: 48,
   });
+  const executionId = result.id;
   ctx.signal.throwIfAborted();
 
   if (result.status !== "done") {
     return ctx.blocked("Scout exploration session failed", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       status: result.status,
       summary: result.summary,
       ...candidateFailureDetails(),
@@ -1185,7 +1216,7 @@ run Git publication or edit the canonical library in this call.`;
     finish.status === "partial"
   ) {
     return ctx.blocked("Scout exploration is incomplete, not a no-op", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       summary: result.summary,
       finish,
       ...candidateFailureDetails(),
@@ -1196,7 +1227,7 @@ run Git publication or edit the canonical library in this call.`;
     return ctx.blocked(
       "Scout exploration did not return a structured source result",
       {
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1215,7 +1246,7 @@ run Git publication or edit the canonical library in this call.`;
         source,
         invalidField: observationAdmission.invalidField,
         reason: observationAdmission.reason,
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1238,7 +1269,7 @@ run Git publication or edit the canonical library in this call.`;
     return ctx.blocked(
       "Scout draft preserved; library integration is incomplete",
       {
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         summary: structured.summary,
         source: observation,
         outputs,
@@ -1252,7 +1283,7 @@ run Git publication or edit the canonical library in this call.`;
       "Scout exploration removed primary sources from an existing output",
       {
         replacements,
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1267,7 +1298,7 @@ run Git publication or edit the canonical library in this call.`;
       "Scout exploration created a finding with duplicate source references",
       {
         duplicates: duplicateReferences,
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         ...candidateFailureDetails(),
       },
     );
@@ -1278,7 +1309,7 @@ run Git publication or edit the canonical library in this call.`;
   );
   if (omittedOutputs.length > 0) {
     return ctx.blocked("Scout exploration omitted changed durable outputs", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       outputs,
       uncommittedChanges: durableChanges,
       omittedOutputs,
@@ -1290,12 +1321,18 @@ run Git publication or edit the canonical library in this call.`;
     return ctx.blocked(
       "Scout exploration created a finding without exactly one resolving INDEX link",
       {
-        executionId: result.id,
+        ...(executionId ? { executionId } : {}),
         outputs,
         indexIssues,
         uncommittedChanges: durableChanges,
         candidateFacts: retainedCandidateFacts(beforePublication),
       },
+    );
+  }
+  if (!executionId) {
+    return ctx.blocked(
+      "Scout exploration returned without an execution reference; publication was not attempted",
+      { source: observation, outputs, summary: structured.summary, ...candidateFailureDetails() },
     );
   }
   let publication;
@@ -1307,7 +1344,7 @@ run Git publication or edit the canonical library in this call.`;
   ctx.signal.throwIfAborted();
   try {
     publication = publishKnowledgeChanges(beforePublication, {
-      executionId: result.id,
+      executionId,
       summary: structured.summary,
       reportedOutputs: outputs.filter((path) => !scratchOutputs.includes(path)),
     });
@@ -1321,12 +1358,12 @@ run Git publication or edit the canonical library in this call.`;
           observation,
           source === "xhs" ? "workflow" : "agent-result+workflow-time",
         ),
-        `execution:${result.id}`,
+        `execution:${executionId}`,
       ],
     });
     if (retained) return ctx.done(retained.summary, retained);
     return ctx.blocked("Scout exploration was accepted but not published", {
-      executionId: result.id,
+      ...(executionId ? { executionId } : {}),
       outputs,
       ...candidateFailureDetails(),
       error: error instanceof Error ? error.message : String(error),
@@ -1350,7 +1387,7 @@ run Git publication or edit the canonical library in this call.`;
       ),
       ...publicationFacts(publication),
       ...(outputs.length === 0 ? ["result:evidence-backed-no-op"] : []),
-      `execution:${result.id}`,
+      `execution:${executionId}`,
     ]),
   ];
   try {

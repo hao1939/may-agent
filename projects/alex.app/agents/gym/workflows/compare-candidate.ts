@@ -17,10 +17,19 @@ import {
   type ComparisonObjective,
 } from "@may-agent/gym/comparison";
 import type { AgentContext, ExecutionResult } from "@may-agent/sdk";
+import { Type, type Static } from "typebox";
 
 export const name = "compare-candidate";
 export const description =
   "Compare one exact frozen May or Scout candidate against one frozen Gym baseline and retain a complete command receipt.";
+
+
+const comparisonDataSchema = Type.Record(Type.String(), Type.Unknown());
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1 }),
+  data: comparisonDataSchema,
+}, { additionalProperties: false });
+type ComparisonCallInput = Static<typeof inputSchema>;
 
 export type Comparison = {
   requestId: string;
@@ -237,11 +246,11 @@ function trustedRunDir(stateDir: string, stdout: string): string {
 }
 
 export async function compareCandidate(
-  ctx: AgentContext,
+  ctx: AgentContext<ComparisonCallInput>,
 ): Promise<ExecutionResult> {
   let request: Comparison;
   try {
-    request = parseComparison(ctx.input);
+    request = parseComparison(ctx.input.data);
   } catch (error) {
     return ctx.blocked(String(error));
   }
@@ -457,6 +466,6 @@ export async function compareCandidate(
     actions: [],
   });
 }
-export async function execute(ctx: AgentContext): Promise<ExecutionResult> {
+export async function execute(ctx: AgentContext<ComparisonCallInput>): Promise<ExecutionResult> {
   return compareCandidate(ctx);
 }

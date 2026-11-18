@@ -218,8 +218,8 @@ Current source entry points are [portable agent execution](../../../may-agent/pa
 [Host preparation](../../../may-agent/src/lib/agent-execution.ts), and
 [session management](../../../may-agent/src/lib/manager.ts). Public callable APIs
 remain those in [SDK](sdk.md); this design does not invent a replacement signature.
-The [convergence follow-up](../proposals/host-ingress-and-boundary-simplification-20261116.md)
-owns the remaining integration sequence; the [earlier runtime follow-up](../proposals/unified-agent-instance-runtime.md)
+The [convergence follow-up](../archive/implementation/host-ingress-and-boundary-simplification-20261116.md)
+owns the remaining integration sequence; the [earlier runtime follow-up](../archive/unified-agent-instance-runtime.md)
 retains the additional worker-supervision boundary.
 
 ## Acceptance

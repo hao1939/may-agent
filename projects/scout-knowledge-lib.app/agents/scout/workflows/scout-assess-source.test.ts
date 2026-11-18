@@ -15,7 +15,11 @@ import { createTestAppWorkflowContext } from "@may-agent/sdk/testing";
 import { admitTaskReconcileResult, type AppWorkflowContext } from "@may-agent/sdk/app";
 import { Check } from "typebox/value";
 import app, { taskForScoutInput } from "../../../app";
-import { execute, executeSourceAssessment } from "./scout-assess-source";
+import {
+  execute,
+  executeSourceAssessment,
+  inputSchema,
+} from "./scout-assess-source";
 import { assessmentRecord, saveAssessment } from "./lib/assessment-archive";
 import {
   coverageEvidence,
@@ -90,7 +94,7 @@ function context(
 ) {
   const current = { ...input, data };
   return createTestAppWorkflowContext({
-    input: current,
+    input: { prompt: "Assess the assigned source", data: current },
     reconciliation: {
       task: {
         id: "goal/test",
@@ -125,7 +129,8 @@ function context(
       root,
       output: join(root, "output"),
     },
-    call,
+    call: (async (agent: string, input: { prompt: string }, options?: unknown) =>
+      (call as any)(agent, input.prompt, options)) as AppWorkflowContext["call"],
   });
 }
 const success = (output = draft) => ({
@@ -160,6 +165,18 @@ it("admits a source operation and binds its code procedure without changing gene
     kind: "desired",
     intent: { workflow: "scout-assess-source", input },
   });
+  expect(
+    Check(inputSchema, {
+      prompt: "Assess the assigned source",
+      data: task.intent.input,
+    }),
+  ).toBe(true);
+  expect(
+    Check(inputSchema, {
+      prompt: "Assess the assigned source",
+      data: input.data,
+    }),
+  ).toBe(false);
   const generic = taskForScoutInput({
     id: "request",
     source: { kind: "app", id: "may" },
@@ -190,13 +207,16 @@ it("supplies bounded excerpts with exact offsets, including the tail", () => {
 it("the procedure saves and reads back the analysis with code-owned coverage", async () => {
   const root = temporary();
   let options: unknown;
-  const ctx = context(root, (async (_agent, prompt, suppliedOptions) => {
+  const ctx = context(root, (async (agent, prompt, suppliedOptions) => {
     options = suppliedOptions;
+    expect(agent).toBe("scout-knowledge-lib/scout");
     expect(prompt).toContain(JSON.stringify(packet));
     return success();
   }) as AppWorkflowContext["call"]);
   const result = await executeSourceAssessment(ctx, async () => packet);
-  expect(options).toMatchObject({ tools: "readonly" });
+  expect(options).toMatchObject({ timeoutMs: 180_000 });
+  expect(options).not.toHaveProperty("tools");
+  expect(options).not.toHaveProperty("operationAllowance");
   expect(result.output).toHaveProperty("state", "converged");
   expect(admitTaskReconcileResult(result.output).ok).toBe(true);
   const record = assessmentRecord(root, sourceUrl);
@@ -384,11 +404,15 @@ it("a partial finish preserves its new gap even when it asks to reuse an older r
   expect(saved).toContain(previous.trim());
 });
 
-it("standalone no-save uses its assignment without reconciliation or a workspace", async () => {
+it("standalone no-save uses its assigned callable data without reconciliation or a workspace", async () => {
   let calls = 0;
   const ctx = createTestAppWorkflowContext({
-    input: { ...input, data: { ...input.data, archive: false } },
-    call: (async (_agent, prompt) => {
+    input: {
+      prompt: "Assess the assigned source",
+      data: { ...input, data: { ...input.data, archive: false } },
+    },
+    call: (async (_agent, callInput: { prompt: string }) => {
+      const prompt = callInput.prompt;
       calls++;
       expect(prompt).toContain(input.data.outcome);
       return success();
@@ -404,19 +428,19 @@ it("standalone no-save uses its assignment without reconciliation or a workspace
   });
 });
 
-it("the hosted assignment overrides conflicting procedure input", async () => {
+it("uses assigned callable data without replacing the raw reconciliation input", async () => {
   const root = temporary();
   const ctx = context(root, (async (_agent, prompt) => {
     expect(prompt).toContain(input.data.outcome);
-    expect(prompt).not.toContain("Conflicting request");
+    expect(prompt).not.toContain("Conflicting retained Task input");
     return success();
   }) as AppWorkflowContext["call"]);
-  ctx.input = {
+  ctx.reconciliation!.input = {
     kind: "assess-source",
     data: {
       ...input.data,
       sourceUrl: "https://example.org/wrong",
-      outcome: "Conflicting request",
+      outcome: "Conflicting retained Task input",
     },
   };
   const result = await executeSourceAssessment(ctx, async (url) => {
@@ -424,25 +448,50 @@ it("the hosted assignment overrides conflicting procedure input", async () => {
     return packet;
   });
   expect(result.output).toHaveProperty("state", "converged");
+  expect(ctx.reconciliation!.input).toMatchObject({
+    data: { outcome: "Conflicting retained Task input" },
+  });
 });
 
-it("missing hosted assignment cannot fall back to a caller's procedure input", async () => {
+it("executes the taskForScoutInput assignment through the canonical Host call envelope", async () => {
   const root = temporary();
-  let calls = 0;
-  let reads = 0;
-  const ctx = context(root, (async () => {
-    calls++;
-    return success();
-  }) as AppWorkflowContext["call"]);
-  ctx.reconciliation!.input = undefined as never;
-  const result = await executeSourceAssessment(ctx, async () => {
-    reads++;
-    return packet;
+  const server = Bun.serve({
+    port: 0,
+    fetch: () =>
+      new Response("Controlled Host runner evidence.", {
+        headers: { "content-type": "text/plain" },
+      }),
   });
-  expect(calls).toBe(0);
-  expect(reads).toBe(0);
-  expect(result.output).toHaveProperty("state", "incomplete");
-  expect(readdirSync(root)).toEqual([".git", "knowledge"]);
+  try {
+    const hostInput = {
+      ...input,
+      data: {
+        ...input.data,
+        sourceUrl: `http://127.0.0.1:${server.port}/source`,
+        archive: false,
+      },
+    };
+    const task = taskForScoutInput({
+      id: "host-runner-request",
+      source: { kind: "app", id: "may" },
+      input: hostInput,
+    });
+    if (task.kind !== "desired" || !("workflow" in task.intent))
+      throw new Error("Expected a workflow assignment");
+    const ctx = context(root, (async (_agent, prompt) => {
+      expect(prompt).toContain(hostInput.data.outcome);
+      expect(prompt).toContain("Controlled Host runner evidence.");
+      return success();
+    }) as AppWorkflowContext["call"], hostInput.data);
+    ctx.input = {
+      prompt: "Assess the assigned source",
+      data: task.intent.input,
+    };
+    const result = await execute(ctx);
+    expect(result.output).toHaveProperty("state", "converged");
+  } finally {
+    server.stop(true);
+  }
 });
 
 it("no-save performs the assessment without creating archive files", async () => {

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type Static } from "typebox";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   auditWorkflows,
@@ -13,14 +14,17 @@ export const name = "runtime-pattern-audit";
 export const description =
   "Deterministically collect and compare latest vs. preceding runtime window workflow and contract evidence without a model call. Input {latestWindowMs?, compareWindowMs?, now?, rootDir?, dbPath?, persistSnapshot?}.";
 
-export type RuntimePatternAuditInput = {
-  latestWindowMs?: number;
-  compareWindowMs?: number;
-  now?: number;
-  rootDir?: string;
-  dbPath?: string;
-  persistSnapshot?: boolean;
-};
+const runtimePatternAuditDataSchema = Type.Object({
+  latestWindowMs: Type.Optional(Type.Number()), compareWindowMs: Type.Optional(Type.Number()),
+  now: Type.Optional(Type.Number()), rootDir: Type.Optional(Type.String()),
+  dbPath: Type.Optional(Type.String()), persistSnapshot: Type.Optional(Type.Boolean()),
+}, { additionalProperties: false });
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1 }),
+  data: Type.Optional(runtimePatternAuditDataSchema),
+}, { additionalProperties: false });
+export type RuntimePatternAuditInput = Static<typeof runtimePatternAuditDataSchema>;
+type RuntimePatternAuditCallInput = Static<typeof inputSchema>;
 
 export type WindowDelta = {
   appId: string;
@@ -166,17 +170,18 @@ export function buildRuntimePatternAuditPacket(
 }
 
 export async function execute(
-  ctx: AppWorkflowContext<RuntimePatternAuditInput>,
+  ctx: AppWorkflowContext<RuntimePatternAuditCallInput>,
 ): Promise<ExecutionResult> {
   ctx.signal.throwIfAborted();
   const rootDir = ctx.workspace?.appRoot
     ? workflowInventoryRootFromAppRoot(ctx.workspace.appRoot)
     : process.cwd();
+  const input = ctx.input.data ?? {};
   const packet = buildRuntimePatternAuditPacket(
     {
-      ...ctx.input,
-      rootDir: ctx.input?.rootDir ?? rootDir,
-      persistSnapshot: ctx.input?.persistSnapshot ?? true,
+      ...input,
+      rootDir: input.rootDir ?? rootDir,
+      persistSnapshot: input.persistSnapshot ?? true,
     },
     {
       snapshotDir: ctx.workspace?.output
@@ -192,42 +197,36 @@ export async function execute(
       : `Runtime pattern audit: ${packet.latestSignals.length} signal(s), ${packet.regressions.length} workflow delta(s) across ${packet.latestTotals.workflows} workflows`;
 
   const attentionSignals = packet.latestSignals.filter((s) => s.severity === "attention");
-  const requests =
+  const requestContent =
     attentionSignals.length > 0
-      ? [
-          {
-            localKey: `workflow-audit:${createHash("sha256")
-              .update(
-                JSON.stringify(
-                  attentionSignals.map((s) => ({
-                    appId: s.appId,
-                    workflow: s.workflow,
-                    code: s.code,
-                    sampleRunIds: s.sampleRunIds ?? [],
-                  })),
-                ),
-              )
-              .digest("hex")
-              .slice(0, 16)}`,
-            target: { appId: "alex" },
-            input: {
-              kind: "message",
-              data: {
-                message: `Workflow audit detected ${attentionSignals.length} attention signal(s): ${attentionSignals
-                  .map((s) => s.summary)
-                  .join("; ")}. Inspect the pinned workflow runs and repair or disposition the root cause.`,
-                context: {
-                  workflowAudit: {
-                    generatedAt: packet.generatedAt,
-                    signals: attentionSignals,
-                    regressions: packet.regressions,
-                  },
+      ? {
+          appId: "alex",
+          input: {
+            kind: "message" as const,
+            data: {
+              message: `Workflow audit detected ${attentionSignals.length} attention signal(s): ${attentionSignals
+                .map((s) => s.summary)
+                .join("; ")}. Inspect the pinned workflow runs and repair or disposition the root cause.`,
+              context: {
+                workflowAudit: {
+                  signals: attentionSignals,
                 },
               },
             },
           },
-        ]
-      : [];
+        }
+      : undefined;
+  const requests = requestContent
+    ? [
+        {
+          id: `workflow-audit:${createHash("sha256")
+            .update(JSON.stringify({ version: 2, ...requestContent }))
+            .digest("hex")
+            .slice(0, 16)}`,
+          ...requestContent,
+        },
+      ]
+    : [];
 
   return ctx.done(summary, {
     state: "converged",

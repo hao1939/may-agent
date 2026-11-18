@@ -3,7 +3,7 @@ import { createTestAppWorkflowContext, runWorkflowTest } from "@may-agent/sdk/te
 import type { TaskDetail } from "@may-agent/sdk";
 import * as procedure from "./revise-assignment.js";
 
-const input = {
+const data = {
   appId: "development", taskId: "delivery/one", expectedGeneration: 3,
   input: { kind: "goal", data: {
     outcome: "Finish the existing PR", acceptance: ["Preserve current work"],
@@ -15,16 +15,18 @@ const input = {
 
 test("forwards the full exact correction to the fenced SDK capability without creating replacement work", async () => {
   const calls: unknown[] = [];
-  const saved = { id: input.taskId, generation: 4 } as TaskDetail;
+  const input = { prompt: "Revise the existing assignment", data };
+  const saved = { id: data.taskId, generation: 4 } as TaskDetail;
   const run = await procedure.execute(createTestAppWorkflowContext({ input, reviseTask: async change => {
     calls.push(change); return saved;
   } }));
-  expect(calls).toEqual([input]);
+  expect(calls).toEqual([data]);
   expect(run.status).toBe("done");
   expect(run.output).toEqual(saved);
 });
 
 test("does not claim revision when the Host denies stale or unauthorized changes", async () => {
+  const input = { prompt: "Revise the existing assignment", data };
   const ctx = createTestAppWorkflowContext({ input, reviseTask: async () => {
     throw new Error("Task requirements changed; read the current Task before revising it");
   } });
@@ -33,7 +35,7 @@ test("does not claim revision when the Host denies stale or unauthorized changes
 
 test("rejects malformed generation before invoking revision", async () => {
   const run = await runWorkflowTest(procedure, {
-    input: {...input, expectedGeneration: 0},
+    input: {prompt: "Revise the existing assignment", data: {...data, expectedGeneration: 0}},
   });
   expect(run.status).toBe("error");
   expect(run.started).toBe(false);

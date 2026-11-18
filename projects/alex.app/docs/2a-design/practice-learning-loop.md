@@ -8,7 +8,7 @@
 **Implementation status:** Alex owns system-improvement work, including its
 assessment, engineering and Gym comparison specialists. May retains human
 requests and cross-domain priorities; Scout owns research and shared knowledge.
-These App contracts exist in source. The [Alex handover record](../proposals/alex-improvement-app.md)
+These App contracts exist in source. The [Alex handover record](../archive/implementation/alex-improvement-app.md)
 retains the dated migration and installation evidence. A complete improvement cycle requires separate
 proof of report consumption, candidate preparation, comparison, approval,
 application and fresh behavior. This document does not certify that cycle.
@@ -181,7 +181,7 @@ Gym compared, who requested/received approval, what was applied, and which fresh
 execution verified the result. Do not infer these transitions from independently
 passing component tests or from an old rollout paragraph.
 
-The [convergence index](../proposals/design-implementation-convergence.md) records
+The [convergence index](../archive/reviews/design-implementation-convergence.md) records
 confirmed source gaps. Prior
 [agent-operated trials](../archive/reviews/agent-operated-improvement-poc-20260912.md)
 and [feedback/adoption trials](../archive/reviews/feedback-adoption-integration-20260912.md)

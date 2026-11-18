@@ -21,7 +21,7 @@ SDK authoring, canonical ingress and external Task reads have been simplified;
 companion SDK context/import adoption is prepared in a local unmerged patch.
 Shared `run()` supervision and connected domain-worker adoption remain incomplete. See the
 [source record](../archive/implementation/host-ingress-sdk-source-review-20261116.md)
-and [remaining convergence work](../proposals/host-ingress-and-boundary-simplification-20261116.md).
+and [remaining convergence work](../archive/implementation/host-ingress-and-boundary-simplification-20261116.md).
 
 The responsibility split is:
 
@@ -392,7 +392,7 @@ return, wake or decision if that chain fails; repair only its owning boundary.
 A harness failure, model failure and safe unresolved escalation are different
 results, and none is verified restoration.
 
-The [connected recovery proposal](../proposals/unified-agent-recovery-20261017.md)
+The [connected recovery proposal](../archive/reviews/unified-agent-recovery-20261017.md)
 separates tested mechanics, observed agent behavior and the remaining
 unavailable-owner-to-original-outcome trial.
 
@@ -492,7 +492,7 @@ without requiring perfect execution history or exactly-once arbitrary effects.
 **Implementation scope:** this matrix clarifies the accepted responsibility
 boundary. It does not establish complete production coverage. Parent watchdog
 wiring, shared invocation/settlement, blocked-result continuation and retained
-caller delivery have distinct [source gaps and local repairs](../proposals/host-ingress-and-boundary-simplification-20261116.md#host-responsibility-model).
+caller delivery have distinct [source gaps and local repairs](../archive/implementation/host-ingress-and-boundary-simplification-20261116.md#host-responsibility-model).
 
 ### Operational scope
 
@@ -771,7 +771,7 @@ Follow the [escalation hierarchy](escalation.md): the owner handles what it can
 and requests the next responsible agent's help when needed. Not every App needs
 system-repair capability. If its owner cannot start, Host executes the already
 declared failure route; it does not invent an owner or switch the Task executor.
-The [recovery proposal](../proposals/unified-agent-recovery-20261017.md) tracks
+The [recovery proposal](../archive/reviews/unified-agent-recovery-20261017.md) tracks
 unproven delivery and recipient-startup boundaries. Escalation preserves the
 original obligation and does not itself renew exhausted automatic retries.
 
@@ -816,7 +816,7 @@ retries must remain observable without making an agent administer each one.
 attempts and owner feedback already support this flow. Some App readers reject
 results only after their agent has finished; caller-specific completion feedback
 and concise validation diagnostics still have gaps. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
+[implementation proposal](../archive/reviews/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
 tracks these gaps. This contract does not promise that every installed procedure
 already returns control correctly.
 

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import type { ExecutionResult } from "@may-agent/sdk";
+import { Type, type ExecutionResult, type Static } from "@may-agent/sdk";
 import type { AppWorkflowContext } from "@may-agent/sdk/app";
 import {
   approvalCondition,
@@ -29,6 +29,12 @@ type Input = {
   finding: FindingJudgment;
   candidate: CandidateJudgment;
 };
+const prepareApprovalDataSchema = Type.Record(Type.String(), Type.Unknown());
+export const inputSchema = Type.Object({
+  prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+  data: prepareApprovalDataSchema,
+}, { additionalProperties: false });
+type EnvelopeInput = Static<typeof inputSchema>;
 
 const sha256 = (bytes: string | Buffer) =>
   createHash("sha256").update(bytes).digest("hex");
@@ -89,13 +95,13 @@ export function prepareImprovementApproval(
 }
 
 export async function execute(
-  ctx: AppWorkflowContext<Input>,
+  ctx: AppWorkflowContext<EnvelopeInput>,
 ): Promise<ExecutionResult> {
   const taskId = ctx.reconciliation?.taskId;
   if (!taskId)
     return ctx.blocked("Approval preparation requires an ordinary owner Task");
   try {
-    const prepared = prepareImprovementApproval(ctx.input, {
+    const prepared = prepareImprovementApproval(ctx.input.data as Input, {
       appId: "may",
       taskId,
       generation: ctx.reconciliation!.generation,

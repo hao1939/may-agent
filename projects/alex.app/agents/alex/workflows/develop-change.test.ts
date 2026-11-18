@@ -106,8 +106,8 @@ function trial() {
   const context = (
     signal = new AbortController().signal,
   ): Parameters<typeof execute>[0] =>
-    createTestAppWorkflowContext<{ verify: string[] }>({
-      input: { verify: (current.input as any).data.verify },
+    createTestAppWorkflowContext<{ prompt: string; data: { verify: string[] } }>({
+      input: { prompt: "Run the selected development procedure", data: { verify: (current.input as any).data.verify } },
       signal,
       reconciliation: {
         task: current,
@@ -115,7 +115,7 @@ function trial() {
         taskId: current.id,
         generation: current.generation,
         resourceVersion: 1,
-        agent: "tech-lead",
+        agent: "alex/tech-lead",
         owner: "tech-lead",
         outcome: current.outcome,
         acceptance: current.acceptance,
@@ -136,12 +136,32 @@ function trial() {
           list: async () => ({ items: [] }),
           get: async () => current,
         },
+        execution: async (id) => ({
+          id,
+          kind: "agent",
+          status: "done",
+          summary: "step complete",
+          diagnostics: {
+            cliCalls: [{
+              sessionId: id,
+              toolCallId: `cli-${id}`,
+              taskId: "task-1",
+              tool: "codex",
+              status: "completed",
+              resultPath: "/tmp/result.md",
+              structuredResultPath: "/tmp/result.json",
+              eventsPath: "/tmp/events.jsonl",
+            }],
+            truncated: true,
+          },
+        }),
       }),
       call: (async (
         agent: string,
-        prompt: string,
+        input: { prompt: string },
         options: { tools?: unknown },
       ) => {
+        const prompt = input.prompt;
         const stage =
           /^Development step: ([^.]+)/.exec(prompt)?.[1] ?? "unknown";
         calls.push({ agent, stage, tools: options?.tools });
@@ -315,6 +335,7 @@ describe("development workflow using real Git and verification", () => {
       "retired Task envelope",
       { kind: "development", data: { verify: ["node", "verify.cjs"] } },
     ],
+    ["legacy bare procedure input", { verify: ["node", "verify.cjs"] }],
     ["missing verification", {}],
     ["shell command string", { verify: "node verify.cjs" }],
     [
@@ -352,7 +373,7 @@ describe("development workflow using real Git and verification", () => {
     // bounded execution test runner deliberately supplies no Task envelope.
     const result = await execute({
       ...ctx,
-      input: { verify: ["node", "-e", "process.exit(7)"] },
+      input: { prompt: "Implement", data: { verify: ["node", "-e", "process.exit(7)"] } },
     });
     expect(result.output).toMatchObject({ state: "incomplete" });
     expect(
@@ -368,18 +389,87 @@ describe("development workflow using real Git and verification", () => {
     );
   });
 
-  test("design → direct implementation → real checks → review with configured tools, then quiet replay", async () => {
+  test("identical invocation assignments quiet-replay while changed assignments preserve scoped guidance and get fresh judgment without repeating valid work", async () => {
     const t = trial();
+    (t.current.input as any).data.context = {
+      executionGuidance: "Preserve the scoped specialist judgment boundary",
+      developmentCheckout: { root: t.worktree, baseRef: "main" },
+      sdkProvider: {
+        sourceCommit: "185ffeb1ce99d58e1b55b6fca224105465031591",
+        sourceRoot: "/immutable/provider",
+      },
+    };
     expect((await t.run()).state).toBe("converged");
     expect(t.calls).toEqual([
-      { agent: "bob", stage: "design", tools: undefined },
-      { agent: "tech-lead", stage: "implementation", tools: undefined },
-      { agent: "bob", stage: "review", tools: undefined },
+      { agent: "alex/bob", stage: "design", tools: undefined },
+      { agent: "alex/tech-lead", stage: "implementation", tools: undefined },
+      { agent: "alex/bob", stage: "review", tools: undefined },
     ]);
+    expect(t.prompts[0]).toContain(
+      "Current invocation assignment: Run the selected development procedure",
+    );
+    expect(t.prompts[0]).toContain(
+      "Preserve the scoped specialist judgment boundary",
+    );
+    expect(t.prompts[0]).toContain(
+      '"sourceCommit":"185ffeb1ce99d58e1b55b6fca224105465031591"',
+    );
+    expect(t.prompts[0]).toContain(
+      "Keep the owning Task's wider acceptance visible as context",
+    );
+    expect(t.prompts[0]).toContain("exact SETUP dependency");
     expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
-    const ctx = t.context(); // A fresh invocation; only Task result and repository survive.
-    expect((await t.run(ctx)).state).toBe("converged");
-    expect(t.calls).toHaveLength(3);
+    expect(t.evidence().roundsUsed).toBe(1);
+
+    t.setJudgment((stage) =>
+      stage === "design"
+        ? {
+            decision: "review",
+            reason: "The changed assignment needs fresh judgment of the retained candidate",
+            design: "Reuse the exact verified implementation and review it against the current assignment",
+          }
+        : {
+            decision: "pass",
+            reason: "The retained candidate satisfies the current assignment",
+            commit: t.git(t.worktree, "rev-parse", "HEAD"),
+            findings: [],
+          },
+    );
+    const changed = t.context();
+    changed.input = {
+      prompt: "Assess the retained candidate against the revised invocation assignment",
+      data: { verify: (t.current.input as any).data.verify },
+    };
+    expect(changed.reconciliation.events.items).toEqual([]);
+    expect((await t.run(changed)).state).toBe("converged");
+    expect(t.calls.slice(3)).toEqual([
+      { agent: "alex/bob", stage: "design", tools: undefined },
+      { agent: "alex/bob", stage: "review", tools: undefined },
+    ]);
+    for (const prompt of t.prompts.slice(3)) {
+      expect(prompt).toContain(
+        "Current invocation assignment: Assess the retained candidate against the revised invocation assignment",
+      );
+      expect(prompt).toContain(
+        "Preserve the scoped specialist judgment boundary",
+      );
+      expect(prompt).toContain(
+        "Keep the owning Task's wider acceptance visible as context",
+      );
+      expect(prompt).toContain(
+        "Retained reports, local verification receipts, and bounded child execution projections",
+      );
+      expect(prompt).toContain("/.state/alex-development/");
+      expect(prompt).toContain("preserve diagnostics.truncated");
+    }
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+    expect(t.evidence().roundsUsed).toBe(2);
+
+    const identical = t.context();
+    identical.input = structuredClone(changed.input);
+    expect((await t.run(identical)).state).toBe("converged");
+    expect(t.calls).toHaveLength(5);
+    expect(t.evidence().roundsUsed).toBe(2);
     expect(readFileSync(join(t.repo, "answer.cjs"), "utf8")).toContain("=> 0");
   });
 
@@ -441,7 +531,7 @@ describe("development workflow using real Git and verification", () => {
     );
 
     const third = t.context();
-    third.input = { verify: ["node", "./verify.cjs", "1"] };
+    third.input = { prompt: "Implement", data: { verify: ["node", "./verify.cjs", "1"] } };
     const count = t.calls.length;
     const result = await t.run(third);
     expect(result.state).toBe("incomplete");
@@ -516,7 +606,7 @@ describe("development workflow using real Git and verification", () => {
     expect((await t.run()).state).toBe("incomplete");
     const calls = t.calls.length;
     const ctx = t.context();
-    ctx.input = { verify: ["node", "./verify.cjs", "1"] };
+    ctx.input = { prompt: "Implement", data: { verify: ["node", "./verify.cjs", "1"] } };
     expect((await t.run(ctx)).state).toBe("incomplete");
     expect(t.calls).toHaveLength(calls);
     expect(t.evidence().roundsUsed).toBe(3);
@@ -676,7 +766,7 @@ describe("development workflow using real Git and verification", () => {
       }
       const count = t.calls.length;
       const ctx = t.context();
-      ctx.input = { verify: ["node", "./verify.cjs", "1"] };
+      ctx.input = { prompt: "Implement", data: { verify: ["node", "./verify.cjs", "1"] } };
       expect((await t.run(ctx)).state).toBe("incomplete");
       expect(t.calls).toHaveLength(count);
       expect(t.evidence().roundsUsed).toBe(3);
@@ -950,7 +1040,8 @@ describe("development workflow using real Git and verification", () => {
     const port = (server.address() as AddressInfo).port;
     const ctx = t.context(controller.signal);
     ctx.input = {
-      verify: [
+      prompt: "Implement",
+      data: { verify: [
         "node",
         "-e",
         `
@@ -962,7 +1053,7 @@ describe("development workflow using real Git and verification", () => {
           socket.on("connect", () => socket.write("ready"));
           socket.on("close", () => clearTimeout(guard));
         `,
-      ],
+      ] },
     };
     try {
       await expect(t.run(ctx)).rejects.toThrow("Verification cancelled");
@@ -1092,7 +1183,7 @@ describe("development workflow using real Git and verification", () => {
     await t.run();
     const reports = t.evidence().reports.map((r: any) => r.report.path);
     const ctx = t.context();
-    ctx.input = { verify: ["node", "-e", "process.exit(1)"] };
+    ctx.input = { prompt: "Implement", data: { verify: ["node", "-e", "process.exit(1)"] } };
     const before = t.prompts.length;
     expect((await t.run(ctx)).state).toBe("incomplete");
     for (const report of reports) expect(t.prompts[before]).toContain(report);
@@ -1108,6 +1199,62 @@ describe("development workflow using real Git and verification", () => {
     }));
     expect(await t.run()).toMatchObject({ state: "incomplete", report: true });
     expect(t.calls).toHaveLength(1);
+  });
+
+  test("an exact setup clarification stops unchanged repair rounds while retaining the failed local check", async () => {
+    const t = trial();
+    t.current.acceptance.push(
+      "Publish the eventual candidate and activate it after this local procedure",
+    );
+    t.setImplementation(() => {});
+    t.setJudgment((stage) => {
+      if (stage === "design")
+        return {
+          decision: "implement",
+          reason: "First assess the local source candidate",
+          design: "Keep the source requirement and run the selected local check",
+        };
+      if (
+        stage === "implementation" &&
+        t.calls.filter((call) => call.stage === "implementation").length === 1
+      )
+        return {
+          decision: "ready",
+          reason: "Candidate is ready for the required check",
+        };
+      return {
+        decision: "clarify",
+        reason:
+          "SETUP dependency: Docker daemon access; owner: workspace operator; resume when docker info exits 0, then rerun the selected verification on this candidate",
+      };
+    });
+
+    const result = await t.run();
+    expect(result).toMatchObject({ state: "incomplete", report: true });
+    expect(result.summary).toContain("SETUP dependency: Docker daemon access");
+    expect(t.calls.map((call) => call.stage)).toEqual([
+      "design",
+      "implementation",
+      "implementation",
+    ]);
+    expect(t.prompts[0]).toContain(
+      "Keep the owning Task's wider acceptance visible as context",
+    );
+    expect(t.prompts[0]).toContain(
+      "Publish the eventual candidate and activate it after this local procedure",
+    );
+    expect(t.prompts[2]).toContain("exact SETUP dependency");
+    expect(t.prompts[2]).toContain("accountable owner");
+    expect(readFileSync(join(t.worktree, ".checks"), "utf8")).toBe("check\n");
+    const evidence = t.evidence();
+    expect(evidence.roundsUsed).toBe(2);
+    const verification = evidence.reports.find(
+      (report: any) => report.stage === "verification",
+    );
+    expect(JSON.parse(readFileSync(verification.record.path, "utf8"))).toMatchObject({
+      passed: false,
+      receipt: { exitCode: 1 },
+    });
   });
 
   test("invalid structured judgments fail closed and exhaust across invocations", async () => {
@@ -1182,15 +1329,30 @@ describe("development workflow using real Git and verification", () => {
     expect(reviewPrompt).toContain(implementation.executionId);
     expect(reviewPrompt).toContain(implementation.report.path);
     expect(reviewPrompt).toContain(verification.report.path);
-    const execution = JSON.parse(
+    const implementationRecord = JSON.parse(
       readFileSync(implementation.record.path, "utf8"),
-    ).response;
-    expect(execution).toMatchObject({
+    );
+    expect(implementationRecord.response).toMatchObject({
       id: "step-2",
       summary: "step complete",
       output: { decision: "ready", reason: "Candidate committed" },
       facts: { retained: "execution evidence" },
     });
+    expect(implementationRecord.execution).toMatchObject({
+      id: "step-2",
+      diagnostics: {
+        cliCalls: [{
+          sessionId: "step-2",
+          toolCallId: "cli-step-2",
+          tool: "codex",
+          status: "completed",
+        }],
+        truncated: true,
+      },
+    });
+    expect(
+      readFileSync(implementation.report.path, "utf8"),
+    ).toContain('"toolCallId": "cli-step-2"');
     const verified = JSON.parse(readFileSync(verification.record.path, "utf8"));
     expect(verified.passed).toBe(true);
     expect(verified.candidate.commit).toBe(evidence.review.candidate.commit);
@@ -1446,7 +1608,7 @@ describe("development workflow using real Git and verification", () => {
     roots.push(root);
     const result = await run(
       "alex/develop-change",
-      { verify: ["node", "-e", "process.exit(0)"] },
+      { prompt: "Implement", data: { verify: ["node", "-e", "process.exit(0)"] } },
       {
         cwd: root,
         projectRoot: resolve(import.meta.dirname, "../../../../.."),
@@ -1454,12 +1616,11 @@ describe("development workflow using real Git and verification", () => {
         timeoutMs: 30_000,
       },
     );
-    expect(result.ok).toBe(true);
-    expect(result.result).toMatchObject({
-      type: "blocked",
-      reason: "Development requires an ordinary Task and its worktree",
+    expect(result).toMatchObject({
+      status: "blocked",
+      summary: "Development requires an ordinary Task and its worktree",
     });
-    expect(result.result?.output).toBeUndefined();
+    expect(result.output).toBeUndefined();
     expect(existsSync(join(root, ".checks"))).toBe(false);
     expect(existsSync(join(root, ".state/alex-development"))).toBe(false);
   });

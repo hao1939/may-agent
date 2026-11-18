@@ -14,7 +14,8 @@ The audit answers three questions:
 
 1. Which event types are currently emitted?
 2. Which handlers or runtime components consume them?
-3. Which events are admitted, unhandled, or waiting for a paired close?
+3. Which required consumers have admitted responsibility, and which linked work
+   or result deliveries remain outstanding?
 
 The event table has retention, so counts are windowed facts. A zero count means
 "not seen in the retained window", not "impossible".
@@ -73,7 +74,9 @@ Before adding a new event type to `SystemEvent`:
 
 1. Identify the emitter site in code.
 2. Identify the consumer or owner route.
-3. Decide whether the event needs pair tracking.
+3. Identify its durable admission boundary and per-consumer recovery evidence.
+   Reuse the owning Task/request lifecycle for work; a new event pair must not
+   duplicate it.
 
 ## Admission Health
 
@@ -97,9 +100,9 @@ Interpretation:
   pending; there is no generic owner fallback that can turn routing into work.
 - `delivery_route='noop'` is only a legacy baseline marker for old rows.
 
-## Pair Health
+## Historical Pair Health
 
-Opening events with expected closing events should appear in pair tracking:
+For producers that already declare event pairs, inspect their retained tracking:
 
 ```sql
 SELECT pair_name, correlation_key, owner, status, opened_at,
@@ -112,6 +115,8 @@ LIMIT 100;
 
 An orphan is an investigation signal. It can mean stuck work, a missing close
 event, a wrong correlation key, a bad timeout, or an event naming issue.
+It does not establish unfinished Task work. Current input and results use their
+own admission, Task and caller records; do not add event pairs to track them.
 
 ## Semantic Trace Health
 
@@ -145,34 +150,45 @@ WHERE p.status = 'closed'
   AND ot.trace_id != ct.trace_id;
 ```
 
-For human-rooted work on the current implementation, verify the trace plus
-durable App lineage. One trace is
-not expected to own every asynchronous attempt:
+For human-rooted or Task-focused work, follow exact durable identities. One
+trace is not expected to own every asynchronous attempt:
 
 ```text
-conversation.message.created (target.appId=may, author.kind=human)
-  -> exact bounded May frontend request
-    -> direct Conversation answer, or responsible Task admission and Topic link
-      -> meaningful Task event wakes May's supervision Task
-        -> accepted Task result and optional Conversation update
-          -> independent adapter rendering attempt
+public input admission -> event receipt + admitted input/caller identity
+  -> exact Task input (or declared App translation -> one accountable Task)
+    -> bounded attempt -> workflow/helper execution -> accepted scoped result
+      -> completed input -> saved caller return -> caller reconsideration
+        -> optional human communication -> independent adapter delivery receipt
 ```
 
-Also check that each human semantic message has one bounded May frontend
-request and either a direct persisted answer or one accepted typed request or
-exact-Task feedback. The frontend request does not stay open for destination
-work. Topic links, exact Task references, and event identities preserve durable
-work and supervision across restarts. Adapter attempt IDs diagnose
-presentation only.
-Direct-agent
-persistent-chat turns, if used, must have distinct traces unless reply context
-links them.
+A receipt proves admission. A session, successful workflow or accepted helper
+result does not prove that the caller input completed or that a human received a
+message. Read each exact linked record; do not infer missing stages from a shared
+Task parent, Topic, text match or `summary`. A direct Task-focused input may
+legitimately have no Conversation reply context.
 
-The accepted [unified route](../2a-design/conversation-execution.md#one-conversation-input-path)
-will replace the supervision hop with a source-marked conversation inbox item.
-Audit that path only after its implementation lands. Verify Task/timer input
-identity, quiet completion and Request closure; do not interpret a system
-review as another human request or require another Task to handle it.
+Use the candidate coding trial to inspect the ordinary and recovery paths:
+
+1. Retry identical admission with the same idempotency key and verify the same
+   input/destination; use a new key for changed instructions. Submit a stale
+   generation through the fenced Task-input API and verify clear rejection.
+2. Correct requirements or checkout through creator revision. Check the actual
+   saved generation, preserved usage and reconsideration wake. Complete an old
+   answered setup escalation through its exact scoped caller return.
+3. Observe real current-head CI and a later substantive comment. Confirm same-
+   Task follow-up after the readiness notification, not only before it. With the
+   current one-shot source, retain/rearm an ordinary fingerprint Condition while
+   follow-up is owed. Continuous idle-Task observation is still proposed.
+4. Check an unchanged fact causes no repeated work, independent Conditions survive
+   scoped convergence, and a missed ephemeral wake recovers from retained input.
+   Verify closed/cancelled Tasks stay closed.
+5. Match the final review-link communication to its addressed Telegram provider
+   receipt. Approval remains a GitHub action; notification is no approval proof.
+
+Record exact Host/SDK/App revisions, binary identity, intervention and unresolved
+steps in dated evidence. Do not copy a live database or installation requirement
+into portable Host tests. Use owning temporary-store/production-adapter fixtures
+for regressions, then the authorized live instance for connected proof.
 
 For Conversation reads, also verify that non-human semantic messages create no
 May request and transient messages do not replay. A command/tool view is
@@ -180,10 +196,11 @@ appended as seen human context only after the adapter actually rendered it;
 May results require no delivery receipt to enter Conversation.
 
 Trace tests should cover new May requests, later/corrective requests, approval,
-cancellation, cross-App Task dependencies and results, failure, and recovery. Compatibility
-execution tests cover async fork/workflow/CLI events, live steering, ended-session
-rejection and fresh Task attempts after confirmed cleanup. Native CLI thread
-continuity remains a separate adapter contract.
+cancellation, cross-App Task dependencies and results, failure, and recovery.
+Historical compatibility reads can retain fork/workflow/CLI evidence. Current
+execution tests cover the supported contribution interface, live steering,
+ended-session rejection and fresh Task attempts after confirmed cleanup. Native
+CLI thread continuity remains a separate adapter contract.
 
 ## Post-rollout state reconciliation
 

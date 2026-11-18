@@ -21,7 +21,7 @@ import {
   readMetricReview,
 } from "./metric-follow-through.js";
 
-const githubPullRequestObservers = createGitHubPullRequestObservers({
+const [, githubPullRequestObserver] = createGitHubPullRequestObservers({
   repository: "hao1939/may-agent",
   author: "hao1939",
   appId: "may",
@@ -400,45 +400,12 @@ export default defineApp({
     inputKinds: ["message"],
     conversationId: "may:primary",
   },
-  schedules: [
-    {
-      id: "metric-source-collection",
-      intervalMs: 300_000,
-      event: {
-        type: "trigger.metrics-snapshot",
-        source: "app:may:schedule:metric-source-collection",
-        owner: "app:may",
-        data: {},
-      },
-    },
-    {
-      id: "metric-evaluation",
-      intervalMs: 60_000,
-      event: {
-        type: "trigger.metrics-evaluate",
-        source: "app:may:schedule:metric-evaluation",
-        owner: "app:may",
-        data: {},
-      },
-    },
-    {
-      id: "conversation-supervision-recovery",
-      intervalMs: 900_000,
-      event: {
-        type: "conversation.supervision.review",
-        source: "app:may:schedule:conversation-supervision-recovery",
-        owner: "app:may",
-        target: { appId: "may", project: "may" },
-        data: { project: "may", limit: 100 },
-      },
-    },
-  ],
   task: taskForMayInput,
   tasks: {
     maxConcurrent: 4,
     validateCondition: validateGitHubPullRequestCondition,
   },
-  observers: [...githubPullRequestObservers, createMetricEvidenceObserver()],
+  observers: [githubPullRequestObserver, createMetricEvidenceObserver()],
   subscriptions: [
     {
       id: "evaluation-review-lag",

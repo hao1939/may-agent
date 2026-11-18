@@ -21,10 +21,10 @@ describe("bounded-cleanup executable skill workflow", () => {
       ].join("\n");
 
       const run = await runWorkflowTest(boundedCleanupWorkflow, {
-        input: { request },
+        input: { prompt: "Assess bounded cleanup", data: { request } },
         workspace: { projectRoot: workRoot, workRoot },
         mocks: {
-          may: {
+          "may/may": {
             status: "done",
             summary: "Remove legacy-alerts only",
             output: {
@@ -86,11 +86,11 @@ describe("bounded-cleanup executable skill workflow", () => {
       ].join("\n");
 
       const run = await runWorkflowTest(boundedCleanupWorkflow, {
-        input: { request },
+        input: { prompt: "Assess bounded cleanup", data: { request } },
         workspace: { projectRoot: workRoot, workRoot },
         mocks: {
-          may: (step) => {
-            expect(step.options?.tools).toBe("readonly");
+          "may/may": (step) => {
+            expect(step.options).not.toHaveProperty("tools");
             return {
               status: "done",
               summary: "Block cleanup on non-empty diff",
@@ -135,12 +135,12 @@ describe("bounded-cleanup executable skill workflow", () => {
       ].join("\n");
 
       const run = await runWorkflowTest(boundedCleanupWorkflow, {
-        input: { request },
+        input: { prompt: "Assess bounded cleanup", data: { request } },
         workspace: { projectRoot: workRoot, workRoot },
         mocks: {
-          may: (step) => {
-            expect(step.task).not.toContain("Return one production-schema-valid");
-            expect(step.task).toContain(
+          "may/may": (step) => {
+            expect(JSON.parse(step.task).prompt).not.toContain("Return one production-schema-valid");
+            expect(JSON.parse(step.task).prompt).toContain(
               "Block Destructive Worktree Cleanup Until Durable Closure Path Is Known",
             );
             return {

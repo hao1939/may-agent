@@ -278,6 +278,6 @@ requirements for this milestone. Keep the existing three-round development
 limit; every started round counts, including cancellation, with no reset on
 reentry. Escalate clearly if exhausted. Exact step restoration and per-step time
 prediction are unnecessary; retain source work, accepted results and effect
-identities. See the [simplified execution refinement](../proposals/host-ingress-and-boundary-simplification-20261116.md#cancel-on-timeout-redo-safe-work-keep-one-round-limit).
+identities. See the [simplified execution refinement](../archive/implementation/host-ingress-and-boundary-simplification-20261116.md#cancel-on-timeout-redo-safe-work-keep-one-round-limit).
 No new submission, model-backed run, publication or activation is authorized
 merely by marking this plan agreed.

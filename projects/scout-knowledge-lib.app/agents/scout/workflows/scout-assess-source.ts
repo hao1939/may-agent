@@ -41,6 +41,22 @@ export const sourceAssessmentInputSchema = Type.Object(
   { additionalProperties: true },
 );
 
+const sourceAssessmentTaskInputSchema = Type.Object(
+  {
+    kind: Type.Literal("assess-source"),
+    data: sourceAssessmentInputSchema,
+  },
+  { additionalProperties: false },
+);
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1, pattern: "\\S" }),
+    data: sourceAssessmentTaskInputSchema,
+  },
+  { additionalProperties: false },
+);
+type EnvelopeInput = Static<typeof inputSchema>;
+
 const draftSchema = Type.Object(
   {
     title: Type.String({ minLength: 1, maxLength: 300 }),
@@ -53,16 +69,14 @@ const draftSchema = Type.Object(
 );
 
 export async function executeSourceAssessment(
-  ctx: AppWorkflowContext,
+  ctx: AppWorkflowContext<EnvelopeInput>,
   read: (
     url: string,
     signal?: AbortSignal,
   ) => Promise<SourcePacket> = readSource,
 ) {
-  const raw = (ctx.reconciliation ? ctx.reconciliation.input : ctx.input) as
-    | { kind?: string; data?: unknown }
-    | undefined;
-  const input = raw?.data as Static<typeof sourceAssessmentInputSchema>;
+  const raw = ctx.input.data;
+  const input = raw.data as Static<typeof sourceAssessmentInputSchema>;
   let record: ReturnType<typeof assessmentRecord> | undefined;
   let beforePublication: KnowledgeSnapshot | undefined;
   const finish = (
@@ -196,8 +210,8 @@ export async function executeSourceAssessment(
       ? coverageSummary(packet)
       : "No source text was supplied to the assessment agent. Retrieval/extraction failed; source content and any unrecorded redirect remain unknown.";
     const result = await ctx.call(
-      "scout",
-      `
+      "scout-knowledge-lib/scout",
+      { prompt: `
 Assess this exact source against the complete current assignment below.
 The workflow owns source retrieval and all archive writes. This call is read-only;
 return the assessment through finish, including on a no-save request. Do not edit
@@ -242,13 +256,8 @@ ${record?.previous.slice(0, 18_000) || "None"}
 Source coverage: ${coverage}
 Source excerpts (page/text-unit character offsets are zero-based, end-exclusive):
 ${JSON.stringify(packet ?? accessFailure)}
-`,
-      {
-        schema: draftSchema,
-        tools: "readonly",
-        timeoutMs: 180_000,
-        operationAllowance: 12,
-      },
+` },
+      { schema: draftSchema, timeoutMs: 180_000 },
     );
     ctx.signal.throwIfAborted();
     const suppliedDraft = Check(draftSchema, result.output)
@@ -374,6 +383,6 @@ ${JSON.stringify(packet ?? accessFailure)}
   }
 }
 
-export async function execute(ctx: AppWorkflowContext) {
+export async function execute(ctx: AppWorkflowContext<EnvelopeInput>) {
   return executeSourceAssessment(ctx);
 }

@@ -8,9 +8,17 @@
 **Implementation status:** Scoped helper calls, common terminal results,
 evidence retention and Task-backed waiting are implemented. Cancellation requires
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
-The sections below state specific coverage limits. Full standalone/Host agent
-parity is not established; [Shared Agent Runtime](agent-runtime.md) owns its
-accepted semantics and current convergence gaps.
+The unified call envelope, canonical discovery and reduced cooperation tool are
+implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
+at `e489ff32b6`. Six post-merge edge fixes are ready for review in
+[#594](https://github.com/hao1939/may-agent/pull/594) at `5dd896025a`, with passing
+Quality/Container checks and independent local verification against App `51141b0b76`.
+The App migration is integrated with canonical source, preserving newer fixes and
+publications. The latest full App scan retains one separate concurrency-fixture
+mismatch. Exact revisions, historical passing totals and current evidence are in the
+[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
+Check paired source identities before relying on installation coverage.
+[Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
 
 An agent or workflow can ask another agent or workflow for a bounded contribution.
 The caller retains its assignment and judges the contribution. Task-level
@@ -66,7 +74,7 @@ schema activation are recorded in the [October 17 rollout](../archive/reviews/ju
 [Host #374](https://github.com/hao1939/may-agent/pull/374) checks original reports before conversion.
 Its [dated activation record](../archive/reviews/recovery-contract-20261017.md#host-374-and-activation-boundary)
 identifies the installation verified then; broader App adoption remains App-owned. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
+[implementation proposal](../archive/reviews/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
 owns that work and the comparison trials; these rules do not establish rollout.
 
 ### A valid report can describe incomplete work
@@ -149,6 +157,38 @@ third argument. Executor-specific skill, operation-count and tool-profile
 options are outside this contract. The input envelope contains only `prompt`
 and optional `data`; reject old or conflicting authoring fields explicitly.
 
+Task/App ingress keeps its own domain-input contract. Its execution adapter builds
+the meaningful prompt from the current assignment and places domain input under
+`data`, so root workflows and child calls receive the same `ctx.input` envelope.
+This does not wrap stored Task input or `ctx.reconciliation.input`: those remain
+the Task's domain input. Migrate workflow body reads alongside schemas and
+callers; a common descriptor alone cannot make top-level domain reads correct.
+
+A Task-bound root's `data` contains its saved domain input, including an App's
+`{ kind, data }` shape when that is what the Task stores. The target's full input
+schema must admit that shape through the actual execution adapter. An inner
+domain object is not another prompt envelope. Keep callable-input typing separate
+from raw reconciliation-input typing; the runtime supplies different values.
+
+For a nested call, inherited Task input supplies ownership and context; the call
+envelope supplies the assigned contribution. A target may explicitly require
+Task context, but context presence must not silently change its declared input
+schema or substitute the parent's domain input for a supplied assignment.
+
+A procedure that delegates must carry the current invocation assignment to its
+helpers alongside the Task's durable requirements. The assignment may clarify
+or narrow the contribution within Task scope; it cannot expand that authority.
+Reusing earlier work must still answer the current assignment. If only `prompt`
+changes, an earlier approval cannot silently stand in for fresh agent judgment,
+even when the Task, candidate and pending events are unchanged. Use the existing
+input-change/review path, retaining valid evidence and consumed allowance;
+identical assignments may reuse their retained result. This requires neither
+another Task lifecycle nor a Host judgment of domain sufficiency.
+
+**Source coverage:** the reviewed App migration preserves changed-assignment
+judgment, identical-assignment replay, receipts and cumulative usage. Exact source
+and local coverage are recorded in the [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
+
 ### Discovery and callable names
 
 Use one catalog and one address rule for agents and workflows:
@@ -158,7 +198,10 @@ Use one catalog and one address rule for agents and workflows:
   contain `/`. Directory ownership is metadata, not another address component.
 - Agents and workflows share the namespace. Duplicate canonical names reject
   registration or reload; neither kind shadows the other. Keep the prior valid
-  definition active after a rejected reload.
+  definition active after a rejected reload. Equal declared names in different
+  namespaces coexist: `global/reviewer`, `alpha/reviewer` and `beta/reviewer`
+  are distinct. Preserve that identity while loading and storing definitions;
+  a bare-name registry must not discard an entry before catalog preparation.
 - List every registered callable in the selected runtime catalog with `name`,
   `description`, complete `inputSchema` and any declared `outputSchema`. The
   input schema includes the required prompt even without extra data requirements.
@@ -171,12 +214,37 @@ Use one catalog and one address rule for agents and workflows:
   ownership; they are not invocation ACLs. Actual tool provisioning and Host
   Task mutation contracts belong to their existing APIs.
 
-Model `agents({ action: "list" })`, the proposed SDK `ctx.list()`, and standalone
+Model `agents({ action: "list" })`, SDK `ctx.list()`, and standalone
 `listTargets` enumerate the same prepared catalog for equivalent runtime inputs.
 They return the same target descriptors, without implementation-kind collections
 or active-session lists. Static workflow code can call known canonical names
 without listing first; discovery is available when it needs runtime inspection.
-The SDK `ctx.list()` binding remains implementation work, not an available API.
+Host #589 implements these bindings; the paired local trial verifies the actual
+Task-worker catalog and cross-App calls. Check the installed source identities.
+
+Prepare and validate the complete selected catalog within the enclosing finite
+execution and cancellation bound, including asynchronous imports. Expose one
+fixed snapshot to discovery and child calls; a later call cannot grow its list
+or resolve a missing entry through another registry. A stalled selected module
+can fail bounded preparation even when that module would not have been called.
+Selecting a canonical root target does not narrow its children to that App;
+the tree keeps the originally configured catalog and cross-namespace callability.
+The snapshot fixes target names, schemas and loaded implementations, not the
+caller. Bind each call to its actual current parent, Task context, cancellation
+scope and trace. Reusing the snapshot cannot execute a child call as the first
+caller that prepared it.
+Callee ownership selects definitions; caller App/Task identity retains lineage.
+Resolve a Task's declared root executor in its own App namespace before checking
+availability, choosing instructions and dispatching. Equal owner names in other
+Apps cannot redirect that execution or narrow the shared child catalog.
+Reload can supply a new snapshot to a later invocation. This keeps completeness,
+duplicate rejection and cancellation understandable without another loader mode.
+
+A native CLI backend or utility is not automatically a registered contribution.
+If configuration exposes it as a callable, include its canonical descriptor and
+apply the same envelope/result contract in every adapter. Otherwise keep it in
+its owning execution/tool API and out of shared discovery. Do not append
+standalone-only pseudo-targets to a catalog claimed to match model/SDK listing.
 
 Replacing an implementation keeps the same canonical name, input and result
 contract. It does not register both implementations under that name at once.
@@ -185,9 +253,8 @@ The model-facing cooperation surface is `list` and awaited `call`. The
 specifies retirement of `fork` and its session controls. Parallel joined calls
 remain ordinary workflow code; durable independently owned work uses Tasks.
 
-**Current gap:** this envelope, discovery rule, permission removal and reduced
-tool surface are the refined target design. Host #585 and existing App call
-sites still need migration; sharing the `agents` tool name does not implement it.
+**Coverage:** the [cutover status](../proposals/agent-workflow-interface-review-20261117.md)
+records exact source/local proof and the bounded post-merge fixes.
 
 An App schedule, subscription or observer first enters through a declared App
 input or Task trigger. Publishing a fact does not directly launch a workflow.
@@ -211,10 +278,10 @@ Each call has two distinct inputs:
   contracts, not a requirement to construct a Task envelope. An input path or
   agent name cannot establish authority or broaden access. Resolve the exact
   current caller session, never the latest session sharing an agent name.
-- **Assigned contribution:** the requested outcome, constraints, relevant
-  references and expected evidence. The caller supplies ordinary task text or
-  private workflow parameters. There is no public schema per scenario and no
-  requirement to copy the whole Task or transcript into each call.
+- **Assigned contribution:** the common `{ prompt, data? }` envelope carries
+  the requested outcome, constraints, references and expected evidence. A target
+  can constrain its domain data through the listed input schema. Neither executor
+  needs a different handoff form or the whole Task/transcript copied into it.
 
 `TASK.md` describes the overall Task. The specific call describes the receiver's
 role. Receiving the shared brief never assigns the receiver the entire Task.
@@ -285,51 +352,50 @@ attempt releases execution capacity. Arbitrary synchronous JavaScript cannot be
 preempted; long I/O must accept cancellation or provide bounded observation
 opportunities. Cancellation does not undo completed external effects.
 
-### Finish before the execution deadline
+<a id="finish-before-the-execution-deadline"></a>
 
-Give a worker an opportunity to return useful progress before forcibly ending
-its execution. This supports [accepted progress and continuation](task-attempts.md#accept-work-and-continue-what-remains)
-and avoids reconstructing work merely because a helper consumed the entire
-allowance. Following [agents judge; infra executes](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge),
-infra controls when execution ends; the agent judges what was accomplished and
-what remains. A timeout does not establish either completion or partial success.
+### Finish or cancel
 
-For Host-managed model invocations that require `finish()`, reserve a finalization
-window inside the existing hard deadline. At the work deadline, signal cooperative
-tools and helpers to stop, retain their returned evidence, and give the model one
-wrap-up instruction. Only `finish()` remains executable; rejected proposals can
-still be corrected through that same tool. A helper is joined before its caller
-receives its result, and outstanding helpers are drained before execution capacity
-is released. Explicit Stop and the hard deadline still cancel the invocation.
-The distinction between a work stop and ordinary cancellation survives nested
-helper calls, so joining a deeper helper still returns its execution reference
-and available evidence instead of replacing them with a generic cancellation error.
+**Design refinement accepted, 18 November 2026; source cutover pending.**
+An invocation runs normally until the agent finishes, the caller cancels it, or
+an admitted execution limit ends it. There is no automatic finish-only phase:
+requiring structured output must not reserve an earlier work deadline, disable
+ordinary tools or trigger a forced wrap-up mode. Explicit resource limits remain
+caller/App or platform policy, enforced through ordinary execution controls.
 
-For example, a review exceeds its work allowance after a patch is prepared.
-The parent receives the interrupted review's execution reference and available
-evidence. It can return `waiting` with `continue: true`, recording the patch and
-the unfinished review. Ordinary result admission accepts that scoped contribution,
-retains its input and artifacts under existing rules, and supplies the result to
-the next attempt. Infra does not fabricate acceptance or satisfy a Condition.
+An accepted `finish()` returns the validated contribution and fences later
+effects. A rejected proposal remains correctable while the invocation can still
+act. Cancellation does not require the agent to acknowledge it or submit another
+`finish()`. Stop scoped operations, join/drain descendants, retain their actual
+execution references and available evidence, and return an honest interruption.
+Unconfirmed cleanup remains visible; do not release capacity for an overlapping
+replacement while old work may still have effects. Cancellation is not rollback.
 
-The source implementation reserves up to **60 seconds**, capped at **one fifth**
-of the invocation's admitted allowance. Helpers inherit the caller's work
-deadline; any finishing window of their own fits inside that bound. The time
-signal is independent of tool counts and uses the existing completion guidance.
-It does not extend deadlines, introduce an agent-facing timer API, or change Task
-states or result schemas. The existing operation-count guidance still applies.
+Children share the caller's cancellation and remaining admitted deadline; a child
+may shorten that bound but cannot extend it. Do not subtract finishing reserves
+at successive call levels. An agent's final report, an invocation's termination
+and the Task owner's judgment of fulfillment remain independent facts.
 
-**Availability:** Implemented in Host PR #308 for managed and direct prepared model
-invocations requiring `finish()`. The [implementation and deployment record](../archive/reviews/graceful-attempt-finish-20261004.md)
-records exact revisions, scripted-provider tests through the real model/tool loop
-and Task admission, and the verified local rollout. Deployment health does not
-establish live model judgment or token savings.
-Standalone native Codex execution, arbitrary workflow JavaScript and persistent chat
-turns have no finalization window of their own. Structured agents' scoped tools
-still receive their caller's work-stop signal.
-A stalled model request or non-cooperative I/O may still consume the finalization
-window; the hard timeout remains a failure if no valid result is returned. Cancelling
-an operation does not prove its external effects were rolled back.
+For example, cancellation during CI retains the patch, execution/log references
+and known test results. A missing CI exit or final model report remains unknown,
+not a fabricated pass or completion. The responsible caller can assess retained
+work and continue the same Task under its existing authority and allowance.
+Cancelling one invocation neither closes that Task nor replenishes its budget.
+
+This accepts the possible loss of a final model-written summary or unsubmitted
+judgment in exchange for simpler execution and uninterrupted authorized work up
+to the real boundary. Existing evidence retention supports recovery; it cannot
+preserve unwritten reasoning or guarantee arbitrary external effects were undone.
+Ordinary instructions may ask for timely reporting, but they do not create a
+second runtime phase, capability gate or special finishing-policy API.
+
+**Implementation gap:** inspected Host main `42a7421d28` still implements the old
+work/finish signal split, early finishing reserve and automatic wrap-up guidance.
+Removing them must preserve normal finish correction, explicit cancellation,
+actual resource ceilings, caller/child identity, late-effect fences and cleanup
+on both managed and standalone paths. The [older graceful-finishing record](../archive/reviews/graceful-attempt-finish-20261004.md)
+retains the original PR #308 choice and its scripted-provider evidence; it is
+history, not proof this simplification is installed.
 
 ### Input during execution
 
@@ -421,7 +487,7 @@ effects and exact input identity while using the existing retry path.
 Workflow runs retain step timing/status, input summaries, source errors and
 bounded result evidence. Optional observations cannot veto a successful result;
 required execution-state persistence remains required. The
-[workflow tracing record](../proposals/workflow-tracing-and-health-metrics.md)
+[workflow tracing record](../archive/implementation/workflow-tracing-and-health-metrics.md)
 and [stability trials](../archive/reviews/workflow-stability-poc-20260912.md)
 retain the original evidence. Current source supplies these contracts:
 
@@ -620,30 +686,37 @@ Backend kind, `sessionId`, `workflowRunId`, output directories, workflow steps,
 raw `lastAssistantText`, `structuredResult` and `finishResult` belong in execution
 diagnostics rather than alternative public result shapes or payload aliases.
 Useful output and facts must remain JSON-compatible and available through the
-same envelope for either implementation. This migration remains outstanding in
-Host #585; the current SDK still exposes a required diagnostic `kind` field.
+same envelope for either implementation. Host #589 passes its source/CI
+checks, and the compatible local candidate uses this interface. The
+[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
+records exact source/local-trial proof and the separate integration/periodic-work handoff.
 An explicit partial agent result is `blocked` with its partial output retained,
 not `done`. Both optional `output` and `facts` survive every authored terminal
 status and nested workflow boundary. A workflow may return an error or
 interrupted contribution with useful evidence; actual caller cancellation and
-failed persistence still follow the execution fences and failure path. Retain
-both fields in the existing bounded run artifact, including explicit unavailable
-markers when evidence exceeds retention limits. Prose-only calls may return a
-summary when no structured result was requested; this does not manufacture
-verified domain data. Both still return the common envelope; unstructured
-assistant text alone is not a successful finish report.
+failed persistence still follow the execution fences and failure path. Ordinary
+exceptions after a child workflow starts return the same error report with its
+actual child identity. Typed deferral, allowance exhaustion and unconfirmed
+cleanup retain their existing supervision paths rather than becoming ordinary
+child reports. Retain both fields in the existing bounded run artifact, including explicit unavailable
+markers when evidence exceeds retention limits. A call without an output schema
+may return a valid report containing only status and summary. Prompt execution
+still requires `finish()`; unstructured assistant text alone is not a successful
+finish report. Use the existing bounded corrective prompt and failure path when
+the required report is missing. This requirement applies equally to model-tool
+calls and calls made from workflows.
+Pass the caller's requested output schema into a prompt helper's existing finish
+validation/correction path through either adapter. Post-return rejection alone
+does not provide that same admission behavior. Bind it per invocation so parallel
+calls with different schemas cannot change each other's requirements.
 
-Invocation/setup failure can occur before a child exists, and cancelled scopes
-or infrastructure failures may throw. Do not fabricate a terminal execution ID
-to make those paths look like completed calls. Existing control errors or thrown
-failures describe the failed operation; available diagnostic references remain
-discoverable. The shared contract does not require every tool response or
-exception to be an `ExecutionResult`. The system-facing workflow adapter keeps
-its failure contract: when a terminal result is available, its typed exception
-carries the normalized `execution` and includes the run reference in its message.
-The Task adapter retains that reference while preserving `state: error` and the
-existing recovery path. Evidence preservation must not turn failure into an
-accepted result or require a new Task lifecycle.
+Setup can fail before a child exists; cancelled scopes and infrastructure failures
+may throw. Preserve available diagnostics without fabricating a terminal child ID.
+Control errors and setup failures need not be an `ExecutionResult`. The system-facing
+workflow adapter retains its failure contract: when a terminal result exists, its
+typed exception carries normalized `execution` and the run reference in its message.
+The Task adapter retains that reference, `state: error` and the existing recovery
+path. Preserving evidence neither accepts failed work nor creates a new Task lifecycle.
 
 When a caller requires structured output, the App owns a TypeBox or equivalent
 schema and pure checks for admission. Use those same checks for newly proposed
@@ -736,7 +809,7 @@ The pinned model tool validator can coerce values before ordinary App checks
 run. Merged Host #374 uses its supported pre-validation hook for
 structured finish reports. The linked dated rollout records identify the
 installation verified then; they do not identify today's active binary. The
-[implementation proposal](../proposals/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
+[implementation proposal](../archive/reviews/host-contract-improvements-20261016.md#app-result-admission-and-owner-follow-through)
 specifies the remaining questions; callers must verify support in their installed
 Host. Optional report fields are already supported by the schema surface.
 
@@ -793,13 +866,14 @@ effect. A retry must distinguish work that ran from results that were admitted.
 Do not replay external writes simply because an attempt failed: inspect the
 actual target state or use its supported idempotency identity first.
 
-Workflow code retains the data needed to assess a step: actual execution ID,
-returned output/facts and command receipts, including failure details. Store
-long bodies in artifacts and carry checksummed references through bounded Task
-results. Validate the aggregate result with SDK admission; independent string
-limits on each field do not establish aggregate size correctness. Keep current
-relevant receipts reachable regardless of how many later attempts fail. A
-summary or preview is not the full evidence, and saving a receipt is not proof
+Workflow code retains actual execution IDs, returned output/facts and command
+receipts, including failure details. Store long bodies in artifacts and carry
+checksummed references through bounded Task results. SDK admission must bound
+nesting, traversal and expanded JSON bytes before materialization or transport.
+Ordinary sharing remains valid; cache reuse cannot hide encoded size or deeper
+nesting. Bound the combined report and rejection evidence, not just each field.
+Keep relevant receipts reachable across later failures. A summary or preview is
+not the full evidence, and saving a receipt is not proof
 that its claims satisfy the requirement.
 
 `shared/tools/task-evidence.ts` supplies reusable local immutable JSON/Markdown

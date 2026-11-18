@@ -1085,11 +1085,13 @@ export function upgradeGitHubPullRequestCondition(
       id: condition.id,
       resource: parsed.pullRequestId,
       expected: record(condition.expected),
+      mode: "continuous",
     },
   );
   return {
     ...condition,
     subject: upgraded.subject,
     expected: upgraded.expected,
+    mode: upgraded.mode,
   };
 }

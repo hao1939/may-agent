@@ -9,7 +9,7 @@
 batch sampling, workflow observations and bounded reporting pages are implemented.
 The maintenance App source retains a central metric catalog, and some HTTP
 reports still encode named Evaluation policy. Those ownership gaps remain in
-[the convergence index](../proposals/design-implementation-convergence.md).
+[the convergence index](../archive/reviews/design-implementation-convergence.md).
 Metrics observe work; they do not accept outcomes or choose improvements.
 
 ## Purpose
@@ -412,7 +412,7 @@ There is no per-source metric registry or additional schedule.
 records the deployed Host and activated App policy; deployment alone does not
 establish improved performance. If execution moves to a worker
 later, the same query declaration should continue to work without App-managed
-process wiring. See the [measurement and remaining work](../proposals/host-contract-improvements-20261016.md#query-cost-and-control-responsiveness)
+process wiring. See the [measurement and remaining work](../archive/reviews/host-contract-improvements-20261016.md#query-cost-and-control-responsiveness)
 and the [operator guide](../2b-manual/metric-alerts.md#investigating-query-cost).
 
 A command may also return

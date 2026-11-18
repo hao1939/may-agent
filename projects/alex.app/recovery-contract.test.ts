@@ -314,6 +314,8 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
         model: fakeModel(),
         tools: [],
         agentDir: f.root,
+        appLocal: true,
+        projectId: "alex",
       };
       manager.register(alexDef);
       manager.activeSessions.set(attempt.attemptId, {
@@ -361,8 +363,8 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
           replies === 1
             ? {
                 action: "call",
-                agent: "read-report",
-                input: { operation: "read-publication", publication },
+                agent: "alex/read-report",
+                input: { prompt: "Read the accepted publication", data: { operation: "read-publication", publication } },
               }
             : {
                 status: "done",
@@ -457,7 +459,7 @@ test.each(["readable", "unfamiliar", "unreadable"] as const)(
       mkdirSync(workflowDir);
       writeFileSync(
         join(workflowDir, "read-report.ts"),
-        `import { readEvaluationReports } from ${JSON.stringify(join(import.meta.dir, "agents/evaluator/workflows/evaluation-report-reader.ts"))};\nexport const name="read-report"; export const description="Read original evidence"; export const execute=ctx=>readEvaluationReports(ctx, ${JSON.stringify(f.root)});\n`,
+        `import { inputSchema, readEvaluationReports } from ${JSON.stringify(join(import.meta.dir, "agents/evaluator/workflows/evaluation-report-reader.ts"))};\nexport { inputSchema }; export const name="read-report"; export const description="Read original evidence"; export const execute=ctx=>readEvaluationReports(ctx, ${JSON.stringify(f.root)});\n`,
       );
       const item = f.admit("interpret", {
         kind: "message",
@@ -1201,14 +1203,29 @@ test.each(["restart", "during-review", "withdrawn", "cancelled-target"] as const
     task: admitted => admitted.input.kind === "workload-review" ? workloadReviewTask(admitted, policy.enabled) : alex.task!(admitted),
     tasks: { ...alex.tasks, coordination: policy.coordination },
   };
-  const manager = { callAgent: async () => {
+  const helperDefinition = {
+    name: "alex",
+    description: "Scripted workload-review helper",
+    domain: "test",
+    appLocal: true,
+    projectId: "alex",
+    tools: [],
+    model: {},
+  } as never;
+  const callHelper = async () => {
     helperCalls++;
     await whileReviewing?.();
     const result = { decision: "reconsider", taskId: ownerTask,
       reason: "The required delivery remains owed.", nextStep: "Defer the optional parallel cross-check." };
     return { sessionId: "scripted-workload-helper", status: "done", messages: [], duration: "0", outputDir: "",
-      lastAssistantText: null, finishResult: { status: "success", summary: "One method recommendation.", result }, structuredResult: result };
-  } } as unknown as SubagentManager;
+      lastAssistantText: null, finishResult: { status: "done", summary: "One method recommendation.", output: result }, structuredResult: result };
+  };
+  const manager = {
+    agentNames: () => ["alex/alex"],
+    getAgentDefinition: (name: string) => name === "alex/alex" ? helperDefinition : undefined,
+    callAgentDefinition: callHelper,
+    callAgent: callHelper,
+  } as unknown as SubagentManager;
   const f = await runtime(async ({ attempt }) => {
     expect(attempt.task.id).toBe(ownerTask);
     ownerCalls++;

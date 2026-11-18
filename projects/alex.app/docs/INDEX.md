@@ -18,12 +18,12 @@ contracts and guides. [Proposals](proposals/README.md) contain remaining choices
 | What must Host preserve, supervise, wake, retry and return? | [Host responsibilities](2a-design/system-boundary.md#responsibilities-through-a-task) |
 | Who judges a result, and what does Host admission establish? | [Agent judgment and infra admission](2a-design/task-attempts.md#agent-judgment-and-infra-admission) |
 | What stays identical standalone and in Host? | [Shared Agent Runtime](2a-design/agent-runtime.md) |
-| Which ingress/SDK changes are complete, and what remains? | [Promoted source record](archive/implementation/host-ingress-sdk-source-review-20261116.md); [remaining integration gaps](proposals/host-ingress-and-boundary-simplification-20261116.md) |
+| Which ingress/SDK changes are complete, and what remains? | [Promoted source record](archive/implementation/host-ingress-sdk-source-review-20261116.md); [remaining integration gaps](archive/implementation/host-ingress-and-boundary-simplification-20261116.md) |
 | Which SDK entry point should a worker or coordinator use? | [SDK entry points](2a-design/sdk.md#stable-root-surface) |
 | How does Host supervise long-running execution? | [Worker supervision](2a-design/runtime.md#worker-supervision) |
 | How should an agent work with current capabilities? | [Task execution guide](2b-manual/task-execution-guide/SKILL.md) |
 | How do Task state, Conditions and recovery work? | [Task lifecycle](2a-design/task-resource-engine.md) |
-| What remains to prove when a Task owner cannot start? | [Connected recovery adoption proposal](proposals/unified-agent-recovery-20261017.md) |
+| What remains to prove when a Task owner cannot start? | [Connected recovery adoption proposal](archive/reviews/unified-agent-recovery-20261017.md) |
 | How do Apps adopt the current Task authoring contract? | [Source upgrade guide](2b-manual/app-operations-recovery.md#update-app-source-for-the-current-task-contract); [merged cleanup evidence](archive/reviews/task-api-cleanup-20261112.md) |
 | Does an idle Task need more work, observation or closure? | [State and continuing responsibility](2a-design/task-resource-engine.md#state-and-continuing-responsibility) |
 | What existing tasks informed the unified lifecycle? | [Task lifecycle review](archive/reviews/task-lifecycle-responsibilities-20261107.md) |

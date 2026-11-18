@@ -1,8 +1,8 @@
 <ai_context>
-summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; completion evidence from requirement binding, post-edit freshness, and non-vacuous execution; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; authority migrations from behavioral-equivalence and retired-path absence proof; release withdrawal from coordinated registry, feed, resolver, and installed-client state transitions; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
-triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "authority migration", "oracle retirement", "absence proof", "action lattice", "release withdrawal", "package yank", "fix-forward", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "M31A", "requirement-scoped evidence", "evidence freshness", "zero-test rejection", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
-last_updated: "2026-11-13"
-source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-11-13: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, Soup Wall be8db48, HOL Guard 56faea4, f5d568f, 31e223d, and 764faf7, ctrlrun 8ebc5a8, aep-sandbox 3495e27, M31A efd97af, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
+summary: "Implementation-evidence companion to agent-security-verified-enforcement.md. Uses pinned repositories, disclosures, and deployed-system reports to separate signed claims from replayable evidence; receipt validity from verifier isolation and claim scope; verifier correctness from adversarial agent resistance; receipt integrity from completeness; configured policy from covered paths; identity enrollment from per-request proof; formal models from unsupported surfaces; observed egress from blocking; static egress policy from irreversible post-sensitive-access session restriction; stable tool digests from equivalent semantics and complete lifecycle coverage; delegation lineage from effect-gate enforcement and task-purpose binding; policy verdicts from effect ownership; counterfactual actions from execution authority and real effect accounting; authorization receipts from effect gates; declared mediation architecture from per-effect path evidence; narrated results from positive execution evidence; completion evidence from requirement binding, post-edit freshness, and non-vacuous execution; sandbox isolation from configuration coherence; stop requests from observed quiescence; frozen eval inputs from stable comparison units; untrusted analysis failure from trusted configuration degradation; human approval records from end-to-end effect binding; authority migrations from behavioral-equivalence and retired-path absence proof; release withdrawal from coordinated registry, feed, resolver, and installed-client state transitions; effect-owning execution routes from provider-reported hook correlation and ambient process coverage; signed workflow conformance from evidence-grade propagation and independently proved declaration pre-existence; and workflow stage labels from prerequisite and ship-gate enforcement."
+triggers: ["SkillProof", "MCP server verification", "replayable evidence", "action receipt", "signed receipt", "evidence completeness", "MAX Authorization Sandbox", "signed policy", "adversary capability", "rollback state", "Pipelock", "HELM AI Kernel", "offline verifier", "verifier isolation", "claim-typed verification", "PassControl", "sender proof", "bearer visa", "authentication assurance", "default deny", "fail closed", "shell hook", "guardrail regression test", "OpenShell prover", "SMT containment", "path composition", "egress firewall", "uninspected egress", "session-aware egress", "sensitive-source transition", "sticky egress restriction", "tool identity", "tool pin", "schema canonicalization", "MCP Hangar", "SigNET", "delegation lineage", "ancestor revocation", "cold-start pinning", "tool annotations", "shadow mode", "mediation ownership", "counterfactual action", "observed policy action", "real effect accounting", "ctrlrun", "HOL Guard", "authority migration", "oracle retirement", "absence proof", "action lattice", "release withdrawal", "package yank", "fix-forward", "Action Evidence Package", "AEP sandbox", "Codex sandbox", "Overpatch", "Heapjack", "authority derivation", "Meta Muse", "local configuration authority", "APEXA", "execution integrity", "tool execution evidence", "M31A", "requirement-scoped evidence", "evidence freshness", "zero-test rejection", "BoxLite", "micro-VM", "sandbox configuration coherence", "guest network", "host jailer grants", "Hard Stop", "SIGSTOP", "process group preemption", "quiescence receipt", "run-assert-eval", "ASSERT", "Agent Control Specification", "fixed evaluation", "applicable denominator", "paired comparison", "safety helpfulness split", "CC Safety Net", "analysis budget", "configuration degradation", "typed failure policy", "emisar", "approval binding", "bridge attestation", "pack hash", "Aegis", "exact action policy", "provider hook correlation", "direct child execution", "route coverage", "Treeship", "workflow conformance", "evidence grade", "declaration pre-existence", "CE-AI", "workflow stage evidence", "ship gate", "prerequisite enforcement"]
+last_updated: "2026-11-18"
+source_basis: "Pinned-source implementation studies and disclosures reviewed 2026-09-10 through 2026-11-18: SkillProof f5ddb4b, MAX Authorization Sandbox 380efe6, Pipelock f7d1816, HELM AI Kernel fe122d4 and 44d4622, agent-guardrails-kit 18c241e, PassControl f9cb702, OpenShell df0ee1a, k8s-rca-agent 29f5fad, secure-agent 017ec5a, Rul1an/assay 900e536, MCP Hangar f02651c, SigNET 1aa95f5, Soup Wall be8db48, HOL Guard 56faea4, f5d568f, 31e223d, and 764faf7, ctrlrun 8ebc5a8, aep-sandbox 3495e27, M31A efd97af, BoxLite 9e9436e, Hard Stop 45c31bc, responsibleai/ASSERT 0628e25, CC Safety Net 0439757, AndrewDryga/emisar ac0d942, antropos17/Aegis 6cae92e, zerkerlabs/treeship 7fd3993, HN items 49795755, 49802030, 49830567, 49834450, 49834720, 49840107, 49841469, 49844056, and 49855568 with their linked primary sources, plus arXiv 2609.24165v1 and 2609.29808v1 (abstracts and full HTML). Each section states its own evidence boundary."
 </ai_context>
 
 # Agent Security: Enforcement Evidence and Runtime Coverage
@@ -823,6 +823,66 @@ one pinned revision. The local environment lacked `pytest`, so the tests were
 not executed; no MCP server was started, and the repository's broader claims
 about authentication, policy enforcement, and production operation were not
 independently validated.
+
+### Follow-up: delegation lineage must reach the effect gate (SigNET, November 2026)
+
+**Repo:** https://github.com/tsiscoe/SigNET
+
+**Pinned observation:** repository commit
+[`1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32`](https://github.com/tsiscoe/SigNET/commit/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32)
+
+SigNET supplies a concrete implementation signal for task-scoped delegation:
+its Ed25519-signed capability claims carry the immediate parent token hash plus
+an ordered ancestor-hash vector, capped at 16 delegation hops. Attenuation code
+rejects child tool sets outside the parent's allow-list, paths outside the
+parent's segment-aware path boundary, larger rate limits, and expirations beyond
+the parent. At the MCP `tools/call` gate, the proxy checks revocation across the
+whole lineage, charges persistent SQLite rate-limit buckets to the child and its
+ancestors, evaluates the current call against the narrowed claims, and writes the
+verdict to a signed hash-chained audit log. Repository-authored integration tests
+cover forged signatures, tool/path/rate escalation, ancestor revocation, expired
+claims, and the `/workspace/safe` versus `/workspace/safe_secrets` prefix trap.
+
+This is more than attaching a parent ID for observability. Ancestor state is
+present in the enforcement input, and a root or intermediate revocation can deny
+a descendant at the effect-owning proxy. It therefore demonstrates the missing
+mechanical half of shadow-delegation control: **authority must attenuate through
+the call chain and remain enforceable where the tool effect is released**.
+
+The repository also combines delegation control with MCP catalog pinning. Its
+pin digest covers name, title, description, input and output schemas,
+annotations, and extension fields; catalog verification scans all tools before
+committing any new pins in one immediate SQLite transaction. That field set is
+broader than MCP Hangar's inspected digest above. The default mode is still
+trust-on-first-use, however: an unpinned live catalog is accepted and recorded
+unless `strict_pins` is selected. Full-metadata hashing prevents later byte-level
+catalog drift under the chosen serializer, but it does not prove that the first
+catalog was trusted or that hash equality implies equivalent behavior in the
+wrapped server.
+
+Two authorization limits remain important. The token binds a subject, tool and
+path restrictions, quotas, expiry, and derivation hashes, but not the originating
+Task, human approver, declared purpose, or requirement set. A correctly signed
+narrow token can therefore prove *derived authority* without proving that this
+particular delegation was requested for the right reason. In addition, the proxy
+mediates its wrapped stdio child; the source inspection does not prove that every
+agent effect is forced through that child or that the process cannot reach an
+alternate execution or network path. Lineage is only as strong as effect-path
+coverage.
+
+**Evidence inspected at the pinned commit:**
+[`README.md`](https://github.com/tsiscoe/SigNET/blob/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32/README.md),
+[`src/crypto/token.rs`](https://github.com/tsiscoe/SigNET/blob/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32/src/crypto/token.rs),
+[`src/policy/mod.rs`](https://github.com/tsiscoe/SigNET/blob/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32/src/policy/mod.rs),
+[`src/policy/pin.rs`](https://github.com/tsiscoe/SigNET/blob/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32/src/policy/pin.rs),
+[`src/proxy/mod.rs`](https://github.com/tsiscoe/SigNET/blob/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32/src/proxy/mod.rs),
+[`src/ledger/mod.rs`](https://github.com/tsiscoe/SigNET/blob/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32/src/ledger/mod.rs), and
+[`tests/integration_tests.rs`](https://github.com/tsiscoe/SigNET/blob/1aa95f5019d5ca7a1983dcb7f3307ca644fe5c32/tests/integration_tests.rs).
+
+**Evidence boundary:** this scan statically inspected the repository's sole
+published commit and its in-tree tests. The environment had no `cargo`, so the
+suite was not executed; no live MCP server was wrapped, no independent security
+audit was reviewed, and the README's performance claim was not measured.
 
 ## A Policy Verdict Is Counterfactual Until the Mediator Owns the Effect (GitHub, September 2026)
 

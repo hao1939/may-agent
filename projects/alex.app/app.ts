@@ -691,7 +691,7 @@ export default defineApp({
     },
   ],
   observers: createAlexGitHubPullRequestWatchers(),
-  tasks: { maxConcurrent: 3, closeOnResult: closeAcceptedAssignment,
+  tasks: { maxConcurrent: 6, closeOnResult: closeAcceptedAssignment,
     validateCondition: validateAlexGitHubPullRequestCondition,
     ...(installedWorkloadReview.enabled ? { coordination: installedWorkloadReview.coordination } : {}),
   },

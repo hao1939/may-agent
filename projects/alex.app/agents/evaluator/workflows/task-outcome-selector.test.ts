@@ -1,4 +1,3 @@
-import { publicTaskFixture } from "./lib/public-task-read.test-support.ts";
 import { describe, expect, test } from "bun:test";
 import { admitTaskReconcileResult } from "@may-agent/sdk/app";
 import { createHash } from "node:crypto";
@@ -234,13 +233,31 @@ function catalogCommand(
     const listed = (tasks[appId] ?? []).find(
       (item) => item.taskId === exactTaskId,
     );
+    if (request.type === "app.task.get")
+      return {
+        type: "ok",
+        command: "app.task.get",
+        appId,
+        taskId: exactTaskId,
+        task: {
+          id: exactTaskId,
+          generation: 1,
+          creator: { appId },
+          agent: listed?.agent ?? "worker",
+          outcome: `Review ${exactTaskId}`,
+          result: { status: listed?.status },
+        },
+      };
     if (request.type === "task.get")
       return {
-        type: "ok", command: "task.get",
-        task: publicTaskFixture({
-          generation: 1, creator: { appId }, agent: listed?.agent ?? "worker",
-          outcome: `Review ${exactTaskId}`, result: { status: listed?.status },
-        }, { ...listed, appId, taskId: exactTaskId, generation: 1 }),
+        type: "ok",
+        command: "task.get",
+        task: {
+          ...listed,
+          appId,
+          taskId: exactTaskId,
+          generation: 1,
+        },
       };
     throw new Error("unexpected");
   };
@@ -757,7 +774,7 @@ describe("automatic task outcome selector", () => {
         ...response,
         task: {
           ...(response.task as Record<string, unknown>),
-          creator: { appId: "evaluation" },
+          creator: { source: { appId: "Evaluation.app" } },
         },
       };
     };
@@ -1320,7 +1337,7 @@ describe("automatic task outcome selector", () => {
     const command: PublicCommand = async (request) => {
       if (
         !readable &&
-        request.type === "task.get"
+        (request.type === "app.task.get" || request.type === "task.get")
       )
         throw new Error("temporary subject read failure");
       return base(request);
@@ -1698,23 +1715,30 @@ describe("automatic task outcome selector", () => {
         return {
           type: "ok",
           command: "task.get",
-          appId: "may",
-          taskId: request.taskId,
           task: {
-            appId: "may", taskId: request.taskId,
+            appId: "may",
+            taskId: request.taskId,
+            id: request.taskId,
             generation: 1,
             creator: { appId: "may" },
+            agent: "worker",
             outcome: "Review linked evidence",
-            diagnostics: { owner: "worker", dependencies: [{ id: linkedTaskId, status: "idle" }] },
+            dependsOn: [linkedTaskId],
           },
         };
       if (request.type === "task.get" && request.taskId === linkedTaskId)
         return {
-          type: "ok", command: "task.get",
+          type: "ok",
+          command: "task.get",
           task: {
-            appId: "may", taskId: request.taskId, generation: 1,
-            creator: { appId: "may" }, outcome: "Large linked evidence",
-            result: { padding }, facts: [padding],
+            appId: "may",
+            taskId: request.taskId,
+            id: request.taskId,
+            generation: 1,
+            creator: { appId: "may" },
+            outcome: "Large linked evidence",
+            result: { padding },
+            facts: [padding],
           },
         };
       return base(request);
@@ -1772,9 +1796,7 @@ describe("automatic task outcome selector", () => {
       const response = await base(request);
       if (request.type === "task.get" && request.taskId === "goal/subject") {
         response.task = {
-          ...(response.task as Record<string, unknown>),
-          diagnostics: { ...((response.task as any).diagnostics ?? {}),
-            dependencies: dependsOn.map((id) => ({ id, status: "idle" })) },
+          ...(response.task as Record<string, unknown>), dependsOn,
           input: { kind: "message", data: { context: { publishedFact: {
             claim: "Review the pinned finding",
             emission: { appId: "may", taskId: "producer", generation: 1, localKey: "finding" },
@@ -1782,13 +1804,10 @@ describe("automatic task outcome selector", () => {
           } } } },
         };
       }
-      if (request.taskId === "producer") {
-        if (request.type === "task.get")
-          return { type: "ok", command: request.type, appId: "may", taskId: "producer",
-            task: { appId: "may", taskId: "producer", generation: 1, result: { fact: producerFact } } };
+      if (request.type === "task.get" && request.taskId === "producer")
         return { type: "ok", command: request.type,
-          task: { appId: "may", taskId: "producer", generation: 1 } };
-      }
+          task: { appId: "may", taskId: "producer", id: "producer", generation: 1,
+            creator: { appId: "may" }, result: { fact: producerFact } } };
       return response;
     };
     const read = () => readSubjectTask({ appId: "may", taskId: "goal/subject" }, command);

@@ -34,7 +34,7 @@ provider HTTP/receipt persistence (`telegram-client.ts`), and unified per-surfac
 session state (`telegram.ts`) over `HumanTaskService` and `getAppConversation`,
 with ESLint forbidding direct core state or raw DB imports in `transport/`.
 Source checks and merge state are not a deployment claim.
-The [conversation experience record](../proposals/telegram-conversation-experience.md)
+The [conversation experience record](../archive/implementation/telegram-conversation-experience.md)
 retains the acknowledgment, contextual-button and compact-update trials.
 Current source includes those mechanisms; a live bot's behavior depends on its
 binary, App definitions, permissions and provider state.
@@ -224,6 +224,13 @@ the Topic to the responsible Task before the frontend turn completes. Later
 Task changes may produce useful Conversation updates under
 [Message Lifecycle](message-lifecycle.md). Telegram renders those messages;
 an agent label or provider send is not evidence of Task completion.
+
+For PR delivery, the Task owner assesses the current pushed head, required
+checks and outstanding review feedback, then sends a GitHub review link through
+the saved human route. Record the provider receipt for a claimed successful
+notification. Approval happens on GitHub. Sending the link does not end the
+Task's owed PR observation or discharge later review comments; see the
+[PR follow-through contract](task-resource-engine.md#solid-use-case-a-pr-through-ci-and-review).
 
 ## Proactive Human Attention
 

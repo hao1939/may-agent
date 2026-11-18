@@ -188,19 +188,23 @@ describe("installed App operational recovery and startup loadability", () => {
         previewTaskEventRoutes: capability.previewEventRoutes,
       });
 
-      // Trigger standing explore-xhs via the real Scout schedule event
+      // Trigger standing explore-xhs through the direct typed schedule input.
       const trigger = bus.emit({
-        type: "scout.explore",
+        type: "app.input.requested",
         source: "app:scout-knowledge-lib:schedule:scout-explore-xhs",
         owner: "app:scout-knowledge-lib",
-        target: { appId: "scout-knowledge-lib", project: "scout-knowledge-lib" },
-        data: { project: "scout-knowledge-lib", source: "xhs" },
+        data: {
+          appId: "scout-knowledge-lib",
+          input: { kind: "explore", data: { source: "xhs" } },
+          source: { kind: "system", id: "schedule:scout-knowledge-lib:scout-explore-xhs" },
+          idempotencyKey: "schedule:scout-knowledge-lib:scout-explore-xhs:1",
+        },
       });
       await until(
         () =>
           (db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(trigger[EVENT_ROW_ID]!) as { delivery_status: string } | null)
             ?.delivery_status === "accepted",
-        "scout.explore admission",
+        "Scout typed schedule input admission",
       );
 
       const scoutStore = AppTaskResourceStore.activeFromDb(db, "scout-knowledge-lib")!;
