@@ -301,6 +301,8 @@ export interface WorkflowToolOptions {
   manager: SubagentManager;
   /** Optional immutable agent catalog for one release-bound execution. */
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+  /** Internal identity for a prepared callable catalog whose workflow modules are already loaded. */
+  callableCatalogScope?: object;
   workflowDir: string;
   /** Persist directory for saving workflow run records. */
   persistDir?: string;
@@ -761,6 +763,8 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           projectId: effectiveProjectId,
           taskBinding: opts.taskBinding,
           taskContext: opts.taskContext,
+          agentDefinitions: opts.taskContext?.agentDefinitions ?? opts.agentDefinitions,
+          callableCatalogScope: opts.taskContext ?? opts.callableCatalogScope,
           recoveryOwner: opts.recoveryOwner,
           stepLabel: agentName,
           timeout: stepControl.timeoutMs,

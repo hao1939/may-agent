@@ -43,6 +43,8 @@ export interface AgentsToolManagerDeps {
       trace?: EventTrace;
       taskBinding?: TaskBinding;
       taskContext?: TaskExecutionContext;
+      agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+      callableCatalogScope?: object;
       executionScope?: ExecutionScope;
     }
   >;
@@ -62,6 +64,8 @@ export interface AgentsToolManagerDeps {
       timeout?: number;
       taskBinding?: TaskBinding;
       taskContext?: TaskExecutionContext;
+      agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+      callableCatalogScope?: object;
     },
   ): Promise<TaskResult & { messages: AgentMessage[] }>;
   registry: {
@@ -162,6 +166,8 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     definition: SubagentDefinition,
     input: ExecutionInput,
     context: CallableInvocationContext,
+    agentDefinitions: ReadonlyMap<string, SubagentDefinition>,
+    callableCatalogScope: object,
     outputSchema?: TSchema,
   ) => {
     const parentSessionId = opts?.getCallerSessionId?.();
@@ -183,6 +189,8 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       timeout: context.timeoutMs,
       taskBinding: session?.taskBinding,
       taskContext: session?.taskContext,
+      agentDefinitions: session?.taskContext?.agentDefinitions ?? agentDefinitions,
+      callableCatalogScope: session?.taskContext ?? callableCatalogScope,
     });
     return { executionId: result.sessionId, report: callableReport(agentExecutionResult(result)) };
   };
@@ -191,6 +199,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     entry: Extract<PreparedCallable, { kind: "workflow" }>,
     input: ExecutionInput,
     context: CallableInvocationContext,
+    callableCatalogScope: object,
   ) => {
     const parentSessionId = opts?.getCallerSessionId?.();
     if (!parentSessionId || !manager.activeSessions.has(parentSessionId)) {
@@ -211,6 +220,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       ...session?.taskContext,
       taskContext: session?.taskContext,
       agentDefinitions: session?.taskContext?.agentDefinitions ?? entry.agentDefinitions,
+      callableCatalogScope: session?.taskContext ?? callableCatalogScope,
       read: opts?.createRead ? opts.createRead(session?.taskContext) : undefined,
       callerSessionId: parentSessionId,
       projectId: parent.projectId,
@@ -277,24 +287,36 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     return pending;
   };
 
-  const bindCatalog = (entries: readonly PreparedCallable[], outputSchema?: TSchema) => new CallableCatalog(entries.map((entry): CallableDefinition => {
-    if (entry.kind === "agent") {
+  const bindCatalog = (entries: readonly PreparedCallable[], callableCatalogScope: object, outputSchema?: TSchema) => {
+    const agentDefinitions = new Map(entries.flatMap((entry) => entry.kind === "agent"
+      ? [[canonicalCallableName(entry.appId, entry.definition.name), entry.definition] as const]
+      : []));
+    return new CallableCatalog(entries.map((entry): CallableDefinition => {
+      if (entry.kind === "agent") {
+        return {
+          appId: entry.appId,
+          declaredName: entry.definition.name,
+          description: entry.definition.description,
+          invoke: (input, context) => invokeAgent(
+            entry.definition,
+            input,
+            context,
+            agentDefinitions,
+            callableCatalogScope,
+            outputSchema,
+          ),
+        };
+      }
       return {
         appId: entry.appId,
-        declaredName: entry.definition.name,
-        description: entry.definition.description,
-        invoke: (input, context) => invokeAgent(entry.definition, input, context, outputSchema),
+        declaredName: entry.workflow.name,
+        description: entry.workflow.description,
+        ...(entry.workflow.inputSchema ? { inputSchema: entry.workflow.inputSchema } : {}),
+        ...(entry.workflow.outputSchema ? { outputSchema: entry.workflow.outputSchema } : {}),
+        invoke: (input, context) => invokeWorkflow(entry, input, context, callableCatalogScope),
       };
-    }
-    return {
-      appId: entry.appId,
-      declaredName: entry.workflow.name,
-      description: entry.workflow.description,
-      ...(entry.workflow.inputSchema ? { inputSchema: entry.workflow.inputSchema } : {}),
-      ...(entry.workflow.outputSchema ? { outputSchema: entry.workflow.outputSchema } : {}),
-      invoke: (input, context) => invokeWorkflow(entry, input, context),
-    };
-  }));
+    }));
+  };
 
   return {
     name: "agents",
@@ -340,12 +362,13 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
         const executionSignal = signals.length === 1 ? signals[0]! : AbortSignal.any(signals);
         executionSignal.throwIfAborted();
         const taskDefinitions = session.taskContext?.agentDefinitions;
-        const capturedAgents = taskDefinitions
-          ? [...taskDefinitions.values()]
+        const capturedDefinitions = taskDefinitions ?? session.agentDefinitions;
+        const capturedAgents = capturedDefinitions
+          ? [...capturedDefinitions.values()]
           : [...manager.agents.values()].map((registered) => registered.definition);
-        const cacheKey = session.taskContext ?? session.executionScope ?? session;
+        const cacheKey = session.taskContext ?? session.callableCatalogScope ?? session.executionScope ?? session;
         const outputSchema = params.action === "call" ? params.options?.schema as TSchema | undefined : undefined;
-        const catalog = bindCatalog(await prepare(cacheKey, capturedAgents, executionSignal), outputSchema);
+        const catalog = bindCatalog(await prepare(cacheKey, capturedAgents, executionSignal), cacheKey, outputSchema);
         executionSignal.throwIfAborted();
         if (params.action === "list") return textResult(JSON.stringify(catalog.list(), null, 2));
         const remainingTimeout = Number.isFinite(deadlineAt) ? Math.max(1, deadlineAt - Date.now()) : undefined;
