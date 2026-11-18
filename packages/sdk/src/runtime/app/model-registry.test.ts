@@ -20,9 +20,10 @@ describe("model registry", () => {
     expect(registry["gpt-6-astra"]?.fallbackModel).toBeUndefined();
     expect(registry["gemini-4-argon"]).toMatchObject({
       id: "gemini-4-argon",
+      api: "openai-responses",
       baseUrl: "http://model-endpoint:4000",
       apiKey: "endpoint-key",
-      contextWindow: 400_000,
+      contextWindow: 200_000,
     });
     expect(registry["gpt-6.1-sol"]).toMatchObject({
       id: "gpt-6.1-sol",
@@ -31,6 +32,20 @@ describe("model registry", () => {
       contextWindow: 400_000,
     });
     expect(registry["gpt-6.1-sol"]?.fallbackModel).toBe(registry["claude-opus-5"]);
+    expect(registry["gpt-6.2-sol"]).toMatchObject({
+      id: "gpt-6.2-sol",
+      name: "GPT-6.2 Sol",
+      api: "openai-responses",
+      provider: "github-copilot",
+      baseUrl: "http://model-endpoint:4000",
+      apiKey: "endpoint-key",
+      contextWindow: 400_000,
+      maxTokens: 128_000,
+      reasoning: true,
+      input: ["text", "image"],
+      cost: { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 2.5 },
+    });
+    expect(registry["gpt-6.2-sol"]?.fallbackModel).toBeUndefined();
     expect(registry["gpt-5.6-sol"]?.apiKey).toBe("endpoint-key");
     expect(registry["claude-opus-5"]?.id).toBe("claude-opus-5");
     expect(registry["claude-opus-5"]?.contextWindow).toBe(200_000);
@@ -120,7 +135,7 @@ describe("model registry", () => {
         Type.Object({ decision: Type.Literal("blocked"), reason: Type.String() }),
       ]),
     });
-    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-6.1-sol", "deepseek-v4-flash"]) {
+    for (const name of ["gpt-5.4", "gpt-5.5", "gpt-5.6-sol", "gpt-6.1-sol", "gpt-6.2-sol", "gemini-4-argon", "deepseek-v4-flash"]) {
       let payload: unknown;
       const model = registry[name]!;
       const response = streamSimple(
