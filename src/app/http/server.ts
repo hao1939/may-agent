@@ -18,7 +18,7 @@ declare const Bun: {
     hostname?: string;
     fetch(req: Request, server: any): Response | Promise<Response> | undefined;
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
-  }): { port: number };
+  }): { port: number; stop(closeActiveConnections?: boolean): void };
 };
 import { randomUUID } from "node:crypto";
 import { createAgentRouteHandlers } from "./agent-routes.js";
@@ -48,10 +48,11 @@ import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { readMetricHistory } from "../adapters/reporting/metric-observations.js";
-import type { EventInput, PublicEvent } from "@may-agent/control/events";
+import type { EventInput } from "@may-agent/control/events";
 import { findEventPublication, getEventView, type EventInterface } from "../core/events/interface.js";
 import type { HumanTaskPage, HumanTaskView } from "../human-task-service.js";
 import type { AppConversationResource } from "@may-agent/sdk/app";
+import { createDaemonWebSocketTransport } from "../transport/websocket.js";
 
 // ── Public API ───────────────────────────────────────────────────────────
 
@@ -133,12 +134,24 @@ export function buildEventIngressFrame(body: Record<string, unknown>): Record<st
     (typeof body.idempotencyKey === "string" && body.idempotencyKey.trim()) ||
     (typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()) ||
     undefined;
-  const operatorId = typeof data.operatorId === "string" ? data.operatorId : undefined;
+  const operatorId =
+    typeof body.operatorId === "string"
+      ? body.operatorId
+      : typeof data.operatorId === "string"
+        ? data.operatorId
+        : undefined;
   const authorizationReference =
-    typeof data.authorizationReference === "string" ? data.authorizationReference : undefined;
+    typeof body.authorizationReference === "string"
+      ? body.authorizationReference
+      : typeof data.authorizationReference === "string"
+        ? data.authorizationReference
+        : undefined;
+  const authorizationEvidenceValue = body.authorizationEvidence ?? data.authorizationEvidence;
   const authorizationEvidence =
-    data.authorizationEvidence && typeof data.authorizationEvidence === "object" && !Array.isArray(data.authorizationEvidence)
-      ? data.authorizationEvidence
+    authorizationEvidenceValue &&
+    typeof authorizationEvidenceValue === "object" &&
+    !Array.isArray(authorizationEvidenceValue)
+      ? authorizationEvidenceValue
       : undefined;
   delete data.idempotencyKey;
   delete data.operatorId;
@@ -396,7 +409,7 @@ export function servePlatformUiRequest(req: Request, platformUiDir: string): Res
   return null;
 }
 
-export function startWebUI(opts: WebUIOptions): { port: number } {
+export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActiveConnections?: boolean): void } {
   const STATE_DIR = opts.stateDir;
   const PORT = opts.port;
   const PROJECT_ROOT = process.env.PROJECT_ROOT || resolve(STATE_DIR, "..");
@@ -444,9 +457,25 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   async function sendDaemonFrame(frame: Record<string, unknown>): Promise<DaemonFrameResult> {
     if (services && frame.type === "publish" && frame.event && typeof frame.event === "object") {
       try {
-        const receipt = services.events.publish(frame.event as EventInput, {
+        const event = frame.event as EventInput;
+        const approvalAuthorization =
+          (event.type === "project.approval.submitted" ||
+            (event.type === "conversation.message.created" && frame.operatorId && event.data.approvalReply))
+            ? {
+                actor: { kind: "operator" as const, id: String(frame.operatorId).trim() },
+                reference: typeof frame.authorizationReference === "string" ? frame.authorizationReference.trim() : "",
+                evidence:
+                  frame.authorizationEvidence &&
+                  typeof frame.authorizationEvidence === "object" &&
+                  !Array.isArray(frame.authorizationEvidence)
+                    ? (frame.authorizationEvidence as Record<string, unknown>)
+                    : {},
+              }
+            : undefined;
+        const receipt = services.events.publish(event, {
           source: "web-ui",
           inputSource: { kind: "human", id: "web-ui" },
+          ...(approvalAuthorization ? { approvalAuthorization } : {}),
         });
         return { ok: true, ...receipt };
       } catch (error) {
@@ -623,17 +652,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
 
   // ── WebSocket wakes ──────────────────────────────────────────────────
 
-  type WsSubscription = {
-    sessions: Set<string> | null;
-    conversations: Set<string>;
-    taskApps: Set<string>;
-    task?: { appId: string; taskId: string };
-    overflowed: boolean;
-    unsubscribe?: () => void;
-  };
   const wsToUnix = new Map<any, Duplex>();
-  const wsSubscriptions = new Map<any, WsSubscription>();
-  const MAX_WS_BUFFERED_BYTES = 256 * 1024;
+  const directWebSocket = services
+    ? createDaemonWebSocketTransport({ events: services.events, agent: DAEMON_AGENT, instance: DAEMON_INSTANCE })
+    : null;
 
   function proxyWebSocket(ws: any): void {
     const socketPath = conventionSocketPath();
@@ -682,79 +704,6 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         ws.close();
       } catch {}
     });
-  }
-
-  function eventMatchesSubscription(event: PublicEvent, state: WsSubscription): boolean {
-    const data = event.data ?? {};
-    const sessionId = typeof data.sessionId === "string" ? data.sessionId : undefined;
-    if (state.sessions === null || (sessionId && state.sessions.has(sessionId))) return true;
-    const appId = event.target?.appId ?? (typeof data.appId === "string" ? data.appId : undefined);
-    const taskId = event.target?.taskId ?? (typeof data.taskId === "string" ? data.taskId : undefined);
-    const conversationId = typeof data.conversationId === "string" ? data.conversationId : undefined;
-    if (conversationId && state.conversations.has(conversationId)) return true;
-    if (state.task && appId === state.task.appId && taskId === state.task.taskId) return true;
-    return Boolean(appId && state.taskApps.has(appId));
-  }
-
-  function openDirectWebSocket(ws: any): void {
-    const state: WsSubscription = {
-      sessions: new Set(),
-      conversations: new Set(),
-      taskApps: new Set(),
-      overflowed: false,
-    };
-    state.unsubscribe = services!.events.subscribe({}, (event) => {
-      if (!eventMatchesSubscription(event, state)) return;
-      if (Number(ws.bufferedAmount ?? 0) > MAX_WS_BUFFERED_BYTES) {
-        if (!state.overflowed) {
-          state.overflowed = true;
-          try {
-            ws.send(JSON.stringify({ type: "overflow", action: "reread" }));
-          } catch {}
-        }
-        return;
-      }
-      state.overflowed = false;
-      try {
-        ws.send(JSON.stringify(event));
-      } catch {}
-    });
-    wsSubscriptions.set(ws, state);
-    ws.send(JSON.stringify({ type: "connected", agent: DAEMON_AGENT, instance: DAEMON_INSTANCE }));
-  }
-
-  function updateDirectSubscription(ws: any, msg: unknown): void {
-    const state = wsSubscriptions.get(ws);
-    if (!state) return;
-    let frame: Record<string, unknown>;
-    try {
-      frame = JSON.parse(typeof msg === "string" ? msg : new TextDecoder().decode(msg as ArrayBuffer));
-    } catch {
-      ws.send(JSON.stringify({ type: "error", message: "Valid subscription JSON required" }));
-      return;
-    }
-    if (frame.type !== "subscribe") {
-      ws.send(JSON.stringify({ type: "error", message: "Only subscribe frames are accepted on /ws" }));
-      return;
-    }
-    const strings = (value: unknown) =>
-      Array.isArray(value)
-        ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())).slice(0, 100)
-        : [];
-    const sessions = strings(frame.sessions);
-    state.sessions = sessions.includes("*") ? null : new Set(sessions);
-    state.conversations = new Set(strings(frame.conversations));
-    state.taskApps = new Set(strings(frame.taskApps).map((appId) => appId.replace(/\.app$/, "")));
-    const task =
-      frame.task && typeof frame.task === "object" && !Array.isArray(frame.task)
-        ? (frame.task as Record<string, unknown>)
-        : null;
-    state.task =
-      task && typeof task.appId === "string" && typeof task.taskId === "string"
-        ? { appId: task.appId.trim(), taskId: task.taskId.trim() }
-        : undefined;
-    state.overflowed = false;
-    ws.send(JSON.stringify({ type: "subscribed" }));
   }
 
   // ── Server ───────────────────────────────────────────────────────────
@@ -889,20 +838,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     },
     websocket: {
       open(ws: any) {
-        if (services) openDirectWebSocket(ws);
+        if (directWebSocket) directWebSocket.open(ws);
         else proxyWebSocket(ws);
       },
       message(ws: any, msg: any) {
-        if (services) updateDirectSubscription(ws, msg);
+        if (directWebSocket) directWebSocket.message(ws, msg);
         else {
           const unix = wsToUnix.get(ws);
           if (unix && typeof msg === "string" && msg.trim()) unix.write(msg.trim() + "\n");
         }
       },
       close(ws: any) {
-        const subscription = wsSubscriptions.get(ws);
-        subscription?.unsubscribe?.();
-        wsSubscriptions.delete(ws);
+        directWebSocket?.close(ws);
         const unix = wsToUnix.get(ws);
         if (unix) {
           unix.destroy();
@@ -912,7 +859,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     },
   });
 
-  return { port: server.port };
+  return { port: server.port, stop: (closeActiveConnections = false) => server.stop(closeActiveConnections) };
 }
 
 // ── Standalone mode ──────────────────────────────────────────────────────
