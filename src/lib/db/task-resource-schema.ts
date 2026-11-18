@@ -194,53 +194,96 @@ export function backfillTaskEventReceipts(db: SqliteDb, appId: string): void {
   db.prepare("UPDATE app_task_events SET event_json = '{}' WHERE app_id = ? AND event_json <> '{}'").run(appId);
 }
 
-function ensureExistingAppTaskAttemptColumns(db: SqliteDb): boolean {
+function ensureExistingAppTaskAttemptColumns(db: SqliteDb): {
+  hadAttemptsTable: boolean;
+  needsAcceptedResultStateBackfill: boolean;
+} {
+  // Acquire the SQLite write lock before inspecting PRAGMA table_info / sqlite_master
+  // so concurrent standalone openers cannot both observe a missing column and race on ALTER TABLE.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS app_task_store_meta (
+      app_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL,
+      PRIMARY KEY(app_id, key)
+    );
+    INSERT OR IGNORE INTO app_task_store_meta(app_id, key, value) VALUES ('', 'schema_lock', '1')
+  `);
   const hasAttemptsTable = Boolean(
     db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_attempts' LIMIT 1").get(),
   );
-  if (!hasAttemptsTable) return false;
+  if (!hasAttemptsTable) return { hadAttemptsTable: false, needsAcceptedResultStateBackfill: false };
   const columns = db.prepare("PRAGMA table_info(app_task_attempts)").all() as Array<{ name?: unknown }>;
   const hasAcceptedResultState = columns.some((item) => item.name === "accepted_result_state");
   if (!hasAcceptedResultState) {
     db.exec("ALTER TABLE app_task_attempts ADD COLUMN accepted_result_state TEXT");
   }
-  return true;
+  const hasTriggers =
+    Number(
+      (
+        db
+          .prepare(
+            `SELECT COUNT(*) AS count FROM sqlite_master
+             WHERE type = 'trigger'
+               AND name IN (
+                 'trg_app_task_attempts_accepted_result_state_insert',
+                 'trg_app_task_attempts_accepted_result_state_update'
+               )`,
+          )
+          .get() as { count?: unknown } | undefined
+      )?.count ?? 0,
+    ) === 2;
+  return {
+    hadAttemptsTable: true,
+    needsAcceptedResultStateBackfill: !hasAcceptedResultState || !hasTriggers,
+  };
 }
 
 /** Create the canonical Task resource and App inbox schema. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
-  db.exec(APP_INBOX_SCHEMA);
-  db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
-    WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
-      AND json_extract(handling, '$.phase') = 'failed'
-      AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
-      AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
-  const hadAttemptsTable = ensureExistingAppTaskAttemptColumns(db);
-  db.exec(TASK_RESOURCE_SCHEMA);
-  if (hadAttemptsTable) {
-    db.exec(`
-      UPDATE app_task_attempts
-      SET accepted_result_state = json_extract(attempt_json, '$.acceptedResult.state')
-      WHERE COALESCE(accepted_result_state, '') IS NOT COALESCE(json_extract(attempt_json, '$.acceptedResult.state'), '')
-    `);
-  }
-  const hasReceiptsTable = Boolean(
-    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1").get(),
-  );
-  if (hasReceiptsTable) {
-    db.prepare(
-      `DELETE FROM app_task_receipts WHERE EXISTS (
-         SELECT 1 FROM app_task_attempts a
-         WHERE a.app_id = app_task_receipts.app_id
-           AND a.task_id = app_task_receipts.receipt_id
-           AND a.task_generation = json_extract(app_task_receipts.receipt_json, '$.metadata.generation')
-           AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
-           AND json_extract(a.attempt_json, '$.specHash') = json_extract(app_task_receipts.receipt_json, '$.specHash')
-       )`,
-    ).run();
-    const remaining = db.prepare("SELECT 1 FROM app_task_receipts LIMIT 1").get();
-    if (!remaining) {
-      db.exec("DROP TABLE IF EXISTS app_task_receipts");
+  const savepoint = `task_resource_schema_${Math.random().toString(36).slice(2, 10)}`;
+  db.exec(`SAVEPOINT ${savepoint}`);
+  try {
+    db.exec(APP_INBOX_SCHEMA);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_app_inbox_rejected_feedback ON app_inbox_items(id)
+      WHERE execution_task_id IS NULL AND status = 'done' AND waiting_on_kind IS NULL
+        AND json_extract(handling, '$.phase') = 'failed'
+        AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
+        AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
+    const { hadAttemptsTable, needsAcceptedResultStateBackfill } = ensureExistingAppTaskAttemptColumns(db);
+    db.exec(TASK_RESOURCE_SCHEMA);
+    if (hadAttemptsTable && needsAcceptedResultStateBackfill) {
+      db.exec(`
+        UPDATE app_task_attempts
+        SET accepted_result_state = json_extract(attempt_json, '$.acceptedResult.state')
+        WHERE COALESCE(accepted_result_state, '') IS NOT COALESCE(json_extract(attempt_json, '$.acceptedResult.state'), '')
+      `);
     }
+    const hasReceiptsTable = Boolean(
+      db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1").get(),
+    );
+    if (hasReceiptsTable) {
+      db.prepare(
+        `DELETE FROM app_task_receipts WHERE EXISTS (
+           SELECT 1 FROM app_task_attempts a
+           WHERE a.app_id = app_task_receipts.app_id
+             AND a.task_id = app_task_receipts.receipt_id
+             AND a.task_generation = json_extract(app_task_receipts.receipt_json, '$.metadata.generation')
+             AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
+             AND json_extract(a.attempt_json, '$.specHash') = json_extract(app_task_receipts.receipt_json, '$.specHash')
+         )`,
+      ).run();
+      const remaining = db.prepare("SELECT 1 FROM app_task_receipts LIMIT 1").get();
+      if (!remaining) {
+        db.exec("DROP TABLE IF EXISTS app_task_receipts");
+      }
+    }
+    db.exec(`RELEASE SAVEPOINT ${savepoint}`);
+  } catch (error) {
+    try {
+      db.exec(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+      db.exec(`RELEASE SAVEPOINT ${savepoint}`);
+    } catch {
+      // Preserve the original migration error.
+    }
+    throw error;
   }
 }
