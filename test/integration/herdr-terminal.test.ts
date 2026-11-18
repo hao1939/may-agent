@@ -53,7 +53,12 @@ describe("Herdr web terminal", () => {
     expect(nginx).toContain("proxy_set_header Upgrade $http_upgrade;");
     expect(supervisor).toContain("--interface /tmp/may-agent-ttyd.sock");
     expect(supervisor).not.toContain("--port 7681");
-    expect(supervisor).toContain('DAEMON_HTTP_PORT="8081"');
+    // Supervisor's global environment reaches both Herdr and ttyd shells,
+    // including Consoles selecting a custom INSTANCE explicitly.
+    const globalConfig = supervisor.split(/^\[/m).find((section) => section.startsWith("supervisord]"));
+    expect(globalConfig).toContain('environment=DAEMON_HTTP_PORT="8081"');
+    expect(supervisor.match(/^command=\/usr\/local\/bin\/may-agent(?: |$)/gm)).toHaveLength(2); // daemon + maintenance
+    expect(supervisor).not.toContain("[program:may-agent-web]");
     expect(compose).not.toContain("TERMINAL_PORT");
     expect(compose).not.toContain(":7681");
     expect(dockerfile).not.toContain("EXPOSE 7681");

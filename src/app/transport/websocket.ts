@@ -1,6 +1,7 @@
 import type { PublicEvent } from "@may-agent/control/events";
 import { isTaskDerivedViewWake, taskUpdateIdentity } from "../../../packages/control/src/task-wake.js";
 import type { EventInterface } from "../core/events/interface.js";
+import type { ExecutionStatus } from "../core/reads/execution-status.js";
 
 export type DaemonWebSocketPeer = {
   bufferedAmount?: number;
@@ -46,12 +47,30 @@ function decodeMessage(message: unknown): string {
 
 export function createDaemonWebSocketTransport(options: {
   events: Pick<EventInterface, "subscribe">;
+  getStatus(): ExecutionStatus;
   agent: string;
   instance: string;
   maxBufferedBytes?: number;
 }): DaemonWebSocketTransport {
   const subscriptions = new Map<DaemonWebSocketPeer, Subscription>();
   const maxBufferedBytes = options.maxBufferedBytes ?? 256 * 1024;
+
+  function statusFields(): Record<string, unknown> {
+    const status = options.getStatus();
+    return {
+      activeAgents: status.sessions
+        .filter((session) => session.status === "running" || session.status === "idle")
+        .slice(0, 100)
+        .map((session) => ({
+          agent: session.agent,
+          sessionId: session.sessionId,
+          status: session.status,
+          kind: session.kind,
+          task: session.task.slice(0, 100),
+        })),
+      activeWork: status.activeWork,
+    };
+  }
 
   function open(ws: DaemonWebSocketPeer): void {
     const state: Subscription = {
@@ -93,7 +112,13 @@ export function createDaemonWebSocketTransport(options: {
       }
     });
     subscriptions.set(ws, state);
-    ws.send(JSON.stringify({ type: "connected", agent: options.agent, instance: options.instance }));
+    let initialStatus: Record<string, unknown>;
+    try {
+      initialStatus = statusFields();
+    } catch {
+      initialStatus = { statusError: "Execution status unavailable" };
+    }
+    ws.send(JSON.stringify({ type: "connected", agent: options.agent, instance: options.instance, ...initialStatus }));
   }
 
   function message(ws: DaemonWebSocketPeer, message: unknown): void {
@@ -101,13 +126,23 @@ export function createDaemonWebSocketTransport(options: {
     if (!state) return;
     let frame: Record<string, unknown>;
     try {
-      frame = JSON.parse(decodeMessage(message));
+      const parsed = JSON.parse(decodeMessage(message));
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Invalid frame");
+      frame = parsed;
     } catch {
       ws.send(JSON.stringify({ type: "error", message: "Valid subscription JSON required" }));
       return;
     }
+    if (frame.type === "status") {
+      try {
+        ws.send(JSON.stringify({ type: "status", command: "status", ...statusFields() }));
+      } catch {
+        ws.send(JSON.stringify({ type: "error", command: "status", message: "Execution status unavailable" }));
+      }
+      return;
+    }
     if (frame.type !== "subscribe") {
-      ws.send(JSON.stringify({ type: "error", message: "Only subscribe frames are accepted on /ws" }));
+      ws.send(JSON.stringify({ type: "error", message: "Only subscribe and status frames are accepted on /ws" }));
       return;
     }
     const strings = (value: unknown) =>

@@ -342,12 +342,17 @@ function sendFrame(frame, opts = {}) {
       ? `ref=${encodeURIComponent(frame.ref)}`
       : `appId=${encodeURIComponent(frame.appId)}&taskId=${encodeURIComponent(frame.taskId)}`;
     void httpJson(`/api/task?${query}`)
-      .then((task) => httpJson("/api/events", { method: "POST", body: JSON.stringify({
-        type: "app.task.cancel.requested",
-        target: { appId: task.appId, taskId: task.taskId },
-        data: { expectedGeneration: task.generation, expectedResourceVersion: task.resourceVersion, reason: frame.reason },
-        idempotencyKey: `app-task-cancel:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
-      }) }).then((result) => handleEvent({ type: "ok", command: "task.cancel", task, ...result })))
+      .then(async (task) => {
+        const result = await httpJson("/api/events", { method: "POST", body: JSON.stringify({
+          type: "app.task.cancel.requested",
+          target: { appId: task.appId, taskId: task.taskId },
+          data: { expectedGeneration: task.generation, expectedResourceVersion: task.resourceVersion, reason: frame.reason },
+          idempotencyKey: `app-task-cancel:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
+        }) });
+        if (result.delivery !== "accepted") throw new Error("Cancellation was not accepted");
+        const updatedTask = await httpJson(`/api/task?appId=${encodeURIComponent(task.appId)}&taskId=${encodeURIComponent(task.taskId)}`);
+        handleEvent({ ...result, type: "ok", command: "task.cancel", task: updatedTask });
+      })
       .catch((error) => handleEvent({ type: "error", command: "task.cancel", message: error.message }));
     return true;
   }

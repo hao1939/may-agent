@@ -158,6 +158,72 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3_000): Promise<voi
 }
 
 describe("May Console", () => {
+  test.each(["port", "endpoint", "unaccepted"])("rereads canonical cancellation with explicit %s selection", async (selection) => {
+    const frames: Array<Record<string, any>> = [];
+    let cancelled = false;
+    let output = "";
+    const server = createServer((socket) => {
+      cleanups.push(() => socket.destroy());
+      socket.write(JSON.stringify({ type: "connected", agent: "host", instance: "custom" }) + "\n");
+      socket.on("data", (chunk) => {
+        for (const line of String(chunk).trim().split("\n")) {
+          const frame = JSON.parse(line);
+          frames.push(frame);
+          const response: Record<string, unknown> = { type: "ok", command: frame.type };
+          if (frame.type === "app.conversation.get") response.conversation = { messages: [] };
+          if (frame.type === "apps.list") response.apps = [];
+          if (frame.type === "tasks.list") response.tasks = { items: [] };
+          if (frame.type === "task.get") response.task = {
+            appId: "sample", taskId: "work/1", ref: "abcdef12", generation: 2,
+            resourceVersion: cancelled ? 8 : 7, status: cancelled ? "cancelled" : "running",
+            terminal: cancelled, outcome: "Review cancellation", updatedAt: 1,
+          };
+          if (frame.type === "publish") {
+            if (frame.event.type === "app.task.cancel.requested") cancelled = selection !== "unaccepted";
+            Object.assign(response, { eventId: frames.length,
+              delivery: selection === "unaccepted" && frame.event.type === "app.task.cancel.requested" ? "recorded" : "accepted" });
+          }
+          socket.write(JSON.stringify(response) + "\n");
+        }
+      });
+    });
+    server.listen("");
+    cleanups.push(() => server.close());
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: { ...process.env, CONVERSATION_APP: "sample", CONVERSATION_ID: "sample:primary",
+        INSTANCE: "custom", DAEMON_INSTANCE: "custom", DAEMON_AGENT: "host",
+        MAY_ENDPOINT: selection === "endpoint" ? consoleEndpoint(server) : undefined,
+        DAEMON_HTTP_URL: undefined, DAEMON_HTTP_PORT: selection === "endpoint" ? "1" : String(server.port), WEB_PORT: undefined },
+      stdio: "pipe",
+    });
+    cleanups.push(() => child.kill("SIGKILL"));
+    child.stdout.on("data", (chunk) => { output += chunk; });
+    child.stderr.on("data", (chunk) => { output += chunk; });
+    await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get"));
+    child.stdin.write("/cancel abcdef12\n");
+    await waitFor(() => output.includes(selection === "unaccepted" ? "Cancellation was not accepted" : "cancelled."));
+    const reads = frames.filter((frame) => frame.type === "task.get");
+    expect(reads[0]).toEqual({ type: "task.get", ref: "abcdef12" });
+    if (selection === "unaccepted") {
+      expect(reads).toHaveLength(1);
+    } else {
+      expect(reads).toEqual([
+        { type: "task.get", ref: "abcdef12" },
+        { type: "task.get", appId: "sample", taskId: "work/1" },
+      ]);
+      expect(output).toContain("The Task will not continue.");
+      expect(output).not.toContain("working.");
+    }
+    expect(frames.find((frame) => frame.event?.type === "app.task.cancel.requested")?.event).toMatchObject({
+      target: { appId: "sample", taskId: "work/1" },
+      data: { expectedGeneration: 2, expectedResourceVersion: 7 },
+      idempotencyKey: "app-task-cancel:sample:work/1:2:7",
+    });
+    child.stdin.write("/exit\n");
+    expect((await once(child, "exit"))[0]).toBe(0);
+  });
+
   test("shares Conversation context and manages stable Tasks instead of sessions", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-"));
     const instance = "test";

@@ -52,17 +52,18 @@ import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { readMetricHistory } from "../adapters/reporting/metric-observations.js";
-import type { EventInput } from "@may-agent/control/events";
+import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { findEventPublication, getEventView, type EventInterface } from "../core/events/interface.js";
 import type { HumanTaskPage, HumanTaskView } from "../human-task-service.js";
 import type { AppConversationResource } from "@may-agent/sdk/app";
 import { createDaemonWebSocketTransport } from "../transport/websocket.js";
+import type { ExecutionStatus } from "../core/reads/execution-status.js";
 
 // ── Public API ───────────────────────────────────────────────────────────
 
 export type DaemonHttpServices = {
   events: EventInterface;
-  getStatus(): unknown;
+  getStatus(): ExecutionStatus;
   getAppConversation(appId: string, conversationId: string, options?: { limit?: number }): AppConversationResource;
   listApps(appId?: string): unknown[];
   listTasks(options?: Record<string, unknown>): HumanTaskPage;
@@ -85,6 +86,7 @@ type DaemonFrameResult = {
   eventType?: string;
   delivery?: "recorded" | "accepted";
   links?: unknown[];
+  approval?: EventReceipt["approval"];
 };
 
 export function buildPublishFrame(
@@ -214,6 +216,7 @@ export async function sendDaemonFrameWithRetry(
           ? { delivery: response.delivery }
           : {}),
         ...(Array.isArray(response.links) ? { links: response.links } : {}),
+        ...(response.approval ? { approval: response.approval as EventReceipt["approval"] } : {}),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -462,11 +465,15 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     if (services && frame.type === "publish" && frame.event && typeof frame.event === "object") {
       try {
         const event = frame.event as EventInput;
+        const operatorId = typeof frame.operatorId === "string" ? frame.operatorId.trim() : "";
+        if (event.type === "project.approval.submitted" && !operatorId) {
+          throw new Error("operatorId must be a non-empty string");
+        }
         const approvalAuthorization =
           (event.type === "project.approval.submitted" ||
-            (event.type === "conversation.message.created" && frame.operatorId && event.data.approvalReply))
+            (event.type === "conversation.message.created" && operatorId && event.data.approvalReply))
             ? {
-                actor: { kind: "operator" as const, id: String(frame.operatorId).trim() },
+                actor: { kind: "operator" as const, id: operatorId },
                 reference: typeof frame.authorizationReference === "string" ? frame.authorizationReference.trim() : "",
                 evidence:
                   frame.authorizationEvidence &&
@@ -706,7 +713,12 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
 
   const wsToUnix = new Map<any, Duplex>();
   const directWebSocket = services
-    ? createDaemonWebSocketTransport({ events: services.events, agent: DAEMON_AGENT, instance: DAEMON_INSTANCE })
+    ? createDaemonWebSocketTransport({
+        events: services.events,
+        getStatus: () => services.getStatus(),
+        agent: DAEMON_AGENT,
+        instance: DAEMON_INSTANCE,
+      })
     : null;
 
   function proxyWebSocket(ws: any): void {

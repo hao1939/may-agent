@@ -7,7 +7,8 @@ import { spawnFixtureProcess } from "../../../test/fixtures/owned-process.js";
 import { DbWriter } from "../../lib/db-writer.js";
 import { closeDb, getDb } from "../../lib/db/connection.js";
 import { EventBus } from "../core/events/bus.js";
-import { createEventInterface, type EventInterface, type EventPublisherContext } from "../core/events/interface.js";
+import { createEventInterface, deliverConversationApproval, type EventInterface, type EventPublisherContext } from "../core/events/interface.js";
+import { AppTaskResourceStore } from "../core/state/app-task-resource-store.js";
 import { startWebUI, type DaemonHttpServices } from "./server.js";
 
 const cleanups: Array<() => void> = [];
@@ -42,7 +43,7 @@ function eventFixture() {
 function servicesFixture(events: EventInterface): DaemonHttpServices {
   return {
     events,
-    getStatus: () => ({ status: "running" }),
+    getStatus: () => ({ sessions: [], activeWork: false }),
     getAppConversation: (appId, conversationId, options) =>
       ({ id: conversationId, owner: appId, version: 4, messages: [], limit: options?.limit } as never),
     listApps: (appId) => [{ appId: appId ?? "sample", running: 1 }],
@@ -85,6 +86,7 @@ function startRealOwnerFixture() {
   const writer = new DbWriter(root);
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
+  const db = getDb(root);
   const task = {
     appId: "sample",
     taskId: "work/1",
@@ -96,11 +98,12 @@ function startRealOwnerFixture() {
   let admissions = 0;
   const unsubscribe = bus.subscribeDurableRoute((event) => {
     if (event.type === "app.input.requested") admissions++;
+    if (event.type === "conversation.message.created") deliverConversationApproval(event, db, bus);
     return { accepted: true, by: "fixture-owner", route: "direct" };
   });
   const events = createEventInterface({
     bus,
-    db: getDb(root),
+    db,
     validateAppInput: (appId, input) => {
       if (appId !== "sample" || input.kind !== "message") throw new Error("invalid App input");
     },
@@ -134,8 +137,45 @@ function startRealOwnerFixture() {
       server = startWebUI({ stateDir: root, hostname: "127.0.0.1", port: 0, services });
     },
     task,
+    db,
+    events,
     admissions: () => admissions,
   };
+}
+
+function approvalFixture() {
+  const fixture = startRealOwnerFixture();
+  const proposal = {
+    taskGeneration: 1, conditionId: "review", conditionGeneration: 1,
+    subject: "candidate:release", requestedAction: "Apply reviewed candidate",
+    expected: { allowedDecisions: ["approve", "reject", "defer"] },
+  };
+  AppTaskResourceStore.fromDb(fixture.db, "sample").bootstrapSnapshot({
+    project: "sample", project_lifecycle: "active", version: 1, root_task_id: "root",
+    groups: { root: { id: "root", parent_id: null } },
+    resources: {
+      release: {
+        metadata: { id: "release", generation: 1, resourceVersion: 1 },
+        spec: { outcome: "Deliver candidate", acceptance: ["Reviewed"], parentId: "root" },
+        status: { phase: "waiting", observedGeneration: 0, conditionIds: ["review"], updatedAt: new Date().toISOString() },
+      },
+    },
+    conditions: {
+      review: {
+        metadata: { id: "review", generation: 1, resourceVersion: 1 },
+        spec: { type: "project.approval.submitted", owner: "human", subject: proposal.subject,
+          requestedAction: proposal.requestedAction, expected: proposal.expected },
+        status: { state: "unknown", observedGeneration: 0 },
+      },
+    },
+  } as never, "fixture");
+  return { ...fixture, proposal };
+}
+
+function postEvent(endpoint: string, body: Record<string, unknown>) {
+  return fetch(`${endpoint}/api/events`, {
+    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+  });
 }
 
 function taskInput(endpoint: string, input: { message: string; key: string; generation?: number }) {
@@ -153,6 +193,64 @@ function taskInput(endpoint: string, input: { message: string; key: string; gene
 }
 
 describe("daemon-owned HTTP services", () => {
+  test("requires a real operator identity before journaling a formal web-ui approval", async () => {
+    const fixture = approvalFixture();
+    const input = {
+      type: "project.approval.submitted", target: { appId: "sample", taskId: "release" },
+      idempotencyKey: "web-approval-1",
+      authorizationReference: "displayed-proposal-1", authorizationEvidence: { decisionText: "approve" },
+      data: { decision: "approve", proposal: fixture.proposal },
+    };
+    for (const operatorId of [undefined, null, "", "  ", 7, {}]) {
+      const response = await postEvent(fixture.endpoint, { ...input, operatorId });
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({ ok: false, error: "operatorId must be a non-empty string" });
+    }
+    expect(fixture.db.prepare("SELECT count(*) AS n FROM events").get()).toEqual({ n: 0 });
+    const accepted = await postEvent(fixture.endpoint, { ...input, operatorId: " operator " });
+    expect(accepted.status).toBe(201);
+    const receipt = await accepted.json();
+    expect(receipt).toMatchObject({ ok: true, eventType: input.type });
+    expect(fixture.events.get(receipt.eventId)?.event.data.hostApproval).toMatchObject({
+      ingressSource: "web-ui", actor: { kind: "operator", id: "operator" },
+      authorization: { reference: input.authorizationReference, evidence: input.authorizationEvidence },
+    });
+    const replay = await postEvent(fixture.endpoint, { ...input, operatorId: "operator" });
+    expect(replay.status).toBe(201);
+    expect((await replay.json()).eventId).toBe(receipt.eventId);
+  });
+
+  test("preserves successful and declined approval outcomes in HTTP Conversation receipts", async () => {
+    const fixture = approvalFixture();
+    const reply = {
+      type: "conversation.message.created", target: { appId: "sample" }, idempotencyKey: "proposal-reply-1",
+      operatorId: "operator", authorizationReference: "displayed-proposal-1",
+      authorizationEvidence: { decisionText: "approve" },
+      data: { conversationId: "sample:primary", author: { kind: "human", id: "message-1" },
+        text: "approve", replyTo: "displayed-proposal-1",
+        approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: fixture.proposal } },
+    };
+    const response = await postEvent(fixture.endpoint, reply);
+    expect(response.status).toBe(201);
+    const receipt = await response.json();
+    expect(receipt.delivery).toBe("accepted");
+    expect(receipt.approval.decision).toBe("approve");
+    expect(Number.isSafeInteger(receipt.approval.eventId)).toBe(true);
+    expect(fixture.events.get(receipt.approval.eventId)?.event).toMatchObject({
+      type: "project.approval.submitted", data: { decision: "approve", inputEventId: receipt.eventId },
+    });
+    const replay = await postEvent(fixture.endpoint, reply);
+    expect(replay.status).toBe(201);
+    expect((await replay.json()).approval).toEqual(receipt.approval);
+
+    const unauthorized = await postEvent(fixture.endpoint, { ...reply, operatorId: undefined, idempotencyKey: "unattributed-reply" });
+    expect(unauthorized.status).toBe(201);
+    const ordinary = await unauthorized.json();
+    expect(ordinary).toMatchObject({ delivery: "accepted", approval: { reason: expect.any(String) } });
+    expect(ordinary.approval.decision).toBeUndefined();
+    expect(fixture.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'project.approval.submitted'").get()).toEqual({ n: 1 });
+  });
+
   test("starts a headless HTTP owner in a parent-owned process without a compatibility socket", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-http-headless-process-"));
     const script = join(root, "headless.mjs");
@@ -160,7 +258,7 @@ describe("daemon-owned HTTP services", () => {
       script,
       `import { startWebUI } from ${JSON.stringify(new URL("./server.ts", import.meta.url).href)};
 const events = { publish(event) { return { eventId: 1, eventType: event.type, delivery: "accepted", links: [] }; }, get() {}, subscribe() { return () => {}; } };
-const server = startWebUI({ stateDir: process.env.STATE_DIR, hostname: "127.0.0.1", port: 0, services: { events, getStatus: () => ({ status: "running" }), getAppConversation: () => ({ messages: [] }), listApps: () => [], listTasks: () => ({ items: [] }), getTask: () => null } });
+const server = startWebUI({ stateDir: process.env.STATE_DIR, hostname: "127.0.0.1", port: 0, services: { events, getStatus: () => ({ sessions: [], activeWork: false }), getAppConversation: () => ({ messages: [] }), listApps: () => [], listTasks: () => ({ items: [] }), getTask: () => null } });
 console.log(JSON.stringify({ port: server.port }));
 process.stdin.resume();
 process.stdin.on("end", () => { server.stop(true); process.exit(0); });

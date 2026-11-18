@@ -1,0 +1,156 @@
+import { afterEach, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { createContext, runInContext } from "node:vm";
+
+const cleanups: Array<() => void> = [];
+afterEach(() => {
+  while (cleanups.length) cleanups.pop()?.();
+});
+
+// Run the shipped scripts with a small DOM/transport boundary. Their read
+// coalescing, selection guards and WebSocket handlers remain production code.
+function fixture(fetch: (url: string) => Promise<Response>) {
+  class Element {
+    innerHTML = "";
+    textContent = "";
+    dataset = {};
+    style = { display: "" };
+    children: Element[] = [];
+    addEventListener() {}
+    appendChild(child: Element) { this.children.push(child); }
+    replaceChildren(...children: Element[]) { this.children = children; }
+  }
+  const elements = new Map([
+    "chat", "chat-agent-banner", "chat-composer-host", "chat-input", "chat-messages", "chat-send",
+    "chat-status", "chat-stop", "conversation-context-bar", "scroll-toggle", "session-detail-panel",
+    "session-followup-anchor", "session-picker",
+  ].map((id) => [id, new Element()]));
+  const frames: Record<string, unknown>[] = [];
+  const sockets: TestSocket[] = [];
+  class TestSocket {
+    static OPEN = 1;
+    static CONNECTING = 0;
+    static CLOSING = 2;
+    readyState = TestSocket.OPEN;
+    onmessage?: (event: { data: string }) => void;
+    constructor() { sockets.push(this); }
+    send(frame: string) { frames.push(JSON.parse(frame)); }
+    close() { this.readyState = TestSocket.CLOSING; }
+  }
+  let livenessReads = 0;
+  const context = createContext({
+    document: {
+      addEventListener() {},
+      getElementById: (id: string) => elements.get(id) ?? null,
+      createElement: () => new Element(),
+      createDocumentFragment: () => new Element(),
+      querySelector: () => new Element(),
+    },
+    WebSocket: TestSocket, fetch, AbortSignal, URLSearchParams, setTimeout, clearTimeout, setInterval, clearInterval,
+    location: { protocol: "http:", host: "host.example.test" }, window: {},
+    currentTab: "sessions", currentRouteParams: {}, currentAgentChat: null,
+    humanInterface: { appId: "conversation", agent: "host", conversationId: "conversation:primary" },
+    isAgentChatActive: (agent: string) => context.currentAgentChat === agent,
+    setAgentChatSessionId() {},
+    scheduleLivenessRefresh: () => { livenessReads++; },
+    renderSessionConversation: (data: { messages: Array<{ text: string }> }) => data.messages.map((message) => message.text).join("\n"),
+    esc: (value: string) => value,
+  });
+  for (const script of ["conversation", "chat"]) {
+    runInContext(readFileSync(new URL(`../static/pages/${script}.js`, import.meta.url), "utf8"), context);
+  }
+  context.setRealtimeEnabled(true);
+  cleanups.push(() => { context.clearChatTranscript(); context.setRealtimeEnabled(false); });
+  const emit = (event: Record<string, unknown>) => sockets.at(-1)!.onmessage!({ data: JSON.stringify(event) });
+  return { context, elements, frames, emit, livenessReads: () => livenessReads };
+}
+
+async function waitFor(predicate: () => boolean) {
+  const deadline = Date.now() + 1_000;
+  while (!predicate()) {
+    if (Date.now() > deadline) throw new Error("Timed out waiting for browser reread");
+    await Bun.sleep(1);
+  }
+}
+
+test("connected and status frames discover and update sessions in the shipped picker", async () => {
+  const reads: string[] = [];
+  const ui = fixture(async (url) => {
+    reads.push(url);
+    return Response.json({ messages: [{ text: "Saved chat" }] });
+  });
+  ui.emit({ type: "connected", activeAgents: [{ sessionId: "s_chat", agent: "host", status: "idle", kind: "chat" }] });
+  await waitFor(() => ui.elements.get("chat-messages")!.innerHTML.includes("Saved chat"));
+  expect(ui.elements.get("session-picker")!.innerHTML).toContain("host (s_chat)");
+  expect(reads).toEqual(["/api/sessions/s_chat/transcript"]);
+  ui.context.refreshSessionStatus();
+  expect(ui.frames.at(-1)).toEqual({ type: "status" });
+  ui.emit({ type: "status", activeAgents: [{ sessionId: "s_new", agent: "helper", status: "running", kind: "job" }] });
+  expect(ui.elements.get("session-picker")!.innerHTML).toContain("helper (s_new)");
+});
+
+test("overflow rereads a selected saved transcript after its final wake was dropped", async () => {
+  let answer = "Working";
+  const reads: string[] = [];
+  const ui = fixture(async (url) => {
+    reads.push(url);
+    return Response.json({ messages: [{ text: answer }] });
+  });
+  await ui.context.switchSession("s_chat");
+  answer = "Final saved answer";
+  ui.emit({ type: "overflow", action: "reread" });
+  await waitFor(() => ui.elements.get("chat-messages")!.innerHTML === answer);
+  expect(reads).toEqual(["/api/sessions/s_chat/transcript", "/api/sessions/s_chat/transcript"]);
+  expect(ui.frames).toEqual([
+    { type: "subscribe", sessions: [], conversations: [] },
+    { type: "subscribe", sessions: ["s_chat"], conversations: [] },
+    { type: "subscribe", sessions: ["s_chat"], conversations: [] }, { type: "status" },
+  ]);
+  expect(ui.livenessReads()).toBe(1);
+});
+
+test("overflow during an old transcript read drains a canonical reread without another wake", async () => {
+  const old = Promise.withResolvers<Response>();
+  let reads = 0;
+  const ui = fixture(async () => ++reads === 1 ? old.promise : Response.json({ messages: [{ text: "Final answer" }] }));
+  const initialRead = ui.context.switchSession("s_chat");
+  ui.emit({ type: "overflow", action: "reread" });
+  old.resolve(Response.json({ messages: [{ text: "Stale answer" }] }));
+  await initialRead;
+  expect(reads).toBe(2);
+  expect(ui.elements.get("chat-messages")!.innerHTML).toBe("Final answer");
+});
+
+test("overflow refreshes the inspected session through its existing detail reader", async () => {
+  const ui = fixture(async () => { throw new Error("Detail mode must use its own reader"); });
+  ui.context.currentRouteParams = { id: "s_detail" };
+  const reads: string[] = [];
+  ui.context.readSessionDetail = async (id: string) => { reads.push(id); };
+  await ui.context.switchSession("s_detail");
+  ui.emit({ type: "overflow", action: "reread" });
+  await waitFor(() => reads.length === 2);
+  expect(reads).toEqual(["s_detail", "s_detail"]);
+});
+
+test("overflow during a Conversation read recovers its final answer and active turn", async () => {
+  const old = Promise.withResolvers<Response>();
+  const reads: string[] = [];
+  const ui = fixture(async (url) => {
+    reads.push(url);
+    return reads.length === 1 ? old.promise : Response.json({
+      messages: [{ id: "answer", author: { kind: "agent" }, text: "Final Conversation answer" }], activeTurn: null,
+    });
+  });
+  ui.context.currentAgentChat = "host";
+  const initialRead = ui.context.refreshMayConversation();
+  ui.emit({ type: "overflow", action: "reread" });
+  old.resolve(Response.json({ messages: [], activeTurn: { id: "old-turn", revision: 1 } }));
+  await initialRead;
+  expect(reads).toEqual([
+    "/api/conversation?appId=conversation&conversationId=conversation%3Aprimary",
+    "/api/conversation?appId=conversation&conversationId=conversation%3Aprimary",
+  ]);
+  expect(ui.elements.get("chat-status")!.textContent).toBe("Ready");
+  expect(ui.elements.get("chat-messages")!.children[0].children[0].children[0].textContent).toBe("Final Conversation answer");
+  expect(ui.frames.at(-1)).toEqual({ type: "status" });
+});

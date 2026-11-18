@@ -6,6 +6,10 @@ import { join } from "node:path";
 import type { EventInterface } from "../core/events/interface.js";
 import { startWebUI, type DaemonHttpServices } from "../http/server.js";
 import { createDaemonWebSocketTransport, type DaemonWebSocketPeer } from "./websocket.js";
+import { closeDb } from "../../lib/db/connection.js";
+import { upsertSession } from "../../lib/db/sessions.js";
+import { markSessionActive, markSessionInactive } from "../../lib/persistence.js";
+import { readExecutionStatus } from "../core/reads/execution-status.js";
 
 const cleanups: Array<() => void> = [];
 afterEach(() => {
@@ -45,7 +49,7 @@ function publicEvent(type: string, input: { appId?: string; taskId?: string; con
 function servicesFixture(events: EventInterface): DaemonHttpServices {
   return {
     events,
-    getStatus: () => ({ status: "running" }),
+    getStatus: () => ({ sessions: [], activeWork: false }),
     getAppConversation: () => ({ messages: [] } as never),
     listApps: () => [],
     listTasks: () => ({ items: [] } as never),
@@ -64,6 +68,60 @@ async function waitForMessage(messages: Record<string, unknown>[], type: string)
 }
 
 describe("daemon WebSocket wakes", () => {
+  test("discovers current sessions on connect and status through the direct runtime owner", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-ws-status-"));
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }), () => closeDb(root));
+    upsertSession(root, { sessionId: "s_chat", agent: "helper", status: "idle", kind: "chat", task: "Current chat", startedAt: 1 });
+    markSessionActive(root, "s_chat");
+    upsertSession(root, { sessionId: "s_stale", agent: "helper", status: "running", task: "Stale session", startedAt: 2 });
+    const services = servicesFixture(eventFixture().events);
+    services.getStatus = () => readExecutionStatus(root);
+    const server = startWebUI({ stateDir: root, hostname: "127.0.0.1", port: 0, services });
+    cleanups.push(() => server.stop(true));
+    const socket = new WebSocket(`ws://127.0.0.1:${server.port}/ws`);
+    cleanups.push(() => socket.close());
+    const messages: Record<string, unknown>[] = [];
+    socket.addEventListener("message", (event) => messages.push(JSON.parse(String(event.data))));
+    expect(await waitForMessage(messages, "connected")).toMatchObject({
+      activeAgents: [{ sessionId: "s_chat", agent: "helper", status: "idle", kind: "chat", task: "Current chat" }],
+      activeWork: false,
+    });
+    markSessionInactive(root, "s_chat");
+    socket.send(JSON.stringify({ type: "status" }));
+    expect(await waitForMessage(messages, "status")).toMatchObject({ activeAgents: [], activeWork: false });
+    socket.send(JSON.stringify({ type: "publish", event: { type: "runtime.reload.requested" } }));
+    expect(await waitForMessage(messages, "error")).toMatchObject({ message: "Only subscribe and status frames are accepted on /ws" });
+  });
+
+  test("bounds session discovery and keeps subscriptions usable when status is unavailable", async () => {
+    const fixture = eventFixture();
+    const sent: Record<string, any>[] = [];
+    const peer = { send: (data: string) => sent.push(JSON.parse(data)) };
+    let unavailable = false;
+    const transport = createDaemonWebSocketTransport({
+      events: fixture.events, agent: "host", instance: "fixture",
+      getStatus: () => {
+        if (unavailable) throw new Error("storage unavailable");
+        return { sessions: Array.from({ length: 150 }, (_, i) => ({
+          sessionId: `s_${i}`, agent: "helper", status: "running", kind: "job", task: "x".repeat(200),
+        })), activeWork: true };
+      },
+    });
+    transport.open(peer);
+    expect(sent[0].activeAgents).toHaveLength(100);
+    expect(sent[0].activeAgents[0].task).toHaveLength(100);
+    unavailable = true;
+    transport.message(peer, '{"type":"status"}');
+    expect(sent.at(-1)).toMatchObject({ type: "error", command: "status" });
+    transport.message(peer, "null");
+    expect(sent.at(-1)).toMatchObject({ type: "error" });
+    transport.message(peer, '{"type":"subscribe","conversations":["chat"]}');
+    await fixture.emit(publicEvent("conversation.updated", { conversationId: "chat" }));
+    expect(sent.at(-1)).toMatchObject({ type: "conversation.updated" });
+    transport.close(peer);
+    expect(fixture.listeners.size).toBe(0);
+  });
+
   test("bind /ws directly to EventInterface, acknowledge filters before wakes, and unsubscribe on disconnect", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-ws-direct-"));
     const fixture = eventFixture();
@@ -122,7 +180,7 @@ describe("daemon WebSocket wakes", () => {
         sent.push(JSON.parse(data));
       },
     };
-    const transport = createDaemonWebSocketTransport({ events: fixture.events, agent: "may", instance: "fixture" });
+    const transport = createDaemonWebSocketTransport({ events: fixture.events, getStatus: () => ({ sessions: [], activeWork: false }), agent: "may", instance: "fixture" });
     transport.open(peer);
     transport.message(peer, JSON.stringify({
       type: "subscribe",
@@ -174,7 +232,7 @@ describe("daemon WebSocket wakes", () => {
         sent.push(JSON.parse(data));
       },
     };
-    const transport = createDaemonWebSocketTransport({ events: fixture.events, agent: "may", instance: "fixture" });
+    const transport = createDaemonWebSocketTransport({ events: fixture.events, getStatus: () => ({ sessions: [], activeWork: false }), agent: "may", instance: "fixture" });
     transport.open(peer);
     transport.message(peer, JSON.stringify({ type: "subscribe", sessions: ["*"] }));
     await fixture.emit({
@@ -201,6 +259,7 @@ describe("daemon WebSocket wakes", () => {
     };
     const transport = createDaemonWebSocketTransport({
       events: fixture.events,
+      getStatus: () => ({ sessions: [], activeWork: false }),
       agent: "may",
       instance: "fixture",
       maxBufferedBytes: 10,

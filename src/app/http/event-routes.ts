@@ -4,6 +4,7 @@ import { createQueryService } from "../../lib/query-service.js";
 import { eventDeliveryContract, getEventView, PUBLIC_EVENT_TYPES } from "../core/events/interface.js";
 import { readProjectIngressIdentity } from "./project-metadata.js";
 import type { SqliteDb } from "./read-model/state-db.js";
+import type { EventReceipt } from "@may-agent/control/events";
 
 export type EventDaemonFrameResult = {
   ok: boolean;
@@ -12,6 +13,7 @@ export type EventDaemonFrameResult = {
   eventType?: string;
   delivery?: "recorded" | "accepted" | "rejected";
   links?: unknown[];
+  approval?: EventReceipt["approval"];
 };
 
 export function createEventRouteHandlers(options: {
@@ -130,6 +132,7 @@ export function createEventRouteHandlers(options: {
           eventId: trigger.eventId,
           delivery: trigger.delivery ?? "recorded",
           links: trigger.links ?? [],
+          ...(trigger.approval ? { approval: trigger.approval } : {}),
           reason: typeof data.reason === "string" ? data.reason : null,
           projectId: projectId || null,
         },
