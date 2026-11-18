@@ -195,6 +195,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       workflowDir: entry.workflowDir,
       persistDir: manager.registry.persistDir,
       agentName: entry.owner.name,
+      canonicalOwner: canonicalCallableName(entry.appId, entry.owner.name),
       runtimeCtx: opts?.runtimeCtx,
       ...session?.taskContext,
       taskContext: session?.taskContext,

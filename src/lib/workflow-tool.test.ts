@@ -195,7 +195,7 @@ export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); 
         callAgentDefinition: async (definition: SubagentDefinition, task: string, options: { toolPolicy?: string; skill?: string }) => {
           expect(definition).toBe(reviewer);
           expect(task).toBe("Review HEAD");
-          expect(options.toolPolicy).toBeUndefined();
+          expect(options.toolPolicy).toBe("readonly");
           expect(options.skill).toBeUndefined();
           promptCalls++;
           return { sessionId: "s_captured", status: "done", messages: [],

@@ -184,6 +184,44 @@ describe("shared callable input and result contract", () => {
     }
   });
 
+  test("accepts shared acyclic JSON references in input, output, and facts while rejecting cycles", async () => {
+    const shared = { ref: "HEAD" };
+    const sharing = new CallableCatalog([
+      definition("sharing", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_sharing",
+            report: {
+              status: "done",
+              summary: "shared references",
+              output: { before: shared, after: shared },
+              facts: { first: shared, second: shared },
+            },
+          };
+        },
+      }),
+    ]);
+    await expect(
+      sharing.call(
+        "alex/sharing",
+        { prompt: "Compare", data: { before: shared, after: shared } },
+        undefined,
+        { signal },
+      ),
+    ).resolves.toMatchObject({
+      id: "s_sharing",
+      status: "done",
+      output: { before: { ref: "HEAD" }, after: { ref: "HEAD" } },
+      facts: { first: { ref: "HEAD" }, second: { ref: "HEAD" } },
+    });
+
+    const cycle: Record<string, unknown> = {};
+    cycle.self = cycle;
+    await expect(
+      sharing.call("alex/sharing", { prompt: "Compare", data: cycle }, undefined, { signal }),
+    ).rejects.toThrow("JSON-compatible");
+  });
+
   test("accepts useful partial reports without output when a schema was requested", async () => {
     const partial = new CallableCatalog([
       definition("partial", "alex", {

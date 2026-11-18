@@ -560,11 +560,17 @@ export async function runTaskExecutorAttempt(
 export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
   const { opts, descriptor, claim, ...execution } = input;
   const agentRunner = opts.agents ?? opts.runner;
-  if (!agentRunner?.available(claim.agent))
+  const appTaskAgent = claim.agent.includes("/") ? claim.agent : `${descriptor.id}/${claim.agent}`;
+  const taskAgent = agentRunner?.available(appTaskAgent)
+    ? appTaskAgent
+    : agentRunner?.available(claim.agent)
+      ? claim.agent
+      : appTaskAgent;
+  if (!agentRunner?.available(taskAgent))
     return {
       handlerResult: {
         state: "error",
-        summary: `Task agent ${claim.agent} is not available`,
+        summary: `Task agent ${taskAgent} is not available`,
         facts: [],
         actions: [],
       },
@@ -587,6 +593,7 @@ export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabil
   let preflightReviewAt: number | undefined;
   const report = await agentRunner.execute({
     ...execution,
+    attempt: { ...execution.attempt, role: agentRunner.role(taskAgent) },
     executionTimeoutMs: input.attempt.maxAttemptMs ?? APP_TASK_AGENT_TIMEOUT_MS,
     descriptor: {
       id: descriptor.id,

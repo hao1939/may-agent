@@ -109,9 +109,12 @@ function isJsonCompatible(value: unknown, seen = new Set<object>()): boolean {
   if (typeof value === "number") return Number.isFinite(value);
   if (typeof value !== "object" || seen.has(value as object)) return false;
   seen.add(value as object);
-  if (Array.isArray(value)) return value.every((item) => isJsonCompatible(item, seen));
-  if (Object.getPrototypeOf(value) !== Object.prototype) return false;
-  return Object.values(value as Record<string, unknown>).every((item) => isJsonCompatible(item, seen));
+  const compatible = Array.isArray(value)
+    ? value.every((item) => isJsonCompatible(item, seen))
+    : Object.getPrototypeOf(value) === Object.prototype &&
+      Object.values(value as Record<string, unknown>).every((item) => isJsonCompatible(item, seen));
+  seen.delete(value as object);
+  return compatible;
 }
 
 export function validateCallableInput(schema: TSchema, input: unknown): asserts input is ExecutionInput {
