@@ -2277,3 +2277,67 @@ arguments together. Allowance remains `61/64`, with no reset or renewal.
 Host PR #589 remains open and ready for review at `d7fe07f80e`, both hosted checks
 pass, and all 11 inline threads are resolved. App reconciliation, publication and
 fresh local pair verification remain required before this goal is complete.
+
+## Canonical reconciliation and final live checks — 18 November
+
+The post-trial reload gap is repaired. Root first restores the exact reviewed
+May-authored `develop-change` source/test onto canonical source as `994f7f7e07`.
+Its 77 owning tests pass against frozen Host4a9e; reload6742841/6742842 succeeds.
+A fresh agent initially misdiagnoses its effective `allOf` schema as contradictory.
+Root validates the actual listed descriptor with the production validator and
+supplies the passing structured input; no Host/schema repair is needed. The real
+`agents` call then starts native workflow `wr_1794961700812_t1ri` on the same Task.
+
+May reconciles canonical21b and retained f85 at3d5, repairs planner conflict
+resolution at5d83, migrates the newly added audit test input atfd86, and restores
+all canonical audit regression assertions/fixture at final candidate
+`8fb96e4819bd4719304b8f9c61fef020542f8362`. The planner retains the newer canonical
+target constant, structured arguments and actual-child-ID guard. Root's in-progress
+review also catches a native provider rebind; both links are restored to the
+saved immutable185 provider. The independent verification uses a separate4a9e
+binding. Nothing is relabeled as an internal native review pass.
+
+Root's first fd86 independent scan fails because the newly frozen test snapshot
+lacks the installation's ignored `.disabled` markers for two example Apps. The
+new final8fb snapshot records both operational markers before checking. Its exact
+configured suite passes **1,149 tests, zero failures, 17,274 expectations across
+81 files**. Typecheck/design and the current-input production probe pass. Its Gym
+subtree is byte-identical to f85 with the same4a9e SDK, retaining the previously
+verified405 Bun tests/1,488 review checks. No broader metric cadence proof is claimed.
+
+The development workflow ends with an execution-work-allowance error and retained
+partial evidence. All64/64 cumulative App reservations remain consumed. Root
+performs actual independent source review, approves8fb after the above checks,
+and delivers the review and exact verification to the original Task. Event6743007
+accepts the scoped source contribution and explicitly preserves the workflow's
+interrupted/internal-review limitation. No new round, reset or fabricated Bob
+receipt is used to turn that workflow into a successful execution.
+
+Root normally merges8fb with the later canonical085f INDEX publication, producing
+`90cc281b6598c9546a308b0fb8d5b85ca7227364`, and pushes both the retained review
+branch and canonical App source. Every App/shared/Gym/scripts/package/typeconfig
+source closure is identical to verified8fb; the sole extra path is the legitimate
+protected INDEX update. Reload6742971/6742972 succeeds. Installed binary remains
+SHA256c741ff5a0b577b85c52e99ffc6ac40509522d1f774251258e23af43f29eb43af;
+App pointer90cc and HTTP readiness are independently checked.
+
+Fresh May attempt `r_1_584776ae-b92b-4ced-9f30-ecaa168538e1` lists32 sorted canonical
+targets, then awaits deterministic `alex/runtime-pattern-audit` as
+`wr_1794962541231_vpgz` and prompt `alex/bob` as
+`s_1794962541776_04415139-96c7-4d77-a72a-52fb9dcccb9d`. Both return common `done`
+reports with real IDs; Bob returns the schema-checked nonce. Persisted child rows
+retain the original May Goal Task/generation/attempt and parent. The workflow's
+source path pins90cc. It observes26 valid workflows with zero signals and emits
+no proposals; no protected work is repeated. May accepts the proof in event6743004.
+The original finding bytes/hash and one INDEX link remain intact. Scout has
+legitimately rolled `digest/today.md` to November18; the earlier November17 digest
+link remains historical trial evidence rather than a required current-day link.
+
+Final evidence: `8fb96e4819-independent-integration-checks.json`,
+`8fb96e4819-root-independent-source-review.json`,
+`8fb-canonical-integration-receipt.json`, `90cc-reconciled-app-reload-result.json`
+and `90cc-live-proof-independent.json` under the retained trial directory.
+The implementation/local interface work is delivered. GitHub source review and
+merge remain human-owned; separate Task/ingress/event and metric cadence work
+remain with their declared owner. The earlier Telegram/provider50734 notice is
+preserved without sending a duplicate.

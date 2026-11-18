@@ -5,19 +5,18 @@
 an authorized local trial. Host `d7fe07f80e` is published in
 [#589](https://github.com/hao1939/may-agent/pull/589); Quality and Container pass
 on that exact head (3,494 tests, zero failures, two skips). The paired App review
-branch contains `5a386d2952`; its later scoped fixture candidate is `f85c46df6c`.
+branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b65`.
 No GitHub merge or broad release is included.
 
-The verified local trial used Host/SDK `4a9e0f9300` and App `241ce00ec6`. It preserves
-required #590 and legitimate canonical changes, includes the Scout current-input
-repair, and retains the original periodic-event tests. The standard deployment
-receipt and independent binary/SDK/App read-back were healthy and matched this pair.
-After that trial, another Task reloaded canonical App definitions, most recently
-`74bb785bec`. That source does not contain the reviewed unified App migrations.
-Host/SDK remains `4a9e0f9300`; the current installation therefore needs App source
-reconciliation and a fresh paired read-back before completion can be claimed.
-The retained generation-13 App Task is handling that integration, preserving the
-newer audit and planner fixes, knowledge publications, and all consumed allowance.
+The active local pair is Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
+preserves the reviewed unified migration, Scout current-input repair, newer audit
+and planner fixes, and canonical knowledge publications. Its App/shared/Gym source
+closures are identical to the independently reviewed `8fb96e4819` candidate.
+That exact candidate passes 1,149 configured App tests across 81 files with
+17,274 expectations, type/design checks and the current-input production probe.
+The supported reload and independent binary/App/readiness read-back match this pair.
+Normal canonical reloads now retain the migration in source; the post-trial
+reload gap is repaired.
 
 The implemented contract provides one canonical catalog, mandatory
 `{prompt,data?}`, common validated results and awaited calls. Invocation
@@ -31,11 +30,18 @@ The local trial found and repaired two gaps that source inventory alone missed:
 Task workers filtered profiles by caller App, and Scout's body ignored the current
 assignment. New actual-worker tests invoke cross-App workflow and prompt targets;
 36 owning/control tests and static checks pass independently. Live May and Scout
-Task roots in that trial expose the same sorted32-target catalog. A cross-App prompt helper
+Task roots in the earlier trial expose the same sorted32-target catalog. A cross-App prompt helper
 returns its real ID while retaining the caller's Task. The corrected original
 Scout Task publishes prepared arXiv2611.19700v1 through the protected workflow at
 `3cdda11f96`, with exact draft/hash, INDEX and digest read-back. Reentry inspects
 that effect and avoids publishing it again.
+
+A fresh May attempt on App `90cc281b65` lists the same 32 canonical targets and
+successfully awaits both `alex/runtime-pattern-audit` and `alex/bob` through
+`agents`. Actual child records retain May's caller Task and return the common
+result envelope; the prompt helper returns the requested schema-checked nonce.
+The original finding hash and single INDEX entry remain intact. This check adds
+no source edits, domain actions or repeated protected publication.
 
 Native GitHub observer event6742108 records the late review and successful checks
 on Hostd7fe. May's existing Conversation route delivers one GitHub review-link
@@ -46,27 +52,26 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Reconcile the reviewed App source with canonical changes, push it for parallel
-   review, and verify/activate the exact compatible local pair. Review and integrate
-   the paired source with its compatible SDK, then decide
+1. Review and integrate Host #589 with the compatible App source/SDK, then decide
    broader rollout separately. Retain the successful local source/receipt identities.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
-   source-only trial App's full configured scan reports1,141 passes and six existing periodic-
-   event failures; every failure also reproduces on preceding canonical source.
-   The metric recurrence failure reveals a real missing producer: this Host pair
-   has metric subscribers while canonical ae40 removed May's schedules. Appf85's
-   fixture migration passes all1,147 tests, but absence assertions do not prove a
+   earlier source-only App241c trial retained six baseline periodic-event failures.
+   The metric recurrence failure revealed a real missing producer: this Host pair
+   has metric subscribers while canonical ae40 removed May's schedules. The final
+   scoped candidate includes f85's fixture migration, which does not prove a
    replacement cadence runs. Its generation13 acceptance explicitly leaves that
-   functionality to the separate owner. The source-only trial retains the original
-   failing tests and does not activate those fixture rewrites or claim cadence repair.
+   functionality to the separate owner. A green configured suite is not cadence proof.
 
 Exact revisions, source reviews, failed trials, scoped check totals and provider
 receipts are in the [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
 May implements through retained Tasks/workflows; Root owns design, independent
 review/verification and publication assistance. The final cumulative ledgers
-remain128/128 Host and61/64 App reservations, without reset, refund or automatic
+remain128/128 Host and64/64 App reservations, without reset, refund or automatic
 renewal. Earlier retained allowances include conservative reservations rather
-than an equal number of proved coding executions.
+than an equal number of proved coding executions. The final development workflow
+ended at its execution bound; its partial evidence remains unchanged. Root supplied
+actual independent source review, and the scoped App Task accepted that reviewed
+source contribution without fabricating a native review pass or another round.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -349,10 +354,10 @@ Preserve these completed checkpoints during integration:
 3. Exact Host/SDK/App binding and supported receipt-backed activation. Keep the
    native provider immutable, retain legitimate installed changes and #590, and
    preserve known baseline failures until their separate owner repairs them.
-   The verified local trial used4a9e/241c. The subsequent canonical reload and
-   reviewed-entrypoint bootstrap994f are integration checkpoints, not replacement
-   full-trial evidence. Keep f85's fixture changes explicit during reconciliation;
-   the superseded staged alternative a1bdf requires no replay or activation.
+   The earlier trial used4a9e/241c; the final reconciled installation uses4a9e/90cc.
+   The canonical reload gap and bootstrap994f remain historical integration evidence.
+   Keep f85's scoped fixture changes explicit; the superseded staged alternative
+   a1bdf requires no replay or activation.
 
 These are checkpoints within the saved outcome, not new Tasks or Host phases.
 May implements through the retained development workflows; Root reviews, checks

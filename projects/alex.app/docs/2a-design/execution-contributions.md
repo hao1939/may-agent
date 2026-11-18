@@ -11,10 +11,11 @@ cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
 implemented in review-ready Host [#589](https://github.com/hao1939/may-agent/pull/589)
 at `d7fe07f80e`; its Quality and Container checks pass. The compatible local
-Host/SDK `4a9e0f9300` and App `241ce00ec6` passed the connected interface trial.
-A subsequent reload selected canonical App source without those migrations.
-Reconciliation of the reviewed App branch with newer canonical fixes, followed
-by verification of the currently installed pair, remains open in the
+Host/SDK `4a9e0f9300` and App `90cc281b65` pass the current live interface checks.
+The reviewed App migration is integrated with canonical source, preserving newer
+fixes and publications. The exact candidate passes 1,149 configured App tests,
+type/design checks and independent review. Source identities and the remaining
+GitHub review/integration handoff are recorded in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
 Check paired source identities before relying on installation coverage.
 [Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
