@@ -519,6 +519,10 @@ describe("manager session lifecycle", () => {
         .toEqual({ kind: "chat", status: "idle", endedAt: null });
       expect(recovered.getSessionSummary(sessionId)).toMatchObject({ status: "idle" });
       expect(recovered.hasActiveSession(sessionId)).toBe(false);
+      expect(recovered.health()).toMatchObject({
+        activeSessions: [],
+        sessionCounts: { running: 0, idle: 0, total: 0 },
+      });
       expect(readActiveSessionProcessId(persistDir, sessionId)).toBeNull();
       await expect(recovered.waitFor(sessionId)).rejects.toThrow("historical idle");
     }
