@@ -319,6 +319,7 @@ export async function measureSourceMetrics(options: {
 }
 
 export type MetricPassRuntime = {
+  request(options?: { forced?: boolean; requestedAt?: number }): void;
   idle(): Promise<void>;
 };
 
@@ -523,6 +524,9 @@ function attachMetricPass(bus: EventBus, type: string, label: string, run: (pass
     });
   }, { label, types: [type] });
   return {
+    request(options = {}) {
+      schedule({ requestedAt: options.requestedAt ?? Date.now(), forced: options.forced === true });
+    },
     async idle() {
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       while (drain) await drain;
