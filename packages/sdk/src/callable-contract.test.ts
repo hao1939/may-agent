@@ -260,6 +260,50 @@ describe("shared callable input and result contract", () => {
     ).rejects.toThrow("maximum JSON traversal of 100000 values");
   });
 
+  test("enforces depth when a cached subtree is reused under a deeper path", async () => {
+    let shared: unknown = { value: "leaf" };
+    for (let depth = 0; depth < 30; depth++) shared = { child: shared };
+    let deep = shared;
+    for (let depth = 0; depth < 80; depth++) deep = { child: deep };
+    const bounded = new CallableCatalog([definition("cached-depth", "alex")]);
+
+    await expect(
+      bounded.call(
+        "alex/cached-depth",
+        { prompt: "Inspect", data: { warmCache: shared, deepReuse: deep } },
+        undefined,
+        { signal },
+      ),
+    ).rejects.toThrow("maximum JSON nesting depth of 100");
+  });
+
+  test("rejects custom toJSON hooks and inherited array values before serialization", async () => {
+    const bounded = new CallableCatalog([definition("serialization-parity", "alex")]);
+    const customSerialization = Object.defineProperty({}, "toJSON", {
+      value: () => ({ expanded: "x".repeat(2_000_000) }),
+    });
+    await expect(
+      bounded.call(
+        "alex/serialization-parity",
+        { prompt: "Inspect", data: customSerialization },
+        undefined,
+        { signal },
+      ),
+    ).rejects.toThrow("JSON-compatible");
+
+    const inheritedValues = [] as unknown[];
+    inheritedValues.length = 1;
+    Object.setPrototypeOf(inheritedValues, Object.assign(Object.create(Array.prototype), { 0: 1n }));
+    await expect(
+      bounded.call(
+        "alex/serialization-parity",
+        { prompt: "Inspect", data: inheritedValues },
+        undefined,
+        { signal },
+      ),
+    ).rejects.toThrow("JSON-compatible");
+  });
+
   test.each(["output", "facts"] as const)("bounds expanded callable result %s", async (field) => {
     let shared: unknown = { value: "leaf" };
     for (let depth = 0; depth < 19; depth++) shared = { left: shared, right: shared };
