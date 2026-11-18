@@ -222,6 +222,28 @@ the newer evaluator App `78fdcb0d9f` typechecks against the paired candidate SDK
 Owning regressions, final review, exact-head CI and supported local trial remain
 open at this checkpoint. The installed pair is Host/SDKc910 and App78fd, activated
 by the separate owner; later local activation must preserve those newer changes.
+
+Checkpoint `90160b9ede` adds the owning regressions and passes current-head Quality
+and Container. Root independently passes44 tests/174 expectations across three
+owning files; its complete paired App scan runs1,152 tests, with1,151 passing and
+only the separate concurrency3/6 fixture failing. Production source is identical
+to4df; all original interface probes still pass. These are scoped successes.
+
+The old source contribution's final independent Codex review finds two remaining
+resource cases that the ordinary43 boundary checks missed: character access can
+flatten an oversized rope before the byte scan rejects it, and repeated long
+schema paths can exceed the rejection report's own size budget. Root safely
+reproduces both and records a superseding review disposition; the earlier pass
+receipt remains retained with its original hash, not relabeled as covering them.
+The old source Task honestly remains partial at15/15.
+
+May Goal generation6 explicitly carries those two cases into the same active
+post-merge Task, retaining its already-consumed slots and total6. Its creator
+revises that same child to generation2 at a quiescent boundary; no replacement
+or allowance reset is used. PR #596's final scope is four cases: canonical
+preparation, non-Task snapshot retention, raw string/key length preflight before
+potential flattening, and bounded schema diagnostics/fallback reports retaining
+the actual child ID. New-head verification and local delivery remain required.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 

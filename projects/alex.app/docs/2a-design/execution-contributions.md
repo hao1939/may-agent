@@ -235,7 +235,7 @@ caller. Bind each call to its actual current parent, Task context, cancellation
 scope and trace. Reusing the snapshot cannot execute a child call as the first
 caller that prepared it.
 Callee ownership selects definitions; caller App/Task identity retains lineage.
-Resolve a Task's declared root executor in its own App namespace before checking
+Resolve a Task's declared root executor in its own App namespace during
 preparation, availability, instructions and dispatch; keep filesystem names local.
 Equal names cannot redirect execution or narrow the shared child catalog.
 Reload can supply a new snapshot to a later invocation. This keeps completeness,
