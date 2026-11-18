@@ -2491,13 +2491,13 @@ these actual calls; none repeats source work or domain publication.
 May's saved Conversation route publishes event6744931 with communication key
 `pr596-ready-c630b215e8`; Root independently confirms Telegram50755 and zero
 duplicate notices in `596-review-notification-provider-proof.json`. Its delivery
-is real, but its automated-review claim is premature: at03:23:11 the exact-head
+is real, but its automated-review claim is premature: at 03:23:11 the exact-head
 Copilot check remains in progress and no review has been submitted. The
 observer's reviewsComplete:true describes complete collection, not review-job
 completion. Root retains the original converged result and records
 `c630-readiness-disposition-update.json`, then returns the correction through
 addressed input6744945 to the same May generation7. Source/CI/local proofs remain
-passed; source7/7 is not reopened and the notice must not be sent again. Actual
+passed; source 7/7 is not reopened and the notice must not be sent again. Actual
 completed automatic review and the corrected final disposition remain pending.
 
 At03:24:24 actual Copilot review5950358488 reports thread
@@ -2511,9 +2511,68 @@ pass is now partial; original receipts are retained unchanged.
 
 `pr596-helper-owner-authorization.json` explicitly authorizes two further narrow
 rounds on the same source Task, preserving seven consumed and raising cumulative
-limit to9. SHA256 is22ecd501b924d49f58d6487edecad02214410e1315d585fed1529b96ceacb44a.
-Ordinary parent revision6744975 saves May generation8; the creator must save a
+limit to9. SHA256 is 22ecd501b924d49f58d6487edecad02214410e1315d585fed1529b96ceacb44a.
+Ordinary parent revision6744975 saves May generation 8; the creator must save a
 complete corrected source input before execution. Repair covers both canonical
 direct-prompt and workflow-prompt routes, keeping captured definitions independent
 of Task context and testing actual helper tools. No source/history reset,
 replacement Task, public option, observer redesign or duplicate notice is allowed.
+
+May saves the actual child creator revision at generation 4, cumulative9 with
+seven prior reservations retained. Native workflow `wr_1794972565780_vwz8` produces
+`3ab40ff8d5ec7c558ba9c3aaca4293c29214b45f`. Its three runtime files propagate the
+captured definitions and existing prepared-catalog cache identity independently
+of Task context; the fourth changed file replaces the stubbed helper test with
+real model-tool execution. Root's in-progress review also restores the original
+workflow-owner-removal assertion in that real fixture. Root pushes the clean
+checkpoint while native Bob review and hosted CI proceed.
+
+The frozen exact 3ab/App 78 pair independently passes four real helper scenarios:
+direct and mixed calls after replacement and removal of captured owners. All
+nested calls return original v1, every helper remains outside Task context, and
+actual persisted helper/workflow parents match. The original preparation,
+workflow snapshot and resource probes and all 43 boundaries pass. Root's five-file
+suite passes 107 tests/428 expectations; `check:ci`, App type/current-input checks
+pass. `3ab4-root-source-review.json` records actual independent review with no
+blocking finding. Native final review, exact-head hosted CI, complete App scan
+and supported candidate activation/live trial are still tracked separately.
+
+The actual installation has meanwhile returned to Host/SDK c910 through the
+separate owner's 03:22 deployment. This does not invalidate historical c630
+read-back, but new activation must reread and preserve the legitimate owner state
+instead of assuming the earlier candidate remains installed. Active App 78 and
+its evaluator repair are unchanged at the new candidate's freeze.
+
+Native source Task generation 4 genuinely converges at 3ab with cumulative 8/9
+consumed, one unused round and the original seven retained. Hosted
+run 44231987784 passes both exact-head Quality and Container. All four JUnit
+shards total 3,561 tests, zero failures and two skips. Complete App 78/3ab scanning
+covers 81 files/1,152 tests, with only the unchanged concurrency3/6 fixture failing.
+These final totals are in `3ab4-hosted-failures.json` and
+`3ab4-configured-app-scan.json`.
+
+Supported local receipt `callable-followup-local-20261118-3ab40ff8d5` succeeds at
+03:46:00. Root independently confirms binary SHA256
+`4b355c5b33a13268dfd1839490145f94bfd570e7a3c60d62c6f163e657ee8290`, matching
+SDK 3ab, unchanged App 78 and healthy readiness; duplicateDeploy:false. The
+controller and independent read-back receipts preserve both prior c910 state
+and actual installed candidate identities.
+
+Fresh May parent `s_1794973563252_89d496af-29bb-4b11-841e-b42507baf1bd` at
+generation 8 lists 32 sorted canonical targets and awaits workflow
+`wr_1794973712410_gk0g`, corrected helper
+`s_1794973716841_2561c41e-10c5-418f-b5c1-c669232b5138` and blocked helper
+`s_1794973725984_26fc347c-2d40-457d-b06a-a66ec9e12151`. Root's independent extractor
+imports the installed 3ab SDK, validates each input and actual child lineage,
+and confirms exactly two finish attempts in the corrected child with final
+nonce unified5963ab4. The blocked result omits output as required.
+`3ab4-live-proof-independent.json` preserves these actual calls; no source or
+protected domain action repeats. Actual new-head automated review remains a
+separate final gate; historical c630 review and notice 50755 are not relabeled.
+
+The ready transition does not initiate a second Copilot review. Root explicitly
+requests the existing reviewer through GitHub's review-request API, accepted 201
+in `3ab4-copilot-review-request.json`; a new reviewer check starts on exact 3ab at
+03:51. The empty maintainer COMMENTED record on 3ab belongs to the old-thread
+reply and is not an independent Copilot judgment. May retains its existing
+review-change Condition; no new observation Task or repeated notice is created.

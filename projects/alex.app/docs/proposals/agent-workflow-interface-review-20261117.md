@@ -13,7 +13,8 @@ resource-bounding repairs through `1d24a0cfe4`. The four-case follow-up reaches
 `c630b215e8` in [#596](https://github.com/hao1939/may-agent/pull/596).
 Exact-head checks, supported local activation and the native call trial pass,
 but completed automated review finds a deeper non-Task helper snapshot gap.
-Repair and new-head verification continue below. The single review-link notice
+May repairs it at `3ab40ff8d5`; exact-head CI and the local trial pass, with final
+automated review pending. The single review-link notice
 is delivered; its premature readiness claim is retained with a correction.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
@@ -67,9 +68,9 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Repair mixed prompt-helper snapshot inheritance in
-   [#596](https://github.com/hao1939/may-agent/pull/596), then verify the new head
-   and reconcile the existing notice. Preserve merged source and prior evidence.
+1. Consume actual current-head automated review of the repaired
+   [#596](https://github.com/hao1939/may-agent/pull/596) at `3ab40ff8d5`, then
+   reconcile the existing notice. Preserve merged source and prior evidence.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -292,7 +293,7 @@ the correction to the same May Task. Consume actual completed review evidence
 before final readiness; preserve the notice without resending or renewing source
 allowance. This is an App judgment gap, not new Host result-acceptance authority.
 
-Completed Copilot review5950358488 at03:24:24 adds a real source finding:
+Completed Copilot review5950358488 at 03:24:24 adds a real source finding:
 workflow `agentDefinitions` do not reach a non-Task prompt helper's session.
 Root's production probe executes the helper's actual canonical `agents` tool:
 after replacement it runs v2, and after removal it reports a missing target.
@@ -304,11 +305,45 @@ independently of Task context. This includes direct prompt-helper calls as well
 as workflow-to-prompt calls. Keep the existing Task snapshot authoritative;
 do not fabricate a Task for standalone execution or add a public call option.
 Root explicitly commissions two bounded repair rounds after reproducing this
-new finding. May Goal generation8 must save the same source Task's cumulative9,
+new finding. May Goal generation 8 saves the same source Task at generation 4, cumulative9,
 retaining seven consumed; this is a reviewed owner revision, not worker renewal.
-The old7/7 result, all c630 proofs and notice50755 remain retained. New owning
+The old7/7 result, all c630 proofs and notice 50755 remain retained. New owning
 tests must execute real helper tools through replacement and removal. Observer
 implementation remains with the separate owner; no notice is resent.
+
+Repair checkpoint `3ab40ff8d5` carries the captured definitions and prepared
+catalog identity through real prompt-helper sessions. Both model and workflow
+routes reuse the existing cache and loaded modules. Task snapshots stay
+authoritative; no public option, fabricated Task or second registry is added.
+The owning test now executes the helper's actual `agents` tool, including removal
+of both the captured workflow owner and peer. Root publishes the clean checkpoint
+promptly while native review and CI run in parallel.
+
+On the frozen exact candidate, Root's four mixed/direct helper scenarios all keep
+v1 after replacement/removal, preserve actual child lineage and have no Task
+context. The earlier preparation/workflow/resource probes and all 43 boundaries
+also pass. Five owning files pass 107 tests/428 expectations; `check:ci`, App 78
+types and current-input checks pass. Native final review, exact-head hosted CI,
+the complete paired App scan, supported local activation and actual new-head
+automated review remain delivery gates at this checkpoint.
+
+Final local/CI verification then passes on exact `3ab40ff8d5`. Quality and
+Container succeed in run 44231987784: 3,561 tests, zero failures, two skips. The
+complete App 78 scan retains only the known concurrency fixture: 1,151/1,152 pass.
+The source contribution genuinely converges at 8/9, with its remaining round
+unused and all seven earlier reservations retained.
+
+Supported activation and independent artifact/SDK/App/readiness read-back match
+3ab, preserving App 78 and its evaluator repair. Fresh native May generation 8
+again lists 32 canonical targets and completes the workflow, same-child correction
+and output-free blocker diagnostics. Root independently validates the exact
+installed SDK, real IDs, two finish attempts and caller lineage. The diagnostics repeat no protected action or notice. Current-head automatic review and human GitHub review
+remain separate; the c630 review does not certify 3ab.
+
+Making the repaired PR ready does not start another review automatically. Root
+explicitly requests Copilot again through the existing GitHub review API; the
+request is accepted and a new check starts on 3ab. The owner waits for that actual
+review, rather than a provider fingerprint that has no outstanding producer.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
