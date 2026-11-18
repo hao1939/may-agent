@@ -5,11 +5,6 @@ export const SOCKET_CONTROL_TYPES = new Set([
   "status",
   "publish",
   "event.get",
-  "app.conversation.get",
-  "apps.list",
-  "tasks.list",
-  "task.get",
-  "task.cancel",
 ]);
 
 export type SocketFrame =
@@ -19,12 +14,7 @@ export type SocketFrame =
         | "subscribe"
         | "status"
         | "publish"
-        | "event.get"
-        | "app.conversation.get"
-        | "apps.list"
-        | "tasks.list"
-        | "task.get"
-        | "task.cancel";
+        | "event.get";
       frame: Record<string, unknown>;
     }
   | { kind: "event"; command: string; event: Record<string, unknown> }
@@ -68,12 +58,7 @@ export function normalizeSocketFrame(frame: Record<string, unknown>): SocketFram
         | "subscribe"
         | "status"
         | "publish"
-        | "event.get"
-        | "app.conversation.get"
-        | "apps.list"
-        | "tasks.list"
-        | "task.get"
-        | "task.cancel",
+        | "event.get",
       frame,
     };
   }

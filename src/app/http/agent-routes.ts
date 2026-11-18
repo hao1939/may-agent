@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { InterfaceBinding } from "@may-agent/control";
 import { metricThresholdBreached } from "../../lib/metrics.js";
 import { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory } from "@may-agent/sdk/runtime";
-import { ChatPublicationConflict, readChatPublication } from "./read-model/chat-publication.js";
 import type { SqliteDb } from "./read-model/state-db.js";
 
 export function createAgentRouteHandlers(options: {
@@ -12,31 +10,18 @@ export function createAgentRouteHandlers(options: {
   agentsRoot: string;
   sharedRoot: string;
   projectsRoot: string;
-  humanInterface: InterfaceBinding;
   getDb: () => SqliteDb;
   json: (data: unknown, status?: number) => Response;
   readProjects: () => Array<{ project: { owner: string; field: (key: string) => string | null | undefined } }>;
-  sendDaemonFrame: (frame: Record<string, unknown>) => Promise<{ ok: boolean; error?: string }>;
-  buildPublishFrame: (
-    type: string,
-    data: Record<string, unknown>,
-    options?: {
-      target?: { appId?: string; taskId?: string; sessionId?: string };
-      idempotencyKey?: string;
-    },
-  ) => Record<string, unknown>;
 }) {
   const {
     stateDir: STATE_DIR,
     agentsRoot: AGENTS_ROOT,
     sharedRoot: SHARED_ROOT,
     projectsRoot: PROJECTS_ROOT,
-    humanInterface,
     getDb: _db,
     json,
     readProjects,
-    sendDaemonFrame,
-    buildPublishFrame,
   } = options;
 
   /**
@@ -211,177 +196,8 @@ export function createAgentRouteHandlers(options: {
     return json({ name: agentName, agentJson, promptFiles, otherFiles });
   }
 
-  function handleAgentDefaultSession(agentName: string, requestId?: string): Response {
-    if (!agentName) return json({ error: "agent required" }, 400);
-    if (requestId !== undefined && (!requestId || requestId.length > 256))
-      return json({ error: "invalid requestId" }, 400);
-    try {
-      const db = _db();
-      // Resolve the agent's chat session — only human-initiated conversations,
-      // not workflows, heartbeats, or fork-spawned task sessions.
-      const row = db
-        .prepare(
-          `
-        SELECT sessionId, status, startedAt, kind, requestId, substr(task, 1, 200) as task
-        FROM sessions
-        WHERE agent = ?
-          AND (kind = 'chat' OR (? IS NULL AND source IN ('telegram', 'web-ui', 'web', 'cli')))
-          AND (? IS NULL OR requestId = ?)
-        ORDER BY startedAt DESC
-        LIMIT 1
-      `,
-        )
-        .get(agentName, requestId ?? null, requestId ?? null, requestId ?? null) as
-        | {
-            sessionId: string;
-            status: string;
-            startedAt: number;
-            kind: string | null;
-            requestId: string | null;
-            task: string;
-          }
-        | undefined;
-      if (!row) return json({ agent: agentName, sessionId: null });
-      return json({
-        agent: agentName,
-        sessionId: row.sessionId,
-        status: row.status,
-        startedAt: row.startedAt,
-        kind: row.kind,
-        requestId: row.requestId,
-        task: row.task,
-      });
-    } catch (e) {
-      return json({ error: e instanceof Error ? e.message : String(e) }, 500);
-    }
-  }
-
-  /**
-   * Interface-agent input always uses the installation's Conversation binding.
-   * Other agents keep direct session chat.
-   */
-  async function handleAgentMessage(req: Request, agentName: string, url?: URL): Promise<Response> {
-    if (!agentName) return json({ error: "agent required" }, 400);
-    let body: { content?: string; requestId?: string };
-    try {
-      body = (await req.json()) as typeof body;
-    } catch {
-      return json({ error: "invalid json" }, 400);
-    }
-    const content = (body.content ?? "").trim();
-    if (!content) return json({ error: "content required" }, 400);
-    if (
-      body.requestId !== undefined &&
-      (typeof body.requestId !== "string" || !body.requestId.trim() || body.requestId.length > 256)
-    ) {
-      return json({ error: "invalid requestId" }, 400);
-    }
-    const requestId = body.requestId?.trim();
-    const forceNew = url?.searchParams.get("new") === "true";
-
-    if (agentName === humanInterface.agent) {
-      if (!humanInterface.appId) return json({ error: "No Conversation App is configured" }, 503);
-      const result = await sendDaemonFrame(
-        buildPublishFrame(
-          "app.input.requested",
-          {
-            input: { kind: "message", data: { message: content, context: { forceNew } } },
-            channel: "web-ui",
-            conversationId: humanInterface.conversationId,
-          },
-          { target: { appId: humanInterface.appId } },
-        ),
-      );
-      if (!result.ok) return json({ error: result.error }, 503);
-      return json({ ok: true, agent: agentName, sessionId: null, deliveredAt: Date.now(), spawned: true });
-    }
-
-    // Recover the immutable publication before resolving a mutable default.
-    // Accepted steering stays confirmed even if that session has since ended.
-    if (requestId) {
-      let saved;
-      try {
-        saved = readChatPublication(_db(), { agent: agentName, content, requestId, forceNew });
-      } catch (error) {
-        return json(
-          { error: error instanceof Error ? error.message : String(error) },
-          error instanceof ChatPublicationConflict ? 409 : 500,
-        );
-      }
-      if (saved) {
-        if (!saved.accepted) {
-          const result = await sendDaemonFrame({ type: "publish", event: saved.input });
-          if (!result.ok) return json({ error: result.error }, 503);
-        }
-        return json({
-          ok: true,
-          agent: agentName,
-          sessionId: saved.input.target?.sessionId ?? null,
-          deliveredAt: Date.now(),
-          spawned: saved.input.type === "chat.start.requested",
-          requestId,
-        });
-      }
-    }
-    // A session alone cannot reconstruct the original publication after its
-    // event has disappeared. Report missing evidence instead of starting again.
-    if (requestId) {
-      const correlated = handleAgentDefaultSession(agentName, requestId);
-      if (!correlated.ok) return correlated;
-      if ((await correlated.json()).sessionId) return json({ error: "Original chat publication unavailable" }, 500);
-    }
-    if (!forceNew) {
-      const resolveResp = handleAgentDefaultSession(agentName);
-      if (!resolveResp.ok) return resolveResp;
-      const resolved = (await resolveResp.json()) as { agent: string; sessionId: string | null };
-      if (resolved.sessionId) {
-        const result = await sendDaemonFrame(
-          buildPublishFrame(
-            "session.steer.requested",
-            { message: content, channel: "web-ui" },
-            { target: { sessionId: resolved.sessionId }, idempotencyKey: requestId },
-          ),
-        );
-        if (!result.ok) return json({ error: result.error }, 503);
-        return json({
-          ok: true,
-          agent: agentName,
-          sessionId: resolved.sessionId,
-          deliveredAt: Date.now(),
-          spawned: false,
-        });
-      }
-    }
-
-    // No prior session — request a create-or-bind chat start from the daemon.
-    const result = await sendDaemonFrame(
-      buildPublishFrame(
-        "chat.start.requested",
-        {
-          agent: agentName,
-          message: content,
-          channel: "web-ui",
-          forceNew,
-          ...(requestId ? { requestId } : {}),
-        },
-        { idempotencyKey: requestId },
-      ),
-    );
-    if (!result.ok) return json({ error: result.error }, 503);
-    return json({
-      ok: true,
-      agent: agentName,
-      sessionId: null,
-      deliveredAt: Date.now(),
-      spawned: true,
-      ...(requestId ? { requestId } : {}),
-    });
-  }
-
   return {
     handleAgents,
     handleAgentAbout,
-    handleAgentDefaultSession,
-    handleAgentMessage,
   };
 }

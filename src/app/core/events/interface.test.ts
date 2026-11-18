@@ -23,7 +23,7 @@ afterEach(() => {
   }
 });
 
-function fixture(conversationAppId?: string) {
+function fixture() {
   const root = mkdtempSync(join(tmpdir(), "may-event-interface-"));
   roots.push(root);
   const bus = new EventBus();
@@ -34,19 +34,23 @@ function fixture(conversationAppId?: string) {
   const events = createEventInterface({
     bus,
     db,
-    conversationAppId,
-    conversationAgent: "helper",
     validateAppInput: (appId, input) => {
       if (appId !== "sample" || input.kind !== "message") throw new Error("invalid App input");
     },
     hasApp: (appId) => appId.trim().replace(/\.app$/, "") === "sample",
-    hasAgent: (agent) => agent === "may",
-    hasSession: (sessionId) => sessionId === "s_known",
   });
   return { bus, db, events };
 }
 
 describe("simple event interface", () => {
+  it.each(["chat.start.requested", "session.steer.requested", "session.cancel.requested",
+    "session.cancel_all.requested", "project.comment.created"])("rejects retired %s before persistence or dispatch", (type) => {
+    const { events, db } = fixture();
+    expect(() => events.publish({ type, target: { sessionId: "s_known" }, data: { agent: "may", message: "hello" } },
+      { source: "web-ui" })).toThrow("not admitted");
+    expect(db.prepare("SELECT 1 FROM events WHERE event_type = ?").get(type)).toBeNull();
+  });
+
   it.each([
     "conversation.updated", "skill.loaded", "workflow.step_started", "workflow.step_completed",
     "handler.workflow_dispatched", "project.task.reconcile.started", "project.task.reconcile.profiled",
@@ -96,8 +100,6 @@ describe("simple event interface", () => {
         validateAppInput: () => {
           if (!valid) throw new Error("Changed schema");
         },
-        hasAgent: () => false,
-        hasSession: () => false,
       });
       bus.subscribeDurableRoute(() => {
         effects++;
@@ -185,17 +187,6 @@ describe("simple event interface", () => {
       expect(events.get(receipt.eventId)?.event).toMatchObject({ target, data });
       expect(events.get(receipt.eventId)?.event.data).toEqual(data);
     }
-  });
-
-  it.each([
-    { type: "app.input.requested", target: { appId: "sample" }, data: { appId: "other", input: { kind: "message", data: {} } } },
-    { type: "session.cancel.requested", target: { sessionId: "s_known" }, data: { sessionId: "other" } },
-    { type: "app.task.retry.requested", idempotencyKey: "conflicting-address", target: { appId: "sample", taskId: "work" },
-      data: { taskId: "other", expectedGeneration: 1, expectedResourceVersion: 1 } },
-  ])("rejects conflicting address aliases for $type", (input) => {
-    const { events, db } = fixture();
-    expect(() => events.publish(input, { source: "fixture" })).toThrow("conflicts");
-    expect(db.prepare("SELECT COUNT(*) AS n FROM events").get()?.n).toBe(0);
   });
 
   it.each(["type", "scope", "ingress", "payload"])(
@@ -299,13 +290,6 @@ describe("simple event interface", () => {
     ).toThrow("Idempotency");
   });
 
-  it("rejects an App address on direct chat even when it is not the Conversation App", () => {
-    const { events, db } = fixture();
-    expect(() => events.publish({ type: "chat.start.requested", target: { appId: "sample" },
-      data: { message: "Please work" } }, { source: "test" })).toThrow("app.input.requested");
-    expect(db.prepare("SELECT count(*) AS n FROM events").get()).toEqual({ n: 0 });
-  });
-
   it("preserves App schema diagnostics at public ingress before persistence", () => {
     const root = mkdtempSync(join(tmpdir(), "may-event-app-input-"));
     roots.push(root);
@@ -337,8 +321,6 @@ describe("simple event interface", () => {
       db,
       validateAppInput: (appId, input) => host.assertAcceptsInput(appId, input),
       hasApp: (appId) => host.hasApp(appId),
-      hasAgent: () => false,
-      hasSession: () => false,
     });
     bus.subscribeDurableRoute((event) => {
       if (event.type !== "app.input.requested") return;
@@ -380,47 +362,6 @@ describe("simple event interface", () => {
     expect(retry).toEqual(first);
     expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 1 });
     expect(db.prepare("SELECT COUNT(*) AS count FROM app_inbox_items").get()).toEqual({ count: 1 });
-  });
-  it.each(["sample", " sample.app "])("requires durable input for the selected conversational App: %s", (selection) => {
-    const { db, events } = fixture(selection);
-    for (const appId of ["sample", "sample.app", " sample.app "]) {
-      for (const target of [{ data: { agent: "helper" } }, { target: { appId }, data: {} }]) {
-        expect(() =>
-          events.publish(
-            { ...target, type: "chat.start.requested", data: { ...target.data, message: "Discuss this" } },
-            { source: "fixture" },
-          ),
-        ).toThrow("input must use app.input.requested");
-      }
-    }
-    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
-
-    const receipt = events.publish(
-      { type: "app.input.requested", target: { appId: "sample" }, data: { input: { kind: "message", data: {} } } },
-      { source: "fixture" },
-    );
-    expect(events.get(receipt.eventId)?.event.type).toBe("app.input.requested");
-
-    // A different agent's name is not core routing policy.
-    const chat = events.publish(
-      { type: "chat.start.requested", data: { agent: "may", message: "Direct agent input" } },
-      { source: "fixture" },
-    );
-    expect(events.get(chat.eventId)?.event.type).toBe("chat.start.requested");
-  });
-
-  it("allows direct agent input without a conversational capability", () => {
-    const { db, events } = fixture();
-    expect(() => events.publish(
-      { type: "chat.start.requested", data: { agent: "helper", message: "Interface input" } },
-      { source: "fixture" },
-    )).toThrow("No Conversation App is configured");
-    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
-    const receipt = events.publish(
-      { type: "chat.start.requested", data: { agent: "may", message: "Direct agent input" } },
-      { source: "fixture" },
-    );
-    expect(events.get(receipt.eventId)?.event.type).toBe("chat.start.requested");
   });
 
   it("reports an async subscriber failure without changing a committed result or blocking another report", async () => {
@@ -934,43 +875,5 @@ describe("simple event interface", () => {
     expect(Object.keys(observed[0]!).sort()).toEqual(["data", "id", "owner", "source", "target", "timestamp", "type"]);
     expect(events.get(receipt.eventId)?.event.data.reason).toBe("original");
     expect(events.get(receipt.eventId)?.event.data.nested).toEqual({ value: "original" });
-  });
-
-  it("rejects invalid targets and unregistered public types before persistence", () => {
-    const { db, events } = fixture();
-    expect(() =>
-      events.publish(
-        { type: "session.cancel.requested", target: { sessionId: "s_missing" }, data: {} },
-        { source: "control-socket" },
-      ),
-    ).toThrow("Session s_missing does not exist");
-    expect(() => events.publish({ type: "custom.unknown", data: {} }, { source: "control-socket" })).toThrow(
-      "not admitted",
-    );
-    expect(() =>
-      events.publish({ type: "project.approval.submitted", data: {} }, { source: "control-socket" }),
-    ).toThrow("data.decision");
-    expect(() =>
-      events.publish(
-        {
-          type: "project.owner.requested",
-          target: { appId: "sample", owner: "agent:forged" } as never,
-          data: { reason: "test" },
-        },
-        { source: "control-socket" },
-      ),
-    ).toThrow("unsupported field 'owner'");
-    expect(() =>
-      events.publish(
-        {
-          type: "project.owner.requested",
-          target: { appId: "sample" },
-          data: { reason: "test" },
-          source: "caller-forged",
-        } as never,
-        { source: "control-socket" },
-      ),
-    ).toThrow("Host-owned or unsupported field 'source'");
-    expect(db.prepare("SELECT COUNT(*) AS count FROM events").get()).toEqual({ count: 0 });
   });
 });

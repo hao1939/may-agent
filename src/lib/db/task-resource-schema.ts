@@ -1,3 +1,4 @@
+import { normalizeLegacyTaskFormats } from "./legacy-task-formats.js";
 import type { SqliteDb } from "../db.js";
 import { APP_INBOX_SCHEMA } from "./app-inbox-schema.js";
 
@@ -84,8 +85,7 @@ CREATE INDEX IF NOT EXISTS idx_app_task_conditions_open_human_owner
   ON app_task_conditions(app_id, condition_id)
   WHERE state != 'true'
     AND (trim(json_extract(condition_json, '$.spec.owner')) = 'human'
-      OR trim(json_extract(condition_json, '$.spec.owner')) GLOB 'human:?*'
-      OR trim(json_extract(condition_json, '$.spec.owner')) = 'Hao');
+      OR trim(json_extract(condition_json, '$.spec.owner')) GLOB 'human:?*');
 CREATE TABLE IF NOT EXISTS app_task_condition_routes (
   app_id TEXT NOT NULL, task_id TEXT NOT NULL, condition_id TEXT NOT NULL,
   PRIMARY KEY(app_id, condition_id, task_id),
@@ -185,23 +185,5 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
       AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
       AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
   db.exec(TASK_RESOURCE_SCHEMA);
-  const hasReceiptsTable = Boolean(
-    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1").get(),
-  );
-  if (hasReceiptsTable) {
-    db.prepare(
-      `DELETE FROM app_task_receipts WHERE EXISTS (
-         SELECT 1 FROM app_task_attempts a
-         WHERE a.app_id = app_task_receipts.app_id
-           AND a.task_id = app_task_receipts.receipt_id
-           AND a.task_generation = json_extract(app_task_receipts.receipt_json, '$.metadata.generation')
-           AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
-           AND json_extract(a.attempt_json, '$.specHash') = json_extract(app_task_receipts.receipt_json, '$.specHash')
-       )`,
-    ).run();
-    const remaining = db.prepare("SELECT 1 FROM app_task_receipts LIMIT 1").get();
-    if (!remaining) {
-      db.exec("DROP TABLE IF EXISTS app_task_receipts");
-    }
-  }
+  normalizeLegacyTaskFormats(db);
 }

@@ -58,8 +58,6 @@ test("public targeted input retains its receipt, attaches once and reaches only 
     db,
     hasApp: (id) => runtime.host.hasApp(id),
     validateAppInput: (id, input) => runtime.host.assertAcceptsInput(id, input),
-    hasAgent: () => false,
-    hasSession: () => false,
   });
   const admit = createAppInputAdmission({ events });
   const seen: AgentEvent[] = [];

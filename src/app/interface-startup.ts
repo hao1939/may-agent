@@ -5,7 +5,6 @@ import type { EventInterface } from "./core/events/interface.js";
 import { attachSocketUI, type SocketUI } from "./transport/socket.js";
 
 export interface InterfaceStartupOptions {
-  conversationAppId?: string;
   socketEnabled: boolean;
   persistDir: string;
   instanceLabel: string;
@@ -13,10 +12,6 @@ export interface InterfaceStartupOptions {
   events: EventInterface;
   getStatus: AttachControlSocketOptions["getStatus"];
   reportInfo: (message: string) => void;
-  getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  listApps?: AttachControlSocketOptions["listApps"];
-  listTasks?: AttachControlSocketOptions["listTasks"];
-  getTask?: AttachControlSocketOptions["getTask"];
 }
 
 export interface InterfaceRuntime {
@@ -59,11 +54,6 @@ export async function startInterfaceRuntime(options: InterfaceStartupOptions): P
           }),
         getStatus: options.getStatus,
         reportInfo: options.reportInfo,
-        getAppConversation: options.getAppConversation,
-        listApps: options.listApps,
-        listTasks: options.listTasks,
-        getTask: options.getTask,
-        conversationAppId: options.conversationAppId,
         agentName: options.interfaceAgent,
         instance: options.instanceLabel,
       })

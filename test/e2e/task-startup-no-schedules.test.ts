@@ -165,13 +165,9 @@ test.each(["waiting", "running"] as const)(
         expect(approved).toMatchObject({ type: "ok", eventType: "project.approval.submitted" });
         const completed = await pollUntil(
           async () => {
-            const result = (await socketEmit(sb.socketPath, "task.get", {
-              appId: "sample",
-              taskId: "work/main",
-            })) as {
-              task?: { taskId: string; status: string; summary: string };
-            };
-            return result.task?.status === "idle" ? result.task : null;
+            const resource = store.readTask("work/main");
+            return resource?.status.phase === "converged"
+              ? { taskId: resource.metadata.id, summary: resource.status.summary } : null;
           },
           {
             timeoutMs: 10000,

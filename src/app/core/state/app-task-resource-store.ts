@@ -1,3 +1,4 @@
+import { assertConvertedTaskReceipts } from "../../../lib/db/legacy-task-formats.js";
 import type { TaskChangeReceipt, TaskStatus } from "@may-agent/sdk/app";
 import { storedResultFacts } from "./result-facts.js";
 import { isDeepStrictEqual } from "node:util";
@@ -40,31 +41,7 @@ function assertSupportedTaskResourceSchemaVersion(db: SqliteDb, appId: string, r
       `Task resource store for ${appId} has unsupported schema_version ${version ?? "missing"} (expected ${TASK_RESOURCE_SCHEMA_VERSION})`,
     );
   }
-  const hasReceiptsTable = Boolean(
-    db
-      .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1")
-      .get(),
-  );
-  if (hasReceiptsTable) {
-    const unconvertedReceipt = db
-      .prepare(
-        `SELECT r.receipt_id FROM app_task_receipts r
-         WHERE r.app_id = ? AND NOT EXISTS (
-           SELECT 1 FROM app_task_attempts a
-           WHERE a.app_id = r.app_id AND a.task_id = r.receipt_id
-             AND a.task_generation = json_extract(r.receipt_json, '$.metadata.generation')
-             AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
-             AND json_extract(a.attempt_json, '$.specHash') = json_extract(r.receipt_json, '$.specHash')
-         ) LIMIT 1`,
-      )
-      .get(appId) as { receipt_id?: string } | null;
-    if (unconvertedReceipt?.receipt_id) {
-      throw new Error(
-        `App ${appId} still contains unconverted legacy app_task_receipts rows (Task ${unconvertedReceipt.receipt_id}); ` +
-          "convert and remove legacy completion receipts before opening the store",
-      );
-    }
-  }
+  assertConvertedTaskReceipts(db);
 }
 
 // Read projection only: new input can await a claim while the last accepted
@@ -430,6 +407,19 @@ export class AppTaskResourceStore {
       }
     }
     const tree = normalizeTaskStateInPlace(structuredClone(treeInput));
+    // A retained snapshot can be imported after the database's one-time upgrade.
+    // Normalize its execution vocabulary at this import boundary as well.
+    if (origin === "retained-facts") {
+      for (const resource of Object.values(tree.resources ?? {})) {
+        delete (resource.spec as Record<string, unknown>).mode;
+      }
+      for (const attempt of Object.values(tree.attempts ?? {})) {
+        if (attempt.handler.startsWith("owner:")) attempt.handler = `agent:${attempt.handler.slice(6)}`;
+      }
+      for (const condition of Object.values(tree.conditions ?? {})) {
+        if (condition.spec.owner?.trim() === "Hao") condition.spec.owner = "human:Hao";
+      }
+    }
     if (tree.project && tree.project.replace(/\.app$/, "") !== this.appId) {
       throw new Error(`Task snapshot project ${tree.project} does not match App ${this.appId}`);
     }

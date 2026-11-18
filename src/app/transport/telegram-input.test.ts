@@ -133,7 +133,7 @@ function durableTelegramFixture() {
     bus.setPersistenceSubscriber(writer.handler);
     bus.setDeliveryRecorder(writer.recordDelivery);
     const events = createEventInterface({ bus, db: getDb(root), validateAppInput: () => {},
-      hasApp: () => true, hasAgent: () => true, hasSession: () => false });
+      hasApp: () => true, });
     publish = (input, approvalAuthorization) => events.publish(input, { source: "telegram", approvalAuthorization });
     return attachTelegramBotRuntime({
     conversationAppId: "may",
@@ -523,7 +523,7 @@ describe("Telegram durable input and natural follow-up", () => {
       const interrupted = state === "accepted without completion";
       let reloads = 0;
       const summary = ok ? "Fixture definitions reloaded" : "Fixture definitions rejected; previous definitions kept";
-      const attach = () => attachCommandRouter({ bus: f.bus, manager: {} as never, projectRoot: f.root,
+      const attach = () => attachCommandRouter({ bus: f.bus,
         reload: () => { reloads++; return { ok, summary }; },
         restart() {}, shutdown() {},
       });

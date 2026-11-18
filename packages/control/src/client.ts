@@ -1,4 +1,3 @@
-import { interfaceBinding, type InterfaceBinding } from "./interface-binding.js";
 export { interfaceBinding, type InterfaceBinding } from "./interface-binding.js";
 import { connect, Socket, type NetConnectOpts } from "node:net";
 import { randomUUID } from "node:crypto";
@@ -365,36 +364,6 @@ export function sendDaemonInput(
           channel: source,
         },
         idempotencyKey: `control-input-${randomUUID()}`,
-      },
-    },
-    opts,
-  );
-}
-
-export function sendAgentMessage(
-  endpoint: SocketEndpoint,
-  agent: string,
-  message: string,
-  source = "control",
-  opts?: { timeoutMs?: number; interface?: InterfaceBinding },
-): Promise<SocketResponse> {
-  const binding = opts?.interface ?? interfaceBinding();
-  if (agent === binding.agent) {
-    if (!binding.appId) throw new Error("No Conversation App is configured");
-    return sendDaemonInput(endpoint, message, source, { appId: binding.appId, conversationId: binding.conversationId, timeoutMs: opts?.timeoutMs });
-  }
-  return sendSocketCommand(
-    endpoint,
-    {
-      type: "publish",
-      event: {
-        type: "chat.start.requested",
-        data: {
-          agent,
-          message,
-          channel: source,
-        },
-        idempotencyKey: `control-chat-${randomUUID()}`,
       },
     },
     opts,

@@ -199,47 +199,6 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       requiredText(input.data.afterResult, "app.task.close.requested data.afterResult");
     },
   },
-  "chat.start.requested": {
-    delivery: "required",
-    validate: (input, options) => {
-      if (input.target?.appId) throw new Error("App input must use app.input.requested");
-      const agent = optionalText(input.data.agent);
-      if (!agent) throw new Error("chat.start.requested requires data.agent");
-      if (agent === options.conversationAgent) {
-        if (!options.conversationAppId) throw new Error("No Conversation App is configured");
-        throw new Error(`${agent} input must use app.input.requested`);
-      }
-      if (!options.hasAgent(agent)) throw new Error(`Agent ${agent} is not loaded`);
-      requiredText(input.data.message, "chat.start.requested data.message");
-    },
-  },
-  "session.steer.requested": {
-    addressFields: ["sessionId"],
-    delivery: "required",
-    validate: (input, options) => {
-      const sessionId = requiredTarget(input, "sessionId");
-      requiredText(input.data.message, "session.steer.requested data.message");
-      if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
-      options.validateSessionControl?.(input.type, sessionId);
-    },
-  },
-  "session.cancel.requested": {
-    addressFields: ["sessionId"],
-    delivery: "required",
-    validate: (input, options) => {
-      const sessionId = requiredTarget(input, "sessionId");
-      optionalTextField(input.data, "reason", "session.cancel.requested data.reason");
-      if (!options.hasSession(sessionId)) throw new Error(`Session ${sessionId} does not exist`);
-      options.validateSessionControl?.(input.type, sessionId);
-    },
-  },
-  "session.cancel_all.requested": {
-    delivery: "required",
-    validate: (input, options) => {
-      validateOptionalReason(input);
-      options.validateSessionControl?.(input.type);
-    },
-  },
   "runtime.reload.requested": {
     delivery: "required",
     validate: (input) => {
@@ -307,14 +266,6 @@ const EVENT_DEFINITIONS: Readonly<Record<string, EventDefinition>> = {
       validateCurrentApproval(input, options.db);
     },
   },
-  "project.comment.created": {
-    delivery: "record",
-    validate: (input) => {
-      requiredText(input.data.projectPath, "project.comment.created data.projectPath");
-      requiredText(input.data.comment, "project.comment.created data.comment");
-      optionalTextField(input.data, "author", "project.comment.created data.author");
-    },
-  },
 };
 
 export function eventDeliveryContract(type: string): "record" | "required" {
@@ -330,13 +281,6 @@ export type CreateEventInterfaceOptions = {
   db: SqliteDb;
   validateAppInput(appId: string, input: AppInput): void;
   hasApp(appId: string): boolean;
-  hasAgent(agent: string): boolean;
-  hasSession(sessionId: string): boolean;
-  /** Composition verifies that the selected execution controller owns the target. */
-  validateSessionControl?(type: string, sessionId?: string): void;
-  /** Composition selects the conversational App; its input must use durable admission. */
-  conversationAppId?: string;
-  conversationAgent?: string;
 };
 
 function requiredText(value: unknown, field: string): string {

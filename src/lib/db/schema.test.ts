@@ -203,8 +203,7 @@ describe("canonical database schema", () => {
              FROM app_task_conditions INDEXED BY idx_app_task_conditions_open_human_owner
              WHERE state != 'true'
                AND (trim(json_extract(condition_json, '$.spec.owner')) = 'human'
-                 OR trim(json_extract(condition_json, '$.spec.owner')) GLOB 'human:?*'
-                 OR trim(json_extract(condition_json, '$.spec.owner')) = 'Hao')`,
+                 OR trim(json_extract(condition_json, '$.spec.owner')) GLOB 'human:?*')`,
           )
           .get() as { count: number };
       expect(indexedCount()).toEqual({ count: 1 });

@@ -1,5 +1,5 @@
 // May's shared Conversation uses the same reads/events as Console and Telegram.
-// Session inspection and direct agent chat keep their existing separate views.
+// Sessions are read-only execution diagnostics.
 let mayActiveTurn = null;
 let mayConversationRead = null;
 let mayConversationDirty = false;
@@ -92,7 +92,6 @@ function updateConversationStop() {
   const button = document.getElementById('chat-stop');
   if (!button) return;
   const active = isMayConversation();
-  document.querySelector('#chat-agent-banner .banner-session').hidden = active;
   button.hidden = !active;
   button.disabled = !active || !mayActiveTurn || mayStopPending;
   const contextBar = document.getElementById('conversation-context-bar');

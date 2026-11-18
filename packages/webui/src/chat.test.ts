@@ -60,7 +60,7 @@ function fixture(fetch: (url: string) => Promise<Response>) {
     runInContext(readFileSync(new URL(`../static/pages/${script}.js`, import.meta.url), "utf8"), context);
   }
   context.setRealtimeEnabled(true);
-  cleanups.push(() => { context.clearChatTranscript(); context.setRealtimeEnabled(false); });
+  cleanups.push(() => { context.setRealtimeEnabled(false); });
   const emit = (event: Record<string, unknown>) => sockets.at(-1)!.onmessage!({ data: JSON.stringify(event) });
   return { context, elements, frames, emit, livenessReads: () => livenessReads };
 }
@@ -72,65 +72,6 @@ async function waitFor(predicate: () => boolean) {
     await Bun.sleep(1);
   }
 }
-
-test("connected and status frames discover and update sessions in the shipped picker", async () => {
-  const reads: string[] = [];
-  const ui = fixture(async (url) => {
-    reads.push(url);
-    return Response.json({ messages: [{ text: "Saved chat" }] });
-  });
-  ui.emit({ type: "connected", activeAgents: [{ sessionId: "s_chat", agent: "host", status: "idle", kind: "chat" }] });
-  await waitFor(() => ui.elements.get("chat-messages")!.innerHTML.includes("Saved chat"));
-  expect(ui.elements.get("session-picker")!.innerHTML).toContain("host (s_chat)");
-  expect(reads).toEqual(["/api/sessions/s_chat/transcript"]);
-  ui.context.refreshSessionStatus();
-  expect(ui.frames.at(-1)).toEqual({ type: "status" });
-  ui.emit({ type: "status", activeAgents: [{ sessionId: "s_new", agent: "helper", status: "running", kind: "job" }] });
-  expect(ui.elements.get("session-picker")!.innerHTML).toContain("helper (s_new)");
-});
-
-test("overflow rereads a selected saved transcript after its final wake was dropped", async () => {
-  let answer = "Working";
-  const reads: string[] = [];
-  const ui = fixture(async (url) => {
-    reads.push(url);
-    return Response.json({ messages: [{ text: answer }] });
-  });
-  await ui.context.switchSession("s_chat");
-  answer = "Final saved answer";
-  ui.emit({ type: "overflow", action: "reread" });
-  await waitFor(() => ui.elements.get("chat-messages")!.innerHTML === answer);
-  expect(reads).toEqual(["/api/sessions/s_chat/transcript", "/api/sessions/s_chat/transcript"]);
-  expect(ui.frames).toEqual([
-    { type: "subscribe", sessions: [], conversations: [] },
-    { type: "subscribe", sessions: ["s_chat"], conversations: [] },
-    { type: "subscribe", sessions: ["s_chat"], conversations: [] }, { type: "status" },
-  ]);
-  expect(ui.livenessReads()).toBe(1);
-});
-
-test("overflow during an old transcript read drains a canonical reread without another wake", async () => {
-  const old = Promise.withResolvers<Response>();
-  let reads = 0;
-  const ui = fixture(async () => ++reads === 1 ? old.promise : Response.json({ messages: [{ text: "Final answer" }] }));
-  const initialRead = ui.context.switchSession("s_chat");
-  ui.emit({ type: "overflow", action: "reread" });
-  old.resolve(Response.json({ messages: [{ text: "Stale answer" }] }));
-  await initialRead;
-  expect(reads).toBe(2);
-  expect(ui.elements.get("chat-messages")!.innerHTML).toBe("Final answer");
-});
-
-test("overflow refreshes the inspected session through its existing detail reader", async () => {
-  const ui = fixture(async () => { throw new Error("Detail mode must use its own reader"); });
-  ui.context.currentRouteParams = { id: "s_detail" };
-  const reads: string[] = [];
-  ui.context.readSessionDetail = async (id: string) => { reads.push(id); };
-  await ui.context.switchSession("s_detail");
-  ui.emit({ type: "overflow", action: "reread" });
-  await waitFor(() => reads.length === 2);
-  expect(reads).toEqual(["s_detail", "s_detail"]);
-});
 
 test("overflow during a Conversation read recovers its final answer and active turn", async () => {
   const old = Promise.withResolvers<Response>();
@@ -153,4 +94,18 @@ test("overflow during a Conversation read recovers its final answer and active t
   expect(ui.elements.get("chat-status")!.textContent).toBe("Ready");
   expect(ui.elements.get("chat-messages")!.children[0].children[0].children[0].textContent).toBe("Final Conversation answer");
   expect(ui.frames.at(-1)).toEqual({ type: "status" });
+});
+
+test("read-only diagnostics use exact session subscriptions and reread after overflow", async () => {
+  const ui = fixture(async () => { throw new Error("No chat read is expected"); });
+  const reads: string[] = [];
+  ui.context.loadSessionDetail = async (id: string) => { reads.push(id); };
+  ui.context.currentRouteParams = { id: "attempt-one" };
+  ui.context.syncRealtimeSubscriptions();
+  expect(ui.frames.at(-1)).toEqual({ type: "subscribe", sessions: ["attempt-one"], conversations: [] });
+  ui.emit({ type: "turn_end", data: { sessionId: "other-attempt" } });
+  expect(reads).toEqual([]);
+  ui.emit({ type: "overflow", action: "reread" });
+  await waitFor(() => reads.length === 1);
+  expect(reads).toEqual(["attempt-one"]);
 });

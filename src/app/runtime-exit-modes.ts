@@ -22,7 +22,6 @@ export async function runRequestedExitMode(opts: {
   appArgs: AppArgs;
 }): Promise<void> {
   const {
-    consoleEnabled,
     cronEnabled,
     socketEnabled,
     telegramEnabled,
@@ -30,14 +29,13 @@ export async function runRequestedExitMode(opts: {
   } = opts.appArgs;
 
   if (
-    !consoleEnabled &&
     !cronEnabled &&
     !webEnabled &&
     !socketEnabled &&
     !telegramEnabled
   ) {
     console.error(
-      "Error: need --chat, --status, --emit, --web, --socket, --telegram, or --cron.",
+      "Error: need --status, --emit, --web, --socket, --telegram, or --cron. For the terminal client, run may-console.",
     );
     process.exit(1);
   }

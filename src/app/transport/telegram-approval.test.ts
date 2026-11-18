@@ -261,7 +261,7 @@ describe("Telegram exact approval presentation", () => {
     }
   });
 
-  it("shows canonical human-role and legacy Hao actions without guessing among approvals", () => {
+  it("shows canonical human-role and migrated human:Hao actions without guessing among approvals", () => {
     const withClarification = proposal("a", 1);
     withClarification.humanAction = { requestedAction: "Two human actions remain." };
     withClarification.diagnostics!.conditions.push({
@@ -300,7 +300,7 @@ describe("Telegram exact approval presentation", () => {
           type: "human.answer.received",
           subject: "question:display-name",
           expected: { answer: true },
-          owner: "Hao",
+          owner: "human:Hao",
           requestedAction: "Approve the legacy Hao-owned rollout wait.",
         },
         status: { state: "false" },
@@ -317,7 +317,7 @@ describe("Telegram exact approval presentation", () => {
     expect(approvalProposalForTask(roleOwnedApproval)?.conditionId).toBe("approval-a");
 
     const legacyHaoApproval = proposal("a", 1);
-    legacyHaoApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "Hao";
+    legacyHaoApproval.diagnostics!.conditions[0]!.condition!.spec.owner = "human:Hao";
     expect(approvalProposalForTask(legacyHaoApproval)?.conditionId).toBe("approval-a");
 
     const ambiguous = proposal("a", 1);

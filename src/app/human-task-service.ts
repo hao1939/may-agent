@@ -1,3 +1,4 @@
+import { assertConvertedTaskReceipts } from "../lib/db/legacy-task-formats.js";
 import type { ApprovalProposal } from "@may-agent/control/events";
 import type { TaskStatus } from "@may-agent/sdk/app";
 import type {
@@ -311,11 +312,11 @@ function decodeCursor(value: string): TaskCursor {
       !decoded.taskId ||
       !(decoded.terminal === 0 || decoded.terminal === 1 || decoded.terminal === 2)
     ) {
-      throw new Error("invalid cursor fields");
+      throw new RangeError("invalid cursor fields");
     }
     return decoded as TaskCursor;
   } catch {
-    throw new Error("Invalid Task cursor");
+    throw new RangeError("Invalid Task cursor");
   }
 }
 
@@ -406,14 +407,10 @@ function taskStatusDetail(
   }
 }
 
-// Conditions are normalized at admission. New Conditions use the canonical
-// human namespace; the exact legacy Hao identity remains read-compatible only.
+// Conditions use canonical human ownership after the schema upgrade.
 const HUMAN_OWNER_VALUE_SQL = "trim(json_extract(human_condition.condition_json, '$.spec.owner'))";
-const CANONICAL_HUMAN_OWNER_SQL = `(${HUMAN_OWNER_VALUE_SQL} = 'human'
+const HUMAN_OWNER_SQL = `(${HUMAN_OWNER_VALUE_SQL} = 'human'
       OR ${HUMAN_OWNER_VALUE_SQL} GLOB 'human:?*')`;
-const LEGACY_HAO_HUMAN_OWNER_SQL = `${HUMAN_OWNER_VALUE_SQL} = 'Hao'`;
-const HUMAN_OWNER_SQL = `(${CANONICAL_HUMAN_OWNER_SQL}
-      OR ${LEGACY_HAO_HUMAN_OWNER_SQL})`;
 
 function taskScheduleSourceIdsSql(appId: string, taskId: string): string {
   return `(SELECT json_group_array(linked_schedule.source_id)
@@ -1008,32 +1005,7 @@ export class HumanTaskService {
     private readonly readObserverHealth?: (appId: string) => ObserverHealth[],
   ) {
     ensureTaskReferenceIndex(db);
-    const hasReceiptsTable = Boolean(
-      db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1").get(),
-    );
-    if (hasReceiptsTable) {
-      const unconverted = db
-        .prepare(
-          `SELECT r.app_id, r.receipt_id FROM app_task_receipts r
-           WHERE NOT EXISTS (
-             SELECT 1 FROM app_task_attempts a
-             WHERE a.app_id = r.app_id AND a.task_id = r.receipt_id
-               AND a.task_generation = json_extract(r.receipt_json, '$.metadata.generation')
-               AND json_extract(a.attempt_json, '$.runtimeId') = 'retired:task-receipt'
-               AND json_extract(a.attempt_json, '$.specHash') = json_extract(r.receipt_json, '$.specHash')
-           ) LIMIT 1`,
-        )
-        .get() as {
-        app_id?: string;
-        receipt_id?: string;
-      } | null;
-      if (unconverted?.receipt_id) {
-        throw new Error(
-          `App ${unconverted.app_id ?? "unknown"} still contains unconverted legacy app_task_receipts rows (Task ${unconverted.receipt_id}); ` +
-            "convert and remove legacy completion receipts before reading Task state",
-        );
-      }
-    }
+    assertConvertedTaskReceipts(db);
   }
 
   listApps(appId?: string): HumanAppView[] {
@@ -1108,7 +1080,7 @@ export class HumanTaskService {
   ): HumanTaskPage {
     const limit = input.limit ?? 30;
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
-      throw new Error("Task list limit must be an integer between 1 and 100");
+      throw new RangeError("Task list limit must be an integer between 1 and 100");
     }
     const valid = new Set<HumanTaskStatus>([
       "pending",
@@ -1120,9 +1092,9 @@ export class HumanTaskService {
       "closed",
       "cancelled",
     ]);
-    if (input.status?.some((status) => !valid.has(status))) throw new Error("Invalid Task status filter");
+    if (input.status?.some((status) => !valid.has(status))) throw new RangeError("Invalid Task status filter");
     const query = input.q?.trim().toLowerCase();
-    if (query && (query.length > 256 || /[\u0000-\u001f]/.test(query))) throw new Error("Invalid Task search query");
+    if (query && (query.length > 256 || /[\u0000-\u001f]/.test(query))) throw new RangeError("Invalid Task search query");
     const searchPattern = query ? `%${query.replace(/[\\%_]/g, "\\$&")}%` : null;
     const statuses = input.status ? new Set(input.status) : null;
     const humanActionOnly = input.humanActionOnly === true;
@@ -1337,7 +1309,7 @@ export class HumanTaskService {
     } else {
       const appId = resolveRequestedAppId(input.appId, this.registry, this.db);
       const taskId = input.taskId?.trim();
-      if (!appId || !taskId) throw new Error("Task read requires ref or App and Task ids");
+      if (!appId || !taskId) throw new RangeError("Task read requires ref or App and Task ids");
       identity = { appId, taskId, digest: taskReferenceDigest(appId, taskId) };
     }
     const row = readTaskRow(this.db, identity.appId, identity.taskId);

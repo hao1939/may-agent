@@ -108,8 +108,6 @@ function startRealOwnerFixture() {
       if (appId !== "sample" || input.kind !== "message") throw new Error("invalid App input");
     },
     hasApp: (appId) => appId === "sample",
-    hasAgent: () => false,
-    hasSession: () => false,
   });
   const services = servicesFixture(events);
   services.getTask = () => ({ ...task } as never);
@@ -193,6 +191,17 @@ function taskInput(endpoint: string, input: { message: string; key: string; gene
 }
 
 describe("daemon-owned HTTP services", () => {
+  test("retired session and project writes return 404 without publishing input", async () => {
+    const fixture = startFixture();
+    for (const path of ["/api/agents/worker/default-session", "/api/agents/worker/message",
+      "/api/sessions/attempt/message", "/api/sessions/attempt/cancel", "/api/projects/comment"]) {
+      const response = await fetch(fixture.endpoint + path, { method: path.endsWith("default-session") ? "GET" : "POST",
+        headers: { "content-type": "application/json" }, body: path.endsWith("default-session") ? undefined : "{}" });
+      expect(response.status).toBe(404);
+    }
+    expect(fixture.published).toHaveLength(0);
+  });
+
   test("rejects cross-origin and non-JSON event ingress before trusted approval publication", async () => {
     const fixture = startFixture();
     const body = JSON.stringify({
@@ -416,32 +425,6 @@ process.stdin.on("end", () => { server.stop(true); process.exit(0); });
     expect(await input.json()).toMatchObject({ accepted: true });
     expect(fixture.admissions()).toBe(1);
     await history.body?.cancel();
-  });
-
-  test("binds project comments to the same in-process App admission owner", async () => {
-    const fixture = startFixture();
-    const response = await fetch(`${fixture.endpoint}/api/projects/comment`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        path: "projects/sample.app",
-        comment: "Review the direct binding.",
-        idempotencyKey: "project-comment-direct-1",
-      }),
-    });
-
-    expect(response.status).toBe(202);
-    expect(await response.json()).toMatchObject({ ok: true, eventType: "app.input.requested", projectId: "sample" });
-    expect(fixture.published).toHaveLength(1);
-    expect(fixture.published[0]).toMatchObject({
-      context: { source: "web-ui", inputSource: { kind: "human", id: "web-ui:project-comment-direct-1" } },
-      event: {
-        type: "app.input.requested",
-        target: { appId: "sample" },
-        idempotencyKey: "project-comment-direct-1",
-        data: { input: { kind: "message", data: { message: "Review the direct binding." } } },
-      },
-    });
   });
 
   test("admits ordinary HTTP events through EventInterface with trusted adapter provenance", async () => {

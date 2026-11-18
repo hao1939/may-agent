@@ -1100,7 +1100,7 @@ describe("App task reconciler state", () => {
     });
     if (claim.kind !== "claimed") throw new Error("expected claim");
     recordAppTaskTrigger(config, claim.taskId, {
-      type: "project.comment.created", eventId: 101, data: { content: "Change scope before admitting more work" },
+      type: "message.created", eventId: 101, data: { content: "Change scope before admitting more work" },
     });
     recordAppTaskTrigger(config, claim.taskId, { type: "project.task.tick", eventId: 102 });
     expect(() => assertAppTaskClaimCurrent(config, claim)).not.toThrow();
@@ -1130,7 +1130,7 @@ describe("App task reconciler state", () => {
       if (!injected) {
         injected = true;
         recordAppTaskTrigger(config, claim.taskId, {
-          type: "project.comment.created", eventId: 101, data: { content: "Preserve concurrent input" },
+          type: "message.created", eventId: 101, data: { content: "Preserve concurrent input" },
         });
       }
       return commit(mutation);
@@ -1156,7 +1156,7 @@ describe("App task reconciler state", () => {
     if (first.kind !== "claimed") throw new Error("expected claim");
     recordAppTaskTrigger(config, first.taskId, { type: "project.task.tick", eventId: 1 });
     recordAppTaskTrigger(config, first.taskId, {
-      type: "project.comment.created",
+      type: "message.created",
       eventId: 2,
       data: { content: "Review this" },
     });
@@ -1849,7 +1849,7 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("schedules an unresolved direct project comment before autonomous priority backlog", () => {
+  it("schedules an unresolved direct message before autonomous priority backlog", () => {
     const state = fixture();
     const { config } = state;
     observeAppTaskIntent(config, {
@@ -1864,7 +1864,7 @@ describe("App task reconciler state", () => {
       intent: { ...intent("monitor"), id: "runtime/owner-review", priority: "P1" },
       appAgent: "app-owner",
       trigger: {
-        type: "project.comment.created",
+        type: "message.created",
         eventId: 42,
         source: "human",
         data: { comment: "Review current project direction" },
@@ -1887,7 +1887,7 @@ describe("App task reconciler state", () => {
     const { config } = state;
     const ownerReview = { ...intent("monitor"), id: "runtime/owner-review", priority: "P1" as const };
     const humanComment = {
-      type: "project.comment.created",
+      type: "message.created",
       eventId: 5157130,
       source: "human",
       data: { comment: "Finish all 79 source lanes and all 82 mapped specs" },
@@ -2011,7 +2011,7 @@ describe("App task reconciler state", () => {
       intent: { ...intent("monitor"), id: "runtime/comment-task", priority: "P1" },
       appAgent: "app-owner",
       trigger: {
-        type: "project.comment.created",
+        type: "message.created",
         data: { comment: "Please review" },
       },
     });
@@ -2346,7 +2346,7 @@ describe("App task reconciler state", () => {
     });
 
     const comment = {
-      type: "project.comment.created",
+      type: "message.created",
       eventId: 42,
       data: { project: "sample", comment: "Verify the missing live proof" },
     };
@@ -2602,7 +2602,7 @@ describe("App task reconciler state", () => {
       intent: { ...intent(), agent: "human" },
       appAgent: "app-owner",
       handler: "auto",
-      trigger: { type: "project.comment.created", data: { comment: "Please retry" } },
+      trigger: { type: "message.created", data: { comment: "Please retry" } },
       isAgentRunnable: (agent) => agent !== "human",
     });
 
@@ -2619,7 +2619,7 @@ describe("App task reconciler state", () => {
       },
     });
     expect(tree.resources?.["evaluate:session-1"].status.currentAttemptId).toBeUndefined();
-    expect(tree.taskTriggers?.["evaluate:session-1"]?.event.type).toBe("project.comment.created");
+    expect(tree.taskTriggers?.["evaluate:session-1"]?.event.type).toBe("message.created");
     advanceToTaskRetry(config, "evaluate:session-1");
     expect(
       claimObservedAppTask(config, {
@@ -4178,7 +4178,7 @@ describe("App task reconciler state", () => {
       intent: { ...intent("monitor"), id: "runtime/owner-review" },
       appAgent: "app-owner",
       trigger: {
-        type: "project.comment.created",
+        type: "message.created",
         data: { comment: "Please review the new approval packet" },
       },
     });
@@ -4193,7 +4193,7 @@ describe("App task reconciler state", () => {
       dependentTaskIds: ["runtime/owner-review"],
     });
     expect(readAppTaskTrigger(config, "runtime/owner-review")).toEqual({
-      type: "project.comment.created",
+      type: "message.created",
       data: { comment: "Please review the new approval packet" },
     });
 
@@ -4207,7 +4207,7 @@ describe("App task reconciler state", () => {
       taskId: "runtime/owner-review",
       generation: claim.generation,
       trigger: {
-        type: "project.comment.created",
+        type: "message.created",
         data: { comment: "Please review the new approval packet" },
       },
     });
@@ -4235,7 +4235,7 @@ describe("App task reconciler state", () => {
     if (parentClaim.kind !== "claimed") throw new Error("expected parent claim");
 
     const commentTrigger = {
-      type: "project.comment.created",
+      type: "message.created",
       eventId: 4425120,
       data: { comment: "Re-evaluate the existing normalization leaf" },
     };
@@ -4706,7 +4706,7 @@ describe("App task reconciler state", () => {
       },
       appAgent: "app-owner",
       handler: "agent:app-owner",
-      trigger: { type: "project.comment.created", eventId: 811, data: { comment: "retained input" } },
+      trigger: { type: "message.created", eventId: 811, data: { comment: "retained input" } },
     });
     if (failed.kind !== "claimed") throw new Error("expected failed claim");
     failAppTaskAttempt(config, failed, "operator review required", {
@@ -4769,7 +4769,7 @@ describe("App task reconciler state", () => {
       status: { phase: "pending", facts: ["failure-log:811"] },
     });
     expect(readAppTaskTrigger(config, failed.taskId)).toMatchObject({
-      type: "project.comment.created",
+      type: "message.created",
       eventId: 811,
     });
     cancelAppTask(config, {

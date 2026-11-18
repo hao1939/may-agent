@@ -353,9 +353,7 @@ function applyResolvedAppTaskEvent(input: {
   });
   if (observation.kind === "observed") wokenTaskIds.add(observation.taskId);
   if (controller && observation.kind === "observed") {
-    enqueueAppTask(controller, config, observation.taskId, {
-      promote: event.type === "project.comment.created",
-    });
+    enqueueAppTask(controller, config, observation.taskId);
   }
   return {
     delivery: appTaskDelivery(descriptor, observation.taskId, "resolved task event accepted"),

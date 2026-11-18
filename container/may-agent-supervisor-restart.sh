@@ -46,7 +46,7 @@ probe_control_socket() {
     const socket = createConnection(process.env.SOCKET_PATH);
     const timer = setTimeout(() => { socket.destroy(); process.exit(1); }, 5000);
     let buffer = "";
-    socket.on("connect", () => socket.write(JSON.stringify({ type: "apps.list" }) + "\n"));
+    socket.on("connect", () => socket.write(JSON.stringify({ type: "status" }) + "\n"));
     socket.on("data", (chunk) => {
       buffer += chunk.toString();
       const lines = buffer.split("\n");
@@ -55,10 +55,10 @@ probe_control_socket() {
         if (!line.trim()) continue;
         try {
           const frame = JSON.parse(line);
-          if (frame.command !== "apps.list") continue;
+          if (frame.command !== "status") continue;
           clearTimeout(timer);
           socket.end();
-          process.exit(frame.type === "ok" ? 0 : 1);
+          process.exit(frame.type === "status" ? 0 : 1);
         } catch {}
       }
     });

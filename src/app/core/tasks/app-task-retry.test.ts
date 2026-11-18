@@ -343,7 +343,7 @@ it("fences a due retry when another connection pauses the project immediately be
 it("retains ordered failure input and newer human steering through a paced retry", () => {
   const f = fixture();
   const first = f.claim();
-  const steering = { type: "project.comment.created", source: "human", eventId: 81,
+  const steering = { type: "message.created", source: "human", eventId: 81,
     data: { text: "Use the corrected sample location" } };
   recordAppTaskTrigger(f.config, "work", steering);
   failAppTaskAttempt(f.config, first, "Provider unavailable");

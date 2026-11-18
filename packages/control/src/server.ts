@@ -3,13 +3,11 @@ import { connect, createServer, type Server } from "node:net";
 import { dirname } from "node:path";
 import type { Duplex } from "node:stream";
 import {
-  taskCancelRequestedEvent,
   type EventInput,
   type EventReceipt,
   type EventView,
 } from "./events.js";
 import { normalizeSocketFrame } from "./protocol.js";
-import { isTaskDerivedViewWake, taskUpdateIdentity } from "./task-wake.js";
 
 export type ControlEvent = Record<string, unknown> & { type: string };
 export type ControlEmitResult = { eventId?: number };
@@ -31,35 +29,12 @@ export type ControlStatusSnapshot = { sessions: ControlStatusItem[]; activeWork:
 export type ControlStatus = ControlStatusItem[] | ControlStatusSnapshot;
 
 export interface AttachControlSocketOptions {
-  conversationAppId?: string;
   socketPath: string;
   getStatus: () => ControlStatus;
   getDiagnostics?: () => Record<string, unknown>;
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: (event: EventInput, approvalAuthorization?: ApprovalIngressAuthorization) => EventReceipt;
   getEvent?: (eventId: number) => EventView | undefined;
-  getAppConversation?: (
-    appId: string,
-    conversationId: string,
-    options?: { limit?: number; topicId?: string; topicLimit?: number; topicCursor?: string },
-  ) => unknown;
-  listApps?: (appId?: string) => unknown;
-  listTasks?: (options?: {
-    appId?: string;
-    includeDone?: boolean;
-    humanActionOnly?: boolean;
-    status?: string[];
-    q?: string;
-    limit?: number;
-    cursor?: string;
-  }) => unknown;
-  getTask?: (input: {
-    ref?: string;
-    appId?: string;
-    taskId?: string;
-    acceptedEvidence?: { limit?: number; cursor?: string };
-    inputKeys?: string[];
-  }) => unknown;
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   onInfo?: (message: string) => void;
   /** Interface agent label, kept for compatibility with existing welcome frames. */
@@ -76,9 +51,6 @@ export interface ControlSocket {
 interface ClientState {
   socket: Duplex;
   filter: Set<string> | null;
-  conversations: Set<string>;
-  taskApps: Set<string>;
-  task: { appId: string; taskId: string } | null;
   subscribed: boolean;
 }
 
@@ -127,40 +99,6 @@ function statusFields(status: ControlStatus): Record<string, unknown> {
     : { activeAgents: activeStatus(status.sessions), activeWork: status.activeWork };
 }
 
-function inputKeyOptions(frame: Record<string, unknown>): { inputKeys?: string[] } {
-  if (frame.inputKeys === undefined) return {};
-  if (
-    !Array.isArray(frame.inputKeys) ||
-    frame.inputKeys.length > 8 ||
-    frame.inputKeys.some((key) => typeof key !== "string" || !key.trim())
-  ) {
-    throw new Error("inputKeys must contain at most 8 non-empty exact keys");
-  }
-  return { inputKeys: frame.inputKeys as string[] };
-}
-
-function acceptedEvidenceOptions(frame: Record<string, unknown>): {
-  acceptedEvidence?: { limit?: number; cursor?: string };
-} {
-  if (frame.acceptedEvidence !== true) {
-    if (frame.acceptedEvidence !== undefined && frame.acceptedEvidence !== false)
-      throw new Error("acceptedEvidence must be a boolean");
-    if (frame.evidenceLimit !== undefined || frame.evidenceCursor !== undefined)
-      throw new Error("acceptedEvidence=true is required for evidence pagination");
-    return {};
-  }
-  if (frame.evidenceLimit !== undefined && !Number.isSafeInteger(frame.evidenceLimit))
-    throw new Error("evidenceLimit must be an integer");
-  if (frame.evidenceCursor !== undefined && (typeof frame.evidenceCursor !== "string" || !frame.evidenceCursor.trim()))
-    throw new Error("evidenceCursor must be a non-empty string");
-  return {
-    acceptedEvidence: {
-      ...(frame.evidenceLimit === undefined ? {} : { limit: frame.evidenceLimit as number }),
-      ...(typeof frame.evidenceCursor === "string" ? { cursor: frame.evidenceCursor.trim() } : {}),
-    },
-  };
-}
-
 function runtimeDiagnostics(): Record<string, unknown> {
   const memory = process.memoryUsage();
   const cpu = process.cpuUsage();
@@ -187,9 +125,6 @@ function shouldForward(client: ClientState, event: ControlEvent): boolean {
   // Runtime control results are correlated by requestId in the initiating
   // adapter rather than by an agent session.
   if (event.type === "runtime.reload.finished") return true;
-  if (event.type === "conversation.updated") {
-    return typeof data.conversationId === "string" && client.conversations.has(data.conversationId);
-  }
   if (!client.filter) return true;
   if (typeof data.sessionId === "string") return client.filter.has(data.sessionId);
   if (event.type === "message.created" && data.to === "human") return false;
@@ -203,16 +138,11 @@ function eventPayload(event: ControlEvent): Record<string, unknown> {
 }
 
 export interface ControlSocketCoreOptions {
-  conversationAppId?: string;
   getStatus: () => ControlStatus;
   getDiagnostics?: AttachControlSocketOptions["getDiagnostics"];
   emitEvent: (event: ControlEvent) => ControlEmitResult | void;
   publishEvent?: AttachControlSocketOptions["publishEvent"];
   getEvent?: AttachControlSocketOptions["getEvent"];
-  getAppConversation?: AttachControlSocketOptions["getAppConversation"];
-  listApps?: AttachControlSocketOptions["listApps"];
-  listTasks?: AttachControlSocketOptions["listTasks"];
-  getTask?: AttachControlSocketOptions["getTask"];
   subscribeEvents: (handler: (event: ControlEvent) => void) => () => void;
   agentName: string;
   instance: string;
@@ -228,10 +158,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     emitEvent,
     publishEvent,
     getEvent,
-    getAppConversation,
-    listApps,
-    listTasks,
-    getTask,
     subscribeEvents,
     agentName,
     instance,
@@ -282,32 +208,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       }
     }
 
-    const wake = taskUpdateIdentity(event);
-    if (!wake) return;
-    const derivedViewWake = isTaskDerivedViewWake(event);
-    let wakeLine: string | undefined;
-    for (const [sock, client] of clients) {
-      if (
-        !client.subscribed ||
-        !(
-          (client.task?.appId === wake.appId && client.task.taskId === wake.taskId) ||
-          (derivedViewWake && client.taskApps.has(wake.appId))
-        )
-      ) {
-        continue;
-      }
-      try {
-        wakeLine ??= `${JSON.stringify({ type: "app.task.updated", data: wake })}\n`;
-        if (sock.writableLength + Buffer.byteLength(wakeLine) > CONTROL_SOCKET_LIMITS.maxOutboundBufferBytes) {
-          clients.delete(sock);
-          sock.destroy(new Error("Control socket client is too slow"));
-          continue;
-        }
-        sock.write(wakeLine);
-      } catch {
-        clients.delete(sock);
-      }
-    }
   }
 
   const unsubscribe = subscribeEvents(broadcast);
@@ -381,94 +281,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
       if (!event) throw new Error(`Event ${eventId} was not found`);
       return { event };
     },
-    "app.conversation.get": (frame) => {
-      const appId = typeof frame.appId === "string" ? frame.appId.trim() : "";
-      const conversationId = typeof frame.conversationId === "string" ? frame.conversationId.trim() : "";
-      if (!appId) throw new Error("appId is required");
-      if (!conversationId) throw new Error("conversationId is required");
-      if (!getAppConversation) throw new Error("App conversation reads are unavailable");
-      const limit = frame.limit === undefined ? undefined : Number(frame.limit);
-      const topicId = typeof frame.topicId === "string" ? frame.topicId.trim() : "";
-      const topicCursor = typeof frame.topicCursor === "string" ? frame.topicCursor.trim() : "";
-      const topicLimit = frame.topicLimit === undefined ? undefined : Number(frame.topicLimit);
-      return {
-        appId,
-        conversationId,
-        conversation: getAppConversation(appId, conversationId, {
-          limit,
-          ...(topicId ? { topicId } : {}),
-          ...(topicCursor ? { topicCursor } : {}),
-          ...(topicLimit === undefined ? {} : { topicLimit }),
-        }),
-      };
-    },
-    "apps.list": (frame) => {
-      if (!listApps) throw new Error("App reads are unavailable");
-      const appId = typeof frame.appId === "string" && frame.appId.trim() ? frame.appId.trim() : undefined;
-      return { apps: listApps(appId) };
-    },
-    "tasks.list": (frame) => {
-      if (!listTasks) throw new Error("Task reads are unavailable");
-      if (
-        frame.status !== undefined &&
-        (!Array.isArray(frame.status) ||
-          !frame.status.every((value) => typeof value === "string" && Boolean(value.trim())))
-      ) {
-        throw new Error("status must be an array of non-empty strings");
-      }
-      return {
-        tasks: listTasks({
-          ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
-          ...(frame.includeDone === true ? { includeDone: true } : {}),
-          ...(frame.humanActionOnly === true ? { humanActionOnly: true } : {}),
-          ...(Array.isArray(frame.status) ? { status: frame.status as string[] } : {}),
-          ...(typeof frame.q === "string" && frame.q.trim() ? { q: frame.q.trim() } : {}),
-          ...(frame.limit === undefined ? {} : { limit: Number(frame.limit) }),
-          ...(typeof frame.cursor === "string" && frame.cursor.trim() ? { cursor: frame.cursor.trim() } : {}),
-        }),
-      };
-    },
-    "task.get": (frame) => {
-      if (!getTask) throw new Error("Task reads are unavailable");
-      return {
-        task: getTask({
-          ...(typeof frame.ref === "string" && frame.ref.trim() ? { ref: frame.ref.trim() } : {}),
-          ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
-          ...(typeof frame.taskId === "string" && frame.taskId.trim() ? { taskId: frame.taskId.trim() } : {}),
-          ...(typeof frame.reason === "string" && frame.reason.trim() ? { reason: frame.reason.trim() } : {}),
-          ...acceptedEvidenceOptions(frame),
-          ...inputKeyOptions(frame),
-        }),
-      };
-    },
-    "task.cancel": (frame) => {
-      if (!getTask || !publishEvent) throw new Error("Task cancellation is unavailable");
-      const input = {
-        ...(typeof frame.ref === "string" && frame.ref.trim() ? { ref: frame.ref.trim() } : {}),
-        ...(typeof frame.appId === "string" && frame.appId.trim() ? { appId: frame.appId.trim() } : {}),
-        ...(typeof frame.taskId === "string" && frame.taskId.trim() ? { taskId: frame.taskId.trim() } : {}),
-      };
-      const task = getTask(input) as Record<string, unknown> | null;
-      if (!task) throw new Error("Task was not found");
-      const appId = typeof task.appId === "string" ? task.appId.trim() : "";
-      const taskId = typeof task.taskId === "string" ? task.taskId.trim() : "";
-      const generation = Number(task.generation);
-      const resourceVersion = Number(task.resourceVersion);
-      if (!appId || !taskId || !Number.isSafeInteger(generation) || !Number.isSafeInteger(resourceVersion)) {
-        throw new Error("Task has no exact mutable resource identity");
-      }
-      const reason =
-        typeof frame.reason === "string" && frame.reason.trim()
-          ? frame.reason.trim()
-          : "human requested cancellation";
-      const receipt = publishEvent(taskCancelRequestedEvent({ appId, taskId, generation, resourceVersion }, reason));
-      if (receipt.delivery !== "accepted") {
-        throw new Error(
-          `Task ${appId}/${taskId} cancellation was recorded but not accepted; read the Task and retry`,
-        );
-      }
-      return { receipt, task: getTask({ appId, taskId }) };
-    },
   };
 
   function attachClient(socket: Duplex): void {
@@ -489,9 +301,6 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
     clients.set(socket, {
       socket,
       filter: null,
-      conversations: new Set(),
-      taskApps: new Set(),
-      task: null,
       subscribed: false,
     });
     const removeClient = () => clients.delete(socket);
@@ -559,74 +368,15 @@ export function createControlSocketCore(opts: ControlSocketCoreOptions): {
 
         if (normalized.kind === "control" && normalized.command === "subscribe") {
           const sessions = frame.sessions;
-          const conversations = frame.conversations;
-          const taskApps = frame.taskApps;
-          const task = frame.task;
           const client = clients.get(socket);
-          if (
-            client &&
-            Array.isArray(sessions) &&
-            sessions.every((session) => typeof session === "string") &&
-            (conversations === undefined ||
-              (Array.isArray(conversations) && conversations.every((id) => typeof id === "string" && id.trim()))) &&
-            (taskApps === undefined ||
-              (Array.isArray(taskApps) && taskApps.every((id) => typeof id === "string" && id.trim()))) &&
-            (task === undefined ||
-              task === null ||
-              (typeof task === "object" &&
-                !Array.isArray(task) &&
-                typeof (task as Record<string, unknown>).appId === "string" &&
-                Boolean(String((task as Record<string, unknown>).appId).trim()) &&
-                typeof (task as Record<string, unknown>).taskId === "string" &&
-                Boolean(String((task as Record<string, unknown>).taskId).trim())))
-          ) {
+          if (client && Array.isArray(sessions) && sessions.every((session) => typeof session === "string")
+            && frame.conversations === undefined && frame.taskApps === undefined && frame.task === undefined) {
             client.filter = sessions.includes("*") ? null : new Set(sessions);
-            client.conversations = new Set(
-              Array.isArray(conversations) ? conversations.map((id) => String(id).trim()) : [],
-            );
-            client.taskApps = new Set(
-              Array.isArray(taskApps)
-                ? taskApps.map((id) =>
-                    String(id)
-                      .trim()
-                      .replace(/\.app$/, ""),
-                  )
-                : [],
-            );
-            client.task =
-              task && typeof task === "object" && !Array.isArray(task)
-                ? {
-                    appId: String((task as Record<string, unknown>).appId)
-                      .trim()
-                      .replace(/\.app$/, ""),
-                    taskId: String((task as Record<string, unknown>).taskId).trim(),
-                  }
-                : null;
             client.subscribed = true;
             writeFrame(socket, { type: "ok", command: "subscribe" });
           } else {
-            writeFrame(socket, {
-              type: "error",
-              command: "subscribe",
-              message:
-                !Array.isArray(sessions) || !sessions.every((session) => typeof session === "string")
-                  ? "sessions must be an array of strings"
-                  : conversations !== undefined &&
-                      (!Array.isArray(conversations) ||
-                        !conversations.every((id) => typeof id === "string" && id.trim()))
-                    ? "conversations must be an array of non-empty strings"
-                    : taskApps !== undefined &&
-                        (!Array.isArray(taskApps) || !taskApps.every((id) => typeof id === "string" && id.trim()))
-                      ? "taskApps must be an array of non-empty strings"
-                      : task !== undefined &&
-                          task !== null &&
-                          (typeof task !== "object" ||
-                            Array.isArray(task) ||
-                            typeof (task as Record<string, unknown>).appId !== "string" ||
-                            typeof (task as Record<string, unknown>).taskId !== "string")
-                        ? "task must contain non-empty appId and taskId strings"
-                        : "invalid subscription",
-            });
+            writeFrame(socket, { type: "error", command: "subscribe",
+              message: "sessions must be an array of strings; use HTTP /ws for Conversation and Task watches" });
           }
           continue;
         }
@@ -712,12 +462,7 @@ export async function attachControlSocket(opts: AttachControlSocketOptions): Pro
     emitEvent,
     publishEvent,
     getEvent,
-    getAppConversation: opts.getAppConversation,
-    listApps: opts.listApps,
-    listTasks: opts.listTasks,
-    getTask: opts.getTask,
     subscribeEvents,
-    conversationAppId: opts.conversationAppId,
     agentName,
     instance,
   });

@@ -20,7 +20,7 @@ describe("Web UI build", () => {
     const installed = join(root, "projects/platform/ui");
     mkdirSync(installed, { recursive: true });
     for (const file of ["index.html", "app.js"]) writeFileSync(join(installed, file), `Installed ${file}`);
-    const child = spawn(process.execPath, mode === "dev" ? ["run", "dev"] : ["src/app/may.ts", "--web"], {
+    const child = spawn(process.execPath, mode === "dev" ? ["run", "dev"] : ["src/app/may.ts", "--socket", "--web"], {
       cwd: mode === "dev" ? join(repo, "packages/webui") : repo,
       env: { ...process.env, APP_ROOT: root, PROJECT_ROOT: root, PROJECTS_ROOT: join(root, "projects"),
         STATE_DIR: join(root, ".state"), AGENTS_ROOT: join(root, "agents"), SHARED_ROOT: join(root, "shared"),

@@ -1,16 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import type { ChildProcess } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { attachControlSocket, type ControlSocket } from "../../packages/control/src/server.js";
-import { daemonSocketPath } from "../../packages/control/src/client.js";
+import { join } from "node:path";
+import { startWebUI } from "../../src/app/http/server.js";
 import { EventBus } from "../../src/app/core/events/bus.js";
 import { createEventInterface, type EventInterface } from "../../src/app/core/events/interface.js";
 import { openStateDb, type SqliteDb } from "../../src/app/http/read-model/state-db.js";
 import { closeDb } from "../../src/lib/db/connection.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
-import { spawnFixtureProcess } from "../fixtures/owned-process.js";
 
 type AdmittedInput = {
   appId: string;
@@ -27,9 +24,7 @@ describe("HTTP Task transcript and feedback transport", () => {
   let root: string;
   let base: string;
   let db: SqliteDb;
-  let control: ControlSocket;
-  let child: ChildProcess | undefined;
-  let stopped: Promise<void> | undefined;
+  let server: ReturnType<typeof startWebUI>;
   let task: Record<string, unknown> | null;
   let reads: unknown[];
   let admitted: AdmittedInput[];
@@ -53,17 +48,8 @@ describe("HTTP Task transcript and feedback transport", () => {
     rejectInput = false;
     persistInput = false;
     failDurableRoute = false;
-    child = undefined;
-    stopped = undefined;
     let events: EventInterface | undefined;
-    control = await attachControlSocket({
-      socketPath: daemonSocketPath(root, { instance: "task-session-test", interfaceAgent: "helper" }),
-      agentName: "helper",
-      instance: "task-session-test",
-      conversationAppId: identity.appId,
-      getStatus: () => [],
-      emitEvent: () => {},
-      subscribeEvents: () => () => {},
+    const services = {
       publishEvent: (event) => {
         if (event.type === "app.input.requested") {
           const input: AdmittedInput = {
@@ -91,8 +77,6 @@ describe("HTTP Task transcript and feedback transport", () => {
                 db,
                 validateAppInput: () => {},
                 hasApp: (appId) => appId === identity.appId,
-                hasAgent: () => false,
-                hasSession: () => false,
               });
             }
             const receipt = events.publish(event, {
@@ -110,48 +94,21 @@ describe("HTTP Task transcript and feedback transport", () => {
         if (rejectRead) throw new Error("fixture Task read unavailable");
         return task;
       },
-    });
-    // Explicit fixture environment has no provider credentials, and its empty
-    // PATH prevents a regression from launching a real native agent CLI.
-    child = spawnFixtureProcess(
-      [resolve(import.meta.dir, "../../src/app/http/server.ts"), "--state-dir", root, "--port", "0"],
-      {
-        cwd: root,
-        env: {
-          PATH: emptyPath,
-          PROJECT_ROOT: root,
-          AGENTS_ROOT: root,
-          SHARED_ROOT: root,
-          PROJECTS_ROOT: join(root, "projects"),
-          DAEMON_INSTANCE: "task-session-test",
-          AGENT: "helper",
-        },
-      },
-    );
-    stopped = new Promise((done) => child!.once("close", () => done()));
-    let logs = "";
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      base = await new Promise<string>((ready, reject) => {
-        timer = setTimeout(() => reject(new Error(`HTTP startup timed out: ${logs}`)), 10_000);
-        child!.once("error", reject);
-        child!.once("exit", (code) => reject(new Error(`HTTP exited (${code}): ${logs}`)));
-        child!.stderr!.on("data", (chunk) => { logs += chunk.toString(); });
-        child!.stdout!.on("data", (chunk) => {
-          logs += chunk.toString();
-          const port = logs.match(/url:\s+http:\/\/localhost:(\d+)/)?.[1];
-          if (port) ready(`http://127.0.0.1:${port}`);
-        });
-      });
-    } finally {
-      clearTimeout(timer);
-    }
+    };
+    const previousRoot = process.env.PROJECT_ROOT;
+    process.env.PROJECT_ROOT = root;
+    server = startWebUI({ stateDir: root, port: 0, hostname: "127.0.0.1", services: {
+      events: { publish: services.publishEvent, get: () => undefined, subscribe: () => () => {} } as unknown as EventInterface,
+      getStatus: () => ({ sessions: [], activeWork: false }),
+      getAppConversation: () => { throw new Error("Not configured"); },
+      listApps: () => [], listTasks: () => ({ items: [], nextCursor: null }), getTask: services.getTask as never,
+    } });
+    if (previousRoot === undefined) delete process.env.PROJECT_ROOT; else process.env.PROJECT_ROOT = previousRoot;
+    base = `http://127.0.0.1:${server.port}`;
   });
 
-  afterEach(async () => {
-    child?.kill("SIGKILL");
-    await stopped;
-    control?.close();
+  afterEach(() => {
+    server?.stop(true);
     db?.close();
     if (root) closeDb(root);
     if (root) rmSync(root, { recursive: true, force: true });
@@ -166,7 +123,7 @@ describe("HTTP Task transcript and feedback transport", () => {
     });
   }
 
-  test("admits feedback through the socket with exact Task scope and server-owned attribution", async () => {
+  test("admits feedback through its in-process owner with exact Task scope and server-owned attribution", async () => {
     const response = await send({
       ...draft,
       appId: " example ",

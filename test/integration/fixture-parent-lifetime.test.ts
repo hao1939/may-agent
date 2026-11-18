@@ -20,7 +20,7 @@ test.each(["killed", "pipe closed"] as const)(
   async (scenario) => {
     const root = mkdtempSync(join(tmpdir(), "may-http-lifetime-"));
     const launcher = fileURLToPath(new URL("../fixtures/owned-process.ts", import.meta.url));
-    const server = fileURLToPath(new URL("../../src/app/http/server.ts", import.meta.url));
+    const server = fileURLToPath(new URL("../fixtures/http-server.ts", import.meta.url));
     const parent = spawnFixtureProcess(
       [
         "-e",

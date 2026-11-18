@@ -2,9 +2,6 @@ import { describe, expect, it } from "bun:test";
 
 import {
   buildEventIngressFrame,
-  buildAppAdmissionCommand,
-  sendAppInputWithRetry,
-  sendDaemonFrameWithRetry,
 } from "./server.js";
 
 describe("HTTP event ingress acknowledgement recovery", () => {
@@ -37,84 +34,6 @@ describe("HTTP event ingress acknowledgement recovery", () => {
         },
       },
     });
-  });
-
-  it("retries an unknown timeout with the same idempotency key", async () => {
-    const frames: Record<string, unknown>[] = [];
-    const timeouts: number[] = [];
-    const send = async (_socketPath: unknown, frame: Record<string, unknown>, options?: { timeoutMs?: number }) => {
-      frames.push(structuredClone(frame));
-      timeouts.push(Number(options?.timeoutMs));
-      if (frames.length === 1) throw new Error("Socket timeout");
-      return { type: "ok" as const, eventId: 42 };
-    };
-
-    const result = await sendDaemonFrameWithRetry(
-      "/tmp/may.sock",
-      { type: "gym.review.requested", data: { project: "gym" } },
-      send,
-    );
-
-    expect(result).toEqual({ ok: true, eventId: 42 });
-    expect(timeouts).toEqual([2_000, 5_000]);
-    expect((frames[0].data as Record<string, unknown>).idempotencyKey).toMatch(/^web-/);
-    expect((frames[1].data as Record<string, unknown>).idempotencyKey).toBe(
-      (frames[0].data as Record<string, unknown>).idempotencyKey,
-    );
-  });
-
-  it("preserves a caller key and does not retry a definite delivery error", async () => {
-    const frames: Record<string, unknown>[] = [];
-    const send = async (_socketPath: unknown, frame: Record<string, unknown>) => {
-      frames.push(structuredClone(frame));
-      throw new Error("connect ENOENT");
-    };
-
-    const result = await sendDaemonFrameWithRetry(
-      "/tmp/missing.sock",
-      {
-        type: "project.task.tick",
-        data: { project: "gym", idempotencyKey: "existing-key" },
-      },
-      send,
-    );
-
-    expect(result).toEqual({
-      ok: false,
-      error: "daemon socket delivery failed at /tmp/missing.sock: connect ENOENT",
-    });
-    expect(frames).toHaveLength(1);
-    expect((frames[0].data as Record<string, unknown>).idempotencyKey).toBe("existing-key");
-  });
-
-  it("returns the durable event when both transport acknowledgements time out", async () => {
-    const keys: string[] = [];
-    const frames: Record<string, unknown>[] = [];
-    const send = async (_socketPath: unknown, frame: Record<string, unknown>) => {
-      frames.push(structuredClone(frame));
-      throw new Error("Socket timeout");
-    };
-
-    const result = await sendDaemonFrameWithRetry(
-      "/tmp/may.sock",
-      { type: "publish", event: {
-        type: "fixture.review", target: { appId: "sample" }, data: { message: "Review this" },
-      } },
-      send,
-      (idempotencyKey, frame) => {
-        keys.push(idempotencyKey);
-        expect(frames).toEqual([frame, frame]);
-        expect(frame).toEqual({ type: "publish", event: {
-          type: "fixture.review", target: { appId: "sample" },
-          data: { message: "Review this" }, idempotencyKey,
-        } });
-        return 4936896;
-      },
-    );
-
-    expect(result).toEqual({ ok: true, eventId: 4936896 });
-    expect(keys).toHaveLength(1);
-    expect(keys[0]).toMatch(/^web-/);
   });
 });
 
@@ -150,56 +69,6 @@ describe("HTTP project comment App ingress", () => {
         },
         idempotencyKey: "project-comment-17",
       },
-    });
-  });
-
-  it("retries an unknown admission outcome with the same App input identity", async () => {
-    const calls: Array<{ command: Record<string, unknown>; timeoutMs?: number }> = [];
-    const response = await sendAppInputWithRetry("/tmp/may.sock", command, async (_endpoint, sent, options) => {
-      calls.push({ command: structuredClone(sent), timeoutMs: options?.timeoutMs });
-      if (calls.length === 1) throw new Error("Socket timeout");
-      return { type: "ok", command: "publish", eventId: 101, eventType: "app.input.requested" };
-    });
-
-    expect(response).toMatchObject({ eventId: 101, eventType: "app.input.requested" });
-    expect(calls.map((call) => call.timeoutMs)).toEqual([2_000, 10_000]);
-    expect(calls[0]?.command).toEqual(calls[1]?.command);
-    expect((calls[1]?.command.event as any).idempotencyKey).toBe("project-comment-17");
-  });
-
-  it("does not retry a definitive App schema rejection", async () => {
-    let calls = 0;
-    await expect(
-      sendAppInputWithRetry("/tmp/may.sock", command, async () => {
-        calls += 1;
-        const error = new Error("App evaluation-canary does not accept this input") as Error & { kind: string };
-        error.kind = "definitive";
-        throw error;
-      }),
-    ).rejects.toThrow("does not accept this input");
-    expect(calls).toBe(1);
-  });
-
-  it("recovers a durable App-input receipt after both acknowledgements are lost", async () => {
-    const keys: string[] = [];
-    const response = await sendAppInputWithRetry(
-      "/tmp/may.sock",
-      command,
-      async () => {
-        throw Object.assign(new Error("Socket closed; outcome unknown"), { kind: "post-send-unknown" });
-      },
-      (idempotencyKey) => {
-        keys.push(idempotencyKey);
-        return { eventId: 102, eventType: "app.input.requested" };
-      },
-    );
-
-    expect(keys).toEqual(["project-comment-17"]);
-    expect(response).toMatchObject({
-      type: "ok",
-      command: "publish",
-      eventId: 102,
-      eventType: "app.input.requested",
     });
   });
 });

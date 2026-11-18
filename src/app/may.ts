@@ -12,7 +12,6 @@ import { execSync } from "node:child_process";
 import packageIdentity from "../../package.json" with { type: "json" };
 import { createIdentityWriter } from "./daemon.js";
 import { runEmitMode } from "./modes/emit.js";
-import { parseWebPort, runWebOnlyMode } from "./modes/web.js";
 import { createModelRegistry } from "@may-agent/sdk/runtime";
 import { parseAppArgs } from "./app-args.js";
 import { runAppRuntime } from "./app-runtime.js";
@@ -63,6 +62,7 @@ if (operatorArgs[0] === "status") {
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`Usage: may-agent [options]
+For an interactive terminal, run may-console (HTTP + /ws client).
        may-agent run <target> [input] [options]
        may-agent list [options]
 
@@ -74,11 +74,10 @@ Options:
   -h, --help                 Show this help and exit
   -v, --version              Show version and git SHA
   --agent <name>             Select the interface agent
-  --console, --chat          Enable the console interface
   --telegram                 Enable the Telegram interface
   --cron                     Enable optional schedules (Tasks run without it)
   --socket                   Enable the daemon socket
-  --web                      Enable the web interface (alone: web-only mode)
+  --web                      Enable daemon HTTP (requires --socket, --cron, or --telegram)
   --status                   Print runtime status
   --emit <event-type>        Emit an event through the running daemon
   --maintenance-once         Run one maintenance pass and exit`);
@@ -124,7 +123,7 @@ try {
   process.exit(1);
 }
 
-const { emitMode: EMIT_MODE, humanInterface, webOnlyMode: WEB_ONLY_MODE } = appArgs;
+const { emitMode: EMIT_MODE, humanInterface } = appArgs;
 const controlSocketPath = daemonSocketPath(PERSIST_DIR, {
   instance: process.env.DAEMON_INSTANCE || INSTANCE_LABEL,
   interfaceAgent: humanInterface.agent,
@@ -158,14 +157,6 @@ if (EMIT_MODE) {
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
   }
-}
-
-if (WEB_ONLY_MODE) {
-  await runWebOnlyMode({
-    interface: humanInterface,
-    stateDir: PERSIST_DIR,
-    port: parseWebPort(process.env.WEB_PORT),
-  });
 }
 
 if (taskWorkerMode) {

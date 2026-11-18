@@ -11,10 +11,3 @@ export async function startWebMode(
   const { startWebUI } = await import("../http/server.js");
   return startWebUI({ ...opts, hostname: opts.hostname?.trim() || process.env.WEB_HOST?.trim() || undefined });
 }
-
-export async function runWebOnlyMode(opts: WebUIOptions): Promise<never> {
-  const { port } = await startWebMode(opts);
-  console.log(`[web] Dashboard running on http://localhost:${port}`);
-  setInterval(() => {}, 30_000);
-  return await new Promise<never>(() => {});
-}

@@ -6,7 +6,7 @@ import { metricEvidenceQuery, readMetricEvidence } from "../adapters/reporting/m
 /**
  * may-agent HTTP adapter — API, static WebUI, and dashboard websocket.
  *
- * Can run standalone: bun src/app/http/server.ts --state-dir .state --port 8080
+ * Created by the daemon with its owning read and admission services.
  * Imported by app modes; serves project UI from PROJECTS_ROOT.
  */
 
@@ -20,14 +20,11 @@ declare const Bun: {
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
   }): { port: number; stop(closeActiveConnections?: boolean): void };
 };
-import { randomUUID } from "node:crypto";
 import { createAgentRouteHandlers } from "./agent-routes.js";
 import { createEventRouteHandlers } from "./event-routes.js";
 import { createMetricAndKnowledgeRouteHandlers } from "./metric-knowledge-routes.js";
 import {
   createProjectRouteHandlers,
-  type AppAdmissionPublishCommand,
-  type ConfirmDurableControl,
 } from "./project-routes.js";
 import { createSessionRouteHandlers } from "./session-routes.js";
 import { createTaskReadHandlers } from "./task-read-routes.js";
@@ -35,19 +32,9 @@ import { createTaskInputHandler, type TaskInputCommand } from "./task-input.js";
 import { createTaskTranscriptHandler } from "./task-transcript.js";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
-import type { Duplex } from "node:stream";
-import {
-  connectSocketEndpoint,
-  daemonSocketPath,
-  sendDaemonEvent,
-  sendSocketCommand,
-  SocketCommandError,
-  type SocketEndpoint,
-  type SocketResponse,
-} from "@may-agent/control/client";
 import { buildCanonicalEventEnvelope } from "../../../packages/control/src/event-envelope.js";
 export { normalizeProjectPathForCompare } from "./project-metadata.js";
-export { buildAppAdmissionCommand, extractMarkdownSection, projectEventTargetForPath } from "./project-routes.js";
+export { extractMarkdownSection, projectEventTargetForPath } from "./project-routes.js";
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
@@ -75,8 +62,8 @@ export interface WebUIOptions {
   stateDir: string;
   port: number;
   hostname?: string;
-  /** Present in the daemon. Omitted only by the bounded standalone compatibility server. */
-  services?: DaemonHttpServices;
+  /** Bound to the daemon owners; HTTP never proxies through the operator socket. */
+  services: DaemonHttpServices;
 }
 
 type DaemonFrameResult = {
@@ -172,152 +159,6 @@ export function buildEventIngressFrame(body: Record<string, unknown>): Record<st
     ...(authorizationReference ? { authorizationReference } : {}),
     ...(authorizationEvidence ? { authorizationEvidence } : {}),
   };
-}
-
-export async function sendDaemonFrameWithRetry(
-  socketPath: string,
-  frame: Record<string, unknown>,
-  send: typeof sendDaemonEvent = sendDaemonEvent,
-  confirm?: (
-    idempotencyKey: string,
-    frame: Record<string, unknown>,
-  ) => number | undefined | Promise<number | undefined>,
-): Promise<DaemonFrameResult> {
-  const publishEvent =
-    frame.type === "publish" && frame.event && typeof frame.event === "object" && !Array.isArray(frame.event)
-      ? (frame.event as Record<string, unknown>)
-      : null;
-  const originalData = publishEvent
-    ? publishEvent.data && typeof publishEvent.data === "object" && !Array.isArray(publishEvent.data)
-      ? (publishEvent.data as Record<string, unknown>)
-      : {}
-    : frame.data && typeof frame.data === "object" && !Array.isArray(frame.data)
-      ? (frame.data as Record<string, unknown>)
-      : {};
-  const idempotencyKey =
-    typeof publishEvent?.idempotencyKey === "string" && publishEvent.idempotencyKey.trim()
-      ? publishEvent.idempotencyKey.trim()
-      : typeof originalData.idempotencyKey === "string" && originalData.idempotencyKey.trim()
-        ? originalData.idempotencyKey.trim()
-        : `web-${randomUUID()}`;
-  const durableFrame = publishEvent
-    ? { ...frame, event: { ...publishEvent, data: { ...originalData }, idempotencyKey } }
-    : { ...frame, data: { ...originalData, idempotencyKey } };
-
-  for (const timeoutMs of [2_000, 5_000]) {
-    try {
-      const response = await send(socketPath, durableFrame, { timeoutMs });
-      const eventId = Number(response.eventId);
-      return {
-        ok: true,
-        ...(Number.isInteger(eventId) && eventId > 0 ? { eventId } : {}),
-        ...(typeof response.eventType === "string" ? { eventType: response.eventType } : {}),
-        ...(response.delivery === "recorded" || response.delivery === "accepted"
-          ? { delivery: response.delivery }
-          : {}),
-        ...(Array.isArray(response.links) ? { links: response.links } : {}),
-        ...(response.approval ? { approval: response.approval as EventReceipt["approval"] } : {}),
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const outcomeMayBeDurable = message === "Socket timeout" || message.includes("outcome unknown");
-      if (timeoutMs === 2_000 && outcomeMayBeDurable) continue;
-      if (outcomeMayBeDurable && confirm) {
-        const eventId = Number(await confirm(idempotencyKey, durableFrame));
-        if (Number.isInteger(eventId) && eventId > 0) {
-          return { ok: true, eventId };
-        }
-      }
-      return {
-        ok: false,
-        error: `daemon socket delivery failed at ${socketPath}: ${message}`,
-      };
-    }
-  }
-
-  return {
-    ok: false,
-    error: `daemon socket delivery failed at ${socketPath}: acknowledgement unavailable`,
-  };
-}
-
-type RetrySafeControlCommand = Record<string, unknown> & {
-  type: string;
-  idempotencyKey?: string;
-  event?: { idempotencyKey?: string; [key: string]: unknown };
-};
-
-async function sendRetrySafeControlCommand(
-  endpoint: SocketEndpoint,
-  command: RetrySafeControlCommand,
-  send: typeof sendSocketCommand,
-  confirm: ConfirmDurableControl | undefined,
-  exhaustedMessage: string,
-): Promise<SocketResponse> {
-  const idempotencyKey = command.idempotencyKey ?? command.event?.idempotencyKey ?? "";
-  for (const timeoutMs of [2_000, 10_000]) {
-    try {
-      return await send(endpoint, command, { timeoutMs });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      const kind =
-        error && typeof error === "object" && "kind" in error ? (error as { kind?: unknown }).kind : undefined;
-      const outcomeMayBeDurable =
-        kind === "post-send-unknown" || message === "Socket timeout" || message.includes("outcome unknown");
-      if (!outcomeMayBeDurable) throw error;
-      if (timeoutMs === 2_000) continue;
-      const durable = idempotencyKey ? await confirm?.(idempotencyKey) : undefined;
-      if (durable) {
-        return {
-          type: "ok",
-          command: command.type,
-          eventId: durable.eventId,
-          eventType: durable.eventType,
-        };
-      }
-      throw error;
-    }
-  }
-  throw new Error(exhaustedMessage);
-}
-
-export async function sendAppInputWithRetry(
-  endpoint: SocketEndpoint,
-  command: RetrySafeControlCommand,
-  send: typeof sendSocketCommand = sendSocketCommand,
-  confirm?: ConfirmDurableControl,
-): Promise<SocketResponse> {
-  return sendRetrySafeControlCommand(endpoint, command, send, confirm, "App input retry exhausted");
-}
-
-export type DaemonReadiness = {
-  ready: boolean;
-  socketPath: string;
-  checkedAt: number;
-  error?: string;
-};
-
-/** Actively prove the daemon can answer control traffic; a socket file alone may be stale. */
-export async function probeDaemonReadiness(
-  socketPath: string,
-  send: typeof sendSocketCommand = sendSocketCommand,
-  timeoutMs = 5_000,
-): Promise<DaemonReadiness> {
-  const checkedAt = Date.now();
-  try {
-    const response = await send(socketPath, { type: "status" }, { timeoutMs });
-    if (response.type !== "status" || response.command !== "status") {
-      throw new Error("daemon returned an unexpected status response");
-    }
-    return { ready: true, socketPath, checkedAt };
-  } catch (error) {
-    return {
-      ready: false,
-      socketPath,
-      checkedAt,
-      error: error instanceof Error ? error.message : String(error),
-    };
-  }
 }
 
 function platformUiContentTypeFor(path: string): string {
@@ -429,22 +270,10 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
   const humanInterface = opts.interface ?? interfaceBinding();
   const DAEMON_AGENT = humanInterface.agent;
   const services = opts.services;
+  if (!services) throw new Error("HTTP requires in-process daemon services; use may-agent --socket --web");
 
   function _db(): SqliteDb {
     return openStateDb(join(STATE_DIR, "may.db"));
-  }
-
-  function conventionSocketPath(): string {
-    return daemonSocketPath(STATE_DIR, {
-      instance: DAEMON_INSTANCE,
-      interfaceAgent: DAEMON_AGENT,
-    });
-  }
-
-  async function handleReadiness(): Promise<Response> {
-    if (services) return json({ ready: true, checkedAt: Date.now(), transport: "in-process" });
-    const readiness = await probeDaemonReadiness(conventionSocketPath());
-    return json(readiness, readiness.ready ? 200 : 503);
   }
 
   function json(data: unknown, status = 200): Response {
@@ -454,15 +283,8 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     });
   }
 
-  // ── Steering verbs (POST → daemon event socket) ───────────────────
-  //
-  // The web process does not own the bus or manager. It sends event frames to
-  // the daemon and waits only for the daemon's transport ack.
-  //
-  // Per webui.md "Plane C — Steering verbs": one event per verb, async.
-
   async function sendDaemonFrame(frame: Record<string, unknown>): Promise<DaemonFrameResult> {
-    if (services && frame.type === "publish" && frame.event && typeof frame.event === "object") {
+    if (frame.type === "publish" && frame.event && typeof frame.event === "object") {
       try {
         const event = frame.event as EventInput;
         const operatorId = typeof frame.operatorId === "string" ? frame.operatorId.trim() : "";
@@ -493,15 +315,11 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
         return { ok: false, error: error instanceof Error ? error.message : String(error) };
       }
     }
-    const socketPath = conventionSocketPath();
-    return sendDaemonFrameWithRetry(socketPath, frame, sendDaemonEvent, (_key, durableFrame) => {
-      if (durableFrame.type !== "publish") return undefined;
-      return findEventPublication(_db(), durableFrame.event as EventInput, { source: "control-socket" });
-    });
+    return { ok: false, error: "Expected a publish frame" };
   }
 
   async function daemonRead(frame: Record<string, unknown>): Promise<Record<string, unknown>> {
-    if (services) {
+    {
       try {
         switch (frame.type) {
           case "status":
@@ -533,7 +351,7 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
               type: "ok",
               command: frame.type,
               task: services.getTask({
-                ...frame,
+                ...Object.fromEntries(Object.entries(frame).filter(([key]) => key !== "type")),
                 ...(acceptedEvidence ? { acceptedEvidence } : {}),
               }),
             };
@@ -542,20 +360,13 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
             return { type: "error", command: String(frame.type ?? "read"), message: "Unsupported direct read" };
         }
       } catch (error) {
+        if (!(error instanceof RangeError)) throw error;
         return {
           type: "error",
           command: String(frame.type ?? "read"),
           message: error instanceof Error ? error.message : String(error),
         };
       }
-    }
-    try {
-      return await sendDaemonEvent(conventionSocketPath(), frame, { timeoutMs: 2_000 });
-    } catch (error) {
-      if (error instanceof SocketCommandError && error.kind === "definitive") {
-        return { type: "error", message: error.message };
-      }
-      throw new Error(`Daemon read unavailable: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -571,7 +382,7 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     // use web-ui; the standalone compatibility binding historically used the
     // control socket. Check only those exact owners so accepted requests from
     // either path remain replayable after the Task changes or closes.
-    const sources = services ? ["web-ui", "control-socket"] : ["control-socket"];
+    const sources = ["web-ui", "control-socket"];
     for (const source of sources) {
       const eventId = findEventPublication(db, event, { source, inputSource });
       if (eventId && getEventView(db, eventId)?.delivery.state === "accepted")
@@ -603,7 +414,7 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     json,
     confirm: confirmTaskInput,
     admit: async (command) => {
-      if (services) {
+      {
         try {
           const receipt = services.events.publish(command.event, {
             source: "web-ui",
@@ -619,46 +430,14 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
           throw rejection;
         }
       }
-      return (await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, () =>
-        confirmTaskInput(command),
-      )) as unknown as Record<string, unknown>;
     },
   });
-  const { handleSession, handleTranscript, handleRawLog, handleSessionCancel, handleSessionMessage } =
+  const { handleSession, handleTranscript, handleRawLog } =
     createSessionRouteHandlers({
       stateDir: STATE_DIR,
       getDb: _db,
       json,
-      sendDaemonFrame,
-      buildPublishFrame,
     });
-  const admitProjectInput = async (command: AppAdmissionPublishCommand): Promise<SocketResponse> => {
-    if (services) {
-      try {
-        const receipt = services.events.publish(command.event, {
-          source: "web-ui",
-          inputSource: command.event.data.source,
-        });
-        return { type: "ok", command: "publish", ...receipt };
-      } catch (error) {
-        const rejection = error instanceof Error ? error : new Error(String(error));
-        Object.assign(rejection, { kind: "definitive" });
-        throw rejection;
-      }
-    }
-    return sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, (key) =>
-      confirmAcceptedAppInput(
-        command.event.target.appId,
-        key,
-        {
-          input: command.event.data.input,
-          conversationId: command.event.data.conversationId,
-          channel: command.event.data.channel,
-        },
-        command.event.data.source,
-      ),
-    );
-  };
   const {
     isAllowedProjectPath,
     resolveProjectFile,
@@ -668,7 +447,6 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     handleProjectContent,
     handleProjectDetail,
     handleProjectSessions,
-    handleProjectComment,
   } = createProjectRouteHandlers({
     projectRoot: PROJECT_ROOT,
     agentsRoot: AGENTS_ROOT,
@@ -676,19 +454,15 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     getDb: _db,
     json,
     platformUiContentTypeFor,
-    admitAppInput: admitProjectInput,
   });
-  const { handleAgents, handleAgentAbout, handleAgentDefaultSession, handleAgentMessage } = createAgentRouteHandlers({
+  const { handleAgents, handleAgentAbout } = createAgentRouteHandlers({
     stateDir: STATE_DIR,
     agentsRoot: AGENTS_ROOT,
     sharedRoot: SHARED_ROOT,
     projectsRoot: PROJECTS_ROOT,
-    humanInterface,
     getDb: _db,
     json,
     readProjects,
-    sendDaemonFrame,
-    buildPublishFrame,
   });
   const { handleLiveness, handleMetrics, handleBrowse, handleKnowledgeSearch, handleAlertResolve } =
     createMetricAndKnowledgeRouteHandlers({
@@ -711,64 +485,10 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
 
   // ── WebSocket wakes ──────────────────────────────────────────────────
 
-  const wsToUnix = new Map<any, Duplex>();
-  const directWebSocket = services
-    ? createDaemonWebSocketTransport({
-        events: services.events,
-        getStatus: () => services.getStatus(),
-        agent: DAEMON_AGENT,
-        instance: DAEMON_INSTANCE,
-      })
-    : null;
-
-  function proxyWebSocket(ws: any): void {
-    const socketPath = conventionSocketPath();
-    if (!existsSync(socketPath)) {
-      ws.send(JSON.stringify({ type: "error", message: `Daemon socket not found at ${socketPath}` }));
-      ws.close();
-      return;
-    }
-    const unix = connectSocketEndpoint(socketPath);
-    unix.setEncoding("utf8");
-    wsToUnix.set(ws, unix);
-    let buffer = "";
-    unix.on("data", (chunk: string) => {
-      buffer += chunk;
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        try {
-          const event = JSON.parse(line);
-          if (event.type === "ok" && event.command === "subscribe") {
-            ws.send(JSON.stringify({ type: "subscribed" }));
-            continue;
-          }
-          ws.send(line);
-        } catch {
-          try {
-            ws.send(line);
-          } catch {}
-        }
-      }
-    });
-    unix.on("error", (err: Error) => {
-      try {
-        ws.send(JSON.stringify({ type: "error", message: `Socket error: ${err.message}` }));
-      } catch {}
-      try {
-        ws.close();
-      } catch {}
-    });
-    unix.on("close", () => {
-      try {
-        ws.send(JSON.stringify({ type: "info", message: "Agent disconnected" }));
-      } catch {}
-      try {
-        ws.close();
-      } catch {}
-    });
-  }
+  const directWebSocket = createDaemonWebSocketTransport({
+    events: services.events, getStatus: () => services.getStatus(),
+    agent: DAEMON_AGENT, instance: DAEMON_INSTANCE,
+  });
 
   // ── Server ───────────────────────────────────────────────────────────
 
@@ -783,11 +503,8 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       }
       if (url.pathname === "/api/liveness") return handleLiveness(url);
       if (url.pathname === "/api/interface") return json(humanInterface);
-      if (url.pathname === "/api/readiness") return handleReadiness();
+      if (url.pathname === "/api/readiness") return json({ ready: true, checkedAt: Date.now(), transport: "in-process" });
       if (url.pathname === "/api/agents") return handleAgents();
-      const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
-      if (defaultSessionMatch)
-        return handleAgentDefaultSession(defaultSessionMatch[1], url.searchParams.get("requestId")?.trim());
       const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
       if (aboutMatch) return handleAgentAbout(aboutMatch[1]);
       if (url.pathname === "/api/browse") return handleBrowse(url);
@@ -845,7 +562,6 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       }
       if (url.pathname === "/api/projects/detail") return handleProjectDetail(url);
       if (url.pathname === "/api/projects/sessions") return handleProjectSessions(url);
-      if (url.pathname === "/api/projects/comment" && req.method === "POST") return handleProjectComment(req);
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
       const eventViewMatch = url.pathname.match(/^\/api\/events\/(\d+)$/);
       if (eventViewMatch && req.method === "GET") return handleEventView(eventViewMatch[1]);
@@ -888,12 +604,6 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
 
       // ── Steering verbs (POST) ───────────────────────────────────────
       if (req.method === "POST") {
-        const sessionCancelMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/cancel$/);
-        if (sessionCancelMatch) return handleSessionCancel(sessionCancelMatch[1]);
-        const sessionMessageMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)\/message$/);
-        if (sessionMessageMatch) return handleSessionMessage(req, sessionMessageMatch[1]);
-        const agentMessageMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/message$/);
-        if (agentMessageMatch) return handleAgentMessage(req, agentMessageMatch[1], url);
         const alertResolveMatch = url.pathname.match(/^\/api\/alerts\/([^/]+)\/resolve$/);
         if (alertResolveMatch) return handleAlertResolve(req, alertResolveMatch[1]);
       }
@@ -907,53 +617,11 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       return new Response("Not found", { status: 404 });
     },
     websocket: {
-      open(ws: any) {
-        if (directWebSocket) directWebSocket.open(ws);
-        else proxyWebSocket(ws);
-      },
-      message(ws: any, msg: any) {
-        if (directWebSocket) directWebSocket.message(ws, msg);
-        else {
-          const unix = wsToUnix.get(ws);
-          if (unix && typeof msg === "string" && msg.trim()) unix.write(msg.trim() + "\n");
-        }
-      },
-      close(ws: any) {
-        directWebSocket?.close(ws);
-        const unix = wsToUnix.get(ws);
-        if (unix) {
-          unix.destroy();
-          wsToUnix.delete(ws);
-        }
-      },
+      open: (ws: any) => directWebSocket.open(ws),
+      message: (ws: any, msg: any) => directWebSocket.message(ws, String(msg)),
+      close: (ws: any) => directWebSocket.close(ws),
     },
   });
 
   return { port: server.port, stop: (closeActiveConnections = false) => server.stop(closeActiveConnections) };
-}
-
-// ── Standalone mode ──────────────────────────────────────────────────────
-
-export function runWebUIServerFromCli(argv: string[] = process.argv): void {
-  // When run as compiled binary, argv is [binary, --state-dir, path, ...]
-  // When run via bun, argv is [bun, web.ts, --state-dir, path, ...]
-  // getArg works for both since it searches the full argv.
-  const getArg = (name: string, fallback: string) => {
-    const idx = argv.indexOf(name);
-    return idx !== -1 && argv[idx + 1] ? argv[idx + 1] : fallback;
-  };
-  const stateDir = resolve(getArg("--state-dir", ".state"));
-  const port = parseInt(getArg("--port", "8080"), 10);
-  const hostname = getArg("--host", process.env.WEB_HOST || "0.0.0.0");
-  if (!existsSync(stateDir)) {
-    console.error(`State directory not found: ${stateDir}`);
-    process.exit(1);
-  }
-  console.log(`may-agent web UI\n  state: ${stateDir}\n  port:  ${port}`);
-  const { port: actualPort } = startWebUI({ stateDir, port, hostname });
-  console.log(`  url:   http://localhost:${actualPort}`);
-}
-
-if ((import.meta as ImportMeta & { main?: boolean }).main && process.argv.includes("--state-dir")) {
-  runWebUIServerFromCli();
 }

@@ -987,7 +987,7 @@ describe("Task reference index", () => {
 });
 
 describe("Human Task service", () => {
-  test("derives human actions from the canonical human namespace and legacy Hao while excluding App, agent, and other display names", () => {
+  test("derives human actions from the canonical human namespace and migrated human:Hao while excluding App, agent, and other display names", () => {
     const db = database();
     insertTask(db, { appId: "alpha", taskId: "completed", phase: "waiting", updatedAt: 80 });
     insertTask(db, { appId: "alpha", taskId: "approval", phase: "waiting", updatedAt: 70 });
@@ -1040,7 +1040,7 @@ describe("Human Task service", () => {
       appId: "alpha",
       taskId: "legacy-hao",
       conditionId: "legacy-hao-action",
-      owner: "Hao",
+      owner: "human:Hao",
       requestedAction: "Approve the legacy rollout wait.",
     });
     insertCondition(db, {
@@ -1157,7 +1157,7 @@ describe("Human Task service", () => {
       conditionId: "approval-a-2",
       owner: "human:reviewer",
     });
-    insertCondition(db, { appId: "current", taskId: "approval-b", conditionId: "approval-b", owner: "Hao" });
+    insertCondition(db, { appId: "current", taskId: "approval-b", conditionId: "approval-b", owner: "human:Hao" });
     insertCondition(db, {
       appId: "unloaded",
       taskId: "retained-human",
@@ -1247,7 +1247,7 @@ describe("Human Task service", () => {
     expect(hydrationConditionStep).toBeGreaterThan(hydrationRouteStep);
   });
 
-  test("keeps a legacy Hao approval visible on an exact dependency leaf", () => {
+  test("keeps a migrated human:Hao approval visible on an exact dependency leaf", () => {
     const db = database();
     insertTask(db, { appId: "evaluation", taskId: "parent", phase: "waiting", updatedAt: 20 });
     insertTask(db, { appId: "may-agent", taskId: "approval", phase: "waiting", updatedAt: 10 });
@@ -1255,7 +1255,7 @@ describe("Human Task service", () => {
       appId: "may-agent",
       taskId: "approval",
       conditionId: "approval-needed",
-      owner: "Hao",
+      owner: "human:Hao",
       requestedAction: "Approve or reject commit 50e4cc0d.",
       createdAt: "2026-08-20T01:02:03.000Z",
     });

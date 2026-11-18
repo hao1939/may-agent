@@ -10,7 +10,6 @@ describe("app runtime startup", () => {
     "headless",
     "headless-http",
     "tty",
-    "non-tty-console-only",
     "no-schedules",
     "activation-failure",
     "reporting-failure",

@@ -15,31 +15,8 @@ describe("app args", () => {
     expect(() => parseAppArgs(["may-agent", ...flags], {})).toThrow("--agent requires an agent name");
   });
 
-  it("uses conventional env defaults and detects web-only mode", () => {
-    const args = parseAppArgs(["may-agent", "--web"], { AGENT: "may" });
-
-    expect(args.humanInterface.agent).toBe("may");
-    expect(args.webEnabled).toBe(true);
-    expect(args.webOnlyMode).toBe(true);
-  });
-
-  it("treats --chat as a quiet console alias without creating a chat runtime mode", () => {
-    const args = parseAppArgs(["may-agent", "--chat"], {});
-
-    expect(args.consoleEnabled).toBe(true);
-    expect(args.quietConsole).toBe(true);
-    expect(args).not.toHaveProperty("chatMode");
-  });
-
-  it("does not classify web plus console as web-only", () => {
-    const args = parseAppArgs(["may-agent", "--web", "--console"], {});
-
-    expect(args.consoleEnabled).toBe(true);
-    expect(args.webOnlyMode).toBe(false);
-  });
-
   it("uses DAEMON_AGENT as the interface agent when AGENT is unset", () => {
-    const args = parseAppArgs(["may-agent", "--web"], { DAEMON_AGENT: "aks-explorer" });
+    const args = parseAppArgs(["may-agent", "--socket", "--web"], { DAEMON_AGENT: "aks-explorer" });
 
     expect(args.humanInterface.agent).toBe("aks-explorer");
   });
@@ -73,6 +50,11 @@ describe("app args", () => {
   });
 
   it.each([
+    [["--web"], "Standalone --web has been retired"],
+    [["--chat"], "--chat has been retired; run may-console"],
+    [["--console", "--socket"], "--console has been retired; run may-console"],
+    [["--chat=true", "--web"], "--chat has been retired; run may-console"],
+    [["--console=true"], "--console has been retired; run may-console"],
     [["--run-workflow", "probe", "--dry-run", "--cron"], "--run-workflow has been retired"],
     [["--run-workflow=probe", "--cron"], "--run-workflow has been retired"],
     [["--socket", "--oneshot", "--task", "work"], "--oneshot has been retired"],

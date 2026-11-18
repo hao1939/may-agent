@@ -17,17 +17,16 @@ describe("background startup", () => {
   );
 
   it.each([
-    [["--socket"], false, true],
-    [["--telegram"], false, true],
-    [["--console"], true, true],
-    [["--console"], false, false],
-    [["--cron"], false, true],
-    [["--web"], false, false],
-    [["--status", "--cron"], false, false],
-    [["--task-recovery-once", "--cron"], false, false],
-    [["--task-worker-once", "{}", "--cron"], false, false],
-    [["--task-admission-worker", "--cron"], false, false],
-  ] as const)("selects background work from process role: %j", (flags, tty, expected) => {
-    expect(runsBackgroundWork(parseAppArgs(["bun", "may", ...flags], {}), tty)).toBe(expected);
+    [["--socket"], true],
+    [["--telegram"], true],
+    [[], false],
+    [["--cron"], true],
+    [["--web", "--socket"], true],
+    [["--status", "--cron"], false],
+    [["--task-recovery-once", "--cron"], false],
+    [["--task-worker-once", "{}", "--cron"], false],
+    [["--task-admission-worker", "--cron"], false],
+  ] as const)("selects background work from process role: %j", (flags, expected) => {
+    expect(runsBackgroundWork(parseAppArgs(["bun", "may", ...flags], {}))).toBe(expected);
   });
 });

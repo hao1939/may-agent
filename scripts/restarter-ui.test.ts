@@ -117,9 +117,9 @@ async function fixture(
     socket.once("data", () =>
       socket.end(
         JSON.stringify({
-          type: options.socketHealthy === false ? "error" : "ok",
-          command: "apps.list",
-          apps: [],
+          type: options.socketHealthy === false ? "error" : "status",
+          command: "status",
+          activeAgents: [],
         }) + "\n",
       ),
     );
@@ -199,7 +199,7 @@ describe("supervisor UI release", () => {
     expect(f.result.exitCode).toBe(0);
     const eventType = readFileSync(`${f.wakePath}.type`, "utf8").trim();
     const payload = JSON.parse(readFileSync(f.wakePath, "utf8"));
-    const sb = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket"] });
+    const sb = await buildSandbox({ fixtureAgents: ["may"], daemonArgs: ["--socket", "--web"] });
     try {
       await sb.daemonReady;
       const appDir = join(sb.projectsRoot, `${f.ownerApp}.app`);
@@ -225,8 +225,8 @@ describe("supervisor UI release", () => {
       await socketEmit(sb.socketPath, "publish", { event: { type: "runtime.reload.requested", data: {} } });
       await pollUntil(
         async () => {
-          const response = (await socketEmit(sb.socketPath, "apps.list")) as { apps?: Array<{ id: string }> };
-          return response.apps?.some((app) => app.id === f.ownerApp);
+          const apps = await fetch(`http://127.0.0.1:${sb.webPort}/api/apps`).then(response => response.json());
+          return apps.some((app: { id: string }) => app.id === f.ownerApp);
         },
         { timeoutMs: 5000, description: "load paused receipt owner" },
       );
@@ -289,12 +289,13 @@ describe("supervisor UI release", () => {
           },
         ]);
         expect(beforeCloseEvents.filter(({ event }) => event.type === "project.task.tick")).toHaveLength(1);
-        const cancellation = await socketEmit(sb.socketPath, "task.cancel", {
-          appId: f.ownerApp,
-          taskId: "app-request/test",
-          reason: "Exercise a late optional deployment notification",
-        });
-        expect(cancellation).toMatchObject({ type: "ok", command: "task.cancel" });
+        const current = store.readTask("app-request/test")!;
+        const cancellation = await socketEmit(sb.socketPath, "publish", { event: {
+          type: "app.task.cancel.requested", idempotencyKey: "fixture-late-deployment-notification", target: { appId: f.ownerApp, taskId: "app-request/test" },
+          data: { expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
+            reason: "Exercise a late optional deployment notification" },
+        } });
+        expect(cancellation).toMatchObject({ type: "ok", eventType: "app.task.cancel.requested" });
         await pollUntil(() => store.readCancellation("app-request/test"), { timeoutMs: 5000 });
         await emit(eventType, payload);
         expect(readFileSync(f.receipt, "utf8")).toBe(settledBeforeRejectedNotification);
