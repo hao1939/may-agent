@@ -25,16 +25,23 @@ import {
 
 export const name = "develop-change";
 export const description =
-  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires a finite development Task with concrete outcome/acceptance and its worktree; a standing improvement review must delegate one incident assignment first. Input: { verify: [executable, ...arguments] }. Requirements come from that Task, not call-site task prose. Returns evidence for Alex to judge; preserve its result.development field in every owning TaskReconcileResult, including waits; a later workflow result supersedes the current receipt after a repair. Does not merge or deploy.";
+  "Produce a locally committed, verified and reviewed code or documentation candidate using Alex-local Bob and tech-lead. Requires a finite development Task with concrete outcome/acceptance and its worktree; a standing improvement review must delegate one incident assignment first. Input: { prompt, data: { verify: [executable, ...arguments] } }. Requirements come from that Task, not call-site task prose. Returns evidence for Alex to judge; preserve its result.development field in every owning TaskReconcileResult, including waits; a later workflow result supersedes the current receipt after a repair. Does not merge or deploy.";
 export const workspace = { kind: "task", baseBranch: "main" } as const;
 
-// Private procedure options; the owning Task supplies requirements.
-export const inputSchema = Type.Object(
+// Canonical callable envelope; the owning Task supplies requirements.
+const procedureDataSchema = Type.Object(
   {
     verify: Type.Array(Type.String({ minLength: 1 }), {
       minItems: 1,
       maxItems: 32,
     }),
+  },
+  { additionalProperties: false },
+);
+export const inputSchema = Type.Object(
+  {
+    prompt: Type.String({ minLength: 1 }),
+    data: procedureDataSchema,
   },
   { additionalProperties: false },
 );
@@ -94,6 +101,7 @@ const savedSchema = Type.Object(
     taskId: text,
     requirementKey: text,
     inputKey: text,
+    assignmentKey: Type.Optional(text),
     roundsUsed: Type.Optional(
       Type.Integer({ minimum: 0, maximum: Number.MAX_SAFE_INTEGER }),
     ),
@@ -128,6 +136,7 @@ const deliverySchema = Type.Object({
   report: artifactSchema,
 });
 
+type DevelopChangeData = Static<typeof procedureDataSchema>;
 type DevelopChangeInput = Static<typeof inputSchema>;
 
 /** One bounded workflow; Runtime owns admission, persistence, wakes and recovery. */
@@ -272,8 +281,8 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           /(?:^|\/)improvement-review$/.test(context.audit.identity ?? ""))) {
       return finish("Standing improvement review is not a development assignment. Retain its incident and cumulative counts; create or reuse one finite incident Task with concrete outcome, acceptance and constraints only within the existing allowance. Call-site task prose cannot replace Task requirements. An exhausted incident requires owner disposition, not a new Task or allowance.");
     }
-    // The invocation kernel validates the procedure's one input contract.
-    const input = ctx.input as Static<typeof inputSchema>;
+    // The invocation kernel validates the full canonical callable envelope.
+    const input: DevelopChangeData = ctx.input.data;
     const constraints =
       (current.input as { data?: { constraints?: string[] } })?.data
         ?.constraints ?? [];
@@ -284,6 +293,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       verify: input.verify,
     });
     const inputKey = digest(rec.events.items);
+    const assignmentKey = digest(ctx.input.prompt);
     // Task-local output must be excluded from source acceptance when stored inside
     // the worktree. Do not edit ignore rules or quietly hide candidate files.
     await inspectCandidate(true);
@@ -306,6 +316,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       taskId: rec.taskId,
       requirementKey,
       inputKey,
+      assignmentKey,
       roundsUsed: 0,
       reports: [],
     });
@@ -370,10 +381,21 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           reports,
         };
         if (recovered.requirementKey === requirementKey) {
-          saved = { ...structuredClone(recovered), inputKey, reports };
-          if (rec.events.items.length > 0 && recovered.inputKey !== inputKey) {
-            // Keep receipts visible. New input needs judgment, not automatic
-            // deletion of earlier work or blind replay of an old approval.
+          saved = {
+            ...structuredClone(recovered),
+            inputKey,
+            assignmentKey,
+            reports,
+          };
+          const changedAssignment =
+            recovered.assignmentKey === undefined ||
+            recovered.assignmentKey !== assignmentKey;
+          const changedTaskInput =
+            rec.events.items.length > 0 && recovered.inputKey !== inputKey;
+          if (changedAssignment || changedTaskInput) {
+            // Keep implementation, verification, reports, and allowance usage
+            // visible. A changed invocation assignment or newly delivered Task
+            // input needs fresh judgment, even when the other source is empty.
             delete saved.design;
             delete saved.review;
           }
@@ -426,9 +448,12 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
       const source = await describeCandidate(root, value, ctx.signal);
       const prompt = [
         `Development step: ${stage}. Worktree: ${root}.`,
+        `Current invocation assignment: ${ctx.input.prompt}`,
         `Current requirement: ${current.outcome}`,
         `Acceptance: ${JSON.stringify(current.acceptance)}`,
         `Constraints: ${JSON.stringify(constraints)}`,
+        `Authoritative current Task input: ${JSON.stringify(current.input)}`,
+        `Saved execution guidance and exact bindings: ${JSON.stringify({ executionGuidance: (current.input as any)?.data?.context?.executionGuidance, developmentCheckout: (current.input as any)?.data?.context?.developmentCheckout, sdkProvider: (current.input as any)?.data?.context?.sdkProvider })}`,
         "Procedure scope: assess and return the local source candidate plus the selected local verification. Keep the owning Task's wider acceptance visible as context, but do not require PR publication, hosted checks, activation, integration, deployment, or caller delivery before this local procedure can return. Do not drop source requirements, and do not treat missing required local verification as ready.",
         `Verification argv: ${JSON.stringify(input.verify)}`,
         `Candidate: ${JSON.stringify(value)}`,
@@ -447,15 +472,15 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
             feedback: saved?.feedback?.slice(0, 2000),
           },
         )}`,
-        `Retained reports and raw execution/command receipts: ${JSON.stringify(currentReports(saved!.reports))}`,
+        `Retained reports, local verification receipts, and bounded child execution projections: ${JSON.stringify(currentReports(saved!.reports))}`,
+        "Child execution projections retain Host-authored diagnostics.cliCalls when available. Treat those bounded receipts as trusted execution evidence, preserve diagnostics.truncated as an explicit completeness limit, and never substitute contributor-authored facts for them.",
         "Read the relevant retained reports before judging. Verification receipts include actual argv, directory, exit status, stdout/stderr and candidate readback. An agent's claim alone is not verification. Do not request a new implementation merely to repeat receipts already supplied here.",
         `Current input facts (not new authority): ${JSON.stringify(rec.events.items).slice(0, 16_000)}`,
         source,
         "Return the supplied structured decision. Clarify for a requirement or authority decision, or when verification exposes an exact SETUP dependency and no source repair is warranted. For SETUP, name the dependency, accountable owner, and exact resumption check in reason; do not spend another coding round on an unchanged candidate solely to rerun the missing prerequisite.",
       ].join("\n\n");
-      const response = await ctx.call(agent, prompt, {
-        schema,
-      });
+      const response = await ctx.call(`alex/${agent}`, { prompt }, { schema });
+      const execution = response.id ? await ctx.read.execution(response.id) : null;
       const evidence = await archive.record(
         {
           taskId: rec.taskId,
@@ -464,6 +489,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           stage,
           candidate: value,
           response,
+          execution,
         },
         `# ${stage}\nExecution: ${response.id}\nStatus: ${response.status}\nCandidate: ${JSON.stringify(value)}\n\n${response.summary}\n\n${Object.entries(
           response.output ?? {},
@@ -474,7 +500,7 @@ export async function execute(ctx: AppWorkflowContext<DevelopChangeInput>) {
           )
           .join(
             "\n\n",
-          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, cliCalls: response.cliCalls }, null, 2)}`,
+          )}\n\n## Execution facts\n${JSON.stringify({ facts: response.facts, execution }, null, 2)}`,
       );
       saved!.reports.push({ stage, executionId: response.id, ...evidence });
       ctx.signal.throwIfAborted();
