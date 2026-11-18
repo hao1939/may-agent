@@ -12,6 +12,14 @@ import {
   workflowInventoryRootFromAppRoot,
 } from "./runtime-pattern-audit.js";
 
+test("evaluation-report-reader has one canonical Alex registration", () => {
+  const registrations = discoverStaticWorkflows(join(import.meta.dir, "../../../../.."))
+    .filter(({ appId, name }) => appId === "alex" && name === "evaluation-report-reader");
+
+  expect(registrations).toHaveLength(1);
+  expect(registrations[0]?.agent).toBe("evaluator");
+});
+
 test("runtime-pattern-audit bundles with dependencies inside the Alex release closure", async () => {
   const result = await Bun.build({
     entrypoints: [join(import.meta.dir, "runtime-pattern-audit.ts")],
