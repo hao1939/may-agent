@@ -72,6 +72,7 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ### 2026-11-18
 
+- [Agent mutation tools should accept intent, not regenerated state](./findings/2026-11-18-agent-mutation-tools-should-accept-intent-not-rewrites.md) — Metabase describes rebuilding its MCP surface around operations, exact replacements, server-held handles, atomic writes, validation-only previews, and explicit continuation instead of model-regenerated objects; the account is producer-authored, and Scout did not inspect the implementation, tests, clients, or production behavior.
 - [Agent SDK dependencies inherit build authority](./findings/2026-11-18-agent-sdk-dependencies-inherit-build-authority.md) — Aikido reports that two compromised `agent-framework` patch releases used Python startup hooks to steal CI and cloud credentials without an application import, supporting locked artifacts, startup-hook inspection, provenance checks, least-privilege builds, and environment-wide rotation; the removed malicious wheels were unavailable for independent inspection, and the compromise mechanism and impact remain vendor-reported.
 
 ### 2026-11-17
