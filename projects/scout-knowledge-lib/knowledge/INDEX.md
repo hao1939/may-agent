@@ -19,6 +19,8 @@ projects/scout-knowledge-lib/knowledge/
 Before creating a new note, search this index and the library for an existing
 topic. Prefer in-place updates and contradiction notes over duplicate files.
 
+- [Pane-based agent routing makes orchestration visible, not verified](./findings/2026-11-18-pi-herdr-role-routed-agent-panes.md) — a body-level XHS practitioner account describes a primary Pi agent launching role-routed workers in Herdr panes with human observation and interruption; it provides no configuration, artifacts, measurements, or controlled comparison, and visible comments dispute whether pane separation adds value over direct model switching or message sharing.
+
 ## Library Operations
 
 - [Xiaohongshu human-collection seed ledger](./xhs-seed-ledger.md) — living seed reconciliation state; distinguishes confirmed collection membership from search/feed and retained local evidence.
