@@ -451,7 +451,6 @@ export function applyDbSchema(db: SqliteDb): void {
     ensureExistingEventsTableColumns(db);
     ensureExistingAppInboxTableColumns(db);
     ensureExistingTaskBindingColumns(db);
-    ensureExistingAppTaskAttemptColumns(db);
     // Trigger definitions are not replaced by IF NOT EXISTS. Remove the superseded
     // type-specific discovery objects after preserving their exact outstanding subset.
     db.exec("DROP TRIGGER IF EXISTS trg_events_referential_retention");
@@ -569,20 +568,6 @@ function ensureExistingTaskBindingColumns(db: SqliteDb): void {
   for (const table of ["sessions", "workflow_runs"]) {
     if (!tableExists(db, table)) continue;
     ensureColumns(db, table, TASK_BINDING_COLUMNS);
-  }
-}
-
-function ensureExistingAppTaskAttemptColumns(db: SqliteDb): void {
-  if (!tableExists(db, "app_task_attempts")) return;
-  const existing = existingColumns(db, "app_task_attempts");
-  const needsAcceptedResultStateBackfill = !existing.has("accepted_result_state");
-  ensureColumns(db, "app_task_attempts", [["accepted_result_state", "TEXT"]], existing);
-  if (needsAcceptedResultStateBackfill) {
-    db.exec(`
-      UPDATE app_task_attempts
-      SET accepted_result_state = json_extract(attempt_json, '$.acceptedResult.state')
-      WHERE accepted_result_state IS NULL
-    `);
   }
 }
 

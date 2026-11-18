@@ -68,6 +68,22 @@ CREATE INDEX IF NOT EXISTS idx_app_task_attempts_started
   ON app_task_attempts(started_at DESC, app_id, attempt_id);
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_return_covering
   ON app_task_attempts(app_id, task_id, attempt_id, task_generation, started_at, accepted_result_state);
+CREATE TRIGGER IF NOT EXISTS trg_app_task_attempts_accepted_result_state_insert
+AFTER INSERT ON app_task_attempts
+WHEN COALESCE(NEW.accepted_result_state, '') IS NOT COALESCE(json_extract(NEW.attempt_json, '$.acceptedResult.state'), '')
+BEGIN
+  UPDATE app_task_attempts
+  SET accepted_result_state = json_extract(NEW.attempt_json, '$.acceptedResult.state')
+  WHERE app_id = NEW.app_id AND attempt_id = NEW.attempt_id;
+END;
+CREATE TRIGGER IF NOT EXISTS trg_app_task_attempts_accepted_result_state_update
+AFTER UPDATE OF attempt_json ON app_task_attempts
+WHEN COALESCE(NEW.accepted_result_state, '') IS NOT COALESCE(json_extract(NEW.attempt_json, '$.acceptedResult.state'), '')
+BEGIN
+  UPDATE app_task_attempts
+  SET accepted_result_state = json_extract(NEW.attempt_json, '$.acceptedResult.state')
+  WHERE app_id = NEW.app_id AND attempt_id = NEW.attempt_id;
+END;
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_failover
   ON app_task_attempts(started_at)
   WHERE json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL;
@@ -178,6 +194,19 @@ export function backfillTaskEventReceipts(db: SqliteDb, appId: string): void {
   db.prepare("UPDATE app_task_events SET event_json = '{}' WHERE app_id = ? AND event_json <> '{}'").run(appId);
 }
 
+function ensureExistingAppTaskAttemptColumns(db: SqliteDb): boolean {
+  const hasAttemptsTable = Boolean(
+    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_attempts' LIMIT 1").get(),
+  );
+  if (!hasAttemptsTable) return false;
+  const columns = db.prepare("PRAGMA table_info(app_task_attempts)").all() as Array<{ name?: unknown }>;
+  const hasAcceptedResultState = columns.some((item) => item.name === "accepted_result_state");
+  if (!hasAcceptedResultState) {
+    db.exec("ALTER TABLE app_task_attempts ADD COLUMN accepted_result_state TEXT");
+  }
+  return true;
+}
+
 /** Create the canonical Task resource and App inbox schema. */
 export function ensureTaskResourceSchema(db: SqliteDb): void {
   db.exec(APP_INBOX_SCHEMA);
@@ -186,7 +215,15 @@ export function ensureTaskResourceSchema(db: SqliteDb): void {
       AND json_extract(handling, '$.phase') = 'failed'
       AND json_extract(recovery_json, '$."input-admission".fingerprint') IS NOT NULL
       AND json_extract(recovery_json, '$."input-admission".reportedAt') IS NULL`);
+  const hadAttemptsTable = ensureExistingAppTaskAttemptColumns(db);
   db.exec(TASK_RESOURCE_SCHEMA);
+  if (hadAttemptsTable) {
+    db.exec(`
+      UPDATE app_task_attempts
+      SET accepted_result_state = json_extract(attempt_json, '$.acceptedResult.state')
+      WHERE COALESCE(accepted_result_state, '') IS NOT COALESCE(json_extract(attempt_json, '$.acceptedResult.state'), '')
+    `);
+  }
   const hasReceiptsTable = Boolean(
     db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_task_receipts' LIMIT 1").get(),
   );

@@ -14,8 +14,6 @@ ui_root="${MAY_AGENT_DEPLOY_UI_ROOT:-/app/projects/may-agent/bundle}"
 ui_target="${MAY_AGENT_UI_PATH:-/app/projects/platform/ui}"
 receipt_tool="${MAY_AGENT_DEPLOY_RECEIPT_TOOL:-/app/projects/may-agent/bundle/deploy-receipt.ts}"
 receipt_dir="${MAY_AGENT_DEPLOY_RECEIPT_DIR:-/app/projects/may-agent/.state/deploy-receipts}"
-supervisor_config_bundle="${MAY_AGENT_SUPERVISOR_CONFIG_BUNDLE:-/app/projects/may-agent/bundle/supervisord.conf}"
-supervisor_config_target="${MAY_AGENT_SUPERVISOR_CONFIG_PATH:-/etc/supervisord.conf}"
 runtime_user="${MAY_AGENT_RUNTIME_USER:-root}"
 runtime_group="${MAY_AGENT_RUNTIME_GROUP:-root}"
 install_tmp="${target}.next.$$"
@@ -25,8 +23,6 @@ console_backup="${console_target}.prev.$$"
 sdk_link_tmp="${sdk_link}.next.$$"
 ui_link_tmp="${ui_target}.next.$$"
 ui_backup="${ui_target}.prev.$$"
-supervisor_config_tmp="${supervisor_config_target}.next.$$"
-supervisor_config_backup="${supervisor_config_target}.prev.$$"
 services_stopped=0
 deployed=0
 finalized=0
@@ -40,7 +36,6 @@ previous_sdk_release=""
 sdk_had_previous=0
 ui_had_previous=0
 ui_activation_started=0
-supervisor_config_activation_started=0
 health_attempts="${MAY_AGENT_HEALTH_ATTEMPTS:-90}"
 health_delay="${MAY_AGENT_HEALTH_DELAY:-1}"
 health_socket="${MAY_AGENT_HEALTH_SOCKET:-${STATE_DIR:-/app/.state}/instances/${DAEMON_INSTANCE:-${INSTANCE:-background}}/${AGENT:-${DAEMON_AGENT:-host}}.sock}"
@@ -106,14 +101,6 @@ switch_sdk() {
   mv -Tf "$sdk_link_tmp" "$sdk_link"
 }
 
-restore_supervisor_config() {
-  [ "$supervisor_config_activation_started" = "1" ] || return 0
-  if ! install -m 644 "$supervisor_config_backup" "$supervisor_config_target"; then return 1; fi
-  if ! supervisorctl reread; then return 1; fi
-  if ! supervisorctl update; then return 1; fi
-  supervisor_config_activation_started=0
-}
-
 restore_previous_release() {
   supervisorctl stop $runtime_services || true
   services_stopped=1
@@ -136,21 +123,16 @@ restore_previous_release() {
     fi
     ui_activation_started=0
   fi
-  config_restore_rc=0
-  restore_supervisor_config || config_restore_rc=$?
   supervisorctl start $runtime_services
   services_stopped=0
   activation_started=0
-  return "$config_restore_rc"
 }
 
 cleanup() {
   rc=$?
-  rm -f "$install_tmp" "$console_install_tmp" "$sdk_link_tmp" "$ui_link_tmp" "$supervisor_config_tmp"
+  rm -f "$install_tmp" "$console_install_tmp" "$sdk_link_tmp" "$ui_link_tmp"
   if [ "$activation_started" = "1" ] && [ "$finalized" = "0" ]; then
     restore_previous_release || true
-  elif [ "$supervisor_config_activation_started" = "1" ] && [ "$finalized" = "0" ]; then
-    restore_supervisor_config || true
   fi
   if [ "$services_stopped" = "1" ]; then supervisorctl start $runtime_services || true; fi
   if [ "$receipt_accepted" = "1" ] && [ "$finalized" = "0" ]; then
@@ -164,11 +146,6 @@ cleanup() {
     rm -rf "$ui_backup"
   else
     echo "[may-agent-restarter] rollback artifacts retained: $backup $console_backup $ui_backup" >&2
-  fi
-  if [ "$supervisor_config_activation_started" = "0" ]; then
-    rm -f "$supervisor_config_backup"
-  else
-    echo "[may-agent-restarter] supervisor config rollback artifact retained: $supervisor_config_backup" >&2
   fi
   exit "$rc"
 }
@@ -185,8 +162,8 @@ if [ -e "$deploy_marker" ]; then
     exit 1
   fi
   receipt_accepted=1
-  if [ ! -x "$bundle" ] || [ ! -x "$console_bundle" ] || [ ! -f "$supervisor_config_bundle" ]; then
-    echo "[may-agent-restarter] receipt or bundle missing: $receipt $bundle $console_bundle $supervisor_config_bundle" >&2
+  if [ ! -x "$bundle" ] || [ ! -x "$console_bundle" ]; then
+    echo "[may-agent-restarter] receipt or bundle missing: $receipt $bundle $console_bundle" >&2
     exit 1
   fi
   source_commit="$(bun -e 'const r=JSON.parse(await Bun.file(process.argv[1]).text()); if (!/^[0-9a-f]{40}$/.test(r.sourceCommit)) throw new Error("invalid sourceCommit"); process.stdout.write(r.sourceCommit)' "$receipt")"
@@ -209,14 +186,6 @@ if [ -e "$deploy_marker" ]; then
   fi
   echo "[may-agent-restarter] correlated staged deploy detected: $receipt"
   runtime_services="$runtime_services may-agent-maintenance"
-  if [ -f "$supervisor_config_target" ] && ! cmp -s "$supervisor_config_bundle" "$supervisor_config_target"; then
-    cp -f "$supervisor_config_target" "$supervisor_config_backup"
-    install -m 644 "$supervisor_config_bundle" "$supervisor_config_tmp"
-    mv -f "$supervisor_config_tmp" "$supervisor_config_target"
-    supervisor_config_activation_started=1
-    supervisorctl reread
-    supervisorctl update
-  fi
 fi
 
 supervisorctl stop $runtime_services || true
@@ -250,18 +219,11 @@ if [ "$deployed" = "1" ]; then
   if wait_for_health; then
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     settle succeeded "$loaded" healthy
-    supervisor_config_activation_started=0
     finalized=1
     emit_wake succeeded || echo "[may-agent-restarter] terminal task wake failed; periodic recovery will observe the settled receipt" >&2
   else
     echo "[may-agent-restarter] health failed; rolling back" >&2
-    if ! restore_previous_release; then
-      loaded="$(sha256sum "$target" | awk '{print $1}')"
-      settle failed "$loaded" unhealthy supervisor-config-rollback-failed
-      emit_wake failed || true
-      finalized=1
-      exit 1
-    fi
+    restore_previous_release
     loaded="$(sha256sum "$target" | awk '{print $1}')"
     rollback_health=unhealthy
     if wait_for_health; then rollback_health=healthy; fi

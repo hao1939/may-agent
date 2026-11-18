@@ -100,6 +100,7 @@ function fixture() {
     return claimed;
   };
   return {
+    root,
     get db() {
       return db;
     },
@@ -714,8 +715,32 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
   // Upgrade a populated database. Retained payloads are not normalized or rewritten.
   f.db.exec(`DROP INDEX idx_app_task_admissions_target_text;
     CREATE INDEX idx_app_task_admissions_target ON app_task_admissions(
-      app_id, json_extract(admission_json, '$.taskId'), json_extract(admission_json, '$.taskGeneration'))`);
+      app_id, json_extract(admission_json, '$.taskId'), json_extract(admission_json, '$.taskGeneration'));
+    DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_insert;
+    DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_update;
+    DROP INDEX IF EXISTS idx_app_task_attempts_return_covering;
+    ALTER TABLE app_task_attempts DROP COLUMN accepted_result_state`);
+  const standalone = AppTaskResourceStore.openStandalone(join(f.root, "may.sqlite"), app.id);
+  standalone.close();
   f.reopen();
+  expect(
+    f.db.prepare("SELECT accepted_result_state FROM app_task_attempts WHERE app_id = ? AND task_id = 'closed-only'")
+      .get(app.id),
+  ).toEqual({ accepted_result_state: "converged" });
+  f.db.exec(`UPDATE app_task_attempts SET accepted_result_state = NULL WHERE app_id = '${app.id}' AND task_id = 'closed-only';
+    UPDATE app_task_attempts SET attempt_json = json_set(attempt_json, '$.acceptedResult.state', 'converged')
+    WHERE app_id = '${app.id}' AND task_id = 'closed-only'`);
+  expect(
+    f.db.prepare("SELECT accepted_result_state FROM app_task_attempts WHERE app_id = ? AND task_id = 'closed-only'")
+      .get(app.id),
+  ).toEqual({ accepted_result_state: "converged" });
+  f.db.exec(`DROP TRIGGER IF EXISTS trg_app_task_attempts_accepted_result_state_update;
+    UPDATE app_task_attempts SET accepted_result_state = NULL WHERE app_id = '${app.id}'`);
+  f.reopen();
+  expect(
+    f.db.prepare("SELECT accepted_result_state FROM app_task_attempts WHERE app_id = ? AND task_id = 'closed-only'")
+      .get(app.id),
+  ).toEqual({ accepted_result_state: "converged" });
   expect(f.db.prepare("SELECT name FROM sqlite_master WHERE name = 'idx_app_task_admissions_target'").get()).toBeNull();
   expect(f.db.prepare("SELECT admission_json FROM app_task_admissions WHERE app_id = ? AND task_id = ?")
     .get(app.id, admission.task_id)?.admission_json).toBe(admission.admission_json);

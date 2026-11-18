@@ -41,7 +41,6 @@ async function fixture(
     socketHealthy?: boolean;
     failWake?: boolean;
     ownerApp?: string | null;
-    failSecondSupervisorUpdate?: boolean;
   } = {},
 ) {
   const root = mkdtempSync(join(tmpdir(), "may-agent-restarter-ui-"));
@@ -51,9 +50,6 @@ async function fixture(
   const bundleRoot = join(root, "bundle");
   const receiptDir = join(root, ".state", "deploy-receipts");
   const wakePath = join(root, "task-wake.json");
-  const supervisorLog = join(root, "supervisorctl.log");
-  const supervisorConfigBundle = join(bundleRoot, "supervisord.conf");
-  const supervisorConfigTarget = join(root, "supervisord.conf");
   const uiParent = join(root, "platform");
   const uiTarget = join(uiParent, "ui");
   const sdkRelease = `sdk-${sourceCommit}`;
@@ -66,12 +62,10 @@ async function fixture(
   writeFileSync(join(uiTarget, "old.txt"), "old-ui");
   writeFileSync(join(bundleRoot, sdkRelease, "package.json"), "{}\n");
   writeFileSync(join(bundleRoot, uiRelease, "index.html"), "new-ui\n");
-  writeFileSync(supervisorConfigBundle, "[supervisord]\n# new-config\n");
-  writeFileSync(supervisorConfigTarget, "[supervisord]\n# old-config\n");
 
   executable(
     join(binDir, "supervisorctl"),
-    '#!/bin/sh\nprintf "%s\\n" "$*" >> "$MAY_TEST_SUPERVISOR_LOG"\nif [ "${1:-}" = update ] && [ "${MAY_TEST_FAIL_SECOND_UPDATE:-}" = 1 ]; then\n  count=$(grep -c "^update$" "$MAY_TEST_SUPERVISOR_LOG")\n  [ "$count" -lt 2 ] || exit 47\nfi\nif [ "${1:-}" = status ]; then\n  printf "may-agent RUNNING\\nmay-agent-maintenance RUNNING\\n"\nfi\nexit 0\n',
+    "#!/bin/sh\nif [ \"${1:-}\" = status ]; then\n  printf 'may-agent RUNNING\\nmay-agent-maintenance RUNNING\\n'\nfi\nexit 0\n",
   );
   executable(join(binDir, "curl"), `#!/bin/sh\nexit ${healthy ? 0 : 1}\n`);
   if (options.failUiSwitch) {
@@ -155,10 +149,6 @@ async function fixture(
         MAY_AGENT_UI_PATH: uiTarget,
         MAY_AGENT_DEPLOY_RECEIPT_TOOL: resolve(import.meta.dir, "deploy-receipt.ts"),
         MAY_AGENT_DEPLOY_RECEIPT_DIR: receiptDir,
-        MAY_AGENT_SUPERVISOR_CONFIG_BUNDLE: supervisorConfigBundle,
-        MAY_AGENT_SUPERVISOR_CONFIG_PATH: supervisorConfigTarget,
-        MAY_TEST_SUPERVISOR_LOG: supervisorLog,
-        MAY_TEST_FAIL_SECOND_UPDATE: options.failSecondSupervisorUpdate ? "1" : "0",
         MAY_AGENT_RUNTIME_USER: String(process.getuid?.() ?? 0),
         MAY_AGENT_RUNTIME_GROUP: String(process.getgid?.() ?? 0),
         MAY_AGENT_RESTART_DELAY: "0",
@@ -199,19 +189,10 @@ async function fixture(
     sdkMarker,
     uiMarker,
     ownerApp,
-    supervisorLog,
-    supervisorConfigBundle,
-    supervisorConfigTarget,
   };
 }
 
 describe("supervisor UI release", () => {
-  it("stages the reviewed supervisor configuration with the deploy bundle", () => {
-    const deploy = readFileSync(resolve(import.meta.dir, "deploy.sh"), "utf8");
-    expect(deploy).toContain('install -m 644 "$build_dir/container/supervisord.conf" "$bundle_dir/supervisord.conf.next"');
-    expect(deploy).toContain('mv -f "$bundle_dir/supervisord.conf.next" "$bundle_dir/supervisord.conf"');
-  });
-
   it("admits a May-owned deployment receipt to its exact Task and retains it beside later clock ticks", async () => {
     const f = await fixture(true, { ownerApp: "may" });
     if (!f.ownerApp) throw new Error("Expected notification owner");
@@ -357,10 +338,6 @@ describe("supervisor UI release", () => {
     expect(readlinkSync(f.uiTarget)).toBe(join(f.bundleRoot, f.uiRelease));
     expect(readFileSync(join(f.uiTarget, "index.html"), "utf8")).toBe("new-ui\n");
     expect(readlinkSync(f.sdkLink)).toBe(`sdk-${sourceCommit}`);
-    expect(readFileSync(f.supervisorConfigTarget, "utf8")).toBe(readFileSync(f.supervisorConfigBundle, "utf8"));
-    const supervisorCommands = readFileSync(f.supervisorLog, "utf8").split("\n");
-    expect(supervisorCommands).toContain("reread");
-    expect(supervisorCommands).toContain("update");
     const receipt = JSON.parse(readFileSync(f.receipt, "utf8"));
     expect(receipt).toMatchObject({ phase: "succeeded", health: "healthy", loadedArtifactSha: receipt.artifactSha });
     expect(JSON.parse(readFileSync(f.wakePath, "utf8"))).toEqual({
@@ -390,20 +367,7 @@ describe("supervisor UI release", () => {
     expect(lstatSync(f.uiTarget).isDirectory()).toBeTrue();
     expect(readFileSync(join(f.uiTarget, "old.txt"), "utf8")).toBe("old-ui");
     expect(readlinkSync(f.sdkLink)).toBe("sdk-old");
-    expect(readFileSync(f.supervisorConfigTarget, "utf8")).toBe("[supervisord]\n# old-config\n");
-    const supervisorCommands = readFileSync(f.supervisorLog, "utf8").split("\n");
-    expect(supervisorCommands.filter((command) => command === "reread")).toHaveLength(2);
-    expect(supervisorCommands.filter((command) => command === "update")).toHaveLength(2);
     expect(JSON.parse(readFileSync(f.receipt, "utf8"))).toMatchObject({ phase: "rolled_back" });
-  });
-
-  it("retains the supervisor config backup when rollback update fails", async () => {
-    const f = await fixture(false, { failSecondSupervisorUpdate: true });
-    expect(f.result.exitCode).not.toBe(0);
-    expect(f.result.stderr).toContain("supervisor config rollback artifact retained");
-    const backups = Array.from(new Bun.Glob("supervisord.conf.prev.*").scanSync(f.root));
-    expect(backups).toHaveLength(1);
-    expect(readFileSync(join(f.root, backups[0]!), "utf8")).toBe("[supervisord]\n# old-config\n");
   });
 
   it("restores all prior artifacts when activation fails partway through", async () => {
