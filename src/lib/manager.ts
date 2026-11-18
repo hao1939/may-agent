@@ -58,7 +58,6 @@ import {
   generateId,
   isRetryableEmptyAssistantFailure,
   trimTerminalEmptyAssistantTurn,
-  truncateForPrompt,
 } from "@may-agent/sdk/runtime";
 import type { PersistedSession, SessionKind, TaskBinding } from "./persistence.js";
 import {
@@ -95,8 +94,7 @@ export interface RunOptions {
   workflowRunId?: string;
   stepLabel?: string;
   source?: string;
-  kind?: SessionKind;
-  autoClose?: "immediate" | "never";
+  kind?: Exclude<SessionKind, "chat">;
   requestId?: string;
   /** Stable logical human conversation captured when this session starts. */
   conversationId?: string;
@@ -179,11 +177,10 @@ interface ActiveSession {
   readonly definition: SubagentDefinition;
   task: string;
   startedAt: number;
-  status: "running" | "paused" | "idle" | "interrupted";
+  status: "running" | "interrupted";
   lastError?: string;
   interruptionKind?: "execution-timeout" | "cancelled";
-  kind: SessionKind;
-  autoClose: "immediate" | "never";
+  kind: Exclude<SessionKind, "chat">;
   parentSessionId?: string;
   originSessionId?: string;
   workflowRunId?: string;
@@ -206,7 +203,6 @@ interface ActiveSession {
   recoveryOwner?: string;
   trace?: EventTrace;
   /** Semantic intent traces merged into the currently executing turn. */
-  openTurnTraces: EventTrace[];
   /** Prompt text may include an explicitly activated skill; task remains the work identity. */
   promptTask?: string;
   loadedSkillHashes: Set<string>;
@@ -245,7 +241,6 @@ export class SubagentManager {
   callDepths = new Map<string, number>();
   private _sessions = new Map<string, ActiveSession>();
   private results = new Map<string, Promise<TaskResult>>();
-  private idlePromises = new Map<string, Promise<void>>();
   private completedResults = new Map<string, TaskResult>();
   private _persistDir: string;
   private _projectRoot: string;
@@ -338,6 +333,11 @@ export class SubagentManager {
   }
 
   private startDefinition(def: SubagentDefinition, task: string, opts?: RunOptions, onAdmitted?: () => void): string {
+    // Validate untyped callers before allocating any execution evidence.
+    if (opts && Object.hasOwn(opts, "autoClose")) throw new Error("Managed execution no longer accepts autoClose");
+    if (opts?.kind !== undefined && opts.kind !== "job" && opts.kind !== "call") {
+      throw new Error("Managed execution kind must be job or call; persistent chat is retired");
+    }
     const recipient = resolvedExecutionRecipient(def);
     const parent = opts?.parentSessionId ? this._sessions.get(opts.parentSessionId) : undefined;
     if (parent) {
@@ -379,22 +379,12 @@ export class SubagentManager {
     if (this._sessions.has(sessionId)) throw new Error(`Session "${sessionId}" already active`);
     const startedAt = opts?.startedAt ?? Date.now();
     const kind = opts?.kind ?? "job";
-    const autoClose = opts?.autoClose ?? "immediate";
-    const persistentChat = this.isPersistentChatPolicy(kind, autoClose);
-    const executionContext = persistentChat
-      ? undefined
-      : [
-          `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts?.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts?.workflowRunId ?? null)}.`,
-          `Original assignment and caller links: ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. If the assignment was compacted, read its task field before continuing.`,
-        ].join("\n");
-    const requestedStructuredCompletion =
-      opts?.requireFinish === true || opts?.outputSchema !== undefined || opts?.validateOutput !== undefined;
+    const executionContext = [
+      `Execution: ${JSON.stringify(sessionId)}. Caller session: ${JSON.stringify(opts?.parentSessionId ?? null)}. Workflow: ${JSON.stringify(opts?.workflowRunId ?? null)}.`,
+      `Original assignment and caller links: ${JSON.stringify(join(this._persistDir, "sessions", sessionId, "meta.json"))}. If the assignment was compacted, read its task field before continuing.`,
+    ].join("\n");
     validateOperationAllowance(opts?.operationAllowance);
     const toolPolicy = opts?.toolPolicy ?? "full";
-    if (requestedStructuredCompletion && persistentChat) {
-      throw new Error("Structured workflow completion is not supported for persistent chat sessions");
-    }
-
     const existingMeta = this._registry.getSession(sessionId);
     if (existingMeta || existsSync(sessionDir(this._persistDir, sessionId))) {
       throw new Error(`Session "${sessionId}" already has execution evidence; start a fresh session`);
@@ -443,7 +433,6 @@ export class SubagentManager {
         projectRoot: this._projectRoot,
         sessionId,
         task,
-        persistentChat,
         taskContext: opts?.taskContext,
         contextPrompt: opts?.contextPrompt,
         skill: opts?.skill,
@@ -454,11 +443,6 @@ export class SubagentManager {
         toolPolicy,
         executionRoot: opts?.executionRoot,
         promptTimestamp: this._promptTimestamp,
-        ...(persistentChat
-          ? {
-              chatContext: () => this.buildChatContextPacket(sessionId, def.name),
-            }
-          : {}),
         createFinish:
           opts?.createFinish ??
           (() =>
@@ -519,7 +503,6 @@ export class SubagentManager {
         startedAt,
         status: "running",
         kind,
-        autoClose,
         parentSessionId: opts?.parentSessionId,
         originSessionId: opts?.originSessionId,
         workflowRunId: opts?.workflowRunId,
@@ -540,7 +523,6 @@ export class SubagentManager {
         callableCatalogScope: opts?.taskContext ?? opts?.callableCatalogScope,
         recoveryOwner: opts?.recoveryOwner,
         trace: opts?.trace,
-        openTurnTraces: opts?.trace ? [opts.trace] : [],
         promptTask: prepared.prompt,
         loadedSkillHashes: new Set(activation ? [activation.contentHash] : []),
         requireFinish,
@@ -570,7 +552,6 @@ export class SubagentManager {
         taskBinding: session.taskBinding,
         recoveryOwner: opts?.recoveryOwner,
         kind,
-        autoClose,
         requireFinish,
         outputSchema: outputSchema,
         toolPolicy,
@@ -610,17 +591,8 @@ export class SubagentManager {
         throw err;
       }
 
-      // Run agent. Persistent chat sessions complete a turn by going idle;
-      // task/call sessions complete by emitting session.end and leaving memory.
       executionDispatched = true;
-      if (this.isPersistentChat(session)) {
-        this.startChatTurn(session, async () => {
-          await agent.prompt(prepared.prompt);
-        });
-      } else {
-        this.startManagedExecution(session);
-      }
-
+      this.startManagedExecution(session);
       return sessionId;
     } catch (error) {
       if (!executionDispatched) {
@@ -633,69 +605,31 @@ export class SubagentManager {
 
   cancel(sessionId: string): void {
     const session = this._sessions.get(sessionId);
-    if (session) {
-      if (session.status === "interrupted") return;
-      const wasRunning = session.status === "running";
-      session.status = "interrupted";
-      session.interruptionKind = "cancelled";
-      session.lastError = "Cancelled";
-      if (session.executionScope) session.executionScope.stop(new Error("Cancelled"));
-      else session.agent.cancel();
-      // A running invocation owns cleanup and its terminal receipt. Do not
-      // mark it offline while it or one of its helpers can still have effects.
-      if (wasRunning) return;
-      session.usage?.finish("interrupted");
-      this._registry.updateSessionStatus(sessionId, "interrupted", "Cancelled");
-      updateSessionDb(this._persistDir, sessionId, {
-        status: "interrupted",
-        endedAt: Date.now(),
-        error: "Cancelled",
-        opCount: session.toolCalls,
-        lastActivityAt: Date.now(),
-      });
-      markSessionInactive(this._persistDir, sessionId);
-      if (!wasRunning) {
-        this._sessions.delete(sessionId);
-        this.idlePromises.delete(sessionId);
-      }
-    }
+    if (!session || session.status === "interrupted") return;
+    session.status = "interrupted";
+    session.interruptionKind = "cancelled";
+    session.lastError = "Cancelled";
+    if (session.executionScope) session.executionScope.stop(new Error("Cancelled"));
+    else session.agent.cancel();
+    // The invocation owns cleanup and its terminal receipt.
   }
 
-  close(sessionId: string): void {
-    this.cancel(sessionId);
-  }
-
-  /** Send a message to a session (replaces steer/input). */
-  send(sessionId: string, text: string, opts?: { trace?: EventTrace; skill?: string }): void {
-    const session = this._sessions.get(sessionId);
-    if (!session) throw new Error(`Session "${sessionId}" not found`);
+  private steerTaskFeedback(session: ActiveSession, text: string, trace?: EventTrace): void {
+    if (session.status !== "running") return;
     this.assertSessionContinuation(session);
+    session.executionScope?.signal.throwIfAborted();
     const parsedSkill = parseExplicitSkill(text);
-    const skillName = opts?.skill ?? parsedSkill.skill;
+    const skillName = parsedSkill.skill;
     const turnTask = parsedSkill.skill ? parsedSkill.task : text;
     const activation = skillName ? invokeCatalogSkill(session.definition.skillCatalog, skillName, turnTask) : undefined;
-    this.queueTurnTrace(session, opts?.trace);
+    if (trace) session.trace = trace;
     if (activation) {
       session.loadedSkillHashes.add(activation.skill.contentHash);
-      this.emitSkillLoaded(session, activation.skill, "explicit", opts?.trace);
+      this.emitSkillLoaded(session, activation.skill, "explicit", trace);
     }
     const promptText = activation?.prompt ?? turnTask;
     const msg = { role: "user" as const, content: [{ type: "text" as const, text: promptText }] };
-    if (session.status === "running") {
-      session.agent.steer(msg as any);
-    } else {
-      if (this.isPersistentChat(session)) {
-        this.startChatTurn(session, async () => {
-          // prompt() starts a new run. followUp() only extends an existing
-          // one — if the agent is idle, followUp queues forever because
-          // nobody starts a run to drain it.
-          await session.agent.prompt(msg as any);
-        });
-      } else {
-        session.status = "running";
-        session.agent.followUp(msg as any);
-      }
-    }
+    session.agent.steer(msg as AgentMessage);
   }
 
   /** Correct owned live work without creating or reviving another execution. */
@@ -719,13 +653,6 @@ export class SubagentManager {
     helper.agent.steer({ role: "user", content: [{ type: "text", text }] } as AgentMessage);
   }
 
-  followUp(sessionId: string, text: string): void {
-    const session = this._sessions.get(sessionId);
-    if (!session) throw new Error(`Session "${sessionId}" not found`);
-    this.assertSessionContinuation(session);
-    session.agent.followUp({ role: "user", content: [{ type: "text", text }] } as any);
-  }
-
   // ── Query ──
 
   status(): SessionInfo[] {
@@ -733,7 +660,7 @@ export class SubagentManager {
       sessionId: s.sessionId,
       agent: s.agentName,
       task: s.task,
-      status: s.status === "idle" || s.status === "paused" ? ("idle" as const) : ("running" as const),
+      status: "running" as const, // Includes invocations still draining after a stop request.
       startedAt: s.startedAt,
       runtime: formatDuration(Date.now() - s.startedAt),
       outputDir: sessionOutputDir(this._persistDir, s.sessionId),
@@ -741,7 +668,6 @@ export class SubagentManager {
       workflowRunId: s.workflowRunId,
       stepLabel: s.stepLabel,
       kind: s.kind,
-      autoClose: s.autoClose,
       turnCount: s.modelStepCount,
       error: s.lastError,
     }));
@@ -776,7 +702,7 @@ export class SubagentManager {
         : null;
     return {
       task: session?.task ?? persisted?.task ?? "",
-      summary: completed?.lastAssistantText ?? storedResult?.lastAssistantText ?? "(running)",
+      summary: completed?.lastAssistantText ?? storedResult?.lastAssistantText ?? (persisted?.status === "idle" ? "(historical idle)" : "(running)"),
       status: completed?.status ?? session?.status ?? persisted?.status ?? "unknown",
     };
   }
@@ -805,18 +731,6 @@ export class SubagentManager {
     if (completed) return this.hydrateCompletedResult(completed);
     if (!promise) return this.resultFromStoredSession(sessionId);
     return promise;
-  }
-
-  async waitForIdle(sessionId: string): Promise<void> {
-    const session = this._sessions.get(sessionId);
-    if (session) {
-      if (session.status === "idle") return;
-      const idlePromise = this.idlePromises.get(sessionId);
-      if (idlePromise) return idlePromise;
-      await session.agent.waitForIdle();
-      return;
-    }
-    await this.waitFor(sessionId);
   }
 
   private callDepthLimitError(parentSessionId?: string): (TaskResult & { messages: AgentMessage[] }) | undefined {
@@ -987,7 +901,11 @@ export class SubagentManager {
           markSessionInactive(this._persistDir, sessionId);
           continue;
         }
-        if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
+        if (persisted.status === "idle") {
+          // The previous turn parked without a terminal receipt. Preserve its
+          // history; removing an exited owner's marker does not complete it.
+          markSessionInactive(this._persistDir, sessionId);
+        } else if (persisted.status === "done" || persisted.status === "error" || persisted.status === "interrupted") {
           recoverUsage(sessionId, persisted.status);
           updateSessionDb(this._persistDir, sessionId, {
             status: persisted.status,
@@ -1032,7 +950,7 @@ export class SubagentManager {
       activeSessions,
       sessionCounts: {
         running: activeSessions.filter((s) => s.status === "running").length,
-        idle: activeSessions.filter((s) => s.status === "idle").length,
+        idle: 0, // Retained health response field; managed invocations never park.
         total: activeSessions.length,
       },
     };
@@ -1104,7 +1022,8 @@ export class SubagentManager {
   private resultFromStoredSession(sessionId: string): TaskResult {
     const persisted = this._registry.getSession(sessionId);
     if (!persisted) throw new Error(`Session "${sessionId}" not found`);
-    if (persisted.status === "running" || persisted.status === "idle") {
+    if (persisted.status === "idle") throw new Error(`Session "${sessionId}" is historical idle and has no terminal result`);
+    if (persisted.status === "running") {
       throw new Error(`Session "${sessionId}" is still running (stale registry entry)`);
     }
     const messages = readSessionMessagesTail(
@@ -1139,84 +1058,12 @@ export class SubagentManager {
     };
   }
 
-  private buildChatContextPacket(sessionId: string, agentName: string): string {
-    const lines = ["# Fresh System State", `- Generated: ${new Date().toISOString()}`];
-    lines.push(`- Chat session: ${sessionId}`);
-    lines.push(`- Agent: ${agentName}`);
-
-    const active = this.status()
-      .filter((session) => session.sessionId !== sessionId)
-      .slice(0, 8)
-      .map(
-        (session) =>
-          `${session.sessionId} ${session.agent} ${session.status}${session.kind ? `/${session.kind}` : ""}: ${truncateForPrompt(session.task, 120)}`,
-      );
-    lines.push(active.length > 0 ? `- Other active sessions: ${active.join("; ")}` : "- Other active sessions: none");
-
-    try {
-      const db = getDb(this._persistDir);
-
-      const alerts = db
-        .prepare(
-          `SELECT ma.id, ma.metric_id, ma.message, ma.created_at, m.owner, m.project
-           FROM metric_alerts ma
-           LEFT JOIN metrics m ON m.id = ma.metric_id
-           WHERE ma.resolved_at IS NULL
-           ORDER BY ma.created_at DESC
-           LIMIT 6`,
-        )
-        .all() as Array<{ id?: number; metric_id?: string; message?: string; owner?: string; project?: string }>;
-      if (alerts.length > 0) {
-        lines.push(
-          `- Open metric alerts: ${alerts
-            .map(
-              (alert) =>
-                `#${alert.id ?? "?"} ${alert.metric_id ?? "unknown"}${alert.project ? ` project=${alert.project}` : ""}${alert.owner ? ` owner=${alert.owner}` : ""}: ${truncateForPrompt(alert.message ?? "", 120)}`,
-            )
-            .join("; ")}`,
-        );
-      } else {
-        lines.push("- Open metric alerts: none");
-      }
-
-      const recentFailures = db
-        .prepare(
-          `SELECT sessionId, agent, status, error, task
-           FROM sessions
-           WHERE status IN ('error', 'interrupted')
-           ORDER BY COALESCE(endedAt, startedAt) DESC
-           LIMIT 5`,
-        )
-        .all() as Array<{ sessionId?: string; agent?: string; status?: string; error?: string; task?: string }>;
-      if (recentFailures.length > 0) {
-        lines.push(
-          `- Recent failed/interrupted sessions: ${recentFailures
-            .map(
-              (session) =>
-                `${session.sessionId ?? "unknown"} ${session.agent ?? "unknown"} ${session.status ?? "unknown"}: ${truncateForPrompt(session.error || session.task || "", 140)}`,
-            )
-            .join("; ")}`,
-        );
-      } else {
-        lines.push("- Recent failed/interrupted sessions: none");
-      }
-    } catch (err) {
-      lines.push(`- DB state packet: unavailable (${err instanceof Error ? err.message : String(err)})`);
-    }
-
-    return lines.join("\n");
-  }
-
   // ── Private ──
 
   private startManagedExecution(session: ActiveSession): void {
     const promise = this.executeSession(session).then(
       (result) => {
-        if (result.status === "done" || result.status === "error" || result.status === "interrupted") {
-          this._sessions.delete(session.sessionId);
-        } else {
-          session.status = "paused";
-        }
+        this._sessions.delete(session.sessionId);
         this.rememberCompletedResult(result);
         this.results.delete(session.sessionId);
         return result;
@@ -1267,7 +1114,7 @@ export class SubagentManager {
     let unsubscribe = () => {};
     try {
       unsubscribe = observeTaskFeedback(session.taskContext, (message, trace) =>
-        this.send(session.sessionId, message, { trace }),
+        this.steerTaskFeedback(session, message, trace),
       );
       return await work();
     } finally {
@@ -1278,8 +1125,6 @@ export class SubagentManager {
 
   private async closeExecutionScope(session: ActiveSession, scope = session.executionScope): Promise<void> {
     scope?.close();
-    // An idle listener may already have started another turn on this session.
-    if (session.executionScope !== scope) return;
     // Joining is necessary: an accepted cancellation is not completed cleanup.
     const children = [...this._sessions.values()].filter((child) => child.parentSessionId === session.sessionId);
     const results = await Promise.allSettled([
@@ -1434,7 +1279,7 @@ export class SubagentManager {
 
     // Emit session.end after the result and its SQL descriptor are persisted.
     if (this.bus) {
-      const trace = this.terminalTrace(session);
+      const trace = session.trace;
       this.bus.emit({
         type: "session.end",
         source: session.source ?? "runtime",
@@ -1463,7 +1308,6 @@ export class SubagentManager {
         },
         ...(trace ? { trace } : {}),
       } as any);
-      this.clearTurnTraces(session);
     }
 
     markSessionInactive(this._persistDir, sessionId);
@@ -1482,268 +1326,12 @@ export class SubagentManager {
     };
   }
 
-  private isPersistentChat(session: ActiveSession): boolean {
-    return this.isPersistentChatPolicy(session.kind, session.autoClose);
-  }
-
-  private isPersistentChatPolicy(kind: SessionKind, autoClose: "immediate" | "never"): boolean {
-    return kind === "chat" || autoClose === "never";
-  }
-
-  private queueTurnTrace(session: ActiveSession, trace: EventTrace | undefined): void {
-    if (!trace) return;
-    session.trace = trace;
-    session.openTurnTraces ??= [];
-    const intentId = trace.parentEventId;
-    if (
-      !intentId ||
-      !session.openTurnTraces.some(
-        (candidate) => candidate.traceId === trace.traceId && candidate.parentEventId === intentId,
-      )
-    ) {
-      session.openTurnTraces.push(trace);
-    }
-  }
-
-  private terminalTrace(session: ActiveSession): EventTrace | undefined {
-    const openTurnTraces = session.openTurnTraces ?? [];
-    return session.trace ?? openTurnTraces.at(-1);
-  }
-
-  private clearTurnTraces(session: ActiveSession): void {
-    session.openTurnTraces = [];
-  }
-
   private assertSessionContinuation(session: ActiveSession): void {
     if (!session.taskBinding) return;
     if (session.status !== "running") throw new Error("Task continuation requires a running managed execution");
     const store = AppTaskResourceStore.activeFromDb(getDb(this._persistDir), session.taskBinding.appId);
     if (!store) throw new Error("Task execution requires canonical authority");
     assertCurrentTaskActor({ resourceStore: store }, session.taskBinding, "continuation");
-  }
-
-  private startChatTurn(session: ActiveSession, start: () => Promise<void>): void {
-    this.assertSessionContinuation(session);
-    const { sessionId } = session;
-    session.status = "running";
-    session.lastError = undefined;
-    session.interruptionKind = undefined;
-    markSessionActive(this._persistDir, sessionId);
-    try {
-      writeFileSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"), new Date().toISOString(), "utf-8");
-    } catch {
-      /* best-effort */
-    }
-    this._registry.updateSessionStatus(sessionId, "running");
-    updateSessionDb(this._persistDir, sessionId, {
-      status: "running",
-      error: undefined,
-      lastActivityAt: Date.now(),
-    });
-    try {
-      getDb(this._persistDir).run(`UPDATE sessions SET endedAt = NULL, error = NULL WHERE sessionId = ?`, [sessionId]);
-    } catch {
-      /* best-effort */
-    }
-
-    const promise = this.withExecutionScope(session, () => this.executeChatTurn(session, start));
-    this.idlePromises.set(sessionId, promise);
-    promise.catch(() => undefined);
-  }
-
-  private async executeChatTurn(session: ActiveSession, start: () => Promise<void>): Promise<void> {
-    const { agent, sessionId, agentName, task } = session;
-    const turnStartedAt = Date.now();
-    let errorText: string | undefined;
-    let retryReason: string | undefined;
-    let retriedEmptyTurn = false;
-
-    try {
-      await start();
-      await agent.waitForIdle();
-    } catch (err) {
-      errorText = err instanceof Error ? err.message : String(err);
-      log("error", `[runtime] ${sessionId} chat turn failed: ${err}`);
-    }
-
-    let messages = agent.state.messages as AgentMessage[];
-    let finishParams = extractFinishParams(messages as any[]);
-    let assistantText = extractLastAssistantText(messages);
-    let assistantError = extractLastAssistantError(messages);
-    let terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
-
-    if (!errorText && assistantError) {
-      errorText = assistantError;
-    }
-
-    if (session.status !== "interrupted" && !errorText && isRetryableEmptyAssistantFailure(terminalAssistantFailure)) {
-      retryReason = terminalAssistantFailure ?? "Agent ended with an empty assistant turn";
-      const retry = await this.retryChatTurnAfterEmptyAssistant(session, retryReason);
-      retriedEmptyTurn = retry.attempted;
-      if (retry.error) {
-        errorText = retry.error;
-      }
-      messages = agent.state.messages as AgentMessage[];
-      finishParams = extractFinishParams(messages as any[]);
-      assistantText = extractLastAssistantText(messages);
-      assistantError = extractLastAssistantError(messages);
-      terminalAssistantFailure = !finishParams ? classifyTerminalAssistantFailure(messages) : undefined;
-      if (!errorText && assistantError) {
-        errorText = assistantError;
-      }
-    }
-
-    if (!errorText && terminalAssistantFailure) {
-      errorText = terminalAssistantFailure;
-    }
-    if (!errorText && !finishParams && !assistantText) {
-      errorText = "Agent ended without producing a response";
-    }
-    if (errorText && retriedEmptyTurn && isRetryableEmptyAssistantFailure(errorText)) {
-      this.trimAndPersistTerminalEmptyAssistant(session);
-    }
-
-    const lastText = finishParams?.summary ?? assistantText ?? "";
-    const durationMs = Date.now() - turnStartedAt;
-
-    const retryableChatFailure = !!errorText && retriedEmptyTurn && isRetryableEmptyAssistantFailure(errorText);
-
-    try {
-      await this.closeExecutionScope(session);
-    } catch (error) {
-      errorText ??= error instanceof Error ? error.message : String(error);
-    }
-    if (session.status === "interrupted") errorText ??= session.lastError;
-
-    if (session.status === "interrupted" || (errorText && !retryableChatFailure)) {
-      const status: "error" | "interrupted" = session.status === "interrupted" ? "interrupted" : "error";
-      session.usage?.finish(status);
-      try {
-        unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
-      } catch {}
-      this._registry.updateSessionStatus(sessionId, status, errorText);
-      updateSessionDb(this._persistDir, sessionId, {
-        status,
-        endedAt: Date.now(),
-        error: errorText,
-        outcome: lastText,
-        opCount: session.toolCalls,
-        lastActivityAt: Date.now(),
-      });
-      this._sessions.delete(sessionId);
-      this.idlePromises.delete(sessionId);
-      const result: TaskResult = {
-        sessionId,
-        status,
-        lastAssistantText: lastText,
-        messages: messages.filter((message) => message.role !== "system"),
-        duration: formatDuration(durationMs),
-        outputDir: sessionOutputDir(this._persistDir, sessionId),
-        error: errorText,
-        errorMessage: assistantError,
-        finishResult: finishParams as any,
-        structuredResult: finishParams?.output,
-      };
-      this.rememberCompletedResult(result);
-
-      const trace = this.terminalTrace(session);
-      this.persistSessionResult(session, { status, summary: lastText, error: errorText, finishParams });
-      this.bus?.emit({
-        type: "session.end",
-        source: session.source ?? "runtime",
-        owner: normalizeEventOwner(agentName),
-        timestamp: Date.now(),
-        data: {
-          sessionId,
-          agent: agentName,
-          agentRelativeDir: session.definition.agentRelativeDir,
-          outcome: status,
-          summary: lastText,
-          durationMs,
-          status,
-          task,
-          error: errorText,
-          interruptionKind: session.interruptionKind,
-          finishParams: finishParams as any,
-          opCount: session.toolCalls,
-          turnCount: session.modelStepCount,
-          parentSessionId: session.parentSessionId,
-          workflowRunId: session.workflowRunId,
-          projectId: session.projectId,
-          kind: session.kind,
-          requestId: session.requestId,
-          stepLabel: session.stepLabel,
-        },
-        ...(trace ? { trace } : {}),
-      } as any);
-      this.clearTurnTraces(session);
-      markSessionInactive(this._persistDir, sessionId);
-      if (errorText) throw new Error(errorText);
-      throw new Error(`Session "${sessionId}" interrupted`);
-    }
-
-    session.status = "idle";
-    session.lastError = retryableChatFailure ? errorText : undefined;
-    this._registry.updateSessionStatus(sessionId, "idle");
-    updateSessionDb(this._persistDir, sessionId, {
-      status: "idle",
-      error: session.lastError,
-      outcome: lastText,
-      opCount: session.toolCalls,
-      lastActivityAt: Date.now(),
-    });
-    try {
-      unlinkSync(join(sessionDir(this._persistDir, sessionId), "[STARTED]"));
-    } catch {}
-
-    const trace = this.terminalTrace(session);
-    this.clearTurnTraces(session);
-    this.bus?.emit({
-      type: "session.idle",
-      source: session.source ?? "runtime",
-      owner: normalizeEventOwner(agentName),
-      timestamp: Date.now(),
-      data: {
-        sessionId,
-        agent: agentName,
-        summary: lastText,
-        durationMs,
-        status: "idle",
-        error: session.lastError,
-        task,
-        finishParams: finishParams as any,
-        opCount: session.toolCalls,
-        turnCount: session.modelStepCount,
-        retry: retriedEmptyTurn ? { reason: retryReason, attempts: 1, recovered: !retryableChatFailure } : undefined,
-        parentSessionId: session.parentSessionId,
-        workflowRunId: session.workflowRunId,
-        projectId: session.projectId,
-        kind: session.kind,
-        requestId: session.requestId,
-        stepLabel: session.stepLabel,
-      },
-      ...(trace ? { trace } : {}),
-    });
-  }
-
-  private async retryChatTurnAfterEmptyAssistant(
-    session: ActiveSession,
-    reason: string,
-  ): Promise<{ attempted: boolean; error?: string }> {
-    if (!this.trimAndPersistTerminalEmptyAssistant(session)) return { attempted: false };
-    log(
-      "warn",
-      `[runtime] ${session.sessionId} chat turn produced empty assistant output; retrying user request once: ${reason}`,
-    );
-    try {
-      await session.agent.continue();
-      await session.agent.waitForIdle();
-      return { attempted: true };
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err);
-      log("error", `[runtime] ${session.sessionId} chat empty-output retry failed: ${error}`);
-      return { attempted: true, error };
-    }
   }
 
   private trimAndPersistTerminalEmptyAssistant(session: ActiveSession): boolean {
@@ -1757,7 +1345,7 @@ export class SubagentManager {
     } catch (err) {
       log(
         "warn",
-        `[runtime] Failed to persist trimmed chat transcript for ${session.sessionId}: ${err instanceof Error ? err.message : String(err)}`,
+        `[runtime] Failed to persist trimmed transcript for ${session.sessionId}: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
     return true;

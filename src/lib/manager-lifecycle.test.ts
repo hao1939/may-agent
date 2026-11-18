@@ -17,8 +17,8 @@ import { createAgentRun } from "@may-agent/sdk/runtime";
 import historicalTranscripts from "../../test/fixtures/pre-migration-finish-transcripts.json";
 import { agentExecutionResult } from "./agent-execution.js";
 import { closeDb, getDb } from "./db/connection.js";
-import { SubagentManager } from "./manager.js";
-import { appendSessionMessage } from "./persistence.js";
+import { SubagentManager, type RunOptions } from "./manager.js";
+import { appendSessionMessage, readActiveSessionProcessId } from "./persistence.js";
 import type { TaskExecutionContext } from "./task-execution-context.js";
 import type { SubagentDefinition } from "@may-agent/sdk/runtime";
 
@@ -477,10 +477,10 @@ describe("manager session lifecycle", () => {
     });
   });
 
-  it("retains usage when a persistent chat fails", async () => {
+  it("retains usage when a managed execution fails", async () => {
     replyFailure = "Synthetic provider failure";
-    const sessionId = manager.run("worker", "Fail this chat input", { kind: "chat", autoClose: "never" });
-    await expect(manager.waitForIdle(sessionId)).rejects.toThrow(replyFailure);
+    const sessionId = manager.run("worker", "Fail this input");
+    expect(await manager.waitFor(sessionId)).toMatchObject({ status: "error", error: replyFailure });
     expect(
       getDb(persistDir)
         .prepare(
@@ -491,33 +491,37 @@ describe("manager session lifecycle", () => {
     ).toEqual([{ task_id: null, outcome: "error", replies: 1 }]);
   });
 
-  it("recovers chat usage after restart without adding activity or recounting completed invocations", async () => {
-    const completed = manager.run("worker", "Complete before restart");
-    await manager.waitFor(completed);
-    const sessionId = manager.run("worker", "Chat before restart", { kind: "chat", autoClose: "never" });
-    await manager.waitForIdle(sessionId);
-    const rows = () =>
-      getDb(persistDir)
-        .prepare("SELECT id, outcome, duration_ms, updated_at, data FROM execution_usage ORDER BY started_at, rowid")
-        .all();
-    const before = rows();
-    expect(before).toHaveLength(2);
-    expect(before[0].outcome).toBe("done");
-    expect(before[1].outcome).toBeNull();
-    expect(manager.cleanupStaleSessions().interrupted).toHaveLength(0);
-    expect(rows()).toEqual(before);
+  it.each([{ kind: "chat" }, { autoClose: "never" }, { autoClose: "immediate" }, { autoClose: undefined }])(
+    "rejects retired managed start options before dispatch: %j",
+    (options) => {
+      const opts = { sessionId: "retired-start", ...options } as RunOptions;
+      expect(() => manager.run("worker", "Do not dispatch", opts)).toThrow(/persistent chat|autoClose/);
+      expect(manager.hasActiveSession(opts.sessionId!)).toBe(false);
+      expect(manager.registry.getSession(opts.sessionId!)).toBeNull();
+      expect(requests).toEqual([]);
+    },
+  );
 
-    // Model the previous owner's exit, not just another manager in the same
-    // still-live process. Real process lifetime is covered by startup recovery.
+  it("keeps an exited parked chat idle across restart and never returns it as done", async () => {
+    const sessionId = "historical-idle";
+    const history = { agent: "worker", task: "Old turn", kind: "chat", status: "idle", startedAt: 1 } as const;
+    manager.registry.saveSession(sessionId, { ...history, autoClose: "never" });
+    getDb(persistDir).prepare(
+      "INSERT INTO sessions (sessionId, agent, task, kind, status, startedAt) VALUES (?, ?, ?, ?, ?, ?)",
+    ).run(sessionId, history.agent, history.task, history.kind, history.status, history.startedAt);
     markStaleSession(persistDir, sessionId);
     closeDb(persistDir);
     const recovered = new SubagentManager({ persistDir });
-    expect(recovered.cleanupStaleSessions().interrupted).toHaveLength(1);
-    expect(rows()).toEqual([before[0], { ...before[1], outcome: "interrupted" }]);
-    expect(before[1].duration_ms).toBeNull();
-    expect(JSON.parse(before[1].data as string).totals.replies).toBe(1);
-    recovered.cleanupStaleSessions();
-    expect(rows()).toEqual([before[0], { ...before[1], outcome: "interrupted" }]);
+    for (let replay = 0; replay < 2; replay++) {
+      expect(recovered.cleanupStaleSessions().interrupted).toEqual([]);
+      expect(recovered.registry.getSession(sessionId)).toMatchObject(history);
+      expect(getDb(persistDir).prepare("SELECT kind, status, endedAt FROM sessions WHERE sessionId = ?").get(sessionId))
+        .toEqual({ kind: "chat", status: "idle", endedAt: null });
+      expect(recovered.getSessionSummary(sessionId)).toMatchObject({ status: "idle" });
+      expect(recovered.hasActiveSession(sessionId)).toBe(false);
+      expect(readActiveSessionProcessId(persistDir, sessionId)).toBeNull();
+      await expect(recovered.waitFor(sessionId)).rejects.toThrow("historical idle");
+    }
   });
 
   it("returns no progress when the requested limit is zero", async () => {

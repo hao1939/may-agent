@@ -416,21 +416,9 @@ describe("shared agent execution preparation", () => {
     expect(candidate.tools.map((tool) => tool.name)).not.toContain("write");
     expect(candidate.outputSchema).toEqual(baseline.outputSchema);
     expect(candidate.runner.sessionId).toBe("new-invocation");
-    const chat = prepareAgentExecution({
-      ...options,
-      outputSchema: undefined,
-      persistentChat: true,
-      definition: {
-        ...options.definition,
-        contextPreparation: () => {
-          throw new Error("Not a bounded brief");
-        },
-      },
-    });
-    expect(chat.prompt).toBe(options.task);
   });
 
-  test("composes Host observations, explicit Task context, and generic messages in order", async () => {
+  test("composes explicit Task context and generic messages in order", async () => {
     const taskContext = { reconciliation: { task: {} } } as TaskExecutionContext;
     const prepared = prepareAgentExecution({
       definition: {
@@ -445,7 +433,6 @@ describe("shared agent execution preparation", () => {
       sessionId: "host-context-order",
       task: "Judge current state",
       taskContext,
-      chatContext: () => "observation packet",
       taskDecisionContext: async () => ({
         role: "user",
         content: [{ type: "text", text: "explicit Task packet" }],
@@ -466,77 +453,12 @@ describe("shared agent execution preparation", () => {
     const view = await prepared.runner.transformContext!(durable);
     expect(view.map((message) => JSON.stringify(message))).toEqual([
       expect.stringContaining("durable transcript"),
-      expect.stringContaining("Current observations (source data):\\nobservation packet"),
       expect.stringContaining("explicit Task packet"),
       expect.stringContaining("generic environment packet"),
     ]);
     expect(JSON.stringify(view)).not.toContain("Task decision context unavailable");
     expect(durable).toHaveLength(1);
   });
-
-  test("keeps persistent-chat explicit-skill prompts and published measurements aligned", () => {
-    const skill = {
-      name: "proof-first",
-      description: "Use proof",
-      filePath: "/tmp/proof-first/SKILL.md",
-      canonicalPath: "/tmp/proof-first/SKILL.md",
-      content: "Collect proof first.",
-      scope: "agent" as const,
-      contentHash: "proof-first-hash",
-    };
-    const measurements: Array<{ preparer: string; systemBytes: number | null }> = [];
-    const prepared = prepareAgentExecution({
-      definition: {
-        name: "worker",
-        description: "fixture",
-        domain: "test",
-        systemPrompt: "Current authority",
-        model: streamTestModel,
-        tools: [],
-        skillCatalog: { skills: new Map([[skill.name, skill]]), diagnostics: [], omittedFromPrompt: [] },
-      },
-      projectRoot: "/tmp",
-      sessionId: "persistent-skill",
-      task: "$proof-first Verify the result",
-      persistentChat: true,
-      onPreparation: (measurement) => measurements.push(measurement),
-    });
-
-    expect(prepared.prompt).toContain(skill.content);
-    expect(prepared.systemPrompt).not.toContain("Selected skill reference:");
-    expect(prepared.runner.initialState.systemPrompt).toBe(prepared.systemPrompt);
-    expect(prepared.preparation).toMatchObject({
-      preparer: "not-applicable",
-      systemBytes: Buffer.byteLength(prepared.systemPrompt),
-    });
-    expect(measurements).toEqual([
-      expect.objectContaining({
-        preparer: "not-applicable",
-        systemBytes: Buffer.byteLength(prepared.systemPrompt),
-      }),
-    ]);
-  });
-
-  test.each([undefined, null, "", "   ", {}, Promise.resolve("async")])(
-    "rejects a malformed preparation result %#",
-    (result) => {
-      expect(() =>
-        prepareAgentExecution({
-          definition: {
-            name: "worker",
-            description: "fixture",
-            domain: "test",
-            model: streamTestModel,
-            tools: [],
-            contextPreparation: (() => result) as any,
-          },
-          projectRoot: tmpdir(),
-          sessionId: "invalid-context",
-          task: "Required work",
-        }),
-      ).toThrow("contextPreparation must return");
-    },
-  );
 
   test("preserves preparation failures instead of silently running a different brief", () => {
     expect(() =>

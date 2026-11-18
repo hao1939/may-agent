@@ -8,14 +8,13 @@ import { Type } from "typebox";
  * Bug 10: callDepths map never cleaned for completed root sessions
  */
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EventBus, type AgentEvent } from "../../src/app/core/events/bus.js";
 import { classifyTerminalAssistantFailure, extractLastAssistantError } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "../../src/lib/manager.js";
 import {
-  appendSessionMessage,
   ensureSessionDir,
   readActiveSessionProcessId,
   readSessionMeta,
@@ -24,8 +23,7 @@ import {
 import { closeDb } from "../../src/lib/db/connection.js";
 
 import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { createAgentRun, type AgentRuntimeListener } from "@may-agent/sdk/runtime";
-import { discoverAgentSkills } from "@may-agent/sdk/runtime";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { RESPONSES_STREAM_TERMINAL_ERROR } from "@may-agent/sdk/runtime";
 import { fakeModel } from "../fixtures/model.js";
 
@@ -104,127 +102,7 @@ describe("session completion publication", () => {
     }
   });
 
-  it("keeps a live chat's selected instructions and skills through replacement and removal", async () => {
-    const bus = new EventBus();
-    const events: AgentEvent[] = [];
-    bus.subscribe((event) => events.push(event));
-    const definitions = [];
-    for (const [folder, text, appLocal] of [
-      ["projects/sample.app/agents/local-owner", "LOCAL_IDENTITY", true],
-      ["agents/global-owner", "GLOBAL_IDENTITY", false],
-    ] as const) {
-      const agentDir = join(persistDir, folder);
-      const skillDir = join(agentDir, "skills/owner-skill");
-      mkdirSync(skillDir, { recursive: true });
-      writeFileSync(
-        join(skillDir, "SKILL.md"),
-        `---\nname: owner-skill\ndescription: Fixture ownership proof\n---\n${text}_SKILL\n`,
-      );
-      definitions.push({
-        name: "arc",
-        description: "Fixture",
-        domain: "test",
-        systemPrompt: text,
-        model: fakeModel(),
-        tools: [],
-        agentDir,
-        agentRelativeDir: folder,
-        appLocal,
-        projectRoot: persistDir,
-        skillCatalog: await discoverAgentSkills({ agentDir, appLocal }),
-      });
-    }
-    const [original, replacement] = definitions;
-    const turns: Array<{ system: string; input: string }> = [];
-    const steers: string[] = [];
-    const listeners: AgentRuntimeListener[] = [];
-    let failTurn = false;
-    const manager = new SubagentManager({
-      persistDir,
-      bus,
-      agentRunFactory: (config) => {
-        const run = createAgentRun(config);
-        // Only the model-loop boundary is synthetic; manager turns and event bridging are real.
-        const subscribe = run.subscribe.bind(run);
-        run.subscribe = (listener) => {
-          listeners.push(listener);
-          return subscribe(listener);
-        };
-        run.prompt = async (input) => {
-          turns.push({ system: run.state.systemPrompt, input: JSON.stringify(input) });
-          if (failTurn) throw new Error("fixture terminal chat failure");
-          run.state.messages.push({
-            role: "assistant",
-            content: [{ type: "text", text: "Fixture response" }],
-            stopReason: "stop",
-          } as AgentMessage);
-        };
-        run.steer = (message) => {
-          steers.push(JSON.stringify(message));
-        };
-        return run;
-      },
-    });
-    manager.register(original);
-    const sid = manager.run("arc", "first turn", { kind: "chat", autoClose: "never" });
-    try {
-      await manager.waitForIdle(sid);
-      manager.register(replacement);
-      const skill = original.skillCatalog.skills.get("owner-skill")!;
-      // A model reading an old session's skill must still be attributed to its old catalog.
-      for (const event of [
-        { type: "tool_execution_start", toolName: "read", toolCallId: "skill-read", args: { path: skill.filePath } },
-        {
-          type: "tool_execution_end",
-          toolName: "read",
-          toolCallId: "skill-read",
-          result: { content: [{ type: "text", text: skill.content }] },
-          isError: false,
-        },
-      ])
-        for (const listener of listeners) listener(event as Parameters<AgentRuntimeListener>[0]);
-      expect(events).toContainEqual(
-        expect.objectContaining({
-          type: "skill.loaded",
-          data: expect.objectContaining({ activation: "model", contentHash: skill.contentHash, scope: "app-agent" }),
-        }),
-      );
-      manager.send(sid, "$owner-skill second turn");
-      // The second turn has started but has not yielded back to idle yet.
-      manager.send(sid, "$owner-skill steer running turn");
-      await manager.waitForIdle(sid);
-      expect(turns[1].system).toContain("LOCAL_IDENTITY");
-      expect(turns[1].system).not.toContain("GLOBAL_IDENTITY");
-      expect(turns[1].input).toContain("LOCAL_IDENTITY_SKILL");
-      expect(steers[0]).toContain("LOCAL_IDENTITY_SKILL");
-      manager.unregister("arc");
-      manager.send(sid, "$owner-skill after removal");
-      await manager.waitForIdle(sid);
-      expect(turns[2].system).toContain("LOCAL_IDENTITY");
-      expect(turns[2].input).toContain("LOCAL_IDENTITY_SKILL");
-      expect(readSessionMeta(persistDir, sid)?.agentRelativeDir).toBe(original.agentRelativeDir);
-
-      // Fresh sessions use the new registry, while runDefinition honors an explicitly captured definition.
-      manager.register(replacement);
-      const fresh = manager.run("arc", "$owner-skill fresh session");
-      expect((await manager.waitFor(fresh)).status).toBe("done");
-      expect(turns[3].system).toContain("GLOBAL_IDENTITY");
-      expect(turns[3].input).toContain("GLOBAL_IDENTITY_SKILL");
-      const pinned = manager.runDefinition(original, "pinned chat", { kind: "chat", autoClose: "never" });
-      await manager.waitForIdle(pinned);
-      expect(turns[4].system).toContain("LOCAL_IDENTITY");
-      manager.cancel(pinned);
-      failTurn = true;
-      manager.send(sid, "finish the old chat");
-      await expect(manager.waitForIdle(sid)).rejects.toThrow("fixture terminal chat failure");
-      expect(readSessionMeta(persistDir, sid)?.agentRelativeDir).toBe(original.agentRelativeDir);
-      expect(readSessionMeta(persistDir, fresh)?.agentRelativeDir).toBe(replacement.agentRelativeDir);
-    } finally {
-      for (const session of manager.status()) manager.cancel(session.sessionId);
-    }
-  });
-
-  it.each(["job", "chat"] as const)("keeps the selected agent folder when a %s ends after registry replacement", async (kind) => {
+  it.each(["done", "error"] as const)("keeps the selected agent folder for %s after registry replacement", async (status) => {
     const bus = new EventBus();
     const events: AgentEvent[] = [];
     bus.subscribe((event) => events.push(event));
@@ -237,7 +115,7 @@ describe("session completion publication", () => {
         // No provider call: hold the real manager at its execution boundary.
         run.prompt = async () => {
           await completion.promise;
-          if (kind === "chat") throw new Error("fixture chat failure");
+          if (status === "error") throw new Error("fixture model failure");
           run.state.messages.push({
             role: "assistant",
             content: [{ type: "text", text: "Fixture completed" }],
@@ -253,18 +131,14 @@ describe("session completion publication", () => {
       agentRelativeDir: "projects/sample.app/agents/local-owner",
     };
     manager.register(original);
-    const sessionId = manager.run(original.name, "Finish accepted work", {
-      kind,
-      autoClose: kind === "chat" ? "never" : "immediate",
-    });
+    const sessionId = manager.run(original.name, "Finish accepted work");
     manager.register({ ...original, agentRelativeDir: "agents/global-owner" });
     completion.resolve();
-    if (kind === "chat") await expect(manager.waitForIdle(sessionId)).rejects.toThrow("fixture chat failure");
-    else expect((await manager.waitFor(sessionId)).status).toBe("done");
+    expect((await manager.waitFor(sessionId)).status).toBe(status);
     expect(events.filter((event) => event.type === "session.end")).toMatchObject([
       {
         type: "session.end",
-        data: { sessionId, agentRelativeDir: original.agentRelativeDir, status: kind === "chat" ? "error" : "done" },
+        data: { sessionId, agentRelativeDir: original.agentRelativeDir, status },
       },
     ]);
   });
@@ -286,133 +160,6 @@ describe("session completion publication", () => {
     expect(manager.hasActiveSession(sessionId)).toBe(false);
     expect(readActiveSessionProcessId(persistDir, sessionId)).toBeNull();
     expect(readSessionMeta(persistDir, sessionId)?.status).toBe("error");
-  });
-});
-
-describe("persistent chat empty response recovery", () => {
-  let persistDir: string;
-  let manager: SubagentManager;
-  let bus: EventBus;
-  let events: AgentEvent[];
-
-  beforeEach(() => {
-    persistDir = mkdtempSync(join(tmpdir(), "may-chat-empty-"));
-    bus = new EventBus();
-    events = [];
-    bus.subscribe((event) => events.push(event));
-    manager = new SubagentManager({ persistDir, bus });
-  });
-
-  afterEach(() => {
-    closeDb(persistDir);
-    if (existsSync(persistDir)) {
-      rmSync(persistDir, { recursive: true, force: true });
-    }
-  });
-
-  function makeChatSession(messages: AgentMessage[], continueFn: () => Promise<void>) {
-    const sessionId = "s_chat_empty";
-    ensureSessionDir(persistDir, sessionId);
-    writeSessionMeta(persistDir, sessionId, {
-      agent: "may",
-      task: "hello",
-      status: "running",
-      startedAt: Date.now(),
-      kind: "chat",
-      autoClose: "never",
-    });
-    for (const message of messages) appendSessionMessage(persistDir, sessionId, message);
-
-    const fakeAgent = {
-      state: { messages },
-      waitForIdle: async () => {},
-      continue: continueFn,
-    };
-    const session = {
-      sessionId,
-      agent: fakeAgent,
-      agentName: "may",
-      definition: { name: "may" },
-      task: "hello",
-      startedAt: Date.now(),
-      status: "running",
-      kind: "chat",
-      autoClose: "never",
-      toolCalls: 0,
-      turnCount: 1,
-    } as any;
-    manager.activeSessions.set(sessionId, session);
-    return { sessionId, session };
-  }
-
-  it("trims an empty assistant turn and retries the same chat request once", async () => {
-    const messages: AgentMessage[] = [
-      { role: "user", content: [{ type: "text", text: "hello" }] } as any,
-      { role: "assistant", stopReason: "toolUse", content: [{ type: "text", text: "" }] } as any,
-    ];
-    const { sessionId, session } = makeChatSession(messages, async () => {
-      messages.push({ role: "assistant", stopReason: "stop", content: [{ type: "text", text: "Hello back." }] } as any);
-    });
-
-    await (manager as any).executeChatTurn(session, async () => {});
-
-    expect(manager.hasActiveSession(sessionId)).toBe(true);
-    expect(session.status).toBe("idle");
-    expect(messages).toHaveLength(2);
-    expect((messages[0].content as any[])[0].text).toBe("hello");
-    expect((messages[1].content as any[])[0].text).toBe("Hello back.");
-
-    const idle = events.find((event) => event.type === "session.idle" && (event as any).data?.sessionId === sessionId);
-    expect(idle).toMatchObject({
-      type: "session.idle",
-      data: {
-        sessionId,
-        status: "idle",
-        summary: "Hello back.",
-        retry: {
-          reason: "Agent ended on an empty tool-use assistant turn",
-          attempts: 1,
-          recovered: true,
-        },
-      },
-    });
-    expect(events.some((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toBe(
-      false,
-    );
-  });
-
-  it("keeps chat idle and visible when the retry is also empty", async () => {
-    const messages: AgentMessage[] = [
-      { role: "user", content: [{ type: "text", text: "hello" }] } as any,
-      { role: "assistant", stopReason: "toolUse", content: [] } as any,
-    ];
-    const { sessionId, session } = makeChatSession(messages, async () => {
-      messages.push({ role: "assistant", stopReason: "toolUse", content: [] } as any);
-    });
-
-    await (manager as any).executeChatTurn(session, async () => {});
-
-    expect(manager.hasActiveSession(sessionId)).toBe(true);
-    expect(session.status).toBe("idle");
-    expect(session.lastError).toBe("Agent ended on an empty tool-use assistant turn");
-    expect(messages).toEqual([{ role: "user", content: [{ type: "text", text: "hello" }] } as any]);
-
-    const idle = events.find((event) => event.type === "session.idle" && (event as any).data?.sessionId === sessionId);
-    expect(idle).toMatchObject({
-      type: "session.idle",
-      data: {
-        sessionId,
-        status: "idle",
-        error: "Agent ended on an empty tool-use assistant turn",
-        retry: {
-          attempts: 1,
-          recovered: false,
-        },
-      },
-    });
-    expect(events.some((event) => event.type === "session.end" && (event as any).data?.sessionId === sessionId)).toBe(
-      false,
-    );
   });
 });
 
