@@ -7,6 +7,9 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
@@ -80,6 +83,66 @@ describe("canonical agents list/call", () => {
     expect(listed.map((item: any) => item.name)).toEqual(["alpha/alpha-owner", "alpha/review", "beta/beta-owner", "beta/review"]);
     const result = await callTool(tool, { action: "call", agent: "beta/review", input: { prompt: "Review beta", data: { ref: "HEAD" } } });
     expect(result).toMatchObject({ status: "done", summary: "beta", output: { ref: "HEAD" } });
+  });
+
+  it("preserves a real schema-backed prompt blocker's child ID and blocked status", async () => {
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: () => {
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: {
+              role: "assistant",
+              api: "openai-responses",
+              provider: "fixture",
+              model: "blocked-worker",
+              content: [{
+                type: "toolCall", id: "finish-blocked", name: "finish",
+                arguments: { status: "blocked", summary: "Waiting for source evidence" },
+              }],
+              stopReason: "toolUse",
+              timestamp: Date.now(),
+              usage: {
+                input: 1, output: 1, totalTokens: 2, cacheRead: 0, cacheWrite: 0,
+                cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+              },
+            },
+          });
+          return stream;
+        },
+      }),
+    });
+    const worker = {
+      name: "worker", description: "Blocked worker", domain: "fixture", model: mockModel(), tools: [],
+    };
+    manager.register(worker);
+    const callerSignal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: worker,
+      status: "running",
+      toolPolicy: "full",
+      scopedChildren: new Set(),
+      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+
+    const result = await callTool(tool, {
+      action: "call",
+      agent: "global/worker",
+      input: { prompt: "Assess source" },
+      options: { schema: Type.Object({ verdict: Type.Literal("pass") }) },
+    });
+
+    expect(result.id).toMatch(/^s_/);
+    expect(result).toEqual({
+      id: result.id,
+      status: "blocked",
+      summary: "Waiting for source evidence",
+    });
   });
 
   it("captures the published execution snapshot after tool creation and dispatches that exact definition", async () => {
