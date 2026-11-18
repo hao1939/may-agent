@@ -231,12 +231,10 @@ async function showProjectDetail(path, initialTab, explicitAppId) {
     html += `</div></div>`;
   }
 
-  // ── Comment input ──
-  html += `<div style="margin:0 0 12px;display:flex;gap:8px;align-items:center">`;
-  html += `<input id="project-comment" placeholder="Send a comment to this project's App..." style="flex:1;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--fg);font-size:13px" oninput="delete this.dataset.idempotencyKey" onkeydown="if(event.key==='Enter')addProjectComment()">`;
-  html += `<button onclick="addProjectComment()" style="padding:8px 16px;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">Comment</button>`;
-  html += `</div>`;
-  html += `<div id="project-comment-status" style="font-size:12px;margin:-8px 0 8px;display:none"></div>`;
+  const conversationLink = humanInterface.appId && humanInterface.agent
+    ? `<a href="${attrEsc('/agents/' + encodeURIComponent(humanInterface.agent))}" style="color:var(--accent)">Conversation</a>`
+    : 'Conversation';
+  html += `<p id="project-feedback-guidance" class="health-note">Start new work in ${conversationLink}. For existing work, open a Task in the Tasks tab and send feedback.</p>`;
 
   // ── Sub-tabs ──
   const defaultProjectTab = initialTab === 'tasks' ? 'kanban' : 'project';
@@ -332,46 +330,5 @@ async function loadProjectTab(tab) {
     }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--red)">Failed: ${e.message}</div>`;
-  }
-}
-
-async function addProjectComment() {
-  const input = document.getElementById('project-comment');
-  const statusEl = document.getElementById('project-comment-status');
-  const comment = input.value.trim();
-  if (!comment) return;
-  input.disabled = true;
-  statusEl.style.display = 'none';
-  const idempotencyKey = input.dataset.idempotencyKey ||
-    (globalThis.crypto?.randomUUID?.() || `comment-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  input.dataset.idempotencyKey = idempotencyKey;
-  try {
-    const res = await fetch('/api/projects/comment', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ path: _projectDetailPath, comment, idempotencyKey })
-    });
-    const data = await res.json();
-    if (!res.ok || data.ok === false) throw new Error(data.error || data.triggerError || `HTTP ${res.status}`);
-    input.value = '';
-    delete input.dataset.idempotencyKey;
-    if (data.eventId) {
-      statusEl.innerHTML = `✅ Comment accepted · <a href="/events/${encodeURIComponent(data.eventId)}">event ${esc(data.eventId)}</a> — the App will handle it asynchronously`;
-      statusEl.style.color = 'var(--green)';
-    } else if (data.triggered) {
-      statusEl.textContent = '⚠️ Comment event sent, but no durable receipt was returned';
-      statusEl.style.color = 'var(--orange)';
-    } else {
-      statusEl.textContent = '⚠️ Comment added — trigger not confirmed';
-      statusEl.style.color = 'var(--fg2)';
-    }
-    statusEl.style.display = 'block';
-  } catch(e) {
-    statusEl.textContent = '❌ Failed: ' + e.message;
-    statusEl.style.color = 'var(--red)';
-    statusEl.style.display = 'block';
-  } finally {
-    input.disabled = false;
-    input.focus();
   }
 }

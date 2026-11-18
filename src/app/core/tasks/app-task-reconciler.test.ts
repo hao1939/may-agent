@@ -1849,7 +1849,7 @@ describe("App task reconciler state", () => {
     });
   });
 
-  it("schedules an unresolved direct message before autonomous priority backlog", () => {
+  it.each(["message.created", "project.comment.created"])("schedules an unresolved %s before autonomous priority backlog", (type) => {
     const state = fixture();
     const { config } = state;
     observeAppTaskIntent(config, {
@@ -1864,7 +1864,7 @@ describe("App task reconciler state", () => {
       intent: { ...intent("monitor"), id: "runtime/owner-review", priority: "P1" },
       appAgent: "app-owner",
       trigger: {
-        type: "message.created",
+        type,
         eventId: 42,
         source: "human",
         data: { comment: "Review current project direction" },
@@ -1880,6 +1880,42 @@ describe("App task reconciler state", () => {
     const queue = new AppTaskQueue(1);
     for (const entry of entries) queue.enqueue(entry.taskId, entry.options);
     expect(queue.take()).toBe("runtime/owner-review");
+  });
+
+  it("preserves a retained control-socket comment through reopen and a later automated wake", () => {
+    const { config } = fixture();
+    const ownerReview = { ...intent("monitor"), id: "runtime/owner-review", priority: "P1" as const };
+    const comment = {
+      type: "project.comment.created",
+      eventId: 42,
+      source: "control-socket",
+      data: { projectPath: "projects/sample.app", comment: "Review the retained project" },
+    };
+    observeAppTaskIntent(config, { intent: ownerReview, appAgent: "app-owner", trigger: comment });
+    const path = join(config.appDir, "retained-comment.sqlite");
+    const saved = AppTaskResourceStore.openStandalone(path, "sample");
+    try {
+      saved.bootstrapSnapshot(readTaskSnapshot(config), "retained-comment");
+    } finally {
+      saved.close();
+    }
+    const reopened = AppTaskResourceStore.openStandalone(path, "sample");
+    stores.push(reopened);
+    const recovered = { ...config, resourceStore: reopened };
+    const tick = { type: "project.task.tick", eventId: 43, source: "scheduler", data: {} };
+    recordAppTaskTrigger(recovered, ownerReview.id, tick);
+
+    expect(readAppTaskTrigger(recovered, ownerReview.id)).toEqual(comment);
+    expect(appTaskQueueEntries(recovered, [ownerReview.id])).toEqual([
+      { taskId: ownerReview.id, options: { priority: "P0", lane: "normal" } },
+    ]);
+    expect(listRunnableAppTaskQueueEntries(recovered).find((entry) => entry.taskId === ownerReview.id)).toEqual({
+      taskId: ownerReview.id, options: { priority: "P0", lane: "normal" },
+    });
+    const claim = claimObservedAppTask(recovered, { taskId: ownerReview.id, appAgent: "app-owner", handler: "workflow:known-workflow" });
+    if (claim.kind !== "claimed") throw new Error("expected retained comment claim");
+    expect(claim.trigger).toEqual(comment);
+    expect(claim.events.map((entry) => entry.event)).toEqual([comment, tick]);
   });
 
   it("keeps an unresolved human task control ahead of a later automated wake", () => {
