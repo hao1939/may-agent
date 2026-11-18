@@ -416,8 +416,6 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "team/slash Tasks");
       expect(await page.$eval(".kanban-board", (el) => el.textContent)).toContain("slash-only");
       await page.evaluate("routeTo('/projects')");
-      let commentBody: any = null;
-      await page.evaluate("window.originalCommentFetch = window.fetch; window.fetch = (url, init) => String(url).endsWith('/api/projects/comment') ? (window.lastCommentBody = JSON.parse(init.body), Promise.resolve(new Response(JSON.stringify({ ok: true, triggered: true, projectId: 'billing.app' }), { status: 202 }))) : window.originalCommentFetch(url, init);");
       await page.waitForSelector('#installed-apps [data-app-id="billing.app"] a');
       await page.click('#installed-apps [data-app-id="billing.app"] a');
       await page.waitForFunction(() => document.querySelector(".kanban-shell h3")?.textContent === "billing.app Tasks");
@@ -428,10 +426,12 @@ describe("HTTP human Task reads and board", () => {
       await page.waitForFunction(() => document.querySelector("#task-detail-drawer")?.textContent?.includes("Full goal billing-app-only"));
       expect(await page.$eval("#task-detail-drawer", (el) => el.classList.contains("hidden"))).toBe(false);
       expect(await page.evaluate("_projectDetailPath")).toBe("projects/billing.app.app");
-      await page.type("#project-comment", "Comment for billing.app");
-      await page.evaluate("addProjectComment()");
-      commentBody = await page.evaluate("window.lastCommentBody");
-      expect(commentBody).toMatchObject({ path: "projects/billing.app.app", comment: "Comment for billing.app" });
+      expect(await page.$("#project-comment")).toBeNull();
+      expect(await page.$("#project-comment-status")).toBeNull();
+      expect(await page.evaluate("typeof addProjectComment")).toBe("undefined");
+      expect(await page.$eval("#project-feedback-guidance", (el) => el.textContent)).toContain("open a Task");
+      expect(await page.$eval("#project-feedback-guidance a", (el) => el.getAttribute("href"))).toBe("/agents/helper");
+      expect(published).toEqual([]);
     } finally {
       await browser.close();
     }
