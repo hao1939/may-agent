@@ -69,9 +69,14 @@ class Socket extends EventEmitter {
 }
 
 class Server extends EventEmitter {
-  readonly port = 30_000 + Math.floor(Math.random() * 20_000);
+  available = true;
   private server?: ReturnType<typeof Bun.serve>;
   private readonly sockets = new Set<Socket>();
+
+  get port(): number {
+    if (!this.server) throw new Error("Test server is not listening");
+    return this.server.port;
+  }
 
   constructor(private readonly connection: (socket: Socket) => void) {
     super();
@@ -80,8 +85,9 @@ class Server extends EventEmitter {
   listen(_path: string): void {
     this.server = Bun.serve({
       hostname: "127.0.0.1",
-      port: this.port,
+      port: 0,
       fetch: async (req, server) => {
+        if (!this.available) return new Response("daemon unavailable", { status: 503 });
         const url = new URL(req.url);
         if (url.pathname === "/ws" && server.upgrade(req)) return;
         const socket = [...this.sockets].at(-1);
@@ -1114,6 +1120,9 @@ describe("May Console", () => {
       });
     });
 
+    server.available = false;
+    server.listen(socketPath);
+    await once(server, "listening");
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
       env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
@@ -1136,8 +1145,7 @@ describe("May Console", () => {
     await waitFor(
       () => output.includes("[offline] Message saved") && output.includes("[waiting for daemon; command queued]"),
     );
-    server.listen(socketPath);
-    await once(server, "listening");
+    server.available = true;
 
     await waitFor(() => frames.some((frame) => frame.type === "apps.list" && frame.appId === "gym"));
     await waitFor(() =>
@@ -1372,6 +1380,7 @@ describe("May Console", () => {
     const startB = take((frame) => frame.type === "task.get" && frame.ref === "bbbbbbbb");
     startB.socket.respond(startB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "B current") });
     await waitFor(() => output.includes("[watch] Following bbbbbbbb · beta."));
+    await waitFor(() => pending.some(({ frame }) => frame.type === "tasks.list" && frame.appId === "beta"));
     const betaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "beta");
     startA.socket.respond(startA.requestId, { type: "ok", command: "task.get", task: task("alpha", "work/a", "aaaaaaaa", "STALE A START") });
     await Bun.sleep(30);
@@ -1387,6 +1396,7 @@ describe("May Console", () => {
     const startC = take((frame) => frame.type === "task.get" && frame.ref === "cccccccc");
     startC.socket.respond(startC.requestId, { type: "ok", command: "task.get", task: task("gamma", "work/c", "cccccccc", "C current") });
     await waitFor(() => output.includes("[watch] Following cccccccc · gamma."));
+    await waitFor(() => pending.some(({ frame }) => frame.type === "tasks.list" && frame.appId === "gamma"));
     const gammaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "gamma");
     lateB.socket.respond(lateB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "STALE B TERMINAL", true) });
     await Bun.sleep(30);
