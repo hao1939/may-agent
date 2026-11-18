@@ -295,22 +295,36 @@ export async function execute(ctx) {
         opts.signal = controller.signal;
         opts.executionTimeoutMs = mode === "timeout" ? 200 : 10_000;
         if (mode === "ceiling") opts.executionTimeoutLimitMs = 200;
+        let importEntered = false;
+        void gate.started.then(() => { importEntered = true; });
         const run = invoke(opts);
+        async function observed<T>(promise: Promise<T>, phase: string): Promise<T> {
+          const observation = await observeBoundedResult(promise);
+          if (!observation) throw new Error(`${adapter}/${mode}: ${phase} watchdog expired`);
+          return observation.result;
+        }
         try {
-          expect(await observeBoundedResult(gate.started)).toBeDefined();
+          await observed(gate.started, "import start");
           if (mode === "cancel") controller.abort(new Error("cancel during root import"));
-          const stopped = await observeBoundedResult(run);
-          expect(stopped).toBeDefined();
-          expect(stopped?.result.type).toBe("error");
-          expect(stopped?.result.id).toBeUndefined();
-          expect(stopped?.result.error).toContain("unconfirmed");
-          expect(stopped?.result.error).toContain(mode === "cancel" ? "cancel during root import" : "timed out");
+          const stopped = await observed(run, "caller settlement before release");
+          expect(stopped.type).toBe("error");
+          expect(stopped.id).toBeUndefined();
+          expect(stopped.error).toContain("unconfirmed");
+          expect(stopped.error).toContain(mode === "cancel" ? "cancel during root import" : "timed out");
         } finally {
           gate.release();
-          await gate.completed;
-          await run;
-          // Drain the loader continuation after releasing its native import.
-          await new Promise<void>((resolve) => setImmediate(resolve));
+          // Stop a still-running cancellation case even if import startup failed.
+          controller.abort(new Error("controlled import test cleanup"));
+          try {
+            await observed(run, "caller settlement during cleanup");
+          } finally {
+            // Drain the loader continuation after releasing its native import,
+            // even if the caller failed to settle within the cleanup watchdog.
+            await new Promise<void>((resolve) => setImmediate(resolve));
+            // A fenced import never resolves completed. Only drain imports that
+            // entered, and watchdog cleanup too so failures cannot hang the suite.
+            if (importEntered) await observed(gate.completed, "entered import completion during cleanup");
+          }
         }
         expect(starts).toEqual([]);
         for (const marker of [later, body, child]) expect(existsSync(marker)).toBe(false);
