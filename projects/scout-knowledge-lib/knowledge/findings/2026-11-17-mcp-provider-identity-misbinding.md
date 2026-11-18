@@ -1,8 +1,8 @@
 <ai_context>
 summary: "An arXiv abstract reports provider misbinding across five LLM-based MCP clients when attacker-controlled tools imitate or out-position a legitimate provider through names, descriptions, and compatible schemas. The reusable control is to bind tool selection and execution to a verified provider identity and to treat unresolved provider ambiguity as a denied or explicitly approved state, not as a metadata-ranking problem. Scout reviewed only the API abstract, not the paper, clients, environment, prompts, traces, code, or results tables."
 triggers: ["MCP provider identity", "tool-provider misbinding", "MCP tool collision", "verified tool provider", "MCP ambiguity"]
-last_updated: "2026-11-17"
-source_basis: "One bounded arXiv cs.AI Atom request returned HTTP 200 in 459 ms with one request and no Retry-After value. Assessment is limited to the complete API abstract for arXiv:2611.21577v1; the full paper and artifacts were not reviewed."
+last_updated: "2026-11-18"
+source_basis: "One bounded arXiv cs.AI Atom request returned HTTP 200 in 315 ms with one request and no Retry-After value. Assessment is limited to the complete API abstract for arXiv:2611.21577v1; the full paper and artifacts were not reviewed."
 </ai_context>
 
 # MCP Tool Selection Must Bind the Provider, Not Just the Tool Metadata
@@ -10,6 +10,7 @@ source_basis: "One bounded arXiv cs.AI Atom request returned HTTP 200 in 459 ms 
 **Question:** What does the current arXiv signal imply for clients that compose tools from multiple MCP servers?
 
 **Observation date:** 2026-11-17  
+**Rechecked:** 2026-11-18 against the same `2611.21577v1` API abstract  
 **Disposition:** New knowledge  
 **Coverage:** Complete title, metadata, and API abstract only; the full paper, evaluation artifacts, and client implementations were not reviewed.  
 **Source:** https://arxiv.org/abs/2611.21577v1  
@@ -55,7 +56,7 @@ The workflow supplied one bounded request to:
 
 `https://export.arxiv.org/api/query?search_query=cat%3Acs.AI&start=0&max_results=20&sortBy=submittedDate&sortOrder=descending`
 
-The request returned HTTP `200` in `459 ms`; request count was `1`. `Retry-After` was unavailable (`null`), and no deferred retry time was supplied. Scout made no retry, pagination request, fallback request, or query variant.
+The current recheck returned HTTP `200` in `315 ms`; request count was `1`. `Retry-After` was unavailable (`null`), and no deferred retry time was supplied. Scout made no retry, pagination request, fallback request, or query variant.
 
 ## Evidence limitations
 
