@@ -49,7 +49,7 @@ test("direct execution keeps normal tools available until a valid finish", async
   const prepared = prepareAgentExecution({
     definition: { name: "owner", description: "fixture", domain: "test", model: fakeModel(), systemPrompt: "Use supplied results.", tools: [
       { name: "slow-work", label: "slow-work", description: "Useful work that crosses the retired early cutoff", parameters: Type.Object({}), async execute() {
-        await new Promise((resolve) => setTimeout(resolve, 650)); usefulWork++; return { content: [{ type: "text", text: "useful work completed" }] };
+        await new Promise((resolve) => setTimeout(resolve, 1_700)); usefulWork++; return { content: [{ type: "text", text: "useful work completed" }] };
       } },
       { name: "effect", label: "effect", description: "A normal follow-up effect", parameters: Type.Object({}), async execute() {
         effects++; return { content: [{ type: "text", text: "follow-up effect completed" }] };

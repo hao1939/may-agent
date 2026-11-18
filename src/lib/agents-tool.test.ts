@@ -173,7 +173,7 @@ export async function execute(ctx) {
       status: "running",
       toolPolicy: "full",
       scopedChildren: new Set(),
-      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+      executionScope: { signal: callerSignal, workSignal: callerSignal, deadlineAt: Date.now() + 10_000, workDeadlineAt: Date.now() + 10_000 },
     } as any);
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
 
@@ -242,7 +242,7 @@ export async function execute(ctx) {
       definition: manager.getAgentDefinition("global/alpha-reviewer"),
       status: "running",
       scopedChildren: new Set(),
-      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+      executionScope: { signal: callerSignal, workSignal: callerSignal, deadlineAt: Date.now() + 10_000, workDeadlineAt: Date.now() + 10_000 },
     } as any);
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
 

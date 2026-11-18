@@ -1070,12 +1070,28 @@ export async function execute(ctx) {
       },
     });
 
-    expect(run.ok).toBeTrue();
-    expect(run.result).toMatchObject({ type: "done", summary: "finished in reserved interval" });
-    expect(run.report.durationMs).toBeLessThan(300);
+    expect(run.ok).toBeFalse();
+    expect(run.result).toBeUndefined();
+    expect(turn).toBe(1);
+    expect(run.report.durationMs).toBeLessThan(600);
     expect(run.report.steps).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "workflow", target: "global/work-stop-helper", status: "error", cleanupConfirmed: true }),
     ]));
+  });
+
+  test("rejects the retired root operationAllowance instead of accepting and ignoring it", async () => {
+    const env = setupDirectLayout();
+    await expect(runDirectWorkflow({
+      target: "global/owner",
+      input: { prompt: "retired option" },
+      operationAllowance: 2,
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    })).rejects.toThrow("operationAllowance is retired");
   });
 
   test("keeps model-visible helper cleanup uncertainty after the parent handles the tool result and finishes", async () => {
