@@ -17,17 +17,12 @@ completion harder to follow. The [dated audit](../archive/reviews/event-system-r
 retains observed row counts and the PR #587 late-comment case; those measurements
 are not enduring API requirements.
 
-**Implementation status:** These are proposed changes. Host main `0606e2df16`
-still uses Event-based control/input admission and unsatisfied Condition routes;
-continuous observation after convergence is not implemented. Existing durable
-admission and caller recovery remain the supported local-trial path.
-
-The first integration priority is keeping the exact PR follow-up responsibility
-alive after a readiness notice. Journal cleanup and HTTP transport consolidation
-follow independently; neither is a prerequisite for testing the unified callable
-candidate. Root owns design/review, May owns implementation through the existing
-workflow. New source findings should be assigned to their exact owner, with a
-bounded regression and return evidence.
+**Implementation status:** **Slice 1 (PR #591)** and **Slice 2 (PR #588 & PR #593)** are merged into `origin/main` (`e489ff32b6`) and deployed to the live Host (`deploy-20261118T004957Z-2673375`), together with their paired Apps updates (`ae40ed0fca` and `73ab3ccd30` on `/app` `main`).
+- `runtime.daemon.heartbeat` now writes to `<persistDir>/instances/<instance>/<interface>.heartbeat.json` (zero `events` rows).
+- Periodic metric collection (`300_000` ms) and evaluation (`60_000` ms) now run on direct `.unref()` Host timers (`attachDaemonMetricTimers`, zero `trigger.metrics-*` rows).
+- `scout-knowledge-lib.app` schedules now use direct `input: { kind, data }` definitions (zero self-subscribed schedule event hops).
+- Continuous resource watches (`mode: "continuous"`) now remain active across `converged` (`idle`) Tasks and multiple `fingerprint` changes with M:N fan-out, and `github-pull-request-live` is retired from active App definitions.
+- **Remaining:** **Slice 3** (`DbWriter` `sessions` side-effect mutations, `app.task.communication.updated` receipt storage, and low-level execution telemetry removal) and **Slice 4** (direct control endpoints & ephemeral `/ws` wake separation).
 
 ## 2. Core Principle: What Is an Event?
 
