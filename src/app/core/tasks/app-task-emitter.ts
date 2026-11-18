@@ -179,6 +179,7 @@ export function createAppTaskEmitter(input: {
             taskId: input.claim.taskId,
             generation: input.claim.generation,
             localKey: key,
+            ...(emitted.type === "project.task.executor.progress" ? { attemptId: input.claim.attemptId } : {}),
           },
         },
         ...(childEventTrace(input.parentEvent) ? { trace: childEventTrace(input.parentEvent) } : {}),

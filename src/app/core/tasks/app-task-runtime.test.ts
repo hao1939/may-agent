@@ -175,6 +175,10 @@ it("counts Codex progress published through a real Task attempt as live success 
   const observed: AgentEvent[] = [];
   const seen = Promise.withResolvers<void>();
   const stop = bus.listen((event) => { observed.push(event); seen.resolve(); }, { types: ["project.task.executor.progress"] });
+  const registry = {
+    id: "codex-progress", generation: 1,
+    entries: [{ appDir: f.appDir, definition: definition() }],
+  };
   try {
     await installCoreTaskRuntimes({
       ...options(f, bus), installControllers: false,
@@ -194,13 +198,18 @@ it("counts Codex progress published through a real Task attempt as live success 
             } },
           });
           expect(await publisher.flush()).toEqual({ queued: 1, published: 1, failed: 0, dropped: 0 });
+          expect(new HumanTaskService(getDb(persistDir), { snapshot: () => registry })
+            .getTask({ appId: "sample", taskId: "work/progress" })?.progress).toMatchObject({
+              stage: "intermediate",
+              message: "Inspecting fixture facts",
+            });
+          expect(getDb(persistDir)
+            .prepare("SELECT count(*) AS n FROM events WHERE event_type = 'project.task.executor.progress'").get())
+            .toEqual({ n: 0 });
           return { state: "converged", summary: "Work completed", facts: [] };
         },
       },
-      appRegistrySnapshot: {
-        id: "codex-progress", generation: 1,
-        entries: [{ appDir: f.appDir, definition: definition() }],
-      },
+      appRegistrySnapshot: registry,
     });
     const config = loadedTaskConfig(f);
     const taskId = "work/progress";

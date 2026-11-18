@@ -10,6 +10,7 @@ import { createHash } from "node:crypto";
 import { isLiveOnlyEventType } from "../app/core/events/persistence-policy.js";
 import { readTaskEventTarget } from "../app/core/events/task-target.js";
 import { readPersistedEventEnvelope } from "../app/core/events/persisted.js";
+import { recordTaskProgress } from "../app/core/tasks/task-progress-observations.js";
 import {
   EVENT_APP_ADMISSION_REDELIVERY_REQUIRED,
   EVENT_DEDUPLICATED,
@@ -297,6 +298,7 @@ export class DbWriter {
         (event as AgentEvent & { [EVENT_TASK_EMISSION_FENCE]?: EventTaskEmissionFence })[EVENT_TASK_EMISSION_FENCE],
         Date.now(),
       );
+      recordTaskProgress(this.db, event);
       if (inStateTransaction(this.db)) {
         return { afterCommit: (deliver) => afterStateCommit(this.db, deliver) };
       }
