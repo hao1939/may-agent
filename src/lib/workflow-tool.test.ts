@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
 import { prepareAgentExecution } from "./agent-execution.js";
-import { createFinishTool, createReadTool, createWriteTool, workflowExecutionResult } from "@may-agent/sdk/runtime";
+import { buildWorkflowCatalog, createFinishTool, createReadTool, createWriteTool, workflowExecutionResult } from "@may-agent/sdk/runtime";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
@@ -615,7 +615,7 @@ export async function execute(ctx) {
     expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
   });
 
-  it("lets a workflow declare a longer bounded timeout", async () => {
+  it.each([false, true])("only lets a declaration extend a timeout fallback on the captured route (captured=%s)", async (captured) => {
     const root = workflowRoot("workflow-timeout-override-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
@@ -639,8 +639,13 @@ export async function execute(ctx) {
       executionTimeoutMs: 10,
     });
 
-    const result = await runner.run("slow", "test");
-    expect(result).toMatchObject({ type: "done" });
+    // A caller-supplied catalog keeps its existing declaration/fallback
+    // semantics. An uncaptured root has already admitted a nonrenewable bound.
+    const catalog = captured ? await buildWorkflowCatalog(workflowDir) : undefined;
+    const result = await runner.run("slow", "test", catalog);
+    expect(result).toMatchObject(captured ? { type: "done" } : {
+      type: "error", error: 'Workflow "slow" timed out after 10ms',
+    });
   });
 
   it.each(["caller", "deadline"] as const)(
