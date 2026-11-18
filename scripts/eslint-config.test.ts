@@ -12,7 +12,7 @@ it("rejects duplicate import bindings without blocking valid TypeScript namespac
         'import { SubagentManager } from "../../../lib/manager.js";',
         "export function create(): SubagentManager { return new SubagentManager({ persistDir: \"fixture\" }); }",
       ].join("\n"),
-      messages: [["@typescript-eslint/no-redeclare", 2]],
+      messages: [["local/no-duplicate-import-bindings", 2, 2]],
     },
     {
       source: [
@@ -33,6 +33,13 @@ it("rejects duplicate import bindings without blocking valid TypeScript namespac
     },
     {
       source: [
+        "export type Codec = { value: string };",
+        'export const Codec: Codec = { value: "ok" };',
+      ].join("\n"),
+      messages: [],
+    },
+    {
+      source: [
         "export interface Service { value: string; }",
         "export interface Service { count: number; }",
       ].join("\n"),
@@ -42,7 +49,7 @@ it("rejects duplicate import bindings without blocking valid TypeScript namespac
 
   for (const { source, messages } of cases) {
     const [result] = await eslint.lintText(source, { filePath });
-    expect(result.messages.map(({ ruleId, line }) => [ruleId, line])).toEqual(messages);
+    expect(result.messages.map(({ ruleId, line, severity }) => [ruleId, line, severity])).toEqual(messages);
   }
 });
 
