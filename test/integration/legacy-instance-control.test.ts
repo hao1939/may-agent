@@ -5,8 +5,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { createServer, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sendSocketCommand } from "@may-agent/control/client";
+import { validateSessionControl } from "../../src/app/adapters/executors/session-control.js";
 import { SubagentManager } from "../../src/lib/manager.js";
-import { createIdentityWriter } from "../../src/lib/instance-identity.js";
+import { createIdentityWriter, readIdentity } from "../../src/lib/instance-identity.js";
 import { appendSessionMessage } from "../../src/lib/persistence.js";
 import { closeAllDbs } from "../../src/lib/db/connection.js";
 
@@ -22,9 +24,21 @@ describe("retained detached instance control", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  async function cancel(sessionId: string) {
-    const result = await manager.createAgentsTool().execute("cancel", { action: "cancel", sessionId });
-    return JSON.parse((result.content[0] as { text: string }).text);
+  async function cancelFromOwner(sessionId: string) {
+    validateSessionControl(manager, "session.cancel.requested", sessionId, { remote: true });
+    const session = manager.registry.getSession(sessionId);
+    const identity = session?.detached && session.instance ? readIdentity(root, session.instance) : null;
+    if (!identity?.socket) throw new Error("No reachable execution owner for this session");
+    const receipt = await sendSocketCommand(identity.socket, {
+      type: "publish",
+      event: {
+        type: "session.cancel.requested",
+        target: { sessionId },
+        data: { reason: "owner requested cancellation" },
+        idempotencyKey: `owner-session-cancel:${sessionId}`,
+      },
+    });
+    return { accepted: true, sessionId, method: "socket", receipt };
   }
 
   it("still publishes cancellation to an existing instance's exact session", async () => {
@@ -63,15 +77,15 @@ describe("retained detached instance control", () => {
         sessionId: "legacy",
       });
 
-      expect(await cancel("legacy")).toMatchObject({ accepted: true, sessionId: "legacy", method: "socket" });
+      expect(await cancelFromOwner("legacy")).toMatchObject({ accepted: true, sessionId: "legacy", method: "socket" });
       expect(frames).toEqual([
         {
           type: "publish",
           event: {
             type: "session.cancel.requested",
             target: { sessionId: "legacy" },
-            data: { reason: "agent tool requested cancellation" },
-            idempotencyKey: "agents-tool-cancel:legacy",
+            data: { reason: "owner requested cancellation" },
+            idempotencyKey: "owner-session-cancel:legacy",
           },
         },
       ]);
@@ -103,7 +117,7 @@ describe("retained detached instance control", () => {
         socket: join(root, "absent.sock"),
         sessionId: "legacy",
       });
-      expect((await cancel("legacy")).error).toContain("ENOENT");
+      await expect(cancelFromOwner("legacy")).rejects.toThrow("ENOENT");
       expect(child.exitCode).toBeNull();
       expect(child.signalCode).toBeNull();
       expect(manager.registry.getSession("legacy")?.status).toBe("running");

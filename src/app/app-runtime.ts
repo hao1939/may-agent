@@ -336,6 +336,7 @@ export async function runAppRuntime(opts: {
         read: createRuntimeAppRead({
           readContract: async (targetAppId) => appTasks.contract(targetAppId),
           getDb: () => getDb(opts.persistDir),
+          persistDir: opts.persistDir,
           readMetric: opts.reporting?.readMetric,
           taskRead: {
             workload: async (options) => appTasks.workload({ appId, options }),

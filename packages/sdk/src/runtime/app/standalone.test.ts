@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { ExecutionDeferredError } from "@may-agent/sdk/app";
 import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
-  WorkflowValidationError,
 } from "@may-agent/sdk/testing";
 import { Type } from "typebox";
 import { fakeModel } from "../../../../../test/fixtures/model.js";
@@ -18,7 +18,6 @@ import {
   listTargets as listStandaloneTargets,
   prepareDirectAgentExecution,
   run,
-  runCliAgent,
   runDirectWorkflow,
   runDirectWorkflow as runDirect,
   type DirectAgentRunResult,
@@ -69,8 +68,11 @@ export const name = "review-change";
 export const description = "Review one ref with schema check";
 export const inputSchema = {
   type: "object",
-  properties: { subjectRef: { type: "string", minLength: 1 } },
-  required: ["subjectRef"],
+  properties: {
+    prompt: { type: "string", minLength: 1 },
+    data: { type: "object", properties: { subjectRef: { type: "string", minLength: 1 } }, required: ["subjectRef"], additionalProperties: false },
+  },
+  required: ["prompt", "data"],
   additionalProperties: false,
 };
 const ReviewSchema = {
@@ -85,13 +87,13 @@ const ReviewSchema = {
 };
 export async function execute(ctx) {
   ctx.log.info("starting direct review");
-  const review = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef, {
+  const review = await ctx.call("global/reviewer", { prompt: "Inspect " + ctx.input.data.subjectRef }, {
     schema: ReviewSchema,
   });
   if (!review.output) {
     return ctx.blocked("Missing review output", { review });
   }
-  return ctx.done("Reviewed " + ctx.input.subjectRef, {
+  return ctx.done("Reviewed " + ctx.input.data.subjectRef, {
     review: review.output,
     workspaceRoot: ctx.workspace?.root,
   });
@@ -131,7 +133,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     const run = await runDirectWorkflow({
       agentName: "owner",
       workflowName: "review-change",
-      input: { subjectRef: "HEAD~1..HEAD" },
+      input: { prompt: "Review change", data: { subjectRef: "HEAD~1..HEAD" } },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -210,8 +212,8 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     const toolCalls: unknown[] = [];
     let cleaned = 0;
     const result = await runDirectWorkflow({
-      target: "owner",
-      input: "Use the explicitly bound agents service",
+      target: "global/owner",
+      input: { prompt: "Use the explicitly bound agents service" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -244,7 +246,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "tc_agents", name: "agents", arguments: {
-                action: "call", agent: "reviewer", task: "must be denied by the supplied binding",
+                action: "call", agent: "global/reviewer", input: { prompt: "must use the supplied binding" },
               } }]
             : [{ type: "toolCall" as const, id: "tc_finish", name: "finish", arguments: {
                 status: "done", summary: "bound provider executed",
@@ -278,12 +280,12 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
     expect(result.ok).toBeTrue();
     expect(result.result).toMatchObject({ type: "done", summary: "bound provider executed" });
     expect(providerCalls).toEqual(["owner"]);
-    expect(toolCalls).toEqual([{ action: "call", agent: "reviewer", task: "must be denied by the supplied binding" }]);
-    expect(result.childSessions.map((session) => session.agent)).toEqual(["owner"]);
+    expect(toolCalls).toEqual([{ action: "call", agent: "global/reviewer", input: { prompt: "must use the supplied binding" } }]);
+    expect(result.childSessions.map((session) => session.agent)).toEqual(["global/owner"]);
     expect(cleaned).toBe(1);
   });
 
-  test("adds no implicit agents tool when undeclared and preserves explicit denial", async () => {
+  test("injects the built-in agents tool independently of declarations and invocation denials", async () => {
     const runCase = async (declared: boolean, deny: boolean) => {
       const env = setupDirectLayout();
       writeFileSync(
@@ -300,7 +302,7 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
       const result = await runDirectWorkflow({
         agentName: "owner",
         workflowName: "review-change",
-        input: { subjectRef: "HEAD" },
+        input: { prompt: "Review HEAD", data: { subjectRef: "HEAD" } },
         projectRoot: env.projectRoot,
         workRoot: env.workRoot,
         agentsRoot: env.agentsRoot,
@@ -343,8 +345,8 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
       return effectiveTools;
     };
 
-    expect(await runCase(false, false)).not.toContain("agents");
-    expect(await runCase(true, true)).not.toContain("agents");
+    expect(await runCase(false, false)).toContain("agents");
+    expect(await runCase(true, true)).toContain("agents");
   });
 
   test("delegates prompt-to-prompt and prompt-to-code through the model-visible common-kernel agents binding", async () => {
@@ -355,16 +357,17 @@ describe("runDirectWorkflow & createDirectWorkflowTool (Host-free Gym support)",
 export const name = "summarize";
 export const description = "Summarize structured input";
 export async function execute(ctx) {
-  return ctx.done("code helper done", { echoed: ctx.input.value });
+  return ctx.done("code helper done", { echoed: ctx.input.data.value });
 }
 `,
     );
     const visibleResults: unknown[] = [];
+    const visibleErrors: string[] = [];
     const ownerTurns = new Map<string, number>();
 
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Delegate both helper kinds",
+      target: "global/owner",
+      input: { prompt: "Delegate both helper kinds" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -377,10 +380,15 @@ export async function execute(ctx) {
         if (agentsTool) {
           const execute = agentsTool.execute.bind(agentsTool);
           agentsTool.execute = async (...args) => {
-            const result = await execute(...args);
-            const text = result.content.find((item) => item.type === "text")?.text;
-            if (text) visibleResults.push(JSON.parse(text));
-            return result;
+            try {
+              const result = await execute(...args);
+              const text = result.content.find((item) => item.type === "text")?.text;
+              if (text) visibleResults.push(JSON.parse(text));
+              return result;
+            } catch (error) {
+              visibleErrors.push(String(error));
+              throw error;
+            }
           };
         }
         prep.prepared.runner.streamFn = () => {
@@ -392,16 +400,20 @@ export async function execute(ctx) {
                 status: "done", summary: "prompt helper done", output: { reviewed: true },
               } }]
             : turn === 1
-              ? [{ type: "toolCall" as const, id: "owner_prompt", name: "agents", arguments: {
-                  action: "call", agent: "reviewer", input: "Review this",
+              ? [{ type: "toolCall" as const, id: "owner_non_exact", name: "agents", arguments: {
+                  action: "call", agent: " global/reviewer ", input: { prompt: "Do not normalize this target" },
                 } }]
               : turn === 2
-                ? [{ type: "toolCall" as const, id: "owner_code", name: "agents", arguments: {
-                    action: "call", agent: "summarize", input: { value: 7 },
+                ? [{ type: "toolCall" as const, id: "owner_prompt", name: "agents", arguments: {
+                    action: "call", agent: "global/reviewer", input: { prompt: "Review this" },
                   } }]
-                : [{ type: "toolCall" as const, id: "owner_finish", name: "finish", arguments: {
-                    status: "done", summary: "parent handled both helpers",
-                  } }];
+                : turn === 3
+                  ? [{ type: "toolCall" as const, id: "owner_code", name: "agents", arguments: {
+                      action: "call", agent: "global/summarize", input: { prompt: "Summarize", data: { value: 7 } },
+                    } }]
+                  : [{ type: "toolCall" as const, id: "owner_finish", name: "finish", arguments: {
+                      status: "done", summary: "parent handled both helpers",
+                    } }];
           stream.push({ type: "done", reason: "toolUse", message: usageReply({ stopReason: "toolUse", content }) });
           return stream;
         };
@@ -430,21 +442,122 @@ export async function execute(ctx) {
 
     expect(run.ok).toBeTrue();
     expect(run.result).toMatchObject({ type: "done", summary: "parent handled both helpers" });
+    expect(visibleErrors).toEqual([
+      'Error: Invalid callable target " global/reviewer " (expected exact "<app>/<name>" or "global/<name>")',
+    ]);
     expect(visibleResults).toEqual([
-      expect.objectContaining({ kind: "agent", status: "done", summary: "prompt helper done", output: { reviewed: true } }),
-      expect.objectContaining({ kind: "workflow", status: "done", summary: "code helper done", output: { echoed: 7 } }),
+      expect.objectContaining({ status: "done", summary: "prompt helper done", output: { reviewed: true } }),
+      expect.objectContaining({ status: "done", summary: "code helper done", output: { echoed: 7 } }),
     ]);
     expect((visibleResults[0] as { id?: string }).id).toBeString();
     expect((visibleResults[1] as { id?: string }).id).toBeString();
-    expect(run.childSessions.map((session) => session.agent)).toEqual(["reviewer", "owner"]);
+    expect(run.childSessions.map((session) => session.agent)).toEqual(["global/reviewer", "global/owner"]);
     expect(run.report.steps.map((step) => [step.kind, step.target, step.status])).toEqual([
-      ["agent", "reviewer", "done"],
-      ["workflow", "summarize", "done"],
-      ["agent", "owner", "done"],
+      ["workflow", " global/reviewer ", "error"],
+      ["agent", "global/reviewer", "done"],
+      ["workflow", "global/summarize", "done"],
+      ["agent", "global/owner", "done"],
     ]);
   });
 
-  test("keeps bare model-visible helper resolution local before and after another owner catalog load", async () => {
+  test("pins prompt identity and model for one callable tree while a later invocation captures updated configuration", async () => {
+    const env = setupDirectLayout();
+    const reviewerConfigPath = join(env.agentsRoot, "reviewer", "agent.json");
+    const observed: Array<{ agentName: string; model: string; description: string | undefined; systemPrompt: string }> = [];
+    writeFileSync(join(env.sharedRoot, "common-sense.md"), "ORIGINAL SHARED PROMPT");
+    const models = {
+      test: { id: "original-model" } as any,
+      updated: { id: "updated-model" } as any,
+    };
+    const runAgent = async (opts: Parameters<typeof prepareDirectAgentExecution>[0]): Promise<DirectAgentRunResult> => {
+      const prep = await prepareDirectAgentExecution(opts);
+      try {
+        observed.push({
+          agentName: opts.agentName,
+          model: prep.model,
+          description: opts.agentConfig?.description,
+          systemPrompt: prep.prepared.systemPrompt,
+        });
+        return {
+          sessionId: prep.sessionId,
+          sessionPath: prep.sessionPath,
+          systemPrompt: prep.prepared.systemPrompt,
+          model: prep.model,
+          executionManifest: prep.executionManifest,
+          status: "done",
+          lastAssistantText: "configured",
+          messages: [],
+          durationMs: 1,
+          finishResult: { status: "done", summary: "configured" },
+          usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+          cleanupConfirmed: await prep.cleanupAsync(),
+        };
+      } finally {
+        prep.cleanup();
+      }
+    };
+
+    const first = await runDirectWorkflow({
+      module: {
+        name: "mutate-after-capture",
+        description: "Mutates the source configuration after this tree captures its catalog",
+        async execute(ctx) {
+          writeFileSync(join(env.agentsRoot, "reviewer", "AGENTS.md"), "CHANGED REVIEWER IDENTITY");
+          writeFileSync(join(env.sharedRoot, "common-sense.md"), "CHANGED SHARED PROMPT");
+          writeFileSync(reviewerConfigPath, JSON.stringify({
+            name: "reviewer-v2",
+            description: "updated reviewer",
+            domain: "test",
+            model: "updated",
+            tools: ["finish"],
+          }));
+          const child = await ctx.call("global/reviewer", { prompt: "Use the captured configuration" });
+          return ctx.done("first tree complete", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "Run the first tree" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models,
+      runAgent,
+    });
+
+    const second = await runDirectWorkflow({
+      module: {
+        name: "capture-updated-config",
+        description: "Uses a fresh independently prepared catalog",
+        async execute(ctx) {
+          const child = await ctx.call("global/reviewer-v2", { prompt: "Use the updated configuration" });
+          return ctx.done("second tree complete", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "Run the second tree" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models,
+      runAgent,
+    });
+
+    expect(first.ok).toBeTrue();
+    expect(second.ok).toBeTrue();
+    expect(observed).toEqual([
+      expect.objectContaining({ agentName: "reviewer", model: "test", description: "reviewer agent", systemPrompt: expect.stringContaining("Lab-forked reviewer instructions v2") }),
+      expect.objectContaining({ agentName: "reviewer-v2", model: "updated", description: "updated reviewer", systemPrompt: expect.stringContaining("CHANGED REVIEWER IDENTITY") }),
+    ]);
+    expect(observed[0]!.systemPrompt).toContain("ORIGINAL SHARED PROMPT");
+    expect(observed[0]!.systemPrompt).not.toContain("CHANGED REVIEWER IDENTITY");
+    expect(observed[1]!.systemPrompt).toContain("CHANGED SHARED PROMPT");
+  });
+
+  test("uses exact canonical workflow names before and after another catalog call", async () => {
     const env = setupDirectLayout();
     const utilityDir = join(env.agentsRoot, "utility");
     mkdirSync(join(utilityDir, "workflows"), { recursive: true });
@@ -452,11 +565,11 @@ export async function execute(ctx) {
       name: "utility", description: "Global prompt namesake", domain: "test", model: "test", tools: ["finish"],
     }));
     writeFileSync(join(utilityDir, "AGENTS.md"), "GLOBAL UTILITY PROMPT");
-    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "utility.ts"), `
-export const name = "utility";
-export const description = "Reviewer-local utility";
+    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "reviewer-utility.ts"), `
+export const name = "reviewer-utility";
+export const description = "Reviewer utility with an exact canonical address";
 export async function execute(ctx) {
-  return ctx.done("local utility", { received: ctx.input });
+  return ctx.done("reviewer utility", { received: ctx.input.prompt });
 }
 `);
     writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "prime.ts"), `
@@ -469,8 +582,8 @@ export async function execute(ctx) { return ctx.done("primed"); }
     let reviewerTurn = 0;
     let globalUtilityExecutions = 0;
     const result = await runDirectWorkflow({
-      target: "reviewer",
-      input: "Use the local utility twice",
+      target: "global/reviewer",
+      input: { prompt: "Use the local utility twice" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -495,15 +608,15 @@ export async function execute(ctx) { return ctx.done("primed"); }
           reviewerTurn += 1;
           const content = reviewerTurn === 1
             ? [{ type: "toolCall" as const, id: "local_before", name: "agents", arguments: {
-                action: "call", agent: "utility", input: "before",
+                action: "call", agent: "global/reviewer-utility", input: { prompt: "before" },
               } }]
             : reviewerTurn === 2
               ? [{ type: "toolCall" as const, id: "explicit_load", name: "agents", arguments: {
-                  action: "call", agent: "reviewer/prime", input: {},
+                  action: "call", agent: "global/prime", input: { prompt: "prime" },
                 } }]
               : reviewerTurn === 3
                 ? [{ type: "toolCall" as const, id: "local_after", name: "agents", arguments: {
-                    action: "call", agent: "utility", input: "after",
+                    action: "call", agent: "global/reviewer-utility", input: { prompt: "after" },
                   } }]
                 : [{ type: "toolCall" as const, id: "finish_local_precedence", name: "finish", arguments: {
                     status: "done", summary: "local precedence stable",
@@ -537,23 +650,108 @@ export async function execute(ctx) { return ctx.done("primed"); }
     expect(result.ok).toBeTrue();
     expect(globalUtilityExecutions).toBe(0);
     expect(visibleResults).toEqual([
-      expect.objectContaining({ kind: "workflow", summary: "local utility", output: { received: "before" } }),
-      expect.objectContaining({ kind: "workflow", summary: "primed" }),
-      expect.objectContaining({ kind: "workflow", summary: "local utility", output: { received: "after" } }),
+      expect.objectContaining({ status: "done", summary: "reviewer utility", output: { received: "before" } }),
+      expect.objectContaining({ status: "done", summary: "primed" }),
+      expect.objectContaining({ status: "done", summary: "reviewer utility", output: { received: "after" } }),
     ]);
   });
 
-  test("records the resolved workflow kind and child identity when a string-input model-visible code helper fails", async () => {
+  test("returns an ordinary nested workflow failure to its standalone parent with the real child trace", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(join(env.agentsRoot, "owner", "workflows", "ordinary-failure.ts"), `
+export const name = "ordinary-failure";
+export const description = "Fails after the child execution starts";
+export async function execute() { throw new Error("ordinary child failure"); }
+`);
+    const result = await runDirectWorkflow({
+      module: {
+        name: "recover-ordinary-failure",
+        description: "Consumes an ordinary child error report without catch",
+        async execute(ctx) {
+          const child = await ctx.call("global/ordinary-failure", { prompt: "fail normally" });
+          return ctx.done("parent recovered", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "recover" },
+      executionId: "wr_parent_recovers_child",
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+
+    expect(result.ok).toBeTrue();
+    expect(result.result).toMatchObject({ type: "done", summary: "parent recovered" });
+    const child = result.result?.output as { id: string; status: string; summary: string };
+    expect(child).toEqual({
+      id: expect.stringMatching(/^wr_/),
+      status: "error",
+      summary: "ordinary child failure",
+    });
+    expect(child.id).not.toBe(result.report.executionId);
+    expect(result.report.steps).toContainEqual(expect.objectContaining({
+      id: child.id,
+      kind: "workflow",
+      target: "global/ordinary-failure",
+      status: "error",
+      summary: "ordinary child failure",
+    }));
+  });
+
+  test("keeps a nested standalone execution deferral on the typed control path", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(join(env.agentsRoot, "owner", "workflows", "deferred-child.ts"), `
+import { ExecutionDeferredError } from ${JSON.stringify(join(process.cwd(), "packages/sdk/src/app.ts"))};
+export const name = "deferred-child";
+export const description = "Defers before useful child work";
+export async function execute() {
+  throw new ExecutionDeferredError({
+    resource: "execution-capacity",
+    reason: "fixture capacity retained",
+    retryAt: null,
+    task: { appId: "fixture", taskId: "child" },
+    root: { appId: "fixture", taskId: "root" },
+  });
+}
+`);
+    const result = await runDirectWorkflow({
+      module: {
+        name: "propagate-deferral",
+        description: "Must not normalize control outcomes into ordinary errors",
+        async execute(ctx) {
+          const child = await ctx.call("global/deferred-child", { prompt: "defer" });
+          return ctx.done("must not finish", child);
+        },
+      },
+      agentName: "owner",
+      input: { prompt: "preserve typed deferral" },
+      projectRoot: env.projectRoot,
+      workRoot: env.workRoot,
+      agentsRoot: env.agentsRoot,
+      sharedRoot: env.sharedRoot,
+      outputRoot: env.outputRoot,
+      models: { test: fakeModel() as any },
+    });
+
+    expect(result.ok).toBeFalse();
+    expect(result.error).toBeInstanceOf(ExecutionDeferredError);
+    expect((result.error as ExecutionDeferredError).deferral.reason).toBe("fixture capacity retained");
+  });
+
+  test("records the resolved workflow kind and child identity when an enveloped model-visible code helper fails", async () => {
     const env = setupDirectLayout();
     writeFileSync(join(env.agentsRoot, "owner", "workflows", "string-failure.ts"), `
 export const name = "string-failure";
 export const description = "Fails after code execution starts";
-export async function execute(ctx) { throw new Error("string helper exploded: " + ctx.input); }
+export async function execute(ctx) { throw new Error("string helper exploded: " + ctx.input.prompt); }
 `);
     let turn = 0;
     const result = await runDirectWorkflow({
-      target: "owner",
-      input: "Call the failing string helper",
+      target: "global/owner",
+      input: { prompt: "Call the failing string helper" },
       executionId: "wr_parent_failure_trace",
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
@@ -568,7 +766,7 @@ export async function execute(ctx) { throw new Error("string helper exploded: " 
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "string_failure", name: "agents", arguments: {
-                action: "call", agent: "string-failure", input: "payload",
+                action: "call", agent: "global/string-failure", input: { prompt: "payload" },
               } }]
             : [{ type: "toolCall" as const, id: "finish_after_string_failure", name: "finish", arguments: {
                 status: "done", summary: "handled string helper failure",
@@ -600,11 +798,11 @@ export async function execute(ctx) { throw new Error("string helper exploded: " 
     });
 
     expect(result.ok).toBeTrue();
-    const failedHelper = result.report.steps.find((step) => step.target === "string-failure");
+    const failedHelper = result.report.steps.find((step) => step.target === "global/string-failure");
     expect(failedHelper).toMatchObject({
       kind: "workflow",
       status: "error",
-      error: { message: "string helper exploded: payload" },
+      summary: "string helper exploded: payload",
       id: expect.stringMatching(/^wr_/),
     });
     expect(failedHelper?.id).not.toBe(result.report.executionId);
@@ -628,8 +826,8 @@ export async function execute(ctx) {
     );
     let turn = 0;
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Try one saturated helper",
+      target: "global/owner",
+      input: { prompt: "Try one saturated helper" },
       maxConcurrentCalls: 1,
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
@@ -644,7 +842,7 @@ export async function execute(ctx) {
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "saturated_call", name: "agents", arguments: {
-                action: "call", agent: "side-effect", input: {},
+                action: "call", agent: "global/side-effect", input: { prompt: "run" },
               } }]
             : [{ type: "toolCall" as const, id: "finish_after_denial", name: "finish", arguments: {
                 status: "done", summary: "handled saturation",
@@ -718,8 +916,8 @@ export async function execute(ctx) {
     const visibleResults: unknown[] = [];
     const helperErrors: string[] = [];
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Bound the helper",
+      target: "global/owner",
+      input: { prompt: "Bound the helper" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -737,10 +935,10 @@ export async function execute(ctx) {
               const toolResult = await execute(...args);
               const text = toolResult.content.find((item) => item.type === "text")?.text;
               if (text) visibleResults.push(JSON.parse(text));
-              if (call?.agent === "warm-helper") measuredStartedAt = Date.now();
+              if (call?.agent === "global/warm-helper") measuredStartedAt = Date.now();
               return toolResult;
             } catch (error) {
-              if (call?.agent === "long-helper") helperErrors.push(String(error));
+              if (call?.agent === "global/long-helper") helperErrors.push(String(error));
               throw error;
             }
           };
@@ -750,11 +948,11 @@ export async function execute(ctx) {
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "warm_helper", name: "agents", arguments: {
-                action: "call", agent: "warm-helper", input: {},
+                action: "call", agent: "global/warm-helper", input: { prompt: "warm" },
               } }]
             : turn === 2
               ? [{ type: "toolCall" as const, id: "bounded_helper", name: "agents", arguments: {
-                  action: "call", agent: "long-helper", input: {}, timeoutMs: 20,
+                  action: "call", agent: "global/long-helper", input: { prompt: "long" }, options: { timeoutMs: 20 },
                 } }]
               : [{ type: "toolCall" as const, id: "finish_after_timeout", name: "finish", arguments: {
                   status: "done", summary: "parent handled helper timeout",
@@ -790,16 +988,16 @@ export async function execute(ctx) {
     expect(measuredStartedAt).toBeNumber();
     expect(Date.now() - measuredStartedAt!).toBeLessThan(400);
     expect(readFileSync(enteredMarker, "utf8")).toBe("entered");
-    expect(readFileSync(cancelledMarker, "utf8")).toContain('Workflow step "long-helper" timed out after 20ms');
+    expect(readFileSync(cancelledMarker, "utf8")).toContain('Workflow step "global/long-helper" timed out after 20ms');
     expect(visibleResults).toEqual([
-      expect.objectContaining({ kind: "workflow", status: "done", summary: "catalog ready" }),
+      expect.objectContaining({ status: "done", summary: "catalog ready" }),
     ]);
     expect(helperErrors).toEqual([
-      expect.stringContaining('Workflow step "long-helper" timed out after 20ms'),
+      expect.stringContaining('Workflow step "global/long-helper" timed out after 20ms'),
     ]);
     expect(run.report.steps).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: "workflow", target: "warm-helper", status: "done", cleanupConfirmed: true }),
-      expect.objectContaining({ kind: "workflow", target: "long-helper", status: "error", cleanupConfirmed: true }),
+      expect.objectContaining({ kind: "workflow", target: "global/warm-helper", status: "done", cleanupConfirmed: true }),
+      expect.objectContaining({ kind: "workflow", target: "global/long-helper", status: "error", cleanupConfirmed: true }),
     ]));
   });
 
@@ -825,8 +1023,8 @@ export async function execute(ctx) {
     );
     let turn = 0;
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Stop helper work but reserve finish time",
+      target: "global/owner",
+      input: { prompt: "Stop helper work but reserve finish time" },
       timeoutMs: 300,
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
@@ -841,7 +1039,7 @@ export async function execute(ctx) {
           turn += 1;
           const content = turn === 1
             ? [{ type: "toolCall" as const, id: "work_stop_helper", name: "agents", arguments: {
-                action: "call", agent: "work-stop-helper", input: {},
+                action: "call", agent: "global/work-stop-helper", input: { prompt: "work" },
               } }]
             : [{ type: "toolCall" as const, id: "finish_in_reserve", name: "finish", arguments: {
                 status: "done", summary: "finished in reserved interval",
@@ -876,7 +1074,7 @@ export async function execute(ctx) {
     expect(run.result).toMatchObject({ type: "done", summary: "finished in reserved interval" });
     expect(run.report.durationMs).toBeLessThan(300);
     expect(run.report.steps).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: "workflow", target: "work-stop-helper", status: "error", cleanupConfirmed: true }),
+      expect.objectContaining({ kind: "workflow", target: "global/work-stop-helper", status: "error", cleanupConfirmed: true }),
     ]));
   });
 
@@ -884,8 +1082,8 @@ export async function execute(ctx) {
     const env = setupDirectLayout();
     let ownerTurn = 0;
     const run = await runDirectWorkflow({
-      target: "owner",
-      input: "Handle helper cleanup uncertainty",
+      target: "global/owner",
+      input: { prompt: "Handle helper cleanup uncertainty" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -915,7 +1113,7 @@ export async function execute(ctx) {
           ownerTurn += 1;
           const content = ownerTurn === 1
             ? [{ type: "toolCall" as const, id: "uncertain_helper", name: "agents", arguments: {
-                action: "call", agent: "reviewer", input: "Return a result",
+                action: "call", agent: "global/reviewer", input: { prompt: "Return a result" },
               } }]
             : [{ type: "toolCall" as const, id: "parent_finish", name: "finish", arguments: {
                 status: "done", summary: "parent handled helper result",
@@ -951,7 +1149,7 @@ export async function execute(ctx) {
     expect(run.report.result).toMatchObject({ type: "done", summary: "parent handled helper result" });
     expect(run.report.cleanup).toEqual({
       confirmed: false,
-      unconfirmed: ["agent:reviewer (reviewer_unconfirmed)"],
+      unconfirmed: ["agent:global/reviewer (reviewer_unconfirmed)"],
     });
   });
 
@@ -962,7 +1160,7 @@ export async function execute(ctx) {
     const run = await runDirectWorkflow({
       agentName: "owner",
       workflowName: "review-change",
-      input: { subjectRef: "HEAD" },
+      input: { prompt: "Review HEAD", data: { subjectRef: "HEAD" } },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -996,7 +1194,7 @@ export async function execute(ctx) {
     expect(run.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
     expect(run.report.cleanup).toEqual({
       confirmed: false,
-      unconfirmed: ["agent:reviewer (s_stuck)"],
+      unconfirmed: ["agent:global/reviewer (s_stuck)"],
     });
     expect(run.report.result?.type).toBe("done");
     expect(readFileSync(join(env.workRoot, "candidate.txt"), "utf8")).toBe("important evidence");
@@ -1011,7 +1209,7 @@ export async function execute(ctx) {
 export const name = "outer";
 export const description = "Calls nested review-change";
 export async function execute(ctx) {
-  return ctx.call("review-change", { subjectRef: "HEAD" });
+  return ctx.call("global/review-change", { prompt: "Review HEAD", data: { subjectRef: "HEAD" } });
 }
 `,
     );
@@ -1066,7 +1264,7 @@ export default function createCustomTool() {
         name: "readonly-step",
         description: "Calls coding+local agent with readonly policy",
         async execute(ctx) {
-          const res = await ctx.call("reviewer", "Inspect only", { tools: "readonly" });
+          const res = await ctx.call("global/reviewer", { prompt: "Inspect only" });
           return ctx.done(res.summary);
         },
       },
@@ -1102,7 +1300,7 @@ export default function createCustomTool() {
     });
 
     expect(run.ok).toBe(true);
-    expect(effectiveTools).toEqual(["read", "finish"]);
+    expect(effectiveTools).toEqual(["read", "bash", "edit", "write", "agents", "finish", "custom_mutate"]);
   });
 
   test("enforces maxDepth at entry and isolates nested executionIds", async () => {
@@ -1114,9 +1312,9 @@ export default function createCustomTool() {
 export const name = "nested-pair";
 export const description = "Runs two nested workflows and returns their IDs";
 export async function execute(ctx) {
-  const first = await ctx.call("review-change", { subjectRef: "A" });
-  const second = await ctx.call("review-change", { subjectRef: "B" });
-  return ctx.done("pair", { parentId: ctx.done("probe").id, firstId: first.id, secondId: second.id });
+  const first = await ctx.call("global/review-change", { prompt: "Review A", data: { subjectRef: "A" } });
+  const second = await ctx.call("global/review-change", { prompt: "Review B", data: { subjectRef: "B" } });
+  return ctx.done("pair", { producerId: ctx.done("probe").id, firstId: first.id, secondId: second.id });
 }
 `,
     );
@@ -1145,8 +1343,8 @@ export async function execute(ctx) {
     });
     expect(distinctIds.ok).toBe(true);
     expect(distinctIds.report.executionId).toBe("wr_explicit_root");
-    const idsOut = distinctIds.result?.output as { parentId: string; firstId: string; secondId: string };
-    expect(idsOut.parentId).toBe("wr_explicit_root");
+    const idsOut = distinctIds.result?.output as { producerId?: string; firstId: string; secondId: string };
+    expect(idsOut.producerId).toBeUndefined();
     expect(idsOut.firstId).not.toBe("wr_explicit_root");
     expect(idsOut.secondId).not.toBe("wr_explicit_root");
     expect(idsOut.firstId).not.toBe(idsOut.secondId);
@@ -1157,7 +1355,7 @@ export async function execute(ctx) {
         name: "root-depth-1",
         description: "Calls nested review-change at depth 2 with maxDepth=1",
         async execute(ctx) {
-          const step = await ctx.call("owner/review-change", { subjectRef: "HEAD" });
+          const step = await ctx.call("global/review-change", { prompt: "Review HEAD", data: { subjectRef: "HEAD" } });
           return ctx.done(step.summary);
         },
       },
@@ -1175,7 +1373,7 @@ export async function execute(ctx) {
     expect(String(depthLimited.error)).toContain("Maximum workflow nesting depth (1) exceeded");
   });
 
-  test("preserves read.tasks.workload and honors step operationAllowance in real direct execution", async () => {
+  test("preserves read.tasks.workload in real direct execution", async () => {
     const env = setupDirectLayout();
     writeFileSync(join(env.workRoot, "note.txt"), "hello allowance");
 
@@ -1207,118 +1405,7 @@ export async function execute(ctx) {
     expect(workloadDirect.ok).toBe(true);
     expect(workloadDirect.result?.output).toEqual({ items: [], limit: 3 });
 
-    // 2. Invalid operationAllowance fails immediately; operationAllowance=1 triggers bounded finish steering on call #1.
-    const badAllowance = await runDirectWorkflow({
-      module: {
-        name: "bad-allowance",
-        description: "Invalid operationAllowance",
-        async execute(ctx) {
-          await ctx.call("reviewer", "Check", { operationAllowance: 0 });
-          return ctx.done("unreachable");
-        },
-      },
-      input: {},
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      agentsRoot: env.agentsRoot,
-      sharedRoot: env.sharedRoot,
-      outputRoot: env.outputRoot,
-      models: { test: fakeModel() as any },
-    });
-    expect(badAllowance.ok).toBe(false);
-    expect(String(badAllowance.error)).toContain("operationAllowance");
 
-    const seenPrompts: string[][] = [];
-    let turn = 0;
-    const allowanceRun = await runDirectWorkflow({
-      module: {
-        name: "allowance-one",
-        description: "Schema-less step with operationAllowance: 1",
-        async execute(ctx) {
-          const step = await ctx.call("reviewer", "Inspect note.txt", {
-            tools: "readonly",
-            operationAllowance: 1,
-          });
-          return ctx.done(step.summary);
-        },
-      },
-      input: {},
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      agentsRoot: env.agentsRoot,
-      sharedRoot: env.sharedRoot,
-      outputRoot: env.outputRoot,
-      models: { test: fakeModel() as any },
-      runAgent: async (opts): Promise<DirectAgentRunResult> => {
-        const prep = await prepareDirectAgentExecution(opts);
-        prep.prepared.runner.streamFn = (_model, context) => {
-          seenPrompts.push(
-            context.messages.map((m: any) =>
-              typeof m.content === "string"
-                ? m.content
-                : Array.isArray(m.content)
-                  ? m.content.map((c: any) => c.text ?? "").join("")
-                  : "",
-            ),
-          );
-          const stream = createAssistantMessageEventStream();
-          turn++;
-          if (turn === 1) {
-            stream.push({
-              type: "done",
-              reason: "toolUse",
-              message: usageReply({
-                stopReason: "toolUse",
-                content: [{ type: "toolCall", id: "tc_read_1", name: "read", arguments: { path: "note.txt" } }],
-              }),
-            });
-          } else {
-            stream.push({
-              type: "done",
-              reason: "toolUse",
-              message: usageReply({
-                stopReason: "toolUse",
-                content: [
-                  {
-                    type: "toolCall",
-                    id: "tc_finish_1",
-                    name: "finish",
-                    arguments: { status: "done", summary: "Bounded after 1 operation" },
-                  },
-                ],
-              }),
-            });
-          }
-          return stream;
-        };
-        try {
-          const execRes = await executePreparedAgent(prep.prepared, {
-            timeoutMs: opts.timeoutMs,
-            signal: opts.signal,
-            deadlineAt: opts.deadlineAt,
-            operationAllowance: opts.operationAllowance,
-          });
-          return {
-            ...execRes,
-            sessionId: prep.sessionId,
-            sessionPath: prep.sessionPath,
-            systemPrompt: prep.prepared.systemPrompt,
-            model: prep.model,
-            executionManifest: prep.executionManifest,
-            cleanupConfirmed: await prep.cleanupAsync(),
-          };
-        } finally {
-          prep.cleanup();
-        }
-      },
-    });
-
-    expect(allowanceRun.ok).toBe(true);
-    expect(allowanceRun.result?.type === "done" ? allowanceRun.result.summary : "").toBe(
-      "Bounded after 1 operation",
-    );
-    expect(seenPrompts).toHaveLength(2);
-    expect(seenPrompts[1]?.some((msg) => msg.includes("finish()"))).toBe(true);
   });
 
   test.each([false, true])("excludes a malformed unused agent and retains its diagnostic (lookup=%s)", async (lookup) => {
@@ -1332,9 +1419,8 @@ export async function execute(ctx) {
         name: "healthy", description: "Independent supplied module",
         async execute(ctx) {
           if (lookup) {
-            try { await ctx.call("broken", "must not run"); }
-            catch (error) { return ctx.done("healthy", String(error)); }
-            throw new Error("Malformed owner was admitted");
+            const child = await ctx.call("global/broken", { prompt: "must not run" });
+            return ctx.done("healthy", child.summary);
           }
           return ctx.done("healthy");
         },
@@ -1348,7 +1434,7 @@ export async function execute(ctx) {
     }
   });
 
-  test.each(["unused", "timeout", "cancel"])("defers unrelated imports and bounds called owner catalog preparation on %s", async (mode) => {
+  test.each(["timeout", "cancel"])("prepares the complete catalog and bounds stalled imports on %s", async (mode) => {
     const env = setupDirectLayout();
     const gate = await controlledWorkflowImport(env.root);
     const reviewerDir = join(env.agentsRoot, "reviewer", "workflows");
@@ -1361,25 +1447,13 @@ export const name = "after";
 export const description = "Must not import after cancellation";
 export async function execute(ctx) { return ctx.done("after"); }
 `);
-    if (mode === "unused") {
-      const run = await observeBoundedResult(runDirectWorkflow({
-        ...env, agentName: "owner", input: {}, models: {}, timeoutMs: 500,
-        module: { name: "healthy", description: "Does not touch reviewer/*", async execute(ctx) {
-          return ctx.done("healthy");
-        } },
-      }));
-      expect(run?.result.ok).toBe(true);
-      expect(run?.result.result).toMatchObject({ type: "done", summary: "healthy" });
-      expect(existsSync(marker)).toBe(false);
-      return;
-    }
     const controller = new AbortController();
     let settledAfterCall = false;
     const run = runDirectWorkflow({
       ...env, agentName: "owner", input: {}, models: {},
       signal: controller.signal, timeoutMs: mode === "timeout" ? 500 : 10_000,
       module: { name: "caller", description: "Calls reviewer/after whose catalog import stalls", async execute(ctx) {
-        await ctx.call("reviewer/after", {});
+        await ctx.call("global/after", { prompt: "after" });
         settledAfterCall = true;
         return ctx.done("must not complete");
       } },
@@ -1401,7 +1475,7 @@ export async function execute(ctx) { return ctx.done("after"); }
     expect(existsSync(marker)).toBe(false);
   });
 
-  test.each(["global", "app-local"])("isolates %s callers from other Apps' procedures", async (layout) => {
+  test.each(["global", "app-local"])("lets %s callers invoke exact cross-App procedures without grants", async (layout) => {
     const env = setupDirectLayout();
     const projectsRoot = join(env.projectRoot, "projects");
     const foreignDir = join(projectsRoot, "foreign.app");
@@ -1429,23 +1503,15 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
     const run = await runDirectWorkflow({
       ...env, agentsRoot, projectsRoot, agentName: "owner", input: {}, models: {},
       module: { name: "caller", description: "Boundary probe", async execute(ctx) {
-        const failures = [];
-        for (const probe of [
-          () => ctx.call("foreign-owner/secret", {}),
-          () => ctx.call("foreign-owner", "probe"),
-        ]) {
-          try { await probe(); } catch (err) { failures.push(String(err)); }
-        }
-        return ctx.done("isolated", failures);
+        const result = await ctx.call("foreign/secret", { prompt: "probe" });
+        return ctx.done("cross-App call completed", result.summary);
       } },
     });
     expect(run.ok).toBe(true);
     expect(run.result).toMatchObject({
       type: "done",
-      output: [
-        expect.stringContaining('Callable procedure "foreign-owner/secret" not found'),
-        expect.stringContaining('Callable target "foreign-owner" not found'),
-      ],
+      summary: "cross-App call completed",
+      output: "foreign execution",
     });
   });
 
@@ -1467,7 +1533,7 @@ export async function execute(ctx) { return ctx.done("foreign execution"); }
       ...env, projectsRoot, agentName: "owner", workflowDir: join(localAgentsRoot, "owner", "workflows"),
       input: {}, models: { test: fakeModel() as any },
       module: { name: "caller", description: "Calls captured prompt", async execute(ctx) {
-        return ctx.call("reviewer", "Review HEAD");
+        return ctx.call("local/reviewer", { prompt: "Review HEAD" });
       } },
       runAgent: async (opts) => {
         const prep = await prepareDirectAgentExecution(opts);
@@ -1513,8 +1579,8 @@ export const name = "deep-review";
 export const description = "Cross-owner procedure that calls unqualified local-helper and prompt reviewer";
 export const readonly = true;
 export async function execute(ctx) {
-  const helper = await ctx.call("local-helper", {});
-  const agentStep = await ctx.call("reviewer", "Inspect " + ctx.input.subjectRef);
+  const helper = await ctx.call("global/local-helper", { prompt: "run helper" });
+  const agentStep = await ctx.call("global/reviewer", { prompt: "Inspect " + ctx.input.data.subjectRef });
   return ctx.done(helper.summary + ":" + agentStep.summary, {
     helper: helper.output,
     agentSummary: agentStep.summary,
@@ -1528,7 +1594,7 @@ export async function execute(ctx) {
 export const name = "delegate-cross-owner";
 export const description = "Owner calls reviewer/deep-review via ctx.call";
 export async function execute(ctx) {
-  const sub = await ctx.call("reviewer/deep-review", { subjectRef: "HEAD" }, { tools: "readonly" });
+  const sub = await ctx.call("global/deep-review", { prompt: "Deep review", data: { subjectRef: "HEAD" } });
   return ctx.done(sub.summary, sub.output);
 }
 `,
@@ -1537,7 +1603,7 @@ export async function execute(ctx) {
     const run = await runDirectWorkflow({
       agentName: "owner",
       workflowName: "delegate-cross-owner",
-      input: {},
+      input: { prompt: "delegate cross owner" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -1571,8 +1637,8 @@ export async function execute(ctx) {
   test("runDirect dispatches both prompt targets and code targets through one standalone entrypoint", async () => {
     const env = setupDirectLayout();
     const promptRun = await runDirect({
-      target: "reviewer",
-      input: "Inspect HEAD",
+      target: "global/reviewer",
+      input: { prompt: "Inspect HEAD" },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -1597,8 +1663,8 @@ export async function execute(ctx) {
     });
 
     const codeRun = await runDirect({
-      target: "owner/review-change",
-      input: { subjectRef: "HEAD~1..HEAD" },
+      target: "global/review-change",
+      input: { prompt: "Review change", data: { subjectRef: "HEAD~1..HEAD" } },
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
       agentsRoot: env.agentsRoot,
@@ -1621,14 +1687,13 @@ export async function execute(ctx) {
       summary: "Reviewed HEAD~1..HEAD",
     });
 
-    // Regression: when agentName="owner" calls prompt target="reviewer", and reviewer also owns
-    // a procedure named "reviewer", runDirect must invoke the resolved prompt (not the procedure),
-    // and must forward tools: "readonly" without failing readonly module checks.
+    // A distinct reviewer-owned procedure must not interfere with prompt dispatch, and the
+    // prompt call must forward tools: "readonly" without failing readonly module checks.
     writeFileSync(
-      join(env.agentsRoot, "reviewer", "workflows", "reviewer.ts"),
+      join(env.agentsRoot, "reviewer", "workflows", "reviewer-procedure.ts"),
       `
-export const name = "reviewer";
-export const description = "Procedure with same name as owning prompt agent";
+export const name = "reviewer-procedure";
+export const description = "Distinct procedure owned by the reviewer prompt agent";
 export const readonly = true;
 export async function execute(ctx) {
   return ctx.done("wrong-procedure-invoked");
@@ -1638,8 +1703,8 @@ export async function execute(ctx) {
     let seenToolsPolicy: string | undefined;
     const collisionAndReadonlyRun = await runDirect({
       agentName: "owner",
-      target: "reviewer",
-      input: "Readonly prompt check",
+      target: "global/reviewer",
+      input: { prompt: "Readonly prompt check" },
       tools: "readonly",
       projectRoot: env.projectRoot,
       workRoot: env.workRoot,
@@ -1648,8 +1713,8 @@ export async function execute(ctx) {
       outputRoot: env.outputRoot,
       models: { test: fakeModel() as any },
       agentFixtures: {
-        reviewer: async ({ task, options: stepOpts }) => {
-          seenToolsPolicy = stepOpts?.tools;
+        reviewer: async ({ task, tools }) => {
+          seenToolsPolicy = tools;
           return {
             id: "s_direct_readonly_prompt",
             kind: "agent",
@@ -1666,84 +1731,12 @@ export async function execute(ctx) {
       summary: "prompt:Readonly prompt check",
     });
 
-    // Exercise the real executeCliStep adapter (not agentFixtures.codex):
-    let seenCliProjectRoot: string | undefined;
-    const codexSchema = Type.Object({ ok: Type.Boolean(), files: Type.Number() });
-    const codexRun = await run("codex", "Inspect package.json", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      outputSchema: codexSchema,
-      models: { test: fakeModel() as any },
-      runCli: async (cliInput, cliOpts) => {
-        seenCliProjectRoot = cliOpts.projectRoot;
-        expect(cliInput.tool).toBe("codex");
-        expect(cliInput.expectedOutput).toEqual({ format: "json" });
-        return {
-          taskId: "cli_codex_real",
-          tool: "codex",
-          status: "completed",
-          summary: "Inspected JSON",
-          outputText: JSON.stringify({ ok: true, files: 4 }),
-          cleanupConfirmed: true,
-          resultPath: "/tmp/result.md",
-          structuredResultPath: "/tmp/result.json",
-          eventsPath: "/tmp/events.jsonl",
-          factsRefs: [],
-          effectiveSandbox: "danger-full-access",
-        };
-      },
-    });
-    expect(codexRun.ok).toBe(true);
-    expect(seenCliProjectRoot).toBe(env.workRoot);
-    expect(codexRun.result).toEqual({
-      type: "done",
-      summary: "Inspected JSON",
-      output: { ok: true, files: 4 },
-      facts: {
-        tool: "codex",
-        resultPath: "/tmp/result.md",
-        eventsPath: "/tmp/events.jsonl",
-      },
-    });
-
-    // Reject readonly native CLI calls before spawning:
-    let spawnedOnReadonly = false;
-    const readonlyCliRejected = await run("codex", "Must not run", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      tools: "readonly",
-      models: {},
-      runCli: async () => {
-        spawnedOnReadonly = true;
-        throw new Error("unreachable");
-      },
-    });
-    expect(readonlyCliRejected.ok).toBe(false);
-    expect(spawnedOnReadonly).toBe(false);
-    expect(String(readonlyCliRejected.error)).toContain('cannot enforce tools: "readonly"');
-
-    // Propagate unconfirmed CLI process-group drain:
-    const failedDrainCli = await run("codex", "Spawn leaky child", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      models: {},
-      runCli: async () => ({
-        taskId: "cli_leaky",
-        tool: "codex",
-        status: "failed",
-        summary: "CLI process group did not drain",
-        error: "CLI process group did not drain",
-        cleanupConfirmed: false,
-        resultPath: "/tmp/result.md",
-        structuredResultPath: "/tmp/result.json",
-        eventsPath: "/tmp/events.jsonl",
-        factsRefs: [],
-        effectiveSandbox: "danger-full-access",
-      }),
-    });
-    expect(failedDrainCli.ok).toBe(false);
-    expect(failedDrainCli.error).toBeInstanceOf(WorkflowUnconfirmedCleanupError);
-    expect(failedDrainCli.report.cleanup.confirmed).toBe(false);
+    // Native CLI backends are execution setup, not unconditional standalone callables.
+    const listed = await listStandaloneTargets({ projectRoot: env.projectRoot });
+    expect(listed.map((descriptor) => descriptor.name)).not.toContain("global/codex");
+    await expect(
+      run("codex", { prompt: "Inspect package.json" }, { projectRoot: env.projectRoot, models: {} }),
+    ).resolves.toEqual({ status: "error", summary: "Callable target not found: codex" });
   });
 
   test.each(["timeout", "cancel"] as const)(
@@ -1768,7 +1761,7 @@ export async function execute(ctx) { return ctx.done("probe"); }
       const run = runDirect({
         ...env,
         agentName: "owner",
-        target: "reviewer/probe",
+        target: "global/probe",
         input: {},
         models: {},
         signal: controller.signal,
@@ -1829,7 +1822,7 @@ export const name = "pinned-helper";
 export const description = "Mutated helper v2";
 export async function execute(ctx) { return ctx.done("v2"); }
 \`);
-  const sub = await ctx.call("pinned-helper", {});
+  const sub = await ctx.call("global/pinned-helper", { prompt: "run pinned helper" });
   return ctx.done("ran:" + sub.summary);
 }
 `,
@@ -1838,7 +1831,7 @@ export async function execute(ctx) { return ctx.done("v2"); }
         ...env,
         agentName: "owner",
         workflowName: "mutate-and-call",
-        input: {},
+        input: { prompt: "run mutation probe" },
         models: {},
       });
       await new Promise<void>((resolve) => setTimeout(resolve, 25));
@@ -1864,8 +1857,8 @@ export async function execute(ctx) { return ctx.done("ok"); }
     const expiredRun = await runDirect({
       ...env,
       agentName: "owner",
-      target: "reviewer/marker",
-      input: {},
+      target: "global/marker",
+      input: { prompt: "expired marker probe" },
       models: {},
       deadlineAt: Date.now() - 100,
     });
@@ -1894,7 +1887,7 @@ export async function execute(ctx) {
     const budgetRun = await runDirect({
       ...env,
       agentName: "owner",
-      target: "reviewer/slow-prep-then-exec",
+      target: "global/slow-prep-then-exec",
       input: {},
       models: {},
       timeoutMs: 260,
@@ -1921,7 +1914,7 @@ export async function execute(ctx) {
     const parityRun = await runDirect({
       ...env,
       agentName: "owner",
-      target: "reviewer/longer-module-timeout",
+      target: "global/longer-module-timeout",
       input: {},
       models: {},
       timeoutMs: 100,
@@ -1931,6 +1924,77 @@ export async function execute(ctx) {
       type: "done",
       summary: "completed-within-module-timeout",
     });
+  });
+
+  test("public run pins edited and missing prompt sources before controller ctx.call dispatch", async () => {
+    const runCase = async (mode: "missing-identity" | "missing-shared") => {
+      const env = setupDirectLayout();
+      const identityPath = join(env.agentsRoot, "reviewer", "AGENTS.md");
+      const sharedPath = join(env.sharedRoot, "common-sense.md");
+      const originalIdentity = "ORIGINAL WORKER IDENTITY";
+      const originalShared = "ORIGINAL SHARED PROMPT";
+      if (mode === "missing-identity") {
+        unlinkSync(identityPath);
+        writeFileSync(sharedPath, originalShared);
+      } else {
+        writeFileSync(identityPath, originalIdentity);
+      }
+      writeFileSync(
+        join(env.agentsRoot, "owner", "workflows", "controller.ts"),
+        `
+import { writeFileSync } from "node:fs";
+export const name = "controller";
+export const description = "Mutate prompt sources after public catalog capture";
+export async function execute(ctx) {
+  writeFileSync(${JSON.stringify(identityPath)}, "CHANGED WORKER IDENTITY");
+  writeFileSync(${JSON.stringify(sharedPath)}, "CHANGED SHARED PROMPT");
+  const child = await ctx.call("global/reviewer", { prompt: "Use captured prompt sources" });
+  return ctx.done("controller complete", child);
+}
+`,
+      );
+
+      let systemPrompt = "";
+      const result = await run("global/controller", { prompt: "Run controller" }, {
+        projectRoot: env.projectRoot,
+        cwd: env.projectRoot,
+        models: { test: fakeModel() as any },
+        runAgent: async (opts): Promise<DirectAgentRunResult> => {
+          const prep = await prepareDirectAgentExecution(opts);
+          try {
+            systemPrompt = prep.prepared.systemPrompt;
+            return {
+              sessionId: prep.sessionId,
+              sessionPath: prep.sessionPath,
+              systemPrompt,
+              model: prep.model,
+              executionManifest: prep.executionManifest,
+              status: "done",
+              lastAssistantText: "captured",
+              messages: [],
+              durationMs: 1,
+              finishResult: { status: "done", summary: "captured" },
+              usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, totalCost: 0 },
+              cleanupConfirmed: await prep.cleanupAsync(),
+            };
+          } finally {
+            prep.cleanup();
+          }
+        },
+      });
+      expect(result).toMatchObject({ status: "done", summary: "controller complete" });
+      return systemPrompt;
+    };
+
+    const missingIdentity = await runCase("missing-identity");
+    expect(missingIdentity).toContain("ORIGINAL SHARED PROMPT");
+    expect(missingIdentity).not.toContain("CHANGED SHARED PROMPT");
+    expect(missingIdentity).not.toContain("CHANGED WORKER IDENTITY");
+
+    const missingShared = await runCase("missing-shared");
+    expect(missingShared).toContain("ORIGINAL WORKER IDENTITY");
+    expect(missingShared).not.toContain("CHANGED WORKER IDENTITY");
+    expect(missingShared).not.toContain("CHANGED SHARED PROMPT");
   });
 
   test("auto-discovers App-local owners in run(target, input) without --app, enforces dual outputSchema, prefers local procedures named codex, and skips prompt owner procedure imports", async () => {
@@ -1956,6 +2020,20 @@ export async function execute(ctx) {
       `
 export const name = "verify-alpha";
 export const description = "Module with loose outputSchema";
+export const inputSchema = {
+  type: "object",
+  properties: {
+    prompt: { type: "string", minLength: 1 },
+    data: {
+      type: "object",
+      properties: { score: { type: "number" } },
+      required: ["score"],
+      additionalProperties: false,
+    },
+  },
+  required: ["prompt", "data"],
+  additionalProperties: false,
+};
 export const outputSchema = {
   type: "object",
   properties: { score: { type: "number" } },
@@ -1963,7 +2041,29 @@ export const outputSchema = {
   additionalProperties: false,
 };
 export async function execute(ctx) {
-  return ctx.done("scored", { score: ctx.input.score });
+  return ctx.done("scored", { score: ctx.input.data.score });
+}
+`,
+    );
+    writeFileSync(
+      join(alphaAgentDir, "workflows", "partial-alpha.ts"),
+      `
+export const name = "partial-alpha";
+export const description = "Returns partial output for root schema validation";
+export const inputSchema = {
+  type: "object",
+  properties: { prompt: { type: "string", minLength: 1 } },
+  required: ["prompt"],
+  additionalProperties: false,
+};
+export const outputSchema = {
+  type: "object",
+  properties: { score: { type: "number" } },
+  required: ["score"],
+  additionalProperties: false,
+};
+export async function execute() {
+  return { status: "blocked", summary: "partial score", output: { score: "invalid" }, facts: { source: "fixture" } };
 }
 `,
     );
@@ -1979,39 +2079,82 @@ export async function execute(ctx) {
 `,
     );
 
-    // 1. Auto-discovers alpha-lead/verify-alpha in projects/alpha.app without `app` option:
+    // 1. Auto-discovers the exact canonical alpha/verify-alpha name without `app` option:
     const autoRun = await run(
-      "alpha-lead/verify-alpha",
-      { score: 95 },
+      "alpha/verify-alpha",
+      { prompt: "Score alpha", data: { score: 95 } },
       {
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
       },
     );
-    expect(autoRun.ok).toBe(true);
-    expect(autoRun.result).toEqual({
-      type: "done",
+    expect(autoRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "scored",
       output: { score: 95 },
     });
 
     // 2. Caller outputSchema is enforced in addition to module.outputSchema:
     const stricterCallerSchemaFail = await run(
-      "alpha-lead/verify-alpha",
-      { score: 50 }, // passes module.outputSchema (Number), fails caller outputSchema (minimum: 90)
+      "alpha/verify-alpha",
+      { prompt: "Score alpha", data: { score: 50 } }, // passes module.outputSchema, fails caller minimum
       {
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
         outputSchema: Type.Object({ score: Type.Number({ minimum: 90 }) }),
       },
     );
-    expect(stricterCallerSchemaFail.ok).toBe(false);
-    expect(stricterCallerSchemaFail.error).toBeInstanceOf(WorkflowValidationError);
+    expect(stricterCallerSchemaFail).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: expect.stringContaining("Invalid caller output schema"),
+    });
 
-    // 3. Local procedure named "codex" wins over native CLI executor when agentName="alpha-lead":
+    // 3. Root partial output is checked against the module schema before run() exposes it.
+    const invalidPartialRoot = await run(
+      "alpha/partial-alpha",
+      { prompt: "Return partial score" },
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+      },
+    );
+    expect(invalidPartialRoot).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: expect.stringContaining("Invalid workflow output"),
+      facts: { invalidOutput: { score: "invalid" } },
+    });
+    expect(invalidPartialRoot).not.toHaveProperty("output");
+
+    // 4. Root partial output is also checked against the caller schema.
+    writeFileSync(
+      join(alphaAgentDir, "workflows", "partial-alpha.ts"),
+      readFileSync(join(alphaAgentDir, "workflows", "partial-alpha.ts"), "utf8")
+        .replace('{ score: "invalid" }', "{ score: 50 }"),
+    );
+    const invalidPartialForCaller = await run(
+      "alpha/partial-alpha",
+      { prompt: "Return partial score" },
+      {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+        outputSchema: Type.Object({ score: Type.Number({ minimum: 90 }) }),
+      },
+    );
+    expect(invalidPartialForCaller).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: expect.stringContaining("Invalid caller output schema"),
+      facts: { invalidOutput: { score: 50 } },
+    });
+    expect(invalidPartialForCaller).not.toHaveProperty("output");
+
+    // 5. The listed App procedure named "codex" is invoked instead of a native CLI alias:
     const localCodexProc = await run(
-      "codex",
-      { customObject: true },
+      "alpha/codex",
+      { prompt: "Run local codex", data: { customObject: true } },
       {
         projectRoot: env.projectRoot,
         agentName: "alpha-lead",
@@ -2021,40 +2164,153 @@ export async function execute(ctx) {
         },
       },
     );
-    expect(localCodexProc.ok).toBe(true);
-    expect(localCodexProc.result).toEqual({
-      type: "done",
+    expect(localCodexProc).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "local-codex-procedure",
-      output: { received: { customObject: true } },
+      output: { received: { prompt: "Run local codex", data: { customObject: true } } },
     });
 
-    // 4. Bare root prompt target `run("reviewer", ...)` does not import reviewer/workflows/*.ts:
-    const gate = await controlledWorkflowImport(env.root);
-    writeFileSync(join(env.agentsRoot, "reviewer", "workflows", "stalled-unused.ts"), gate.source);
-    try {
-      const barePrompt = await observeBoundedResult(
-        run("reviewer", "Fast prompt without importing workflows", {
-          projectRoot: env.projectRoot,
-          timeoutMs: 500,
-          models: { test: fakeModel() as any },
-          agentFixtures: {
-            reviewer: async ({ task }) => ({
-              id: "s_fast_prompt",
-              kind: "agent",
-              status: "done",
-              summary: `fast:${task}`,
-            }),
-          },
+    // 4. Canonical global prompt dispatch uses the same prepared catalog as discovery.
+    const barePrompt = await run("global/reviewer", { prompt: "Fast canonical prompt" }, {
+      projectRoot: env.projectRoot,
+      timeoutMs: 500,
+      models: { test: fakeModel() as any },
+      agentFixtures: {
+        reviewer: async ({ task }) => ({
+          id: "s_fast_prompt",
+          kind: "agent",
+          status: "done",
+          summary: `fast:${task}`,
         }),
-      );
-      expect(barePrompt?.result.ok).toBe(true);
-      expect(barePrompt?.result.result).toMatchObject({
-        type: "done",
-        summary: "fast:Fast prompt without importing workflows",
-      });
-    } finally {
-      gate.release();
-    }
+      },
+    });
+    expect(barePrompt).toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "fast:Fast canonical prompt",
+    });
+  });
+
+  test("returns an error when a real prompt run omits schema-required finish output", async () => {
+    const env = setupDirectLayout();
+    let promptMessages: DirectAgentRunResult["messages"] = [];
+    const result = await run("global/reviewer", { prompt: "Return a verdict" }, {
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
+      outputSchema: Type.Object({ verdict: Type.Literal("pass") }),
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        let turn = 0;
+        prep.prepared.runner.streamFn = () => {
+          const stream = createAssistantMessageEventStream();
+          turn += 1;
+          const content = turn === 1
+            ? [{ type: "toolCall" as const, id: "finish_without_output", name: "finish", arguments: {
+                status: "done", summary: "omitted the required verdict",
+              } }]
+            : [{ type: "text" as const, text: "I cannot correct the omitted output." }];
+          stream.push({
+            type: "done",
+            reason: turn === 1 ? "toolUse" : "stop",
+            message: usageReply({ stopReason: turn === 1 ? "toolUse" : "stop", content }),
+          });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          promptMessages = executed.messages;
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(result).toMatchObject({
+      id: expect.any(String),
+      status: "error",
+      summary: "Workflow agent step ended without calling finish() after one corrective prompt",
+    });
+    expect(promptMessages).toContainEqual(expect.objectContaining({
+      role: "toolResult",
+      toolCallId: "finish_without_output",
+      isError: true,
+      content: expect.arrayContaining([expect.objectContaining({
+        type: "text",
+        text: expect.stringContaining("status done requires the schema-validated output payload"),
+      })]),
+    }));
+  });
+
+  test("admits a real prompt blocked result without unavailable schema output in one turn", async () => {
+    const env = setupDirectLayout();
+    let promptTurns = 0;
+    const result = await run("global/reviewer", { prompt: "Return a verdict when evidence exists" }, {
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
+      outputSchema: Type.Object({ verdict: Type.Literal("pass") }),
+      runAgent: async (opts): Promise<DirectAgentRunResult> => {
+        const prep = await prepareDirectAgentExecution(opts);
+        prep.prepared.runner.streamFn = () => {
+          promptTurns += 1;
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: usageReply({
+              stopReason: "toolUse",
+              content: [{ type: "toolCall", id: "finish_blocked_without_output", name: "finish", arguments: {
+                status: "blocked", summary: "Evidence unavailable",
+              } }],
+            }),
+          });
+          return stream;
+        };
+        try {
+          const executed = await executePreparedAgent(prep.prepared, {
+            timeoutMs: opts.timeoutMs,
+            signal: opts.signal,
+            deadlineAt: opts.deadlineAt,
+          });
+          prep.cleanup();
+          return {
+            ...executed,
+            sessionId: prep.sessionId,
+            sessionPath: prep.sessionPath,
+            systemPrompt: prep.prepared.systemPrompt,
+            model: prep.model,
+            executionManifest: prep.executionManifest,
+            cleanupConfirmed: await prep.cleanupAsync(),
+          };
+        } catch (error) {
+          await prep.cleanupAsync();
+          throw error;
+        }
+      },
+    });
+
+    expect(promptTurns).toBe(1);
+    expect(result).toMatchObject({
+      id: expect.any(String),
+      status: "blocked",
+      summary: "Evidence unavailable",
+    });
+    expect(result).not.toHaveProperty("output");
   });
 
   test("recovers App-local prompt callerProjectId without agentFixtures, admits global agents from App procedures, enforces explicit App scope, defaults workRoot to cwd, retains scratch outputRoot on unconfirmed cleanup, supports array outputSchema on CLI runner, and lists exported procedure names", async () => {
@@ -2111,68 +2367,48 @@ export async function execute(ctx) {
 export const name = "aliased-proc";
 export const description = "Aliased procedure calling global reviewer";
 export async function execute(ctx) {
-  const step = await ctx.call("reviewer", "Check from App procedure");
+  const step = await ctx.call("global/reviewer", { prompt: "Check from App procedure" });
   return ctx.done("alpha->global:" + step.summary);
 }
 `,
     );
-    // Duplicate exported name in another file to verify ambiguity exclusion in listStandaloneTargets:
-    writeFileSync(
-      join(betaOwnerDir, "workflows", "dup-a.ts"),
-      `
-export const name = "dup-proc";
-export const description = "Duplicate A";
-export async function execute(ctx) { return ctx.done("a"); }
-`,
-    );
-    writeFileSync(
-      join(betaOwnerDir, "workflows", "dup-b.ts"),
-      `
-export const name = "dup-proc";
-export const description = "Duplicate B";
-export async function execute(ctx) { return ctx.done("b"); }
-`,
-    );
-
-    // 1. Bare App-local prompt target AND App-prefixed prompt target WITHOUT agentFixtures:
+    // 1. Invoke the exact canonical App-local prompt name without agentFixtures:
     const seenRunAgentWorkRoots: string[] = [];
     const nestedCwd = join(env.workRoot, "nested-repo");
     mkdirSync(nestedCwd, { recursive: true });
 
-    for (const promptTarget of ["alpha-lead", "alpha.app/alpha-lead"] as const) {
-      const bareAppPrompt = await run(promptTarget, "Run bare App prompt", {
-        cwd: nestedCwd,
-        projectRoot: env.projectRoot,
-        models: { test: fakeModel() as any },
-        runAgent: async (agentOpts) => {
-          seenRunAgentWorkRoots.push(agentOpts.workRoot);
-          return {
-            sessionId: "s_alpha_prompt",
-            sessionPath: join(agentOpts.outputRoot, "s_alpha_prompt"),
-            status: "completed",
-            lastAssistantText: "done",
-            messages: [],
-            durationMs: 5,
-            finishResult: {
-              status: "done",
-              summary: `ran:${agentOpts.agentName}:${agentOpts.task}`,
-            },
-          };
-        },
-      });
-      expect(bareAppPrompt.ok).toBe(true);
-      expect(bareAppPrompt.result).toMatchObject({
-        type: "done",
-        summary: "ran:alpha-lead:Run bare App prompt",
-      });
-    }
+    const bareAppPrompt = await run("alpha/alpha-lead", { prompt: "Run bare App prompt" }, {
+      cwd: nestedCwd,
+      projectRoot: env.projectRoot,
+      models: { test: fakeModel() as any },
+      runAgent: async (agentOpts) => {
+        seenRunAgentWorkRoots.push(agentOpts.workRoot);
+        return {
+          sessionId: "s_alpha_prompt",
+          sessionPath: join(agentOpts.outputRoot, "s_alpha_prompt"),
+          status: "completed",
+          lastAssistantText: "done",
+          messages: [],
+          durationMs: 5,
+          finishResult: {
+            status: "done",
+            summary: `ran:${agentOpts.agentName}:${agentOpts.task}`,
+          },
+        };
+      },
+    });
+    expect(bareAppPrompt).toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "ran:alpha-lead:Run bare App prompt",
+    });
     // 2. workRoot defaults to cwd (nestedCwd) rather than inferred projectRoot:
-    expect(seenRunAgentWorkRoots).toEqual([nestedCwd, nestedCwd]);
+    expect(seenRunAgentWorkRoots).toEqual([nestedCwd]);
 
     // 3. Auto-discovered App procedure can call a global agent ("reviewer") without agentFixtures:
     const appCallsGlobal = await run(
-      "alpha-lead/aliased-proc",
-      {},
+      "alpha/aliased-proc",
+      { prompt: "Call the global reviewer" },
       {
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
@@ -2190,132 +2426,74 @@ export async function execute(ctx) { return ctx.done("b"); }
         }),
       },
     );
-    expect(appCallsGlobal.ok).toBe(true);
-    expect(appCallsGlobal.result).toEqual({
-      type: "done",
+    expect(appCallsGlobal).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "alpha->global:global-reviewer",
     });
 
-    // 4. Explicit App scope (--app or <app>.app/<target>) rejects sibling App procedures:
+    // 4. Retired App selection does not narrow the complete captured catalog.
     await expect(
       run(
-        "beta-owner/beta-probe",
-        {},
+        "beta/beta-probe",
+        { prompt: "Probe beta" },
         {
           projectRoot: env.projectRoot,
           app: "alpha",
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("beta-owner/beta-probe");
+    ).resolves.toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "beta-ran",
+    });
 
     await expect(
       run(
         "alpha.app/beta-owner/beta-probe",
-        {},
+        { prompt: "Rejected legacy target" },
         {
           projectRoot: env.projectRoot,
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("beta-owner/beta-probe");
+    ).resolves.toEqual({
+      status: "error",
+      summary: "Callable target not found: alpha.app/beta-owner/beta-probe",
+    });
 
-    // 5. listStandaloneTargets advertises exported `name` ("alpha-lead/aliased-proc", not "alpha-lead/z-aliased") and excludes ambiguous duplicates:
+    // 5. Catalog preparation rejects an ambiguous canonical workflow instead of silently omitting it.
+    writeFileSync(
+      join(betaOwnerDir, "workflows", "dup-a.ts"),
+      `
+export const name = "dup-proc";
+export const description = "Duplicate A";
+export async function execute(ctx) { return ctx.done("a"); }
+`,
+    );
+    writeFileSync(
+      join(betaOwnerDir, "workflows", "dup-b.ts"),
+      `
+export const name = "dup-proc";
+export const description = "Duplicate B";
+export async function execute(ctx) { return ctx.done("b"); }
+`,
+    );
+    await expect(listStandaloneTargets({ projectRoot: env.projectRoot })).rejects.toThrow(
+      'Ambiguous agent workflow name "dup-proc"',
+    );
+    unlinkSync(join(betaOwnerDir, "workflows", "dup-b.ts"));
+
+    // The repaired catalog uses exact App/global canonical names and exported workflow names.
     const listed = await listStandaloneTargets({ projectRoot: env.projectRoot });
-    const targetNames = listed.map((item) => item.target);
-    expect(targetNames).toContain("alpha-lead/aliased-proc");
-    expect(targetNames).not.toContain("alpha-lead/z-aliased");
-    expect(targetNames).not.toContain("beta-owner/dup-proc");
+    const targetNames = listed.map((item) => item.name);
+    expect(targetNames).toContain("alpha/aliased-proc");
+    expect(targetNames).not.toContain("alpha/z-aliased");
+    expect(targetNames).toContain("beta/dup-proc");
+    expect(listed.every((item) => !("kind" in item) && !("target" in item))).toBe(true);
 
-    // 6. Array outputSchema through the real runCliAgent runner + scratch outputRoot retention when drainProcessGroup returns false:
-    const arraySchema = Type.Array(Type.String());
-    const arrayCliRun = await run("codex", "Return JSON array", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      outputSchema: arraySchema,
-      models: {},
-      runCli: (cliInput, cliOpts) =>
-        runCliAgent(cliInput, {
-          ...cliOpts,
-          spawnCommand: (() => {
-            const { EventEmitter } = require("node:events");
-            const { PassThrough } = require("node:stream");
-            const child = new EventEmitter();
-            child.pid = 42424;
-            child.stdout = new PassThrough();
-            child.stderr = new PassThrough();
-            child.kill = () => true;
-            setImmediate(() => {
-              const outIdx = cliInput.tool === "codex" ? 9 : -1;
-              void outIdx;
-              // Write JSON array to resultPath via finalText in codex stream:
-              child.stdout.write(
-                `${JSON.stringify({
-                  type: "item.completed",
-                  item: { type: "agent_message", text: '["alpha","beta"]' },
-                })}\n${JSON.stringify({ type: "turn.completed" })}\n`,
-              );
-              child.stdout.end();
-              child.stderr.end();
-              child.emit("exit", 0, null);
-              child.emit("close", 0, null);
-            });
-            return child;
-          }) as any,
-          drainProcessGroup: async () => true,
-        }),
-    });
-    expect(arrayCliRun.ok).toBe(true);
-    expect(arrayCliRun.result).toMatchObject({
-      type: "done",
-      output: ["alpha", "beta"],
-    });
-
-    // 7. Scratch outputRoot is retained when drainProcessGroup returns false (unconfirmed cleanup) and outputRoot was omitted:
-    const unconfirmedScratchRun = await run("codex", "Leaky process group", {
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      models: {},
-      drainProcessGroup: async () => false,
-      runCli: (cliInput, cliOpts) =>
-        runCliAgent(cliInput, {
-          ...cliOpts,
-          spawnCommand: (() => {
-            const { EventEmitter } = require("node:events");
-            const { PassThrough } = require("node:stream");
-            const child = new EventEmitter();
-            child.pid = 52525;
-            child.stdout = new PassThrough();
-            child.stderr = new PassThrough();
-            child.kill = () => true;
-            setImmediate(() => {
-              child.stdout.write(
-                `${JSON.stringify({
-                  type: "item.completed",
-                  item: { type: "agent_message", text: "ok" },
-                })}\n${JSON.stringify({ type: "turn.completed" })}\n`,
-              );
-              child.stdout.end();
-              child.stderr.end();
-              child.emit("exit", 0, null);
-              child.emit("close", 0, null);
-            });
-            return child;
-          }) as any,
-        }),
-    });
-    expect(unconfirmedScratchRun.ok).toBe(false);
-    expect(unconfirmedScratchRun.report.cleanup.confirmed).toBe(false);
-    expect(unconfirmedScratchRun.outputRoot).toBeDefined();
-    roots.push(unconfirmedScratchRun.outputRoot!);
-    expect(existsSync(unconfirmedScratchRun.outputRoot!)).toBe(true);
-    const stepSessionId = unconfirmedScratchRun.report.steps[0]?.sessionId;
-    expect(stepSessionId).toBeDefined();
-    expect(
-      existsSync(join(unconfirmedScratchRun.outputRoot!, "sessions", stepSessionId!, "bash-process-groups.json")),
-    ).toBe(true);
-
-    // 8. Duplicate owner in alpha.app and beta.app with cwd inside beta.app executes beta's procedure (not alpha's):
+    // 6. Same owner names in different Apps remain distinct exact canonical routes.
     const alphaSharedDir = join(alphaAppDir, "agents", "shared-owner");
     const betaSharedDir = join(betaAppDir, "agents", "shared-owner");
     mkdirSync(join(alphaSharedDir, "workflows"), { recursive: true });
@@ -2348,33 +2526,46 @@ export async function execute(ctx) {
     }
 
     const betaCwdRun = await run(
-      "shared-owner/which-app",
-      {},
+      "beta/which-app",
+      { prompt: "Report the owning App" },
       {
         cwd: betaAppDir,
         projectRoot: env.projectRoot,
         models: { test: fakeModel() as any },
       },
     );
-    expect(betaCwdRun.ok).toBe(true);
-    expect(betaCwdRun.result).toEqual({
-      type: "done",
+    expect(betaCwdRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "beta",
     });
+    await expect(
+      run("shared-owner/which-app", { prompt: "Reject legacy owner alias" }, {
+        projectRoot: env.projectRoot,
+        models: { test: fakeModel() as any },
+      }),
+    ).resolves.toEqual({
+      status: "error",
+      summary: "Callable target not found: shared-owner/which-app",
+    });
 
-    // 9. Explicit app scope ("alpha") combined with sibling agentsRoot ("beta.app/agents") is rejected before importing beta procedures:
+    // 7. App and agentsRoot compatibility options do not filter project App discovery.
     await expect(
       run(
-        "beta-owner/beta-probe",
-        {},
+        "beta/beta-probe",
+        { prompt: "Probe beta" },
         {
           projectRoot: env.projectRoot,
           app: "alpha",
-          agentsRoot: join(betaAppDir, "agents"),
+          agentsRoot: join(alphaAppDir, "agents"),
           models: { test: fakeModel() as any },
         },
       ),
-    ).rejects.toThrow("Conflicting App scope");
+    ).resolves.toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "beta-ran",
+    });
 
     // 10. listStandaloneTargets bounds stalled top-level await imports via timeoutMs/signal:
     const gate = await controlledWorkflowImport(env.root);
@@ -2401,13 +2592,21 @@ export const description = "Reports ordinary domain input without Task synthesis
 export const inputSchema = {
   type: "object",
   properties: {
-    task: { type: "string" },
-    outcome: { type: "string" },
-    acceptance: { type: "array", items: { type: "string" } },
-    constraints: { type: "array", items: { type: "string" } },
-    verify: { type: "array", items: { type: "string" } },
+    prompt: { type: "string", minLength: 1 },
+    data: {
+      type: "object",
+      properties: {
+        task: { type: "string" },
+        outcome: { type: "string" },
+        acceptance: { type: "array", items: { type: "string" } },
+        constraints: { type: "array", items: { type: "string" } },
+        verify: { type: "array", items: { type: "string" } },
+      },
+      required: ["task", "outcome", "acceptance", "constraints", "verify"],
+      additionalProperties: false,
+    },
   },
-  required: ["task", "outcome", "acceptance", "constraints", "verify"],
+  required: ["prompt", "data"],
   additionalProperties: false,
 };
 export async function execute(ctx) {
@@ -2419,25 +2618,137 @@ export async function execute(ctx) {
 `,
     );
     const domainInput = {
-      task: "Domain field, not orchestration",
-      outcome: "Return unchanged input",
-      acceptance: ["No fake TaskDetail"],
-      constraints: ["No reconciliation envelope"],
-      verify: ["bun", "test"],
+      prompt: "Run the domain input probe",
+      data: {
+        task: "Domain field, not orchestration",
+        outcome: "Return unchanged input",
+        acceptance: ["No fake TaskDetail"],
+        constraints: ["No reconciliation envelope"],
+        verify: ["bun", "test"],
+      },
     };
-    const domainRun = await run("alpha-lead/domain-input-probe", domainInput, {
+    const domainRun = await run("alpha/domain-input-probe", domainInput, {
       projectRoot: env.projectRoot,
       models: { test: fakeModel() as any },
     });
-    expect(domainRun.ok).toBe(true);
-    expect(domainRun.result).toEqual({
-      type: "done",
+    expect(domainRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
       summary: "domain input retained",
       output: { input: domainInput, reconciliation: null },
     });
   });
 
-  test("activates skills, passes domain context, and reports explicit missing-service errors", async () => {
+  test("invokes the exact canonical workflow name returned by standalone discovery", async () => {
+    const env = setupDirectLayout();
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "echo.ts"),
+      `
+export const name = "echo";
+export const description = "Echo the canonical envelope";
+export async function execute(ctx) { return ctx.done("echoed", ctx.input); }
+`,
+    );
+    writeFileSync(
+      join(env.agentsRoot, "owner", "workflows", "invalid-targets.ts"),
+      `
+export const name = "invalid-targets";
+export const description = "Return pre-start failures through the common result envelope";
+export async function execute(ctx) {
+  const targets = ["echo", "owner/echo", "global/ echo", "global /echo", "global/", "/echo"];
+  const results = [];
+  for (const target of targets) results.push({ target, result: await ctx.call(target, { prompt: "run" }) });
+  return ctx.done("checked invalid targets", results);
+}
+`,
+    );
+
+    const descriptors = await listStandaloneTargets({ projectRoot: env.projectRoot });
+    const echo = descriptors.find((descriptor) => descriptor.name === "global/echo");
+    expect(echo).toBeDefined();
+    expect(descriptors.map((descriptor) => descriptor.name)).not.toContain("global/codex");
+    expect(descriptors.map((descriptor) => descriptor.name)).not.toContain("global/claude");
+
+    const input = { prompt: "echo this", data: { marker: "preserved" } };
+    const result = await run(echo!.name, input, {
+      projectRoot: env.projectRoot,
+      cwd: env.projectRoot,
+      models: {},
+      timeoutMs: 1_000,
+    });
+    expect(result).toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: "echoed",
+      output: input,
+    });
+
+    const invalidTargets = await run("global/invalid-targets", { prompt: "check invalid targets" }, {
+      projectRoot: env.projectRoot,
+      cwd: env.projectRoot,
+      models: {},
+      timeoutMs: 1_000,
+    });
+    expect(invalidTargets).toMatchObject({
+      status: "done",
+      summary: "checked invalid targets",
+      output: [
+        { target: "echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "owner/echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "global/ echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "global /echo", result: { status: "error", summary: expect.any(String) } },
+        { target: "global/", result: { status: "error", summary: expect.any(String) } },
+        { target: "/echo", result: { status: "error", summary: expect.any(String) } },
+      ],
+    });
+    for (const entry of invalidTargets.output as Array<{ result: Record<string, unknown> }>) {
+      expect(entry.result).not.toHaveProperty("id");
+    }
+
+    const reviewer = descriptors.find((descriptor) => descriptor.name === "global/reviewer");
+    expect(reviewer).toBeDefined();
+    const promptRun = await run(reviewer!.name, { prompt: "inspect", data: { ref: "HEAD" } }, {
+      projectRoot: env.projectRoot,
+      cwd: env.projectRoot,
+      models: {},
+      timeoutMs: 1_000,
+      agentFixtures: {
+        reviewer: async ({ task }) => ({
+          id: "s_canonical_prompt",
+          kind: "agent",
+          status: "done",
+          summary: task,
+        }),
+      },
+    });
+    expect(promptRun).toMatchObject({
+      id: expect.any(String),
+      status: "done",
+      summary: 'inspect\n\nInput data:\n{\n  "ref": "HEAD"\n}',
+    });
+
+    for (const [target, invalidInput, expected] of [
+      [echo!.name, { data: { marker: "preserved" } }, "Invalid callable input"],
+      [echo!.name, { prompt: "   ", data: { marker: "preserved" } }, "non-whitespace"],
+      [echo!.name, "echo this", "Invalid callable input"],
+      [echo!.name, { prompt: "echo this", task: "retired alias" }, "Invalid callable input"],
+      ["owner/echo", { prompt: "echo this" }, "Callable target not found"],
+    ] as const) {
+      const rejected = await run(target, invalidInput, {
+        projectRoot: env.projectRoot,
+        cwd: env.projectRoot,
+        models: {},
+        timeoutMs: 1_000,
+      });
+      expect(rejected).toMatchObject({
+        status: "error",
+        summary: expect.stringContaining(expected),
+      });
+      expect(rejected).not.toHaveProperty("id");
+    }
+  });
+
+  test("passes domain context and reports explicit missing-service errors", async () => {
     const env = setupDirectLayout();
     const skillDir = join(env.agentsRoot, "reviewer", "skills", "careful-audit");
     mkdirSync(skillDir, { recursive: true });
@@ -2471,9 +2782,7 @@ export async function execute(ctx) {
             "Constraints:",
             ...assignment.constraints.map((item) => `- ${item}`),
           ].join("\n");
-          const step = await ctx.call("reviewer", prompt, {
-            skill: "careful-audit",
-          });
+          const step = await ctx.call("global/reviewer", { prompt });
           return ctx.done(step.summary);
         },
       },
@@ -2514,32 +2823,9 @@ export async function execute(ctx) {
     });
 
     expect(skillAndContextRun.ok).toBe(true);
-    expect(capturedPrompt).toContain('<skill name="careful-audit"');
-    expect(capturedPrompt).toContain("Always check boundary conditions first.");
     expect(capturedPrompt).toContain("Goal: Ensure boundary.ts handles empty input");
     expect(capturedPrompt).toContain("- Empty input returns null");
     expect(capturedPrompt).toContain("- No public signature changes");
-
-    // Unknown skill is rejected explicitly instead of turning into advisory prose:
-    const unknownSkillRun = await runDirectWorkflow({
-      module: {
-        name: "unknown-skill-step",
-        description: "Calls reviewer with nonexistent skill",
-        async execute(ctx) {
-          return ctx.call("reviewer", "Inspect boundary.ts", { skill: "nonexistent-skill" });
-        },
-      },
-      agentName: "owner",
-      input: {},
-      projectRoot: env.projectRoot,
-      workRoot: env.workRoot,
-      agentsRoot: env.agentsRoot,
-      sharedRoot: env.sharedRoot,
-      outputRoot: env.outputRoot,
-      models: { test: fakeModel() as any },
-    });
-    expect(unknownSkillRun.ok).toBe(false);
-    expect(String(unknownSkillRun.error)).toContain('Skill "nonexistent-skill" is not available');
 
     // Unconfigured read and partial metric services throw explicit errors instead of returning null or no-op:
     const unconfiguredServicesRun = await runDirectWorkflow({

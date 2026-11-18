@@ -228,7 +228,7 @@ describe("workflow facts without reporting", () => {
       export const name = "upload";
       export const description = "Fixture upload";
       export async function execute(ctx) {
-        if (ctx.input.fail) throw new Error("Upload unavailable");
+        if (ctx.input.data.fail) throw new Error("Upload unavailable");
         return ctx.done("uploaded");
       }`,
     );
@@ -239,9 +239,9 @@ describe("workflow facts without reporting", () => {
       export const description = "Fixture report";
       export async function execute(ctx) {
         ctx.log.info("prepared report");
-        try { await ctx.call("upload", { fail: true }); }
-        catch { ctx.log.warn("retrying upload"); }
-        await ctx.call("upload", { fail: false });
+        const first = await ctx.call("global/upload", { prompt: "Upload report", data: { fail: true } });
+        if (first.status === "error") ctx.log.warn("retrying upload");
+        await ctx.call("global/upload", { prompt: "Retry upload", data: { fail: false } });
         return ctx.done("delivered");
       }`,
     );

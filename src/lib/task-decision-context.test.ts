@@ -440,7 +440,9 @@ test("the production transform restores current facts after compaction without a
       expect(getCurrentSystemPrompt(request.messages)).toContain(skill.canonicalPath);
       expect(getCurrentSystemPrompt(request.messages)).not.toContain("workflow step");
       const finish = getCurrentTools(request.messages).find((tool) => tool.name === "finish")!;
-      expect(finish.parameters.properties.output).toEqual(helperSchema);
+      expect(finish.parameters.anyOf).toHaveLength(2);
+      expect(finish.parameters.anyOf[0].properties.output).toEqual(helperSchema);
+      expect(finish.parameters.anyOf[1].properties.output).toEqual(helperSchema);
       expect(JSON.stringify(request.messages).split("Task decision brief")).toHaveLength(2);
     }
     expect(JSON.stringify(agent.state.messages)).not.toContain("Task decision brief");

@@ -10,6 +10,7 @@
 import type { Static, TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 import type { AppRead, CallOptions, ExecutionResult, WorkflowMetricCapability } from "./app.js";
+import { validateCallableInput, validateCallableOptions, type CallableDescriptor } from "./callable.js";
 import type { AgentExecutableModule, AppWorkflowContext as WorkflowContext, Logger } from "./workflow.js";
 
 const DEFAULT_WORKFLOW_TIMEOUT_MS = 30 * 60_000;
@@ -70,6 +71,16 @@ export function resolveCallable<TPromptDef = unknown>(
     if (!owner || !procName || procName.includes("/")) {
       throw new Error(`Invalid qualified callable target "${name}" (expected "<owner>/<name>")`);
     }
+    const promptEntry = snapshot.prompts?.get(normalizedTarget);
+    if (promptEntry) {
+      return {
+        kind: "prompt",
+        name: normalizedTarget,
+        owner: promptEntry.owner ?? owner,
+        definition: promptEntry.definition,
+        ...(promptEntry.outputSchema ? { outputSchema: promptEntry.outputSchema } : {}),
+      };
+    }
     const ownerProcedures = snapshot.proceduresByOwner?.get(owner);
     const mod = ownerProcedures?.get(procName);
     if (!mod) {
@@ -77,7 +88,7 @@ export function resolveCallable<TPromptDef = unknown>(
         snapshot.diagnostics && snapshot.diagnostics.length > 0
           ? ` Catalog diagnostics:\n  ${snapshot.diagnostics.join("\n  ")}`
           : "";
-      throw new Error(`Callable procedure "${owner}/${procName}" not found.${diag}`);
+      throw new Error(`Callable target "${owner}/${procName}" not found.${diag}`);
     }
     return {
       kind: "code",
@@ -127,6 +138,8 @@ export type NormalizedWorkflowContribution = (
 ) & { output?: unknown; facts?: unknown };
 
 export type WorkflowStepInvocationResult<TOutput = unknown> = ExecutionResult<TOutput> & {
+  /** Executor classification is retained only for step diagnostics. */
+  kind?: "agent" | "workflow";
   sessionId?: string;
   transcriptPath?: string;
   cleanupConfirmed?: boolean;
@@ -282,6 +295,8 @@ export type WorkflowKernelStepControl = {
   deadlineAt: number;
   stepIndex: number;
   allowance: WorkflowExecutionAllowance;
+  /** Effective runtime tool context inherited from the enclosing execution. */
+  tools?: "full" | "readonly";
   /** Internal bridge for model-visible tools that delegate through this same kernel lifecycle. */
   callTarget(
     target: string,
@@ -315,8 +330,10 @@ export type WorkflowKernelBindings<TInput = unknown> = {
   deadlineAt?: number;
   maxConcurrentCalls?: number;
   allowance?: WorkflowExecutionAllowance;
-  /** Optional caller-side output schema enforced in addition to module.outputSchema when status === "done". */
+  /** Optional caller-side output schema enforced in addition to module.outputSchema for every supplied output. */
   outputSchema?: TSchema;
+  /** Immutable descriptors for the same captured catalog used by resolveTarget. */
+  listTargets?: () => readonly CallableDescriptor[];
   /** Resolve and capture one callable for this ctx.call invocation. */
   resolveTarget?(target: string, input: unknown): WorkflowKernelResolvedTarget | Promise<WorkflowKernelResolvedTarget>;
   /** Compatibility fallback for bindings that have not adopted single-pass resolution. */
@@ -397,11 +414,14 @@ export function normalizeWorkflowContribution(
     return { type: "done", summary: value.summary, output: value };
   }
   const isExecutionResult =
-    (value.kind === "agent" || value.kind === "workflow") &&
-    typeof value.id === "string" &&
-    typeof value.summary === "string";
+    (value.status === "done" || value.status === "blocked" || value.status === "error" || value.status === "interrupted") &&
+    typeof value.summary === "string" &&
+    value.summary.trim().length > 0;
   if (!isExecutionResult) {
     throw new Error("Workflow returned an invalid terminal execution result");
+  }
+  if (value.kind !== undefined || value.cliCalls !== undefined) {
+    throw new Error("Workflow returned retired executor or diagnostic result fields");
   }
   const payload = {
     ...(value.output !== undefined ? { output: value.output } : {}),
@@ -576,14 +596,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
     return failBeforeStart(bindings.signal.reason ?? new Error(`Workflow "${module.name}" was aborted before start`));
   }
 
-  if (bindings.tools === "readonly" && !module.readonly) {
-    return failBeforeStart(
-      new Error(
-        `Workflow "${module.name}" cannot run with tools: "readonly" unless the module declares readonly: true`,
-      ),
-    );
-  }
-
   let allowance: WorkflowExecutionAllowance;
   let timeoutMs: number;
   let effectiveTimeoutMessage: string;
@@ -732,36 +744,6 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
   const enclosingReadonly = bindings.tools === "readonly" || Boolean(module.readonly);
 
-  const normalizeEffectiveCallOptions = (
-    kind: "agent" | "workflow",
-    target: string,
-    callOptions: (CallOptions<TSchema> & { schema?: TSchema }) | undefined,
-  ): (CallOptions<TSchema> & { schema?: TSchema }) | undefined => {
-    if (enclosingReadonly && callOptions?.tools === "full") {
-      throw new Error(
-        `Cannot widen tool policy to "full" for "${target}" inside a readonly execution scope`,
-      );
-    }
-    if (kind === "workflow") {
-      if (callOptions?.skill !== undefined) {
-        throw new Error(
-          `Call option "skill" is only supported for prompt targets, not code procedure "${target}"`,
-        );
-      }
-      if (callOptions?.operationAllowance !== undefined) {
-        throw new Error(
-          `Call option "operationAllowance" is only supported for prompt targets, not code procedure "${target}"`,
-        );
-      }
-    }
-    const effectiveTools = enclosingReadonly ? "readonly" : callOptions?.tools;
-    if (!callOptions && !effectiveTools) return undefined;
-    return {
-      ...callOptions,
-      ...(effectiveTools ? { tools: effectiveTools } : {}),
-    };
-  };
-
   const runBoundStep = async (
     kind: "agent" | "workflow",
     target: string,
@@ -785,7 +767,8 @@ export async function runWorkflowInvocation<TInput = unknown>(
     }
     scope?.signal?.throwIfAborted();
     const currentKind = () => resolvedKind?.current ?? kind;
-    const effectiveOptions = normalizeEffectiveCallOptions(kind, target, callOptions);
+    validateCallableOptions(callOptions);
+    const effectiveOptions = callOptions;
     const effectiveDeadlineAt = Math.min(allowance.deadlineAt, scope?.deadlineAt ?? allowance.deadlineAt);
     const remainingMs = effectiveDeadlineAt - Date.now();
     if (remainingMs <= 0) {
@@ -848,6 +831,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
             deadlineAt: stepDeadlineAt,
             stepIndex,
             allowance,
+            ...(enclosingReadonly ? { tools: "readonly" as const } : bindings.tools ? { tools: bindings.tools } : {}),
             callTarget: (nestedTarget, nestedInput, nestedOptions, nestedSignal, resolveNestedTarget) => {
               const fallbackKind: "agent" | "workflow" =
                 typeof nestedTarget === "string" && nestedTarget.includes("/")
@@ -864,12 +848,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
                 async (nestedControl, nestedEffectiveOptions) => {
                   const resolved = await resolveNestedTarget(nestedControl);
                   resolvedKind.current = resolved.kind;
-                  const effective = normalizeEffectiveCallOptions(
-                    resolved.kind,
-                    nestedTarget,
-                    nestedEffectiveOptions,
-                  );
-                  return resolved.invoke(effective, nestedControl);
+                  return resolved.invoke(nestedEffectiveOptions, nestedControl);
                 },
                 { signal: nestedSignal, deadlineAt: stepDeadlineAt },
                 resolvedKind,
@@ -907,7 +886,7 @@ export async function runWorkflowInvocation<TInput = unknown>(
         const promptTruncated = promptText.length > MAX_PROMPT_CHARS;
         const formatted = formatError(stepErr);
         const identity = lateRaw
-          ? { id: lateRaw.id, ...(lateRaw.sessionId ? { sessionId: lateRaw.sessionId } : {}) }
+          ? { id: lateRaw.id ?? null, ...(lateRaw.sessionId ? { sessionId: lateRaw.sessionId } : {}) }
           : extractErrorExecutionIdentity(stepErr);
         const failureStatus: ExecutionResult["status"] =
           abortedExternally && !timedOut && !stepTimedOut ? "interrupted" : "error";
@@ -934,24 +913,23 @@ export async function runWorkflowInvocation<TInput = unknown>(
 
       const actualKind = raw.kind ?? kind;
       const cleanupConfirmed = raw.cleanupConfirmed !== false;
-      if (raw.status === "done" && effectiveOptions?.schema) {
+      if (effectiveOptions?.schema) {
         const kindLabel = actualKind === "agent" ? "Agent" : "Workflow";
-        if (raw.output !== undefined) {
-          if (!Check(effectiveOptions.schema, raw.output)) {
-            const detail = schemaDiagnostic(effectiveOptions.schema, raw.output);
-            raw = {
-              ...raw,
-              status: "error",
-              summary: `${kindLabel} "${target}" output failed step schema: ${detail}`,
-              output: undefined,
-              facts: {
-                ...(isRecord(raw.facts) ? raw.facts : raw.facts !== undefined ? { priorFacts: raw.facts } : {}),
-                invalidOutput: raw.output,
-                validationError: detail,
-              },
-            };
-          }
-        } else if (raw.status === "done") {
+        if (raw.output !== undefined && !Check(effectiveOptions.schema, raw.output)) {
+          const invalidOutput = raw.output;
+          const detail = schemaDiagnostic(effectiveOptions.schema, invalidOutput);
+          raw = {
+            ...raw,
+            status: "error",
+            summary: `${kindLabel} "${target}" output failed step schema: ${detail}`,
+            output: undefined,
+            facts: {
+              ...(isRecord(raw.facts) ? raw.facts : raw.facts !== undefined ? { priorFacts: raw.facts } : {}),
+              invalidOutput,
+              validationError: detail,
+            },
+          };
+        } else if (raw.status === "done" && raw.output === undefined) {
           raw = {
             ...raw,
             status: "error",
@@ -979,14 +957,14 @@ export async function runWorkflowInvocation<TInput = unknown>(
         durationMs: stepEndedAt - stepStartedAt,
         startedAt: stepStartedAt,
         endedAt: stepEndedAt,
-        id: raw.id,
+        id: raw.id ?? null,
         ...(raw.sessionId ? { sessionId: raw.sessionId } : {}),
         ...(raw.transcriptPath ? { transcriptPath: raw.transcriptPath } : {}),
         cleanupConfirmed,
       });
 
       assertActive();
-      const { sessionId: _sid, transcriptPath: _tp, cleanupConfirmed: _cc, ...publicResult } = raw;
+      const { kind: _kind, sessionId: _sid, transcriptPath: _tp, cleanupConfirmed: _cc, ...publicResult } = raw;
       return publicResult;
     } finally {
       clearTimeout(stepTimer);
@@ -1008,6 +986,17 @@ export async function runWorkflowInvocation<TInput = unknown>(
       return Promise.reject(err);
     }
     return trackOperation((async () => {
+      const descriptor = bindings.listTargets?.().find((candidate) => candidate.name === target);
+      if (descriptor) {
+        try {
+          validateCallableInput(descriptor.inputSchema, input);
+        } catch (error) {
+          return {
+            status: "error" as const,
+            summary: error instanceof Error ? error.message : String(error),
+          };
+        }
+      }
       const promptPreview = safePromptPreview(input);
       const fallbackKind: "agent" | "workflow" =
         typeof target === "string" && target.includes("/")
@@ -1031,9 +1020,9 @@ export async function runWorkflowInvocation<TInput = unknown>(
           };
         }
       } catch (error) {
-        resolved = {
-          kind: fallbackKind,
-          invoke: async () => { throw error; },
+        return {
+          status: "error" as const,
+          summary: error instanceof Error ? error.message : String(error),
         };
       }
       return runBoundStep(
@@ -1049,6 +1038,10 @@ export async function runWorkflowInvocation<TInput = unknown>(
   const ctx: WorkflowContext<TInput> = {
     input: bindings.input as WorkflowContext<TInput>["input"],
     signal: controller.signal,
+    list: () => {
+      assertActive();
+      return bindings.listTargets?.() ?? Object.freeze([]);
+    },
     ...(bindings.reconciliation ? { reconciliation: bindings.reconciliation } : {}),
     read: rawRead,
     log: logger,
@@ -1145,15 +1138,11 @@ export async function runWorkflowInvocation<TInput = unknown>(
       },
     },
     done: <T>(summary: string, output?: T): ExecutionResult<T> => ({
-      id: executionId,
-      kind: "workflow",
       status: "done",
       summary,
       ...(output !== undefined ? { output } : {}),
     }),
     blocked: (reason: string, facts?: unknown): ExecutionResult<never> => ({
-      id: executionId,
-      kind: "workflow",
       status: "blocked",
       summary: reason,
       ...(facts !== undefined ? { facts } : {}),
@@ -1203,21 +1192,20 @@ export async function runWorkflowInvocation<TInput = unknown>(
       const authored = await module.execute(ctx);
       assertActive();
       const normalized = normalizeWorkflowContribution(authored, Boolean(bindings.taskOwned));
-      if (normalized.type === "done") {
-        if (module.outputSchema && !Check(module.outputSchema, normalized.output)) {
-          throw new WorkflowValidationError(
-            "output",
-            `Invalid workflow output for "${module.name}": ${schemaDiagnostic(module.outputSchema, normalized.output)}`,
-            normalized.output,
-          );
-        }
-        if (bindings.outputSchema && !Check(bindings.outputSchema, normalized.output)) {
-          throw new WorkflowValidationError(
-            "output",
-            `Invalid caller output schema for "${module.name}": ${schemaDiagnostic(bindings.outputSchema, normalized.output)}`,
-            normalized.output,
-          );
-        }
+      const shouldValidateOutput = normalized.type === "done" || normalized.output !== undefined;
+      if (shouldValidateOutput && module.outputSchema && !Check(module.outputSchema, normalized.output)) {
+        throw new WorkflowValidationError(
+          "output",
+          `Invalid workflow output for "${module.name}": ${schemaDiagnostic(module.outputSchema, normalized.output)}`,
+          normalized.output,
+        );
+      }
+      if (shouldValidateOutput && bindings.outputSchema && !Check(bindings.outputSchema, normalized.output)) {
+        throw new WorkflowValidationError(
+          "output",
+          `Invalid caller output schema for "${module.name}": ${schemaDiagnostic(bindings.outputSchema, normalized.output)}`,
+          normalized.output,
+        );
       }
       return normalized;
     })();

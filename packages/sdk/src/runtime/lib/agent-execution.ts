@@ -1602,7 +1602,7 @@ export async function executePreparedAgent(
   if (!error && prepared.requireFinish && !finishResult) {
     error = "Workflow agent step ended without calling finish() after one corrective prompt";
   }
-  if (!error && prepared.outputSchema && finishResult && finishResult.output === undefined) {
+  if (!error && prepared.outputSchema && finishResult?.status === "done" && finishResult.output === undefined) {
     error = "Workflow agent step completed without the required schema-backed finish().output payload";
   }
   const assistantText = finishResult?.summary ?? extractLastAssistantText(messages);

@@ -42,7 +42,7 @@ describe("direct workflow dispatch snapshot", () => {
 export const name = "versioned";
 export const description = "Versioned execution and verification fixture";
 export async function execute(ctx) {
-  const child = await ctx.call("child", {});
+  const child = await ctx.call("global/child", { prompt: "Run the captured child" });
   return ctx.${status}("${version}:" + child.summary);
 }
 export async function verify(_context, result) {
@@ -83,8 +83,8 @@ export async function execute(ctx) { return ctx.done("unused"); }
       const first = await runWorkflowDirect(opts);
       expect(first.result).toEqual(
         status === "done"
-          ? { type: "done", summary: "v1:v1", output: undefined }
-          : { type: "blocked", reason: "v1:v1", context: undefined },
+          ? { type: "done", summary: "v1:v1", output: undefined, facts: undefined }
+          : { type: "blocked", reason: "v1:v1", context: undefined, output: undefined, facts: undefined },
       );
       expect(first.verifier?.sourcePath).toBe(oldPath);
       expect(await first.verifier?.verify({}, first.result)).toEqual({ accepted: true, version: "v1" });
@@ -98,8 +98,8 @@ export async function execute(ctx) { return ctx.done("unused"); }
       const second = await runWorkflowDirect(opts);
       expect(second.result).toEqual(
         status === "done"
-          ? { type: "done", summary: "v2:v2", output: undefined }
-          : { type: "blocked", reason: "v2:v2", context: undefined },
+          ? { type: "done", summary: "v2:v2", output: undefined, facts: undefined }
+          : { type: "blocked", reason: "v2:v2", context: undefined, output: undefined, facts: undefined },
       );
       expect(second.verifier?.sourcePath).toBe(newPath);
       expect(await second.verifier?.verify({}, second.result)).toEqual({ accepted: true, version: "v2" });

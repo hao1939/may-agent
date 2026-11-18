@@ -105,7 +105,7 @@ test.each([false, true])("managed Task passes policy scope through real preparat
         preparedCount++;
         return { status: "done", sessionId: "fixture", structuredResult: { state: "converged", summary: "Scope checked", facts: [] } };
       },
-    } as unknown as SubagentManager }, new Map([[definition.name, definition]]));
+    } as unknown as SubagentManager }, new Map([[`sample/${definition.name}`, definition]]));
     const input = {
       descriptor: { id: "sample", app: {} },
       attempt: { read: { tasks: {} },

@@ -40,7 +40,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "sub";
       export const description = "Sub-workflow";
       export async function execute(ctx) {
-        return ctx.done("sub completed: " + ctx.input);
+        return ctx.done("sub completed: " + ctx.input.prompt);
       }
     `,
     );
@@ -51,7 +51,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent";
       export const description = "Parent workflow that calls sub";
       export async function execute(ctx) {
-        const result = await ctx.call("sub", "child task");
+        const result = await ctx.call("global/sub", { prompt: "child task" });
         if (result.status === "done") {
           return ctx.done("parent got: " + result.summary);
         }
@@ -89,7 +89,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-esc";
       export const description = "Parent that handles sub blocker";
       export async function execute(ctx) {
-        const result = await ctx.call("failing-sub", "task");
+        const result = await ctx.call("global/failing-sub", { prompt: "task" });
         if (result.status === "blocked") {
           return ctx.blocked("sub blocked: " + result.summary);
         }
@@ -116,12 +116,11 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-missing";
       export const description = "Calls nonexistent sub";
       export async function execute(ctx) {
-        try {
-          await ctx.call("nonexistent", "task");
-          return ctx.done("should not reach");
-        } catch (error) {
-          return ctx.blocked("sub not found: " + error.message);
+        const result = await ctx.call("global/nonexistent", { prompt: "task" });
+        if (result.status === "error") {
+          return ctx.blocked("sub not found: " + result.summary);
         }
+        return ctx.done("should not reach");
       }
     `,
     );
@@ -156,7 +155,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-events";
       export const description = "Parent with sub events";
       export async function execute(ctx) {
-        const result = await ctx.call("sub-events", "task");
+        const result = await ctx.call("global/sub-events", { prompt: "task" });
         return ctx.done("parent done");
       }
     `,
@@ -198,7 +197,7 @@ describe("workflow composition: runWorkflow", () => {
         await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.call("coder", "something");
+        const result = await ctx.call("global/coder", { prompt: "something" });
         return ctx.done("should not reach");
       }
     `,
@@ -210,7 +209,7 @@ describe("workflow composition: runWorkflow", () => {
       export const name = "parent-steerable";
       export const description = "Parent that delegates to steerable sub";
       export async function execute(ctx) {
-        const result = await ctx.call("sub-steerable", "task");
+        const result = await ctx.call("global/sub-steerable", { prompt: "task" });
         return ctx.done("done");
       }
     `,

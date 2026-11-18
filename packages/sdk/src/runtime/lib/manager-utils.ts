@@ -209,7 +209,7 @@ export function log(level: LogLevel, message: string): void {
 import { ExecutionDeferredError, type ExecutionResult } from "@may-agent/sdk/app";
 import type { CliCallFacts } from "@may-agent/sdk/app";
 
-export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCallFacts[] {
+export function cliCallFacts(sessionId: string, messages: AgentMessage[], limit = 64): CliCallFacts[] {
   const calls = new Map<string, CliCallFacts>();
   for (const message of messages) {
     if (message.role !== "toolResult" || message.toolName !== "run_cli_agent") continue;
@@ -220,7 +220,8 @@ export function cliCallFacts(sessionId: string, messages: AgentMessage[]): CliCa
     if (!call.resultPath || !call.structuredResultPath || !call.eventsPath) continue;
     calls.set(call.taskId, call);
   }
-  return [...calls.values()].slice(-64);
+  const normalizedLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 0;
+  return normalizedLimit === 0 ? [] : [...calls.values()].slice(-normalizedLimit);
 }
 
 export type WorkflowToolResult = (
@@ -244,7 +245,12 @@ export function enforceStructuredWorkflowResult(result: TaskResult, expectsPaylo
       error: "Workflow agent step completed without the required finish() result",
     };
   }
-  if (expectsPayload && result.structuredResult === undefined && result.finishResult.output === undefined) {
+  if (
+    expectsPayload &&
+    result.finishResult.status === "done" &&
+    result.structuredResult === undefined &&
+    result.finishResult.output === undefined
+  ) {
     return {
       ...result,
       status: "error",
@@ -267,7 +273,6 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
         : "done";
   return {
     id: result.sessionId,
-    kind: "agent",
     status,
     summary:
       (result.status === "error" ? result.error?.trim() || result.errorMessage?.trim() : undefined) ||
@@ -277,7 +282,6 @@ export function agentExecutionResult(result: TaskResult): ExecutionResult {
       ? { output: result.structuredResult }
       : finish?.output !== undefined ? { output: finish.output } : {}),
     ...(finish?.facts !== undefined ? { facts: finish.facts } : {}),
-    cliCalls: cliCallFacts(result.sessionId, result.messages),
   };
 }
 
@@ -286,7 +290,6 @@ export function workflowExecutionResult(result: WorkflowToolResult): ExecutionRe
   if (result.type === "list" || !result.workflowRunId) return undefined;
   return {
     id: result.workflowRunId,
-    kind: "workflow",
     status: result.type,
     summary: result.type === "done" ? result.summary
       : result.type === "blocked" ? result.reason

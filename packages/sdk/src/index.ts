@@ -3,6 +3,8 @@
 export { Type } from "typebox";
 export type { Static, TSchema } from "typebox";
 export { ExecutionDeferredError } from "./workflow.js";
+export { CallableCatalog, CallableCatalogStore, CallableValidationError } from "./callable.js";
+export type { CallableDefinition } from "./callable.js";
 export type {
   AgentCallOptions,
   AgentContext,

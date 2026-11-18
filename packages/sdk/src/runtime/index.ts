@@ -9,6 +9,7 @@ export * from "./app/standalone.js";
 export * from "./app/model-registry.js";
 export * from "./app/loader/agent-config.js";
 export * from "../workflow-kernel.js";
+export * from "../callable.js";
 export type { EventTrace } from "../event.js";
 
 export * from "./lib/agent-execution.js";

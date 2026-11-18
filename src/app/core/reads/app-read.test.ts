@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase, type SqliteDb } from "../../../lib/db.js";
 import { applyDbSchema } from "../../../lib/db/schema.js";
 import { createAppInboxItem } from "../state/app-inbox-store.js";
 import { claimAppInboxItem, completeAppInboxClaim } from "../../../../test/fixtures/legacy-inbox.js";
-import { createRuntimeAppRead, createRuntimeTaskRead, listRuntimeTaskViews, readRuntimeTaskView } from "./app-read.js";
+import { createRuntimeAppRead, createRuntimeTaskRead, listRuntimeTaskViews, readRuntimeExecutionView, readRuntimeTaskView } from "./app-read.js";
+import { ensureSessionDir, sessionJsonlPath } from "../../../lib/persistence.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   observeAppTaskIntent,
@@ -700,5 +701,51 @@ describe("App read projections", () => {
     const afterRun = (await read.tasks.get(intent.id))!;
     expect(afterRun.activeAttempt).toBeUndefined();
     expect(afterRun.acceptedAttempt?.id).toBe(running.attemptId);
+  });
+
+  it("bounds workflow traversal and reports omitted sessionless descendants", () => {
+    db.run(`INSERT INTO workflow_runs(runId, workflow, task, status, startedAt, endedAt, result_summary)
+      VALUES ('wr_wide_root', 'root', 'run', 'done', 1, 2, 'done')`);
+    const insert = db.prepare(`INSERT INTO workflow_runs(
+      runId, workflow, task, status, startedAt, endedAt, parentWorkflowRunId
+    ) VALUES (?, 'child', 'run', 'done', ?, ?, 'wr_wide_root')`);
+    for (let index = 0; index < 65; index += 1) {
+      insert.run(`wr_wide_child_${index}`, index + 2, index + 3);
+    }
+
+    expect(readRuntimeExecutionView({ getDb: () => db, persistDir: root }, "wr_wide_root")?.diagnostics)
+      .toEqual({ cliCalls: [], truncated: true, omitted: { workflows: true } });
+  });
+
+  it("reads nested workflow CLI receipts and reports receipt and transcript tail omissions", () => {
+    db.run(`INSERT INTO workflow_runs(runId, workflow, task, status, startedAt, endedAt, result_summary)
+      VALUES ('wr_root', 'root', 'run', 'done', 1, 2, 'done')`);
+    db.run(`INSERT INTO workflow_runs(runId, workflow, task, status, startedAt, endedAt, parentWorkflowRunId)
+      VALUES ('wr_child', 'child', 'run', 'done', 2, 3, 'wr_root')`);
+    db.run(`INSERT INTO sessions(sessionId, agent, task, status, workflowRunId, startedAt, endedAt)
+      VALUES ('s_nested', 'worker', 'run', 'done', 'wr_child', 2, 3)`);
+    ensureSessionDir(root, "s_nested");
+    const receipt = (index: number) => ({
+      role: "toolResult", toolName: "run_cli_agent", toolCallId: `tc-${index}`, content: [],
+      details: { cliCall: { sessionId: "s_nested", toolCallId: `tc-${index}`, taskId: `task-${index}`,
+        tool: "codex", status: "completed", resultPath: `/result-${index}`,
+        structuredResultPath: `/structured-${index}`, eventsPath: `/events-${index}` } },
+    });
+    writeFileSync(sessionJsonlPath(root, "s_nested"),
+      Array.from({ length: 65 }, (_, index) => JSON.stringify(receipt(index))).join("\n") + "\n");
+
+    const nested = readRuntimeExecutionView({ getDb: () => db, persistDir: root }, "wr_root");
+    expect(nested?.diagnostics?.cliCalls).toHaveLength(64);
+    expect(nested?.diagnostics?.cliCalls[0]?.taskId).toBe("task-1");
+    expect(nested?.diagnostics).toMatchObject({ truncated: true, omitted: { cliCalls: true } });
+
+    db.run(`INSERT INTO sessions(sessionId, agent, task, status, startedAt, endedAt)
+      VALUES ('s_tail', 'worker', 'run', 'done', 4, 5)`);
+    ensureSessionDir(root, "s_tail");
+    const user = (text: string) => JSON.stringify({ role: "user", content: [{ type: "text", text }] });
+    writeFileSync(sessionJsonlPath(root, "s_tail"),
+      [user("x".repeat(1024 * 1024)), ...Array.from({ length: 513 }, (_, index) => user(String(index)))].join("\n") + "\n");
+    expect(readRuntimeExecutionView({ getDb: () => db, persistDir: root }, "s_tail")?.diagnostics)
+      .toEqual({ cliCalls: [], truncated: true, omitted: { messages: true, bytes: true } });
   });
 });

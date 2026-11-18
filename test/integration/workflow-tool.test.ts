@@ -257,7 +257,7 @@ describe("workflow tool: typed execution", () => {
       export const name = "recovery-owned";
       export const description = "Recovery ownership fixture";
       export async function execute(ctx) {
-        await ctx.call("worker", "do the step");
+        await ctx.call("global/worker", { prompt: "do the step" });
         return ctx.done("done");
       }
     `,
@@ -711,8 +711,8 @@ describe("workflow runner: agent name validation", () => {
       `
       export const name = "bad-agent";
       export async function execute(ctx) {
-        await ctx.call(undefined, "task");
-        return ctx.done("should not reach");
+        const result = await ctx.call(undefined, { prompt: "task" });
+        return ctx.done(result.status + ":" + result.summary);
       }
     `,
     );
@@ -722,10 +722,8 @@ describe("workflow runner: agent name validation", () => {
 
     const parsed: WorkflowToolResult = await runner.run("bad-agent", "test");
 
-    expect(parsed.type).toBe("error");
-    if (parsed.type === "error") {
-      expect(parsed.error).toContain("ctx.call invoked with invalid target name");
-    }
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") expect(parsed.summary).toContain("error:Callable target not found");
   });
 
   it("rejects call with the literal string 'undefined' as agent name", async () => {
@@ -735,8 +733,8 @@ describe("workflow runner: agent name validation", () => {
       export const name = "bad-agent-str";
       export async function execute(ctx) {
         // Simulate serialization bug: agentName becomes the string "undefined"
-        await ctx.call("undefined", "task");
-        return ctx.done("should not reach");
+        const result = await ctx.call("undefined", { prompt: "task" });
+        return ctx.done(result.status + ":" + result.summary);
       }
     `,
     );
@@ -746,10 +744,8 @@ describe("workflow runner: agent name validation", () => {
 
     const parsed: WorkflowToolResult = await runner.run("bad-agent-str", "test");
 
-    expect(parsed.type).toBe("error");
-    if (parsed.type === "error") {
-      expect(parsed.error).toContain("ctx.call invoked with invalid target name");
-    }
+    expect(parsed.type).toBe("done");
+    if (parsed.type === "done") expect(parsed.summary).toContain("error:Callable target not found");
   });
 });
 
@@ -767,7 +763,7 @@ describe("workflow runner: structured agent results", () => {
         additionalProperties: false,
       };
       export async function execute(ctx) {
-        const review = await ctx.call("reviewer", "review it", { schema: ReviewSchema, tools: "readonly" });
+        const review = await ctx.call("global/reviewer", { prompt: "review it" }, { schema: ReviewSchema });
         return ctx.done(review.status + ":" + review.output.verdict);
       }
     `,
@@ -803,7 +799,6 @@ describe("workflow runner: structured agent results", () => {
     if (parsed.type === "done") expect(parsed.summary).toBe("done:pass");
     expect(receivedOpts?.requireFinish).toBe(true);
     expect(receivedOpts?.outputSchema).toMatchObject({ type: "object" });
-    expect(receivedOpts?.toolPolicy).toBe("readonly");
   });
 
   it("turns prose-only workflow completion into an error result", async () => {
@@ -813,7 +808,7 @@ describe("workflow runner: structured agent results", () => {
       export const name = "reject-prose";
       export const description = "Rejects a prose-only agent result";
       export async function execute(ctx) {
-        const result = await ctx.call("worker", "do it");
+        const result = await ctx.call("global/worker", { prompt: "do it" });
         return ctx.done(result.status + ":" + result.summary);
       }
     `,
@@ -924,31 +919,6 @@ describe("workflow runner: steering", () => {
     expect(runner.activeWorkflow).toBeNull();
   });
 
-  it("steer() queues a signal that interrupts the workflow at the next call", async () => {
-    writeWorkflow(
-      "steerable.ts",
-      `
-      export const name = "steerable";
-      export const description = "Workflow that can be steered";
-      export async function execute(ctx) {
-        const result = await ctx.call("coder", "do something");
-        return ctx.done("should not reach here");
-      }
-    `,
-    );
-
-    const events: WorkflowEvent[] = [];
-    const manager = new SubagentManager({ persistDir: join(testDir, "state") });
-    const runner = createWorkflowRunner({
-      manager,
-      workflowDir,
-      onEvent: (e) => events.push(e),
-    });
-
-    const parsed: WorkflowToolResult = await runner.run("steerable", "steerable task");
-    expect(parsed.type).toBe("error");
-  });
-
   it("pre-queued steering signal interrupts workflow before first call", async () => {
     writeWorkflow(
       "delayed.ts",
@@ -959,7 +929,7 @@ describe("workflow runner: steering", () => {
         await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.call("coder", "do something");
+        const result = await ctx.call("global/coder", { prompt: "do something" });
         return ctx.done("should not reach here");
       }
     `,
@@ -1012,7 +982,7 @@ describe("workflow runner: steering", () => {
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        const result = await ctx.call("coder", "implement");
+        const result = await ctx.call("global/coder", { prompt: "implement" });
         return ctx.done("done");
       }
     `,
@@ -1055,7 +1025,7 @@ describe("workflow runner: steering", () => {
         await ctx.events.emit({ type: "test.ready", data: { step: "ready-for-steering" } });
         await new Promise(resolve => setTimeout(resolve, 0));
         await new Promise(resolve => setTimeout(resolve, 0));
-        const result = await ctx.call("coder", "first");
+        const result = await ctx.call("global/coder", { prompt: "first" });
         return ctx.done("done");
       }
     `,

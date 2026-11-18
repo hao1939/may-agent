@@ -200,6 +200,7 @@ async function executeTaskWorkflow(
       read: createRuntimeAppRead({
         readContract: attempt.read.contract,
         getDb: runtimeCtx.getDb,
+        persistDir: runtime.persistDir,
         readMetric: async (id) => readMetricView(runtimeCtx.metrics, id),
         taskRead: attempt.read.tasks,
       }),
@@ -210,7 +211,7 @@ async function executeTaskWorkflow(
       ...taskContext,
       taskContext,
       trace,
-      workflowInput: taskDetail.input ?? {},
+      workflowInput: { prompt: task, data: taskDetail.input ?? {} },
       executionTimeoutMs: input.executionTimeoutMs,
       executionTimeoutLimitMs: input.executionTimeoutLimitMs,
       signal: attempt.signal,
@@ -296,7 +297,7 @@ async function executeTaskWorkflow(
     if (error instanceof ExecutionDeferredError) throw error;
     const summary = error instanceof Error ? error.message : String(error);
     const unavailable = error instanceof WorkflowHandlerUnavailable;
-    const runId = error instanceof WorkflowExecutionFailure ? error.execution.id : null;
+    const runId = error instanceof WorkflowExecutionFailure ? error.execution.id ?? null : null;
     bus.emit({
       [EVENT_RECORD_ONLY]: true,
       type: "handler.workflow_dispatched",
