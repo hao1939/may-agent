@@ -15,8 +15,9 @@ Exact-head checks, supported local activation and the native call trial pass,
 but completed automated review finds a deeper non-Task helper snapshot gap.
 May repairs it at `3ab40ff8d5`; CI and the local trial pass. Further review finds
 peer-file reload, repaired at `7d4d55ea2c`, then an initially-empty-owner capture
-gap, independently reproduced and assigned back to May. Current-main integration
-and new-head verification remain pending. The single review-link notice
+gap, independently reproduced and repaired at `f5eb256755` with current-main
+integration. Final `67e0ef73dc` also removes the duplicate test import found in
+review; current-head CI, automated approval and installed native trial pass. The single review-link notice
 is delivered; its premature readiness claim is retained with a correction.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
@@ -70,10 +71,10 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. May retains empty peer catalogs and integrates current `main` in existing
-   [#596](https://github.com/hao1939/may-agent/pull/596), preserving nine consumed
-   rounds under an explicit cumulative11 owner revision. Verify the repaired head
-   with actual CI/review/local execution; retain the existing notice without resend.
+1. Human GitHub review/approval and merge of verified
+   [#596](https://github.com/hao1939/may-agent/pull/596) at `67e0ef73dc`. Quality,
+   Container, actual Copilot approval, resolved discussions and final local trial
+   pass. Retain the existing notice without resend.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -371,6 +372,52 @@ cancellation changes. Historical source15/15, original128/64 and notice50755
 remain untouched. Current-head Quality/Container, source review, compatible
 frozen App trial and supported activation/readback are still required; none of
 the historical3ab receipts certify7d4d or its successor.
+
+May commits the repair and ordinary main merge as `f5eb256755`, preserving
+0821722a and both parent histories. The same real mixed-helper regression now
+covers both empty and absent peer directories, late additions, equal nested
+catalogs and missing-target results, alongside edited/deleted peer files. Root's
+independent probes pass all these cases, all four real helper routes and 43 JSON
+boundaries. Six owning files pass110 tests/458 expectations; Host/SDK static
+checks and paired App types/current-input pass. Native independent review also
+passes, with170 selected tests. Root publishes the clean candidate to the same
+Host branch promptly; actual hosted CI, fresh automated review, full App scan
+and supported local activation/readback remain delivery gates.
+
+The creator revision already starts the source Task. May's additional direct
+Alex helper briefly duplicates delegation under May's lineage; durable feedback
+stops that subtree before it changes source. Its distinct historical ledger is
+retained without refund, while the actual Alex Task remains the sole source
+owner. Observe that Task through its existing Condition after revision; a direct
+helper call does not attach to an existing Task merely by mentioning its ID.
+This coordination finding does not authorize changes to the user's Task/event
+implementation. No extra notice is sent.
+
+The last review finds a duplicate import in the managed-agent test. May removes
+only the redundant type-only import at `67e0ef73dc`. The explicit TypeScript
+probe confirms the duplicate-identifier errors are gone; the 10 owning tests and
+`check:ci` pass. Root independently reviews the deletion and verifies that all
+production and SDK source is identical to the tested parent. Earlier runtime
+and App probes are retained with that explicit provenance.
+
+Final hosted run 44238963654 passes Quality and Container: 3,581 tests, zero
+failures and two skips. Copilot review 5950935141 approves the final commit; all
+three discussions are resolved. Supported activation and independent readback
+confirm the final binary, matching SDK, unchanged App 78 and healthy readiness.
+Native May generation 10 lists 32 targets and completes the three diagnostic
+calls. Root validates their actual IDs and caller lineage, schema correction
+within the same child, and a blocked result without output against the installed
+SDK. The remaining external step is human GitHub review, approval and merge.
+
+The full paired App scan retains one existing concurrency fixture: 1,152 of
+1,153 tests pass. The final import cleanup uses direct tools in the existing
+Alex generation-6 Task, with no new development workflow or round-11 reservation.
+Its initial 11/11 claim is corrected to the actual workflow ledger of 10/11;
+direct edit and review evidence are retained separately. The earlier workflow
+receipt remains historical. This corrects an unsupported count without refunding
+work. The source outcome is complete, with one workflow round unused. Historical
+allowances, partials and the single prematurely worded notice remain intact;
+no protected publication or broad release occurs.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,

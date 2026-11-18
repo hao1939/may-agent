@@ -2607,3 +2607,119 @@ and merge legitimate current main0821722a preserving #597/#598. No reset, refund
 new public invocation option, duplicate notice or autonomous merge is authorized.
 The old source15/15 and original128/64 allowances remain untouched. Outer gates
 must be collected on the actual repaired head before claiming completion.
+
+
+May saves source generation5 and completes native workflow wr_1794975992295_o330
+at f5eb256755357d8055d77c7467ff2bd578d2b105, cumulative10/11. Its ordinary merge
+preserves main0821722a (#597/#598). Root's seven independent probes and43JSON
+boundaries pass, including same-path peer edit/delete and initially empty/absent
+directory additions. Six owning files pass110 tests/458 expectations; Host/SDK
+check:ci, paired App types/current-input pass. Native independent review passes
+with170 selected tests. Root publishes the clean candidate to github; the same
+Task/branch/checkout and all previous consumed rounds remain intact.
+
+Complete frozen Appf2de scan has1153 tests,1152pass and the known concurrency3/6
+fixture failure. Frozen canonical-boundary/integrity/examples checks pass; long
+snapshot paths cause the known model-surface budget artifacts, while actual
+working model surface passes0errors. Appf2de differs from installedApp78 only by
+docs/knowledge publications and an evaluator regression test, with no changed
+production definitions or configuration.
+
+Hosted run44237919676 passes Quality and Container: all four JUnit shards total
+3581 tests,0failures,2skips. Supported local receipt
+callable-followup-local-20261118-f5eb256755 succeeds04:36:45, duplicateDeploy:false.
+Root independently confirms binarySHA256
+312f88b30db04557b7552a24343d58abdf89fefcd03e82422cce86c3466e5d34, matchingSDK,
+unchangedApp78 and readiness:true. It preserves the separate owner's installed
+082 source and its cancellation/event work rather than restoring an older base.
+
+Native May parent s_1794976608468_904fba13-8625-410a-80c8-39fe6987d05a atgen9
+lists32targets and completes exactly3diagnostics: workflowwr_1794976652163_9uj4,
+correctedchilds_1794976659096_0aadb3b3-67fa-4f93-b620-621e0d970ffb and expected
+blockedchilds_1794976670452_a45ab9e5-9b1e-42e8-b557-74ea0d93ceba. Independent
+installedSDK extraction verifies actual lineage, two finishattempts in the same
+corrected child with nonceunified596f5eb and omitted blocked output. No protected
+domain publication or review notice repeats.
+
+Actual submitted review5950868972 then flags a duplicate type/value import of
+SubagentManager in managed-agent.test.ts. This is a genuine test-source issue:
+Root's real TypeScript probe reports TS2300 atlines10/21; regular check:ci excludes
+tests and therefore does not catch it, while Bun executes the owning test.
+ThreadPRRT_kwDORdj3Ac64x6Nr remains open at this checkpoint. The runtime snapshot
+fixes and their actual trial remain proved; source is not yet review-clean.
+Ordinary event6745783 revises parentgen10; the creator must save sourcegen6 for
+the one remaining authorized round, retaining10consumed/11total with no increase.
+Only redundant test import removal is commissioned; source11 is not automatically
+renewable. New-source CI/review/install disposition remains required.
+
+The revision itself starts the source Task. May briefly also calls Alex directly
+under its own lineage, spawning duplicateworkflowwr_1794975990884_b1hg. Root's
+ordinary feedback6745720 reaches that duplicate before source edits and it
+finishes without changing code; its separate historicalMay3/3ledger is retained.
+A raw session cancel was rejected before mutation because the helper is
+Task-bound. The actual sourceTask remains sole owner; no refund/reset occurs.
+This coordinator misuse is recorded without expanding the user's Task/event
+implementation scope. Later sourcegen6 commissioning uses only the creator
+revision and saved Task observation.
+
+
+## Final repaired candidate verified before merge
+
+May commits67e0ef73dca927bad0df25dcb9d376f397f2e7b3, deleting only the redundant
+type-only SubagentManager import. Root's compiler probe now has0duplicate TS2300
+errors (three other pre-existing test semantic diagnostics remain; no whole-file
+clean-type claim). Ten owning tests/63expectations and check:ci pass. The exact
+one-line deletion is independently reviewed; production/SDK source is identical
+to f5eb, recorded in67e0-runtime-source-equivalence.json. Earlier real probes and
+full App scan are retained with that explicit provenance, not relabeled as rerun.
+
+The source worker initially claims11/11 while citing the old f5eb receipt.
+Root audits actual executions and finds no gen6 develop-change or round11
+reservation: this test-only cleanup used direct Task tools. Ordinary feedback
+6745834/6745835 corrects the actual source result to10/11 and retains the direct
+edit and supplied-diff CLI review separately. Root's exact-checkout independent
+review also passes. No fake workflow receipt, refund, reset or new coding round
+is introduced. Source gen6 converges; all10 actual workflow rounds and one unused
+round remain. The old15/15 source and original128/64 allowances are untouched.
+
+Actual final hosted run44238963654 passes Quality and Container. All JUnit shards
+total3581tests,0failures,2skips. Root's explicit new Copilot request is accepted
+once at04:42:15; actual submitted review5950935141 approves exact67e0 at04:45:55
+and all3threads are resolved. The empty maintainer COMMENTED record5950921634
+belongs to the thread disposition; it is not a human approval.
+67e0-final-review-disposition.json retains the actual reviewer judgment.
+
+Supported receiptcallable-followup-local-20261118-67e0ef73dc succeeds04:46:11,
+duplicateDeploy:false. Independent readback confirms binarySHA256
+9b10a2fee135219229534e8177cb9c367e8a6428029f1f3aa6242cf0dee354f2,
+matchingSDK67e0, unchangedApp78 and readiness:true. It retains the user's current
+main082 changes and makes no App-source switch or broad release.
+
+Actual native May parent s_1794977174505_de32c6d9-71ed-403d-820a-01ecbc5afaa4 at
+gen10 lists32canonical targets. Workflowwr_1794977209234_ph5e returnsdone;
+helpers_1794977209981_ca1f9d22-fb21-4666-8440-7c252e3d15eb corrects the rejected
+nonce in the same child with exactly2finishattempts to unified59667e0;
+helpers_1794977218908_4afe4105-b069-484f-9909-7eb5328feef2 returnsblocked without
+output. Root's independent extractor validates inputs against the installed final
+SDK and verifies actual child IDs and caller Task/gen/attempt lineage. Evidence
+is67e0-live-proof-independent.json. No protected publication or notice repeats.
+
+Root hands the completed actual review/CI/install/live proofs to May through
+ordinary event6745872 for final PR-body readback and native parent settlement.
+The existing PR remains open, unmerged, clean and mergeable. Human GitHub review,
+approval and merge remain external. Provider notice50755/event6744931 remains the
+single historical prematurely worded notification, with its correction retained;
+none of the final proofs relabel that old-head delivery as a new notice. The
+full paired App scan remains1152/1153pass, solely the known concurrency fixture;
+long-path snapshot model-budget artifacts are preserved, with actual working
+integrity/examples/model-surface checks passing. These limits are visible and
+no policy/test/budget is weakened to hide them.
+
+
+May generation 10 has now converged with no remaining Conditions. It applies the
+concise prepared PR description, preserves the required Task ownership block and
+reads back the final commit, green checks, actual automated approval and resolved
+threads. Source generation 6 also converges with the corrected workflow ledger.
+Root independently confirms the final PR body, executable, SDK and readiness;
+all source and bounded delivery obligations are complete. Human GitHub review,
+approval and merge remain outside this finite outcome.

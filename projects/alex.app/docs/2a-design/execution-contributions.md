@@ -13,9 +13,9 @@ implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
 at `e489ff32b6`; post-merge [#594](https://github.com/hao1939/may-agent/pull/594)
 is merged as `c91083a1fd`, including shared-JSON resource bounds. Remaining
 preparation/capture edge repairs and bounded diagnostic handling are implemented
-in [#596](https://github.com/hao1939/may-agent/pull/596) through `7d4d55ea2c`.
-Review reproduces one remaining empty-owner capture gap; current-head CI and
-local trial remain unproved. Current-main integration is also pending.
+in [#596](https://github.com/hao1939/may-agent/pull/596) through `67e0ef73dc`,
+including empty-owner catalog retention and current-main integration. Source, CI
+and automated review pass; the final local binary/SDK and native call trial pass.
 The App migration is integrated with canonical source, preserving newer fixes and
 publications. The App concurrency-fixture mismatch is tracked in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
@@ -357,7 +357,7 @@ opportunities. Cancellation does not undo completed external effects.
 
 ### Finish or cancel
 
-**Design refinement accepted, 18 November 2026; source cutover pending.**
+**Design refinement accepted; implemented in merged Host #598.**
 An invocation runs normally until the agent finishes, the caller cancels it, or
 an admitted execution limit ends it. There is no automatic finish-only phase:
 requiring structured output must not reserve an earlier work deadline, disable
@@ -390,13 +390,13 @@ preserve unwritten reasoning or guarantee arbitrary external effects were undone
 Ordinary instructions may ask for timely reporting, but they do not create a
 second runtime phase, capability gate or special finishing-policy API.
 
-**Implementation gap:** inspected Host main `42a7421d28` still implements the old
-work/finish signal split, early finishing reserve and automatic wrap-up guidance.
-Removing them must preserve normal finish correction, explicit cancellation,
-actual resource ceilings, caller/child identity, late-effect fences and cleanup
-on both managed and standalone paths. The [older graceful-finishing record](../archive/reviews/graceful-attempt-finish-20261004.md)
-retains the original PR #308 choice and its scripted-provider evidence; it is
-history, not proof this simplification is installed.
+**Implementation:** Host main `0821722a62` removes the automatic finish-only
+phase in [#598](https://github.com/hao1939/may-agent/pull/598); follow-up #596
+includes that source through its ordinary main merge. Normal finish correction,
+explicit cancellation, caller/child identity, effect fences and cleanup remain
+shared managed/standalone obligations. The [older graceful-finishing record](../archive/reviews/graceful-attempt-finish-20261004.md)
+retains the original PR #308 choice and its scripted-provider evidence. Check
+actual installed identities before relying on either revision for local coverage.
 
 ### Input during execution
 
