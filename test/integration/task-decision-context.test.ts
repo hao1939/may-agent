@@ -183,6 +183,8 @@ test("current Task context reaches a late helper and survives settlement into a 
         description: "Owner",
         domain: "test",
         model: fakeModel(),
+        appLocal: true,
+        projectId: "sample",
         tools: [
           {
             name: "revise_draft",
@@ -219,10 +221,18 @@ test("current Task context reaches a late helper and survives settlement into a 
           },
         ],
       });
-      manager.register({ name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(), tools: [] });
+      manager.register({
+        name: "reviewer",
+        description: "Reviewer",
+        domain: "test",
+        model: fakeModel(),
+        tools: [],
+        appLocal: true,
+        projectId: "sample",
+      });
       opts.agents = createTaskAgentRunner({ manager }, new Map([
-        ["sample/owner", manager.getAgentDefinition("owner")!],
-        ["sample/reviewer", manager.getAgentDefinition("reviewer")!],
+        ["sample/owner", manager.getAgentDefinition("sample/owner")!],
+        ["sample/reviewer", manager.getAgentDefinition("sample/reviewer")!],
       ]));
       const execution = {
         opts,

@@ -378,6 +378,8 @@ test("a managed Task accepts progress after helper cancellation and continues fr
     domain: "test",
     model: { ...fakeModel(), id: "owner" },
     systemPrompt: "Use the supplied Task contract.",
+    appLocal: true,
+    projectId: "sample",
     tools: [
       manager.createAgentsTool({
         getCallerSessionId: () => currentAgentSessionId("owner"),
@@ -397,7 +399,7 @@ test("a managed Task accepts progress after helper cancellation and continues fr
     ],
   });
   const runner = createTaskAgentRunner({ manager }, new Map([
-    ["sample/owner", manager.getAgentDefinition("global/owner")!],
+    ["sample/owner", manager.getAgentDefinition("sample/owner")!],
     ["global/helper", manager.getAgentDefinition("global/helper")!],
   ]));
   const boundedRunner: typeof runner = {
