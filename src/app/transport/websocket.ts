@@ -97,11 +97,13 @@ export function createDaemonWebSocketTransport(options: {
       state.deferredReloads.set(requestId, event);
       while (state.deferredReloads.size > 64) state.deferredReloads.delete(state.deferredReloads.keys().next().value!);
     };
-    const flushDeferredReloads = () => {
+    const flushDeferredReloads = (): boolean => {
       for (const event of state.deferredReloads.values()) {
-        try { ws.send(JSON.stringify(event)); } catch { break; }
+        if (bufferedBytes() > maxBufferedBytes) return false;
+        try { ws.send(JSON.stringify(event)); } catch { return false; }
         state.deferredReloads.delete(typeof event.data?.requestId === "string" ? event.data.requestId : `event:${event.id}`);
       }
+      return true;
     };
     const scheduleOverflowRecovery = () => {
       if (state.overflowRecovery) return;
@@ -116,8 +118,12 @@ export function createDaemonWebSocketTransport(options: {
         // A reread started from the first hint can finish before the socket
         // drains. Emit a second hint after drain so the final dropped wake is
         // always covered even when no later owner event arrives.
+        if (!flushDeferredReloads()) {
+          state.overflowRecovery = setTimeout(checkDrain, 25);
+          state.overflowRecovery.unref?.();
+          return;
+        }
         state.overflowed = false;
-        flushDeferredReloads();
         sendOverflow();
       };
       state.overflowRecovery = setTimeout(checkDrain, 25);
@@ -137,10 +143,14 @@ export function createDaemonWebSocketTransport(options: {
         // A prior wake was dropped. If another subscribed frame arrives after
         // drain but before the recovery timer, preserve the full reread
         // obligation before forwarding that possibly unrelated frame.
-        state.overflowed = false;
         if (state.overflowRecovery) clearTimeout(state.overflowRecovery);
         state.overflowRecovery = undefined;
-        flushDeferredReloads();
+        if (!flushDeferredReloads()) {
+          scheduleOverflowRecovery();
+          if (frame.type === "runtime.reload.finished") deferReload(frame);
+          return;
+        }
+        state.overflowed = false;
         sendOverflow();
       }
       try {
