@@ -85,6 +85,53 @@ describe("canonical agents list/call", () => {
     expect(result).toMatchObject({ status: "done", summary: "beta", output: { ref: "HEAD" } });
   });
 
+  it.each(["alpha", "global"] as const)("dispatches exact cross-App same-owner workflows from an %s caller", async (callerKind) => {
+    for (const appId of ["alpha", "beta"] as const) {
+      const agentDir = join(persistDir, appId, "worker");
+      mkdirSync(join(agentDir, "workflows"), { recursive: true });
+      writeFileSync(join(agentDir, "workflows", "echo.ts"), `
+export const name = "echo";
+export const description = "${appId} implementation";
+export async function execute(ctx) { return ctx.done("${appId}", { owner: "${appId}" }); }
+`);
+      if (appId === "beta") {
+        writeFileSync(join(agentDir, "workflows", "route.ts"), `
+export const name = "route";
+export const description = "Beta calls the exact Alpha workflow";
+export async function execute(ctx) {
+  const child = await ctx.call("alpha/echo", { prompt: "Run exact alpha implementation" });
+  return ctx.done("Route complete", { child });
+}
+`);
+      }
+      manager.register({
+        name: "worker", description: `${appId} worker`, domain: "fixture", model: mockModel(), tools: [],
+        agentDir, appLocal: true, projectId: appId,
+      });
+    }
+    const signal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: callerKind === "alpha"
+        ? manager.getAgentDefinition("alpha/worker")
+        : { name: "coordinator", description: "Global caller", domain: "fixture", model: mockModel(), tools: [] },
+      ...(callerKind === "alpha" ? { projectId: "alpha" } : {}),
+      status: "running",
+      executionScope: { signal, workSignal: signal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+
+    const result = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
+      action: "call",
+      agent: "beta/route",
+      input: { prompt: "Beta must invoke exact Alpha echo" },
+    });
+
+    expect(result).toMatchObject({
+      status: "done",
+      summary: "Route complete",
+      output: { child: { status: "done", summary: "alpha", output: { owner: "alpha" } } },
+    });
+  });
+
   it("preserves a real schema-backed prompt blocker's child ID and blocked status", async () => {
     manager = new SubagentManager({
       persistDir,
