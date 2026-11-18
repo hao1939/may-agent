@@ -294,10 +294,34 @@ worktree is removed remains a separate live acceptance check.
 
 ### Keep one model-facing invocation tool
 
+Current disposition, 18 November: the unified interface is implemented and
+independently verified at Host #589 `d7fe07f80e`, with current-head Quality and
+Container passing (3,494 tests, zero failures, two skips). The active authorized
+local pair is Host/SDK `4a9e0f9300` plus App `241ce00ec6`, including required #590
+and reviewed current-assignment repair `5a386d2952`. Separate May and Scout Task
+roots expose the same sorted 32-target catalog; actual cross-App prompt and
+workflow calls retain the current caller and real child IDs. The original Scout
+Task publishes the exact prepared finding through the isolated workflow at
+`3cdda11f96`, with matching draft bytes, one INDEX link and one digest link.
+May's existing Conversation route delivers the GitHub review-link notice as
+Telegram message `50734`; approval remains on GitHub. Root assists publication
+and supplies an explicit source-delivery input, so this is not a claim that the
+initial mixed assignment ran unattended. The source review retains those limits.
+
+The remaining periodic metric-cadence gap belongs to the user's separate work:
+canonical ae40 removed May schedules without a demonstrated recurring producer
+in this Host pair. The active trial keeps the six original baseline failures
+visible. Scoped fixture candidate `f85c46df6c` passes all 1,147 App tests, but
+does not prove cadence repair and is not the active source. Human source
+review/integration and broad rollout remain separate from this successful trial.
+See the [current proposal](../../proposals/agent-workflow-interface-review-20261117.md)
+and [exact source/trial record](../reviews/agent-workflow-interface-source-review-20261117.md).
+The #585 chronology below is historical and does not describe the current interface.
+
 Review of [#585](https://github.com/hao1939/may-agent/pull/585) at `085d619f12`
 confirmed a design mismatch: its restricted constructor shares implementation
 with `agents`, but publishes a second `workflows` name and parameter schema.
-The [SDK tool contract](../2a-design/sdk.md#agent-tools-and-sdk) uses `agents.call`
+The [SDK tool contract](../../2a-design/sdk.md#agent-tools-and-sdk) uses `agents.call`
 for both prompt agents and code procedures. The earlier repair interpreted local
 procedure access as excluding prompt delegation. The human clarified that either
 implementation must be callable in the same way and may call either kind.
@@ -305,7 +329,7 @@ That clarification supersedes the procedure-only interpretation. The subsequent
 human comments remove invocation permission support entirely, rather than unify
 its checks. App ownership remains descriptive; registered callables are listed
 and called without per-target grants or App-based invocation denials.
-The [unified-call proposal](agent-workflow-interface-review-20261117.md) specifies
+The [unified-call proposal](../../proposals/agent-workflow-interface-review-20261117.md) specifies
 the input/result contracts, exact naming rule, public fork retirement and paired
 Host/SDK/App migration for review. Production loader/Task
 tests must prove the required-prompt input, common result, canonical discovery,

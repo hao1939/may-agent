@@ -8,8 +8,17 @@ import { discoverStaticWorkflows } from "../../../scripts/audit-workflows.js";
 import {
   buildRuntimePatternAuditPacket,
   execute,
+  type RuntimePatternAuditPacket,
   workflowInventoryRootFromAppRoot,
 } from "./runtime-pattern-audit.js";
+
+test("evaluation-report-reader has one canonical Alex registration", () => {
+  const registrations = discoverStaticWorkflows(join(import.meta.dir, "../../../../.."))
+    .filter(({ appId, name }) => appId === "alex" && name === "evaluation-report-reader");
+
+  expect(registrations).toHaveLength(1);
+  expect(registrations[0]?.agent).toBe("evaluator");
+});
 
 test("runtime-pattern-audit bundles with dependencies inside the Alex release closure", async () => {
   const result = await Bun.build({
@@ -86,6 +95,122 @@ test("runtime-pattern-audit resolves the installed sibling-App inventory from an
     expect(existsSync(join(snapshotDir, "latest.json"))).toBe(true);
     expect(existsSync(join(snapshotDir, "latest.md"))).toBe(true);
     expect(existsSync(join(inventoryRoot, ".state"))).toBe(false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("runtime-pattern-audit keeps requests idempotent for stable attention evidence", async () => {
+  const root = mkdtempSync(join(tmpdir(), "runtime-pattern-audit-request-"));
+  try {
+    const appDir = join(root, "projects/sample.app");
+    const wfDir = join(appDir, "agents/owner/workflows");
+    mkdirSync(wfDir, { recursive: true });
+    writeFileSync(
+      join(appDir, "app.ts"),
+      'export default { task: () => ({ intent: { workflow: "sample-flow" } }) };\n',
+    );
+    for (const workflow of ["sample-flow", "unrelated-flow"]) {
+      writeFileSync(
+        join(wfDir, `${workflow}.ts`),
+        `export const name = "${workflow}";\nexport const description = "Fixture workflow";\nexport async function execute() {}\n`,
+      );
+      writeFileSync(join(wfDir, `${workflow}.test.ts`), "// paired test\n");
+    }
+
+    const dbPath = join(root, "may.db");
+    const db = new Database(dbPath);
+    db.exec(`
+      CREATE TABLE workflow_runs (
+        runId TEXT PRIMARY KEY,
+        app_id TEXT,
+        projectId TEXT,
+        workflow TEXT NOT NULL,
+        status TEXT NOT NULL,
+        startedAt INTEGER NOT NULL,
+        endedAt INTEGER
+      );
+    `);
+    const insert = db.prepare(
+      "INSERT INTO workflow_runs (runId, app_id, projectId, workflow, status, startedAt, endedAt) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    );
+    const firstNow = 1_795_000_000_000;
+    const secondNow = firstNow + 1_000;
+    const windowMs = 3 * 3_600_000;
+    insert.run(
+      "stable_done",
+      "sample",
+      "sample",
+      "sample-flow",
+      "done",
+      firstNow - 30_000,
+      firstNow - 29_000,
+    );
+    insert.run(
+      "stable_error_1",
+      "sample",
+      "sample",
+      "sample-flow",
+      "error",
+      firstNow - 20_000,
+      firstNow - 19_000,
+    );
+    insert.run(
+      "stable_error_2",
+      "sample",
+      "sample",
+      "sample-flow",
+      "error",
+      firstNow - 10_000,
+      firstNow - 9_000,
+    );
+    insert.run(
+      "unrelated_boundary_error",
+      "sample",
+      "sample",
+      "unrelated-flow",
+      "error",
+      firstNow - windowMs + 500,
+      firstNow - windowMs + 500,
+    );
+
+    const run = (now: number) =>
+      execute(
+        createTestAppWorkflowContext({
+          workflow: "runtime-pattern-audit",
+          input: {
+            rootDir: root,
+            dbPath,
+            now,
+            latestWindowMs: windowMs,
+            compareWindowMs: windowMs,
+            persistSnapshot: false,
+          },
+        }),
+      );
+
+    const first = await run(firstNow);
+    const second = await run(secondNow);
+    const firstOutput = first.output as {
+      requests: unknown[];
+      result: RuntimePatternAuditPacket;
+    };
+    const secondOutput = second.output as {
+      requests: unknown[];
+      result: RuntimePatternAuditPacket;
+    };
+    expect(firstOutput.result.generatedAt).not.toBe(secondOutput.result.generatedAt);
+    expect(firstOutput.result.regressions).not.toEqual(secondOutput.result.regressions);
+    expect(secondOutput.requests[0]).toEqual(firstOutput.requests[0]);
+    expect(JSON.stringify(secondOutput.requests[0])).toBe(JSON.stringify(firstOutput.requests[0]));
+
+    insert.run("changed_error", "sample", "sample", "sample-flow", "error", secondNow - 500, secondNow - 100);
+    const changed = await run(secondNow);
+    const changedOutput = changed.output as { requests: Array<{ id: string }> };
+    expect(changedOutput.requests[0]?.id).not.toBe(
+      (firstOutput.requests[0] as { id: string }).id,
+    );
+    db.close();
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

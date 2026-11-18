@@ -1,71 +1,72 @@
 # Unified agent and workflow calls
 
-**Design status:** Accepted; the [owning contract](../2a-design/execution-contributions.md)
-defines the enduring behavior. This proposal tracks the remaining cutover work.
-**Implementation status:** Host source is published through `04c544c104` in draft
-[#589](https://github.com/hao1939/may-agent/pull/589). The paired App contribution
-at `b7d6b41b7a` is reviewed and verified for its scoped compatibility checks.
-The authorized local candidate is active: Host/SDK `3f48a1e2cd` includes the
-required #590 repair; App `054e64b4f1` includes canonical ef7 and reviewed Appb7.
-The deployment receipt and independent binary/SDK/App read-back match and report healthy.
+**Design status:** Accepted and promoted to the [owning contract](../2a-design/execution-contributions.md).
+**Implementation status:** Implemented and independently verified in source and
+an authorized local trial. Host `d7fe07f80e` is published in
+[#589](https://github.com/hao1939/may-agent/pull/589); Quality and Container pass
+on that exact head (3,494 tests, zero failures, two skips). The paired App review
+branch contains `5a386d2952`; its later scoped fixture candidate is `f85c46df6c`.
+No GitHub merge or broad release is included.
 
-The source provides one canonical catalog, mandatory `{prompt,data?}`
-input, common validated results and awaited calls for agents and workflows.
-Invocation permissions and public fork/session actions are removed. Independent
-production probes cover all four call directions, immutable definition snapshots,
-bounded cancellation and Task ingress. Canonical model calls require `finish()`;
-a real-manager regression proves that missing reports fail after one correction
-without fabricating output or execution identity.
+The verified local trial used Host/SDK `4a9e0f9300` and App `241ce00ec6`. It preserves
+required #590 and legitimate canonical changes, includes the Scout current-input
+repair, and retains the original periodic-event tests. The standard deployment
+receipt and independent binary/SDK/App read-back were healthy and matched this pair.
+After that trial, another Task reloaded canonical App definitions, most recently
+`74bb785bec`. That source does not contain the reviewed unified App migrations.
+Host/SDK remains `4a9e0f9300`; the current installation therefore needs App source
+reconciliation and a fresh paired read-back before completion can be claimed.
+The retained generation-13 App Task is handling that integration, preserving the
+newer audit and planner fixes, knowledge publications, and all consumed allowance.
 
-The installed trial exposes two additional integration gaps: real Task workers
-still filter loaded profiles to the caller App, and Scout's workflow body reads
-inherited Task input instead of the current call. May's scoped Scout repair
-`5a386d2952` is independently verified and pushed for review; the Host worker
-repair is running through the retained Task. The remaining work, in order, is:
+The implemented contract provides one canonical catalog, mandatory
+`{prompt,data?}`, common validated results and awaited calls. Invocation
+permissions and public fork/session actions are removed. Independent production
+probes cover all four call directions, immutable snapshots, bounded cancellation
+and Task ingress. Canonical model calls require `finish()` with one bounded
+correction for a missing report. Ordinary nested failures return error reports
+with real child IDs; supervision/control errors retain their existing unwinding.
 
-1. Finish Task-worker catalog loading and its actual-process regression, then
-   pass CI on the resulting Host revision. Preserve scoped Task runtime registration
-   and actor fences while discovering/calling all registered contributions.
-2. Verify and activate the repaired pair, then finish the native integration trial
-   and remaining configured App
-   compatibility disposition. Exact active App054e/Host3f48 passes184 revision/
-   reconciliation tests, Host static checks, App type/design and complete Gym
-   checks (405 tests,1,488 review checks). The full App scan reports1,140 passes
-   and six periodic-event failures; each also fails on canonical main with the
-   preceding installed SDK. May's creator reopens the retained App Task at
-   generation12 within its existing64 limit for those exact fixtures. Keep that
-   scoped compatibility work distinct from the user's Task/ingress/event redesign.
-3. Prove native workflow → PR push → CI/comment repair → Telegram review-link
-   delivery, including a late review comment. Human approval stays on GitHub.
+The local trial found and repaired two gaps that source inventory alone missed:
+Task workers filtered profiles by caller App, and Scout's body ignored the current
+assignment. New actual-worker tests invoke cross-App workflow and prompt targets;
+36 owning/control tests and static checks pass independently. Live May and Scout
+Task roots in that trial expose the same sorted32-target catalog. A cross-App prompt helper
+returns its real ID while retaining the caller's Task. The corrected original
+Scout Task publishes prepared arXiv2611.19700v1 through the protected workflow at
+`3cdda11f96`, with exact draft/hash, INDEX and digest read-back. Reentry inspects
+that effect and avoids publishing it again.
 
-Host04c5 passes complete hosted Quality and Container:3,494 tests, zero failures,
-two skips. All316 owning tests and static checks pass independently, including
-shared concurrency limits, typed deferral and cancellation. Hosted/standalone
-probes consume ordinary child error reports with real IDs. This completes the
-earlier Host source/fixture step. The subsequently observed worker-catalog gap
-reopens source work despite those passing checks.
+Native GitHub observer event6742108 records the late review and successful checks
+on Hostd7fe. May's existing Conversation route delivers one GitHub review-link
+notice as Telegram message50734. The notification follows an explicit source-
+delivery input on the retained May Task; this is evidence of the connected path,
+not a claim that the original mixed Scout assignment specified every delivery
+obligation automatically. Human approval stays on GitHub.
 
-The reviewed Appcdc/Host3e1 pair passes all 1,146 configured App tests across
-81 files, typechecking, design checks and complete private Gym checks (405 Bun
-tests and 1,488 review checks). Installation markers/evidence are explicit
-prerequisites. The 33-target disposition index maps definitions, bodies, callers,
-guidance and owning checks; it does not prove every target's external effects.
+The remaining handoff is:
 
-May implements through the retained Task/workflow path; Root owns design,
-review, independent verification and publication assistance. The finite cumulative
-limits remain 128 Host and 64 App rounds, preserving all prior usage and effects.
-Host's retained112 entries include102 ordinary reservations and ten conservative
-retained-allowance entries, rather than112 demonstrated coding executions.
-Task, ingress and event redesign belongs to the user's separate work.
+1. Reconcile the reviewed App source with canonical changes, push it for parallel
+   review, and verify/activate the exact compatible local pair. Review and integrate
+   the paired source with its compatible SDK, then decide
+   broader rollout separately. Retain the successful local source/receipt identities.
+2. The user owns the separate Task/ingress/event and periodic-work changes. The
+   source-only trial App's full configured scan reports1,141 passes and six existing periodic-
+   event failures; every failure also reproduces on preceding canonical source.
+   The metric recurrence failure reveals a real missing producer: this Host pair
+   has metric subscribers while canonical ae40 removed May's schedules. Appf85's
+   fixture migration passes all1,147 tests, but absence assertions do not prove a
+   replacement cadence runs. Its generation13 acceptance explicitly leaves that
+   functionality to the separate owner. The source-only trial retains the original
+   failing tests and does not activate those fixture rewrites or claim cadence repair.
 
-Exact revisions, focused checks, prior failures and operational findings are in
-the [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
-Appb7d adds compatibility coverage for scoped specialist guidance, assignment
-forwarding, retained bindings and quiet replay; all77 owning tests, typecheck
-and design checks pass independently, with native review acceptance. The prior
-full App/Gym receipts remain specific to Appcdc/Host3e1.
-
-The local candidate is active; final native trial and readiness notification remain unproved.
+Exact revisions, source reviews, failed trials, scoped check totals and provider
+receipts are in the [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
+May implements through retained Tasks/workflows; Root owns design, independent
+review/verification and publication assistance. The final cumulative ledgers
+remain128/128 Host and61/64 App reservations, without reset, refund or automatic
+renewal. Earlier retained allowances include conservative reservations rather
+than an equal number of proved coding executions.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,
@@ -75,7 +76,7 @@ and [robust enough for the goal](../1-principles/design-philosophy.md#robust-eno
 Remove invocation permissions and public background-helper management. Use ordinary
 awaited calls, bounded cancellation and affordable redo with retained evidence.
 
-## Proposed behavior
+## Accepted behavior
 
 An agent can call an agent or workflow; a workflow can call an agent or workflow.
 The caller discovers a named contribution, supplies its assignment, and receives
@@ -92,8 +93,8 @@ one result. It does not choose an executor kind or manage a child session.
 
 The contribution contract owns the enduring [input/discovery](../2a-design/execution-contributions.md#invocation-and-ownership)
 and [result](../2a-design/execution-contributions.md#result-admission) rules.
-This proposal specifies their pending interface cutover. Examples below show
-proposed syntax, not the currently deployed SDK.
+This proposal records their implemented interface cutover. The examples below
+match the locally verified candidate SDK.
 
 ## Ordinary use
 
@@ -204,10 +205,10 @@ alone is not a successful finish. Code returns the equivalent report through the
 SDK. Backend kind, session/workflow aliases, transcripts and output directories
 stay in execution diagnostics, outside the common result payload.
 
-Migrate diagnostic consumers as well as result producers. In particular,
-`ExecutionResult.cliCalls` currently supplies Host-recorded evidence to development
-and Gym. Preserve its provenance through the existing execution diagnostics or
-configured diagnostic observer, addressed by the actual execution reference.
+Migrate diagnostic consumers as well as result producers. The legacy
+`ExecutionResult.cliCalls` field supplied Host-recorded evidence to development
+and Gym. The reviewed migration preserves its provenance through execution
+diagnostics or the configured diagnostic observer, addressed by the actual execution reference.
 Extend that owning read/projection only where a real consumer needs it; do not
 retain a second result alias or treat producer-authored `facts` as trusted tool
 receipts. Candidate verification must include those consumers.
@@ -241,8 +242,8 @@ Use one rule for every registered agent or workflow:
    that address in a catalog version.
 
 Model `agents({ action: "list" })`, SDK `ctx.list()`, and standalone `listTargets`
-return the same descriptor list for equivalent runtime configuration. `ctx.list()`
-is a proposed SDK binding. Listing is optional for statically authored workflows.
+return the same descriptor list for equivalent runtime configuration. These SDK
+bindings are implemented. Listing is optional for statically authored workflows.
 Calls and discovery within an invocation use the same prepared definition/catalog
 snapshot; a reload does not silently redirect an active call tree.
 Prepare the complete selected catalog within that invocation's finite timeout
@@ -330,39 +331,28 @@ paired-activation obligation; a passing Host commit cannot certify App edits.
 | E — Execution | Keep joined workflow concurrency and inherited cancellation; preserve normal Task/Condition continuation and evidence on safe redo. | Stop/timeout through a mixed tree cleans up ordinary children, starts no further children, and preserves evidence; helper completion cannot settle its Task. |
 | F — Local trial | Build and run the paired candidate Host/SDK/Apps before PR merge. Assign bounded coding work through May, observe workflow/PR/CI/comment follow-up, and verify Telegram review-link delivery. | Record exact candidate SHAs, executable identity, native Task/workflow references, current PR head/checks, addressed comment and notification receipt. Record failures as open gaps. |
 
-Catalog, common admission/results, removed invocation controls and bounded
-cancellation have independently checked source checkpoints, including real prompt
-partial results and nested CLI receipt projection. Preserve those behaviors while
-finishing D and F; selected checks do not establish full cutover readiness.
-The [dated review](../archive/reviews/agent-workflow-interface-source-review-20261117.md)
-retains the earlier findings and exact repair evidence.
+Items A–F have source and local-trial evidence. Hostd7fe closes the actual-worker
+catalog gap; App5a closes current-assignment precedence and prepared-evidence
+forwarding. The 33-target disposition index supports source review and states
+its effect limits; live catalogs and the exact protected publication supply
+additional production evidence. Historical failure/repair checkpoints remain in
+the [dated review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
 
-The remaining implementation order is:
+Preserve these completed checkpoints during integration:
 
-1. **Finish Host migration.** Preserve required finish reports, the committed
-   real-manager negative regression, valid output/facts, actual identity and
-   bounded correction. Continue from exact current-head CI artifacts, preserving real
-   cancellation, steering, lineage and SIGINT child-drain assertions. The steering
-   coverage review is resolved; retain its actual interruption tests. Retired
-   fork/session controls, aliases and bare strings must not return to satisfy old
-   fixtures. Run owning tests and `check:ci` for each coherent checkpoint, then
-   full current-head Quality.
-2. **Preserve the reviewed App candidate.** Retain invocation-assignment forwarding
-   and fresh judgment with retained receipts, usage and identical replay.
-   Preserve the verified native Gym temporary-workspace binding and actual CLI
-   protocol coverage and corrected source/configuration inventory fixtures.
-   Keep the completed 33-target body/caller/guidance disposition and its explicit
-   remaining effects. Final pairing and installed behavior still need verification;
-   a Host-only checkpoint cannot certify a different App revision.
-3. **Verify and trial the pair.** Bind App imports and TypeScript aliases to one
-   exact clean Host/SDK provider; keep the native development provider unchanged
-   until a verified replacement is ready at a quiescent boundary. Supply any
-   installation configuration/evidence explicitly and distinguish configured
-   checks from clean-checkout checks. Resolve substantive review, activate a
-   compatible local candidate while preserving legitimate installation changes
-   and the required Task-revision repair, then prove native coding, PR push,
-   CI/comment follow-up and Telegram review-link delivery. Record the running
-   executable/SDK/App identities and rollback revision.
+1. Required finish reports, bounded correction, valid output/facts, actual child
+   identity and ordinary cancellation/steering/lineage/CLI-drain behavior.
+2. Current invocation assignment/data ahead of inherited Task context, fresh
+   judgment with retained valid evidence, bounded receipts/usage and quiet replay.
+   Canonical target selection does not transfer Task ownership: explicit domain
+   parameters remain necessary, and independently owned work uses App/Task requests.
+3. Exact Host/SDK/App binding and supported receipt-backed activation. Keep the
+   native provider immutable, retain legitimate installed changes and #590, and
+   preserve known baseline failures until their separate owner repairs them.
+   The verified local trial used4a9e/241c. The subsequent canonical reload and
+   reviewed-entrypoint bootstrap994f are integration checkpoints, not replacement
+   full-trial evidence. Keep f85's fixture changes explicit during reconciliation;
+   the superseded staged alternative a1bdf requires no replay or activation.
 
 These are checkpoints within the saved outcome, not new Tasks or Host phases.
 May implements through the retained development workflows; Root reviews, checks
@@ -385,7 +375,7 @@ Continue from the retained Host #589 and paired App branches, preserving their
 complete histories, saved cross-repository selectors and every actual cumulative
 reservation, including the original seven #585 rounds. Their creator owns saved
 finite allowance revisions; no replacement Task resets usage. Keep unrelated work
-separate. Push coherent committed checkpoints to the existing draft PR and App
+separate. Push coherent committed checkpoints to the existing PR and App
 review branch while implementation continues, stating actual checks and gaps. Full cutover readiness
 is required for its readiness claim, not for sharing unfinished work for review.
 The user owns the separate ingress/input and event-system proposals; this
@@ -394,8 +384,9 @@ implementation remains focused on the unified callable interface.
 Review and local verification do not wait for merge. First run portable candidate
 checks; then build the exact candidate and activate compatible components for the
 user-authorized local trial using the supported rollout/cancellation path. Keep a
-known rollback revision, preserve independent Tasks, and leave protected Scout
-publication untouched. A local trial does not authorize GitHub merge or a broader
+known rollback revision and preserve independent Tasks. Protected Scout
+publication stays on its owning isolated workflow; Root never edits its canonical
+knowledge directly. A local trial does not authorize GitHub merge or a broader
 release. Return concrete failures through the existing owner for workflow repair.
 
 Do not leave a second legacy authoring route or merge incompatible Host/App

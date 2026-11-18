@@ -9,16 +9,15 @@
 evidence retention and Task-backed waiting are implemented. Cancellation requires
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
-accepted requirements with partial source implementation in draft Host #589.
-Focused checks cover the model adapter, standalone child calls, inherited
-Task context and real prompt partial-result admission. The paired App source
-contribution is reviewed; full Host CI, final pair verification and local
-activation remain open in the
+implemented in review-ready Host [#589](https://github.com/hao1939/may-agent/pull/589)
+at `d7fe07f80e`; its Quality and Container checks pass. The compatible local
+Host/SDK `4a9e0f9300` and App `241ce00ec6` passed the connected interface trial.
+A subsequent reload selected canonical App source without those migrations.
+Reconciliation of the reviewed App branch with newer canonical fixes, followed
+by verification of the currently installed pair, remains open in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
-The examples under Invocation and Result admission describe the accepted target,
-not the installed API. The sections below state specific coverage limits. Full standalone/Host agent
-parity is not established; [Shared Agent Runtime](agent-runtime.md) owns its
-accepted semantics and current convergence gaps.
+Check paired source identities before relying on installation coverage.
+[Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
 
 An agent or workflow can ask another agent or workflow for a bounded contribution.
 The caller retains its assignment and judges the contribution. Task-level
@@ -188,9 +187,10 @@ another Task lifecycle nor a Host judgment of domain sufficiency.
 **Source coverage:** App `27acebb375` forwards the invocation assignment and
 requires fresh judgment when it changes. Independent real-Git verification
 confirms identical-assignment replay, retained receipts and cumulative usage.
-This source repair is not activated; the
+The verified local trial included this repair; checkpoint `994f7f7e07` restores
+the exact reviewed development module after a later canonical reload. The
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
-tracks the remaining paired migration and trial.
+tracks the remaining App integration and current installation verification.
 
 ### Discovery and callable names
 
@@ -217,13 +217,13 @@ Use one catalog and one address rule for agents and workflows:
   ownership; they are not invocation ACLs. Actual tool provisioning and Host
   Task mutation contracts belong to their existing APIs.
 
-Model `agents({ action: "list" })`, the proposed SDK `ctx.list()`, and standalone
+Model `agents({ action: "list" })`, SDK `ctx.list()`, and standalone
 `listTargets` enumerate the same prepared catalog for equivalent runtime inputs.
 They return the same target descriptors, without implementation-kind collections
 or active-session lists. Static workflow code can call known canonical names
 without listing first; discovery is available when it needs runtime inspection.
-Candidate SDK source exposes `ctx.list()`; complete production binding and
-installed availability still need verification. Use the actual installed API.
+Host #589 implements these bindings; the paired local trial verifies the actual
+Task-worker catalog and cross-App calls. Check the installed source identities.
 
 Prepare and validate the complete selected catalog within the enclosing finite
 execution and cancellation bound, including asynchronous imports. Expose one
@@ -252,13 +252,13 @@ The model-facing cooperation surface is `list` and awaited `call`. The
 specifies retirement of `fork` and its session controls. Parallel joined calls
 remain ordinary workflow code; durable independently owned work uses Tasks.
 
-**Source coverage and rollout gap:** draft Host #589 has independently verified
+**Source coverage and rollout gap:** review-ready Host #589 has independently verified
 common envelopes/results, all four call directions, exact canonical discovery,
 immutable prompt/config snapshots and finite cancellation. Pending native imports
-remain explicitly unconfirmed on timeout/abort. This promotes verified source
-behavior; the installed API still requires the paired cutover. App targets,
-callers, fixtures and trusted-result consumers remain under migration, with full
-CI and the connected local trial open. See the
+remain explicitly unconfirmed on timeout/abort. Hosted checks and the connected
+local trial pass on the recorded pair. A subsequent canonical App reload exposed
+an integration gap: retain the reviewed consumer migrations alongside newer App
+fixes, then verify the current installation. See the
 [cutover status](../proposals/agent-workflow-interface-review-20261117.md).
 
 An App schedule, subscription or observer first enters through a declared App
@@ -692,10 +692,10 @@ Backend kind, `sessionId`, `workflowRunId`, output directories, workflow steps,
 raw `lastAssistantText`, `structuredResult` and `finishResult` belong in execution
 diagnostics rather than alternative public result shapes or payload aliases.
 Useful output and facts must remain JSON-compatible and available through the
-same envelope for either implementation. Draft Host #589 passes its source/CI
+same envelope for either implementation. Host #589 passes its source/CI
 checks, and the compatible local candidate uses this interface. The
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
-tracks the remaining full-suite, compatible activation and connected trial work.
+records exact source/local-trial proof and the separate integration/periodic-work handoff.
 An explicit partial agent result is `blocked` with its partial output retained,
 not `done`. Both optional `output` and `facts` survive every authored terminal
 status and nested workflow boundary. A workflow may return an error or

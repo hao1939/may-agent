@@ -1,8 +1,8 @@
 <ai_context>
 summary: "Entry point for Scout's project-owned knowledge library. Use this before creating or updating Scout-local knowledge notes."
 triggers: ["scout knowledge", "agent architecture research", "multi-agent trends", "XHS trends", "knowledge library maintenance"]
-last_updated: "2026-11-17"
-source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-17, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
+last_updated: "2026-11-18"
+source_basis: "Maintained index of Scout canonical notes, companion notes, findings, and durable reports. Current navigation includes source-grounded findings through 2026-11-18, the §37–§40 Agent Evaluation Research: Diagnostic Layers companion, and the Agent Runtime Enforcement Observability companion without duplicating the full index. Runtime task, credential, backlog, and health status belongs in the project UI or dated reports."
 findings_date_convention: "Use the actual observation date in YYYY-MM-DD filenames; never create a future-dated finding."
 </ai_context>
 
@@ -70,8 +70,13 @@ Migration and project-operation artifacts live outside `knowledge/`:
 
 ## Recent Source-Grounded Findings
 
+### 2026-11-18
+
+- [Agent SDK dependencies inherit build authority](./findings/2026-11-18-agent-sdk-dependencies-inherit-build-authority.md) — Aikido reports that two compromised `agent-framework` patch releases used Python startup hooks to steal CI and cloud credentials without an application import, supporting locked artifacts, startup-hook inspection, provenance checks, least-privilege builds, and environment-wide rotation; the removed malicious wheels were unavailable for independent inspection, and the compromise mechanism and impact remain vendor-reported.
+
 ### 2026-11-17
 
+- [Retained agent experience needs current-task verification guardrails](./findings/2026-11-17-retained-agent-experience-needs-verification-guardrails.md) — an arXiv abstract reports that retained context improved mean success and reduced environment lookups but also increased skipped current-task inspection and verification; adding GRPO partly restored those behaviors, while Scout reviewed only the abstract and not the full paper, traces, code, uncertainty, or per-environment results.
 - [Human approval is durable workflow input, not a worker callback](./findings/2026-11-17-human-approval-is-durable-workflow-input.md) — pinned `tuvl` source stores an approval request with the suspend checkpoint, durably settles a validated decision before requeue, and includes a producer-authored test where another worker resumes after the requester process is killed; Scout inspected source and tests statically but did not run PostgreSQL, kill a worker, or test the commit crash windows.
 - [Coding-agent evaluations need professional-judgment criteria](./findings/2026-11-17-coding-agent-evals-need-professional-judgment.md) — Surge AI's private-task sudo L7 benchmark reports tightly grouped functional-correctness scores but wider differences in thought partnership and communication, supporting separate scoring of implementation and decision quality; Scout could not inspect the private tasks, rubrics, trajectories, grader prompts, checks, or result bundle and did not reproduce the runs.
 - [Agent run completion needs shutdown proof](./findings/2026-11-17-agent-run-completion-needs-shutdown-proof.md) — pinned Umbra source and producer-authored tests separate the command result, complete resource-ledger closure, provider-process collection, and durable completion recording; missing closure evidence prevents clean completion and can record recovery-required, while Scout did not build or run Umbra or execute its tests.

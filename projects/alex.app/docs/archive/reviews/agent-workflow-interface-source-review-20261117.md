@@ -2167,3 +2167,113 @@ Evidence: `054e-scout-current-assignment-probe.json`,
 `054e-stop-misdirected-scout-trial.json`, `pr589-live-worker-review-receipt.json`
 and the persisted actual workflow run. Final installed repair/read-back, original
 prepared publication and Telegram review-link delivery remain unproved.
+
+
+## Unified source and connected local trial verified — 18 November
+
+Root reviews and pushes Hostd7fe07f80e6d52076a8af0236086ea553088f90c. All36
+owning/control tests across five worker files and static checks pass independently.
+The actual-process regression discovers the shared catalog, awaits another App's
+workflow and prompt helper, compares both catalogs and retains real child IDs and
+pinned reviewer instructions. Completed hosted run44201090755 passes Quality and
+Container with3,494 tests, zero failures and two skips. The native Alex observer's
+event6742108 includes exact-head green checks and late review5948418690, distinct
+from Root system feedback. Source repair retains scoped Task registration and fences.
+
+May's scoped App5a repair passes87 Scout owning tests, typecheck and the independent
+before/after production-body probe against the exact compatible SDK. Root pushes
+it on the retained backup branch for parallel review. May reconciles canonical
+source into candidatef85c46df6c9990c78cfa00c1456f387ea7f9e691. The exact frozen
+f85/Host4a pair passes1,147 App tests/81files, typecheck, design, complete Gym
+(405 Bun tests and1,488 review checks),184 revision/reconciliation tests and Host
+static checks. Its only changes beyond Root's source-only integration241c are
+four test files. Native review correctly identifies that replacing the old metric
+recurrence assertion with absence assertions does not establish a replacement
+producer. A read-only installation check confirms the last metric triggers are
+hours stale and this Host pair contains subscribers but no recurring producer.
+Root corrects the earlier classification of all six failures as fixture-only drift.
+
+The user owns that periodic/Task/ingress work. May revises the same App Task in
+place to generation13, preserving61 consumed reservations and limit64, to separate
+its scoped metric-ID/subscriber compatibility from the external cadence obligation.
+Its source contribution is accepted within that scope; no cadence repair is claimed.
+Root retains the original tests in the active source-only App241ce00ec6d4cfe42a3ddc9db4a4d1ed57ec378d,
+which contains canonical3a/ef7 and Scout5a without f85's disputed fixture rewrites.
+Its fresh complete configured scan passes1,141 tests and fails the same six
+canonical periodic-event tests. Its type/design, full Gym and current-input probe
+pass. No old receipts are relabeled as this final pair.
+
+At23:56 UTC the supported immutable-archive deployment settles succeeded/healthy,
+duplicateDeploy false, for Host4a9e0f93008f8a6c95fa40996204c57f405e9891 and App241c.
+Installed binary SHA c741ff5a0b577b85c52e99ffc6ac40509522d1f774251258e23af43f29eb43af
+matches requested/loaded and SDK files match the frozen source. This preserves
+required590, legitimate prior source changes and the exact128 Host/61 App reservations.
+Normal merge-tree checks prove prior active changes are retained. The source-only
+trial does not activate f85, waive its broader review objection or repair cadence.
+
+Live May and original Scout Task roots each list the same sorted32 canonical
+targets across all three Apps. May also awaits a Scout prompt helper through
+the common envelope/result: actual child s_1794959834409_df57cd3d-4200-4bc4-9d06-43a2f6e91dcc
+returns done while retaining caller May Goal identity. An incorrect May-context
+workflow call without source correctly blocks. Target selection does not transfer
+Task ownership. The corrected original Scout Task calls the installed workflow
+with explicit source arxiv and prepared evidence; no new code repair is needed.
+
+Actual workflow wr_1794960135012_vp47, child
+s_1794960139096_0654c885-812c-447a-bbed-a81b797a68b4, publishes the exact prepared
+arXiv2611.19700v1 finding at3cdda11f96ed6d7d2302f4fd7f221e24d0b45d02, parent
+fdd42870085acf4b54695b47c0488bbff39a7440. Independent current/Git read-back matches
+original draft SHA c1030c88f0deea132326cb0421482c378dc4e8d8046036216326887da36b6cb2;
+the retained packet hash is unchanged, INDEX and digest each contain one exact
+finding link, and the abstract-only limitation remains explicit. The prepared
+branch performs no replacement acquisition and records the original paper identity.
+The original Scout caller consumes the result; later input inspects this effect
+instead of publishing again. Root never directly edits protected knowledge.
+
+May sends one source-readiness notice through the existing primary Conversation
+Task, after an explicit source-delivery input on its retained Goal. Event6742143
+maps to actual Telegram mirror/provider message50734 on the same configured human
+route as the earlier verified notice, with zero duplicates. The notice contains
+the exact Hostd7fe head and GitHub review URL; it requests approval on GitHub and
+separates unfinished periodic behavior. This proves native delivery and observed
+CI/comment follow-up with Root publication assistance, rather than an untouched
+initial assignment automatically specifying every downstream obligation.
+
+May, the retained Host Task and the scoped App Task converge on their respective
+accepted outcomes. A surplus prepared-route Task is reconciled as superseded;
+its staged a1bdf alternative/effects remain historical and are not activated.
+Root's later context correction is superseded by the already completed publication,
+so no reload, refetch, allowance renewal or repeated publication follows.
+
+Exact evidence under the trial directory: `d7fe-hosted-failures.json`,
+`d7fe-independent-worker-owning.log`, `d7fe-independent-worker-controls.log`,
+`d7fe-independent-check-ci.log`, `d7fe-native-review-observation.json`,
+`f85-independent-verification.json`, `054e-metric-cadence-gap-handoff.json`,
+`241c-app-complete.json`, `241c-typecheck.log`, `241c-design.log`, `241c-gym.log`,
+`241c-scout-current-assignment-probe.json`, `241c-independent-activation-readback.json`,
+`241c-native-catalog-and-cross-app-proof.json`,
+`241c-prepared-publication-independent-readback.json` and
+`d7fe-review-notification-provider-proof.json`. Standard active deployment receipt:
+`projects/may-agent/.state/deploy-receipts/unified-interface-local-trial-20261117-4a9e-241c.json`.
+Source review/integration and the separate periodic functionality remain explicit
+handoffs; no GitHub merge or broad release is part of this result.
+
+## Post-trial canonical reload — 18 November
+
+The completion audit found that other Tasks subsequently reloaded canonical App
+source through `4f15b5eea0` and `74bb785bec`. The installed Host remains the verified
+`4a9e0f9300` binary, but the selected App definitions lack the reviewed unified
+consumer migrations. The successful `241c` trial remains historical evidence;
+it does not establish current installation compatibility.
+
+Root returned the concrete integration gap to the same generation-13 App Task
+in event `6742786`. The task must preserve the reviewed unified source and Scout
+current-input repair while incorporating the newer audit idempotency, single
+reader registration, canonical planner target, documentation and publications.
+Read-only merge preparation found two conflicts, both in the planner source/test;
+other changes merge automatically. Preserve canonical names and structured
+arguments together. Allowance remains `61/64`, with no reset or renewal.
+
+Host PR #589 remains open and ready for review at `d7fe07f80e`, both hosted checks
+pass, and all 11 inline threads are resolved. App reconciliation, publication and
+fresh local pair verification remain required before this goal is complete.
