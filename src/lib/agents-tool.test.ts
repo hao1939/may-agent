@@ -7,6 +7,9 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
+import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
+import { Type } from "typebox";
+import { createAgentRun } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
@@ -80,6 +83,182 @@ describe("canonical agents list/call", () => {
     expect(listed.map((item: any) => item.name)).toEqual(["alpha/alpha-owner", "alpha/review", "beta/beta-owner", "beta/review"]);
     const result = await callTool(tool, { action: "call", agent: "beta/review", input: { prompt: "Review beta", data: { ref: "HEAD" } } });
     expect(result).toMatchObject({ status: "done", summary: "beta", output: { ref: "HEAD" } });
+  });
+
+  it.each(["alpha", "global"] as const)("dispatches exact cross-App same-owner workflows from an %s caller", async (callerKind) => {
+    for (const appId of ["alpha", "beta"] as const) {
+      const agentDir = join(persistDir, appId, "worker");
+      mkdirSync(join(agentDir, "workflows"), { recursive: true });
+      writeFileSync(join(agentDir, "workflows", "echo.ts"), `
+export const name = "echo";
+export const description = "${appId} implementation";
+export async function execute(ctx) { return ctx.done("${appId}", { owner: "${appId}" }); }
+`);
+      if (appId === "beta") {
+        writeFileSync(join(agentDir, "workflows", "route.ts"), `
+export const name = "route";
+export const description = "Beta calls the exact Alpha workflow";
+export async function execute(ctx) {
+  const child = await ctx.call("alpha/echo", { prompt: "Run exact alpha implementation" });
+  return ctx.done("Route complete", { child });
+}
+`);
+      }
+      manager.register({
+        name: "worker", description: `${appId} worker`, domain: "fixture", model: mockModel(), tools: [],
+        agentDir, appLocal: true, projectId: appId,
+      });
+    }
+    const signal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: callerKind === "alpha"
+        ? manager.getAgentDefinition("alpha/worker")
+        : { name: "coordinator", description: "Global caller", domain: "fixture", model: mockModel(), tools: [] },
+      ...(callerKind === "alpha" ? { projectId: "alpha" } : {}),
+      status: "running",
+      executionScope: { signal, workSignal: signal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+
+    const result = await callTool(manager.createAgentsTool({ getCallerSessionId: () => "caller" }), {
+      action: "call",
+      agent: "beta/route",
+      input: { prompt: "Beta must invoke exact Alpha echo" },
+    });
+
+    expect(result).toMatchObject({
+      status: "done",
+      summary: "Route complete",
+      output: { child: { status: "done", summary: "alpha", output: { owner: "alpha" } } },
+    });
+  });
+
+  it("preserves a real schema-backed prompt blocker's child ID and blocked status", async () => {
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: () => {
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: {
+              role: "assistant",
+              api: "openai-responses",
+              provider: "fixture",
+              model: "blocked-worker",
+              content: [{
+                type: "toolCall", id: "finish-blocked", name: "finish",
+                arguments: { status: "blocked", summary: "Waiting for source evidence" },
+              }],
+              stopReason: "toolUse",
+              timestamp: Date.now(),
+              usage: {
+                input: 1, output: 1, totalTokens: 2, cacheRead: 0, cacheWrite: 0,
+                cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+              },
+            },
+          });
+          return stream;
+        },
+      }),
+    });
+    const worker = {
+      name: "worker", description: "Blocked worker", domain: "fixture", model: mockModel(), tools: [],
+    };
+    manager.register(worker);
+    const callerSignal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: worker,
+      status: "running",
+      toolPolicy: "full",
+      scopedChildren: new Set(),
+      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+
+    const result = await callTool(tool, {
+      action: "call",
+      agent: "global/worker",
+      input: { prompt: "Assess source" },
+      options: { schema: Type.Object({ verdict: Type.Literal("pass") }) },
+    });
+
+    expect(result.id).toMatch(/^s_/);
+    expect(result).toEqual({
+      id: result.id,
+      status: "blocked",
+      summary: "Waiting for source evidence",
+    });
+  });
+
+  it("forwards each canonical model call schema for same-child correction and concurrent isolation", async () => {
+    const replies = new Map<string, number>();
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: (model) => {
+          const count = (replies.get(model.id) ?? 0) + 1;
+          replies.set(model.id, count);
+          const expected = model.id === "schema-alpha" ? "alpha" : "beta";
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: {
+              role: "assistant",
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              content: [{
+                type: "toolCall", id: `${model.id}-finish-${count}`, name: "finish",
+                arguments: {
+                  status: "done",
+                  summary: `${expected} judgement`,
+                  output: { verdict: count === 1 ? "wrong" : expected },
+                },
+              }],
+              stopReason: "toolUse",
+              timestamp: Date.now(),
+              usage: {
+                input: 1, output: 1, totalTokens: 2, cacheRead: 0, cacheWrite: 0,
+                cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+              },
+            },
+          });
+          return stream;
+        },
+      }),
+    });
+    for (const verdict of ["alpha", "beta"] as const) {
+      manager.register({
+        name: `${verdict}-reviewer`, description: `${verdict} reviewer`, domain: "fixture",
+        model: { ...mockModel(), id: `schema-${verdict}` }, tools: [],
+      });
+    }
+    const callerSignal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: manager.getAgentDefinition("global/alpha-reviewer"),
+      status: "running",
+      scopedChildren: new Set(),
+      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+
+    const [alpha, beta] = await Promise.all((["alpha", "beta"] as const).map((verdict) => callTool(tool, {
+      action: "call",
+      agent: `global/${verdict}-reviewer`,
+      input: { prompt: `Return ${verdict}` },
+      options: { schema: Type.Object({ verdict: Type.Literal(verdict) }) },
+    })));
+
+    expect(alpha).toMatchObject({ status: "done", summary: "alpha judgement", output: { verdict: "alpha" } });
+    expect(beta).toMatchObject({ status: "done", summary: "beta judgement", output: { verdict: "beta" } });
+    expect(alpha.id).toMatch(/^s_/);
+    expect(beta.id).toMatch(/^s_/);
+    expect(alpha.id).not.toBe(beta.id);
+    expect(replies).toEqual(new Map([["schema-alpha", 2], ["schema-beta", 2]]));
   });
 
   it("captures the published execution snapshot after tool creation and dispatches that exact definition", async () => {

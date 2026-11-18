@@ -309,6 +309,8 @@ export interface WorkflowToolOptions {
   callerSessionId?: string | (() => string);
   /** The agent that owns this workflow catalog and its execution provenance. */
   agentName?: string;
+  /** Exact captured catalog key for the workflow owner; independent of caller lineage. */
+  canonicalOwner?: string;
   /** Exact source stored on agent sessions started by this workflow. */
   sessionSource?: string;
   /** Maximum workflow nesting depth (default: 3). */
@@ -450,20 +452,23 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     );
     const prompts = new Map<string, { owner: string; definition: SubagentDefinition }>();
     const requestedOwner = opts.agentName ?? "workflow";
+    const capturedOwner = opts.canonicalOwner;
     const currentProjectId = opts.projectId ?? opts.taskBinding?.appId;
     const matchingOwners = [...definitions].filter(([, definition]) => definition.name === requestedOwner);
     const scopedOwners = currentProjectId === undefined
       ? matchingOwners
       : matchingOwners.filter(([, definition]) => definition.appLocal && definition.projectId === currentProjectId);
     const ownerCandidates = scopedOwners.length > 0 ? scopedOwners : matchingOwners;
-    if (ownerCandidates.length > 1) {
+    if (capturedOwner && !definitions.has(capturedOwner)) {
+      throw new Error(`Captured root workflow owner "${capturedOwner}" is not available`);
+    }
+    if (!capturedOwner && ownerCandidates.length > 1) {
       throw new Error(
         `Ambiguous root workflow owner "${requestedOwner}": ${ownerCandidates.map(([owner]) => owner).join(", ")}`,
       );
     }
-    const rootProcedureOwner = definitions.has(requestedOwner)
-      ? requestedOwner
-      : ownerCandidates[0]?.[0] ?? requestedOwner;
+    const rootProcedureOwner = capturedOwner
+      ?? (definitions.has(requestedOwner) ? requestedOwner : ownerCandidates[0]?.[0] ?? requestedOwner);
     const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>([
       [rootProcedureOwner, catalog.workflows],
     ]);
@@ -764,6 +769,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           trace: resolveTrace(),
           requireFinish: true,
           outputSchema: stepOpts?.schema,
+          toolPolicy: stepControl.tools,
           executionRoot: opts.executionPaths?.workspaceDir,
         };
         let taskResult = definition

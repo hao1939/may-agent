@@ -1,5 +1,5 @@
 import { ExecutionDeferredError, type AppRead } from "@may-agent/sdk/app";
-import { Type, type Static } from "typebox";
+import { Type, type Static, type TSchema } from "typebox";
 /** Canonical catalog-backed agent/workflow list and awaited call tool. */
 
 import type { AgentMessage, AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
@@ -57,6 +57,7 @@ export interface AgentsToolManagerDeps {
       trace?: EventTrace;
       parseSkillCommand?: boolean;
       requireFinish?: boolean;
+      outputSchema?: TSchema;
       signal?: AbortSignal;
       timeout?: number;
       taskBinding?: TaskBinding;
@@ -153,6 +154,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     definition: SubagentDefinition,
     input: ExecutionInput,
     context: CallableInvocationContext,
+    outputSchema?: TSchema,
   ) => {
     const parentSessionId = opts?.getCallerSessionId?.();
     if (!parentSessionId || !manager.activeSessions.has(parentSessionId)) {
@@ -168,6 +170,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       trace: parent.trace,
       parseSkillCommand: false,
       requireFinish: true,
+      outputSchema,
       signal: context.signal,
       timeout: context.timeoutMs,
       taskBinding: session?.taskBinding,
@@ -195,6 +198,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       workflowDir: entry.workflowDir,
       persistDir: manager.registry.persistDir,
       agentName: entry.owner.name,
+      canonicalOwner: canonicalCallableName(entry.appId, entry.owner.name),
       runtimeCtx: opts?.runtimeCtx,
       ...session?.taskContext,
       taskContext: session?.taskContext,
@@ -259,13 +263,13 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     return pending;
   };
 
-  const bindCatalog = (entries: readonly PreparedCallable[]) => new CallableCatalog(entries.map((entry): CallableDefinition => {
+  const bindCatalog = (entries: readonly PreparedCallable[], outputSchema?: TSchema) => new CallableCatalog(entries.map((entry): CallableDefinition => {
     if (entry.kind === "agent") {
       return {
         appId: entry.appId,
         declaredName: entry.definition.name,
         description: entry.definition.description,
-        invoke: (input, context) => invokeAgent(entry.definition, input, context),
+        invoke: (input, context) => invokeAgent(entry.definition, input, context, outputSchema),
       };
     }
     return {
@@ -326,7 +330,8 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
           ? [...taskDefinitions.values()]
           : [...manager.agents.values()].map((registered) => registered.definition);
         const cacheKey = session.taskContext ?? session.executionScope ?? session;
-        const catalog = bindCatalog(await prepare(cacheKey, capturedAgents, executionSignal));
+        const outputSchema = params.action === "call" ? params.options?.schema as TSchema | undefined : undefined;
+        const catalog = bindCatalog(await prepare(cacheKey, capturedAgents, executionSignal), outputSchema);
         executionSignal.throwIfAborted();
         if (params.action === "list") return textResult(JSON.stringify(catalog.list(), null, 2));
         const remainingTimeout = Number.isFinite(deadlineAt) ? Math.max(1, deadlineAt - Date.now()) : undefined;

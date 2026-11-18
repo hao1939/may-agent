@@ -7,7 +7,8 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
-import { workflowExecutionResult } from "@may-agent/sdk/runtime";
+import { prepareAgentExecution } from "./agent-execution.js";
+import { createFinishTool, createReadTool, createWriteTool, workflowExecutionResult } from "@may-agent/sdk/runtime";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
@@ -70,7 +71,7 @@ export async function execute(ctx) {
 export const name = "parent";
 export const description = "Calls one root-owned workflow";
 export async function execute(ctx) {
-  return ctx.call("sample/helper", { prompt: "Run the helper" });
+  return ctx.call("beta/helper", { prompt: "Run the helper" });
 }
 `);
     writeFileSync(join(root, "helper.ts"), `
@@ -78,17 +79,21 @@ export const name = "helper";
 export const description = "Root-owned helper";
 export async function execute(ctx) { return ctx.done("helper complete"); }
 `);
-    const owner: SubagentDefinition = {
-      name: "owner", description: "Owner", domain: "test", model: fakeModel(), tools: [],
-      agentDir: root, appLocal: true, projectId: "sample",
+    const alphaOwner: SubagentDefinition = {
+      name: "owner", description: "Alpha owner", domain: "test", model: fakeModel(), tools: [],
+      agentDir: join(root, "alpha"), appLocal: true, projectId: "alpha",
+    };
+    const betaOwner: SubagentDefinition = {
+      name: "owner", description: "Beta owner", domain: "test", model: fakeModel(), tools: [],
+      agentDir: root, appLocal: true, projectId: "beta",
     };
 
     const result = await createWorkflowRunner({
       manager: {} as any,
       workflowDir: root,
       agentName: "owner",
-      projectId: "sample",
-      agentDefinitions: new Map([["sample/owner", owner]]),
+      canonicalOwner: "beta/owner",
+      agentDefinitions: new Map([["alpha/owner", alphaOwner], ["beta/owner", betaOwner]]),
     }).run("parent", "Run the parent");
 
     expect(result).toMatchObject({ type: "done", summary: "helper complete" });
@@ -186,17 +191,28 @@ export const readonly = true;
 export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); }
 `);
     const reviewer: SubagentDefinition = {
-      name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(), tools: [],
+      name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(),
+      tools: [createReadTool(root), createWriteTool(root)],
       agentDir: reviewerDir, appLocal: true, projectId: "sample",
     };
     let promptCalls = 0;
     const runner = createWorkflowRunner({
       manager: {
-        callAgentDefinition: async (definition: SubagentDefinition, task: string, options: { toolPolicy?: string; skill?: string }) => {
+        callAgentDefinition: async (definition: SubagentDefinition, task: string, options: { toolPolicy?: "full" | "readonly"; skill?: string }) => {
           expect(definition).toBe(reviewer);
           expect(task).toBe("Review HEAD");
-          expect(options.toolPolicy).toBeUndefined();
+          expect(options.toolPolicy).toBe("readonly");
           expect(options.skill).toBeUndefined();
+          const prepared = prepareAgentExecution({
+            ...options,
+            definition,
+            task,
+            projectRoot: root,
+            sessionId: "s_captured",
+            createFinish: () => createFinishTool({ projectRoot: root }),
+          });
+          expect(prepared.tools.map((tool) => tool.name)).toContain("read");
+          expect(prepared.tools.map((tool) => tool.name)).not.toContain("write");
           promptCalls++;
           return { sessionId: "s_captured", status: "done", messages: [],
             finishResult: { status: "done", summary: "captured prompt" } };

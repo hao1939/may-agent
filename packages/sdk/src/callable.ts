@@ -2,6 +2,9 @@ import { Type, type Static, type TSchema } from "typebox";
 import { Check, Errors } from "typebox/value";
 
 const INVOCATION_SETTLEMENT_GRACE_MS = 2_000;
+const MAX_JSON_DEPTH = 100;
+const MAX_JSON_TRAVERSAL_VALUES = 100_000;
+const MAX_EXPANDED_JSON_BYTES = 1_048_576;
 const UNCONFIRMED_INVOCATION_SETTLEMENT = Symbol("unconfirmed-invocation-settlement");
 
 export const ExecutionInputSchema = Type.Object(
@@ -104,17 +107,150 @@ function deepFreeze<T>(value: T, seen = new Set<object>()): T {
   return Object.freeze(value);
 }
 
-function isJsonCompatible(value: unknown, seen = new Set<object>()): boolean {
-  if (value === null || typeof value === "string" || typeof value === "boolean") return true;
-  if (typeof value === "number") return Number.isFinite(value);
-  if (typeof value !== "object" || seen.has(value as object)) return false;
-  seen.add(value as object);
-  if (Array.isArray(value)) return value.every((item) => isJsonCompatible(item, seen));
-  if (Object.getPrototypeOf(value) !== Object.prototype) return false;
-  return Object.values(value as Record<string, unknown>).every((item) => isJsonCompatible(item, seen));
+type JsonInspection =
+  | Readonly<{ ok: true; expandedBytes: number; maxObjectDepth: number }>
+  | Readonly<{ ok: false; reason: "incompatible" | "depth" | "traversal" | "size" }>;
+
+type CompletedJsonInspection = Readonly<{ expandedBytes: number; maxObjectDepth: number }>;
+
+function jsonStringBytes(value: string): number | undefined {
+  let bytes = 2;
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (
+      code === 0x22 || code === 0x5c || code === 0x08 || code === 0x09 ||
+      code === 0x0a || code === 0x0c || code === 0x0d
+    ) {
+      bytes += 2;
+    } else if (code <= 0x1f || (code >= 0xd800 && code <= 0xdfff)) {
+      if (code >= 0xd800 && code <= 0xdbff && index + 1 < value.length) {
+        const next = value.charCodeAt(index + 1);
+        if (next >= 0xdc00 && next <= 0xdfff) {
+          bytes += 4;
+          index++;
+        } else bytes += 6;
+      } else bytes += 6;
+    } else if (code <= 0x7f) bytes++;
+    else if (code <= 0x7ff) bytes += 2;
+    else bytes += 3;
+    if (bytes > MAX_EXPANDED_JSON_BYTES) return undefined;
+  }
+  return bytes;
+}
+
+function inspectJson(value: unknown): JsonInspection {
+  const active = new Set<object>();
+  const completed = new Map<object, CompletedJsonInspection>();
+  let visitedValues = 0;
+
+  const addBytes = (left: number, right: number): number | undefined => {
+    const total = left + right;
+    return total <= MAX_EXPANDED_JSON_BYTES ? total : undefined;
+  };
+  const visit = (current: unknown, depth: number): JsonInspection => {
+    visitedValues++;
+    if (visitedValues > MAX_JSON_TRAVERSAL_VALUES) return { ok: false, reason: "traversal" };
+    if (current === null) return { ok: true, expandedBytes: 4, maxObjectDepth: -1 };
+    if (typeof current === "string") {
+      const expandedBytes = jsonStringBytes(current);
+      return expandedBytes === undefined
+        ? { ok: false, reason: "size" }
+        : { ok: true, expandedBytes, maxObjectDepth: -1 };
+    }
+    if (typeof current === "boolean") {
+      return { ok: true, expandedBytes: current ? 4 : 5, maxObjectDepth: -1 };
+    }
+    if (typeof current === "number") {
+      if (!Number.isFinite(current)) return { ok: false, reason: "incompatible" };
+      return {
+        ok: true,
+        expandedBytes: String(Object.is(current, -0) ? 0 : current).length,
+        maxObjectDepth: -1,
+      };
+    }
+    if (typeof current !== "object") return { ok: false, reason: "incompatible" };
+    if (active.has(current)) return { ok: false, reason: "incompatible" };
+    const cached = completed.get(current);
+    if (cached !== undefined) {
+      return depth + cached.maxObjectDepth <= MAX_JSON_DEPTH
+        ? { ok: true, ...cached }
+        : { ok: false, reason: "depth" };
+    }
+    if (depth > MAX_JSON_DEPTH) return { ok: false, reason: "depth" };
+    if (!Array.isArray(current) && Object.getPrototypeOf(current) !== Object.prototype) {
+      return { ok: false, reason: "incompatible" };
+    }
+    if (typeof (current as { toJSON?: unknown }).toJSON === "function") {
+      return { ok: false, reason: "incompatible" };
+    }
+
+    active.add(current);
+    let expandedBytes = 2;
+    let maxObjectDepth = 0;
+    try {
+      if (Array.isArray(current)) {
+        for (let index = 0; index < current.length; index++) {
+          if (index > 0) expandedBytes++;
+          let child: JsonInspection;
+          if (index in current) {
+            child = visit(current[index], depth + 1);
+          } else {
+            visitedValues++;
+            if (visitedValues > MAX_JSON_TRAVERSAL_VALUES) return { ok: false, reason: "traversal" };
+            child = { ok: true, expandedBytes: 4, maxObjectDepth: -1 };
+          }
+          if (!child.ok) return child;
+          const total = addBytes(expandedBytes, child.expandedBytes);
+          if (total === undefined) return { ok: false, reason: "size" };
+          expandedBytes = total;
+          maxObjectDepth = Math.max(maxObjectDepth, child.maxObjectDepth + 1);
+        }
+      } else {
+        const record = current as Record<string, unknown>;
+        const keys = Object.keys(record);
+        for (let index = 0; index < keys.length; index++) {
+          const key = keys[index]!;
+          if (index > 0) expandedBytes++;
+          const keyBytes = jsonStringBytes(key);
+          if (keyBytes === undefined) return { ok: false, reason: "size" };
+          const child = visit(record[key], depth + 1);
+          if (!child.ok) return child;
+          const total = addBytes(expandedBytes, keyBytes + 1 + child.expandedBytes);
+          if (total === undefined) return { ok: false, reason: "size" };
+          expandedBytes = total;
+          maxObjectDepth = Math.max(maxObjectDepth, child.maxObjectDepth + 1);
+        }
+      }
+    } finally {
+      active.delete(current);
+    }
+    const result = { expandedBytes, maxObjectDepth };
+    completed.set(current, result);
+    return { ok: true, ...result };
+  };
+
+  return visit(value, 0);
+}
+
+function assertBoundedJson(
+  value: unknown,
+  phase: "input" | "result" | "output",
+  label: string,
+): void {
+  const inspection = inspectJson(value);
+  if (inspection.ok) return;
+  const message = inspection.reason === "incompatible"
+    ? `${label} must be JSON-compatible`
+    : inspection.reason === "depth"
+      ? `${label} exceeds maximum JSON nesting depth of ${MAX_JSON_DEPTH}`
+      : inspection.reason === "traversal"
+        ? `${label} exceeds maximum JSON traversal of ${MAX_JSON_TRAVERSAL_VALUES} values`
+        : `${label} exceeds maximum expanded JSON size of ${MAX_EXPANDED_JSON_BYTES} bytes`;
+  throw new CallableValidationError(phase, message, value);
 }
 
 export function validateCallableInput(schema: TSchema, input: unknown): asserts input is ExecutionInput {
+  assertBoundedJson(input, "input", "Callable input");
   if (!Check(schema, input)) {
     throw new CallableValidationError(
       "input",
@@ -124,9 +260,6 @@ export function validateCallableInput(schema: TSchema, input: unknown): asserts 
   }
   if (!(input as ExecutionInput).prompt.trim()) {
     throw new CallableValidationError("input", "Callable input prompt must contain non-whitespace text", input);
-  }
-  if (!isJsonCompatible(input)) {
-    throw new CallableValidationError("input", "Callable input must be JSON-compatible", input);
   }
 }
 
@@ -170,12 +303,8 @@ function normalizeResult(
   if (typeof value.summary !== "string" || !value.summary.trim()) {
     throw new CallableValidationError("result", "Callable result summary must contain non-whitespace text", raw);
   }
-  if (value.output !== undefined && !isJsonCompatible(value.output)) {
-    throw new CallableValidationError("output", "Callable result output must be JSON-compatible", value.output);
-  }
-  if (value.facts !== undefined && !isJsonCompatible(value.facts)) {
-    throw new CallableValidationError("result", "Callable result facts must be JSON-compatible", value.facts);
-  }
+  if (value.output !== undefined) assertBoundedJson(value.output, "output", "Callable result output");
+  if (value.facts !== undefined) assertBoundedJson(value.facts, "result", "Callable result facts");
   const schemas = [targetSchema, callerSchema].filter((schema): schema is TSchema => schema !== undefined);
   if (value.status === "done" && schemas.length > 0 && value.output === undefined) {
     throw new CallableValidationError("output", "Successful callable result omitted required output", raw);
@@ -189,13 +318,15 @@ function normalizeResult(
       );
     }
   }
-  return deepFreeze({
+  const normalized = {
     ...(childId ? { id: childId } : {}),
     status: value.status as CallableStatus,
     summary: value.summary,
     ...(value.output !== undefined ? { output: value.output } : {}),
     ...(value.facts !== undefined ? { facts: value.facts } : {}),
-  });
+  };
+  assertBoundedJson(normalized, "result", "Callable result");
+  return deepFreeze(normalized);
 }
 
 type PreparedCallable = Readonly<{
@@ -329,15 +460,24 @@ export class CallableCatalog {
       return normalizeResult(report, childId, entry.descriptor.outputSchema, options?.schema);
     } catch (error) {
       if (!(error instanceof CallableValidationError)) throw error;
-      return deepFreeze({
+      const rawInspection = inspectJson(error.rawValue);
+      const omittedEvidence = `[omitted: ${rawInspection.ok ? "error envelope exceeds JSON resource limits" : rawInspection.reason}]`;
+      let failure: CallableResult = {
         ...(childId ? { id: childId } : {}),
         status: "error",
         summary: error.message,
-        facts: {
-          phase: error.phase,
-          invalidEvidence: isJsonCompatible(error.rawValue) ? error.rawValue : String(error.rawValue),
-        },
-      });
+        facts: { phase: error.phase, invalidEvidence: rawInspection.ok ? error.rawValue : omittedEvidence },
+      };
+      if (!inspectJson(failure).ok) {
+        failure = {
+          ...(childId ? { id: childId } : {}),
+          status: "error",
+          summary: error.message,
+          facts: { phase: error.phase, invalidEvidence: omittedEvidence },
+        };
+      }
+      assertBoundedJson(failure, "result", "Callable error result");
+      return deepFreeze(failure);
     }
   }
 }

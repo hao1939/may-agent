@@ -1093,9 +1093,11 @@ test("managed finish corrects invalid input scope in one model execution and pre
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(
     async () => proposal,
     "task",
@@ -1295,9 +1297,11 @@ test.each([
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(
     async () => corrected,
     "task",
@@ -1406,9 +1410,11 @@ test("managed finish preflight rolls back an App request and publishes it exactl
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   runtime = await fixture(
     async () => corrected,
     "task",
@@ -1491,9 +1497,11 @@ test("managed finish rejects a consumed live-event-only wait before closing the 
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(
     async () => corrected,
     "task",
@@ -1612,9 +1620,11 @@ test("managed finish refreshes accepted live events when a rejected waiting prop
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(
     async () => incomplete,
     "task",
@@ -1719,9 +1729,11 @@ test("managed finish pins an empty accepted-live-event snapshot across executor 
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(
     async () => result,
     "task",
@@ -1824,9 +1836,11 @@ test("managed finish pins retained reviewAt across executor closure", async () =
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(
     async () => ({ state: "waiting", summary: "Retained scheduled review", facts: [] }),
     "task",
@@ -1949,9 +1963,11 @@ test.each(["retire action", "condition and communication batch"] as const)("mana
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(
     async () => corrected,
     "task",
@@ -2035,9 +2051,11 @@ test("managed finish rejects an undeclared request Condition and accepts a corre
     projectRoot: managerRoot,
     tools: [],
     model: fakeModel(),
+    appLocal: true,
+    projectId: "sample",
   };
   manager.register(definition);
-  const agents = createTaskAgentRunner({ manager }, new Map([[definition.name, definition]]));
+  const agents = createTaskAgentRunner({ manager }, new Map([["sample/owner", definition]]));
   const f = await fixture(async () => corrected, "task", undefined, agents);
   try {
     const input = f.admit("ask").item;

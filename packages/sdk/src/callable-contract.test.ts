@@ -184,6 +184,232 @@ describe("shared callable input and result contract", () => {
     }
   });
 
+  test("accepts shared acyclic object and array references while rejecting cycles and non-JSON values", async () => {
+    const shared = { ref: "HEAD" };
+    const sharedArray = [shared];
+    const sharing = new CallableCatalog([
+      definition("sharing", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_sharing",
+            report: {
+              status: "done",
+              summary: "shared references",
+              output: { before: shared, after: shared, arrays: [sharedArray, sharedArray] },
+              facts: { first: shared, second: shared, arrays: [sharedArray, sharedArray] },
+            },
+          };
+        },
+      }),
+    ]);
+    await expect(
+      sharing.call(
+        "alex/sharing",
+        { prompt: "Compare", data: { before: shared, after: shared, arrays: [sharedArray, sharedArray] } },
+        undefined,
+        { signal },
+      ),
+    ).resolves.toMatchObject({
+      id: "s_sharing",
+      status: "done",
+      output: { before: { ref: "HEAD" }, after: { ref: "HEAD" } },
+      facts: { first: { ref: "HEAD" }, second: { ref: "HEAD" } },
+    });
+
+    const cycle: Record<string, unknown> = {};
+    cycle.self = cycle;
+    await expect(
+      sharing.call("alex/sharing", { prompt: "Compare", data: cycle }, undefined, { signal }),
+    ).rejects.toThrow("JSON-compatible");
+    for (const nonJson of [undefined, 1n, () => "nope", new Date(0)]) {
+      await expect(
+        sharing.call("alex/sharing", { prompt: "Compare", data: { nonJson } }, undefined, { signal }),
+      ).rejects.toThrow("JSON-compatible");
+    }
+  });
+
+  test("bounds compact shared DAG validation before expanded serialization", async () => {
+    let getterReads = 0;
+    let shared: unknown = { value: "leaf" };
+    for (let depth = 0; depth < 19; depth++) {
+      const child = shared;
+      shared = Object.defineProperties({}, {
+        left: { enumerable: true, get: () => { getterReads++; return child; } },
+        right: { enumerable: true, get: () => { getterReads++; return child; } },
+      });
+    }
+    const bounded = new CallableCatalog([definition("bounded", "alex")]);
+
+    await expect(
+      bounded.call("alex/bounded", { prompt: "Inspect", data: shared }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+    expect(getterReads).toBeLessThanOrEqual(38);
+  });
+
+  test("enforces deterministic JSON depth and traversal limits", async () => {
+    const bounded = new CallableCatalog([definition("bounded", "alex")]);
+    let deep: Record<string, unknown> = {};
+    for (let depth = 0; depth < 101; depth++) deep = { child: deep };
+    await expect(
+      bounded.call("alex/bounded", { prompt: "Inspect", data: deep }, undefined, { signal }),
+    ).rejects.toThrow("maximum JSON nesting depth of 100");
+
+    const sparse = new Array(100_001);
+    await expect(
+      bounded.call("alex/bounded", { prompt: "Inspect", data: sparse }, undefined, { signal }),
+    ).rejects.toThrow("maximum JSON traversal of 100000 values");
+  });
+
+  test("enforces depth when a cached subtree is reused under a deeper path", async () => {
+    let shared: unknown = { value: "leaf" };
+    for (let depth = 0; depth < 30; depth++) shared = { child: shared };
+    let deep = shared;
+    for (let depth = 0; depth < 80; depth++) deep = { child: deep };
+    const bounded = new CallableCatalog([definition("cached-depth", "alex")]);
+
+    await expect(
+      bounded.call(
+        "alex/cached-depth",
+        { prompt: "Inspect", data: { warmCache: shared, deepReuse: deep } },
+        undefined,
+        { signal },
+      ),
+    ).rejects.toThrow("maximum JSON nesting depth of 100");
+  });
+
+  test("rejects custom toJSON hooks and inherited array values before serialization", async () => {
+    const bounded = new CallableCatalog([definition("serialization-parity", "alex")]);
+    const customSerialization = Object.defineProperty({}, "toJSON", {
+      value: () => ({ expanded: "x".repeat(2_000_000) }),
+    });
+    await expect(
+      bounded.call(
+        "alex/serialization-parity",
+        { prompt: "Inspect", data: customSerialization },
+        undefined,
+        { signal },
+      ),
+    ).rejects.toThrow("JSON-compatible");
+
+    const inheritedValues = [] as unknown[];
+    inheritedValues.length = 1;
+    Object.setPrototypeOf(inheritedValues, Object.assign(Object.create(Array.prototype), { 0: 1n }));
+    await expect(
+      bounded.call(
+        "alex/serialization-parity",
+        { prompt: "Inspect", data: inheritedValues },
+        undefined,
+        { signal },
+      ),
+    ).rejects.toThrow("JSON-compatible");
+  });
+
+  test.each(["output", "facts"] as const)("bounds expanded callable result %s", async (field) => {
+    let shared: unknown = { value: "leaf" };
+    for (let depth = 0; depth < 19; depth++) shared = { left: shared, right: shared };
+    const bounded = new CallableCatalog([
+      definition(`bounded-${field}`, "alex", {
+        async invoke() {
+          return {
+            executionId: `s_bounded_${field}`,
+            report: { status: "done", summary: "bounded", [field]: shared },
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call(`alex/bounded-${field}`, { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: `s_bounded_${field}`,
+      status: "error",
+      summary: expect.stringContaining("maximum expanded JSON size of 1048576 bytes"),
+      facts: { phase: field === "output" ? "output" : "result" },
+    });
+  });
+
+  test("bounds the combined expanded result and counts UTF-8 bytes", async () => {
+    const largeUtf8 = "é".repeat(300_000);
+    const bounded = new CallableCatalog([
+      definition("combined", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_combined",
+            report: { status: "done", summary: "bounded", output: largeUtf8, facts: largeUtf8 },
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call("alex/combined", { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: "s_combined",
+      status: "error",
+      summary: expect.stringContaining("Callable result exceeds maximum expanded JSON size of 1048576 bytes"),
+      facts: { phase: "result" },
+    });
+  });
+
+  test("bounds adversarial escaped strings and property names without materializing JSON", async () => {
+    const bounded = new CallableCatalog([definition("bounded-strings", "alex")]);
+    const escaped = "\\".repeat(600_000);
+    await expect(
+      bounded.call("alex/bounded-strings", { prompt: "Inspect", data: escaped }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+    await expect(
+      bounded.call("alex/bounded-strings", { prompt: "Inspect", data: { [escaped]: true } }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+  });
+
+  test("returns bounded diagnostics without coercing rejected evidence", async () => {
+    const hostile = Object.create(null) as { toString?: () => string };
+    hostile.toString = () => { throw new Error("must not coerce rejected evidence"); };
+    const bounded = new CallableCatalog([
+      definition("hostile-evidence", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_hostile_evidence",
+            report: { status: "done", summary: "hostile", output: [hostile] },
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call("alex/hostile-evidence", { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: "s_hostile_evidence",
+      status: "error",
+      summary: expect.stringContaining("JSON-compatible"),
+      facts: { phase: "output", invalidEvidence: "[omitted: incompatible]" },
+    });
+  });
+
+  test("rejects cycles in callable output and facts", async () => {
+    for (const field of ["output", "facts"] as const) {
+      const cycle: Record<string, unknown> = {};
+      cycle.self = cycle;
+      const cyclic = new CallableCatalog([
+        definition(`cyclic-${field}`, "alex", {
+          async invoke() {
+            return {
+              executionId: `s_cyclic_${field}`,
+              report: { status: "done", summary: "cyclic", [field]: cycle },
+            };
+          },
+        }),
+      ]);
+      await expect(
+        cyclic.call(`alex/cyclic-${field}`, { prompt: "Inspect" }, undefined, { signal }),
+      ).resolves.toMatchObject({
+        id: `s_cyclic_${field}`,
+        status: "error",
+        summary: expect.stringContaining("JSON-compatible"),
+      });
+    }
+  });
+
   test("accepts useful partial reports without output when a schema was requested", async () => {
     const partial = new CallableCatalog([
       definition("partial", "alex", {
