@@ -560,12 +560,7 @@ export async function runTaskExecutorAttempt(
 export async function runTaskAgent(input: TaskHandlerInput): Promise<TaskCapabilityRun> {
   const { opts, descriptor, claim, ...execution } = input;
   const agentRunner = opts.agents ?? opts.runner;
-  const appTaskAgent = claim.agent.includes("/") ? claim.agent : `${descriptor.id}/${claim.agent}`;
-  const taskAgent = agentRunner?.available(appTaskAgent)
-    ? appTaskAgent
-    : agentRunner?.available(claim.agent)
-      ? claim.agent
-      : appTaskAgent;
+  const taskAgent = claim.agent.includes("/") ? claim.agent : `${descriptor.id}/${claim.agent}`;
   if (!agentRunner?.available(taskAgent))
     return {
       handlerResult: {

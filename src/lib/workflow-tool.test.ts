@@ -70,7 +70,7 @@ export async function execute(ctx) {
 export const name = "parent";
 export const description = "Calls one root-owned workflow";
 export async function execute(ctx) {
-  return ctx.call("sample/helper", { prompt: "Run the helper" });
+  return ctx.call("beta/helper", { prompt: "Run the helper" });
 }
 `);
     writeFileSync(join(root, "helper.ts"), `
@@ -78,17 +78,21 @@ export const name = "helper";
 export const description = "Root-owned helper";
 export async function execute(ctx) { return ctx.done("helper complete"); }
 `);
-    const owner: SubagentDefinition = {
-      name: "owner", description: "Owner", domain: "test", model: fakeModel(), tools: [],
-      agentDir: root, appLocal: true, projectId: "sample",
+    const alphaOwner: SubagentDefinition = {
+      name: "owner", description: "Alpha owner", domain: "test", model: fakeModel(), tools: [],
+      agentDir: join(root, "alpha"), appLocal: true, projectId: "alpha",
+    };
+    const betaOwner: SubagentDefinition = {
+      name: "owner", description: "Beta owner", domain: "test", model: fakeModel(), tools: [],
+      agentDir: root, appLocal: true, projectId: "beta",
     };
 
     const result = await createWorkflowRunner({
       manager: {} as any,
       workflowDir: root,
       agentName: "owner",
-      projectId: "sample",
-      agentDefinitions: new Map([["sample/owner", owner]]),
+      canonicalOwner: "beta/owner",
+      agentDefinitions: new Map([["alpha/owner", alphaOwner], ["beta/owner", betaOwner]]),
     }).run("parent", "Run the parent");
 
     expect(result).toMatchObject({ type: "done", summary: "helper complete" });

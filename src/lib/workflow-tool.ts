@@ -459,16 +459,16 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
       ? matchingOwners
       : matchingOwners.filter(([, definition]) => definition.appLocal && definition.projectId === currentProjectId);
     const ownerCandidates = scopedOwners.length > 0 ? scopedOwners : matchingOwners;
-    if (ownerCandidates.length > 1) {
+    if (capturedOwner && !definitions.has(capturedOwner)) {
+      throw new Error(`Captured root workflow owner "${capturedOwner}" is not available`);
+    }
+    if (!capturedOwner && ownerCandidates.length > 1) {
       throw new Error(
         `Ambiguous root workflow owner "${requestedOwner}": ${ownerCandidates.map(([owner]) => owner).join(", ")}`,
       );
     }
-    const rootProcedureOwner = capturedOwner && definitions.has(capturedOwner)
-      ? capturedOwner
-      : definitions.has(requestedOwner)
-        ? requestedOwner
-        : ownerCandidates[0]?.[0] ?? requestedOwner;
+    const rootProcedureOwner = capturedOwner
+      ?? (definitions.has(requestedOwner) ? requestedOwner : ownerCandidates[0]?.[0] ?? requestedOwner);
     const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>([
       [rootProcedureOwner, catalog.workflows],
     ]);
