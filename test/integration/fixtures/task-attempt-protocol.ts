@@ -14,6 +14,7 @@ import {
   parseTaskWorkerDefinitionSource,
   type TaskAttemptProcessRequest,
 } from "../../../src/app/composition/workers/task-attempt-process.js";
+import { createDaemonWebSocketTransport } from "../../../src/app/transport/websocket.js";
 
 const request: TaskAttemptProcessRequest = {
   appId: "sample",
@@ -163,19 +164,42 @@ const scenarios: Record<string, () => void | Promise<void>> = {
     const bus = new EventBus();
     const observed: string[] = [];
     bus.subscribe((event) => observed.push(event.type));
+    const websocketFrames: Array<Record<string, unknown>> = [];
+    const transport = createDaemonWebSocketTransport({
+      events: {
+        subscribe: (_filter, listener) => bus.subscribe((event) => listener(event as never)),
+      },
+      getStatus: () => ({ sessions: [], activeWork: false }),
+      agent: "may",
+      instance: "fixture",
+    });
+    const peer = { send: (data: string) => websocketFrames.push(JSON.parse(data)) };
+    transport.open(peer);
+    transport.message(peer, JSON.stringify({ type: "subscribe", conversations: ["may:primary"] }));
     const execute = createTaskAttemptProcessExecutor({
       bus,
       spawnWorker: () =>
         scriptedWorker(`
 
           process.send({kind:"event",eventId:41,event:{type:"info",message:"working"}});
+          process.send({kind:"event",event:{type:"conversation.updated",source:"app-task-reconciler",
+            owner:"app:may",data:{appId:"may",conversationId:"may:primary"}}});
           process.send({kind:"result",dependentTaskIds:["work/one","work/two"],
             taskChecks:{counts:{waiting:1},examples:[{appId:"sample",taskId:"work/one",outcome:"waiting"}]}});
         `),
     });
 
     await expect(execute(request)).resolves.toEqual(["work/one", "work/two"]);
-    expect(observed).toEqual(["info"]);
+    expect(observed).toEqual(["info", "conversation.updated"]);
+    expect(websocketFrames.filter((frame) => frame.type === "conversation.updated")).toEqual([
+      {
+        type: "conversation.updated",
+        source: "app-task-reconciler",
+        owner: "app:may",
+        data: { appId: "may", conversationId: "may:primary" },
+      },
+    ]);
+    transport.close(peer);
     expect(readTaskChecks(bus).counts.waiting).toBe(1);
     expect(readTaskChecks(bus).examples).toEqual([{ appId: "sample", taskId: "work/one", outcome: "waiting" }]);
   },

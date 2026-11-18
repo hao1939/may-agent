@@ -1,10 +1,158 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { once } from "node:events";
+import { randomUUID } from "node:crypto";
+import { EventEmitter, once } from "node:events";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
-import { createServer, type Server, type Socket } from "node:net";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+
+class Socket extends EventEmitter {
+  ws: { send(data: string): void; close(): void } | null = null;
+  subscriptionAcknowledged = false;
+  private readonly requestContext = new AsyncLocalStorage<string>();
+  private readonly pending = new Map<
+    string,
+    { command: string; resolve(value: Record<string, any>): void; reject(error: Error): void }
+  >();
+
+  write(data: string): boolean {
+    for (const line of data.split("\n")) {
+      if (!line.trim()) continue;
+      const message = JSON.parse(line) as Record<string, any>;
+      if (message.type === "ok" && message.command === "subscribe") {
+        if (!this.subscriptionAcknowledged) {
+          this.subscriptionAcknowledged = true;
+          this.ws?.send(JSON.stringify({ type: "subscribed" }));
+        }
+        continue;
+      }
+      const requestId = this.requestContext.getStore();
+      const waiter = requestId ? this.pending.get(requestId) : undefined;
+      if (waiter && (message.type === "ok" || message.type === "error" || message.type === "status")) {
+        this.pending.delete(requestId!);
+        waiter.resolve(message);
+      } else {
+        this.ws?.send(JSON.stringify(message));
+      }
+    }
+    return true;
+  }
+
+  request(frame: Record<string, any>): Promise<Record<string, any>> {
+    return new Promise((resolve, reject) => {
+      const requestId = randomUUID();
+      this.pending.set(requestId, { command: String(frame.type), resolve, reject });
+      this.requestContext.run(requestId, () => this.emit("data", Buffer.from(`${JSON.stringify(frame)}\n`)));
+    });
+  }
+
+  currentRequestId(): string | undefined {
+    return this.requestContext.getStore();
+  }
+
+  respond(requestId: string, message: Record<string, any>): void {
+    const waiter = this.pending.get(requestId);
+    if (!waiter) throw new Error(`Unknown pending request ${requestId}`);
+    this.pending.delete(requestId);
+    waiter.resolve(message);
+  }
+
+  destroy(): void {
+    for (const waiter of this.pending.values()) {
+      waiter.resolve({ type: "error", command: waiter.command, message: "daemon connection closed" });
+    }
+    this.pending.clear();
+    this.ws?.close();
+    this.emit("close");
+  }
+}
+
+class Server extends EventEmitter {
+  readonly port = 30_000 + Math.floor(Math.random() * 20_000);
+  private server?: ReturnType<typeof Bun.serve>;
+  private readonly sockets = new Set<Socket>();
+
+  constructor(private readonly connection: (socket: Socket) => void) {
+    super();
+  }
+
+  listen(_path: string): void {
+    this.server = Bun.serve({
+      hostname: "127.0.0.1",
+      port: this.port,
+      fetch: async (req, server) => {
+        const url = new URL(req.url);
+        if (url.pathname === "/ws" && server.upgrade(req)) return;
+        const socket = [...this.sockets].at(-1);
+        if (!socket) return Response.json({ error: "daemon unavailable" }, { status: 503 });
+        let frame: Record<string, any>;
+        if (url.pathname === "/api/conversation") {
+          frame = { type: "app.conversation.get", appId: url.searchParams.get("appId"), conversationId: url.searchParams.get("conversationId"), limit: Number(url.searchParams.get("limit") || 30) };
+        } else if (url.pathname === "/api/apps") {
+          frame = { type: "apps.list", ...(url.searchParams.get("appId") ? { appId: url.searchParams.get("appId") } : {}) };
+        } else if (url.pathname === "/api/tasks") {
+          frame = { type: "tasks.list" };
+          for (const key of ["appId", "cursor", "q"]) if (url.searchParams.get(key)) frame[key] = url.searchParams.get(key);
+          for (const key of ["includeDone", "humanActionOnly", "allApps"]) if (url.searchParams.get(key) === "true") frame[key] = true;
+          if (url.searchParams.get("limit")) frame.limit = Number(url.searchParams.get("limit"));
+        } else if (url.pathname === "/api/task") {
+          frame = { type: "task.get" };
+          for (const key of ["ref", "appId", "taskId"]) if (url.searchParams.get(key)) frame[key] = url.searchParams.get(key);
+        } else if (url.pathname === "/api/events" && req.method === "POST") {
+          frame = { type: "publish", event: await req.json() };
+        } else return Response.json({ error: "not found" }, { status: 404 });
+        const result = await socket.request(frame);
+        if (result.type === "error") return Response.json({ error: result.message }, { status: 503 });
+        const body = frame.type === "app.conversation.get" ? result.conversation
+          : frame.type === "apps.list" ? result.apps
+          : frame.type === "tasks.list" ? result.tasks
+          : frame.type === "task.get" ? result.task
+          : result;
+        return Response.json(body ?? {});
+      },
+      websocket: {
+        open: (ws) => {
+          const socket = new Socket();
+          socket.ws = ws;
+          this.sockets.add(socket);
+          this.connection(socket);
+        },
+        message: (ws, message) => {
+          const socket = [...this.sockets].find((item) => item.ws === ws);
+          if (!socket) return;
+          const frame = JSON.parse(String(message));
+          if (frame.type === "subscribe" && !socket.subscriptionAcknowledged) {
+            socket.subscriptionAcknowledged = true;
+            ws.send(JSON.stringify({ type: "subscribed" }));
+          }
+          socket.emit("data", Buffer.from(`${JSON.stringify(frame)}\n`));
+        },
+        close: (ws) => {
+          const socket = [...this.sockets].find((item) => item.ws === ws);
+          if (socket) {
+            this.sockets.delete(socket);
+            socket.emit("close");
+          }
+        },
+      },
+    });
+    queueMicrotask(() => this.emit("listening"));
+  }
+
+  close(): void {
+    this.server?.stop(true);
+    this.server = undefined;
+  }
+}
+
+function createServer(connection: (socket: Socket) => void): Server {
+  return new Server(connection);
+}
+
+function consoleEndpoint(server: Server): string {
+  return `http://127.0.0.1:${server.port}`;
+}
 
 const cleanups: Array<() => void> = [];
 
@@ -21,6 +169,72 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3_000): Promise<voi
 }
 
 describe("May Console", () => {
+  test.each(["port", "endpoint", "unaccepted"])("rereads canonical cancellation with explicit %s selection", async (selection) => {
+    const frames: Array<Record<string, any>> = [];
+    let cancelled = false;
+    let output = "";
+    const server = createServer((socket) => {
+      cleanups.push(() => socket.destroy());
+      socket.write(JSON.stringify({ type: "connected", agent: "host", instance: "custom" }) + "\n");
+      socket.on("data", (chunk) => {
+        for (const line of String(chunk).trim().split("\n")) {
+          const frame = JSON.parse(line);
+          frames.push(frame);
+          const response: Record<string, unknown> = { type: "ok", command: frame.type };
+          if (frame.type === "app.conversation.get") response.conversation = { messages: [] };
+          if (frame.type === "apps.list") response.apps = [];
+          if (frame.type === "tasks.list") response.tasks = { items: [] };
+          if (frame.type === "task.get") response.task = {
+            appId: "sample", taskId: "work/1", ref: "abcdef12", generation: 2,
+            resourceVersion: cancelled ? 8 : 7, status: cancelled ? "cancelled" : "running",
+            terminal: cancelled, outcome: "Review cancellation", updatedAt: 1,
+          };
+          if (frame.type === "publish") {
+            if (frame.event.type === "app.task.cancel.requested") cancelled = selection !== "unaccepted";
+            Object.assign(response, { eventId: frames.length,
+              delivery: selection === "unaccepted" && frame.event.type === "app.task.cancel.requested" ? "recorded" : "accepted" });
+          }
+          socket.write(JSON.stringify(response) + "\n");
+        }
+      });
+    });
+    server.listen("");
+    cleanups.push(() => server.close());
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: { ...process.env, CONVERSATION_APP: "sample", CONVERSATION_ID: "sample:primary",
+        INSTANCE: "custom", DAEMON_INSTANCE: "custom", DAEMON_AGENT: "host",
+        MAY_ENDPOINT: selection === "endpoint" ? consoleEndpoint(server) : undefined,
+        DAEMON_HTTP_URL: undefined, DAEMON_HTTP_PORT: selection === "endpoint" ? "1" : String(server.port), WEB_PORT: undefined },
+      stdio: "pipe",
+    });
+    cleanups.push(() => child.kill("SIGKILL"));
+    child.stdout.on("data", (chunk) => { output += chunk; });
+    child.stderr.on("data", (chunk) => { output += chunk; });
+    await waitFor(() => frames.some((frame) => frame.type === "app.conversation.get"));
+    child.stdin.write("/cancel abcdef12\n");
+    await waitFor(() => output.includes(selection === "unaccepted" ? "Cancellation was not accepted" : "cancelled."));
+    const reads = frames.filter((frame) => frame.type === "task.get");
+    expect(reads[0]).toEqual({ type: "task.get", ref: "abcdef12" });
+    if (selection === "unaccepted") {
+      expect(reads).toHaveLength(1);
+    } else {
+      expect(reads).toEqual([
+        { type: "task.get", ref: "abcdef12" },
+        { type: "task.get", appId: "sample", taskId: "work/1" },
+      ]);
+      expect(output).toContain("The Task will not continue.");
+      expect(output).not.toContain("working.");
+    }
+    expect(frames.find((frame) => frame.event?.type === "app.task.cancel.requested")?.event).toMatchObject({
+      target: { appId: "sample", taskId: "work/1" },
+      data: { expectedGeneration: 2, expectedResourceVersion: 7 },
+      idempotencyKey: "app-task-cancel:sample:work/1:2:7",
+    });
+    child.stdin.write("/exit\n");
+    expect((await once(child, "exit"))[0]).toBe(0);
+  });
+
   test("shares Conversation context and manages stable Tasks instead of sessions", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-"));
     const instance = "test";
@@ -313,7 +527,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -414,6 +628,14 @@ describe("May Console", () => {
         output.includes("you[evaluation · 2 todo]>"),
     );
     const todoNoticeCount = output.split("[todo] 2 Tasks need you in evaluation. Run /todo.").length - 1;
+    await waitFor(() =>
+      frames.some(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.data?.metadata?.command === "/todo notification" &&
+          frame.event?.data?.text?.includes("2 Tasks need you"),
+      ),
+    );
     const automaticTodoView = frames.find(
       (frame) =>
         frame.type === "publish" &&
@@ -788,7 +1010,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -894,7 +1116,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -993,7 +1215,14 @@ describe("May Console", () => {
             appReads.push({ frame, socket });
           } else if (frame.type === "tasks.list") {
             socket.write(
-              `${JSON.stringify({ type: "ok", command: "tasks.list", tasks: { items: [], nextCursor: null } })}\n`,
+              `${JSON.stringify({
+                type: "ok",
+                command: "tasks.list",
+                tasks: {
+                  items: [],
+                  ...(frame.appId === "evaluation" && !frame.cursor ? { nextCursor: "evaluation-page-2" } : {}),
+                },
+              })}\n`,
             );
           } else {
             socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 42 })}\n`);
@@ -1006,7 +1235,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let output = "";
@@ -1028,17 +1257,15 @@ describe("May Console", () => {
       () =>
         appReads.length === 2 &&
         frames.some((frame) => frame.type === "tasks.list" && frame.appId === "gym" && !frame.humanActionOnly) &&
-        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly),
+        frames.some((frame) => frame.type === "tasks.list" && frame.appId === "evaluation" && !frame.humanActionOnly) &&
+        frames.some(
+          (frame) =>
+            frame.type === "publish" &&
+            frame.event?.type === "conversation.message.created" &&
+            frame.event?.data?.text === "hello" &&
+            frame.event?.data?.context?.focusedApp === "gym",
+        ),
     );
-    expect(
-      frames.some(
-        (frame) =>
-          frame.type === "publish" &&
-          frame.event?.type === "conversation.message.created" &&
-          frame.event?.data?.text === "hello" &&
-          frame.event?.data?.context?.focusedApp === "gym",
-      ),
-    ).toBe(true);
     expect(output).toContain("[apps] Selecting gym…");
     expect(output).toContain("you[gym]>");
     expect(output).toContain("you[evaluation]>");
@@ -1063,11 +1290,127 @@ describe("May Console", () => {
     await waitFor(() => output.includes("Selected App: evaluation"));
     expect(output).not.toContain("Selected App: gym");
 
+    // The validation response may arrive after the first Task page. It must not
+    // erase that page's cursor before the human asks for more.
+    child.stdin.write("/tasks more\n");
+    await waitFor(() =>
+      frames.some(
+        (frame) =>
+          frame.type === "tasks.list" &&
+          frame.appId === "evaluation" &&
+          frame.cursor === "evaluation-page-2",
+      ),
+    );
+    expect(output).not.toContain("[tasks] No next page. Run /tasks first.");
+
     child.stdin.write("/apps missing\n");
     await waitFor(() => appReads.length === 3 && output.includes("you[missing]>"));
     appReads[2].socket.write(`${JSON.stringify({ type: "ok", command: "apps.list", apps: [] })}\n`);
     await waitFor(() => output.includes("App missing was not found; restored evaluation."));
     expect(output).toContain("you[evaluation]>");
+
+    child.stdin.write("/exit\n");
+    await once(child, "exit");
+  });
+
+  test("keeps delayed watch and todo reads scoped to the current selection", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-selection-races-"));
+    const instance = "test";
+    mkdirSync(join(root, "instances", instance), { recursive: true });
+    const pending: Array<{ frame: Record<string, any>; requestId: string; socket: Socket }> = [];
+    let client: Socket | null = null;
+    const server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance, activeAgents: [] })}\n`);
+      socket.on("data", (chunk) => {
+        for (const line of String(chunk).trim().split("\n")) {
+          if (!line) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          const requestId = socket.currentRequestId();
+          if (frame.type === "app.conversation.get") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, conversation: { id: "may:primary", owner: "may", version: 1, topics: [], messages: [] } })}\n`);
+          } else if (frame.type === "apps.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, apps: [{ id: frame.appId, description: `${frame.appId} app`, activeTasks: 0 }] })}\n`);
+          } else if ((frame.type === "task.get" || frame.type === "tasks.list") && requestId) {
+            pending.push({ frame, requestId, socket });
+          } else if (frame.type !== "task.get" && frame.type !== "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 1 })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(join(root, "instances", instance, "may.sock"));
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
+      stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => { output += chunk; });
+    child.stderr.on("data", (chunk) => { output += chunk; });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    const take = (predicate: (frame: Record<string, any>) => boolean) => {
+      const index = pending.findIndex(({ frame }) => predicate(frame));
+      expect(index).toBeGreaterThanOrEqual(0);
+      return pending.splice(index, 1)[0];
+    };
+    const task = (appId: string, taskId: string, ref: string, summary: string, terminal = false) => ({
+      appId, taskId, ref, status: terminal ? "done" : "running", outcome: `Work ${ref}`, summary,
+      updatedAt: Date.now(), terminal, cancellable: !terminal,
+    });
+    await waitFor(() => output.includes("you[may]>"));
+
+    child.stdin.write("/watch aaaaaaaa\n");
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "aaaaaaaa"));
+    const startA = take((frame) => frame.type === "task.get" && frame.ref === "aaaaaaaa");
+    child.stdin.write("/watch bbbbbbbb\n");
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "bbbbbbbb"));
+    const startB = take((frame) => frame.type === "task.get" && frame.ref === "bbbbbbbb");
+    startB.socket.respond(startB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "B current") });
+    await waitFor(() => output.includes("[watch] Following bbbbbbbb · beta."));
+    const betaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "beta");
+    startA.socket.respond(startA.requestId, { type: "ok", command: "task.get", task: task("alpha", "work/a", "aaaaaaaa", "STALE A START") });
+    await Bun.sleep(30);
+    expect(output).not.toContain("STALE A START");
+    expect(output).not.toContain("[watch] Following aaaaaaaa · alpha.");
+    expect(output).toContain("you[beta:bbbbbbbb]>");
+
+    client?.write(`${JSON.stringify({ type: "app.task.updated", data: { appId: "beta", taskId: "work/b" } })}\n`);
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.appId === "beta"));
+    const lateB = take((frame) => frame.type === "task.get" && frame.appId === "beta");
+    child.stdin.write("/watch cccccccc\n");
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "cccccccc"));
+    const startC = take((frame) => frame.type === "task.get" && frame.ref === "cccccccc");
+    startC.socket.respond(startC.requestId, { type: "ok", command: "task.get", task: task("gamma", "work/c", "cccccccc", "C current") });
+    await waitFor(() => output.includes("[watch] Following cccccccc · gamma."));
+    const gammaTodo = take((frame) => frame.type === "tasks.list" && frame.appId === "gamma");
+    lateB.socket.respond(lateB.requestId, { type: "ok", command: "task.get", task: task("beta", "work/b", "bbbbbbbb", "STALE B TERMINAL", true) });
+    await Bun.sleep(30);
+    expect(output).not.toContain("STALE B TERMINAL");
+    expect(output).not.toContain("bbbbbbbb finished; watch ended");
+    expect(output).toContain("you[gamma:cccccccc]>");
+
+    gammaTodo.socket.respond(gammaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("gamma", "approval/c", "c0c0c0c0", "Gamma approval"), humanAction: { requestedAction: "Approve gamma" }, resourceVersion: 2 }], total: 2 } });
+    await waitFor(() => output.includes("[todo] 2 Tasks need you in gamma. Run /todo."));
+    betaTodo.socket.respond(betaTodo.requestId, { type: "ok", command: "tasks.list", tasks: { items: [{ ...task("beta", "approval/b", "b0b0b0b0", "Beta approval"), humanAction: { requestedAction: "Approve beta" }, resourceVersion: 9 }], total: 9 } });
+    await Bun.sleep(30);
+    expect(output).not.toContain("9 Tasks need you");
+    expect(output).toContain("you[gamma:cccccccc]>");
+
+    child.stdin.write("/watch dddddddd\n");
+    await waitFor(() => pending.some(({ frame }) => frame.type === "task.get" && frame.ref === "dddddddd"));
+    const startD = take((frame) => frame.type === "task.get" && frame.ref === "dddddddd");
+    child.stdin.write("/unwatch\n");
+    await waitFor(() => output.includes("[watch] Watch ended. The Task continues."));
+    startD.socket.respond(startD.requestId, { type: "ok", command: "task.get", task: task("delta", "work/d", "dddddddd", "STALE D START") });
+    await Bun.sleep(30);
+    expect(output).not.toContain("STALE D START");
+    expect(output).not.toContain("[watch] Following dddddddd · delta.");
+    expect(output).toContain("you[gamma · 2 todo]>");
 
     child.stdin.write("/exit\n");
     await once(child, "exit");
@@ -1119,7 +1462,7 @@ describe("May Console", () => {
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const children = [0, 1].map(() =>
       spawn("node", [consolePath], {
-        env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+        env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
         stdio: "pipe",
       }),
     );
@@ -1136,6 +1479,192 @@ describe("May Console", () => {
     expect(humanIds[0]).toMatch(/^may-console:[0-9a-f-]{36}:\d+$/);
     expect(humanIds[1]).toMatch(/^may-console:[0-9a-f-]{36}:\d+$/);
     expect(new Set(humanIds).size).toBe(2);
+  });
+
+  test("retries a transient HTTP read while the WebSocket remains healthy", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-http-retry-"));
+    let connections = 0;
+    let conversationReads = 0;
+    const server = createServer((socket) => {
+      connections++;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance: "test" })}\n`);
+      socket.on("data", (chunk) => {
+        for (const line of chunk.toString().split("\n")) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          if (frame.type === "app.conversation.get") {
+            conversationReads++;
+            if (conversationReads === 1) {
+              socket.write(`${JSON.stringify({ type: "error", command: frame.type, message: "Temporary read failure" })}\n`);
+            } else {
+              socket.write(`${JSON.stringify({
+                type: "ok",
+                command: frame.type,
+                conversation: { id: "may:primary", owner: "may", version: 2, messages: [] },
+              })}\n`);
+            }
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(join(root, "unused.sock"));
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: {
+        ...process.env,
+        CONVERSATION_APP: "may",
+        CONVERSATION_ID: "may:primary",
+        DAEMON_INSTANCE: "test",
+        DAEMON_AGENT: "may",
+        MAY_ENDPOINT: consoleEndpoint(server),
+      },
+      stdio: "pipe",
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => conversationReads >= 2);
+    expect(connections).toBe(1);
+  });
+
+  test("discards a delayed pre-overflow snapshot before applying its canonical reread", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-overflow-order-"));
+    let client: Socket | null = null;
+    let conversationReads = 0;
+    let releaseFirstRead = () => {};
+    const firstReadReleased = new Promise<void>((resolve) => {
+      releaseFirstRead = resolve;
+    });
+    const server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance: "test" })}\n`);
+      socket.on("data", async (chunk) => {
+        for (const line of chunk.toString().split("\n")) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          if (frame.type === "app.conversation.get") {
+            conversationReads++;
+            const readNumber = conversationReads;
+            if (readNumber === 1) await firstReadReleased;
+            socket.write(`${JSON.stringify({
+              type: "ok",
+              command: frame.type,
+              conversation: {
+                id: "may:primary",
+                owner: "may",
+                version: readNumber,
+                messages: [{
+                  id: readNumber === 1 ? "old-snapshot" : "new-snapshot",
+                  author: { kind: "agent", id: "may" },
+                  text: readNumber === 1 ? "stale snapshot must not render" : "fresh snapshot rendered",
+                  metadata: {},
+                }],
+              },
+            })}\n`);
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(join(root, "unused.sock"));
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: {
+        ...process.env,
+        CONVERSATION_APP: "may",
+        CONVERSATION_ID: "may:primary",
+        DAEMON_INSTANCE: "test",
+        DAEMON_AGENT: "may",
+        MAY_ENDPOINT: consoleEndpoint(server),
+      },
+      stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => conversationReads === 1 && client !== null);
+    client!.write(`${JSON.stringify({ type: "overflow", action: "reread" })}\n`);
+    releaseFirstRead();
+    await waitFor(() => conversationReads >= 2 && output.includes("fresh snapshot rendered"));
+    expect(output).not.toContain("stale snapshot must not render");
+  });
+
+  test("rereads canonical state after WebSocket overflow without replaying human input", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-overflow-"));
+    const frames: Array<Record<string, any>> = [];
+    let conversationReads = 0;
+    let client: Socket | null = null;
+    const server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance: "test" })}\n`);
+      socket.on("data", (chunk) => {
+        for (const line of chunk.toString().split("\n")) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          frames.push(frame);
+          if (frame.type === "subscribe") {
+            socket.write(`${JSON.stringify({ type: "ok", command: "subscribe" })}\n`);
+          } else if (frame.type === "app.conversation.get") {
+            conversationReads++;
+            socket.write(`${JSON.stringify({
+              type: "ok",
+              command: frame.type,
+              conversation: { id: "may:primary", owner: "may", version: conversationReads, messages: [] },
+            })}\n`);
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } })}\n`);
+          } else if (frame.type === "publish") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, eventId: 90, delivery: "accepted" })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(join(root, "unused.sock"));
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: {
+        ...process.env,
+        CONVERSATION_APP: "may",
+        CONVERSATION_ID: "may:primary",
+        DAEMON_INSTANCE: "test",
+        DAEMON_AGENT: "may",
+        MAY_ENDPOINT: consoleEndpoint(server),
+      },
+      stdio: "pipe",
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => conversationReads >= 1);
+    child.stdin.write("one durable input\n");
+    const humanInputs = () =>
+      frames.filter(
+        (frame) =>
+          frame.type === "publish" &&
+          frame.event?.type === "conversation.message.created" &&
+          frame.event?.data?.text === "one durable input",
+      );
+    await waitFor(() => humanInputs().length === 1);
+    const beforeOverflow = conversationReads;
+    client!.write(`${JSON.stringify({ type: "overflow", action: "reread" })}\n`);
+    await waitFor(() => conversationReads > beforeOverflow);
+    await Bun.sleep(50);
+    expect(humanInputs()).toHaveLength(1);
   });
 
   test("exits cleanly when stdin closes", async () => {
@@ -1155,7 +1684,7 @@ describe("May Console", () => {
 
     const consolePath = resolve(import.meta.dir, "../bin/may-console.cjs");
     const child: ChildProcessWithoutNullStreams = spawn("node", [consolePath], {
-      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may" },
+      env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: instance, DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
       stdio: "pipe",
     });
     let stderr = "";
@@ -1226,7 +1755,7 @@ test("TTY Esc preserves editing, dismisses completion and stops only the observe
   // util-linux script supplies a real terminal without requiring a live daemon.
   const quotedPath = "'" + consolePath.replaceAll("'", "'\\''") + "'";
   const child = spawn("script", ["-qefc", `node ${quotedPath}`, "/dev/null"], {
-    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", TERM: "xterm" },
+    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server), TERM: "xterm" },
     stdio: "pipe",
   });
   let output = "";
@@ -1334,7 +1863,7 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
   server.listen(join(socketDir, "may.sock"));
   await once(server, "listening");
   const child = spawn(process.execPath, [resolve(import.meta.dir, "../bin/may-console.cjs")], {
-    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may" },
+    env: { ...process.env, CONVERSATION_APP: "may", CONVERSATION_ID: "may:primary", STATE_DIR: root, DAEMON_INSTANCE: "test", DAEMON_AGENT: "may", MAY_ENDPOINT: consoleEndpoint(server) },
     stdio: "pipe",
   });
   child.stdout.on("data", (chunk) => {
@@ -1372,8 +1901,8 @@ test("Console replies bind a displayed proposal explicitly and keep it through l
     replyTo: command.event.data.messageId,
     approvalReply: { target: { appId: "sample", taskId: "release" }, proposal: shown },
   });
-  expect(human[1].operatorId).toBeTruthy();
-  expect(human[1].authorizationEvidence).toMatchObject({
+  expect(human[1].event.operatorId).toBeTruthy();
+  expect(human[1].event.authorizationEvidence).toMatchObject({
     decisionText: "approve",
     replyTo: command.event.data.messageId,
   });

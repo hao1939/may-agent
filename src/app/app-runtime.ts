@@ -62,9 +62,7 @@ export type AppInputAdmission = (input: {
   eventType: string;
 };
 
-export function createAppInputAdmission(options: {
-  events: Pick<EventInterface, "publish">;
-}): AppInputAdmission {
+export function createAppInputAdmission(options: { events: Pick<EventInterface, "publish"> }): AppInputAdmission {
   return (input) => {
     const sourceKind = input.source.kind;
     const sourceId = input.source.id;
@@ -133,7 +131,16 @@ export async function runAppRuntime(opts: {
   } = opts.appArgs;
   const interfaceAgent = humanInterface.agent;
   const interactiveConsole = CONSOLE_ENABLED && process.stdin.isTTY;
-  const backgroundEnabled = runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole));
+  const explicitDaemonHttp = Boolean(process.env.DAEMON_HTTP_PORT);
+  const backgroundEnabled =
+    runsBackgroundWork(opts.appArgs, Boolean(interactiveConsole)) ||
+    (explicitDaemonHttp &&
+      !opts.appArgs.statusMode &&
+      !opts.appArgs.emitMode &&
+      !opts.appArgs.webOnlyMode &&
+      !opts.appArgs.taskWorkerRequest &&
+      !opts.appArgs.taskRecoveryWorker &&
+      !opts.appArgs.taskAdmissionWorker);
 
   const bus = new EventBus();
   const requestedHostConcurrency = Number(process.env.MAY_HOST_MAX_CONCURRENT ?? 4);
@@ -155,11 +162,6 @@ export async function runAppRuntime(opts: {
       },
     );
   } else if (process.env.MAY_DAEMON_QUIET !== "1") attachDaemonInfoLog(bus);
-
-  if (WEB_ENABLED) {
-    const { port } = await startWebMode({ interface: humanInterface, stateDir: opts.persistDir, port: parseWebPort(process.env.WEB_PORT) });
-    bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${port}` });
-  }
 
   bus.emit({
     type: "info",
@@ -257,9 +259,12 @@ export async function runAppRuntime(opts: {
         expectedResourceVersion: resourceVersion,
         controlKey,
       }),
-    reopenTask: ({ generation, resourceVersion, ...input }) => appTasks.reopen({
-      ...input, expectedGeneration: generation, expectedResourceVersion: resourceVersion,
-    }),
+    reopenTask: ({ generation, resourceVersion, ...input }) =>
+      appTasks.reopen({
+        ...input,
+        expectedGeneration: generation,
+        expectedResourceVersion: resourceVersion,
+      }),
     closeTask: ({ appId, taskId, generation, resourceVersion, afterResult, reason, controlKey }) =>
       appTasks.closeAfterResult({
         appId,
@@ -366,6 +371,7 @@ export async function runAppRuntime(opts: {
   }
 
   let telegramBot: { close: () => void } = { close: () => {} };
+  let daemonHttpServer: { port: number; stop(closeActiveConnections?: boolean): void } | undefined;
   let cancelledOnce = false;
   const preparedSources = new WeakMap<
     Awaited<ReturnType<typeof prepareAgentGeneration>>,
@@ -387,6 +393,7 @@ export async function runAppRuntime(opts: {
     beforeShutdown: () => {
       daemonMetricTimers?.close();
       daemonMetricTimers = null;
+      daemonHttpServer?.stop(true);
       void appTasks.close();
       appInboxRuntime?.close();
     },
@@ -505,6 +512,13 @@ export async function runAppRuntime(opts: {
           }),
       })
     : { close: () => {} };
+  const getAppConversation = (appId: string, conversationId: string, options?: { limit?: number }) =>
+    readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options);
+  const listApps = (appId?: string) => humanTasks.listApps(appId);
+  const listTasks = (options?: Record<string, unknown>) =>
+    humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]);
+  const getTask = (input: Record<string, unknown>) => humanTasks.getTask(input);
+  const getStatus = () => readExecutionStatus(opts.persistDir);
   const { socketPath: SOCKET_PATH, socketUI } = await startInterfaceRuntime({
     conversationAppId,
     socketEnabled: SOCKET_ENABLED,
@@ -512,14 +526,27 @@ export async function runAppRuntime(opts: {
     instanceLabel: opts.instanceLabel,
     interfaceAgent,
     events,
-    getStatus: () => readExecutionStatus(opts.persistDir),
+    getStatus,
     reportInfo: (message) => bus.emit({ type: "info", message }),
-    getAppConversation: (appId, conversationId, options) =>
-      readAppConversationResource(getDb(opts.persistDir), appId, conversationId, options),
-    listApps: (appId) => humanTasks.listApps(appId),
-    listTasks: (options) => humanTasks.listTasks(options as Parameters<HumanTaskService["listTasks"]>[0]),
-    getTask: (input) => humanTasks.getTask(input),
+    getAppConversation,
+    listApps,
+    listTasks,
+    getTask,
   });
+  // A daemon only claims a TCP listener when its endpoint was explicitly
+  // configured. This keeps fixture and multi-instance daemons headless while
+  // the packaged service opts into its stable Console/browser endpoint.
+  const daemonHttpPort = process.env.DAEMON_HTTP_PORT ?? (WEB_ENABLED ? process.env.WEB_PORT : undefined);
+  const daemonHttpEnabled = WEB_ENABLED || Boolean(daemonHttpPort);
+  if (daemonHttpEnabled) {
+    daemonHttpServer = await startWebMode({
+      interface: humanInterface,
+      stateDir: opts.persistDir,
+      port: parseWebPort(daemonHttpPort),
+      services: { events, getStatus, getAppConversation, listApps, listTasks, getTask },
+    });
+    bus.emit({ type: "info", message: `[web] Dashboard running on http://localhost:${daemonHttpServer.port}` });
+  }
   markStartupPhase("interfaces");
   bus.emit({
     type: "info",
@@ -563,8 +590,11 @@ export async function runAppRuntime(opts: {
     status: "running",
   });
 
-  if (!interactiveConsole && !CRON_ENABLED && !WEB_ENABLED && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
-    bus.emit({ type: "info", message: "[console] Non-TTY console invocation has no active daemon interfaces. Exiting." });
+  if (!interactiveConsole && !CRON_ENABLED && !daemonHttpEnabled && !SOCKET_ENABLED && !TELEGRAM_ENABLED) {
+    bus.emit({
+      type: "info",
+      message: "[console] Non-TTY console invocation has no active daemon interfaces. Exiting.",
+    });
     process.exit(0);
   } else if (interactiveConsole) {
     await runInteractiveLoop({

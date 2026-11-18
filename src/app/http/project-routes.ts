@@ -2,11 +2,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
-import {
-  sendSocketCommand,
-  type SocketEndpoint,
-  type SocketResponse,
-} from "@may-agent/control/client";
+import type { SocketResponse } from "@may-agent/control/client";
 import { metricThresholdBreached } from "../../lib/metrics.js";
 import {
   normalizeProjectPathForCompare,
@@ -118,20 +114,8 @@ export function createProjectRouteHandlers(options: {
   projectsRoot: string;
   getDb: () => SqliteDb;
   json: (data: unknown, status?: number) => Response;
-  conventionSocketPath: () => string;
   platformUiContentTypeFor: (path: string) => string;
-  sendAppInputWithRetry: (
-    endpoint: SocketEndpoint,
-    command: AppAdmissionPublishCommand,
-    send?: typeof sendSocketCommand,
-    confirm?: ConfirmDurableControl,
-  ) => Promise<SocketResponse>;
-  confirmAcceptedAppInput: (
-    appId: string,
-    idempotencyKey: string,
-    data: Record<string, unknown>,
-    inputSource: { kind: "human"; id: string },
-  ) => { eventId: number; eventType: "app.input.requested"; delivery: "accepted" } | undefined;
+  admitAppInput: (command: AppAdmissionPublishCommand) => Promise<SocketResponse>;
 }) {
   const {
     projectRoot: PROJECT_ROOT,
@@ -139,10 +123,8 @@ export function createProjectRouteHandlers(options: {
     projectsRoot: PROJECTS_ROOT,
     getDb: _db,
     json,
-    conventionSocketPath,
     platformUiContentTypeFor,
-    sendAppInputWithRetry,
-    confirmAcceptedAppInput,
+    admitAppInput,
   } = options;
 
   function projectNameFromPath(path: string): string {
@@ -564,18 +546,7 @@ export function createProjectRouteHandlers(options: {
       const idempotencyKey = body.idempotencyKey?.trim() || `web-project-${randomUUID()}`;
       const command = buildAppAdmissionCommand({ projectPath: path, projectId, comment, idempotencyKey });
       try {
-        const admitted = await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, (key) =>
-          confirmAcceptedAppInput(
-            projectId,
-            key,
-            {
-              input: command.event.data.input,
-              conversationId: command.event.data.conversationId,
-              channel: command.event.data.channel,
-            },
-            { kind: "human", id: `web-ui:${key}` },
-          ),
-        );
+        const admitted = await admitAppInput(command);
         return json(
           {
             ok: true,

@@ -65,7 +65,7 @@ async function fixture(
 
   executable(
     join(binDir, "supervisorctl"),
-    "#!/bin/sh\nif [ \"${1:-}\" = status ]; then\n  printf 'may-agent RUNNING\\nmay-agent-web RUNNING\\nmay-agent-maintenance RUNNING\\n'\nfi\nexit 0\n",
+    "#!/bin/sh\nif [ \"${1:-}\" = status ]; then\n  printf 'may-agent RUNNING\\nmay-agent-maintenance RUNNING\\n'\nfi\nexit 0\n",
   );
   executable(join(binDir, "curl"), `#!/bin/sh\nexit ${healthy ? 0 : 1}\n`);
   if (options.failUiSwitch) {

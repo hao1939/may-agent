@@ -371,6 +371,15 @@ function connectWs() {
       }
 
       switch (eventType) {
+        case 'overflow':
+          if (event.action === 'reread') {
+            syncRealtimeSubscriptions();
+            refreshSessionStatus();
+            if (isMayConversation()) void refreshMayConversation();
+            else void refreshChatTranscript();
+            scheduleLivenessRefresh();
+          }
+          break;
         case 'connected':
         case 'status':
           if (event.activeAgents) {

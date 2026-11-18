@@ -1,15 +1,18 @@
 #!/usr/bin/env node
-const net = require("node:net");
 const { userInfo } = require("node:os");
 const { randomUUID } = require("node:crypto");
-const path = require("node:path");
 const readline = require("node:readline");
 const { spawn } = require("node:child_process");
 
-const stateDir = process.env.STATE_DIR || "/app/.state";
 const instance = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "background";
 const daemonAgent = process.env.AGENT?.trim() || process.env.DAEMON_AGENT?.trim() || "host";
-const socketPath = path.join(stateDir, "instances", instance, `${daemonAgent}.sock`);
+const configuredEndpoint = process.env.MAY_ENDPOINT?.trim() || process.env.DAEMON_HTTP_URL?.trim();
+const configuredPort = process.env.DAEMON_HTTP_PORT?.trim() || process.env.WEB_PORT?.trim();
+if (!configuredEndpoint && !configuredPort && instance !== "background") {
+  throw new Error(`Console instance ${instance} requires MAY_ENDPOINT, DAEMON_HTTP_URL, or DAEMON_HTTP_PORT`);
+}
+const daemonEndpoint = (configuredEndpoint || `http://127.0.0.1:${configuredPort || "8081"}`).replace(/\/$/, "");
+const wakeEndpoint = daemonEndpoint.replace(/^http/, "ws") + "/ws";
 const source = "may-console";
 const conversationAppId = process.env.CONVERSATION_APP?.trim();
 if (!conversationAppId) throw new Error("Console requires CONVERSATION_APP");
@@ -18,6 +21,8 @@ const adapterInstanceId = randomUUID();
 
 let socket = null;
 let connected = false;
+let subscriptionReady = false;
+let conversationLoaded = false;
 let closing = false;
 let reconnectTimer = null;
 let reconnectDelayMs = 250;
@@ -29,13 +34,13 @@ let completionVisible = false;
 let watchedTask = null;
 let watchedTaskReadInFlight = false;
 let watchedTaskDirty = false;
+let watchedTaskSelectionVersion = 0;
 let desiredAutoFollow = null;
 let lastDisconnectedMessage = "";
 const displayedTaskReplies = new Map();
 let appSelectionVersion = 0;
 let todoCount = 0;
-let todoReadInFlight = false;
-let todoReadDirty = false;
+const todoReadDirtyApps = new Set();
 const pendingInputFrames = [];
 const maxPendingInputFrames = 100;
 
@@ -60,7 +65,6 @@ const pendingTaskReads = [];
 let nextTaskPage = null;
 let nextTodoPage = null;
 const pendingRuntimeControls = new Map();
-const pendingPublishReceipts = [];
 const knownAppIds = new Set();
 const knownTaskRefs = new Set();
 const shownTaskRevisions = new Map();
@@ -305,19 +309,57 @@ function subscribedSessions() {
   return debug || raw ? ["*"] : [];
 }
 
+function removePending(queue, pending) {
+  const index = queue.indexOf(pending);
+  if (index >= 0) queue.splice(index, 1);
+}
+
+async function httpJson(pathname, options = {}) {
+  const response = await fetch(`${daemonEndpoint}${pathname}`, {
+    ...options,
+    headers: { ...(options.body ? { "content-type": "application/json" } : {}), ...(options.headers || {}) },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(body?.error || `HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
+  return body;
+}
+
 function sendFrame(frame, opts = {}) {
-  if (!connected || !socket || socket.destroyed) {
-    if (!opts.silent) printLine(`[disconnected] ${socketPath}`);
-    return false;
-  }
-  try {
-    socket.write(`${JSON.stringify(frame)}\n`);
-    if (frame?.type === "publish") pendingPublishReceipts.push(opts.receiptKind || null);
+  if (frame?.type === "subscribe") {
+    if (!connected || !socket || socket.readyState !== WebSocket.OPEN) return false;
+    socket.send(JSON.stringify(frame));
     return true;
-  } catch (err) {
-    if (!opts.silent) printLine(`[socket write failed] ${err && err.message ? err.message : String(err)}`);
-    return false;
   }
+  if (frame?.type === "publish" && frame.event) {
+    void httpJson("/api/events", { method: "POST", body: JSON.stringify(frame.event) })
+      .then((result) => handleEvent({ type: "ok", command: "publish", ...result, __receiptKind: opts.receiptKind }))
+      .catch((error) => handleEvent({ type: "error", command: "publish", message: error.message, __receiptKind: opts.receiptKind }));
+    return true;
+  }
+  if (frame?.type === "task.cancel") {
+    const query = frame.ref
+      ? `ref=${encodeURIComponent(frame.ref)}`
+      : `appId=${encodeURIComponent(frame.appId)}&taskId=${encodeURIComponent(frame.taskId)}`;
+    void httpJson(`/api/task?${query}`)
+      .then(async (task) => {
+        const result = await httpJson("/api/events", { method: "POST", body: JSON.stringify({
+          type: "app.task.cancel.requested",
+          target: { appId: task.appId, taskId: task.taskId },
+          data: { expectedGeneration: task.generation, expectedResourceVersion: task.resourceVersion, reason: frame.reason },
+          idempotencyKey: `app-task-cancel:${task.appId}:${task.taskId}:${task.generation}:${task.resourceVersion}`,
+        }) });
+        if (result.delivery !== "accepted") throw new Error("Cancellation was not accepted");
+        const updatedTask = await httpJson(`/api/task?appId=${encodeURIComponent(task.appId)}&taskId=${encodeURIComponent(task.taskId)}`);
+        handleEvent({ ...result, type: "ok", command: "task.cancel", task: updatedTask });
+      })
+      .catch((error) => handleEvent({ type: "error", command: "task.cancel", message: error.message }));
+    return true;
+  }
+  return false;
 }
 
 function conversationInputFrame(message, reply) {
@@ -330,16 +372,16 @@ function conversationInputFrame(message, reply) {
   rememberRenderedConversationMessage(messageId);
   return {
     type: "publish",
-    ...(reply
-      ? {
-          operatorId: userInfo().username,
-          authorizationReference: messageId,
-          authorizationEvidence: { channel: source, replyTo: reply.messageId, decisionText: message },
-        }
-      : {}),
     event: {
       type: "conversation.message.created",
       target: { appId: conversationAppId },
+      ...(reply
+        ? {
+            operatorId: userInfo().username,
+            authorizationReference: messageId,
+            authorizationEvidence: { channel: source, replyTo: reply.messageId, decisionText: message },
+          }
+        : {}),
       data: {
         conversationId,
         author: { kind: "human", id: messageId },
@@ -383,15 +425,52 @@ function requestConversation(kind = "startup", options = {}) {
   return sent || !closing;
 }
 
+function readFailedTransiently(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const status = error && typeof error === "object" ? error.status : undefined;
+  const transient = !connected || !subscriptionReady || (Number.isInteger(status) && status >= 500) || /fetch failed|daemon unavailable|HTTP 5\d\d/i.test(message);
+  if (transient && (!connected || !subscriptionReady)) scheduleReconnect();
+  return transient;
+}
+
+function sendCanonicalRead(pending, read, apply, reportError) {
+  if (pending.__readInFlight) {
+    pending.__readDirty = true;
+    return true;
+  }
+  pending.__readInFlight = true;
+  void read()
+    .then((value) => {
+      pending.__readInFlight = false;
+      if (pending.__readDirty) {
+        pending.__readDirty = false;
+        sendCanonicalRead(pending, read, apply, reportError);
+        return;
+      }
+      apply(value);
+    })
+    .catch((error) => {
+      pending.__readInFlight = false;
+      if (readFailedTransiently(error)) {
+        if (!pending.__readRetryTimer && !closing) {
+          pending.__readRetryTimer = setTimeout(() => {
+            pending.__readRetryTimer = null;
+            if (!closing) sendCanonicalRead(pending, read, apply, reportError);
+          }, 250);
+        }
+        return;
+      }
+      reportError(error);
+    });
+  return true;
+}
+
 function sendConversationRead(pending = {}) {
-  return sendFrame(
-    {
-      type: "app.conversation.get",
-      appId: conversationAppId,
-      conversationId,
-      limit: 30,
-    },
-    { silent: true },
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/conversation?appId=${encodeURIComponent(conversationAppId)}&conversationId=${encodeURIComponent(conversationId)}&limit=30`),
+    (conversation) => handleEvent({ type: "ok", command: "app.conversation.get", conversation, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "app.conversation.get", message: error.message, __pending: pending }),
   );
 }
 
@@ -411,7 +490,13 @@ function requestApps(appId = null, command = "/apps", select = false, selection 
 }
 
 function sendAppRead(pending) {
-  return sendFrame({ type: "apps.list", ...(pending.appId ? { appId: pending.appId } : {}) }, { silent: true });
+  const query = pending.appId ? `?appId=${encodeURIComponent(pending.appId)}` : "";
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/apps${query}`),
+    (apps) => handleEvent({ type: "ok", command: "apps.list", apps, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "apps.list", message: error.message, __pending: pending }),
+  );
 }
 
 function requestTasks(options = {}) {
@@ -431,40 +516,44 @@ function requestTasks(options = {}) {
 }
 
 function sendTaskListRead(pending) {
-  return sendFrame(
-    {
-      type: "tasks.list",
-      ...(pending.appId ? { appId: pending.appId } : {}),
-      ...(pending.includeDone ? { includeDone: true } : {}),
-      ...(pending.humanActionOnly ? { humanActionOnly: true } : {}),
-      ...(pending.cursor ? { cursor: pending.cursor } : {}),
-      limit: pending.limit,
-    },
-    { silent: true },
+  const query = new URLSearchParams();
+  if (pending.appId) query.set("appId", pending.appId); else query.set("allApps", "true");
+  if (pending.includeDone) query.set("includeDone", "true");
+  if (pending.humanActionOnly) query.set("humanActionOnly", "true");
+  if (pending.cursor) query.set("cursor", pending.cursor);
+  query.set("limit", String(pending.limit));
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/tasks?${query}`),
+    (tasks) => handleEvent({ type: "ok", command: "tasks.list", tasks, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "tasks.list", message: error.message, __pending: pending }),
   );
 }
 
 function requestTodoRefresh() {
   if (!connected) return false;
-  if (todoReadInFlight) {
-    todoReadDirty = true;
+  const appId = selectedApp;
+  if (pendingTaskListReads.some((pending) => pending.kind === "todo-refresh" && pending.appId === appId)) {
+    todoReadDirtyApps.add(appId);
     return true;
   }
-  todoReadInFlight = true;
-  const sent = requestTasks({
+  return requestTasks({
     kind: "todo-refresh",
-    appId: selectedApp,
+    appId,
     humanActionOnly: true,
     limit: todoPageSize,
     command: "automatic todo refresh",
   });
-  if (!sent) todoReadInFlight = false;
-  return sent;
 }
 
 function requestTask(input) {
   const pending = {
     kind: input.kind || "detail",
+    ...(input.kind === "watch-refresh"
+      ? { watchSelectionVersion: watchedTaskSelectionVersion }
+      : input.kind === "watch-start" && Number.isSafeInteger(input.watchSelectionVersion)
+        ? { watchSelectionVersion: input.watchSelectionVersion }
+        : {}),
     command: input.command || `/task ${input.ref || ""}`.trim(),
     ...(input.appId ? { appId: input.appId } : {}),
     ...(input.taskId ? { taskId: input.taskId } : {}),
@@ -482,14 +571,14 @@ function requestTask(input) {
 }
 
 function sendTaskRead(pending) {
-  return sendFrame(
-    {
-      type: "task.get",
-      ...(pending.ref ? { ref: pending.ref } : {}),
-      ...(pending.appId ? { appId: pending.appId } : {}),
-      ...(pending.taskId ? { taskId: pending.taskId } : {}),
-    },
-    { silent: true },
+  const query = new URLSearchParams();
+  if (pending.ref) query.set("ref", pending.ref);
+  else { query.set("appId", pending.appId); query.set("taskId", pending.taskId); }
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/task?${query}`),
+    (task) => handleEvent({ type: "ok", command: "task.get", task, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "task.get", message: error.message, __pending: pending }),
   );
 }
 
@@ -571,7 +660,6 @@ function renderApps(apps, pending) {
   if (selected) {
     const nextApp = apps[0].id.trim();
     selectAppContext(nextApp);
-    nextTaskPage = null;
   } else if (pending?.select) {
     selectAppContext(pending.previousAppId);
   }
@@ -912,6 +1000,7 @@ function renderWatchSnapshot(task, options = {}) {
 }
 
 function setWatchedTask(task) {
+  watchedTaskSelectionVersion += 1;
   watchedTask = task && !task.terminal ? { appId: task.appId, taskId: task.taskId, ref: task.ref } : null;
   if (watchedTask) conversationResultsByTask.delete(taskPresentationKey(watchedTask));
   const appChanged = watchedTask ? selectAppContext(watchedTask.appId) : false;
@@ -1059,6 +1148,7 @@ function runtimeFrame(type) {
 }
 
 function subscribe() {
+  subscriptionReady = false;
   return sendFrame({
     type: "subscribe",
     sessions: subscribedSessions(),
@@ -1066,6 +1156,23 @@ function subscribe() {
     taskApps: [selectedApp],
     task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
   });
+}
+
+function rereadCanonicalState() {
+  if (pendingConversationReads.length > 0) {
+    for (const pending of pendingConversationReads) sendConversationRead(pending);
+  } else {
+    requestConversation(conversationLoaded ? "sync" : "startup");
+  }
+  for (const pending of pendingAppReads) sendAppRead(pending);
+  for (const pending of pendingTaskListReads) sendTaskListRead(pending);
+  for (const pending of pendingTaskReads) sendTaskRead(pending);
+  if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh" && pending.appId === selectedApp)) requestTodoRefresh();
+  if (watchedTask && !pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) {
+    watchedTaskReadInFlight = false;
+    refreshWatchedTask();
+  }
+  requestDesiredAutoFollow();
 }
 
 function formatToolArgs(tool, args) {
@@ -1129,6 +1236,20 @@ function handleEvent(event) {
     }
     return;
   }
+  if (event.type === "subscribed") {
+    subscriptionReady = true;
+    rereadCanonicalState();
+    flushPendingCommands();
+    flushPendingInput();
+    refreshPrompt();
+    return;
+  }
+  if (event.type === "overflow") {
+    // WebSocket events are only lossy wake hints. Recover from the owning HTTP
+    // projections; never replay user input or control work because a stream fell behind.
+    if (subscriptionReady) rereadCanonicalState();
+    return;
+  }
   if (raw) {
     printLine(JSON.stringify(event));
     return;
@@ -1160,7 +1281,7 @@ function handleEvent(event) {
       handleConnected(event);
       return;
     case "ok":
-      const receiptKind = event.command === "publish" ? pendingPublishReceipts.shift() : null;
+      const receiptKind = event.__receiptKind || null;
       if (receiptKind === "human-turn" && event.approval) {
         printNotice("reason" in event.approval ? event.approval.reason
           : `${event.approval.decision} recorded for the exact proposal.`);
@@ -1178,7 +1299,9 @@ function handleEvent(event) {
         requestConversation("sync");
       }
       if (event.command === "app.conversation.get") {
-        const pending = pendingConversationReads.shift();
+        const pending = event.__pending || pendingConversationReads[0];
+        removePending(pendingConversationReads, pending);
+        conversationLoaded = true;
         if (pending?.kind === "startup" || pending?.kind === "sync") {
           const next = event.conversation?.activeTurn ?? null;
           if (next && (!activeTurn || activeTurn.id !== next.id || activeTurn.revision !== next.revision)) {
@@ -1194,18 +1317,17 @@ function handleEvent(event) {
         if (conversationSyncDirty) requestConversation("sync");
       }
       if (event.command === "apps.list") {
-        const pending = pendingAppReads.shift();
+        const pending = event.__pending || pendingAppReads[0];
+        removePending(pendingAppReads, pending);
         renderApps(event.apps, pending);
       }
       if (event.command === "tasks.list") {
-        const pending = pendingTaskListReads.shift();
+        const pending = event.__pending || pendingTaskListReads[0];
+        removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
-          todoReadInFlight = false;
-          applyTodoRefresh(event.tasks);
-          if (todoReadDirty) {
-            todoReadDirty = false;
-            requestTodoRefresh();
-          }
+          if (pending.appId === selectedApp) applyTodoRefresh(event.tasks);
+          const dirty = todoReadDirtyApps.delete(pending.appId);
+          if (dirty && pending.appId === selectedApp) requestTodoRefresh();
         } else if (pending?.kind === "todo-command") {
           renderTodos(event.tasks, pending);
         } else {
@@ -1213,10 +1335,13 @@ function handleEvent(event) {
         }
       }
       if (event.command === "task.get") {
-        const pending = pendingTaskReads.shift();
+        const pending = event.__pending || pendingTaskReads[0];
+        removePending(pendingTaskReads, pending);
         const task = event.task;
         if (pending?.kind === "watch-start") {
-          if (task?.terminal) {
+          if (pending.watchSelectionVersion !== watchedTaskSelectionVersion) {
+            // A newer human watch, unwatch, or App selection superseded this read.
+          } else if (task?.terminal) {
             renderWatchSnapshot(task, { catchUp: true });
             setWatchedTask(null);
             printNotice("[watch] Task is already terminal.");
@@ -1251,18 +1376,24 @@ function handleEvent(event) {
           requestDesiredAutoFollow();
         } else if (pending?.kind === "watch-refresh") {
           watchedTaskReadInFlight = false;
-          const taskKey = taskPresentationKey(task);
-          const conversationAlreadyPresentedResult = Boolean(task?.terminal && conversationResultsByTask.has(taskKey));
-          if (task && !conversationAlreadyPresentedResult) renderWatchSnapshot(task);
-          else if (task && conversationAlreadyPresentedResult) {
-            rememberTaskRevision(taskKey, taskPresentationRevision(task));
-            conversationResultsByTask.delete(taskKey);
-          }
-          if (!task || task.terminal) {
-            setWatchedTask(null);
-            if (task?.terminal) printNotice(`[watch] ${task.ref} finished; watch ended.`);
-          } else if (watchedTask) {
-            watchedTask.ref = task.ref;
+          const pendingWatchKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
+          const currentWatchKey = autoFollowKey(watchedTask);
+          const currentSelection =
+            pending.watchSelectionVersion === watchedTaskSelectionVersion && pendingWatchKey === currentWatchKey;
+          if (currentSelection) {
+            const taskKey = taskPresentationKey(task);
+            const conversationAlreadyPresentedResult = Boolean(task?.terminal && conversationResultsByTask.has(taskKey));
+            if (task && !conversationAlreadyPresentedResult) renderWatchSnapshot(task);
+            else if (task && conversationAlreadyPresentedResult) {
+              rememberTaskRevision(taskKey, taskPresentationRevision(task));
+              conversationResultsByTask.delete(taskKey);
+            }
+            if (!task || task.terminal) {
+              setWatchedTask(null);
+              if (task?.terminal) printNotice(`[watch] ${task.ref} finished; watch ended.`);
+            } else if (watchedTask) {
+              watchedTask.ref = task.ref;
+            }
           }
           if (watchedTaskDirty) {
             watchedTaskDirty = false;
@@ -1281,33 +1412,33 @@ function handleEvent(event) {
       // answer is the human-visible response.
       return;
     case "error":
-      if (event.command === "publish" && pendingPublishReceipts.shift() === "stop-turn") {
+      if (event.command === "publish" && event.__receiptKind === "stop-turn") {
         printNotice(`[${daemonAgent}] Stop was not confirmed: ${event.message || "unknown error"}`);
         requestConversation("sync");
         return;
       }
       if (event.command === "app.conversation.get") {
-        pendingConversationReads.shift();
+        removePending(pendingConversationReads, event.__pending || pendingConversationReads[0]);
         if (conversationSyncDirty) requestConversation("sync");
       }
       if (event.command === "apps.list") {
-        const pending = pendingAppReads.shift();
+        const pending = event.__pending || pendingAppReads[0];
+        removePending(pendingAppReads, pending);
         if (pending?.select && pending.selectionVersion === appSelectionVersion) {
           selectAppContext(pending.previousAppId);
         }
       }
       if (event.command === "tasks.list") {
-        const pending = pendingTaskListReads.shift();
+        const pending = event.__pending || pendingTaskListReads[0];
+        removePending(pendingTaskListReads, pending);
         if (pending?.kind === "todo-refresh") {
-          todoReadInFlight = false;
-          if (todoReadDirty) {
-            todoReadDirty = false;
-            requestTodoRefresh();
-          }
+          const dirty = todoReadDirtyApps.delete(pending.appId);
+          if (dirty && pending.appId === selectedApp) requestTodoRefresh();
         }
       }
       if (event.command === "task.get") {
-        const pending = pendingTaskReads.shift();
+        const pending = event.__pending || pendingTaskReads[0];
+        removePending(pendingTaskReads, pending);
         if (pending?.kind === "watch-refresh") watchedTaskReadInFlight = false;
         if (pending?.kind === "auto-follow" && desiredAutoFollow) {
           const pendingKey = `${pending.appId || ""}\0${pending.taskId || ""}`;
@@ -1351,86 +1482,37 @@ function handleEvent(event) {
 }
 
 function connectSocket() {
-  if (closing) return;
-  if (socket && !socket.destroyed) return;
-
-  socket = net.createConnection(socketPath);
-  socket.setEncoding("utf8");
-  // Partial frames belong to this connection, never to a later reconnect.
-  let buffer = "";
-
-  socket.on("connect", () => {
+  if (closing || (socket && socket.readyState < WebSocket.CLOSING)) return;
+  socket = new WebSocket(wakeEndpoint);
+  socket.onopen = () => {
     connected = true;
+    subscriptionReady = false;
     reconnectDelayMs = 250;
     lastDisconnectedMessage = "";
-    sendFrame(
-      {
-        type: "subscribe",
-        sessions: subscribedSessions(),
-        conversations: [conversationId],
-        taskApps: [selectedApp],
-        task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
-      },
-      { silent: true },
-    );
-    if (pendingConversationReads.length > 0) {
-      for (const pending of pendingConversationReads) sendConversationRead(pending);
-    } else {
-      requestConversation();
-    }
-    for (const pending of pendingAppReads) sendAppRead(pending);
-    for (const pending of pendingTaskListReads) sendTaskListRead(pending);
-    for (const pending of pendingTaskReads) sendTaskRead(pending);
-    if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh")) requestTodoRefresh();
-    if (!pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) {
-      watchedTaskReadInFlight = false;
-      refreshWatchedTask();
-    }
-    if (!pendingTaskReads.some((pending) => pending.kind === "auto-follow")) requestDesiredAutoFollow();
-    flushPendingCommands();
-    flushPendingInput();
+    // The server installs filters before acknowledging this frame. Canonical
+    // rereads happen only after that acknowledgement, closing the subscribe/read gap.
+    subscribe();
     refreshPrompt();
-  });
-
-  socket.on("data", (chunk) => {
-    buffer += chunk;
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        handleEvent(JSON.parse(line));
-      } catch {
-        printLine(line);
-      }
-    }
-  });
-
-  socket.on("error", (err) => {
+  };
+  socket.onmessage = (message) => {
+    try { handleEvent(JSON.parse(String(message.data))); }
+    catch { printLine(String(message.data)); }
+  };
+  socket.onerror = () => {
     connected = false;
-    const message = err && err.message ? err.message : String(err);
-    if (message !== lastDisconnectedMessage) {
-      lastDisconnectedMessage = message;
-      printLine(`[socket] waiting for daemon: ${message}`);
+    if (lastDisconnectedMessage !== "daemon unavailable") {
+      lastDisconnectedMessage = "daemon unavailable";
+      printLine(`[websocket] waiting for daemon at ${wakeEndpoint}`);
     }
-  });
-
-  socket.on("close", () => {
+  };
+  socket.onclose = () => {
     connected = false;
     socket = null;
-    pendingPublishReceipts.length = 0;
-    // Reads are idempotent. Preserve and replay them after reconnect so a
-    // daemon restart cannot silently swallow /tasks, /task, /apps, or sync.
-    if (pendingConversationReads.length > 0) {
-      pendingConversationReads.splice(0, pendingConversationReads.length, { kind: "startup" });
-      conversationSyncDirty = false;
-    }
     if (closing) return;
     refreshPrompt();
     scheduleReconnect();
-  });
+  };
 }
-
 function scheduleReconnect() {
   if (closing || reconnectTimer) return;
   const delay = reconnectDelayMs;
@@ -1486,12 +1568,14 @@ function handleCommand(input) {
         let stoppedWatch = null;
         if (rest !== selectedApp) {
           desiredAutoFollow = null;
+          watchedTaskSelectionVersion += 1;
           if (watchedTask) {
             stoppedWatch = watchedTask.ref;
             setWatchedTask(null);
           }
           selectAppContext(rest);
         }
+        nextTaskPage = null;
         const selectionVersion = ++appSelectionVersion;
         printNotice(`[apps] Selecting ${rest}…`);
         requestApps(rest, input, true, { previousAppId, selectionVersion, stoppedWatch });
@@ -1580,7 +1664,13 @@ function handleCommand(input) {
         return;
       }
       desiredAutoFollow = null;
-      requestTask({ kind: "watch-start", ref: rest, command: input });
+      watchedTaskSelectionVersion += 1;
+      requestTask({
+        kind: "watch-start",
+        watchSelectionVersion: watchedTaskSelectionVersion,
+        ref: rest,
+        command: input,
+      });
       return;
     }
     case "unwatch":
@@ -1588,11 +1678,13 @@ function handleCommand(input) {
         printLine("Usage: /unwatch");
         return;
       }
-      if (!watchedTask && !desiredAutoFollow) {
+      const pendingWatchStart = pendingTaskReads.some((pending) => pending.kind === "watch-start");
+      if (!watchedTask && !desiredAutoFollow && !pendingWatchStart) {
         printNotice("[watch] No Task is watched.");
         return;
       }
       desiredAutoFollow = null;
+      watchedTaskSelectionVersion += 1;
       if (watchedTask) setWatchedTask(null);
       printNotice("[watch] Watch ended. The Task continues.");
       return;
@@ -1639,7 +1731,7 @@ function handleCommand(input) {
       return;
     case "shell":
       closing = true;
-      if (socket) socket.end();
+      if (socket) socket.close();
       rl.close();
       spawn("bash", ["-i"], { stdio: "inherit" }).on("exit", (code) => process.exit(code || 0));
       return;
@@ -1724,7 +1816,7 @@ function flushPendingInput() {
 function closeAndExit(code) {
   closing = true;
   if (reconnectTimer) clearTimeout(reconnectTimer);
-  if (socket) socket.end();
+  if (socket) socket.close();
   rl.close();
   process.exit(code);
 }
@@ -1765,11 +1857,11 @@ rl.on("close", () => {
   if (closing) return;
   closing = true;
   if (reconnectTimer) clearTimeout(reconnectTimer);
-  if (socket) socket.end();
+  if (socket) socket.close();
 });
 
 console.log("May daemon terminal");
-console.log(`Socket: ${socketPath}`);
+console.log(`Endpoint: ${daemonEndpoint}`);
 console.log(`Type a message for ${daemonAgent}. Try /help for console commands.`);
 refreshPrompt();
 connectSocket();

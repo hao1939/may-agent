@@ -38,7 +38,8 @@ const root = mkdtempSync(join(tmpdir(), "may-startup-"));
 const mode = process.argv[2];
 const tty = mode === "tty";
 const nonTtyConsoleOnly = mode === "non-tty-console-only";
-const noInterfaces = mode === "no-interfaces";
+const headlessHttp = mode === "headless-http";
+const noInterfaces = mode === "no-interfaces" || headlessHttp;
 const schedulesEnabled = mode === "headless" || noInterfaces;
 const activationFailure = mode === "activation-failure";
 const reportingFailure = mode === "reporting-failure";
@@ -49,7 +50,7 @@ let publicationPause: {
   reject: boolean;
 } | undefined;
 let dispatchedSource: taskWorkers.TaskWorkerDefinitionSource | undefined;
-const taskExecution = activationFailure || reportingFailure || noInterfaces;
+const taskExecution = activationFailure || reportingFailure || (noInterfaces && !headlessHttp);
 let reportingCalls = 0;
 const agentNames = activationFailure ? ["may", "aux"] : ["may"];
 const order: string[] = [];
@@ -66,6 +67,8 @@ let attemptFinished = Promise.withResolvers<void>();
 Object.defineProperty(process.stdin, "isTTY", { value: tty });
 process.env.MAY_HOST_MAX_CONCURRENT = "2";
 process.env.MAY_DAEMON_QUIET = "1";
+const headlessHttpPort = 30_000 + (process.pid % 20_000);
+if (headlessHttp) process.env.DAEMON_HTTP_PORT = String(headlessHttpPort);
 
 if (workerPublication) {
   mock.module("../../src/app/core/tasks/app-task-capability.js", () => ({
@@ -331,6 +334,12 @@ export async function execute(ctx) {
     processStartTime: Date.now(),
     writeIdentity() {},
   });
+  if (headlessHttp) {
+    const readiness = await fetch(`http://127.0.0.1:${headlessHttpPort}/api/readiness`).then((response) => response.json());
+    assert.equal(readiness.ready, true);
+    assert.equal(readiness.transport, "in-process");
+    assert.equal(existsSync(socket!.socketPath), false);
+  }
   assert.deepEqual(
     order,
     tty

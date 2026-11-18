@@ -18,13 +18,17 @@ declare const Bun: {
     hostname?: string;
     fetch(req: Request, server: any): Response | Promise<Response> | undefined;
     websocket: { open(ws: any): void; message(ws: any, msg: any): void; close(ws: any): void };
-  }): { port: number };
+  }): { port: number; stop(closeActiveConnections?: boolean): void };
 };
 import { randomUUID } from "node:crypto";
 import { createAgentRouteHandlers } from "./agent-routes.js";
 import { createEventRouteHandlers } from "./event-routes.js";
 import { createMetricAndKnowledgeRouteHandlers } from "./metric-knowledge-routes.js";
-import { createProjectRouteHandlers, type ConfirmDurableControl } from "./project-routes.js";
+import {
+  createProjectRouteHandlers,
+  type AppAdmissionPublishCommand,
+  type ConfirmDurableControl,
+} from "./project-routes.js";
 import { createSessionRouteHandlers } from "./session-routes.js";
 import { createTaskReadHandlers } from "./task-read-routes.js";
 import { createTaskInputHandler, type TaskInputCommand } from "./task-input.js";
@@ -48,16 +52,31 @@ import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
 import { readMetricHistory } from "../adapters/reporting/metric-observations.js";
-import type { EventInput } from "@may-agent/control/events";
-import { findEventPublication, getEventView } from "../core/events/interface.js";
+import type { EventInput, EventReceipt } from "@may-agent/control/events";
+import { findEventPublication, getEventView, type EventInterface } from "../core/events/interface.js";
+import type { HumanTaskPage, HumanTaskView } from "../human-task-service.js";
+import type { AppConversationResource } from "@may-agent/sdk/app";
+import { createDaemonWebSocketTransport } from "../transport/websocket.js";
+import type { ExecutionStatus } from "../core/reads/execution-status.js";
 
 // ── Public API ───────────────────────────────────────────────────────────
+
+export type DaemonHttpServices = {
+  events: EventInterface;
+  getStatus(): ExecutionStatus;
+  getAppConversation(appId: string, conversationId: string, options?: { limit?: number }): AppConversationResource;
+  listApps(appId?: string): unknown[];
+  listTasks(options?: Record<string, unknown>): HumanTaskPage;
+  getTask(input: Record<string, unknown>): HumanTaskView | null;
+};
 
 export interface WebUIOptions {
   interface?: InterfaceBinding;
   stateDir: string;
   port: number;
   hostname?: string;
+  /** Present in the daemon. Omitted only by the bounded standalone compatibility server. */
+  services?: DaemonHttpServices;
 }
 
 type DaemonFrameResult = {
@@ -67,6 +86,7 @@ type DaemonFrameResult = {
   eventType?: string;
   delivery?: "recorded" | "accepted";
   links?: unknown[];
+  approval?: EventReceipt["approval"];
 };
 
 export function buildPublishFrame(
@@ -120,18 +140,48 @@ export function buildEventIngressFrame(body: Record<string, unknown>): Record<st
     (typeof body.idempotencyKey === "string" && body.idempotencyKey.trim()) ||
     (typeof data.idempotencyKey === "string" && data.idempotencyKey.trim()) ||
     undefined;
+  const operatorId =
+    typeof body.operatorId === "string"
+      ? body.operatorId
+      : typeof data.operatorId === "string"
+        ? data.operatorId
+        : undefined;
+  const authorizationReference =
+    typeof body.authorizationReference === "string"
+      ? body.authorizationReference
+      : typeof data.authorizationReference === "string"
+        ? data.authorizationReference
+        : undefined;
+  const authorizationEvidenceValue = body.authorizationEvidence ?? data.authorizationEvidence;
+  const authorizationEvidence =
+    authorizationEvidenceValue &&
+    typeof authorizationEvidenceValue === "object" &&
+    !Array.isArray(authorizationEvidenceValue)
+      ? authorizationEvidenceValue
+      : undefined;
   delete data.idempotencyKey;
-  return buildPublishFrame(String(envelope.type), data, {
-    ...(Object.values(target).some(Boolean) ? { target } : {}),
-    ...(idempotencyKey ? { idempotencyKey } : {}),
-  });
+  delete data.operatorId;
+  delete data.authorizationReference;
+  delete data.authorizationEvidence;
+  return {
+    ...buildPublishFrame(String(envelope.type), data, {
+      ...(Object.values(target).some(Boolean) ? { target } : {}),
+      ...(idempotencyKey ? { idempotencyKey } : {}),
+    }),
+    ...(operatorId ? { operatorId } : {}),
+    ...(authorizationReference ? { authorizationReference } : {}),
+    ...(authorizationEvidence ? { authorizationEvidence } : {}),
+  };
 }
 
 export async function sendDaemonFrameWithRetry(
   socketPath: string,
   frame: Record<string, unknown>,
   send: typeof sendDaemonEvent = sendDaemonEvent,
-  confirm?: (idempotencyKey: string, frame: Record<string, unknown>) => number | undefined | Promise<number | undefined>,
+  confirm?: (
+    idempotencyKey: string,
+    frame: Record<string, unknown>,
+  ) => number | undefined | Promise<number | undefined>,
 ): Promise<DaemonFrameResult> {
   const publishEvent =
     frame.type === "publish" && frame.event && typeof frame.event === "object" && !Array.isArray(frame.event)
@@ -166,6 +216,7 @@ export async function sendDaemonFrameWithRetry(
           ? { delivery: response.delivery }
           : {}),
         ...(Array.isArray(response.links) ? { links: response.links } : {}),
+        ...(response.approval ? { approval: response.approval as EventReceipt["approval"] } : {}),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -365,7 +416,7 @@ export function servePlatformUiRequest(req: Request, platformUiDir: string): Res
   return null;
 }
 
-export function startWebUI(opts: WebUIOptions): { port: number } {
+export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActiveConnections?: boolean): void } {
   const STATE_DIR = opts.stateDir;
   const PORT = opts.port;
   const PROJECT_ROOT = process.env.PROJECT_ROOT || resolve(STATE_DIR, "..");
@@ -377,6 +428,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   const DAEMON_INSTANCE = process.env.DAEMON_INSTANCE || process.env.INSTANCE || "default";
   const humanInterface = opts.interface ?? interfaceBinding();
   const DAEMON_AGENT = humanInterface.agent;
+  const services = opts.services;
 
   function _db(): SqliteDb {
     return openStateDb(join(STATE_DIR, "may.db"));
@@ -390,6 +442,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   async function handleReadiness(): Promise<Response> {
+    if (services) return json({ ready: true, checkedAt: Date.now(), transport: "in-process" });
     const readiness = await probeDaemonReadiness(conventionSocketPath());
     return json(readiness, readiness.ready ? 200 : 503);
   }
@@ -409,6 +462,37 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   // Per webui.md "Plane C — Steering verbs": one event per verb, async.
 
   async function sendDaemonFrame(frame: Record<string, unknown>): Promise<DaemonFrameResult> {
+    if (services && frame.type === "publish" && frame.event && typeof frame.event === "object") {
+      try {
+        const event = frame.event as EventInput;
+        const operatorId = typeof frame.operatorId === "string" ? frame.operatorId.trim() : "";
+        if (event.type === "project.approval.submitted" && !operatorId) {
+          throw new Error("operatorId must be a non-empty string");
+        }
+        const approvalAuthorization =
+          (event.type === "project.approval.submitted" ||
+            (event.type === "conversation.message.created" && operatorId && event.data.approvalReply))
+            ? {
+                actor: { kind: "operator" as const, id: operatorId },
+                reference: typeof frame.authorizationReference === "string" ? frame.authorizationReference.trim() : "",
+                evidence:
+                  frame.authorizationEvidence &&
+                  typeof frame.authorizationEvidence === "object" &&
+                  !Array.isArray(frame.authorizationEvidence)
+                    ? (frame.authorizationEvidence as Record<string, unknown>)
+                    : {},
+              }
+            : undefined;
+        const receipt = services.events.publish(event, {
+          source: "web-ui",
+          inputSource: { kind: "human", id: "web-ui" },
+          ...(approvalAuthorization ? { approvalAuthorization } : {}),
+        });
+        return { ok: true, ...receipt };
+      } catch (error) {
+        return { ok: false, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
     const socketPath = conventionSocketPath();
     return sendDaemonFrameWithRetry(socketPath, frame, sendDaemonEvent, (_key, durableFrame) => {
       if (durableFrame.type !== "publish") return undefined;
@@ -417,6 +501,54 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
   }
 
   async function daemonRead(frame: Record<string, unknown>): Promise<Record<string, unknown>> {
+    if (services) {
+      try {
+        switch (frame.type) {
+          case "status":
+            return { type: "status", command: "status", status: services.getStatus() };
+          case "apps.list":
+            return {
+              type: "ok",
+              command: frame.type,
+              apps: services.listApps(typeof frame.appId === "string" ? frame.appId : undefined),
+            };
+          case "app.conversation.get":
+            return {
+              type: "ok",
+              command: frame.type,
+              conversation: services.getAppConversation(String(frame.appId), String(frame.conversationId), {
+                limit: typeof frame.limit === "number" ? frame.limit : 30,
+              }),
+            };
+          case "tasks.list":
+            return { type: "ok", command: frame.type, tasks: services.listTasks(frame) };
+          case "task.get": {
+            const acceptedEvidence = frame.acceptedEvidence === true
+              ? {
+                  ...(typeof frame.evidenceLimit === "number" ? { limit: frame.evidenceLimit } : {}),
+                  ...(typeof frame.evidenceCursor === "string" ? { cursor: frame.evidenceCursor } : {}),
+                }
+              : undefined;
+            return {
+              type: "ok",
+              command: frame.type,
+              task: services.getTask({
+                ...frame,
+                ...(acceptedEvidence ? { acceptedEvidence } : {}),
+              }),
+            };
+          }
+          default:
+            return { type: "error", command: String(frame.type ?? "read"), message: "Unsupported direct read" };
+        }
+      } catch (error) {
+        return {
+          type: "error",
+          command: String(frame.type ?? "read"),
+          message: error instanceof Error ? error.message : String(error),
+        };
+      }
+    }
     try {
       return await sendDaemonEvent(conventionSocketPath(), frame, { timeoutMs: 2_000 });
     } catch (error) {
@@ -434,16 +566,20 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     inputSource: { kind: "human"; id: string },
   ): { eventId: number; eventType: "app.input.requested"; delivery: "accepted" } | undefined {
     const db = _db();
-    const eventId = findEventPublication(
-      db,
-      { type: "app.input.requested", target: { appId }, idempotencyKey, data },
-      { source: "control-socket", inputSource },
-    );
-    if (!eventId || getEventView(db, eventId)?.delivery.state !== "accepted") return undefined;
-    return { eventId, eventType: "app.input.requested", delivery: "accepted" };
+    const event = { type: "app.input.requested", target: { appId }, idempotencyKey, data } as const;
+    // Receipt identity includes transport provenance. Direct daemon HTTP writes
+    // use web-ui; the standalone compatibility binding historically used the
+    // control socket. Check only those exact owners so accepted requests from
+    // either path remain replayable after the Task changes or closes.
+    const sources = services ? ["web-ui", "control-socket"] : ["control-socket"];
+    for (const source of sources) {
+      const eventId = findEventPublication(db, event, { source, inputSource });
+      if (eventId && getEventView(db, eventId)?.delivery.state === "accepted")
+        return { eventId, eventType: "app.input.requested", delivery: "accepted" };
+    }
+    return undefined;
   }
-  const { handleApps, handleConversationRead, handleHumanTaskRead } =
-    createTaskReadHandlers({ daemonRead, json });
+  const { handleApps, handleConversationRead, handleHumanTaskRead } = createTaskReadHandlers({ daemonRead, json });
   const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
   const confirmTaskInput = (command: TaskInputCommand) => {
     const data = {
@@ -451,9 +587,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       targetTaskId: command.event.data.targetTaskId,
       channel: command.event.data.channel,
     };
-    const confirm = (data: Record<string, unknown>) => confirmAcceptedAppInput(
-      command.event.target.appId, command.event.idempotencyKey, data, command.event.data.source,
-    );
+    const confirm = (data: Record<string, unknown>) =>
+      confirmAcceptedAppInput(
+        command.event.target.appId,
+        command.event.idempotencyKey,
+        data,
+        command.event.data.source,
+      );
     // The old envelope still includes the exact generation in domain context.
     // Only confirm an accepted receipt; never publish new unfenced input.
     return confirm({ ...data, targetTaskGeneration: command.event.data.targetTaskGeneration }) ?? confirm(data);
@@ -462,24 +602,63 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     daemonRead,
     json,
     confirm: confirmTaskInput,
-    admit: async (command) =>
-      (await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, () =>
+    admit: async (command) => {
+      if (services) {
+        try {
+          const receipt = services.events.publish(command.event, {
+            source: "web-ui",
+            inputSource: command.event.data.source,
+          });
+          return { type: "ok", command: "publish", ...receipt };
+        } catch (error) {
+          // In-process publication has no ambiguous transport state. Validation,
+          // fencing, and idempotency failures are definitive rejections, just as
+          // the compatibility socket reports them to this handler.
+          const rejection = error instanceof Error ? error : new Error(String(error));
+          Object.assign(rejection, { kind: "definitive" });
+          throw rejection;
+        }
+      }
+      return (await sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, () =>
         confirmTaskInput(command),
-      )) as unknown as Record<string, unknown>,
+      )) as unknown as Record<string, unknown>;
+    },
   });
-  const {
-    handleSession,
-    handleTranscript,
-    handleRawLog,
-    handleSessionCancel,
-    handleSessionMessage,
-  } = createSessionRouteHandlers({
-    stateDir: STATE_DIR,
-    getDb: _db,
-    json,
-    sendDaemonFrame,
-    buildPublishFrame,
-  });
+  const { handleSession, handleTranscript, handleRawLog, handleSessionCancel, handleSessionMessage } =
+    createSessionRouteHandlers({
+      stateDir: STATE_DIR,
+      getDb: _db,
+      json,
+      sendDaemonFrame,
+      buildPublishFrame,
+    });
+  const admitProjectInput = async (command: AppAdmissionPublishCommand): Promise<SocketResponse> => {
+    if (services) {
+      try {
+        const receipt = services.events.publish(command.event, {
+          source: "web-ui",
+          inputSource: command.event.data.source,
+        });
+        return { type: "ok", command: "publish", ...receipt };
+      } catch (error) {
+        const rejection = error instanceof Error ? error : new Error(String(error));
+        Object.assign(rejection, { kind: "definitive" });
+        throw rejection;
+      }
+    }
+    return sendAppInputWithRetry(conventionSocketPath(), command, sendSocketCommand, (key) =>
+      confirmAcceptedAppInput(
+        command.event.target.appId,
+        key,
+        {
+          input: command.event.data.input,
+          conversationId: command.event.data.conversationId,
+          channel: command.event.data.channel,
+        },
+        command.event.data.source,
+      ),
+    );
+  };
   const {
     isAllowedProjectPath,
     resolveProjectFile,
@@ -496,17 +675,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     projectsRoot: PROJECTS_ROOT,
     getDb: _db,
     json,
-    conventionSocketPath,
     platformUiContentTypeFor,
-    sendAppInputWithRetry,
-    confirmAcceptedAppInput,
+    admitAppInput: admitProjectInput,
   });
-  const {
-    handleAgents,
-    handleAgentAbout,
-    handleAgentDefaultSession,
-    handleAgentMessage,
-  } = createAgentRouteHandlers({
+  const { handleAgents, handleAgentAbout, handleAgentDefaultSession, handleAgentMessage } = createAgentRouteHandlers({
     stateDir: STATE_DIR,
     agentsRoot: AGENTS_ROOT,
     sharedRoot: SHARED_ROOT,
@@ -518,27 +690,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     sendDaemonFrame,
     buildPublishFrame,
   });
-  const {
-    handleLiveness,
-    handleMetrics,
-    handleBrowse,
-    handleKnowledgeSearch,
-    handleAlertResolve,
-  } = createMetricAndKnowledgeRouteHandlers({
-    agentsRoot: AGENTS_ROOT,
-    sharedRoot: SHARED_ROOT,
-    projectsRoot: PROJECTS_ROOT,
-    getDb: _db,
-    json,
-    sendDaemonFrame,
-    buildPublishFrame,
-  });
-  const {
-    handleEvents,
-    handleEventDeliveryHealth,
-    handleEventIngress,
-    handleEventView,
-  } = createEventRouteHandlers({
+  const { handleLiveness, handleMetrics, handleBrowse, handleKnowledgeSearch, handleAlertResolve } =
+    createMetricAndKnowledgeRouteHandlers({
+      agentsRoot: AGENTS_ROOT,
+      sharedRoot: SHARED_ROOT,
+      projectsRoot: PROJECTS_ROOT,
+      getDb: _db,
+      json,
+      sendDaemonFrame,
+      buildPublishFrame,
+    });
+  const { handleEvents, handleEventDeliveryHealth, handleEventIngress, handleEventView } = createEventRouteHandlers({
     getDb: _db,
     json,
     isAllowedProjectPath,
@@ -547,9 +709,17 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     buildEventIngressFrame,
   });
 
-  // ── WebSocket proxy ──────────────────────────────────────────────────
+  // ── WebSocket wakes ──────────────────────────────────────────────────
 
   const wsToUnix = new Map<any, Duplex>();
+  const directWebSocket = services
+    ? createDaemonWebSocketTransport({
+        events: services.events,
+        getStatus: () => services.getStatus(),
+        agent: DAEMON_AGENT,
+        instance: DAEMON_INSTANCE,
+      })
+    : null;
 
   function proxyWebSocket(ws: any): void {
     const socketPath = conventionSocketPath();
@@ -570,8 +740,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (!line.trim()) continue;
         try {
           const event = JSON.parse(line);
-          // Skip subscribe ack responses
-          if (event.type === "ok" && event.command === "subscribe") continue;
+          if (event.type === "ok" && event.command === "subscribe") {
+            ws.send(JSON.stringify({ type: "subscribed" }));
+            continue;
+          }
           ws.send(line);
         } catch {
           try {
@@ -614,7 +786,8 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/readiness") return handleReadiness();
       if (url.pathname === "/api/agents") return handleAgents();
       const defaultSessionMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/default-session$/);
-      if (defaultSessionMatch) return handleAgentDefaultSession(defaultSessionMatch[1], url.searchParams.get("requestId")?.trim());
+      if (defaultSessionMatch)
+        return handleAgentDefaultSession(defaultSessionMatch[1], url.searchParams.get("requestId")?.trim());
       const aboutMatch = url.pathname.match(/^\/api\/agents\/([^/]+)\/about$/);
       if (aboutMatch) return handleAgentAbout(aboutMatch[1]);
       if (url.pathname === "/api/browse") return handleBrowse(url);
@@ -622,15 +795,21 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/metrics") return handleMetrics(url);
       if (url.pathname === "/api/context-usage") {
         let query: ReturnType<typeof contextUsageQuery>;
-        try { query = contextUsageQuery(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400); }
+        try {
+          query = contextUsageQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400);
+        }
         return json(readContextUsage(_db(), query));
       }
       if (url.pathname === "/api/task-attempts") {
         if (req.method !== "GET") return json({ error: "GET required" }, 405);
         let query: ReturnType<typeof taskAttemptsQuery>;
-        try { query = taskAttemptsQuery(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid attempt filter" }, 400); }
+        try {
+          query = taskAttemptsQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid attempt filter" }, 400);
+        }
         return json(readTaskAttempts(_db(), query));
       }
       const workflowFactsMatch = url.pathname.match(/^\/api\/workflow-runs\/([^/]+)$/);
@@ -645,13 +824,16 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       }
       if (url.pathname === "/api/workflow-health") {
         let query: ReturnType<typeof workflowHealthQuery>;
-        try { query = workflowHealthQuery(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid workflow filter" }, 400); }
+        try {
+          query = workflowHealthQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid workflow filter" }, 400);
+        }
         return json(readWorkflowHealth(_db(), query));
       }
       if (url.pathname === "/api/projects") return handleProjects();
       if (url.pathname === "/api/apps")
-        return req.method === "GET" ? handleApps() : json({ error: "GET required" }, 405);
+        return req.method === "GET" ? handleApps(url) : json({ error: "GET required" }, 405);
       if (url.pathname === "/api/projects/content") return handleProjectContent(url);
       if (url.pathname === "/api/conversation" && req.method === "GET") return handleConversationRead(url);
       if (url.pathname === "/api/task/transcript")
@@ -667,7 +849,13 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (url.pathname === "/api/events/delivery-health") return handleEventDeliveryHealth(url);
       const eventViewMatch = url.pathname.match(/^\/api\/events\/(\d+)$/);
       if (eventViewMatch && req.method === "GET") return handleEventView(eventViewMatch[1]);
-      if (url.pathname === "/api/events" && req.method === "POST") return handleEventIngress(req);
+      if (url.pathname === "/api/events" && req.method === "POST") {
+        const contentType = req.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+        if (contentType !== "application/json") return json({ error: "application/json required" }, 415);
+        const origin = req.headers.get("origin");
+        if (origin && origin !== url.origin) return json({ error: "Same-origin request required" }, 403);
+        return handleEventIngress(req);
+      }
       if (url.pathname === "/api/events") return handleEvents(url);
       const metricEvidenceMatch = url.pathname.match(/^\/api\/metrics\/([^/]+)\/evidence$/);
       if (metricEvidenceMatch) {
@@ -684,8 +872,11 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
       if (metricHistoryMatch) {
         const metricId = decodeURIComponent(metricHistoryMatch[1]);
         let window: ReturnType<typeof healthWindow>;
-        try { window = healthWindow(url.searchParams); }
-        catch (error) { return json({ error: error instanceof Error ? error.message : "Invalid history window" }, 400); }
+        try {
+          window = healthWindow(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid history window" }, 400);
+        }
         return json(readMetricHistory(_db(), metricId, window));
       }
       const sessionMatch = url.pathname.match(/^\/api\/sessions\/([^/]+)$/);
@@ -717,13 +908,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     },
     websocket: {
       open(ws: any) {
-        proxyWebSocket(ws);
+        if (directWebSocket) directWebSocket.open(ws);
+        else proxyWebSocket(ws);
       },
       message(ws: any, msg: any) {
-        const unix = wsToUnix.get(ws);
-        if (unix && typeof msg === "string" && msg.trim()) unix.write(msg.trim() + "\n");
+        if (directWebSocket) directWebSocket.message(ws, msg);
+        else {
+          const unix = wsToUnix.get(ws);
+          if (unix && typeof msg === "string" && msg.trim()) unix.write(msg.trim() + "\n");
+        }
       },
       close(ws: any) {
+        directWebSocket?.close(ws);
         const unix = wsToUnix.get(ws);
         if (unix) {
           unix.destroy();
@@ -733,7 +929,7 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     },
   });
 
-  return { port: server.port };
+  return { port: server.port, stop: (closeActiveConnections = false) => server.stop(closeActiveConnections) };
 }
 
 // ── Standalone mode ──────────────────────────────────────────────────────

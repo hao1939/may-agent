@@ -5,9 +5,9 @@ export function createTaskReadHandlers(options: {
 }) {
   const { daemonRead, json } = options;
 
-  async function handleApps(): Promise<Response> {
+  async function handleApps(url?: URL): Promise<Response> {
     try {
-      const response = await daemonRead({ type: "apps.list" });
+      const response = await daemonRead({ type: "apps.list", ...(url?.searchParams.get("appId")?.trim() ? { appId: url.searchParams.get("appId")!.trim() } : {}) });
       if (response.type === "error") return json({ error: response.message ?? "App read failed" }, 503);
       if (response.type !== "ok" || !Array.isArray(response.apps)) throw new Error("Invalid App response");
       return json(response.apps);
@@ -105,6 +105,7 @@ export function createTaskReadHandlers(options: {
         type: "tasks.list",
         ...(appId ? { appId } : {}),
         includeDone: includeDone === "true",
+        ...(url.searchParams.get("humanActionOnly") === "true" ? { humanActionOnly: true } : {}),
         ...(url.searchParams.has("status") ? { status: url.searchParams.getAll("status") } : {}),
         ...(url.searchParams.has("q") ? { q: url.searchParams.get("q") } : {}),
         ...(url.searchParams.has("limit") ? { limit: Number(url.searchParams.get("limit")) } : {}),

@@ -103,9 +103,9 @@ test.each([
           expect(response.status).toBe(status);
           const responseBody = await response.json();
           expect(responseBody).toMatchObject({ ok: status === 202, triggered: status === 202 });
-          expect(frames).toEqual(
-            status === 202 || scenario === "collision" ? ["publish", "publish"] : ["publish"],
-          );
+          // Daemon-served HTTP binds to the in-process admission owner and must
+          // not depend on the compatibility socket, even when that socket drops replies.
+          expect(frames).toEqual([]);
           return responseBody;
         } catch (error) {
           const cause = error instanceof Error ? error.cause : undefined;
@@ -154,12 +154,9 @@ test.each([
           return;
         }
         expect(Number.isSafeInteger(body.eventId)).toBe(true);
-        expect(dropped).toEqual([
-          { key, eventId: body.eventId },
-          { key, eventId: body.eventId },
-        ]);
-        // The HTTP response recovered this exact event by idempotency key after
-        // both replies were dropped; a transport receipt alone cannot pass.
+        expect(dropped).toEqual([]);
+        // The direct HTTP owner returned the exact durable event without using
+        // the deliberately broken compatibility socket.
         const events = queryEvents(db, {
           types: ["app.input.requested"],
         });
