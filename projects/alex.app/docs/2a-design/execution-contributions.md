@@ -692,10 +692,10 @@ Backend kind, `sessionId`, `workflowRunId`, output directories, workflow steps,
 raw `lastAssistantText`, `structuredResult` and `finishResult` belong in execution
 diagnostics rather than alternative public result shapes or payload aliases.
 Useful output and facts must remain JSON-compatible and available through the
-same envelope for either implementation. Draft Host #589 passes its source/CI
+same envelope for either implementation. Host #589 passes its source/CI
 checks, and the compatible local candidate uses this interface. The
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
-tracks the remaining full-suite, compatible activation and connected trial work.
+records exact source/local-trial proof and the separate integration/periodic-work handoff.
 An explicit partial agent result is `blocked` with its partial output retained,
 not `done`. Both optional `output` and `facts` survive every authored terminal
 status and nested workflow boundary. A workflow may return an error or
