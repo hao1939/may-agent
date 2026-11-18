@@ -22,7 +22,7 @@ export async function execute(ctx: AppWorkflowContext<Static<typeof inputSchema>
   const {id, repository, number, fingerprint} = ctx.input.data;
   const condition = observationCondition(capability, {
     id, observerId: capability.id, resource: `github:${repository}#${number}`,
-    expected: {field: "fingerprint", notEquals: fingerprint},
+    expected: {field: "fingerprint", notEquals: fingerprint}, mode: "continuous",
   });
   return ctx.done("Return this Condition with the owning Task's external wait", {condition});
 }

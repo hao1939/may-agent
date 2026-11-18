@@ -51,7 +51,6 @@ describe("canonical May conversation App", () => {
     expect(app.tasks).toMatchObject({ maxConcurrent: 4 });
     expect(app.tasks?.validateCondition).toBeFunction();
     expect(app.observers?.map(({ id }) => id)).toEqual([
-      "github-pull-request-live",
       "github-pull-request",
       "metric-evidence",
     ]);

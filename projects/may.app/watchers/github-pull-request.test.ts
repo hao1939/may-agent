@@ -851,6 +851,7 @@ describe("GitHub live observation and saved Condition recovery", () => {
         timestamp: { gte: expect.any(Number) },
         source: "app:may:observer:github-pull-request",
       },
+      mode: "continuous",
     });
     expect(original.subject).toBe("pull-request:github:hao1939/may-agent#215");
     expect(upgradeGitHubPullRequestCondition(upgraded)).toBe(upgraded);

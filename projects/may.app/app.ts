@@ -21,7 +21,7 @@ import {
   readMetricReview,
 } from "./metric-follow-through.js";
 
-const githubPullRequestObservers = createGitHubPullRequestObservers({
+const [, githubPullRequestObserver] = createGitHubPullRequestObservers({
   repository: "hao1939/may-agent",
   author: "hao1939",
   appId: "may",
@@ -405,7 +405,7 @@ export default defineApp({
     maxConcurrent: 4,
     validateCondition: validateGitHubPullRequestCondition,
   },
-  observers: [...githubPullRequestObservers, createMetricEvidenceObserver()],
+  observers: [githubPullRequestObserver, createMetricEvidenceObserver()],
   subscriptions: [
     {
       id: "evaluation-review-lag",

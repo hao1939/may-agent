@@ -18,6 +18,7 @@ for (const fingerprint of [null, "a".repeat(64)]) test(`builds a source-bound in
   expect(condition).toMatchObject({
     id: "feedback", type: "alex.github.pull-request.state", subject: "resource:github:example/project#42",
     expected: {field: "fingerprint", notEquals: fingerprint, source: "app:alex:observer:github-pull-request"},
+    mode: "continuous",
   });
   expect(validateGitHubPullRequestCondition(condition, "alex")).toBeNull();
 });
