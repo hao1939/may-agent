@@ -105,11 +105,11 @@ describe("EventBus subscriber priority", () => {
     });
 
     bus.emit({ type: "info", message: "one" });
-    bus.emit({ type: "heartbeat", agent: "may" });
+    bus.emit({ type: "prompt", message: "two" });
 
-    expect(calls).toEqual(["route:info", "route:heartbeat"]);
+    expect(calls).toEqual(["route:info", "route:prompt"]);
     for (let turn = 0; turn < 2; turn++) await Bun.sleep(1);
-    expect(calls).toEqual(["route:info", "route:heartbeat", "observe:info", "observe:heartbeat"]);
+    expect(calls).toEqual(["route:info", "route:prompt", "observe:info", "observe:prompt"]);
   });
 
   it("yields to timers between listener notifications", async () => {
@@ -149,7 +149,7 @@ describe("EventBus subscriber priority", () => {
     bus.listen((event) => calls.push(`fast:${event.type}`), { types: ["info"] });
 
     bus.emit({ type: "info", message: "one" });
-    bus.emit({ type: "heartbeat", agent: "may" });
+    bus.emit({ type: "prompt", message: "two" });
     await Bun.sleep(1);
 
     expect(calls).toEqual(["slow:start", "fast:info"]);

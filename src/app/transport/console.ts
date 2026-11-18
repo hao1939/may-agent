@@ -63,17 +63,6 @@ export function attachConsoleUI(
             if (session.error) {
               console.log(`\n⚠️ ${session.error}`);
             }
-            bus.emit({
-              type: "channel.delivery.completed",
-              source: "console",
-              owner: "system:host",
-              target: { human: true },
-              data: {
-                channel: "console",
-                sessionId: String(session.sessionId),
-                resultEventType: event.type,
-              },
-            } as any);
             onResponseDelivered?.();
             break;
         }

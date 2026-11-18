@@ -236,15 +236,22 @@ function acceptedAttempt(f: ReturnType<typeof fixture>) {
 
 async function observationDelivery(consumer: "none" | "accept" | "fail") {
   const f = fixture("owner");
+  const workflowPath = join(f.appDir, "agents", "owner", "workflows", "probe.ts");
+  writeFileSync(workflowPath, readFileSync(workflowPath, "utf8").replace(
+    "if (!ctx.input.data.wait)",
+    `await ctx.events.emit({ localKey: "progress", type: "project.task.executor.progress",
+      data: { executor: "fixture", stage: "intermediate", message: "Inspecting fixture facts" } });
+    if (!ctx.input.data.wait)`,
+  ));
   const writer = new DbWriter(f.persistDir, { housekeepingIntervalMs: 0 });
-  const types = ["project.task.reconcile.started", "project.task.reconciled"];
-  const observed: Array<{ event: AgentEvent; id: number; status: unknown }> = [];
+  const types = ["project.task.reconcile.started", "project.task.executor.progress", "project.task.reconciled"];
+  const observed: Array<{ event: AgentEvent; id: number | undefined; status: unknown }> = [];
   const stop = f.bus.subscribeDurableRoute((event) => {
     if (!types.includes(event.type)) return;
-    const id = (event as AgentEvent & { [EVENT_ROW_ID]: number })[EVENT_ROW_ID];
+    const id = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
     observed.push({
       event, id,
-      status: f.db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(id)?.delivery_status,
+      status: id === undefined ? undefined : f.db.prepare("SELECT delivery_status FROM events WHERE id = ?").get(id)?.delivery_status,
     });
     if (consumer === "fail") throw new Error("Parent consumer admission unavailable");
     if (consumer === "accept") return { accepted: true, by: "fixture:parent-consumer", route: "direct" };
@@ -252,13 +259,18 @@ async function observationDelivery(consumer: "none" | "accept" | "fail") {
   await run(f);
   const accepted = acceptedAttempt(f);
   assert.deepEqual(observed.map(({ event }) => event.type), types);
+  assert.equal(observed[1]!.id, undefined);
+  assert.deepEqual(observed[1]!.event.data?.emission, {
+    appId: "sample", taskId: "work/one", generation: 1, localKey: "progress", attemptId: accepted.metadata.id,
+  });
+  assert.equal(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'project.task.executor.progress'").get()?.n, 0);
   assert.deepEqual(
-    observed.map(({ status }) => status), ["pending", "pending"],
+    observed.map(({ status }) => status), [undefined, undefined, "pending"],
     "The worker must leave delivery to the parent",
   );
   const receipts = () => f.db.prepare(`SELECT id, delivery_status, accepted_by FROM events
     WHERE event_type IN ('project.task.reconcile.started', 'project.task.reconciled') ORDER BY id`).all();
-  assert.deepEqual(receipts(), observed.map(({ id }) => ({
+  assert.deepEqual(receipts(), observed.filter(({ id }) => id !== undefined).map(({ id }) => ({
     id,
     delivery_status: consumer === "fail" ? "pending" : "accepted",
     accepted_by: consumer === "fail" ? null : consumer === "accept" ? "fixture:parent-consumer" : "event-interface:record",
@@ -267,7 +279,7 @@ async function observationDelivery(consumer: "none" | "accept" | "fail") {
   const expired = receipts();
   assert.deepEqual(
     expired.map((row) => row.delivery_status),
-    consumer === "fail" ? ["unhandled", "unhandled"] : ["accepted", "accepted"],
+    consumer === "fail" ? ["unhandled"] : ["accepted"],
   );
   // Reopening storage preserves both the delivery result and the accepted work.
   closeDb(f.persistDir);
@@ -275,17 +287,18 @@ async function observationDelivery(consumer: "none" | "accept" | "fail") {
   f.store = AppTaskResourceStore.fromDb(f.db, "sample");
   assert.deepEqual(receipts(), expired);
   for (const { id } of observed) {
+    if (id === undefined) continue;
     const restored = loadPersistedEvent(f.db, id, f.persistDir) as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean };
     assert.equal(restored[EVENT_RECORD_ONLY], true, "Worker publication intent must survive journal recovery");
   }
-  // This worker/parent boundary owns these two receipts. A concurrent receipt
+  // This worker/parent boundary owns this durable receipt. A concurrent receipt
   // write for the subscriber-failure diagnostic can also fail under contention;
   // the global metric must retain that additional failure, not hide it to make
-  // this assertion exact. Check these observations' contribution to the metric.
+  // this assertion exact. Check the durable observation's contribution to the metric.
   assert.deepEqual(
     f.db.prepare(`${UNEXPECTED_UNHANDLED_SIGNAL_SOURCE_QUERY}
       AND event_type IN ('project.task.reconcile.started', 'project.task.reconciled')`).get(),
-    { value: consumer === "fail" ? 2 : 0 },
+    { value: consumer === "fail" ? 1 : 0 },
   );
   assert.deepEqual(acceptedAttempt(f), accepted);
   stop();

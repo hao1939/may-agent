@@ -11,7 +11,11 @@ describe("console transport", () => {
 
   it("restores the prompt when the primary session reaches a stable boundary", async () => {
     const bus = new EventBus();
-    const onResponseDelivered = mock(() => {});
+    let responseDelivered!: () => void;
+    const delivered = new Promise<void>((resolve) => { responseDelivered = resolve; });
+    const onResponseDelivered = mock(responseDelivered);
+    const observed: string[] = [];
+    const stop = bus.subscribe((event) => { observed.push(event.type); });
     console.log = mock(() => {});
     attachConsoleUI(bus, () => "session-1", true, onResponseDelivered);
 
@@ -25,8 +29,10 @@ describe("console transport", () => {
         status: "done",
       },
     } as any);
-    await new Promise<void>((resolve) => setTimeout(resolve, 5));
+    await delivered;
+    stop();
 
     expect(onResponseDelivered).toHaveBeenCalledTimes(1);
+    expect(observed).toEqual(["session.end"]);
   });
 });

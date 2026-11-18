@@ -473,7 +473,7 @@ describe("event delivery metadata", () => {
     }
   });
 
-  it("keeps skill and guard facts unclassified until the App registry reviews them", () => {
+  it("keeps skills live while guard facts remain durable for App review", () => {
     const root = tempRoot();
     try {
       const bus = new EventBus();
@@ -518,12 +518,6 @@ describe("event delivery metadata", () => {
         .all() as Array<Record<string, unknown>>;
       expect(rows).toEqual([
         expect.objectContaining({
-          event_type: "skill.loaded",
-          delivery_status: "pending",
-          accepted_by: null,
-          delivery_route: null,
-        }),
-        expect.objectContaining({
           event_type: "guard.triggered",
           delivery_status: "pending",
           accepted_by: null,
@@ -549,16 +543,6 @@ describe("event delivery metadata", () => {
         data: { pid: 123, interfaceAgent: "may", socketEnabled: true },
       } as any);
       bus.emit({
-        type: "metric.feedback.routed",
-        source: "app-task-runtime",
-        owner: "agent:may",
-        data: {
-          metricId: "runtime.example",
-          appId: "may-agent",
-          route: "owner-app",
-        },
-      } as any);
-      bus.emit({
         type: "handler.workflow_dispatched",
         source: "workflow-runner",
         owner: "agent:evaluator",
@@ -574,8 +558,6 @@ describe("event delivery metadata", () => {
       const db = getDb(root);
       for (const eventType of [
         "runtime.daemon.heartbeat",
-        "metric.feedback.routed",
-        "handler.workflow_dispatched",
         "evaluation.owner_reviewed",
       ]) {
         const event = db
