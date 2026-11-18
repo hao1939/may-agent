@@ -8,13 +8,17 @@ import { join } from "node:path";
 import { taskAgentResultSchema } from "@may-agent/sdk/app";
 import { createAgentRun, createFinishTool, currentAgentSessionId } from "@may-agent/sdk/runtime";
 import { prepareAgentExecution, executePreparedAgent } from "./agent-execution.js";
+import { closeDb } from "./db/connection.js";
 import { SubagentManager } from "./manager.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { usageReply } from "../../test/fixtures/execution-usage.js";
 
 const roots: string[] = [];
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    closeDb(join(root, "state"));
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 function root() {
   const dir = mkdtempSync(join(tmpdir(), "may-finish-or-cancel-"));
