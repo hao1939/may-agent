@@ -21,6 +21,7 @@ const adapterInstanceId = randomUUID();
 
 let socket = null;
 let connected = false;
+let subscriptionReady = false;
 let closing = false;
 let reconnectTimer = null;
 let reconnectDelayMs = 250;
@@ -161,10 +162,7 @@ function selectAppContext(appId) {
   todoCount = 0;
   shownTodoActions = new Map();
   nextTodoPage = null;
-  if (connected) {
-    subscribe();
-    requestTodoRefresh();
-  }
+  if (connected) subscribe();
   refreshPrompt();
   return true;
 }
@@ -1086,6 +1084,7 @@ function runtimeFrame(type) {
 }
 
 function subscribe() {
+  subscriptionReady = false;
   return sendFrame({
     type: "subscribe",
     sessions: subscribedSessions(),
@@ -1093,6 +1092,17 @@ function subscribe() {
     taskApps: [selectedApp],
     task: watchedTask ? { appId: watchedTask.appId, taskId: watchedTask.taskId } : null,
   });
+}
+
+function rereadCanonicalState() {
+  conversationSyncDirty = true;
+  requestConversation("sync");
+  requestTodoRefresh();
+  if (watchedTask) {
+    watchedTaskDirty = true;
+    refreshWatchedTask();
+  }
+  requestDesiredAutoFollow();
 }
 
 function formatToolArgs(tool, args) {
@@ -1154,6 +1164,20 @@ function handleEvent(event) {
       conversationSyncDirty = true;
       requestConversation("sync");
     }
+    return;
+  }
+  if (event.type === "subscribed") {
+    subscriptionReady = true;
+    rereadCanonicalState();
+    flushPendingCommands();
+    flushPendingInput();
+    refreshPrompt();
+    return;
+  }
+  if (event.type === "overflow") {
+    // WebSocket events are only lossy wake hints. Recover from the owning HTTP
+    // projections; never replay user input or control work because a stream fell behind.
+    if (subscriptionReady) rereadCanonicalState();
     return;
   }
   if (raw) {
@@ -1389,15 +1413,12 @@ function connectSocket() {
   socket = new WebSocket(wakeEndpoint);
   socket.onopen = () => {
     connected = true;
+    subscriptionReady = false;
     reconnectDelayMs = 250;
     lastDisconnectedMessage = "";
+    // The server installs filters before acknowledging this frame. Canonical
+    // rereads happen only after that acknowledgement, closing the subscribe/read gap.
     subscribe();
-    if (pendingConversationReads.length === 0) requestConversation();
-    if (!pendingTaskListReads.some((pending) => pending.kind === "todo-refresh")) requestTodoRefresh();
-    if (!pendingTaskReads.some((pending) => pending.kind === "watch-refresh")) { watchedTaskReadInFlight = false; refreshWatchedTask(); }
-    if (!pendingTaskReads.some((pending) => pending.kind === "auto-follow")) requestDesiredAutoFollow();
-    flushPendingCommands();
-    flushPendingInput();
     refreshPrompt();
   };
   socket.onmessage = (message) => {

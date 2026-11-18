@@ -497,13 +497,18 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
     inputSource: { kind: "human"; id: string },
   ): { eventId: number; eventType: "app.input.requested"; delivery: "accepted" } | undefined {
     const db = _db();
-    const eventId = findEventPublication(
-      db,
-      { type: "app.input.requested", target: { appId }, idempotencyKey, data },
-      { source: "control-socket", inputSource },
-    );
-    if (!eventId || getEventView(db, eventId)?.delivery.state !== "accepted") return undefined;
-    return { eventId, eventType: "app.input.requested", delivery: "accepted" };
+    const event = { type: "app.input.requested", target: { appId }, idempotencyKey, data } as const;
+    // Receipt identity includes transport provenance. Direct daemon HTTP writes
+    // use web-ui; the standalone compatibility binding historically used the
+    // control socket. Check only those exact owners so accepted requests from
+    // either path remain replayable after the Task changes or closes.
+    const sources = services ? ["web-ui", "control-socket"] : ["control-socket"];
+    for (const source of sources) {
+      const eventId = findEventPublication(db, event, { source, inputSource });
+      if (eventId && getEventView(db, eventId)?.delivery.state === "accepted")
+        return { eventId, eventType: "app.input.requested", delivery: "accepted" };
+    }
+    return undefined;
   }
   const { handleApps, handleConversationRead, handleHumanTaskRead } = createTaskReadHandlers({ daemonRead, json });
   const handleTaskTranscript = createTaskTranscriptHandler({ daemonRead, json, stateDir: STATE_DIR });
@@ -634,7 +639,10 @@ export function startWebUI(opts: WebUIOptions): { port: number } {
         if (!line.trim()) continue;
         try {
           const event = JSON.parse(line);
-          if (event.type === "ok" && event.command === "subscribe") continue;
+          if (event.type === "ok" && event.command === "subscribe") {
+            ws.send(JSON.stringify({ type: "subscribed" }));
+            continue;
+          }
           ws.send(line);
         } catch {
           try {
