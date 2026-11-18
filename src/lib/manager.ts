@@ -43,7 +43,8 @@ import { normalizeEventOwner } from "../../packages/control/src/event-envelope.j
 import { ownsBoundedHelper } from "../app/adapters/executors/session-control.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, type EventBus, type EventTrace } from "../app/core/events/bus.js";
 import { getDb } from "./db/connection.js";
-import { readSessionTaskAttempt, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
+import { readSessionTaskAttempt, upsertSession, updateSessionDb, updateSessionProgress } from "./db/sessions.js";
+import { writeSessionResult } from "./artifacts.js";
 import {
   getWorkflowRun,
   getWorkflowStepSessions,
@@ -573,6 +574,21 @@ export class SubagentManager {
       this.completedResults.delete(sessionId);
       this._sessions.set(sessionId, session);
       try {
+        upsertSession(this._persistDir, {
+          sessionId,
+          agent: session.agentName,
+          task: session.task,
+          status: "running",
+          kind: session.kind,
+          source: session.source ?? "runtime",
+          parentSessionId: session.parentSessionId,
+          workflowRunId: session.workflowRunId,
+          projectId: session.projectId,
+          taskBinding: session.taskBinding,
+          requestId: session.requestId,
+          stepLabel: session.stepLabel,
+          startedAt: session.startedAt,
+        });
         this.bridgeEvents(session);
         if (activation) this.emitSkillLoaded(session, activation, prepared.skillActivation ?? "explicit", opts?.trace);
       } catch (err) {
@@ -1412,7 +1428,9 @@ export class SubagentManager {
       lastActivityAt: Date.now(),
     });
 
-    // Emit session.end
+    this.persistSessionResult(session, { status, summary: lastText, error: errorText, finishParams });
+
+    // Emit session.end after the result and its SQL descriptor are persisted.
     if (this.bus) {
       const trace = this.terminalTrace(session);
       this.bus.emit({
@@ -1627,6 +1645,7 @@ export class SubagentManager {
       this.rememberCompletedResult(result);
 
       const trace = this.terminalTrace(session);
+      this.persistSessionResult(session, { status, summary: lastText, error: errorText, finishParams });
       this.bus?.emit({
         type: "session.end",
         source: session.source ?? "runtime",
@@ -1766,8 +1785,39 @@ export class SubagentManager {
     });
   }
 
+  /** Required evidence precedes publication; failures retain the earlier terminal status. */
+  private persistSessionResult(
+    session: ActiveSession,
+    result: {
+      status: "done" | "error" | "interrupted";
+      summary: string;
+      error?: string;
+      finishParams: ReturnType<typeof extractFinishParams>;
+    },
+  ): void {
+    const endedAt = Date.now();
+    const resultArtifact = writeSessionResult(this._persistDir, session.sessionId, {
+      status: result.status,
+      outcome: result.status,
+      error: result.error,
+      summary: result.summary,
+      opCount: session.toolCalls,
+      turnCount: session.modelStepCount,
+      finishParams: result.finishParams,
+      endedAt,
+    });
+    updateSessionDb(this._persistDir, session.sessionId, {
+      status: result.status,
+      error: result.error,
+      outcome: result.status,
+      opCount: session.toolCalls,
+      lastActivityAt: endedAt,
+      endedAt,
+      resultArtifact,
+    });
+  }
+
   private bridgeEvents(session: ActiveSession): void {
-    if (!this.bus) return;
     const { agent, sessionId, agentName, task } = session;
     const bus = this.bus;
     const pendingSkillReads = new Map<string, MaySkill>();
@@ -1806,15 +1856,16 @@ export class SubagentManager {
       },
       ...(session.trace ? { trace: session.trace } : {}),
     } as any;
-    const persistedStartEvent = bus.emit(startEvent);
-    const startEventId = persistedStartEvent[EVENT_ROW_ID];
-    if (Number.isInteger(startEventId) && Number(startEventId) > 0) {
+    const persistedStartEvent = bus?.emit(startEvent);
+    const startEventId = persistedStartEvent?.[EVENT_ROW_ID];
+    if (persistedStartEvent && Number.isInteger(startEventId) && Number(startEventId) > 0) {
       session.trace = {
         traceId: persistedStartEvent.trace?.traceId ?? `event:${startEventId}`,
         parentEventId: startEventId,
       };
     }
 
+    // Execution bookkeeping also owns result counts when publication is disabled.
     agent.subscribe((event) => {
       switch (event.type) {
         case "tool_execution_update":
@@ -1841,7 +1892,7 @@ export class SubagentManager {
             this.requestBoundedFinish(session);
           }
           persistProgress();
-          bus.emit({
+          bus?.emit({
             type: "tool_call",
             sessionId,
             agent: agentName,
@@ -1871,7 +1922,7 @@ export class SubagentManager {
           persistProgress();
           const blocks = (event as any).result?.content ?? [];
           const text = blocks.find((b: any) => b?.type === "text" && !b.text?.startsWith("<tool_output"))?.text ?? "";
-          bus.emit({
+          bus?.emit({
             type: "tool_result",
             sessionId,
             agent: agentName,
@@ -1896,12 +1947,12 @@ export class SubagentManager {
             .map((block: any) => block.text)
             .join("\n")
             .trim();
-          if (text) bus.emit({ type: "text", sessionId, agent: agentName, text });
+          if (text) bus?.emit({ type: "text", sessionId, agent: agentName, text });
           break;
         }
         case "turn_end":
           persistProgress();
-          bus.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls: session.toolCalls, durationMs: 0 });
+          bus?.emit({ type: "turn_end", sessionId, agent: agentName, toolCalls: session.toolCalls, durationMs: 0 });
           break;
       }
     });

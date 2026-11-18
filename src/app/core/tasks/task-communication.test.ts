@@ -5,6 +5,7 @@ import {
   type AppDefinition,
   type AppTaskPolicy,
   type TaskAttempt,
+  type TaskChangeReceipt,
   type TaskCommunication,
   type TaskExecutor,
 } from "@may-agent/sdk/app";
@@ -197,6 +198,260 @@ const progress: TaskCommunication = {
   inputId: "ask",
   message: "The tests passed; review is still pending.",
 };
+
+test.each(["dedicated", "legacy receipt", "legacy message"] as const)(
+  "%s communication receipts preserve exact operations and reply lookup after restart",
+  async (storage) => {
+    const accept: TaskCommunication = {
+      id: "accept",
+      inputId: "ask",
+      topic: { kind: "new", title: "Accepted work" },
+      requestUpdates: [{ id: "work-request", expectedRevision: 0, disposition: "open", scope: "Original scope" }],
+    };
+    const explain = { ...progress, id: "explain" };
+    let original: TaskChangeReceipt["communication"];
+    let calls = 0;
+    const f = await fixture(async (attempt) => {
+      calls++;
+      if (calls === 1) {
+        original = (await attempt.apply({ communication: [accept, explain] })).communication;
+        await attempt.apply({
+          communication: [
+            {
+              id: "revise",
+              inputId: "ask",
+              requestUpdates: [
+                { id: "work-request", expectedRevision: 1, disposition: "open", scope: "Revised scope" },
+              ],
+            },
+          ],
+        });
+        throw new Error("Interrupted after revising the Request");
+      }
+      // Different batches force per-operation reads, independent of the batch receipt.
+      expect((await attempt.apply({ communication: [explain] })).communication).toEqual([original![1]!]);
+      expect((await attempt.apply({ communication: [accept] })).communication).toEqual([original![0]!]);
+      expect(readConversationRequest(f.db, "sample", "discussion", "work-request")).toMatchObject({
+        revision: 2,
+        scope: "Revised scope",
+      });
+      await expect(attempt.apply({ communication: [{ ...explain, message: "Changed explanation" }] })).rejects.toThrow(
+        "different content",
+      );
+      await expect(attempt.apply({ communication: [{ ...accept, topic: { kind: "none" } }] })).rejects.toThrow(
+        "different content",
+      );
+      await expect(attempt.apply({ communication: [{ ...accept, id: `${accept.id} ` }] })).rejects.toThrow(
+        "different content",
+      );
+      const cited = (
+        await attempt.apply({
+          communication: [
+            {
+              id: "cite",
+              inputId: "ask",
+              replyId: explain.id,
+              requestUpdates: [
+                { id: "work-request", expectedRevision: 2, disposition: "fulfilled", reason: "Work verified" },
+              ],
+            },
+          ],
+        })
+      ).communication![0]!;
+      expect(cited.messageId).toBe(original![1]!.messageId);
+      expect(cited.requests?.[0]).toMatchObject({ revision: 3, closure: { messageId: cited.messageId } });
+      await expect(
+        attempt.apply({
+          communication: [
+            {
+              id: "cite-alias",
+              inputId: "ask",
+              replyId: "cite",
+              topic: { kind: "none" },
+            },
+          ],
+        }),
+      ).rejects.toThrow("replyId must name a published explanation");
+      return {
+        state: "waiting",
+        summary: "Waiting for review",
+        facts: [],
+        conditions: [
+          { id: "review", type: "review.completed", subject: "review:work", expected: true, owner: "app:sample" },
+        ],
+      };
+    });
+    try {
+      const published: string[] = [];
+      f.bus.subscribe((event) => published.push(event.type));
+      f.admit("ask");
+      await f.run();
+      expect(f.store.readTask("work")?.status.summary).toContain("Interrupted after revising");
+      expect(published).not.toContain("app.task.communication.updated");
+      expect(
+        f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'app.task.communication.updated'").get(),
+      ).toEqual({ n: 0 });
+      if (storage !== "dedicated") {
+        // Retained pre-slice formats: a separate receipt fact, or a full message fact.
+        const row = f.db.prepare("SELECT data FROM events WHERE event_type = 'conversation.message.created'").get() as {
+          data: string;
+        };
+        const data = { ...JSON.parse(row.data), communication: explain, receipt: original![1]! };
+        if (storage === "legacy receipt") {
+          f.db.run(
+            `INSERT INTO events
+            (event_type, source, owner, data, project_id, task_id, ingress_source, idempotency_scope, idempotency_key, timestamp)
+            VALUES ('app.task.communication.updated', 'app-task:sample', 'agent:owner', ?, 'sample', 'work',
+              'app-task:sample', 'sample', ?, ?)`,
+            [JSON.stringify(data), data.idempotencyKey, Date.now()],
+          );
+        } else {
+          const legacyKey = `task:sample:work:${data.emission.generation}:emit:communication:explain`;
+          data.idempotencyKey = legacyKey;
+          f.db.run(
+            `UPDATE events SET data = ?, idempotency_key = ?, body_ref = NULL, body_sha256 = NULL, body_bytes = NULL
+            WHERE event_type = 'conversation.message.created'`,
+            [JSON.stringify(data), legacyKey],
+          );
+        }
+        f.db.run("DELETE FROM app_task_communication_receipts WHERE communication_id = 'explain'");
+      }
+      const legacyRows = storage === "legacy receipt" ? 1 : 0;
+      await f.reopen();
+      f.bus.subscribe((event) => published.push(event.type));
+      makeTaskRetryDue(f.store, "work");
+      await f.run();
+      expect(calls).toBe(2);
+      expect(f.store.readTask("work")?.status.phase).toBe("waiting");
+      expect(
+        f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'app.task.communication.updated'").get(),
+      ).toEqual({ n: legacyRows });
+      expect(published).not.toContain("app.task.communication.updated");
+      expect(
+        listAppConversationMessages(f.db, "sample", "discussion").filter(({ author }) => author.kind === "agent"),
+      ).toHaveLength(1);
+    } finally {
+      await f.close();
+    }
+  },
+);
+
+test("communication receipts, Requests, Topics and publications roll back together before a corrected retry", async () => {
+  const change: TaskCommunication = {
+    id: "atomic",
+    inputId: "ask",
+    message: "Accepted scope",
+    topic: { kind: "new", title: "Atomic Topic" },
+    requestUpdates: [{ id: "atomic-request", expectedRevision: 0, disposition: "open", scope: "Atomic scope" }],
+  };
+  const f = await fixture(async (attempt) => {
+    await expect(
+      attempt.apply({
+        communication: [
+          change,
+          {
+            id: "invalid-reply",
+            inputId: "ask",
+            replyId: "missing",
+            topic: { kind: "none" },
+          },
+        ],
+      }),
+    ).rejects.toThrow("replyId must name");
+    expect(f.db.prepare("SELECT count(*) AS n FROM app_task_communication_receipts").get()).toEqual({ n: 0 });
+    expect(readConversationRequest(f.db, "sample", "discussion", "atomic-request")).toBeNull();
+    expect(f.db.prepare("SELECT count(*) AS n FROM conversation_topics WHERE title = 'Atomic Topic'").get()).toEqual({
+      n: 0,
+    });
+    expect(
+      f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'conversation.message.created'").get(),
+    ).toEqual({ n: 0 });
+    const receipt = await attempt.apply({ communication: [change] });
+    expect(receipt.communication?.[0]).toMatchObject({ id: "atomic", requests: [{ revision: 1 }] });
+    return {
+      state: "waiting",
+      summary: "Waiting for review",
+      facts: [],
+      conditions: [
+        { id: "review", type: "review.completed", subject: "review:work", expected: true, owner: "app:sample" },
+      ],
+    };
+  });
+  try {
+    const messages: AgentEvent[] = [];
+    f.bus.subscribe((event) => {
+      if (event.type === "conversation.message.created") messages.push(event);
+    });
+    f.admit("ask");
+    await f.run();
+    expect(f.store.readTask("work")?.status.phase).toBe("waiting");
+    expect(messages).toHaveLength(1);
+    await f.reopen();
+    expect(f.db.prepare("SELECT count(*) AS n FROM app_task_communication_receipts").get()).toEqual({ n: 1 });
+    expect(readConversationRequest(f.db, "sample", "discussion", "atomic-request")?.revision).toBe(1);
+  } finally {
+    await f.close();
+  }
+});
+
+test("communication ids and reply lookup remain scoped to the exact Task generation", async () => {
+  const receipts: string[] = [];
+  const f = await fixture(async (attempt) => {
+    const inputId = attempt.task.id === "reviewer" ? "review-ask" : "ask";
+    if (receipts.length) {
+      await expect(
+        attempt.apply({
+          communication: [
+            {
+              id: "foreign-reply",
+              inputId,
+              replyId: "same-id",
+              topic: { kind: "none" },
+            },
+          ],
+        }),
+      ).rejects.toThrow("replyId must name a published explanation");
+    }
+    const receipt = await attempt.apply({ communication: [{ id: "same-id", inputId, message: "Scoped explanation" }] });
+    receipts.push(receipt.communication![0]!.messageId!);
+    return {
+      state: "waiting",
+      summary: "Waiting for review",
+      facts: [],
+      conditions: [
+        {
+          id: `review-${attempt.task.id}`,
+          type: "review.completed",
+          subject: `review:${attempt.task.id}`,
+          expected: true,
+          owner: "app:sample",
+        },
+      ],
+    };
+  });
+  try {
+    f.admit("ask");
+    await f.run();
+    expect(receipts).toHaveLength(1);
+    f.admit("review-ask", "review", "discussion", 2);
+    await f.run("reviewer");
+    expect(receipts).toHaveLength(2);
+    const task = f.store.readTask("work")!;
+    const { owner, ...spec } = task.spec;
+    observeAppTaskIntent(
+      appTaskContext({ appDir: "fixture", projectDir: "fixture", agent: "owner", resourceStore: f.store }),
+      { appAgent: "owner", intent: { ...spec, agent: owner, id: "work", outcome: "Handle the revised ask" } },
+    );
+    expect(f.store.readTask("work")?.metadata.generation).toBe(task.metadata.generation + 1);
+    await f.reopen();
+    await f.run();
+    expect(receipts).toHaveLength(3);
+    expect(new Set(receipts).size).toBe(3);
+    expect(f.db.prepare("SELECT count(*) AS n FROM app_task_communication_receipts").get()).toEqual({ n: 3 });
+  } finally {
+    await f.close();
+  }
+});
 
 test("App ending policy atomically closes a finite task, returns its caller answer and stays closed across restart", async () => {
   let calls = 0;
@@ -2036,7 +2291,8 @@ test("accepted Topic decisions persist across same-input messages and Request up
       });
       if (selection === "none")
         expect(readConversationRequest(f.db, "sample", "discussion", "scope-0")?.topicId).toBeUndefined();
-      f.db.run("DELETE FROM events WHERE event_type = 'app.task.communication.updated'");
+      expect(f.db.prepare("SELECT count(*) AS n FROM events WHERE event_type = 'app.task.communication.updated'").get())
+        .toEqual({ n: 0 });
       expect(readConversationInputTopicId(f.db, getAppInboxItem(f.db, "followup")!)).toBe(expected);
     } finally {
       await f.close();

@@ -149,8 +149,8 @@ export function createAppTaskEmitter(input: {
         throw new Error("Formal human approval must use a Host-verified human ingress");
       }
       if (
-        (emitted.type === "conversation.message.created" || emitted.type === "app.task.communication.updated") &&
-        !input.communication
+        emitted.type === "app.task.communication.updated" ||
+        (emitted.type === "conversation.message.created" && !input.communication)
       )
         throw new Error("Use Task communication changes to publish through saved reply context");
       if (emitted.type === "app.input.requested") {
