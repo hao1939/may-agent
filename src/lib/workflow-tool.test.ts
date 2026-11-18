@@ -7,7 +7,8 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
-import { workflowExecutionResult } from "@may-agent/sdk/runtime";
+import { prepareAgentExecution } from "./agent-execution.js";
+import { createFinishTool, createReadTool, createWriteTool, workflowExecutionResult } from "@may-agent/sdk/runtime";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
@@ -190,17 +191,28 @@ export const readonly = true;
 export async function execute(ctx) { return ctx.done(ctx.reconciliation.agent); }
 `);
     const reviewer: SubagentDefinition = {
-      name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(), tools: [],
+      name: "reviewer", description: "Reviewer", domain: "test", model: fakeModel(),
+      tools: [createReadTool(root), createWriteTool(root)],
       agentDir: reviewerDir, appLocal: true, projectId: "sample",
     };
     let promptCalls = 0;
     const runner = createWorkflowRunner({
       manager: {
-        callAgentDefinition: async (definition: SubagentDefinition, task: string, options: { toolPolicy?: string; skill?: string }) => {
+        callAgentDefinition: async (definition: SubagentDefinition, task: string, options: { toolPolicy?: "full" | "readonly"; skill?: string }) => {
           expect(definition).toBe(reviewer);
           expect(task).toBe("Review HEAD");
           expect(options.toolPolicy).toBe("readonly");
           expect(options.skill).toBeUndefined();
+          const prepared = prepareAgentExecution({
+            ...options,
+            definition,
+            task,
+            projectRoot: root,
+            sessionId: "s_captured",
+            createFinish: () => createFinishTool({ projectRoot: root }),
+          });
+          expect(prepared.tools.map((tool) => tool.name)).toContain("read");
+          expect(prepared.tools.map((tool) => tool.name)).not.toContain("write");
           promptCalls++;
           return { sessionId: "s_captured", status: "done", messages: [],
             finishResult: { status: "done", summary: "captured prompt" } };

@@ -184,8 +184,9 @@ describe("shared callable input and result contract", () => {
     }
   });
 
-  test("accepts shared acyclic JSON references in input, output, and facts while rejecting cycles", async () => {
+  test("accepts shared acyclic object and array references while rejecting cycles and non-JSON values", async () => {
     const shared = { ref: "HEAD" };
+    const sharedArray = [shared];
     const sharing = new CallableCatalog([
       definition("sharing", "alex", {
         async invoke() {
@@ -194,8 +195,8 @@ describe("shared callable input and result contract", () => {
             report: {
               status: "done",
               summary: "shared references",
-              output: { before: shared, after: shared },
-              facts: { first: shared, second: shared },
+              output: { before: shared, after: shared, arrays: [sharedArray, sharedArray] },
+              facts: { first: shared, second: shared, arrays: [sharedArray, sharedArray] },
             },
           };
         },
@@ -204,7 +205,7 @@ describe("shared callable input and result contract", () => {
     await expect(
       sharing.call(
         "alex/sharing",
-        { prompt: "Compare", data: { before: shared, after: shared } },
+        { prompt: "Compare", data: { before: shared, after: shared, arrays: [sharedArray, sharedArray] } },
         undefined,
         { signal },
       ),
