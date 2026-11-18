@@ -2341,3 +2341,34 @@ The implementation/local interface work is delivered. GitHub source review and
 merge remain human-owned; separate Task/ingress/event and metric cadence work
 remain with their declared owner. The earlier Telegram/provider50734 notice is
 preserved without sending a duplicate.
+
+## Human merge and bounded post-merge fixes — 18 November
+
+The human merges #589 at00:48 UTC as `e489ff32b6de69f8261532f88a0485b74ec47789`
+and explicitly authorizes continued refinement/fixes. Quality, Container and the
+automated review pass; the late review adds five unresolved findings: cross-App
+workflow owner seeding, same-named Task agent resolution, inherited readonly
+helper tools, acyclic shared JSON references and schema-backed output-free blockers
+in managed settlement. They are implementation gaps under the accepted contract.
+Root independently reproduces the shared-reference input/result failures through
+the production validators. Exact review bodies and URLs are retained in
+`postmerge-review-589-findings.json` and the reproduction in
+`postmerge-shared-reference-reproduction.json`.
+
+An attempted App-only revision of the old May coordination Task is correctly
+rejected in event6743056: its creator is Scout/explore-arxiv. Its completed
+publication and historical128/64 source usage stay intact. The ordinary new-goal
+route admits a separate post-merge outcome as
+`may/goal/app_c3b29e84-3807-4fb0-8ce5-7bad04a05c70`. Its App-only creator can revise
+its wording normally; generation2 preserves that identity. May commissions one
+new finite Alex contribution for exactly these five findings, with a12-round
+bound, a new isolated Host checkout and a new follow-up PR. No old allowance is
+reset or renewed, and the historical Host branch remains intact.
+
+The new base is merged Host main e489, which includes the user's #590 revision,
+#591 observation, #588 heartbeat and #593 periodic-source changes. Normal merge
+preparation of installed4a with e489 equals e489's tree, so this base preserves
+the legitimate prior Host changes. The previous missing-metric-producer finding
+describes the older installed4a pair; it is not a claim that current main lacks
+the newly merged producer. Root retains design/review/independent verification
+and publication assistance; May owns source implementation through the workflow.

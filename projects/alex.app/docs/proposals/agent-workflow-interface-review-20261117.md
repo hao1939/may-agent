@@ -2,11 +2,12 @@
 
 **Design status:** Accepted and promoted to the [owning contract](../2a-design/execution-contributions.md).
 **Implementation status:** Implemented and independently verified in source and
-an authorized local trial. Host `d7fe07f80e` is published in
+an authorized local trial. Host `d7fe07f80e` is merged as `e489ff32b6` in
 [#589](https://github.com/hao1939/may-agent/pull/589); Quality and Container pass
 on that exact head (3,494 tests, zero failures, two skips). The paired App review
 branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b65`.
-No GitHub merge or broad release is included.
+The human merged the PR; broader release is separate. Five late review findings
+are assigned to May as the bounded post-merge follow-up below.
 
 The active local pair is Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
 preserves the reviewed unified migration, Scout current-input repair, newer audit
@@ -52,15 +53,18 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Review and integrate Host #589 with the compatible App source/SDK, then decide
-   broader rollout separately. Retain the successful local source/receipt identities.
+1. Complete the five post-merge fixes, verify the compatible local candidate,
+   and publish a new reviewable PR. Retain the successful source/receipt identities.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
    has metric subscribers while canonical ae40 removed May's schedules. The final
    scoped candidate includes f85's fixture migration, which does not prove a
    replacement cadence runs. Its generation13 acceptance explicitly leaves that
-   functionality to the separate owner. A green configured suite is not cadence proof.
+   functionality to the separate owner. Host main now includes the user's #593
+   direct metric producer; installed4a still predates that change. Candidate
+   activation must preserve it and record actual integration evidence. A green
+   configured suite alone is not cadence proof.
 
 Exact revisions, source reviews, failed trials, scoped check totals and provider
 receipts are in the [source review](../archive/reviews/agent-workflow-interface-source-review-20261117.md).
@@ -72,6 +76,38 @@ than an equal number of proved coding executions. The final development workflow
 ended at its execution bound; its partial evidence remains unchanged. Root supplied
 actual independent source review, and the scoped App Task accepted that reviewed
 source contribution without fabricating a native review pass or another round.
+
+## Post-merge follow-up
+
+The human merged #589 and explicitly authorized continued refinements. A late
+automated review identified these remaining implementation defects; the accepted
+interface contract stays the same.
+
+| Finding | Required behavior and regression |
+| --- | --- |
+| Workflow owner confused with caller App | Alpha and Beta may both declare `worker`. A Beta workflow uses Beta's captured owner to prepare definitions while retaining Alpha caller lineage. Exact Alpha addresses execute Alpha code. |
+| Task root resolved by ambiguous bare agent name | Resolve each Task executor in its owning App namespace before availability, instructions and dispatch. Both Apps' `worker` Tasks run; child discovery remains complete. |
+| Readonly helper loses inherited tool policy | Preserve the workflow's internal tool restrictions in hosted prompt helpers, including an unrestricted or absent parent. Inspect actual effective helper tools. No public invocation permission option returns. |
+| Shared JSON references treated as cycles | Reusing an acyclic object in input, output or facts succeeds; actual cycles still fail. Root's production input/result probe reproduces both false rejections. |
+| Managed settlement rejects an output-free blocker | A schema-backed prompt helper can return `blocked` without output. Successful completion still requires schema-valid output; supplied output validates across statuses. |
+
+May owns one new finite post-merge outcome,
+`may/goal/app_c3b29e84-3807-4fb0-8ce5-7bad04a05c70`, with an Alex source
+contribution limited to 12 rounds. The earlier Scout-owned coordination Task
+remains fulfilled; its creator boundary is preserved. Original Host128/128 and
+App64/64 usage remain historical, without reset or replacement. This new work
+has a new source checkout/PR based on merged main `e489ff32b6`, preserving #590
+and the user's merged observation/heartbeat/periodic changes. Root reviews the
+design and source, independently verifies the candidate, and helps publish it.
+The first attempted App-only revision of the Scout-owned Task was correctly
+rejected; the ordinary new-goal route admits this separate outcome.
+
+Exact findings and reproduction are retained as
+`postmerge-review-589-findings.json` and
+`postmerge-shared-reference-reproduction.json` in the trial directory. Fix the
+two namespace defects first, then inherited tools and report/JSON admission.
+Local verification before merge remains authorized; broad release and GitHub
+merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,

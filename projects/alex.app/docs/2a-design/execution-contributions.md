@@ -9,13 +9,13 @@
 evidence retention and Task-backed waiting are implemented. Cancellation requires
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
-implemented in review-ready Host [#589](https://github.com/hao1939/may-agent/pull/589)
-at `d7fe07f80e`; its Quality and Container checks pass. The compatible local
+implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
+at `e489ff32b6`; its Quality and Container checks pass. The compatible local
 Host/SDK `4a9e0f9300` and App `90cc281b65` pass the current live interface checks.
 The reviewed App migration is integrated with canonical source, preserving newer
 fixes and publications. The exact candidate passes 1,149 configured App tests,
 type/design checks and independent review. Source identities and the remaining
-GitHub review/integration handoff are recorded in the
+post-merge fixes and verification handoff are recorded in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
 Check paired source identities before relying on installation coverage.
 [Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
@@ -185,13 +185,9 @@ input-change/review path, retaining valid evidence and consumed allowance;
 identical assignments may reuse their retained result. This requires neither
 another Task lifecycle nor a Host judgment of domain sufficiency.
 
-**Source coverage:** App `27acebb375` forwards the invocation assignment and
-requires fresh judgment when it changes. Independent real-Git verification
-confirms identical-assignment replay, retained receipts and cumulative usage.
-The verified local trial included this repair; checkpoint `994f7f7e07` restores
-the exact reviewed development module after a later canonical reload. The
-[cutover proposal](../proposals/agent-workflow-interface-review-20261117.md)
-tracks the remaining App integration and current installation verification.
+**Source coverage:** the reviewed App migration preserves changed-assignment
+judgment, identical-assignment replay, receipts and cumulative usage. Exact source
+and local coverage are recorded in the [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
 
 ### Discovery and callable names
 
@@ -237,6 +233,10 @@ The snapshot fixes target names, schemas and loaded implementations, not the
 caller. Bind each call to its actual current parent, Task context, cancellation
 scope and trace. Reusing the snapshot cannot execute a child call as the first
 caller that prepared it.
+Callee ownership selects definitions; caller App/Task identity retains lineage.
+Resolve a Task's declared root executor in its own App namespace before checking
+availability, choosing instructions and dispatching. Equal owner names in other
+Apps cannot redirect that execution or narrow the shared child catalog.
 Reload can supply a new snapshot to a later invocation. This keeps completeness,
 duplicate rejection and cancellation understandable without another loader mode.
 
@@ -253,13 +253,13 @@ The model-facing cooperation surface is `list` and awaited `call`. The
 specifies retirement of `fork` and its session controls. Parallel joined calls
 remain ordinary workflow code; durable independently owned work uses Tasks.
 
-**Source coverage and rollout gap:** review-ready Host #589 has independently verified
+**Source coverage and rollout gap:** merged Host #589 has independently verified
 common envelopes/results, all four call directions, exact canonical discovery,
 immutable prompt/config snapshots and finite cancellation. Pending native imports
 remain explicitly unconfirmed on timeout/abort. Hosted checks and the connected
-local trial pass on the recorded pair. A subsequent canonical App reload exposed
-an integration gap: retain the reviewed consumer migrations alongside newer App
-fixes, then verify the current installation. See the
+local trial pass on the recorded pair. The canonical App reload gap is repaired.
+Five late findings in owner resolution, inherited tools and report/JSON admission
+remain assigned to the bounded follow-up in the
 [cutover status](../proposals/agent-workflow-interface-review-20261117.md).
 
 An App schedule, subscription or observer first enters through a declared App

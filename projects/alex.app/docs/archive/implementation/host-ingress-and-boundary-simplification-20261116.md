@@ -295,7 +295,7 @@ worktree is removed remains a separate live acceptance check.
 ### Keep one model-facing invocation tool
 
 Current disposition, 18 November: the unified interface is implemented and
-independently verified at Host #589 `d7fe07f80e`, with current-head Quality and
+independently verified at Host #589 `d7fe07f80e`, merged as `e489ff32b6`, with Quality and
 Container passing (3,494 tests, zero failures, two skips). The active authorized
 local pair is Host/SDK `4a9e0f9300` plus App `90cc281b65`, including required #590
 and reviewed current-assignment repair `5a386d2952`. The reconciled App source
@@ -316,8 +316,11 @@ The remaining periodic metric-cadence gap belongs to the user's separate work:
 canonical ae40 removed May schedules without a demonstrated recurring producer
 in this Host pair. The earlier App241c trial retained six original baseline
 failures. The final scoped source includes f85's fixture migration, which does
-not prove cadence repair. The canonical reload gap is repaired. Human source
-review/integration and broad rollout remain separate from this successful trial.
+not prove cadence repair. The canonical reload gap is repaired. The human merged
+#589 and authorized a bounded follow-up for five late ownership/tools/report
+findings. Host main also includes the user's direct metric producer #593; the
+installed4a pair predates it. Follow-up fixes and broader rollout remain separate
+from this successful initial trial.
 See the [current proposal](../../proposals/agent-workflow-interface-review-20261117.md)
 and [exact source/trial record](../reviews/agent-workflow-interface-source-review-20261117.md).
 The #585 chronology below is historical and does not describe the current interface.
