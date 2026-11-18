@@ -267,53 +267,7 @@ describe("shared execution scope", () => {
     expect(() => manager.runAgent("worker", "orphan")).toThrow("live caller");
   });
 
-  it("idle chat can start a new bounded turn after its earlier allowance passes", async () => {
-    const manager = fixture(async () => "answer");
-    const sessionId = manager.run("worker", "first", { kind: "chat", autoClose: "never", timeoutMs: 100 });
-    await manager.waitForIdle(sessionId);
-    const first = manager.activeSessions.get(sessionId)!.executionScope!.deadlineAt;
-    await new Promise((resolve) => setTimeout(resolve, 120));
-    expect(manager.activeSessions.get(sessionId)!.status).toBe("idle");
-    manager.send(sessionId, "second");
-    await manager.waitForIdle(sessionId);
-    expect(manager.activeSessions.get(sessionId)!.executionScope!.deadlineAt).toBeGreaterThan(first);
-    manager.cancel(sessionId);
-  });
-
-  it("does not let the previous chat turn close a turn started by its idle event", async () => {
-    const bus = new EventBus();
-    const entered = Promise.withResolvers<void>();
-    const release = Promise.withResolvers<void>();
-    const manager = fixture(async (text) => {
-      if (text === "second") {
-        entered.resolve();
-        await release.promise;
-      }
-      return "answer";
-    }, bus);
-    let sent = false;
-    const unsubscribe = bus.subscribe((event) => {
-      if (event.type === "session.idle" && !sent) {
-        sent = true;
-        manager.send(event.data.sessionId, "second", { trace: { traceId: "second-turn", parentEventId: 2 } });
-      }
-    });
-    const id = manager.run("worker", "first", { kind: "chat", autoClose: "never", timeoutMs: 5_000 });
-    try {
-      await entered.promise;
-      await new Promise<void>((resolve) => setImmediate(resolve));
-      expect(manager.activeSessions.get(id)!.executionScope!.signal.aborted).toBe(false);
-      expect(manager.activeSessions.get(id)!.status).toBe("running");
-      expect(manager.activeSessions.get(id)!.openTurnTraces).toMatchObject([{ traceId: "second-turn" }]);
-    } finally {
-      unsubscribe();
-      release.resolve();
-      await manager.waitForIdle(id);
-      manager.cancel(id);
-    }
-  });
-
-  it("reports a chat helper cleanup failure instead of leaving the chat running", async () => {
+  it("reports a bounded child cleanup failure instead of leaving the invocation running", async () => {
     const bus = new EventBus();
     const release = Promise.withResolvers<void>();
     let child: string;
@@ -325,14 +279,13 @@ describe("shared execution scope", () => {
       else await release.promise;
       return "answer";
     }, bus);
-    const parent = manager.run("worker", "parent", { kind: "chat", autoClose: "never", timeoutMs: 5_000 });
+    const parent = manager.run("worker", "parent", { timeoutMs: 5_000 });
     child = manager.runAgent("worker", "child", { parentSessionId: parent });
     const failedChild = manager.waitFor(child).catch((error) => error);
     release.resolve();
-    await expect(manager.waitForIdle(parent)).rejects.toThrow("Child receipt write failed");
+    await expect(manager.waitFor(parent)).rejects.toThrow("Child receipt write failed");
     expect((await failedChild).message).toContain("Child receipt write failed");
     expect(manager.status()).toEqual([]);
-    expect((await manager.waitFor(parent)).status).toBe("error");
   });
 
   it("keeps terminal persistence failure observable without a global rejection", async () => {

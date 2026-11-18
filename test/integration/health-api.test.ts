@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, spyOn } from "bun:test";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SubagentManager, type SessionInfo } from "../../src/lib/manager.js";
+import { SubagentManager } from "../../src/lib/manager.js";
 import { closeDb } from "../../src/lib/db/connection.js";
 import { fakeModel } from "../fixtures/model.js";
 
@@ -70,27 +70,21 @@ describe("health()", () => {
     await manager.waitFor(sid);
   });
 
-  it("counts each running and idle session from the current status snapshot", () => {
-    const sessions: SessionInfo[] = (["running", "running", "idle"] as const).map((status, index) => ({
-      sessionId: `session-${index}`,
-      agent: "coder",
-      task: "inspect health",
-      status,
-      startedAt: 1,
-      runtime: "1s",
-      outputDir: join(persistDir, `session-${index}`),
-    }));
-    const status = spyOn(manager, "status").mockReturnValue(sessions);
+  it("counts live invocations as running and retains the idle field at zero", async () => {
+    registerTestAgents(manager);
+    const first = manager.run("coder", "inspect health");
+    const second = manager.run("reviewer", "review health");
     try {
-      expect(manager.health()).toMatchObject({
-        activeSessions: sessions,
-        sessionCounts: { running: 2, idle: 1, total: 3 },
-      });
-      status.mockReturnValue([]);
-      expect(manager.health().sessionCounts).toEqual({ running: 0, idle: 0, total: 0 });
+      const report = manager.health();
+      expect(report.activeSessions.map(({ sessionId, status }) => ({ sessionId, status }))).toEqual([
+        { sessionId: first, status: "running" },
+        { sessionId: second, status: "running" },
+      ]);
+      expect(report.sessionCounts).toEqual({ running: 2, idle: 0, total: 2 });
     } finally {
-      status.mockRestore();
+      await Promise.all([manager.waitFor(first), manager.waitFor(second)]);
     }
+    expect(manager.health().sessionCounts).toEqual({ running: 0, idle: 0, total: 0 });
   });
 
   it("reports elapsed uptime without waiting for wall-clock time", () => {

@@ -1,7 +1,7 @@
 import { createAgentRun } from "@may-agent/sdk/runtime";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { afterEach, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Type } from "typebox";
@@ -200,49 +200,6 @@ test.each(["writer", "bus", "none"] as const)(
     expect(observed.filter((event) => event.type === "session.end")).toMatchObject(
       mode === "none" ? [] : [{ data: { opCount: 1, turnCount: 2 } }],
     );
-  },
-);
-
-test.each(["writer", "bus"] as const)(
-  "manager projects idle and terminal chat failure with %s publication",
-  async (mode) => {
-    for (const failed of [false, true]) {
-      const f = fixture(mode, failed ? "Chat failed" : undefined);
-      const observed: AgentEvent[] = [];
-      f.bus!.subscribe((event) => {
-        if (event.type !== "session.idle" && event.type !== "session.end") return;
-        expect(f.db.prepare("SELECT status FROM sessions WHERE sessionId = ?").get(event.data.sessionId)).toEqual({
-          status: failed ? "error" : "idle",
-        });
-        observed.push(event);
-      });
-      const id = f.manager.run("worker", "A chat turn", { kind: "chat", autoClose: "never" });
-      const waiting = f.manager.waitForIdle(id);
-      f.release();
-      if (failed) await expect(waiting).rejects.toThrow("Chat failed");
-      else await waiting;
-      expect(observed.map(({ type }) => type)).toEqual([failed ? "session.end" : "session.idle"]);
-      const row = f.db
-        .prepare("SELECT status, endedAt, result_ref, outcome, error FROM sessions WHERE sessionId = ?")
-        .get(id);
-      expect(row).toMatchObject(
-        failed
-          ? {
-              status: "error",
-              endedAt: expect.any(Number),
-              result_ref: `sessions/${id}/result.json`,
-              outcome: "error",
-              error: "Chat failed",
-            }
-          : { status: "idle", endedAt: null, result_ref: null, outcome: "Saved result", error: null },
-      );
-      expect(existsSync(join(f.root, `sessions/${id}/result.json`))).toBe(failed);
-      if (failed)
-        expect(readJsonArtifactWithDescriptor(f.root, String(row!.result_ref))?.value).toMatchObject({
-          status: "error",
-          error: "Chat failed",
-        });
-    }
   },
 );
 
