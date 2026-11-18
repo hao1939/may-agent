@@ -2436,3 +2436,54 @@ the actual publication/provider records;50734 remains the earlier #589 notice.
 Human approval/merge stay on GitHub. The scoped six-finding implementation,
 paired local verification and review-link delivery are complete; the known App
 concurrency fixture and user-owned Task/ingress/event work remain separate.
+
+## Four-case follow-up after #594 — 18 November
+
+PR #596 starts at mergedc910, retaining #595 and the prior status-coercion patch
+through transparent cherry-pick216c. Source Task
+`alex/input/appdep_6b53ccfc13f4edfe52e3d69b` retains its durable branch and checkout.
+Its four-case scope covers canonical App-local preparation, captured non-Task
+workflow definitions, early raw string/key admission and bounded schema-error
+fallbacks. Earlier resource source15/15 remains partial after adversarial review;
+its original pass receipt is preserved with a superseding disposition.
+
+Final owner-authorized round raises this same contribution from six consumed to
+total7, saved by May's creator revision at generation3. It fixes the remaining
+summary-before-trim path in c630; native development and Bob review genuinely
+complete at7/7. No historical allowance is reset or refunded.
+
+Exact candidate `c630b215e8c401118e3838f0976bd359d12850a3` passes Root's unchanged
+fallback-publication, non-Task snapshot and43 JSON-boundary probes. The separate
+resource probe observes zero oversized character/trim accesses for a134M-character
+rope. Actual repeated-schema validation returns status:error with its real child
+ID and a222,903-byte envelope; an oversized summary returns a194-byte envelope.
+The owning suite passes 47 tests/193 expectations across three files. `check:ci`
+passes. Independent exact-head Codex source review finds no blocking issue and
+also passes138 focused/adjacent tests. These source results do not replace CI.
+
+Hosted run44228766996 passes Quality and Container on exactc630. All four JUnit
+shards total3,561 tests, zero failures and two skips. The supported deployment
+receipt `callable-followup-local-20261118-c630b215e8` reports succeeded/healthy,
+loadedArtifactSha equal to artifactSha and duplicateDeploy:false. Root independently
+matches binarySHA256fdc3f24138f2a6ade44ca687db8378b409661a70375ff963b3f9c0face884bd2,
+SDKc630, unchanged App78fd and ready:true. Deployment is not repeated after restart.
+Evidence uses the existing post-merge directory's `c630-*` receipts and logs;
+final automated review and provider delivery remain separate.
+
+The final frozen App78/c630 scan covers all 81 files and 1,152 tests: 1,151 pass,
+one fails solely at the unchanged concurrency3/6 assertion. App types/current-input
+checks pass. Design integrity/examples pass; the long frozen path creates two
+model-surface budget errors, so actual working-path validation is recorded
+separately rather than relaxing the budgets.
+
+Actual May parent `s_1794971883179_ceac0a1d-190f-461a-a17e-39e7a00b1bee` at
+generation7 lists 32 sorted canonical targets. It awaits workflow
+`wr_1794971937181_6ezj`, corrected prompt helper
+`s_1794971942198_a498dcec-7dec-4525-8efc-10a4229a27e3` and output-free blocker
+`s_1794971953892_476ab483-9937-4e18-bc7e-8058566ca6ba`. Root's independent extractor
+imports the installed exact SDK, validates each input and checks results against
+actual persisted lineage. The corrected child makes exactly two finish attempts:
+rejected deliberately-invalid nonce, then accepted unified596c630. The blocker
+omits output despite the requested schema. Caller Task/generation/attempt and
+the active workflow source match. `c630-live-proof-independent.json` preserves
+these actual calls; none repeats source work or domain publication.

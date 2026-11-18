@@ -9,9 +9,10 @@ branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b6
 The human merged the PR; broader release is separate. May's six post-merge repairs
 passed review and the local trial at `5dd896025a`. The human subsequently merges
 [#594](https://github.com/hao1939/may-agent/pull/594) as `c91083a1fd`, including
-resource-bounding repairs through `1d24a0cfe4`. A final diagnostic patch and two
-later preparation/capture findings continue in draft
-[#596](https://github.com/hao1939/may-agent/pull/596), detailed below.
+resource-bounding repairs through `1d24a0cfe4`. The four-case follow-up is implemented
+at `c630b215e8` in [#596](https://github.com/hao1939/may-agent/pull/596).
+Exact-head checks, supported local activation and the native call trial pass;
+automated review and the final review-link notice remain delivery checks below.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
 preserves the reviewed unified migration, Scout current-input repair, newer audit
@@ -64,9 +65,9 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Complete owning regressions, independent review, current-head CI and paired
-   local verification for [#596](https://github.com/hao1939/may-agent/pull/596),
-   then request human GitHub review. Preserve all merged source and prior evidence.
+1. Consume final automated review and send one new GitHub review-link notice for
+   [#596](https://github.com/hao1939/may-agent/pull/596). Source review, exact-head
+   CI and paired local verification pass. Preserve merged source and prior evidence.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -246,6 +247,38 @@ potential flattening, and bounded schema diagnostics/fallback reports retaining
 the actual child ID. New-head verification and local delivery remain required.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
+
+### Final four-case candidate
+
+Checkpoint `9801495b9e` repairs the raw-string/key and schema-diagnostic cases.
+Independent review then catches a related oversized-summary path reaching
+`.trim()` before admission. Root explicitly authorizes one final narrow round:
+May revises the same source Task to generation3, cumulative7 with all six earlier
+reservations retained. The final candidate `c630b215e8` fixes that path and reuses
+the bounded summary in both fallback branches. The native source contribution
+converges at7/7 with actual workflow and Bob review evidence; it is not renewed.
+The older15/15 contribution remains honestly partial.
+
+Root's unchanged production probes pass for canonical fallback publication and
+non-Task snapshot retention. The resource probe rejects a134-million-character
+rope before character access or summary trimming and returns a bounded real-child
+error for repeated oversized schema paths. All43 JSON boundary cases pass;
+47 owning tests pass across three files. Host/SDK types, boundary and lint pass.
+Exact-head Quality and Container pass in run44228766996:3,561 tests, zero failures,
+two skips. Independent exact-head source review finds no blocking issue.
+
+Supported local activation `callable-followup-local-20261118-c630b215e8` succeeds.
+Independent binary hash/SDK/readiness read-back matches c630, preserving active
+App `78fdcb0d9f` and its evaluator repair. The complete paired App scan runs all
+81 files: 1,151 pass and one unchanged concurrency3/6 fixture fails.
+
+Native May generation7 discovers the same 32 sorted canonical targets and awaits
+one workflow and two prompt helpers. Independent extraction checks the exact
+installed SDK, real child IDs, two finish attempts correcting the schema within
+one child, output-free blocked settlement and caller Task/generation/attempt
+lineage. No source changes or protected publication repeat. Automatic review
+and one new GitHub review-link notice remain delivery work; earlier50742 does
+not certify this candidate.
 
 **Supports:** [Agent and workflow contributions](../2a-design/execution-contributions.md).
 Let a caller assign bounded work and consume its result through the same contract,

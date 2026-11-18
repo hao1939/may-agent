@@ -12,11 +12,10 @@ The unified call envelope, canonical discovery and reduced cooperation tool are
 implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
 at `e489ff32b6`; post-merge [#594](https://github.com/hao1939/may-agent/pull/594)
 is merged as `c91083a1fd`, including shared-JSON resource bounds. Remaining
-preparation/capture edge repairs and a retained diagnostic patch are in draft
-[#596](https://github.com/hao1939/may-agent/pull/596).
+preparation/capture edge repairs and bounded diagnostic handling are implemented
+in [#596](https://github.com/hao1939/may-agent/pull/596) at `c630b215e8`.
 The App migration is integrated with canonical source, preserving newer fixes and
-publications. The latest full App scan retains one separate concurrency-fixture
-mismatch. Exact revisions, historical passing totals and current evidence are in the
+publications. One separate App concurrency-fixture mismatch remains. Evidence is in the
 [cutover proposal](../proposals/agent-workflow-interface-review-20261117.md).
 Check paired source identities before relying on installation coverage.
 [Shared Agent Runtime](agent-runtime.md) owns the remaining standalone/Host parity gaps.
@@ -872,7 +871,8 @@ receipts, including failure details. Store long bodies in artifacts and carry
 checksummed references through bounded Task results. SDK admission must bound
 nesting, traversal and expanded JSON bytes before materialization or transport.
 Ordinary sharing remains valid; cache reuse cannot hide encoded size or deeper
-nesting. Bound the combined report and rejection evidence, not just each field.
+nesting. Bound raw string/key lengths before scanning or trimming; bound schema
+diagnostics and the combined report, including rejection evidence and its summary.
 Keep relevant receipts reachable across later failures. A summary or preview is
 not the full evidence, and saving a receipt is not proof
 that its claims satisfy the requirement.
