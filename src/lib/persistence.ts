@@ -86,7 +86,7 @@ export interface PersistedSession {
   opCount?: number;
   /** Workflow calls require the structured finish() terminal contract. */
   requireFinish?: boolean;
-  /** Per-invocation operation allowance retained across runtime recovery. */
+  /** Historical retired option retained only for reading old session evidence. */
   operationAllowance?: number;
   /** Serializable TypeBox/JSON schema for finish().output. */
   outputSchema?: TSchema;

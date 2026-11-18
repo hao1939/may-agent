@@ -120,7 +120,7 @@ export interface RunOptions {
   parseSkillCommand?: boolean;
   /** Require the agent to terminate through finish(); used by workflow steps. */
   requireFinish?: boolean;
-  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  /** Retired. Supplying this option throws; use timeoutMs or deadlineAt. */
   operationAllowance?: number;
   /** Caller-defined schema for the required finish().output payload. */
   outputSchema?: TSchema;
@@ -189,7 +189,6 @@ interface ActiveSession {
   admittedTimeoutMs?: number;
   toolCalls: number;
   modelStepCount: number;
-  boundedFinishRequested?: boolean;
   requestId?: string;
   conversationId?: string;
   channelMessageId?: number;
@@ -350,9 +349,7 @@ export class SubagentManager {
           : parent.executionScope.signal,
         deadlineAt: Math.min(
           opts?.deadlineAt ?? Infinity,
-          parent.executionScope.deadlineAt ??
-            (parent.executionScope as { workDeadlineAt?: number }).workDeadlineAt ??
-            Infinity,
+          parent.executionScope.deadlineAt ?? Infinity,
         ),
       };
     }

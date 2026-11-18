@@ -140,7 +140,7 @@ export type DirectAgentRunOptions = {
   requireFinish?: boolean;
   /** Per-call capability restriction (for example "readonly"), applied after tool expansion. */
   toolPolicy?: ToolPolicy;
-  /** Finite positive integer tool-operation allowance before bounded completion is requested. */
+  /** Retired. Supplying this option throws; use timeoutMs or deadlineAt. */
   operationAllowance?: number;
   toolDenials?: ToolDenial[];
   /** Bind services for explicitly declared capabilities that the portable SDK does not implement. */

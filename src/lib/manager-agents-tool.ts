@@ -319,9 +319,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
         }
         const deadlineAt = Math.min(
           requestedTimeout === undefined ? Infinity : Date.now() + requestedTimeout,
-          session.executionScope?.deadlineAt ??
-            (session.executionScope as { workDeadlineAt?: number } | undefined)?.workDeadlineAt ??
-            Infinity,
+          session.executionScope?.deadlineAt ?? Infinity,
         );
         const timeoutController = Number.isFinite(deadlineAt) ? new AbortController() : undefined;
         if (timeoutController) {
