@@ -188,7 +188,9 @@ export function taskEvidenceHash(
       stable({
         appId,
         taskId,
-        appTask: meaningfulTaskDetail(object(task.appTask)),
+        appTask: task.appTask === undefined
+          ? undefined
+          : meaningfulTaskDetail(object(task.appTask)),
         detail: meaningfulTaskDetail(object(task.detail)),
         readBack: task.readBack && {
           ...object(task.readBack),
@@ -547,6 +549,7 @@ function recordedWorkerIds(task: Record<string, unknown>): string[] {
     task.agent,
     assignment.agent,
     diagnostics.agent,
+    diagnostics.owner,
     acceptedAttempt.agent,
   ]
     .map(text)

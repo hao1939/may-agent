@@ -12,10 +12,15 @@ export async function readObserverEvidence(
   task: Record<string, unknown> | undefined,
   command: PublicCommand = sendPublicReadCommand,
 ) {
-  const conditions = object(task?.appTask).conditions;
+  const appTask = object(task?.appTask);
+  const conditions = appTask.conditions ?? object(appTask.diagnostics).conditions;
   if (!Array.isArray(conditions)) return undefined;
   const interests = conditions.flatMap((value) => {
-    const condition = object(value);
+    const entry = object(value);
+    const resource = object(entry.condition);
+    const condition = resource.spec
+      ? { ...object(resource.spec), id: entry.id, observation: resource.status }
+      : entry;
     const source = object(condition.expected).source;
     const match =
       typeof source === "string"

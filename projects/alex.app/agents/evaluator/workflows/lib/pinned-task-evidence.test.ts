@@ -341,37 +341,40 @@ describe("pinned Task evidence read-back", () => {
     expect(changed.evidenceHash).not.toBe(one.evidenceHash);
   });
 
-  test("retains creator navigation without hashing unrelated creator traffic", async () => {
-    let creatorFact = "conversation:one";
-    const base = publicReader({ complete: true });
-    const command: PublicCommand = async (request) => {
-      const response = await base(request);
-      const task = response.task as Record<string, unknown>;
-      if (request.taskId === "goal/one" && request.type === "task.get")
-        task.creator = { appId: "may", taskId: "conversation/one" };
-      if (
-        request.taskId === "conversation/one" &&
-        request.type === "task.get"
-      )
-        task.facts = [creatorFact];
-      return response;
-    };
-    const first = await readSubjectTask(
-      { appId: "may", taskId: "goal/one" },
-      command,
-    );
-    creatorFact = "conversation:unrelated-report-consumed";
-    const second = await readSubjectTask(
-      { appId: "may", taskId: "goal/one" },
-      command,
-    );
-    expect(second.evidenceHash).toBe(first.evidenceHash);
-    expect((second.task!.appTask as any).creator).toEqual({
-      appId: "may",
-      taskId: "conversation/one",
-    });
-    expect((second.task!.readBack as any).links).toEqual([]);
-  });
+  test.each(["creator", "requestedBy"])(
+    "retains %s navigation without hashing unrelated requester traffic",
+    async (field) => {
+      let requesterFact = "conversation:one";
+      const base = publicReader({ complete: true });
+      const command: PublicCommand = async (request) => {
+        const response = await base(request);
+        const task = response.task as Record<string, unknown>;
+        if (request.taskId === "goal/one" && request.type === "task.get")
+          task[field] = { appId: "may", taskId: "conversation/one" };
+        if (
+          request.taskId === "conversation/one" &&
+          request.type === "task.get"
+        )
+          task.facts = [requesterFact];
+        return response;
+      };
+      const first = await readSubjectTask(
+        { appId: "may", taskId: "goal/one" },
+        command,
+      );
+      requesterFact = "conversation:unrelated-report-consumed";
+      const second = await readSubjectTask(
+        { appId: "may", taskId: "goal/one" },
+        command,
+      );
+      expect(second.evidenceHash).toBe(first.evidenceHash);
+      expect((second.task!.appTask as any)[field]).toEqual({
+        appId: "may",
+        taskId: "conversation/one",
+      });
+      expect((second.task!.readBack as any).links).toEqual([]);
+    },
+  );
 
   test("an explicit helper reference still follows the same creator Task as evidence", async () => {
     let helperFact = "helper:passed";
