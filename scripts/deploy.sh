@@ -61,6 +61,8 @@ install -m 755 "$build_dir/packages/terminal/bin/may-console.cjs" "$bundle_dir/m
 mv -f "$bundle_dir/may-console.next" "$bundle_dir/may-console"
 install -m 755 "$build_dir/container/may-agent-supervisor-restart.sh" "$bundle_dir/may-agent-supervisor-restart.next"
 mv -f "$bundle_dir/may-agent-supervisor-restart.next" "$bundle_dir/may-agent-supervisor-restart"
+install -m 644 "$build_dir/container/supervisord.conf" "$bundle_dir/supervisord.conf.next"
+mv -f "$bundle_dir/supervisord.conf.next" "$bundle_dir/supervisord.conf"
 install -m 644 "$build_dir/scripts/deploy-receipt.ts" "$bundle_dir/deploy-receipt.ts.next"
 mv -f "$bundle_dir/deploy-receipt.ts.next" "$bundle_dir/deploy-receipt.ts"
 artifact_sha="$(sha256sum "$bundle_dir/may-agent" | awk '{print $1}')"

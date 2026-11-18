@@ -59,13 +59,15 @@ CREATE INDEX IF NOT EXISTS idx_app_task_relations_target
 CREATE TABLE IF NOT EXISTS app_task_attempts (
   app_id TEXT NOT NULL, attempt_id TEXT NOT NULL, task_id TEXT NOT NULL,
   task_generation INTEGER NOT NULL, state TEXT NOT NULL, lease_until INTEGER,
-  started_at INTEGER NOT NULL, attempt_json TEXT NOT NULL,
+  started_at INTEGER NOT NULL, accepted_result_state TEXT, attempt_json TEXT NOT NULL,
   PRIMARY KEY(app_id, attempt_id)
 );
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_task
   ON app_task_attempts(app_id, task_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_started
   ON app_task_attempts(started_at DESC, app_id, attempt_id);
+CREATE INDEX IF NOT EXISTS idx_app_task_attempts_return_covering
+  ON app_task_attempts(app_id, task_id, attempt_id, task_generation, started_at, accepted_result_state);
 CREATE INDEX IF NOT EXISTS idx_app_task_attempts_failover
   ON app_task_attempts(started_at)
   WHERE json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL;

@@ -787,6 +787,9 @@ test("recovery scopes report lookups to linked Tasks without changing legacy JSO
     }
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_tasks"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE linked_attempts"))).toHaveLength(1);
+    expect(plan.some((step) =>
+      String(step.detail).includes("COVERING INDEX idx_app_task_attempts_return_covering"),
+    )).toBe(true);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE selected_reports"))).toHaveLength(1);
     expect(plan.filter((step) => String(step.detail).includes("MATERIALIZE live_conversations"))).toHaveLength(1);
     const ctes = recoverySql.slice(0, recoverySql.lastIndexOf("    SELECT appId, conversationId, topicId"));

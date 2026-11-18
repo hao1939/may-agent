@@ -490,8 +490,8 @@ export class AppTaskResourceStore {
         this.db
           .prepare(
             `INSERT INTO app_task_attempts(
-             app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, attempt_json
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+             app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, accepted_result_state, attempt_json
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
           .run(
             this.appId,
@@ -501,6 +501,7 @@ export class AppTaskResourceStore {
             attempt.state,
             epoch(attempt.lease?.expiresAt),
             epoch(attempt.startedAt) ?? 0,
+            attempt.acceptedResult?.state ?? null,
             json(attempt),
           );
         if (attempt.state === "running" && attempt.lease?.expiresAt) {
@@ -1577,12 +1578,13 @@ export class AppTaskResourceStore {
         this.db
           .prepare(
             `INSERT INTO app_task_attempts(
-             app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, attempt_json
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+             app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, accepted_result_state, attempt_json
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(app_id, attempt_id) DO UPDATE SET
              task_id=excluded.task_id, task_generation=excluded.task_generation,
              state=excluded.state, lease_until=excluded.lease_until,
-             started_at=excluded.started_at, attempt_json=excluded.attempt_json`,
+             started_at=excluded.started_at, accepted_result_state=excluded.accepted_result_state,
+             attempt_json=excluded.attempt_json`,
           )
           .run(
             this.appId,
@@ -1592,6 +1594,7 @@ export class AppTaskResourceStore {
             attempt.state,
             epoch(attempt.lease?.expiresAt),
             epoch(attempt.startedAt) ?? 0,
+            attempt.acceptedResult?.state ?? null,
             json(attempt),
           );
         if (attempt.state === "running") {
