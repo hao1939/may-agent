@@ -1281,6 +1281,127 @@ describe("May Console", () => {
     expect(new Set(humanIds).size).toBe(2);
   });
 
+  test("retries a transient HTTP read while the WebSocket remains healthy", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-http-retry-"));
+    let connections = 0;
+    let conversationReads = 0;
+    const server = createServer((socket) => {
+      connections++;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance: "test" })}\n`);
+      socket.on("data", (chunk) => {
+        for (const line of chunk.toString().split("\n")) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          if (frame.type === "app.conversation.get") {
+            conversationReads++;
+            if (conversationReads === 1) {
+              socket.write(`${JSON.stringify({ type: "error", command: frame.type, message: "daemon unavailable" })}\n`);
+            } else {
+              socket.write(`${JSON.stringify({
+                type: "ok",
+                command: frame.type,
+                conversation: { id: "may:primary", owner: "may", version: 2, messages: [] },
+              })}\n`);
+            }
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(join(root, "unused.sock"));
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: {
+        ...process.env,
+        CONVERSATION_APP: "may",
+        CONVERSATION_ID: "may:primary",
+        DAEMON_INSTANCE: "test",
+        DAEMON_AGENT: "may",
+        MAY_ENDPOINT: consoleEndpoint(server),
+      },
+      stdio: "pipe",
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => conversationReads >= 2);
+    expect(connections).toBe(1);
+  });
+
+  test("discards a delayed pre-overflow snapshot before applying its canonical reread", async () => {
+    const root = mkdtempSync(join(tmpdir(), "may-console-overflow-order-"));
+    let client: Socket | null = null;
+    let conversationReads = 0;
+    let releaseFirstRead = () => {};
+    const firstReadReleased = new Promise<void>((resolve) => {
+      releaseFirstRead = resolve;
+    });
+    const server = createServer((socket) => {
+      client = socket;
+      socket.write(`${JSON.stringify({ type: "connected", agent: "may", instance: "test" })}\n`);
+      socket.on("data", async (chunk) => {
+        for (const line of chunk.toString().split("\n")) {
+          if (!line.trim()) continue;
+          const frame = JSON.parse(line) as Record<string, any>;
+          if (frame.type === "app.conversation.get") {
+            conversationReads++;
+            const readNumber = conversationReads;
+            if (readNumber === 1) await firstReadReleased;
+            socket.write(`${JSON.stringify({
+              type: "ok",
+              command: frame.type,
+              conversation: {
+                id: "may:primary",
+                owner: "may",
+                version: readNumber,
+                messages: [{
+                  id: readNumber === 1 ? "old-snapshot" : "new-snapshot",
+                  author: { kind: "agent", id: "may" },
+                  text: readNumber === 1 ? "stale snapshot must not render" : "fresh snapshot rendered",
+                  metadata: {},
+                }],
+              },
+            })}\n`);
+          } else if (frame.type === "tasks.list") {
+            socket.write(`${JSON.stringify({ type: "ok", command: frame.type, tasks: { items: [] } })}\n`);
+          }
+        }
+      });
+    });
+    server.listen(join(root, "unused.sock"));
+    await once(server, "listening");
+    const child = spawn("node", [resolve(import.meta.dir, "../bin/may-console.cjs")], {
+      env: {
+        ...process.env,
+        CONVERSATION_APP: "may",
+        CONVERSATION_ID: "may:primary",
+        DAEMON_INSTANCE: "test",
+        DAEMON_AGENT: "may",
+        MAY_ENDPOINT: consoleEndpoint(server),
+      },
+      stdio: "pipe",
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    cleanups.push(() => server.close());
+    cleanups.push(() => client?.destroy());
+    cleanups.push(() => child.kill("SIGKILL"));
+
+    await waitFor(() => conversationReads === 1 && client !== null);
+    client!.write(`${JSON.stringify({ type: "overflow", action: "reread" })}\n`);
+    releaseFirstRead();
+    await waitFor(() => conversationReads >= 2 && output.includes("fresh snapshot rendered"));
+    expect(output).not.toContain("stale snapshot must not render");
+  });
+
   test("rereads canonical state after WebSocket overflow without replaying human input", async () => {
     const root = mkdtempSync(join(tmpdir(), "may-console-overflow-"));
     const frames: Array<Record<string, any>> = [];

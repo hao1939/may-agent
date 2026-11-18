@@ -415,20 +415,50 @@ function requestConversation(kind = "startup", options = {}) {
 
 function readFailedTransiently(error) {
   const message = error instanceof Error ? error.message : String(error);
-  if (!connected || !subscriptionReady || /fetch failed|daemon unavailable|HTTP 5\d\d/i.test(message)) {
-    scheduleReconnect();
+  const transient = !connected || !subscriptionReady || /fetch failed|daemon unavailable|HTTP 5\d\d/i.test(message);
+  if (transient && (!connected || !subscriptionReady)) scheduleReconnect();
+  return transient;
+}
+
+function sendCanonicalRead(pending, read, apply, reportError) {
+  if (pending.__readInFlight) {
+    pending.__readDirty = true;
     return true;
   }
-  return false;
+  pending.__readInFlight = true;
+  void read()
+    .then((value) => {
+      pending.__readInFlight = false;
+      if (pending.__readDirty) {
+        pending.__readDirty = false;
+        sendCanonicalRead(pending, read, apply, reportError);
+        return;
+      }
+      apply(value);
+    })
+    .catch((error) => {
+      pending.__readInFlight = false;
+      if (readFailedTransiently(error)) {
+        if (!pending.__readRetryTimer && !closing) {
+          pending.__readRetryTimer = setTimeout(() => {
+            pending.__readRetryTimer = null;
+            if (!closing) sendCanonicalRead(pending, read, apply, reportError);
+          }, 250);
+        }
+        return;
+      }
+      reportError(error);
+    });
+  return true;
 }
 
 function sendConversationRead(pending = {}) {
-  void httpJson(`/api/conversation?appId=${encodeURIComponent(conversationAppId)}&conversationId=${encodeURIComponent(conversationId)}&limit=30`)
-    .then((conversation) => handleEvent({ type: "ok", command: "app.conversation.get", conversation, __pending: pending }))
-    .catch((error) => {
-      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "app.conversation.get", message: error.message, __pending: pending });
-    });
-  return true;
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/conversation?appId=${encodeURIComponent(conversationAppId)}&conversationId=${encodeURIComponent(conversationId)}&limit=30`),
+    (conversation) => handleEvent({ type: "ok", command: "app.conversation.get", conversation, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "app.conversation.get", message: error.message, __pending: pending }),
+  );
 }
 
 function readWillComplete(sent) {
@@ -448,12 +478,12 @@ function requestApps(appId = null, command = "/apps", select = false, selection 
 
 function sendAppRead(pending) {
   const query = pending.appId ? `?appId=${encodeURIComponent(pending.appId)}` : "";
-  void httpJson(`/api/apps${query}`)
-    .then((apps) => handleEvent({ type: "ok", command: "apps.list", apps, __pending: pending }))
-    .catch((error) => {
-      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "apps.list", message: error.message, __pending: pending });
-    });
-  return true;
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/apps${query}`),
+    (apps) => handleEvent({ type: "ok", command: "apps.list", apps, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "apps.list", message: error.message, __pending: pending }),
+  );
 }
 
 function requestTasks(options = {}) {
@@ -479,12 +509,12 @@ function sendTaskListRead(pending) {
   if (pending.humanActionOnly) query.set("humanActionOnly", "true");
   if (pending.cursor) query.set("cursor", pending.cursor);
   query.set("limit", String(pending.limit));
-  void httpJson(`/api/tasks?${query}`)
-    .then((tasks) => handleEvent({ type: "ok", command: "tasks.list", tasks, __pending: pending }))
-    .catch((error) => {
-      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "tasks.list", message: error.message, __pending: pending });
-    });
-  return true;
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/tasks?${query}`),
+    (tasks) => handleEvent({ type: "ok", command: "tasks.list", tasks, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "tasks.list", message: error.message, __pending: pending }),
+  );
 }
 
 function requestTodoRefresh() {
@@ -528,12 +558,12 @@ function sendTaskRead(pending) {
   const query = new URLSearchParams();
   if (pending.ref) query.set("ref", pending.ref);
   else { query.set("appId", pending.appId); query.set("taskId", pending.taskId); }
-  void httpJson(`/api/task?${query}`)
-    .then((task) => handleEvent({ type: "ok", command: "task.get", task, __pending: pending }))
-    .catch((error) => {
-      if (!readFailedTransiently(error)) handleEvent({ type: "error", command: "task.get", message: error.message, __pending: pending });
-    });
-  return true;
+  return sendCanonicalRead(
+    pending,
+    () => httpJson(`/api/task?${query}`),
+    (task) => handleEvent({ type: "ok", command: "task.get", task, __pending: pending }),
+    (error) => handleEvent({ type: "error", command: "task.get", message: error.message, __pending: pending }),
+  );
 }
 
 function appendConversationMessage({ author, text, transient = false, metadata = {}, idempotencyKey }) {
