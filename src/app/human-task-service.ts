@@ -4,6 +4,7 @@ import type {
   ObservationContract,
   ObserverHealth,
   TaskAcceptedEvidenceNavigation,
+  TaskDetail,
   TaskReadOptions,
 } from "@may-agent/sdk/app";
 import type { SqliteDb } from "../lib/db.js";
@@ -16,6 +17,7 @@ import {
   readTaskAcceptedEvidence,
 } from "./core/reads/app-task-evidence.js";
 import { taskStatusFromPhase } from "./core/reads/task-status.js";
+import { readStoredRuntimeTaskView } from "./core/reads/app-read.js";
 import { readAppConversationResource, readConversationTopic } from "./core/state/conversations.js";
 import { storedResultFacts } from "./core/state/result-facts.js";
 import {
@@ -101,6 +103,15 @@ export type HumanTaskView = {
   outcome: string;
   /** Exact completion criteria. Detail reads only; compact lists omit them. */
   acceptance?: string[];
+  /** Canonical saved Task input and provenance metadata. Detail reads only. */
+  input?: TaskDetail["input"];
+  creator?: TaskDetail["creator"];
+  /** Recorded responsible worker identity; distinct from creator and requestedBy. */
+  agent?: TaskDetail["agent"];
+  currentObligations?: TaskDetail["currentObligations"];
+  activeAttempt?: TaskDetail["activeAttempt"];
+  pendingEvents?: TaskDetail["pendingEvents"];
+  inputEvents?: TaskDetail["inputEvents"];
   /** Plain explanation of the current lifecycle state. */
   statusDetail?: string;
   summary?: string;
@@ -1294,6 +1305,21 @@ export class HumanTaskService {
   }
 
   getTask(input: { ref?: string; appId?: string; taskId?: string } & TaskReadOptions): HumanTaskView | null {
+    this.db.exec("SAVEPOINT human_task_detail_read");
+    try {
+      const result = this.getTaskFromSnapshot(input);
+      this.db.exec("RELEASE human_task_detail_read");
+      return result;
+    } catch (error) {
+      this.db.exec("ROLLBACK TO human_task_detail_read");
+      this.db.exec("RELEASE human_task_detail_read");
+      throw error;
+    }
+  }
+
+  private getTaskFromSnapshot(
+    input: { ref?: string; appId?: string; taskId?: string } & TaskReadOptions,
+  ): HumanTaskView | null {
     let identity: ResolvedTaskReference;
     if (input.ref) {
       const resolved = resolveTaskReference(this.db, input.ref);
@@ -1323,6 +1349,26 @@ export class HumanTaskService {
     );
     if (!view) return null;
     const requestedBy = taskRequester(this.db, identity.appId, identity.taskId);
+    const defaultAgent = this.registry.snapshot().entries
+      .find((entry) => entry.definition.id === identity.appId)?.definition.agent;
+    const canonical = readStoredRuntimeTaskView(
+      this.db,
+      identity.appId,
+      identity.taskId,
+      input.inputKeys === undefined ? undefined : { inputKeys: input.inputKeys },
+      defaultAgent,
+    );
+    const canonicalMetadata = canonical
+      ? {
+          input: canonical.input,
+          currentObligations: canonical.currentObligations,
+          ...(canonical.creator ? { creator: canonical.creator } : {}),
+          ...(canonical.agent ? { agent: canonical.agent } : {}),
+          ...(canonical.activeAttempt ? { activeAttempt: canonical.activeAttempt } : {}),
+          ...(canonical.pendingEvents ? { pendingEvents: canonical.pendingEvents } : {}),
+          ...(canonical.inputEvents ? { inputEvents: canonical.inputEvents } : {}),
+        }
+      : {};
     const acceptedEvidence: TaskAcceptedEvidenceNavigation = {
       available: hasTaskAcceptedEvidence(this.db, identity.appId, identity.taskId),
       maxPageSize: TASK_ACCEPTED_EVIDENCE_MAX_PAGE_SIZE,
@@ -1332,6 +1378,7 @@ export class HumanTaskService {
     };
     const linkedView = {
       ...view,
+      ...canonicalMetadata,
       acceptedEvidence,
       ...(requestedBy ? { requestedBy } : {}),
       ...taskHistory(this.db, identity.appId, identity.taskId),

@@ -291,8 +291,9 @@ describe("agent registry loader", () => {
 
       const opts = makeOpts(root, globalAgentsRoot, projectsRoot);
       const runtime = makeRuntime();
-      expect((await loadAgents(opts, runtime)).added).toEqual(["alpha/shared-agent", "beta/shared-agent"]);
-      expect(opts.manager.agentNames()).toEqual(["alpha/shared-agent", "beta/shared-agent"]);
+      // Registration follows filesystem discovery; both exact namespaces must survive.
+      expect((await loadAgents(opts, runtime)).added.sort()).toEqual(["alpha/shared-agent", "beta/shared-agent"]);
+      expect(opts.manager.agentNames().sort()).toEqual(["alpha/shared-agent", "beta/shared-agent"]);
 
       // Different App namespaces are not a collision.
       const emitCalls = (opts.bus.emit as any).mock.calls;

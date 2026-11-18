@@ -9,6 +9,7 @@ import type {
 } from "@may-agent/sdk/app";
 import type { AppTaskContext, TaskTree } from "../tasks/app-task-store.js";
 import type { AppTaskCancellation } from "../tasks/app-task-state.js";
+import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { projectAppTaskReconciliationEvents } from "../tasks/app-task-context.js";
 import { getExecutionResultFromDb } from "../../../lib/execution-result.js";
 import { readSessionMessagesTailWithCoverage } from "../../../lib/persistence.js";
@@ -108,6 +109,59 @@ function currentTaskObligations(
   };
 }
 
+function addRequestedInputEvents(
+  store: AppTaskContext["resourceStore"],
+  taskId: string,
+  result: TaskDetail | null,
+  inputKeys: TaskReadOptions["inputKeys"],
+): void {
+  if (inputKeys === undefined) return;
+  if (
+    !Array.isArray(inputKeys) ||
+    inputKeys.length > 8 ||
+    inputKeys.some((key) => typeof key !== "string" || !key.trim())
+  ) {
+    throw new Error("inputKeys must contain at most 8 non-empty exact keys");
+  }
+  if (!result) return;
+  const admissions = store.readTaskContext({ taskIds: [], admissionIds: inputKeys }).appTaskAdmissions;
+  result.inputEvents = [...new Set(inputKeys)].map((key) => {
+    const admission = admissions?.[key];
+    if (admission?.taskId !== taskId || admission.taskGeneration > result.generation || !admission.inputEvent)
+      throw new Error(`Original input unavailable on this Task: ${key}`);
+    return { key, observedAt: admission.admittedAt, event: canonicalAppEvent(admission.inputEvent as AgentEvent) };
+  });
+}
+
+export function readStoredRuntimeTaskView(
+  db: SqliteDb,
+  appId: string,
+  taskId: string,
+  options?: TaskReadOptions,
+  defaultAgent?: string,
+): TaskDetail | null {
+  const store = AppTaskResourceStore.inspectFromDb(db, appId);
+  store.db.exec("SAVEPOINT stored_task_detail_read");
+  try {
+    const result = readTaskDetail(store, taskId, options);
+    // Historical receipts can outlive both their Task resource and App metadata.
+    if (result && !result.agent && store.readTask(taskId)) {
+      const agent = readAppTaskAgent({ resourceStore: store, agent: defaultAgent }, taskId);
+      if (agent) {
+        result.agent = agent;
+        result.owner = agent;
+      }
+    }
+    addRequestedInputEvents(store, taskId, result, options?.inputKeys);
+    store.db.exec("RELEASE stored_task_detail_read");
+    return result;
+  } catch (error) {
+    store.db.exec("ROLLBACK TO stored_task_detail_read");
+    store.db.exec("RELEASE stored_task_detail_read");
+    throw error;
+  }
+}
+
 export function readRuntimeTaskView(
   opts: Pick<RuntimeAppReadOptions, "taskStateConfig">,
   taskId: string,
@@ -129,24 +183,7 @@ export function readRuntimeTaskView(
         result.owner = agent;
       }
     }
-    if (options?.inputKeys !== undefined) {
-      const keys = options.inputKeys;
-      if (!Array.isArray(keys) || keys.length > 8 || keys.some((key) => typeof key !== "string" || !key.trim()))
-        throw new Error("inputKeys must contain at most 8 non-empty exact keys");
-      if (result) {
-        const admissions = store.readTaskContext({ taskIds: [], admissionIds: keys }).appTaskAdmissions;
-        result.inputEvents = [...new Set(keys)].map((key) => {
-          const admission = admissions?.[key];
-          if (admission?.taskId !== taskId || admission.taskGeneration > result.generation || !admission.inputEvent)
-            throw new Error(`Original input unavailable on this Task: ${key}`);
-          return {
-            key,
-            observedAt: admission.admittedAt,
-            event: canonicalAppEvent(admission.inputEvent as AgentEvent),
-          };
-        });
-      }
-    }
+    addRequestedInputEvents(store, taskId, result, options?.inputKeys);
     store.db.exec("RELEASE task_detail_read");
     return result;
   } catch (error) {

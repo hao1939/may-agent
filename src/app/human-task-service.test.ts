@@ -131,7 +131,11 @@ test("accepted evidence remains opt-in, bounded, and navigable past later waits"
     .prepare("SELECT resource_json FROM app_tasks WHERE app_id = 'sample' AND task_id = 'work'")
     .get() as { resource_json: string };
   const resource = JSON.parse(resourceRow.resource_json);
+  resource.metadata.creator = { appId: "creator-app", taskId: "creator-task" };
+  resource.spec.owner = "ordinary-worker";
+  resource.spec.input = { kind: "goal", data: { context: { exact: true } } };
   resource.spec.dependsOn = ["independent"];
+  resource.status.reviewAt = 900;
   resource.status.summary = "Current budget wait";
   resource.status.result = { current: true };
   resource.status.conditionIds = ["independent-review"];
@@ -210,6 +214,14 @@ test("accepted evidence remains opt-in, bounded, and navigable past later waits"
   expect(ordinary).toMatchObject({
     summary: "Current budget wait",
     result: { current: true },
+    input: { kind: "goal", data: { context: { exact: true } } },
+    creator: { appId: "creator-app", taskId: "creator-task" },
+    agent: "ordinary-worker",
+    currentObligations: {
+      available: true,
+      reviewAt: 900,
+      inputWaits: { maxItems: 100, truncated: false, items: [] },
+    },
     acceptedEvidence: { available: true, maxPageSize: 8 },
     diagnostics: {
       conditions: [expect.objectContaining({ id: "independent-review" })],
