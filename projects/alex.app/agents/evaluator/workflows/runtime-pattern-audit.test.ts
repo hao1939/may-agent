@@ -180,12 +180,15 @@ test("runtime-pattern-audit keeps requests idempotent for stable attention evide
         createTestAppWorkflowContext({
           workflow: "runtime-pattern-audit",
           input: {
-            rootDir: root,
-            dbPath,
-            now,
-            latestWindowMs: windowMs,
-            compareWindowMs: windowMs,
-            persistSnapshot: false,
+            prompt: "Audit stable runtime attention evidence",
+            data: {
+              rootDir: root,
+              dbPath,
+              now,
+              latestWindowMs: windowMs,
+              compareWindowMs: windowMs,
+              persistSnapshot: false,
+            },
           },
         }),
       );
@@ -207,7 +210,7 @@ test("runtime-pattern-audit keeps requests idempotent for stable attention evide
     insert.run("changed_error", "sample", "sample", "sample-flow", "error", secondNow - 500, secondNow - 100);
     const changed = await run(secondNow);
     const changedOutput = changed.output as { requests: Array<{ id: string }> };
-    expect(changedOutput.requests[0]?.id).toBe(
+    expect(changedOutput.requests[0]?.id).not.toBe(
       (firstOutput.requests[0] as { id: string }).id,
     );
     db.close();
