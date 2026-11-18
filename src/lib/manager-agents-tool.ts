@@ -125,7 +125,15 @@ function callableReport(result: ReturnType<typeof agentExecutionResult> | NonNul
 // that tree; direct callers fall back to their live execution scope/session.
 type PreparedCallable =
   | { kind: "agent"; appId?: string; definition: SubagentDefinition }
-  | { kind: "workflow"; appId?: string; owner: SubagentDefinition; workflowDir: string; workflows: WorkflowCatalog; workflow: WorkflowModule };
+  | {
+      kind: "workflow";
+      appId?: string;
+      owner: SubagentDefinition;
+      agentDefinitions: ReadonlyMap<string, SubagentDefinition>;
+      workflowDir: string;
+      workflows: WorkflowCatalog;
+      workflow: WorkflowModule;
+    };
 
 const preparedCatalogs = new WeakMap<object, WeakMap<object, Promise<readonly PreparedCallable[]>>>();
 
@@ -202,6 +210,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
       runtimeCtx: opts?.runtimeCtx,
       ...session?.taskContext,
       taskContext: session?.taskContext,
+      agentDefinitions: session?.taskContext?.agentDefinitions ?? entry.agentDefinitions,
       read: opts?.createRead ? opts.createRead(session?.taskContext) : undefined,
       callerSessionId: parentSessionId,
       projectId: parent.projectId,
@@ -231,6 +240,10 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     if (existing) return existing;
     const pending = (async () => {
       const entries: PreparedCallable[] = [];
+      const agentDefinitions = new Map(capturedAgents.map((definition) => [
+        canonicalCallableName(definition.appLocal ? definition.projectId : undefined, definition.name),
+        definition,
+      ]));
       for (const definition of capturedAgents) {
         entries.push({
           kind: "agent",
@@ -248,6 +261,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
             kind: "workflow",
             ...(owner.appLocal ? { appId: owner.projectId } : {}),
             owner,
+            agentDefinitions,
             workflowDir,
             workflows,
             workflow,

@@ -1420,7 +1420,7 @@ async function commitAppTaskRuntimeDescriptors(
     const agentPrep = opts.agents ?? opts.runner;
     if (
       agentPrep &&
-      !(await agentPrep.prepare({ source: opts, appDir: descriptor.appDir, agent: descriptor.agent }))
+      !(await agentPrep.prepare({ source: opts, appId: descriptor.id, appDir: descriptor.appDir, agent: descriptor.agent }))
     ) {
       opts.bus.emit({
         type: "info",

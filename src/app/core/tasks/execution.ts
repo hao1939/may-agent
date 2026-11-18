@@ -31,7 +31,7 @@ export type TaskAgentInput = TaskExecutionInput & {
 
 /** Agent-specific preparation and execution; no claim or result authority. */
 export type TaskAgentRunner = {
-  prepare(input: { source: TaskDefinitionSource; appDir: string; agent: string }): Promise<boolean>;
+  prepare(input: { source: TaskDefinitionSource; appId: string; appDir: string; agent: string }): Promise<boolean>;
   available(agent: string): boolean;
   /** Same pinned definition used for execution; unknown is never an alias key. */
   executionRecipient?(agent: string): ExecutionRecipient | null;

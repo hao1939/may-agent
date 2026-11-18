@@ -56,12 +56,14 @@ export function createTaskAgentRunner(
       const definition = definitions ? capturedAgentDefinition(definitions, agent) : input.manager.getAgentDefinition(agent);
       return definition ? resolvedExecutionRecipient(definition) : null;
     },
-    async prepare({ source, appDir, agent }) {
-      if (input.manager.hasAgent(agent)) return true;
-      const dir = localAgentDir(join(source.projectsRoot, basename(appDir)), agent);
+    async prepare({ source, appId, appDir, agent }) {
+      const executor = agent.includes("/") ? agent : `${appId}/${agent}`;
+      if (input.manager.hasAgent(executor)) return true;
+      const localName = agent.includes("/") ? agent.slice(agent.indexOf("/") + 1) : agent;
+      const dir = localAgentDir(join(source.projectsRoot, basename(appDir)), localName);
       return (
-        (input.registerLocalAgent ? await input.registerLocalAgent(agent, appDir, dir) : false) ||
-        input.manager.hasAgent(agent)
+        (input.registerLocalAgent ? await input.registerLocalAgent(localName, appDir, dir) : false) ||
+        input.manager.hasAgent(executor)
       );
     },
     role: (agent) => taskAttemptRole(definitions, agent),
