@@ -70,6 +70,11 @@ export default [
 
       // Customizations
       "no-unused-vars": "off",
+      "no-redeclare": "off",
+      "@typescript-eslint/no-redeclare": [
+        "error",
+        { ignoreDeclarationMerge: true },
+      ],
       // Callbacks may read a binding before its later initialization. Do not
       // demand a const rewrite that changes that lifecycle boundary.
       "prefer-const": ["error", { ignoreReadBeforeAssign: true }],
