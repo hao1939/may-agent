@@ -9,11 +9,12 @@ import { tmpdir } from "node:os";
 import { getBuiltinModel } from "@earendil-works/pi-ai/providers/all";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { Type } from "typebox";
-import { createAgentRun } from "@may-agent/sdk/runtime";
+import { createAgentRun, currentAgentSessionId } from "@may-agent/sdk/runtime";
 import { SubagentManager } from "./manager.js";
 import { closeDb } from "./db/connection.js";
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
+import { usageReply } from "../../test/fixtures/execution-usage.js";
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -130,6 +131,205 @@ export async function execute(ctx) {
       summary: "Route complete",
       output: { child: { status: "done", summary: "alpha", output: { owner: "alpha" } } },
     });
+  });
+
+  it("keeps real non-Task workflow and direct prompt helpers on one captured callable catalog", async () => {
+    let releaseParent: (() => void) | undefined;
+    const parentStarted = Promise.withResolvers<void>();
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: (model, context) => {
+          const stream = createAssistantMessageEventStream();
+          if (model.id === "caller-v1") {
+            releaseParent = () => stream.push({
+              type: "done",
+              reason: "stop",
+              message: usageReply({
+                api: model.api,
+                provider: model.provider,
+                model: model.id,
+                stopReason: "stop",
+                content: [{ type: "text", text: "Caller complete" }],
+              }),
+            });
+            parentStarted.resolve();
+            return stream;
+          }
+          const toolResult = [...context.messages].reverse().find(
+            (message) => message.role === "toolResult" && message.toolName === "agents",
+          );
+          if (!toolResult || toolResult.role !== "toolResult") {
+            stream.push({
+              type: "done",
+              reason: "toolUse",
+              message: usageReply({
+                api: model.api,
+                provider: model.provider,
+                model: model.id,
+                stopReason: "toolUse",
+                content: [{
+                  type: "toolCall",
+                  id: `agents-${model.id}`,
+                  name: "agents",
+                  arguments: {
+                    action: "call",
+                    agent: "global/echo",
+                    input: { prompt: "Use the captured workflow source" },
+                  },
+                }],
+              }),
+            });
+            return stream;
+          }
+          const text = toolResult.content.find((part) => part.type === "text");
+          if (!text || text.type !== "text") throw new Error("Missing agents tool result text");
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: usageReply({
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              stopReason: "toolUse",
+              content: [{
+                type: "toolCall",
+                id: `finish-${model.id}`,
+                name: "finish",
+                arguments: {
+                  status: "done",
+                  summary: "Actual nested tool returned",
+                  output: { child: JSON.parse(text.text) },
+                },
+              }],
+            }),
+          });
+          return stream;
+        },
+      }),
+    });
+    const profile = (name: string, version: string) => {
+      const agentDir = join(persistDir, version, name);
+      mkdirSync(join(agentDir, "workflows"), { recursive: true });
+      return {
+        name,
+        description: `${name} ${version}`,
+        domain: "fixture",
+        tools: [] as AgentTool[],
+        agentDir,
+        model: { ...mockModel(), id: `${name}-${version}` },
+      };
+    };
+    const caller = profile("caller", "v1");
+    const owner = profile("owner", "v1");
+    const peerV1 = profile("reviewer", "v1");
+    const peerV2 = profile("reviewer", "v2");
+    const emptyPeer = profile("empty-peer", "v1");
+    const absentPeer = profile("absent-peer", "v1");
+    rmSync(join(absentPeer.agentDir, "workflows"), { recursive: true });
+    const helperTool = manager.createAgentsTool({ getCallerSessionId: () => currentAgentSessionId("reviewer") });
+    peerV1.tools = [helperTool];
+    peerV2.tools = [helperTool];
+    writeFileSync(join(owner.agentDir, "workflows", "route.ts"), `
+export const name = "route";
+export const description = "Route through a real captured prompt helper";
+export async function execute(ctx) {
+  const listed = ctx.list().map((entry) => entry.name);
+  const peer = await ctx.call("global/echo", { prompt: "Use the captured peer workflow" });
+  const helper = await ctx.call("global/reviewer", { prompt: "Use the captured helper" });
+  const emptyLate = await ctx.call("global/late-empty", { prompt: "Reject a workflow added after capture" });
+  const absentLate = await ctx.call("global/late-absent", { prompt: "Reject a workflow directory added after capture" });
+  return ctx.done("Route complete", { listed, peer, helper, emptyLate, absentLate });
+}
+`);
+    for (const [definition, version] of [[peerV1, "v1"], [peerV2, "v2"]] as const) {
+      writeFileSync(join(definition.agentDir, "workflows", "echo.ts"), `
+export const name = "echo";
+export const description = "${version} implementation";
+export async function execute(ctx) { return ctx.done("${version}", { version: "${version}" }); }
+`);
+    }
+    for (const definition of [caller, owner, peerV1, emptyPeer, absentPeer]) manager.register(definition);
+    const parentSessionId = manager.run("global/caller", "Hold non-Task parent");
+    await parentStarted.promise;
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => parentSessionId });
+    const listed = await callTool(tool, { action: "list" });
+    const capturedNames = listed.map((entry: any) => entry.name);
+    for (const name of [
+      "global/owner",
+      "global/reviewer",
+      "global/empty-peer",
+      "global/absent-peer",
+      "global/route",
+      "global/echo",
+    ]) {
+      expect(capturedNames).toContain(name);
+    }
+
+    for (const [definition, workflow] of [[emptyPeer, "late-empty"], [absentPeer, "late-absent"]] as const) {
+      const workflowDir = join(definition.agentDir, "workflows");
+      mkdirSync(workflowDir, { recursive: true });
+      writeFileSync(join(workflowDir, `${workflow}.ts`), `
+export const name = "${workflow}";
+export const description = "Added after canonical capture";
+export async function execute(ctx) { return ctx.done("Unexpected late execution"); }
+`);
+      expect(await callTool(tool, {
+        action: "call",
+        agent: `global/${workflow}`,
+        input: { prompt: "Reject late workflow" },
+      })).toEqual({ status: "error", summary: `Callable target not found: global/${workflow}` });
+    }
+
+    const assertCapturedCalls = async (label: string) => {
+      const mixed = await callTool(tool, {
+        action: "call",
+        agent: "global/route",
+        input: { prompt: `${label}: mixed workflow and prompt` },
+      });
+      const direct = await callTool(tool, {
+        action: "call",
+        agent: "global/reviewer",
+        input: { prompt: `${label}: direct prompt helper` },
+      });
+      expect(mixed).toMatchObject({
+        status: "done",
+        summary: "Route complete",
+        output: {
+          listed: capturedNames,
+          peer: { status: "done", summary: "v1", output: { version: "v1" } },
+          helper: {
+            status: "done",
+            summary: "Actual nested tool returned",
+            output: { child: { status: "done", summary: "v1", output: { version: "v1" } } },
+          },
+          emptyLate: { status: "error", summary: "Callable target not found: global/late-empty" },
+          absentLate: { status: "error", summary: "Callable target not found: global/late-absent" },
+        },
+      });
+      expect(direct).toMatchObject({
+        status: "done",
+        summary: "Actual nested tool returned",
+        output: { child: { status: "done", summary: "v1", output: { version: "v1" } } },
+      });
+    };
+
+    const capturedPeerWorkflow = join(peerV1.agentDir, "workflows", "echo.ts");
+    writeFileSync(capturedPeerWorkflow, `
+export const name = "echo";
+export const description = "replacement implementation";
+export async function execute(ctx) { return ctx.done("replacement", { version: "replacement" }); }
+`);
+    manager.register(peerV2);
+    await assertCapturedCalls("replacement");
+    rmSync(capturedPeerWorkflow);
+    manager.unregister("reviewer");
+    manager.unregister("owner");
+    await assertCapturedCalls("removal");
+
+    releaseParent?.();
+    await manager.waitFor(parentSessionId);
   });
 
   it("preserves a real schema-backed prompt blocker's child ID and blocked status", async () => {

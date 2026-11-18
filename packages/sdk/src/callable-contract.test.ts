@@ -360,6 +360,88 @@ describe("shared callable input and result contract", () => {
     await expect(
       bounded.call("alex/bounded-strings", { prompt: "Inspect", data: { [escaped]: true } }, undefined, { signal }),
     ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+
+    let rope = "x";
+    for (let depth = 0; depth < 26; depth++) rope += rope;
+    expect(rope.length).toBe(67_108_864);
+    await expect(
+      bounded.call("alex/bounded-strings", { prompt: "Inspect", data: rope }, undefined, { signal }),
+    ).rejects.toThrow("maximum expanded JSON size of 1048576 bytes");
+  });
+
+  test("rejects oversized report summaries before trimming the string", async () => {
+    let rope = "x";
+    for (let depth = 0; depth < 26; depth++) rope += rope;
+    expect(rope.length).toBe(67_108_864);
+
+    const bounded = new CallableCatalog([
+      definition("bounded-summary", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_bounded_summary",
+            report: { status: "done", summary: rope },
+          };
+        },
+      }),
+    ]);
+    let oversizedSummaryTrims = 0;
+    const originalTrim = String.prototype.trim;
+    const result = await (async () => {
+      try {
+        String.prototype.trim = function () {
+          const value = String.prototype.valueOf.call(this);
+          if (value.length > 1_048_576) {
+            oversizedSummaryTrims++;
+            throw new Error("test stopped oversized summary trim before flattening");
+          }
+          return originalTrim.call(this);
+        };
+        return await bounded.call("alex/bounded-summary", { prompt: "Inspect" }, undefined, { signal });
+      } finally {
+        String.prototype.trim = originalTrim;
+      }
+    })();
+
+    expect(oversizedSummaryTrims).toBe(0);
+    expect(result).toMatchObject({
+      id: "s_bounded_summary",
+      status: "error",
+      summary: "Callable result summary exceeds maximum expanded JSON size of 1048576 bytes",
+      facts: { phase: "result", invalidEvidence: "[omitted: size]" },
+    });
+    expect(JSON.stringify(result).length).toBeLessThan(1_048_576);
+  });
+
+  test("bounds repeated long schema paths and the resulting error envelope", async () => {
+    const longKey = "k".repeat(220_000);
+    const bounded = new CallableCatalog([
+      definition("bounded-diagnostic", "alex", {
+        outputSchema: Type.Object({
+          [longKey]: Type.Tuple([
+            Type.String(), Type.String(), Type.String(), Type.String(), Type.String(),
+          ]),
+        }),
+        async invoke() {
+          return {
+            executionId: "s_bounded_diagnostic",
+            report: {
+              status: "done",
+              summary: "invalid output",
+              output: { [longKey]: [1, 2, 3, 4, 5] },
+            },
+          };
+        },
+      }),
+    ]);
+
+    const result = await bounded.call("alex/bounded-diagnostic", { prompt: "Inspect" }, undefined, { signal });
+    expect(result.id).toBe("s_bounded_diagnostic");
+    expect(result.status).toBe("error");
+    expect(result.facts).toMatchObject({ phase: "output" });
+    expect(result.summary).toStartWith("Callable result output failed schema validation");
+    expect(result.summary).toContain("…[truncated]");
+    expect(result.summary.length).toBeLessThan(10_000);
+    expect(JSON.stringify(result).length).toBeLessThan(1_048_576);
   });
 
   test("returns bounded diagnostics without coercing rejected evidence", async () => {
@@ -384,6 +466,38 @@ describe("shared callable input and result contract", () => {
       summary: expect.stringContaining("JSON-compatible"),
       facts: { phase: "output", invalidEvidence: "[omitted: incompatible]" },
     });
+  });
+
+  test("does not coerce an invalid recursively shared result status before admission", async () => {
+    let coercions = 0;
+    const leaf = {
+      toString() {
+        coercions++;
+        return "invalid";
+      },
+    };
+    let sharedStatus: unknown = leaf;
+    for (let depth = 0; depth < 19; depth++) sharedStatus = [sharedStatus, sharedStatus];
+    const bounded = new CallableCatalog([
+      definition("invalid-status", "alex", {
+        async invoke() {
+          return {
+            executionId: "s_invalid_status",
+            report: { status: sharedStatus, summary: "invalid status" } as never,
+          };
+        },
+      }),
+    ]);
+
+    await expect(
+      bounded.call("alex/invalid-status", { prompt: "Inspect" }, undefined, { signal }),
+    ).resolves.toMatchObject({
+      id: "s_invalid_status",
+      status: "error",
+      summary: "Invalid callable result status; expected done, blocked, error, or interrupted",
+      facts: { phase: "result", invalidEvidence: "[omitted: incompatible]" },
+    });
+    expect(coercions).toBe(0);
   });
 
   test("rejects cycles in callable output and facts", async () => {

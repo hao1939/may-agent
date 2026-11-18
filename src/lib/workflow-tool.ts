@@ -301,6 +301,10 @@ export interface WorkflowToolOptions {
   manager: SubagentManager;
   /** Optional immutable agent catalog for one release-bound execution. */
   agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+  /** Internal immutable workflow catalogs already loaded for the captured callable tree. */
+  workflowCatalogsByOwner?: ReadonlyMap<string, WorkflowCatalog>;
+  /** Internal identity for a prepared callable catalog whose workflow modules are already loaded. */
+  callableCatalogScope?: object;
   workflowDir: string;
   /** Persist directory for saving workflow run records. */
   persistDir?: string;
@@ -469,10 +473,15 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     }
     const rootProcedureOwner = capturedOwner
       ?? (definitions.has(requestedOwner) ? requestedOwner : ownerCandidates[0]?.[0] ?? requestedOwner);
-    const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>([
-      [rootProcedureOwner, catalog.workflows],
-    ]);
+    const proceduresByOwner = new Map<string, WorkflowCatalog["workflows"]>();
     const diagnostics = [...catalog.diagnostics];
+    for (const [owner, prepared] of opts.workflowCatalogsByOwner ?? []) {
+      proceduresByOwner.set(owner, prepared.workflows);
+      for (const diagnostic of prepared.diagnostics) {
+        if (!diagnostics.includes(diagnostic)) diagnostics.push(diagnostic);
+      }
+    }
+    proceduresByOwner.set(rootProcedureOwner, catalog.workflows);
     for (const [name, definition] of definitions) {
       prompts.set(name, { owner: name, definition });
     }
@@ -761,6 +770,8 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
           projectId: effectiveProjectId,
           taskBinding: opts.taskBinding,
           taskContext: opts.taskContext,
+          agentDefinitions: opts.taskContext?.agentDefinitions ?? opts.agentDefinitions,
+          callableCatalogScope: opts.taskContext ?? opts.callableCatalogScope,
           recoveryOwner: opts.recoveryOwner,
           stepLabel: agentName,
           timeout: stepControl.timeoutMs,

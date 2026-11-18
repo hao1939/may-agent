@@ -106,6 +106,10 @@ export interface RunOptions {
   /** Current fenced App Task attempt exposed only to scoped Task tools. */
   taskBinding?: TaskBinding;
   taskContext?: TaskExecutionContext;
+  /** Immutable non-Task callable definitions captured for this execution tree. */
+  agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+  /** Internal identity for one prepared callable catalog, including loaded workflows. */
+  callableCatalogScope?: object;
   contextPrompt?: string;
   /** Runtime that exclusively owns crash recovery for this session. */
   recoveryOwner?: string;
@@ -142,6 +146,8 @@ export type CallAgentOptions = Pick<
   | "projectId"
   | "taskBinding"
   | "taskContext"
+  | "agentDefinitions"
+  | "callableCatalogScope"
   | "contextPrompt"
   | "recoveryOwner"
   | "stepLabel"
@@ -195,6 +201,8 @@ interface ActiveSession {
   projectId?: string;
   taskBinding?: TaskBinding;
   taskContext?: TaskExecutionContext;
+  agentDefinitions?: ReadonlyMap<string, SubagentDefinition>;
+  callableCatalogScope?: object;
   recoveryOwner?: string;
   trace?: EventTrace;
   /** Semantic intent traces merged into the currently executing turn. */
@@ -301,7 +309,8 @@ export class SubagentManager {
 
   /** Resolve the same definition for helper authorization and execution. */
   getAgentDefinition(name: string, callerSessionId?: string): SubagentDefinition | undefined {
-    const captured = callerSessionId ? this._sessions.get(callerSessionId)?.taskContext?.agentDefinitions : undefined;
+    const session = callerSessionId ? this._sessions.get(callerSessionId) : undefined;
+    const captured = session?.taskContext?.agentDefinitions ?? session?.agentDefinitions;
     const exact =
       captured?.get(name) ??
       captured?.get(`global/${name}`) ??
@@ -341,6 +350,8 @@ export class SubagentManager {
         ...opts,
         taskBinding: parent.taskBinding ?? opts?.taskBinding,
         taskContext: parent.taskContext ?? opts?.taskContext,
+        agentDefinitions: parent.taskContext?.agentDefinitions ?? parent.agentDefinitions ?? opts?.agentDefinitions,
+        callableCatalogScope: parent.taskContext ?? parent.callableCatalogScope ?? opts?.callableCatalogScope,
         recoveryOwner: parent.recoveryOwner ?? opts?.recoveryOwner,
         executionRoot: parent.executionRoot ?? opts?.executionRoot,
         toolPolicy: opts?.toolPolicy ?? parent.toolPolicy,
@@ -525,6 +536,8 @@ export class SubagentManager {
         projectId: opts?.projectId,
         taskBinding: opts?.taskBinding,
         taskContext: opts?.taskContext,
+        agentDefinitions: opts?.taskContext?.agentDefinitions ?? opts?.agentDefinitions,
+        callableCatalogScope: opts?.taskContext ?? opts?.callableCatalogScope,
         recoveryOwner: opts?.recoveryOwner,
         trace: opts?.trace,
         openTurnTraces: opts?.trace ? [opts.trace] : [],
@@ -850,6 +863,8 @@ export class SubagentManager {
       projectId: opts?.projectId,
       taskBinding: opts?.taskBinding,
       taskContext: opts?.taskContext,
+      agentDefinitions: opts?.agentDefinitions,
+      callableCatalogScope: opts?.callableCatalogScope,
       recoveryOwner: opts?.recoveryOwner,
       stepLabel: opts?.stepLabel,
       contextPrompt: opts?.contextPrompt,
