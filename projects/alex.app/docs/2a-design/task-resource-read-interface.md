@@ -6,6 +6,10 @@
 
 **Design status:** Accepted.
 **Implementation status:** The shared reader and explicit `inputKeys` reads are implemented; [Host #269 is merged](../archive/reviews/explicit-task-input-consideration-20260930.md). Source status is not deployment evidence.
+External reads use the supported human-facing `task.get` contract. Canonical
+metadata parity and exact-input forwarding on that socket command are prepared
+in [Host #592](https://github.com/hao1939/may-agent/pull/592); that extension is
+not yet merged or verified in the installed Host.
 
 This reference is part of the [Task resource engine](task-resource-engine.md) contract.
 
@@ -80,6 +84,11 @@ prose. Human explanation stays in `summary` or `response`.
 The get form returns one exact `TaskDetail`, including parent, acceptance,
 input, selected execution mechanism, dependencies, and Conditions. Attempt and
 activity evidence remain linked records rather than copied Task truth.
+Responsible-agent identity resolves the saved explicit assignment and parent or
+group inheritance before using an available App default. Reading retained
+assignment must not require the App to remain loaded. Immutable `creator`,
+current requester navigation and the responsible agent are different facts;
+missing historical identity remains unknown.
 
 The current Task reader also exposes `resourceVersion` and an observation
 beside each Condition definition: its generation/revision, observed generation,
@@ -101,9 +110,12 @@ reconciliation opportunity. Reading the window does not consume it.
 `currentObligations.inputWaits.items` gives exact retained admission keys, timing,
 useful-work flag `pending`, and input/result correlations. An active worker can inspect an earlier request
 before its timer is due using `read.tasks.get(taskId, { inputKeys: [key] })`.
-The same option is available on the agent's `tasks.get`, socket `app.task.get`,
-and App HTTP detail route (repeated `inputKey` query parameters). Human board
-`task.get` remains a separate presentation and does not provide this option.
+The same option is available on the agent's `tasks.get` and App HTTP detail
+route (repeated `inputKey` query parameters). External socket callers use
+`task.get` with exact App/Task identity; `app.task.get` is retired. Host #592 adds
+the bounded `inputKeys` option to this supported socket command. Until that
+extension is installed, do not assume public detail has metadata/input parity
+with the scoped reader or use the retired command as a fallback.
 
 An explicit read returns `inputEvents: [{ key, observedAt, event }]` from those
 exact admissions, including the original request and its source. At most eight
