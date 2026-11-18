@@ -141,7 +141,7 @@ export function readStoredRuntimeTaskView(
   try {
     const result = readTaskDetail(store, taskId, options);
     // Historical receipts can outlive both their Task resource and App metadata.
-    if (result && !result.agent && defaultAgent && store.readTask(taskId)) {
+    if (result && !result.agent && store.readTask(taskId)) {
       const agent = readAppTaskAgent({ resourceStore: store, agent: defaultAgent }, taskId);
       if (agent) {
         result.agent = agent;

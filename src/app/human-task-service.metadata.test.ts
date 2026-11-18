@@ -19,8 +19,13 @@ afterEach(() => {
   while (directories.length) rmSync(directories.pop()!, { recursive: true, force: true });
 });
 
-function fixture(worker = "worker", fileBacked = false, assignment: "explicit" | "inherited" | "app-default" = "explicit") {
-  const appAgent = assignment === "inherited" ? "app-lead" : worker;
+function fixture(
+  worker = "worker",
+  fileBacked = false,
+  assignment: "explicit" | "inherited" | "group" | "app-default" = "explicit",
+  registered = true,
+) {
+  const appAgent = assignment === "inherited" || assignment === "group" ? "app-lead" : worker;
   const directory = fileBacked ? mkdtempSync(join(tmpdir(), "public-task-metadata-")) : undefined;
   if (directory) directories.push(directory);
   const path = directory ? join(directory, "fixture.sqlite") : ":memory:";
@@ -32,13 +37,15 @@ function fixture(worker = "worker", fileBacked = false, assignment: "explicit" |
   const store = AppTaskResourceStore.fromDb(db, appId);
   const config = appTaskTestContext({
     appDir: "/unused", appId, agent: appAgent, maxConcurrent: 1, resourceStore: store,
-    tree: { root_task_id: "root", groups: { root: { id: "root", parent_id: null } } },
+    tree: { root_task_id: "root", groups: { root: {
+      id: "root", parent_id: null, ...(assignment === "group" ? { owner: worker } : {}),
+    } } },
   });
   const service = new HumanTaskService(db, {
-    snapshot: () => ({ id: "fixture:1", generation: 1, entries: [{
+    snapshot: () => ({ id: "fixture:1", generation: 1, entries: registered ? [{
       appDir: "/unused/sample.app",
       definition: { id: appId, version: 1 as const, agent: appAgent, inputSchema: {} as never },
-    }] }),
+    }] : [] }),
   });
   if (assignment === "inherited") observeAppTaskIntent(config, {
     appAgent, intent: { id: "parent", parentId: "root", agent: worker,
@@ -172,4 +179,36 @@ test.each(["inherited", "app-default"] as const)("public detail resolves %s work
   f.db.exec("PRAGMA query_only = ON");
   expect(readRuntimeTaskView({ taskStateConfig: f.config }, f.taskId)?.agent).toBe("specialist");
   expect(f.read()).toMatchObject({ terminal: true, agent: "specialist" });
+});
+
+test.each(["inherited", "group"] as const)("public detail retains %s assignment without a loaded App", (assignment) => {
+  const f = fixture("reviewer", false, assignment, false);
+  expect(f.store.readTask(f.taskId)?.spec.owner).toBeUndefined();
+  expect(readRuntimeTaskView({ taskStateConfig: f.config }, f.taskId)?.agent).toBe("reviewer");
+  expect(f.read().agent).toBe("reviewer");
+  f.wait();
+  const current = f.store.readTask(f.taskId)!;
+  expect(cancelAppTask(f.config, {
+    appId: f.appId, taskId: f.taskId,
+    expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
+    reason: "Fixture responsibility ended",
+  }).applied).toBe(true);
+  f.db.exec("PRAGMA query_only = ON");
+  expect(readRuntimeTaskView({ taskStateConfig: f.config }, f.taskId)?.agent).toBe("reviewer");
+  expect(f.read()).toMatchObject({ terminal: true, agent: "reviewer" });
+});
+
+test("public detail leaves unknown assignment absent without a loaded App default", () => {
+  const f = fixture("reviewer", false, "app-default", false);
+  expect(f.read().agent).toBeUndefined();
+  f.wait();
+  const current = f.store.readTask(f.taskId)!;
+  expect(cancelAppTask(f.config, {
+    appId: f.appId, taskId: f.taskId,
+    expectedGeneration: current.metadata.generation, expectedResourceVersion: current.metadata.resourceVersion,
+    reason: "Fixture responsibility ended",
+  }).applied).toBe(true);
+  f.db.exec("PRAGMA query_only = ON");
+  expect(f.read()).toMatchObject({ terminal: true });
+  expect(f.read().agent).toBeUndefined();
 });

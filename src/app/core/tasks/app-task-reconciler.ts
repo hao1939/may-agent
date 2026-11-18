@@ -1505,9 +1505,9 @@ export function readAppTaskIntent(config: AppTaskContext, taskId: string): AppTa
   return resource ? resourceIntent(resource) : null;
 }
 
-/** Resolve the exact Task's agent, including inheritance, before worker loading. */
+/** Resolve stored assignment before using an available App default. */
 export function readAppTaskAgent(
-  config: Pick<AppTaskContext, "resourceStore" | "agent">,
+  config: Pick<AppTaskContext, "resourceStore"> & { agent?: string },
   taskId: string,
   snapshot?: TaskTree,
 ): string | null {
@@ -1516,7 +1516,7 @@ export function readAppTaskAgent(
     { includeHistory: false, childLimit: 0 },
   );
   const resource = tree.resources?.[taskId];
-  return resource ? resolvedAgent(tree, resourceIntent(resource), config.agent) : null;
+  return resource ? resolvedAgent(tree, resourceIntent(resource), config.agent ?? "") || null : null;
 }
 
 /**
