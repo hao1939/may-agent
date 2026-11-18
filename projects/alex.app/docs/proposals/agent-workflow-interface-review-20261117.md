@@ -7,8 +7,9 @@ an authorized local trial. Host `d7fe07f80e` is merged as `e489ff32b6` in
 on that exact head (3,494 tests, zero failures, two skips). The paired App review
 branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b65`.
 The human merged the PR; broader release is separate. May's six post-merge repairs
-are ready for review in [#594](https://github.com/hao1939/may-agent/pull/594) at
-`5dd896025a`, with both checks passing and the paired local trial verified below.
+passed review and the local trial at `5dd896025a`. A later review of
+[#594](https://github.com/hao1939/may-agent/pull/594) finds one resource-bounding
+gap; the human authorizes repairing it before merge. That follow-up remains open.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
 preserves the reviewed unified migration, Scout current-input repair, newer audit
@@ -100,6 +101,7 @@ interface contract stays the same.
 | Shared JSON references treated as cycles | Reusing an acyclic object in input, output or facts succeeds; actual cycles still fail. Root's production input/result probe reproduces both false rejections. |
 | Managed settlement rejects an output-free blocker | A schema-backed prompt helper can return `blocked` without output. Successful completion still requires schema-valid output; supplied output validates across statuses. |
 | Model tool drops the requested output schema | Bind the existing caller schema to the prompt helper's finish validation/correction. Identical invalid-then-valid replies must correct within the same child through both model and workflow adapters; parallel calls keep independent schemas. |
+| Shared graphs cause unbounded validation and JSON expansion | Preserve modest sharing while bounding traversal, nesting and expanded UTF-8 bytes before materialization. Cached subgraphs retain their size and height; bound combined reports and rejection evidence too. |
 
 May owns one new finite post-merge outcome,
 `may/goal/app_c3b29e84-3807-4fb0-8ce5-7bad04a05c70`, with an Alex source
@@ -164,6 +166,28 @@ one GitHub review-link notice as Telegram message50742, independently confirmed
 with zero duplicates. The first system input omitted Conversation context and
 was correctly rejected; the corrected input uses the existing saved route.
 May's finite generation4 Goal converges. Approval stays on GitHub.
+
+### Seventh finding: bounded shared JSON
+
+Copilot review4608353086 finds that the shared-reference repair revisits compact
+graphs exponentially, followed by unbounded JSON expansion. Root independently
+reproduces19 objects expanding to4,718,581 bytes with524,287 object visits and
+about149ms validation. Ordinary call timeouts cannot interrupt synchronous work.
+The human agrees to repair this before merge. May revises the same Alex Task to
+generation4, total15 rounds with all12 already consumed retained; no reset,
+replacement Task or additional historical App/Host allowance is used.
+
+The repair keeps one common contract and no new public option. Its initial
+candidate `a095bf5f01` adds cached subgraph accounting and internal limits of1MiB
+expanded JSON,100 nesting levels and100,000 inspected values. Independent review
+finds cached-height, serializer-parity and error-evidence gaps in that checkpoint;
+Root also proves that oversized strings/keys must be bounded before quoting.
+May repairs these within the same contribution. Ordinary shared objects/arrays,
+cycles, compact DAGs, cached-depth reuse, escaped/multibyte strings, combined
+reports and failure evidence require owning regressions and independent probes.
+The latest complete candidate still needs current-head CI and local verification
+before the review thread can be resolved and merge readiness restored. Previous
+5dd test/local/Telegram receipts remain historical proof, not new-head acceptance.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 

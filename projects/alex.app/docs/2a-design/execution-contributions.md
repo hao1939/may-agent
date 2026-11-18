@@ -352,51 +352,50 @@ attempt releases execution capacity. Arbitrary synchronous JavaScript cannot be
 preempted; long I/O must accept cancellation or provide bounded observation
 opportunities. Cancellation does not undo completed external effects.
 
-### Finish before the execution deadline
+<a id="finish-before-the-execution-deadline"></a>
 
-Give a worker an opportunity to return useful progress before forcibly ending
-its execution. This supports [accepted progress and continuation](task-attempts.md#accept-work-and-continue-what-remains)
-and avoids reconstructing work merely because a helper consumed the entire
-allowance. Following [agents judge; infra executes](../1-principles/core-principles.md#code-executes-and-brings-back-evidence-agents-judge),
-infra controls when execution ends; the agent judges what was accomplished and
-what remains. A timeout does not establish either completion or partial success.
+### Finish or cancel
 
-For Host-managed model invocations that require `finish()`, reserve a finalization
-window inside the existing hard deadline. At the work deadline, signal cooperative
-tools and helpers to stop, retain their returned evidence, and give the model one
-wrap-up instruction. Only `finish()` remains executable; rejected proposals can
-still be corrected through that same tool. A helper is joined before its caller
-receives its result, and outstanding helpers are drained before execution capacity
-is released. Explicit Stop and the hard deadline still cancel the invocation.
-The distinction between a work stop and ordinary cancellation survives nested
-helper calls, so joining a deeper helper still returns its execution reference
-and available evidence instead of replacing them with a generic cancellation error.
+**Design refinement accepted, 18 November 2026; source cutover pending.**
+An invocation runs normally until the agent finishes, the caller cancels it, or
+an admitted execution limit ends it. There is no automatic finish-only phase:
+requiring structured output must not reserve an earlier work deadline, disable
+ordinary tools or trigger a forced wrap-up mode. Explicit resource limits remain
+caller/App or platform policy, enforced through ordinary execution controls.
 
-For example, a review exceeds its work allowance after a patch is prepared.
-The parent receives the interrupted review's execution reference and available
-evidence. It can return `waiting` with `continue: true`, recording the patch and
-the unfinished review. Ordinary result admission accepts that scoped contribution,
-retains its input and artifacts under existing rules, and supplies the result to
-the next attempt. Infra does not fabricate acceptance or satisfy a Condition.
+An accepted `finish()` returns the validated contribution and fences later
+effects. A rejected proposal remains correctable while the invocation can still
+act. Cancellation does not require the agent to acknowledge it or submit another
+`finish()`. Stop scoped operations, join/drain descendants, retain their actual
+execution references and available evidence, and return an honest interruption.
+Unconfirmed cleanup remains visible; do not release capacity for an overlapping
+replacement while old work may still have effects. Cancellation is not rollback.
 
-The source implementation reserves up to **60 seconds**, capped at **one fifth**
-of the invocation's admitted allowance. Helpers inherit the caller's work
-deadline; any finishing window of their own fits inside that bound. The time
-signal is independent of tool counts and uses the existing completion guidance.
-It does not extend deadlines, introduce an agent-facing timer API, or change Task
-states or result schemas. The existing operation-count guidance still applies.
+Children share the caller's cancellation and remaining admitted deadline; a child
+may shorten that bound but cannot extend it. Do not subtract finishing reserves
+at successive call levels. An agent's final report, an invocation's termination
+and the Task owner's judgment of fulfillment remain independent facts.
 
-**Availability:** Implemented in Host PR #308 for managed and direct prepared model
-invocations requiring `finish()`. The [implementation and deployment record](../archive/reviews/graceful-attempt-finish-20261004.md)
-records exact revisions, scripted-provider tests through the real model/tool loop
-and Task admission, and the verified local rollout. Deployment health does not
-establish live model judgment or token savings.
-Standalone native Codex execution, arbitrary workflow JavaScript and persistent chat
-turns have no finalization window of their own. Structured agents' scoped tools
-still receive their caller's work-stop signal.
-A stalled model request or non-cooperative I/O may still consume the finalization
-window; the hard timeout remains a failure if no valid result is returned. Cancelling
-an operation does not prove its external effects were rolled back.
+For example, cancellation during CI retains the patch, execution/log references
+and known test results. A missing CI exit or final model report remains unknown,
+not a fabricated pass or completion. The responsible caller can assess retained
+work and continue the same Task under its existing authority and allowance.
+Cancelling one invocation neither closes that Task nor replenishes its budget.
+
+This accepts the possible loss of a final model-written summary or unsubmitted
+judgment in exchange for simpler execution and uninterrupted authorized work up
+to the real boundary. Existing evidence retention supports recovery; it cannot
+preserve unwritten reasoning or guarantee arbitrary external effects were undone.
+Ordinary instructions may ask for timely reporting, but they do not create a
+second runtime phase, capability gate or special finishing-policy API.
+
+**Implementation gap:** inspected Host main `42a7421d28` still implements the old
+work/finish signal split, early finishing reserve and automatic wrap-up guidance.
+Removing them must preserve normal finish correction, explicit cancellation,
+actual resource ceilings, caller/child identity, late-effect fences and cleanup
+on both managed and standalone paths. The [older graceful-finishing record](../archive/reviews/graceful-attempt-finish-20261004.md)
+retains the original PR #308 choice and its scripted-provider evidence; it is
+history, not proof this simplification is installed.
 
 ### Input during execution
 
@@ -867,13 +866,14 @@ effect. A retry must distinguish work that ran from results that were admitted.
 Do not replay external writes simply because an attempt failed: inspect the
 actual target state or use its supported idempotency identity first.
 
-Workflow code retains the data needed to assess a step: actual execution ID,
-returned output/facts and command receipts, including failure details. Store
-long bodies in artifacts and carry checksummed references through bounded Task
-results. Validate the aggregate result with SDK admission; independent string
-limits on each field do not establish aggregate size correctness. Keep current
-relevant receipts reachable regardless of how many later attempts fail. A
-summary or preview is not the full evidence, and saving a receipt is not proof
+Workflow code retains actual execution IDs, returned output/facts and command
+receipts, including failure details. Store long bodies in artifacts and carry
+checksummed references through bounded Task results. SDK admission must bound
+nesting, traversal and expanded JSON bytes before materialization or transport.
+Ordinary sharing remains valid; cache reuse cannot hide encoded size or deeper
+nesting. Bound the combined report and rejection evidence, not just each field.
+Keep relevant receipts reachable across later failures. A summary or preview is
+not the full evidence, and saving a receipt is not proof
 that its claims satisfy the requirement.
 
 `shared/tools/task-evidence.ts` supplies reusable local immutable JSON/Markdown
