@@ -481,7 +481,7 @@ export async function execute(ctx) {
                     type: "toolCall",
                     id: "inspect",
                     name: "agents",
-                    arguments: { action: "call", agent: "global/inspect", input: { prompt: "Inspect retained state", data: { marker: "accepted" } } },
+                    arguments: { action: "call", agent: "sample/inspect", input: { prompt: "Inspect retained state", data: { marker: "accepted" } } },
                   },
                 ]
               : [
@@ -552,7 +552,9 @@ export async function execute(ctx) {
     agentsRoot: join(root, "agents"),
     sharedRoot: root,
     persistDir,
-    agents: createTaskAgentRunner({ manager }),
+    agents: createTaskAgentRunner({ manager }, new Map([
+      ["sample/owner", { ...manager.getAgentDefinition("global/owner")!, appLocal: true, projectId: "sample" }],
+    ])),
   };
   try {
     observeAppTaskIntent(config, {

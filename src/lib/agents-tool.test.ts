@@ -192,6 +192,75 @@ export async function execute(ctx) {
     });
   });
 
+  it("forwards each canonical model call schema for same-child correction and concurrent isolation", async () => {
+    const replies = new Map<string, number>();
+    manager = new SubagentManager({
+      persistDir,
+      agentRunFactory: (config) => createAgentRun({
+        ...config,
+        streamFn: (model) => {
+          const count = (replies.get(model.id) ?? 0) + 1;
+          replies.set(model.id, count);
+          const expected = model.id === "schema-alpha" ? "alpha" : "beta";
+          const stream = createAssistantMessageEventStream();
+          stream.push({
+            type: "done",
+            reason: "toolUse",
+            message: {
+              role: "assistant",
+              api: model.api,
+              provider: model.provider,
+              model: model.id,
+              content: [{
+                type: "toolCall", id: `${model.id}-finish-${count}`, name: "finish",
+                arguments: {
+                  status: "done",
+                  summary: `${expected} judgement`,
+                  output: { verdict: count === 1 ? "wrong" : expected },
+                },
+              }],
+              stopReason: "toolUse",
+              timestamp: Date.now(),
+              usage: {
+                input: 1, output: 1, totalTokens: 2, cacheRead: 0, cacheWrite: 0,
+                cost: { input: 0, output: 0, total: 0, cacheRead: 0, cacheWrite: 0 },
+              },
+            },
+          });
+          return stream;
+        },
+      }),
+    });
+    for (const verdict of ["alpha", "beta"] as const) {
+      manager.register({
+        name: `${verdict}-reviewer`, description: `${verdict} reviewer`, domain: "fixture",
+        model: { ...mockModel(), id: `schema-${verdict}` }, tools: [],
+      });
+    }
+    const callerSignal = new AbortController().signal;
+    manager.activeSessions.set("caller", {
+      definition: manager.getAgentDefinition("global/alpha-reviewer"),
+      status: "running",
+      scopedChildren: new Set(),
+      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+    } as any);
+    const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
+
+    const [alpha, beta] = await Promise.all((["alpha", "beta"] as const).map((verdict) => callTool(tool, {
+      action: "call",
+      agent: `global/${verdict}-reviewer`,
+      input: { prompt: `Return ${verdict}` },
+      options: { schema: Type.Object({ verdict: Type.Literal(verdict) }) },
+    })));
+
+    expect(alpha).toMatchObject({ status: "done", summary: "alpha judgement", output: { verdict: "alpha" } });
+    expect(beta).toMatchObject({ status: "done", summary: "beta judgement", output: { verdict: "beta" } });
+    expect(alpha.id).toMatch(/^s_/);
+    expect(beta.id).toMatch(/^s_/);
+    expect(alpha.id).not.toBe(beta.id);
+    expect(replies).toEqual(new Map([["schema-alpha", 2], ["schema-beta", 2]]));
+  });
+
   it("captures the published execution snapshot after tool creation and dispatches that exact definition", async () => {
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
     const captured = { name: "reviewer", description: "Published reviewer", domain: "fixture", model: mockModel(), tools: [] };

@@ -396,7 +396,10 @@ test("a managed Task accepts progress after helper cancellation and continues fr
       }),
     ],
   });
-  const runner = createTaskAgentRunner({ manager });
+  const runner = createTaskAgentRunner({ manager }, new Map([
+    ["sample/owner", manager.getAgentDefinition("global/owner")!],
+    ["global/helper", manager.getAgentDefinition("global/helper")!],
+  ]));
   const boundedRunner: typeof runner = {
     ...runner,
     snapshot: () => boundedRunner,
