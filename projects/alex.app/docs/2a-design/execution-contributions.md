@@ -10,9 +10,10 @@ evidence retention and Task-backed waiting are implemented. Cancellation require
 cooperative I/O; arbitrary JavaScript stacks are not durable or preemptible.
 The unified call envelope, canonical discovery and reduced cooperation tool are
 implemented in merged Host [#589](https://github.com/hao1939/may-agent/pull/589)
-at `e489ff32b6`. Six post-merge edge fixes are ready for review in
-[#594](https://github.com/hao1939/may-agent/pull/594) at `5dd896025a`, with passing
-Quality/Container checks and independent local verification against App `51141b0b76`.
+at `e489ff32b6`; post-merge [#594](https://github.com/hao1939/may-agent/pull/594)
+is merged as `c91083a1fd`, including shared-JSON resource bounds. Remaining
+preparation/capture edge repairs and a retained diagnostic patch are in draft
+[#596](https://github.com/hao1939/may-agent/pull/596).
 The App migration is integrated with canonical source, preserving newer fixes and
 publications. The latest full App scan retains one separate concurrency-fixture
 mismatch. Exact revisions, historical passing totals and current evidence are in the
@@ -235,8 +236,8 @@ scope and trace. Reusing the snapshot cannot execute a child call as the first
 caller that prepared it.
 Callee ownership selects definitions; caller App/Task identity retains lineage.
 Resolve a Task's declared root executor in its own App namespace before checking
-availability, choosing instructions and dispatching. Equal owner names in other
-Apps cannot redirect that execution or narrow the shared child catalog.
+preparation, availability, instructions and dispatch; keep filesystem names local.
+Equal names cannot redirect execution or narrow the shared child catalog.
 Reload can supply a new snapshot to a later invocation. This keeps completeness,
 duplicate rejection and cancellation understandable without another loader mode.
 

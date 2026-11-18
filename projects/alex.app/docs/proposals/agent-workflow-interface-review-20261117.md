@@ -7,9 +7,11 @@ an authorized local trial. Host `d7fe07f80e` is merged as `e489ff32b6` in
 on that exact head (3,494 tests, zero failures, two skips). The paired App review
 branch is pushed at `8fb96e4819` and integrated into canonical source `90cc281b65`.
 The human merged the PR; broader release is separate. May's six post-merge repairs
-passed review and the local trial at `5dd896025a`. A later review of
-[#594](https://github.com/hao1939/may-agent/pull/594) finds one resource-bounding
-gap; the human authorizes repairing it before merge. That follow-up remains open.
+passed review and the local trial at `5dd896025a`. The human subsequently merges
+[#594](https://github.com/hao1939/may-agent/pull/594) as `c91083a1fd`, including
+resource-bounding repairs through `1d24a0cfe4`. A final diagnostic patch and two
+later preparation/capture findings continue in draft
+[#596](https://github.com/hao1939/may-agent/pull/596), detailed below.
 
 The independently verified local pair was Host/SDK `4a9e0f9300` and App `90cc281b65`. The App source
 preserves the reviewed unified migration, Scout current-input repair, newer audit
@@ -62,9 +64,9 @@ obligation automatically. Human approval stays on GitHub.
 
 The remaining handoff is:
 
-1. Human GitHub review and merge of the verified six-fix follow-up
-   [#594](https://github.com/hao1939/may-agent/pull/594). Local activation and
-   compatible interface verification are complete; broader release is separate.
+1. Complete owning regressions, independent review, current-head CI and paired
+   local verification for [#596](https://github.com/hao1939/may-agent/pull/596),
+   then request human GitHub review. Preserve all merged source and prior evidence.
 2. The user owns the separate Task/ingress/event and periodic-work changes. The
    earlier source-only App241c trial retained six baseline periodic-event failures.
    The metric recurrence failure revealed a real missing producer: this Host pair
@@ -185,9 +187,41 @@ Root also proves that oversized strings/keys must be bounded before quoting.
 May repairs these within the same contribution. Ordinary shared objects/arrays,
 cycles, compact DAGs, cached-depth reuse, escaped/multibyte strings, combined
 reports and failure evidence require owning regressions and independent probes.
-The latest complete candidate still needs current-head CI and local verification
-before the review thread can be resolved and merge readiness restored. Previous
-5dd test/local/Telegram receipts remain historical proof, not new-head acceptance.
+The human merges the resource guards through `1d24a0cfe4` at02:32UTC as `c91083a1fd`;
+its Quality and Container both subsequently pass. Main also contains user-owned
+#595 session/communication ownership changes. Final status-coercion repair
+`1cb8b5ab5f` lands just after that merge: Root's independent review passes43 byte,
+escape/surrogate and error-budget cases plus22 owning tests. Its exact patch is
+retained for the next PR; prior source usage remains unchanged. Previous5dd
+test/local/Telegram receipts remain historical proof, not new-head acceptance.
+
+### After #594 merge: preparation and definition capture
+
+The human explicitly authorizes continued fixes. Later review adds two defects:
+
+| Finding | Required behavior |
+| --- | --- |
+| Global namesake suppresses App-local fallback registration | Prepare the owning App's canonical executor even when a global short-name match exists. Keep the local name for filesystem discovery/registration, then publish the correct snapshot, instructions and execution. |
+| Non-Task workflow reads live definitions after discovery | Capture definitions with the prepared catalog. Registry replacement/removal cannot change the still-listed workflow or its nested targets; keep caller lineage and the existing Task snapshot. |
+
+Both failures are independently reproduced with real runtime paths. Root's
+fallback probe observes no registration and missing `alpha/worker` after App
+installation. Its non-Task list/reload/call probe observes replacementv2 code,
+then failure after the captured owner's removal. May commissions one genuinely
+new post-merge source contribution, `alex/input/appdep_6b53ccfc13f4edfe52e3d69b`,
+with a six-round bound, separate checkout and durable branch. It starts at merged
+`c91083a1fd`, preserving #595, and transparently cherry-picks retained1cb as216c.
+Original128/64 and prior15 source allowances are retained without reset or refund.
+
+Draft #596 publishes checkpoint `4dfb8d23de`:24 production-line additions across
+preparation typing/callsite, managed preparation and captured workflow binding.
+Root's unchanged probes now pass: local registration receives the bare filesystem
+name and actual managed execution uses Alpha; nested workflows keep originalv1
+after replacement and owner removal. All43 JSON-budget boundary checks pass;
+the newer evaluator App `78fdcb0d9f` typechecks against the paired candidate SDK.
+Owning regressions, final review, exact-head CI and supported local trial remain
+open at this checkpoint. The installed pair is Host/SDKc910 and App78fd, activated
+by the separate owner; later local activation must preserve those newer changes.
 Local verification before merge remains authorized; broad release and GitHub
 merge remain human-owned. Task/ingress/event implementation remains outside this scope.
 
