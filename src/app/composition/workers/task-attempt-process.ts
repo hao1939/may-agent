@@ -73,9 +73,14 @@ type WorkerEventFrame = {
   /** Preserve the producer's observation intent across JSON IPC; this is not acceptance. */
   recordOnly?: true;
 };
+type WorkerWakeFrame = {
+  kind: "wake";
+  /** Unjournaled identity-only wake. The parent re-emits it through its complete live fan-out. */
+  event: Extract<AgentEvent, { type: "conversation.updated" }>;
+};
 type WorkerResultFrame = { kind: "result"; dependentTaskIds: string[]; taskChecks?: unknown };
 type WorkerErrorFrame = { kind: "error"; error: string; taskChecks?: unknown };
-type WorkerFrame = WorkerEventFrame | WorkerResultFrame | WorkerErrorFrame | { kind: "heartbeat" };
+type WorkerFrame = WorkerEventFrame | WorkerWakeFrame | WorkerResultFrame | WorkerErrorFrame | { kind: "heartbeat" };
 
 export type TaskAttemptProcessRequest = {
   appId: string;
@@ -116,6 +121,20 @@ function parseWorkerFrame(value: unknown): WorkerFrame {
       throw new Error("Task worker returned an invalid event frame");
     }
     return parsed as WorkerEventFrame;
+  }
+  if (parsed.kind === "wake" && parsed.event && typeof parsed.event === "object") {
+    const event = parsed.event as Record<string, unknown>;
+    const data = event.data && typeof event.data === "object" && !Array.isArray(event.data)
+      ? event.data as Record<string, unknown>
+      : null;
+    if (
+      event.type === "conversation.updated" &&
+      (event.source === "app-inbox" || event.source === "app-task-reconciler") &&
+      typeof event.owner === "string" && Boolean(event.owner.trim()) &&
+      typeof data?.appId === "string" && Boolean(data.appId.trim()) &&
+      typeof data.conversationId === "string" && Boolean(data.conversationId.trim())
+    ) return parsed as WorkerWakeFrame;
+    throw new Error("Task worker returned an invalid wake frame");
   }
   if (parsed.kind === "result" && Array.isArray(parsed.dependentTaskIds)) {
     return {
@@ -257,6 +276,9 @@ async function runWorkerProcess(
       if (frame.recordOnly) Object.defineProperty(frame.event, EVENT_RECORD_ONLY, { value: true, configurable: true });
       relayedEvents.add(frame.event);
       bus.fanoutPersisted(frame.event, frame.eventId);
+    } else if (frame.kind === "wake") {
+      relayedEvents.add(frame.event);
+      bus.emit(frame.event);
     } else if (frame.kind !== "heartbeat") {
       mergeTaskChecks(bus, frame.taskChecks);
       if (frame.kind === "result") result = frame.dependentTaskIds;
@@ -538,6 +560,10 @@ async function runTaskWorker(input: {
           kind: "event", eventId: Number(eventId), event,
           ...(recordOnly ? { recordOnly: true } : {}),
         }).catch(stopWithParent);
+      } else if (event.type === "conversation.updated") {
+        // Conversation wakes are intentionally identity-only and unjournaled.
+        // They still need the parent process's HTTP/WebSocket subscribers.
+        void writeWorkerFrame({ kind: "wake", event }).catch(stopWithParent);
       }
     },
     { label: "task-worker-event-relay" },

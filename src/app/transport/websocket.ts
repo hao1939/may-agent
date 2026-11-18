@@ -15,6 +15,7 @@ type Subscription = {
   taskApps: Set<string>;
   task?: { appId: string; taskId: string };
   overflowed: boolean;
+  overflowRecovery?: ReturnType<typeof setTimeout>;
   unsubscribe: () => void;
 };
 
@@ -80,20 +81,51 @@ export function createDaemonWebSocketTransport(options: {
       overflowed: false,
       unsubscribe: () => {},
     };
+    const bufferedBytes = () => typeof ws.getBufferedAmount === "function"
+      ? ws.getBufferedAmount()
+      : Number(ws.bufferedAmount ?? 0);
+    const sendOverflow = () => {
+      try {
+        ws.send(JSON.stringify({ type: "overflow", action: "reread" }));
+      } catch {}
+    };
+    const scheduleOverflowRecovery = () => {
+      if (state.overflowRecovery) return;
+      const checkDrain = () => {
+        state.overflowRecovery = undefined;
+        if (!subscriptions.has(ws) || !state.overflowed) return;
+        if (bufferedBytes() > maxBufferedBytes) {
+          state.overflowRecovery = setTimeout(checkDrain, 25);
+          state.overflowRecovery.unref?.();
+          return;
+        }
+        // A reread started from the first hint can finish before the socket
+        // drains. Emit a second hint after drain so the final dropped wake is
+        // always covered even when no later owner event arrives.
+        state.overflowed = false;
+        sendOverflow();
+      };
+      state.overflowRecovery = setTimeout(checkDrain, 25);
+      state.overflowRecovery.unref?.();
+    };
     const sendWake = (frame: PublicEvent | { type: "app.task.updated"; data: { appId: string; taskId: string } }) => {
-      const bufferedAmount = typeof ws.getBufferedAmount === "function"
-        ? ws.getBufferedAmount()
-        : Number(ws.bufferedAmount ?? 0);
-      if (bufferedAmount > maxBufferedBytes) {
+      if (bufferedBytes() > maxBufferedBytes) {
         if (!state.overflowed) {
           state.overflowed = true;
-          try {
-            ws.send(JSON.stringify({ type: "overflow", action: "reread" }));
-          } catch {}
+          sendOverflow();
+          scheduleOverflowRecovery();
         }
         return;
       }
-      state.overflowed = false;
+      if (state.overflowed) {
+        // A prior wake was dropped. If another subscribed frame arrives after
+        // drain but before the recovery timer, preserve the full reread
+        // obligation before forwarding that possibly unrelated frame.
+        state.overflowed = false;
+        if (state.overflowRecovery) clearTimeout(state.overflowRecovery);
+        state.overflowRecovery = undefined;
+        sendOverflow();
+      }
       try {
         ws.send(JSON.stringify(frame));
       } catch {}
@@ -161,12 +193,16 @@ export function createDaemonWebSocketTransport(options: {
       task && typeof task.appId === "string" && typeof task.taskId === "string"
         ? { appId: task.appId.trim(), taskId: task.taskId.trim() }
         : undefined;
-    state.overflowed = false;
+    // Resubscription changes filters but does not prove a prior overflow reread
+    // covered the final dropped wake. Preserve recovery until its post-drain
+    // hint is delivered; only disconnect retires that obligation.
     ws.send(JSON.stringify({ type: "subscribed" }));
   }
 
   function close(ws: DaemonWebSocketPeer): void {
-    subscriptions.get(ws)?.unsubscribe();
+    const state = subscriptions.get(ws);
+    if (state?.overflowRecovery) clearTimeout(state.overflowRecovery);
+    state?.unsubscribe();
     subscriptions.delete(ws);
   }
 

@@ -247,7 +247,124 @@ describe("daemon WebSocket wakes", () => {
     transport.close(peer);
   });
 
-  test("reports one overflow hint per congestion interval and resumes filtered wakes after reread", async () => {
+  test("reissues overflow recovery after drain when an early reread can miss the final dropped wake", async () => {
+    const fixture = eventFixture();
+    const sent: Record<string, unknown>[] = [];
+    let bufferedAmount = 11;
+    const peer: DaemonWebSocketPeer = {
+      getBufferedAmount: () => bufferedAmount,
+      send(data) {
+        sent.push(JSON.parse(data));
+      },
+    };
+    const transport = createDaemonWebSocketTransport({
+      events: fixture.events,
+      getStatus: () => ({ sessions: [], activeWork: false }),
+      agent: "may",
+      instance: "fixture",
+      maxBufferedBytes: 10,
+    });
+    transport.open(peer);
+    transport.message(peer, JSON.stringify({ type: "subscribe", taskApps: ["alex"] }));
+
+    await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/1" }));
+    // Model an early canonical reread completing while the socket is still
+    // congested, followed by the final wake that must not be lost forever.
+    await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/2" }));
+    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(1);
+    bufferedAmount = 0;
+    const deadline = Date.now() + 2_000;
+    while (sent.filter((message) => message.type === "overflow").length < 2 && Date.now() < deadline) {
+      await Bun.sleep(10);
+    }
+    expect(sent.filter((message) => message.type === "overflow")).toEqual([
+      { type: "overflow", action: "reread" },
+      { type: "overflow", action: "reread" },
+    ]);
+
+    transport.close(peer);
+    expect(fixture.listeners.size).toBe(0);
+  });
+
+  test("preserves overflow recovery when an unrelated wake arrives after drain", async () => {
+    const fixture = eventFixture();
+    const sent: Record<string, unknown>[] = [];
+    let bufferedAmount = 11;
+    const peer: DaemonWebSocketPeer = {
+      getBufferedAmount: () => bufferedAmount,
+      send(data) {
+        sent.push(JSON.parse(data));
+      },
+    };
+    const transport = createDaemonWebSocketTransport({
+      events: fixture.events,
+      getStatus: () => ({ sessions: [], activeWork: false }),
+      agent: "may",
+      instance: "fixture",
+      maxBufferedBytes: 10,
+    });
+    transport.open(peer);
+    transport.message(peer, JSON.stringify({ type: "subscribe", conversations: ["may:primary"] }));
+
+    await fixture.emit(publicEvent("conversation.updated", { conversationId: "may:primary" }));
+    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(1);
+    bufferedAmount = 0;
+    await fixture.emit({
+      id: 8,
+      type: "runtime.reload.finished",
+      data: { requestId: "reload-1", summary: "Reloaded" },
+      timestamp: Date.now(),
+    } as PublicEvent);
+    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(2);
+    expect(sent.filter((message) => message.type === "runtime.reload.finished")).toHaveLength(1);
+    await Bun.sleep(50);
+    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(2);
+
+    transport.close(peer);
+    expect(fixture.listeners.size).toBe(0);
+  });
+
+  test("preserves overflow recovery across client resubscription", async () => {
+    const fixture = eventFixture();
+    const sent: Record<string, unknown>[] = [];
+    let bufferedAmount = 11;
+    const peer: DaemonWebSocketPeer = {
+      getBufferedAmount: () => bufferedAmount,
+      send(data) {
+        sent.push(JSON.parse(data));
+      },
+    };
+    const transport = createDaemonWebSocketTransport({
+      events: fixture.events,
+      getStatus: () => ({ sessions: [], activeWork: false }),
+      agent: "may",
+      instance: "fixture",
+      maxBufferedBytes: 10,
+    });
+    transport.open(peer);
+    const subscribe = JSON.stringify({ type: "subscribe", conversations: ["may:primary"] });
+    transport.message(peer, subscribe);
+
+    await fixture.emit(publicEvent("conversation.updated", { conversationId: "may:primary" }));
+    // Model the client's first reread completing before this final update,
+    // followed by its overflow-triggered subscription refresh.
+    await fixture.emit(publicEvent("conversation.updated", { conversationId: "may:primary" }));
+    transport.message(peer, subscribe);
+    expect(sent.filter((message) => message.type === "subscribed")).toHaveLength(2);
+    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(1);
+
+    bufferedAmount = 0;
+    const deadline = Date.now() + 2_000;
+    while (sent.filter((message) => message.type === "overflow").length < 2 && Date.now() < deadline) {
+      await Bun.sleep(10);
+    }
+    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(2);
+
+    transport.close(peer);
+    expect(fixture.listeners.size).toBe(0);
+  });
+
+  test("reissues recovery for each congestion interval and resumes filtered wakes", async () => {
     const fixture = eventFixture();
     const sent: Record<string, unknown>[] = [];
     let bufferedAmount = 0;
@@ -276,7 +393,7 @@ describe("daemon WebSocket wakes", () => {
     await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/3" }));
     bufferedAmount = 11;
     await fixture.emit(publicEvent("app.task.updated", { appId: "alex", taskId: "work/4" }));
-    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(2);
+    expect(sent.filter((message) => message.type === "overflow")).toHaveLength(3);
     expect(sent.some((message) => message.type === "app.task.updated")).toBe(true);
 
     transport.close(peer);
