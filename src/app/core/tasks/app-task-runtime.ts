@@ -1114,7 +1114,7 @@ export function publishLoadedAppTaskEvent(input: {
   binding: { appId: string; taskId: string; generation: number; attemptId: string };
   localKey: string;
   event: AppTaskEmission;
-}): number {
+}): number | undefined {
   const appId = input.binding.appId.trim().replace(/\.app$/, "");
   const descriptor = (appRouterDescriptorsByBus.get(input.bus) ?? []).find((candidate) => candidate.id === appId);
   if (!descriptor) throw new Error(`App ${input.binding.appId} has no loaded Task runtime`);

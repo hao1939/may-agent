@@ -9,6 +9,7 @@ import { DefinitionSourceReleaseStore, type DefinitionSourceRelease } from "../.
 import { isBundled } from "../../bundle-mode.js";
 import { AppRegistry } from "../../core/apps/registry.js";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, EventBus, type AgentEvent } from "../../core/events/bus.js";
+import { isLiveOnlyEventType } from "../../core/events/persistence-policy.js";
 import { readEventTaskTarget } from "../../core/events/task-target.js";
 import { HostCapacity } from "../../core/scheduling/host-capacity.js";
 import {
@@ -68,7 +69,8 @@ function scheduleWorkerRelay(bus: EventBus, callback: () => void): void {
 
 type WorkerEventFrame = {
   kind: "event";
-  eventId: number;
+  /** Only classified live observations may omit a journal identity. */
+  eventId?: number;
   event: AgentEvent;
   /** Preserve the producer's observation intent across JSON IPC; this is not acceptance. */
   recordOnly?: true;
@@ -110,7 +112,10 @@ function parseWorkerFrame(value: unknown): WorkerFrame {
   if (parsed.kind === "heartbeat") return { kind: "heartbeat" };
   if (parsed.kind === "event") {
     if (
-      !Number.isSafeInteger(parsed.eventId) || Number(parsed.eventId) <= 0 || !parsed.event ||
+      !parsed.event || typeof parsed.event.type !== "string" ||
+      (parsed.eventId === undefined
+        ? !isLiveOnlyEventType(parsed.event.type)
+        : !Number.isSafeInteger(parsed.eventId) || Number(parsed.eventId) <= 0) ||
       (parsed.recordOnly !== undefined && parsed.recordOnly !== true)
     ) {
       throw new Error("Task worker returned an invalid event frame");
@@ -256,7 +261,8 @@ async function runWorkerProcess(
     if (frame.kind === "event") {
       if (frame.recordOnly) Object.defineProperty(frame.event, EVENT_RECORD_ONLY, { value: true, configurable: true });
       relayedEvents.add(frame.event);
-      bus.fanoutPersisted(frame.event, frame.eventId);
+      if (frame.eventId === undefined) bus.emit(frame.event);
+      else bus.fanoutPersisted(frame.event, frame.eventId);
     } else if (frame.kind !== "heartbeat") {
       mergeTaskChecks(bus, frame.taskChecks);
       if (frame.kind === "result") result = frame.dependentTaskIds;
@@ -523,7 +529,7 @@ async function runTaskWorker(input: {
   const receivedEvents = new WeakSet<AgentEvent>();
   const incoming = (message: unknown) => {
     const frame = parseWorkerFrame(message);
-    if (frame.kind !== "event") throw new Error("Task worker input must be a persisted event");
+    if (frame.kind !== "event" || frame.eventId === undefined) throw new Error("Task worker input must be a persisted event");
     receivedEvents.add(frame.event);
     bus.fanoutPersisted(frame.event, frame.eventId);
   };
@@ -532,10 +538,12 @@ async function runTaskWorker(input: {
     (event) => {
       if (receivedEvents.has(event)) return;
       const eventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
-      if (Number.isSafeInteger(eventId) && Number(eventId) > 0) {
+      const persisted = Number.isSafeInteger(eventId) && Number(eventId) > 0;
+      if (persisted || isLiveOnlyEventType(event.type)) {
         const recordOnly = (event as AgentEvent & { [EVENT_RECORD_ONLY]?: boolean })[EVENT_RECORD_ONLY];
         void writeWorkerFrame({
-          kind: "event", eventId: Number(eventId), event,
+          kind: "event", event,
+          ...(persisted ? { eventId: Number(eventId) } : {}),
           ...(recordOnly ? { recordOnly: true } : {}),
         }).catch(stopWithParent);
       }

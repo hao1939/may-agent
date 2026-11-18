@@ -11,7 +11,7 @@ import {
   settleConversationDelivery,
 } from "../../lib/db/telegram-conversation-deliveries.js";
 import { createAppInboxItem } from "../core/state/app-inbox-store.js";
-import { EventBus } from "../core/events/bus.js";
+import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../core/events/bus.js";
 import type { EventInput } from "@may-agent/control/events";
 import type { HumanTaskView } from "../human-task-service.js";
 import { attachTelegramBot } from "./telegram.js";
@@ -67,6 +67,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   bus.setPersistenceSubscriber(writer.handler);
   bus.setDeliveryRecorder(writer.recordDelivery);
   const published: EventInput[] = [];
+  const deliveryEvents: AgentEvent[] = [];
   const sent: Send[] = [];
   const errors: string[] = [];
   const unsubscribeLog = addLogSubscriber((_level, message) => errors.push(message));
@@ -105,6 +106,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
   const sendRejections = new Set<string>();
   const unsubscribe = bus.subscribe((event) => {
     if (event.type === "info") errors.push(event.message);
+    if (event.type === "message.delivery_failed") deliveryEvents.push(event);
   });
   globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     const method = String(url).split("/").at(-1);
@@ -167,6 +169,7 @@ function fixture(options: { root?: string; removeOnClose?: boolean } = {}) {
     bot,
     sent,
     published,
+    deliveryEvents,
     errors,
     get deliveryFailures() {
       return getDb(root)
@@ -309,6 +312,9 @@ describe("Telegram refresh lifecycle", () => {
     try {
       await f.ready();
       await waitFor(() => f.deliveryFailures.length === 1);
+      expect(f.deliveryEvents).toHaveLength(1);
+      expect(f.deliveryEvents[0][EVENT_ROW_ID]).toBeGreaterThan(0);
+      expect(f.deliveryEvents[0].data).toMatchObject(f.deliveryFailures[0]);
       expect(f.sent).toHaveLength(0);
       expect(f.deliveryFailures[0]).toMatchObject({
         appId: "may",
@@ -1196,6 +1202,12 @@ describe("Telegram refresh lifecycle", () => {
       Object.assign(first.tasks.get("first")!, action(1, "Run the verified operator step."));
       first.wake("first");
       await waitFor(() => first.sent.some((send) => send.text.includes("Run the verified operator step.")));
+      await waitFor(
+        () =>
+          Number(
+            getDb(root).prepare("SELECT COUNT(*) AS count FROM notification_messages").get()?.count ?? 0,
+          ) > 0,
+      );
     } finally {
       await first.close();
     }

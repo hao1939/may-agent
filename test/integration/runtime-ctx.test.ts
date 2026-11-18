@@ -75,10 +75,10 @@ describe("buildRuntimeCtx", () => {
     const opts = baseOpts();
     const rtx = buildRuntimeCtx(opts);
 
-    rtx.emit({ type: "project.status_changed", data: { projectId: "p1", from: "open", to: "active" } });
+    rtx.emit({ type: "sample.status_changed", data: { projectId: "p1", from: "open", to: "active" } });
 
     expect(opts.bus.emit).toHaveBeenCalledWith({
-      type: "project.status_changed",
+      type: "sample.status_changed",
       source: "agent:test-agent",
       owner: "agent:test-agent",
       data: { projectId: "p1", from: "open", to: "active" },

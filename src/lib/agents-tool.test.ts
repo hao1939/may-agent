@@ -225,6 +225,9 @@ export async function execute(ctx) {
     const owner = profile("owner", "v1");
     const peerV1 = profile("reviewer", "v1");
     const peerV2 = profile("reviewer", "v2");
+    const emptyPeer = profile("empty-peer", "v1");
+    const absentPeer = profile("absent-peer", "v1");
+    rmSync(join(absentPeer.agentDir, "workflows"), { recursive: true });
     const helperTool = manager.createAgentsTool({ getCallerSessionId: () => currentAgentSessionId("reviewer") });
     peerV1.tools = [helperTool];
     peerV2.tools = [helperTool];
@@ -232,9 +235,12 @@ export async function execute(ctx) {
 export const name = "route";
 export const description = "Route through a real captured prompt helper";
 export async function execute(ctx) {
+  const listed = ctx.list().map((entry) => entry.name);
   const peer = await ctx.call("global/echo", { prompt: "Use the captured peer workflow" });
   const helper = await ctx.call("global/reviewer", { prompt: "Use the captured helper" });
-  return ctx.done("Route complete", { peer, helper });
+  const emptyLate = await ctx.call("global/late-empty", { prompt: "Reject a workflow added after capture" });
+  const absentLate = await ctx.call("global/late-absent", { prompt: "Reject a workflow directory added after capture" });
+  return ctx.done("Route complete", { listed, peer, helper, emptyLate, absentLate });
 }
 `);
     for (const [definition, version] of [[peerV1, "v1"], [peerV2, "v2"]] as const) {
@@ -244,13 +250,36 @@ export const description = "${version} implementation";
 export async function execute(ctx) { return ctx.done("${version}", { version: "${version}" }); }
 `);
     }
-    for (const definition of [caller, owner, peerV1]) manager.register(definition);
+    for (const definition of [caller, owner, peerV1, emptyPeer, absentPeer]) manager.register(definition);
     const parentSessionId = manager.run("global/caller", "Hold non-Task parent");
     await parentStarted.promise;
     const tool = manager.createAgentsTool({ getCallerSessionId: () => parentSessionId });
     const listed = await callTool(tool, { action: "list" });
-    for (const name of ["global/owner", "global/reviewer", "global/route", "global/echo"]) {
-      expect(listed.map((entry: any) => entry.name)).toContain(name);
+    const capturedNames = listed.map((entry: any) => entry.name);
+    for (const name of [
+      "global/owner",
+      "global/reviewer",
+      "global/empty-peer",
+      "global/absent-peer",
+      "global/route",
+      "global/echo",
+    ]) {
+      expect(capturedNames).toContain(name);
+    }
+
+    for (const [definition, workflow] of [[emptyPeer, "late-empty"], [absentPeer, "late-absent"]] as const) {
+      const workflowDir = join(definition.agentDir, "workflows");
+      mkdirSync(workflowDir, { recursive: true });
+      writeFileSync(join(workflowDir, `${workflow}.ts`), `
+export const name = "${workflow}";
+export const description = "Added after canonical capture";
+export async function execute(ctx) { return ctx.done("Unexpected late execution"); }
+`);
+      expect(await callTool(tool, {
+        action: "call",
+        agent: `global/${workflow}`,
+        input: { prompt: "Reject late workflow" },
+      })).toEqual({ status: "error", summary: `Callable target not found: global/${workflow}` });
     }
 
     const assertCapturedCalls = async (label: string) => {
@@ -268,12 +297,15 @@ export async function execute(ctx) { return ctx.done("${version}", { version: "$
         status: "done",
         summary: "Route complete",
         output: {
+          listed: capturedNames,
           peer: { status: "done", summary: "v1", output: { version: "v1" } },
           helper: {
             status: "done",
             summary: "Actual nested tool returned",
             output: { child: { status: "done", summary: "v1", output: { version: "v1" } } },
           },
+          emptyLate: { status: "error", summary: "Callable target not found: global/late-empty" },
+          absentLate: { status: "error", summary: "Callable target not found: global/late-absent" },
         },
       });
       expect(direct).toMatchObject({
@@ -341,7 +373,7 @@ export async function execute(ctx) { return ctx.done("replacement", { version: "
       status: "running",
       toolPolicy: "full",
       scopedChildren: new Set(),
-      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+      executionScope: { signal: callerSignal, workSignal: callerSignal, deadlineAt: Date.now() + 10_000, workDeadlineAt: Date.now() + 10_000 },
     } as any);
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
 
@@ -410,7 +442,7 @@ export async function execute(ctx) { return ctx.done("replacement", { version: "
       definition: manager.getAgentDefinition("global/alpha-reviewer"),
       status: "running",
       scopedChildren: new Set(),
-      executionScope: { signal: callerSignal, workSignal: callerSignal, workDeadlineAt: Date.now() + 10_000 },
+      executionScope: { signal: callerSignal, workSignal: callerSignal, deadlineAt: Date.now() + 10_000, workDeadlineAt: Date.now() + 10_000 },
     } as any);
     const tool = manager.createAgentsTool({ getCallerSessionId: () => "caller" });
 

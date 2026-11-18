@@ -5,11 +5,9 @@ import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { taskAgentResultSchema } from "@may-agent/sdk/app";
 import {
   RESPONSES_STREAM_TERMINAL_ERROR,
-  boundedWorkflowFinishPrompt,
   createWorkflowFinishTool,
   recoverCapturedWorkflowFinish,
   shouldAttemptWorkflowFinishRecovery,
-  shouldRequestBoundedWorkflowFinish,
   validateOperationAllowance,
   workflowFinishRecoveryPrompt,
 } from "@may-agent/sdk/runtime";
@@ -257,63 +255,13 @@ describe("workflow finish recovery", () => {
     }
   });
 
-  it("does not request bounded completion when operationAllowance is omitted", () => {
-    for (const toolCalls of [0, 23, 24, 34, 10_000]) {
-      expect(shouldRequestBoundedWorkflowFinish(true, toolCalls, false)).toBe(false);
-      expect(
-        shouldRequestBoundedWorkflowFinish(true, toolCalls, false, {
-          admittedTimeoutMs: 60_000,
-          elapsedMs: 59_999,
-        }),
-      ).toBe(false);
-      expect(
-        shouldRequestBoundedWorkflowFinish(true, toolCalls, false, {
-          admittedTimeoutMs: 900_000,
-          elapsedMs: 899_999,
-        }),
-      ).toBe(false);
-    }
-    expect(boundedWorkflowFinishPrompt(Type.Object({ state: Type.String() }))).toContain(
-      "schema-validated output field",
-    );
-  });
-
-  it("requests bounded completion only after an explicit operation allowance is reached", () => {
-    for (const operationAllowance of [5, 24, 50]) {
-      expect(
-        shouldRequestBoundedWorkflowFinish(true, operationAllowance - 1, false, { operationAllowance }),
-      ).toBe(false);
-      expect(
-        shouldRequestBoundedWorkflowFinish(true, operationAllowance, false, {
-          operationAllowance,
-          admittedTimeoutMs: 900_000,
-          elapsedMs: 1,
-        }),
-      ).toBe(true);
-      expect(
-        shouldRequestBoundedWorkflowFinish(true, operationAllowance + 1, false, {
-          operationAllowance,
-          admittedTimeoutMs: 60_000,
-          elapsedMs: 59_999,
-        }),
-      ).toBe(true);
-      expect(
-        shouldRequestBoundedWorkflowFinish(false, operationAllowance, false, { operationAllowance }),
-      ).toBe(false);
-      expect(
-        shouldRequestBoundedWorkflowFinish(true, operationAllowance, true, { operationAllowance }),
-      ).toBe(false);
-    }
-  });
-
-  it("rejects invalid and non-finite operation allowances", () => {
-    for (const value of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => validateOperationAllowance(value)).toThrow("finite positive integer");
-      expect(() =>
-        shouldRequestBoundedWorkflowFinish(true, 100, false, { operationAllowance: value }),
-      ).toThrow("finite positive integer");
-    }
-    expect(validateOperationAllowance(50)).toBe(50);
+  it("rejects the retired operation allowance instead of silently restoring finish guidance", () => {
     expect(validateOperationAllowance(undefined)).toBeUndefined();
+    for (const value of [1, 24, 50, Number.POSITIVE_INFINITY]) {
+      expect(() => validateOperationAllowance(value)).toThrow(
+        "operationAllowance is retired; use timeoutMs or deadlineAt for a real execution limit",
+      );
+    }
   });
+
 });

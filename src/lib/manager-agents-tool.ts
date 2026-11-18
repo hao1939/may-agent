@@ -115,7 +115,9 @@ function callablePrompt(input: ExecutionInput): string {
     : `${input.prompt}\n\nAssignment data (JSON):\n${JSON.stringify(input.data, null, 2)}`;
 }
 
-function callableReport(result: ReturnType<typeof agentExecutionResult> | NonNullable<ReturnType<typeof workflowExecutionResult>>) {
+function callableReport(
+  result: ReturnType<typeof agentExecutionResult> | NonNullable<ReturnType<typeof workflowExecutionResult>>,
+) {
   return {
     status: result.status,
     summary: result.summary,
@@ -139,9 +141,14 @@ type PreparedCallable =
       workflow: WorkflowModule;
     };
 
-const preparedCatalogs = new WeakMap<object, WeakMap<object, Promise<readonly PreparedCallable[]>>>();
+type PreparedCatalog = Readonly<{
+  entries: readonly PreparedCallable[];
+  workflowCatalogsByOwner: ReadonlyMap<string, WorkflowCatalog>;
+}>;
 
-function catalogCache(manager: AgentsToolManagerDeps): WeakMap<object, Promise<readonly PreparedCallable[]>> {
+const preparedCatalogs = new WeakMap<object, WeakMap<object, Promise<PreparedCatalog>>>();
+
+function catalogCache(manager: AgentsToolManagerDeps): WeakMap<object, Promise<PreparedCatalog>> {
   let cache = preparedCatalogs.get(manager);
   if (!cache) {
     cache = new WeakMap();
@@ -151,7 +158,6 @@ function catalogCache(manager: AgentsToolManagerDeps): WeakMap<object, Promise<r
 }
 
 function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: CreateAgentsToolOptions): AgentTool {
-
   const lineage = (sessionId: string) => {
     const active = manager.activeSessions.get(sessionId);
     const persisted = manager.registry.getSession(sessionId);
@@ -237,7 +243,9 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     const raw = await runner.run(entry.workflow.name, input.prompt, entry.workflows);
     const result = workflowExecutionResult(raw);
     if (!result) {
-      throw new Error(`Workflow callable ${canonicalCallableName(entry.appId, entry.workflow.name)} returned no execution result`);
+      throw new Error(
+        `Workflow callable ${canonicalCallableName(entry.appId, entry.workflow.name)} returned no execution result`,
+      );
     }
     return { executionId: result.id, report: callableReport(result) };
   };
@@ -246,12 +254,13 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     cacheKey: object,
     capturedAgents: readonly SubagentDefinition[],
     signal: AbortSignal,
-  ): Promise<readonly PreparedCallable[]> => {
+  ): Promise<PreparedCatalog> => {
     const cache = catalogCache(manager);
     const existing = cache.get(cacheKey);
     if (existing) return existing;
     const pending = (async () => {
       const entries: PreparedCallable[] = [];
+      const workflowCatalogsByOwner = new Map<string, WorkflowCatalog>();
       const agentDefinitions = new Map(capturedAgents.map((definition) => [
         canonicalCallableName(definition.appLocal ? definition.projectId : undefined, definition.name),
         definition,
@@ -268,6 +277,10 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
         const workflowDir = join(owner.agentDir, "workflows");
         const workflows = await buildWorkflowCatalog(workflowDir, signal);
         signal.throwIfAborted();
+        workflowCatalogsByOwner.set(
+          canonicalCallableName(owner.appLocal ? owner.projectId : undefined, owner.name),
+          workflows,
+        );
         for (const workflow of workflows.workflows.values()) {
           entries.push({
             kind: "workflow",
@@ -280,7 +293,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
           });
         }
       }
-      return entries;
+      return { entries, workflowCatalogsByOwner };
     })();
     cache.set(cacheKey, pending);
     void pending.catch(() => {
@@ -289,17 +302,11 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
     return pending;
   };
 
-  const bindCatalog = (entries: readonly PreparedCallable[], callableCatalogScope: object, outputSchema?: TSchema) => {
-    const agentDefinitions = new Map(entries.flatMap((entry) => entry.kind === "agent"
+  const bindCatalog = (prepared: PreparedCatalog, callableCatalogScope: object, outputSchema?: TSchema) => {
+    const agentDefinitions = new Map(prepared.entries.flatMap((entry) => entry.kind === "agent"
       ? [[canonicalCallableName(entry.appId, entry.definition.name), entry.definition] as const]
       : []));
-    const workflowCatalogsByOwner = new Map<string, WorkflowCatalog>();
-    for (const entry of entries) {
-      if (entry.kind === "workflow") {
-        workflowCatalogsByOwner.set(canonicalCallableName(entry.appId, entry.owner.name), entry.workflows);
-      }
-    }
-    return new CallableCatalog(entries.map((entry): CallableDefinition => {
+    return new CallableCatalog(prepared.entries.map((entry): CallableDefinition => {
       if (entry.kind === "agent") {
         return {
           appId: entry.appId,
@@ -325,7 +332,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
           entry,
           input,
           context,
-          workflowCatalogsByOwner,
+          prepared.workflowCatalogsByOwner,
           callableCatalogScope,
         ),
       };
@@ -335,7 +342,8 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
   return {
     name: "agents",
     label: "Agents",
-    description: "List the complete captured callable catalog or await an exact canonical agent/workflow call using {prompt,data?}.",
+    description:
+      "List the complete captured callable catalog or await an exact canonical agent/workflow call using {prompt,data?}.",
     parameters: CanonicalAgentsToolParams,
     execute: async (_toolCallId, rawParams, signal) => {
       const params = rawParams as CanonicalAgentsToolParamsType;
@@ -355,7 +363,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
         }
         const deadlineAt = Math.min(
           requestedTimeout === undefined ? Infinity : Date.now() + requestedTimeout,
-          session.executionScope?.workDeadlineAt ?? Infinity,
+          session.executionScope?.deadlineAt ?? Infinity,
         );
         const timeoutController = Number.isFinite(deadlineAt) ? new AbortController() : undefined;
         if (timeoutController) {
@@ -366,7 +374,7 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
           );
           timeout.unref?.();
         }
-        const inheritedSignal = session.executionScope?.workSignal;
+        const inheritedSignal = session.executionScope?.signal;
         const signals = [signal, inheritedSignal, timeoutController?.signal].filter(
           (candidate): candidate is AbortSignal => candidate !== undefined,
         );
@@ -381,25 +389,31 @@ function createCanonicalAgentsTool(manager: AgentsToolManagerDeps, opts?: Create
           ? [...capturedDefinitions.values()]
           : [...manager.agents.values()].map((registered) => registered.definition);
         const cacheKey = session.taskContext ?? session.callableCatalogScope ?? session.executionScope ?? session;
-        const outputSchema = params.action === "call" ? params.options?.schema as TSchema | undefined : undefined;
+        const outputSchema = params.action === "call" ? (params.options?.schema as TSchema | undefined) : undefined;
         const catalog = bindCatalog(await prepare(cacheKey, capturedAgents, executionSignal), cacheKey, outputSchema);
         executionSignal.throwIfAborted();
         if (params.action === "list") return textResult(JSON.stringify(catalog.list(), null, 2));
         const remainingTimeout = Number.isFinite(deadlineAt) ? Math.max(1, deadlineAt - Date.now()) : undefined;
-        return textResult(JSON.stringify(await catalog.call(
-          params.agent,
-          params.input,
-          params.options as CallableOptions | undefined,
-          { signal: executionSignal, ...(remainingTimeout !== undefined ? { timeoutMs: remainingTimeout } : {}) },
-        ), null, 2));
+        return textResult(
+          JSON.stringify(
+            await catalog.call(params.agent, params.input, params.options as CallableOptions | undefined, {
+              signal: executionSignal,
+              ...(remainingTimeout !== undefined ? { timeoutMs: remainingTimeout } : {}),
+            }),
+            null,
+            2,
+          ),
+        );
       } catch (error) {
         if (error instanceof ExecutionDeferredError) {
           return textResult(JSON.stringify(deferredExecutionResult(error)));
         }
-        return textResult(JSON.stringify({
-          status: "error",
-          summary: error instanceof Error ? error.message : String(error),
-        }));
+        return textResult(
+          JSON.stringify({
+            status: "error",
+            summary: error instanceof Error ? error.message : String(error),
+          }),
+        );
       } finally {
         if (timeout) clearTimeout(timeout);
       }
