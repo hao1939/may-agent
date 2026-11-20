@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createWorkflowRunner } from "./workflow-tool.js";
 import { prepareAgentExecution } from "./agent-execution.js";
-import { createFinishTool, createReadTool, createWriteTool, workflowExecutionResult } from "@may-agent/sdk/runtime";
+import { buildWorkflowCatalog, createFinishTool, createReadTool, createWriteTool, workflowExecutionResult } from "@may-agent/sdk/runtime";
 import { closeDb, getDb } from "./db/connection.js";
 import { fakeModel } from "../../test/fixtures/model.js";
 import { controlledWorkflowImport, observeBoundedResult } from "../../test/fixtures/workflow-import.js";
@@ -615,7 +615,7 @@ export async function execute(ctx) {
     expect(events.some((event) => event.type === "test.late-effect")).toBe(false);
   });
 
-  it("lets a workflow declare a longer bounded timeout", async () => {
+  it.each([false, true])("lets a declaration extend a timeout fallback (captured=%s)", async (captured) => {
     const root = workflowRoot("workflow-timeout-override-");
     const workflowDir = join(root, "workflows");
     mkdirSync(workflowDir);
@@ -626,7 +626,7 @@ export const name = "slow";
 export const description = "Workflow timeout override test";
 export const executionTimeoutMs = 1000;
 export async function execute(ctx) {
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await new Promise((resolve) => setTimeout(resolve, 180));
   return ctx.done("completed within its own budget");
 }
 `,
@@ -636,10 +636,11 @@ export async function execute(ctx) {
       manager: {} as any,
       workflowDir,
       agentName: "owner",
-      executionTimeoutMs: 10,
+      executionTimeoutMs: 100,
     });
 
-    const result = await runner.run("slow", "test");
+    const catalog = captured ? await buildWorkflowCatalog(workflowDir) : undefined;
+    const result = await runner.run("slow", "test", catalog);
     expect(result).toMatchObject({ type: "done" });
   });
 

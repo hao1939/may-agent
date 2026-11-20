@@ -7,6 +7,7 @@ import {
   WorkflowAllowanceExhaustedError,
   WorkflowUnconfirmedCleanupError,
   canonicalCallableName,
+  createWorkflowAllowance,
   resolveCallable,
   runWorkflowInvocation,
   type CallableDescriptor,
@@ -179,6 +180,75 @@ export class WorkflowExecutionFailure extends Error {
   }
 }
 
+// Both uncaptured Host entries fence preparation before importing. The fallback
+// is a provisional discovery watchdog, not a ceiling on a later declaration.
+// Native imports cannot be preempted: stop waiting, fence later imports, and
+// report outstanding import cleanup rather than inventing a started run.
+async function prepareRootWorkflow(
+  opts: Pick<WorkflowToolOptions, "workflowDir" | "signal" | "executionTimeoutMs" | "executionTimeoutLimitMs">,
+  name: string,
+): Promise<{ catalog: WorkflowCatalog; allowance: WorkflowExecutionAllowance }> {
+  const startedAt = Date.now();
+  opts.signal?.throwIfAborted();
+  const timeoutMs = executionTimeout(opts.executionTimeoutMs);
+  const ceiling = opts.executionTimeoutLimitMs === undefined
+    ? timeoutMs
+    : executionTimeout(opts.executionTimeoutLimitMs);
+  const boundedTimeout = Math.min(timeoutMs, ceiling);
+  const deadlineReason = `Workflow "${name}" timed out after ${boundedTimeout}ms`;
+  const allowance = createWorkflowAllowance({ timeoutMs: boundedTimeout, deadlineReason, now: startedAt });
+  const controller = new AbortController();
+  const onAbort = () => controller.abort(opts.signal?.reason ?? new Error(`Workflow "${name}" cancelled`));
+  opts.signal?.addEventListener("abort", onAbort, { once: true });
+  const check = () => {
+    if (Date.now() >= allowance.deadlineAt && !controller.signal.aborted) {
+      controller.abort(new Error(deadlineReason));
+    }
+    controller.signal.throwIfAborted();
+  };
+  const timer = setTimeout(
+    () => controller.abort(new Error(deadlineReason)),
+    Math.max(0, allowance.deadlineAt - Date.now()),
+  );
+  timer.unref?.();
+  let pendingImports = 0;
+  try {
+    check();
+    const catalog = await buildWorkflowCatalog(opts.workflowDir, controller.signal, {
+      onImportStart: () => {
+        check();
+        pendingImports += 1;
+      },
+      onImportSettled: () => {
+        pendingImports -= 1;
+      },
+    });
+    // A stopped discovery must never be revived by a longer declaration.
+    check();
+    const { workflow } = findWorkflow(catalog, name);
+    const declaredTimeout = executionTimeout(workflow?.executionTimeoutMs ?? opts.executionTimeoutMs);
+    const admittedTimeout = opts.executionTimeoutLimitMs === undefined
+      ? declaredTimeout
+      : Math.min(declaredTimeout, ceiling);
+    return {
+      catalog,
+      allowance: createWorkflowAllowance({
+        timeoutMs: admittedTimeout,
+        now: startedAt,
+        deadlineReason: `Workflow "${name}" timed out after ${admittedTimeout}ms`,
+      }),
+    };
+  } catch (error) {
+    if (pendingImports > 0) {
+      throw new WorkflowUnconfirmedCleanupError(name, [`root workflow import (${name})`], error);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    opts.signal?.removeEventListener("abort", onAbort);
+  }
+}
+
 // ── runWorkflowDirect — for system-level callers (handlers) ───────────
 
 export interface RunWorkflowDirectOpts {
@@ -233,9 +303,9 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
   verifier?: { name: string; sourcePath: string; verify: NonNullable<WorkflowModule["verify"]> };
 }> {
   // Execution and its verifier must come from the same dispatch snapshot.
-  const catalog = await buildWorkflowCatalog(opts.workflowDir ?? "");
+  const { catalog, allowance } = await prepareRootWorkflow({ ...opts, workflowDir: opts.workflowDir ?? "" }, opts.workflowName);
   const { workflow } = findWorkflow(catalog, opts.workflowName);
-  const runner = createWorkflowRunner({
+  const runner = createPreparedWorkflowRunner({
     manager: opts.manager,
     agentDefinitions: opts.agentDefinitions,
     workflowDir: opts.workflowDir ?? "",
@@ -260,7 +330,7 @@ export async function runWorkflowDirect(opts: RunWorkflowDirectOpts): Promise<{
     executionTimeoutMs: opts.executionTimeoutMs,
     executionTimeoutLimitMs: opts.executionTimeoutLimitMs,
     signal: opts.signal,
-  });
+  }, allowance);
 
   const parsed = await runner.run(opts.workflowName, opts.task, catalog);
   const verifier = workflow?.verify
@@ -357,6 +427,13 @@ export interface WorkflowToolOptions {
 
 /** Typed workflow execution for SDK, handlers, and other system callers. */
 export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner {
+  return createPreparedWorkflowRunner(opts);
+}
+
+function createPreparedWorkflowRunner(
+  opts: WorkflowToolOptions,
+  rootAllowance?: WorkflowExecutionAllowance,
+): WorkflowRunner {
   if (opts.taskContext?.taskBinding) {
     if (opts.taskBinding && !isDeepStrictEqual(opts.taskBinding, opts.taskContext.taskBinding)) {
       throw new Error("Task execution binding does not match its Task context");
@@ -1096,6 +1173,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     parentSessionId: string | undefined,
     parentWorkflowRunId: string | undefined,
     authoredInput?: { value: unknown },
+    allowance?: WorkflowExecutionAllowance,
   ): Promise<WorkflowToolResult> {
     const completedSteps: CompletedStep[] = [];
     const steeringQueue: string[] = [];
@@ -1117,6 +1195,8 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
         steeringQueue,
         authoredInput ?? (opts.workflowInput !== undefined ? { value: opts.workflowInput } : undefined),
         runId,
+        opts.signal,
+        allowance,
       );
 
       activeSteeringQueue = null;
@@ -1200,7 +1280,22 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     existingCatalog?: WorkflowCatalog,
     authoredInput?: { value: unknown },
   ): Promise<WorkflowToolResult> {
-    const catalog = existingCatalog ?? (await buildWorkflowCatalog(workflowDir));
+    let catalog = existingCatalog;
+    let allowance = rootAllowance;
+    if (!catalog) {
+      try {
+        ({ catalog, allowance } = await prepareRootWorkflow({ ...opts, workflowDir }, name));
+      } catch (error) {
+        if (error instanceof ExecutionDeferredError) throw error;
+        return { type: "error", workflow: name, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
+    // Preparation can exhaust the deadline without the timer getting a turn.
+    // Check here too, before announcing or persisting a workflow start.
+    if (allowance && (opts.signal?.aborted || Date.now() >= allowance.deadlineAt)) {
+      const error = opts.signal?.reason ?? allowance.deadlineReason ?? "Caller execution deadline expired";
+      return { type: "error", workflow: name, error: error instanceof Error ? error.message : String(error) };
+    }
     const { workflow, error } = findWorkflow(catalog, name);
     if (!workflow) {
       const message = error ?? `Workflow "${name}" not found`;
@@ -1214,7 +1309,7 @@ export function createWorkflowRunner(opts: WorkflowToolOptions): WorkflowRunner 
     }
     const callerSessionId = resolveCallerSessionId();
     const callerMeta = getCallerSessionMeta(callerSessionId);
-    return runWorkflow(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId, authoredInput);
+    return runWorkflow(catalog, workflow, task, 1, callerSessionId, callerMeta.workflowRunId, authoredInput, allowance);
   }
 
   const runner: WorkflowRunner = {

@@ -1,5 +1,82 @@
 # Changelog
 
+## [6.0.0](https://github.com/hao1939/may-agent/compare/v5.6.0...v6.0.0) (2026-11-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **host:** retire legacy human control paths ([#603](https://github.com/hao1939/may-agent/issues/603))
+
+### Features
+
+* **cli,standalone:** add unified may run / may list CLI and zero-config run(target, input) ([#520](https://github.com/hao1939/may-agent/issues/520)) ([76f180b](https://github.com/hao1939/may-agent/commit/76f180b5f4f4ca28e209c4e1fb477b150ef13fb3))
+* **container:** upgrade Herdr and agent CLIs with self-healing /app persistence and full auto-approval ([#557](https://github.com/hao1939/may-agent/issues/557)) ([5258d3d](https://github.com/hao1939/may-agent/commit/5258d3d5b9d5cc731063cd35f109b9ff4157afc4))
+* **control,webui:** shared human-surface contract and 2-mode Conversation/Task focus ([#581](https://github.com/hao1939/may-agent/issues/581)) ([43fc420](https://github.com/hao1939/may-agent/commit/43fc420a8f2ea7071cef5c2bb6b960c84b7c78ab))
+* **input:** bind daemon HTTP and Console to owning services ([#599](https://github.com/hao1939/may-agent/issues/599)) ([cf1672a](https://github.com/hao1939/may-agent/commit/cf1672a556c939e8e7d99650c641a6b2918c5317))
+* **input:** polish two-mode task surfaces ([#587](https://github.com/hao1939/may-agent/issues/587)) ([404625d](https://github.com/hao1939/may-agent/commit/404625dbabf3e1ba8b8cb1afb737a17fc8c34c66))
+* **models:** register GPT-6.2 Sol and correct Argon Responses routing ([#602](https://github.com/hao1939/may-agent/issues/602)) ([29ded19](https://github.com/hao1939/may-agent/commit/29ded19664e37944bbaab6ccb812a419c3f841fa))
+* **sdk,runtime:** move stateless Agent & Workflow Runtime physically into @may-agent/sdk ([#526](https://github.com/hao1939/may-agent/issues/526)) ([0d48466](https://github.com/hao1939/may-agent/commit/0d48466befd580dde0ff403549dc24d2bb93937b))
+* **sdk,workflow:** add unified ctx.call, resolveCallableTarget, and testing mocks (Phase 1) ([#513](https://github.com/hao1939/may-agent/issues/513)) ([ad165b9](https://github.com/hao1939/may-agent/commit/ad165b983044c4db1fc70444f03e65926ebbf3dd))
+* **standalone:** converge standalone agent runtime skill, context, service, snapshot, and workspace rules ([#563](https://github.com/hao1939/may-agent/issues/563)) ([d4ee090](https://github.com/hao1939/may-agent/commit/d4ee0909607cbeb87765a7502ec047229dca8bda))
+* **task:** make assigned attempt input distinct from pending unclaimed input ([#459](https://github.com/hao1939/may-agent/issues/459)) ([8fa6b18](https://github.com/hao1939/may-agent/commit/8fa6b18caaea719dc143949e57267a9150e88668))
+* **tasks,agents:** add unified TaskRunner and support code procedures in agents tool ([#515](https://github.com/hao1939/may-agent/issues/515)) ([19ee8d2](https://github.com/hao1939/may-agent/commit/19ee8d22dc034d12c4e4f2cb340d85e95b7cf350))
+* **tasks:** add AppTaskPolicy.maxAttemptMs and port Codex ongoing-goal/transcript support ([#469](https://github.com/hao1939/may-agent/issues/469)) ([b1949c0](https://github.com/hao1939/may-agent/commit/b1949c09b27ea784665b8837fcb28dd2adb532e3))
+* **tasks:** unify continuous resource observation lifecycle ([#591](https://github.com/hao1939/may-agent/issues/591)) ([0472da6](https://github.com/hao1939/may-agent/commit/0472da6386c79ab9f6b4372e21b1419ca6a8f427))
+
+
+### Bug Fixes
+
+* **agents:** align captured helper execution and contract tests ([#451](https://github.com/hao1939/may-agent/issues/451)) ([ad34d8c](https://github.com/hao1939/may-agent/commit/ad34d8c51e0f745698f33b09ab330590c88ecd27))
+* **apps:** apply non-source filtering to Git definition snapshots ([#487](https://github.com/hao1939/may-agent/issues/487)) ([6e333ce](https://github.com/hao1939/may-agent/commit/6e333ced1f334c8c5115e422bb958b0e6c985512))
+* **cli,standalone:** address PR [#520](https://github.com/hao1939/may-agent/issues/520) round-4 review findings ([#525](https://github.com/hao1939/may-agent/issues/525)) ([f13f94d](https://github.com/hao1939/may-agent/commit/f13f94d12dbe1ab553b59ef62c8a07153e23ec11))
+* **container:** align coding CLIs and mounted runtime user ([#461](https://github.com/hao1939/may-agent/issues/461)) ([0fc8ceb](https://github.com/hao1939/may-agent/commit/0fc8ceba3ec51e827ee2cdaca8461be1f208e0ab))
+* **container:** align services and docker exec as root ([#561](https://github.com/hao1939/may-agent/issues/561)) ([a23d573](https://github.com/hao1939/may-agent/commit/a23d573c3f802245767b27657b50183713dbc6a3))
+* **container:** expose distinct Gemini 4 models and pin routing ([#567](https://github.com/hao1939/may-agent/issues/567)) ([9d85a49](https://github.com/hao1939/may-agent/commit/9d85a49d35ba4f6794e14d184037688aa62cf4fd))
+* **container:** move resume_agents_on_restore under [session] and enforce herdr config check ([#564](https://github.com/hao1939/may-agent/issues/564)) ([4a86745](https://github.com/hao1939/may-agent/commit/4a86745bbe702898868dbba8127d9c1741306273))
+* **container:** resolve Gemini 4 model aliases ([#465](https://github.com/hao1939/may-agent/issues/465)) ([46fba0f](https://github.com/hao1939/may-agent/commit/46fba0f89edca212c1d9180564403e9049b3f56d))
+* **container:** resolve system tools independently of PATH ([#464](https://github.com/hao1939/may-agent/issues/464)) ([708cc9c](https://github.com/hao1939/may-agent/commit/708cc9c7c1528f2354e5ab5e5a81b9555de2337f))
+* **conversations:** keep Task-admitted summaries internal ([#608](https://github.com/hao1939/may-agent/issues/608)) ([7c4aff9](https://github.com/hao1939/may-agent/commit/7c4aff94980f94863701162c2c4bc3defc25db89))
+* **host:** complete legacy project comment retirement ([#607](https://github.com/hao1939/may-agent/issues/607)) ([affbf2e](https://github.com/hao1939/may-agent/commit/affbf2e8cd47e7584717a89f06ebeff5fafcd403))
+* **host:** preserve fenced Task inputs and retained caller returns ([#577](https://github.com/hao1939/may-agent/issues/577)) ([d8b9190](https://github.com/hao1939/may-agent/commit/d8b91905f8f2a3d295550cf68b85678a8dcf856f))
+* **inbox:** queue forced admission recovery across in-flight recovery passes ([#534](https://github.com/hao1939/may-agent/issues/534)) ([04c630e](https://github.com/hao1939/may-agent/commit/04c630e167b0f56e895a3681ed1c4054c0710de3))
+* **models:** keep tool root parameter schemas as type object for Gemini ([#606](https://github.com/hao1939/may-agent/issues/606)) ([fd4540c](https://github.com/hao1939/may-agent/commit/fd4540c1d50f691c78cf99cb64b174445cae7a6c))
+* **operations:** scope Task contract conversion checks to affected Apps and live sessions ([#453](https://github.com/hao1939/may-agent/issues/453)) ([e9e88da](https://github.com/hao1939/may-agent/commit/e9e88da22f9e0ecbbe2bde49030f589f9eeb5806))
+* **runtime:** bound daemon heartbeat persistence ([#588](https://github.com/hao1939/may-agent/issues/588)) ([09e588f](https://github.com/hao1939/may-agent/commit/09e588f67ffe379d764bc41abc12e8e4df8f4bb4))
+* **runtime:** converge retained admission and maintenance recovery ([#447](https://github.com/hao1939/may-agent/issues/447)) ([946d3ff](https://github.com/hao1939/may-agent/commit/946d3ff4ad314394714e3a196d0f95a7ac8e4914))
+* **scanner:** exclude reserved nested .worktrees directories ([#610](https://github.com/hao1939/may-agent/issues/610)) ([5f56248](https://github.com/hao1939/may-agent/commit/5f5624808da053d1c8f9512608a512febebb144f))
+* **scripts:** ignore workspace/ and .disabled Apps in check-canonical-app-boundary ([#519](https://github.com/hao1939/may-agent/issues/519)) ([b16392b](https://github.com/hao1939/may-agent/commit/b16392bea9c445506ec5ef20bd6c5407690b2e3d))
+* **sdk,standalone:** sync bun.lock, preserve flat Task feedback payloads, and prune standalone exports ([#527](https://github.com/hao1939/may-agent/issues/527)) ([2a30219](https://github.com/hao1939/may-agent/commit/2a302194857d812793004a6d79ccb42b0ea40ac9))
+* **sdk:** cancel awaited workflow commands with bounded cleanup ([#584](https://github.com/hao1939/may-agent/issues/584)) ([8a795c1](https://github.com/hao1939/may-agent/commit/8a795c12d9c9cdcec6a55601dacd5d96ff817d1f))
+* **sdk:** expose runtime text asset types to consumers ([#604](https://github.com/hao1939/may-agent/issues/604)) ([92c77ab](https://github.com/hao1939/may-agent/commit/92c77ab13ab70c6c9f3dac818810c1bb96c68632))
+* **sdk:** load shared commands without the coding runtime ([#586](https://github.com/hao1939/may-agent/issues/586)) ([5c3ba8e](https://github.com/hao1939/may-agent/commit/5c3ba8eff42486aacdf9327d7cce687ae88fcf6b))
+* **tasks:** add explicit creator-owned assignment discovery ([#472](https://github.com/hao1939/may-agent/issues/472)) ([0c7b0ad](https://github.com/hao1939/may-agent/commit/0c7b0adb071ad6dae8a281a2a875e1f3e583eeff))
+* **tasks:** admit real revision after effective no-op ([#590](https://github.com/hao1939/may-agent/issues/590)) ([a276dc5](https://github.com/hao1939/may-agent/commit/a276dc5a8c8ff96068ba75bb5b32bf68eb2170ac))
+* **tasks:** align workload guidance with current execution limits ([#497](https://github.com/hao1939/may-agent/issues/497)) ([528cfee](https://github.com/hao1939/may-agent/commit/528cfeec32b5bb7b262857e02ddc57ccb8319938))
+* **tasks:** avoid redundant workers on settled session notices ([#507](https://github.com/hao1939/may-agent/issues/507)) ([de76f5c](https://github.com/hao1939/may-agent/commit/de76f5c3f00c6e3d103317259e2c26422b0f72cf))
+* **tasks:** clarify saved-context reply guidance ([#500](https://github.com/hao1939/may-agent/issues/500)) ([e9c789b](https://github.com/hao1939/may-agent/commit/e9c789b3b95bfd2d88ba3c69c0931347b3a2814d))
+* **tasks:** correct decision detail guidance ([#583](https://github.com/hao1939/may-agent/issues/583)) ([82ddc2f](https://github.com/hao1939/may-agent/commit/82ddc2fcc561dca8f9d3827280a65dede04e377a))
+* **tasks:** expose scoped procedures through agents ([#585](https://github.com/hao1939/may-agent/issues/585)) ([0606e2d](https://github.com/hao1939/may-agent/commit/0606e2df16d0a44016bbef1c6294dac4c4c11d94))
+* **tasks:** omit absent fields from Task detail projection ([#605](https://github.com/hao1939/may-agent/issues/605)) ([049ce4c](https://github.com/hao1939/may-agent/commit/049ce4c65273d36695607462de171cc992efeebb))
+* **tasks:** preflight native results within the current invocation ([#578](https://github.com/hao1939/may-agent/issues/578)) ([aeaa768](https://github.com/hao1939/may-agent/commit/aeaa7682b0505d7211b9490c3b05dfdfd5a648c9))
+* **tasks:** preserve blank public execution facts ([#571](https://github.com/hao1939/may-agent/issues/571)) ([bec736a](https://github.com/hao1939/may-agent/commit/bec736a7948dc5967d6baa3d74adc69aae254c89))
+* **tasks:** preserve canonical metadata in public detail ([#592](https://github.com/hao1939/may-agent/issues/592)) ([946453c](https://github.com/hao1939/may-agent/commit/946453cff0eaddc15dde5bc2538b6939a8866251))
+* **tasks:** retain blocked checkpoints and App progress policy ([#574](https://github.com/hao1939/may-agent/issues/574)) ([082a639](https://github.com/hao1939/may-agent/commit/082a63977d0454a7e9c3491a2a9037e8779c111a))
+* **tasks:** show creator-owned work in native decision context ([#491](https://github.com/hao1939/may-agent/issues/491)) ([9cc9547](https://github.com/hao1939/may-agent/commit/9cc9547c9237247f5060f67a35d82774e882236f))
+* **workflow:** enforce legacy agent catalog isolation, defer owner imports, and isolate malformed agent.json ([#516](https://github.com/hao1939/may-agent/issues/516)) ([17ba0aa](https://github.com/hao1939/may-agent/commit/17ba0aa0f788d2f4643e4cbfc7ec39339e1bae36))
+* **workflows:** bound Host root workflow preparation ([#612](https://github.com/hao1939/may-agent/issues/612)) ([246839c](https://github.com/hao1939/may-agent/commit/246839cab2b67885d8ff51c6c7fb0cf36048b3c4))
+
+
+### Performance Improvements
+
+* **db:** add idx_app_task_attempts_started for rolling attempt cohort queries ([#560](https://github.com/hao1939/may-agent/issues/560)) ([4c2ddaa](https://github.com/hao1939/may-agent/commit/4c2ddaa3e44072ea5d2fef518fbb4f6ec48c18e8))
+* **db:** batch PRAGMA table_info checks and guard child-wait retirement in applyDbSchema ([#483](https://github.com/hao1939/may-agent/issues/483)) ([e03cd86](https://github.com/hao1939/may-agent/commit/e03cd869732ad1b73a38c59d9206c5dd344555ac))
+* **db:** cover retained task return scans with accepted_result_state ([#601](https://github.com/hao1939/may-agent/issues/601)) ([731b934](https://github.com/hao1939/may-agent/commit/731b9348cccba832f1ef0e422c8038ff7059cdc4))
+
+
+### Code Refactoring
+
+* **host:** retire legacy human control paths ([#603](https://github.com/hao1939/may-agent/issues/603)) ([0594a9a](https://github.com/hao1939/may-agent/commit/0594a9ab3484a58be8843722857fd4adf85f40a2))
+
 ## [5.6.0](https://github.com/hao1939/may-agent/compare/v5.5.0...v5.6.0) (2026-11-10)
 
 
