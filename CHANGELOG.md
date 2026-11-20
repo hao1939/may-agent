@@ -1,5 +1,18 @@
 # Changelog
 
+## [6.1.0](https://github.com/hao1939/may-agent/compare/v6.0.0...v6.1.0) (2026-11-20)
+
+
+### Features
+
+* **context:** preserve hot human turns, open requests, and executive Task summary/facts ([#614](https://github.com/hao1939/may-agent/issues/614)) ([bfde0dc](https://github.com/hao1939/may-agent/commit/bfde0dc2429b1bf67aabebb9e68ef7516f2ff27d))
+* **tools:** add task_inspect system state inspector and flat reconcile turn settlement ([#617](https://github.com/hao1939/may-agent/issues/617)) ([9f37aae](https://github.com/hao1939/may-agent/commit/9f37aaee7834834f15d8f6d17e163658b7f8d384))
+
+
+### Bug Fixes
+
+* **tasks:** continue timer-only waits on new input and emit waiting conditions ([#616](https://github.com/hao1939/may-agent/issues/616)) ([35902a8](https://github.com/hao1939/may-agent/commit/35902a8ebaf4034aa07c2444bf2c0b75f10189c0))
+
 ## [6.0.0](https://github.com/hao1939/may-agent/compare/v5.6.0...v6.0.0) (2026-11-19)
 
 
