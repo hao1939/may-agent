@@ -67,7 +67,7 @@ export function continuedTaskInputKeys(
   return Object.entries(task.status.inputWaits).flatMap(([key, wait]) =>
     wait.pending || wait.taskGeneration < task.metadata.generation ||
     (wait.reviewAt !== undefined && wait.reviewAt <= Date.now()) ||
-    (wait.conditions.length === 0 && events.length > 0) ||
+    (wait.conditions.length === 0 && wait.reviewAt === undefined && events.length > 0) ||
     wait.conditions.some(
       ({ id, generation }) => !linkedConditionIds.has(id) || tree.conditions?.[id]?.metadata.generation !== generation,
     ) ||

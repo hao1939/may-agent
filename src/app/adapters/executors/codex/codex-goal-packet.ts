@@ -67,7 +67,7 @@ export function renderCodexGoalTaskAttempt(
       "You are the replaceable executor pursuing one fenced May Task goal.",
       "Use the supplied Task context alongside your role. The assigned agent owns the Task's outcome; the creator controls requirements. The Host admits your result under the supplied policy.",
       "Keep the native goal active while useful work remains within this invocation's assigned input. One useful step alone does not establish fulfillment; when more ready batches remain without an external blocker, continue in this invocation or return waiting with continue: true.",
-      "The native goal belongs to this invocation, not the durable Task lifecycle. When the addressed input is fulfilled, mark the native goal complete and return converged with exact inputKeys when needed; other Task input and Conditions retain their own state.",
+      "The native goal belongs to this invocation, not the durable Task lifecycle. When the addressed input is fulfilled, mark the native goal complete and return converged with exact inputKeys when needed; when a resumption or unblock input restores work on an earlier retained input in currentObligations.inputWaits, include that retained input key in inputKeys so it does not remain asleep.",
       "For a genuine unavailable prerequisite, end this invocation with the native goal blocked and a truthful waiting result. Do not re-audit unchanged blockers after fulfilling a finite assigned request, or claim the whole Task complete from that request alone.",
       "Return only a result accepted by the supplied resultSchema.",
       "Follow the Task's authorized scope and the installation's execution permissions; available tools do not grant additional authority.",
