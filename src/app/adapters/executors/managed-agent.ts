@@ -120,7 +120,21 @@ function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
       `${base.description} Done output must satisfy the Task result contract; blocked output remains domain checkpoint data.`,
     parameters,
     execute: async (toolCallId, params, signal, onUpdate) => {
-      const report = params as { status?: unknown; output?: unknown };
+      const raw = (params && typeof params === "object" && !Array.isArray(params) ? params : {}) as Record<
+        string,
+        unknown
+      >;
+      const isFlatTaskResult =
+        raw.status === undefined &&
+        typeof raw.state === "string" &&
+        ["waiting", "converged", "incomplete"].includes(raw.state);
+      const report = isFlatTaskResult
+        ? {
+            status: "done" as const,
+            summary: typeof raw.summary === "string" ? raw.summary : "",
+            output: raw,
+          }
+        : (raw as { status?: unknown; output?: unknown });
       if (report.status === "done") {
         const schemaAdmission = admitTaskResultForSchema(appTaskAgentResultSchema, report.output);
         if (!schemaAdmission?.ok) {
@@ -147,7 +161,7 @@ function createManagedTaskFinish(input: TaskAgentInput): AgentTool {
           return { content: [{ type: "text" as const, text: `finish() error: ${problem}` }], details: undefined };
         }
       }
-      return base.execute(toolCallId, params, signal, onUpdate);
+      return base.execute(toolCallId, report, signal, onUpdate);
     },
   };
 }

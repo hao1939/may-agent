@@ -458,7 +458,9 @@ function capturedAbortedFinish(messages: any[], reason: string | undefined): Too
   const assistant = [...messages].reverse().find((message: any) => message?.role === "assistant") as any;
   if (assistant?.stopReason !== "aborted" || assistant.errorMessage !== reason) return null;
   const calls = Array.isArray(assistant.content)
-    ? assistant.content.filter((block: any) => block?.type === "toolCall" && block.name === "finish")
+    ? assistant.content.filter(
+        (block: any) => block?.type === "toolCall" && (block.name === "finish" || block.name === "reconcile"),
+      )
     : [];
   if (calls.length !== 1 || typeof calls[0].id !== "string" || !calls[0].id) return null;
   const raw = calls[0].arguments ?? calls[0].args;
@@ -466,7 +468,7 @@ function capturedAbortedFinish(messages: any[], reason: string | undefined): Too
   try {
     const args = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (!args || typeof args !== "object" || Array.isArray(args)) return null;
-    return { type: "toolCall", id: calls[0].id, name: "finish", arguments: args } as ToolCall;
+    return { type: "toolCall", id: calls[0].id, name: calls[0].name, arguments: args } as ToolCall;
   } catch {
     return null;
   }
@@ -493,7 +495,7 @@ export async function recoverCapturedWorkflowFinish(options: {
   if (existing) return existing;
 
   const recovery = (async (): Promise<CapturedFinishRecovery> => {
-    const finish = options.tools.find((tool) => tool.name === "finish");
+    const finish = options.tools.find((tool) => tool.name === call.name || tool.name === "finish");
     if (!finish) return { disposition: "rejected", toolCallId: call.id, error: "finish tool unavailable" };
     let result: Awaited<ReturnType<AgentTool["execute"]>>;
     try {
@@ -582,7 +584,7 @@ export function assertUniqueToolNames(entries: readonly SourcedAgentTool[], agen
   }
 }
 
-/** A finish call is committed only when its matching tool result succeeded. */
+/** A finish/reconcile call is committed only when its matching tool result succeeded. */
 function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined): boolean {
   if (!toolCallId) return false;
   const result = messages.find((message) => message?.role === "toolResult" && message.toolCallId === toolCallId);
@@ -592,9 +594,7 @@ function finishToolCallSucceeded(messages: any[], toolCallId: string | undefined
   return !content.some(
     (block: any) =>
       block?.type === "text" &&
-      String(block.text ?? "")
-        .trimStart()
-        .startsWith("finish() error:"),
+      /^(?:finish|reconcile)\(\) error:/.test(String(block.text ?? "").trimStart()),
   );
 }
 
@@ -645,16 +645,38 @@ export function extractFinishParams(messages: any[]): FinishParams | null {
     if (message.role !== "assistant" || !Array.isArray(message.content)) continue;
     for (const block of message.content) {
       const rawArgs = block?.arguments ?? block?.args;
-      if (block?.type !== "toolCall" || block.name !== "finish" || !rawArgs) continue;
+      if (block?.type !== "toolCall" || (block.name !== "finish" && block.name !== "reconcile") || !rawArgs) continue;
       if (!finishToolCallSucceeded(messages, block.id ?? block.toolCallId)) continue;
       try {
         const args = (typeof rawArgs === "string" ? JSON.parse(rawArgs) : rawArgs) as Record<string, unknown>;
-        if (typeof args.summary !== "string" || !args.summary.trim()) return null;
+        if (typeof args.state === "string" && ["converged", "waiting", "incomplete"].includes(args.state)) {
+          const summary = typeof args.summary === "string" ? args.summary.trim() : "";
+          if (!summary) return null;
+          return {
+            status: "done",
+            summary: args.summary as string,
+            output: args,
+            ...(hasOwn(args, "facts") ? { facts: args.facts } : {}),
+          };
+        }
+        const nestedOutput =
+          hasOwn(args, "output") && args.output && typeof args.output === "object" && !Array.isArray(args.output)
+            ? (args.output as Record<string, unknown>)
+            : null;
+        const summary =
+          typeof args.summary === "string" && args.summary.trim()
+            ? args.summary
+            : typeof nestedOutput?.summary === "string" && nestedOutput.summary.trim()
+              ? (nestedOutput.summary as string)
+              : "";
+        if (!summary) return null;
         const historical = isHistoricalFinish(args);
         const output = hasOwn(args, "output") ? args.output : historical ? args.result : undefined;
         return {
-          status: normalizedFinishStatus(args.status),
-          summary: args.summary,
+          status: args.status === undefined && nestedOutput && typeof nestedOutput.state === "string"
+            ? "done"
+            : normalizedFinishStatus(args.status),
+          summary,
           output,
           facts: normalizedFinishFacts(args, historical),
         };
@@ -904,7 +926,7 @@ export function createExecutionUsage(preparation: PreparationMeasurement) {
   };
 }
 
-const READONLY_TOOL_ALLOWLIST = new Set(["finish", "query_db", "read"]);
+const READONLY_TOOL_ALLOWLIST = new Set(["finish", "reconcile", "query_db", "task_inspect", "read"]);
 
 const SEQUENTIAL_TOOL_NAMES = new Set([
   "agents",
@@ -913,6 +935,7 @@ const SEQUENTIAL_TOOL_NAMES = new Set([
   "cron",
   "edit",
   "finish",
+  "reconcile",
   "message",
   "run_cli_agent",
   "write",
@@ -1275,7 +1298,32 @@ function resolveTools(options: AgentPreparationOptions, requireFinish: boolean):
   }
   const finish = createWorkflowFinishTool(baseFinish, options.outputSchema, options.validateOutput);
   const index = tools.findIndex((tool) => tool.name === "finish");
-  const finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
+  let finalTools = index < 0 ? [...tools, finish] : tools.map((tool, offset) => (offset === index ? finish : tool));
+  const reconcileIndex = finalTools.findIndex((tool) => tool.name === "reconcile");
+  if (reconcileIndex >= 0) {
+    finalTools = finalTools.map((tool, offset) =>
+      offset === reconcileIndex
+        ? {
+            ...finish,
+            name: "reconcile",
+            label: "Reconcile Turn",
+            description:
+              "Commit this Task attempt's reconciliation decision ({ state: 'waiting' | 'converged' | 'incomplete', summary, facts, and optional continue, inputKeys, requests, conditions, actions, communication }) and end the current turn.",
+            parameters: Type.Unsafe({
+              ...structuredClone(
+                ((finish.parameters as any)?.properties?.output?.anyOf?.[0] as Record<string, unknown> | undefined) ??
+                  finish.parameters,
+              ),
+              description:
+                "Flat Task attempt reconciliation result (state: 'waiting' | 'converged' | 'incomplete', summary, facts, optional continue, inputKeys, requests, conditions, actions, communication).",
+            }),
+            prepareArguments: undefined,
+            execute: async (toolCallId, params, signal, onUpdate) =>
+              finish.execute(toolCallId, params, signal, onUpdate),
+          }
+        : tool,
+    );
+  }
   assertUniqueToolNames(
     finalTools.map((tool, offset) => ({
       tool,
@@ -1483,7 +1531,8 @@ function prepareExecution(options: AgentPreparationOptions): Omit<PreparedAgentE
       },
       beforeToolCall,
       afterToolCall: async ({ toolCall, assistantMessage, result, isError }) => {
-        if (toolCall.name === "finish" && !isError && result.terminate === true) finishedTurn = assistantMessage;
+        if ((toolCall.name === "finish" || toolCall.name === "reconcile") && !isError && result.terminate === true)
+          finishedTurn = assistantMessage;
         return undefined;
       },
       // Pi's batch hint alone can continue mixed batches or consume queued input.

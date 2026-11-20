@@ -11,6 +11,7 @@ import {
 } from "@may-agent/sdk/runtime";
 import { createFinishTool } from "@may-agent/sdk/runtime";
 import { createQueryDbTool } from "../../lib/tools/query-db.js";
+import { createTaskInspectTool } from "../../lib/tools/task-inspect.js";
 import { createReadTool } from "@may-agent/sdk/runtime";
 import { createRunCliAgentTool } from "../../lib/tools/run-cli-agent.js";
 import type { WorkflowEvent } from "../../lib/workflow.js";
@@ -48,6 +49,15 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
     switch (preset) {
       case "query_db":
         tools.push(createQueryDbTool(persistDir));
+        if (!tools.some((t) => t.name === "task_inspect")) {
+          tools.push(createTaskInspectTool({ persistDir, bus }));
+        }
+        break;
+
+      case "task_inspect":
+        if (!tools.some((t) => t.name === "task_inspect")) {
+          tools.push(createTaskInspectTool({ persistDir, bus }));
+        }
         break;
 
       case "coding":
@@ -102,11 +112,19 @@ export async function buildTools(config: AgentConfig, opts: ToolsetLoaderOptions
       }
 
       case "finish": {
-        tools.push(
-          createFinishTool({
-            projectRoot,
-          }),
-        );
+        const finishTool = createFinishTool({
+          projectRoot,
+        });
+        tools.push(finishTool);
+        if (!tools.some((t) => t.name === "reconcile")) {
+          tools.push({
+            ...finishTool,
+            name: "reconcile",
+            label: "Reconcile Turn",
+            description:
+              "Commit this Task attempt's reconciliation decision (state: 'waiting' | 'converged' | 'incomplete', summary, facts, and optional continue, inputKeys, requests, conditions, actions, communication) and end the current turn.",
+          });
+        }
         break;
       }
 
