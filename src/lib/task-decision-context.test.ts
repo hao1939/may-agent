@@ -343,6 +343,31 @@ test("large Unicode data stays discoverable without displacing current conclusio
   }
 });
 
+test("large current.result preserves current.summary and current.facts with dedicated budgets", async () => {
+  const root = mkdtempSync(join(tmpdir(), "decision-current-budgets-"));
+  try {
+    const f = fixture(root);
+    const fullSummary = "Completed scheduled four-hour design-alignment pass-013: all 6 causal chains and 30 workflows are healthy.";
+    const fullFact = "Executed alex/system-alignment-check (aligned: true, 0 violations) and alex/slop-audit (0 candidates).";
+    f.setCurrent({
+      ...f.task,
+      summary: fullSummary,
+      facts: [fullFact],
+      result: {
+        alignmentReview: Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`pass-${i}`, "archived-evidence-".repeat(20)])),
+      },
+    });
+    const p = packet(await createTaskDecisionContext(f.context)());
+    expect(p.current.omitted).toBe(true);
+    expect(p.current.preview.summary).toBe(fullSummary);
+    expect(p.current.preview.facts).toEqual([fullFact]);
+    expect(p.current.preview.result.omitted).toBe(true);
+    expect(p.current.preview.result.pointer).toBe("/current/result");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("the production transform restores current facts after compaction without accumulating briefs", async () => {
   const root = mkdtempSync(join(tmpdir(), "decision-compaction-"));
   try {
