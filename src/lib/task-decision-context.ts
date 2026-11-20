@@ -19,7 +19,9 @@ function preview(value: unknown, budget: number, pointer: string, depth = 0): un
   const omitted = { omitted: true, pointer };
   if (typeof value === "string") {
     // Code points preserve Unicode; the final byte check also covers JSON escaping.
-    const points = [...value].slice(0, Math.max(0, Math.floor(budget / 8)));
+    const wrapperBytes = bytes({ ...omitted, preview: "" });
+    const maxChars = Math.max(0, budget - wrapperBytes);
+    const points = [...value].slice(0, maxChars);
     let text = points.join("");
     while (bytes({ ...omitted, preview: text }) > budget && points.length) {
       points.pop();
@@ -160,6 +162,26 @@ export function taskDecisionState(task: TaskDetail, events: TaskReconciliationEv
   };
 }
 
+function previewCurrentTaskState(value: unknown): unknown {
+  if (bytes(value) <= SECTION_BYTES) return value;
+  const cur = record(value);
+  if (!cur) return preview(value, SECTION_BYTES, "/current");
+  return {
+    omitted: true,
+    pointer: "/current",
+    preview: {
+      ...(cur.summary !== undefined ? { summary: preview(cur.summary, 600, "/current/summary") } : {}),
+      ...(cur.facts !== undefined ? { facts: preview(cur.facts, 900, "/current/facts") } : {}),
+      ...(cur.result !== undefined ? { result: preview(cur.result, 700, "/current/result") } : {}),
+      ...(cur.response !== undefined ? { response: preview(cur.response, 400, "/current/response") } : {}),
+      ...(cur.acceptedAttempt !== undefined
+        ? { acceptedAttempt: preview(cur.acceptedAttempt, 300, "/current/acceptedAttempt") }
+        : {}),
+    },
+    totalItems: Object.keys(cur).length,
+  };
+}
+
 /** Keep sections independently visible; omitted material keeps its JSON pointer. */
 export function previewTaskDecisionSections(full: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -167,13 +189,15 @@ export function previewTaskDecisionSections(full: Record<string, unknown>): Reco
       key,
       key === "events"
         ? previewTaskInputs(value)
-        : preview(
-            value,
-            key === "input" || key === "related" || key === "previousAttempt" || key === "waitsAtAttemptStart"
-              ? 800
-              : SECTION_BYTES,
-            `/${key}`,
-          ),
+        : key === "current"
+          ? previewCurrentTaskState(value)
+          : preview(
+              value,
+              key === "input" || key === "related" || key === "previousAttempt" || key === "waitsAtAttemptStart"
+                ? 800
+                : SECTION_BYTES,
+              `/${key}`,
+            ),
     ]),
   );
 }
