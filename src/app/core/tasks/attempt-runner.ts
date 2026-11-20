@@ -602,6 +602,7 @@ async function runClaimedTask(
           summary: result.summary,
           ...(result.response ? { response: result.response } : {}),
           ...(result.result ? { result: result.result } : {}),
+          ...(result.conditions?.length ? { conditions: result.conditions } : {}),
           facts: result.facts,
           actionsApplied: [...changes.actionsApplied, ...apply.actionsApplied],
           ...(stale ? { staleRecovery: stale.staleRecovery } : {}),
