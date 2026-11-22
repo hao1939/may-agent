@@ -50,7 +50,7 @@
     "@may-agent/control": "workspace:*",
     "@may-agent/sdk": "workspace:*",
     "diff": "^9.0.0",
-    "typebox": "1.4.6"
+    "typebox": "1.4.7"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
