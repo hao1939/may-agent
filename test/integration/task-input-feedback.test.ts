@@ -10,14 +10,20 @@ import { EVENT_ROW_ID, EventBus, type AgentEvent } from "../../src/app/core/even
 import { createEventInterface, findEventPublication } from "../../src/app/core/events/interface.js";
 import { createAppInboxItem } from "../../src/app/core/state/app-inbox-store.js";
 import { createAppTaskEvents } from "../../src/app/core/tasks/app-task-emitter.js";
+import { createAppTaskCapability } from "../../src/app/core/tasks/app-task-capability.js";
+import { appTaskContext, observeAppTaskIntent } from "../../src/app/core/tasks/app-task-reconciler.js";
+import { closeInstalledAppTaskRuntimes, installAppTaskRuntimes } from "../../src/app/core/tasks/app-task-runtime.js";
+import { AppTaskResourceStore } from "../../src/app/core/state/app-task-resource-store.js";
 import { DbWriter } from "../../src/lib/db-writer.js";
 import { closeDb, getDb } from "../../src/lib/db/connection.js";
-import { fakeTaskAttacher } from "../fixtures/task-attachment.js";
 
 test("public targeted input retains its receipt, attaches once and reaches only its live Task", async () => {
   const root = mkdtempSync(join(tmpdir(), "may-input-feedback-"));
   const persistDir = join(root, "state");
-  mkdirSync(join(root, "sample.app"));
+  mkdirSync(join(root, "sample.app/tasks"), { recursive: true });
+  writeFileSync(join(root, "sample.app/tasks/seed.json"), JSON.stringify({
+    root_task_id: "root", groups: { root: { id: "root", parent_id: null } },
+  }));
   writeFileSync(
     join(root, "sample.app/app.js"),
     `export default {
@@ -36,6 +42,19 @@ test("public targeted input retains its receipt, attaches once and reaches only 
   bus.setDeliveryRecorder(writer.recordDelivery);
   const registry = new AppRegistry(discoverAppDefinitions(root));
   await registry.reload();
+  const startGate = Promise.withResolvers<void>();
+  await installAppTaskRuntimes({
+    projectRoot: root, projectsRoot: root, persistDir, bus,
+    appRegistrySnapshot: registry.snapshot(), startAfter: startGate.promise,
+  }, { deferRecovery: true });
+  const config = appTaskContext({
+    appDir: join(root, "sample.app"), projectDir: join(root, "sample.app"), agent: "owner", maxConcurrent: 1,
+    resourceStore: AppTaskResourceStore.activeFromDb(db, "sample")!,
+  });
+  for (const id of ["current", "other"]) observeAppTaskIntent(config, {
+    appAgent: "owner", intent: { id, parentId: "root", outcome: "Handle feedback", acceptance: ["Feedback applied"] },
+  });
+  const capability = createAppTaskCapability({ bus });
   const attached: string[] = [];
   let conversations = 0;
   const runtime = await startAppInboxRuntime({
@@ -43,11 +62,15 @@ test("public targeted input retains its receipt, attaches once and reaches only 
     db,
     bus,
     scanIntervalMs: 60_000,
-    attachTask: fakeTaskAttacher(db, ({ attachment }) => {
-      if (attachment.kind !== "existing") throw new Error("Expected existing Task");
-      attached.push(attachment.taskId);
-      return { taskId: attachment.taskId };
-    }),
+    attachTask: (input) => {
+      if (input.attachment.kind !== "existing") throw new Error("Expected existing Task");
+      attached.push(input.attachment.taskId);
+      return capability.attach(input);
+    },
+    admitTaskEvent: capability.admitEvent,
+    hasTaskTarget: capability.has,
+    previewTaskEvent: capability.previewEvent,
+    previewTaskEventRoutes: capability.previewEventRoutes,
     admitConversation: (input) => {
       conversations++;
       return createAppInboxItem(db, input);
@@ -91,7 +114,11 @@ test("public targeted input retains its receipt, attaches once and reaches only 
     expect(conversations).toBe(0);
     expect(seen).toHaveLength(1);
     expect(other).toEqual([]);
-    expect(seen[0]![EVENT_ROW_ID]).toBe(receipt.eventId);
+    expect(seen[0]!.type).toBe("app.task.requested");
+    expect(Number(seen[0]![EVENT_ROW_ID])).toBeGreaterThan(receipt.eventId);
+    const admissionKey = runtime.host.get(String((seen[0]!.data.request as { id: string }).id))!.taskAdmissionKey;
+    expect(seen[0]!.data.idempotencyKey).toBe(admissionKey);
+    expect(seen[0]!.target).toEqual({ project: "sample", taskId: "current" });
     const view = events.get(receipt.eventId)!;
     expect(view.event.target).toEqual({ appId: "sample" }); // No rewritten envelope.
     expect(view.event.data.targetTaskId).toBe("current");
@@ -129,6 +156,9 @@ test("public targeted input retains its receipt, attaches once and reaches only 
   } finally {
     stops.forEach((stop) => stop());
     runtime.close();
+    const drained = closeInstalledAppTaskRuntimes(bus);
+    startGate.resolve();
+    await drained;
     closeDb(persistDir);
     rmSync(root, { recursive: true, force: true });
   }

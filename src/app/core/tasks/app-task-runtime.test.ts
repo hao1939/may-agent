@@ -5202,6 +5202,7 @@ describe("canonical App task runtime", () => {
   it("yields readiness inside one large reconciliation after claim persistence", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     const retainedFacts = "x".repeat(4 * 1024 * 1024);
     const seed = JSON.parse(readFileSync(join(f.appDir, "tasks", "seed.json"), "utf8"));
     const sourceConfig = appTaskTestContext({
@@ -6212,6 +6213,7 @@ describe("canonical App task runtime", () => {
   it("admits desired attachments and resolved events through the one loaded generation", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     await installAppTaskRuntimes({
       ...options(f, bus),
       appRegistrySnapshot: {
@@ -6280,6 +6282,7 @@ describe("canonical App task runtime", () => {
   it("discards a post-claim superseded attempt without a handler failure or retry loop", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     const failures: AgentEvent[] = [];
     const staleDispositions: AgentEvent[] = [];
     let superseded = false;
@@ -7269,6 +7272,7 @@ describe("canonical App task runtime", () => {
   it("retries a restored executor through durable eligibility while independent Tasks keep working", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     const calls: string[] = [];
     const startedAt = new Map<string, number>();
     const execute: TaskExecutor = async (attempt) => {
@@ -7598,6 +7602,7 @@ describe("canonical App task runtime", () => {
   it("starts new work from a reloaded definition while an old attempt is still running", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     const started: string[] = [];
     let releaseOld = () => {};
     const oldBlocked = new Promise<void>((resolve) => {
@@ -7688,6 +7693,7 @@ describe("canonical App task runtime", () => {
     async (controllers) => {
       const f = fixture();
       const bus = eventBus();
+      bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
       let cliRequests = 0;
       bus.subscribeDurableRoute((event) => {
         if (event.type !== "cli.task.requested") return;
@@ -7778,6 +7784,7 @@ describe("canonical App task runtime", () => {
   it("delegates a controller attempt across the configured execution boundary", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     const calls: Array<{ appId: string; taskId: string; lane: string }> = [];
 
     await installAppTaskRuntimes({
@@ -7825,6 +7832,7 @@ describe("canonical App task runtime", () => {
       const newInput = timing === "new input";
       const f = fixture();
       const bus = eventBus();
+      bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
       const persistDir = join(f.root, "state");
       const taskId = "work/session-completion";
       const sessionEnded = Promise.withResolvers<void>();
@@ -8235,6 +8243,7 @@ describe("canonical App task runtime", () => {
   it("persists an actual blocked workflow checkpoint across DB reopen and resumes it on fresh input", async () => {
     const f = fixture();
     let bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     const agentsRoot = join(f.root, "agents");
     const workflowDir = join(agentsRoot, "sample-owner", "workflows");
     mkdirSync(workflowDir, { recursive: true });
@@ -8328,6 +8337,7 @@ describe("canonical App task runtime", () => {
     await closeInstalledAppTaskRuntimes(bus);
     closeDb(join(f.root, "state"));
     bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     await installAppTaskRuntimes(runtimeOptions());
     const reopened = loadedTaskConfig(f);
     expect(reopened.resourceStore.readTask(taskId)?.status).toMatchObject({
@@ -9271,6 +9281,7 @@ describe("canonical App task runtime", () => {
   it.each(["invalid-state", "self-unblock"])("paces %s and accepts a corrected result on the same Task", async (invalid) => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     let calls = 0;
     const rejection = invalid === "invalid-state"
       ? "Handler result was rejected: state must be converged, waiting, or incomplete"
@@ -9359,6 +9370,7 @@ describe("canonical App task runtime", () => {
   it("bounds controller retries by default while unrelated work progresses", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     let calls = 0;
     await installCoreTaskRuntimes({
       ...options(f, bus),
@@ -9810,6 +9822,7 @@ describe("canonical App task runtime", () => {
   it("retries the same Task after an executor process failure", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     let calls = 0;
 
     await installAppTaskRuntimes({
@@ -9884,6 +9897,7 @@ describe("canonical App task runtime", () => {
   it("schedules unexpected exact-task input without replacing outstanding waits", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     const taskId = "work/open-waits";
     const conditions = [
       {
@@ -10106,6 +10120,7 @@ describe("canonical App task runtime", () => {
   it("keeps task admission durable while paused without starting reconciliation", async () => {
     const f = fixture();
     const bus = eventBus();
+    bus.setPersistenceSubscriber(new DbWriter(join(f.root, "state")).handler);
     activateTaskResources(
       appTaskTestContext({
         appDir: f.appDir,
