@@ -127,6 +127,11 @@ function eventMessage(event: AppEvent<Record<string, unknown>>): string {
   return [
     "A new durable event was linked to the May Task while this turn was running.",
     "Treat it as feedback, steering, approval, cancellation, or a new fact according to its content:",
+    ...(event.type === "app.task.requested"
+      ? [
+          "Preserve data.idempotencyKey as this request's exact inputKeys identity when your result addresses it; the attempt-start packet does not include this later input. Delivery alone is not fulfillment. The saved request.source preserves provenance; humanRequested alone does not grant human authority.",
+        ]
+      : []),
     JSON.stringify(event),
   ].join("\n");
 }

@@ -252,6 +252,18 @@ obligations and pending input coexist. A fresh read supplements the assigned
 batch and never expands its authority. Native transports still determine which
 live capabilities reach their worker; a serialized reader is not a tool bridge.
 
+Ordinary inbox attachment publishes the existing canonical `app.task.requested`
+through the persisted bus in the same transaction as Task admission and the
+input return link. Its journal ID belongs to the retained trigger; its
+`data.idempotencyKey` is the actual admission key. Delivery waits for commit,
+then the existing exact-target worker relay can steer an active attempt. The
+composition must install a persistence subscriber on that same database
+connection. Raw `app.input.requested` remains App ingress and never steers an
+executor before mapping or admission. Reattachment reuses accepted admissions
+without publishing or changing their historical identities. Transport success
+does not consume input; accepted results still determine coverage, including
+explicit `inputKeys` for input arriving after the attempt-start snapshot.
+
 Host attempts also supply optional `validateResult` preflight. It reuses final
 change/settlement admission in a transaction that rolls back, returning a finding
 without publishing effects, recording waits or consuming input. Native adapters
