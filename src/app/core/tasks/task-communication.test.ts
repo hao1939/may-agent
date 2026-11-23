@@ -12,7 +12,7 @@ import {
 import { expect, setSystemTime, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { usageReply } from "../../../../test/fixtures/execution-usage.js";
 import { fakeModel } from "../../../../test/fixtures/model.js";
 import { createAgentRun } from "@may-agent/sdk/runtime";
@@ -198,6 +198,183 @@ const progress: TaskCommunication = {
   inputId: "ask",
   message: "The tests passed; review is still pending.",
 };
+
+test.each([
+  { route: "mapped", coverLive: true },
+  { route: "addressed", coverLive: true },
+  { route: "mapped", coverLive: false },
+])(
+  "$route inbox input reaches a running Task after admission with its exact key (covered: $coverLive)",
+  async ({ route, coverLive }) => {
+    const received: Array<{ type: string; key: unknown; request: unknown }> = [];
+    const delivered = Promise.withResolvers<void>();
+    const f = await fixture(async (attempt) => {
+      const stop = attempt.onEvent((event) => {
+        received.push({
+          type: event.type,
+          key: event.data.idempotencyKey,
+          request: event.data.request,
+        });
+        delivered.resolve();
+      });
+      try {
+        f.bus.emit({
+          type: "app.input.requested",
+          source: "fixture",
+          owner: "human:requester",
+          target: { appId: "sample" },
+          data: {
+            appId: "sample",
+            requestId: "live",
+            idempotencyKey: "transport:live",
+            source: { kind: "human", id: "requester" },
+            ...(route === "addressed" ? { targetTaskId: "work" } : {}),
+            input: {
+              kind: "message",
+              data: { message: "Continue and publish the next change" },
+            },
+          },
+        });
+        const deadline = setTimeout(() => delivered.reject(new Error("Admitted input was not delivered")), 1_000);
+        try {
+          await delivered.promise;
+        } finally {
+          clearTimeout(deadline);
+        }
+        expect(received).toEqual([
+          {
+            type: "app.task.requested",
+            key: "task:live",
+            request: expect.objectContaining({
+              id: "live",
+              source: { kind: "human", id: "requester" },
+            }),
+          },
+        ]);
+        expect(f.inbox.host.get("live")).toMatchObject({
+          status: "handling",
+          taskAdmissionKey: "task:live",
+        });
+        expect(
+          f.store.readTaskContext({ taskIds: [], admissionIds: ["task:live"] }).appTaskAdmissions!["task:live"]!
+            .resultAttemptId,
+        ).toBeUndefined();
+        return {
+          state: "converged",
+          summary: "Applied the addressed requests",
+          facts: [],
+          inputKeys: coverLive ? ["task:ask", "task:live"] : ["task:ask"],
+        };
+      } finally {
+        stop();
+      }
+    });
+    try {
+      f.admit("ask");
+      await f.run();
+      expect(received).toEqual([
+        {
+          type: "app.task.requested",
+          key: "task:live",
+          request: expect.objectContaining({
+            id: "live",
+            source: { kind: "human", id: "requester" },
+          }),
+        },
+      ]);
+      expect(f.store.readTask("work")?.status.executionFailures ?? 0).toBe(0);
+      await f.inbox.host.refreshTaskResults("sample", "work");
+      expect(f.inbox.host.get("live")?.status).toBe(coverLive ? "done" : "handling");
+      expect(f.store.readTask("work")?.metadata.generation).toBe(1);
+      await f.reopen();
+      expect(f.inbox.host.get("live")?.status).toBe(coverLive ? "done" : "handling");
+    } finally {
+      await f.close();
+    }
+  },
+);
+
+test("rejected input and failed publication cannot steer; recovery publishes one exact admitted request", async () => {
+  const received: string[] = [];
+  const delivered = Promise.withResolvers<void>();
+  const f = await fixture(async (attempt) => {
+    const stop = attempt.onEvent((event) => {
+      if (event.type !== "app.task.requested") return;
+      received.push(String(event.data.idempotencyKey));
+      delivered.resolve();
+    });
+    const writer = new DbWriter(dirname(f.appDir));
+    try {
+      const rejected = f.inbox.host.admit({
+        id: "rejected",
+        appId: "sample",
+        targetTaskId: "work",
+        targetTaskGeneration: 99,
+        source: { kind: "human", id: "requester" },
+        input: { kind: "message", data: {} },
+      }).item;
+      expect(rejected.result?.result).toMatchObject({
+        disposition: "admission-rejected",
+      });
+      expect(
+        f.db
+          .prepare(
+            "SELECT id FROM events WHERE event_type = 'app.task.requested' AND idempotency_key = 'task:rejected'",
+          )
+          .get(),
+      ).toBeFalsy();
+      f.bus.setPersistenceSubscriber((event) => {
+        if (event.type === "app.task.requested" && event.data.idempotencyKey === "task:retry")
+          throw new Error("Publication unavailable");
+        return writer.handler(event);
+      });
+      const retry = f.admit("retry", "message", "discussion", 2).item;
+      expect(retry.status).toBe("pending");
+      expect(
+        f.store.readTaskContext({ taskIds: [], admissionIds: ["task:retry"] }).appTaskAdmissions?.["task:retry"],
+      ).toBeUndefined();
+      f.bus.setPersistenceSubscriber(writer.handler);
+      if (retry.availableAt) setSystemTime(new Date(retry.availableAt));
+      f.inbox.host.recoverAdmission("retry");
+      const deadline = setTimeout(() => delivered.reject(new Error("Recovered input was not delivered")), 1_000);
+      try {
+        await delivered.promise;
+      } finally {
+        clearTimeout(deadline);
+      }
+      f.admit("retry", "message", "discussion", 2);
+      expect(received).toEqual(["task:retry"]);
+      expect(
+        f.db
+          .prepare(
+            "SELECT count(*) AS n FROM events WHERE event_type = 'app.task.requested' AND idempotency_key = 'task:retry'",
+          )
+          .get(),
+      ).toEqual({ n: 1 });
+      return {
+        state: "converged",
+        summary: "Recovered the accepted input",
+        facts: [],
+        inputKeys: ["task:ask", "task:retry"],
+      };
+    } finally {
+      f.bus.setPersistenceSubscriber(writer.handler);
+      stop();
+    }
+  });
+  try {
+    f.admit("ask");
+    await f.run();
+    expect(f.store.readTask("work")?.status.summary).toBe("Recovered the accepted input");
+    expect(received).toEqual(["task:retry"]);
+    expect(f.store.readTask("work")?.status.executionFailures ?? 0).toBe(0);
+    await f.inbox.host.refreshTaskResults("sample", "work");
+    expect(f.inbox.host.get("retry")?.status).toBe("done");
+  } finally {
+    setSystemTime();
+    await f.close();
+  }
+});
 
 test.each(["dedicated", "legacy receipt", "legacy message"] as const)(
   "%s communication receipts preserve exact operations and reply lookup after restart",
@@ -2505,10 +2682,7 @@ test.each(["default", "original-only"] as const)("live Requests respect %s input
     });
     const live = f.admit("live", "message", "discussion", 2).item;
     expect(live.taskAdmissionKey).toBe("task:live");
-    const admission = f.store.readTaskContext({ taskIds: [], admissionIds: [live.taskAdmissionKey!] })
-      .appTaskAdmissions![live.taskAdmissionKey!]!;
-    // Deliver the saved input through the real event bus while this attempt is live.
-    f.bus.emit(admission.inputEvent as AgentEvent);
+    // Production inbox admission delivers the canonical request after commit.
     await accepted.promise;
     await attempt.apply({ communication: [{
       id: "accept-live", inputId: "live", requestUpdates: [{

@@ -26,6 +26,8 @@ export type TaskInputAdmission = {
   appId: string;
   attachment: AppTaskAttachment;
   idempotencyKey: string;
+  /** Trusted composition's journal receipt, committed atomically with admission. */
+  inputEventId?: number;
   inputContext: Readonly<AppInputContext>;
   authorize?: () => void;
   /** Supplied by trusted composition, never by App input or a model payload. */
@@ -176,6 +178,28 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
       intent = { ...intent, parentId: current.spec.parentId };
     }
   }
+  return observeAppTaskIntent(config, {
+    intent,
+    creator: input.creator,
+    creatorRevision: input.creatorRevision,
+    appAgent: config.agent,
+    admissionKey: idempotencyKey,
+    trigger: {
+      ...taskInputRequestEvent({ ...input, taskId: intent.id, agent: config.agent }),
+      ...(input.inputEventId !== undefined ? { eventId: input.inputEventId } : {}),
+    },
+  });
+}
+
+/** Pure canonical request shared by atomic admission and its journal publication. */
+export function taskInputRequestEvent(input: {
+  appId: string;
+  taskId: string;
+  agent: string;
+  idempotencyKey: string;
+  inputContext: Readonly<AppInputContext>;
+}) {
+  const idempotencyKey = input.idempotencyKey.trim();
   const data = input.inputContext.input.data;
   const context =
     data && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>).context : undefined;
@@ -198,31 +222,24 @@ function admitAuthorizedTaskInput(config: AppTaskContext, input: TaskInputAdmiss
           taskGeneration: displayedHumanCondition.taskGeneration,
         }
       : {};
-  return observeAppTaskIntent(config, {
-    intent,
-    creator: input.creator,
-    creatorRevision: input.creatorRevision,
-    appAgent: config.agent,
-    admissionKey: idempotencyKey,
-    trigger: {
-      type: "app.task.requested",
-      source:
-        input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true
-          ? "human"
-          : `app-inbox:${input.appId}`,
-      owner: `agent:${config.agent}`,
-      target: { project: input.appId, taskId: intent.id },
+  return {
+    type: "app.task.requested",
+    source:
+      input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true
+        ? "human"
+        : `app-inbox:${input.appId}`,
+    owner: `agent:${input.agent}`,
+    target: { project: input.appId, taskId: input.taskId },
+    idempotencyKey,
+    data: {
+      project: input.appId,
+      taskId: input.taskId,
+      appId: input.appId,
       idempotencyKey,
-      data: {
-        project: input.appId,
-        taskId: intent.id,
-        appId: input.appId,
-        idempotencyKey,
-        request: input.inputContext,
-        ...correlatedHumanCondition,
-      },
+      request: input.inputContext,
+      ...correlatedHumanCondition,
     },
-  });
+  };
 }
 
 /** Called inside Task admission's transaction; this row is correlation, never an execution owner. */

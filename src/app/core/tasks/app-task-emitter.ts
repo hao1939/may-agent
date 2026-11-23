@@ -85,6 +85,9 @@ function taskEventMux(bus: EventBus): TaskEventMux {
   const listeners = new Map<string, Set<TaskEventListener>>();
   bus.listen(
     (event) => {
+      // App ingress is a mapping proposal. Only its admitted Task request is
+      // live work, with the canonical target and input accounting identity.
+      if (event.type === "app.input.requested") return;
       const key = taskTargetKey(event);
       if (!key) return;
       for (const listener of listeners.get(key) ?? []) listener(event);

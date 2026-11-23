@@ -29,7 +29,7 @@ import { freezeInputContext } from "../inbox/input-context.js";
 import { readInstalledAppContract } from "../reads/app-contract.js";
 import { createRuntimeTaskRead, readRuntimeTaskView } from "../reads/app-read.js";
 import { runtimeWorkloadSource } from "../reads/task-workload.js";
-import type { AppTurnTarget, CreateAppInboxItem } from "../state/app-inbox-store.js";
+import { getAppInboxItem, type AppTurnTarget, type CreateAppInboxItem } from "../state/app-inbox-store.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import {
   admitConversationTaskInput,
@@ -38,7 +38,7 @@ import {
 } from "../state/conversation-task-turns.js";
 import { admitConversationTaskChange, type ConversationTaskChangeRef } from "../state/retained-conversation-task-returns.js";
 import { conversationTaskExecutionId } from "../state/conversation-task-turns.js";
-import { admitTaskInput } from "../state/inbox.js";
+import { admitTaskInput, taskInputRequestEvent } from "../state/inbox.js";
 import {
   matchesAppTaskCondition,
   matchingAppTaskConditionTaskIds,
@@ -943,7 +943,38 @@ export function attachLoadedAppTask(input: {
   const config = appTaskConfig(descriptor);
   const humanRequested = input.inputContext.source.kind === "human" || input.inputContext.humanRequested === true;
 
-  const observation = admitTaskInput(config, input);
+  const observation = stateTransaction(config.resourceStore.db, () => {
+    const taskId = input.attachment.kind === "existing" ? input.attachment.taskId.trim() : input.attachment.intent.id;
+    const item = input.inboxInputId ? getAppInboxItem(config.resourceStore.db, input.inboxInputId) : null;
+    const keys = [
+      input.idempotencyKey.trim(),
+      ...(item
+        ? [item.taskAdmissionKey, `task:${item.id}:desired:${taskId}`, `task:${item.id}:existing:${taskId}`].filter(
+            (key): key is string => Boolean(key),
+          )
+        : []),
+    ];
+    const admissions = config.resourceStore.readTaskContext({
+      taskIds: [],
+      admissionIds: keys,
+    }).appTaskAdmissions;
+    // An already admitted input owns its saved identity, generation and result.
+    // Reattachment must neither republish it nor change a legacy admission.
+    if (keys.some((key) => admissions?.[key])) return admitTaskInput(config, input);
+    const event = input.bus.emit(
+      taskInputRequestEvent({
+        ...input,
+        taskId,
+        agent: config.agent,
+      }) as AgentEvent,
+    );
+    const eventId = event[EVENT_ROW_ID];
+    if (!Number.isSafeInteger(eventId) || Number(eventId) <= 0)
+      throw new Error("Task input publication requires a durable event identity");
+    // The journal append joins this transaction. Bus delivery waits until
+    // admission, the exact return link and this event all commit together.
+    return admitTaskInput(config, { ...input, inputEventId: Number(eventId) });
+  });
   if (controller && observation.kind === "observed") {
     enqueueAppTask(controller, config, observation.taskId, {
       lane: humanRequested ? "human" : "normal",

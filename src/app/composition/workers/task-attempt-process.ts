@@ -318,6 +318,7 @@ async function runWorkerProcess(
   const stopInput = task
     ? bus.listen(
         (event) => {
+          if (event.type === "app.input.requested") return;
           const target = readEventTaskTarget(event);
           const eventId = (event as AgentEvent & { [EVENT_ROW_ID]?: number })[EVENT_ROW_ID];
           if (
