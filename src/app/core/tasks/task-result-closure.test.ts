@@ -131,20 +131,42 @@ test("an assigned agent reaches the App policy and can authorize the finite endi
   });
 });
 
-test.each([{ appId: "sample", taskId: "creator" }, { appId: "another-app" }, null])(
-  "App policy cannot acquire creator authority over delegated/foreign/unattributed work: %j",
+test.each([{ appId: "sample", taskId: "creator" }, { appId: "another-app", taskId: "caller" }, { appId: "another-app" }])(
+  "App closeOnResult closes finite delegated and cross-App assignments while preserving creator provenance: %j",
   (creator) => {
-    let called = false;
-    const f = fixture(creator, () => {
-      called = true;
-      return { reason: "Must not run" };
+    let observedCreator: ResourceCreator | undefined;
+    const f = fixture(creator, (ctx) => {
+      observedCreator = ctx.creator;
+      return policy(ctx);
     });
-    completeAppTask(f.config, f.claim(), ending);
-    expect(f.read.get("review")?.status).toBe("idle");
-    expect(called).toBe(false);
-    expect(f.store.readCancellation("review")).toBeNull();
+    const claim = f.claim();
+    const applied = completeAppTask(f.config, claim, ending);
+    expect(observedCreator).toEqual(creator);
+    expect(applied.cancelledTasks?.[0]?.cancellation).toMatchObject({
+      kind: "closed",
+      acceptedResultAttemptId: claim.attemptId,
+      decidedBy: { kind: "app-policy" },
+    });
+    expect(f.read.get("review")).toMatchObject({
+      status: "closed",
+      response: ending.response,
+      result: ending.result,
+      acceptedAttempt: { id: claim.attemptId },
+    });
   },
 );
+
+test("App policy does not close historical unattributed records lacking creator provenance", () => {
+  let called = false;
+  const f = fixture(null, () => {
+    called = true;
+    return { reason: "Must not run" };
+  });
+  completeAppTask(f.config, f.claim(), ending);
+  expect(f.read.get("review")?.status).toBe("idle");
+  expect(called).toBe(false);
+  expect(f.store.readCancellation("review")).toBeNull();
+});
 
 test("convergence and an owner recommendation without App authorization both remain idle", () => {
   const f = fixture();
