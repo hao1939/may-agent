@@ -949,9 +949,23 @@ describe("codex-goal Task executor", () => {
         method: "turn/completed",
         params: { threadId: client.threadId, turn: { id: "turn-1", status: "completed" } },
       });
-      taskEvent?.({ type: "project.comment.created", data: { comment: "LIVE-STEER-TEST" } }, () => {
-        accepted = true;
-      });
+      taskEvent?.(
+        {
+          type: "app.task.requested",
+          data: {
+            idempotencyKey: "task:live",
+            request: {
+              id: "live",
+              source: { kind: "app", id: "reviewer" },
+              humanRequested: true,
+              input: { kind: "message", data: { message: "LIVE-STEER-TEST" } },
+            },
+          },
+        },
+        () => {
+          accepted = true;
+        },
+      );
       client.emit({
         method: "turn/started",
         params: { threadId: client.threadId, turn: { id: "turn-2", status: "inProgress" } },
@@ -1002,6 +1016,9 @@ describe("codex-goal Task executor", () => {
     expect(steered).toHaveLength(1);
     expect(steered[0]).toMatchObject({ turnId: "turn-2" });
     expect(steered[0]?.message).toContain("LIVE-STEER-TEST");
+    expect(steered[0]?.message).toContain('"idempotencyKey":"task:live"');
+    expect(steered[0]?.message).toContain('"source":{"kind":"app","id":"reviewer"}');
+    expect(steered[0]?.message).toContain("attempt-start packet does not include this later input");
     expect(accepted).toBeFalse();
   });
 

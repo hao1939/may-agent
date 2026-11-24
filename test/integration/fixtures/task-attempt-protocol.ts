@@ -216,6 +216,11 @@ const scenarios: Record<string, () => void | Promise<void>> = {
         data: { targetTaskId: request.taskId, input: { kind: "message", data: { text: "correction" } } } }, 49);
       bus.fanoutPersisted({ type: "app.input.requested", target: { appId: "sample" },
         data: { targetTaskId: "work/other", input: { kind: "message", data: {} } } }, 50);
+      bus.fanoutPersisted({ type: "app.task.requested", target,
+        data: { idempotencyKey: "task:correction", request: {
+          id: "correction", source: { kind: "human", id: "requester" },
+          input: { kind: "message", data: { text: "correction" } },
+        } } }, 51);
       // Match durable admission's project alias and whitespace rules across IPC.
       for (const [index, normalizedTarget] of [
         { appId: "", project: "sample.app", taskId: " work/one " },
@@ -254,7 +259,7 @@ const scenarios: Record<string, () => void | Promise<void>> = {
     try {
       await expect(execute(request)).resolves.toEqual([
         "task.feedback:43",
-        "app.input.requested:49",
+        "app.task.requested:51",
         "task.feedback:45",
         "task.feedback:46",
         "task.feedback:47",

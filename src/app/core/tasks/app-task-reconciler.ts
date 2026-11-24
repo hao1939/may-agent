@@ -4046,10 +4046,14 @@ function acceptedTaskClosure(
 ): AppTaskCancellation | undefined {
   const creator = resource.metadata.creator;
   const accepted = tree.attempts?.[claim.attemptId]?.acceptedResult;
-  const hostFiniteDone = provenance.hostCompletion === "finite-done" && !provenance.conversation;
+  const hostFiniteDone =
+    provenance.hostCompletion === "finite-done" &&
+    !provenance.conversation &&
+    creator?.appId === config.resourceStore.appId &&
+    creator.taskId === undefined;
   if (
     (!hostFiniteDone && !config.closeOnResult) ||
-    creator?.appId !== config.resourceStore.appId || creator.taskId !== undefined ||
+    !creator?.appId ||
     accepted?.state !== "converged" || resource.status.phase !== "converged" ||
     resource.status.currentAttemptId || tree.taskTriggers?.[claim.taskId]?.event ||
     resource.status.conditionIds?.length || resource.status.reviewAt !== undefined ||
