@@ -357,12 +357,12 @@ export type AppTaskPolicy = {
   translateBlockedResult?: (
     context: AppTaskBlockedResultContext,
   ) => AppTaskBlockedSettlement | null;
-  /** Pure, opt-in App decision after a converged result is accepted. Only applies
-   * to this App's own App-created assignments, never Task-created/delegated work.
-   * Return a nonblank reason to end responsibility, or null to retain it. Inspect
-   * the owner's explicit disposition and standing purpose; convergence alone is
-   * not fulfillment. New input, waits or a reconsideration deadline prevent closing.
-   * Result, caller answer and closure commit atomically; this is not a worker tool.
+  /** Pure, opt-in App decision after a converged result is accepted. Applies to
+   * both App-root assignments and Task-delegated requests (receiving `creator` in
+   * context so the policy can inspect caller provenance if needed). Return a
+   * nonblank reason to end responsibility, or null to retain it (e.g. for standing
+   * schedules or Conversation tasks). New input, open Conditions, or a reviewAt
+   * deadline prevent closing. Result, caller answer and closure commit atomically.
    */
   closeOnResult?: (context: AppTaskResultContext) => { reason: string } | null;
   /** Background limit; humans and declared coordination share one additional place within the Host limit. */
