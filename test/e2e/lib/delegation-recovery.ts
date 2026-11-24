@@ -53,6 +53,7 @@ export async function runDelegationRecoveryEpisode(options: DelegationRecoveryOp
   let restartLog = "";
   let receipt: { id: string; sha256: string; idempotencyKey: string } | null = null;
   let publicationAttempts = 0;
+  let publicationAcknowledgments = 0;
   let originalCheckerSha = "";
   const releaseAck = Promise.withResolvers<void>();
   const serviceEvents: unknown[] = [];
@@ -83,6 +84,7 @@ export async function runDelegationRecoveryEpisode(options: DelegationRecoveryOp
         writeFileSync(join(options.evidenceDir, "service-events.json"), JSON.stringify(serviceEvents, null, 2));
       record("publication-committed-ack-held", { sha256: receipt.sha256 });
       await releaseAck.promise; // Fault boundary: external commit exists, worker has no acknowledgment.
+      publicationAcknowledgments++;
       return Response.json({ receipt });
     },
   });
@@ -254,14 +256,19 @@ export async function runDelegationRecoveryEpisode(options: DelegationRecoveryOp
     // No DB edits, forced leases or synthesized dependency results aid recovery.
     process.kill(sb.daemonPid!, "SIGKILL");
     const oldWorkerPid = childAttempt.lease!.ownerProcess!.pid;
-    if (alive(oldWorkerPid)) process.kill(oldWorkerPid, "SIGKILL");
+    try {
+      process.kill(oldWorkerPid, "SIGKILL");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+    }
     await poll("original daemon and worker exit", () => !alive(sb!.daemonPid!) && !alive(oldWorkerPid));
     record("fixture-crashed", {
       daemonPid: sb.daemonPid,
       workerPid: oldWorkerPid,
       attemptId: childAttempt.metadata.id,
     });
-    releaseAck.resolve();
+    // The publisher can outlive its Task worker. Keep its acknowledgment held until teardown.
+    assert(!existsSync(join(sb.projectsRoot, "repair.app/publication.json")));
     restarted = spawnSandboxDaemon(["--socket"], {
       cwd: resolve(import.meta.dir, "../../.."),
       env: {
@@ -314,6 +321,7 @@ export async function runDelegationRecoveryEpisode(options: DelegationRecoveryOp
       1,
       "Recovery must inspect the committed receipt instead of repeating publication",
     );
+    assert.equal(publicationAcknowledgments, 0, "Recovery must finish while the original acknowledgment is withheld");
     assert.equal(digest(join(sb.projectsRoot, "repair.app/preview.json")), receipt!.sha256);
     assert.equal(
       digest(join(sb.projectsRoot, "repair.app/check.cjs")),
@@ -371,6 +379,7 @@ export async function runDelegationRecoveryEpisode(options: DelegationRecoveryOp
   } finally {
     report.elapsedMs = Date.now() - startedAt;
     report.publicationAttempts = publicationAttempts;
+    report.publicationAcknowledgments = publicationAcknowledgments;
     report.serviceEvents = serviceEvents;
     report.receipt = receipt;
     report.ownerRoleSha256 = createHash("sha256").update(ownerRole).digest("hex");

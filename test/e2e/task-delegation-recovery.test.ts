@@ -134,6 +134,7 @@ test("delegated publication survives lost acknowledgment while caller accepts in
     });
     expect(report.passed).toBe(true);
     expect(report.publicationAttempts).toBe(1);
+    expect(report.publicationAcknowledgments).toBe(0);
     expect(report.finalOwner.task.metadata.generation).toBe(1);
     expect(report.finalWorker.task.metadata.generation).toBe(1);
     expect(report.sessions).toHaveLength(5);
