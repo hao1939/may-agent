@@ -41,7 +41,8 @@ Separate files let Bun schedule these contracts independently.
 Worker `create-task` is retired. `packages/sdk/src/task-contract.test.ts` rejects
 it; action fencing and rollback tests now mutate existing fixture assignments.
 `src/app/task-worker-interaction.test.ts` owns real worker coverage for typed
-App delegation, nested A → B → C → B → A, continued human input, and reopen.
+App delegation, nested A → B → C → B → A, blocker/decision return to the same
+worker, refined human Request fulfillment, continued human input, and reopen.
 `task-worker-workload.test.ts` owns cross-process coordination timeout enforcement
 and bounded parent/App workload observations. `task-worker-integration.test.ts`
 keeps worker loss, recovery, source pinning, event delivery and compiled-command
