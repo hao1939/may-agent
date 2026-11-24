@@ -414,6 +414,8 @@ export async function runDelegationRecoveryEpisode(options: DelegationRecoveryOp
     } catch (error) {
       report.archiveError = String(error);
       report.passed = false;
+      if (options.evidenceDir)
+        writeFileSync(join(options.evidenceDir, "report.json"), JSON.stringify(report, null, 2) + "\n");
       throw error;
     } finally {
       if (previousKeep === undefined) delete process.env.E2E_KEEP;
