@@ -20,6 +20,9 @@ export function openStateDb(path: string): SqliteDb {
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 5000");
   db.exec("PRAGMA foreign_keys = ON");
+  // Keep temporary B-trees for read-model GROUP BY / ORDER BY queries in RAM so
+  // observability dashboards continue serving even when the host disk hits 100% ENOSPC.
+  db.exec("PRAGMA temp_store = MEMORY");
   applyDbSchema(db);
 
   const cachedDb: SqliteDb = {

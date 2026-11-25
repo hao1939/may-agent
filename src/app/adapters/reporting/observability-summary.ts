@@ -1343,8 +1343,7 @@ export function readObservabilitySummary(
     auth: probeAzureCliAuthHeadroom(now),
   };
 
-  db.exec("SAVEPOINT observability_summary_read");
-  try {
+  {
     const observations = readMetricObservations(db, now);
     const metricById = new Map(observations.metrics.map((m) => [m.id, m]));
     const metricValue = (id: string): number | null => {
@@ -1840,11 +1839,6 @@ export function readObservabilitySummary(
       apps,
       appDetail,
     };
-    db.exec("RELEASE observability_summary_read");
     return result;
-  } catch (error) {
-    db.exec("ROLLBACK TO observability_summary_read");
-    db.exec("RELEASE observability_summary_read");
-    throw error;
   }
 }

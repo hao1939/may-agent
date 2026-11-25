@@ -397,8 +397,14 @@ async function loadTopDownOverview() {
 
 async function readHealthJson(url) {
   const response = await fetch(url);
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || `Read failed (${response.status})`);
+  const text = await response.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(`Read failed (${response.status}): ${(text || 'invalid response').slice(0, 120).trim()}`);
+  }
+  if (!response.ok) throw new Error(data?.error || `Read failed (${response.status})`);
   return data;
 }
 

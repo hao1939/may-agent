@@ -519,13 +519,17 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
         } catch (error) {
           return json({ error: error instanceof Error ? error.message : "Invalid observability filter" }, 400);
         }
-        return json(
-          readObservabilitySummary(_db(), {
-            query,
-            projectsRoot: PROJECTS_ROOT,
-            stateDir: STATE_DIR,
-          }),
-        );
+        try {
+          return json(
+            readObservabilitySummary(_db(), {
+              query,
+              projectsRoot: PROJECTS_ROOT,
+              stateDir: STATE_DIR,
+            }),
+          );
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Observability read failed" }, 503);
+        }
       }
       if (url.pathname === "/api/context-usage") {
         let query: ReturnType<typeof contextUsageQuery>;
@@ -534,7 +538,11 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
         } catch (error) {
           return json({ error: error instanceof Error ? error.message : "Invalid usage filter" }, 400);
         }
-        return json(readContextUsage(_db(), query));
+        try {
+          return json(readContextUsage(_db(), query));
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Context usage read failed" }, 503);
+        }
       }
       if (url.pathname === "/api/task-attempts") {
         if (req.method !== "GET") return json({ error: "GET required" }, 405);
