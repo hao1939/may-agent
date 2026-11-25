@@ -14,7 +14,10 @@ import {
   probeAzureCliAuthHeadroom,
   readAgentCapabilityRollups,
   readObservabilitySummary,
+  resolveAppCatalog,
 } from "./observability-summary.js";
+import { readMetricObservations } from "./metric-observations.js";
+import { STALE_ACTIVE_SOURCE_QUERY } from "../../metric-source-measurement.js";
 import { HOST_HARNESS_METRICS, buildAppEvolutionMetrics } from "./evolution-metrics.js";
 
 describe("top-down Host vs. Apps observability summary", () => {
@@ -28,10 +31,15 @@ describe("top-down Host vs. Apps observability summary", () => {
     applyDbSchema(db);
     root = mkdtempSync(join(tmpdir(), "may-obs-summary-"));
     projectsRoot = join(root, "projects");
-    for (const appId of ["may", "alex", "aks-rp-e2e", "scout-knowledge-lib"]) {
+    for (const [appId, agent] of [
+      ["may", "may"],
+      ["alex", "alex"],
+      ["aks-rp-e2e", "aks-explorer"],
+      ["scout-knowledge-lib", "scout"],
+    ] as const) {
       const dir = join(projectsRoot, `${appId}.app`);
       mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, "app.ts"), "export default {};\n");
+      writeFileSync(dir + "/app.ts", `export default { id: "${appId}", agent: "${agent}" };\n`);
     }
   });
 
@@ -40,32 +48,57 @@ describe("top-down Host vs. Apps observability summary", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
-  test("classifies fleet may.* infrastructure metrics to Host while preserving App ownership", () => {
-    const installed = new Set(["may", "alex", "aks-rp-e2e", "scout-knowledge-lib"]);
-    expect(classifyMetricScope({ id: "may.daemon-sql-time-percent", owner: "may" }, installed)).toEqual({
+  test("classifies metrics from declarations and catalog without Host hardcoding", () => {
+    const catalog = resolveAppCatalog({ projectsRoot });
+    expect(classifyMetricScope({ id: "may.daemon-sql-time-percent", owner: "may" }, catalog)).toEqual({
       kind: "host",
     });
-    expect(classifyMetricScope({ id: "may.unresolved-input-recovery-count", owner: "may" }, installed)).toEqual({
+    expect(classifyMetricScope({ id: "may.unresolved-input-recovery-count", owner: "may" }, catalog)).toEqual({
       kind: "host",
     });
-    expect(classifyMetricScope({ id: "workflow.error-count-24h", owner: "system:host" }, installed)).toEqual({
+    expect(classifyMetricScope({ id: "workflow.error-count-24h", owner: "system:host" }, catalog)).toEqual({
       kind: "host",
     });
     expect(
-      classifyMetricScope({ id: "may.evaluation-unfinished-review-age-seconds", owner: "alex" }, installed),
+      classifyMetricScope(
+        { id: "may.evaluation-unfinished-review-age-seconds", owner: "may", project: "alex" },
+        catalog,
+      ),
     ).toEqual({
       kind: "app",
       appId: "alex",
     });
-    expect(classifyMetricScope({ id: "scout.knowledge-preamble-coverage", owner: "scout" }, installed)).toEqual({
+    // Renamed evaluation App resolves without any Host code edits (R-04).
+    const renamedCatalog = resolveAppCatalog({
+      loadedApps: [
+        { id: "may", owner: "may" },
+        { id: "evaluation-canary", owner: "evaluator" },
+      ],
+    });
+    expect(
+      classifyMetricScope(
+        { id: "may.evaluation-unfinished-review-age-seconds", owner: "may", project: "evaluation-canary" },
+        renamedCatalog,
+      ),
+    ).toEqual({
+      kind: "app",
+      appId: "evaluation-canary",
+    });
+    // Prefix different from declared owner resolves identically across /api/metrics and /api/observability (R-03).
+    const researchCatalog = resolveAppCatalog({ loadedApps: [{ id: "research", owner: "researcher" }] });
+    expect(classifyMetricScope({ id: "quality.success", owner: "researcher" }, researchCatalog)).toEqual({
+      kind: "app",
+      appId: "research",
+    });
+    expect(classifyMetricScope({ id: "scout.knowledge-preamble-coverage", owner: "scout" }, catalog)).toEqual({
       kind: "app",
       appId: "scout-knowledge-lib",
     });
-    expect(classifyMetricScope({ id: "aks-rp-e2e.pr-conflict-count", project: "aks-rp-e2e.app" }, installed)).toEqual({
+    expect(classifyMetricScope({ id: "aks-rp-e2e.pr-conflict-count", project: "aks-rp-e2e.app" }, catalog)).toEqual({
       kind: "app",
       appId: "aks-rp-e2e",
     });
-    expect(classifyMetricScope({ id: "may.request-fulfillment-rate", owner: "may" }, installed)).toEqual({
+    expect(classifyMetricScope({ id: "may.request-fulfillment-rate", owner: "may" }, catalog)).toEqual({
       kind: "app",
       appId: "may",
     });
@@ -140,8 +173,16 @@ describe("top-down Host vs. Apps observability summary", () => {
        VALUES
          ('in-1', 'may', 'human', 'telegram', 'message', '{}', 'done', NULL, ?, ?),
          ('in-2', 'aks-rp-e2e', 'human', 'web-ui', 'steer', '{}', 'done', NULL, ?, ?),
-         ('in-stuck', 'may', 'system', 'bus', 'event', '{}', 'pending', '{"reason":"retry"}', ?, ?)`,
-    ).run(now - 900_000, now - 900_000, now - 800_000, now - 800_000, now - 1_200_000, now - 1_200_000);
+         ('in-stuck', 'may', 'system', 'bus', 'event', '{}', 'pending', ?, ?, ?)`,
+    ).run(
+      now - 900_000,
+      now - 900_000,
+      now - 800_000,
+      now - 800_000,
+      JSON.stringify({ "input-admission": { failures: 2, firstFailedAt: now - 1_200_000 } }),
+      now - 5_000_000,
+      now - 1_200_000,
+    );
 
     db.prepare(
       `INSERT INTO workflow_runs(runId, workflow, task, app_id, status, startedAt, endedAt, parentWorkflowRunId)
@@ -234,6 +275,8 @@ describe("top-down Host vs. Apps observability summary", () => {
     ).run(
       now - 100_000,
       JSON.stringify({
+        owner: "aks-explorer",
+        sessionId: "sess-aks-1",
         finishedAt: new Date(now - 50_000).toISOString(),
         acceptedResult: { state: "converged", facts: [`scorecard:${JSON.stringify(aksScorecard)}`] },
       }),
@@ -399,7 +442,7 @@ describe("top-down Host vs. Apps observability summary", () => {
     expect(metrics.evaluate("test.ratio_min_exposure")[0]).toMatchObject({ status: "breached" });
   });
 
-  test("executes all 5 Host and 5 App evolution SQL source queries with 0/0 empty-exposure safety", () => {
+  test("executes all Host and App evolution SQL source queries with 0/0 empty-exposure and no_exposure freshness safety", () => {
     const allDefs = [...HOST_HARNESS_METRICS, ...buildAppEvolutionMetrics("aks-rp-e2e", "aks-explorer")];
     for (const def of allDefs) {
       if (!def.sourceQuery) continue;
@@ -411,5 +454,186 @@ describe("top-down Host vs. Apps observability summary", () => {
         expect(emptyRow.value).toBe(0); // Outcomes count in empty window is 0
       }
     }
+
+    // no_exposure check updates lastNoExposureAt so STALE_ACTIVE_SOURCE_QUERY does not false-alert.
+    const wallNow = Date.now();
+    const metrics = createMetricService({ getDb: () => db, now: () => wallNow });
+    metrics.define({
+      id: "aks-rp-e2e.cost_per_outcome_usd_7d",
+      measureInterval: 900_000,
+      config: { lastNoExposureAt: wallNow - 60_000 },
+    });
+    db.run("UPDATE metrics SET created_at = ? WHERE id = 'aks-rp-e2e.cost_per_outcome_usd_7d'", [wallNow - 7_200_000]);
+    expect(db.prepare(STALE_ACTIVE_SOURCE_QUERY).get()).toMatchObject({ value: 0 });
+    const obs = readMetricObservations(db, wallNow, ["aks-rp-e2e.cost_per_outcome_usd_7d"]);
+    expect(obs.metrics[0]).toMatchObject({ freshness: "fresh", noExposure: true, current: null });
+  });
+
+  test("covers PR #627 regressions: catalog parity, disabled Apps, rubric validation, multi-App dedup, attempt owner, recovery stages, single lease, and workflow-only offload", () => {
+    const metrics = createMetricService({ getDb: () => db, now: () => now });
+    // Disabled App on disk with retained active DB Task rows is excluded from active cards (R-10).
+    const disabledDir = join(projectsRoot, "retired-app.app");
+    mkdirSync(disabledDir, { recursive: true });
+    writeFileSync(join(disabledDir, "app.ts"), 'export default { id: "retired-app", agent: "retired-owner" };\n');
+    writeFileSync(join(disabledDir, ".disabled"), "");
+    db.prepare(
+      `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, updated_at, resource_json)
+       VALUES ('retired-app', 'ghost/1', 1, 1, 1, 'running', 'normal', 0, 0, ?, '{"status":{"phase":"running"}}')`,
+    ).run(now - 10_000);
+
+    // Loaded daemon catalog maps directory evaluation.app -> definition.id 'evaluation-canary' (R-09) and owner 'researcher' -> 'research' (R-03).
+    const loadedApps = [
+      { id: "evaluation-canary", owner: "evaluator" },
+      { id: "research", owner: "researcher" },
+      { id: "wf-only", owner: "wf-agent" },
+    ];
+    metrics.define({ id: "quality.success", owner: "researcher", measureInterval: 300_000 });
+    metrics.record("quality.success", 0.99, { measuredAt: now - 1_000 });
+    const catalog = resolveAppCatalog({ projectsRoot, loadedApps });
+    expect(readMetricObservations(db, now, ["quality.success"], catalog).metrics[0]?.scope).toEqual({
+      kind: "app",
+      appId: "research",
+    });
+
+    // Task + mirrored current attempt expired lease counts ONCE, not twice (R-13), and interrupted counts as terminal (R-11).
+    db.prepare(
+      `INSERT INTO app_tasks(app_id, task_id, generation, resource_version, observed_generation, phase, lane, changed, ready, lease_until, current_attempt_id, updated_at, resource_json)
+       VALUES ('research', 't-reassigned', 1, 2, 1, 'running', 'normal', 0, 0, ?, 'att-running', ?, '{"spec":{"agent":"replacement-agent"},"status":{"phase":"running"}}')`,
+    ).run(now - 5_000, now - 5_000);
+    db.prepare(
+      `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, lease_until, started_at, attempt_json)
+       VALUES
+         ('research', 'att-running', 't-reassigned', 1, 'running', ?, ?, '{"owner":"replacement-agent","handler":"executor:codex-goal"}'),
+         ('research', 'att-old-fail', 't-reassigned', 1, 'failed', NULL, ?, '{"owner":"original-agent","handler":"executor:codex-goal","finishedAt":"' || ? || '"}'),
+         ('research', 'att-interrupted', 't-reassigned', 1, 'interrupted', NULL, ?, '{"owner":"original-agent","handler":"executor:codex-goal","finishedAt":"' || ? || '"}')`,
+    ).run(
+      now - 5_000,
+      now - 20_000,
+      now - 40_000,
+      new Date(now - 35_000).toISOString(),
+      now - 30_000,
+      new Date(now - 25_000).toISOString(),
+    );
+
+    // Recovery stages: recovered admission is ignored; done item with unresolved input-feedback counts and uses firstFailedAt (R-12).
+    db.prepare(
+      `INSERT INTO app_inbox_items(id, app_id, source_kind, source_id, input_kind, input_data, status, recovery_json, created_at, updated_at)
+       VALUES
+         ('rec-resolved', 'research', 'system', 'bus', 'event', '{}', 'pending', ?, ?, ?),
+         ('rec-done-feedback', 'research', 'system', 'bus', 'event', '{}', 'done', ?, ?, ?)`,
+    ).run(
+      JSON.stringify({ "input-admission": { failures: 1, firstFailedAt: now - 900_000, recoveredAt: now - 800_000 } }),
+      now - 1_000_000,
+      now - 800_000,
+      JSON.stringify({ "input-feedback": { failures: 3, firstFailedAt: now - 120_000 } }),
+      now - 9_000_000,
+      now - 120_000,
+    );
+
+    // Workflow-only App: 1 workflow attempt + 1 workflow_run + 0 agent calls => 0 agent invocations, 100% offload (R-14).
+    db.prepare(
+      `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+       VALUES ('wf-only', 'att-wf-1', 'hygiene', 1, 'completed', ?, '{"owner":"wf-agent","handler":"workflow:hygiene"}')`,
+    ).run(now - 50_000);
+    db.prepare(
+      `INSERT INTO workflow_runs(runId, workflow, task, app_id, status, startedAt, endedAt, parentWorkflowRunId)
+       VALUES ('wr-wf-1', 'wf-only/hygiene', 'clean', 'wf-only', 'done', ?, ?, NULL)`,
+    ).run(now - 50_000, now - 40_000);
+
+    // Unsupported rubricVersion rejected (R-06), and two Apps with identical (taskId, cohort) don't collide on shared agent (R-07).
+    const badRubric = {
+      version: 1,
+      appId: "research",
+      taskId: "shared-task",
+      agent: "shared-agent",
+      cohort: "c1",
+      rubricVersion: "unsupported-v99",
+      dimensions: { outcomeValue: 0, correctnessAndEvidence: 0, autonomyAndRecovery: 0, efficiency: 0, humanCoordination: 0 },
+    };
+    const appAScore = {
+      version: 1,
+      appId: "research",
+      taskId: "shared-task",
+      agent: "shared-agent",
+      cohort: "c1",
+      rubricVersion: "app-rubric-v1",
+      dimensions: { outcomeValue: 4, correctnessAndEvidence: 0, autonomyAndRecovery: 4, efficiency: 4, humanCoordination: 4 },
+    };
+    const appBScore = {
+      version: 1,
+      appId: "evaluation-canary",
+      taskId: "shared-task",
+      agent: "shared-agent",
+      cohort: "c1",
+      rubricVersion: "app-rubric-v1",
+      dimensions: { outcomeValue: 4, correctnessAndEvidence: 4, autonomyAndRecovery: 4, efficiency: 4, humanCoordination: 4 },
+    };
+    db.prepare(
+      `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+       VALUES ('evaluation-canary', 'att-scores', 'eval-run', 1, 'completed', ?, ?)`,
+    ).run(
+      now - 15_000,
+      JSON.stringify({
+        owner: "evaluator",
+        handler: "workflow:eval",
+        finishedAt: new Date(now - 10_000).toISOString(),
+        acceptedResult: {
+          state: "converged",
+          facts: [
+            `scorecard:${JSON.stringify(badRubric)}`,
+            `scorecard:${JSON.stringify(appAScore)}`,
+            `scorecard:${JSON.stringify(appBScore)}`,
+          ],
+        },
+      }),
+    );
+
+    const summary = readObservabilitySummary(db, {
+      query: observabilitySummaryQuery(new URLSearchParams("days=1"), now),
+      projectsRoot,
+      stateDir: root,
+      loadedApps,
+      now,
+    });
+
+    expect(summary.apps.map((a) => a.appId)).toEqual(["evaluation-canary", "research", "wf-only"]);
+    expect(summary.host.plumbing.terminalTaskAttemptsWindow).toBe(4); // completed + failed + interrupted
+    expect(summary.host.recovery).toMatchObject({
+      unresolvedInputRecoveryCount: 1,
+      oldestInputRecoveryAgeMs: 120_000, // from firstFailedAt, not created_at
+      expiredLeasesCount: 1, // Task + mirrored current attempt counted once
+    });
+
+    const wfOnly = summary.apps.find((a) => a.appId === "wf-only")!;
+    expect(wfOnly.costAndLeverage).toMatchObject({
+      agentInvocationsWindow: 0,
+      workflowRunsWindow: 1,
+      workflowOffloadShare: 1,
+    });
+
+    const research = summary.apps.find((a) => a.appId === "research")!;
+    expect(research.metrics.defined).toBe(1); // quality.success attributed to research
+    expect(research.scorecard).toMatchObject({ status: "scored", gated: true, score: 25, sampleSize: 1 }); // unsupported-v99 ignored
+
+    // Drill-down preserves historical attempt owner 'original-agent' after Task reassignment to 'replacement-agent' (R-08).
+    const detail = readObservabilitySummary(db, {
+      query: observabilitySummaryQuery(new URLSearchParams("days=1&appId=research"), now),
+      projectsRoot,
+      stateDir: root,
+      loadedApps,
+      now,
+    }).appDetail!;
+    expect(detail.agents.find((a) => a.agent === "original-agent")).toMatchObject({
+      invocationsWindow: 2,
+      errorsWindow: 1,
+    });
+
+    // Multi-App agent rollup preserves both Apps' identical (taskId, cohort) and keeps App A's gate (R-07).
+    const sharedRollup = readAgentCapabilityRollups(db, now)("shared-agent");
+    expect(sharedRollup.scorecard7d).toMatchObject({
+      sampleSize: 2,
+      gated: true,
+      score: 25,
+    });
   });
 });

@@ -5,38 +5,48 @@ const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
 
 export const HOST_DISK_USED_METRIC_ID = "host.disk_used_ratio";
+export const HOST_AUTH_REMAINING_METRIC_ID = "host.auth_remaining_seconds";
+
+const UNRESOLVED_RECOVERY_SQL = `SELECT COUNT(DISTINCT i.id) AS unresolved
+  FROM app_inbox_items i, json_each(COALESCE(i.recovery_json, '{}')) r
+  WHERE json_extract(r.value, '$.recoveredAt') IS NULL
+    AND json_extract(r.value, '$.failures') > 0
+    AND ((r.key = 'input-admission' AND i.status != 'done' AND i.execution_task_id IS NULL)
+      OR (r.key = 'input-result' AND i.status != 'done')
+      OR (r.key = 'input-feedback' AND json_extract(i.recovery_json, '$."input-admission".reportedAt') IS NULL))`;
 
 /**
- * Canonical 5 Host (Agent Harness) metrics using Prometheus base units (`ratio`, `seconds`)
+ * Canonical Host (Agent Harness) metrics using Prometheus base units (`ratio`, `seconds`)
  * and explicit `sampleSize` denominators (`value = NULL, sampleSize = 0` -> quiet no_exposure skip).
  */
 export const HOST_HARNESS_METRICS: MetricDefinition[] = [
   {
     id: "host.settlement_integrity_ratio",
     name: "Host settlement integrity (24h)",
-    owner: "system:host",
+    owner: "alex",
     type: "gauge",
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
-    threshold: 0.95,
+    threshold: 0.9,
     alertOp: "<",
-    config: { alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
+    priority: "P2",
+    config: {
+      scope: "host",
+      handler: "alex",
+      alert: { mode: "sustained", consecutive: 3, minSampleSize: 10 },
+    },
     source: "Cleanly settled Task attempts vs. terminal attempts + unresolved input recovery boundaries (24h)",
     description:
-      "Ratio [0..1] of cleanly settled Task attempts over all terminal attempts plus unresolved input recovery boundaries in the rolling 24h window. Empty exposure (0/0) skips quietly rather than recording 0 or 1.",
+      "Ratio [0..1] of cleanly settled Task attempts over all terminal (completed, failed, interrupted) attempts plus unresolved input recovery boundaries in the rolling 24h window. Empty exposure (0/0) skips quietly rather than recording 0 or 1.",
     sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
       att AS (
         SELECT
           COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
-          COUNT(CASE WHEN state IN ('completed', 'failed') THEN 1 END) AS terminal
+          COUNT(CASE WHEN state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal
         FROM app_task_attempts, clock
         WHERE started_at >= clock.cut - ${DAY_MS} AND started_at < clock.cut
       ),
-      rec AS (
-        SELECT COUNT(*) AS unresolved
-        FROM app_inbox_items
-        WHERE status != 'done' AND recovery_json IS NOT NULL
-      )
+      rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
         CAST(att.settled AS REAL) / NULLIF(att.terminal + rec.unresolved, 0) AS value,
         att.terminal + rec.unresolved AS sampleSize,
@@ -51,7 +61,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     type: "gauge",
     unit: "seconds",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
-    config: { alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
+    config: { scope: "host", alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
     source: "p95 preparation.durationMs / 1000 across execution_usage invocations (24h)",
     description:
       "95th-percentile Host prompt/tool preparation latency in seconds across recorded invocations in the rolling 24h window.",
@@ -81,7 +91,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     type: "gauge",
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
-    config: { alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
+    config: { scope: "host", alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
     source: "SUM(cacheRead) / SUM(input + cacheRead + cacheWrite) across measured invocations (24h)",
     description:
       "Prompt-cache read token share [0..1] across complete execution_usage records in the rolling 24h window. Drops indicate wait-induced cache expiry or cold context churn.",
@@ -110,7 +120,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     type: "gauge",
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
-    config: { alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
+    config: { scope: "host", alert: { disabled: true, mode: "sustained", consecutive: 3, minSampleSize: 5 } },
     source: "Mechanical attempt failures/interrupts + workflow errors + unresolved recoveries over total runs (24h)",
     description:
       "Fraction [0..1] of Host execution units experiencing harness-level friction (failed/interrupted attempts, top-level workflow errors, or unresolved input recovery boundaries) in the rolling 24h window.",
@@ -129,9 +139,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
         FROM workflow_runs, clock
         WHERE parentWorkflowRunId IS NULL AND endedAt >= clock.cut - ${DAY_MS} AND endedAt < clock.cut
       ),
-      rec AS (
-        SELECT COUNT(*) AS unresolved FROM app_inbox_items WHERE status != 'done' AND recovery_json IS NOT NULL
-      )
+      rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
         CAST(att.friction + wf.errs + rec.unresolved AS REAL) / NULLIF(att.total + wf.total + rec.unresolved, 0) AS value,
         att.total + wf.total + rec.unresolved AS sampleSize,
@@ -142,16 +150,40 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
   {
     id: HOST_DISK_USED_METRIC_ID,
     name: "Host disk usage ratio",
-    owner: "system:host",
+    owner: "alex",
     type: "gauge",
     unit: "ratio",
     measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
-    threshold: 0.95,
+    threshold: 0.92,
     alertOp: ">=",
+    priority: "P1",
+    config: {
+      scope: "host",
+      handler: "auto-hygiene → alex",
+      alert: { mode: "sustained", consecutive: 2 },
+    },
+    source: "statfs state volume used bytes / total bytes (runs mechanical cache/worktree auto-hygiene first at >= 92%)",
+    description:
+      "Host state filesystem usage ratio [0..1] sampled via statfs. Triggers deterministic cache/clean-worktree auto-hygiene at >= 0.92 and alerts Alex only if sustained pressure persists.",
+  },
+  {
+    id: HOST_AUTH_REMAINING_METRIC_ID,
+    name: "Host shared Azure CLI auth remaining validity",
+    owner: "may",
+    type: "gauge",
+    unit: "seconds",
+    measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
+    threshold: 0,
+    alertOp: "<=",
     priority: "P2",
-    config: { alert: { disabled: true, mode: "sustained", consecutive: 3 } },
-    source: "statfs state volume used bytes / total bytes",
-    description: "Host state filesystem usage ratio [0..1] sampled directly via statfs.",
+    config: {
+      scope: "host",
+      handler: "may → human (az login)",
+      alert: { mode: "sustained", consecutive: 2 },
+    },
+    source: "Local Azure CLI MSAL token expiry timestamp minus current time (no_exposure when unconfigured)",
+    description:
+      "Remaining validity in seconds of local Azure CLI credentials when configured. Skips quietly when unconfigured; alerts May to request human az login when expired.",
   },
 ];
 
@@ -285,16 +317,30 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
           WHERE parentWorkflowRunId IS NULL AND app_id = ${sqlApp}
             AND endedAt >= clock.cut - ${DAY_MS} AND endedAt < clock.cut
         ),
+        usage_agent AS (
+          SELECT COUNT(*) AS n
+          FROM execution_usage, clock
+          WHERE app_id = ${sqlApp}
+            AND workflow_run_id IS NULL
+            AND started_at >= clock.cut - ${DAY_MS} AND started_at < clock.cut
+        ),
         att AS (
           SELECT COUNT(*) AS total_att
-          FROM app_task_attempts, clock
-          WHERE app_id = ${sqlApp} AND ${attemptTimeExpr} >= clock.cut - ${DAY_MS} AND ${attemptTimeExpr} < clock.cut
+          FROM app_task_attempts a, clock
+          WHERE a.app_id = ${sqlApp}
+            AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
+            AND ${attemptTimeExpr} >= clock.cut - ${DAY_MS} AND ${attemptTimeExpr} < clock.cut
+            AND NOT EXISTS (
+              SELECT 1 FROM execution_usage u
+              WHERE u.app_id = a.app_id
+                AND (u.attempt_id = a.attempt_id OR u.session_id = json_extract(a.attempt_json, '$.sessionId'))
+            )
         )
         SELECT
-          CAST(wf.done_wf AS REAL) / NULLIF(wf.total_wf + att.total_att, 0) AS value,
-          wf.total_wf + att.total_att AS sampleSize,
+          CAST(wf.done_wf AS REAL) / NULLIF(wf.total_wf + usage_agent.n + att.total_att, 0) AS value,
+          wf.total_wf + usage_agent.n + att.total_att AS sampleSize,
           (SELECT cut FROM clock) AS measuredAt
-        FROM wf, att`,
+        FROM wf, usage_agent, att`,
     },
     {
       id: `${appId}.autonomy_ratio_7d`,

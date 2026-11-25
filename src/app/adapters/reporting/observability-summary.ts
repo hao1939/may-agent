@@ -1,4 +1,5 @@
-import { existsSync, readdirSync, readFileSync, statSync, statfsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, rmSync, statSync, statfsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -7,6 +8,19 @@ import { METRIC_LIST_LIMIT, readMetricObservations } from "./metric-observations
 import { healthWindow } from "./workflow-health.js";
 
 export type MetricScope = { kind: "host" } | { kind: "app"; appId: string };
+
+export type AppCatalogEntry = {
+  id: string;
+  owner: string;
+};
+
+export type AppCatalog = {
+  installedIds: string[];
+  installedSet: Set<string>;
+  disabledSet: Set<string>;
+  ownerByAppId: Map<string, string>;
+  appIdByOwner: Map<string, string>;
+};
 
 const HOST_METRIC_PREFIXES = [
   "event.",
@@ -20,7 +34,7 @@ const HOST_METRIC_PREFIXES = [
   "workflow.",
 ];
 
-/** Historical `may.*` IDs that measure fleet/daemon infrastructure rather than May domain outcomes. */
+/** Historical `may.*` IDs that measure fleet/daemon infrastructure rather than App domain outcomes. */
 const HOST_METRIC_IDS = new Set([
   "may.daemon-sql-recent-worst-call-ms",
   "may.daemon-sql-time-percent",
@@ -31,65 +45,245 @@ const HOST_METRIC_IDS = new Set([
   "may.unresolved-input-recovery-count",
 ]);
 
-const APP_ALIAS_BY_KEY: Record<string, string> = {
-  scout: "scout-knowledge-lib",
-  "scout-knowledge": "scout-knowledge-lib",
-};
-
 function normalizeAppKey(raw: string | null | undefined): string {
   return String(raw ?? "")
     .trim()
-    .replace(/^app:/i, "")
+    .replace(/^(?:app|agent|project):/i, "")
     .replace(/^projects\//i, "")
     .replace(/\/project\.(md|json)$/i, "")
     .replace(/\.app$/i, "");
 }
 
-function resolveCanonicalAppId(candidate: string | null | undefined, installedApps?: ReadonlySet<string>): string {
-  const clean = normalizeAppKey(candidate);
-  if (!clean) return "";
-  if (installedApps?.has(clean)) return clean;
-  const alias = APP_ALIAS_BY_KEY[clean.toLowerCase()];
-  if (alias && (!installedApps || installedApps.has(alias))) return alias;
-  return clean;
+function parseAppModuleMetadata(dir: string, fallbackId: string): AppCatalogEntry | null {
+  for (const file of ["app.ts", "app.js"]) {
+    const candidate = join(dir, file);
+    if (!existsSync(candidate)) continue;
+    try {
+      const source = readFileSync(candidate, "utf8");
+      const idMatch = source.match(/\bid\s*:\s*["']([^"']+)["']/);
+      const ownerMatch = source.match(/\b(?:agent|owner)\s*:\s*["']([^"']+)["']/);
+      const id = idMatch?.[1]?.trim() || fallbackId;
+      const owner = ownerMatch?.[1]?.trim() || id;
+      return { id, owner };
+    } catch {
+      return { id: fallbackId, owner: fallbackId };
+    }
+  }
+  return null;
 }
 
 /**
- * Classifies a metric into Host platform scope vs. accountable App scope without
- * renaming deployed metric IDs.
+ * Resolves the authoritative App catalog from the daemon's loaded App registry when
+ * available, falling back to non-disabled `.app` definitions on disk for standalone
+ * read-only fixtures while always recording `.disabled` Apps so they are excluded from
+ * active backlogs.
+ */
+export function resolveAppCatalog(options: {
+  projectsRoot?: string;
+  loadedApps?: ReadonlyArray< Record<string, unknown> > | null;
+}): AppCatalog {
+  const installedIds: string[] = [];
+  const installedSet = new Set<string>();
+  const disabledSet = new Set<string>();
+  const ownerByAppId = new Map<string, string>();
+  const appIdByOwner = new Map<string, string>();
+
+  const registerInstalled = (idRaw: string, ownerRaw?: string) => {
+    const id = normalizeAppKey(idRaw);
+    if (!id || disabledSet.has(id)) return;
+    if (!installedSet.has(id)) {
+      installedSet.add(id);
+      installedIds.push(id);
+    }
+    const owner = normalizeAppKey(ownerRaw) || id;
+    ownerByAppId.set(id, owner);
+    if (!appIdByOwner.has(owner)) appIdByOwner.set(owner, id);
+  };
+
+  const projectsRoot = options.projectsRoot ?? "";
+  const diskEntries: AppCatalogEntry[] = [];
+  if (projectsRoot && existsSync(projectsRoot)) {
+    try {
+      for (const entry of readdirSync(projectsRoot).sort()) {
+        if (!entry.endsWith(".app")) continue;
+        const stem = entry.slice(0, -".app".length);
+        const dir = join(projectsRoot, entry);
+        try {
+          if (!statSync(dir).isDirectory()) continue;
+          const parsed = parseAppModuleMetadata(dir, stem);
+          if (existsSync(join(dir, ".disabled"))) {
+            disabledSet.add(stem);
+            if (parsed?.id) disabledSet.add(normalizeAppKey(parsed.id));
+            continue;
+          }
+          if (parsed) diskEntries.push(parsed);
+        } catch {
+          /* Skip unreadable directory entries. */
+        }
+      }
+    } catch {
+      /* Ignore unreadable projectsRoot. */
+    }
+  }
+
+  if (Array.isArray(options.loadedApps)) {
+    for (const item of options.loadedApps) {
+      if (!item || typeof item !== "object") continue;
+      const id = typeof item.id === "string" ? item.id.trim() : "";
+      if (!id) continue;
+      const owner = typeof item.owner === "string" && item.owner.trim() ? item.owner.trim() : id;
+      registerInstalled(id, owner);
+    }
+  } else {
+    for (const entry of diskEntries) {
+      registerInstalled(entry.id, entry.owner);
+    }
+  }
+
+  installedIds.sort((a, b) => a.localeCompare(b));
+  return { installedIds, installedSet, disabledSet, ownerByAppId, appIdByOwner };
+}
+
+export function discoverInstalledAppIds(projectsRoot: string): string[] {
+  return resolveAppCatalog({ projectsRoot }).installedIds;
+}
+
+function resolveCatalogAppId(candidate: string | null | undefined, catalog?: AppCatalog): string {
+  const clean = normalizeAppKey(candidate);
+  if (!clean) return "";
+  if (catalog) {
+    if (catalog.installedSet.has(clean)) return clean;
+    const byOwner = catalog.appIdByOwner.get(clean);
+    if (byOwner) return byOwner;
+  }
+  return clean;
+}
+
+function parseMetricConfigObject(raw: unknown): Record<string, unknown> | null {
+  if (!raw) return null;
+  if (typeof raw === "object" && !Array.isArray(raw)) return raw as Record<string, unknown>;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Classifies a metric into Host platform scope vs. accountable App scope using
+ * explicit declarations and the loaded App catalog — with zero hardcoded App names.
  */
 export function classifyMetricScope(
-  metric: { id: string; owner?: string | null; project?: string | null },
-  installedApps?: ReadonlySet<string>,
+  metric: { id: string; owner?: string | null; project?: string | null; config?: unknown },
+  catalogOrSet?: AppCatalog | ReadonlySet<string>,
 ): MetricScope {
+  const catalog: AppCatalog | undefined =
+    catalogOrSet && "installedSet" in catalogOrSet
+      ? catalogOrSet
+      : catalogOrSet instanceof Set
+        ? {
+            installedIds: [...catalogOrSet],
+            installedSet: new Set(catalogOrSet),
+            disabledSet: new Set(),
+            ownerByAppId: new Map([...catalogOrSet].map((id) => [id, id])),
+            appIdByOwner: new Map([...catalogOrSet].map((id) => [id, id])),
+          }
+        : undefined;
+
+  const cfg = parseMetricConfigObject(metric.config);
+  if (cfg?.scope === "host") return { kind: "host" };
+  if (typeof cfg?.scope === "string" && cfg.scope.startsWith("app:")) {
+    const explicitApp = resolveCatalogAppId(cfg.scope.slice(4), catalog);
+    if (explicitApp) return { kind: "app", appId: explicitApp };
+  }
+
   const id = String(metric.id ?? "").trim();
   const lowerId = id.toLowerCase();
   if (HOST_METRIC_IDS.has(lowerId)) return { kind: "host" };
   if (HOST_METRIC_PREFIXES.some((prefix) => lowerId.startsWith(prefix))) return { kind: "host" };
-  // Evaluation specialist workflows belong to alex.app.
-  if (lowerId.startsWith("may.evaluation-")) {
-    return { kind: "app", appId: resolveCanonicalAppId("alex", installedApps) };
+
+  const projectRaw = normalizeAppKey(metric.project);
+  if (projectRaw && projectRaw !== "platform" && !projectRaw.startsWith("system:")) {
+    const resolvedProject = resolveCatalogAppId(projectRaw, catalog);
+    // Avoid mistaking legacy `project: 'may'` + `owner: 'may'` Host declarations unless not in HOST_METRIC_IDS.
+    if (!catalog || catalog.installedSet.has(resolvedProject) || !catalog.disabledSet.has(resolvedProject)) {
+      return { kind: "app", appId: resolvedProject };
+    }
   }
 
-  const projectApp = resolveCanonicalAppId(metric.project, installedApps);
-  if (projectApp && projectApp !== "platform" && !projectApp.startsWith("system:")) {
-    return { kind: "app", appId: projectApp };
-  }
-
-  const ownerRaw = String(metric.owner ?? "").trim();
-  if (ownerRaw.toLowerCase().startsWith("system:")) return { kind: "host" };
-  const ownerApp = resolveCanonicalAppId(ownerRaw, installedApps);
-  if (ownerApp && installedApps?.has(ownerApp)) {
-    return { kind: "app", appId: ownerApp };
+  const ownerTrimmed = String(metric.owner ?? "").trim();
+  if (ownerTrimmed.toLowerCase().startsWith("system:")) return { kind: "host" };
+  const ownerKey = normalizeAppKey(ownerTrimmed);
+  if (ownerKey && catalog) {
+    if (catalog.installedSet.has(ownerKey)) return { kind: "app", appId: ownerKey };
+    const mappedByOwner = catalog.appIdByOwner.get(ownerKey);
+    if (mappedByOwner) return { kind: "app", appId: mappedByOwner };
   }
 
   const prefix = lowerId.split(".", 1)[0] ?? "";
   if (prefix) {
-    const prefixApp = resolveCanonicalAppId(prefix, installedApps);
-    if (prefixApp) return { kind: "app", appId: prefixApp };
+    const resolvedPrefix = resolveCatalogAppId(prefix, catalog);
+    if (catalog?.installedSet.has(resolvedPrefix)) return { kind: "app", appId: resolvedPrefix };
+    if (!catalog && resolvedPrefix) return { kind: "app", appId: resolvedPrefix };
   }
-  if (ownerApp) return { kind: "app", appId: ownerApp };
+  if (ownerKey) return { kind: "app", appId: resolveCatalogAppId(ownerKey, catalog) };
   return { kind: "host" };
+}
+
+let lastAutoHygieneAt = 0;
+const AUTO_HYGIENE_COOLDOWN_MS = 3_600_000; // 1 hour
+
+/**
+ * Tier-1 mechanical self-heal for `host.disk_used_ratio >= 0.92` (`0` LLM calls):
+ * prunes Go build cache and clean (`dirty === 0`) scratch worktrees older than 24h.
+ */
+export function runBoundedDiskAutoHygiene(now = Date.now()): { prunedCount: number } {
+  if (now - lastAutoHygieneAt < AUTO_HYGIENE_COOLDOWN_MS) return { prunedCount: 0 };
+  lastAutoHygieneAt = now;
+  let prunedCount = 0;
+  const goCache = join(homedir(), ".cache", "go-build");
+  if (existsSync(goCache)) {
+    try {
+      for (const entry of readdirSync(goCache)) {
+        rmSync(join(goCache, entry), { recursive: true, force: true });
+      }
+      prunedCount += 1;
+    } catch {
+      /* Best-effort cache cleanup. */
+    }
+  }
+  const scratchRoot = join(homedir(), "workspace-worktrees");
+  if (existsSync(scratchRoot)) {
+    try {
+      for (const entry of readdirSync(scratchRoot)) {
+        const wt = join(scratchRoot, entry);
+        try {
+          const st = statSync(wt);
+          if (!st.isDirectory() || now - st.mtimeMs < 86_400_000) continue;
+          const porcelain = execFileSync("git", ["-C", wt, "status", "--porcelain"], {
+            encoding: "utf8",
+            timeout: 5_000,
+            stdio: ["ignore", "pipe", "ignore"],
+          }).trim();
+          if (porcelain === "") {
+            rmSync(wt, { recursive: true, force: true });
+            prunedCount += 1;
+          }
+        } catch {
+          /* Never delete an unverified worktree. */
+        }
+      }
+    } catch {
+      /* Ignore unreadable scratch root. */
+    }
+  }
+  return { prunedCount };
 }
 
 export type DiskHeadroom = {
@@ -157,29 +351,6 @@ export function probeAzureCliAuthHeadroom(now = Date.now(), azureDir?: string): 
     };
   } catch {
     return { provider: "azure-cli", state: "unknown", expiresAt: null };
-  }
-}
-
-export function discoverInstalledAppIds(projectsRoot: string): string[] {
-  if (!projectsRoot || !existsSync(projectsRoot)) return [];
-  try {
-    const appIds: string[] = [];
-    for (const entry of readdirSync(projectsRoot).sort()) {
-      if (!entry.endsWith(".app")) continue;
-      const dir = join(projectsRoot, entry);
-      try {
-        if (!statSync(dir).isDirectory()) continue;
-        if (existsSync(join(dir, ".disabled"))) continue;
-        if (existsSync(join(dir, "app.ts")) || existsSync(join(dir, "app.js"))) {
-          appIds.push(entry.slice(0, -".app".length));
-        }
-      } catch {
-        /* Skip unreadable directory entries. */
-      }
-    }
-    return appIds;
-  } catch {
-    return [];
   }
 }
 
@@ -258,22 +429,34 @@ type RawScorecardFact = {
 };
 
 function readScorecardFacts(db: SqliteDb, start: number, end: number): RawScorecardFact[] {
+  // Bound started_at via idx_app_task_attempts_started (allowing up to 30d attempt duration before window start)
+  // and filter exact finished/started timestamp in SQL before expanding json_each facts.
+  const lookbackStart = Math.max(0, start - 30 * 86_400_000);
+  const tsExpr = `COALESCE(
+    CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
+    a.started_at
+  )`;
   const rows = db
     .prepare(
       `SELECT a.app_id AS appId, a.task_id AS taskId, a.attempt_id AS attemptId,
-        COALESCE(
-          CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
-          a.started_at
-        ) AS timestamp,
+        ${tsExpr} AS timestamp,
         f.value AS fact
       FROM app_task_attempts a, json_each(a.attempt_json, '$.acceptedResult.facts') f
-      WHERE a.accepted_result_state IS NOT NULL
+      WHERE a.started_at >= ? AND a.started_at < ?
+        AND a.accepted_result_state IS NOT NULL
         AND instr(a.attempt_json, 'scorecard:') > 0
+        AND ${tsExpr} >= ? AND ${tsExpr} < ?
         AND f.type = 'text'
         AND substr(f.value, 1, 10) = 'scorecard:'
         AND length(f.value) <= 8000`,
     )
-    .all() as Array<{ appId: string; taskId: string; attemptId: string; timestamp: number; fact: string }>;
+    .all(lookbackStart, end, start, end) as Array<{
+    appId: string;
+    taskId: string;
+    attemptId: string;
+    timestamp: number;
+    fact: string;
+  }>;
 
   const parsed: RawScorecardFact[] = [];
   for (const row of rows) {
@@ -282,6 +465,7 @@ function readScorecardFacts(db: SqliteDb, start: number, end: number): RawScorec
       const payload = JSON.parse(row.fact.slice("scorecard:".length)) as Record<string, unknown>;
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) continue;
       if (payload.version !== 1) continue;
+      if (payload.rubricVersion !== "app-rubric-v1" && payload.rubricVersion !== "host-rubric-v1") continue;
       parsed.push({
         appId: row.appId,
         taskId: row.taskId,
@@ -298,11 +482,12 @@ function readScorecardFacts(db: SqliteDb, start: number, end: number): RawScorec
 }
 
 function summarizeAppScorecard(facts: RawScorecardFact[]): AppScorecardSummary {
+  const appFacts = facts.filter((f) => f.payload.rubricVersion === "app-rubric-v1");
   const dimensions = Object.fromEntries(
     APP_RUBRIC_DIMENSIONS.map((dim) => [dim, { mean: null, assessed: 0, unknown: 0, notApplicable: 0 }]),
   ) as AppScorecardSummary["dimensions"];
 
-  if (!facts.length) {
+  if (!appFacts.length) {
     return {
       status: "not_scored",
       rubricVersion: "app-rubric-v1",
@@ -317,13 +502,17 @@ function summarizeAppScorecard(facts: RawScorecardFact[]): AppScorecardSummary {
     };
   }
 
-  // Deduplicate by (taskId, cohort || attemptId) keeping newest assessment.
+  // Deduplicate by (appId, taskId, cohort || attemptId) keeping newest assessment across multi-App rollups.
   const seen = new Set<string>();
   const unique: RawScorecardFact[] = [];
-  for (const item of facts) {
+  for (const item of appFacts) {
+    const subjectApp =
+      typeof item.payload.appId === "string" && item.payload.appId.trim()
+        ? normalizeAppKey(item.payload.appId)
+        : item.appId;
     const subjectTask = typeof item.payload.taskId === "string" && item.payload.taskId.trim() ? item.payload.taskId.trim() : item.taskId;
     const cohort = typeof item.payload.cohort === "string" && item.payload.cohort.trim() ? item.payload.cohort.trim() : item.attemptId;
-    const key = `${subjectTask}::${cohort}`;
+    const key = `${subjectApp}::${subjectTask}::${cohort}`;
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(item);
@@ -419,11 +608,12 @@ function summarizeAppScorecard(facts: RawScorecardFact[]): AppScorecardSummary {
 }
 
 function summarizeHostScorecard(facts: RawScorecardFact[]): HostScorecardSummary {
+  const hostFacts = facts.filter((f) => f.payload.rubricVersion === "host-rubric-v1");
   const dimensions = Object.fromEntries(
     HOST_RUBRIC_DIMENSIONS.map((dim) => [dim, { mean: null, assessed: 0, unknown: 0, notApplicable: 0 }]),
   ) as HostScorecardSummary["dimensions"];
 
-  if (!facts.length) {
+  if (!hostFacts.length) {
     return {
       status: "not_scored",
       rubricVersion: "host-rubric-v1",
@@ -446,7 +636,7 @@ function summarizeHostScorecard(facts: RawScorecardFact[]): HostScorecardSummary
   let gated = false;
   let gateReason: string | null = null;
 
-  for (const item of facts) {
+  for (const item of hostFacts) {
     const rawDims =
       item.payload.dimensions && typeof item.payload.dimensions === "object" && !Array.isArray(item.payload.dimensions)
         ? (item.payload.dimensions as Record<string, unknown>)
@@ -499,9 +689,9 @@ function summarizeHostScorecard(facts: RawScorecardFact[]): HostScorecardSummary
     score,
     gated,
     gateReason,
-    sampleSize: facts.length,
-    confidence: facts.length >= 5 ? "calibrated" : "low-sample",
-    latestAt: facts[0]?.timestamp ?? null,
+    sampleSize: hostFacts.length,
+    confidence: hostFacts.length >= 5 ? "calibrated" : "low-sample",
+    latestAt: hostFacts[0]?.timestamp ?? null,
     dimensions,
   };
 }
@@ -644,12 +834,18 @@ function buildWindowTrends(
          app_id AS appId,
          MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((${attemptTimeExpr} - ?) / ? AS INTEGER))) AS b,
          COUNT(*) AS total,
-         COUNT(CASE WHEN state IN ('completed', 'failed') THEN 1 END) AS terminal,
+         COUNT(CASE WHEN state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal,
          COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
          COUNT(CASE WHEN state IN ('failed', 'interrupted') THEN 1 END) AS friction,
          COUNT(CASE WHEN state != 'running' THEN 1 END) AS finishedNonRunning,
          COUNT(CASE WHEN accepted_result_state = 'converged' THEN 1 END) AS converged,
-         COUNT(CASE WHEN state != 'running' AND COALESCE(accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged
+         COUNT(CASE WHEN state != 'running' AND COALESCE(accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged,
+         COUNT(CASE WHEN COALESCE(json_extract(attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
+           AND NOT EXISTS (
+             SELECT 1 FROM execution_usage u
+             WHERE u.app_id = app_task_attempts.app_id
+               AND (u.attempt_id = app_task_attempts.attempt_id OR u.session_id = json_extract(app_task_attempts.attempt_json, '$.sessionId'))
+           ) THEN 1 END) AS disjointAgentAttempts
        FROM app_task_attempts
        WHERE ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?
        GROUP BY app_id, b`,
@@ -664,6 +860,7 @@ function buildWindowTrends(
     finishedNonRunning: number;
     converged: number;
     nonConverged: number;
+    disjointAgentAttempts: number;
   }>;
 
   // 2. Workflow bucket facts (Host + per-App).
@@ -695,6 +892,7 @@ function buildWindowTrends(
       `SELECT
          COALESCE(app_id, '') AS appId,
          started_at AS ts,
+         workflow_run_id AS workflowRunId,
          CASE WHEN ${complete} THEN 1 ELSE 0 END AS isComplete,
          COALESCE(json_extract(data, '$.totals.cacheRead'), 0) AS cacheRead,
          COALESCE(json_extract(data, '$.totals.input'), 0) + COALESCE(json_extract(data, '$.totals.cacheRead'), 0) + COALESCE(json_extract(data, '$.totals.cacheWrite'), 0) AS exposure,
@@ -709,6 +907,7 @@ function buildWindowTrends(
     .all(start, end) as Array<{
     appId: string;
     ts: number;
+    workflowRunId: string | null;
     isComplete: number;
     cacheRead: number;
     exposure: number;
@@ -718,7 +917,7 @@ function buildWindowTrends(
     promptBytes: number | null;
   }>;
 
-  // 4. Closed requests, closed finite tasks, and human steers per bucket.
+  // 4. Closed requests and human steers per bucket.
   const closedReqBuckets = db
     .prepare(
       `SELECT app_id AS appId,
@@ -769,7 +968,7 @@ function buildWindowTrends(
     pricedCount: number[];
     nonConverged: number[];
     finishedAttempts: number[];
-    totalAttempts: number[];
+    agentExecutions: number[];
     wfDone: number[];
     wfTotal: number[];
     humanTouches: number[];
@@ -785,7 +984,7 @@ function buildWindowTrends(
         pricedCount: zeros(),
         nonConverged: zeros(),
         finishedAttempts: zeros(),
-        totalAttempts: zeros(),
+        agentExecutions: zeros(),
         wfDone: zeros(),
         wfTotal: zeros(),
         humanTouches: zeros(),
@@ -807,7 +1006,7 @@ function buildWindowTrends(
       a.outcomeExposure[r.b] += r.total;
       a.nonConverged[r.b] += r.nonConverged;
       a.finishedAttempts[r.b] += r.finishedNonRunning;
-      a.totalAttempts[r.b] += r.total;
+      a.agentExecutions[r.b] += r.disjointAgentAttempts;
     }
   }
 
@@ -840,6 +1039,9 @@ function buildWindowTrends(
     ) {
       hostPromptTaxBytes[b] += Math.max(0, r.promptBytes - r.taskBytes);
       hostPromptTotalBytes[b] += r.promptBytes;
+    }
+    if (r.appId && !r.workflowRunId) {
+      ensureApp(r.appId).agentExecutions[b] += 1;
     }
     if (r.appId && typeof r.pricedUsd === "number" && Number.isFinite(r.pricedUsd)) {
       const a = ensureApp(r.appId);
@@ -1005,7 +1207,7 @@ function buildWindowTrends(
         goodDirection: "up",
         bucketStarts,
         numerators: a.wfDone,
-        denominators: a.wfTotal.map((w, i) => w + (a.totalAttempts[i] ?? 0)),
+        denominators: a.wfTotal.map((w, i) => w + (a.agentExecutions[i] ?? 0)),
       }),
       autonomyRatio: buildRatioTrend({
         metricId: `${appId}.autonomy_ratio_7d`,
@@ -1154,26 +1356,41 @@ function buildAppDrillDown(
     estimatedCostUsd: number | null;
   }>;
 
-  // Also include Task attempt counts by assigned agent (covering Codex/native executors without session/usage rows).
+  // Attribute Task attempts to the resolved owner retained on each attempt (`$.owner`),
+  // counting only non-workflow attempts not already represented in execution_usage / sessions.
   const attemptAgentRows = db
     .prepare(
       `SELECT
          COALESCE(
+           NULLIF(trim(json_extract(a.attempt_json, '$.owner')), ''),
            NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
            NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
          ) AS agent,
-         COUNT(*) AS attemptsWindow,
-         COUNT(CASE WHEN a.state = 'failed' THEN 1 END) AS failedAttemptsWindow
+         COUNT(CASE WHEN NOT EXISTS (
+           SELECT 1 FROM execution_usage u
+           WHERE u.app_id = a.app_id
+             AND (u.attempt_id = a.attempt_id OR u.session_id = json_extract(a.attempt_json, '$.sessionId'))
+         ) THEN 1 END) AS disjointUsageAttempts,
+         COUNT(CASE WHEN NOT EXISTS (
+           SELECT 1 FROM sessions s
+           WHERE s.sessionId = json_extract(a.attempt_json, '$.sessionId')
+         ) THEN 1 END) AS disjointSessionAttempts,
+         COUNT(CASE WHEN a.state = 'failed' AND NOT EXISTS (
+           SELECT 1 FROM sessions s
+           WHERE s.sessionId = json_extract(a.attempt_json, '$.sessionId') AND s.status = 'error'
+         ) THEN 1 END) AS disjointFailedAttempts
        FROM app_task_attempts a
-       JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
+       LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
        WHERE a.app_id = ?
+         AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
          AND ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?
        GROUP BY 1`,
     )
     .all(appId, start, end) as Array<{
     agent: string | null;
-    attemptsWindow: number;
-    failedAttemptsWindow: number;
+    disjointUsageAttempts: number;
+    disjointSessionAttempts: number;
+    disjointFailedAttempts: number;
   }>;
 
   // Also include assigned agents on active tasks.
@@ -1195,13 +1412,14 @@ function buildAppDrillDown(
       const s = sessByAgent.get(agent);
       const u = usageByAgent.get(agent);
       const att = attemptsByAgent.get(agent);
-      const runs = Math.max(u?.invocationsWindow ?? 0, s?.sessionsWindow ?? 0, att?.attemptsWindow ?? 0);
-      const errs = Math.max(s?.errorsWindow ?? 0, att?.failedAttemptsWindow ?? 0);
+      const runs = (u?.invocationsWindow ?? 0) + (att?.disjointUsageAttempts ?? 0);
+      const sessionsCount = (s?.sessionsWindow ?? 0) + (att?.disjointSessionAttempts ?? 0);
+      const errs = (s?.errorsWindow ?? 0) + (att?.disjointFailedAttempts ?? 0);
       return {
         agent,
-        sessionsWindow: s?.sessionsWindow ?? att?.attemptsWindow ?? 0,
+        sessionsWindow: sessionsCount,
         errorsWindow: errs,
-        invocationsWindow: runs,
+        invocationsWindow: runs > 0 ? runs : sessionsCount,
         estimatedCostUsdWindow:
           u && u.pricedInvocations > 0 && u.estimatedCostUsd !== null
             ? Math.round(u.estimatedCostUsd * 10000) / 10000
@@ -1255,14 +1473,16 @@ export function readAgentCapabilityRollups(db: SqliteDb, now = Date.now()) {
          UNION ALL
          SELECT
            COALESCE(
+             NULLIF(trim(json_extract(a.attempt_json, '$.owner')), ''),
              NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
              NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
            ) AS agent,
            a.app_id AS appId,
            COUNT(*) AS runs
          FROM app_task_attempts a
-         JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
+         LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
          WHERE a.started_at >= ? AND a.started_at < ?
+           AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
          GROUP BY 1, 2
        ) WHERE agent IS NOT NULL AND agent != ''
        GROUP BY agent, appId`,
@@ -1323,20 +1543,107 @@ export function readAgentCapabilityRollups(db: SqliteDb, now = Date.now()) {
   };
 }
 
+export type AlertHandlerSummary = {
+  alertId: number;
+  metricId: string;
+  name: string;
+  priority: string;
+  message: string | null;
+  createdAt: number | null;
+  scope: MetricScope;
+  handler: string;
+  handlingStatus: string;
+  linkedTask: { appId: string; taskId: string } | null;
+};
+
+export function describeOpenAlert(
+  alert: {
+    alertId: number;
+    metricId: string;
+    name?: string | null;
+    priority?: string | null;
+    message?: string | null;
+    createdAt?: number | null;
+    owner?: string | null;
+    project?: string | null;
+    config?: unknown;
+    latestJudgment?: Record<string, unknown> | null;
+  },
+  catalog?: AppCatalog,
+): AlertHandlerSummary {
+  const scope = classifyMetricScope(
+    { id: alert.metricId, owner: alert.owner, project: alert.project, config: alert.config },
+    catalog,
+  );
+  const cfg = parseMetricConfigObject(alert.config);
+  const configuredHandler = typeof cfg?.handler === "string" && cfg.handler.trim() ? cfg.handler.trim() : null;
+  let handler: string;
+  if (configuredHandler) {
+    handler = configuredHandler;
+  } else if (alert.metricId === "host.disk_used_ratio") {
+    handler = "auto-hygiene → alex";
+  } else if (alert.metricId === "host.auth_remaining_seconds") {
+    handler = "may → human (az login)";
+  } else if (scope.kind === "host") {
+    const ownerClean = normalizeAppKey(alert.owner);
+    handler = ownerClean && !ownerClean.startsWith("system:") && ownerClean !== "may" && ownerClean !== "may-agent"
+      ? ownerClean
+      : "alex (Host steward)";
+  } else {
+    handler = catalog?.ownerByAppId.get(scope.appId) ?? normalizeAppKey(alert.owner) ?? scope.appId;
+  }
+
+  const j = alert.latestJudgment;
+  let handlingStatus = handler.startsWith("auto-hygiene")
+    ? "Auto-hygiene active"
+    : handler.includes("human")
+      ? "Needs human action"
+      : `Routed to ${handler}`;
+  let linkedTask: { appId: string; taskId: string } | null = null;
+  if (j && typeof j === "object") {
+    const lt = j.linkedTask as Record<string, unknown> | undefined;
+    const src = j.source as Record<string, unknown> | undefined;
+    if (lt && typeof lt.appId === "string" && typeof lt.taskId === "string") {
+      linkedTask = { appId: lt.appId, taskId: lt.taskId };
+    } else if (src && typeof src.appId === "string" && typeof src.taskId === "string") {
+      linkedTask = { appId: src.appId, taskId: src.taskId };
+    }
+    const disp = typeof j.disposition === "string" ? j.disposition : typeof j.verdict === "string" ? j.verdict : null;
+    if (disp === "investigate") handlingStatus = "Investigating";
+    else if (disp) handlingStatus = `Triaged: ${disp}`;
+  }
+
+  return {
+    alertId: alert.alertId,
+    metricId: alert.metricId,
+    name: alert.name || alert.metricId,
+    priority: alert.priority || "P2",
+    message: alert.message ?? null,
+    createdAt: alert.createdAt ?? null,
+    scope,
+    handler,
+    handlingStatus,
+    linkedTask,
+  };
+}
+
 export function readObservabilitySummary(
   db: SqliteDb,
   options: {
     query: ReturnType<typeof observabilitySummaryQuery>;
     projectsRoot: string;
     stateDir: string;
+    loadedApps?: ReadonlyArray<Record<string, unknown>> | null;
     now?: number;
     envProbes?: EnvironmentProbes;
   },
 ) {
   const now = options.now ?? Date.now();
   const { start, end, appId: filterAppId } = options.query;
-  const installedAppIds = discoverInstalledAppIds(options.projectsRoot);
-  const installedSet = new Set(installedAppIds);
+  const catalog = resolveAppCatalog({
+    projectsRoot: options.projectsRoot,
+    loadedApps: options.loadedApps,
+  });
 
   const envProbes: EnvironmentProbes = options.envProbes ?? {
     disk: probeDiskHeadroom(options.stateDir),
@@ -1344,7 +1651,7 @@ export function readObservabilitySummary(
   };
 
   {
-    const observations = readMetricObservations(db, now);
+    const observations = readMetricObservations(db, now, undefined, catalog);
     const metricById = new Map(observations.metrics.map((m) => [m.id, m]));
     const metricValue = (id: string): number | null => {
       const m = metricById.get(id);
@@ -1354,7 +1661,7 @@ export function readObservabilitySummary(
     const openAlerts = db
       .prepare(
         `SELECT ma.id AS alertId, ma.metric_id AS metricId, ma.message, ma.created_at AS createdAt,
-           m.name, m.owner, m.project, m.priority
+           m.name, m.owner, m.project, m.priority, m.config
          FROM metric_alerts ma
          INNER JOIN metrics m ON m.id = ma.metric_id
          WHERE ma.resolved_at IS NULL AND m.status = 'active'
@@ -1370,11 +1677,12 @@ export function readObservabilitySummary(
       owner: string | null;
       project: string | null;
       priority: string | null;
+      config: string | null;
     }>;
     const alertsTruncated = openAlerts.length > METRIC_LIST_LIMIT;
     const visibleAlerts = openAlerts.slice(0, METRIC_LIST_LIMIT);
 
-    // Discover any additional App IDs referenced in retained DB tables so active data is never hidden.
+    // Discover any additional non-disabled App IDs referenced in retained DB tables.
     const dbAppRows = db
       .prepare(
         `SELECT DISTINCT app_id AS appId FROM (
@@ -1391,27 +1699,63 @@ export function readObservabilitySummary(
       )
       .all() as Array<{ appId: string }>;
 
-    const allAppIds = [...installedAppIds];
+    const allAppIds = [...catalog.installedIds];
     const knownAppSet = new Set(allAppIds);
     for (const { appId } of dbAppRows) {
       if (appId === "platform" || appId.startsWith("system:")) continue;
+      if (catalog.disabledSet.has(appId)) continue;
+      // When the daemon supplied an authoritative loaded App list, only include
+      // uninstalled historical DB Apps when explicitly queried via ?appId=<id>.
+      if (Array.isArray(options.loadedApps) && filterAppId !== appId) continue;
       if (!knownAppSet.has(appId)) {
         knownAppSet.add(appId);
         allAppIds.push(appId);
       }
     }
 
+    const fullCatalog: AppCatalog = {
+      ...catalog,
+      installedSet: new Set([...catalog.installedSet, ...knownAppSet]),
+    };
+
     let hostOpenAlerts = 0;
     const appOpenAlerts = new Map<string, number>();
+    const alertSummaries: AlertHandlerSummary[] = [];
     for (const alert of visibleAlerts) {
-      const scope = classifyMetricScope(
-        { id: alert.metricId, owner: alert.owner, project: alert.project },
-        knownAppSet,
-      );
-      if (scope.kind === "host") {
+      const acceptedDisp = db
+        .prepare(
+          `SELECT app_id, task_id, attempt_id, timestamp, data
+           FROM metric_dispositions WHERE metric_id = ? AND alert_id = ?
+           ORDER BY timestamp DESC, attempt_id DESC LIMIT 1`,
+        )
+        .get(alert.metricId, alert.alertId) as {
+        app_id: string;
+        task_id: string;
+        attempt_id: string;
+        data: string;
+      } | null;
+      let latestJudgment: Record<string, unknown> | null = null;
+      if (acceptedDisp) {
+        try {
+          latestJudgment = {
+            ...(JSON.parse(acceptedDisp.data) as Record<string, unknown>),
+            source: {
+              kind: "accepted-task-result",
+              appId: acceptedDisp.app_id,
+              taskId: acceptedDisp.task_id,
+              attemptId: acceptedDisp.attempt_id,
+            },
+          };
+        } catch {
+          /* Ignore malformed disposition. */
+        }
+      }
+      const summary = describeOpenAlert({ ...alert, latestJudgment }, fullCatalog);
+      alertSummaries.push(summary);
+      if (summary.scope.kind === "host") {
         hostOpenAlerts += 1;
       } else {
-        appOpenAlerts.set(scope.appId, (appOpenAlerts.get(scope.appId) ?? 0) + 1);
+        appOpenAlerts.set(summary.scope.appId, (appOpenAlerts.get(summary.scope.appId) ?? 0) + 1);
       }
     }
 
@@ -1423,7 +1767,7 @@ export function readObservabilitySummary(
     let hostActiveMetrics = 0;
 
     for (const metric of observations.metrics) {
-      const scope = classifyMetricScope(metric, knownAppSet);
+      const scope = metric.scope;
       if (scope.kind === "host") {
         hostActiveMetrics += 1;
         if (metric.freshness === "fresh") hostFreshMetrics += 1;
@@ -1453,7 +1797,7 @@ export function readObservabilitySummary(
     const hostAttemptRow = db
       .prepare(
         `SELECT
-           COUNT(CASE WHEN state IN ('completed', 'failed', 'cancelled') THEN 1 END) AS terminal,
+           COUNT(CASE WHEN state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal,
            COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failed,
            COUNT(CASE WHEN json_extract(attempt_json, '$.failoverFromAttemptId') IS NOT NULL THEN 1 END) AS failovers
          FROM app_task_attempts
@@ -1464,22 +1808,37 @@ export function readObservabilitySummary(
     const recoveryRow = db
       .prepare(
         `SELECT
-           COUNT(*) AS unresolvedCount,
-           MIN(created_at) AS oldestCreatedAt
-         FROM app_inbox_items
-         WHERE status != 'done' AND recovery_json IS NOT NULL`,
+           COUNT(DISTINCT i.id) AS unresolvedCount,
+           MIN(CAST(json_extract(r.value, '$.firstFailedAt') AS INTEGER)) AS oldestFailedAt
+         FROM app_inbox_items i, json_each(COALESCE(i.recovery_json, '{}')) r
+         WHERE json_extract(r.value, '$.recoveredAt') IS NULL
+           AND json_extract(r.value, '$.failures') > 0
+           AND ((r.key = 'input-admission' AND i.status != 'done' AND i.execution_task_id IS NULL)
+             OR (r.key = 'input-result' AND i.status != 'done')
+             OR (r.key = 'input-feedback' AND json_extract(i.recovery_json, '$."input-admission".reportedAt') IS NULL))`,
       )
-      .get() as { unresolvedCount: number; oldestCreatedAt: number | null };
+      .get() as { unresolvedCount: number; oldestFailedAt: number | null };
 
+    // Count canonical expired leases once across non-cancelled Tasks/current-attempts (Task lease mirrors currentAttemptId).
     const expiredTaskLeases =
       (
         db
           .prepare(
-            `SELECT
-               (SELECT COUNT(*) FROM app_tasks t
-                LEFT JOIN app_task_cancellations c ON c.app_id = t.app_id AND c.task_id = t.task_id
-                WHERE c.task_id IS NULL AND t.lease_until IS NOT NULL AND t.lease_until < ?) +
-               (SELECT COUNT(*) FROM app_task_attempts WHERE state = 'running' AND lease_until IS NOT NULL AND lease_until < ?) AS expired`,
+            `SELECT COUNT(*) AS expired
+             FROM app_tasks t
+             LEFT JOIN app_task_cancellations c ON c.app_id = t.app_id AND c.task_id = t.task_id
+             WHERE c.task_id IS NULL
+               AND json_extract(t.resource_json, '$.status.closure.state') IS NULL
+               AND (
+                 (t.lease_until IS NOT NULL AND t.lease_until < ?)
+                 OR EXISTS (
+                   SELECT 1 FROM app_task_attempts a
+                   WHERE a.app_id = t.app_id
+                     AND a.attempt_id = COALESCE(t.current_attempt_id, '')
+                     AND a.state = 'running'
+                     AND a.lease_until IS NOT NULL AND a.lease_until < ?
+                 )
+               )`,
           )
           .get(now, now) as { expired: number }
       )?.expired ?? 0;
@@ -1534,6 +1893,12 @@ export function readObservabilitySummary(
         `SELECT
            app_id AS appId,
            COUNT(*) AS totalAttempts,
+           COUNT(CASE WHEN COALESCE(json_extract(attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
+             AND NOT EXISTS (
+               SELECT 1 FROM execution_usage u
+               WHERE u.app_id = app_task_attempts.app_id
+                 AND (u.attempt_id = app_task_attempts.attempt_id OR u.session_id = json_extract(app_task_attempts.attempt_json, '$.sessionId'))
+             ) THEN 1 END) AS disjointAgentAttempts,
            COUNT(CASE WHEN accepted_result_state = 'converged' THEN 1 END) AS convergedMilestones,
            COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failedAttempts
          FROM app_task_attempts
@@ -1543,6 +1908,7 @@ export function readObservabilitySummary(
       .all(start, end) as Array<{
       appId: string;
       totalAttempts: number;
+      disjointAgentAttempts: number;
       convergedMilestones: number;
       failedAttempts: number;
     }>;
@@ -1622,7 +1988,7 @@ export function readObservabilitySummary(
       blocked: number;
     }>;
 
-    // Per-App agent invocation & token/cost usage in window.
+    // Per-App agent invocation & token/cost usage in window (agentInvocations excludes workflow step runs so workflows aren't double-counted).
     const complete =
       "outcome IS NOT NULL AND json_extract(data, '$.totals.replies') > 0 AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')";
     const appUsageRows = db
@@ -1630,6 +1996,7 @@ export function readObservabilitySummary(
         `SELECT
            app_id AS appId,
            COUNT(*) AS invocations,
+           COUNT(CASE WHEN workflow_run_id IS NULL THEN 1 END) AS standaloneAgentInvocations,
            COUNT(CASE WHEN ${complete} THEN 1 END) AS measuredInvocations,
            SUM(COALESCE(json_extract(data, '$.totals.input'), 0) + COALESCE(json_extract(data, '$.totals.cacheRead'), 0) + COALESCE(json_extract(data, '$.totals.cacheWrite'), 0)) AS inputTokens,
            SUM(COALESCE(json_extract(data, '$.totals.output'), 0)) AS outputTokens,
@@ -1644,6 +2011,7 @@ export function readObservabilitySummary(
       .all(start, end) as Array<{
       appId: string;
       invocations: number;
+      standaloneAgentInvocations: number;
       measuredInvocations: number;
       inputTokens: number | null;
       outputTokens: number | null;
@@ -1661,7 +2029,7 @@ export function readObservabilitySummary(
       if (fact.payload.targetKind === "host" || fact.payload.rubricVersion === "host-rubric-v1") continue;
       const targetApp =
         typeof fact.payload.appId === "string" && fact.payload.appId.trim()
-          ? resolveCanonicalAppId(fact.payload.appId, knownAppSet)
+          ? resolveCatalogAppId(fact.payload.appId, fullCatalog)
           : fact.appId;
       if (!targetApp) continue;
       const list = appScorecardFactsByApp.get(targetApp) ?? [];
@@ -1725,15 +2093,16 @@ export function readObservabilitySummary(
       const wf = workflowsByApp.get(appId);
       const usage = usageByApp.get(appId);
       const taskAttemptsWindow = attempts?.totalAttempts ?? 0;
-      // Native/Codex executors record in app_task_attempts without execution_usage rows.
-      const agentInvocations = Math.max(usage?.invocations ?? 0, taskAttemptsWindow);
+      // Sum standalone non-workflow execution_usage invocations + disjoint non-workflow Task attempts (never double-counting workflows).
+      const agentInvocations = (usage?.standaloneAgentInvocations ?? 0) + (attempts?.disjointAgentAttempts ?? 0);
       const workflowRuns = wf?.finished ?? 0;
       const executionTotal = workflowRuns + agentInvocations;
       const metricSummary = appMetricCounts.get(appId) ?? { total: 0, fresh: 0, staleOrMissing: 0 };
 
       return {
         appId,
-        installed: installedSet.has(appId),
+        installed: catalog.installedSet.has(appId),
+        owner: catalog.ownerByAppId.get(appId) ?? appId,
         improvementWorkflow: "alex/develop-change",
         outcomes: {
           convergedMilestonesWindow: attempts?.convergedMilestones ?? 0,
@@ -1800,8 +2169,8 @@ export function readObservabilitySummary(
       recovery: {
         unresolvedInputRecoveryCount: recoveryRow.unresolvedCount,
         oldestInputRecoveryAgeMs:
-          recoveryRow.oldestCreatedAt !== null && now >= recoveryRow.oldestCreatedAt
-            ? now - recoveryRow.oldestCreatedAt
+          recoveryRow.oldestFailedAt !== null && now >= recoveryRow.oldestFailedAt
+            ? now - recoveryRow.oldestFailedAt
             : null,
         expiredLeasesCount: expiredTaskLeases,
         taskFailoversWindow: hostAttemptRow.failovers,
@@ -1835,6 +2204,7 @@ export function readObservabilitySummary(
       window: { start, end },
       alertsTruncated,
       metricsTruncated: observations.truncated,
+      alerts: alertSummaries.slice(0, 20),
       host,
       apps,
       appDetail,

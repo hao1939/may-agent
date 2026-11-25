@@ -205,6 +205,31 @@ function renderAppDrillDown(detail, days) {
   </section>`;
 }
 
+function renderOpenAlertsStrip(alerts) {
+  if (!Array.isArray(alerts) || !alerts.length) return '';
+  return `<div class="td-alerts-strip" data-active-alerts>
+    ${alerts.slice(0, 6).map(a => {
+      const scopeLabel = a.scope?.kind === 'app' ? `App: ${a.scope.appId}` : 'Host';
+      const scopeClass = a.scope?.kind === 'app' ? 'app' : 'host';
+      const p1 = a.priority === 'P0' || a.priority === 'P1';
+      const taskLink = a.linkedTask
+        ? ` · <a href="/projects/${encodeURIComponent(a.linkedTask.appId + '.app')}/tasks?appId=${encodeURIComponent(a.linkedTask.appId)}&task=${encodeURIComponent(a.linkedTask.taskId)}">Task <code>${esc(a.linkedTask.taskId)}</code></a>`
+        : '';
+      return `<div class="td-alert-card ${p1 ? 'p1' : ''}">
+        <div class="td-alert-main">
+          <span class="td-scope-tag ${scopeClass}">${esc(scopeLabel)} → ${esc(a.handler || 'owner')}</span>
+          <a href="/metrics/${encodeURIComponent(a.metricId)}"><strong>${esc(a.name || a.metricId)}</strong></a>
+          <span class="health-note">${esc(a.message || '')}</span>
+        </div>
+        <div class="td-alert-status">
+          <span class="td-alert-handler">${esc(a.handlingStatus || 'Pending triage')}</span>${taskLink}
+          <span>· ${esc(formatAgo(a.createdAt))}</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function renderTrendRow(series, days) {
   if (!series) return '';
   const href = `/metrics/${encodeURIComponent(series.metricId)}?days=${encodeURIComponent(String(days))}`;
@@ -247,10 +272,10 @@ function renderTopDownObservability(data, options = {}) {
   const onMetricsTab = !!options.detailed;
 
   const hostAlertsBadge = headroom.openAlerts === null
-    ? `<span class="breach-badge alerting" onclick="routeTo('/metrics')">⚠ Alerts truncated (${esc(String(headroom.visibleOpenAlerts || 0))}+)</span>`
+    ? `<a class="breach-badge alerting" href="/metrics">⚠ Alerts truncated (${esc(String(headroom.visibleOpenAlerts || 0))}+)</a>`
     : (headroom.openAlerts || 0) > 0
-      ? `<span class="breach-badge alerting" onclick="routeTo('/metrics')">⚠ ${esc(String(headroom.openAlerts))} Host alert${headroom.openAlerts === 1 ? '' : 's'}</span>`
-      : `<span class="breach-badge healthy" onclick="routeTo('/metrics')">✓ 0 Host alerts</span>`;
+      ? `<a class="breach-badge alerting" href="/metrics">⚠ ${esc(String(headroom.openAlerts))} Host alert${headroom.openAlerts === 1 ? '' : 's'}</a>`
+      : `<a class="breach-badge healthy" href="/metrics">✓ 0 Host alerts</a>`;
 
   const authText = auth.state === 'valid'
     ? `✓ az valid (${formatAgeCompact((auth.expiresAt || 0) - data.generatedAt)})`
@@ -376,6 +401,7 @@ function renderTopDownObservability(data, options = {}) {
         )}
       </div>
     </section>
+    ${renderOpenAlertsStrip(data.alerts)}
     <div class="td-apps-grid">${appsHtml || '<p class="health-note">No enabled Apps discovered yet.</p>'}</div>
     ${onMetricsTab && data.appDetail ? renderAppDrillDown(data.appDetail, days) : ''}`;
 }
@@ -482,6 +508,7 @@ async function loadOverviewTasks() {
 
 function metricObservationLabel(metric) {
   const observation = metric.observation;
+  if (!observation && metric.noExposure) return `${metric.freshness} · 0/0 no exposure in window`;
   let label = observation ? `${metric.freshness} · measured ${healthTime(observation.measuredAt)}` : 'No retained observation';
   if (metric.collectionFailure?.afterLastSample) label += ' · collection failed after last sample';
   return label;
@@ -621,11 +648,13 @@ async function loadMetricsTab() {
   const id = currentRouteParams.id;
   // Independent surfaces: an unavailable metric collector cannot hide run facts.
   if (!id) {
-    const obsQuery = new URLSearchParams(location.search);
-    if (!obsQuery.has('days') && !obsQuery.has('start')) obsQuery.set('days', String(topDownDays));
+    // Share one normalized window query across Observability, Context Usage, and Workflow Health.
+    const query = new URLSearchParams(location.search);
+    if (!query.has('days') && !query.has('start')) query.set('days', String(topDownDays));
+    if (!query.has('end')) query.set('end', String(Date.now()));
     if (topDown) {
       topDown.innerHTML = '<p>Loading Host &amp; App summary…</p>';
-      void readHealthJson('/api/observability?' + obsQuery).then(data => {
+      void readHealthJson('/api/observability?' + query).then(data => {
         if (generation === metricsLoadGeneration && currentTab === 'metrics') {
           topDown.innerHTML = renderTopDownObservability(data, { detailed: true });
         }
@@ -636,19 +665,18 @@ async function loadMetricsTab() {
       });
     }
     workflows.innerHTML = '<p>Loading workflow facts…</p>';
-    const query = new URLSearchParams(location.search);
-    if (!query.has('end')) query.set('end', Date.now());
-    query.set('runs', 'true');
+    const wfQuery = new URLSearchParams(query);
+    wfQuery.set('runs', 'true');
     context.innerHTML = '<p>Loading context usage…</p>';
-    void readHealthJson('/api/context-usage?' + query).then(data => {
+    void readHealthJson('/api/context-usage?' + wfQuery).then(data => {
       if (generation === metricsLoadGeneration && currentTab === 'metrics') context.innerHTML = renderContextUsage(data);
     }).catch(error => {
       if (generation === metricsLoadGeneration) context.innerHTML = `<p class="health-warning">Context usage read failed: ${esc(error.message)}</p>`;
     });
-    void readHealthJson('/api/workflow-health?' + query).then(data => {
+    void readHealthJson('/api/workflow-health?' + wfQuery).then(data => {
       if (generation !== metricsLoadGeneration || currentTab !== 'metrics') return;
-      query.set('start', data.window.start); query.set('end', data.window.end); query.delete('days');
-      history.replaceState({}, '', '/metrics?' + query);
+      wfQuery.set('start', data.window.start); wfQuery.set('end', data.window.end); wfQuery.delete('days');
+      history.replaceState({}, '', '/metrics?' + wfQuery);
       workflows.innerHTML = renderWorkflowComparison(data);
     }).catch(error => {
       if (generation === metricsLoadGeneration) workflows.innerHTML = `<p class="health-warning">Workflow read failed: ${esc(error.message)}</p>`;
@@ -666,7 +694,11 @@ async function loadMetricsTab() {
       el.innerHTML = renderObservationList(data);
       const failures = data.metrics.filter(m => m.collectionFailure?.afterLastSample);
       document.getElementById('metrics-alerts').innerHTML = `<p>${data.alertsTruncated ? 'More than ' : ''}${data.alerts.length} open alerts; ${failures.length} measurements with a failure after the last sample${data.truncated ? ' among ' + data.metrics.length + ' shown definitions (partial list)' : ''}. No alerts is not proof of health.</p>
-        ${data.alerts.slice(0, 20).map(a => `<div class="health-warning"><a href="/metrics/${encodeURIComponent(a.metricId)}">${esc(a.name || a.metricId)}</a>: ${esc(a.message)} · opened ${esc(healthTime(a.createdAt))}</div>`).join('')}${data.alerts.length > 20 ? '<p>Showing newest 20 alerts; use metric detail for a selected definition.</p>' : ''}
+        ${data.alerts.slice(0, 20).map(a => {
+          const scopeLabel = a.scope?.kind === 'app' ? `App:${a.scope.appId}` : 'Host';
+          const handlerBadge = a.handler ? ` [${scopeLabel} → ${a.handler} · ${a.handlingStatus || 'Pending'}]` : '';
+          return `<div class="health-warning"><a href="/metrics/${encodeURIComponent(a.metricId)}">${esc(a.name || a.metricId)}</a>${esc(handlerBadge)}: ${esc(a.message)} · opened ${esc(healthTime(a.createdAt))}</div>`;
+        }).join('')}${data.alerts.length > 20 ? '<p>Showing newest 20 alerts; use metric detail for a selected definition.</p>' : ''}
         ${failures.map(m => `<div class="health-warning"><a href="/metrics/${encodeURIComponent(m.id)}">${esc(m.name || m.id)}</a>: ${esc(m.collectionFailure.reason)} · <a href="/events/${m.collectionFailure.eventId}">event</a></div>`).join('')}`;
     }
   } catch (error) { if (generation === metricsLoadGeneration) el.innerHTML = `<p class="health-warning">Metric read failed: ${esc(error.message)}</p>`; }

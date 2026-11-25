@@ -1020,12 +1020,20 @@ describe("served workflow and metric health pages", () => {
         headless: true,
         args: ["--no-sandbox", "--disable-dev-shm-usage"],
       });
+      db.prepare(
+        "INSERT INTO metric_alerts(id, metric_id, alert_type, message, created_at) VALUES (901, 'workflow.error-count-24h', 'threshold', 'Host invariant breach', ?)",
+      ).run(now - 500);
       try {
         const page = await browser.newPage();
         const errors: string[] = [];
+        const metricsRequests: string[] = [];
         page.on("pageerror", (error) => errors.push(String(error)));
         await page.setRequestInterception(true);
-        page.on("request", (request) => void (request.url().startsWith(base) ? request.continue() : request.abort()));
+        page.on("request", (request) => {
+          if (!request.url().startsWith(base)) return void request.abort();
+          metricsRequests.push(new URL(request.url()).pathname + new URL(request.url()).search);
+          void request.continue();
+        });
 
         await page.goto(base, { waitUntil: "domcontentloaded" });
         await page.waitForSelector('#top-down-overview [data-host-summary]');
@@ -1035,10 +1043,29 @@ describe("served workflow and metric health pages", () => {
         expect(await page.$eval('#top-down-overview [data-app-card="research"]', (el) => el.textContent || "")).toContain(
           "low-sample (n=1)",
         );
+        // R-01: Alert badge is a keyboard-focusable <a> link, and 4-tier handler ownership renders in strip.
+        expect(
+          await page.$eval('#top-down-overview [data-host-summary] a.breach-badge', (el) => el.getAttribute("href")),
+        ).toBe("/metrics");
+        expect(await page.$eval("#top-down-overview [data-active-alerts]", (el) => el.textContent || "")).toContain(
+          "Host →",
+        );
 
+        metricsRequests.length = 0;
         await page.goto(base + "/metrics", { waitUntil: "domcontentloaded" });
         await page.waitForSelector('#metrics-top-down [data-app-card="research"]');
         await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
+        await page.waitForSelector("#metrics-context");
+        // R-02: /metrics aligns all three panels on the shared default window (days=1) and exact end boundary.
+        const panelEnds = new Set<string | null>();
+        for (const pathname of ["/api/observability", "/api/context-usage", "/api/workflow-health"]) {
+          const matched = metricsRequests.find((req) => req.startsWith(pathname + "?"));
+          expect(matched).toBeTruthy();
+          const params = new URL("http://x" + matched!).searchParams;
+          expect(params.get("days")).toBe("1");
+          panelEnds.add(params.get("end"));
+        }
+        expect(panelEnds.size).toBe(1);
         const metricsTopText = await page.$eval('#metrics-top-down [data-app-card="research"]', (el) => el.textContent || "");
         expect(metricsTopText).toContain("Outcome value (35%)");
         expect(metricsTopText).toContain("4.0/4");
@@ -1053,6 +1080,7 @@ describe("served workflow and metric health pages", () => {
         ).toBeUndefined();
         expect(errors).toEqual([]);
       } finally {
+        db.prepare("DELETE FROM metric_alerts WHERE id = 901").run();
         await browser.close();
       }
     },

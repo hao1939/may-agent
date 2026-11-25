@@ -2,6 +2,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "../adapters/reporting/metric-observations.js";
+import { describeOpenAlert, resolveAppCatalog } from "../adapters/reporting/observability-summary.js";
 import { listConfiguredAgentNames } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "./read-model/state-db.js";
 
@@ -22,6 +23,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
   sharedRoot: string;
   projectsRoot: string;
   getDb: () => SqliteDb;
+  listLoadedApps?: () => ReadonlyArray<Record<string, unknown>> | null;
   json: (data: unknown, status?: number) => Response;
   sendDaemonFrame: (frame: Record<string, unknown>) => Promise<MetricDaemonFrameResult>;
   buildPublishFrame: (
@@ -253,17 +255,26 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
   function handleMetrics(url: URL): Response {
     const db = _db();
     const metricId = url.searchParams.get("id");
-    const observations = readMetricObservations(db, Date.now(), metricId === null ? undefined : [metricId]);
+    const appCatalog = resolveAppCatalog({
+      projectsRoot: PROJECTS_ROOT,
+      loadedApps: options.listLoadedApps?.() ?? null,
+    });
+    const observations = readMetricObservations(
+      db,
+      Date.now(),
+      metricId === null ? undefined : [metricId],
+      appCatalog,
+    );
     const metrics = observations.metrics;
 
-    const openAlerts = enrichOpenAlerts(
+    const rawOpenAlerts = enrichOpenAlerts(
       db,
       db
         .prepare(
           `
       SELECT ma.id as alertId, ma.metric_id as metricId, ma.alert_type as alertType,
              ma.message, ma.created_at as createdAt,
-             m.name, m.type,
+             m.name, m.type, m.config,
              COALESCE(NULLIF(trim(m.owner), ''), NULLIF(trim(p.owner), ''), 'system:host') as owner,
              m.owner as explicitOwner, m.project, m.current, m.target, m.threshold,
              m.unit, m.priority, m.status, m.speed, m.alert_op,
@@ -281,6 +292,30 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
         )
         .all(...(metricId === null ? [] : [metricId])) as any[],
     );
+    const openAlerts = rawOpenAlerts.map(({ config, ...alert }) => {
+      const routing = describeOpenAlert(
+        {
+          alertId: alert.alertId,
+          metricId: alert.metricId,
+          name: alert.name,
+          priority: alert.priority,
+          message: alert.message,
+          createdAt: alert.createdAt,
+          owner: alert.explicitOwner ?? alert.owner,
+          project: alert.project,
+          config,
+          latestJudgment: alert.latestJudgment,
+        },
+        appCatalog,
+      );
+      return {
+        ...alert,
+        scope: routing.scope,
+        handler: routing.handler,
+        handlingStatus: routing.handlingStatus,
+        linkedTask: routing.linkedTask,
+      };
+    });
 
     const alertsTruncated = openAlerts.length > METRIC_LIST_LIMIT;
     // Keep the latest alert, and never infer absence from a truncated global list.

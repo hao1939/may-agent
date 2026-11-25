@@ -465,12 +465,22 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
     json,
     readProjects,
   });
+  function listLoadedAppsSafe(): ReadonlyArray<Record<string, unknown>> | null {
+    try {
+      const apps = services.listApps();
+      return Array.isArray(apps) ? (apps as ReadonlyArray<Record<string, unknown>>) : null;
+    } catch {
+      return null;
+    }
+  }
+
   const { handleLiveness, handleMetrics, handleBrowse, handleKnowledgeSearch, handleAlertResolve } =
     createMetricAndKnowledgeRouteHandlers({
       agentsRoot: AGENTS_ROOT,
       sharedRoot: SHARED_ROOT,
       projectsRoot: PROJECTS_ROOT,
       getDb: _db,
+      listLoadedApps: listLoadedAppsSafe,
       json,
       sendDaemonFrame,
       buildPublishFrame,
@@ -525,6 +535,7 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
               query,
               projectsRoot: PROJECTS_ROOT,
               stateDir: STATE_DIR,
+              loadedApps: listLoadedAppsSafe(),
             }),
           );
         } catch (error) {

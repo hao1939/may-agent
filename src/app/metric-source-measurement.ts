@@ -12,11 +12,17 @@ import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
 import {
+  HOST_AUTH_REMAINING_METRIC_ID,
   HOST_DISK_USED_METRIC_ID,
   HOST_HARNESS_METRICS,
   buildAppEvolutionMetrics,
 } from "./adapters/reporting/evolution-metrics.js";
-import { discoverInstalledAppIds, probeDiskHeadroom } from "./adapters/reporting/observability-summary.js";
+import {
+  discoverInstalledAppIds,
+  probeAzureCliAuthHeadroom,
+  probeDiskHeadroom,
+  runBoundedDiskAutoHygiene,
+} from "./adapters/reporting/observability-summary.js";
 import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import { METRIC_QUERY_DURATION_METRIC, MetricQueryObservations } from "./adapters/reporting/metric-query-metrics.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
@@ -55,20 +61,27 @@ export const STALE_ACTIVE_SOURCE_QUERY = `WITH clock AS (SELECT CAST(ROUND(unixe
         0
       ) AS created_at,
       (SELECT MAX(s.measured_at) FROM metric_snapshots s
-        WHERE s.metric_id = m.id AND s.measured_at <= (SELECT cut FROM clock)) AS last_sample
+        WHERE s.metric_id = m.id AND s.measured_at <= (SELECT cut FROM clock)) AS last_sample,
+      CASE
+        WHEN json_valid(COALESCE(m.config, '{}'))
+          AND json_type(m.config, '$.lastNoExposureAt') = 'integer'
+          AND json_extract(m.config, '$.lastNoExposureAt') <= (SELECT cut FROM clock)
+        THEN json_extract(m.config, '$.lastNoExposureAt')
+        ELSE NULL
+      END AS last_no_exposure
     FROM metrics m
     WHERE m.status = 'active' AND m.id != '${STALE_ACTIVE_METRIC_ID}'
       AND m.measure_interval > 0
   ), stale AS (
     SELECT * FROM cadence
-    WHERE COALESCE(last_sample, created_at) <= (SELECT cut FROM clock) - MAX(900000, measure_interval * 2)
+    WHERE MAX(COALESCE(last_sample, 0), COALESCE(last_no_exposure, 0), created_at) <= (SELECT cut FROM clock) - MAX(900000, measure_interval * 2)
   )
 SELECT COUNT(*) AS value, (SELECT COUNT(*) FROM cadence) AS sampleSize,
   (SELECT cut FROM clock) AS measuredAt,
   json_object('scope', 'Active metrics with a declared cadence; missing first samples receive the same freshness grace.',
     'examples', json((SELECT json_group_array(json_object('metricId', id,
       'measureInterval', measure_interval, 'lastSampleAt', last_sample))
-      FROM (SELECT * FROM stale ORDER BY COALESCE(last_sample, created_at), id LIMIT 5))),
+      FROM (SELECT * FROM stale ORDER BY MAX(COALESCE(last_sample, 0), COALESCE(last_no_exposure, 0), created_at), id LIMIT 5))),
     'examplesTruncated', COUNT(*) > 5) AS note
 FROM stale`;
 
@@ -199,10 +212,10 @@ export async function measureSourceMetrics(options: {
        WHERE status = 'active'
          AND ((source_query IS NOT NULL AND trim(source_query) != '')
            OR (source_command IS NOT NULL AND trim(source_command) != '')
-           OR id IN (?, ?))
+           OR id IN (?, ?, ?))
        ORDER BY id`,
     )
-    .all(TASK_SKIPPED_CHECK_METRIC.id, HOST_DISK_USED_METRIC_ID) as SourceMetric[];
+    .all(TASK_SKIPPED_CHECK_METRIC.id, HOST_DISK_USED_METRIC_ID, HOST_AUTH_REMAINING_METRIC_ID) as SourceMetric[];
   const dueRows = options.isDue ? rows.filter(options.isDue) : rows;
   const measured: string[] = [];
   const skipped: string[] = [];
@@ -267,15 +280,38 @@ export async function measureSourceMetrics(options: {
       } else if (row.id === HOST_DISK_USED_METRIC_ID) {
         completedAt = options.measuredAt ?? Date.now();
         measuredBy = "runtime:host-disk-probe";
-        const disk = probeDiskHeadroom(options.persistDir);
+        let disk = probeDiskHeadroom(options.persistDir);
+        let hygieneResult: { prunedCount: number } | null = null;
+        if (disk && disk.usedPercent >= 92) {
+          hygieneResult = runBoundedDiskAutoHygiene(completedAt);
+          if (hygieneResult.prunedCount > 0) {
+            disk = probeDiskHeadroom(options.persistDir) ?? disk;
+          }
+        }
         sample = disk
           ? {
               kind: "sample",
               value: Math.round((disk.usedPercent / 100) * 10000) / 10000,
               sampleSize: 1,
-              note: JSON.stringify(disk),
+              note: JSON.stringify({ ...disk, ...(hygieneResult ? { autoHygienePruned: hygieneResult.prunedCount } : {}) }),
             }
           : null;
+      } else if (row.id === HOST_AUTH_REMAINING_METRIC_ID) {
+        completedAt = options.measuredAt ?? Date.now();
+        measuredBy = "runtime:host-auth-probe";
+        const auth = probeAzureCliAuthHeadroom(completedAt);
+        if (auth.state === "unconfigured") {
+          sample = { kind: "no_exposure", sampleSize: 0, measuredAt: completedAt, note: "azure-cli unconfigured" };
+        } else if (auth.expiresAt !== null) {
+          sample = {
+            kind: "sample",
+            value: Math.round((auth.expiresAt - completedAt) / 1000),
+            sampleSize: 1,
+            note: JSON.stringify({ provider: auth.provider, state: auth.state, expiresAt: auth.expiresAt }),
+          };
+        } else {
+          sample = { kind: "no_exposure", sampleSize: 0, measuredAt: completedAt, note: "azure-cli expiry unavailable" };
+        }
       } else if (row.source_query) {
         // SQLite prepare executes the first statement and ignores SQL tail; it
         // is not a parser-based single-statement guarantee. Give every query its
@@ -321,7 +357,13 @@ export async function measureSourceMetrics(options: {
         continue;
       }
       if (sample.kind === "no_exposure") {
-        // Valid 0/0 empty denominator: record neither a fake 0/1 sample nor a collection failure.
+        // Valid 0/0 empty denominator: record neither a fake 0/1 sample nor a collection failure,
+        // and advance lastNoExposureAt so STALE_ACTIVE_SOURCE_QUERY recognizes the live check.
+        const checkedAt = sample.measuredAt ?? options.measuredAt ?? completedAt ?? Date.now();
+        db.run(
+          "UPDATE metrics SET config = json_set(CASE WHEN json_valid(COALESCE(config, '')) THEN config ELSE '{}' END, '$.lastNoExposureAt', ?) WHERE id = ?",
+          [checkedAt, row.id],
+        );
         skipped.push(row.id);
         continue;
       }

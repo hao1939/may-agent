@@ -1,6 +1,6 @@
 import type { SqliteDb } from "../../../lib/db.js";
 import { metricThresholdBreached } from "../../../lib/metrics.js";
-import { classifyMetricScope } from "./observability-summary.js";
+import { classifyMetricScope, type AppCatalog } from "./observability-summary.js";
 import { WORKFLOW_OUTCOME_METRICS, WORKFLOW_OUTCOMES, WORKFLOW_OUTCOME_WINDOW_MS } from "./workflow-metrics.js";
 
 export const METRIC_LIST_LIMIT = 500;
@@ -9,7 +9,12 @@ export const METRIC_HISTORY_LIMIT = 2_000;
 // A cadence-free or future-dated observation has unknown freshness, never healthy.
 const STALE_INTERVALS = 2;
 
-export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: string[]) {
+export function readMetricObservations(
+  db: SqliteDb,
+  now = Date.now(),
+  ids?: string[],
+  appCatalog?: AppCatalog,
+) {
   const rows = db
     .prepare(
       `SELECT m.id, m.name, m.type, m.owner, m.project, m.target, m.threshold,
@@ -61,23 +66,41 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
       /* Retain the failure identity even with unreadable detail. */
     }
     let alertsDisabled = false;
+    let parsedConfig: Record<string, unknown> | null = null;
     try {
-      const alert = JSON.parse(config ?? "null")?.alert;
-      alertsDisabled = alert?.disabled === true || alert?.mode === "disabled";
+      const cfg = JSON.parse(config ?? "null");
+      if (cfg && typeof cfg === "object" && !Array.isArray(cfg)) {
+        parsedConfig = cfg as Record<string, unknown>;
+        const alert = parsedConfig.alert as Record<string, unknown> | undefined;
+        alertsDisabled = alert?.disabled === true || alert?.mode === "disabled";
+      }
     } catch {
       /* No invented policy. */
     }
+    const lastNoExposureAt =
+      typeof parsedConfig?.lastNoExposureAt === "number" &&
+      Number.isSafeInteger(parsedConfig.lastNoExposureAt) &&
+      parsedConfig.lastNoExposureAt > 0
+        ? parsedConfig.lastNoExposureAt
+        : null;
     const observed =
       row.sampleId !== null && row.value !== null && Number.isFinite(row.value) && row.measured_at !== null;
     const staleAfterMs =
       row.measure_interval && row.measure_interval > 0 ? row.measure_interval * STALE_INTERVALS : null;
-    const freshness = !observed
-      ? "missing"
-      : row.measured_at! > now || staleAfterMs === null
-        ? "unknown"
-        : now - row.measured_at! > staleAfterMs
-          ? "stale"
-          : "fresh";
+    const lastCheckedAt =
+      observed && lastNoExposureAt !== null
+        ? Math.max(row.measured_at!, lastNoExposureAt)
+        : observed
+          ? row.measured_at!
+          : lastNoExposureAt;
+    const freshness =
+      lastCheckedAt === null
+        ? "missing"
+        : lastCheckedAt > now || staleAfterMs === null
+          ? "unknown"
+          : now - lastCheckedAt > staleAfterMs
+            ? "stale"
+            : "fresh";
     const thresholdBreached =
       observed && row.threshold !== null
         ? metricThresholdBreached({ current: row.value!, threshold: row.threshold, alert_op: row.alert_op })
@@ -102,7 +125,8 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
         : null;
     return {
       ...row,
-      scope: classifyMetricScope(row),
+      scope: classifyMetricScope({ ...row, config: parsedConfig }, appCatalog),
+      noExposure: !observed && lastNoExposureAt !== null,
       current: observed ? row.value : null,
       updated_at: observed ? row.measured_at : null,
       observation: observed
