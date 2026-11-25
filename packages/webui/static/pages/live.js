@@ -125,7 +125,12 @@ function shortMetricLabel(metric, project) {
 function scheduleLivenessRefresh() {
   if (typeof currentTab !== 'undefined' && currentTab !== 'live') return;
   if (livenessRefreshTimer) clearTimeout(livenessRefreshTimer);
-  livenessRefreshTimer = setTimeout(() => { loadLiveness(); loadWorkflowOverview(); loadOverviewTasks(); }, 500);
+  livenessRefreshTimer = setTimeout(() => {
+    if (typeof loadTopDownOverview === 'function') loadTopDownOverview();
+    loadLiveness();
+    loadWorkflowOverview();
+    loadOverviewTasks();
+  }, 500);
 }
 
 async function loadLiveness() {

@@ -1,5 +1,6 @@
 import type { SqliteDb } from "../../../lib/db.js";
 import { metricThresholdBreached } from "../../../lib/metrics.js";
+import { classifyMetricScope } from "./observability-summary.js";
 import { WORKFLOW_OUTCOME_METRICS, WORKFLOW_OUTCOMES, WORKFLOW_OUTCOME_WINDOW_MS } from "./workflow-metrics.js";
 
 export const METRIC_LIST_LIMIT = 500;
@@ -101,6 +102,7 @@ export function readMetricObservations(db: SqliteDb, now = Date.now(), ids?: str
         : null;
     return {
       ...row,
+      scope: classifyMetricScope(row),
       current: observed ? row.value : null,
       updated_at: observed ? row.measured_at : null,
       observation: observed

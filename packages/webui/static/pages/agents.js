@@ -25,9 +25,10 @@ async function loadAgentsTab() {
 
       html += `<div onclick="routeTo('/agents/${esc(a.name)}')" style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:border-color 0.1s;${stale ? 'opacity:0.7' : ''}" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">`;
 
-      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
         <span style="color:${dotColor};font-size:12px">●</span>
         <span style="font-weight:600;font-size:15px">${esc(a.name)}</span>
+        ${typeof renderScorePill === 'function' ? renderScorePill(a.scorecard7d) : ''}
         ${a.model ? `<span class="model-chip" style="margin-left:auto;font-size:10px">${esc(a.model)}</span>` : ''}
       </div>`;
 
@@ -37,9 +38,12 @@ async function loadAgentsTab() {
         html += `<div style="font-size:12px;color:var(--fg2);margin-bottom:10px;font-style:italic;min-height:34px">No description in agent.json</div>`;
       }
 
+      const appsLabel = Array.isArray(a.apps7d) && a.apps7d.length ? a.apps7d.join(', ') : null;
       html += `<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:var(--fg2)">
         <span title="Last session" style="background:var(--bg);padding:2px 8px;border-radius:8px">⏱ ${esc(ageLabel)}</span>
         <span title="Sessions in 4h / 24h" style="background:var(--bg);padding:2px 8px;border-radius:8px">${a.sessions4h || 0} (4h) · ${a.sessions24h || 0} (24h)</span>
+        ${appsLabel ? `<span title="Owner Apps served in last 7 days" style="background:var(--bg);padding:2px 8px;border-radius:8px;color:var(--accent)">Apps (7d): ${esc(appsLabel)}</span>` : ''}
+        ${a.estimatedCost7d != null ? `<span title="Estimated 7-day token spend" style="background:var(--bg);padding:2px 8px;border-radius:8px">$${Number(a.estimatedCost7d).toFixed(3)} (7d)</span>` : ''}
         <span title="Active projects / total" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.projectsActive > 0 ? 'color:var(--green)' : ''}">📁 ${a.projectsActive}/${a.projectsTotal}</span>
         <span title="Owned metrics; breached count" style="background:var(--bg);padding:2px 8px;border-radius:8px;${a.metricBreached > 0 ? 'color:var(--red)' : ''}">∆ ${a.metricCount}${a.metricBreached > 0 ? ` (${a.metricBreached} ⚠)` : ''}</span>
         ${a.errors4h > 0 ? `<span style="background:var(--bg);padding:2px 8px;border-radius:8px;color:var(--red)" title="Errored sessions in 4h">✗ ${a.errors4h}</span>` : ''}

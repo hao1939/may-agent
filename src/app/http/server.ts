@@ -38,6 +38,7 @@ export { extractMarkdownSection, projectEventTargetForPath } from "./project-rou
 import { openStateDb, type SqliteDb } from "./read-model/state-db.js";
 import { healthWindow, readWorkflowHealth, workflowHealthQuery } from "../adapters/reporting/workflow-health.js";
 import { contextUsageQuery, readContextUsage } from "../adapters/reporting/context-usage.js";
+import { observabilitySummaryQuery, readObservabilitySummary } from "../adapters/reporting/observability-summary.js";
 import { readMetricHistory } from "../adapters/reporting/metric-observations.js";
 import type { EventInput, EventReceipt } from "@may-agent/control/events";
 import { findEventPublication, getEventView, type EventInterface } from "../core/events/interface.js";
@@ -510,6 +511,22 @@ export function startWebUI(opts: WebUIOptions): { port: number; stop(closeActive
       if (url.pathname === "/api/browse") return handleBrowse(url);
       if (url.pathname === "/api/knowledge/search") return handleKnowledgeSearch(url);
       if (url.pathname === "/api/metrics") return handleMetrics(url);
+      if (url.pathname === "/api/observability") {
+        if (req.method !== "GET") return json({ error: "GET required" }, 405);
+        let query: ReturnType<typeof observabilitySummaryQuery>;
+        try {
+          query = observabilitySummaryQuery(url.searchParams);
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : "Invalid observability filter" }, 400);
+        }
+        return json(
+          readObservabilitySummary(_db(), {
+            query,
+            projectsRoot: PROJECTS_ROOT,
+            stateDir: STATE_DIR,
+          }),
+        );
+      }
       if (url.pathname === "/api/context-usage") {
         let query: ReturnType<typeof contextUsageQuery>;
         try {

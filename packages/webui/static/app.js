@@ -182,6 +182,7 @@ function render() {
   // Surface initialization
   if (tab === 'live' && (!liveInitialized || previousTab !== 'live')) {
     liveInitialized = true;
+    if (typeof loadTopDownOverview === 'function') loadTopDownOverview();
     loadLiveness();
     loadWorkflowOverview();
     loadOverviewTasks();

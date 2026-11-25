@@ -2,6 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { metricThresholdBreached } from "../../lib/metrics.js";
+import { readAgentCapabilityRollups } from "../adapters/reporting/observability-summary.js";
 import { listRuntimeAgentDirectories, resolveRuntimeAgentDirectory } from "@may-agent/sdk/runtime";
 import type { SqliteDb } from "./read-model/state-db.js";
 
@@ -113,10 +114,12 @@ export function createAgentRouteHandlers(options: {
         counts.total += 1;
         if (!hidden.has(project.field("status") ?? "unknown")) counts.active += 1;
       }
+      const capabilityRollup = readAgentCapabilityRollups(db);
       for (const a of agents) {
         const counts = projByOwner[a.name as string] || { active: 0, total: 0 };
         a.projectsActive = counts.active;
         a.projectsTotal = counts.total;
+        Object.assign(a, capabilityRollup(a.name as string));
       }
 
       // Sort: active first (recent session), then alphabetic.

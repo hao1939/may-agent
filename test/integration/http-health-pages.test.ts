@@ -970,4 +970,91 @@ describe("served workflow and metric health pages", () => {
     },
     30000,
   );
+
+  test.skipIf(skipBrowser)(
+    "Overview and Metrics render top-down Host pillars, App cards, and escaped scorecards",
+    async () => {
+      expect((await fetch(`${base}/api/observability`, { method: "POST" })).status).toBe(405);
+      expect((await fetch(`${base}/api/observability?days=91`)).status).toBe(400);
+
+      const db = getDb(root);
+      const scorecard = {
+        version: 1,
+        targetKind: "app",
+        appId: "research",
+        taskId: `report ${markup}`,
+        agent: "worker",
+        cohort: `cohort ${markup}`,
+        rubricVersion: "app-rubric-v1",
+        dimensions: {
+          outcomeValue: 4,
+          correctnessAndEvidence: 3,
+          autonomyAndRecovery: 3,
+          efficiency: 4,
+          humanCoordination: "not_applicable",
+        },
+      };
+      db.prepare(
+        `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+         VALUES ('research', 'scored-attempt', 'report', 1, 'completed', ?, ?)`,
+      ).run(
+        now - 400,
+        JSON.stringify({
+          finishedAt: new Date(now - 200).toISOString(),
+          acceptedResult: { state: "converged", facts: [`scorecard:${JSON.stringify(scorecard)}`] },
+        }),
+      );
+
+      const summaryRes = await fetch(`${base}/api/observability?days=1`);
+      expect(summaryRes.status).toBe(200);
+      const summary = await summaryRes.json();
+      expect(summary.host.improvementWorkflow).toBe("alex/develop-host-change");
+      expect(summary.apps.find((a: { appId: string }) => a.appId === "research")?.scorecard).toMatchObject({
+        status: "scored",
+        sampleSize: 1,
+        confidence: "low-sample",
+      });
+
+      const browser = await puppeteer.launch({
+        executablePath: chrome!,
+        headless: true,
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      try {
+        const page = await browser.newPage();
+        const errors: string[] = [];
+        page.on("pageerror", (error) => errors.push(String(error)));
+        await page.setRequestInterception(true);
+        page.on("request", (request) => void (request.url().startsWith(base) ? request.continue() : request.abort()));
+
+        await page.goto(base, { waitUntil: "domcontentloaded" });
+        await page.waitForSelector('#top-down-overview [data-host-summary]');
+        await page.waitForSelector('#top-down-overview [data-app-card="research"]');
+        expect(await page.$eval("#top-down-overview", (el) => el.textContent || "")).toContain("Host Platform (Kernel)");
+        expect(await page.$eval('#top-down-overview [data-app-card="research"]', (el) => el.textContent || "")).toContain(
+          "low-sample (n=1)",
+        );
+
+        await page.goto(base + "/metrics", { waitUntil: "domcontentloaded" });
+        await page.waitForSelector('#metrics-top-down [data-app-card="research"]');
+        await page.waitForSelector("#metrics-workflows [data-workflow-outcomes]");
+        const metricsTopText = await page.$eval('#metrics-top-down [data-app-card="research"]', (el) => el.textContent || "");
+        expect(metricsTopText).toContain("Outcome value (35%)");
+        expect(metricsTopText).toContain("4.0/4");
+        await page.click('#metrics-top-down [data-drilldown-link="research"]');
+        await page.waitForSelector('#metrics-top-down [data-app-drilldown="research"]');
+        const drillText = await page.$eval('#metrics-top-down [data-app-drilldown="research"]', (el) => el.textContent || "");
+        expect(drillText).toContain("1. Contributing Tasks");
+        expect(drillText).toContain("worker");
+        expect(await page.$("#metrics-top-down img")).toBeNull();
+        expect(
+          await page.evaluate(() => (window as unknown as { healthInjected?: boolean }).healthInjected),
+        ).toBeUndefined();
+        expect(errors).toEqual([]);
+      } finally {
+        await browser.close();
+      }
+    },
+    30000,
+  );
 });
