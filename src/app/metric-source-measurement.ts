@@ -11,6 +11,12 @@ import { resolveRuntimeRoots } from "./path-roots.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
 import { TASK_SKIPPED_CHECK_METRIC } from "./adapters/reporting/task-check-metrics.js";
+import {
+  HOST_DISK_USED_METRIC_ID,
+  HOST_HARNESS_METRICS,
+  buildAppEvolutionMetrics,
+} from "./adapters/reporting/evolution-metrics.js";
+import { discoverInstalledAppIds, probeDiskHeadroom } from "./adapters/reporting/observability-summary.js";
 import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
 import { METRIC_QUERY_DURATION_METRIC, MetricQueryObservations } from "./adapters/reporting/metric-query-metrics.js";
 import { redactTranscriptSecrets } from "../lib/persistence.js";
@@ -73,12 +79,21 @@ type SourceMetric = {
   measure_interval: number | null;
 };
 
-type CommandSample = {
-  value: number;
-  sampleSize?: number;
-  measuredAt?: number;
-  note?: string;
-};
+type CommandSample =
+  | {
+      kind?: "sample";
+      value: number;
+      sampleSize?: number;
+      measuredAt?: number;
+      note?: string;
+    }
+  | {
+      /** Prometheus 0/0 empty-exposure result: valid query with zero denominator, neither 0 nor collection failure. */
+      kind: "no_exposure";
+      sampleSize: 0;
+      measuredAt?: number;
+      note?: string;
+    };
 
 function sourceQuerySample(row: Record<string, unknown> | null): CommandSample | null {
   if (!row) return null;
@@ -88,11 +103,19 @@ function sourceQuerySample(row: Record<string, unknown> | null): CommandSample |
 }
 
 function commandSample(value: unknown): CommandSample | null {
-  if (typeof value === "number" && Number.isFinite(value)) return { value };
+  if (typeof value === "number" && Number.isFinite(value)) return { kind: "sample", value };
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
+  if ((row.value === null || row.value === undefined) && row.sampleSize === 0) {
+    return {
+      kind: "no_exposure",
+      sampleSize: 0,
+      ...(typeof row.measuredAt === "number" && Number.isFinite(row.measuredAt) ? { measuredAt: row.measuredAt } : {}),
+      ...(typeof row.note === "string" ? { note: row.note } : row.note != null ? { note: JSON.stringify(row.note) } : {}),
+    };
+  }
   if (typeof row.value !== "number" || !Number.isFinite(row.value)) return null;
-  const sample: CommandSample = { value: row.value };
+  const sample: CommandSample = { kind: "sample", value: row.value };
   if (typeof row.sampleSize === "number" && Number.isFinite(row.sampleSize)) {
     sample.sampleSize = row.sampleSize;
   }
@@ -176,10 +199,10 @@ export async function measureSourceMetrics(options: {
        WHERE status = 'active'
          AND ((source_query IS NOT NULL AND trim(source_query) != '')
            OR (source_command IS NOT NULL AND trim(source_command) != '')
-           OR id = ?)
+           OR id IN (?, ?))
        ORDER BY id`,
     )
-    .all(TASK_SKIPPED_CHECK_METRIC.id) as SourceMetric[];
+    .all(TASK_SKIPPED_CHECK_METRIC.id, HOST_DISK_USED_METRIC_ID) as SourceMetric[];
   const dueRows = options.isDue ? rows.filter(options.isDue) : rows;
   const measured: string[] = [];
   const skipped: string[] = [];
@@ -241,6 +264,18 @@ export async function measureSourceMetrics(options: {
           sampleSize: total,
           note: JSON.stringify({ ...observation, until: completedAt, windowMs, skippedChecks: total - counts.claimed }),
         };
+      } else if (row.id === HOST_DISK_USED_METRIC_ID) {
+        completedAt = options.measuredAt ?? Date.now();
+        measuredBy = "runtime:host-disk-probe";
+        const disk = probeDiskHeadroom(options.persistDir);
+        sample = disk
+          ? {
+              kind: "sample",
+              value: Math.round((disk.usedPercent / 100) * 10000) / 10000,
+              sampleSize: 1,
+              note: JSON.stringify(disk),
+            }
+          : null;
       } else if (row.source_query) {
         // SQLite prepare executes the first statement and ignores SQL tail; it
         // is not a parser-based single-statement guarantee. Give every query its
@@ -283,6 +318,11 @@ export async function measureSourceMetrics(options: {
       }
       if (!sample) {
         failed(row.id, "Source returned no finite numeric sample");
+        continue;
+      }
+      if (sample.kind === "no_exposure") {
+        // Valid 0/0 empty denominator: record neither a fake 0/1 sample nor a collection failure.
+        skipped.push(row.id);
         continue;
       }
       metrics.record(row.id, sample.value, {
@@ -344,6 +384,23 @@ export function attachMetricSourceMeasurement(options: {
     }
     if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(METRIC_QUERY_DURATION_METRIC.id)) {
       metricService.define(METRIC_QUERY_DURATION_METRIC);
+    }
+    for (const hostMetric of HOST_HARNESS_METRICS) {
+      if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(hostMetric.id)) {
+        metricService.define(hostMetric);
+      }
+    }
+    const projectsRoot =
+      process.env.PROJECTS_ROOT?.trim() ||
+      (options.persistDir.endsWith("/.state") || options.persistDir.endsWith("\\.state")
+        ? join(options.persistDir, "..", "projects")
+        : join(options.persistDir, "projects"));
+    for (const appId of discoverInstalledAppIds(projectsRoot)) {
+      for (const appMetric of buildAppEvolutionMetrics(appId)) {
+        if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(appMetric.id)) {
+          metricService.define(appMetric);
+        }
+      }
     }
     const subscriberFailureSource = {
       source: "rolling one-hour subscriber.failed event count",

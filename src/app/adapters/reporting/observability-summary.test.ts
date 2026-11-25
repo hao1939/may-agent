@@ -15,6 +15,7 @@ import {
   readAgentCapabilityRollups,
   readObservabilitySummary,
 } from "./observability-summary.js";
+import { HOST_HARNESS_METRICS, buildAppEvolutionMetrics } from "./evolution-metrics.js";
 
 describe("top-down Host vs. Apps observability summary", () => {
   let db: SqliteDb;
@@ -375,5 +376,40 @@ describe("top-down Host vs. Apps observability summary", () => {
 
     const agentRollup = readAgentCapabilityRollups(db, now)("aks-explorer");
     expect(agentRollup.scorecard7d.score).toBe(91.7);
+
+    // Prometheus TSDB rules: 12-bucket trends preserve null on 0/0 empty exposure, counter zeroInit, and minSampleSize alert gate.
+    expect(summary.host.trends.harnessBurdenRatio.points).toHaveLength(12);
+    expect(aks.trends?.spinRatio.points.some((p) => p.v === null && p.n === 0)).toBe(true);
+    expect(aks.trends?.costPerOutcomeUsd.current).not.toBeNull();
+    expect(scout.trends?.costPerOutcomeUsd.current).toBeNull(); // 0 outcomes -> null (no_exposure), never $0!
+
+    metrics.define({ id: "test.counter_total", type: "counter", config: { zeroInit: true } });
+    expect(metrics.get("test.counter_total")?.current).toBe(0);
+
+    metrics.define({
+      id: "test.ratio_min_exposure",
+      type: "gauge",
+      threshold: 0.5,
+      alertOp: ">",
+      config: { alert: { minSampleSize: 5 } },
+    });
+    metrics.record("test.ratio_min_exposure", 0.9, { sampleSize: 2, measuredAt: now - 1 });
+    expect(metrics.evaluate("test.ratio_min_exposure")[0]).toMatchObject({ status: "unknown" });
+    metrics.record("test.ratio_min_exposure", 0.9, { sampleSize: 5, measuredAt: now });
+    expect(metrics.evaluate("test.ratio_min_exposure")[0]).toMatchObject({ status: "breached" });
+  });
+
+  test("executes all 5 Host and 5 App evolution SQL source queries with 0/0 empty-exposure safety", () => {
+    const allDefs = [...HOST_HARNESS_METRICS, ...buildAppEvolutionMetrics("aks-rp-e2e", "aks-explorer")];
+    for (const def of allDefs) {
+      if (!def.sourceQuery) continue;
+      const emptyRow = db.prepare(def.sourceQuery).get() as { value: number | null; sampleSize: number };
+      expect(emptyRow.sampleSize).toBe(0);
+      if (def.unit === "ratio" || def.unit === "usd" || def.unit === "seconds") {
+        expect(emptyRow.value).toBeNull(); // Prometheus 0/0 empty exposure -> NULL, never fake 0 or 1!
+      } else {
+        expect(emptyRow.value).toBe(0); // Outcomes count in empty window is 0
+      }
+    }
   });
 });

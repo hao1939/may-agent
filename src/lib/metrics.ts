@@ -248,6 +248,17 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       const updateValues = updateColumns.map((key) => values[key]);
       updateValues.push(def.id);
       db.run(`UPDATE metrics SET ${updateColumns.map((key) => `${key} = ?`).join(", ")} WHERE id = ?`, updateValues);
+      // Prometheus-style counter zero-initialization (opt-in via config.zeroInit) captures 0 -> N from registration.
+      if (def.type === "counter" && def.config?.zeroInit === true) {
+        const hasSnapshot = db.prepare("SELECT 1 FROM metric_snapshots WHERE metric_id = ? LIMIT 1").get(def.id);
+        if (!hasSnapshot) {
+          db.run(
+            "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, 0, 0, ?, ?, 'counter zero-init')",
+            [def.id, ts, options.measuredBy ?? "metric-service"],
+          );
+          db.run("UPDATE metrics SET current = 0, updated_at = ? WHERE id = ?", [ts, def.id]);
+        }
+      }
       // Retirement is administrative closure, not a measured recovery or Task result.
       if (def.status === "retired" || def.status === "closed") {
         db.run("UPDATE metric_alerts SET resolved_at = ? WHERE metric_id = ? AND resolved_at IS NULL", [ts, def.id]);
@@ -320,6 +331,25 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
 
       const calculation = calculateMetric(db, { id: row.id, measure_interval: row.measure_interval, config }, ts);
       const current = calculation.value;
+
+      // Minimum exposure gate (Prometheus-style minSampleSize): avoid noisy ratio/latency alerts on tiny denominators.
+      const minSampleSize = alertConfig?.minSampleSize;
+      if (Number.isSafeInteger(minSampleSize) && minSampleSize > 0 && current !== null) {
+        const latestSample = db
+          .prepare(
+            "SELECT sample_size FROM metric_snapshots WHERE metric_id = ? AND measured_at <= ? ORDER BY measured_at DESC, id DESC LIMIT 1",
+          )
+          .get(row.id, ts) as { sample_size: number | null } | null;
+        if (latestSample && latestSample.sample_size !== null && latestSample.sample_size < minSampleSize) {
+          results.push({
+            metricId: row.id,
+            status: "unknown",
+            calculation,
+            message: `Insufficient exposure (${latestSample.sample_size} < ${minSampleSize})`,
+          });
+          return;
+        }
+      }
 
       const owner = resolveOwner({
         id: row.id,

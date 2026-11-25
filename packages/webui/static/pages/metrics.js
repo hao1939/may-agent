@@ -19,19 +19,115 @@ function formatBytesGiB(bytes) {
   return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
 }
 
+function formatTrendScalar(value, unit) {
+  if (value == null || !Number.isFinite(Number(value))) return '—';
+  const n = Number(value);
+  if (unit === 'ratio') return (n * 100).toFixed(1).replace(/\.0$/, '') + '%';
+  if (unit === 'seconds') {
+    if (n < 1) return Math.round(n * 1000) + ' ms';
+    if (n < 60) return n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '') + ' s';
+    return (n / 60).toFixed(1) + ' min';
+  }
+  if (unit === 'usd') return '$' + (n >= 10 ? n.toFixed(2) : n.toFixed(2));
+  return String(Math.round(n));
+}
+
+function renderTrendDelta(series) {
+  if (!series || series.current == null) {
+    return `<span class="td-trend-delta neutral">no exposure</span>`;
+  }
+  if (series.delta == null || !Number.isFinite(Number(series.delta))) {
+    return `<span class="td-trend-delta neutral">n=${esc(String(series.sampleSize || 0))}</span>`;
+  }
+  const d = Number(series.delta);
+  if (Math.abs(d) < 1e-6) {
+    return `<span class="td-trend-delta neutral">→ flat · n=${esc(String(series.sampleSize || 0))}</span>`;
+  }
+  const arrow = d > 0 ? '↑' : '↓';
+  const sign = d > 0 ? '+' : '';
+  let formatted;
+  if (series.unit === 'ratio') formatted = sign + (d * 100).toFixed(1).replace(/\.0$/, '') + 'pp';
+  else if (series.unit === 'usd') formatted = (d > 0 ? '+$' : '-$') + Math.abs(d).toFixed(2);
+  else if (series.unit === 'seconds') formatted = sign + Math.round(d * 1000) + 'ms';
+  else formatted = sign + Math.round(d);
+
+  const improved = (d > 0 && series.goodDirection === 'up') || (d < 0 && series.goodDirection === 'down');
+  const cls = improved ? 'good' : 'bad';
+  return `<span class="td-trend-delta ${cls}">${arrow} ${esc(formatted)}</span>`;
+}
+
+function renderInlineTrendSvg(series, width = 88, height = 24, className = 'td-trend-spark') {
+  const pts = (series && Array.isArray(series.points)) ? series.points : [];
+  const valid = pts.filter(p => p && p.v != null && Number.isFinite(Number(p.v)));
+  const label = `${series?.label || 'Metric'} trend`;
+  if (!valid.length) {
+    return `<svg role="img" aria-label="${attrEsc(label + ': no exposure')}" viewBox="0 0 ${width} ${height}" class="${attrEsc(className)}" data-trend-spark="empty">
+      <line x1="4" y1="${(height / 2).toFixed(1)}" x2="${width - 4}" y2="${(height / 2).toFixed(1)}" stroke="var(--border)" stroke-dasharray="2,3"/>
+    </svg>`;
+  }
+  let min = Math.min(...valid.map(p => Number(p.v)));
+  let max = Math.max(...valid.map(p => Number(p.v)));
+  if (series.unit === 'ratio') {
+    min = Math.min(min, Math.max(0, min - 0.05));
+    max = Math.max(max, Math.min(1, max + 0.05));
+  }
+  if (min === max) { min -= 1; max += 1; }
+  const span = max - min;
+  const padX = 4;
+  const padY = 3.5;
+  const stepX = pts.length > 1 ? (width - 2 * padX) / (pts.length - 1) : 0;
+  const xOf = idx => padX + idx * stepX;
+  const yOf = val => height - padY - ((Number(val) - min) / span) * (height - 2 * padY);
+
+  // Break SVG path segments cleanly across null (0/0 empty-exposure) buckets — never linearly bridge gaps!
+  const segments = [];
+  let currentSeg = [];
+  pts.forEach((p, idx) => {
+    if (p && p.v != null && Number.isFinite(Number(p.v))) {
+      currentSeg.push({ x: xOf(idx), y: yOf(p.v), v: Number(p.v) });
+    } else if (currentSeg.length) {
+      segments.push(currentSeg);
+      currentSeg = [];
+    }
+  });
+  if (currentSeg.length) segments.push(currentSeg);
+
+  let strokeColor = 'var(--accent)';
+  if (series.delta != null && Math.abs(series.delta) >= 1e-6) {
+    const improved = (series.delta > 0 && series.goodDirection === 'up') || (series.delta < 0 && series.goodDirection === 'down');
+    strokeColor = improved ? 'var(--green)' : 'var(--yellow)';
+  }
+
+  let pathsHtml = '';
+  for (const seg of segments) {
+    if (seg.length === 1) {
+      pathsHtml += `<circle cx="${seg[0].x.toFixed(1)}" cy="${seg[0].y.toFixed(1)}" r="2" fill="${strokeColor}"/>`;
+    } else {
+      const d = seg.map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
+      pathsHtml += `<path d="${d}" fill="none" stroke="${strokeColor}" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"/>`;
+    }
+  }
+  const lastSeg = segments[segments.length - 1];
+  const lastPt = lastSeg[lastSeg.length - 1];
+  pathsHtml += `<circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="2.3" fill="${strokeColor}"/>`;
+
+  return `<svg role="img" aria-label="${attrEsc(label + ': ' + formatTrendScalar(series.current, series.unit))}" viewBox="0 0 ${width} ${height}" class="${attrEsc(className)}" data-trend-spark="${attrEsc(series.metricId || '')}">${pathsHtml}</svg>`;
+}
+
 function renderScorePill(scorecard) {
   if (!scorecard || scorecard.status === 'not_scored') {
-    return `<span class="td-score-pill" title="No milestone cohorts scored in this window">Unscored</span>`;
+    return `<span class="td-score-pill" title="No milestone cohorts scored in this window">· Unscored</span>`;
   }
   if (scorecard.status === 'incomplete' || scorecard.score === null) {
-    return `<span class="td-score-pill warn" title="Missing evidence on one or more required dimensions">Incomplete · n=${esc(String(scorecard.sampleSize || 0))}</span>`;
+    return `<span class="td-score-pill warn" title="Missing evidence on one or more required dimensions">⚠ Incomplete · n=${esc(String(scorecard.sampleSize || 0))}</span>`;
   }
   const conf = scorecard.confidence === 'low-sample' ? ` · low-sample (n=${scorecard.sampleSize})` : ` · n=${scorecard.sampleSize}`;
   if (scorecard.gated) {
-    return `<span class="td-score-pill gated" title="${attrEsc(scorecard.gateReason || 'Gated by correctness/safety')}">Gated ${esc(scorecard.score.toFixed(1))}${esc(conf)}</span>`;
+    return `<span class="td-score-pill gated" title="${attrEsc(scorecard.gateReason || 'Gated by correctness/safety')}">✕ Gated ${esc(scorecard.score.toFixed(1))}${esc(conf)}</span>`;
   }
   const cls = scorecard.score >= 75 ? 'good' : 'warn';
-  return `<span class="td-score-pill ${cls}">${esc(scorecard.score.toFixed(1))}/100${esc(conf)}</span>`;
+  const icon = scorecard.score >= 75 ? '✓' : '⚠';
+  return `<span class="td-score-pill ${cls}">${icon} ${esc(scorecard.score.toFixed(1))}/100${esc(conf)}</span>`;
 }
 
 function setTopDownDays(days, onMetricsTab) {
@@ -55,48 +151,48 @@ function renderAppDrillDown(detail, days) {
   const appId = detail.appId;
 
   const tasksTable = tasks.length
-    ? `<div class="health-scroll"><table class="health-table"><thead><tr><th>Task</th><th>Status</th><th>Agent</th><th>Window outcomes</th><th>Scorecard</th></tr></thead><tbody>
+    ? `<div tabindex="0" role="region" aria-label="Contributing Tasks for ${attrEsc(appId)}" class="td-table-wrap"><table class="health-table"><thead><tr><th>Task</th><th>Status</th><th>Agent</th><th>Window outcomes</th><th>Scorecard</th></tr></thead><tbody>
         ${tasks.map(t => {
           const href = `/projects/${encodeURIComponent(appId + '.app')}/tasks?appId=${encodeURIComponent(appId)}&task=${encodeURIComponent(t.taskId)}`;
           return `<tr>
-            <td><a href="${attrEsc(href)}"><code>${esc(t.taskId)}</code></a>${t.goal && t.goal !== t.taskId ? `<div class="health-note">${esc(t.goal)}</div>` : ''}</td>
-            <td><span class="badge ${t.status === 'running' ? 'running' : t.status === 'attention' ? 'error' : t.status === 'closed' || t.status === 'idle' ? 'done' : 'interrupted'}">${esc(t.status)}</span></td>
-            <td>${t.agent ? `<a href="/agents/${encodeURIComponent(t.agent)}">${esc(t.agent)}</a>` : '—'}</td>
-            <td>${esc(String(t.convergedWindow || 0))} converged${t.failedWindow ? ` · <span class="td-kv-val warn">${esc(String(t.failedWindow))} failed</span>` : ''}</td>
-            <td>${renderScorePill(t.scorecard)}</td>
+            <td data-col="Task"><a href="${attrEsc(href)}"><code>${esc(t.taskId)}</code></a>${t.goal && t.goal !== t.taskId ? `<div class="health-note">${esc(t.goal)}</div>` : ''}</td>
+            <td data-col="Status"><span class="badge ${t.status === 'running' ? 'running' : t.status === 'attention' ? 'error' : t.status === 'closed' || t.status === 'idle' ? 'done' : 'interrupted'}">${esc(t.status)}</span></td>
+            <td data-col="Agent">${t.agent ? `<a href="/agents/${encodeURIComponent(t.agent)}">${esc(t.agent)}</a>` : '—'}</td>
+            <td data-col="Outcomes">${esc(String(t.convergedWindow || 0))} converged${t.failedWindow ? ` · <span class="td-kv-val warn">${esc(String(t.failedWindow))} failed</span>` : ''}</td>
+            <td data-col="Scorecard">${renderScorePill(t.scorecard)}</td>
           </tr>`;
         }).join('')}
       </tbody></table></div>`
     : '<p class="health-note">No active or recent Tasks in this window.</p>';
 
   const agentsTable = agents.length
-    ? `<div class="health-scroll"><table class="health-table"><thead><tr><th>Agent</th><th>Runs / Sessions</th><th>Errors</th><th>Estimated cost</th><th>App-scoped Scorecard</th></tr></thead><tbody>
+    ? `<div tabindex="0" role="region" aria-label="Contributing Agents for ${attrEsc(appId)}" class="td-table-wrap"><table class="health-table"><thead><tr><th>Agent</th><th>Runs / Sessions</th><th>Errors</th><th>Estimated cost</th><th>App-scoped Scorecard</th></tr></thead><tbody>
         ${agents.map(a => `<tr>
-          <td><a href="/agents/${encodeURIComponent(a.agent)}"><b>${esc(a.agent)}</b></a></td>
-          <td>${esc(String(a.invocationsWindow || 0))} runs · ${esc(String(a.sessionsWindow || 0))} sessions</td>
-          <td class="${a.errorsWindow > 0 ? 'td-kv-val warn' : ''}">${esc(String(a.errorsWindow || 0))}</td>
-          <td>${a.estimatedCostUsdWindow != null ? '$' + Number(a.estimatedCostUsdWindow).toFixed(4) : '—'}</td>
-          <td>${renderScorePill(a.scorecard)}</td>
+          <td data-col="Agent"><a href="/agents/${encodeURIComponent(a.agent)}"><b>${esc(a.agent)}</b></a></td>
+          <td data-col="Runs">${esc(String(a.invocationsWindow || 0))} runs · ${esc(String(a.sessionsWindow || 0))} sessions</td>
+          <td data-col="Errors" class="${a.errorsWindow > 0 ? 'td-kv-val warn' : ''}">${esc(String(a.errorsWindow || 0))}</td>
+          <td data-col="Cost">${a.estimatedCostUsdWindow != null ? '$' + Number(a.estimatedCostUsdWindow).toFixed(4) : '—'}</td>
+          <td data-col="Scorecard">${renderScorePill(a.scorecard)}</td>
         </tr>`).join('')}
       </tbody></table></div>`
     : '<p class="health-note">No Agent executions recorded for this App in this window.</p>';
 
   const workflowsTable = workflows.length
-    ? `<div class="health-scroll"><table class="health-table"><thead><tr><th>Workflow</th><th>Finished</th><th>Done</th><th>Error / Blocked</th><th>Mean duration</th></tr></thead><tbody>
+    ? `<div tabindex="0" role="region" aria-label="Deterministic Workflows for ${attrEsc(appId)}" class="td-table-wrap"><table class="health-table"><thead><tr><th>Workflow</th><th>Finished</th><th>Done</th><th>Error / Blocked</th><th>Mean duration</th></tr></thead><tbody>
         ${workflows.map(w => {
           const wfHref = `/metrics?days=${encodeURIComponent(String(days))}&appId=${encodeURIComponent(appId)}&workflow=${encodeURIComponent(w.workflow)}&runs=true`;
           return `<tr>
-            <td><a href="${attrEsc(wfHref)}"><code>${esc(w.workflow)}</code></a></td>
-            <td>${esc(String(w.finished || 0))}</td>
-            <td>${esc(String(w.done || 0))}</td>
-            <td class="${(w.errors || w.blocked) ? 'td-kv-val warn' : ''}">${esc(String(w.errors || 0))} err · ${esc(String(w.blocked || 0))} blocked</td>
-            <td>${esc(healthDuration(w.meanDurationMs))}</td>
+            <td data-col="Workflow"><a href="${attrEsc(wfHref)}"><code>${esc(w.workflow)}</code></a></td>
+            <td data-col="Finished">${esc(String(w.finished || 0))}</td>
+            <td data-col="Done">${esc(String(w.done || 0))}</td>
+            <td data-col="Errors" class="${(w.errors || w.blocked) ? 'td-kv-val warn' : ''}">${esc(String(w.errors || 0))} err · ${esc(String(w.blocked || 0))} blocked</td>
+            <td data-col="Duration">${esc(healthDuration(w.meanDurationMs))}</td>
           </tr>`;
         }).join('')}
       </tbody></table></div>`
     : '<p class="health-note">No top-level Workflow executions recorded for this App in this window.</p>';
 
-  return `<div class="td-drilldown" data-app-drilldown="${attrEsc(appId)}">
+  return `<section class="td-drilldown" data-app-drilldown="${attrEsc(appId)}" aria-label="App Drill-Down for ${attrEsc(appId)}">
     <div class="td-drilldown-head">
       <h3>App Drill-Down: <code>${esc(appId)}</code> (Tasks, Agents &amp; Workflows)</h3>
       <a href="/metrics?days=${encodeURIComponent(String(days))}" class="td-window-btn">← Show all Apps</a>
@@ -106,7 +202,34 @@ function renderAppDrillDown(detail, days) {
       <div><h4>2. Contributing Agents (capability → App)</h4>${agentsTable}</div>
       <div><h4>3. Deterministic Workflows (code offload → App)</h4>${workflowsTable}</div>
     </div>
-  </div>`;
+  </section>`;
+}
+
+function renderTrendRow(series, days) {
+  if (!series) return '';
+  const href = `/metrics/${encodeURIComponent(series.metricId)}?days=${encodeURIComponent(String(days))}`;
+  return `<a class="td-trend-row" href="${attrEsc(href)}" title="${attrEsc('Open ' + series.metricId + ' sample history')}">
+    <span class="td-trend-meta">
+      <span class="td-trend-label">${esc(series.label)}</span>
+      ${renderTrendDelta(series)}
+    </span>
+    ${renderInlineTrendSvg(series, 88, 24, 'td-trend-spark')}
+    <span class="td-trend-val">${esc(formatTrendScalar(series.current, series.unit))}</span>
+  </a>`;
+}
+
+function renderHostPillarTile(series, subText, days, warnClass = '') {
+  if (!series) return '';
+  const href = `/metrics/${encodeURIComponent(series.metricId)}?days=${encodeURIComponent(String(days))}`;
+  return `<a class="td-pillar" href="${attrEsc(href)}" title="${attrEsc('Open ' + series.metricId + ' sample history')}">
+    <div class="td-pillar-top">
+      <span class="td-pillar-label">${esc(series.label)}</span>
+      ${renderTrendDelta(series)}
+    </div>
+    <div class="td-pillar-main ${warnClass}">${esc(formatTrendScalar(series.current, series.unit))}</div>
+    ${renderInlineTrendSvg(series, 136, 26, 'td-pillar-chart')}
+    <div class="td-pillar-sub">${esc(subText)}</div>
+  </a>`;
 }
 
 function renderTopDownObservability(data, options = {}) {
@@ -116,6 +239,7 @@ function renderTopDownObservability(data, options = {}) {
   const headroom = host.headroom || {};
   const sensors = headroom.sensors || {};
   const overhead = host.overhead || {};
+  const ht = host.trends || {};
   const disk = headroom.disk;
   const auth = headroom.auth || { state: 'unknown', expiresAt: null };
   const days = Math.max(1, Math.round(((data.window?.end || 0) - (data.window?.start || 0)) / 86400000)) || 1;
@@ -123,21 +247,18 @@ function renderTopDownObservability(data, options = {}) {
   const onMetricsTab = !!options.detailed;
 
   const hostAlertsBadge = headroom.openAlerts === null
-    ? `<span class="breach-badge alerting" onclick="routeTo('/metrics')">Alerts truncated (${esc(String(headroom.visibleOpenAlerts || 0))}+)</span>`
+    ? `<span class="breach-badge alerting" onclick="routeTo('/metrics')">⚠ Alerts truncated (${esc(String(headroom.visibleOpenAlerts || 0))}+)</span>`
     : (headroom.openAlerts || 0) > 0
-      ? `<span class="breach-badge alerting" onclick="routeTo('/metrics')">${esc(String(headroom.openAlerts))} Host alert${headroom.openAlerts === 1 ? '' : 's'}</span>`
-      : `<span class="breach-badge healthy" onclick="routeTo('/metrics')">0 Host alerts</span>`;
+      ? `<span class="breach-badge alerting" onclick="routeTo('/metrics')">⚠ ${esc(String(headroom.openAlerts))} Host alert${headroom.openAlerts === 1 ? '' : 's'}</span>`
+      : `<span class="breach-badge healthy" onclick="routeTo('/metrics')">✓ 0 Host alerts</span>`;
 
-  const diskText = disk
-    ? `${disk.usedPercent}% used (${formatBytesGiB(disk.availableBytes)} free)`
-    : 'Disk unknown';
   const authText = auth.state === 'valid'
-    ? `az auth valid (${formatAgeCompact((auth.expiresAt || 0) - data.generatedAt)} left)`
+    ? `✓ az valid (${formatAgeCompact((auth.expiresAt || 0) - data.generatedAt)})`
     : auth.state === 'expired'
-      ? 'az auth EXPIRED'
+      ? '✕ az EXPIRED'
       : auth.state === 'unconfigured'
-        ? 'az auth unconfigured'
-        : 'az auth unknown';
+        ? 'az unconfigured'
+        : 'az unknown';
 
   const rubricLabels = [
     ['outcomeValue', 'Outcome value (35%)'],
@@ -151,20 +272,14 @@ function renderTopDownObservability(data, options = {}) {
     const o = app.outcomes || {};
     const t = o.tasks || {};
     const b = app.blockers || {};
-    const hb = app.humanBurden || {};
-    const cl = app.costAndLeverage || {};
+    const tr = app.trends || {};
     const sc = app.scorecard || { status: 'not_scored' };
 
-    const deliveredParts = [`${o.convergedMilestonesWindow || 0} milestones`];
-    if (o.closedTasksWindow) deliveredParts.push(`${o.closedTasksWindow} closed tasks`);
-    if (o.closedRequestsWindow) deliveredParts.push(`${o.closedRequestsWindow} asks`);
-    const outcomesVal = deliveredParts.join(' · ');
-    const backlogVal = `${o.openTasksTotal || 0} active (${t.running || 0} run, ${t.waiting || 0} wait${t.attention ? `, ${t.attention} attn` : ''})`
+    const backlogText = `${o.openTasksTotal || 0} active (${t.running || 0} run, ${t.waiting || 0} wait${t.attention ? `, ${t.attention} attn` : ''})`
       + (t.idle ? ` · ${t.idle} idle` : '')
       + (o.openRequests ? ` · ${o.openRequests} asks` : '')
       + (o.oldestOpenAgeMs != null ? ` · oldest ${formatAgeCompact(o.oldestOpenAgeMs)}` : '');
 
-    const blockerCount = (b.failedAttemptsWindow || 0) + (b.errorWorkflowsWindow || 0) + (b.blockedWorkflowsWindow || 0) + (b.openHumanConditions || 0) + (b.visibleOpenAlerts || 0);
     const blockerParts = [];
     if (b.failedAttemptsWindow) blockerParts.push(`${b.failedAttemptsWindow} failed att`);
     if (b.errorWorkflowsWindow) blockerParts.push(`${b.errorWorkflowsWindow} wf err`);
@@ -172,11 +287,8 @@ function renderTopDownObservability(data, options = {}) {
     if (b.openHumanConditions) blockerParts.push(`${b.openHumanConditions} human wait`);
     if (b.openAlerts === null) blockerParts.push('alerts truncated');
     else if (b.openAlerts > 0) blockerParts.push(`${b.openAlerts} alert${b.openAlerts === 1 ? '' : 's'}`);
-    const blockerVal = blockerParts.length ? blockerParts.join(' · ') : 'None observed';
-
-    const offloadPct = cl.workflowOffloadShare != null ? Math.round(cl.workflowOffloadShare * 100) + '% workflow' : '—';
-    const costParts = [`${cl.agentInvocationsWindow || 0} agent / ${cl.workflowRunsWindow || 0} wf (${offloadPct})`];
-    if (cl.estimatedCostUsdWindow != null) costParts.push('$' + Number(cl.estimatedCostUsdWindow).toFixed(3));
+    const blockerText = blockerParts.length ? `⚠ ${blockerParts.join(' · ')}` : '✓ No active blockers';
+    const hasBlocker = blockerParts.length > 0;
 
     const taskHref = `/projects/${encodeURIComponent(app.appId + '.app')}/tasks?appId=${encodeURIComponent(app.appId)}`;
     const metricHref = `/metrics?appId=${encodeURIComponent(app.appId)}&days=${encodeURIComponent(String(days))}`;
@@ -189,72 +301,81 @@ function renderTopDownObservability(data, options = {}) {
         }).join('')}</div>`
       : '';
 
-    return `<div class="td-app-card" data-app-card="${attrEsc(app.appId)}">
-      <div class="td-app-head">
-        <span class="td-app-name">${esc(app.appId)}</span>
+    return `<article class="td-app-card" data-app-card="${attrEsc(app.appId)}">
+      <header class="td-app-head">
+        <h3><a href="${attrEsc(metricHref)}">${esc(app.appId)}</a></h3>
         ${renderScorePill(sc)}
+      </header>
+      <div class="td-trend-body">
+        ${renderTrendRow(tr.verifiedOutcomes, days)}
+        ${renderTrendRow(tr.costPerOutcomeUsd, days)}
+        ${renderTrendRow(tr.spinRatio, days)}
+        ${renderTrendRow(tr.workflowOffloadRatio, days)}
+        ${renderTrendRow(tr.autonomyRatio, days)}
+        <div class="td-backlog-strip">
+          <div><strong>Backlog:</strong> ${esc(backlogText)}</div>
+          <div class="${hasBlocker ? 'td-kv-val warn' : ''}">${esc(blockerText)}</div>
+        </div>
+        ${rubricHtml}
       </div>
-      <div class="td-kv-list">
-        <div class="td-kv-row"><span class="td-kv-key">Delivered (${esc(windowLabel)})</span><span class="td-kv-val">${esc(outcomesVal)}</span></div>
-        <div class="td-kv-row"><span class="td-kv-key">Open backlog</span><span class="td-kv-val">${esc(backlogVal)}</span></div>
-        <div class="td-kv-row"><span class="td-kv-key">Blockers &amp; friction</span><span class="td-kv-val ${blockerCount > 0 ? 'warn' : ''}">${esc(blockerVal)}</span></div>
-        <div class="td-kv-row"><span class="td-kv-key">Human inputs (${esc(windowLabel)})</span><span class="td-kv-val">${esc(String(hb.humanInputsWindow || 0))}</span></div>
-        <div class="td-kv-row"><span class="td-kv-key">Effort &amp; offload</span><span class="td-kv-val">${esc(costParts.join(' · '))}</span></div>
-      </div>
-      ${rubricHtml}
-      <div class="td-app-links">
-        <a href="${attrEsc(taskHref)}">Open Tasks →</a>
-        <a href="${attrEsc(metricHref)}" data-drilldown-link="${attrEsc(app.appId)}">Drill Down →</a>
-      </div>
-    </div>`;
+      <footer class="td-app-links">
+        <a href="${attrEsc(taskHref)}">Open Tasks<span class="sr-only"> for ${esc(app.appId)}</span> →</a>
+        <a href="${attrEsc(metricHref)}" data-drilldown-link="${attrEsc(app.appId)}">Drill Down<span class="sr-only"> into ${esc(app.appId)}</span> →</a>
+      </footer>
+    </article>`;
   }).join('');
 
-  const plumbingErrs = (plumbing.failedTaskAttemptsWindow || 0) + (plumbing.workflowErrorsWindow || 0) + (plumbing.subscriberFailures1h || 0) + (plumbing.unhandledSignals1h || 0);
-  const recoveryIssues = (recovery.unresolvedInputRecoveryCount || 0) + (recovery.expiredLeasesCount || 0);
   const diskWarn = disk && disk.usedPercent >= 90;
   const authBad = auth.state === 'expired';
+  const promptTaxText = ht.promptTaxRatio != null ? `Prompt tax: ${Math.round(ht.promptTaxRatio * 100)}%` : 'Prompt tax: —';
 
   return `<div class="td-header">
       <div>
-        <h2>Host &amp; Apps · Top-Down Observing &amp; Scoring</h2>
-        <p class="health-note" style="margin:2px 0 0">Transparent Host telemetry (${esc(windowLabel)} window). Host protects stable contracts (<code>alex/develop-host-change</code>); Apps iterate on domain outcomes (<code>alex/develop-change</code>).</p>
+        <h2>Host &amp; Apps · Trend Observing &amp; Scoring</h2>
+        <p class="health-note" style="margin:0.15rem 0 0">12-bucket trend trajectories (${esc(windowLabel)} window; gaps indicate 0 exposure, never fake zeros). Host: <code>alex/develop-host-change</code> · Apps: <code>alex/develop-change</code>.</p>
       </div>
-      <div class="td-window-switch">
-        ${[1, 7, 30].map(d => `<button type="button" class="td-window-btn ${days === d ? 'active' : ''}" onclick="setTopDownDays(${d}, ${onMetricsTab})">${d === 1 ? '24h' : d + 'd'}</button>`).join('')}
+      <div class="td-window-switch" role="group" aria-label="Observation time window">
+        ${[1, 7, 30].map(d => `<button type="button" class="td-window-btn ${days === d ? 'active' : ''}" aria-pressed="${days === d ? 'true' : 'false'}" onclick="setTopDownDays(${d}, ${onMetricsTab})">${d === 1 ? '24h' : d + 'd'}</button>`).join('')}
       </div>
     </div>
-    <div class="td-host-box" data-host-summary>
+    <section class="td-host-box" data-host-summary aria-label="Host Platform Harness Metrics">
       <div class="td-host-head">
         <div class="td-host-title">
-          <span>Host Platform (Kernel)</span>
+          <span>Host Platform (Agent Harness)</span>
           ${renderScorePill(host.scorecard)}
           ${hostAlertsBadge}
         </div>
         <span class="health-note">Rubric: <code>host-rubric-v1</code> · Conservative &amp; subtractive</span>
       </div>
       <div class="td-pillars">
-        <div class="td-pillar">
-          <div class="td-pillar-label">1. Plumbing &amp; Execution</div>
-          <div class="td-pillar-main ${plumbingErrs > 0 ? 'td-kv-val warn' : ''}" style="text-align:left">${esc(String(plumbing.failedTaskAttemptsWindow || 0))} failed att · ${esc(String(plumbing.workflowErrorsWindow || 0))} wf err</div>
-          <div class="td-pillar-sub">Unhandled 1h: ${esc(plumbing.unhandledSignals1h == null ? '—' : String(plumbing.unhandledSignals1h))} · Sub err 1h: ${esc(plumbing.subscriberFailures1h == null ? '—' : String(plumbing.subscriberFailures1h))}</div>
-        </div>
-        <div class="td-pillar">
-          <div class="td-pillar-label">2. Stuck Work &amp; Recovery</div>
-          <div class="td-pillar-main ${recoveryIssues > 0 ? 'td-kv-val warn' : ''}" style="text-align:left">${esc(String(recovery.unresolvedInputRecoveryCount || 0))} unresolved · ${esc(String(recovery.expiredLeasesCount || 0))} expired leases</div>
-          <div class="td-pillar-sub">Oldest recovery: ${esc(formatAgeCompact(recovery.oldestInputRecoveryAgeMs))} · Failovers (${esc(windowLabel)}): ${esc(String(recovery.taskFailoversWindow || 0))}</div>
-        </div>
-        <div class="td-pillar">
-          <div class="td-pillar-label">3. Environment &amp; Sensors</div>
-          <div class="td-pillar-main ${authBad ? 'td-kv-val bad' : diskWarn ? 'td-kv-val warn' : ''}" style="text-align:left">${esc(diskText)}</div>
-          <div class="td-pillar-sub">${esc(authText)} · Sensors: ${esc(String(sensors.freshMetrics || 0))}/${esc(String(sensors.activeMetrics || 0))} fresh${sensors.collectionFailuresAfterSample ? ` · ${esc(String(sensors.collectionFailuresAfterSample))} failed` : ''}</div>
-        </div>
-        <div class="td-pillar">
-          <div class="td-pillar-label">4. Platform Overhead</div>
-          <div class="td-pillar-main" style="text-align:left">SQL: ${esc(overhead.daemonSqlTimePercent == null ? '—' : overhead.daemonSqlTimePercent + '%')} · Skip: ${esc(overhead.skippedCheckRatePerMin == null ? '—' : Math.round(overhead.skippedCheckRatePerMin) + '/m')}</div>
-          <div class="td-pillar-sub">Worst SQL: ${esc(overhead.daemonSqlWorstMs == null ? '—' : Math.round(overhead.daemonSqlWorstMs) + 'ms')} · Metric query: ${esc(overhead.metricQueryWorstMs == null ? '—' : Math.round(overhead.metricQueryWorstMs) + 'ms')}</div>
-        </div>
+        ${renderHostPillarTile(
+          ht.settlementIntegrity,
+          `${plumbing.failedTaskAttemptsWindow || 0} failed att · Unhandled 1h: ${plumbing.unhandledSignals1h ?? '—'} · Sub err: ${plumbing.subscriberFailures1h ?? '—'}`,
+          days,
+        )}
+        ${renderHostPillarTile(
+          ht.harnessBurdenRatio,
+          `Unresolved rec: ${recovery.unresolvedInputRecoveryCount || 0} (${formatAgeCompact(recovery.oldestInputRecoveryAgeMs)}) · ${promptTaxText}`,
+          days,
+        )}
+        ${renderHostPillarTile(
+          ht.prepLatencyP95,
+          `SQL: ${overhead.daemonSqlTimePercent == null ? '—' : overhead.daemonSqlTimePercent.toFixed?.(1) + '%'} · Worst SQL: ${overhead.daemonSqlWorstMs == null ? '—' : Math.round(overhead.daemonSqlWorstMs) + 'ms'} · Skip: ${overhead.skippedCheckRatePerMin == null ? '—' : Math.round(overhead.skippedCheckRatePerMin) + '/m'}`,
+          days,
+        )}
+        ${renderHostPillarTile(
+          ht.cacheHitRatio,
+          `Failovers (${windowLabel}): ${recovery.taskFailoversWindow || 0} · Expired leases: ${recovery.expiredLeasesCount || 0}`,
+          days,
+        )}
+        ${renderHostPillarTile(
+          ht.diskUsedRatio,
+          `${disk ? formatBytesGiB(disk.availableBytes) + ' free' : 'Disk unknown'} · ${authText} · Sensors ${sensors.freshMetrics || 0}/${sensors.activeMetrics || 0}`,
+          days,
+          authBad ? 'td-kv-val bad' : diskWarn ? 'td-kv-val warn' : '',
+        )}
       </div>
-    </div>
+    </section>
     <div class="td-apps-grid">${appsHtml || '<p class="health-note">No enabled Apps discovered yet.</p>'}</div>
     ${onMetricsTab && data.appDetail ? renderAppDrillDown(data.appDetail, days) : ''}`;
 }

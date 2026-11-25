@@ -1030,7 +1030,8 @@ describe("served workflow and metric health pages", () => {
         await page.goto(base, { waitUntil: "domcontentloaded" });
         await page.waitForSelector('#top-down-overview [data-host-summary]');
         await page.waitForSelector('#top-down-overview [data-app-card="research"]');
-        expect(await page.$eval("#top-down-overview", (el) => el.textContent || "")).toContain("Host Platform (Kernel)");
+        expect(await page.$eval("#top-down-overview", (el) => el.textContent || "")).toContain("Host Platform (Agent Harness)");
+        expect(await page.$$eval('#top-down-overview svg[data-trend-spark]', (svgs) => svgs.length)).toBeGreaterThanOrEqual(10);
         expect(await page.$eval('#top-down-overview [data-app-card="research"]', (el) => el.textContent || "")).toContain(
           "low-sample (n=1)",
         );

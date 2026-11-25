@@ -10,6 +10,7 @@ export type MetricScope = { kind: "host" } | { kind: "app"; appId: string };
 
 const HOST_METRIC_PREFIXES = [
   "event.",
+  "host.",
   "infra.",
   "metric.",
   "runtime.",
@@ -503,6 +504,522 @@ function summarizeHostScorecard(facts: RawScorecardFact[]): HostScorecardSummary
     latestAt: facts[0]?.timestamp ?? null,
     dimensions,
   };
+}
+
+export type TrendPoint = {
+  t: number;
+  v: number | null;
+  n: number;
+};
+
+export type TrendSeries = {
+  metricId: string;
+  label: string;
+  unit: "ratio" | "seconds" | "usd" | "outcomes";
+  goodDirection: "up" | "down";
+  current: number | null;
+  sampleSize: number;
+  delta: number | null;
+  points: TrendPoint[];
+};
+
+const TREND_BUCKETS = 12;
+
+function roundMetric(val: number | null, digits = 4): number | null {
+  if (val === null || !Number.isFinite(val)) return null;
+  const f = 10 ** digits;
+  return Math.round(val * f) / f;
+}
+
+function buildRatioTrend(options: {
+  metricId: string;
+  label: string;
+  unit: TrendSeries["unit"];
+  goodDirection: TrendSeries["goodDirection"];
+  bucketStarts: number[];
+  numerators: number[];
+  denominators: number[];
+  extraNumerator?: number;
+  extraDenominator?: number;
+}): TrendSeries {
+  const {
+    metricId,
+    label,
+    unit,
+    goodDirection,
+    bucketStarts,
+    numerators,
+    denominators,
+    extraNumerator = 0,
+    extraDenominator = 0,
+  } = options;
+  const points: TrendPoint[] = bucketStarts.map((t, i) => {
+    const den = denominators[i] ?? 0;
+    const num = numerators[i] ?? 0;
+    return {
+      t,
+      v: den > 0 ? roundMetric(num / den) : null,
+      n: den,
+    };
+  });
+  const totalNum = numerators.reduce((s, x) => s + x, 0) + extraNumerator;
+  const totalDen = denominators.reduce((s, x) => s + x, 0) + extraDenominator;
+  const current = totalDen > 0 ? roundMetric(totalNum / totalDen) : null;
+
+  const mid = Math.floor(TREND_BUCKETS / 2);
+  let firstNum = 0;
+  let firstDen = 0;
+  let secondNum = 0;
+  let secondDen = 0;
+  for (let i = 0; i < TREND_BUCKETS; i++) {
+    if (i < mid) {
+      firstNum += numerators[i] ?? 0;
+      firstDen += denominators[i] ?? 0;
+    } else {
+      secondNum += numerators[i] ?? 0;
+      secondDen += denominators[i] ?? 0;
+    }
+  }
+  const delta =
+    firstDen > 0 && secondDen > 0 ? roundMetric(secondNum / secondDen - firstNum / firstDen) : null;
+
+  return { metricId, label, unit, goodDirection, current, sampleSize: totalDen, delta, points };
+}
+
+function buildCountTrend(options: {
+  metricId: string;
+  label: string;
+  goodDirection: TrendSeries["goodDirection"];
+  bucketStarts: number[];
+  counts: number[];
+  exposures: number[];
+}): TrendSeries {
+  const { metricId, label, goodDirection, bucketStarts, counts, exposures } = options;
+  const points: TrendPoint[] = bucketStarts.map((t, i) => ({
+    t,
+    v: counts[i] ?? 0,
+    n: exposures[i] ?? 0,
+  }));
+  const current = counts.reduce((s, x) => s + x, 0);
+  const sampleSize = exposures.reduce((s, x) => s + x, 0);
+  const mid = Math.floor(TREND_BUCKETS / 2);
+  const firstHalf = counts.slice(0, mid).reduce((s, x) => s + x, 0);
+  const secondHalf = counts.slice(mid).reduce((s, x) => s + x, 0);
+  const delta = current > 0 ? secondHalf - firstHalf : null;
+  return { metricId, label, unit: "outcomes", goodDirection, current, sampleSize, delta, points };
+}
+
+function p95Sorted(values: number[]): number | null {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * 0.95) - 1));
+  return roundMetric(sorted[idx]!);
+}
+
+function buildWindowTrends(
+  db: SqliteDb,
+  start: number,
+  end: number,
+  appIds: readonly string[],
+  envProbes: EnvironmentProbes,
+  unresolvedRecoveryCount: number,
+) {
+  const span = Math.max(TREND_BUCKETS, end - start);
+  const bucketWidth = span / TREND_BUCKETS;
+  const bucketStarts = Array.from({ length: TREND_BUCKETS }, (_, i) => Math.round(start + i * bucketWidth));
+  const bucketOf = (ts: number): number => {
+    const raw = Math.floor((ts - start) / bucketWidth);
+    return Math.min(TREND_BUCKETS - 1, Math.max(0, raw));
+  };
+
+  const attemptTimeExpr = `COALESCE(
+    CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
+    started_at
+  )`;
+
+  // 1. Attempt bucket facts (Host + per-App).
+  const attemptBuckets = db
+    .prepare(
+      `SELECT
+         app_id AS appId,
+         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((${attemptTimeExpr} - ?) / ? AS INTEGER))) AS b,
+         COUNT(*) AS total,
+         COUNT(CASE WHEN state IN ('completed', 'failed') THEN 1 END) AS terminal,
+         COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
+         COUNT(CASE WHEN state IN ('failed', 'interrupted') THEN 1 END) AS friction,
+         COUNT(CASE WHEN state != 'running' THEN 1 END) AS finishedNonRunning,
+         COUNT(CASE WHEN accepted_result_state = 'converged' THEN 1 END) AS converged,
+         COUNT(CASE WHEN state != 'running' AND COALESCE(accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged
+       FROM app_task_attempts
+       WHERE ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?
+       GROUP BY app_id, b`,
+    )
+    .all(start, bucketWidth, start, end) as Array<{
+    appId: string;
+    b: number;
+    total: number;
+    terminal: number;
+    settled: number;
+    friction: number;
+    finishedNonRunning: number;
+    converged: number;
+    nonConverged: number;
+  }>;
+
+  // 2. Workflow bucket facts (Host + per-App).
+  const wfBuckets = db
+    .prepare(
+      `SELECT
+         COALESCE(app_id, '') AS appId,
+         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((endedAt - ?) / ? AS INTEGER))) AS b,
+         COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS total,
+         COUNT(CASE WHEN status = 'done' THEN 1 END) AS done,
+         COUNT(CASE WHEN status = 'error' THEN 1 END) AS errors
+       FROM workflow_runs
+       WHERE parentWorkflowRunId IS NULL AND endedAt >= ? AND endedAt < ?
+       GROUP BY 1, b`,
+    )
+    .all(start, bucketWidth, start, end) as Array<{
+    appId: string;
+    b: number;
+    total: number;
+    done: number;
+    errors: number;
+  }>;
+
+  // 3. Execution usage bucket facts (cache hit, cost, prompt tax, prep latency).
+  const complete =
+    "outcome IS NOT NULL AND json_extract(data, '$.totals.replies') > 0 AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')";
+  const usageRows = db
+    .prepare(
+      `SELECT
+         COALESCE(app_id, '') AS appId,
+         started_at AS ts,
+         CASE WHEN ${complete} THEN 1 ELSE 0 END AS isComplete,
+         COALESCE(json_extract(data, '$.totals.cacheRead'), 0) AS cacheRead,
+         COALESCE(json_extract(data, '$.totals.input'), 0) + COALESCE(json_extract(data, '$.totals.cacheRead'), 0) + COALESCE(json_extract(data, '$.totals.cacheWrite'), 0) AS exposure,
+         CASE WHEN ${complete} AND json_extract(data, '$.totals.estimatedCostReplies') = json_extract(data, '$.totals.replies')
+           THEN json_extract(data, '$.totals.estimatedCost') ELSE NULL END AS pricedUsd,
+         json_extract(data, '$.preparation.durationMs') AS prepMs,
+         json_extract(data, '$.preparation.taskBytes') AS taskBytes,
+         json_extract(data, '$.preparation.promptBytes') AS promptBytes
+       FROM execution_usage
+       WHERE started_at >= ? AND started_at < ?`,
+    )
+    .all(start, end) as Array<{
+    appId: string;
+    ts: number;
+    isComplete: number;
+    cacheRead: number;
+    exposure: number;
+    pricedUsd: number | null;
+    prepMs: number | null;
+    taskBytes: number | null;
+    promptBytes: number | null;
+  }>;
+
+  // 4. Closed requests, closed finite tasks, and human steers per bucket.
+  const closedReqBuckets = db
+    .prepare(
+      `SELECT app_id AS appId,
+         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((updated_at - ?) / ? AS INTEGER))) AS b,
+         COUNT(*) AS closed
+       FROM conversation_requests
+       WHERE status = 'closed' AND updated_at >= ? AND updated_at < ?
+       GROUP BY app_id, b`,
+    )
+    .all(start, bucketWidth, start, end) as Array<{ appId: string; b: number; closed: number }>;
+
+  const humanSteerBuckets = db
+    .prepare(
+      `SELECT app_id AS appId,
+         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((created_at - ?) / ? AS INTEGER))) AS b,
+         COUNT(*) AS touches
+       FROM app_inbox_items
+       WHERE source_kind = 'human' AND created_at >= ? AND created_at < ?
+       GROUP BY app_id, b`,
+    )
+    .all(start, bucketWidth, start, end) as Array<{ appId: string; b: number; touches: number }>;
+
+  const diskSnapshots = db
+    .prepare(
+      `SELECT measured_at AS ts, value
+       FROM metric_snapshots
+       WHERE metric_id = 'host.disk_used_ratio' AND measured_at >= ? AND measured_at < ?
+       ORDER BY measured_at ASC`,
+    )
+    .all(start, end) as Array<{ ts: number; value: number }>;
+
+  const zeros = () => Array.from({ length: TREND_BUCKETS }, () => 0);
+  const hostSettled = zeros();
+  const hostTerminal = zeros();
+  const hostFriction = zeros();
+  const hostExecUnits = zeros();
+  const hostCacheRead = zeros();
+  const hostCacheExp = zeros();
+  const hostPromptTaxBytes = zeros();
+  const hostPromptTotalBytes = zeros();
+  const hostPrepByBucket: number[][] = Array.from({ length: TREND_BUCKETS }, () => []);
+  const allHostPrep: number[] = [];
+
+  type AppBuckets = {
+    outcomes: number[];
+    outcomeExposure: number[];
+    pricedUsd: number[];
+    pricedCount: number[];
+    nonConverged: number[];
+    finishedAttempts: number[];
+    totalAttempts: number[];
+    wfDone: number[];
+    wfTotal: number[];
+    humanTouches: number[];
+  };
+  const byApp = new Map<string, AppBuckets>();
+  const ensureApp = (id: string): AppBuckets => {
+    let entry = byApp.get(id);
+    if (!entry) {
+      entry = {
+        outcomes: zeros(),
+        outcomeExposure: zeros(),
+        pricedUsd: zeros(),
+        pricedCount: zeros(),
+        nonConverged: zeros(),
+        finishedAttempts: zeros(),
+        totalAttempts: zeros(),
+        wfDone: zeros(),
+        wfTotal: zeros(),
+        humanTouches: zeros(),
+      };
+      byApp.set(id, entry);
+    }
+    return entry;
+  };
+  for (const id of appIds) ensureApp(id);
+
+  for (const r of attemptBuckets) {
+    hostSettled[r.b] += r.settled;
+    hostTerminal[r.b] += r.terminal;
+    hostFriction[r.b] += r.friction;
+    hostExecUnits[r.b] += r.total;
+    if (r.appId) {
+      const a = ensureApp(r.appId);
+      a.outcomes[r.b] += r.converged;
+      a.outcomeExposure[r.b] += r.total;
+      a.nonConverged[r.b] += r.nonConverged;
+      a.finishedAttempts[r.b] += r.finishedNonRunning;
+      a.totalAttempts[r.b] += r.total;
+    }
+  }
+
+  for (const r of wfBuckets) {
+    hostFriction[r.b] += r.errors;
+    hostExecUnits[r.b] += r.total;
+    if (r.appId) {
+      const a = ensureApp(r.appId);
+      a.wfDone[r.b] += r.done;
+      a.wfTotal[r.b] += r.total;
+    }
+  }
+
+  for (const r of usageRows) {
+    const b = bucketOf(r.ts);
+    if (r.isComplete && r.exposure > 0) {
+      hostCacheRead[b] += r.cacheRead;
+      hostCacheExp[b] += r.exposure;
+    }
+    if (typeof r.prepMs === "number" && Number.isFinite(r.prepMs) && r.prepMs >= 0) {
+      const s = r.prepMs / 1000;
+      hostPrepByBucket[b]!.push(s);
+      allHostPrep.push(s);
+    }
+    if (
+      typeof r.promptBytes === "number" &&
+      r.promptBytes > 0 &&
+      typeof r.taskBytes === "number" &&
+      r.taskBytes >= 0
+    ) {
+      hostPromptTaxBytes[b] += Math.max(0, r.promptBytes - r.taskBytes);
+      hostPromptTotalBytes[b] += r.promptBytes;
+    }
+    if (r.appId && typeof r.pricedUsd === "number" && Number.isFinite(r.pricedUsd)) {
+      const a = ensureApp(r.appId);
+      a.pricedUsd[b] += r.pricedUsd;
+      a.pricedCount[b] += 1;
+    }
+  }
+
+  for (const r of closedReqBuckets) {
+    const a = ensureApp(r.appId);
+    a.outcomes[r.b] += r.closed;
+    a.outcomeExposure[r.b] += r.closed;
+  }
+
+  for (const r of humanSteerBuckets) {
+    const a = ensureApp(r.appId);
+    a.humanTouches[r.b] += r.touches;
+  }
+
+  // Host Prep p95 trend.
+  const prepPoints: TrendPoint[] = bucketStarts.map((t, i) => ({
+    t,
+    v: p95Sorted(hostPrepByBucket[i]!),
+    n: hostPrepByBucket[i]!.length,
+  }));
+  const mid = Math.floor(TREND_BUCKETS / 2);
+  const firstPrep = p95Sorted(hostPrepByBucket.slice(0, mid).flat());
+  const secondPrep = p95Sorted(hostPrepByBucket.slice(mid).flat());
+  const prepTrend: TrendSeries = {
+    metricId: "host.prep_p95_seconds",
+    label: "Prep latency p95",
+    unit: "seconds",
+    goodDirection: "down",
+    current: p95Sorted(allHostPrep),
+    sampleSize: allHostPrep.length,
+    delta: firstPrep !== null && secondPrep !== null ? roundMetric(secondPrep - firstPrep) : null,
+    points: prepPoints,
+  };
+
+  // Host Disk usage trend (from retained snapshots, with live probe in latest bucket if no snapshots yet).
+  const diskLatestByBucket: Array<number | null> = Array.from({ length: TREND_BUCKETS }, () => null);
+  const diskCountByBucket = zeros();
+  for (const snap of diskSnapshots) {
+    const b = bucketOf(snap.ts);
+    diskLatestByBucket[b] = roundMetric(snap.value);
+    diskCountByBucket[b] += 1;
+  }
+  const currentDiskRatio = envProbes.disk ? roundMetric(envProbes.disk.usedPercent / 100) : null;
+  if (currentDiskRatio !== null && diskLatestByBucket[TREND_BUCKETS - 1] === null) {
+    diskLatestByBucket[TREND_BUCKETS - 1] = currentDiskRatio;
+    diskCountByBucket[TREND_BUCKETS - 1] = 1;
+  }
+  const diskPoints: TrendPoint[] = bucketStarts.map((t, i) => ({
+    t,
+    v: diskLatestByBucket[i]!,
+    n: diskCountByBucket[i]!,
+  }));
+
+  const totalPromptBytes = hostPromptTotalBytes.reduce((s, x) => s + x, 0);
+  const promptTaxRatio =
+    totalPromptBytes > 0 ? roundMetric(hostPromptTaxBytes.reduce((s, x) => s + x, 0) / totalPromptBytes) : null;
+
+  const hostTrends = {
+    settlementIntegrity: buildRatioTrend({
+      metricId: "host.settlement_integrity_ratio",
+      label: "Settlement integrity",
+      unit: "ratio",
+      goodDirection: "up",
+      bucketStarts,
+      numerators: hostSettled,
+      denominators: hostTerminal,
+      extraDenominator: unresolvedRecoveryCount,
+    }),
+    prepLatencyP95: prepTrend,
+    cacheHitRatio: buildRatioTrend({
+      metricId: "host.cache_hit_ratio",
+      label: "Prompt cache hit",
+      unit: "ratio",
+      goodDirection: "up",
+      bucketStarts,
+      numerators: hostCacheRead,
+      denominators: hostCacheExp,
+    }),
+    harnessBurdenRatio: buildRatioTrend({
+      metricId: "host.harness_burden_ratio",
+      label: "Harness burden / tax",
+      unit: "ratio",
+      goodDirection: "down",
+      bucketStarts,
+      numerators: hostFriction,
+      denominators: hostExecUnits,
+      extraNumerator: unresolvedRecoveryCount,
+      extraDenominator: unresolvedRecoveryCount,
+    }),
+    diskUsedRatio: {
+      metricId: "host.disk_used_ratio",
+      label: "Disk usage",
+      unit: "ratio" as const,
+      goodDirection: "down" as const,
+      current: currentDiskRatio,
+      sampleSize: diskCountByBucket.reduce((s, x) => s + x, 0),
+      delta: null,
+      points: diskPoints,
+    },
+    promptTaxRatio,
+  };
+
+  const appTrends = new Map<
+    string,
+    {
+      verifiedOutcomes: TrendSeries;
+      costPerOutcomeUsd: TrendSeries;
+      spinRatio: TrendSeries;
+      workflowOffloadRatio: TrendSeries;
+      autonomyRatio: TrendSeries;
+    }
+  >();
+
+  for (const appId of appIds) {
+    const a = ensureApp(appId);
+    const totalPriced = a.pricedCount.reduce((s, x) => s + x, 0);
+    // Cost per outcome only has valid exposure in buckets/windows where pricing exists AND outcomes > 0.
+    const costNums = a.pricedUsd.map((usd, i) => (a.pricedCount[i]! > 0 && a.outcomes[i]! > 0 ? usd : 0));
+    const costDens = a.outcomes.map((outc, i) => (a.pricedCount[i]! > 0 && outc > 0 ? outc : 0));
+    const costSeries = buildRatioTrend({
+      metricId: `${appId}.cost_per_outcome_usd_7d`,
+      label: "Cost / outcome",
+      unit: "usd",
+      goodDirection: "down",
+      bucketStarts,
+      numerators: costNums,
+      denominators: costDens,
+    });
+    // Whole-window cost/outcome uses whole-window SUM(priced USD) / SUM(verified outcomes) when priced runs exist.
+    const windowOutcomes = a.outcomes.reduce((s, x) => s + x, 0);
+    const windowUsd = a.pricedUsd.reduce((s, x) => s + x, 0);
+    costSeries.current = totalPriced > 0 && windowOutcomes > 0 ? roundMetric(windowUsd / windowOutcomes) : null;
+    costSeries.sampleSize = totalPriced > 0 ? windowOutcomes : 0;
+
+    appTrends.set(appId, {
+      verifiedOutcomes: buildCountTrend({
+        metricId: `${appId}.verified_outcomes_24h`,
+        label: "Verified outcomes",
+        goodDirection: "up",
+        bucketStarts,
+        counts: a.outcomes,
+        exposures: a.outcomeExposure,
+      }),
+      costPerOutcomeUsd: costSeries,
+      spinRatio: buildRatioTrend({
+        metricId: `${appId}.spin_ratio_24h`,
+        label: "Spin / cycling ratio",
+        unit: "ratio",
+        goodDirection: "down",
+        bucketStarts,
+        numerators: a.nonConverged,
+        denominators: a.finishedAttempts,
+      }),
+      workflowOffloadRatio: buildRatioTrend({
+        metricId: `${appId}.workflow_offload_ratio_24h`,
+        label: "Workflow offload",
+        unit: "ratio",
+        goodDirection: "up",
+        bucketStarts,
+        numerators: a.wfDone,
+        denominators: a.wfTotal.map((w, i) => w + (a.totalAttempts[i] ?? 0)),
+      }),
+      autonomyRatio: buildRatioTrend({
+        metricId: `${appId}.autonomy_ratio_7d`,
+        label: "Autonomy yield",
+        unit: "ratio",
+        goodDirection: "up",
+        bucketStarts,
+        numerators: a.outcomes,
+        denominators: a.outcomes.map((o, i) => o + (a.humanTouches[i] ?? 0)),
+      }),
+    });
+  }
+
+  return { hostTrends, appTrends };
 }
 
 export function observabilitySummaryQuery(params: URLSearchParams, now = Date.now()) {
@@ -1161,6 +1678,15 @@ export function readObservabilitySummary(
     const workflowsByApp = new Map(appWorkflowRows.map((r) => [r.appId, r]));
     const usageByApp = new Map(appUsageRows.map((r) => [r.appId, r]));
 
+    const { hostTrends, appTrends } = buildWindowTrends(
+      db,
+      start,
+      end,
+      allAppIds,
+      envProbes,
+      recoveryRow.unresolvedCount,
+    );
+
     const selectedAppIds = filterAppId ? allAppIds.filter((id) => id === filterAppId) : allAppIds;
 
     const apps = selectedAppIds.map((appId) => {
@@ -1252,6 +1778,7 @@ export function readObservabilitySummary(
           staleOrMissing: metricSummary.staleOrMissing,
           catalogTruncated: observations.truncated,
         },
+        trends: appTrends.get(appId) ?? null,
         scorecard: summarizeAppScorecard(appScorecardFactsByApp.get(appId) ?? []),
       };
     });
@@ -1300,6 +1827,7 @@ export function readObservabilitySummary(
         skippedCheckRatePerMin: metricValue("task.skipped-check-rate"),
         metricQueryWorstMs: metricValue("metric.source-query-worst-ms"),
       },
+      trends: hostTrends,
       scorecard: summarizeHostScorecard(hostScorecardFacts),
     };
 
