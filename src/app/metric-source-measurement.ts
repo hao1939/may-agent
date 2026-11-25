@@ -18,9 +18,9 @@ import {
   buildAppEvolutionMetrics,
 } from "./adapters/reporting/evolution-metrics.js";
 import {
-  discoverInstalledAppIds,
   probeAzureCliAuthHeadroom,
   probeDiskHeadroom,
+  resolveAppCatalog,
   runBoundedDiskAutoHygiene,
 } from "./adapters/reporting/observability-summary.js";
 import { readTaskChecks, resetTaskChecks } from "./core/tasks/task-check-observations.js";
@@ -430,6 +430,19 @@ export function attachMetricSourceMeasurement(options: {
     for (const hostMetric of HOST_HARNESS_METRICS) {
       if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(hostMetric.id)) {
         metricService.define(hostMetric);
+      } else {
+        db.run(
+          `UPDATE metrics
+             SET source = ?, source_query = ?, measure_interval = ?, description = ?
+           WHERE id = ?`,
+          [
+            hostMetric.source ?? null,
+            hostMetric.sourceQuery ?? null,
+            hostMetric.measureInterval ?? null,
+            hostMetric.description ?? null,
+            hostMetric.id,
+          ],
+        );
       }
     }
     const projectsRoot =
@@ -437,10 +450,25 @@ export function attachMetricSourceMeasurement(options: {
       (options.persistDir.endsWith("/.state") || options.persistDir.endsWith("\\.state")
         ? join(options.persistDir, "..", "projects")
         : join(options.persistDir, "projects"));
-    for (const appId of discoverInstalledAppIds(projectsRoot)) {
-      for (const appMetric of buildAppEvolutionMetrics(appId)) {
+    const catalog = resolveAppCatalog({ projectsRoot });
+    for (const appId of catalog.installedIds) {
+      const ownerAgent = catalog.ownerByAppId.get(appId) ?? appId;
+      for (const appMetric of buildAppEvolutionMetrics(appId, ownerAgent)) {
         if (!db.prepare("SELECT id FROM metrics WHERE id = ?").get(appMetric.id)) {
           metricService.define(appMetric);
+        } else {
+          db.run(
+            `UPDATE metrics
+               SET source = ?, source_query = ?, measure_interval = ?, description = ?
+             WHERE id = ?`,
+            [
+              appMetric.source ?? null,
+              appMetric.sourceQuery ?? null,
+              appMetric.measureInterval ?? null,
+              appMetric.description ?? null,
+              appMetric.id,
+            ],
+          );
         }
       }
     }

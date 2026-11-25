@@ -3,6 +3,7 @@ import type { MetricDefinition } from "../../../lib/metrics.js";
 export const EVOLUTION_MEASURE_INTERVAL_MS = 900_000; // 15 minutes
 const DAY_MS = 86_400_000;
 const WEEK_MS = 7 * DAY_MS;
+const NOW_SQL = `CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER)`;
 
 export const HOST_DISK_USED_METRIC_ID = "host.disk_used_ratio";
 export const HOST_AUTH_REMAINING_METRIC_ID = "host.auth_remaining_seconds";
@@ -38,19 +39,18 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     source: "Cleanly settled Task attempts vs. terminal attempts + unresolved input recovery boundaries (24h)",
     description:
       "Ratio [0..1] of cleanly settled Task attempts over all terminal (completed, failed, interrupted) attempts plus unresolved input recovery boundaries in the rolling 24h window. Empty exposure (0/0) skips quietly rather than recording 0 or 1.",
-    sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-      att AS (
+    sourceQuery: `WITH att AS (
         SELECT
           COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
           COUNT(CASE WHEN state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal
-        FROM app_task_attempts, clock
-        WHERE started_at >= clock.cut - ${DAY_MS} AND started_at < clock.cut
+        FROM app_task_attempts
+        WHERE started_at >= ${NOW_SQL} - ${DAY_MS} AND started_at < ${NOW_SQL}
       ),
       rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
         CAST(att.settled AS REAL) / NULLIF(att.terminal + rec.unresolved, 0) AS value,
         att.terminal + rec.unresolved AS sampleSize,
-        (SELECT cut FROM clock) AS measuredAt,
+        ${NOW_SQL} AS measuredAt,
         json_object('settledAttempts', att.settled, 'terminalAttempts', att.terminal, 'unresolvedRecovery', rec.unresolved) AS note
       FROM att, rec`,
   },
@@ -65,11 +65,10 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     source: "p95 preparation.durationMs / 1000 across execution_usage invocations (24h)",
     description:
       "95th-percentile Host prompt/tool preparation latency in seconds across recorded invocations in the rolling 24h window.",
-    sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-      samples AS (
+    sourceQuery: `WITH samples AS (
         SELECT CAST(json_extract(data, '$.preparation.durationMs') AS REAL) / 1000.0 AS prep_s
-        FROM execution_usage, clock
-        WHERE started_at >= clock.cut - ${DAY_MS} AND started_at < clock.cut
+        FROM execution_usage
+        WHERE started_at >= ${NOW_SQL} - ${DAY_MS} AND started_at < ${NOW_SQL}
           AND json_type(data, '$.preparation.durationMs') IN ('integer', 'real')
           AND json_extract(data, '$.preparation.durationMs') >= 0
       ),
@@ -81,7 +80,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
       SELECT
         (SELECT prep_s FROM ordered, counted WHERE counted.n > 0 AND rn = MAX(1, MIN(counted.n, CAST(counted.n * 0.95 + 0.999999 AS INTEGER))) LIMIT 1) AS value,
         counted.n AS sampleSize,
-        (SELECT cut FROM clock) AS measuredAt
+        ${NOW_SQL} AS measuredAt
       FROM counted`,
   },
   {
@@ -95,14 +94,13 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     source: "SUM(cacheRead) / SUM(input + cacheRead + cacheWrite) across measured invocations (24h)",
     description:
       "Prompt-cache read token share [0..1] across complete execution_usage records in the rolling 24h window. Drops indicate wait-induced cache expiry or cold context churn.",
-    sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-      u AS (
+    sourceQuery: `WITH u AS (
         SELECT
           COUNT(*) AS n,
           SUM(COALESCE(json_extract(data, '$.totals.cacheRead'), 0)) AS cache_read,
           SUM(COALESCE(json_extract(data, '$.totals.input'), 0) + COALESCE(json_extract(data, '$.totals.cacheRead'), 0) + COALESCE(json_extract(data, '$.totals.cacheWrite'), 0)) AS exposure
-        FROM execution_usage, clock
-        WHERE started_at >= clock.cut - ${DAY_MS} AND started_at < clock.cut
+        FROM execution_usage
+        WHERE started_at >= ${NOW_SQL} - ${DAY_MS} AND started_at < ${NOW_SQL}
           AND outcome IS NOT NULL
           AND json_extract(data, '$.totals.replies') > 0
           AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')
@@ -110,7 +108,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
       SELECT
         CASE WHEN u.exposure > 0 THEN CAST(u.cache_read AS REAL) / u.exposure ELSE NULL END AS value,
         CASE WHEN u.exposure > 0 THEN u.n ELSE 0 END AS sampleSize,
-        (SELECT cut FROM clock) AS measuredAt
+        ${NOW_SQL} AS measuredAt
       FROM u`,
   },
   {
@@ -124,26 +122,25 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
     source: "Mechanical attempt failures/interrupts + workflow errors + unresolved recoveries over total runs (24h)",
     description:
       "Fraction [0..1] of Host execution units experiencing harness-level friction (failed/interrupted attempts, top-level workflow errors, or unresolved input recovery boundaries) in the rolling 24h window.",
-    sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-      att AS (
+    sourceQuery: `WITH att AS (
         SELECT
           COUNT(CASE WHEN state IN ('failed', 'interrupted') THEN 1 END) AS friction,
           COUNT(*) AS total
-        FROM app_task_attempts, clock
-        WHERE started_at >= clock.cut - ${DAY_MS} AND started_at < clock.cut
+        FROM app_task_attempts
+        WHERE started_at >= ${NOW_SQL} - ${DAY_MS} AND started_at < ${NOW_SQL}
       ),
       wf AS (
         SELECT
           COUNT(CASE WHEN status = 'error' THEN 1 END) AS errs,
           COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS total
-        FROM workflow_runs, clock
-        WHERE parentWorkflowRunId IS NULL AND endedAt >= clock.cut - ${DAY_MS} AND endedAt < clock.cut
+        FROM workflow_runs
+        WHERE parentWorkflowRunId IS NULL AND endedAt >= ${NOW_SQL} - ${DAY_MS} AND endedAt < ${NOW_SQL}
       ),
       rec AS (${UNRESOLVED_RECOVERY_SQL})
       SELECT
         CAST(att.friction + wf.errs + rec.unresolved AS REAL) / NULLIF(att.total + wf.total + rec.unresolved, 0) AS value,
         att.total + wf.total + rec.unresolved AS sampleSize,
-        (SELECT cut FROM clock) AS measuredAt,
+        ${NOW_SQL} AS measuredAt,
         json_object('attemptFriction', att.friction, 'workflowErrors', wf.errs, 'unresolvedRecovery', rec.unresolved) AS note
       FROM att, wf, rec`,
   },
@@ -199,6 +196,10 @@ function escapeSqlLiteral(value: string): string {
 export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): MetricDefinition[] {
   const sqlApp = escapeSqlLiteral(appId);
   const attemptTimeExpr = `COALESCE(CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), started_at)`;
+  // Bound `started_at` with 7d slack so SQLite uses `idx_app_task_attempts_started (started_at, app_id)`
+  // instead of scanning every historical `attempt_json` row for high-volume Apps (e.g., 14k+ rows on `may`).
+  const startedBound24h = `started_at >= ${NOW_SQL} - ${DAY_MS + WEEK_MS} AND started_at < ${NOW_SQL}`;
+  const startedBound7d = `started_at >= ${NOW_SQL} - ${2 * WEEK_MS} AND started_at < ${NOW_SQL}`;
 
   return [
     {
@@ -213,23 +214,22 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
       source: "Converged Task milestones + closed user Requests in rolling 24h",
       description:
         "Count of settled domain outcomes (accepted converged Task milestones plus closed user Conversation Requests) in the rolling 24h window.",
-      sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-        att AS (
+      sourceQuery: `WITH att AS (
           SELECT
             COUNT(CASE WHEN accepted_result_state = 'converged' THEN 1 END) AS conv,
             COUNT(*) AS total
-          FROM app_task_attempts, clock
-          WHERE app_id = ${sqlApp} AND ${attemptTimeExpr} >= clock.cut - ${DAY_MS} AND ${attemptTimeExpr} < clock.cut
+          FROM app_task_attempts
+          WHERE +app_id = ${sqlApp} AND ${startedBound24h} AND ${attemptTimeExpr} >= ${NOW_SQL} - ${DAY_MS} AND ${attemptTimeExpr} < ${NOW_SQL}
         ),
         req AS (
           SELECT COUNT(*) AS closed
-          FROM conversation_requests, clock
-          WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= clock.cut - ${DAY_MS} AND updated_at < clock.cut
+          FROM conversation_requests
+          WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= ${NOW_SQL} - ${DAY_MS} AND updated_at < ${NOW_SQL}
         )
         SELECT
           att.conv + req.closed AS value,
           att.total + req.closed AS sampleSize,
-          (SELECT cut FROM clock) AS measuredAt
+          ${NOW_SQL} AS measuredAt
         FROM att, req`,
     },
     {
@@ -244,14 +244,13 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
       source: "Priced execution_usage USD / verified outcomes in rolling 7d (unknown != $0)",
       description:
         "Price-weighted USD per verified outcome over the rolling 7d window. Unpriced executors (e.g. native CLI without token pricing) or zero-outcome windows emit no_exposure rather than $0.",
-      sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-        u AS (
+      sourceQuery: `WITH u AS (
           SELECT
             COUNT(*) AS priced_n,
             SUM(COALESCE(json_extract(data, '$.totals.estimatedCost'), 0)) AS usd
-          FROM execution_usage, clock
-          WHERE app_id = ${sqlApp}
-            AND started_at >= clock.cut - ${WEEK_MS} AND started_at < clock.cut
+          FROM execution_usage
+          WHERE +app_id = ${sqlApp}
+            AND started_at >= ${NOW_SQL} - ${WEEK_MS} AND started_at < ${NOW_SQL}
             AND outcome IS NOT NULL
             AND json_extract(data, '$.totals.replies') > 0
             AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')
@@ -259,13 +258,13 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
         ),
         outc AS (
           SELECT
-            (SELECT COUNT(*) FROM app_task_attempts, clock WHERE app_id = ${sqlApp} AND accepted_result_state = 'converged' AND ${attemptTimeExpr} >= clock.cut - ${WEEK_MS} AND ${attemptTimeExpr} < clock.cut) +
-            (SELECT COUNT(*) FROM conversation_requests, clock WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= clock.cut - ${WEEK_MS} AND updated_at < clock.cut) AS n
+            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND accepted_result_state = 'converged' AND ${attemptTimeExpr} >= ${NOW_SQL} - ${WEEK_MS} AND ${attemptTimeExpr} < ${NOW_SQL}) +
+            (SELECT COUNT(*) FROM conversation_requests WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= ${NOW_SQL} - ${WEEK_MS} AND updated_at < ${NOW_SQL}) AS n
         )
         SELECT
           CASE WHEN u.priced_n > 0 AND outc.n > 0 THEN CAST(u.usd AS REAL) / outc.n ELSE NULL END AS value,
           CASE WHEN u.priced_n > 0 AND outc.n > 0 THEN outc.n ELSE 0 END AS sampleSize,
-          (SELECT cut FROM clock) AS measuredAt
+          ${NOW_SQL} AS measuredAt
         FROM u, outc`,
     },
     {
@@ -280,20 +279,20 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
       source: "Non-converging finished attempts / total finished attempts (24h)",
       description:
         "Fraction [0..1] of finished Task attempts in the rolling 24h window that did not converge (waiting, incomplete, failed, or interrupted). Lower means more direct execution paths.",
-      sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-        att AS (
+      sourceQuery: `WITH att AS (
           SELECT
             COUNT(CASE WHEN COALESCE(accepted_result_state, '') != 'converged' THEN 1 END) AS non_conv,
             COUNT(*) AS total
-          FROM app_task_attempts, clock
-          WHERE app_id = ${sqlApp}
+          FROM app_task_attempts
+          WHERE +app_id = ${sqlApp}
+            AND ${startedBound24h}
             AND state != 'running'
-            AND ${attemptTimeExpr} >= clock.cut - ${DAY_MS} AND ${attemptTimeExpr} < clock.cut
+            AND ${attemptTimeExpr} >= ${NOW_SQL} - ${DAY_MS} AND ${attemptTimeExpr} < ${NOW_SQL}
         )
         SELECT
           CAST(att.non_conv AS REAL) / NULLIF(att.total, 0) AS value,
           att.total AS sampleSize,
-          (SELECT cut FROM clock) AS measuredAt
+          ${NOW_SQL} AS measuredAt
         FROM att`,
     },
     {
@@ -308,38 +307,48 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
       source: "Successful top-level workflow runs / (workflow runs + agent/task runs) (24h)",
       description:
         "Share [0..1] of execution volume handled by successful deterministic top-level workflows in the rolling 24h window.",
-      sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-        wf AS (
+      sourceQuery: `WITH wf AS (
           SELECT
             COUNT(CASE WHEN status = 'done' THEN 1 END) AS done_wf,
             COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS total_wf
-          FROM workflow_runs, clock
-          WHERE parentWorkflowRunId IS NULL AND app_id = ${sqlApp}
-            AND endedAt >= clock.cut - ${DAY_MS} AND endedAt < clock.cut
+          FROM workflow_runs
+          WHERE parentWorkflowRunId IS NULL AND +app_id = ${sqlApp}
+            AND endedAt >= ${NOW_SQL} - ${DAY_MS} AND endedAt < ${NOW_SQL}
         ),
         usage_agent AS (
           SELECT COUNT(*) AS n
-          FROM execution_usage, clock
-          WHERE app_id = ${sqlApp}
+          FROM execution_usage
+          WHERE +app_id = ${sqlApp}
             AND workflow_run_id IS NULL
-            AND started_at >= clock.cut - ${DAY_MS} AND started_at < clock.cut
+            AND started_at >= ${NOW_SQL} - ${DAY_MS} AND started_at < ${NOW_SQL}
+        ),
+        usage_attempts AS MATERIALIZED (
+          SELECT DISTINCT attempt_id
+          FROM execution_usage
+          WHERE +app_id = ${sqlApp}
+            AND started_at >= ${NOW_SQL} - ${DAY_MS + WEEK_MS} AND started_at < ${NOW_SQL}
+            AND attempt_id IS NOT NULL AND attempt_id != ''
         ),
         att AS (
           SELECT COUNT(*) AS total_att
-          FROM app_task_attempts a, clock
-          WHERE a.app_id = ${sqlApp}
+          FROM app_task_attempts a
+          LEFT JOIN usage_attempts ua ON ua.attempt_id = a.attempt_id
+          WHERE +a.app_id = ${sqlApp}
+            AND a.started_at >= ${NOW_SQL} - ${DAY_MS + WEEK_MS} AND a.started_at < ${NOW_SQL}
+            AND ua.attempt_id IS NULL
             AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
-            AND ${attemptTimeExpr} >= clock.cut - ${DAY_MS} AND ${attemptTimeExpr} < clock.cut
+            AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) >= ${NOW_SQL} - ${DAY_MS}
+            AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) < ${NOW_SQL}
             AND NOT EXISTS (
               SELECT 1 FROM execution_usage u
-              WHERE u.app_id = a.app_id
-                AND (u.attempt_id = a.attempt_id OR u.session_id = json_extract(a.attempt_json, '$.sessionId'))
+              WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+                AND u.app_id = a.app_id
             )
         )
         SELECT
           CAST(wf.done_wf AS REAL) / NULLIF(wf.total_wf + usage_agent.n + att.total_att, 0) AS value,
           wf.total_wf + usage_agent.n + att.total_att AS sampleSize,
-          (SELECT cut FROM clock) AS measuredAt
+          ${NOW_SQL} AS measuredAt
         FROM wf, usage_agent, att`,
     },
     {
@@ -354,21 +363,20 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
       source: "Verified outcomes / (verified outcomes + human inbox inputs) in rolling 7d",
       description:
         "Bounded ratio [0..1] of verified outcomes to (verified outcomes + human inputs) over 7d. 1.0 indicates 100% autonomous delivery with zero human touches; 0/0 emits no_exposure.",
-      sourceQuery: `WITH clock AS (SELECT CAST(ROUND(unixepoch('subsec') * 1000) AS INTEGER) AS cut),
-        outc AS (
+      sourceQuery: `WITH outc AS (
           SELECT
-            (SELECT COUNT(*) FROM app_task_attempts, clock WHERE app_id = ${sqlApp} AND accepted_result_state = 'converged' AND ${attemptTimeExpr} >= clock.cut - ${WEEK_MS} AND ${attemptTimeExpr} < clock.cut) +
-            (SELECT COUNT(*) FROM conversation_requests, clock WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= clock.cut - ${WEEK_MS} AND updated_at < clock.cut) AS n
+            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND accepted_result_state = 'converged' AND ${attemptTimeExpr} >= ${NOW_SQL} - ${WEEK_MS} AND ${attemptTimeExpr} < ${NOW_SQL}) +
+            (SELECT COUNT(*) FROM conversation_requests WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= ${NOW_SQL} - ${WEEK_MS} AND updated_at < ${NOW_SQL}) AS n
         ),
         hum AS (
           SELECT COUNT(*) AS touches
-          FROM app_inbox_items, clock
-          WHERE app_id = ${sqlApp} AND source_kind = 'human' AND created_at >= clock.cut - ${WEEK_MS} AND created_at < clock.cut
+          FROM app_inbox_items
+          WHERE app_id = ${sqlApp} AND source_kind = 'human' AND created_at >= ${NOW_SQL} - ${WEEK_MS} AND created_at < ${NOW_SQL}
         )
         SELECT
           CAST(outc.n AS REAL) / NULLIF(outc.n + hum.touches, 0) AS value,
           outc.n + hum.touches AS sampleSize,
-          (SELECT cut FROM clock) AS measuredAt
+          ${NOW_SQL} AS measuredAt
         FROM outc, hum`,
     },
   ];

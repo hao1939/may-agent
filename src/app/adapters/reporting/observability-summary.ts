@@ -54,14 +54,57 @@ function normalizeAppKey(raw: string | null | undefined): string {
     .replace(/\.app$/i, "");
 }
 
+function extractAppDeclarationBlock(source: string): string {
+  const defineIdx = source.search(/\bdefineApp\s*\(\s*\{/);
+  const exportIdx = source.search(/\bexport\s+default\s*\{/);
+  const startIdx = defineIdx >= 0 ? defineIdx : exportIdx;
+  if (startIdx < 0) return "";
+  const openBrace = source.indexOf("{", startIdx);
+  if (openBrace < 0) return "";
+  // Extract only top-level properties of the App literal (depth === 1) so nested
+  // subscription/task/workflow `id:` fields can never masquerade as the App ID.
+  let depth = 0;
+  let topLevel = "";
+  let inSingle = false;
+  let inDouble = false;
+  let inTemplate = false;
+  for (let i = openBrace; i < source.length; i++) {
+    const ch = source[i]!;
+    const prev = i > 0 ? source[i - 1] : "";
+    if (prev !== "\\") {
+      if (!inDouble && !inTemplate && ch === "'") inSingle = !inSingle;
+      else if (!inSingle && !inTemplate && ch === '"') inDouble = !inDouble;
+      else if (!inSingle && !inDouble && ch === "`") inTemplate = !inTemplate;
+    }
+    if (inSingle || inDouble || inTemplate) {
+      if (depth === 1) topLevel += ch;
+      continue;
+    }
+    if (ch === "{" || ch === "[") {
+      depth += 1;
+      if (depth === 1) continue;
+      topLevel += " ";
+      continue;
+    }
+    if (ch === "}" || ch === "]") {
+      depth -= 1;
+      if (depth <= 0) break;
+      continue;
+    }
+    if (depth === 1) topLevel += ch;
+  }
+  return topLevel;
+}
+
 function parseAppModuleMetadata(dir: string, fallbackId: string): AppCatalogEntry | null {
   for (const file of ["app.ts", "app.js"]) {
     const candidate = join(dir, file);
     if (!existsSync(candidate)) continue;
     try {
       const source = readFileSync(candidate, "utf8");
-      const idMatch = source.match(/\bid\s*:\s*["']([^"']+)["']/);
-      const ownerMatch = source.match(/\b(?:agent|owner)\s*:\s*["']([^"']+)["']/);
+      const block = extractAppDeclarationBlock(source);
+      const idMatch = block.match(/(?:^|[,;\n])\s*id\s*:\s*["']([^"']+)["']/);
+      const ownerMatch = block.match(/(?:^|[,;\n])\s*(?:agent|owner)\s*:\s*["']([^"']+)["']/);
       const id = idMatch?.[1]?.trim() || fallbackId;
       const owner = ownerMatch?.[1]?.trim() || id;
       return { id, owner };
@@ -822,35 +865,41 @@ function buildWindowTrends(
     return Math.min(TREND_BUCKETS - 1, Math.max(0, raw));
   };
 
-  const attemptTimeExpr = `COALESCE(
-    CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
-    started_at
-  )`;
-
   // 1. Attempt bucket facts (Host + per-App).
+  const lookbackStart = start - 7 * 86_400_000;
   const attemptBuckets = db
     .prepare(
-      `SELECT
-         app_id AS appId,
-         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((${attemptTimeExpr} - ?) / ? AS INTEGER))) AS b,
+      `WITH usage_attempts AS MATERIALIZED (
+         SELECT DISTINCT app_id, attempt_id
+         FROM execution_usage
+         WHERE started_at >= ? AND started_at < ?
+           AND attempt_id IS NOT NULL AND attempt_id != ''
+       )
+       SELECT
+         a.app_id AS appId,
+         MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) - ?) / ? AS INTEGER))) AS b,
          COUNT(*) AS total,
-         COUNT(CASE WHEN state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal,
-         COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
-         COUNT(CASE WHEN state IN ('failed', 'interrupted') THEN 1 END) AS friction,
-         COUNT(CASE WHEN state != 'running' THEN 1 END) AS finishedNonRunning,
-         COUNT(CASE WHEN accepted_result_state = 'converged' THEN 1 END) AS converged,
-         COUNT(CASE WHEN state != 'running' AND COALESCE(accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged,
-         COUNT(CASE WHEN COALESCE(json_extract(attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
+         COUNT(CASE WHEN a.state IN ('completed', 'failed', 'interrupted') THEN 1 END) AS terminal,
+         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL THEN 1 END) AS settled,
+         COUNT(CASE WHEN a.state IN ('failed', 'interrupted') THEN 1 END) AS friction,
+         COUNT(CASE WHEN a.state != 'running' THEN 1 END) AS finishedNonRunning,
+         COUNT(CASE WHEN a.accepted_result_state = 'converged' THEN 1 END) AS converged,
+         COUNT(CASE WHEN a.state != 'running' AND COALESCE(a.accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged,
+         COUNT(CASE WHEN ua.attempt_id IS NULL
+           AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
            AND NOT EXISTS (
              SELECT 1 FROM execution_usage u
-             WHERE u.app_id = app_task_attempts.app_id
-               AND (u.attempt_id = app_task_attempts.attempt_id OR u.session_id = json_extract(app_task_attempts.attempt_json, '$.sessionId'))
+             WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+               AND u.app_id = a.app_id
            ) THEN 1 END) AS disjointAgentAttempts
-       FROM app_task_attempts
-       WHERE ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?
-       GROUP BY app_id, b`,
+       FROM app_task_attempts a
+       LEFT JOIN usage_attempts ua ON ua.app_id = a.app_id AND ua.attempt_id = a.attempt_id
+       WHERE a.started_at >= ? AND a.started_at < ?
+         AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) >= ?
+         AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) < ?
+       GROUP BY a.app_id, b`,
     )
-    .all(start, bucketWidth, start, end) as Array<{
+    .all(lookbackStart, end, start, bucketWidth, lookbackStart, end, start, end) as Array<{
     appId: string;
     b: number;
     total: number;
@@ -1358,35 +1407,45 @@ function buildAppDrillDown(
 
   // Attribute Task attempts to the resolved owner retained on each attempt (`$.owner`),
   // counting only non-workflow attempts not already represented in execution_usage / sessions.
+  const lookbackStart = start - 7 * 86_400_000;
   const attemptAgentRows = db
     .prepare(
-      `SELECT
+      `WITH usage_attempts AS MATERIALIZED (
+         SELECT DISTINCT attempt_id
+         FROM execution_usage
+         WHERE started_at >= ? AND started_at < ?
+           AND app_id = ?
+           AND attempt_id IS NOT NULL AND attempt_id != ''
+       )
+       SELECT
          COALESCE(
            NULLIF(trim(json_extract(a.attempt_json, '$.owner')), ''),
            NULLIF(trim(json_extract(t.resource_json, '$.spec.agent')), ''),
            NULLIF(trim(json_extract(t.resource_json, '$.spec.owner')), '')
          ) AS agent,
-         COUNT(CASE WHEN NOT EXISTS (
+         COUNT(CASE WHEN ua.attempt_id IS NULL AND NOT EXISTS (
            SELECT 1 FROM execution_usage u
-           WHERE u.app_id = a.app_id
-             AND (u.attempt_id = a.attempt_id OR u.session_id = json_extract(a.attempt_json, '$.sessionId'))
+           WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+             AND u.app_id = a.app_id
          ) THEN 1 END) AS disjointUsageAttempts,
          COUNT(CASE WHEN NOT EXISTS (
            SELECT 1 FROM sessions s
-           WHERE s.sessionId = json_extract(a.attempt_json, '$.sessionId')
+           WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
          ) THEN 1 END) AS disjointSessionAttempts,
          COUNT(CASE WHEN a.state = 'failed' AND NOT EXISTS (
            SELECT 1 FROM sessions s
-           WHERE s.sessionId = json_extract(a.attempt_json, '$.sessionId') AND s.status = 'error'
+           WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '') AND s.status = 'error'
          ) THEN 1 END) AS disjointFailedAttempts
        FROM app_task_attempts a
        LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
+       LEFT JOIN usage_attempts ua ON ua.attempt_id = a.attempt_id
        WHERE a.app_id = ?
+         AND a.started_at >= ? AND a.started_at < ?
          AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
          AND ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?
        GROUP BY 1`,
     )
-    .all(appId, start, end) as Array<{
+    .all(lookbackStart, end, appId, appId, lookbackStart, end, start, end) as Array<{
     agent: string | null;
     disjointUsageAttempts: number;
     disjointSessionAttempts: number;
@@ -1884,28 +1943,35 @@ export function readObservabilitySummary(
       .all(start, end) as Array<{ appId: string; closedTasksWindow: number }>;
 
     // Per-App attempt outcomes in window (total attempts, converged milestones, failures).
-    const attemptTimeExpr = `COALESCE(
-      CAST(unixepoch(json_extract(attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER),
-      started_at
-    )`;
+    const attemptLookbackStart = start - 7 * 86_400_000;
     const appAttemptRows = db
       .prepare(
-        `SELECT
-           app_id AS appId,
+        `WITH usage_attempts AS MATERIALIZED (
+           SELECT DISTINCT app_id, attempt_id
+           FROM execution_usage
+           WHERE started_at >= ? AND started_at < ?
+             AND attempt_id IS NOT NULL AND attempt_id != ''
+         )
+         SELECT
+           a.app_id AS appId,
            COUNT(*) AS totalAttempts,
-           COUNT(CASE WHEN COALESCE(json_extract(attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
+           COUNT(CASE WHEN ua.attempt_id IS NULL
+             AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
              AND NOT EXISTS (
                SELECT 1 FROM execution_usage u
-               WHERE u.app_id = app_task_attempts.app_id
-                 AND (u.attempt_id = app_task_attempts.attempt_id OR u.session_id = json_extract(app_task_attempts.attempt_json, '$.sessionId'))
+               WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+                 AND u.app_id = a.app_id
              ) THEN 1 END) AS disjointAgentAttempts,
-           COUNT(CASE WHEN accepted_result_state = 'converged' THEN 1 END) AS convergedMilestones,
-           COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failedAttempts
-         FROM app_task_attempts
-         WHERE ${attemptTimeExpr} >= ? AND ${attemptTimeExpr} < ?
-         GROUP BY app_id`,
+           COUNT(CASE WHEN a.accepted_result_state = 'converged' THEN 1 END) AS convergedMilestones,
+           COUNT(CASE WHEN a.state = 'failed' THEN 1 END) AS failedAttempts
+         FROM app_task_attempts a
+         LEFT JOIN usage_attempts ua ON ua.app_id = a.app_id AND ua.attempt_id = a.attempt_id
+         WHERE a.started_at >= ? AND a.started_at < ?
+           AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) >= ?
+           AND COALESCE(CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER), a.started_at) < ?
+         GROUP BY a.app_id`,
       )
-      .all(start, end) as Array<{
+      .all(attemptLookbackStart, end, attemptLookbackStart, end, start, end) as Array<{
       appId: string;
       totalAttempts: number;
       disjointAgentAttempts: number;

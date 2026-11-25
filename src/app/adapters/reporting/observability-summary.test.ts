@@ -471,7 +471,18 @@ describe("top-down Host vs. Apps observability summary", () => {
 
   test("covers PR #627 regressions: catalog parity, disabled Apps, rubric validation, multi-App dedup, attempt owner, recovery stages, single lease, and workflow-only offload", () => {
     const metrics = createMetricService({ getDb: () => db, now: () => now });
-    // Disabled App on disk with retained active DB Task rows is excluded from active cards (R-10).
+    // Disabled App on disk with retained active DB Task rows is excluded from active cards (R-10),
+    // and nested subscription/task `id:` literals before `defineApp({...})` never masquerade as App IDs.
+    writeFileSync(
+      join(projectsRoot, "may.app", "app.ts"),
+      `const sub = { id: "evaluation-intake", agent: "sub-agent" };\nexport default defineApp({ subscriptions: [sub], id: "may", agent: "may" });\n`,
+    );
+    expect(resolveAppCatalog({ projectsRoot }).installedIds).toEqual([
+      "aks-rp-e2e",
+      "alex",
+      "may",
+      "scout-knowledge-lib",
+    ]);
     const disabledDir = join(projectsRoot, "retired-app.app");
     mkdirSync(disabledDir, { recursive: true });
     writeFileSync(join(disabledDir, "app.ts"), 'export default { id: "retired-app", agent: "retired-owner" };\n');
