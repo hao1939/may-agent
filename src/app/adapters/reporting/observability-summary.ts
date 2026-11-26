@@ -987,7 +987,7 @@ function buildWindowTrends(
   end: number,
   appIds: readonly string[],
   envProbes: EnvironmentProbes,
-  unresolvedRecoveryCount: number,
+  _unresolvedRecoveryCount = 0,
 ) {
   const span = Math.max(TREND_BUCKETS, end - start);
   const bucketWidth = span / TREND_BUCKETS;
@@ -1320,7 +1320,6 @@ function buildWindowTrends(
       bucketStarts,
       numerators: hostSettled,
       denominators: hostSettlementExposure,
-      extraDenominator: unresolvedRecoveryCount,
     }),
     prepLatencyP95: prepTrend,
     cacheHitRatio: buildRatioTrend({
@@ -1340,8 +1339,6 @@ function buildWindowTrends(
       bucketStarts,
       numerators: hostFriction,
       denominators: hostExecUnits,
-      extraNumerator: unresolvedRecoveryCount,
-      extraDenominator: unresolvedRecoveryCount,
     }),
     diskUsedRatio: {
       metricId: "host.disk_used_ratio",
