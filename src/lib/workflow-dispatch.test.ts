@@ -181,6 +181,17 @@ describe("root preparation shares the invocation bound", () => {
     return { root, opts, starts };
   }
 
+  async function preparationClock(root: string, elapsedMs: number) {
+    const url = pathToFileURL(join(root, "clock.mjs")).href;
+    writeFileSync(join(root, "clock.mjs"), `
+let current = ${Date.now()};
+export const now = () => current;
+export const consumePreparation = () => { current += ${elapsedMs}; };
+`);
+    const clock = await import(url) as { now(): number };
+    return { ...clock, url };
+  }
+
   // Compare real Host adapters with the portable adapter, not a copied loader.
   for (const adapter of ["direct", "runner", "standalone"] as const) {
     async function invoke(opts: RunWorkflowDirectOpts) {
@@ -336,18 +347,12 @@ export async function execute(ctx) {
       const { root, opts } = setup();
       const body = join(root, "body-start");
       const finished = join(root, "body-finished");
-      const clockUrl = pathToFileURL(join(root, "clock.mjs")).href;
-      writeFileSync(join(root, "clock.mjs"), `
-let current = ${Date.now()};
-export const now = () => current;
-export const consumePreparation = () => { current += 9900; };
-`);
-      const clock = await import(clockUrl) as { now(): number };
+      const clock = await preparationClock(root, 9900);
       writeFileSync(
         join(opts.workflowDir!, "root.ts"),
         `
 import { writeFileSync } from "node:fs";
-import { consumePreparation } from ${JSON.stringify(clockUrl)};
+import { consumePreparation } from ${JSON.stringify(clock.url)};
 consumePreparation();
 export const name = "slow-import";
 export const description = "Preparation and body each fit, their total does not";
@@ -452,9 +457,11 @@ export async function execute(ctx) {
         const { root, opts } = setup();
         const body = join(root, "body-start");
         const finished = join(root, "body-finished");
+        const clock = await preparationClock(root, exhaustedDuringImport ? 1150 : 700);
         writeFileSync(join(opts.workflowDir!, "root.ts"), `
 import { writeFileSync } from "node:fs";
-await new Promise(resolve => setTimeout(resolve, ${exhaustedDuringImport ? 1150 : 700}));
+import { consumePreparation } from ${JSON.stringify(clock.url)};
+consumePreparation();
 export const name = "slow-import";
 export const description = "Declaration includes preparation";
 export const executionTimeoutMs = 1000;
@@ -470,11 +477,16 @@ export async function execute(ctx) {
 }
 `);
         opts.executionTimeoutMs = 3000;
-        const result = await invoke(opts);
-        expect(result.type).toBe("error");
-        expect(result.error).toContain("timed out");
-        expect(existsSync(body)).toBe(!exhaustedDuringImport);
-        expect(existsSync(finished)).toBe(false);
+        const now = spyOn(Date, "now").mockImplementation(clock.now);
+        try {
+          const result = await invoke(opts);
+          expect(result.type).toBe("error");
+          expect(result.error).toContain("timed out");
+          expect(existsSync(body)).toBe(!exhaustedDuringImport);
+          expect(existsSync(finished)).toBe(false);
+        } finally {
+          now.mockRestore();
+        }
       });
     }
 
