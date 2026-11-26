@@ -35,10 +35,12 @@ describe("source-query metric measurement", () => {
   let bus: EventBus;
   let measurement: MetricPassRuntime;
   const originalAppRoot = process.env.APP_ROOT;
+  const originalProjectsRoot = process.env.PROJECTS_ROOT;
 
   beforeEach(() => {
     persistDir = mkdtempSync(join(tmpdir(), "may-metric-source-test-"));
     process.env.APP_ROOT = persistDir;
+    process.env.PROJECTS_ROOT = join(persistDir, "projects");
     bus = new EventBus();
     applyDbSchema(getDb(persistDir));
     attachEventPersistence({ bus, persistDir });
@@ -52,6 +54,8 @@ describe("source-query metric measurement", () => {
     rmSync(persistDir, { recursive: true, force: true });
     if (originalAppRoot === undefined) delete process.env.APP_ROOT;
     else process.env.APP_ROOT = originalAppRoot;
+    if (originalProjectsRoot === undefined) delete process.env.PROJECTS_ROOT;
+    else process.env.PROJECTS_ROOT = originalProjectsRoot;
   });
 
   it("retains actual query cost and plans quietly, including failed sources, and does not fabricate idle recovery", async () => {
@@ -236,6 +240,8 @@ describe("source-query metric measurement", () => {
   });
 
   it("registers metrics after a short competing startup writer without losing samples or calibration", async () => {
+    // Complete fixture bootstrap before introducing the competing writer.
+    await measurement.idle();
     const db = getDb(persistDir);
     db.run("UPDATE metrics SET threshold = 7 WHERE id = ?", [SUBSCRIBER_FAILED_COUNT_METRIC_ID]);
     createMetricService({ getDb: () => db }).record(SUBSCRIBER_FAILED_COUNT_METRIC_ID, 2);
@@ -275,7 +281,10 @@ describe("source-query metric measurement", () => {
         let signal = "";
         while (!signal.includes("locked\n")) {
           const { value, done } = await reader.read();
-          if (done) throw new Error("Lock holder exited before its readiness marker");
+          if (done) {
+            const error = await new Response(writer.stderr).text();
+            throw new Error(`Lock holder exited before its readiness marker (exit ${await writer.exited}): ${error}`);
+          }
           signal += decoder.decode(value, { stream: true });
         }
       } finally {

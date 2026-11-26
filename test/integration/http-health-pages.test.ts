@@ -845,9 +845,15 @@ describe("served workflow and metric health pages", () => {
         expect(requests.filter((path) => path.endsWith("/history"))).toHaveLength(0);
         const selected = await page.$eval(
           '#workflow-overview a[href*="outcome=error"]',
-          (el) => (el as HTMLAnchorElement).href,
+          (el) => {
+            // A background refresh can replace the rolling-window card between
+            // separate browser calls. Compare the URL of the anchor we click.
+            const anchor = el as HTMLAnchorElement;
+            const href = anchor.href;
+            anchor.click();
+            return href;
+          },
         );
-        await page.click('#workflow-overview a[href*="outcome=error"]');
         await page.waitForFunction(() =>
           document.querySelector("#metrics-workflows")?.textContent?.includes("Matching runs · 2"),
         );
