@@ -1607,6 +1607,13 @@ describe("May Console", () => {
 
     await waitFor(() => conversationReads === 1 && client !== null);
     client!.write(`${JSON.stringify({ type: "overflow", action: "reread" })}\n`);
+    // The following frame shares WebSocket FIFO with overflow. Observe its
+    // rendering before releasing HTTP; the reread itself waits for that HTTP.
+    client!.write(`${JSON.stringify({ type: "conversation.message.created", data: {
+      transient: true, metadata: { channel: "may-console" },
+      author: { kind: "system", id: "fixture" }, text: "overflow barrier observed",
+    } })}\n`);
+    await waitFor(() => output.includes("overflow barrier observed"));
     releaseFirstRead();
     await waitFor(() => conversationReads >= 2 && output.includes("fresh snapshot rendered"));
     expect(output).not.toContain("stale snapshot must not render");
