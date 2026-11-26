@@ -364,7 +364,7 @@ async function runClaimedTask(
     const result = report.handlerResult;
     const rejectResult = (
       summary: string,
-      diagnostics: Pick<TaskCapabilityRun, "handlerBlocked"> = {},
+      diagnostics: Pick<TaskCapabilityRun, "handlerBlocked" | "workspaceFinalizationFailed"> = {},
       facts = result.facts,
     ) =>
       finishUnsuccessfulAttempt({
@@ -557,10 +557,11 @@ async function runClaimedTask(
       if (stale) return stale.reconcileTaskIds;
       const finalized = await finalizeWorkspace("waiting");
       if (!finalized.ok) {
-        return await rejectResult(finalized.reason ?? "Task workspace finalization failed", { handlerBlocked: true }, [
-          ...result.facts,
-          taskWorkspace?.metadata.path ?? executionPaths.workspaceDir,
-        ]);
+        return await rejectResult(
+          finalized.reason ?? "Task workspace finalization failed",
+          { workspaceFinalizationFailed: true },
+          [...result.facts, taskWorkspace?.metadata.path ?? executionPaths.workspaceDir],
+        );
       }
 
       try {
@@ -742,6 +743,7 @@ async function runClaimedTask(
       run.unavailable ||
       run.handlerBlocked ||
       run.workspacePreparationFailed ||
+      run.workspaceFinalizationFailed ||
       result.resultRejected;
     const details = diagnostic
       ? {
@@ -756,7 +758,9 @@ async function runClaimedTask(
                 ? "HandlerExecutionFailed"
                 : run.workspacePreparationFailed
                   ? "WorkspacePreparationFailed"
-                  : "handler-blocked",
+                  : run.workspaceFinalizationFailed
+                    ? "WorkspaceFinalizationFailed"
+                    : "handler-blocked",
         }
       : unacceptedResult
         ? { reason: "HandlerResultSettlementFailed", unacceptedResult }

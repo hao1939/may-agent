@@ -1345,7 +1345,7 @@ describe("top-down Host vs. Apps observability summary", () => {
         terminalTaskAttemptsWindow: 5,
         hostFailedAttemptsWindow: 0,
         preemptedAttemptsWindow: 1,
-        failedTaskAttemptsWindow: 0,
+        failedTaskAttemptsWindow: 2,
       });
       expect(healthyHostSummary.host.trends.settlementIntegrity).toMatchObject({ current: 1, sampleSize: 1 });
       expect(healthyHostSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.2, sampleSize: 5 });
@@ -1384,10 +1384,52 @@ describe("top-down Host vs. Apps observability summary", () => {
         terminalTaskAttemptsWindow: 6,
         hostFailedAttemptsWindow: 1,
         preemptedAttemptsWindow: 1,
-        failedTaskAttemptsWindow: 1,
+        failedTaskAttemptsWindow: 3,
       });
       expect(degradedHostSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.5, sampleSize: 2 });
       expect(degradedHostSummary.host.trends.harnessBurdenRatio).toMatchObject({ current: 0.3333, sampleSize: 6 });
+
+      // 6. Repaired completed attempt carrying acceptedResult + running-without-current-attempt-requeued is counted once (mutually exclusive)
+      // in Host settlement integrity while preserving per-App accepted-result outcome counts, and WorkspaceFinalizationFailed counts as Host failure.
+      ins.run(
+        "alex",
+        "att-repaired-completed",
+        "t-repaired",
+        "completed",
+        liveNow - 25_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 15_000).toISOString(),
+          acceptedResult: { state: "converged" },
+          failureReason: "running-without-current-attempt-requeued",
+        }),
+      );
+      ins.run(
+        "alex",
+        "att-ws-finalize-err",
+        "t-ws-fin",
+        "failed",
+        liveNow - 22_000,
+        JSON.stringify({
+          finishedAt: new Date(liveNow - 12_000).toISOString(),
+          failureReason: "WorkspaceFinalizationFailed",
+        }),
+      );
+      // 1 clean settled + 3 Host failures (HandlerResultSettlementFailed + running-without-current-attempt-requeued + WorkspaceFinalizationFailed) = sampleSize 4, value 0.25!
+      expect(boundaryDb.prepare(settlementSql).get()).toMatchObject({ value: 0.25, sampleSize: 4 });
+      const repairedSummary = readObservabilitySummary(boundaryDb, {
+        query: { start: liveNow - 86_400_000, end: liveNow, appId: null },
+        projectsRoot: join(root, "projects"),
+        stateDir: root,
+        loadedApps: [
+          { id: "alex", owner: "alex" },
+          { id: "aks-rp-e2e", owner: "aks-explorer" },
+          { id: "may", owner: "may" },
+        ],
+        now: liveNow,
+      });
+      expect(repairedSummary.host.trends.settlementIntegrity).toMatchObject({ current: 0.25, sampleSize: 4 });
+      // App 'alex' still counts both converged accepted results (att-settled + att-repaired-completed = 2)!
+      expect(repairedSummary.apps.find((a) => a.appId === "alex")?.outcomes.convergedMilestonesWindow).toBe(2);
     } finally {
       boundaryDb.close();
     }

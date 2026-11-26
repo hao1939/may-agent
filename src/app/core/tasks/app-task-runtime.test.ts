@@ -10212,6 +10212,94 @@ describe("canonical App task runtime", () => {
     expect(JSON.stringify(persisted).split(largePayload).length - 1).toBe(1);
   });
 
+  it("persists WorkspaceFinalizationFailed when finalizing a waiting workspace fails", async () => {
+    const f = fixture();
+    const bus = eventBus();
+    let nextEventId = 1;
+    bus.setPersistenceSubscriber((event) => {
+      Object.defineProperty(event, EVENT_ROW_ID, { value: nextEventId++, configurable: true });
+    });
+    const wsMeta = {
+      kind: "task-worktree" as const,
+      path: f.appDir,
+      branch: "task/ws-finalize-fail",
+      baseRef: "main",
+      baseCommit: "0000000",
+      headCommit: "0000000",
+      disposition: "active" as const,
+    };
+    const def = defineApp({
+      ...definition(),
+      workspace: { kind: "git", localPath: ".", branch: "main" },
+    });
+    await installAppTaskRuntimes({
+      ...options(f, bus),
+      workspaces: {
+        async prepare() {
+          return { cwd: f.appDir, metadata: { ...wsMeta } };
+        },
+        async inspect() {
+          return { ok: true, headCommit: "0000000", dirty: false };
+        },
+        async finalize(_prepared, outcome) {
+          if (outcome === "waiting") throw new Error("synthetic waiting workspace finalization error");
+          return { ok: true, metadata: { ...wsMeta, disposition: "retained-for-recovery" } };
+        },
+      },
+      executors: {
+        waiter: async () => ({
+          state: "waiting",
+          summary: "Waiting for next check",
+          facts: [],
+          reviewAt: Date.now() + 60_000,
+        }),
+      },
+      appRegistrySnapshot: {
+        id: "boot:ws-finalize-fail",
+        generation: 1,
+        entries: [{ appDir: f.appDir, definition: def }],
+      },
+    });
+    await attachLoadedAppTask({
+      bus,
+      appDir: f.appDir,
+      appId: "sample",
+      attachment: {
+        kind: "desired",
+        intent: {
+          id: "work/ws-finalize-fail",
+          parentId: "operations",
+          outcome: "Wait after workspace work",
+          acceptance: ["Done"],
+          agent: "sample-owner",
+          executor: "waiter",
+        },
+      },
+      idempotencyKey: "attach:ws-finalize-fail",
+      inputContext: {
+        id: "request-ws-finalize-fail",
+        source: { kind: "human", id: "operator" },
+        input: { kind: "sample", data: {} },
+      },
+    });
+    const config = loadedTaskConfig(f);
+    const deadline = performance.now() + 3_000;
+    while (
+      Object.values(readTaskSnapshot(config).attempts ?? {}).filter((a) => a.state === "failed").length === 0 &&
+      performance.now() < deadline
+    ) {
+      await Bun.sleep(10);
+    }
+    const attempts = Object.values(readTaskSnapshot(config).attempts ?? {});
+    expect(attempts).toContainEqual(
+      expect.objectContaining({
+        taskId: "work/ws-finalize-fail",
+        state: "failed",
+        failureReason: "WorkspaceFinalizationFailed",
+      }),
+    );
+  });
+
 });
 
 // This exercises the production attempt boundary: persisted waits, generated

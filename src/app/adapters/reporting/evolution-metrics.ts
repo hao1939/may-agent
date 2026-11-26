@@ -41,6 +41,7 @@ export function terminalAttemptWindowPredicateSql(startSql: string, endSql: stri
 export const HOST_ATTEMPT_FAILURE_REASONS = [
   "HandlerResultSettlementFailed",
   "WorkspacePreparationFailed",
+  "WorkspaceFinalizationFailed",
   "HandlerUnavailable",
   "terminal-agent-session-expired-lease-requeued",
   "late-terminal-workflow-result-requeued",
@@ -62,13 +63,13 @@ export const HOST_ATTEMPT_PREEMPTION_REASONS = [
 export function hostAttemptFailurePredicateSql(alias = ""): string {
   const prefix = alias ? `${alias}.` : "";
   const list = HOST_ATTEMPT_FAILURE_REASONS.map((r) => `'${r}'`).join(", ");
-  return `json_extract(${prefix}attempt_json, '$.failureReason') IN (${list})`;
+  return `COALESCE(json_extract(${prefix}attempt_json, '$.failureReason'), '') IN (${list})`;
 }
 
 export function hostAttemptPreemptionPredicateSql(alias = ""): string {
   const prefix = alias ? `${alias}.` : "";
   const list = HOST_ATTEMPT_PREEMPTION_REASONS.map((r) => `'${r}'`).join(", ");
-  return `json_extract(${prefix}attempt_json, '$.failureReason') IN (${list})`;
+  return `COALESCE(json_extract(${prefix}attempt_json, '$.failureReason'), '') IN (${list})`;
 }
 
 const HOST_TERMINAL_WINDOW_24H = terminalAttemptWindowPredicateSql(`${NOW_SQL} - ${DAY_MS}`, NOW_SQL);
@@ -101,7 +102,7 @@ export const HOST_HARNESS_METRICS: MetricDefinition[] = [
       "Dimensionally homogeneous ratio [0..1] of cleanly settled Task attempts over settled attempts plus Host-owned settlement/workspace/availability/lease failures in the rolling 24h window. Graceful daemon restart requeues and App/Agent handler failures are excluded from Host settlement defects.",
     sourceQuery: `WITH att AS (
         SELECT
-          COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL THEN 1 END) AS settled,
+          COUNT(CASE WHEN state = 'completed' AND accepted_result_state IS NOT NULL AND NOT (${HOST_ATTEMPT_FAILURE_SQL}) THEN 1 END) AS settled,
           COUNT(CASE WHEN ${HOST_ATTEMPT_FAILURE_SQL} THEN 1 END) AS host_failed,
           COUNT(*) AS terminal
         FROM app_task_attempts

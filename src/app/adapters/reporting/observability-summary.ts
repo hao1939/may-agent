@@ -1008,7 +1008,7 @@ function buildWindowTrends(
          a.app_id AS appId,
          MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((${finishMsExpr} - ?) / ? AS INTEGER))) AS b,
          COUNT(*) AS terminal,
-         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL THEN 1 END) AS settled,
+         COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state IS NOT NULL AND NOT (${hostFailureExpr}) THEN 1 END) AS settled,
          COUNT(CASE WHEN ${hostFailureExpr} THEN 1 END) AS hostFailed,
          COUNT(CASE WHEN (${hostFailureExpr} OR ${hostPreemptionExpr}) THEN 1 END) AS hostFriction,
          COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS converged,
@@ -2140,8 +2140,7 @@ export function readObservabilitySummary(
       terminal: hostTerminalRow.terminal,
       hostFailed: hostTerminalRow.hostFailed,
       preempted: hostTerminalRow.preempted,
-      failed: hostTerminalRow.hostFailed,
-      allFailed: hostTerminalRow.appAndHostFailed,
+      failed: hostTerminalRow.appAndHostFailed,
       failovers: hostFailoverRow.failovers,
     };
 
