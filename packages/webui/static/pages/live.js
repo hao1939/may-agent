@@ -202,7 +202,7 @@ function renderSwimlaneRow(lane, since, now, span, filter, showError) {
   const items = Array.isArray(lane.items) ? lane.items : [];
   const visibleItems = items.filter(item => {
     const k = item.kind || 'other';
-    if (item.status === 'error') return showError && filter.has(k);
+    if (item.status === 'error' || item.status === 'blocked') return showError && filter.has(k);
     return filter.has(k);
   });
 
@@ -228,7 +228,7 @@ function renderSwimlaneRow(lane, since, now, span, filter, showError) {
     }
 
     const width = Math.max(0.45, Math.min(100 - left, ((endClamped - startClamped) / span) * 100));
-    const errCls = item.status === 'error' ? ' error' : '';
+    const errCls = item.status === 'error' ? ' error' : item.status === 'blocked' ? ' blocked' : '';
     const runCls = item.status === 'running' ? ' running' : '';
     const convCls = item.status === 'converged' ? ' converged' : '';
     const style = `left:${left.toFixed(2)}%;width:${width.toFixed(2)}%`;
@@ -386,7 +386,10 @@ async function loadLiveness() {
     html += `<span class="note">bar width = duration · glow = running · green tip = converged</span></div>`;
 
     if (summary.activityRowsTruncated) {
-      html += `<div class="note" style="margin:4px 0 8px;color:var(--yellow)">Showing the newest ${summary.activityRows || summary.rowLimit || 2000} items in this window.</div>`;
+      const srcLabel = Array.isArray(summary.truncatedSources) && summary.truncatedSources.length
+        ? ` (truncated: ${summary.truncatedSources.join(', ')})`
+        : '';
+      html += `<div class="note" style="margin:4px 0 8px;color:var(--yellow)">Showing up to ${summary.activityRows || summary.rowLimit || 2000} recent timeline items in this window${esc(srcLabel)}.</div>`;
     }
 
     const filter = TIMELINE_CATEGORY_FILTER;

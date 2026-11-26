@@ -354,12 +354,9 @@ export async function measureSourceMetrics(options: {
       }
       if (sample.kind === "no_exposure") {
         // Valid 0/0 empty denominator: record neither a fake 0/1 sample nor a collection failure,
-        // and advance lastNoExposureAt so STALE_ACTIVE_SOURCE_QUERY recognizes the live check.
-        const checkedAt = sample.measuredAt ?? options.measuredAt ?? completedAt ?? Date.now();
-        db.run(
-          "UPDATE metrics SET config = json_set(CASE WHEN json_valid(COALESCE(config, '')) THEN config ELSE '{}' END, '$.lastNoExposureAt', ?) WHERE id = ?",
-          [checkedAt, row.id],
-        );
+        // advance lastNoExposureAt monotonically, and clear superseded current values.
+        const checkedAt = Math.round(sample.measuredAt ?? options.measuredAt ?? completedAt ?? Date.now());
+        metrics.recordNoExposure(row.id, checkedAt);
         skipped.push(row.id);
         continue;
       }

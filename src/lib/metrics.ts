@@ -94,8 +94,14 @@ export interface MetricService {
   define(def: MetricDefinition): void;
   defineMany(defs: MetricDefinition[]): void;
   record(id: string, value: number, opts?: MetricRecordOptions): void;
+  recordNoExposure(id: string, measuredAt?: number): void;
   evaluate(id?: string): MetricEvaluationResult[];
-  get(id: string): Metric | null;
+  get(id?: string): Metric | null;
+}
+
+function readValidNoExposureAt(config: Record<string, any> | null | undefined): number | null {
+  const raw = config?.lastNoExposureAt;
+  return typeof raw === "number" && Number.isSafeInteger(raw) && raw > 0 ? raw : null;
 }
 
 
@@ -225,6 +231,22 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     return defaultOwnerForMetric(row);
   }
 
+  function reconcileStoredCurrent(db: SqliteDb, id: string): void {
+    const cfgRow = db.prepare("SELECT config FROM metrics WHERE id = ?").get(id) as { config?: string | null } | null;
+    if (!cfgRow) return;
+    const lastNoExposureAt = readValidNoExposureAt(parseConfig(cfgRow.config));
+    const latest = db
+      .prepare(
+        "SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ? ORDER BY measured_at DESC, id DESC LIMIT 1",
+      )
+      .get(id) as { value: number; measured_at: number } | null;
+    if (lastNoExposureAt !== null && (!latest || lastNoExposureAt > latest.measured_at)) {
+      db.run("UPDATE metrics SET current = NULL, updated_at = ? WHERE id = ?", [lastNoExposureAt, id]);
+    } else if (latest) {
+      db.run("UPDATE metrics SET current = ?, updated_at = ? WHERE id = ?", [latest.value, latest.measured_at, id]);
+    }
+  }
+
   function define(def: MetricDefinition): void {
     if (!def.id?.trim()) throw new Error("metric id is required");
     metricCalculationOptions(def.config);
@@ -235,10 +257,17 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       explicitOwner: def.owner ?? null,
       project: def.project ?? null,
     });
-    const values = toDbDefinition(def, owner, ts);
-    const insertColumns = Object.keys(values);
-    const insertValues = insertColumns.map((key) => values[key]);
     stateTransaction(db, () => {
+      const existing = db.prepare("SELECT config FROM metrics WHERE id = ?").get(def.id) as { config?: string | null } | null;
+      const retainedNoExposureAt = readValidNoExposureAt(parseConfig(existing?.config));
+      const mergedDef: MetricDefinition =
+        retainedNoExposureAt !== null && def.config?.lastNoExposureAt === undefined
+          ? { ...def, config: { ...(def.config ?? {}), lastNoExposureAt: retainedNoExposureAt } }
+          : def;
+      const values = toDbDefinition(mergedDef, owner, ts);
+      const insertColumns = Object.keys(values);
+      const insertValues = insertColumns.map((key) => values[key]);
+
       db.run(
         `INSERT OR IGNORE INTO metrics (${insertColumns.join(", ")}) VALUES (${insertColumns.map(() => "?").join(", ")})`,
         insertValues,
@@ -256,9 +285,9 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
             "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, 0, 0, ?, ?, 'counter zero-init')",
             [def.id, ts, options.measuredBy ?? "metric-service"],
           );
-          db.run("UPDATE metrics SET current = 0, updated_at = ? WHERE id = ?", [ts, def.id]);
         }
       }
+      reconcileStoredCurrent(db, def.id);
       // Retirement is administrative closure, not a measured recovery or Task result.
       if (def.status === "retired" || def.status === "closed") {
         db.run("UPDATE metric_alerts SET resolved_at = ? WHERE metric_id = ? AND resolved_at IS NULL", [ts, def.id]);
@@ -276,11 +305,23 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         "INSERT INTO metric_snapshots (metric_id, value, sample_size, measured_at, measured_by, note) VALUES (?, ?, ?, ?, ?, ?)",
         [id, value, opts?.sampleSize ?? null, measuredAt, measuredBy, opts?.note ?? null],
       );
-      // Use the same latest observation as readers, including late arrivals.
-      db.run(`UPDATE metrics SET (current, updated_at) = (
-        SELECT value, measured_at FROM metric_snapshots WHERE metric_id = ?
-        ORDER BY measured_at DESC, id DESC LIMIT 1
-      ) WHERE id = ?`, [id, id]);
+      reconcileStoredCurrent(db, id);
+    });
+  }
+
+  function recordNoExposure(id: string, measuredAt?: number): void {
+    const ts = measuredAt ?? now();
+    if (!Number.isSafeInteger(ts) || ts <= 0) return;
+    const db = options.getDb();
+    stateTransaction(db, () => {
+      const existing = db.prepare("SELECT config FROM metrics WHERE id = ?").get(id) as { config?: string | null } | null;
+      if (!existing) return;
+      const parsed = parseConfig(existing.config) ?? {};
+      const prevNoExposureAt = readValidNoExposureAt(parsed);
+      const nextNoExposureAt = prevNoExposureAt !== null ? Math.max(prevNoExposureAt, ts) : ts;
+      const nextConfig = JSON.stringify({ ...parsed, lastNoExposureAt: nextNoExposureAt });
+      db.run("UPDATE metrics SET config = ? WHERE id = ?", [nextConfig, id]);
+      reconcileStoredCurrent(db, id);
     });
   }
 
@@ -375,8 +416,15 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
         const configuredCount = alertConfig.count ?? alertConfig.consecutive;
         const requiredCount =
           Number.isSafeInteger(configuredCount) && configuredCount > 0 ? configuredCount : 3;
-        const snapshots = db.prepare(`SELECT value, sample_size FROM metric_snapshots WHERE metric_id = ? AND measured_at <= ?
-          ORDER BY measured_at DESC, id DESC LIMIT ?`).all(row.id, ts, requiredCount) as Array<{
+        const rawGapAt = readValidNoExposureAt(config);
+        const validGapAt = rawGapAt !== null && rawGapAt <= ts ? rawGapAt : null;
+        const snapshots = db
+          .prepare(
+            `SELECT value, sample_size FROM metric_snapshots
+             WHERE metric_id = ? AND measured_at <= ? AND (? IS NULL OR measured_at >= ?)
+             ORDER BY measured_at DESC, id DESC LIMIT ?`,
+          )
+          .all(row.id, ts, validGapAt, validGapAt, requiredCount) as Array<{
           value: number;
           sample_size: number | null;
         }>;
@@ -544,17 +592,13 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
     return results;
   }
 
-  function get(id: string): Metric | null {
+  function get(id?: string): Metric | null {
+    if (!id) return null;
     const db = options.getDb();
     const metric = db.prepare("SELECT * FROM metrics WHERE id = ?").get(id) as Metric | null;
     if (!metric) return null;
     const parsedCfg = parseConfig(metric.config);
-    const lastNoExposureAt =
-      typeof parsedCfg?.lastNoExposureAt === "number" &&
-      Number.isSafeInteger(parsedCfg.lastNoExposureAt) &&
-      parsedCfg.lastNoExposureAt > 0
-        ? parsedCfg.lastNoExposureAt
-        : null;
+    const lastNoExposureAt = readValidNoExposureAt(parsedCfg);
     const ts = now();
     const sample = db
       .prepare(`SELECT value, measured_at AS measuredAt, sample_size AS sampleSize, note
@@ -576,6 +620,7 @@ export function createMetricService(options: MetricServiceOptions): MetricServic
       for (const def of defs) define(def);
     },
     record,
+    recordNoExposure,
     evaluate,
     get,
   };
@@ -589,6 +634,7 @@ export function createUnavailableMetricService(reason = "metrics unavailable"): 
     define: fail,
     defineMany: fail,
     record: fail,
+    recordNoExposure: fail,
     evaluate: fail,
     get: fail,
   };

@@ -14,13 +14,23 @@ export function attemptFinishMsSql(alias = ""): string {
   return `CAST(unixepoch(json_extract(${prefix}attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER)`;
 }
 
-const HOST_FINISH_MS = attemptFinishMsSql();
-const HOST_TERMINAL_WINDOW_24H = `started_at >= ${NOW_SQL} - ${DAY_MS + ATTEMPT_FINISH_LOOKBACK_SLACK_MS}
-  AND started_at < ${NOW_SQL}
-  AND state IN ('completed', 'failed', 'interrupted')
-  AND ${HOST_FINISH_MS} IS NOT NULL
-  AND ${HOST_FINISH_MS} >= ${NOW_SQL} - ${DAY_MS}
-  AND ${HOST_FINISH_MS} < ${NOW_SQL}`;
+/**
+ * Shared terminal attempt finish-window cohort predicate (`[startSql, endSql)`) used identically
+ * by Host evolution SQL collectors, Host 12-bucket trends, and Host plumbing counters so an attempt
+ * started before `startSql` and settled inside `[startSql, endSql)` is included everywhere while
+ * attempts finishing at or after `endSql` are excluded everywhere.
+ */
+export function terminalAttemptWindowPredicateSql(startSql: string, endSql: string, alias = ""): string {
+  const prefix = alias ? `${alias}.` : "";
+  const finishMs = attemptFinishMsSql(alias);
+  return `${prefix}started_at < ${endSql}
+    AND ${prefix}state IN ('completed', 'failed', 'interrupted')
+    AND ${finishMs} IS NOT NULL
+    AND ${finishMs} >= ${startSql}
+    AND ${finishMs} < ${endSql}`;
+}
+
+const HOST_TERMINAL_WINDOW_24H = terminalAttemptWindowPredicateSql(`${NOW_SQL} - ${DAY_MS}`, NOW_SQL);
 
 const UNRESOLVED_RECOVERY_SQL = `SELECT COUNT(DISTINCT i.id) AS unresolved
   FROM app_inbox_items i, json_each(COALESCE(i.recovery_json, '{}')) r
@@ -208,11 +218,8 @@ function escapeSqlLiteral(value: string): string {
  */
 export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): MetricDefinition[] {
   const sqlApp = escapeSqlLiteral(appId);
-  const finishExpr = attemptFinishMsSql();
-  const startedBound24h = `started_at >= ${NOW_SQL} - ${DAY_MS + ATTEMPT_FINISH_LOOKBACK_SLACK_MS} AND started_at < ${NOW_SQL}`;
-  const startedBound7d = `started_at >= ${NOW_SQL} - ${WEEK_MS + ATTEMPT_FINISH_LOOKBACK_SLACK_MS} AND started_at < ${NOW_SQL}`;
-  const terminal24h = `state IN ('completed', 'failed', 'interrupted') AND ${finishExpr} IS NOT NULL AND ${finishExpr} >= ${NOW_SQL} - ${DAY_MS} AND ${finishExpr} < ${NOW_SQL}`;
-  const terminal7d = `state IN ('completed', 'failed', 'interrupted') AND ${finishExpr} IS NOT NULL AND ${finishExpr} >= ${NOW_SQL} - ${WEEK_MS} AND ${finishExpr} < ${NOW_SQL}`;
+  const terminal24h = terminalAttemptWindowPredicateSql(`${NOW_SQL} - ${DAY_MS}`, NOW_SQL);
+  const terminal7d = terminalAttemptWindowPredicateSql(`${NOW_SQL} - ${WEEK_MS}`, NOW_SQL);
 
   return [
     {
@@ -232,7 +239,7 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
             COUNT(CASE WHEN state = 'completed' AND accepted_result_state = 'converged' THEN 1 END) AS conv,
             COUNT(*) AS total
           FROM app_task_attempts
-          WHERE +app_id = ${sqlApp} AND ${startedBound24h} AND ${terminal24h}
+          WHERE +app_id = ${sqlApp} AND ${terminal24h}
         ),
         req AS (
           SELECT COUNT(*) AS closed
@@ -254,31 +261,64 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
       unit: "usd",
       measureInterval: EVOLUTION_MEASURE_INTERVAL_MS,
       config: { alert: { disabled: true } },
-      source: "Priced execution_usage USD / verified outcomes in rolling 7d (unknown != $0)",
+      source: "Complete priced execution_usage USD / verified outcomes in rolling 7d (partial/unpriced = no_exposure)",
       description:
-        "Price-weighted USD per verified outcome over the rolling 7d window. Unpriced executors (e.g. native CLI without token pricing) or zero-outcome windows emit no_exposure rather than $0.",
+        "Price-weighted USD per verified outcome over the rolling 7d window when 100% of executions in the window have complete token pricing. Unpriced, partially priced, or zero-outcome windows emit no_exposure rather than reporting partial spend as complete cost.",
       sourceQuery: `WITH u AS (
           SELECT
-            COUNT(*) AS priced_n,
-            SUM(COALESCE(json_extract(data, '$.totals.estimatedCost'), 0)) AS usd
+            COUNT(*) AS total_n,
+            COUNT(CASE WHEN outcome IS NOT NULL
+              AND json_extract(data, '$.totals.replies') > 0
+              AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')
+              AND json_extract(data, '$.totals.estimatedCostReplies') = json_extract(data, '$.totals.replies')
+              THEN 1 END) AS priced_n,
+            SUM(CASE WHEN outcome IS NOT NULL
+              AND json_extract(data, '$.totals.replies') > 0
+              AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')
+              AND json_extract(data, '$.totals.estimatedCostReplies') = json_extract(data, '$.totals.replies')
+              THEN COALESCE(json_extract(data, '$.totals.estimatedCost'), 0) ELSE 0 END) AS usd
           FROM execution_usage
           WHERE +app_id = ${sqlApp}
             AND started_at >= ${NOW_SQL} - ${WEEK_MS} AND started_at < ${NOW_SQL}
-            AND outcome IS NOT NULL
-            AND json_extract(data, '$.totals.replies') > 0
-            AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')
-            AND json_extract(data, '$.totals.estimatedCostReplies') = json_extract(data, '$.totals.replies')
+        ),
+        usage_attempts AS MATERIALIZED (
+          SELECT DISTINCT attempt_id
+          FROM execution_usage
+          WHERE +app_id = ${sqlApp}
+            AND started_at >= ${NOW_SQL} - ${2 * WEEK_MS} AND started_at < ${NOW_SQL}
+            AND attempt_id IS NOT NULL AND attempt_id != ''
+        ),
+        unpriced_att AS (
+          SELECT COUNT(*) AS n
+          FROM app_task_attempts a
+          LEFT JOIN usage_attempts ua ON ua.attempt_id = a.attempt_id
+          WHERE +a.app_id = ${sqlApp}
+            AND a.started_at >= ${NOW_SQL} - ${WEEK_MS} AND a.started_at < ${NOW_SQL}
+            AND ua.attempt_id IS NULL
+            AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
+            AND NOT EXISTS (
+              SELECT 1 FROM execution_usage eu
+              WHERE eu.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+                AND eu.app_id = a.app_id
+            )
         ),
         outc AS (
           SELECT
-            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND state = 'completed' AND accepted_result_state = 'converged' AND ${terminal7d}) +
+            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND state = 'completed' AND accepted_result_state = 'converged' AND ${terminal7d}) +
             (SELECT COUNT(*) FROM conversation_requests WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= ${NOW_SQL} - ${WEEK_MS} AND updated_at < ${NOW_SQL}) AS n
         )
         SELECT
-          CASE WHEN u.priced_n > 0 AND outc.n > 0 THEN CAST(u.usd AS REAL) / outc.n ELSE NULL END AS value,
-          CASE WHEN u.priced_n > 0 AND outc.n > 0 THEN outc.n ELSE 0 END AS sampleSize,
-          ${NOW_SQL} AS measuredAt
-        FROM u, outc`,
+          CASE WHEN u.priced_n > 0 AND u.priced_n = u.total_n AND unpriced_att.n = 0 AND outc.n > 0
+            THEN CAST(u.usd AS REAL) / outc.n ELSE NULL END AS value,
+          CASE WHEN u.priced_n > 0 AND u.priced_n = u.total_n AND unpriced_att.n = 0 AND outc.n > 0
+            THEN outc.n ELSE 0 END AS sampleSize,
+          ${NOW_SQL} AS measuredAt,
+          json_object(
+            'pricedExecutions', u.priced_n,
+            'unpricedExecutions', (u.total_n - u.priced_n) + unpriced_att.n,
+            'outcomes', outc.n
+          ) AS note
+        FROM u, unpriced_att, outc`,
     },
     {
       id: `${appId}.spin_ratio_24h`,
@@ -298,7 +338,6 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
             COUNT(*) AS total
           FROM app_task_attempts
           WHERE +app_id = ${sqlApp}
-            AND ${startedBound24h}
             AND ${terminal24h}
         )
         SELECT
@@ -375,7 +414,7 @@ export function buildAppEvolutionMetrics(appId: string, ownerAgent = appId): Met
         "Bounded ratio [0..1] of verified outcomes to (verified outcomes + human inputs) over 7d. 1.0 indicates 100% autonomous delivery with zero human touches; 0/0 emits no_exposure.",
       sourceQuery: `WITH outc AS (
           SELECT
-            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND ${startedBound7d} AND state = 'completed' AND accepted_result_state = 'converged' AND ${terminal7d}) +
+            (SELECT COUNT(*) FROM app_task_attempts WHERE +app_id = ${sqlApp} AND state = 'completed' AND accepted_result_state = 'converged' AND ${terminal7d}) +
             (SELECT COUNT(*) FROM conversation_requests WHERE app_id = ${sqlApp} AND status = 'closed' AND updated_at >= ${NOW_SQL} - ${WEEK_MS} AND updated_at < ${NOW_SQL}) AS n
         ),
         hum AS (

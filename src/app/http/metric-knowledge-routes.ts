@@ -245,9 +245,13 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
 
     const timelineItems: UnifiedTimelineItem[] = [];
     const claimedSessionIds = new Set<string>();
-    const claimedAttemptKeys = new Set<string>();
+    const attemptItemByKey = new Map<string, UnifiedTimelineItem>();
+    const ATTEMPT_TIMELINE_ROW_LIMIT = 800;
+    const WORKFLOW_TIMELINE_ROW_LIMIT = 600;
+    const HUMAN_TIMELINE_ROW_LIMIT = 300;
+    const ALERT_TIMELINE_ROW_LIMIT = 100;
 
-    const attemptRows = db
+    const attemptCandidates = db
       .prepare(
         `SELECT
            a.app_id AS appId,
@@ -273,7 +277,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
              OR CAST(unixepoch(json_extract(a.attempt_json, '$.finishedAt'), 'subsec') * 1000 AS INTEGER) > ?
            )
          ORDER BY a.started_at DESC
-         LIMIT 800`,
+         LIMIT ${ATTEMPT_TIMELINE_ROW_LIMIT + 1}`,
       )
       .all(lookbackSince, since, since) as Array<{
       appId: string;
@@ -287,11 +291,12 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       sessionId: string | null;
       owner: string | null;
     }>;
+    const attemptsTruncated = attemptCandidates.length > ATTEMPT_TIMELINE_ROW_LIMIT;
+    const attemptRows = attemptCandidates.slice(0, ATTEMPT_TIMELINE_ROW_LIMIT);
 
     for (const r of attemptRows.reverse()) {
       const appId = normalizeTimelineApp(r.appId);
       if (r.appId && appCatalog.disabledSet.has(r.appId)) continue;
-      claimedAttemptKeys.add(`${r.appId}::${r.attemptId}`);
       const linkedSession = r.sessionId ? sessionById.get(r.sessionId) : undefined;
       if (r.sessionId) claimedSessionIds.add(r.sessionId);
 
@@ -322,7 +327,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
         : appId
           ? `/projects/${encodeURIComponent(appId + ".app")}/tasks?appId=${encodeURIComponent(appId)}&task=${encodeURIComponent(r.taskId)}`
           : "/projects";
-      timelineItems.push({
+      const item: UnifiedTimelineItem = {
         id: `att:${r.appId}:${r.attemptId}`,
         kind,
         legacyCategory,
@@ -335,10 +340,12 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
         detail: r.handler || kind,
         startedAt: r.startedAt,
         endedAt: r.state === "running" ? null : (r.finishedAt ?? linkedSession?.endedAt ?? r.startedAt),
-      });
+      };
+      timelineItems.push(item);
+      attemptItemByKey.set(`${r.appId}::${r.attemptId}`, item);
     }
 
-    const wfRows = db
+    const wfCandidates = db
       .prepare(
         `SELECT runId, workflow, status, app_id AS appId, projectId, attempt_id AS attemptId, startedAt, endedAt
          FROM workflow_runs
@@ -346,7 +353,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
            AND startedAt >= ?
            AND (status = 'running' OR startedAt > ? OR (endedAt IS NOT NULL AND endedAt > ?))
          ORDER BY startedAt DESC
-         LIMIT 600`,
+         LIMIT ${WORKFLOW_TIMELINE_ROW_LIMIT + 1}`,
       )
       .all(lookbackSince, since, since) as Array<{
       runId: string;
@@ -358,9 +365,31 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       startedAt: number;
       endedAt: number | null;
     }>;
+    const workflowsTruncated = wfCandidates.length > WORKFLOW_TIMELINE_ROW_LIMIT;
+    const wfRows = wfCandidates.slice(0, WORKFLOW_TIMELINE_ROW_LIMIT);
 
     for (const wf of wfRows.reverse()) {
-      if (wf.appId && wf.attemptId && claimedAttemptKeys.has(`${wf.appId}::${wf.attemptId}`)) continue;
+      const wfKey = wf.appId && wf.attemptId ? `${wf.appId}::${wf.attemptId}` : null;
+      const existingAttemptItem = wfKey ? attemptItemByKey.get(wfKey) : undefined;
+      if (existingAttemptItem) {
+        if (wf.status === "error") {
+          existingAttemptItem.status = "error";
+        } else if (wf.status === "blocked" && existingAttemptItem.status !== "error") {
+          existingAttemptItem.status = "blocked";
+        } else if (wf.status === "interrupted" && existingAttemptItem.status === "done") {
+          existingAttemptItem.status = "interrupted";
+        } else if (wf.status === "running") {
+          existingAttemptItem.status = "running";
+        }
+        const params = new URLSearchParams({ workflow: wf.workflow, runs: "true" });
+        if (existingAttemptItem.appId) params.set("appId", existingAttemptItem.appId);
+        existingAttemptItem.href = `/metrics?${params.toString()}`;
+        existingAttemptItem.detail = `${existingAttemptItem.detail || "workflow"} · ${wf.status} (${wf.runId})`;
+        if (wf.endedAt !== null && (existingAttemptItem.endedAt === null || wf.endedAt > existingAttemptItem.endedAt)) {
+          existingAttemptItem.endedAt = wf.endedAt;
+        }
+        continue;
+      }
       const appId = normalizeTimelineApp(wf.appId ?? wf.projectId);
       const agent = appId ? (appCatalog.ownerByAppId.get(appId) ?? appId) : null;
       const status: UnifiedTimelineItem["status"] =
@@ -439,13 +468,13 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       });
     }
 
-    const humanRows = db
+    const humanCandidates = db
       .prepare(
         `SELECT id, app_id AS appId, source_id AS sourceId, input_kind AS inputKind, created_at AS createdAt
          FROM app_inbox_items
          WHERE source_kind = 'human' AND created_at > ? AND created_at <= ?
-         ORDER BY created_at ASC
-         LIMIT 300`,
+         ORDER BY created_at DESC
+         LIMIT ${HUMAN_TIMELINE_ROW_LIMIT + 1}`,
       )
       .all(since, now) as Array<{
       id: string;
@@ -454,6 +483,8 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       inputKind: string;
       createdAt: number;
     }>;
+    const humanPinsTruncated = humanCandidates.length > HUMAN_TIMELINE_ROW_LIMIT;
+    const humanRows = humanCandidates.slice(0, HUMAN_TIMELINE_ROW_LIMIT).reverse();
 
     for (const h of humanRows) {
       const appId = normalizeTimelineApp(h.appId);
@@ -536,7 +567,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       lane.items.push(item);
       lane.totalCount += 1;
       if (item.status === "running") lane.runningCount += 1;
-      if (item.status === "error") lane.errorCount += 1;
+      if (item.status === "error" || item.status === "blocked") lane.errorCount += 1;
       const touchAt = item.status === "running" ? now : Math.max(item.startedAt, item.endedAt ?? item.startedAt);
       if (lane.lastActivityAt === null || touchAt > lane.lastActivityAt) lane.lastActivityAt = touchAt;
     };
@@ -598,15 +629,15 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
     if (unboundAppLane.totalCount > 0) appLanes.push(unboundAppLane);
     const agentLanes = sortLanes([...agentLaneMap.values()]);
 
-    const alertWindowRows = db
+    const alertWindowCandidates = db
       .prepare(
         `SELECT ma.id AS alertId, ma.metric_id AS metricId, ma.created_at AS createdAt, ma.resolved_at AS resolvedAt,
                 COALESCE(m.name, ma.metric_id) AS name, COALESCE(m.priority, 'P2') AS priority
          FROM metric_alerts ma
          LEFT JOIN metrics m ON m.id = ma.metric_id
          WHERE ma.created_at > ? OR (ma.resolved_at IS NOT NULL AND ma.resolved_at > ?)
-         ORDER BY ma.created_at ASC
-         LIMIT 100`,
+         ORDER BY COALESCE(ma.resolved_at, ma.created_at) DESC, ma.id DESC
+         LIMIT ${ALERT_TIMELINE_ROW_LIMIT + 1}`,
       )
       .all(since, since) as Array<{
       alertId: number;
@@ -616,6 +647,17 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       name: string;
       priority: string;
     }>;
+    const alertEventsTruncated = alertWindowCandidates.length > ALERT_TIMELINE_ROW_LIMIT;
+    const alertWindowRows = alertWindowCandidates
+      .slice(0, ALERT_TIMELINE_ROW_LIMIT)
+      .sort((a, b) => a.createdAt - b.createdAt || a.alertId - b.alertId);
+    const truncatedSources: string[] = [];
+    if (activityTruncated) truncatedSources.push("sessions");
+    if (attemptsTruncated) truncatedSources.push("attempts");
+    if (workflowsTruncated) truncatedSources.push("workflows");
+    if (humanPinsTruncated) truncatedSources.push("human");
+    if (alertEventsTruncated) truncatedSources.push("alerts");
+    const timelineTruncated = truncatedSources.length > 0;
 
     const activeSessions =
       (db.prepare("SELECT COUNT(*) as c FROM sessions WHERE status IN ('running', 'idle')").get() as any)?.c ?? 0;
@@ -676,7 +718,8 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
         windowSince: since,
         windowEnd: now,
         activityRows: timelineItems.length,
-        activityRowsTruncated: activityTruncated,
+        activityRowsTruncated: timelineTruncated,
+        truncatedSources,
         rowLimit: DASHBOARD_SESSION_ROW_LIMIT,
         activeSessions,
         activeRunning: Math.max(activeSessions, activeRunningItems),
@@ -689,6 +732,8 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
         appLanes,
         agentLanes,
         alertEvents: alertWindowRows,
+        truncated: timelineTruncated,
+        truncatedSources,
       },
     });
   }
@@ -707,6 +752,7 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       Date.now(),
       metricId === null ? undefined : [metricId],
       appCatalog,
+      { scopeAppId: filterAppId },
     );
     const metrics = observations.metrics;
 
@@ -754,6 +800,8 @@ export function createMetricAndKnowledgeRouteHandlers(options: {
       return {
         ...alert,
         scope: routing.scope,
+        declaredOwner: routing.declaredOwner,
+        declaredHandler: routing.declaredHandler,
         handler: routing.handler,
         handlingStatus: routing.handlingStatus,
         linkedTask: routing.linkedTask,

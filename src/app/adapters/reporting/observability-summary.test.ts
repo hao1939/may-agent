@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createExecutionUsage } from "@may-agent/sdk/runtime";
@@ -895,6 +895,302 @@ describe("top-down Host vs. Apps observability summary", () => {
       if (prevAzureDir === undefined) delete process.env.AZURE_CONFIG_DIR;
       else process.env.AZURE_CONFIG_DIR = prevAzureDir;
       closeDb(dataState);
+    }
+  });
+
+  test("round-4 review regressions: incremental hygiene, no_exposure persistence across define(), complete cost pricing, and drill-down attribution", async () => {
+    const now = 1_780_200_000_000;
+    const projectsRoot = join(root, "projects-r4");
+    for (const [id, owner] of [
+      ["alpha", "owner-alpha"],
+      ["beta", "owner-beta"],
+    ] as const) {
+      mkdirSync(join(projectsRoot, `${id}.app`), { recursive: true });
+      writeFileSync(join(projectsRoot, `${id}.app`, "app.ts"), `export default { id: "${id}", agent: "${owner}" };\n`);
+    }
+
+    // 1. Incremental cache hygiene bounds descendant file removals inside a single deep directory (never recursive rm).
+    const deepCacheDir = join(root, "deep-cache");
+    const singleShard = join(deepCacheDir, "shard-deep", "nested");
+    mkdirSync(singleShard, { recursive: true });
+    for (let i = 0; i < 20; i++) {
+      writeFileSync(join(singleShard, `obj-${i}.o`), "payload");
+    }
+    const deepHygiene = await runBoundedDiskCacheHygiene({
+      now,
+      cacheDir: deepCacheDir,
+      maxEntries: 5,
+      deadlineMs: 2_000,
+      ignoreCooldown: true,
+    });
+    expect(deepHygiene).toEqual({ prunedEntries: 5, stoppedByBudget: true });
+    expect(readdirSync(singleShard)).toHaveLength(15);
+
+    // 2. recordNoExposure clears stored current, survives define()/reload, stays monotonic, and resets consecutive streaks.
+    const r4Db = openDatabase(":memory:");
+    applyDbSchema(r4Db);
+    try {
+      let clockTs = now - 60_000;
+      const ms = createMetricService({ getDb: () => r4Db, now: () => clockTs });
+      const def = {
+        id: "alpha.streak_guard",
+        owner: "owner-alpha",
+        project: "alpha",
+        type: "gauge" as const,
+        threshold: 0.5,
+        alertOp: ">" as const,
+        measureInterval: 900_000,
+        config: { alert: { mode: "sustained", consecutive: 3, minSampleSize: 2 } },
+      };
+      ms.define(def);
+      ms.record(def.id, 0.9, { sampleSize: 4, measuredAt: now - 50_000 });
+      ms.record(def.id, 0.9, { sampleSize: 4, measuredAt: now - 40_000 });
+      expect(r4Db.prepare("SELECT current FROM metrics WHERE id = ?").get(def.id)).toEqual({ current: 0.9 });
+
+      // Record no_exposure at now - 30s -> clears stored current while stamping updated_at.
+      ms.recordNoExposure(def.id, now - 30_000);
+      expect(r4Db.prepare("SELECT current, updated_at FROM metrics WHERE id = ?").get(def.id)).toEqual({
+        current: null,
+        updated_at: now - 30_000,
+      });
+
+      // Out-of-order older no_exposure timestamp cannot rewind lastNoExposureAt.
+      ms.recordNoExposure(def.id, now - 45_000);
+      const storedCfg = JSON.parse(
+        (r4Db.prepare("SELECT config FROM metrics WHERE id = ?").get(def.id) as { config: string }).config,
+      ) as { lastNoExposureAt?: number };
+      expect(storedCfg.lastNoExposureAt).toBe(now - 30_000);
+
+      // Re-defining on startup/reload preserves lastNoExposureAt and never resurrects stale breach.
+      ms.define(def);
+      expect(r4Db.prepare("SELECT current FROM metrics WHERE id = ?").get(def.id)).toEqual({ current: null });
+      expect(ms.evaluate(def.id)[0]?.status).toBe("unknown");
+
+      // Post-gap single breach cannot bridge with the 2 pre-gap breaches to satisfy consecutive=3!
+      clockTs = now - 10_000;
+      ms.record(def.id, 0.9, { sampleSize: 4, measuredAt: clockTs });
+      expect(ms.evaluate(def.id)[0]?.status).toBe("unknown");
+      clockTs = now - 5_000;
+      ms.record(def.id, 0.9, { sampleSize: 4, measuredAt: clockTs });
+      expect(ms.evaluate(def.id)[0]?.status).toBe("unknown");
+      clockTs = now - 1_000;
+      ms.record(def.id, 0.9, { sampleSize: 4, measuredAt: clockTs });
+      expect(ms.evaluate(def.id)[0]?.status).toBe("breached");
+
+      // 3. Partial pricing coverage yields null costPerOutcomeUsd (both SQL and summary), while 100% pricing emits exact ratio.
+      const start = now - 86_400_000;
+      r4Db
+        .prepare(
+          `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, accepted_result_state, started_at, attempt_json)
+           VALUES
+             ('alpha', 'att-priced', 't-a', 1, 'completed', 'converged', ?, ?),
+             ('alpha', 'att-45d-settled', 't-old', 1, 'completed', 'converged', ?, ?)`,
+        )
+        .run(
+          now - 3_600_000,
+          JSON.stringify({
+            owner: "owner-alpha",
+            sessionId: "sess-priced",
+            finishedAt: new Date(now - 1_800_000).toISOString(),
+            acceptedResult: { state: "converged" },
+          }),
+          now - 45 * 86_400_000,
+          JSON.stringify({
+            owner: "owner-alpha",
+            sessionId: "sess-old",
+            finishedAt: new Date(now - 2_000_000).toISOString(),
+            acceptedResult: { state: "converged" },
+          }),
+        );
+      r4Db
+        .prepare(
+          `INSERT INTO execution_usage(id, session_id, agent, app_id, attempt_id, configured_model, preparer, models, outcome, started_at, updated_at, data)
+           VALUES ('u-priced', 'sess-priced', 'owner-alpha', 'alpha', 'att-priced', 'gpt-5', 'full', '[]', 'done', ?, ?, ?)`,
+        )
+        .run(
+          now - 3_600_000,
+          now - 1_800_000,
+          JSON.stringify({
+            totals: { replies: 1, measuredReplies: 1, estimatedCostReplies: 1, estimatedCost: 0.4, input: 100, output: 50 },
+          }),
+        );
+
+      const fullPricedSummary = readObservabilitySummary(r4Db, {
+        query: { start, end: now, appId: "alpha" },
+        projectsRoot,
+        stateDir: root,
+        loadedApps: [
+          { id: "alpha", owner: "owner-alpha" },
+          { id: "beta", owner: "owner-beta" },
+        ],
+        now,
+      });
+      // 45d-old started attempt settled in window is included in BOTH Host cohort and App outcomes (2 converged total).
+      expect(fullPricedSummary.host.plumbing.terminalTaskAttemptsWindow).toBe(2);
+      expect(fullPricedSummary.apps[0]?.outcomes.convergedMilestonesWindow).toBe(2);
+      expect(fullPricedSummary.apps[0]?.costAndLeverage.completePricingCoverage).toBe(true);
+      expect(fullPricedSummary.apps[0]?.trends?.costPerOutcomeUsd.current).toBe(0.2);
+
+      // Adding an unpriced execution_usage row makes costPerOutcomeUsd null instead of reporting partial spend as complete.
+      r4Db
+        .prepare(
+          `INSERT INTO execution_usage(id, session_id, agent, app_id, configured_model, preparer, models, outcome, started_at, updated_at, data)
+           VALUES ('u-unpriced', 'sess-unpriced', 'usage-only-specialist', 'alpha', 'gpt-5', 'full', '[]', 'done', ?, ?, ?)`,
+        )
+        .run(
+          now - 2_400_000,
+          now - 2_000_000,
+          JSON.stringify({
+            totals: { replies: 1, measuredReplies: 1, estimatedCostReplies: 0, estimatedCost: 0, input: 100, output: 50 },
+          }),
+        );
+      const mixedPricedSummary = readObservabilitySummary(r4Db, {
+        query: { start, end: now, appId: "alpha" },
+        projectsRoot,
+        stateDir: root,
+        loadedApps: [
+          { id: "alpha", owner: "owner-alpha" },
+          { id: "beta", owner: "owner-beta" },
+        ],
+        now,
+      });
+      expect(mixedPricedSummary.apps[0]?.costAndLeverage.completePricingCoverage).toBe(false);
+      expect(mixedPricedSummary.apps[0]?.trends?.costPerOutcomeUsd.current).toBeNull();
+      const alphaEvoDefs = buildAppEvolutionMetrics("alpha", "owner-alpha");
+      const costSql = alphaEvoDefs.find((d) => d.id === "alpha.cost_per_outcome_usd_7d")!.sourceQuery!;
+      const liveMixedDb = openDatabase(":memory:");
+      applyDbSchema(liveMixedDb);
+      try {
+        const liveTs = Date.now();
+        liveMixedDb
+          .prepare(
+            `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+             VALUES ('alpha', 'a1', 't1', 1, 'completed', ?, ?)`,
+          )
+          .run(
+            liveTs - 60_000,
+            JSON.stringify({
+              finishedAt: new Date(liveTs - 30_000).toISOString(),
+              acceptedResult: { state: "converged" },
+            }),
+          );
+        liveMixedDb
+          .prepare(
+            `INSERT INTO execution_usage(id, session_id, agent, app_id, attempt_id, configured_model, preparer, models, outcome, started_at, updated_at, data)
+             VALUES
+               ('u1', 's1', 'owner-alpha', 'alpha', 'a1', 'gpt-5', 'full', '[]', 'done', ?, ?, ?),
+               ('u2', 's2', 'owner-alpha', 'alpha', NULL, 'gpt-5', 'full', '[]', 'done', ?, ?, ?)`,
+          )
+          .run(
+            liveTs - 60_000,
+            liveTs - 30_000,
+            JSON.stringify({ totals: { replies: 1, measuredReplies: 1, estimatedCostReplies: 1, estimatedCost: 0.5 } }),
+            liveTs - 50_000,
+            liveTs - 20_000,
+            JSON.stringify({ totals: { replies: 1, measuredReplies: 1, estimatedCostReplies: 0, estimatedCost: 0 } }),
+          );
+        expect(liveMixedDb.prepare(costSql).get()).toMatchObject({
+          value: null,
+          sampleSize: 0,
+          note: '{"pricedExecutions":1,"unpricedExecutions":1,"outcomes":1}',
+        });
+        liveMixedDb.prepare("DELETE FROM execution_usage WHERE id = 'u2'").run();
+        expect(liveMixedDb.prepare(costSql).get()).toMatchObject({
+          value: 0.5,
+          sampleSize: 1,
+          note: '{"pricedExecutions":1,"unpricedExecutions":0,"outcomes":1}',
+        });
+      } finally {
+        liveMixedDb.close();
+      }
+
+      // 4. Drill-down prefers app_id over projectId, keeps failed attempt errors whose session started before start, and rolls up usage-only Apps.
+      r4Db
+        .prepare(
+          `INSERT INTO sessions(sessionId, agent, task, app_id, projectId, status, startedAt, endedAt)
+           VALUES
+             ('cross-app-sess', 'owner-alpha', 'cross-app check', 'alpha', 'beta', 'done', ?, ?),
+             ('pre-window-err-sess', 'owner-alpha', 'long running task', 'alpha', 'alpha', 'error', ?, ?)`,
+        )
+        .run(now - 5_000, now - 4_000, start - 3_600_000, now - 1_000);
+      r4Db
+        .prepare(
+          `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
+           VALUES ('alpha', 'cross-window-fail', 't-err', 1, 'failed', ?, ?)`,
+        )
+        .run(
+          start - 3_600_000,
+          JSON.stringify({
+            owner: "owner-alpha",
+            sessionId: "pre-window-err-sess",
+            finishedAt: new Date(now - 1_000).toISOString(),
+          }),
+        );
+      r4Db
+        .prepare(
+          `INSERT INTO workflow_runs(runId, workflow, task, status, app_id, projectId, startedAt, endedAt)
+           VALUES ('wf-cross', 'alpha/check', 'check alpha', 'done', 'alpha', 'beta', ?, ?)`,
+        )
+        .run(now - 6_000, now - 5_000);
+
+      const betaSummary = readObservabilitySummary(r4Db, {
+        query: { start, end: now, appId: "beta" },
+        projectsRoot,
+        stateDir: root,
+        loadedApps: [
+          { id: "alpha", owner: "owner-alpha" },
+          { id: "beta", owner: "owner-beta" },
+        ],
+        now,
+      });
+      // Session & workflow with app_id='alpha' + projectId='beta' are NOT double-counted into beta!
+      expect(betaSummary.appDetail?.agents).toEqual([]);
+      expect(betaSummary.appDetail?.workflows).toEqual([]);
+
+      const alphaSummary2 = readObservabilitySummary(r4Db, {
+        query: { start, end: now, appId: "alpha" },
+        projectsRoot,
+        stateDir: root,
+        loadedApps: [
+          { id: "alpha", owner: "owner-alpha" },
+          { id: "beta", owner: "owner-beta" },
+        ],
+        now,
+      });
+      // Attempt failing inside window whose session started before `start` still counts its failure!
+      expect(alphaSummary2.appDetail?.agents.find((a) => a.agent === "owner-alpha")?.errorsWindow).toBe(1);
+
+      // Usage-only specialist appears in readAgentCapabilityRollups apps7d!
+      const rollups = readAgentCapabilityRollups(r4Db, now);
+      expect(rollups("usage-only-specialist").apps7d).toEqual(["alpha"]);
+
+      // 5. readMetricObservations scopes by appId BEFORE row limit and derives historical DB catalog when appCatalog is omitted.
+      for (let i = 0; i < 12; i++) {
+        ms.define({ id: `aaa-filler.m-${String(i).padStart(2, "0")}`, owner: "system:host" });
+      }
+      ms.define({ id: "zzz-beta.custom_metric", owner: "owner-beta" });
+      ms.record("zzz-beta.custom_metric", 42, { measuredAt: now - 100 });
+      const betaCatalog = resolveObservabilityCatalog(r4Db, {
+        projectsRoot,
+        loadedApps: [
+          { id: "alpha", owner: "owner-alpha" },
+          { id: "beta", owner: "owner-beta" },
+        ],
+        filterAppId: "beta",
+      });
+      const scopedObs = readMetricObservations(r4Db, now, undefined, betaCatalog, {
+        scopeAppId: "beta",
+        limit: 5,
+      });
+      expect(scopedObs.metrics.map((m) => m.id)).toEqual(["zzz-beta.custom_metric"]);
+      expect(scopedObs.truncated).toBe(false);
+
+      // Historical App in DB (`alpha`) is recognized even when readMetricObservations is called without a prebuilt catalog.
+      ms.define({ id: "alpha.latency_custom", owner: "unmapped-agent" });
+      const defaultCatalogObs = readMetricObservations(r4Db, now, ["alpha.latency_custom"]);
+      expect(defaultCatalogObs.metrics[0]?.scope).toEqual({ kind: "app", appId: "alpha" });
+    } finally {
+      r4Db.close();
     }
   });
 });

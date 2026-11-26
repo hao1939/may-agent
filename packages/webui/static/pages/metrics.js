@@ -143,7 +143,22 @@ function setTopDownDays(days, onMetricsTab) {
   }
 }
 
-function renderAppDrillDown(detail, days) {
+function metricsWindowHref(windowObj, days, extra = {}) {
+  const params = new URLSearchParams();
+  if (windowObj && Number.isFinite(windowObj.start) && Number.isFinite(windowObj.end)) {
+    params.set('start', String(windowObj.start));
+    params.set('end', String(windowObj.end));
+  } else {
+    params.set('days', String(days));
+  }
+  for (const [key, value] of Object.entries(extra)) {
+    if (value === null || value === undefined || value === '') params.delete(key);
+    else params.set(key, String(value));
+  }
+  return '/metrics?' + params.toString();
+}
+
+function renderAppDrillDown(detail, days, windowObj = null) {
   if (!detail) return '';
   const tasks = detail.tasks || [];
   const agents = detail.agents || [];
@@ -180,7 +195,7 @@ function renderAppDrillDown(detail, days) {
   const workflowsTable = workflows.length
     ? `<div tabindex="0" role="region" aria-label="Deterministic Workflows for ${attrEsc(appId)}" class="td-table-wrap"><table class="health-table"><thead><tr><th>Workflow</th><th>Finished</th><th>Done</th><th>Error / Blocked</th><th>Mean duration</th></tr></thead><tbody>
         ${workflows.map(w => {
-          const wfHref = `/metrics?days=${encodeURIComponent(String(days))}&appId=${encodeURIComponent(appId)}&workflow=${encodeURIComponent(w.workflow)}&runs=true`;
+          const wfHref = metricsWindowHref(windowObj, days, { appId, workflow: w.workflow, runs: 'true' });
           return `<tr>
             <td data-col="Workflow"><a href="${attrEsc(wfHref)}"><code>${esc(w.workflow)}</code></a></td>
             <td data-col="Finished">${esc(String(w.finished || 0))}</td>
@@ -195,7 +210,7 @@ function renderAppDrillDown(detail, days) {
   return `<section class="td-drilldown" data-app-drilldown="${attrEsc(appId)}" aria-label="App Drill-Down for ${attrEsc(appId)}">
     <div class="td-drilldown-head">
       <h3>App Drill-Down: <code>${esc(appId)}</code> (Tasks, Agents &amp; Workflows)</h3>
-      <a href="/metrics?days=${encodeURIComponent(String(days))}" class="td-window-btn">← Show all Apps</a>
+      <a href="${attrEsc(metricsWindowHref(windowObj, days))}" class="td-window-btn">← Show all Apps</a>
     </div>
     <div class="td-drilldown-grid">
       <div><h4>1. Contributing Tasks (value &amp; backlog → App)</h4>${tasksTable}</div>
@@ -321,7 +336,9 @@ function renderTopDownObservability(data, options = {}) {
     const hasBlocker = blockerParts.length > 0;
 
     const taskHref = `/projects/${encodeURIComponent(app.appId + '.app')}/tasks?appId=${encodeURIComponent(app.appId)}`;
-    const metricHref = `/metrics?appId=${encodeURIComponent(app.appId)}&days=${encodeURIComponent(String(days))}`;
+    const metricHref = onMetricsTab
+      ? metricsWindowHref(data.window, days, { appId: app.appId })
+      : `/metrics?appId=${encodeURIComponent(app.appId)}&days=${encodeURIComponent(String(days))}`;
 
     const rubricHtml = onMetricsTab && sc.sampleSize > 0
       ? `<div class="td-rubric-bars">${rubricLabels.map(([key, label]) => {
@@ -413,7 +430,7 @@ function renderTopDownObservability(data, options = {}) {
     </section>
     ${onMetricsTab ? renderOpenAlertsStrip(data.alerts) : ''}
     <div class="td-apps-grid">${appsHtml || '<p class="health-note">No enabled Apps discovered yet.</p>'}</div>
-    ${onMetricsTab && data.appDetail ? renderAppDrillDown(data.appDetail, days) : ''}`;
+    ${onMetricsTab && data.appDetail ? renderAppDrillDown(data.appDetail, days, data.window) : ''}`;
 }
 
 async function loadTopDownOverview() {
@@ -709,7 +726,13 @@ async function loadMetricsTab() {
     });
   }
   try {
-    const data = await readHealthJson('/api/metrics' + (id ? '?id=' + encodeURIComponent(id) : ''));
+    const selectedAppId = id ? null : (new URLSearchParams(location.search).get('appId') || null);
+    const metricsApiQuery = id
+      ? '?id=' + encodeURIComponent(id)
+      : selectedAppId
+        ? '?appId=' + encodeURIComponent(selectedAppId)
+        : '';
+    const data = await readHealthJson('/api/metrics' + metricsApiQuery);
     if (generation !== metricsLoadGeneration || currentTab !== 'metrics') return;
     if (id) {
       const metric = data.metrics.find(m => m.id === id);

@@ -1038,8 +1038,23 @@ describe("served workflow and metric health pages", () => {
       ).run(now - 500);
       db.prepare(
         `INSERT INTO app_task_attempts(app_id, attempt_id, task_id, task_generation, state, started_at, attempt_json)
-         VALUES ('research', 'codex-run-1', 'report-codex', 1, 'running', ?, ?)`,
-      ).run(now - 1_800_000, JSON.stringify({ owner: "worker", handler: "executor:codex-goal" }));
+         VALUES
+           ('research', 'codex-run-1', 'report-codex', 1, 'running', ?, ?),
+           ('research', 'wf-blocked-att', 'report-wf-gate', 1, 'completed', ?, ?)`,
+      ).run(
+        now - 1_800_000,
+        JSON.stringify({ owner: "worker", handler: "executor:codex-goal" }),
+        now - 1_200_000,
+        JSON.stringify({
+          owner: "worker",
+          handler: "workflow:research/gate",
+          finishedAt: new Date(now - 1_100_000).toISOString(),
+        }),
+      );
+      db.prepare(
+        `INSERT INTO workflow_runs(runId, workflow, task, status, app_id, attempt_id, startedAt, endedAt)
+         VALUES ('wr-blocked-1', 'research/gate', 'gate check', 'blocked', 'research', 'wf-blocked-att', ?, ?)`,
+      ).run(now - 1_200_000, now - 1_100_000);
       db.prepare(
         `INSERT INTO app_inbox_items(id, app_id, source_kind, source_id, input_kind, input_data, status, created_at, updated_at)
          VALUES ('hum-steer-1', 'research', 'human', 'web-ui', 'steer', '{}', 'done', ?, ?)`,
@@ -1067,8 +1082,9 @@ describe("served workflow and metric health pages", () => {
         expect(await page.$eval('#top-down-overview [data-app-card="research"]', (el) => el.textContent || "")).toContain(
           "low-sample (n=1)",
         );
-        // Unified Activity Timeline renders native Codex duration bar, human ◆ pin, and alert rail at top of Overview.
+        // Unified Activity Timeline renders native Codex duration bar, blocked workflow bar, human ◆ pin, and alert rail at top of Overview.
         expect(await page.$("#liveness-panel .timeline-bar.kind-codex.running")).not.toBeNull();
+        expect(await page.$("#liveness-panel .timeline-bar.kind-workflow.blocked")).not.toBeNull();
         expect(await page.$("#liveness-panel .timeline-pin.kind-human")).not.toBeNull();
         expect(await page.$("#liveness-panel .timeline-alert-rail")).not.toBeNull();
         // R-01 & unified alert strip: rendered once on Overview (in #liveness-panel, not duplicated in #top-down-overview).
@@ -1102,8 +1118,21 @@ describe("served workflow and metric health pages", () => {
         const metricsTopText = await page.$eval('#metrics-top-down [data-app-card="research"]', (el) => el.textContent || "");
         expect(metricsTopText).toContain("Outcome value (35%)");
         expect(metricsTopText).toContain("4.0/4");
+        expect(await page.$eval("#metrics-alerts", (el) => el.textContent || "")).toContain(
+          "[Host · Owner: system:host · No recorded handling]",
+        );
         await page.click('#metrics-top-down [data-drilldown-link="research"]');
         await page.waitForSelector('#metrics-top-down [data-app-drilldown="research"]');
+        const drillParams = new URL(page.url()).searchParams;
+        expect(drillParams.get("start")).toBeTruthy();
+        expect(drillParams.get("end")).toBeTruthy();
+        expect(metricsRequests.some((req) => req === "/api/metrics?appId=research")).toBe(true);
+        const showAllHref = await page.$eval(
+          '#metrics-top-down [data-app-drilldown="research"] a.td-window-btn',
+          (el) => el.getAttribute("href") || "",
+        );
+        expect(new URL("http://x" + showAllHref).searchParams.get("start")).toBe(drillParams.get("start"));
+        expect(new URL("http://x" + showAllHref).searchParams.get("end")).toBe(drillParams.get("end"));
         const drillText = await page.$eval('#metrics-top-down [data-app-drilldown="research"]', (el) => el.textContent || "");
         expect(drillText).toContain("1. Contributing Tasks");
         expect(drillText).toContain("worker");
@@ -1119,7 +1148,8 @@ describe("served workflow and metric health pages", () => {
         expect(errors).toEqual([]);
       } finally {
         db.prepare("DELETE FROM metric_alerts WHERE id = 901").run();
-        db.prepare("DELETE FROM app_task_attempts WHERE attempt_id = 'codex-run-1'").run();
+        db.prepare("DELETE FROM workflow_runs WHERE runId = 'wr-blocked-1'").run();
+        db.prepare("DELETE FROM app_task_attempts WHERE attempt_id IN ('codex-run-1', 'wf-blocked-att')").run();
         db.prepare("DELETE FROM app_inbox_items WHERE id = 'hum-steer-1'").run();
         db.prepare("DELETE FROM metric_snapshots WHERE metric_id = 'quality.success'").run();
         db.prepare("DELETE FROM metrics WHERE id = 'quality.success'").run();

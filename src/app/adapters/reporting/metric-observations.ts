@@ -1,6 +1,6 @@
 import type { SqliteDb } from "../../../lib/db.js";
 import { metricThresholdBreached } from "../../../lib/metrics.js";
-import { classifyMetricScope, type AppCatalog } from "./observability-summary.js";
+import { classifyMetricScope, resolveObservabilityCatalog, type AppCatalog } from "./observability-summary.js";
 import { WORKFLOW_OUTCOME_METRICS, WORKFLOW_OUTCOMES, WORKFLOW_OUTCOME_WINDOW_MS } from "./workflow-metrics.js";
 
 export const METRIC_LIST_LIMIT = 500;
@@ -14,7 +14,33 @@ export function readMetricObservations(
   now = Date.now(),
   ids?: string[],
   appCatalog?: AppCatalog,
+  options?: { scopeAppId?: string | null; limit?: number; projectsRoot?: string },
 ) {
+  const scopeAppId = options?.scopeAppId?.trim() || null;
+  const catalog =
+    appCatalog ?? resolveObservabilityCatalog(db, { projectsRoot: options?.projectsRoot, filterAppId: scopeAppId });
+  const rowLimit = options?.limit ?? METRIC_LIST_LIMIT;
+
+  let effectiveIds = ids;
+  let prefilteredTruncated = false;
+  if (scopeAppId && !ids) {
+    const candidates = db
+      .prepare("SELECT id, owner, project, config FROM metrics WHERE status = 'active' ORDER BY owner, priority, id")
+      .all() as Array<{ id: string; owner: string | null; project: string | null; config: string | null }>;
+    const matching: string[] = [];
+    for (const c of candidates) {
+      const sc = classifyMetricScope(c, catalog);
+      if (sc.kind === "app" && sc.appId === scopeAppId) {
+        matching.push(c.id);
+      }
+    }
+    prefilteredTruncated = matching.length > rowLimit;
+    effectiveIds = matching.slice(0, rowLimit);
+    if (effectiveIds.length === 0) {
+      return { metrics: [], truncated: false, generatedAt: now };
+    }
+  }
+
   const rows = db
     .prepare(
       `SELECT m.id, m.name, m.type, m.owner, m.project, m.target, m.threshold,
@@ -27,10 +53,10 @@ export function readMetricObservations(
     LEFT JOIN events e ON e.id = (
       SELECT id FROM events WHERE metric_id = m.id AND event_type = 'metric.measurement.failed'
       ORDER BY timestamp DESC, id DESC LIMIT 1)
-    WHERE m.status = 'active' ${ids ? `AND m.id IN (${ids.map(() => "?").join(",") || "NULL"})` : ""}
+    WHERE m.status = 'active' ${effectiveIds ? `AND m.id IN (${effectiveIds.map(() => "?").join(",") || "NULL"})` : ""}
     ORDER BY m.owner, m.priority, m.id LIMIT ?`,
     )
-    .all(...(ids ?? []), METRIC_LIST_LIMIT + 1) as Array<{
+    .all(...(effectiveIds ?? []), rowLimit + 1) as Array<{
     id: string;
     name: string | null;
     owner: string | null;
@@ -57,7 +83,7 @@ export function readMetricObservations(
     failedAt: number | null;
     failureData: string | null;
   }>;
-  const metrics = rows.slice(0, METRIC_LIST_LIMIT).map(({ failureData, config, source_query, ...row }) => {
+  const metrics = rows.slice(0, rowLimit).map(({ failureData, config, source_query, ...row }) => {
     let reason = "Source measurement failed; explanation unavailable";
     try {
       const data = JSON.parse(failureData ?? "null");
@@ -128,7 +154,7 @@ export function readMetricObservations(
         : null;
     return {
       ...row,
-      scope: classifyMetricScope({ ...row, config: parsedConfig }, appCatalog),
+      scope: classifyMetricScope({ ...row, config: parsedConfig }, catalog),
       noExposure: supersededByNoExposure,
       current: observed ? row.value : null,
       updated_at: observed ? row.measured_at : null,
@@ -157,7 +183,7 @@ export function readMetricObservations(
           : null,
     };
   });
-  return { metrics, truncated: rows.length > METRIC_LIST_LIMIT, generatedAt: now };
+  return { metrics, truncated: prefilteredTruncated || rows.length > rowLimit, generatedAt: now };
 }
 
 export function readMetricHistory(db: SqliteDb, metricId: string, window: { start: number; end: number }) {

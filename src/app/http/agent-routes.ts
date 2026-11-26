@@ -251,16 +251,17 @@ export function createAgentRouteHandlers(options: {
         a.lastActivityAt =
           Math.max(Number(a.lastSessionAt ?? 0), Number(att?.lastAttemptAt ?? 0)) || null;
 
-        // Owned ACTIVE metrics + actionable breaches (excluding retired metrics & trend-only alertsDisabled rules).
+        // Owned ACTIVE metrics + actionable breaches (excluding retired metrics, no-exposure superseded values, & trend-only alertsDisabled rules).
         const mets = db
           .prepare(
             `
-          SELECT id, current, threshold, alert_op, config FROM metrics WHERE owner = ? AND status = 'active'
+          SELECT id, current, updated_at, threshold, alert_op, config FROM metrics WHERE owner = ? AND status = 'active'
         `,
           )
           .all(name) as Array<{
           id: string;
           current: number | null;
+          updated_at: number | null;
           threshold: number | null;
           alert_op: string | null;
           config: string | null;
@@ -269,8 +270,18 @@ export function createAgentRouteHandlers(options: {
         a.metricBreached = mets.filter((m) => {
           if (openAlertMetricIds.has(m.id)) return true;
           if (isMetricAlertsDisabled(m.config)) return false;
-          if (m.threshold == null || m.current == null) return false;
-          return metricThresholdBreached({ current: m.current, threshold: m.threshold, alert_op: m.alert_op });
+          let current = m.current;
+          try {
+            const cfg = m.config ? JSON.parse(m.config) : null;
+            const noExp = cfg?.lastNoExposureAt;
+            if (typeof noExp === "number" && noExp > 0 && (m.updated_at == null || noExp > m.updated_at)) {
+              current = null;
+            }
+          } catch {
+            /* ignore */
+          }
+          if (m.threshold == null || current == null) return false;
+          return metricThresholdBreached({ current, threshold: m.threshold, alert_op: m.alert_op });
         }).length;
       }
 

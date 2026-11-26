@@ -1,10 +1,14 @@
 import { existsSync, readdirSync, readFileSync, statSync, statfsSync } from "node:fs";
-import { opendir, rm } from "node:fs/promises";
+import { opendir, rmdir, unlink } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { SqliteDb } from "../../../lib/db.js";
 import { taskViewPhaseSql } from "../../core/state/task-view-phase.js";
-import { ATTEMPT_FINISH_LOOKBACK_SLACK_MS, attemptFinishMsSql } from "./evolution-metrics.js";
+import {
+  ATTEMPT_FINISH_LOOKBACK_SLACK_MS,
+  attemptFinishMsSql,
+  terminalAttemptWindowPredicateSql,
+} from "./evolution-metrics.js";
 import { METRIC_LIST_LIMIT, readMetricObservations } from "./metric-observations.js";
 import { healthWindow } from "./workflow-health.js";
 
@@ -324,8 +328,9 @@ export type DiskCacheHygieneOptions = {
 
 /**
  * Bounded asynchronous build-cache hygiene (`0` Git subprocesses, `0` workspace/worktree
- * deletions, off the synchronous metric sampling path). Removes at most `maxEntries`
- * disposable entries under `cacheDir` within `deadlineMs`, yielding between removals.
+ * deletions, off the synchronous metric sampling path). Traverses incrementally with
+ * descendant-entry and wall-clock deadline checks before each `unlink`/`rmdir`, never
+ * issuing an unbounded recursive `rm()`.
  */
 export async function runBoundedDiskCacheHygiene(
   opts: DiskCacheHygieneOptions = {},
@@ -341,19 +346,69 @@ export async function runBoundedDiskCacheHygiene(
   const startedAt = performance.now();
   let prunedEntries = 0;
   let stoppedByBudget = false;
+  type OpenDirFrame = { path: string; dir: Awaited<ReturnType<typeof opendir>>; isRoot: boolean };
+  const stack: OpenDirFrame[] = [];
+  const overBudget = () => prunedEntries >= maxEntries || performance.now() - startedAt >= deadlineMs;
+
   try {
-    const dirHandle = await opendir(cacheDir);
-    for await (const dirent of dirHandle) {
-      if (prunedEntries >= maxEntries || performance.now() - startedAt >= deadlineMs) {
+    stack.push({ path: cacheDir, dir: await opendir(cacheDir), isRoot: true });
+    while (stack.length > 0) {
+      if (overBudget()) {
         stoppedByBudget = true;
         break;
       }
-      await rm(join(cacheDir, dirent.name), { recursive: true, force: true });
-      prunedEntries += 1;
-      await new Promise<void>((resolveTick) => setTimeout(resolveTick, 0));
+      const top = stack[stack.length - 1]!;
+      const dirent = await top.dir.read();
+      if (dirent === null) {
+        stack.pop();
+        await top.dir.close();
+        if (!top.isRoot) {
+          if (overBudget()) {
+            stoppedByBudget = true;
+            break;
+          }
+          try {
+            await rmdir(top.path);
+            prunedEntries += 1;
+          } catch {
+            /* Non-empty or concurrently modified directory. */
+          }
+          await new Promise<void>((resolveTick) => setTimeout(resolveTick, 0));
+        }
+        continue;
+      }
+      if (overBudget()) {
+        stoppedByBudget = true;
+        break;
+      }
+      const entryPath = join(top.path, dirent.name);
+      if (dirent.isDirectory() && !dirent.isSymbolicLink()) {
+        try {
+          stack.push({ path: entryPath, dir: await opendir(entryPath), isRoot: false });
+        } catch {
+          /* Skip unreadable subdirectory. */
+        }
+      } else {
+        try {
+          await unlink(entryPath);
+          prunedEntries += 1;
+        } catch {
+          /* Skip concurrently removed entry. */
+        }
+        await new Promise<void>((resolveTick) => setTimeout(resolveTick, 0));
+      }
     }
   } catch {
     /* Missing or unreadable disposable cache dir is a safe no-op. */
+  } finally {
+    while (stack.length > 0) {
+      const frame = stack.pop()!;
+      try {
+        await frame.dir.close();
+      } catch {
+        /* Ignore close errors on cleanup. */
+      }
+    }
   }
   return { prunedEntries, stoppedByBudget };
 }
@@ -933,7 +988,7 @@ function buildWindowTrends(
 
   // 1a. Terminal Attempt bucket facts (Host + per-App) aligned on shared finish-time cohort `[start, end)`.
   const finishMsExpr = attemptFinishMsSql("a");
-  const terminalLookbackStart = start - ATTEMPT_FINISH_LOOKBACK_SLACK_MS;
+  const terminalCohortPredicate = terminalAttemptWindowPredicateSql("?", "?", "a");
   const terminalAttemptBuckets = db
     .prepare(
       `SELECT
@@ -945,14 +1000,10 @@ function buildWindowTrends(
          COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS converged,
          COUNT(CASE WHEN COALESCE(a.accepted_result_state, '') != 'converged' THEN 1 END) AS nonConverged
        FROM app_task_attempts a
-       WHERE a.started_at >= ? AND a.started_at < ?
-         AND a.state IN ('completed', 'failed', 'interrupted')
-         AND ${finishMsExpr} IS NOT NULL
-         AND ${finishMsExpr} >= ?
-         AND ${finishMsExpr} < ?
+       WHERE ${terminalCohortPredicate}
        GROUP BY a.app_id, b`,
     )
-    .all(start, bucketWidth, terminalLookbackStart, end, start, end) as Array<{
+    .all(start, bucketWidth, end, start, end) as Array<{
     appId: string;
     b: number;
     terminal: number;
@@ -993,11 +1044,11 @@ function buildWindowTrends(
     disjointAgentAttempts: number;
   }>;
 
-  // 2. Workflow bucket facts (Host + per-App).
+  // 2. Workflow bucket facts (Host + per-App, preferring app_id over projectId).
   const wfBuckets = db
     .prepare(
       `SELECT
-         COALESCE(app_id, '') AS appId,
+         COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), ''), '') AS appId,
          MIN(${TREND_BUCKETS - 1}, MAX(0, CAST((endedAt - ?) / ? AS INTEGER))) AS b,
          COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS total,
          COUNT(CASE WHEN status = 'done' THEN 1 END) AS done,
@@ -1096,6 +1147,7 @@ function buildWindowTrends(
     outcomeExposure: number[];
     pricedUsd: number[];
     pricedCount: number[];
+    unpricedCount: number[];
     nonConverged: number[];
     finishedAttempts: number[];
     agentExecutions: number[];
@@ -1112,6 +1164,7 @@ function buildWindowTrends(
         outcomeExposure: zeros(),
         pricedUsd: zeros(),
         pricedCount: zeros(),
+        unpricedCount: zeros(),
         nonConverged: zeros(),
         finishedAttempts: zeros(),
         agentExecutions: zeros(),
@@ -1141,7 +1194,9 @@ function buildWindowTrends(
 
   for (const r of startedAttemptBuckets) {
     if (r.appId) {
-      ensureApp(r.appId).agentExecutions[r.b] += r.disjointAgentAttempts;
+      const a = ensureApp(r.appId);
+      a.agentExecutions[r.b] += r.disjointAgentAttempts;
+      a.unpricedCount[r.b] += r.disjointAgentAttempts;
     }
   }
 
@@ -1178,10 +1233,14 @@ function buildWindowTrends(
     if (r.appId && !r.workflowRunId) {
       ensureApp(r.appId).agentExecutions[b] += 1;
     }
-    if (r.appId && typeof r.pricedUsd === "number" && Number.isFinite(r.pricedUsd)) {
+    if (r.appId) {
       const a = ensureApp(r.appId);
-      a.pricedUsd[b] += r.pricedUsd;
-      a.pricedCount[b] += 1;
+      if (typeof r.pricedUsd === "number" && Number.isFinite(r.pricedUsd)) {
+        a.pricedUsd[b] += r.pricedUsd;
+        a.pricedCount[b] += 1;
+      } else {
+        a.unpricedCount[b] += 1;
+      }
     }
   }
 
@@ -1298,9 +1357,14 @@ function buildWindowTrends(
   for (const appId of appIds) {
     const a = ensureApp(appId);
     const totalPriced = a.pricedCount.reduce((s, x) => s + x, 0);
-    // Cost per outcome only has valid exposure in buckets/windows where pricing exists AND outcomes > 0.
-    const costNums = a.pricedUsd.map((usd, i) => (a.pricedCount[i]! > 0 && a.outcomes[i]! > 0 ? usd : 0));
-    const costDens = a.outcomes.map((outc, i) => (a.pricedCount[i]! > 0 && outc > 0 ? outc : 0));
+    const totalUnpriced = a.unpricedCount.reduce((s, x) => s + x, 0);
+    // Require complete pricing coverage (`unpricedCount === 0`) so partial spend never masquerades as full cost/outcome.
+    const costNums = a.pricedUsd.map((usd, i) =>
+      a.pricedCount[i]! > 0 && a.unpricedCount[i]! === 0 && a.outcomes[i]! > 0 ? usd : 0,
+    );
+    const costDens = a.outcomes.map((outc, i) =>
+      a.pricedCount[i]! > 0 && a.unpricedCount[i]! === 0 && outc > 0 ? outc : 0,
+    );
     const costSeries = buildRatioTrend({
       metricId: `${appId}.cost_per_outcome_usd_7d`,
       label: "Cost / outcome",
@@ -1310,11 +1374,11 @@ function buildWindowTrends(
       numerators: costNums,
       denominators: costDens,
     });
-    // Whole-window cost/outcome uses whole-window SUM(priced USD) / SUM(verified outcomes) when priced runs exist.
     const windowOutcomes = a.outcomes.reduce((s, x) => s + x, 0);
     const windowUsd = a.pricedUsd.reduce((s, x) => s + x, 0);
-    costSeries.current = totalPriced > 0 && windowOutcomes > 0 ? roundMetric(windowUsd / windowOutcomes) : null;
-    costSeries.sampleSize = totalPriced > 0 ? windowOutcomes : 0;
+    const completeWindowPricing = totalPriced > 0 && totalUnpriced === 0;
+    costSeries.current = completeWindowPricing && windowOutcomes > 0 ? roundMetric(windowUsd / windowOutcomes) : null;
+    costSeries.sampleSize = completeWindowPricing && windowOutcomes > 0 ? windowOutcomes : 0;
 
     appTrends.set(appId, {
       verifiedOutcomes: buildCountTrend({
@@ -1454,7 +1518,7 @@ function buildAppDrillDown(
     scorecard: summarizeAppScorecard(scorecardsByTask.get(row.taskId) ?? []),
   }));
 
-  // Agents contributing to this App in the window (sessions + execution_usage).
+  // Agents contributing to this App in the window (preferring app_id, falling back to projectId only when absent).
   const sessionAgentRows = db
     .prepare(
       `SELECT
@@ -1462,12 +1526,12 @@ function buildAppDrillDown(
          COUNT(*) AS sessionsWindow,
          COUNT(CASE WHEN status = 'error' THEN 1 END) AS errorsWindow
        FROM sessions
-       WHERE (app_id = ? OR projectId = ?)
+       WHERE COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), '')) = ?
          AND agent IS NOT NULL AND agent != ''
          AND startedAt >= ? AND startedAt < ?
        GROUP BY agent`,
     )
-    .all(appId, appId, start, end) as Array<{ agent: string; sessionsWindow: number; errorsWindow: number }>;
+    .all(appId, start, end) as Array<{ agent: string; sessionsWindow: number; errorsWindow: number }>;
 
   const complete =
     "outcome IS NOT NULL AND json_extract(data, '$.totals.replies') > 0 AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')";
@@ -1492,7 +1556,7 @@ function buildAppDrillDown(
   }>;
 
   // Attribute Task attempts to the resolved owner retained on each attempt (`$.owner`),
-  // counting only non-workflow attempts not already represented in execution_usage / sessions.
+  // deduplicating only against usage/sessions counted in the same `[start, end)` window.
   const usageLookbackStart = start - 7 * 86_400_000;
   const attemptAgentRows = db
     .prepare(
@@ -1514,17 +1578,25 @@ function buildAppDrillDown(
              SELECT 1 FROM execution_usage u
              WHERE u.session_id = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
                AND u.app_id = a.app_id
+               AND u.started_at >= ? AND u.started_at < ?
            ) THEN 1 END) AS disjointUsageAttempts,
          COUNT(CASE WHEN a.started_at >= ? AND a.started_at < ?
            AND NOT EXISTS (
              SELECT 1 FROM sessions s
              WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+               AND COALESCE(NULLIF(trim(s.app_id), ''), NULLIF(trim(s.projectId), '')) = a.app_id
+               AND s.agent IS NOT NULL AND s.agent != ''
+               AND s.startedAt >= ? AND s.startedAt < ?
            ) THEN 1 END) AS disjointSessionAttempts,
          COUNT(CASE WHEN a.state = 'failed'
            AND ${finishMsExpr} IS NOT NULL AND ${finishMsExpr} >= ? AND ${finishMsExpr} < ?
            AND NOT EXISTS (
              SELECT 1 FROM sessions s
-             WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '') AND s.status = 'error'
+             WHERE s.sessionId = COALESCE(json_extract(a.attempt_json, '$.sessionId'), '')
+               AND s.status = 'error'
+               AND COALESCE(NULLIF(trim(s.app_id), ''), NULLIF(trim(s.projectId), '')) = a.app_id
+               AND s.agent IS NOT NULL AND s.agent != ''
+               AND s.startedAt >= ? AND s.startedAt < ?
            ) THEN 1 END) AS disjointFailedAttempts
        FROM app_task_attempts a
        LEFT JOIN app_tasks t ON t.app_id = a.app_id AND t.task_id = a.task_id
@@ -1537,17 +1609,23 @@ function buildAppDrillDown(
        GROUP BY 1`,
     )
     .all(
-      usageLookbackStart,
-      end,
-      appId,
-      start,
-      end,
-      start,
-      end,
       start,
       end,
       appId,
-      terminalLookbackStart,
+      start,
+      end,
+      start,
+      end,
+      start,
+      end,
+      start,
+      end,
+      start,
+      end,
+      start,
+      end,
+      appId,
+      Math.min(usageLookbackStart, terminalLookbackStart),
       end,
       start,
       end,
@@ -1608,13 +1686,13 @@ function buildAppDrillDown(
                THEN endedAt - startedAt END) AS meanDurationMs
        FROM workflow_runs
        WHERE parentWorkflowRunId IS NULL
-         AND (app_id = ? OR projectId = ?)
+         AND COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), '')) = ?
          AND endedAt >= ? AND endedAt < ?
        GROUP BY workflow
        ORDER BY finished DESC, workflow ASC
        LIMIT 20`,
     )
-    .all(appId, appId, start, end) as Array<{
+    .all(appId, start, end) as Array<{
     workflow: string;
     finished: number;
     done: number;
@@ -1633,7 +1711,7 @@ export function readAgentCapabilityRollups(db: SqliteDb, now = Date.now()) {
   const sessionApps = db
     .prepare(
       `SELECT agent, appId, SUM(runs) AS runs FROM (
-         SELECT agent, COALESCE(NULLIF(app_id, ''), NULLIF(projectId, '')) AS appId, COUNT(*) AS runs
+         SELECT agent, COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), '')) AS appId, COUNT(*) AS runs
          FROM sessions
          WHERE startedAt >= ? AND startedAt < ? AND agent IS NOT NULL AND agent != ''
          GROUP BY agent, appId
@@ -1651,10 +1729,17 @@ export function readAgentCapabilityRollups(db: SqliteDb, now = Date.now()) {
          WHERE a.started_at >= ? AND a.started_at < ?
            AND COALESCE(json_extract(a.attempt_json, '$.handler'), '') NOT LIKE 'workflow:%'
          GROUP BY 1, 2
+         UNION ALL
+         SELECT agent, NULLIF(trim(app_id), '') AS appId, COUNT(*) AS runs
+         FROM execution_usage
+         WHERE started_at >= ? AND started_at < ?
+           AND agent IS NOT NULL AND agent != ''
+           AND app_id IS NOT NULL AND trim(app_id) != ''
+         GROUP BY agent, appId
        ) WHERE agent IS NOT NULL AND agent != ''
        GROUP BY agent, appId`,
     )
-    .all(start, end, start, end) as Array<{ agent: string; appId: string | null; runs: number }>;
+    .all(start, end, start, end, start, end) as Array<{ agent: string; appId: string | null; runs: number }>;
 
   const complete =
     "outcome IS NOT NULL AND json_extract(data, '$.totals.replies') > 0 AND json_extract(data, '$.totals.measuredReplies') = json_extract(data, '$.totals.replies')";
@@ -1966,21 +2051,16 @@ export function readObservabilitySummary(
       )
       .get(start, end) as { finished: number; errors: number };
 
-    const hostFinishExpr = attemptFinishMsSql();
-    const hostTerminalLookbackStart = start - ATTEMPT_FINISH_LOOKBACK_SLACK_MS;
+    const hostTerminalPredicate = terminalAttemptWindowPredicateSql("?", "?");
     const hostTerminalRow = db
       .prepare(
         `SELECT
            COUNT(*) AS terminal,
            COUNT(CASE WHEN state = 'failed' THEN 1 END) AS failed
          FROM app_task_attempts
-         WHERE started_at >= ? AND started_at < ?
-           AND state IN ('completed', 'failed', 'interrupted')
-           AND ${hostFinishExpr} IS NOT NULL
-           AND ${hostFinishExpr} >= ?
-           AND ${hostFinishExpr} < ?`,
+         WHERE ${hostTerminalPredicate}`,
       )
-      .get(hostTerminalLookbackStart, end, start, end) as { terminal: number; failed: number };
+      .get(end, start, end) as { terminal: number; failed: number };
 
     const hostFailoverRow = db
       .prepare(
@@ -2105,7 +2185,7 @@ export function readObservabilitySummary(
       disjointAgentAttempts: number;
     }>;
 
-    const appFinishExpr = attemptFinishMsSql("a");
+    const appTerminalPredicate = terminalAttemptWindowPredicateSql("?", "?", "a");
     const appTerminalRows = db
       .prepare(
         `SELECT
@@ -2113,14 +2193,10 @@ export function readObservabilitySummary(
            COUNT(CASE WHEN a.state = 'completed' AND a.accepted_result_state = 'converged' THEN 1 END) AS convergedMilestones,
            COUNT(CASE WHEN a.state = 'failed' THEN 1 END) AS failedAttempts
          FROM app_task_attempts a
-         WHERE a.started_at >= ? AND a.started_at < ?
-           AND a.state IN ('completed', 'failed', 'interrupted')
-           AND ${appFinishExpr} IS NOT NULL
-           AND ${appFinishExpr} >= ?
-           AND ${appFinishExpr} < ?
+         WHERE ${appTerminalPredicate}
          GROUP BY a.app_id`,
       )
-      .all(hostTerminalLookbackStart, end, start, end) as Array<{
+      .all(end, start, end) as Array<{
       appId: string;
       convergedMilestones: number;
       failedAttempts: number;
@@ -2205,20 +2281,20 @@ export function readObservabilitySummary(
       )
       .all(start, end) as Array<{ appId: string; humanInputsWindow: number }>;
 
-    // Per-App workflow execution counts in window (top-level runs).
+    // Per-App workflow execution counts in window (top-level runs, preferring app_id over projectId).
     const appWorkflowRows = db
       .prepare(
         `SELECT
-           app_id AS appId,
+           COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), '')) AS appId,
            COUNT(CASE WHEN status IN ('done', 'error', 'blocked', 'interrupted') THEN 1 END) AS finished,
            COUNT(CASE WHEN status = 'done' THEN 1 END) AS done,
            COUNT(CASE WHEN status = 'error' THEN 1 END) AS errors,
            COUNT(CASE WHEN status = 'blocked' THEN 1 END) AS blocked
          FROM workflow_runs
          WHERE parentWorkflowRunId IS NULL
-           AND app_id IS NOT NULL AND app_id != ''
+           AND COALESCE(NULLIF(trim(app_id), ''), NULLIF(trim(projectId), '')) IS NOT NULL
            AND endedAt >= ? AND endedAt < ?
-         GROUP BY app_id`,
+         GROUP BY 1`,
       )
       .all(start, end) as Array<{
       appId: string;
@@ -2385,6 +2461,10 @@ export function readObservabilitySummary(
           inputTokensWindow: usage && usage.measuredInvocations > 0 ? (usage.inputTokens ?? 0) : null,
           outputTokensWindow: usage && usage.measuredInvocations > 0 ? (usage.outputTokens ?? 0) : null,
           pricedInvocationsWindow: usage?.pricedInvocations ?? 0,
+          completePricingCoverage:
+            (usage?.pricedInvocations ?? 0) > 0 &&
+            (usage?.pricedInvocations ?? 0) === (usage?.invocations ?? 0) &&
+            (attempts?.disjointAgentAttempts ?? 0) === 0,
           estimatedCostUsdWindow:
             usage && usage.pricedInvocations > 0 && usage.estimatedCostUsd !== null
               ? Math.round(usage.estimatedCostUsd * 10000) / 10000

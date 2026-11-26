@@ -116,6 +116,7 @@
   .heartbeat-dot.cat-workflow, .timeline-bar.kind-workflow   { background: var(--yellow); }
   .heartbeat-dot.cat-other, .timeline-bar.kind-other         { background: var(--fg2); }
   .timeline-bar.converged                                    { border-right: 2px solid var(--green); }
+  .timeline-bar.blocked                                      { background: repeating-linear-gradient(135deg, var(--yellow), var(--yellow) 3px, rgba(248,81,73,0.75) 3px, rgba(248,81,73,0.75) 6px); border-right: 2px solid var(--red); z-index: 2; }
   .heartbeat-dot.error, .timeline-bar.error                  { background: var(--red); border-right-color: var(--red); z-index: 2; }
   .heartbeat-dot.running, .timeline-bar.running              { box-shadow: 0 0 0 1.5px var(--fg), 0 0 6px rgba(88,166,255,0.55); z-index: 2; }
 
