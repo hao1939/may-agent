@@ -683,19 +683,24 @@ describe("served workflow and metric health pages", () => {
           for (const [route, selector] of [["/", "#workflow-overview"], ["/metrics", "#metrics-workflows"]]) {
             await page.goto(base + route, { waitUntil: "domcontentloaded" });
             await page.waitForSelector(selector + " .health-card");
-            const cards = await page.$$eval(selector + " .health-card", cards => cards.map(card => {
-              const style = getComputedStyle(card);
-              const label = getComputedStyle(card.querySelector(".health-label")!);
-              const value = getComputedStyle(card.querySelector(".health-value")!);
-              return { border: parseFloat(style.borderTopWidth), padding: parseFloat(style.paddingTop),
-                labelSize: parseFloat(label.fontSize), valueSize: parseFloat(value.fontSize), weight: Number(value.fontWeight) };
-            }));
-            expect(cards).toHaveLength(5);
+            // Resolve the current panel and sample styles in one browser task.
+            // $$eval resolves handles before evaluation; a live reread can detach
+            // those nodes in between, leaving empty computed styles.
+            const cards = await page.evaluate(selector =>
+              [...document.querySelectorAll(selector + " .health-card")].map(card => {
+                const style = getComputedStyle(card);
+                const label = getComputedStyle(card.querySelector(".health-label")!);
+                const value = getComputedStyle(card.querySelector(".health-value")!);
+                return { border: parseFloat(style.borderTopWidth), padding: parseFloat(style.paddingTop),
+                  labelSize: parseFloat(label.fontSize), valueSize: parseFloat(value.fontSize), weight: Number(value.fontWeight) };
+              }), selector);
+            const context = `route=${route}, width=${width}`;
+            expect(cards, context).toHaveLength(5);
             for (const card of cards) {
-              expect(card.border).toBeGreaterThan(0);
-              expect(card.padding).toBeGreaterThan(0);
-              expect(card.valueSize).toBeGreaterThan(card.labelSize);
-              expect(card.weight).toBeGreaterThanOrEqual(600);
+              expect(card.border, context).toBeGreaterThan(0);
+              expect(card.padding, context).toBeGreaterThan(0);
+              expect(card.valueSize, context).toBeGreaterThan(card.labelSize);
+              expect(card.weight, context).toBeGreaterThanOrEqual(600);
             }
           }
         }
@@ -769,6 +774,8 @@ describe("served workflow and metric health pages", () => {
         const errors: string[] = [];
         const requests: string[] = [];
         let failMetrics = false;
+        let overviewReadCount = 0;
+        let captureOverviewRefresh: ((request: HTTPRequest) => void) | null = null;
         page.on("pageerror", (error) => errors.push(String(error)));
         page.on("request", (request) => {
           if (request.url().startsWith(base + "/api/")) requests.push(new URL(request.url()).pathname);
@@ -776,7 +783,13 @@ describe("served workflow and metric health pages", () => {
         await page.setRequestInterception(true);
         page.on("request", (request) => {
           if (!request.url().startsWith(base)) void request.abort();
-          else if (failMetrics && new URL(request.url()).pathname === "/api/metrics")
+          else if (captureOverviewRefresh && new URL(request.url()).pathname === "/api/workflow-health"
+            && ++overviewReadCount === 2) {
+            // Let the initial Overview render, but hold its overlapping live
+            // reread until the test has observed the first set of cards.
+            captureOverviewRefresh(request);
+            captureOverviewRefresh = null;
+          } else if (failMetrics && new URL(request.url()).pathname === "/api/metrics")
             void request.respond({
               status: 503,
               contentType: "application/json",
@@ -823,9 +836,13 @@ describe("served workflow and metric health pages", () => {
           db.run("INSERT INTO metrics (id, status, owner) VALUES (?, 'active', 'zz-fixture')", [id]);
           db.run("INSERT INTO metric_alerts(metric_id, message, created_at) VALUES (?, 'synthetic browser alert boundary', ?)", [id, now + i]);
         };
+        let overviewRefresh: Promise<HTTPRequest> | null = null;
         for (let i = 0; i < 21; i++) {
           alert(i);
           if (![3, 4, 19, 20].includes(i)) continue;
+          if (i === 20) {
+            overviewRefresh = new Promise(resolve => { captureOverviewRefresh = resolve; });
+          }
           await page.reload({ waitUntil: "domcontentloaded" });
           await page.waitForSelector("#liveness-panel .breach-badge");
           expect(await page.$eval("#liveness-panel .breach-badge", (el) => el.textContent))
@@ -838,11 +855,25 @@ describe("served workflow and metric health pages", () => {
           document.querySelector("#overview-tasks")?.textContent?.includes("Task read unavailable"),
         );
         expect(requests.filter((path) => path.endsWith("/history"))).toHaveLength(0);
-        const selected = await page.$eval(
-          '#workflow-overview a[href*="outcome=error"]',
-          (el) => (el as HTMLAnchorElement).href,
-        );
+        const heldOverview = await overviewRefresh!;
+        const initialCards = await page.$('#workflow-overview [data-workflow-outcomes]');
+        expect(initialCards).not.toBeNull();
+        expect(await initialCards!.evaluate(el => el.isConnected)).toBe(true);
+        await heldOverview.continue();
+        // Observe the actual render, not merely the HTTP response. This forces
+        // the formerly racy replacement between the initial cards and click.
+        await page.waitForFunction(el => !el!.isConnected, {}, initialCards);
+        await initialCards!.dispose();
+        await page.evaluate(() => {
+          document.addEventListener('click', event => {
+            const link = (event.target as Element).closest('#workflow-overview a[href*="outcome=error"]');
+            if (link) (window as unknown as { clickedOutcome: string }).clickedOutcome = (link as HTMLAnchorElement).href;
+          }, { capture: true, once: true });
+        });
         await page.click('#workflow-overview a[href*="outcome=error"]');
+        // Record the exact native click target, not a prior read's rolling window.
+        const selected = await page.evaluate(() => (window as unknown as { clickedOutcome: string }).clickedOutcome);
+        expect(selected).toBeString();
         await page.waitForFunction(() =>
           document.querySelector("#metrics-workflows")?.textContent?.includes("Matching runs · 2"),
         );
@@ -850,6 +881,12 @@ describe("served workflow and metric health pages", () => {
         const actualWindow = new URL(page.url()).searchParams;
         expect(actualWindow.get("start")).toBe(expectedWindow.get("start"));
         expect(actualWindow.get("end")).toBe(expectedWindow.get("end"));
+        for (const key of ["scope", "runs", "outcome"]) {
+          expect(actualWindow.get(key)).toBe(expectedWindow.get(key));
+        }
+        expect(actualWindow.get("outcome")).toBe("error");
+        expect(await page.$$eval('#metrics-workflows a[href^="/api/workflow-runs/"]', links =>
+          links.map(link => link.textContent).sort())).toEqual(["wr_6", "wr_7"]);
         expect(await page.$eval("#metrics-workflows", (el) => el.textContent)).toContain("60.0% successful execution");
         await page.waitForSelector("#metrics-context [data-context-comparison]");
         const contextText = await page.$eval("#metrics-context", (el) => el.textContent || "");
