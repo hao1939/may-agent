@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from "node:util";
 import type { SqliteDb } from "../../../lib/db.js";
 import { AppTaskResourceStore } from "../state/app-task-resource-store.js";
 import { isHumanActionOwner } from "../tasks/human-condition.js";
@@ -53,6 +54,24 @@ export function readHumanTaskReply(data: Record<string, unknown>, trustedTelegra
     Number(reply.taskGeneration) < 1
   )
     return null;
+  // Console sends both bindings for a displayed proposal. The weaker feedback
+  // binding must not bypass that card's identity, even for non-decision text.
+  if (data.approvalReply !== undefined) {
+    const approval = record(data.approvalReply);
+    const approvalTarget = record(approval.target);
+    const proposal = record(approval.proposal);
+    if (
+      !data.replyTo ||
+      typeof approvalTarget.appId !== "string" ||
+      approvalTarget.appId.trim().replace(/\.app$/, "") !== target.appId.trim().replace(/\.app$/, "") ||
+      typeof approvalTarget.taskId !== "string" ||
+      approvalTarget.taskId.trim() !== target.taskId.trim() ||
+      proposal.taskGeneration !== reply.taskGeneration ||
+      (reply.proposal !== undefined && !isDeepStrictEqual(reply.proposal, proposal))
+    )
+      return null;
+    reply = { ...reply, proposal };
+  }
   const anchor = record(reply.condition);
   if (
     reply.condition !== undefined &&

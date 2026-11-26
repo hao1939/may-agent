@@ -61,6 +61,9 @@ with the displayed detail's identity. `condition`, when present, is the exact
 `{ taskGeneration, conditionId, conditionGeneration }` ordinary-question anchor
 returned as `humanConditionAnchor` in that detail. This is separate from
 `approvalReply`; feedback never grants approval or revises creator-owned scope.
+When both bindings accompany a displayed proposal, their target and generation
+must agree and the exact shown proposal remains required even for non-decision
+feedback. A stale proposal cannot silently become generation-only Task feedback.
 
 Passive `context.focusedTask`, quoted discussion, lists and watch refreshes
 remain Conversation context. They do not address background work. The Host

@@ -836,12 +836,13 @@ export async function startAppInboxRuntime(options: StartAppInboxRuntimeOptions)
       if (String(event.type) === "project.task.reconcile.started" || String(event.type) === "project.task.reconciled") {
       const rows = options.db
         .prepare(
-          `SELECT DISTINCT conversation_id FROM app_inbox_items
+          `SELECT DISTINCT COALESCE(conversation_app_id, app_id) AS conversation_app_id, conversation_id
+          FROM app_inbox_items
           WHERE app_id = ? AND conversation_id IS NOT NULL AND
             (execution_task_id = ? OR (waiting_on_kind = 'task' AND waiting_on_id = ?))`,
         )
           .all(String(data.project ?? ""), String(data.taskId ?? ""), String(data.taskId ?? ""));
-        for (const row of rows) notifyConversationUpdated(String(data.project), String(row.conversation_id));
+        for (const row of rows) notifyConversationUpdated(String(row.conversation_app_id), String(row.conversation_id));
       }
       if (event.type === "conversation.turn.stop.requested") {
         // The first delivery executes the fenced control. Marker recovery only

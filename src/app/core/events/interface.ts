@@ -19,6 +19,7 @@ import {
 } from "./approval.js";
 import { isLiveOnlyEventType } from "./persistence-policy.js";
 import { readEventTaskTarget } from "./task-target.js";
+import { readHumanTaskReply } from "./task-reply.js";
 import { readPersistedEventEnvelope } from "./persisted.js";
 import { getAppEventAdmissionPlan } from "../state/app-event-admission-store.js";
 import type { SqliteDb } from "../../../lib/db.js";
@@ -728,6 +729,8 @@ export function deliverConversationApproval(
   // A saved decision remains the receipt even after its Condition has resolved.
   const prior = findPersistedEventId(db, canonical);
   if (!prior) {
+    if (data.taskReply !== undefined && !readHumanTaskReply(data))
+      return { reason: "The displayed reply bindings disagree. No approval was recorded; your text remains conversation." };
     try {
       validateCurrentApproval(bound, db);
     } catch (error) {

@@ -402,6 +402,67 @@ for (const ownerApp of ["interface", "worker"]) {
         id: "not-a-promise-transfer", inputId: requestId,
         requestUpdates: [{ id: "caller-promise", expectedRevision: 0, disposition: "open", scope: "Not transferred" }],
       }], communication))).toThrow("cannot update another App");
+      // A Console proposal reply carries both bindings. Replacing the shown
+      // proposal at the same Task generation must not degrade to direct feedback.
+      const currentTask = store.readTask("question")!;
+      const currentQuestion = store.readTaskContext({ taskIds: ["question"] }).conditions!.environment!;
+      const approvalCondition = { ...currentQuestion,
+        metadata: { ...currentQuestion.metadata, generation: 3, resourceVersion: 3 },
+        spec: { type: "project.approval.submitted", subject: "fixture:proposal", owner: "human",
+          requestedAction: "Apply the isolated fixture", expected: { allowedDecisions: ["approve", "reject"] } },
+      };
+      expect(store.commit({
+        fences: [{ taskId: "question", resourceVersion: currentTask.metadata.resourceVersion }],
+        conditions: [approvalCondition],
+      })).toBe(true);
+      const proposal = service.getTask(target)!.approvalProposal!;
+      expect(proposal).toBeDefined();
+      const consoleReply = { replyTo: "displayed-proposal", taskReply: { target, taskGeneration: 1 },
+        approvalReply: { target, proposal } };
+      const beforeProposal = receipts.length;
+      publish("proposal-feedback", consoleReply);
+      await waitFor(beforeProposal + 1);
+      expect(receipts.at(-1)!.target).toEqual({ project: ownerApp, taskId: "question" });
+      const decide = (id: string, reply = consoleReply) => events.publish({
+        type: "conversation.message.created", target: { appId: "interface" }, idempotencyKey: id,
+        data: { conversationId: "primary", author: { kind: "human", id }, text: "approve", ...reply },
+      }, { source: "control-socket", approvalAuthorization: {
+        actor: { kind: "operator", id: "fixture-operator" }, reference: "fixture:decision",
+        evidence: { decisionText: "approve" },
+      } });
+      const mismatched = decide("mismatched-decision", {
+        ...consoleReply, taskReply: { target, taskGeneration: 2 },
+      });
+      expect(mismatched.approval).toHaveProperty("reason");
+      expect(db.prepare("SELECT target_task_id FROM app_inbox_items WHERE source_id = 'mismatched-decision'").get())
+        .toEqual({ target_task_id: null });
+      for (const [id, binding] of [
+        ["mismatched-proposal-target", { ...consoleReply, taskReply: {
+          target: { appId: ownerApp === "interface" ? "worker" : "interface", taskId: "question" }, taskGeneration: 1 } }],
+        ["mismatched-proposal-generation", { ...consoleReply, taskReply: { target, taskGeneration: 2 } }],
+        ["missing-proposal", { ...consoleReply, approvalReply: { target, proposal: {} } }],
+      ] as const) {
+        publish(id, binding);
+        expect(db.prepare("SELECT target_task_id FROM app_inbox_items WHERE source_id = ?").get(id))
+          .toEqual({ target_task_id: null });
+      }
+      const formal = decide("proposal-decision");
+      expect(formal.approval).toMatchObject({ decision: "approve", eventId: expect.any(Number) });
+      // The exact decision may settle its approval Condition before ordinary
+      // input routing; it must not be relabeled as another question receipt.
+      const replacingTask = store.readTask("question")!;
+      expect(store.commit({
+        fences: [{ taskId: "question", resourceVersion: replacingTask.metadata.resourceVersion }],
+        conditions: [{ ...approvalCondition,
+          metadata: { ...approvalCondition.metadata, generation: 4, resourceVersion: 4 },
+          spec: { ...approvalCondition.spec, requestedAction: "Apply the replacement fixture" } }],
+      })).toBe(true);
+      publish("replaced-proposal-feedback", consoleReply);
+      expect(db.prepare("SELECT target_task_id FROM app_inbox_items WHERE source_id = 'replaced-proposal-feedback'").get())
+        .toEqual({ target_task_id: null });
+      expect(receipts.filter(event => event.target?.taskId === "question")).toHaveLength(4);
+      expect(readAppConversationResource(db, "interface", "primary").messages
+        .some(message => message.id === "replaced-proposal-feedback" && message.text === "Use the isolated fixture")).toBe(true);
       // Journal retention cannot erase the saved originating Conversation or
       // relabel another App's same-named Task history after a storage reopen.
       db.prepare("DELETE FROM events WHERE id = ?").run(admitted.eventId);
@@ -417,6 +478,62 @@ for (const ownerApp of ["interface", "worker"]) {
         .toHaveLength(1);
       if (ownerApp !== "interface") expect(readAppConversationResource(reopened, ownerApp, "primary").messages
         .some(message => message.id === "deliberate")).toBe(false);
+      // Restart the actual Host admission composition after origin-event retention.
+      // Owner execution/results must wake the original Conversation, not a
+      // same-named Conversation on the worker App.
+      const recoveredBus = new EventBus();
+      const recoveredWriter = new DbWriter(persistDir);
+      recoveredBus.setPersistenceSubscriber(recoveredWriter.handler);
+      recoveredBus.setDeliveryRecorder(recoveredWriter.recordDelivery);
+      const recoveredGate = Promise.withResolvers<void>();
+      await installAppTaskRuntimes({
+        projectRoot: root, projectsRoot: root, persistDir, bus: recoveredBus,
+        appRegistrySnapshot: registry.snapshot(), startAfter: recoveredGate.promise,
+      }, { deferRecovery: true });
+      const reopenedStore = AppTaskResourceStore.activeFromDb(reopened, ownerApp)!;
+      expect(reopenedStore.readTaskContext({ taskIds: [], admissionIds: [item.taskAdmissionKey!] })
+        .appTaskAdmissions![item.taskAdmissionKey!]!.inputEvent?.data).toMatchObject({
+          ...condition, request: { source: { kind: "human", id: "deliberate" } },
+        });
+      const recoveredCapability = createAppTaskCapability({ bus: recoveredBus, db: reopened });
+      const recoveredRuntime = await startAppInboxRuntime({
+        registry, db: reopened, bus: recoveredBus, scanIntervalMs: 60_000,
+        attachTask: recoveredCapability.attach, admitConversation: recoveredCapability.admitConversation,
+        admitTaskEvent: recoveredCapability.admitEvent, hasTaskTarget: recoveredCapability.has,
+        previewTaskEvent: recoveredCapability.previewEvent, previewTaskEventRoutes: recoveredCapability.previewEventRoutes,
+      });
+      const wakes: AgentEvent[] = [];
+      const stopWakes = recoveredBus.listen(event => { if (event.type === "conversation.updated") wakes.push(event); });
+      try {
+        const waitForWake = async () => {
+          const deadline = Date.now() + 2000;
+          while (!wakes.length && Date.now() < deadline) await Bun.sleep(5);
+          expect(wakes.length).toBeGreaterThan(0);
+        };
+        // Observe an explicit startup barrier rather than sleeping and assuming
+        // that any pending presentation wake has drained.
+        recoveredBus.emit({ type: "conversation.message.created", source: "fixture", data: {
+          appId: "interface", conversationId: "primary", author: { kind: "command", id: "restart-barrier" },
+          text: "Fixture storage reopened",
+        } });
+        await waitForWake();
+        for (const type of ["project.task.reconcile.started", "project.task.reconciled"]) {
+          wakes.length = 0;
+          recoveredBus.emit({ type, source: "fixture", data: { project: ownerApp, taskId: "question", attemptId: claim.attemptId } });
+          await waitForWake();
+          expect(wakes.map(event => event.data)).toEqual([{ appId: "interface", conversationId: "primary" }]);
+          const history = readAppConversationResource(reopened, "interface", "primary");
+          expect(history.messages.filter(message => message.id === "deliberate")).toHaveLength(1);
+          expect(history.messages.some(message => message.text === "The owner received your choice; verification is still needed."))
+            .toBe(true);
+        }
+      } finally {
+        stopWakes();
+        recoveredRuntime.close();
+        const drained = closeInstalledAppTaskRuntimes(recoveredBus);
+        recoveredGate.resolve();
+        await drained;
+      }
     } finally {
       unlisten();
       runtime.close();
