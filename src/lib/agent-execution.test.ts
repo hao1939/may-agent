@@ -170,7 +170,7 @@ describe("environment-agnostic SDK execution preparation", () => {
     ...overrides,
   });
 
-  test("keeps Task policy in the Host readonly adapter", async () => {
+  test("the Host delegates the supplied readonly policy to shared SDK preparation", async () => {
     let mutations = 0;
     const tasks: AgentTool = {
       name: "tasks",
