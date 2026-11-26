@@ -28,6 +28,11 @@ function queryShape(sql: string): string {
     .trim();
 }
 
+/** 64-bit normalized SHA-256 identity (base64url), independent of profiler retention/prepare success. */
+export function normalizedQueryFingerprint(sql: string): string {
+  return createHash("sha256").update(queryShape(sql)).digest().subarray(0, 8).toString("base64url");
+}
+
 function isReadShape(shape: string): boolean {
   // SQLite accepts non-ASCII bare identifiers, but this bounded classifier does
   // not try to reproduce SQLite's tokenizer. Skip uncertain shapes rather than

@@ -1,4 +1,5 @@
 import type { SqliteDb } from "../db.js";
+import { contentionNow, observeContention } from "./contention-observations.js";
 
 const active = new WeakMap<SqliteDb, Array<() => void>>();
 
@@ -20,6 +21,7 @@ export function stateTransaction<T>(db: SqliteDb, operation: () => T): T {
   const pending = parent ?? [];
   const checkpoint = pending.length;
   db.exec(nested ? "SAVEPOINT state_operation" : "BEGIN IMMEDIATE");
+  const started = nested ? undefined : contentionNow();
   active.set(db, pending);
   let result: T;
   try {
@@ -40,7 +42,10 @@ export function stateTransaction<T>(db: SqliteDb, operation: () => T): T {
     }
     throw error;
   } finally {
-    if (!nested) active.delete(db);
+    if (!nested) {
+      active.delete(db);
+      observeContention(db, { kind: "writer", start: started!, end: contentionNow() });
+    }
   }
   // Outside the rollback boundary: delivery failure cannot undo committed SQL.
   if (!nested) {

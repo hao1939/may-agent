@@ -2,7 +2,8 @@ import { execFile, type ExecFileOptionsWithStringEncoding } from "node:child_pro
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { openReadOnlyDatabase, type SqliteDb } from "../lib/db.js";
-import { readSqlQueryEvidence } from "../lib/db/query-performance.js";
+import { normalizedQueryFingerprint, readSqlQueryEvidence } from "../lib/db/query-performance.js";
+import { contentionNow, readContentionObservations } from "../lib/db/contention-observations.js";
 import { createMetricService, type MetricService } from "../lib/metrics.js";
 import { importRuntimeModule, log } from "@may-agent/sdk/runtime";
 import { EVENT_RECORD_ONLY, EVENT_ROW_ID, eventData, type AgentEvent, type EventBus } from "./core/events/bus.js";
@@ -330,8 +331,10 @@ export async function measureSourceMetrics(options: {
         // is not a parser-based single-statement guarantee. Give every query its
         // own read-only connection and close it before the writer records or
         // evaluates the sample, so query transaction state cannot leak forward.
-        const started = performance.now();
+        const queryFingerprint = queryObservations ? normalizedQueryFingerprint(row.source_query) : "unknown";
+        const started = contentionNow();
         let failed = true;
+        let contentionFailure: "busy" | "locked" | undefined;
         try {
           const sourceDb = openReadOnlyDatabase(join(options.persistDir, "may.db"));
           try {
@@ -340,8 +343,15 @@ export async function measureSourceMetrics(options: {
             sourceDb.close();
           }
           failed = sample === null;
+        } catch (error) {
+          const identity = error as { code?: string; errno?: number; errcode?: number } | null;
+          const code = typeof identity?.code === "string" ? identity.code : "";
+          const primary = (identity?.errno ?? identity?.errcode ?? 0) & 0xff;
+          if (code.startsWith("SQLITE_BUSY") || primary === 5) contentionFailure = "busy";
+          if (code.startsWith("SQLITE_LOCKED") || primary === 6) contentionFailure = "locked";
+          throw error;
         } finally {
-          const durationMs = performance.now() - started;
+          const durationMs = contentionNow() - started;
           if (queryObservations) {
             let evidence;
             try {
@@ -349,7 +359,9 @@ export async function measureSourceMetrics(options: {
             } catch {
               // Optional diagnostics must not change the source's result or timing.
             }
-            queryObservations.record(row.id, durationMs, failed, evidence);
+            queryObservations.record(row.id, durationMs, failed, evidence, {
+              start: started, queryFingerprint, outcome: contentionFailure ?? (failed ? "failed" : "ok"),
+            });
           }
         }
         completedAt = Date.now();
@@ -397,7 +409,7 @@ export async function measureSourceMetrics(options: {
     }
   }
 
-  const querySample = queryObservations?.sample();
+  const querySample = queryObservations?.sample(undefined, readContentionObservations(db, options.persistDir));
   if (querySample) {
     try {
       metrics.record(METRIC_QUERY_DURATION_METRIC.id, querySample.value, {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { openDatabase } from "../db.js";
+import { readContentionObservations } from "./contention-observations.js";
 import { afterStateCommit, inStateTransaction, stateTransaction } from "./transaction.js";
 
 describe("state transaction delivery", () => {
@@ -22,7 +23,25 @@ describe("state transaction delivery", () => {
       expect(delivered).toEqual(["outer", "nested"]);
       afterStateCommit(db, () => delivered.push("immediate"));
       expect(delivered).toEqual(["outer", "nested", "immediate"]);
+      // Nested savepoints are not independent writer intervals, and delivery is outside the interval.
+      const history = readContentionObservations(db, "missing-fixture-directory");
+      expect(history.intervals).toHaveLength(1);
+      expect(history.intervals[0].kind).toBe("writer");
+      expect(history.intervals[0].end).toBeGreaterThanOrEqual(history.intervals[0].start);
     } finally { db.close(); }
+  });
+
+  it("bounds writer capture, isolates databases and retains rolled-back outer intervals", () => {
+    const db = openDatabase(":memory:");
+    const other = openDatabase(":memory:");
+    try {
+      for (let i = 0; i < 130; i++) stateTransaction(db, () => undefined);
+      expect(() => stateTransaction(db, () => { throw new Error("fixture rollback"); })).toThrow("fixture rollback");
+      const history = readContentionObservations(db, "missing-fixture-directory");
+      expect(history).toMatchObject({ coverage: "unknown", dropped: 3 });
+      expect(history.intervals).toHaveLength(128);
+      expect(readContentionObservations(other, "missing-fixture-directory").intervals).toEqual([]);
+    } finally { db.close(); other.close(); }
   });
 
   it("keeps committed state and attempts remaining delivery when a callback fails", () => {

@@ -5,6 +5,40 @@ definitions own domain measurements and alert thresholds. The source collector
 in `../../metric-source-measurement.ts` executes declared sources and preserves
 sample evidence and failures.
 
+## Direct SQL pass evidence
+
+`metric.source-query-worst-ms` notes retain a versioned `cohort` alongside the
+three slowest `examples` (a preview only). Historical notes without a cohort
+remain historical previews, not complete cohorts. `examplesTruncated` concerns
+that preview; `cohort.status`, `attempted`, `retained` and `dropped` reconcile the
+actual invocation evidence independently. This does not change reuse eligibility.
+
+Cohort v1 has one prefix-compressed `ids` pair per invocation: prefix length
+from the preceding decoded ID, then suffix. `fingerprints` holds normalized SQL
+SHA-256 identities (first 64 bits, base64url); no SQL, binds or results are stored
+in the cohort. Each `entries` tuple is `[fingerprintIndex, startOffsetMs,
+durationMs, outcome?]`, where omitted/0 is success, 1 failure, 2 BUSY and 3 LOCKED.
+Offsets and durations have 0.01ms precision. `decodeQueryCohort` expands this wire
+format. `cohortFingerprint` hashes the ordered, multiplicity-preserving sequence
+of decoded `[metricId, queryFingerprint]` pairs as JSON lines; timings and
+outcomes do not change workload identity. A dropped cohort cannot be reconciled
+from retained entries alone and is explicitly incomplete.
+
+Pass `start`/`end` use `performance.timeOrigin + performance.now()` for a
+same-machine monotonic-epoch timebase, not a repeatedly sampled wall clock.
+Contention intervals include offsets and overlapping invocation ordinals. Outer
+local `stateTransaction` intervals exclude acquisition waits, nested savepoints
+and post-commit delivery. Existing maintenance PASSIVE checkpoints publish a
+bounded, atomically replaced `checkpoint-observations.json` sidecar beside the
+database; measurement only reads it, never checkpoints or probes locks. The
+128-interval histories and 16-interval note cap prefer checkpoint witnesses over
+frequent local writes; loss is counted. Optional plans/SQL are trimmed before
+cohort entries. Missing, delayed, stale, dropped, other-process and in-flight
+coverage remains **unknown**, never evidence of no contention. Native busy/lock
+wait counts and times are unsupported by the SQLite APIs and remain unknown;
+observed BUSY/LOCKED failures are separate counts, not wait duration estimates.
+Overlap is not causation. Capture does not backfill old notes or authorize rollout.
+
 ## Command sources
 
 A source command runs in the configured installation root. It may return a

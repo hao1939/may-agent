@@ -1,4 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, setSystemTime, spyOn } from "bun:test";
+import { execFile } from "node:child_process";
+import { stateTransaction } from "../lib/db/transaction.js";
+import { contentionNow, publishCheckpointObservation, readContentionObservations } from "../lib/db/contention-observations.js";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,7 +13,7 @@ import { attachEventPersistence } from "./daemon-events.js";
 import { EventBus, EVENT_ROW_ID, EVENT_RECORD_ONLY, EVENT_DELIVERY_RESULT } from "./core/events/bus.js";
 import { WORKFLOW_OUTCOME_METRICS } from "./adapters/reporting/workflow-metrics.js";
 import { TASK_FAILOVER_METRIC } from "./adapters/reporting/task-failover-metrics.js";
-import { METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
+import { cohortFingerprint, decodeQueryCohort, METRIC_QUERY_DURATION_METRIC } from "./adapters/reporting/metric-query-metrics.js";
 import * as database from "../lib/db.js";
 import { profileDatabase, SqlPerformance } from "../lib/db/query-performance.js";
 import * as queryPerformance from "../lib/db/query-performance.js";
@@ -56,6 +59,99 @@ describe("source-query metric measurement", () => {
     else process.env.APP_ROOT = originalAppRoot;
     if (originalProjectsRoot === undefined) delete process.env.PROJECTS_ROOT;
     else process.env.PROJECTS_ROOT = originalProjectsRoot;
+  });
+
+  it("round-trips 44 SQL attempts including prepare/invalid/busy failures and correlates writer/checkpoint evidence", async () => {
+    const db = getDb(persistDir);
+    const metrics = createMetricService({ getDb: () => db });
+    for (let n = 0; n < 44; n++) metrics.define({
+      id: `cohort.fixture-${String(n).padStart(2, "0")}-source`, type: "gauge",
+      sourceQuery: n === 41 ? "SELECT * FROM missing_cohort_fixture" : n === 43 ? "SELECT 'invalid' AS value" : `SELECT ${n} AS value`,
+    });
+    let elapsed = 100;
+    const clock = spyOn(performance, "now").mockImplementation(() => elapsed);
+    const open = database.openReadOnlyDatabase;
+    let checkpoints = 0;
+    const prepare = db.prepare.bind(db);
+    const writerSpy = spyOn(db, "prepare").mockImplementation((sql, options) => {
+      if (/wal_checkpoint/i.test(sql)) checkpoints++;
+      return prepare(sql, options);
+    });
+    const read = spyOn(database, "openReadOnlyDatabase").mockImplementation(path => {
+      const actual = open(path);
+      return { ...actual, prepare(sql, options) {
+        const statement = actual.prepare(sql, options);
+        return { ...statement, get(...params) {
+          if (sql === "SELECT 42 AS value") throw Object.assign(new Error("fixture busy"), { code: "SQLITE_BUSY", errno: 5 });
+          const result = statement.get(...params);
+          elapsed += 2;
+          if (sql === "SELECT 0 AS value") {
+            stateTransaction(db, () => { elapsed += 3; });
+            publishCheckpointObservation(persistDir, {
+              kind: "checkpoint", mode: "PASSIVE", start: performance.timeOrigin + elapsed - 2,
+              end: performance.timeOrigin + elapsed + 1, busy: 1, log: 12, checkpointed: 8,
+            });
+          }
+          elapsed += 5;
+          return result;
+        } };
+      } };
+    });
+    try {
+      const result = await measureSourceMetrics({ bus, persistDir, isDue: row => row.id.startsWith("cohort.fixture-") });
+      expect(result.failures).toHaveLength(3);
+      const sample = metrics.get(METRIC_QUERY_DURATION_METRIC.id)!.observation!;
+      expect(sample.sampleSize).toBe(44);
+      expect(sample.note!.length).toBeLessThanOrEqual(4_000);
+      const note = JSON.parse(sample.note!);
+      expect(note.cohort).toMatchObject({ version: 1, attempted: 44, retained: 44, failed: 3, dropped: 0, status: "complete" });
+      const attempts = decodeQueryCohort(note.cohort);
+      expect(cohortFingerprint(attempts)).toBe(note.cohort.cohortFingerprint);
+      expect(attempts.slice(-3).map(a => a.outcome)).toEqual(["failed", "busy", "failed"]);
+      expect(attempts[41].queryFingerprint).toBe(queryPerformance.normalizedQueryFingerprint("SELECT * FROM missing_cohort_fixture"));
+      expect(note.contention).toMatchObject({ coverage: "unknown", busyFailures: 1, busyWaitMs: "unknown", busyWaitCount: "unknown" });
+      expect(note.contention.intervals).toEqual(expect.arrayContaining([
+        expect.objectContaining({ kind: "writer", queries: [0], durationMs: 3 }),
+        expect.objectContaining({ kind: "checkpoint", queries: [0], mode: "PASSIVE", busy: 1, walFrames: 12, checkpointedFrames: 8 }),
+      ]));
+      expect(checkpoints).toBe(0);
+      expect(note.examples).toHaveLength(3);
+    } finally { read.mockRestore(); writerSpy.mockRestore(); clock.mockRestore(); }
+  });
+
+  it("reads real maintenance checkpoint observations across processes without executing another checkpoint", async () => {
+    const start = contentionNow();
+    const maintenanceUrl = new URL("../lib/db/maintenance.ts", import.meta.url).href;
+    const connectionUrl = new URL("../lib/db/connection.ts", import.meta.url).href;
+    const code = `const {getDb, closeDb} = await import(${JSON.stringify(connectionUrl)});
+      const {runDbMaintenancePass} = await import(${JSON.stringify(maintenanceUrl)});
+      const root = ${JSON.stringify(persistDir)};
+      getDb(root, {existingSchemaOnly:true});
+      runDbMaintenancePass(root); closeDb(root);`;
+    await new Promise<void>((resolve, reject) => execFile(process.execPath, ["--eval", code], { timeout: 10_000 },
+      (error, _stdout, stderr) => error ? reject(new Error(`${error.message}: ${stderr}`)) : resolve()));
+    const db = getDb(persistDir);
+    const observations = readContentionObservations(db, persistDir);
+    const checkpoint = observations.intervals.find(i => i.kind === "checkpoint")!;
+    expect(checkpoint).toMatchObject({ kind: "checkpoint", mode: "PASSIVE", busy: 0, log: expect.any(Number), checkpointed: expect.any(Number) });
+    expect(checkpoint.start).toBeGreaterThanOrEqual(start);
+    expect(checkpoint.end).toBeLessThanOrEqual(contentionNow());
+    const sidecar = readFileSync(join(persistDir, "checkpoint-observations.json"), "utf8");
+    const prepare = db.prepare.bind(db);
+    const spy = spyOn(db, "prepare").mockImplementation((sql, options) => {
+      if (/wal_checkpoint/i.test(sql)) throw new Error("Measurement must not checkpoint");
+      return prepare(sql, options);
+    });
+    try {
+      await measureSourceMetrics({ bus, persistDir, isDue: row => row.id === STALE_ACTIVE_METRIC_ID });
+      expect(readFileSync(join(persistDir, "checkpoint-observations.json"), "utf8")).toBe(sidecar);
+      // A stale/nonoverlapping interval is not attributed to the next pass.
+      const note = JSON.parse(createMetricService({ getDb: () => db }).get(METRIC_QUERY_DURATION_METRIC.id)!.observation!.note!);
+      expect(note.contention.intervals.filter((i: { kind: string }) => i.kind === "checkpoint")).toEqual([]);
+      expect(note.contention.checkpointCoverage).toBe("unknown");
+      writeFileSync(join(persistDir, "checkpoint-observations.json"), "invalid");
+      expect(readContentionObservations(db, persistDir).coverage).toBe("unknown");
+    } finally { spy.mockRestore(); }
   });
 
   it("retains actual query cost and plans quietly, including failed sources, and does not fabricate idle recovery", async () => {

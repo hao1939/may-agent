@@ -2,6 +2,7 @@ import { existsSync, rmSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { SqliteDb } from "../db.js";
 import { getDb } from "./connection.js";
+import { contentionNow, publishCheckpointObservation, type ContentionInterval } from "./contention-observations.js";
 
 export interface DbMaintenanceResult {
   deleted: Record<string, number>;
@@ -187,12 +188,20 @@ export function runDbMaintenancePass(
 
   let checkpoint: DbMaintenanceResult["checkpoint"] = "failed";
   let checkpointError: MaintenanceErrorDetails | undefined;
+  const checkpointStart = contentionNow();
+  let checkpointFrames: Pick<ContentionInterval, "busy" | "log" | "checkpointed"> = {};
   try {
-    const result = db.prepare("PRAGMA wal_checkpoint(PASSIVE)").get() as { busy?: number } | undefined;
+    const result = db.prepare("PRAGMA wal_checkpoint(PASSIVE)").get() as typeof checkpointFrames | undefined;
+    checkpointFrames = result ?? {};
     checkpoint = result?.busy ? "busy" : "ok";
   } catch (error) {
     checkpoint = "failed";
     checkpointError = describeMaintenanceError(error);
+  } finally {
+    const end = contentionNow();
+    publishCheckpointObservation(persistDir, {
+      kind: "checkpoint", mode: "PASSIVE", start: checkpointStart, end, ...checkpointFrames,
+    });
   }
 
   return { deleted, checkpoint, ...(checkpointError ? { checkpointError } : {}) };
